@@ -18,7 +18,7 @@ import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { Size } from "recharts/types/util/types";
 import { Permission } from "shared/permissions";
-import { Coord2D, formatFileSize, MulSize } from "shared/rootroot";
+import { Coord2D, formatFileSize, MulSize, type TAnyModel } from "shared/rootroot";
 import { calculateNewDimensions, gDefaultImageArea, IsNullOrWhitespace } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
@@ -36,11 +36,18 @@ import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 
+type FrontpageGalleryClient = DB3Client.xLegacyTableRenderClient<db3.FrontpageGalleryItemPayload> & {
+    readonly crud: DB3Client.CrudViewCommandClient<
+        typeof db3.frontpageGalleryItemEditorView,
+        TAnyModel
+    >;
+};
+
 
 
 ////////////////////////////////////////////////////////////////
 export interface NewGalleryItemComponentProps {
-    client: DB3Client.xTableRenderClient;
+    client: FrontpageGalleryClient;
     //showImages: boolean;
     //onChangeShowImages: (newValue: boolean) => void;
 };
@@ -85,7 +92,7 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
                     const newGalleryItem = props.client.tableSpec.args.table.createNew(currentUser) as db3.FrontpageGalleryItemPayloadForUpload;
                     newGalleryItem.fileId = file.id;
                     newGalleryItem.file = file;
-                    return props.client.doInsertMutation(newGalleryItem);
+                    return props.client.crud.create(newGalleryItem);
                 });
 
                 // proceed to create a gallery item.
@@ -140,7 +147,7 @@ interface GalleryItemDescriptionEditorProps {
     refetch: () => void;
     onClose: () => void;
     galleryItem: db3.FrontpageGalleryItemPayload;
-    client: DB3Client.xTableRenderClient;
+    client: FrontpageGalleryClient;
 };
 
 export const GalleryItemDescriptionEditor = (props: GalleryItemDescriptionEditorProps) => {
@@ -163,7 +170,7 @@ export const GalleryItemDescriptionEditor = (props: GalleryItemDescriptionEditor
                 caption_fr: valueFr || "",
                 caption_nl: valueNl || "",
             };
-            await props.client.doUpdateMutation(newrow);
+            await props.client.crud.update(newrow, props.galleryItem);
             showSnackbar({ severity: "success", children: "Success" });
             props.client.refetch();
             return true;
@@ -213,7 +220,7 @@ export const GalleryItemDescriptionEditor = (props: GalleryItemDescriptionEditor
 
 export interface GalleryItemDescriptionControlProps {
     value: db3.FrontpageGalleryItemPayload;
-    client: DB3Client.xTableRenderClient;
+    client: FrontpageGalleryClient;
     editMode: boolean;
     setEditMode: (newValue: boolean) => void;
 };
@@ -250,7 +257,7 @@ type SelectedTool = "CropBegin" | "CropEnd" | "Move" | "Scale" | "Rotate";
 // uncontrolled pattern... so upon mount, we create our own editable version of the value.
 export interface GalleryItemImageEditControlProps {
     value: db3.FrontpageGalleryItemPayload;
-    client: DB3Client.xTableRenderClient;
+    client: FrontpageGalleryClient;
     onExitEditMode: () => void;
 };
 export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlProps) => {
@@ -340,7 +347,7 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
             frontpageGalleryItemId: editingValue.id,
             context: `ImageEditorSave`,
         });
-        props.client.doUpdateMutation(editingValue).then((r) => {
+        props.client.crud.update(editingValue, props.value).then(() => {
             showSnackbar({ severity: "success", children: `params updated.` });
         }).catch((e) => {
             console.log(e);
@@ -488,7 +495,7 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
 
 export interface GalleryItemImageControlProps {
     value: db3.FrontpageGalleryItemPayload;
-    client: DB3Client.xTableRenderClient;
+    client: FrontpageGalleryClient;
     editMode: boolean;
     setEditMode: (newValue: boolean) => void;
 };
@@ -511,7 +518,7 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
 interface GalleryItemProps {
     value: db3.FrontpageGalleryItemPayload;
     //showImages: boolean;
-    client: DB3Client.xTableRenderClient;
+    client: FrontpageGalleryClient;
 };
 
 const GalleryItem = (props: GalleryItemProps) => {
@@ -527,7 +534,7 @@ const GalleryItem = (props: GalleryItemProps) => {
             feature: ActivityFeature.frontpagegallery_item_delete,
             frontpageGalleryItemId: newrow.id,
         });
-        props.client.doUpdateMutation(newrow).then(() => {
+        props.client.crud.update(newrow, props.value).then(() => {
             showSnackbar({ severity: "success", children: `item soft-deleted.` });
         }).catch(e => {
             console.log(e);
@@ -543,7 +550,7 @@ const GalleryItem = (props: GalleryItemProps) => {
             feature: ActivityFeature.frontpagegallery_item_change_visibility,
             frontpageGalleryItemId: newrow.id,
         });
-        props.client.doUpdateMutation(newrow).then(() => {
+        props.client.crud.update(newrow, props.value).then(() => {
             showSnackbar({ severity: "success", children: `Visibility updated.` });
         }).catch(e => {
             console.log(e);
@@ -610,11 +617,19 @@ const MainContent = () => {
         },
     });
 
-    const client = DB3Client.useLegacyTableRenderContext({
+    const tableClient = DB3Client.useLegacyTableRenderContext<db3.FrontpageGalleryItemPayload>({
         tableSpec,
-        requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
+        requestedCaps: DB3Client.xTableClientCaps.Query,
     });
-    const items = client.items as db3.FrontpageGalleryItemPayload[];
+    const crud = DB3Client.useLegacyCrudViewCommands<
+        typeof db3.frontpageGalleryItemEditorView,
+        TAnyModel
+    >({
+        view: db3.frontpageGalleryItemEditorView,
+        tableClient,
+    });
+    const client: FrontpageGalleryClient = Object.assign(tableClient, { crud });
+    const items = client.items;
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
         if (args.addedIndex === args.removedIndex) return; // no change

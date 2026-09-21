@@ -10,7 +10,7 @@ vi.mock("db", async () => {
 import * as db3 from "@db3/db3"
 import db3Query from "@db3/queries/db3queries"
 import db3PaginatedQuery from "@db3/queries/db3paginatedQueries"
-import db3Mutation from "@db3/mutations/db3mutations"
+import db3Mutation from "tests/authorization/db3MutationTestResolver"
 import { createAuthorizationPersona } from "./support/authorizationFixtures"
 import { forgeDb3Query, forgeDb3Update } from "./support/db3RequestBuilders"
 import { authorizationTestDb } from "./support/inMemoryPrisma"

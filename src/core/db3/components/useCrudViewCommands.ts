@@ -11,9 +11,9 @@ export interface CrudViewCommandClient<
     TView extends AnyDB3CrudView = AnyDB3CrudView,
     TRow extends TAnyModel = ClientOf<TView>,
 > {
-    create(row: Partial<TRow>): Promise<unknown>;
-    update(row: TRow, previousRow: TRow): Promise<unknown>;
-    delete(identity: EntityIdOf<EntityOf<TView>>): Promise<unknown>;
+    create(row: Partial<TRow>): Promise<{ identity: EntityIdOf<EntityOf<TView>> }>;
+    update(row: TRow, previousRow: TRow): Promise<{ identity: EntityIdOf<EntityOf<TView>> }>;
+    delete(identity: EntityIdOf<EntityOf<TView>>): Promise<{ identity: EntityIdOf<EntityOf<TView>> }>;
 }
 
 /**
@@ -84,12 +84,15 @@ export function useCrudViewCommands<
  * Migration adapter for editors whose local enriched row is intentionally not
  * the client model declared by their CRUD view.
  */
-export function useLegacyCrudViewCommands<TView extends AnyDB3CrudView>(args: {
+export function useLegacyCrudViewCommands<
+    TView extends AnyDB3CrudView,
+    TRow extends TAnyModel = TAnyModel,
+>(args: {
     readonly view: TView;
-    readonly tableClient: xTableRenderClient<any, any>;
-}): CrudViewCommandClient<TView, TAnyModel> {
+    readonly tableClient: xTableRenderClient<any, TRow>;
+}): CrudViewCommandClient<TView, TRow> {
     const commands = useCrudViewCommands(args);
     // The legacy contract deliberately erases only the editor-row parameter;
     // command identity and runtime preparation still come from the typed view.
-    return commands as CrudViewCommandClient<TView, TAnyModel>;
+    return commands as CrudViewCommandClient<TView, TRow>;
 }

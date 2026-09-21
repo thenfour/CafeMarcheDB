@@ -10,20 +10,13 @@ const InstrumentFunctionalGroupListContent = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.instrumentFunctionalGroupEditorView,
         columns: {
-            publicId: () => new DB3Client.PublicIdColumnClient(),
+            publicId: DB3Client.publicIdFieldGen(),
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
             description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 300 }),
             color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 300 }),
             sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
         },
     });
-
-    // const tableRenderClient = DB3Client.useTableRenderContext({
-    //     requestedCaps: DB3Client.xTableClientCaps.None,
-    //     tableSpec,
-    // });
-
-    // const x = tableRenderClient.items;
 
     return <>
         <SettingMarkdown setting="InstrumentFunctionalGroupList_markdown"></SettingMarkdown>

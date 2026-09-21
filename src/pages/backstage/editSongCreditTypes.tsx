@@ -9,8 +9,8 @@ import * as DB3Client from "src/core/db3/DB3Client";
 
 
 const MainContent = () => {
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xSongCreditType,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.songCreditTypeEditorView,
         columns: {
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
             text: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),

@@ -22,10 +22,10 @@ const UserListContent: React.FC<{}> = () => {
     const dashboardContext = useDashboardContext();
     //const lifecycle = useUserLifecycleActions();
 
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xUser,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.userEditorView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            id: DB3Client.pkFieldGen(),
 
             // isDeleted should require continuity checks and dedicated lifecycle actions.
             // but this adds complexity to the grid capabilities; as this is sysadmin maintenance only,
@@ -40,7 +40,7 @@ const UserListContent: React.FC<{}> = () => {
             isSysAdmin: columnName => makeDisplayOnlyColumn(new DB3Client.BoolColumnClient({ columnName })),
             //new DB3Client.BoolColumnClient({ columnName: "isActive" }),
             instruments: columnName => new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
-            tags: columnName => new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            tags: columnName => new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false, selectionView: db3.userTagEditorView }),
             role: columnName => makeDisplayOnlyColumn(new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 180, })),
         },
     });

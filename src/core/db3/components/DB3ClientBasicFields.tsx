@@ -74,6 +74,8 @@ export class PKColumnClient<TColumnName extends string = string>
     ApplyClientToPostClient = undefined;
 };
 
+export const pkFieldGen = () => (columnName: string) => new PKColumnClient({ columnName });
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export class PublicIdColumnClient
     extends DB3ClientCore.IColumnClient<"publicId", string> {
@@ -107,6 +109,8 @@ export class PublicIdColumnClient
     onSchemaConnected() { };
     ApplyClientToPostClient = undefined;
 }
+
+export const publicIdFieldGen = () => (columnName: string) => new PublicIdColumnClient();
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface GenericStringColumnArgs<TColumnName extends string = string> {
@@ -209,7 +213,7 @@ export interface MarkdownStringColumnArgs<TColumnName extends string = string> {
 };
 
 export class MarkdownStringColumnClient<TColumnName extends string = string>
-    extends DB3ClientCore.IColumnClient<TColumnName, string> {
+    extends DB3ClientCore.IColumnClient<TColumnName, string | null> {
     typedSchemaColumn: GenericStringField;
 
     constructor(args: MarkdownStringColumnArgs<TColumnName>) {
@@ -254,10 +258,10 @@ export class MarkdownStringColumnClient<TColumnName extends string = string>
         };
     };
 
-    renderViewer = (params: DB3ClientCore.RenderViewerArgs<string>) => <NameValuePair
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<string | null>) => <NameValuePair
         className={params.className}
         name={this.columnName}
-        value={<Markdown key={params.key} markdown={params.value} />}
+        value={<Markdown key={params.key} markdown={params.value ?? ""} />}
         fieldName={this.columnName}
         isReadOnly={false}
     />
@@ -268,7 +272,7 @@ export class MarkdownStringColumnClient<TColumnName extends string = string>
             isReadOnly: false,
             validationResult: params.validationResult,
             value: <Markdown3Editor
-                value={params.value as string}
+                value={typeof params.value === "string" ? params.value : ""}
                 nominalHeight={120}
                 autoFocus={false}
                 onChange={async (val) => {
@@ -293,7 +297,7 @@ export interface GenericIntegerColumnArgs<TColumnName extends string = string> {
 };
 
 export class GenericIntegerColumnClient<TColumnName extends string = string>
-    extends DB3ClientCore.IColumnClient<TColumnName, number> {
+    extends DB3ClientCore.IColumnClient<TColumnName, number | null> {
     constructor(args: GenericIntegerColumnArgs<TColumnName>) {
         super({
             columnName: args.columnName,
@@ -337,7 +341,7 @@ export class GenericIntegerColumnClient<TColumnName extends string = string>
         };
     };
 
-    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => <NameValuePair
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number | null>) => <NameValuePair
         className={params.className}
         name={this.columnName}
         value={params.value}
@@ -1061,21 +1065,6 @@ export class AnyColumnClient extends DB3ClientCore.IColumnClient {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const useInsertMutationClient = (schema: db3.xTable, enabled = true) => {
-    const mutationCtx = DB3ClientCore.useLegacyTableRenderContext({
-        requestedCaps: enabled
-            ? DB3ClientCore.xTableClientCaps.Mutation
-            : DB3ClientCore.xTableClientCaps.None,
-        tableSpec: DB3ClientCore.defineLegacyDynamicTableClientSpec({
-            table: schema,
-            columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
-        }),
-    });
-    return mutationCtx;
-}
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface UseDb3QueryArgs {
     schema: db3.xTable;
     filterSpec?: CMDBTableFilterModel | undefined;
@@ -1137,18 +1126,3 @@ export function useDb3Query(
         filterModel: filterSpec,
     });
 }
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const useDb3Update = <Trow extends TAnyModel,>(schema: db3.xTable) => {
-    const ctx = useDashboardContext();
-    const mutationCtx = DB3ClientCore.useLegacyTableRenderContext<Trow>({
-        requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
-        tableSpec: DB3ClientCore.defineLegacyDynamicTableClientSpec({
-            table: schema,
-            columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
-        }),
-    });
-    return mutationCtx;
-}
-

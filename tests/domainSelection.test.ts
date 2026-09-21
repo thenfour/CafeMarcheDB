@@ -7,7 +7,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("src/core/db3/db3", () => ({ xUser: { getRowInfo: (user: any) => ({ pk: user.id, name: user.name }) }, xEvent: { authorizeColumnForEdit: vi.fn() } }));
 vi.mock("src/core/db3/clientAPI", () => ({ API: { events: { updateEventBasicFields: { useToken: vi.fn() } } } }));
 vi.mock("src/core/db3/components/DB3ClientCore", () => ({ fetchUnsuspended: vi.fn() }));
-vi.mock("src/core/db3/components/DB3ClientBasicFields", () => ({ useInsertMutationClient: () => ({}) }));
 vi.mock("src/core/db3/components/useCrudViewCreate", () => ({ useCrudViewCreate: vi.fn() }));
 vi.mock("src/core/db3/components/useDB3Authorization", () => ({ useDB3Authorization: () => ({}) }));
 vi.mock("src/core/db3/components/IconMap", () => ({ RenderMuiIcon: (icon: string) => icon ? React.createElement("svg", { "data-icon": icon, "aria-hidden": true }) : null, gIconMap: { Lock: () => null, Add: () => null } }));

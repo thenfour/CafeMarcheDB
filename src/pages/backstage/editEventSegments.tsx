@@ -24,8 +24,8 @@ const MainContent = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const eventId: number | null = parseIntOrNull(urlParams.get('eventId'));
 
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xEventSegment,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.eventSegmentEditorView,
         columns: DB3Client.makeClientColumnSelection(
             EventSegmentClientColumns.id,
             EventSegmentClientColumns.name,

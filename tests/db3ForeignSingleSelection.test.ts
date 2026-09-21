@@ -31,12 +31,10 @@ vi.mock("src/core/components/SnackbarContext", async () => {
 });
 vi.mock("src/auth/mutations/updateSetting", () => ({ default: vi.fn() }));
 vi.mock("src/auth/queries/getSetting", () => ({ default: vi.fn() }));
-vi.mock("src/core/db3/mutations/db3mutations", () => ({ default: vi.fn() }));
 vi.mock("src/core/db3/queries/db3queries", () => ({ default: vi.fn() }));
 
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import getSetting from "src/auth/queries/getSetting";
-import db3mutations from "src/core/db3/mutations/db3mutations";
 import { ForeignSingleFieldClient, ForeignSingleFieldInput, ForeignSingleFieldInputProps, SelectSingleForeignDialog } from "src/core/db3/components/db3ForeignSingleFieldClient";
 import { useCrudViewCreate } from "src/core/db3/components/useCrudViewCreate";
 
@@ -60,29 +58,40 @@ beforeEach(() => {
     insertAuthorized = true;
     selectStyleSetting = null;
     queryState = { isLoading: false, isFetching: false, isError: false, isPreviousData: false };
-    vi.mocked(useCrudViewCreate).mockReturnValue(undefined);
-    vi.mocked(useMutation).mockImplementation(resolver => [resolver === db3mutations ? createOption : vi.fn()] as any);
+    // These hook mocks implement only the token/tuple surface exercised here.
+    vi.mocked(useCrudViewCreate).mockReturnValue({ create: createOption } as any);
+    vi.mocked(useMutation).mockReturnValue([vi.fn()] as any);
     vi.mocked(useQuery).mockImplementation((query, args: any) => {
         if (query === getSetting) return [selectStyleSetting, { refetch }] as any;
         const filter = args.filter.quickFilterValues.join(" ").toLowerCase();
         return [queryState.isLoading ? undefined : { items: options.filter(o => o.name.toLowerCase().includes(filter)) }, { ...queryState, refetch }] as any;
     });
+    const foreignSchema = {
+        pkMember: "id", clientIdMember: "id", tableID: "Instrument", tableName: "Instrument",
+        getRowInfo: (item: Instrument) => ({ name: item.name }),
+        createInsertModelFromString: (name: string) => ({ name }),
+        authorizeRowBeforeInsert: () => insertAuthorized,
+        activeAsSelectable: (item: Instrument) => item.id !== 3,
+        doesItemExactlyMatchText: (item: Instrument, text: string) => item.name.toLowerCase() === text.toLowerCase(),
+    };
+    const selectionView = {
+        viewID: "Instrument_Editor",
+        entity: { schema: foreignSchema },
+        parseDto: (item: Instrument) => item,
+        hydrate: (item: Instrument) => item,
+    };
     spec = new ForeignSingleFieldClient<Instrument>({
         columnName: "instrument", fieldCaption: "Instrument", cellWidth: 150,
+        // This intentionally minimal descriptor supplies only the view members
+        // exercised by the selector test.
+        selectionView: selectionView as any,
         renderAsChip: args => React.createElement("span", { className: "custom-chip", onClick: args.onClick }, args.value?.name || spec.args.nullItemInfo?.label || "None"),
     });
     // Creation permission belongs to the referenced table, not this parent row.
     spec.schemaTable = { tableName: "User", authorizeRowBeforeInsert: () => false } as any;
     spec.schemaColumn = {
         member: "instrument", allowNull: true, allowInsertFromString: true,
-        getForeignTableSchema: () => ({
-            pkMember: "id", clientIdMember: "id", tableID: "Instrument", tableName: "Instrument",
-            getRowInfo: (item: Instrument) => ({ name: item.name }),
-            createInsertModelFromString: (name: string) => ({ name }),
-            authorizeRowBeforeInsert: () => insertAuthorized,
-            activeAsSelectable: (item: Instrument) => item.id !== 3,
-            doesItemExactlyMatchText: (item: Instrument, text: string) => item.name.toLowerCase() === text.toLowerCase(),
-        }),
+        getForeignTableSchema: () => foreignSchema,
     } as any;
     spec.onSchemaConnected({ args: {} } as any);
 });
@@ -246,7 +255,7 @@ describe("shared DB3 foreign-single selection", () => {
         createOption.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectCreate = reject; }));
         await click(button("Create 'Flute'"));
         expect(createOption).toHaveBeenCalledOnce();
-        expect(createOption.mock.calls[0]![0].insertModel).toEqual({ name: "Flute" });
+        expect(createOption).toHaveBeenCalledWith({ name: "Flute" });
         expect(button("Creating...").disabled).toBe(true);
         expect(button("Cancel").disabled).toBe(true);
         expect(button("Apply").disabled).toBe(true);

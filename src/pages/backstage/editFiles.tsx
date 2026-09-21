@@ -13,10 +13,10 @@ const makeDisplayOnlyColumn = <T extends DB3Client.IColumnClient>(column: T): T 
 };
 
 const MainContent = () => {
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xFile,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.fileEditorView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            id: DB3Client.pkFieldGen(),
             fileLeafName: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 }),
             storedLeafName: columnName => makeDisplayOnlyColumn(new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 })),
             description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 150 }),
@@ -28,7 +28,7 @@ const MainContent = () => {
             uploadedByUser: columnName => makeDisplayOnlyColumn(new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, })),
             visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
 
-            tags: columnName => new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            tags: columnName => new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false, selectionView: db3.fileTagEditorView }),
             taggedUsers: columnName => new DB3Client.TagsFieldClient<db3.FileUserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
             taggedSongs: columnName => new DB3Client.TagsFieldClient<db3.FileSongTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
             taggedEvents: columnName => new DB3Client.TagsFieldClient<db3.FileEventTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),

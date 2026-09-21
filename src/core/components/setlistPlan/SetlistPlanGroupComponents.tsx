@@ -6,7 +6,6 @@ import * as db3 from "../../db3/db3";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from "../../db3/components/db3NewObjectDialog";
 import { gIconMap } from "../../db3/components/IconMap";
 import * as DB3Client from "../../db3/DB3Client";
-import { SetlistPlanGroupPayload } from "../../db3/shared/schema/setlistPlan";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
 import { Markdown } from "../markdown/Markdown";
@@ -19,7 +18,7 @@ import { useDashboardContext } from "../dashboardContext/DashboardContext";
 interface SetlistPlanGroupSelectProps {
     tableClient: DB3Client.xTableRenderClient<typeof db3.setlistPlanGroupEditorView>
     selectedGroupId?: number | null;
-    onChange: (group: SetlistPlanGroupPayload | null) => void;
+    onChange: (group: db3.SetlistPlanGroupEditorClient | null) => void;
 };
 
 export const SetlistPlanGroupSelect = ({ tableClient, selectedGroupId, onChange }: SetlistPlanGroupSelectProps) => {
@@ -32,7 +31,7 @@ export const SetlistPlanGroupSelect = ({ tableClient, selectedGroupId, onChange 
                 label: group.name,
                 value: group.id,
                 tooltip: group.description,
-                color: group.color,
+                color: group.color?.id ?? null,
                 id: group.id,
             };
         }}
@@ -56,7 +55,7 @@ export const SetlistPlanGroupClientColumns = DB3Client.makeClientColumnSet({
 
 interface SetlistPlanGroupListItemProps {
     tableClient: DB3Client.xTableRenderClient<typeof db3.setlistPlanGroupEditorView>
-    group: SetlistPlanGroupPayload;
+    group: db3.SetlistPlanGroupEditorClient;
 };
 
 
@@ -68,7 +67,7 @@ export const SetlistPlanGroupListItem = (props: SetlistPlanGroupListItemProps) =
         tableClient: props.tableClient,
     });
 
-    const handleSave = async (obj: SetlistPlanGroupPayload, api: DB3EditRowButtonAPI) => {
+    const handleSave = async (obj: db3.SetlistPlanGroupEditorClient, api: DB3EditRowButtonAPI) => {
         await snackbar.invokeAsync(async () => {
             await commands.update(obj, props.group);
             api.closeDialog();
@@ -134,7 +133,7 @@ export const SetlistPlanGroupList = (props: SetlistPlanGroupListProps) => {
     const client = props.tableClient;
     const items = props.tableClient.items;
 
-    const handleSaveNew = async (obj: SetlistPlanGroupPayload, api: DB3EditRowButtonAPI) => {
+    const handleSaveNew = async (obj: db3.SetlistPlanGroupEditorClient, api: DB3EditRowButtonAPI) => {
         await snackbar.invokeAsync(async () => {
             await commands.create(obj);
             api.closeDialog();

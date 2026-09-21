@@ -1,7 +1,7 @@
 import { Prisma } from "db";
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { z } from "zod";
-import { defineLegacyCrudView } from "../../core/db3CrudView";
+import { defineCrudView } from "../../core/db3CrudView";
 import { WikiPageTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { wikiPageEntity } from "./wikiEntities";
 
@@ -40,11 +40,11 @@ const wikiPageEditorSelection = Prisma.validator<Prisma.WikiPageDefaultArgs>()({
     },
 });
 
-export const wikiPageEditorView = defineLegacyCrudView({
+export const wikiPageEditorView = defineCrudView({
     viewID: "WikiPage_Editor",
     entity: wikiPageEntity,
     operations: { update: true },
     selection: wikiPageEditorSelection,
     dtoSchema: WikiPageEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => wikiPageEntity.schema.getClientModel(dto, "view"),
 });

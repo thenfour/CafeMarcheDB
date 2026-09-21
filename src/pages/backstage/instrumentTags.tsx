@@ -10,8 +10,8 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 
 const InstrumentTagListContent = () => {
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xInstrumentTag,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.instrumentTagEditorView,
         columns: {
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
             text: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),

@@ -8,7 +8,7 @@ vi.mock("db", async () => {
 
 vi.mock("src/server/brand", () => ({ clearBrandCache: vi.fn() }))
 
-import db3Mutation from "@db3/mutations/db3mutations"
+import db3Mutation from "tests/authorization/db3MutationTestResolver"
 import updateBulkSettings from "src/auth/mutations/updateBulkSettings"
 import updateSetting from "src/auth/mutations/updateSetting"
 import { clearBrandCache } from "src/server/brand"

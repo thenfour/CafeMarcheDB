@@ -16,6 +16,7 @@ import * as db3 from "src/core/db3/db3";
 const MainContent = () => {
     const [showUnknown, setShowUnknown] = React.useState<boolean>(false);
 
+    // association matrix still uses tablespecs and not views, use legacy.
     const RoleClientSchema = DB3Client.defineLegacyTableClientSpec({
         table: db3.xRole,
         columns: {
@@ -38,7 +39,7 @@ const MainContent = () => {
             isVisibility: columnName => new DB3Client.BoolColumnClient({ columnName }),
             color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 120 }),
             iconName: columnName => new DB3Client.IconFieldClient({ columnName, cellWidth: 120 }),
-            roles: columnName => new DB3Client.TagsFieldClient({ columnName, cellWidth: 300, allowDeleteFromCell: false }),
+            roles: columnName => new DB3Client.TagsFieldClient({ columnName, cellWidth: 300, allowDeleteFromCell: false, selectionView: db3.roleEditorView }),
         },
     });
 

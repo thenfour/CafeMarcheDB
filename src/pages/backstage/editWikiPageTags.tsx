@@ -5,8 +5,8 @@ import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 
-const tableSpec = DB3Client.defineLegacyTableClientSpec({
-    table: db3.xWikiPageTag,
+const tableSpec = DB3Client.defineTableClientSpec({
+    view: db3.wikiPageTagEditorView,
     columns: {
         id: columnName => new DB3Client.PKColumnClient({ columnName }),
         text: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),

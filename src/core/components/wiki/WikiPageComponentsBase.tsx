@@ -8,7 +8,7 @@ export const WikiPageTableClientColumns = DB3Client.makeClientColumnSet({
     createdAt: columnName => new DB3Client.CreatedAtColumn({ columnName, cellWidth: 150 }),
     createdByUser: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
     visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
-    tags: columnName => new DB3Client.TagsFieldClient<db3.WikiPageTagAssignmentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+    tags: DB3Client.tagsFieldClientGen<db3.WikiPageTagAssignmentPayload>({ allowDeleteFromCell: false, selectionView: db3.wikiPageTagEditorView }),
 });
 
 export const WikiPageTableClientSchema = DB3Client.defineLegacyTableClientSpec({

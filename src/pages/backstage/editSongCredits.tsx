@@ -11,13 +11,13 @@ const MainContent = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const songId: number | null = parseIntOrNull(urlParams.get('songId'));
 
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xSongCredit,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.songCreditEditorView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
-            user: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
-            song: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
-            type: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
+            id: DB3Client.pkFieldGen(),
+            user: DB3Client.foreignRefFieldGen({}),
+            song: DB3Client.foreignRefFieldGen({}),
+            type: DB3Client.foreignRefFieldGen({ selectionView: db3.songCreditTypeEditorView }),
         },
     });
 

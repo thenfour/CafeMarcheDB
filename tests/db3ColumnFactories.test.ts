@@ -6,13 +6,12 @@ import {
     defineTableClientSpec,
     makeClientColumnSelection,
     makeClientColumnSet,
-    useTableRenderContext,
-    xTableClientCaps,
 } from "src/core/db3/components/DB3ClientCore";
 import * as db3 from "src/core/db3/db3";
 import type { InstrumentFunctionalGroupPublicId } from "shared/publicId";
 import { GhostField } from "src/core/db3/shared/db3basicFields";
 import { makeColumnSet } from "src/core/db3/shared/db3core";
+import { useCrudTableRenderContext } from "src/core/db3/components/useCrudTableRenderContext";
 
 const allowField = () => true;
 
@@ -24,8 +23,8 @@ const instrumentFunctionalGroupPilotSpec = defineTableClientSpec({
 });
 
 function useInstrumentFunctionalGroupPilotClient() {
-    return useTableRenderContext({
-        requestedCaps: xTableClientCaps.None,
+    return useCrudTableRenderContext({
+        view: db3.instrumentFunctionalGroupEditorView,
         tableSpec: instrumentFunctionalGroupPilotSpec,
     });
 }
@@ -88,7 +87,7 @@ describe("DB3 keyed column factories", () => {
             .toEqualTypeOf<ColorPaletteEntry | null | undefined>();
         expectTypeOf<TPreparedMutation["color"]>()
             .toEqualTypeOf<string | null | undefined>();
-        expectTypeOf<Parameters<TPilotClient["doDeleteMutation"]>[0]>()
+        expectTypeOf<Parameters<TPilotClient["crud"]["delete"]>[0]>()
             .toEqualTypeOf<InstrumentFunctionalGroupPublicId>();
 
         if (false) {

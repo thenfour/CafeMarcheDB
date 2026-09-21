@@ -22,10 +22,9 @@ import { useDashboardContext } from "src/core/components/dashboardContext/Dashbo
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
-import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
 import type { CMDBTableFilterModel } from "../shared/apiTypes";
-import { IColumnClient, type RenderForNewItemDialogArgs, type RenderViewerArgs, type TMutateFn, xTableRenderClient } from "./DB3ClientCore";
+import { IColumnClient, type RenderForNewItemDialogArgs, type RenderViewerArgs, xTableRenderClient } from "./DB3ClientCore";
 import { RenderMuiIcon } from "./IconMap";
 import { type CrudViewCreateToken, useCrudViewCreate } from "./useCrudViewCreate";
 import { type ColorPaletteEntry, type ColorVariationSpec, StandardVariationSpec } from "../../components/color/palette";
@@ -212,7 +211,7 @@ export interface ForeignSingleFieldNullItemInfo {
 
 export interface ForeignSingleFieldClientArgs<TForeign extends TAnyModel> {
     columnName: string;
-    cellWidth: number;
+    cellWidth?: number;
     // the db3 view used for populating selection dialogs
     selectionView?: db3.AnyDB3CrudView;
 
@@ -256,7 +255,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
             columnName: args.columnName,
             headerName: args.columnName,
             editable: true,
-            width: args.cellWidth,
+            width: args.cellWidth ?? 150,
             isAutoFocusable: false,
             visible: Coalesce(args.visible, true),
             className: args.className,
@@ -445,6 +444,9 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
 };
 
 
+export const foreignRefFieldGen = <TForeign extends TAnyModel>(args: Omit<ForeignSingleFieldClientArgs<TForeign>, "columnName">) => (
+    (columnName: string) => new ForeignSingleFieldClient<TForeign>({ ...args, columnName })
+);
 
 
 
@@ -458,7 +460,6 @@ export interface ForeignSingleFieldRenderContextArgs<TForeign extends TAnyModel>
 // the "live" adapter handling server-side comms.
 export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
     args: ForeignSingleFieldRenderContextArgs<TForeign>;
-    mutateFn?: TMutateFn;
     crudCreate?: CrudViewCreateToken<db3.AnyDB3CrudView>;
 
     items: TForeign[];
@@ -477,12 +478,13 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
                 `DB3 CRUD view '${selectionView.viewID}' does not belong to table '${foreignSchema.tableID}'.`,
             );
         }
+        if (this.args.spec.typedSchemaColumn.allowInsertFromString && !selectionView) {
+            throw new Error(
+                `Foreign field '${this.args.spec.columnName}' requires a selectionView to create options.`,
+            );
+        }
         const dashboard = useDashboardContext();
         this.crudCreate = useCrudViewCreate(selectionView);
-
-        if (this.args.spec.typedSchemaColumn.allowInsertFromString && !selectionView) {
-            this.mutateFn = useMutation(db3mutations)[0] as TMutateFn;
-        }
 
         const [result, queryStatus] = useQuery(db3queries, {
             table: {
@@ -518,20 +520,14 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
     doInsertFromString = async (userInput: string): Promise<TForeign> => {
         console.assert(!!this.args.spec.typedSchemaColumn.getForeignTableSchema().createInsertModelFromString);
         const insertModel = this.args.spec.typedSchemaColumn.getForeignTableSchema().createInsertModelFromString!(userInput);
-        try {
-            if (this.crudCreate) {
-                return await this.crudCreate.create(insertModel) as TForeign;
-            }
-            return await this.mutateFn!({
-                tableID: this.args.spec.typedSchemaColumn.getForeignTableSchema().tableID,
-                tableName: this.args.spec.typedSchemaColumn.getForeignTableSchema().tableName,
-                mutationType: "insert",
-                insertModel,
-            }) as TForeign;
-        } catch (e) {
-            // ?
-            throw e;
+        if (!this.crudCreate) {
+            throw new Error(
+                `Foreign field '${this.args.spec.columnName}' requires a selectionView to create options.`,
+            );
         }
+        // The runtime view/table equality check above proves that the hydrated
+        // create result belongs to this legacy field's foreign-row contract.
+        return await this.crudCreate.create(insertModel) as TForeign;
     };
 };
 
@@ -567,14 +563,15 @@ export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props
         useOptions(filterText) {
             const query = useForeignSingleFieldRenderContext({ spec: props.spec, filterText, suspense: false });
             const publicData = useDB3Authorization();
-            const dashboard = useDashboardContext();
             const { showMessage } = React.useContext(SnackbarContext);
-            const canCreate = props.spec.typedSchemaColumn.allowInsertFromString && !!foreignSchema.createInsertModelFromString && foreignSchema.authorizeRowBeforeInsert({ publicData });
+            const canCreate = props.spec.typedSchemaColumn.allowInsertFromString
+                && !!foreignSchema.createInsertModelFromString
+                && !!query.crudCreate
+                && foreignSchema.authorizeRowBeforeInsert({ publicData });
             return {
                 ...query,
                 createOption: canCreate ? async text => {
                     const item = await query.doInsertFromString(text);
-                    if (!props.spec.args.selectionView) dashboard.refreshCachedData();
                     showMessage({ children: "New option created", severity: "success" });
                     return item;
                 } : undefined,

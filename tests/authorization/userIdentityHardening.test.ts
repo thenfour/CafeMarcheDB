@@ -9,7 +9,7 @@ vi.mock("db", async () => {
   }
 })
 
-import db3Mutation from "@db3/mutations/db3mutations"
+import db3Mutation from "tests/authorization/db3MutationTestResolver"
 import { getVerifiedGoogleProfileEmail } from "src/auth/server/googleProfile"
 import {
   createAuthorizationPersona,

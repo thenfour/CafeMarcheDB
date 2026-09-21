@@ -8,7 +8,7 @@ vi.mock("db", async () => {
 });
 
 import { assertValidSysadminRole } from "src/auth/server/sessionInvalidation";
-import db3Mutation from "src/core/db3/mutations/db3mutations";
+import db3Mutation from "tests/authorization/db3MutationTestResolver";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { forgeDb3Update } from "./support/db3RequestBuilders";

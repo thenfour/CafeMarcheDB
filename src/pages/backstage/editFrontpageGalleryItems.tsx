@@ -7,19 +7,19 @@ import * as DB3Client from "src/core/db3/DB3Client";
 
 
 const MainContent = () => {
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xFrontpageGalleryItem,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.frontpageGalleryItemEditorView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
-            file: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
+            id: DB3Client.pkFieldGen(),
+            file: DB3Client.foreignRefFieldGen({}),
             sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
             isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
             caption: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 120 }),
             caption_nl: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 120 }),
             caption_fr: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 120 }),
             displayParams: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 120 }),
-            createdByUser: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
-            visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
+            createdByUser: DB3Client.foreignRefFieldGen({}),
+            visiblePermission: DB3Client.foreignRefFieldGen({}),
         },
     });
 

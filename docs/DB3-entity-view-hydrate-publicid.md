@@ -671,8 +671,8 @@ For a converted entity:
   entity itself has not yet been converted;
 - grids, selectors, caches, and React keys use the client/entity identity rather
   than assuming `.id`; and
-- update and delete commands identify the target with `updatePublicId` or
-  `deletePublicId`. Inserts may not supply `publicId`.
+- update and delete commands identify the target with the entity's canonical
+  identity. Inserts may not supply `publicId`.
 
 If a Sysadmin diagnostic or export genuinely needs the numeric ID, expose it via
 an explicitly internal/admin-only view or server operation. Do not make the
@@ -701,10 +701,10 @@ This translation must be centralized in DB3 or explicitly invoked by a
 non-DB3 server endpoint. A raw Prisma result must not be returned directly merely
 because the endpoint itself is trusted.
 
-The current generic mutation translator has been validated for scalar
-`ForeignSingleField` references. Public-ID resolution for many-to-many/tag
-mutation inputs remains future work and must be implemented before converting a
-target used through those mutation shapes.
+Command row services resolve scalar `ForeignSingleField` references at their
+trusted boundary. Public-ID resolution for many-to-many/tag mutation inputs
+remains future work and must be implemented before converting a target used
+through those mutation shapes.
 
 ### Creation, collision handling, and migration
 
@@ -783,14 +783,16 @@ a per-row compatibility flag or a second lookup mode.
   entry, command hooks, mutation adapter, numeric ID, or generic mutation
   envelope.
 - Selection creation can now opt into the same CRUD view. Both the generic DB3
-  selection source and `ForeignSingleFieldRenderContext` query and hydrate
+  selection source, `ForeignSingleFieldRenderContext`, and tag-field selector
+  query and hydrate
   through that view, invoke its generated create command, and read the returned
   canonical identity back through an authorized exact-identity view query
   before publishing it as the selected value. A successful create that is not
   readable through the view fails explicitly rather than manufacturing a
   partial client row. The Instrument editor's functional-group selector proves
-  this path with public IDs; unmigrated selection entities retain their legacy
-  create path until they define a CRUD view.
+  this path with public IDs. Create-from-string has no generic mutation
+  fallback: a creatable selector must name the matching CRUD view, and a
+  mismatched or missing view fails explicitly.
 - `DB3NewObjectDialog` now requires its table-render client to be injected. The
   grid-owned dialog therefore cannot silently construct a second legacy
   mutation client underneath a command-backed grid.
@@ -829,20 +831,18 @@ a per-row compatibility flag or a second lookup mode.
 - Most unconverted named views still expose numeric identities. That is
   transitional evidence for the view/hydration design, not permission to treat
   numeric IDs as part of the final client contract.
-- Legacy TableClient mutation transport is still broadly used. The intended
-  replacement is generated entity CRUD commands for ordinary row editors and
-  handwritten commands for aggregate or workflow operations.
+- The legacy TableClient mutation transport has been removed. Ordinary row
+  editors use generated entity CRUD commands; aggregate and workflow operations
+  use their existing explicit endpoints or named domain commands while those
+  boundaries are migrated independently.
 
 ### Legacy TableClient mutation inventory and deletion gate
 
-The legacy mutation transport is now a closed migration inventory. The source
-test `tests/db3LegacyMutationInventory.test.ts` records every remaining
-`xTableClientCaps.Mutation` acquisition, every direct call to
-`doInsertMutation()`, `doUpdateMutation()`, or `doDeleteMutation()`, and asserts
-that every writable `DB3EditGrid` supplies a command-backed CRUD view. A new
-legacy file or call fails the test. Counts are recorded as well as paths so
-adding another writer inside an already-inventoried file also fails. The
-inventory may shrink; it must not be expanded to make a new failure pass.
+The source test `tests/db3LegacyMutationInventory.test.ts` now enforces an empty
+legacy inventory: there may be no `xTableClientCaps.Mutation` acquisition and no
+call to `doInsertMutation()`, `doUpdateMutation()`, or `doDeleteMutation()`. It
+also asserts that every writable `DB3EditGrid` supplies a command-backed CRUD
+view. A new legacy capability or call therefore fails the test.
 
 Writable grids make this boundary visible in their type contract. A grid must
 now supply a CRUD-enabled `view`; the writable legacy branch and its
@@ -858,8 +858,12 @@ The existing writers are grouped by the replacement they need:
 | Entity detail editors | None | Song, Event, File, User/Profile, and Wiki tag metadata now use generated CRUD commands for row-shaped patches. Privileged and operation-specific actions remain named workflows. |
 | Nested rows and relationships | None | Embedded Event Segment, Song Credit, File metadata, profile instrument-set, and Setlist Plan Group edits now use generated CRUD commands. Setlist group reordering remains an explicit ordered operation. |
 | Collection editors | None | Custom Link and Menu Link row edits use generated CRUD commands over narrow editor DTOs. Menu Link ordering remains an explicit scoped collection operation. |
-| Workflows and aggregates | New-song creation, frontpage gallery composition, setlist planning, and similar multi-step flows | Use handwritten named commands with strict DTOs and one authorized transaction. |
-| Compatibility infrastructure | The selection-creation fallback, generic mutation-capable query helpers, and the TableClient transport implementation | Delete each bridge after its callers migrate; remove the capability flag and generic mutation RPC last. The standalone edit dialog's mutation-capable fallback is already gone. |
+| Workflows and aggregates | None use the generic TableClient transport. Gallery baking/reordering, setlist planning, and similar multi-step flows remain explicit workflow boundaries. | Move remaining ad hoc workflow RPCs to handwritten named commands when their aggregate contracts are addressed. |
+| Compatibility infrastructure | None in production | The capability flag, client mutation methods/helpers, selection fallbacks, and generic table-selected mutation RPC have been deleted. |
+
+The retired RPC's hostile-input and row-authorization coverage remains in a
+clearly test-only compatibility resolver. It composes the same production row
+services but is not an application RPC endpoint.
 
 The first post-inventory category slice migrates the Event Type, Event Status,
 and Event Tag administration grids. Each now has one registered editor CRUD
@@ -873,10 +877,8 @@ Instrument Tag, Song Tag, Song Credit Type, User Tag, and Wiki Page Tag now use
 the same CRUD-view path. Song Tag's additional grouping and indicator fields
 and User Tag's CSS class are part of their strict editor DTOs; schema-owned
 association collections are deliberately absent. This migrates the admin-grid
-writers only. Create-from-string behavior in foreign/tag selection controls is
-still represented by the separate selection-fallback inventory and must be
-wired to these CRUD views at its actual consumers before those entity write
-surfaces are complete.
+writers and supplies the same views to create-from-string consumers, so lookup
+creation returns the view's authorized hydrated client value.
 
 The third slice starts the remaining ordinary-grid category with the two scalar
 configuration grids: Permission and Setting. Their command-backed editor views
@@ -1151,7 +1153,7 @@ boundary safely.
     `InstrumentFunctionalGroup` CRUD view.
   - [x] `DB3AssociationMatrix`, using an explicit association-command contract
     rather than ordinary row CRUD.
-- [ ] Prohibit new consumers of the legacy TableClient mutation transport, then
+- [x] Prohibit new consumers of the legacy TableClient mutation transport, then
   migrate existing writers by category: generated CRUD for ordinary rows and
   named commands for aggregates or workflows.
   - [x] Add a source-enforced deletion inventory for mutation capability,
@@ -1199,9 +1201,11 @@ boundary safely.
   - [x] Migrate Custom Link and Menu Link collection editors through finite
     list/editor views and generated row CRUD, retaining Menu Link reorder on its
     explicit scoped sort boundary.
-  - [ ] Migrate the workflow category. Split out named domain commands wherever
-    row CRUD is not truthful, and separately migrate selection
-    create-from-string consumers to the matching CRUD views.
+  - [x] Remove the workflow category's dependence on the generic TableClient
+    transport. New-song creation and row-shaped gallery writes use generated
+    CRUD; create-from-string consumers use their matching CRUD views. Existing
+    aggregate-specific workflow endpoints remain explicit and can migrate to
+    handwritten commands independently.
 - [ ] Validate or normalize the combined setlist song/divider position namespace
   on the server, independent of the client serializer.
 - [ ] Decide and prove the first-class edit-model contract for draft creation,
@@ -1211,7 +1215,7 @@ boundary safely.
 - [ ] Finish the setlist aggregate proof, including edit-model lifecycle,
   ordering invariants, concurrency/lost-update policy, deletion/reordering, and
   removal of every remaining legacy setlist write path.
-- [ ] Remove the legacy TableClient mutation implementation, mutation capability
+- [x] Remove the legacy TableClient mutation implementation, mutation capability
   flag, table-name envelope, and generic DB3 mutation RPC after their final
   consumers have moved; retain a command-backed high-level CRUD facade where it
   preserves automatic editor ergonomics.

@@ -7,8 +7,8 @@ import * as DB3Client from "src/core/db3/DB3Client";
 
 
 const MainContent = () => {
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xUserInstrument,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.userInstrumentEditorView,
         columns: {
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
             user: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 180, }),

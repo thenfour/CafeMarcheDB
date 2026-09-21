@@ -9,7 +9,7 @@ vi.mock("db", async () => {
   }
 })
 
-import db3Mutation from "@db3/mutations/db3mutations"
+import db3Mutation from "tests/authorization/db3MutationTestResolver"
 import executeDB3CommandMutation from "@db3/mutations/executeDB3Command"
 import * as db3 from "@db3/db3"
 import deleteEventSongList from "src/core/db3/mutations/deleteEventSongList"

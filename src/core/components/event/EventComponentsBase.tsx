@@ -379,11 +379,11 @@ export const EventTableClientColumns = DB3Client.makeClientColumnSet({
     isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
     locationDescription: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150, fieldCaption: "Location" }),
     locationURL: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150, fieldCaption: "Location URL" }),
-    type: columnName => new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName, cellWidth: 150, selectStyle: "inline", fieldCaption: "Event Type" }),
-    status: columnName => new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName, cellWidth: 150, fieldCaption: "Status" }),
+    type: columnName => new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName, cellWidth: 150, selectStyle: "inline", fieldCaption: "Event Type", selectionView: db3.eventTypeEditorView }),
+    status: columnName => new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName, cellWidth: 150, fieldCaption: "Status", selectionView: db3.eventStatusEditorView }),
     segmentBehavior: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 220, fieldCaption: "Behavior of segments" }),
-    expectedAttendanceUserTag: columnName => new DB3Client.ForeignSingleFieldClient<db3.UserTagPayload>({ columnName, cellWidth: 150, fieldCaption: "Who's invited?" }),
-    tags: columnName => new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false, fieldCaption: "Tags" }),
+    expectedAttendanceUserTag: columnName => new DB3Client.ForeignSingleFieldClient<db3.UserTagPayload>({ columnName, cellWidth: 150, fieldCaption: "Who's invited?", selectionView: db3.userTagEditorView }),
+    tags: columnName => new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false, fieldCaption: "Tags", selectionView: db3.eventTagEditorView }),
 
     visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, fieldCaption: "Who can view this event?" }),
 

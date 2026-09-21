@@ -1,7 +1,7 @@
 import { Prisma } from "db";
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { z } from "zod";
-import { defineLegacyCrudView } from "../../core/db3CrudView";
+import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } from "../../core/db3View";
 import { EventTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { permissionEntity } from "../user/userEntities";
@@ -62,36 +62,36 @@ const EventAttendanceEditorDtoSchema = z.object({
     strength: z.number().int().optional(),
 });
 
-export const eventTypeEditorView = defineLegacyCrudView({
+export const eventTypeEditorView = defineCrudView({
     viewID: "EventType_Editor",
     entity: eventTypeEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: EventTypeEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => eventTypeEntity.schema.getClientModel(dto, "view"),
 });
 
-export const eventStatusEditorView = defineLegacyCrudView({
+export const eventStatusEditorView = defineCrudView({
     viewID: "EventStatus_Editor",
     entity: eventStatusEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: EventStatusEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => eventStatusEntity.schema.getClientModel(dto, "view"),
 });
 
-export const eventTagEditorView = defineLegacyCrudView({
+export const eventTagEditorView = defineCrudView({
     viewID: "EventTag_Editor",
     entity: eventTagEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: EventTagEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => eventTagEntity.schema.getClientModel(dto, "view"),
 });
 
-export const eventAttendanceEditorView = defineLegacyCrudView({
+export const eventAttendanceEditorView = defineCrudView({
     viewID: "EventAttendance_Editor",
     entity: eventAttendanceEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: EventAttendanceEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => eventAttendanceEntity.schema.getClientModel(dto, "view"),
 });
 
 const EventEditorTypeDtoSchema = z.object({
@@ -133,12 +133,12 @@ const EventSegmentEditorDtoSchema = z.object({
     }).optional(),
 });
 
-export const eventSegmentEditorView = defineLegacyCrudView({
+export const eventSegmentEditorView = defineCrudView({
     viewID: "EventSegment_Editor",
     entity: eventSegmentEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: EventSegmentEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => eventSegmentEntity.schema.getClientModel(dto, "view"),
 });
 
 const EventEditorTagDtoSchema = z.object({
@@ -221,13 +221,13 @@ const eventEditorSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
     },
 });
 
-export const eventEditorView = defineLegacyCrudView({
+export const eventEditorView = defineCrudView({
     viewID: "Event_Editor",
     entity: eventEntity,
     operations: { create: true, update: true, delete: true },
     selection: eventEditorSelection,
     dtoSchema: EventEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => eventEntity.schema.getClientModel(dto, "view"),
 });
 
 const EventTagAssignmentDtoSchema = z.object({

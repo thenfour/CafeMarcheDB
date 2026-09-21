@@ -8,7 +8,6 @@ vi.mock("src/core/db3/components/IconMap", () => ({ RenderMuiIcon: () => null, g
 vi.mock("src/core/components/CMLink", () => ({ CMLink: () => null }));
 vi.mock("src/core/db3/db3", () => ({}));
 vi.mock("src/core/db3/components/DB3ClientCore", () => ({ fetchUnsuspended: vi.fn() }));
-vi.mock("src/core/db3/components/DB3ClientBasicFields", () => ({ useInsertMutationClient: vi.fn() }));
 vi.mock("src/core/db3/components/useCrudViewCreate", () => ({ useCrudViewCreate: vi.fn() }));
 vi.mock("src/core/db3/components/useDB3Authorization", () => ({ useDB3Authorization: () => ({}) }));
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ referenceStore: {}, refreshCachedData: vi.fn() }) }));
@@ -19,7 +18,6 @@ import { CMMultiSelectDialog } from "src/core/components/select/CMMultiSelectDia
 import { DB3SingleSelect } from "src/core/db3/components/db3Select";
 import { DB3MultiSelectDialog } from "src/core/db3/components/db3SelectDialog";
 import { fetchUnsuspended } from "src/core/db3/components/DB3ClientCore";
-import { useInsertMutationClient } from "src/core/db3/components/DB3ClientBasicFields";
 import { useCrudViewCreate } from "src/core/db3/components/useCrudViewCreate";
 
 const numberOptions = StringArrayOptionsProvider([0, 1, 2]);
@@ -177,22 +175,29 @@ describe("DB3 picker adapters", () => {
     it("uses schema labels and permissions with the same field, search and creation UI", async () => {
         const instrument = { id: 1, name: "Trumpet" };
         const created = { id: 2, name: "Flute" };
-        const insert = vi.fn().mockResolvedValue(created);
+        const create = vi.fn().mockResolvedValue(created);
         const onInsert = vi.fn();
         let allowed = false;
         const schema = {
+            tableID: "Instrument",
             getRowInfo: (item: typeof instrument) => ({ pk: item.id, name: item.name, color: "gold" }),
             createInsertModelFromString: (name: string) => ({ name }),
             authorizeRowBeforeInsert: () => allowed,
             doesItemExactlyMatchText: (item: typeof instrument, text: string) => item.name === text,
         } as any;
-        vi.mocked(useInsertMutationClient).mockReturnValue({ doInsertMutation: insert } as any);
+        // The picker test needs only identity and schema ownership from a view.
+        const view = {
+            viewID: "Instrument_Editor",
+            entity: { schema, getIdentity: (item: typeof instrument) => item.id },
+        } as any;
+        // The hook mock implements the token surface used by the picker.
+        vi.mocked(useCrudViewCreate).mockReturnValue({ create } as any);
         vi.mocked(fetchUnsuspended).mockImplementation((args: any) => ({
             items: args.filterModel.quickFilterValues.length ? [] : [instrument], isLoading: false, refetch: vi.fn(),
             queryResult: { isError: false, isFetching: false, isPreviousData: false },
         }) as any);
         await render(React.createElement(DB3SingleSelect<typeof instrument>, {
-            schema, value: instrument, onChange, displayStyle: CMSelectDisplayStyle.SelectedWithDialog, dialogTitle: "Instrument", onInsert,
+            schema, view, value: instrument, onChange, displayStyle: CMSelectDisplayStyle.SelectedWithDialog, dialogTitle: "Instrument", onInsert,
         }));
         expect(vi.mocked(fetchUnsuspended).mock.calls[0]![0].queryOptions.enabled).toBe(false);
         await click(button("Edit Instrument"));
@@ -202,11 +207,11 @@ describe("DB3 picker adapters", () => {
         allowed = true;
         await search(" Flute ");
         await click(button("Create 'Flute'"));
-        expect(insert).toHaveBeenCalledWith({ name: "Flute" });
+        expect(create).toHaveBeenCalledWith({ name: "Flute" });
         expect(onInsert).toHaveBeenCalledWith(created);
         expect(onChange).toHaveBeenCalledWith(created);
         expect(document.querySelector('[role="dialog"]')).toBeNull();
-        await render(React.createElement(DB3MultiSelectDialog<typeof instrument>, { schema, initialValues: [instrument], title: "Instruments", description: "", onOK: onChange, onCancel }));
+        await render(React.createElement(DB3MultiSelectDialog<typeof instrument>, { schema, view, initialValues: [instrument], title: "Instruments", description: "", onOK: onChange, onCancel }));
         expect(checkbox("Trumpet").checked).toBe(true);
         expect(button("Apply").disabled).toBe(true);
     });
@@ -214,7 +219,6 @@ describe("DB3 picker adapters", () => {
     it("creates through a CRUD view and selects the hydrated public-ID row", async () => {
         const existing = { publicId: "AbCdEfGhIjKlMn01", name: "Brass" };
         const created = { publicId: "AbCdEfGhIjKlMn02", name: "Flute", hydrated: true };
-        const legacyInsert = vi.fn();
         const create = vi.fn().mockResolvedValue(created);
         const schema = {
             tableID: "InstrumentFunctionalGroup",
@@ -231,7 +235,6 @@ describe("DB3 picker adapters", () => {
             },
             crud: { operations: { create: { kind: "create", command: {} } } },
         } as any;
-        vi.mocked(useInsertMutationClient).mockReturnValue({ doInsertMutation: legacyInsert } as any);
         vi.mocked(useCrudViewCreate).mockReturnValue({ create } as any);
         vi.mocked(fetchUnsuspended).mockReturnValue({
             items: [], isLoading: false, refetch: vi.fn(),
@@ -254,13 +257,12 @@ describe("DB3 picker adapters", () => {
         ))!);
 
         expect(create).toHaveBeenCalledWith({ name: "Flute", description: "", sortOrder: 0 });
-        expect(legacyInsert).not.toHaveBeenCalled();
         expect(onChange).toHaveBeenCalledWith(created);
         expect(vi.mocked(fetchUnsuspended).mock.calls.at(-1)![0]).toMatchObject({
             schema,
             view,
             referenceProvider: {},
         });
-        expect(vi.mocked(useInsertMutationClient)).toHaveBeenCalledWith(schema, false);
+        expect(vi.mocked(useCrudViewCreate)).toHaveBeenCalledWith(view);
     });
 });

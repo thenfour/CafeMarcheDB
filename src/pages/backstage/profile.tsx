@@ -28,13 +28,13 @@ const MainContent = () => {
         feature: ActivityFeature.profile_view,
     });
 
-    const spec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xUser,
+    const spec = DB3Client.defineTableClientSpec({
+        view: db3.userEditorView,
         columns: {
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 160 }),
             email: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 }),
             phone: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 120 }),
-            tags: columnName => new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            tags: columnName => new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false, selectionView: db3.userTagEditorView }),
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
         },
     });

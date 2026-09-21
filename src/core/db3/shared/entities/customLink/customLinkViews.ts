@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { z } from "zod";
-import { defineLegacyCrudView } from "../../core/db3CrudView";
+import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { customLinkEntity } from "./customLinkEntities";
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
@@ -16,12 +16,12 @@ const CustomLinkEditorDtoSchema = z.object({
     forwardQuery: z.boolean().optional(),
 });
 
-export const customLinkEditorView = defineLegacyCrudView({
+export const customLinkEditorView = defineCrudView({
     viewID: "CustomLink_Editor",
     entity: customLinkEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: CustomLinkEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => customLinkEntity.schema.getClientModel(dto, "view"),
 });
 
 const CustomLinkListDtoSchema = z.object({

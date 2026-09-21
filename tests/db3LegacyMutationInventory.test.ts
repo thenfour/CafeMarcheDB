@@ -16,19 +16,9 @@ interface InventoryEntry {
 // This is a deletion inventory, not an extension registry. A new entry means
 // new dependency on the transport being retired and must not be added. Migrate
 // the caller to a CRUD-enabled view or named command instead.
-const legacyMutationCapabilitySites: Record<string, InventoryEntry> = {
-    "src/core/components/song/NewSongComponents.tsx": { category: "workflow", count: 1 },
-    "src/core/db3/components/DB3ClientBasicFields.tsx": { category: "legacy-helper", count: 2 },
-    "src/core/db3/components/DB3ClientCore.tsx": { category: "transport-infrastructure", count: 1 },
-    "src/pages/backstage/frontpagegallery.tsx": { category: "workflow", count: 1 },
-};
+const legacyMutationCapabilitySites: Record<string, InventoryEntry> = {};
 
-const legacyMutationCallSites: Record<string, InventoryEntry> = {
-    "src/core/components/song/NewSongComponents.tsx": { category: "workflow", count: 1 },
-    "src/core/db3/components/db3DataGrid.tsx": { category: "transport-infrastructure", count: 3 },
-    "src/core/db3/components/useDB3SelectionSource.tsx": { category: "legacy-helper", count: 1 },
-    "src/pages/backstage/frontpagegallery.tsx": { category: "workflow", count: 5 },
-};
+const legacyMutationCallSites: Record<string, InventoryEntry> = {};
 
 function listSourceFiles(directory: string): string[] {
     return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
@@ -123,8 +113,8 @@ function collectLegacyMutationUsage() {
     return { capabilitySites, callSites, invalidGridSites };
 }
 
-describe("legacy TableClient mutation inventory", () => {
-    it("rejects new mutation capability and method consumers", () => {
+describe("retired TableClient mutation transport", () => {
+    it("has no mutation capability or method consumers", () => {
         const usage = collectLegacyMutationUsage();
         expect(usage.capabilitySites).toEqual(inventoryCounts(legacyMutationCapabilitySites));
         expect(usage.callSites).toEqual(inventoryCounts(legacyMutationCallSites));

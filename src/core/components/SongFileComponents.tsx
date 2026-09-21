@@ -54,8 +54,8 @@ const hasEventChipFields = (event: {
     statusId: number | null;
     typeId: number | null;
 } => event.name !== undefined
-    && event.startsAt !== undefined
-    && event.statusId !== undefined
+&& event.startsAt !== undefined
+&& event.statusId !== undefined
     && event.typeId !== undefined;
 
 // don't take maximum because it can hide your own instruments. so either handle that specifically or just don't bother hiding tags.
@@ -411,7 +411,7 @@ export const FileEditor = (props: FileEditorProps) => {
     const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xFile,
         columns: {
-            // any columns that I intend to update via doUpdateMutation need to be specified here.
+            // Any columns updated by the file CRUD command need to be specified here.
             // if they shouldn't be displayed to users, make a hidden version.
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
             visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
@@ -419,9 +419,9 @@ export const FileEditor = (props: FileEditorProps) => {
             description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 150 }),
             fileCreatedAt: columnName => new DB3Client.DateTimeColumn({ columnName }),
 
-            tags: columnName => new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline' }),
-            taggedInstruments: columnName => new DB3Client.TagsFieldClient<db3.FileInstrumentTagClientPayload>({
-                columnName, cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline',
+            tags: DB3Client.tagsFieldClientGen<db3.FileTagAssignmentPayload>({ allowDeleteFromCell: false, selectStyle: 'inline', selectionView: db3.fileTagEditorView }),
+            taggedInstruments: DB3Client.tagsFieldClientGen<db3.FileInstrumentTagClientPayload>({
+                cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline',
                 overrideRowInfo: (association: db3.FileInstrumentTagClientPayload, rowInfo: db3.RowInfo) => {
                     // because the query doesn't include instrument functional group, get it from global dashboard context
                     const fg = dashboardContext.instrumentFunctionalGroup.getById(association.instrument.functionalGroupId);
@@ -429,10 +429,9 @@ export const FileEditor = (props: FileEditorProps) => {
                     return { ...rowInfo, color: gGeneralPaletteList.findEntry(fg.color) };
                 }
             }),
-            taggedUsers: columnName => new DB3Client.TagsFieldClient<db3.FileUserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
-            taggedSongs: columnName => new DB3Client.TagsFieldClient<db3.FileSongTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
-            taggedEvents: columnName => new DB3Client.TagsFieldClient<db3.FileEventTagPayload>({
-                columnName,
+            taggedUsers: DB3Client.tagsFieldClientGen<db3.FileUserTagPayload>({ allowDeleteFromCell: false }),
+            taggedSongs: DB3Client.tagsFieldClientGen<db3.FileSongTagPayload>({ allowDeleteFromCell: false }),
+            taggedEvents: DB3Client.tagsFieldClientGen<db3.FileEventTagPayload>({
                 cellWidth: 150,
                 allowDeleteFromCell: false,
                 renderAsChip: (args) => {
@@ -445,7 +444,7 @@ export const FileEditor = (props: FileEditorProps) => {
                     return <EventChip renderAsLink={false} value={value.event} />;
                 }
             }),
-            taggedWikiPages: columnName => new DB3Client.TagsFieldClient<db3.FileWikiPageTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            taggedWikiPages: DB3Client.tagsFieldClientGen<db3.FileWikiPageTagPayload>({ allowDeleteFromCell: false }),
         },
     });
     const tableRenderClient = DB3Client.useLegacyTableRenderContext({

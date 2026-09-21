@@ -10,7 +10,7 @@ vi.mock("db", async () => {
   }
 })
 
-import db3Mutation from "@db3/mutations/db3mutations"
+import db3Mutation from "tests/authorization/db3MutationTestResolver"
 import setRoleDesignation from "src/auth/mutations/setRoleDesignation"
 import {
   RoleDesignation,

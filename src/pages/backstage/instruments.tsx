@@ -11,8 +11,8 @@ import * as DB3Client from "src/core/db3/DB3Client";
 const InstrumentListContent = () => {
     const router = useRouter();
 
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xInstrument,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.instrumentEditorView,
         columns: {
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
@@ -24,7 +24,7 @@ const InstrumentListContent = () => {
                 cellWidth: 200,
                 selectionView: db3.instrumentFunctionalGroupEditorView,
             }),
-            instrumentTags: columnName => new DB3Client.TagsFieldClient<db3.InstrumentTagAssociationPayload>({ columnName, cellWidth: 220, allowDeleteFromCell: false }),
+            instrumentTags: columnName => new DB3Client.TagsFieldClient<db3.InstrumentTagAssociationPayload>({ columnName, cellWidth: 220, allowDeleteFromCell: false, selectionView: db3.instrumentTagEditorView }),
         },
     });
 

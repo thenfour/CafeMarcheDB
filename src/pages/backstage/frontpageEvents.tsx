@@ -35,7 +35,7 @@ const EventsList = () => {
             page: 0,
             pageSize: 20,
         },
-        requestedCaps: DB3Client.xTableClientCaps.Query,// | DB3Client.xTableClientCaps.Mutation,
+        requestedCaps: DB3Client.xTableClientCaps.Query,
         queryOptions: gQueryOptions.liveData,
     });
 

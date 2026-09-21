@@ -26,8 +26,8 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
 };
 
 const MainContent = () => {
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xEvent,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.eventEditorView,
         columns: DB3Client.makeClientColumnSelection(
             EventTableClientColumns.id,
             EventTableClientColumns.name,

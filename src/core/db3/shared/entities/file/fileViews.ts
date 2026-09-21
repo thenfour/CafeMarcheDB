@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { z } from "zod";
-import { defineLegacyCrudView } from "../../core/db3CrudView";
+import { defineCrudView } from "../../core/db3CrudView";
 import type { DB3ReferenceProvider } from "../../core/db3Hydration";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { instrumentEntity } from "../instrument/instrumentViews";
@@ -16,12 +16,12 @@ const FileTagEditorDtoSchema = z.object({
     significance: z.string().nullable().optional(),
 });
 
-export const fileTagEditorView = defineLegacyCrudView({
+export const fileTagEditorView = defineCrudView({
     viewID: "FileTag_Editor",
     entity: fileTagEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: FileTagEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => fileTagEntity.schema.getClientModel(dto, "view"),
 });
 
 const FrontpageGalleryItemEditorDtoSchema = z.object({
@@ -53,12 +53,12 @@ const FrontpageGalleryItemEditorDtoSchema = z.object({
     }).nullable().optional(),
 });
 
-export const frontpageGalleryItemEditorView = defineLegacyCrudView({
+export const frontpageGalleryItemEditorView = defineCrudView({
     viewID: "FrontpageGalleryItem_Editor",
     entity: frontpageGalleryItemEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: FrontpageGalleryItemEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => frontpageGalleryItemEntity.schema.getClientModel(dto, "view"),
 });
 
 const FileTagAssignmentDtoSchema = z.object({
@@ -323,13 +323,20 @@ const fileEditorSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     },
 });
 
-export const fileEditorView = defineLegacyCrudView({
+export const fileEditorView = defineCrudView({
     viewID: "File_Editor",
     entity: fileEntity,
     operations: { update: true, delete: true },
     selection: fileEditorSelection,
     dtoSchema: FileEditorDtoSchema,
-    hydrate: (dto, references) => hydrateFileDetailDto(dto, references),
+    hydrate: (dto, references) => {
+        const client = fileEntity.schema.getClientModel(dto, "view");
+        return {
+            ...hydrateFileDetailDto(client, references),
+            isDeleted: client.isDeleted,
+            customData: client.customData,
+        };
+    },
 });
 
 export const fileDetailView = defineView({

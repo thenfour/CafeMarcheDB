@@ -92,8 +92,8 @@ const BuiltInRoleAssignments = () => {
 };
 
 const MainContent = () => {
-    const RoleClientSchema = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xRole,
+    const RoleClientSchema = DB3Client.defineTableClientSpec({
+        view: db3.roleEditorView,
         columns: {
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),

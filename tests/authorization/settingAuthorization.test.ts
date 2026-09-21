@@ -14,7 +14,7 @@ vi.mock("src/server/brand", () => ({
 }))
 
 import * as db3 from "@db3/db3"
-import db3Mutation from "@db3/mutations/db3mutations"
+import db3Mutation from "tests/authorization/db3MutationTestResolver"
 import db3Query from "@db3/queries/db3queries"
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls"
 import updateBulkSettings from "src/auth/mutations/updateBulkSettings"

@@ -13,7 +13,7 @@ import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization
 // this is for rendering in various places on the site front-end. a datagrid will require pretty much
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
-import { type RestPaginatedResult, type RestQueryResult, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
+import { type RestPaginatedResult, type RestQueryResult, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import React from "react";
 //import * as db3 from "../db3";
 import type { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
@@ -22,7 +22,6 @@ import { Coalesce, HasFlag, gQueryOptions } from "shared/utils";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
-import db3mutations from "../mutations/db3mutations";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import db3queries from "../queries/db3queries";
 import type { CMDBTableFilterModel } from "../shared/apiTypes";
@@ -257,13 +256,32 @@ type ColumnValueOfFactory<TFactory> =
     ? ColumnValueOf<TColumn>
     : never;
 
-type InvalidViewColumnFactoryKeys<TRow, TFactories extends DB3ClientColumnFactoryMap> = {
+type UnknownViewColumnFactoryKeys<TRow, TFactories extends DB3ClientColumnFactoryMap> = {
+    [K in keyof TFactories]: K extends keyof TRow ? never : K;
+}[keyof TFactories];
+
+type IncompatibleViewColumnFactoryKeys<TRow, TFactories extends DB3ClientColumnFactoryMap> = {
     [K in keyof TFactories]: K extends keyof TRow
     ? Exclude<TRow[K], undefined> extends ColumnValueOfFactory<TFactories[K]>
     ? never
     : K
-    : K;
+    : never;
 }[keyof TFactories];
+
+// tries to emit useful-looking errors to help diagnose what caused the failing path
+type ValidateViewColumnFactories<TRow, TFactories extends DB3ClientColumnFactoryMap> =
+    ([UnknownViewColumnFactoryKeys<TRow, TFactories>] extends [never]
+        ? unknown
+        : {
+            readonly [K in Extract<UnknownViewColumnFactoryKeys<TRow, TFactories>, string>
+            as `__unknownColumn_${K}`]: never
+        })
+    & ([IncompatibleViewColumnFactoryKeys<TRow, TFactories>] extends [never]
+        ? unknown
+        : {
+            readonly [K in Extract<IncompatibleViewColumnFactoryKeys<TRow, TFactories>, string>
+            as `__incompatibleColumnValue_${K}`]: never
+        });
 
 function instantiateClientColumnSet(factories: DB3ClientColumnFactoryMap): Record<string, AnyIColumnClient> {
     const columns: Record<string, AnyIColumnClient> = {};
@@ -321,19 +339,13 @@ function instantiateClientColumns(factories: DB3ClientColumnFactoryMap): AnyICol
  * hydrated client row inferred from the concrete view.
  */
 
-// note that __invalidColumnKeys is pretty broad: it doesn't report which column
-// is the issue.
-// note that __invalidColumnKeys can occur also when the datatypes just don't match --
-// in particular, nullability mismatch.
 export function defineTableClientSpec<
     TView extends db3.AnyDB3View,
     TFactories extends { [K in keyof TFactories]: DB3ClientColumnFactory },
 >(args: {
     view: TView;
     columns: TFactories;
-} & ([InvalidViewColumnFactoryKeys<db3.ClientOf<TView>, TFactories>] extends [never]
-    ? unknown
-    : { readonly __invalidColumnKeys: InvalidViewColumnFactoryKeys<db3.ClientOf<TView>, TFactories> })
+} & ValidateViewColumnFactories<db3.ClientOf<TView>, TFactories>
 ): xTableClientSpec<TView> {
     return xTableClientSpec.fromView({
         view: args.view,
@@ -418,8 +430,6 @@ export const CalculateOrderBy = (sortModel?: GridSortModel) => {
     return orderBy;
 };
 
-export type TMutateFn = (args: db3.MutatorInput) => Promise<unknown>;
-
 // Query models contain every field the caller may view, which can be a wider
 // set than the fields they may edit. Keep those read-only values out of normal
 // client mutations; the server remains the authority and still rejects forged
@@ -457,8 +467,6 @@ export enum xTableClientCaps {
     None = 0,
     PaginatedQuery = 1,
     Query = 2,
-    /** @deprecated Existing migration inventory only. Use a CRUD view or named command. */
-    Mutation = 4,
 };
 
 export type AnyIColumnClient = IColumnClient<any, any, any>;
@@ -467,11 +475,6 @@ export type TableClientRowOf<
     TView extends db3.AnyDB3View | undefined,
     TLegacyRow extends TAnyModel = TAnyModel,
 > = TView extends db3.AnyDB3View ? db3.ClientOf<TView> : TLegacyRow;
-
-export type TableClientIdentityOf<TView extends db3.AnyDB3View | undefined> =
-    TView extends db3.AnyDB3View
-    ? db3.EntityIdOf<db3.EntityOf<TView>>
-    : number | string;
 
 export type PreparedTableMutationOf<TView extends db3.AnyDB3View | undefined> =
     TView extends db3.AnyDB3View
@@ -505,7 +508,6 @@ export class xTableRenderClient<
 > {
     tableSpec: xTableClientSpec<TView>;
     args: xTableClientArgs<TView>;
-    mutateFn: TMutateFn;
 
     items: TableClientRowOf<TView, TLegacyRow>[];
     rowCount: number;
@@ -545,10 +547,6 @@ export class xTableRenderClient<
             //resultPayloadSize: 0,
         };
 
-
-        if (HasFlag(args.requestedCaps, xTableClientCaps.Mutation)) {
-            this.mutateFn = useMutation(db3mutations)[0] as TMutateFn;
-        }
 
         const orderBy = CalculateOrderBy(args.sortModel);
 
@@ -717,80 +715,11 @@ export class xTableRenderClient<
         return ret as PreparedTableMutationOf<TView>;
     };
 
-    // the row as returned by the db is not the same model as the one to be passed in for updates / creation / etc.
-    // all the columns in our spec though represent logical values which can be passed into mutations.
-    // that is, all the columns comprise the updation model completely.
-    // for things like FK, 
-    doUpdateMutation = async (
-        row: TableClientRowOf<TView, TLegacyRow>,
-        _previousRow?: TableClientRowOf<TView, TLegacyRow>,
-    ) => {
-        console.assert(!!this.mutateFn); // make sure you request this capability!
-
-        const dbModel = this.prepareMutation(row, "update");
-
-        const identity = row[this.schema.clientIdMember];
-
-        // sanity. this is not a perfect check: in theory, non-string publicids could exist.
-        if (this.schema.publicIdMember && typeof identity !== "string") {
-            throw new Error(`Expected public ID for ${this.schema.tableName}`);
-        }
-        // also not perfect: in theory, non-numeric natural ids could also exist.
-        if (!this.schema.publicIdMember && typeof identity !== "number") {
-            throw new Error(`Expected natural ID for ${this.schema.tableName}`);
-        }
-        const ret = await this.mutateFn({
-            tableID: this.args.tableSpec.args.table.tableID,
-            tableName: this.tableSpec.args.table.tableName,
-            mutationType: "update",
-            ...(this.schema.publicIdMember
-                ? { updatePublicId: identity }
-                : { updateId: identity }),
-            updateModel: dbModel,
-        });
-        this.refetch();
-        return ret;
-    };
-
     prepareInsertMutation = (
         row: Partial<TableClientRowOf<TView, TLegacyRow>>,
     ): PreparedTableMutationOf<TView> => {
         const dbModel = this.prepareMutation(row, "new");
         return dbModel;
-    };
-
-    doInsertMutation = async (row: Partial<TableClientRowOf<TView, TLegacyRow>>) => {
-        const dbModel = this.prepareInsertMutation(row);
-        return await this.mutateFn({
-            tableID: this.args.tableSpec.args.table.tableID,
-            tableName: this.tableSpec.args.table.tableName,
-            mutationType: "insert",
-            insertModel: dbModel,
-        });
-    };
-
-    doDeleteMutation = async (
-        identity: TableClientIdentityOf<TView>,
-        deleteType: "softWhenPossible" | "hard",
-    ) => {
-        const common = {
-            tableID: this.args.tableSpec.args.table.tableID,
-            tableName: this.tableSpec.args.table.tableName,
-            mutationType: "delete" as const,
-            deleteType,
-        };
-        if (this.schema.publicIdMember) {
-            // sanity, but this is not 100% accurate. in theory, non-string publicids could exist.
-            if (typeof identity !== "string") {
-                throw new Error(`Expected public ID for ${this.schema.tableName}`);
-            }
-            return await this.mutateFn({ ...common, deletePublicId: identity });
-        }
-        // sanity; not accurate: in theory, non-numeric natural ids could exist.
-        if (typeof identity !== "number") {
-            throw new Error(`Expected natural ID for ${this.schema.tableName}`);
-        }
-        return await this.mutateFn({ ...common, deleteId: identity });
     };
 
 };

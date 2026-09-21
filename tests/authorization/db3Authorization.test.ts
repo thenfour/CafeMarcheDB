@@ -7,7 +7,7 @@ vi.mock("db", async () => {
 })
 
 import * as db3 from "@db3/db3"
-import db3Mutation from "@db3/mutations/db3mutations"
+import db3Mutation from "tests/authorization/db3MutationTestResolver"
 import updateSongBasicFields from "@db3/mutations/updateSongBasicFields"
 import db3Query from "@db3/queries/db3queries"
 import db3PaginatedQuery from "@db3/queries/db3paginatedQueries"

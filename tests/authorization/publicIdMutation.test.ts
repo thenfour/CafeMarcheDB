@@ -6,7 +6,7 @@ vi.mock("db", async () => {
     return { ...prisma, default: authorizationTestDb };
 });
 
-import db3Mutation from "@db3/mutations/db3mutations";
+import db3Mutation from "tests/authorization/db3MutationTestResolver";
 import { isPublicId } from "shared/publicId";
 import { Permission } from "shared/permissions";
 import { authorizationTestDb } from "./support/inMemoryPrisma";

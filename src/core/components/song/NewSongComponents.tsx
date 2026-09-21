@@ -32,8 +32,8 @@ export const NewSongButton = () => {
     })();
 
     // song table bindings
-    const songTableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xSong,
+    const songTableSpec = DB3Client.defineTableClientSpec({
+        view: db3.songEditorView,
         columns: {
             ...DB3Client.makeClientColumnSelection(
                 SongClientColumns.id,
@@ -56,15 +56,25 @@ export const NewSongButton = () => {
     });
 
     // necessary to connect all the columns in the spec.
-    const songTableClient = DB3Client.useLegacyTableRenderContext({
-        requestedCaps: DB3Client.xTableClientCaps.Mutation,
+    const songTableClient = DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.None,
         tableSpec: songTableSpec,
+        referenceProvider: dashboardContext.referenceStore,
+    });
+    const songCommands = DB3Client.useCrudViewCommands({
+        view: db3.songEditorView,
+        tableClient: songTableClient,
     });
 
     const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
-        songTableClient.doInsertMutation(obj).then(async (ret: db3.SongPayloadMinimum) => {
+        // DB3EditRowButton still exposes its transitional untyped draft. The
+        // view-bound table client proves the row expected by this CRUD command.
+        songCommands.create(obj as db3.ClientOf<typeof db3.songEditorView>).then(async result => {
             showSnackbar({ severity: "success", children: "success" });
-            void router.push(dashboardContext.routingApi.getURIForSong(ret));
+            void router.push(dashboardContext.routingApi.getURIForSong({
+                id: result.identity,
+                name: obj.name,
+            }));
             api.closeDialog();
         }).catch(e => {
             console.log(e);

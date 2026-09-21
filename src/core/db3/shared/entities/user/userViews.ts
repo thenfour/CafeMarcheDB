@@ -1,7 +1,7 @@
 import { Prisma } from "db";
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { z } from "zod";
-import { defineLegacyCrudView } from "../../core/db3CrudView";
+import { defineCrudView } from "../../core/db3CrudView";
 import {
     UserInstrumentNaturalOrderBy,
     UserTagAssignmentNaturalOrderBy,
@@ -81,13 +81,13 @@ const userEditorSelection = Prisma.validator<Prisma.UserDefaultArgs>()({
     },
 });
 
-export const userEditorView = defineLegacyCrudView({
+export const userEditorView = defineCrudView({
     viewID: "User_Editor",
     entity: userEntity,
     operations: { create: true, update: true },
     selection: userEditorSelection,
     dtoSchema: UserEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => userEntity.schema.getClientModel(dto, "view"),
 });
 
 const UserInstrumentEditorDtoSchema = z.object({
@@ -110,10 +110,10 @@ const UserInstrumentEditorDtoSchema = z.object({
     isPrimary: z.boolean().optional(),
 });
 
-export const userInstrumentEditorView = defineLegacyCrudView({
+export const userInstrumentEditorView = defineCrudView({
     viewID: "UserInstrument_Editor",
     entity: userInstrumentEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: UserInstrumentEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => userInstrumentEntity.schema.getClientModel(dto, "view"),
 });

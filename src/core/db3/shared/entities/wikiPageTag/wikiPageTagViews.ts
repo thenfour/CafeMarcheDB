@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { defineLegacyCrudView } from "../../core/db3CrudView";
+import { defineCrudView } from "../../core/db3CrudView";
 import { wikiPageTagEntity } from "./wikiPageTagEntities";
 
 const WikiPageTagEditorDtoSchema = z.object({
@@ -11,10 +11,10 @@ const WikiPageTagEditorDtoSchema = z.object({
     significance: z.string().nullable().optional(),
 });
 
-export const wikiPageTagEditorView = defineLegacyCrudView({
+export const wikiPageTagEditorView = defineCrudView({
     viewID: "WikiPageTag_Editor",
     entity: wikiPageTagEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: WikiPageTagEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => wikiPageTagEntity.schema.getClientModel(dto, "view"),
 });

@@ -10,8 +10,8 @@ import * as db3 from "src/core/db3/db3";
 const MainContent = () => {
     //const dashboardContext = React.useContext(DashboardContext);
 
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xEventAttendance,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.eventAttendanceEditorView,
         columns: {
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
             isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),

@@ -165,7 +165,7 @@ const AutoAssignInstrumentTester = () => {
                 cellWidth: 200,
                 selectionView: db3.instrumentFunctionalGroupEditorView,
             }),
-            instrumentTags: columnName => new DB3Client.TagsFieldClient<db3.InstrumentTagAssociationPayload>({ columnName, cellWidth: 220, allowDeleteFromCell: false }),
+            instrumentTags: DB3Client.foreignRefFieldGen({ selectionView: db3.instrumentTagEditorView }),
         },
     });
     const tableClient = DB3Client.useTableRenderContext({

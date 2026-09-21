@@ -7,7 +7,7 @@ vi.mock("db", async () => {
 })
 
 import * as db3 from "@db3/db3"
-import db3Mutation from "@db3/mutations/db3mutations"
+import db3Mutation from "tests/authorization/db3MutationTestResolver"
 import { UpdateAssociations } from "@db3/server/db3mutationCore"
 import { PermissionSet } from "src/auth/shared/PermissionSet"
 import { Permission } from "shared/permissions"

@@ -6,8 +6,8 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 
 
-const tableSpec = DB3Client.defineLegacyTableClientSpec({
-    table: db3.xEventStatus,
+const tableSpec = DB3Client.defineTableClientSpec({
+    view: db3.eventStatusEditorView,
     columns: {
         id: columnName => new DB3Client.PKColumnClient({ columnName }),
         isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),

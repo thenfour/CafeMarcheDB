@@ -23,8 +23,8 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
 
 
 const MainContent = () => {
-    const songTableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xSong,
+    const songTableSpec = DB3Client.defineTableClientSpec({
+        view: db3.songEditorView,
         columns: {
             ...DB3Client.makeClientColumnSelection(
                 SongClientColumns.id,

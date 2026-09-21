@@ -13,8 +13,8 @@ const Inner = () => {
 
     const codePermissions = gPermissionOrdered;
 
-    const PermissionClientSchema = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xPermission,
+    const PermissionClientSchema = DB3Client.defineTableClientSpec({
+        view: db3.permissionEditorView,
         columns: {
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),

@@ -18,14 +18,14 @@ import { SelectionValueList } from 'src/core/components/select/SelectionOptions'
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from 'src/core/components/SettingMarkdown';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
-import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
-import { IColumnClient, type RenderForNewItemDialogArgs, type RenderViewerArgs, type TMutateFn, xTableRenderClient } from './DB3ClientCore';
+import { IColumnClient, type RenderForNewItemDialogArgs, type RenderViewerArgs, xTableRenderClient } from './DB3ClientCore';
 import type { RenderAsChipParams } from './db3ForeignSingleFieldClient';
 import { RenderMuiIcon } from './IconMap';
 import { type ColorVariationSpec, StandardVariationSpec } from '../../components/color/palette';
 import { TAnyModel } from '@/shared/rootroot';
 import { useDashboardContext } from '../../components/dashboardContext/DashboardContext';
+import { type CrudViewCreateToken, useCrudViewCreate } from './useCrudViewCreate';
 
 
 const gMaxVisibleTags = 6;
@@ -73,14 +73,15 @@ function DB3SelectTagsDialogInner<TAssociation extends TAnyModel>(props: DB3Sele
         useOptions(filterText) {
             const query = useTagsFieldRenderContext({ spec: props.spec, row: props.row, filterText, suspense: false });
             const publicData = useDB3Authorization();
-            const dashboard = useDashboardContext();
             const { showMessage } = React.useContext(SnackbarContext);
-            const canCreate = props.spec.typedSchemaColumn.allowInsertFromString && props.spec.schemaTable.authorizeRowBeforeInsert({ publicData });
+            const foreignSchema = props.spec.typedSchemaColumn.getForeignTableShema();
+            const canCreate = props.spec.typedSchemaColumn.allowInsertFromString
+                && !!query.crudCreate
+                && foreignSchema.authorizeRowBeforeInsert({ publicData });
             return {
                 ...query, items: query.options,
                 createOption: canCreate ? async text => {
                     const item = await query.doInsertFromString({ row: props.row, userInput: text });
-                    dashboard.refreshCachedData();
                     showMessage({ children: "New option created", severity: "success" });
                     return item;
                 } : undefined,
@@ -306,8 +307,10 @@ export const DefaultRenderAsChip = <TAssociation,>(args: DefaultRenderAsChipPara
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface TagsFieldClientArgs<TAssociation> {
     columnName: string;
-    cellWidth: number;
+    cellWidth?: number;
     allowDeleteFromCell: boolean,
+    // The foreign-row view used for selection queries and option creation.
+    selectionView?: db3.AnyDB3CrudView;
 
     renderAsChip?: (args: RenderAsChipParams<TAssociation>) => React.ReactNode;
 
@@ -357,7 +360,7 @@ export class TagsFieldClient<TAssociation extends TAnyModel> extends IColumnClie
             columnName: args.columnName,
             headerName: args.columnName,
             editable: true,
-            width: args.cellWidth,
+            width: args.cellWidth ?? 150,
             isAutoFocusable: false,
             visible: true,
             className: args.className,
@@ -449,6 +452,10 @@ export class TagsFieldClient<TAssociation extends TAnyModel> extends IColumnClie
 
 };
 
+export const tagsFieldClientGen = <TAssociation extends TAnyModel>(args: Omit<TagsFieldClientArgs<TAssociation>, "columnName">) => (
+    columnName => new TagsFieldClient<TAssociation>({ ...args, columnName })
+);
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface TagsFieldRenderContextArgs<TAssociation extends TAnyModel> {
@@ -468,7 +475,7 @@ export interface TagsCreateFromStringArgs {
 // the "live" adapter handling server-side comms.
 export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
     args: TagsFieldRenderContextArgs<TAssociation>;
-    mutateFn: TMutateFn;
+    crudCreate?: CrudViewCreateToken<db3.AnyDB3CrudView>;
 
     options: TAssociation[];
     refetch: () => void;
@@ -479,16 +486,27 @@ export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
 
     constructor(args: TagsFieldRenderContextArgs<TAssociation>) {
         this.args = args;
-
-        if (this.args.spec.typedSchemaColumn.allowInsertFromString) {
-            this.mutateFn = useMutation(db3mutations)[0] as TMutateFn;
+        const foreignSchema = args.spec.typedSchemaColumn.getForeignTableShema();
+        const selectionView = args.spec.args.selectionView;
+        if (selectionView && selectionView.entity.schema !== foreignSchema) {
+            throw new Error(
+                `DB3 CRUD view '${selectionView.viewID}' does not belong to table '${foreignSchema.tableID}'.`,
+            );
         }
+        if (args.spec.typedSchemaColumn.allowInsertFromString && !selectionView) {
+            throw new Error(
+                `Tags field '${args.spec.columnName}' requires a selectionView to create options.`,
+            );
+        }
+        const dashboard = useDashboardContext();
+        this.crudCreate = useCrudViewCreate(selectionView);
 
         // returns the foreign items.
         const [result, queryStatus] = useQuery(db3queries, {
             table: {
-                tableID: args.spec.typedSchemaColumn.getForeignTableShema().tableID,
-                tableName: args.spec.typedSchemaColumn.getForeignTableShema().tableName,
+                tableID: foreignSchema.tableID,
+                tableName: foreignSchema.tableName,
+                viewID: selectionView?.viewID,
             },
             orderBy: undefined,
             filter: {
@@ -502,7 +520,16 @@ export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
             ...(args.suspense === false ? { useErrorBoundary: false } : {}),
             keepPreviousData: args.suspense === false,
         });
-        this.options = (result?.items || []).map(item => this.args.spec.typedSchemaColumn.createMockAssociation(args.row, item));
+        this.options = (result?.items || []).map(item => {
+            const foreignObject = selectionView
+                ? db3.hydrateView(
+                    selectionView,
+                    selectionView.parseDto(item),
+                    dashboard.referenceStore,
+                )
+                : item;
+            return this.args.spec.typedSchemaColumn.createMockAssociation(args.row, foreignObject);
+        });
         this.refetch = queryStatus.refetch;
         this.isLoading = queryStatus.isLoading;
         this.isFetching = queryStatus.isFetching;
@@ -515,18 +542,13 @@ export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
         const foreignTableSpec = this.args.spec.typedSchemaColumn.getForeignTableShema();
         console.assert(!!foreignTableSpec.createInsertModelFromString);
         const insertModel = foreignTableSpec.createInsertModelFromString!(args.userInput);
-        try {
-            const foreignObject = await this.mutateFn({
-                tableID: foreignTableSpec.tableID,
-                tableName: foreignTableSpec.tableName,
-                mutationType: "insert",
-                insertModel,
-            }) as TAnyModel;
-            return this.args.spec.typedSchemaColumn.createMockAssociation(args.row, foreignObject);
-        } catch (e) {
-            // ?
-            throw e;
+        if (!this.crudCreate) {
+            throw new Error(
+                `Tags field '${this.args.spec.columnName}' requires a selectionView to create options.`,
+            );
         }
+        const foreignObject = await this.crudCreate.create(insertModel);
+        return this.args.spec.typedSchemaColumn.createMockAssociation(args.row, foreignObject);
     };
 };
 

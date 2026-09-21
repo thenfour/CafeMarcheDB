@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { z } from "zod";
-import { defineLegacyCrudView } from "../../core/db3CrudView";
+import { defineCrudView } from "../../core/db3CrudView";
 import { defineEntity } from "../../core/db3Entity";
 import { xSetting } from "../../db3schema";
 
@@ -15,10 +15,10 @@ const SettingEditorDtoSchema = z.object({
     value: z.string().optional(),
 });
 
-export const settingEditorView = defineLegacyCrudView({
+export const settingEditorView = defineCrudView({
     viewID: "Setting_Editor",
     entity: settingEntity,
     operations: { create: true, update: true },
     dtoSchema: SettingEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => settingEntity.schema.getClientModel(dto, "view"),
 });

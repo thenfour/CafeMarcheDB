@@ -1,7 +1,7 @@
 import { Prisma } from "db";
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { z } from "zod";
-import { defineLegacyCrudView } from "../../core/db3CrudView";
+import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { SongTagAssociationNaturalOrderBy } from "../../schema/prismArgs";
 import { fileTagEntity } from "../file/fileEntities";
@@ -101,37 +101,37 @@ const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
     },
 });
 
-export const songTagEditorView = defineLegacyCrudView({
+export const songTagEditorView = defineCrudView({
     viewID: "SongTag_Editor",
     entity: songTagEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: SongTagEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => songTagEntity.schema.getClientModel(dto, "view"),
 });
 
-export const songCreditTypeEditorView = defineLegacyCrudView({
+export const songCreditTypeEditorView = defineCrudView({
     viewID: "SongCreditType_Editor",
     entity: songCreditTypeEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: SongCreditTypeEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => songCreditTypeEntity.schema.getClientModel(dto, "view"),
 });
 
-export const songCreditEditorView = defineLegacyCrudView({
+export const songCreditEditorView = defineCrudView({
     viewID: "SongCredit_Editor",
     entity: songCreditEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: SongCreditEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => songCreditEntity.schema.getClientModel(dto, "view"),
 });
 
-export const songEditorView = defineLegacyCrudView({
+export const songEditorView = defineCrudView({
     viewID: "Song_Editor",
     entity: songEntity,
     operations: { create: true, update: true, delete: true },
     selection: songEditorSelection,
     dtoSchema: SongEditorDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => songEntity.schema.getClientModel(dto, "view"),
 });
 
 const SongTagAssociationDtoSchema = z.object({

@@ -5,7 +5,9 @@ import { createRoot, Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@blitzjs/rpc", () => ({ useQuery: vi.fn(), useMutation: vi.fn() }));
-vi.mock("src/core/db3/db3", () => ({}));
+vi.mock("src/core/db3/db3", () => ({
+    hydrateView: (view: any, dto: any, references: any) => view.hydrate(dto, references),
+}));
 vi.mock("src/core/db3/components/DB3ClientCore", () => ({
     IColumnClient: class { constructor(args: object) { Object.assign(this, args); } },
 }));
@@ -17,7 +19,8 @@ vi.mock("src/core/components/CMCoreComponents2", () => ({
         ...props, type, onClick, disabled: disabled ?? !enabled,
     }, children),
 }));
-vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ refreshCachedData: vi.fn() }) }));
+vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ referenceStore: {}, refreshCachedData: vi.fn() }) }));
+vi.mock("src/core/db3/components/useCrudViewCreate", () => ({ useCrudViewCreate: vi.fn() }));
 vi.mock("src/core/components/SettingMarkdown", () => ({
     GenerateForeignSingleSelectStyleSettingName: () => "selection-style",
     SettingMarkdown: () => null,
@@ -28,13 +31,12 @@ vi.mock("src/core/components/SnackbarContext", async () => {
 });
 vi.mock("src/auth/mutations/updateSetting", () => ({ default: vi.fn() }));
 vi.mock("src/auth/queries/getSetting", () => ({ default: vi.fn() }));
-vi.mock("src/core/db3/mutations/db3mutations", () => ({ default: vi.fn() }));
 vi.mock("src/core/db3/queries/db3queries", () => ({ default: vi.fn() }));
 
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import getSetting from "src/auth/queries/getSetting";
-import db3mutations from "src/core/db3/mutations/db3mutations";
 import { TagsFieldClient, TagsFieldInput } from "src/core/db3/components/DB3ClientTagsField";
+import { useCrudViewCreate } from "src/core/db3/components/useCrudViewCreate";
 
 const options = [{ id: 1, name: "Trumpet" }, { id: 2, name: "Flugelhorn" }, { id: 3, name: "Tuba" }];
 const initialValue = [
@@ -57,14 +59,31 @@ beforeEach(() => {
     root = createRoot(document.getElementById("root")!);
     insertAuthorized = true;
     queryState = { isLoading: false, isFetching: false, isError: false, isPreviousData: false };
-    vi.mocked(useMutation).mockImplementation(resolver => [resolver === db3mutations ? createOption : vi.fn()] as any);
+    // These hook mocks implement only the token/tuple surface exercised here.
+    vi.mocked(useCrudViewCreate).mockReturnValue({ create: createOption } as any);
+    vi.mocked(useMutation).mockReturnValue([vi.fn()] as any);
     vi.mocked(useQuery).mockImplementation((query, args: any) => {
         if (query === getSetting) return [null, { refetch }] as any;
         const filter = args.filter.quickFilterValues.join(" ").toLowerCase();
         return [queryState.isLoading ? undefined : { items: options.filter(o => o.name.toLowerCase().includes(filter)) }, { ...queryState, refetch }] as any;
     });
+    const foreignSchema = {
+        tableID: "Instrument",
+        tableName: "Instrument",
+        createInsertModelFromString: (name: string) => ({ name }),
+        authorizeRowBeforeInsert: () => insertAuthorized,
+    };
+    const selectionView = {
+        viewID: "Instrument_Editor",
+        entity: { schema: foreignSchema },
+        parseDto: (item: typeof options[number]) => item,
+        hydrate: (item: typeof options[number]) => item,
+    };
     spec = new TagsFieldClient<Association>({
         columnName: "taggedInstruments", fieldCaption: "Instruments", cellWidth: 150, allowDeleteFromCell: false,
+        // This intentionally minimal descriptor supplies only the view members
+        // exercised by the selector test.
+        selectionView: selectionView as any,
         renderAsChip: args => React.createElement("span", { className: "custom-chip", onClick: args.onClick }, args.value?.instrument.name),
     });
     spec.schemaTable = { tableName: "File", authorizeRowBeforeInsert: () => insertAuthorized } as any;
@@ -72,7 +91,7 @@ beforeEach(() => {
         member: "taggedInstruments", allowInsertFromString: true,
         associationForeignIDMember: "instrumentId", associationLocalIDMember: "fileId", associationLocalObjectMember: "file",
         localTableSpec: { pkMember: "id" },
-        getForeignTableShema: () => ({ tableID: "Instrument", tableName: "Instrument", createInsertModelFromString: (name: string) => ({ name }) }),
+        getForeignTableShema: () => foreignSchema,
         getAssociationTableShema: () => ({
             getRowInfo: (a: Association) => ({ name: a.instrument.name }),
             doesItemExactlyMatchText: (a: Association, text: string) => a.instrument.name.toLowerCase() === text.toLowerCase(),
@@ -114,6 +133,7 @@ describe("shared DB3 tags selection", () => {
             table: {
                 tableID: "Instrument",
                 tableName: "Instrument",
+                viewID: "Instrument_Editor",
             },
         });
         expect(queryInput).not.toHaveProperty("tableID");

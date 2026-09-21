@@ -104,10 +104,10 @@ type DB3EditGridBaseProps<
 };
 
 type DB3CrudEditGridProps<TView extends db3.AnyDB3CrudView> =
-    DB3EditGridBaseProps<db3.ClientOf<TView>, DB3Client.xTableRenderClient<TView>> & {
-    view: TView;
-    tableSpec: DB3Client.xTableClientSpec<TView> | DB3Client.xTableClientSpec<undefined>;
-};
+    DB3EditGridBaseProps<db3.ClientOf<TView>, DB3Client.CrudTableRenderContext<TView>> & {
+        view: TView;
+        tableSpec: DB3Client.xTableClientSpec<TView>;
+    };
 
 type DB3ReadOnlyGridProps = DB3EditGridBaseProps & {
     readOnly: true;
@@ -260,6 +260,7 @@ function DB3CrudEditGrid<TView extends db3.AnyDB3CrudView>({
         disableCreate={props.disableCreate || !view.crud.operations.create}
         tableSpec={tableSpec}
         tableClient={tableClient}
+        crud={tableClient.crud}
         queryState={queryState}
     />;
 }
@@ -269,6 +270,7 @@ type DB3EditGridImplProps<
     TClient extends DB3Client.xTableRenderClient<any, any> = DB3Client.xLegacyTableRenderClient,
 > = DB3EditGridBaseProps<TRow, TClient> & {
     tableClient: TClient;
+    crud?: DB3Client.CrudViewCommandClient<any, TRow>;
     queryState: DB3EditGridQueryState;
 };
 
@@ -278,6 +280,7 @@ function DB3EditGridImpl<
 >({
     tableSpec,
     tableClient,
+    crud,
     queryState,
     ...props
 }: DB3EditGridImplProps<TRow, TClient>) {
@@ -359,7 +362,10 @@ function DB3EditGridImpl<
         try {
             let updatedRow = newRow;
             if (props.onUpdateRow) updatedRow = await props.onUpdateRow(newRow, oldRow, tableClient);
-            else await tableClient.doUpdateMutation(newRow, oldRow);
+            else {
+                if (!crud) throw new Error("Writable DB3 grids require command-backed CRUD operations.");
+                await crud.update(newRow, oldRow);
+            }
             resolve(updatedRow);
             if (props.onUpdateRow) {
                 await tableClient.refetch();
@@ -380,7 +386,8 @@ function DB3EditGridImpl<
             return null;
         }
         const handleYes = () => {
-            tableClient.doDeleteMutation(deleteRowId, 'softWhenPossible').then(() => {
+            if (!crud) throw new Error("Writable DB3 grids require command-backed CRUD operations.");
+            crud.delete(deleteRowId).then(() => {
                 showSnackbar({ children: "deleted successful", severity: 'success' });
                 setDeleteRowId(null);
             }).catch(e => {
@@ -441,7 +448,9 @@ function DB3EditGridImpl<
     };
 
     const onAddOK = (obj) => {
-        tableClient.doInsertMutation(obj).then((_newRow) => {
+        if (!crud) throw new Error("Writable DB3 grids require command-backed CRUD operations.");
+
+        crud.create(obj).then((_newRow) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
         }).catch(err => {
             console.log(err);

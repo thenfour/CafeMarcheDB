@@ -1,3 +1,5 @@
+// useful for selection dialogs
+
 import React from "react";
 import { TAnyModel } from "shared/rootroot";
 import { SplitQuickFilter } from "shared/quickFilter";
@@ -7,7 +9,6 @@ import { useDashboardContext } from "src/core/components/dashboardContext/Dashbo
 import { SelectionSource } from "src/core/components/select/selectionSource";
 import * as db3 from "../db3";
 import { fetchUnsuspended } from "./DB3ClientCore";
-import { useInsertMutationClient } from "./DB3ClientBasicFields";
 import { useCrudViewCreate } from "./useCrudViewCreate";
 import { useDB3Authorization } from "./useDB3Authorization";
 
@@ -28,6 +29,15 @@ export function useDB3SelectionSource<T extends TAnyModel>(props: DB3SelectionSo
             `DB3 CRUD view '${props.view.viewID}' does not belong to table '${props.schema.tableID}'.`,
         );
     }
+    if (
+        props.allowInsertFromString !== false
+        && props.schema.createInsertModelFromString
+        && !props.view
+    ) {
+        throw new Error(
+            `Selection source for '${props.schema.tableID}' requires a CRUD view to create options.`,
+        );
+    }
     return {
         getKey: item => props.view?.entity.getIdentity(item) ?? props.schema.getRowInfo(item).pk,
         getLabel: item => props.schema.getRowInfo(item).name,
@@ -39,7 +49,6 @@ export function useDB3SelectionSource<T extends TAnyModel>(props: DB3SelectionSo
         useOptions(filterText, enabled) {
             const publicData = useDB3Authorization();
             const dashboard = useDashboardContext();
-            const mutation = useInsertMutationClient(props.schema, !props.view);
             const crudCreate = useCrudViewCreate(props.view);
             const query = fetchUnsuspended<T>({
                 schema: props.schema,
@@ -48,7 +57,10 @@ export function useDB3SelectionSource<T extends TAnyModel>(props: DB3SelectionSo
                 filterModel: { items: [], quickFilterValues: SplitQuickFilter(filterText) },
                 queryOptions: { enabled, suspense: false, useErrorBoundary: false, keepPreviousData: true },
             });
-            const canCreate = props.allowInsertFromString !== false && !!props.schema.createInsertModelFromString && props.schema.authorizeRowBeforeInsert({ publicData });
+            const canCreate = props.allowInsertFromString !== false
+                && !!props.schema.createInsertModelFromString
+                && !!crudCreate
+                && props.schema.authorizeRowBeforeInsert({ publicData });
             return {
                 items: query.items, isLoading: enabled && query.isLoading,
                 isFetching: enabled && query.queryResult?.isFetching,
@@ -56,10 +68,9 @@ export function useDB3SelectionSource<T extends TAnyModel>(props: DB3SelectionSo
                 refetch: query.refetch,
                 createOption: canCreate ? async text => {
                     const model = props.schema.createInsertModelFromString!(text);
-                    const item = crudCreate
-                        ? await crudCreate.create(model) as T
-                        : await mutation.doInsertMutation(model) as T;
-                    if (!crudCreate) dashboard.refreshCachedData();
+                    // The view/schema equality check above proves that the
+                    // hydrated create result is an item from this source.
+                    const item = await crudCreate!.create(model) as T;
                     props.onInsert?.(item);
                     return item;
                 } : undefined,

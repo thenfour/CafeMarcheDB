@@ -67,8 +67,8 @@ const SettingsControls = (props) => {
 
 const SettingsContent = () => {
 
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xSetting,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.settingEditorView,
         columns: {
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),

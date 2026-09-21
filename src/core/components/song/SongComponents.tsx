@@ -45,7 +45,7 @@ export const SongClientColumns = DB3Client.makeClientColumnSet({
     endBPM: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 100 }),
     introducedYear: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 100 }),
     lengthSeconds: columnName => new DB3Client.SongLengthSecondsColumnClient({ columnName, cellWidth: 100, fieldCaption: "Length / duration" }),
-    tags: columnName => new DB3Client.TagsFieldClient({ columnName, cellWidth: 200, allowDeleteFromCell: false }),
+    tags: columnName => new DB3Client.TagsFieldClient({ columnName, cellWidth: 200, allowDeleteFromCell: false, selectionView: db3.songTagEditorView }),
     createdByUser: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
     visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({
         columnName, cellWidth: 120, nullItemInfo: {
@@ -269,7 +269,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
         columns: {
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
             user: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
-            type: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
+            type: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, selectionView: db3.songCreditTypeEditorView }),
             year: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 120 }),
             comment: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 120 }),
             song: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, visible: false }),

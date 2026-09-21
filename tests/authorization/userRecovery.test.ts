@@ -15,7 +15,7 @@ import { loadAuthorizedPageEntity } from "src/auth/server/serverPageAuthorizatio
 import { getRequestAuthorization } from "src/auth/server/requestAuthorization";
 import getUserExtraInfo from "src/core/db3/queries/getUserExtraInfo";
 import db3queries from "src/core/db3/queries/db3queries";
-import db3mutations from "src/core/db3/mutations/db3mutations";
+import db3mutations from "tests/authorization/db3MutationTestResolver";
 import { xUser } from "src/core/db3/db3";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import {

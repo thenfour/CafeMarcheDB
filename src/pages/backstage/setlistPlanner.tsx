@@ -340,7 +340,7 @@ interface SetlistPlannerDocumentOverviewItemProps {
     dbPlan: SetlistPlan;
     onSelect: (doc: SetlistPlan) => void;
     className?: string;
-    group: db3.SetlistPlanGroupPayload | null;
+    group: db3.SetlistPlanGroupEditorClient | null;
     refetch: () => void;
 };
 
@@ -500,7 +500,7 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
                     getOptions={() => groupTableClient.items}
                     getOptionInfo={(group) => ({
                         id: group!.id,
-                        color: group!.color,
+                        color: group!.color?.id ?? null,
                     })}
                     onCancel={() => setShowingGroupSelectDialog(false)}
                     nullBehavior={CMSelectNullBehavior.AllowNull}
@@ -525,7 +525,7 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
 interface SetlistPlanOverviewGroupProps {
     groupTableClient: DB3Client.xTableRenderClient<typeof db3.setlistPlanGroupEditorView>;
     plansInGroup: SetlistPlan[];
-    group: db3.SetlistPlanGroupPayload | null;
+    group: db3.SetlistPlanGroupEditorClient | null;
     onSelect: (doc: SetlistPlan) => void;
     className?: string;
     refetch: () => void;
@@ -713,8 +713,8 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
 
     const groupTableClient = DB3Client.useCrudTableRenderContext({
         view: db3.setlistPlanGroupEditorView,
-        tableSpec: DB3Client.defineLegacyTableClientSpec({
-            table: db3.xSetlistPlanGroup,
+        tableSpec: DB3Client.defineTableClientSpec({
+            view: db3.setlistPlanGroupEditorView,
             columns: DB3Client.makeClientColumnSelection(
                 SetlistPlanGroupClientColumns.id,
                 SetlistPlanGroupClientColumns.name,
