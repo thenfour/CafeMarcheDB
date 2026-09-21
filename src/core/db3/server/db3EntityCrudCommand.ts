@@ -17,12 +17,14 @@ type HandlerFor<TOperation> =
     ? DB3CommandHandler<TCommand>
     : undefined;
 
-export type EntityCrudCommandHandlers<TCommands extends AnyDB3EntityEditorCommands> = {
-    readonly create: HandlerFor<TCommands["operations"]["create"]>;
-    readonly update: HandlerFor<TCommands["operations"]["update"]>;
-    readonly delete: HandlerFor<TCommands["operations"]["delete"]>;
-    readonly all: readonly AnyDB3CommandHandler[];
+type MutableEntityCrudCommandHandlers<TCommands extends AnyDB3EntityEditorCommands> = {
+    create: HandlerFor<TCommands["operations"]["create"]> | undefined;
+    update: HandlerFor<TCommands["operations"]["update"]> | undefined;
+    delete: HandlerFor<TCommands["operations"]["delete"]> | undefined;
+    all: (Readonly<AnyDB3CommandHandler>)[];
 };
+
+export type EntityCrudCommandHandlers<TCommands extends AnyDB3EntityEditorCommands> = Readonly<MutableEntityCrudCommandHandlers<TCommands>>;
 
 function defineEntityCrudOperationHandler(
     commands: AnyDB3EntityEditorCommands,
@@ -66,17 +68,18 @@ function defineEntityCrudOperationHandler(
 export function defineEntityCrudCommandHandlers<
     TCommands extends AnyDB3EntityEditorCommands,
 >(commands: TCommands): EntityCrudCommandHandlers<TCommands> {
-    const handlers: Partial<Record<AnyDB3GeneratedCrudOperation["kind"], AnyDB3CommandHandler>> = {};
-    const all = getDefinedCrudOperations(commands).map(operation => {
-        const handler = defineEntityCrudOperationHandler(commands, operation);
-        handlers[operation.kind] = handler;
-        return handler;
-    });
+    const handlers: MutableEntityCrudCommandHandlers<TCommands> = {
+        create: undefined,
+        update: undefined,
+        delete: undefined,
+        all: [],
+    };
 
-    return {
-        create: handlers.create,
-        update: handlers.update,
-        delete: handlers.delete,
-        all,
-    } as unknown as EntityCrudCommandHandlers<TCommands>;
+    for (const operation of getDefinedCrudOperations(commands)) {
+        const handler = defineEntityCrudOperationHandler(commands, operation);
+        handlers.all.push(handler);
+        handlers[operation.kind] = handler as any; // this cast is safe because the handler type matches the operation kind
+    }
+
+    return handlers;
 }

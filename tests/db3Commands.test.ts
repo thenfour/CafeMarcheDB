@@ -192,7 +192,7 @@ describe("DB3 commands", () => {
             name: "Brass",
         });
 
-        await expect(instrumentFunctionalGroupCrudHandlers.create.execute({
+        await expect(instrumentFunctionalGroupCrudHandlers.create!.execute({
             name: "Brass",
             description: "",
             sortOrder: 0,
@@ -205,7 +205,7 @@ describe("DB3 commands", () => {
             color: null,
         });
 
-        await expect(instrumentFunctionalGroupCrudHandlers.update.execute({
+        await expect(instrumentFunctionalGroupCrudHandlers.update!.execute({
             identity: functionalGroupPublicId,
             patch: { name: "Winds" },
         }, context)).resolves.toEqual({ identity: functionalGroupPublicId });
@@ -215,7 +215,7 @@ describe("DB3 commands", () => {
             { name: "Winds" },
         );
 
-        await expect(instrumentFunctionalGroupCrudHandlers.delete.execute({
+        await expect(instrumentFunctionalGroupCrudHandlers.delete!.execute({
             identity: functionalGroupPublicId,
         }, context)).resolves.toEqual({ identity: functionalGroupPublicId });
         expect(deleteRow).toHaveBeenLastCalledWith(
@@ -226,7 +226,7 @@ describe("DB3 commands", () => {
         expect(instrumentFunctionalGroupCrudHandlers.all).toHaveLength(3);
 
         insert.mockResolvedValueOnce({ id: 13, name: "Missing public identity" });
-        await expect(instrumentFunctionalGroupCrudHandlers.create.execute({
+        await expect(instrumentFunctionalGroupCrudHandlers.create!.execute({
             name: "Strings",
             description: "",
             sortOrder: 1,

@@ -16,7 +16,7 @@ vi.mock("src/core/db3/components/useDB3Authorization", () => ({ useDB3Authorizat
 vi.mock("src/core/db3/components/IconMap", () => ({ RenderMuiIcon: () => null }));
 vi.mock("src/core/components/CMCoreComponents2", () => ({
     useIsShowingAdminControls: () => false,
-    CMButton: ({ children, onClick, disabled, enabled = true, type, ...props }: any) => React.createElement("button", {
+    CMButton: ({ children, onClick, disabled, enabled = true, startIcon, type, ...props }: any) => React.createElement("button", {
         ...props, type, onClick, disabled: disabled ?? !enabled,
     }, children),
 }));
