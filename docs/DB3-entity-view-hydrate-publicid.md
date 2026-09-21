@@ -770,7 +770,7 @@ The existing writers are grouped by the replacement they need:
 
 | Category | Remaining surfaces | Intended replacement |
 | --- | --- | --- |
-| Ordinary grids | User/Event/File/Song/Instrument grids | Add a CRUD-enabled named view, pass it to `DB3EditGrid`, and remove the legacy marker. Split out any operation that proves not to be ordinary row CRUD. |
+| Ordinary grids | User/Event/File/Song grids | Add a CRUD-enabled named view, pass it to `DB3EditGrid`, and remove the legacy marker. Split out any operation that proves not to be ordinary row CRUD. |
 | Entity detail editors | Event, Song, File, User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
 | Nested rows and relationships | Event segments, song credits/files, user instruments, and setlist-plan groups | Choose a generated row/association command only when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
 | Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
@@ -824,6 +824,14 @@ association service in the command transaction; deletion remains disabled.
 Built-in-role designations are deliberately absent from the editor DTO and
 continue through `setRoleDesignation`. The separate role-permission matrix
 continues to use its explicit pairwise `RolePermission_Set` command.
+
+The sixth slice migrates the Instrument administration grid. Its strict editor
+view carries editable scalar fields, the functional-group public reference,
+and the finite instrument-tag association shape. Generated Instrument CRUD
+uses the existing public-FK resolver and schema-owned association service in
+the command transaction, retaining the table's hard-delete policy. The grid's
+stale link to the removed Instrument `slug` column is replaced with its numeric
+identity, which is the value consumed by the current placeholder detail route.
 
 ## Design principles
 
@@ -977,6 +985,9 @@ boundary safely.
   - [x] Migrate the Role administration grid, preserving bulk permission-set
     editing while keeping built-in designations and the pairwise permission
     matrix on their explicit command boundaries.
+  - [x] Migrate the Instrument administration grid, including its public-ID
+    functional-group reference and finite tag set, while retaining the existing
+    hard-delete policy.
   - [ ] Migrate the remaining ordinary grids, then entity-detail,
     nested/relationship, collection, and workflow categories in that order.
     Split out named domain commands wherever row CRUD is not truthful, and

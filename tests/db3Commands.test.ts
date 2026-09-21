@@ -387,7 +387,7 @@ describe("DB3 commands", () => {
         );
     });
 
-    it("registers generated CRUD for the scalar-grid migration batches", () => {
+    it("registers generated CRUD for the administration-grid migration batches", () => {
         const views = [
             db3.eventTypeEditorView,
             db3.eventStatusEditorView,
@@ -402,6 +402,7 @@ describe("DB3 commands", () => {
             db3.settingEditorView,
             db3.frontpageGalleryItemEditorView,
             db3.roleEditorView,
+            db3.instrumentEditorView,
         ];
 
         for (const view of views) {
@@ -568,6 +569,57 @@ describe("DB3 commands", () => {
         })).toThrow();
         expect(db3.hasGeneratedDeleteCommand(db3.roleEditorView.crud)).toBe(false);
         expect(db3.getDB3CrudViewForCommand("Role_Delete")).toBeUndefined();
+        expect(db3.instrumentEditorView.parseDto({
+            id: 7,
+            name: "Trumpet",
+            description: "",
+            autoAssignFileLeafRegex: "trumpet",
+            sortOrder: 1,
+            functionalGroupId: functionalGroupPublicId,
+            functionalGroup: {
+                publicId: functionalGroupPublicId,
+                name: "Brass",
+                description: "",
+                sortOrder: 1,
+                color: null,
+            },
+            instrumentTags: [{
+                id: 70,
+                instrumentId: 7,
+                tagId: 20,
+                tag: {
+                    id: 20,
+                    text: "Uses electricity",
+                    description: "",
+                    sortOrder: 1,
+                    color: null,
+                    significance: "electricity",
+                },
+            }],
+        })).toMatchObject({
+            id: 7,
+            functionalGroupId: functionalGroupPublicId,
+            functionalGroup: { publicId: functionalGroupPublicId },
+            instrumentTags: [{ tagId: 20, tag: { text: "Uses electricity" } }],
+        });
+        expect(db3.instrumentEditorView.crud.updateCommand.parseDto({
+            identity: 7,
+            patch: {
+                functionalGroupId: functionalGroupPublicId,
+                instrumentTags: [20, 30],
+            },
+        })).toEqual({
+            identity: 7,
+            patch: {
+                functionalGroupId: functionalGroupPublicId,
+                instrumentTags: [20, 30],
+            },
+        });
+        expect(() => db3.instrumentEditorView.crud.updateCommand.parseDto({
+            identity: 7,
+            patch: { functionalGroup: { publicId: functionalGroupPublicId } },
+        })).toThrow();
+        expect(db3.instrumentEditorView.crud.deleteType).toBe("hard");
     });
 
     it("preserves xTable client-value transforms across CRUD reads and writes", () => {

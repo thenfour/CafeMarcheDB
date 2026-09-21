@@ -207,6 +207,85 @@ describe("DB3 command boundary", () => {
     expect(authorizationTestDb.snapshot("rolePermission")).toEqual([])
   })
 
+  it("updates an Instrument public reference and tag set through generated CRUD", async () => {
+    const permissions = [Permission.login, Permission.admin_instruments]
+    const actor = createAuthorizationTestUser("normal", { id: 96, permissions })
+    const originalGroup = {
+      id: 54,
+      publicId: "originalGroup001",
+      name: "Brass",
+      description: "",
+      color: null,
+      sortOrder: 1,
+    }
+    const nextGroup = {
+      id: 55,
+      publicId: "nextGroup0000001",
+      name: "Woodwinds",
+      description: "",
+      color: null,
+      sortOrder: 2,
+    }
+    const instrument = {
+      id: 7,
+      name: "Trumpet",
+      description: "",
+      autoAssignFileLeafRegex: null,
+      sortOrder: 1,
+      functionalGroupId: originalGroup.id,
+      functionalGroup: originalGroup,
+      instrumentTags: [],
+    }
+    const acousticTag = {
+      id: 20,
+      text: "Acoustic",
+      description: "",
+      sortOrder: 1,
+      color: null,
+      significance: null,
+    }
+    const electricTag = {
+      id: 21,
+      text: "Electric",
+      description: "",
+      sortOrder: 2,
+      color: null,
+      significance: "electricity",
+    }
+    authorizationTestDb.reset({
+      user: [actor],
+      instrumentFunctionalGroup: [originalGroup, nextGroup],
+      instrument: [instrument],
+      instrumentTag: [acousticTag, electricTag],
+      instrumentTagAssociation: [{ id: 70, instrumentId: instrument.id, tagId: acousticTag.id }],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
+
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.instrumentEditorView.crud.updateCommand.commandID,
+      payload: {
+        identity: instrument.id,
+        patch: {
+          name: "Cornet",
+          functionalGroupId: nextGroup.publicId,
+          instrumentTags: [electricTag.id],
+        },
+      },
+    }, ctx)).resolves.toEqual({ identity: instrument.id })
+
+    expect(authorizationTestDb.snapshot("instrument")).toEqual([
+      expect.objectContaining({
+        id: instrument.id,
+        name: "Cornet",
+        functionalGroupId: nextGroup.id,
+      }),
+    ])
+    expect(authorizationTestDb.snapshot("instrumentTagAssociation")).toEqual([
+      expect.objectContaining({ instrumentId: instrument.id, tagId: electricTag.id }),
+    ])
+  })
+
   it("revalidates command DTOs and enforces server-side entity authorization", async () => {
     const permissions = [Permission.login, Permission.view_events]
     const actor = createAuthorizationTestUser("normal", { id: 92, permissions })

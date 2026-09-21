@@ -9,6 +9,7 @@ import {
     InstrumentFunctionalGroupArgs,
     type InstrumentClientPayload,
     type InstrumentFunctionalGroupClientPayload,
+    InstrumentTagAssociationNaturalOrderBy,
 } from "../../schema/prismArgs";
 
 const InstrumentFunctionalGroupPublicIdSchema = z.custom<InstrumentFunctionalGroupPublicId>(
@@ -58,6 +59,24 @@ const InstrumentTagDtoSchema = z.object({
     significance: z.string().nullable().optional(),
 });
 
+const InstrumentTagAssociationEditorDtoSchema = z.object({
+    id: z.number().int(),
+    instrumentId: z.number().int().optional(),
+    tagId: z.number().int().optional(),
+    tag: InstrumentTagDtoSchema.optional(),
+});
+
+const InstrumentEditorDtoSchema = z.object({
+    id: z.number().int(),
+    name: z.string().optional(),
+    description: z.string().optional(),
+    autoAssignFileLeafRegex: z.string().nullable().optional(),
+    sortOrder: z.number().int().optional(),
+    functionalGroupId: InstrumentFunctionalGroupPublicIdSchema.optional(),
+    functionalGroup: InstrumentFunctionalGroupListDtoSchema.optional(),
+    instrumentTags: z.array(InstrumentTagAssociationEditorDtoSchema).optional(),
+});
+
 const instrumentTagEditorSelection = Prisma.validator<Prisma.InstrumentTagDefaultArgs>()({
     select: {
         id: true,
@@ -66,6 +85,44 @@ const instrumentTagEditorSelection = Prisma.validator<Prisma.InstrumentTagDefaul
         sortOrder: true,
         color: true,
         significance: true,
+    },
+});
+
+const instrumentEditorSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
+    select: {
+        id: true,
+        name: true,
+        description: true,
+        autoAssignFileLeafRegex: true,
+        sortOrder: true,
+        functionalGroupId: true,
+        functionalGroup: {
+            select: {
+                publicId: true,
+                name: true,
+                description: true,
+                sortOrder: true,
+                color: true,
+            },
+        },
+        instrumentTags: {
+            select: {
+                id: true,
+                instrumentId: true,
+                tagId: true,
+                tag: {
+                    select: {
+                        id: true,
+                        text: true,
+                        description: true,
+                        sortOrder: true,
+                        color: true,
+                        significance: true,
+                    },
+                },
+            },
+            orderBy: InstrumentTagAssociationNaturalOrderBy,
+        },
     },
 });
 
@@ -122,6 +179,15 @@ export const instrumentTagEditorView = defineCrudView({
     entity: instrumentTagEntity,
     selection: instrumentTagEditorSelection,
     dtoSchema: InstrumentTagDtoSchema,
+    hydrate: dto => dto,
+    getIdentity: client => client.id,
+});
+
+export const instrumentEditorView = defineCrudView({
+    viewID: "Instrument_Editor",
+    entity: instrumentEntity,
+    selection: instrumentEditorSelection,
+    dtoSchema: InstrumentEditorDtoSchema,
     hydrate: dto => dto,
     getIdentity: client => client.id,
 });
