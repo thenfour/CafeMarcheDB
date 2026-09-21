@@ -25,7 +25,7 @@ const MainContent = () => {
         <SettingMarkdown setting="EditSongCreditsPage_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
-            legacyMutationTransport
+            view={db3.songCreditEditorView}
             tableParams={{ songId }}
         />
     </>;

@@ -6,7 +6,7 @@ import {
     UserInstrumentNaturalOrderBy,
     UserTagAssignmentNaturalOrderBy,
 } from "../../schema/prismArgs";
-import { userEntity } from "./userEntities";
+import { userEntity, userInstrumentEntity } from "./userEntities";
 
 const UserEditorRoleDtoSchema = z.object({
     id: z.number().int(),
@@ -87,5 +87,33 @@ export const userEditorView = defineCrudView({
     operations: { create: true, update: true },
     selection: userEditorSelection,
     dtoSchema: UserEditorDtoSchema,
+    hydrate: dto => dto,
+});
+
+const UserInstrumentEditorDtoSchema = z.object({
+    id: z.number().int(),
+    userId: z.number().int().optional(),
+    user: z.object({
+        id: z.number().int(),
+        name: z.string().optional(),
+    }).optional(),
+    instrumentId: z.number().int().optional(),
+    instrument: z.object({
+        id: z.number().int(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        functionalGroup: z.object({
+            publicId: z.string().optional(),
+            color: z.string().nullable().optional(),
+        }).optional(),
+    }).optional(),
+    isPrimary: z.boolean().optional(),
+});
+
+export const userInstrumentEditorView = defineCrudView({
+    viewID: "UserInstrument_Editor",
+    entity: userInstrumentEntity,
+    operations: { create: true, update: true, delete: true },
+    dtoSchema: UserInstrumentEditorDtoSchema,
     hydrate: dto => dto,
 });

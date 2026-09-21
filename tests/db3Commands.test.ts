@@ -408,6 +408,10 @@ describe("DB3 commands", () => {
             db3.songEditorView,
             db3.userEditorView,
             db3.eventEditorView,
+            db3.eventAttendanceEditorView,
+            db3.eventSegmentEditorView,
+            db3.songCreditEditorView,
+            db3.userInstrumentEditorView,
         ];
 
         for (const view of views) {
@@ -836,6 +840,110 @@ describe("DB3 commands", () => {
         expect(getDB3CommandHandler(db3.fileEditorView.crud.operations.delete.command.commandID).command)
             .toBe(db3.fileEditorView.crud.operations.delete.command);
         expect(db3.fileEditorView.crud.operations.delete.deleteType).toBe("softWhenPossible");
+    });
+
+    it("defines finite CRUD views for the standalone relationship grids", () => {
+        expect(db3.eventAttendanceEditorView.parseDto({
+            id: 1,
+            text: "Going",
+            personalText: "You are going",
+            pastText: "Went",
+            pastPersonalText: "You went",
+            description: "Confirmed attendance",
+            sortOrder: 1,
+            isActive: true,
+            isDeleted: false,
+            iconName: "Check",
+            color: "green",
+            strength: 100,
+        })).toMatchObject({ id: 1, text: "Going", strength: 100 });
+        expect(db3.eventAttendanceEditorView.parseDto({
+            id: 1,
+            responses: [],
+        })).toEqual({ id: 1 });
+        expect(db3.eventAttendanceEditorView.crud.operations.delete.deleteType)
+            .toBe("softWhenPossible");
+
+        expect(db3.eventSegmentEditorView.parseDto({
+            id: 2,
+            name: "First set",
+            description: "",
+            startsAt: new Date("2026-10-10T18:00:00.000Z"),
+            durationMillis: BigInt(3_600_000),
+            isAllDay: false,
+            statusId: 3,
+            status: { id: 3, label: "Confirmed" },
+            eventId: 4,
+            event: {
+                id: 4,
+                name: "Autumn concert",
+                startsAt: new Date("2026-10-10T18:00:00.000Z"),
+            },
+        })).toMatchObject({
+            id: 2,
+            status: { label: "Confirmed" },
+            event: { name: "Autumn concert" },
+        });
+        expect(db3.eventSegmentEditorView.crud.operations.update.command.parseDto({
+            identity: 2,
+            patch: { name: "Opening set", eventId: 4, statusId: null },
+        })).toEqual({
+            identity: 2,
+            patch: { name: "Opening set", eventId: 4, statusId: null },
+        });
+        expect(() => db3.eventSegmentEditorView.crud.operations.update.command.parseDto({
+            identity: 2,
+            patch: { responses: [] },
+        })).toThrow();
+        expect(db3.eventSegmentEditorView.crud.operations.delete.deleteType).toBe("hard");
+
+        expect(db3.songCreditEditorView.parseDto({
+            id: 5,
+            userId: 6,
+            user: { id: 6, name: "Ada" },
+            songId: 7,
+            song: { id: 7, name: "Autumn Leaves", description: "" },
+            typeId: 8,
+            type: { id: 8, text: "Composer" },
+        })).toMatchObject({
+            id: 5,
+            user: { name: "Ada" },
+            song: { name: "Autumn Leaves" },
+            type: { text: "Composer" },
+        });
+        expect(db3.songCreditEditorView.crud.operations.create.command.parseDto({
+            userId: 6,
+            songId: 7,
+            typeId: 8,
+        })).toEqual({ userId: 6, songId: 7, typeId: 8 });
+        expect(db3.songCreditEditorView.crud.operations.delete.deleteType).toBe("hard");
+
+        expect(db3.userInstrumentEditorView.parseDto({
+            id: 9,
+            userId: 6,
+            user: { id: 6, name: "Ada" },
+            instrumentId: 10,
+            instrument: {
+                id: 10,
+                name: "Trumpet",
+                description: "",
+                functionalGroup: { publicId: "abcdefghijklmnop", color: "brass" },
+            },
+            isPrimary: true,
+        })).toMatchObject({
+            id: 9,
+            user: { name: "Ada" },
+            instrument: { name: "Trumpet" },
+            isPrimary: true,
+        });
+        expect(db3.userInstrumentEditorView.crud.operations.update.command.parseDto({
+            identity: 9,
+            patch: { instrumentId: 10, isPrimary: false },
+        })).toEqual({
+            identity: 9,
+            patch: { instrumentId: 10, isPrimary: false },
+        });
+        expect(db3.userInstrumentEditorView.crud.operations.delete.deleteType).toBe("hard");
     });
 
     it("preserves xTable client-value transforms across CRUD reads and writes", () => {

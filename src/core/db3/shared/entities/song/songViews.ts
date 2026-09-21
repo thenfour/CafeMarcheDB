@@ -7,7 +7,7 @@ import { SongTagAssociationNaturalOrderBy } from "../../schema/prismArgs";
 import { fileTagEntity } from "../file/fileEntities";
 import { FileDetailDtoSchema, fileDetailSelection, hydrateFileDetailDto } from "../file/fileViews";
 import { permissionEntity } from "../user/userEntities";
-import { songCreditTypeEntity, songEntity, songTagEntity } from "./songEntities";
+import { songCreditEntity, songCreditTypeEntity, songEntity, songTagEntity } from "./songEntities";
 
 const SongTagEditorDtoSchema = z.object({
     id: z.number().int(),
@@ -28,6 +28,23 @@ const SongCreditTypeEditorDtoSchema = z.object({
     color: z.string().nullable().optional(),
     sortOrder: z.number().int().optional(),
     significance: z.string().nullable().optional(),
+});
+
+const SongCreditEditorDtoSchema = z.object({
+    id: z.number().int(),
+    userId: z.number().int().nullable().optional(),
+    user: z.object({
+        id: z.number().int(),
+        name: z.string().optional(),
+    }).nullable().optional(),
+    songId: z.number().int().optional(),
+    song: z.object({
+        id: z.number().int(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+    }).optional(),
+    typeId: z.number().int().optional(),
+    type: SongCreditTypeEditorDtoSchema.optional(),
 });
 
 const SongEditorUserDtoSchema = z.object({
@@ -95,6 +112,14 @@ export const songCreditTypeEditorView = defineCrudView({
     entity: songCreditTypeEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: SongCreditTypeEditorDtoSchema,
+    hydrate: dto => dto,
+});
+
+export const songCreditEditorView = defineCrudView({
+    viewID: "SongCredit_Editor",
+    entity: songCreditEntity,
+    operations: { create: true, update: true, delete: true },
+    dtoSchema: SongCreditEditorDtoSchema,
     hydrate: dto => dto,
 });
 

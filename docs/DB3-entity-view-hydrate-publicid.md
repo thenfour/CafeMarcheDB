@@ -776,29 +776,28 @@ a per-row compatibility flag or a second lookup mode.
 The legacy mutation transport is now a closed migration inventory. The source
 test `tests/db3LegacyMutationInventory.test.ts` records every remaining
 `xTableClientCaps.Mutation` acquisition, every direct call to
-`doInsertMutation()`, `doUpdateMutation()`, or `doDeleteMutation()`, and every
-writable `DB3EditGrid` that still uses the legacy branch. A new file, call, or
-capability acquisition fails the test. Counts are recorded as well as paths so
+`doInsertMutation()`, `doUpdateMutation()`, or `doDeleteMutation()`, and asserts
+that every writable `DB3EditGrid` supplies a command-backed CRUD view. A new
+legacy file or call fails the test. Counts are recorded as well as paths so
 adding another writer inside an already-inventoried file also fails. The
 inventory may shrink; it must not be expanded to make a new failure pass.
 
 Writable grids make this boundary visible in their type contract. A grid must
-now supply a CRUD-enabled `view`, or an existing inventoried call site must
-carry the explicit `legacyMutationTransport` marker. A read-only legacy grid
-does not request mutation capability. The marker is not a supported opt-in for
-new code; it makes the remaining debt searchable and is itself checked against
-the inventory.
+now supply a CRUD-enabled `view`; the writable legacy branch and its
+`legacyMutationTransport` escape hatch have been removed. A read-only grid can
+still use the query-only TableClient facade without requesting mutation
+capability.
 
 The existing writers are grouped by the replacement they need:
 
 | Category | Remaining surfaces | Intended replacement |
 | --- | --- | --- |
-| Ordinary grids | None | User, Event, and File now use command-backed editor views. File creation remains owned by the upload workflow rather than the metadata grid. |
+| Row CRUD grids | None | Every writable `DB3EditGrid` now uses a command-backed editor view. File creation remains owned by the upload workflow rather than the metadata grid. |
 | Entity detail editors | Event, Song, File, User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
-| Nested rows and relationships | Event segments, song credits/files, user instruments, and setlist-plan groups | Choose a generated row/association command only when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
+| Nested rows and relationships | Embedded event-segment and song-credit/file editors, the profile user-instrument editor, and setlist-plan groups | Reuse generated row/association commands when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
 | Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
 | Workflows and aggregates | New-song creation, frontpage gallery composition, setlist planning, and similar multi-step flows | Use handwritten named commands with strict DTOs and one authorized transaction. |
-| Compatibility infrastructure | The legacy grid branch, standalone edit dialog, selection-creation fallback, generic mutation-capable query helpers, and the TableClient transport implementation | Delete each bridge after its callers migrate; remove the capability flag and generic mutation RPC last. |
+| Compatibility infrastructure | The standalone edit dialog, selection-creation fallback, generic mutation-capable query helpers, and the TableClient transport implementation | Delete each bridge after its callers migrate; remove the capability flag and generic mutation RPC last. |
 
 The first post-inventory category slice migrates the Event Type, Event Status,
 and Event Tag administration grids. Each now has one registered editor CRUD
@@ -875,6 +874,18 @@ upload provenance, size, and derived custom data are display-only. File
 creation is disabled in this grid because upload and derived-file creation own
 the storage transaction; generated File updates still retain schema-enforced
 storage-field rejection and soft-delete/recovery policy.
+
+The ninth slice migrates the four remaining writable `DB3EditGrid` surfaces:
+Event Attendance, Event Segment, Song Credit, and User Instrument. Although
+three are parent-associated rows and one is a direct relationship row, each
+grid edits one independently addressable record at a time, so generated CRUD
+is the truthful contract. Their finite editor views retain parent query
+parameters, foreign-reference display shapes, table-owned authorization, and
+the existing hard- or soft-delete policy. With every writable grid now
+command-backed, the `legacyMutationTransport` prop and writable legacy grid
+branch are deleted. Embedded detail editors for the same entities remain in
+the direct TableClient inventory and can migrate separately by reusing these
+commands where their interaction remains row-shaped.
 
 ## Design principles
 

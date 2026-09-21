@@ -19,7 +19,7 @@ const MainContent = () => {
 
     return <>
         <SettingMarkdown setting="UserInstrumentsPage_markdown"></SettingMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} legacyMutationTransport />
+        <DB3EditGrid tableSpec={tableSpec} view={db3.userInstrumentEditorView} />
     </>;
 };
 

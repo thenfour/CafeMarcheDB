@@ -30,7 +30,7 @@ const MainContent = () => {
 
     return <>
         <SettingMarkdown setting="EditEventAttendancesPage_markdown"></SettingMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} legacyMutationTransport />
+        <DB3EditGrid tableSpec={tableSpec} view={db3.eventAttendanceEditorView} />
     </>;
 };
 

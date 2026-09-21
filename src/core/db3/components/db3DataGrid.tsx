@@ -100,25 +100,16 @@ type DB3EditGridBaseProps = {
     isCellEditable?: (row: TAnyModel, field: string) => boolean;
 };
 
-export type DB3EditGridProps = DB3EditGridBaseProps & (
-    | {
-        view: db3.AnyDB3CrudView;
-        legacyMutationTransport?: never;
-    }
-    | {
-        readOnly: true;
-        view?: never;
-        legacyMutationTransport?: never;
-    }
-    | {
-        /**
-         * Existing migration inventory only. New writable grids must supply a
-         * CRUD-enabled view instead of opting into the generic mutation RPC.
-         */
-        legacyMutationTransport: true;
-        view?: never;
-    }
-);
+type DB3CrudEditGridProps = DB3EditGridBaseProps & {
+    view: db3.AnyDB3CrudView;
+};
+
+type DB3ReadOnlyGridProps = DB3EditGridBaseProps & {
+    readOnly: true;
+    view?: never;
+};
+
+export type DB3EditGridProps = DB3CrudEditGridProps | DB3ReadOnlyGridProps;
 
 // default sort model should be determined by the table spec.
 // but those are prisma orderby clauses... make  a crude attempt to convert.
@@ -202,22 +193,13 @@ type DB3EditGridQueryState = ReturnType<typeof useDB3EditGridQueryState>;
 
 export function DB3EditGrid(props: DB3EditGridProps) {
     if (props.view) return <DB3CrudEditGrid {...props} view={props.view} />;
-    if (!props.readOnly && !props.legacyMutationTransport) {
-        throw new Error(
-            "Writable DB3EditGrid instances require a CRUD-enabled view. "
-            + "The legacy mutation transport is restricted to the migration inventory.",
-        );
-    }
-    return <DB3LegacyEditGrid {...props} />;
+    return <DB3ReadOnlyGrid {...props} />;
 }
 
-function DB3LegacyEditGrid({ view: _view, tableSpec, ...props }: DB3EditGridProps) {
+function DB3ReadOnlyGrid({ view: _view, tableSpec, ...props }: DB3ReadOnlyGridProps) {
     const queryState = useDB3EditGridQueryState(tableSpec, props);
     const tableClient = DB3Client.useTableRenderContext({
-        requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery
-            | (props.readOnly
-                ? DB3Client.xTableClientCaps.None
-                : DB3Client.xTableClientCaps.Mutation),
+        requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
         tableSpec,
         filterModel: {
             items: queryState.filterModel.items.filter(i => i.value !== undefined).map(i => {
@@ -236,11 +218,10 @@ function DB3LegacyEditGrid({ view: _view, tableSpec, ...props }: DB3EditGridProp
         tableSpec={tableSpec}
         tableClient={tableClient}
         queryState={queryState}
-        commandBacked={false}
     />;
 }
 
-function DB3CrudEditGrid({ view, tableSpec, ...props }: DB3EditGridProps & { view: db3.AnyDB3CrudView }) {
+function DB3CrudEditGrid({ view, tableSpec, ...props }: DB3CrudEditGridProps) {
     const queryState = useDB3EditGridQueryState(tableSpec, props);
     const tableClient = DB3Client.useCrudTableRenderContext({
         view,
@@ -264,21 +245,18 @@ function DB3CrudEditGrid({ view, tableSpec, ...props }: DB3EditGridProps & { vie
         tableSpec={tableSpec}
         tableClient={tableClient}
         queryState={queryState}
-        commandBacked
     />;
 }
 
-type DB3EditGridImplProps = Omit<DB3EditGridProps, "view"> & {
+type DB3EditGridImplProps = DB3EditGridBaseProps & {
     tableClient: DB3Client.xTableRenderClient;
     queryState: DB3EditGridQueryState;
-    commandBacked: boolean;
 };
 
 function DB3EditGridImpl({
     tableSpec,
     tableClient,
     queryState,
-    commandBacked,
     ...props
 }: DB3EditGridImplProps) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
@@ -361,7 +339,7 @@ function DB3EditGridImpl({
             if (props.onUpdateRow) updatedRow = await props.onUpdateRow(newRow, oldRow, tableClient);
             else await tableClient.doUpdateMutation(newRow, oldRow);
             resolve(updatedRow);
-            if (!commandBacked || props.onUpdateRow) {
+            if (props.onUpdateRow) {
                 await tableClient.refetch();
                 dashboardContext.refreshCachedData();
             }
@@ -383,7 +361,6 @@ function DB3EditGridImpl({
             tableClient.doDeleteMutation(deleteRowId, 'softWhenPossible').then(() => {
                 showSnackbar({ children: "deleted successful", severity: 'success' });
                 setDeleteRowId(null);
-                if (!commandBacked) tableClient.refetch();
             }).catch(e => {
                 showSnackbar({ children: "delete error", severity: 'error' });
                 console.error(e);
@@ -444,10 +421,6 @@ function DB3EditGridImpl({
     const onAddOK = (obj) => {
         tableClient.doInsertMutation(obj).then((_newRow) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
-            if (!commandBacked) {
-                tableClient.refetch();
-                dashboardContext.refreshCachedData();
-            }
         }).catch(err => {
             console.log(err);
             showSnackbar({ children: "insert error", severity: 'error' });

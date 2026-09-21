@@ -5,8 +5,6 @@ import { describe, expect, it } from "vitest";
 
 type LegacyWriterCategory =
     | "transport-infrastructure"
-    | "ordinary-grid"
-    | "lookup-grid"
     | "entity-detail"
     | "nested-row"
     | "relationship"
@@ -31,7 +29,6 @@ const legacyMutationCapabilitySites: Record<string, InventoryEntry> = {
     "src/core/components/wiki/WikiComponents.tsx": { category: "entity-detail", count: 1 },
     "src/core/db3/components/DB3ClientBasicFields.tsx": { category: "legacy-helper", count: 2 },
     "src/core/db3/components/DB3ClientCore.tsx": { category: "transport-infrastructure", count: 1 },
-    "src/core/db3/components/db3DataGrid.tsx": { category: "transport-infrastructure", count: 1 },
     "src/core/db3/components/db3NewObjectDialog.tsx": { category: "legacy-helper", count: 1 },
     "src/pages/backstage/event/[...id_slug_tab].tsx": { category: "entity-detail", count: 1 },
     "src/pages/backstage/frontpagegallery.tsx": { category: "workflow", count: 1 },
@@ -59,13 +56,6 @@ const legacyMutationCallSites: Record<string, InventoryEntry> = {
     "src/pages/backstage/file/[...id_slug_tab].tsx": { category: "entity-detail", count: 2 },
     "src/pages/backstage/frontpagegallery.tsx": { category: "workflow", count: 5 },
     "src/pages/backstage/profile.tsx": { category: "entity-detail", count: 1 },
-};
-
-const legacyGridSites: Record<string, LegacyWriterCategory> = {
-    "src/pages/backstage/editEventAttendances.tsx": "nested-row",
-    "src/pages/backstage/editEventSegments.tsx": "nested-row",
-    "src/pages/backstage/editSongCredits.tsx": "nested-row",
-    "src/pages/backstage/userInstruments.tsx": "relationship",
 };
 
 function listSourceFiles(directory: string): string[] {
@@ -98,7 +88,6 @@ function collectLegacyMutationUsage() {
     const root = process.cwd();
     const capabilitySites: Record<string, number> = {};
     const callSites: Record<string, number> = {};
-    const gridSites: Record<string, LegacyWriterCategory> = {};
     const invalidGridSites: string[] = [];
 
     for (const absolutePath of listSourceFiles(path.join(root, "src"))) {
@@ -150,11 +139,7 @@ function collectLegacyMutationUsage() {
                 const readOnly = attributes.some(attribute =>
                     getJsxAttributeName(attribute) === "readOnly" && isTrueJsxAttribute(attribute));
                 if (!hasView && !readOnly) {
-                    const hasLegacyOptIn = attributes.some(attribute =>
-                        getJsxAttributeName(attribute) === "legacyMutationTransport"
-                        && isTrueJsxAttribute(attribute));
-                    if (!hasLegacyOptIn) invalidGridSites.push(relativePath);
-                    gridSites[relativePath] = legacyGridSites[relativePath] ?? "ordinary-grid";
+                    invalidGridSites.push(relativePath);
                 }
             }
 
@@ -163,7 +148,7 @@ function collectLegacyMutationUsage() {
         visit(source);
     }
 
-    return { capabilitySites, callSites, gridSites, invalidGridSites };
+    return { capabilitySites, callSites, invalidGridSites };
 }
 
 describe("legacy TableClient mutation inventory", () => {
@@ -173,9 +158,8 @@ describe("legacy TableClient mutation inventory", () => {
         expect(usage.callSites).toEqual(inventoryCounts(legacyMutationCallSites));
     });
 
-    it("requires every writable legacy grid to be an explicit inventoried opt-in", () => {
+    it("requires every writable grid to supply a command-backed CRUD view", () => {
         const usage = collectLegacyMutationUsage();
         expect(usage.invalidGridSites).toEqual([]);
-        expect(usage.gridSites).toEqual(legacyGridSites);
     });
 });

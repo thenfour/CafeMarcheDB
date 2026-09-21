@@ -6,7 +6,14 @@ import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } f
 import { EventTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { permissionEntity } from "../user/userEntities";
 import { hydrateEventDateRange } from "./eventDateRange";
-import { eventEntity, eventStatusEntity, eventTagEntity, eventTypeEntity } from "./eventEntities";
+import {
+    eventAttendanceEntity,
+    eventEntity,
+    eventSegmentEntity,
+    eventStatusEntity,
+    eventTagEntity,
+    eventTypeEntity,
+} from "./eventEntities";
 
 const EventTypeEditorDtoSchema = z.object({
     id: z.number().int(),
@@ -40,6 +47,21 @@ const EventTagEditorDtoSchema = z.object({
     visibleOnFrontpage: z.boolean().optional(),
 });
 
+const EventAttendanceEditorDtoSchema = z.object({
+    id: z.number().int(),
+    isDeleted: z.boolean().optional(),
+    text: z.string().optional(),
+    personalText: z.string().optional(),
+    pastText: z.string().optional(),
+    pastPersonalText: z.string().optional(),
+    description: z.string().optional(),
+    sortOrder: z.number().int().optional(),
+    isActive: z.boolean().optional(),
+    iconName: z.string().nullable().optional(),
+    color: z.string().nullable().optional(),
+    strength: z.number().int().optional(),
+});
+
 export const eventTypeEditorView = defineCrudView({
     viewID: "EventType_Editor",
     entity: eventTypeEntity,
@@ -64,6 +86,14 @@ export const eventTagEditorView = defineCrudView({
     hydrate: dto => dto,
 });
 
+export const eventAttendanceEditorView = defineCrudView({
+    viewID: "EventAttendance_Editor",
+    entity: eventAttendanceEntity,
+    operations: { create: true, update: true, delete: true },
+    dtoSchema: EventAttendanceEditorDtoSchema,
+    hydrate: dto => dto,
+});
+
 const EventEditorTypeDtoSchema = z.object({
     id: z.number().int(),
     text: z.string().optional(),
@@ -82,6 +112,33 @@ const EventEditorStatusDtoSchema = z.object({
     sortOrder: z.number().int().optional(),
     significance: z.string().nullable().optional(),
     iconName: z.string().nullable().optional(),
+});
+
+const EventSegmentEditorDtoSchema = z.object({
+    id: z.number().int(),
+    name: z.string().optional(),
+    description: z.string().optional(),
+    startsAt: z.date().nullable().optional(),
+    durationMillis: z.bigint().optional(),
+    isAllDay: z.boolean().optional(),
+    statusId: z.number().int().nullable().optional(),
+    status: EventEditorStatusDtoSchema.nullable().optional(),
+    eventId: z.number().int().optional(),
+    event: z.object({
+        id: z.number().int(),
+        name: z.string().optional(),
+        startsAt: z.date().nullable().optional(),
+        createdByUserId: z.number().int().nullable().optional(),
+        type: EventEditorTypeDtoSchema.nullable().optional(),
+    }).optional(),
+});
+
+export const eventSegmentEditorView = defineCrudView({
+    viewID: "EventSegment_Editor",
+    entity: eventSegmentEntity,
+    operations: { create: true, update: true, delete: true },
+    dtoSchema: EventSegmentEditorDtoSchema,
+    hydrate: dto => dto,
 });
 
 const EventEditorTagDtoSchema = z.object({
