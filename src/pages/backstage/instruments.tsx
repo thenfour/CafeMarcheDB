@@ -32,15 +32,19 @@ const InstrumentListContent = () => {
     return <>
         <SettingMarkdown setting="instrumentList_markdown"></SettingMarkdown>
         <DB3EditGrid
-            tableSpec={tableSpec} view={db3.instrumentEditorView} renderExtraActions={(args) => <GridActionsCellItem
-                icon={<PageviewIcon />}
-                key="view"
-                label="View"
-                color="inherit"
-                onClick={() => {
-                    void router.push(`/backstage/instrument/${args.row["id"]}`);
-                }}
-            />}
+            tableSpec={tableSpec}
+            view={db3.instrumentEditorView}
+            renderExtraActions={(args) => (
+                <GridActionsCellItem
+                    icon={<PageviewIcon />}
+                    key="view"
+                    label="View"
+                    color="inherit"
+                    onClick={() => {
+                        void router.push(`/backstage/instrument/${args.row["id"]}`);
+                    }}
+                />
+            )}
         />
     </>;
 };

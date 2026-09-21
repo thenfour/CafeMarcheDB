@@ -222,12 +222,13 @@ function validateQueryForTable<T extends db3.QueryRequestInput | db3.PaginatedQu
 }
 
 export function validateDB3QueryRequest(input: unknown): db3.QueryRequestInput {
-    return validateQueryForTable(parseRequest(QueryRequestSchema, input) as db3.QueryRequestInput);
+    const parsed = parseRequest(QueryRequestSchema, input);
+    return validateQueryForTable(parsed as db3.QueryRequestInput); // TODO: cast should not be necessary. fix typing.
 }
 
 export function validateDB3PaginatedQueryRequest(input: unknown): db3.PaginatedQueryRequestInput {
     const parsed = parseRequest(PaginatedQueryRequestSchema, input);
-    const parsedAndTyped = parsed as db3.PaginatedQueryRequestInput;
+    const parsedAndTyped = parsed as db3.PaginatedQueryRequestInput; // TODO: should not be necessary. fix typing.
     return validateQueryForTable(parsedAndTyped);
 }
 

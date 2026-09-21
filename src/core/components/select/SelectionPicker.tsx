@@ -99,7 +99,7 @@ export function SelectionPicker<T>(props: SelectionPickerProps<T>) {
         {createError && <Alert severity="error" sx={{ m: 2 }}>{createError}</Alert>}
         {allowCreate && <Box sx={{ px: 3, py: 2 }}>
             <CMButton type="button" startIcon={<AddIcon />} onClick={() => { void create(); }} disabled={creating}>{creating ? "Creating..." : `Create '${filterText.trim()}'`}</CMButton>
-            <Typography variant="caption" display="block" color="text.secondary">New options are created immediately.</Typography>
+            {/* <Typography variant="caption" display="block" color="text.secondary">New options are created immediately.</Typography> */}
         </Box>}
         {!props.multiple && !immediate ? <RadioGroup aria-label="Choose one option" value={value.length ? String(source.getKey(value[0]!)) : ""}>{list}</RadioGroup> : list}
         {!query.isFetching && !query.isLoading && !query.isError && !(query.hasMatches ?? query.items.length > 0) && <Box role="status" sx={{ px: 3, py: 4 }}>
