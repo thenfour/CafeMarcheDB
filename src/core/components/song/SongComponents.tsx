@@ -378,6 +378,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
 export interface SongDetailContainerProps {
     songData: SongWithMetadata;
     tableClient: null | DB3Client.xTableRenderClient;
+    editCommands?: DB3Client.CrudViewCommandClient;
     readonly: boolean;
     initialTabIndex?: number;
     showVisibility?: boolean;
@@ -385,7 +386,7 @@ export interface SongDetailContainerProps {
     renderAsLinkTo?: string;
 }
 
-export const SongDetailContainer = ({ songData, tableClient, ...props }: React.PropsWithChildren<SongDetailContainerProps>) => {
+export const SongDetailContainer = ({ songData, tableClient, editCommands, ...props }: React.PropsWithChildren<SongDetailContainerProps>) => {
     const song = songData.song;
     //const router = useRouter();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
@@ -393,10 +394,6 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
     const isShowingAdminControls = API.other.useIsShowingAdminControls();
     const highlightedTagIds = props.highlightedTagIds || [];
     const dashboardContext = useDashboardContext();
-
-    const refetch = () => {
-        tableClient?.refetch();
-    };
 
     const visInfo = dashboardContext.getVisibilityInfo({
         visiblePermissionId: song.visiblePermissionId ?? null,
@@ -437,21 +434,22 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                     </>
                 }
 
-                {tableClient && <EditFieldsDialogButton
+                {tableClient && editCommands && <EditFieldsDialogButton
                     dialogTitle='Edit song'
                     dialogDescription={<SettingMarkdown setting='EditSongDialogDescription' />}
                     readonly={props.readonly}
                     initialValue={song}
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
                     tableSpec={tableClient.tableSpec}
+                    tableRenderClient={tableClient}
                     onCancel={() => { }}
-                    onOK={(obj: db3.SongDetailClient, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                    onOK={(obj: db3.SongDetailClient, _tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
                         void recordFeature({
                             feature: ActivityFeature.song_edit,
                             context: "song detail dialog",
                         });
                         console.log(`song update`, obj);
-                        tableClient.doUpdateMutation(obj).then(() => {
+                        editCommands.update(obj, song).then(() => {
                             showSnackbar({ children: "update successful", severity: 'success' });
                             api.close();
                             // if (obj.slug !== song.slug) {
@@ -461,20 +459,20 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                         }).catch(err => {
                             console.log(err);
                             showSnackbar({ children: "update error", severity: 'error' });
-                        }).finally(refetch);
+                        });
                     }}
                     onDelete={(api: EditFieldsDialogButtonApi) => {
                         void recordFeature({
                             feature: ActivityFeature.song_delete,
                             context: "song detail dialog",
                         });
-                        tableClient.doDeleteMutation(song.id, 'softWhenPossible').then(() => {
+                        editCommands.delete(song.id).then(() => {
                             showSnackbar({ children: "delete successful", severity: 'success' });
                             api.close();
                         }).catch(err => {
                             console.log(err);
                             showSnackbar({ children: "delete error", severity: 'error' });
-                        }).finally(refetch);
+                        });
                     }}
                 />}
 
@@ -523,6 +521,10 @@ export interface SongDetailArgs {
 export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
     const dashboardContext = useDashboardContext();
     const router = useRouter();
+    const editCommands = DB3Client.useCrudViewCommands({
+        view: db3.songEditorView,
+        tableClient,
+    });
 
     const refetch = () => {
         tableClient.refetch();
@@ -558,7 +560,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
     const partitionTagId = dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Partition)?.id;
     const recordingTagId = dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Recording)?.id;
 
-    return <SongDetailContainer readonly={props.readonly} songData={songData} tableClient={tableClient} showVisibility={true}>
+    return <SongDetailContainer readonly={props.readonly} songData={songData} tableClient={tableClient} editCommands={editCommands} showVisibility={true}>
 
         <SongMetadataView readonly={props.readonly} refetch={refetch} songData={songData} showCredits={true} />
 

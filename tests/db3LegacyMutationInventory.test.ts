@@ -34,7 +34,6 @@ const legacyMutationCapabilitySites: Record<string, InventoryEntry> = {
     "src/pages/backstage/frontpagegallery.tsx": { category: "workflow", count: 1 },
     "src/pages/backstage/profile.tsx": { category: "entity-detail", count: 1 },
     "src/pages/backstage/setlistPlanner.tsx": { category: "workflow", count: 1 },
-    "src/pages/backstage/song/[...id_slug_tab].tsx": { category: "entity-detail", count: 1 },
     "src/pages/backstage/user/[...id_slug_tab].tsx": { category: "entity-detail", count: 1 },
 };
 
@@ -46,7 +45,7 @@ const legacyMutationCallSites: Record<string, InventoryEntry> = {
     "src/core/components/event/EventSegmentComponents.tsx": { category: "nested-row", count: 4 },
     "src/core/components/setlistPlan/SetlistPlanGroupComponents.tsx": { category: "nested-row", count: 3 },
     "src/core/components/song/NewSongComponents.tsx": { category: "workflow", count: 1 },
-    "src/core/components/song/SongComponents.tsx": { category: "nested-row", count: 5 },
+    "src/core/components/song/SongComponents.tsx": { category: "nested-row", count: 3 },
     "src/core/components/user/UserAdminPanel.tsx": { category: "entity-detail", count: 1 },
     "src/core/components/user/UserDetail.tsx": { category: "entity-detail", count: 1 },
     "src/core/components/user/UserInstruments.tsx": { category: "relationship", count: 1 },

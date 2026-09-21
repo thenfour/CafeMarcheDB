@@ -4,14 +4,13 @@ import { useDashboardContext } from "src/core/components/dashboardContext/Dashbo
 import type { CMDBTableFilterModel } from "../shared/apiTypes";
 import type { GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import type { AnyDB3CrudView, ClientOf } from "../db3";
-import { createEntityCrudUpdatePatch } from "../db3";
 import {
     useTableRenderContext,
     type xTableClientSpec,
     xTableClientCaps,
     type xTableRenderClient,
 } from "./DB3ClientCore";
-import { useDB3Command } from "./useDB3Command";
+import { useCrudViewCommands } from "./useCrudViewCommands";
 
 export interface UseCrudTableRenderContextArgs<TView extends AnyDB3CrudView> {
     readonly view: TView;
@@ -39,9 +38,6 @@ export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
     }
 
     const dashboardContext = useDashboardContext();
-    const create = useDB3Command(args.view.crud.operations.create?.command);
-    const update = useDB3Command(args.view.crud.operations.update.command);
-    const deleteCommand = useDB3Command(args.view.crud.operations.delete?.command);
     const tableClient = useTableRenderContext<ClientOf<TView>>({
         requestedCaps: args.paginated
             ? xTableClientCaps.PaginatedQuery
@@ -55,43 +51,18 @@ export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
         includeDeleted: args.includeDeleted,
         queryOptions: args.queryOptions,
     });
+    const commands = useCrudViewCommands({ view: args.view, tableClient });
 
-    const refresh = async () => {
-        await tableClient.refetch();
-        dashboardContext.refreshCachedData();
-    };
-
-    tableClient.doInsertMutation = async row => {
-        if (!create) {
-            throw new Error(`DB3 editor view '${args.view.viewID}' does not permit creation.`);
-        }
-        const values = tableClient.prepareInsertMutation(row);
-        const result = await create.invoke(values);
-        await refresh();
-        return result;
-    };
+    tableClient.doInsertMutation = commands.create;
     tableClient.doUpdateMutation = async (row, previousRow) => {
         if (!previousRow) {
             throw new Error(
                 `Command-backed updates for '${args.view.viewID}' require the previous row.`,
             );
         }
-        const identity = args.view.entity.getIdentity(row);
-        const previousValues = tableClient.prepareMutation(previousRow, "update");
-        const nextValues = tableClient.prepareMutation(row, "update");
-        const patch = createEntityCrudUpdatePatch(previousValues, nextValues);
-        const result = await update.invoke({ identity, patch });
-        await refresh();
-        return result;
+        return commands.update(row, previousRow);
     };
-    tableClient.doDeleteMutation = async identity => {
-        if (!deleteCommand) {
-            throw new Error(`DB3 editor view '${args.view.viewID}' does not permit deletion.`);
-        }
-        const result = await deleteCommand.invoke({ identity });
-        await refresh();
-        return result;
-    };
+    tableClient.doDeleteMutation = commands.delete;
 
     return tableClient;
 }

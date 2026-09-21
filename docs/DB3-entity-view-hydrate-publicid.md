@@ -793,7 +793,7 @@ The existing writers are grouped by the replacement they need:
 | Category | Remaining surfaces | Intended replacement |
 | --- | --- | --- |
 | Row CRUD grids | None | Every writable `DB3EditGrid` now uses a command-backed editor view. File creation remains owned by the upload workflow rather than the metadata grid. |
-| Entity detail editors | Event, Song, File, User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
+| Entity detail editors | Event, File, User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
 | Nested rows and relationships | Embedded event-segment and song-credit/file editors, the profile user-instrument editor, and setlist-plan groups | Reuse generated row/association commands when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
 | Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
 | Workflows and aggregates | New-song creation, frontpage gallery composition, setlist planning, and similar multi-step flows | Use handwritten named commands with strict DTOs and one authorized transaction. |
@@ -887,6 +887,16 @@ branch are deleted. Embedded detail editors for the same entities remain in
 the direct TableClient inventory and can migrate separately by reusing these
 commands where their interaction remains row-shaped.
 
+The tenth slice begins the entity-detail category with Song. The page continues
+to query and hydrate the finite `songDetailView`, while its edit dialog prepares
+the existing TableClient editor values and invokes the generated update/delete
+commands owned by `songEditorView`. The dialog accepts the query-only render
+client instead of acquiring legacy mutation capability for itself, and update
+patches are computed from explicit previous and next values. Embedded song
+credit editing and the new-song workflow remain in their later nested-row and
+workflow categories. This slice intentionally preserves Song's current natural
+identity; public-ID conversion follows the entity/view/command migration.
+
 ## Design principles
 
 - Define an entity once; define multiple named views for its use-specific shapes.
@@ -926,11 +936,13 @@ commands where their interaction remains row-shaped.
 
 ## Migration method
 
-Migration proceeds through vertical slices with deletion gates, not through a
-cleanup sweep followed by a later public-ID project. Each slice must prove its
-replacement, migrate the relevant consumers, and remove the superseded path.
-Compatibility seams are acceptable only while a known set of consumers is in
-flight.
+Migration proceeds through vertical slices with deletion gates. The current
+stage adapts the as-is database schema and natural identities to the
+entity/view/command system: each slice must prove its replacement, migrate the
+relevant consumers, and remove the superseded path. After those read and write
+boundaries are established and the legacy mutation transport is gone, convert
+entities to public IDs one bounded model slice at a time. Compatibility seams
+are acceptable only while a known set of consumers is in flight.
 
 Migrate one bounded entity/view/consumer slice at a time:
 
@@ -962,9 +974,10 @@ Migrate one bounded entity/view/consumer slice at a time:
 
 Do not combine all public-ID migrations into one architecture refactor. Convert
 entities individually once each bounded slice has coherent read and write
-boundaries. Public identity nevertheless remains part of the acceptance test
-for every new generic facility so the architecture cannot accidentally settle
-around numeric client IDs.
+boundaries. New generic facilities must remain compatible with the existing
+public-ID pilot so the first-stage migration does not introduce fresh numeric-ID
+assumptions, but converting an individual consumer to commands does not also
+require converting that entity's identity.
 
 ### Definition of a migrated entity
 
@@ -1012,7 +1025,7 @@ boundary safely.
   the CRUD-enabled view, without entity-specific command schemas, serializers,
   handler files, registry wiring, command hooks, mutation adapters, table names,
   numeric table IDs, `TAnyModel`, or the generic mutation envelope.
-- [ ] Make generic editing infrastructure command-backed.
+- [x] Make generic editing infrastructure command-backed.
   - [x] `DB3EditGrid` and its injected-client `DB3NewObjectDialog` path.
   - [x] Selection-source creation, proved through the public-ID
     `InstrumentFunctionalGroup` CRUD view.
@@ -1047,11 +1060,16 @@ boundary safely.
   - [x] Migrate the remaining User, Event, and File ordinary grids while
     retaining privileged User workflows, nested Event editors, and File upload
     creation on their existing explicit boundaries.
-  - [ ] Migrate the entity-detail, nested/relationship, collection, and workflow
-    categories in that order.
-    Split out named domain commands wherever row CRUD is not truthful, and
-    separately migrate selection create-from-string consumers to the matching
-    CRUD views.
+  - [x] Migrate the remaining writable Event Attendance, Event Segment, Song
+    Credit, and User Instrument grids, removing the writable legacy-grid branch.
+  - [x] Begin the entity-detail category with Song update/delete, retaining the
+    rich detail view for reads and using `songEditorView` commands for writes.
+  - [ ] Migrate the remaining Event, File, User/Profile, Wiki metadata, and
+    user-administration entity-detail writers.
+  - [ ] Migrate the nested/relationship, collection, and workflow categories in
+    that order. Split out named domain commands wherever row CRUD is not
+    truthful, and separately migrate selection create-from-string consumers to
+    the matching CRUD views.
 - [ ] Validate or normalize the combined setlist song/divider position namespace
   on the server, independent of the client serializer.
 - [ ] Decide and prove the first-class edit-model contract for draft creation,

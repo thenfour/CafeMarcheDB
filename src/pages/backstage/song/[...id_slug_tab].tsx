@@ -42,7 +42,7 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
 
     const tableClient = DB3Client.useDb3Query({
         view: db3.songDetailView,
-        requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
+        requestedCaps: DB3Client.xTableClientCaps.Query,
         tableSpec,
         filterSpec: {
             tableParams: { songId },
