@@ -793,7 +793,7 @@ The existing writers are grouped by the replacement they need:
 | Category | Remaining surfaces | Intended replacement |
 | --- | --- | --- |
 | Row CRUD grids | None | Every writable `DB3EditGrid` now uses a command-backed editor view. File creation remains owned by the upload workflow rather than the metadata grid. |
-| Entity detail editors | File, User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
+| Entity detail editors | User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
 | Nested rows and relationships | Embedded event-segment and song-credit/file editors, the profile user-instrument editor, and setlist-plan groups | Reuse generated row/association commands when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
 | Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
 | Workflows and aggregates | New-song creation, frontpage gallery composition, setlist planning, and similar multi-step flows | Use handwritten named commands with strict DTOs and one authorized transaction. |
@@ -905,6 +905,16 @@ is injected into the edit dialog for field rendering; `eventEditorView` owns
 the generated update/delete commands and strict write DTO. Event segments,
 attendance, setlists, description content, and other nested actions remain on
 their existing boundaries for later slices. Event retains its natural identity.
+
+The twelfth slice migrates File detail update/delete. The landing page retains
+its existing query and `enrichFile()` path because its parent/child, preview,
+gallery, and pinned-song graph is broader than the current finite
+`fileDetailView`, and several of those relations still use transitional
+`GhostField` metadata. Its query-only render client is injected into the dialog
+for editor-value preparation, while `fileEditorView` supplies the generated
+update/delete commands. Upload remains the only File creation workflow;
+storage-owned fields and file-association workflows remain outside this slice.
+File retains its natural identity.
 
 ## Design principles
 
@@ -1076,8 +1086,10 @@ boundary safely.
   - [x] Migrate Event detail update/delete through `eventEditorView`, retaining
     the existing verbose read/enrichment path until a finite detail view owns
     that complete graph.
-  - [ ] Migrate the remaining File, User/Profile, Wiki metadata, and
-    user-administration entity-detail writers.
+  - [x] Migrate File detail update/delete through `fileEditorView`, preserving
+    upload-owned creation and the broader legacy detail read graph.
+  - [ ] Migrate the remaining User/Profile, Wiki metadata, and user-administration
+    entity-detail writers.
   - [ ] Migrate the nested/relationship, collection, and workflow categories in
     that order. Split out named domain commands wherever row CRUD is not
     truthful, and separately migrate selection create-from-string consumers to

@@ -28,7 +28,7 @@ export interface EditFieldsDialogButtonProps<TRowModel extends TAnyModel> {
     dialogTitle: string;
     dialogDescription: React.ReactNode;
     buttonComponent?: React.ComponentType<React.ComponentProps<typeof CMButton>>;
-    tableRenderClient?: DB3Client.xTableRenderClient<TRowModel>;
+    tableRenderClient?: DB3Client.xTableRenderClient;
 };
 export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>({ buttonComponent, ...props }: EditFieldsDialogButtonProps<TRowModel>) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);

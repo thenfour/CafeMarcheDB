@@ -77,11 +77,13 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
     const visInfo = dashboardContext.getVisibilityInfo(file);
     const recordFeature = useFeatureRecorder();
     const snackbar = useSnackbar();
+    const editCommands = DB3Client.useCrudViewCommands({
+        view: db3.fileEditorView,
+        tableClient,
+    });
 
     const mimeInfo = parseMimeType(file.mimeType);
     const isAudio = mimeInfo?.type === 'audio';
-
-    const refetch = tableClient.refetch;
 
     const imageInfo = SharedAPI.files.getImageFileDimensions(file);
 
@@ -95,17 +97,17 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                 initialValue={file}
                 renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
                 tableSpec={tableClient.tableSpec}
+                tableRenderClient={tableClient}
                 onCancel={() => { }}
-                onOK={async (obj, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                onOK={async (obj, _tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
                     void recordFeature({
                         feature: ActivityFeature.file_edit,
                         context: "file edit dialog",
                     });
                     await snackbar.invokeAsync(async () => {
-                        await tableClient.doUpdateMutation(obj);
+                        await editCommands.update(obj, file);
                         api.close();
                     });
-                    refetch();
                 }}
                 onDelete={async (api: EditFieldsDialogButtonApi) => {
                     void recordFeature({
@@ -114,10 +116,9 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                     });
 
                     await snackbar.invokeAsync(async () => {
-                        await tableClient.doDeleteMutation(file.id, 'softWhenPossible');
+                        await editCommands.delete(file.id);
                         api.close();
                     });
-                    refetch();
                 }}
             />}
 

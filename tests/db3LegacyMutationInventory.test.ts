@@ -50,7 +50,6 @@ const legacyMutationCallSites: Record<string, InventoryEntry> = {
     "src/core/components/wiki/WikiComponents.tsx": { category: "entity-detail", count: 1 },
     "src/core/db3/components/db3DataGrid.tsx": { category: "transport-infrastructure", count: 3 },
     "src/core/db3/components/useDB3SelectionSource.tsx": { category: "legacy-helper", count: 1 },
-    "src/pages/backstage/file/[...id_slug_tab].tsx": { category: "entity-detail", count: 2 },
     "src/pages/backstage/frontpagegallery.tsx": { category: "workflow", count: 5 },
     "src/pages/backstage/profile.tsx": { category: "entity-detail", count: 1 },
 };
