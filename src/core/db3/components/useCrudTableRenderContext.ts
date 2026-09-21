@@ -5,6 +5,7 @@ import type { CMDBTableFilterModel } from "../shared/apiTypes";
 import type { GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import type { AnyDB3CrudView, ClientOf } from "../db3";
 import {
+    bindLegacyTableClientSpecToView,
     useTableRenderContext,
     type xTableClientSpec,
     xTableClientCaps,
@@ -35,7 +36,7 @@ export interface UseCrudTableRenderContextArgs<TView extends AnyDB3CrudView> {
  */
 export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
     args: UseCrudTableRenderContextArgs<TView>,
-): xTableRenderClient<ClientOf<TView>> {
+): xTableRenderClient<TView> {
     if (args.tableSpec.args.view && args.tableSpec.args.view !== args.view) {
         throw new Error(
             `DB3 table client view '${args.tableSpec.args.view.viewID}' cannot be used with CRUD view '${args.view.viewID}'.`,
@@ -48,12 +49,20 @@ export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
     }
 
     const dashboardContext = useDashboardContext();
-    const tableClient = useTableRenderContext<ClientOf<TView>>({
+    const tableSpec = args.tableSpec.args.view
+        // The union's view-bearing arm was checked against args.view above;
+        // TypeScript cannot narrow an invariant generic from that property.
+        ? args.tableSpec as xTableClientSpec<TView>
+        : bindLegacyTableClientSpecToView({
+            view: args.view,
+            // Only the migration arm can lack a runtime view.
+            tableSpec: args.tableSpec as xTableClientSpec<undefined>,
+        });
+    const tableClient = useTableRenderContext({
         requestedCaps: args.paginated
             ? xTableClientCaps.PaginatedQuery
             : xTableClientCaps.Query,
-        tableSpec: args.tableSpec,
-        queryView: args.view,
+        tableSpec,
         referenceProvider: dashboardContext.referenceStore,
         filterModel: args.filterModel,
         sortModel: args.sortModel,
@@ -63,14 +72,23 @@ export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
     });
     const commands = useCrudViewCommands({ view: args.view, tableClient });
 
-    tableClient.doInsertMutation = commands.create;
+    tableClient.doInsertMutation = row => {
+        // For TView constrained to AnyDB3CrudView, TableClientRowOf is exactly
+        // ClientOf<TView>; TypeScript does not reduce that conditional inside
+        // a generic function body.
+        return commands.create(row as Partial<ClientOf<TView>>);
+    };
     tableClient.doUpdateMutation = async (row, previousRow) => {
         if (!previousRow) {
             throw new Error(
                 `Command-backed updates for '${args.view.viewID}' require the previous row.`,
             );
         }
-        return commands.update(row, previousRow);
+        // The same conditional-type limitation applies to both hydrated rows.
+        return commands.update(
+            row as ClientOf<TView>,
+            previousRow as ClientOf<TView>,
+        );
     };
     tableClient.doDeleteMutation = commands.delete;
 

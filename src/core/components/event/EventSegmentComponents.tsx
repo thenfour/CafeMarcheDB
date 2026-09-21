@@ -79,7 +79,7 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
             EventSegmentClientColumns.event,
         ),
     });
-    const tableRenderClient = DB3Client.useTableRenderContext({
+    const tableRenderClient = DB3Client.useLegacyTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.None,
         tableSpec,
     });

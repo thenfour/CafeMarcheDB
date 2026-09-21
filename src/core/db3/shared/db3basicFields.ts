@@ -9,7 +9,7 @@ import {
 } from "./apiTypes";
 import {
     ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3RowMode, ErrorValidateAndParseResult,
-    type DB3ReadCodec, FieldBase, GetTableById, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
+    type DB3FieldCodec, FieldBase, GetTableById, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, createAuthContextMap_SysadminNaturalPK, xTable
 } from "./db3core";
 import type { DB3Authorization } from "./db3Authorization";
@@ -17,6 +17,7 @@ import { type UserWithRolesPayload } from "./schema/userPayloads";
 import { type ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList, gSwatchColors } from "../../components/color/palette";
 import { TAnyModel } from "@/shared/rootroot";
 import { isPublicId } from "shared/publicId";
+import { z } from "zod";
 
 // export type DB3AuthSpec = {
 //     authMap: DB3AuthContextPermissionMap;
@@ -113,7 +114,7 @@ export type PKFieldArgs = {
     naturalIdVisibility?: "all" | "sysadmin";
 };// & DB3AuthSpec;
 
-export class PKField extends FieldBase<number> {
+export class PKField extends FieldBase<number, undefined, false> {
     constructor(args: PKFieldArgs) {
         super({
             member: args.columnName,
@@ -194,7 +195,7 @@ export class PKField extends FieldBase<number> {
 ////////////////////////////////////////////////////////////////
 // Stable, opaque identity used whenever a converted row crosses the client
 // boundary. Generation remains server-owned.
-export class PublicIdField extends FieldBase<string> {
+export class PublicIdField extends FieldBase<string, undefined, false> {
     constructor(columnName = "publicId") {
         super({
             member: columnName,
@@ -474,13 +475,15 @@ export type ColorFieldArgs = {
 
 export class ColorField extends FieldBase<
     ColorPaletteEntry,
-    DB3ReadCodec<string | null, ColorPaletteEntry | null> // says "i decode strings to ColorPaletteEntry and back"
+    DB3FieldCodec<string | null, ColorPaletteEntry | null>
 > {
     allowNull: boolean;
     palette: ColorPaletteList;
 
-    readonly readCodec: DB3ReadCodec<string | null, ColorPaletteEntry | null> = {
+    readonly codec: DB3FieldCodec<string | null, ColorPaletteEntry | null> = {
         decode: value => this.palette.findEntry(value),
+        encode: value => value?.id || null,
+        writeSchema: z.string().nullable(),
     };
 
     constructor(args: ColorFieldArgs) {
@@ -516,7 +519,7 @@ export class ColorField extends FieldBase<
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         const dbVal: string | null = dbModel[this.member];
-        clientModel[this.member] = this.readCodec.decode(dbVal);
+        clientModel[this.member] = this.codec.decode(dbVal);
     }
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
@@ -524,7 +527,7 @@ export class ColorField extends FieldBase<
             return;
         }
         const val: ColorPaletteEntry | null = clientModel[this.member];
-        mutationModel[this.member] = (val?.id) || null;
+        mutationModel[this.member] = this.codec.encode(val);
     };
 
     ApplyToNewRow = (args: TAnyModel) => {
@@ -732,7 +735,9 @@ export type ForeignSingleFieldArgs<TForeign> = {
     specialFunction?: SqlSpecialColumnFunction | undefined;
 } & DB3AuthSpec;
 
-export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
+// The write member is fkidMember rather than this field-map key, so it is not a
+// same-key mutation field. Its projected key is supplied by the client column.
+export class ForeignSingleField<TForeign> extends FieldBase<TForeign, undefined, false> {
     requireVisibleTarget: boolean;
     foreignTableID: string;
     localTableSpec: xTable;
@@ -1044,7 +1049,9 @@ export type TagsFieldArgs<TAssociation> = {
     associationForeignObjectMember: string;
 } & DB3AuthSpec;
 
-export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
+// Tags encode an association collection rather than a same-key scalar value;
+// their exact write shape belongs to their explicit mutation projection.
+export class TagsField<TAssociation> extends FieldBase<TAssociation[], undefined, false> {
     localTableSpec: xTable;
     associationTableID: string;
     foreignTableID: string;

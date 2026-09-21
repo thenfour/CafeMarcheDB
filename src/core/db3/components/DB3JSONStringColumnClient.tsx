@@ -641,7 +641,7 @@ export class JSONStringColumnClient extends DB3ClientCore.IColumnClient {
 
     ApplyClientToPostClient = undefined;
 
-    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient<any, any>) => {
         this.typedSchemaColumn = this.schemaColumn as GenericStringField;
 
         assert(this.typedSchemaColumn.format === "raw", `JSONStringColumnClient[${tableClient.tableSpec.args.table.tableID}.${this.schemaColumn.member}] has an unsupported type.`);

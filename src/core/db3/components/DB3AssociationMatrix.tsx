@@ -68,7 +68,8 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
         quickFilterValues: filterModel.quickFilterValues,
     };
 
-    const dbRows = DB3Client.useTableRenderContext({
+    // legacy because this isn't (yet) working with views; only xTable
+    const dbRows = DB3Client.useLegacyTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
         tableSpec: props.localTableSpec,
         filterModel: convertedFilter,// quick filter will apply to both rows & columns
@@ -78,7 +79,8 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
 
     const filteredRows: TLocal[] = !!props.filterRow ? (dbRows.items as TLocal[]).filter(row => props.filterRow!(row)) : (dbRows.items as TLocal[]);
 
-    const dbColumns = DB3Client.useTableRenderContext({
+    // legacy because this isn't (yet) working with views; only xTable
+    const dbColumns = DB3Client.useLegacyTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
         tableSpec: props.foreignTableSpec,
         filterModel: convertedFilter,// quick filter will apply to both rows & columns

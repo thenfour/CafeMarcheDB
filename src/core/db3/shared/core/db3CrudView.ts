@@ -10,7 +10,12 @@ import {
     type AnyDB3EntityEditorCommands,
     type DB3CrudOperationFlags,
 } from "./db3EntityCrud";
-import type { AnyDB3Entity, EntityIdOf } from "./db3Entity";
+import type { AnyDB3Entity, EntityIdOf, SchemaOf } from "./db3Entity";
+import type {
+    DB3FieldsOf,
+    DB3SchemaClientModel,
+    DB3SchemaMutationModel,
+} from "../db3core";
 import {
     defineView,
     type DB3View,
@@ -79,11 +84,25 @@ function applyLegacyTableSchemaDbToClient<TModel extends TAnyModel>(
  * mutation services; this schema prevents identities and unknown members from
  * entering the generated-command envelope.
  */
-function createPreparedMutationSchema(
-    entity: AnyDB3Entity,
-    dtoSchema: z.AnyZodObject,
+type PreparedMutationValues<
+    TEntity extends AnyDB3Entity,
+    TDtoSchema extends z.AnyZodObject,
+> = DB3SchemaMutationModel<
+    DB3SchemaClientModel<z.infer<TDtoSchema>, DB3FieldsOf<SchemaOf<TEntity>>>,
+    DB3FieldsOf<SchemaOf<TEntity>>
+>;
+
+type PreparedMutationSchema<TValues extends TAnyModel> =
+    z.AnyZodObject & z.ZodType<TValues>;
+
+function createPreparedMutationSchema<
+    TEntity extends AnyDB3Entity,
+    TDtoSchema extends z.AnyZodObject,
+>(
+    entity: TEntity,
+    dtoSchema: TDtoSchema,
     mode: "new" | "update",
-): z.AnyZodObject {
+): PreparedMutationSchema<PreparedMutationValues<TEntity, TDtoSchema>> {
     const shape: z.ZodRawShape = {};
     const dtoMembers = new Set(Object.keys(dtoSchema.shape));
     for (const field of entity.schema.columns) {
@@ -95,7 +114,8 @@ function createPreparedMutationSchema(
         if (member === entity.schema.pkMember || member === entity.schema.publicIdMember) {
             continue;
         }
-        shape[member] = zod.unknown().superRefine((value, context) => {
+        const transportSchema = field.codec?.writeSchema ?? zod.unknown();
+        shape[member] = transportSchema.superRefine((value, context) => {
             // Prepared mutation values have already passed through
             // ApplyClientToDb. Convert them back to the table's client shape
             // before invoking the field's client-value validator.
@@ -112,7 +132,12 @@ function createPreparedMutationSchema(
             }
         }).optional();
     }
-    return zod.object(shape).strict();
+    const schema = zod.object(shape).strict();
+    // Runtime field discovery cannot retain the keyed xTable map through
+    // Object.keys(). PreparedMutationValues derives the same included
+    // same-key fields from the concrete entity schema, while the construction
+    // above remains authoritative for runtime parsing and authorization.
+    return schema as PreparedMutationSchema<PreparedMutationValues<TEntity, TDtoSchema>>;
 }
 
 function registerCrudView(view: AnyDB3CrudView): void {

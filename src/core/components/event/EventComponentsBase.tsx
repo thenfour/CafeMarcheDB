@@ -6,7 +6,7 @@ import { calculateEventAttendance, EventAttendanceResult } from "./attendanceCal
 import { getUniqueNegativeID } from 'shared/utils';
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { defineLegacyTableClientSpec, useTableRenderContext, xTableClientCaps } from '../../db3/components/DB3ClientCore';
+import { defineLegacyTableClientSpec, useLegacyTableRenderContext, xTableClientCaps } from '../../db3/components/DB3ClientCore';
 import { EnrichedEvent } from '../../db3/shared/schema/enrichedEventTypes';
 import { EventResponseInfo, fn_makeMockEventSegmentResponse, fn_makeMockEventUserResponse, GetEventResponseInfo, UserInstrumentList } from '../../db3/shared/schema/eventAPI';
 import { DashboardContextData, useDashboardContext } from '../dashboardContext/DashboardContext';
@@ -108,7 +108,7 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
     };
 
     // fetch users with instruments.
-    const dynMenuClient = useTableRenderContext({
+    const dynMenuClient = useLegacyTableRenderContext({
         requestedCaps: xTableClientCaps.Query,
         tableSpec: defineLegacyTableClientSpec({
             table: db3.xUserWithInstrument,

@@ -72,11 +72,14 @@ export interface IColumnClientArgs<TColumnName extends string = string> {
 export abstract class IColumnClient<
     TColumnName extends string = string,
     TValue = unknown,
+    TMutationPatch extends TAnyModel = Partial<Record<TColumnName, TValue>>,
 > {
     // IColumnClientArgs here...
     columnName: TColumnName;
     /** Type-only marker consumed by the view-bound table-spec factory. */
     readonly __columnValueType?: TValue;
+    /** Type-only marker for the values this UI column contributes to a write. */
+    readonly __mutationPatchType?: TMutationPatch;
     headerName: string;
     editable: boolean;
     visible: boolean;
@@ -92,8 +95,15 @@ export abstract class IColumnClient<
 
     abstract renderForNewDialog?: (params: RenderForNewItemDialogArgs) => React.ReactNode; // will render as a child of <FormControl>
     abstract renderViewer: (params: RenderViewerArgs<unknown>) => React.ReactNode; // will render as a child of <FormControl>
-    abstract ApplyClientToPostClient?: (clientRow: TAnyModel, updateModel: TAnyModel, mode: db3.DB3RowMode) => void; // applies the values from the client object to a db-compatible object.
-    abstract onSchemaConnected(tableClient: xTableRenderClient<any>): void;
+
+    // new better-typed replacement for ApplyClientToPostClient
+    // allows a column to define how its value should be projected into a
+    // mutation patch (e.g. date range columns work on multiple members)
+    projectMutation?: (clientRow: TAnyModel, mode: db3.DB3RowMode) => TMutationPatch;
+
+    /** @deprecated Migration-only mutable projection. New columns use projectMutation(). */
+    abstract ApplyClientToPostClient?: (clientRow: TAnyModel, updateModel: TAnyModel, mode: db3.DB3RowMode) => void;
+    abstract onSchemaConnected(tableClient: xTableRenderClient<any, any>): void;
 
     schemaTable: db3.xTable;
     schemaColumn: db3.AnyDB3Field;
@@ -106,7 +116,7 @@ export abstract class IColumnClient<
     }
 
     // called when the table client is initialized to make sure this column object knows about its sibling column in the schema.
-    connectColumn = (schemaTable: db3.xTable, tableClient: xTableRenderClient<any>) => {
+    connectColumn = (schemaTable: db3.xTable, tableClient: xTableRenderClient<any, any>) => {
         console.assert(this.columnName.length > 0);
         this.schemaTable = schemaTable;
         this.schemaColumn = schemaTable.columns.find(c => c.member === this.columnName)!;
@@ -146,6 +156,7 @@ type NormalizedTableClientSpecArgs<TView extends db3.AnyDB3View | undefined> = {
     table: db3.xTable;
     view?: TView;
     columns: AnyIColumnClient[];
+    legacyMutationProjection: boolean;
 };
 
 export class xTableClientSpec<
@@ -160,13 +171,17 @@ export class xTableClientSpec<
      * or defineLegacyDynamicTableClientSpec() so the intended contract is explicit.
      */
     constructor(args: xTableClientSpecArgs) {
-        this.args = args;
+        this.args = {
+            ...args,
+            legacyMutationProjection: true,
+        };
     };
 
     /** @internal Use defineTableClientSpec() for the typed public entry point. */
     static fromView<TView extends db3.AnyDB3View>(args: {
         view: TView;
         columns: AnyIColumnClient[];
+        legacyMutationProjection?: boolean;
     }): xTableClientSpec<TView> {
         const spec = new xTableClientSpec({
             table: args.view.entity.schema,
@@ -176,6 +191,7 @@ export class xTableClientSpec<
         // specialization. This assignment upgrades that same argument bag
         // only after storing the concrete view that owns its schema.
         (spec.args as unknown as NormalizedTableClientSpecArgs<TView>).view = args.view;
+        spec.args.legacyMutationProjection = args.legacyMutationProjection ?? false;
 
         // This cast changes only the phantom view parameter. The runtime view
         // stored above is the same concrete value that supplied the table.
@@ -233,7 +249,7 @@ export type DB3ClientColumnSet<TFactories extends DB3ClientColumnFactoryMap> = {
 };
 
 export type DB3ClientColumnSelection<TColumns extends readonly AnyIColumnClient[]> = {
-    readonly [TColumn in TColumns[number] as TColumn["columnName"]]: () => TColumn;
+    readonly [TColumn in TColumns[number]as TColumn["columnName"]]: () => TColumn;
 };
 
 type ColumnValueOfFactory<TFactory> =
@@ -364,6 +380,27 @@ export function defineLegacyDynamicTableClientSpec(
     return new xTableClientSpec(args);
 }
 
+/**
+ * Explicit migration adapter for an existing table-only spec whose runtime
+ * columns are known to edit a concrete view. New code should define the spec
+ * with defineTableClientSpec() instead.
+ */
+export function bindLegacyTableClientSpecToView<TView extends db3.AnyDB3View>(args: {
+    readonly view: TView;
+    readonly tableSpec: xTableClientSpec<undefined>;
+}): xTableClientSpec<TView> {
+    if (args.tableSpec.args.table !== args.view.entity.schema) {
+        throw new Error(
+            `Legacy DB3 table client '${args.tableSpec.args.table.tableID}' cannot be bound to view '${args.view.viewID}'.`,
+        );
+    }
+    return xTableClientSpec.fromView({
+        view: args.view,
+        columns: args.tableSpec.args.columns,
+        legacyMutationProjection: true,
+    });
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // xTableRenderClient is an object that React components use to access functionality, access the items in the table etc.
@@ -419,11 +456,30 @@ export enum xTableClientCaps {
     Mutation = 4,
 };
 
-export type AnyIColumnClient = IColumnClient<any, any>;
+export type AnyIColumnClient = IColumnClient<any, any, any>;
 
-export interface xTableClientArgs {
-    tableSpec: xTableClientSpec<any>,
-    queryView?: db3.AnyDB3View,
+export type TableClientRowOf<
+    TView extends db3.AnyDB3View | undefined,
+    TLegacyRow extends TAnyModel = TAnyModel,
+> = TView extends db3.AnyDB3View ? db3.ClientOf<TView> : TLegacyRow;
+
+export type TableClientIdentityOf<TView extends db3.AnyDB3View | undefined> =
+    TView extends db3.AnyDB3View
+    ? db3.EntityIdOf<db3.EntityOf<TView>>
+    : number | string;
+
+export type PreparedTableMutationOf<TView extends db3.AnyDB3View | undefined> =
+    TView extends db3.AnyDB3View
+    ? db3.DB3SchemaMutationModel<
+        db3.ClientOf<TView>,
+        db3.DB3FieldsOf<db3.SchemaOf<db3.EntityOf<TView>>>
+    >
+    // A table-only client has no view/field-map contract from which to infer a
+    // prepared DTO. Its deliberately explicit legacy API retains the old type.
+    : any;
+
+export interface xTableClientArgs<TView extends db3.AnyDB3View | undefined = undefined> {
+    tableSpec: xTableClientSpec<TView>,
     referenceProvider?: db3.DB3ReferenceProvider,
 
     requestedCaps: xTableClientCaps,
@@ -438,12 +494,15 @@ export interface xTableClientArgs {
     queryOptions?: any; // of gQueryOptions
 };
 
-export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
-    tableSpec: xTableClientSpec<any>;
-    args: xTableClientArgs;
+export class xTableRenderClient<
+    TView extends db3.AnyDB3View | undefined = undefined,
+    TLegacyRow extends TAnyModel = TAnyModel,
+> {
+    tableSpec: xTableClientSpec<TView>;
+    args: xTableClientArgs<TView>;
     mutateFn: TMutateFn;
 
-    items: Trow[];
+    items: TableClientRowOf<TView, TLegacyRow>[];
     rowCount: number;
     remainingQueryResults: any;
     remainingQueryStatus: RestQueryResult<unknown, unknown>;
@@ -470,7 +529,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         return this.tableSpec.getColumn(name);
     }
 
-    constructor(args: xTableClientArgs, publicData: db3.DB3Authorization) {
+    constructor(args: xTableClientArgs<TView>, publicData: db3.DB3Authorization) {
         this.tableSpec = args.tableSpec;
         this.args = args;
         this.publicData = publicData;
@@ -495,7 +554,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
             this.clientColumns[i]?.connectColumn(args.tableSpec.args.table, this);
         }
 
-        let items_: Trow[] = [];
+        let items_: unknown[] = [];
 
         const filter: CMDBTableFilterModel = args.filterModel || { items: [] };
 
@@ -508,7 +567,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
                 table: {
                     tableID: this.args.tableSpec.args.table.tableID,
                     tableName: this.args.tableSpec.args.table.tableName,
-                    viewID: this.args.queryView?.viewID,
+                    viewID: this.tableSpec.args.view?.viewID,
                 },
                 orderBy,
                 skip,
@@ -526,7 +585,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
                 items_ = [];
                 this.rowCount = 0;
             } else {
-                items_ = queryResult[0].items as Trow[];
+                items_ = queryResult[0].items;
                 this.rowCount = queryResult[0].count;//queryResult[0].items.length;
                 this.remainingQueryResults = { ...queryResult[0] };
                 this.queryResultInfo = {
@@ -550,7 +609,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
                 table: {
                     tableID: this.args.tableSpec.args.table.tableID,
                     tableName: this.args.tableSpec.args.table.tableName,
-                    viewID: this.args.queryView?.viewID,
+                    viewID: this.tableSpec.args.view?.viewID,
                 },
                 orderBy,
                 take,
@@ -566,7 +625,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
                 items_ = [];
                 this.rowCount = 0;
             } else {
-                items_ = queryResult[0].items as Trow[];
+                items_ = queryResult[0].items;
                 this.rowCount = queryResult[0].items.length;
                 this.remainingQueryResults = { ...queryResult[0] };
             }
@@ -581,17 +640,24 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
 
         // convert items from a database result to a client-side object.
         this.items = items_.map(dbitem => {
-            if (this.args.queryView) {
+            const view = this.tableSpec.args.view;
+            if (view) {
                 if (!this.args.referenceProvider) {
-                    throw new Error(`DB3 view '${this.args.queryView.viewID}' requires a reference provider.`);
+                    throw new Error(`DB3 view '${view.viewID}' requires a reference provider.`);
                 }
-                return db3.hydrateView(
-                    this.args.queryView,
-                    this.args.queryView.parseDto(dbitem),
+                const hydrated = db3.hydrateView(
+                    view,
+                    view.parseDto(dbitem),
                     this.args.referenceProvider,
-                ) as Trow;
+                );
+                // TView determines both hydrate() and TableClientRowOf. The
+                // conditional row alias cannot be narrowed by this runtime
+                // presence check, so expose that already-proven relationship.
+                return hydrated as TableClientRowOf<TView, TLegacyRow>;
             }
-            return this.schema.getClientModel(dbitem, "view") as Trow;
+            // This is the explicitly legacy table-only path. Its row type is a
+            // caller declaration because no view exists to infer one from.
+            return this.schema.getClientModel(dbitem as TAnyModel, "view") as TableClientRowOf<TView, TLegacyRow>;
         });
 
         this.refetch = this.refetch || (() => { });
@@ -604,15 +670,25 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         // }
     }; // ctor
 
-    prepareMutation = <T extends TAnyModel,>(row: T, mode: "new" | "update"): any => {
+    prepareMutation = (
+        row: Partial<TableClientRowOf<TView, TLegacyRow>>,
+        mode: "new" | "update",
+    ): PreparedTableMutationOf<TView> => {
         const postClientModel = {}; // when applying values, it's client-value -> post-client-value -> db-value. there are 2 stages, to allow client columns to work AND the schema column.
         const dbModel = {};
 
         this.clientColumns.forEach(clientCol => {
-            // seems to be an eternal problem; probably a bad design in general. well,
-            // the case for using client schema is for EventDateRangeColumn, where the single "client" field consists of 3 underlying schema columns.
-            // so the client column types need the ability to prepare things for update.
-            if (clientCol.ApplyClientToPostClient) {
+            if (clientCol.projectMutation) {
+                Object.assign(postClientModel, clientCol.projectMutation(row, mode));
+            } else if (clientCol.ApplyClientToPostClient) {
+                if (!this.tableSpec.args.legacyMutationProjection) {
+                    throw new Error(
+                        `Typed DB3 client column '${clientCol.columnName}' must use projectMutation(); `
+                        + "ApplyClientToPostClient is available only through an explicit legacy table spec.",
+                    );
+                }
+                // Explicit legacy adapter: older foreign/composite columns
+                // mutate an accumulator instead of returning a typed patch.
                 clientCol.ApplyClientToPostClient(row, postClientModel, mode);
             } else {
                 postClientModel[clientCol.columnName] = row[clientCol.columnName]; // by default just copy the value.
@@ -631,14 +707,19 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
             publicData: this.publicData,
         });
 
-        return ret;
+        // The typed xTable field map defines the same-key encoded result. The
+        // runtime authorization pass may only remove keys from that model.
+        return ret as PreparedTableMutationOf<TView>;
     };
 
     // the row as returned by the db is not the same model as the one to be passed in for updates / creation / etc.
     // all the columns in our spec though represent logical values which can be passed into mutations.
     // that is, all the columns comprise the updation model completely.
     // for things like FK, 
-    doUpdateMutation = async (row: TAnyModel, _previousRow?: TAnyModel) => {
+    doUpdateMutation = async (
+        row: TableClientRowOf<TView, TLegacyRow>,
+        _previousRow?: TableClientRowOf<TView, TLegacyRow>,
+    ) => {
         console.assert(!!this.mutateFn); // make sure you request this capability!
 
         const dbModel = this.prepareMutation(row, "update");
@@ -666,12 +747,14 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         return ret;
     };
 
-    prepareInsertMutation = <T extends TAnyModel,>(row: TAnyModel): any => {
+    prepareInsertMutation = (
+        row: Partial<TableClientRowOf<TView, TLegacyRow>>,
+    ): PreparedTableMutationOf<TView> => {
         const dbModel = this.prepareMutation(row, "new");
         return dbModel;
     };
 
-    doInsertMutation = async (row: TAnyModel) => {
+    doInsertMutation = async (row: Partial<TableClientRowOf<TView, TLegacyRow>>) => {
         const dbModel = this.prepareInsertMutation(row);
         return await this.mutateFn({
             tableID: this.args.tableSpec.args.table.tableID,
@@ -681,7 +764,10 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         });
     };
 
-    doDeleteMutation = async (identity: number | string, deleteType: "softWhenPossible" | "hard") => {
+    doDeleteMutation = async (
+        identity: TableClientIdentityOf<TView>,
+        deleteType: "softWhenPossible" | "hard",
+    ) => {
         const common = {
             tableID: this.args.tableSpec.args.table.tableID,
             tableName: this.tableSpec.args.table.tableName,
@@ -705,9 +791,22 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
 };
 
 
-export const useTableRenderContext = <Trow extends TAnyModel,>(args: xTableClientArgs) => {
+export const useTableRenderContext = <TView extends db3.AnyDB3View,>(
+    args: xTableClientArgs<TView>,
+): xTableRenderClient<TView> => {
     const publicData = useDB3Authorization();
-    return new xTableRenderClient<Trow>(args, publicData);
+    return new xTableRenderClient(args, publicData);
+};
+
+export type xLegacyTableRenderClient<TRow extends TAnyModel = TAnyModel> =
+    xTableRenderClient<undefined, TRow>;
+
+/** Table-only migration path; it cannot infer a hydrated row without a view. */
+export const useLegacyTableRenderContext = <TRow extends TAnyModel = TAnyModel,>(
+    args: xTableClientArgs<undefined>,
+): xLegacyTableRenderClient<TRow> => {
+    const publicData = useDB3Authorization();
+    return new xTableRenderClient<undefined, TRow>(args, publicData);
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

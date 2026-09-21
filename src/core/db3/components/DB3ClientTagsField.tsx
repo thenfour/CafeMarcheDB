@@ -389,7 +389,7 @@ export class TagsFieldClient<TAssociation extends TAnyModel> extends IColumnClie
         />
     })}</React.Fragment>;
 
-    onSchemaConnected = (tableClient: xTableRenderClient) => {
+    onSchemaConnected = (tableClient: xTableRenderClient<any, any>) => {
         this.typedSchemaColumn = this.schemaColumn as db3.TagsField<TAssociation>;
 
         if (!this.args.renderAsChip) {

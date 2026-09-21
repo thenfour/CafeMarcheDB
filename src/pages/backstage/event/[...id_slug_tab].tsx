@@ -57,7 +57,7 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
         initialTabIndex = gEventDetailTabSlugIndices[tab];
     }
 
-    const tableClient = DB3Client.useTableRenderContext(queryArgs);
+    const tableClient = DB3Client.useLegacyTableRenderContext(queryArgs);
     const eventRaw = tableClient.items[0]! as db3.EventClientPayload_Verbose;
     const event = eventRaw ? enrichSearchResultEvent(eventRaw, dashboardContext) : null;
 

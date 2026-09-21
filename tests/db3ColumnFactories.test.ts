@@ -1,14 +1,34 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import { GenericStringColumnClient } from "src/core/db3/components/DB3ClientBasicFields";
+import type { ColorPaletteEntry } from "src/core/components/color/palette";
+import { ColorColumnClient, GenericStringColumnClient } from "src/core/db3/components/DB3ClientBasicFields";
 import {
+    defineTableClientSpec,
     makeClientColumnSelection,
     makeClientColumnSet,
+    useTableRenderContext,
+    xTableClientCaps,
 } from "src/core/db3/components/DB3ClientCore";
+import * as db3 from "src/core/db3/db3";
+import type { InstrumentFunctionalGroupPublicId } from "shared/publicId";
 import { GhostField } from "src/core/db3/shared/db3basicFields";
 import { makeColumnSet } from "src/core/db3/shared/db3core";
 
 const allowField = () => true;
+
+const instrumentFunctionalGroupPilotSpec = defineTableClientSpec({
+    view: db3.instrumentFunctionalGroupEditorView,
+    columns: {
+        color: columnName => new ColorColumnClient({ columnName, cellWidth: 200 }),
+    },
+});
+
+function useInstrumentFunctionalGroupPilotClient() {
+    return useTableRenderContext({
+        requestedCaps: xTableClientCaps.None,
+        tableSpec: instrumentFunctionalGroupPilotSpec,
+    });
+}
 
 describe("DB3 keyed column factories", () => {
     it("uses schema object keys as runtime members while preserving order", () => {
@@ -57,5 +77,25 @@ describe("DB3 keyed column factories", () => {
         });
         expect(() => makeClientColumnSelection(columns.name, columns.name))
             .toThrow("Duplicate DB3 client column 'name'");
+    });
+
+    it("propagates a view's hydrated row, encoded mutation, and public identity types", () => {
+        type TPilotClient = ReturnType<typeof useInstrumentFunctionalGroupPilotClient>;
+        type TPilotRow = TPilotClient["items"][number];
+        type TPreparedMutation = ReturnType<TPilotClient["prepareMutation"]>;
+
+        expectTypeOf<TPilotRow["color"]>()
+            .toEqualTypeOf<ColorPaletteEntry | null | undefined>();
+        expectTypeOf<TPreparedMutation["color"]>()
+            .toEqualTypeOf<string | null | undefined>();
+        expectTypeOf<Parameters<TPilotClient["doDeleteMutation"]>[0]>()
+            .toEqualTypeOf<InstrumentFunctionalGroupPublicId>();
+
+        if (false) {
+            const prepared = {} as TPreparedMutation;
+            // @ts-expect-error Public identity travels separately from prepared values.
+            prepared.publicId;
+        }
+        expect(instrumentFunctionalGroupPilotSpec.args.legacyMutationProjection).toBe(false);
     });
 });

@@ -23,7 +23,7 @@ import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/Das
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface MenuLinkItemProps {
     item: db3.MenuLinkListClient;
-    client: DB3Client.xTableRenderClient<db3.MenuLinkListClient>;
+    client: DB3Client.xTableRenderClient<typeof db3.menuLinkListView>;
     commands: DB3Client.CrudViewCommandClient;
     readonly: boolean;
 };
@@ -135,9 +135,8 @@ export const WikiSlugInputWithSearch = (props: WikiSlugInputWithSearchProps) => 
     const searchQuery = props.value || "";
 
 
-
-
-    const songsClient = DB3Client.useTableRenderContext({
+    // legacy because of columnName being runtime so correct type cannot be known.
+    const songsClient = DB3Client.useLegacyTableRenderContext({
         tableSpec: DB3Client.defineLegacyDynamicTableClientSpec({
             table: props.schema,
             columns: [
@@ -213,10 +212,8 @@ export const MenuLinkList = () => {
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
-    const client = DB3Client.useTableRenderContext<db3.MenuLinkListClient>({
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-        queryView: db3.menuLinkListView,
-        referenceProvider: dashboardContext.referenceStore,
+    const tableSpec = DB3Client.bindLegacyTableClientSpecToView({
+        view: db3.menuLinkListView,
         tableSpec: DB3Client.defineLegacyTableClientSpec({
             table: db3.xMenuLink,
             columns: {
@@ -239,6 +236,11 @@ export const MenuLinkList = () => {
 
             },
         }),
+    });
+    const client = DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+        referenceProvider: dashboardContext.referenceStore,
+        tableSpec,
     });
     const commands = DB3Client.useCrudViewCommands({
         view: db3.menuLinkEditorView,

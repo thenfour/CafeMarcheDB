@@ -56,7 +56,7 @@ export const NewSongButton = () => {
     });
 
     // necessary to connect all the columns in the spec.
-    const songTableClient = DB3Client.useTableRenderContext({
+    const songTableClient = DB3Client.useLegacyTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Mutation,
         tableSpec: songTableSpec,
     });

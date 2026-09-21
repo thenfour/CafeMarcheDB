@@ -610,7 +610,7 @@ const MainContent = () => {
         },
     });
 
-    const client = DB3Client.useTableRenderContext({
+    const client = DB3Client.useLegacyTableRenderContext({
         tableSpec,
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
     });

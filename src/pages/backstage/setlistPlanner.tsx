@@ -336,7 +336,7 @@ balancing available rehearsal time against the time needed for each song.
 // segments = columns
 
 interface SetlistPlannerDocumentOverviewItemProps {
-    groupTableClient: DB3Client.xTableRenderClient<db3.SetlistPlanGroupPayload>;
+    groupTableClient: DB3Client.xTableRenderClient<typeof db3.setlistPlanGroupEditorView>;
     dbPlan: SetlistPlan;
     onSelect: (doc: SetlistPlan) => void;
     className?: string;
@@ -523,7 +523,7 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
 
 
 interface SetlistPlanOverviewGroupProps {
-    groupTableClient: DB3Client.xTableRenderClient<db3.SetlistPlanGroupPayload>;
+    groupTableClient: DB3Client.xTableRenderClient<typeof db3.setlistPlanGroupEditorView>;
     plansInGroup: SetlistPlan[];
     group: db3.SetlistPlanGroupPayload | null;
     onSelect: (doc: SetlistPlan) => void;
@@ -598,7 +598,7 @@ const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, re
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 type SetlistPlannerDocumentOverviewProps = {
-    groupTableClient: DB3Client.xTableRenderClient<db3.SetlistPlanGroupPayload>;
+    groupTableClient: DB3Client.xTableRenderClient<typeof db3.setlistPlanGroupEditorView>;
     plans: SetlistPlan[];
     onSelect: (doc: SetlistPlan) => void;
     expandedGroups: number[];

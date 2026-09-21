@@ -339,19 +339,26 @@ export interface SqlGetSortableQueryElementsAPI {
 };
 
 /**
- * A field-level DTO-to-client conversion. Fields without a codec retain the
- * exact value type supplied by the view DTO; this is important for narrow
- * relation DTOs whose type is more specific than the legacy xTable field.
+ * A reversible field-level transport/client conversion. Read and write
+ * transport values are separate because a command DTO need not have exactly
+ * the same representation as a query DTO.
  */
-export interface DB3ReadCodec<TTransportValue, TClientValue> {
-    readonly decode: (value: TTransportValue) => TClientValue;
+export interface DB3FieldCodec<
+    TReadTransportValue,
+    TClientValue,
+    TWriteTransportValue = TReadTransportValue,
+> {
+    readonly decode: (value: TReadTransportValue) => TClientValue;
+    readonly encode: (value: TClientValue) => TWriteTransportValue;
+    readonly writeSchema: import("zod").z.ZodType<TWriteTransportValue>;
 }
 
-export type AnyDB3ReadCodec = DB3ReadCodec<any, any>;
+export type AnyDB3FieldCodec = DB3FieldCodec<any, any, any>;
 
 export abstract class FieldBase<
     FieldDataType,
-    TReadCodec extends AnyDB3ReadCodec | undefined = undefined,
+    TCodec extends AnyDB3FieldCodec | undefined = undefined,
+    TClientWritable extends boolean = true,
 > {
     fieldTableAssociation: FieldAssociationWithTable;
     member: string;
@@ -363,7 +370,10 @@ export abstract class FieldBase<
      * Omitted for identity/pass-through fields. A concrete codec is both the
      * runtime implementation and the type-level declaration of a conversion.
      */
-    readonly readCodec?: TReadCodec;
+    readonly codec?: TCodec;
+
+    /** Type-only marker used when deriving prepared command values. */
+    readonly __clientWritable?: TClientWritable;
 
     authMap: DB3AuthContextPermissionMap | null;
     _customAuth: ((args: DB3AuthorizeAndSanitizeFieldInput<TAnyModel>) => boolean) | null;
@@ -532,9 +542,12 @@ export interface TableDesc {
 
 };
 
-export type AnyDB3Field = FieldBase<any, AnyDB3ReadCodec | undefined>;
+export type AnyDB3Field = FieldBase<any, AnyDB3FieldCodec | undefined, boolean>;
 
 export type DB3FieldMap = Readonly<Record<string, AnyDB3Field>>;
+
+export type DB3FieldsOf<TTable extends xTable> =
+    TTable extends xTable<infer TFields> ? TFields : DB3FieldMap;
 
 /**
  * Defers field construction until makeColumnSet() can supply the authoritative
@@ -574,9 +587,9 @@ export function makeColumnSet<TFactories extends DB3ColumnFactoryMap>(
     return fields as DB3ColumnSet<TFactories>;
 }
 
-type DB3ReadCodecResult<TField, TSourceValue> =
-    TField extends FieldBase<any, infer TCodec>
-    ? TCodec extends DB3ReadCodec<infer TTransportValue, infer TClientValue>
+type DB3CodecResult<TField, TSourceValue> =
+    TField extends FieldBase<any, infer TCodec, boolean>
+    ? TCodec extends DB3FieldCodec<infer TTransportValue, infer TClientValue, any>
     ? Exclude<TSourceValue, undefined> extends TTransportValue
     ? TClientValue | Extract<TSourceValue, undefined>
     : never
@@ -593,9 +606,39 @@ export type DB3SchemaClientModel<
     TFields extends DB3FieldMap,
 > = {
         [K in keyof TDto]: K extends keyof TFields
-        ? DB3ReadCodecResult<TFields[K], TDto[K]>
+        ? DB3CodecResult<TFields[K], TDto[K]>
         : TDto[K];
     };
+
+type DB3EncodedFieldValue<TField, TSourceValue> =
+    TField extends FieldBase<any, infer TCodec, boolean>
+    ? TCodec extends DB3FieldCodec<any, infer TClientValue, infer TWriteTransportValue>
+    ? Exclude<TSourceValue, undefined> extends TClientValue
+    ? TWriteTransportValue | Extract<TSourceValue, undefined>
+    : never
+    : TSourceValue
+    : never;
+
+type DB3WritableFieldKeys<TSource, TFields extends DB3FieldMap> = {
+    [K in Extract<keyof TSource, keyof TFields>]:
+    TFields[K] extends FieldBase<any, any, infer TClientWritable>
+    ? TClientWritable extends false ? never : K
+    : never;
+}[Extract<keyof TSource, keyof TFields>];
+
+/**
+ * The same-key values that a typed xTable can prepare for a command. Every
+ * property is optional because field authorization may remove it at runtime.
+ * Composite and foreign-key projections remain an explicit client-column
+ * concern and are not inferred as same-key fields here.
+ */
+export type DB3SchemaMutationModel<
+    TSource,
+    TFields extends DB3FieldMap,
+> = Partial<{
+        [K in DB3WritableFieldKeys<TSource, TFields>]:
+        DB3EncodedFieldValue<TFields[K], TSource[K]>;
+    }>;
 
 export type DB3DeletePolicy = "disabled" | "hard" | "softOnly";
 
@@ -1325,20 +1368,26 @@ export class xTable<
             const field = this.columns[i]!;
             field.ApplyDbToClient(dbModel, ret, mode, currentUser);
         }
-        // Each typed field's declared readCodec describes the transformation
+        // Each typed field's declared codec describes the transformation
         // performed by ApplyDbToClient on that same field instance. The cast
         // exposes the merged runtime result without duplicating conversion.
         return { ...dbModel, ...ret } as DB3SchemaClientModel<TDto, TFields>;
         //return ret;
     }
 
-    clientToDbModel = <T extends TAnyModel,>(clientModel: T, mode: DB3RowMode): TAnyModel => {
+    clientToDbModel = <T extends TAnyModel,>(
+        clientModel: T,
+        mode: DB3RowMode,
+    ): DB3SchemaMutationModel<T, TFields> => {
         const dbModel = {};
 
         this.columns.forEach(schemaCol => {
             schemaCol.ApplyClientToDb(clientModel, dbModel, mode);
         });
-        return dbModel;
+        // ApplyClientToDb is the legacy runtime surface for all field kinds.
+        // The typed result describes same-key fields; foreign/composite fields
+        // require the separate client-column projection contract.
+        return dbModel as DB3SchemaMutationModel<T, TFields>;
     };
 
     getColumn = <TKey extends Extract<keyof TFields, string>>(name: TKey): TFields[TKey] | undefined => {
@@ -1410,7 +1459,7 @@ export function defineTable<TFields extends DB3FieldMap>(
     });
 
     // The runtime xTable was built from exactly this keyed map, and getClientModel
-    // executes the readCodec stored on those same field instances. The cast only
+    // executes the codec stored on those same field instances. The cast only
     // exposes that construction invariant to TypeScript; it does not invent a
     // separate model declaration or conversion path.
     return table as unknown as DB3TypedTable<TFields>;

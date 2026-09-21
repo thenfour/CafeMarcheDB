@@ -17,7 +17,7 @@ import { ColorSwatch } from "../color/ColorSwatch";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 interface SetlistPlanGroupSelectProps {
-    tableClient: DB3Client.xTableRenderClient<SetlistPlanGroupPayload>
+    tableClient: DB3Client.xTableRenderClient<typeof db3.setlistPlanGroupEditorView>
     selectedGroupId?: number | null;
     onChange: (group: SetlistPlanGroupPayload | null) => void;
 };
@@ -55,7 +55,7 @@ export const SetlistPlanGroupClientColumns = DB3Client.makeClientColumnSet({
 
 
 interface SetlistPlanGroupListItemProps {
-    tableClient: DB3Client.xTableRenderClient<SetlistPlanGroupPayload>
+    tableClient: DB3Client.xTableRenderClient<typeof db3.setlistPlanGroupEditorView>
     group: SetlistPlanGroupPayload;
 };
 
@@ -118,7 +118,7 @@ export const SetlistPlanGroupListItem = (props: SetlistPlanGroupListItemProps) =
 };
 
 interface SetlistPlanGroupListProps {
-    tableClient: DB3Client.xTableRenderClient<SetlistPlanGroupPayload>
+    tableClient: DB3Client.xTableRenderClient<typeof db3.setlistPlanGroupEditorView>
 };
 
 export const SetlistPlanGroupList = (props: SetlistPlanGroupListProps) => {

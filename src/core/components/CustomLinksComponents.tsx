@@ -62,7 +62,7 @@ export class CustomLinkSlugColumn extends DB3Client.GenericStringColumnClient {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface CustomLinkItemProps {
     item: db3.CustomLinkListClient;
-    client: DB3Client.xTableRenderClient<db3.CustomLinkListClient>;
+    client: DB3Client.xTableRenderClient<typeof db3.customLinkListView>;
     commands: DB3Client.CrudViewCommandClient;
     readonly: boolean;
 };
@@ -195,10 +195,8 @@ export const CustomLinkList = () => {
         };
     };
 
-    const client = DB3Client.useTableRenderContext<db3.CustomLinkListClient>({
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-        queryView: db3.customLinkListView,
-        referenceProvider: dashboardContext.referenceStore,
+    const tableSpec = DB3Client.bindLegacyTableClientSpecToView({
+        view: db3.customLinkListView,
         tableSpec: DB3Client.defineLegacyTableClientSpec({
             table: db3.xCustomLink,
             columns: {
@@ -212,6 +210,11 @@ export const CustomLinkList = () => {
                 forwardQuery: columnName => new DB3Client.BoolColumnClient({ columnName, fieldCaption: "Forward URL parameters?" }),
             },
         }),
+    });
+    const client = DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+        referenceProvider: dashboardContext.referenceStore,
+        tableSpec,
     });
     const commands = DB3Client.useCrudViewCommands({
         view: db3.customLinkEditorView,

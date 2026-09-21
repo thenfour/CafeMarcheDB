@@ -276,7 +276,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
         },
     });
 
-    const creditsTableClient = DB3Client.useTableRenderContext({
+    const creditsTableClient = DB3Client.useLegacyTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.None,
         tableSpec,
     });
@@ -388,7 +388,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface SongDetailContainerProps {
     songData: SongWithMetadata;
-    tableClient: null | DB3Client.xTableRenderClient;
+    tableClient: null | DB3Client.xTableRenderClient<typeof db3.songDetailView>;
     editCommands?: DB3Client.CrudViewCommandClient;
     readonly: boolean;
     initialTabIndex?: number;
@@ -454,7 +454,7 @@ export const SongDetailContainer = ({ songData, tableClient, editCommands, ...pr
                     tableSpec={tableClient.tableSpec}
                     tableRenderClient={tableClient}
                     onCancel={() => { }}
-                    onOK={(obj: db3.SongDetailClient, _tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                    onOK={(obj: db3.SongDetailClient, _tableClient: DB3Client.xTableRenderClient<any, any>, api: EditFieldsDialogButtonApi) => {
                         void recordFeature({
                             feature: ActivityFeature.song_edit,
                             context: "song detail dialog",
@@ -524,7 +524,7 @@ export enum SongDetailTabSlug {
 
 export interface SongDetailArgs {
     song: db3.SongDetailClient;
-    tableClient: DB3Client.xTableRenderClient;
+    tableClient: DB3Client.xTableRenderClient<typeof db3.songDetailView>;
     readonly: boolean;
     initialTab?: SongDetailTabSlug;
 }

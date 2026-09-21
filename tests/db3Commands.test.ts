@@ -1159,6 +1159,16 @@ describe("DB3 commands", () => {
             .toEqualTypeOf<InstrumentFunctionalGroupPublicId>();
         expectTypeOf<db3.ClientOf<typeof view>["color"]>()
             .toEqualTypeOf<ColorPaletteEntry | null | undefined>();
+        type TCreateInput = db3.CommandClientInputOf<
+            typeof view.crud.operations.create.command
+        >;
+        type TUpdateInput = db3.CommandClientInputOf<
+            typeof view.crud.operations.update.command
+        >;
+        expectTypeOf<TCreateInput["color"]>()
+            .toEqualTypeOf<string | null | undefined>();
+        expectTypeOf<TUpdateInput["patch"]["color"]>()
+            .toEqualTypeOf<string | null | undefined>();
         if (false) {
             // @ts-expect-error Typed xTable keys reject members outside its field map.
             db3.xInstrumentFunctionalGroup.getColumn("notAColumn");
@@ -1185,7 +1195,9 @@ describe("DB3 commands", () => {
                 { color: hydrated.color },
                 "update",
             );
+            expectTypeOf(prepared.color).toEqualTypeOf<string | null | undefined>();
             expect(prepared.color).toBe(colorId);
+            expect(colorField.codec.encode(hydrated.color ?? null)).toBe(colorId);
             expect(view.crud.operations.update.command.parseDto({
                 identity: functionalGroupPublicId,
                 patch: { color: prepared.color },
@@ -1194,6 +1206,8 @@ describe("DB3 commands", () => {
                 patch: { color: colorId },
             });
         }
+        expect(colorField.codec.decode(null)).toBeNull();
+        expect(colorField.codec.encode(null)).toBeNull();
     });
 
     it("routes Role permission-set edits through the generated Role update command", async () => {

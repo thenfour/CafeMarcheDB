@@ -102,13 +102,6 @@ const DashboardInstrumentDtoSchema = z.object({
     })),
 });
 
-export const dashboardInstrumentArgs = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
-    include: {
-        functionalGroup: true,
-        instrumentTags: true,
-    },
-});
-
 export const instrumentFunctionalGroupListView = defineView({
     viewID: "InstrumentFunctionalGroup_List",
     entity: instrumentFunctionalGroupEntity,
@@ -151,7 +144,6 @@ export const instrumentEditorView = defineLegacyCrudView({
 export const instrumentDashboardView = defineView({
     viewID: "Instrument_Dashboard",
     entity: instrumentEntity,
-    selection: dashboardInstrumentArgs,
     dtoSchema: DashboardInstrumentDtoSchema,
     hydrate: (dto, references) => ({
         ...dto,

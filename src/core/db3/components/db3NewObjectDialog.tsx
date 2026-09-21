@@ -22,10 +22,10 @@ type ViewBase = db3.AnyDB3View | undefined;
 type db3NewObjectDialogProps<TView extends ViewBase> = {
 
     // todo: complete typing of row & view models.
-    onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient) => any;
+    onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient<any, any>) => any;
     onCancel: () => any;
     table: DB3ClientCore.xTableClientSpec<TView>;
-    tableRenderClient: DB3ClientCore.xTableRenderClient;
+    tableRenderClient: DB3ClientCore.xTableRenderClient<any, any>;
 
 
     caption?: string;
@@ -42,7 +42,7 @@ function DB3NewObjectDialogWithClient<TView extends ViewBase>({
     table,
     tableRenderClient: tableClient,
     ...props
-}: db3NewObjectDialogProps<TView> & { tableRenderClient: DB3ClientCore.xTableRenderClient }) {
+}: db3NewObjectDialogProps<TView> & { tableRenderClient: DB3ClientCore.xTableRenderClient<any, any> }) {
     const [currentUser] = useCurrentUser();
     const [obj, setObj] = React.useState(table.args.table.createNew(currentUser));
     const [oldObj, setOldObj] = React.useState(table.args.table.createNew(currentUser)); // needed for tracking changes
@@ -130,10 +130,10 @@ function DB3NewObjectDialogWithClient<TView extends ViewBase>({
 ////////////////////////////////////////////////////////////////
 // similar to DB3EditObjectDialog but uses external table render client.
 type DB3EditObject2DialogProps = {
-    onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient) => void;
+    onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient<any, any>) => void;
     onCancel: () => void;
-    onDelete?: (tableClient: DB3ClientCore.xTableRenderClient) => void;
-    tableRenderClient: DB3ClientCore.xTableRenderClient;
+    onDelete?: (tableClient: DB3ClientCore.xTableRenderClient<any, any>) => void;
+    tableRenderClient: DB3ClientCore.xTableRenderClient<any, any>;
     initialValue: TAnyModel;
     title?: React.ReactNode;
     description?: React.ReactNode;
@@ -248,10 +248,10 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
 
 ////////////////////////////////////////////////////////////////
 type DB3EditObjectDialogProps = {
-    onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient) => void;
+    onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient<any, any>) => void;
     onCancel: () => void;
-    onDelete?: (tableClient: DB3ClientCore.xTableRenderClient) => void;
-    tableRenderClient: DB3ClientCore.xTableRenderClient;
+    onDelete?: (tableClient: DB3ClientCore.xTableRenderClient<any, any>) => void;
+    tableRenderClient: DB3ClientCore.xTableRenderClient<any, any>;
 
     initialValue: TAnyModel;
     title?: React.ReactNode;
@@ -281,7 +281,7 @@ export interface DB3EditRowButtonAPI {
 
 export interface DB3EditRowButtonProps {
     row: TAnyModel;
-    tableRenderClient: DB3ClientCore.xTableRenderClient;
+    tableRenderClient: DB3ClientCore.xTableRenderClient<any, any>;
     onSave: (newRow: TAnyModel, api: DB3EditRowButtonAPI) => void;
     label?: React.ReactNode;
     smallButton?: boolean;
@@ -338,7 +338,7 @@ export const DB3EditRowButton = (props: DB3EditRowButtonProps) => {
 
 ////////////////////////////////////////////////////////////////
 export interface DB3RowViewerProps {
-    tableRenderClient: DB3ClientCore.xTableRenderClient;
+    tableRenderClient: DB3ClientCore.xTableRenderClient<any, any>;
     row: TAnyModel;
 };
 

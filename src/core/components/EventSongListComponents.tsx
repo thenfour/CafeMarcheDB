@@ -1182,7 +1182,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     });
 
     // necessary to connect columns.
-    const ctx__ = DB3Client.useTableRenderContext({
+    const ctx__ = DB3Client.useLegacyTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.None, // i don't think it's necessary to do this when i'm just connecting columns.
         tableSpec: tableSpec,
     });

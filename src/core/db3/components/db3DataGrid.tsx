@@ -36,7 +36,7 @@ const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 50 as number;
 
 interface ClipboardControlsProps {
-    client: DB3Client.xTableRenderClient;
+    client: DB3Client.xTableRenderClient<any, any>;
 };
 
 const ClipboardControls = (props: ClipboardControlsProps) => {
@@ -88,7 +88,10 @@ export interface DB3EditGridExtraActionsArgs<TRow extends TAnyModel = TAnyModel>
     refetch: () => void;
 };
 
-type DB3EditGridBaseProps<TRow extends TAnyModel = TAnyModel> = {
+type DB3EditGridBaseProps<
+    TRow extends TAnyModel = TAnyModel,
+    TClient extends DB3Client.xTableRenderClient<any, any> = DB3Client.xLegacyTableRenderClient,
+> = {
     tableSpec: DB3Client.xTableClientSpec<any>,
     renderExtraActions?: (args: DB3EditGridExtraActionsArgs<TRow>) => React.ReactNode,
     tableParams?: TAnyModel,
@@ -96,12 +99,12 @@ type DB3EditGridBaseProps<TRow extends TAnyModel = TAnyModel> = {
     defaultSortModel?: GridSortModel,
     includeDeleted?: boolean,
     disableCreate?: boolean,
-    onUpdateRow?: (newRow: TRow, oldRow: TRow, client: DB3Client.xTableRenderClient<TRow>) => Promise<TRow>;
+    onUpdateRow?: (newRow: TRow, oldRow: TRow, client: TClient) => Promise<TRow>;
     isCellEditable?: (row: TRow, field: string) => boolean;
 };
 
 type DB3CrudEditGridProps<TView extends db3.AnyDB3CrudView> =
-    DB3EditGridBaseProps<db3.ClientOf<TView>> & {
+    DB3EditGridBaseProps<db3.ClientOf<TView>, DB3Client.xTableRenderClient<TView>> & {
     view: TView;
     tableSpec: DB3Client.xTableClientSpec<TView> | DB3Client.xTableClientSpec<undefined>;
 };
@@ -159,7 +162,10 @@ function gridSortModelFromPrismaOrderBy(tableSpec: DB3Client.xTableClientSpec<an
 
 function useDB3EditGridQueryState(
     tableSpec: DB3Client.xTableClientSpec<any>,
-    props: Omit<DB3EditGridBaseProps<any>, "tableSpec">,
+    props: Pick<
+        DB3EditGridBaseProps<any, any>,
+        "defaultSortModel" | "includeDeleted"
+    >,
 ) {
     const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
         page: 0,
@@ -204,7 +210,7 @@ export function DB3EditGrid(props: DB3CrudEditGridProps<any> | DB3ReadOnlyGridPr
 
 function DB3ReadOnlyGrid({ tableSpec, ...props }: DB3ReadOnlyGridProps) {
     const queryState = useDB3EditGridQueryState(tableSpec, props);
-    const tableClient = DB3Client.useTableRenderContext({
+    const tableClient = DB3Client.useLegacyTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
         tableSpec,
         filterModel: {
@@ -258,17 +264,23 @@ function DB3CrudEditGrid<TView extends db3.AnyDB3CrudView>({
     />;
 }
 
-type DB3EditGridImplProps<TRow extends TAnyModel = TAnyModel> = DB3EditGridBaseProps<TRow> & {
-    tableClient: DB3Client.xTableRenderClient<TRow>;
+type DB3EditGridImplProps<
+    TRow extends TAnyModel = TAnyModel,
+    TClient extends DB3Client.xTableRenderClient<any, any> = DB3Client.xLegacyTableRenderClient,
+> = DB3EditGridBaseProps<TRow, TClient> & {
+    tableClient: TClient;
     queryState: DB3EditGridQueryState;
 };
 
-function DB3EditGridImpl<TRow extends TAnyModel>({
+function DB3EditGridImpl<
+    TRow extends TAnyModel,
+    TClient extends DB3Client.xTableRenderClient<any, any>,
+>({
     tableSpec,
     tableClient,
     queryState,
     ...props
-}: DB3EditGridImplProps<TRow>) {
+}: DB3EditGridImplProps<TRow, TClient>) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const dashboardContext = useDashboardContext();
     const readOnly = CoerceToBoolean(props.readOnly, false);

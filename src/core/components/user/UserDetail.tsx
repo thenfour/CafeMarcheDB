@@ -30,7 +30,7 @@ type _Role = Prisma.RoleGetPayload<{ select: { id: true, description: true, name
 type RoleControlProps = {
     value: _Role | null;
     userId: number;
-    tableClient: DB3Client.xTableRenderClient;
+    tableClient: DB3Client.xTableRenderClient<typeof db3.userEditorView>;
     readonly: boolean;
     onChange: () => void;
 };
@@ -100,7 +100,7 @@ export enum UserDetailTabSlug {
 ////////////////////////////////////////////////////////////////
 export interface UserDetailArgs {
     user: EnrichedVerboseUser;
-    tableClient: DB3Client.xTableRenderClient;
+    tableClient: DB3Client.xTableRenderClient<typeof db3.userEditorView>;
     readonly: boolean;
     initialTab?: UserDetailTabSlug;
 }

@@ -53,7 +53,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     });
 
     // necessary to connect all the columns in the spec.
-    const eventTableClient = DB3Client.useTableRenderContext({
+    const eventTableClient = DB3Client.useLegacyTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.None,
         tableSpec: eventTableSpec,
     });
@@ -87,7 +87,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     });
 
     // necessary to connect all the columns in the spec.
-    const segmentTableClient = DB3Client.useTableRenderContext({
+    const segmentTableClient = DB3Client.useLegacyTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.None,
         tableSpec: segmentTableSpec,
     });

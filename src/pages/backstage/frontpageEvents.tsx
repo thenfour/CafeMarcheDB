@@ -22,7 +22,7 @@ const EventsList = () => {
         forFrontPageAgenda: true,
     };
 
-    const eventsClient = DB3Client.useTableRenderContext({
+    const eventsClient = DB3Client.useLegacyTableRenderContext({
         tableSpec: DB3Client.defineLegacyTableClientSpec({
             table: db3.xEventVerbose,
             columns: {

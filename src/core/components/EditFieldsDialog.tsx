@@ -17,20 +17,26 @@ import { CMButton } from "./CMCoreComponents2";
 export interface EditFieldsDialogButtonApi {
     close: () => void;
 };
-export interface EditFieldsDialogButtonProps<TRowModel extends TAnyModel> {
+export interface EditFieldsDialogButtonProps<
+    TRowModel extends TAnyModel,
+    TTableClient extends DB3Client.xTableRenderClient<any, any>,
+> {
     readonly: boolean;
-    tableSpec: DB3Client.xTableClientSpec;
+    tableSpec: TTableClient["tableSpec"];
     renderButtonChildren: () => React.ReactNode;
     onCancel: () => void;
-    onOK: (obj: TRowModel, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => void;
+    onOK: (obj: TRowModel, tableClient: TTableClient, api: EditFieldsDialogButtonApi) => void;
     onDelete?: (api: EditFieldsDialogButtonApi) => void;
     initialValue: TRowModel;
     dialogTitle: string;
     dialogDescription: React.ReactNode;
     buttonComponent?: React.ComponentType<React.ComponentProps<typeof CMButton>>;
-    tableRenderClient: DB3Client.xTableRenderClient;
+    tableRenderClient: TTableClient;
 };
-export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>({ buttonComponent, ...props }: EditFieldsDialogButtonProps<TRowModel>) => {
+export const EditFieldsDialogButton = <
+    TRowModel extends TAnyModel,
+    TTableClient extends DB3Client.xTableRenderClient<any, any>,
+>({ buttonComponent, ...props }: EditFieldsDialogButtonProps<TRowModel, TTableClient>) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
 
     const publicData = useDB3Authorization();
@@ -61,7 +67,10 @@ export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>({ buttonCom
                 setIsOpen(false);
             }}
             onOK={(obj, tableClient) => {
-                props.onOK(obj as TRowModel, tableClient, api);
+                // DB3EditObjectDialog is still row-agnostic, but it returns the
+                // same client instance and draft shape supplied to this typed
+                // wrapper.
+                props.onOK(obj as TRowModel, tableClient as TTableClient, api);
             }}
             onDelete={onDelete}
             tableRenderClient={props.tableRenderClient}

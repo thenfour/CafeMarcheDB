@@ -50,7 +50,7 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
         this.args = args;
     }
 
-    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient<any, any>) => {
         this.startsAtSchemaColumn = this.schemaColumn as db3fields.EventStartsAtField;
         this.durationMillisSchemaColumn = tableClient.schema.getColumn(this.args.durationMillisColumnName) as db3fields.GenericIntegerField;
         this.isAllDaySchemaColumn = tableClient.schema.getColumn(this.args.isAllDayColumnName) as db3fields.BoolField;
@@ -105,11 +105,13 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
         });
     };
 
-    ApplyClientToPostClient = (clientRow: TAnyModel, updateModel: TAnyModel, mode: db3.DB3RowMode) => {
-        updateModel[this.args.startsAtColumnName] = clientRow[this.args.startsAtColumnName];
-        updateModel[this.args.durationMillisColumnName] = clientRow[this.args.durationMillisColumnName];
-        updateModel[this.args.isAllDayColumnName] = clientRow[this.args.isAllDayColumnName];
-    };
+    projectMutation = (clientRow: TAnyModel) => ({
+        [this.args.startsAtColumnName]: clientRow[this.args.startsAtColumnName],
+        [this.args.durationMillisColumnName]: clientRow[this.args.durationMillisColumnName],
+        [this.args.isAllDayColumnName]: clientRow[this.args.isAllDayColumnName],
+    });
+
+    ApplyClientToPostClient = undefined;
 };
 
 

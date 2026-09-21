@@ -186,13 +186,13 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     });
 
     //necessary to connect all the columns in the spec.
-    const eventResponseTableClient = DB3Client.useTableRenderContext({
+    const eventResponseTableClient = DB3Client.useLegacyTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.None, // we're only using this for display.
         tableSpec: eventResponseTableSpec,
     });
 
     //necessary to connect all the columns in the spec.
-    const eventSegmentResponseTableClient = DB3Client.useTableRenderContext({
+    const eventSegmentResponseTableClient = DB3Client.useLegacyTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.None, // we're only using this for display.
         tableSpec: eventSegmentResponseTableSpec,
     });

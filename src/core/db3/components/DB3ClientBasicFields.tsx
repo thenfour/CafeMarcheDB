@@ -140,7 +140,7 @@ export class GenericStringColumnClient<TColumnName extends string = string>
 
     ApplyClientToPostClient = undefined;
 
-    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient<any, any>) => {
         this.typedSchemaColumn = this.schemaColumn as GenericStringField;
 
         assert(this.typedSchemaColumn.format === "raw" ||
@@ -227,7 +227,7 @@ export class MarkdownStringColumnClient<TColumnName extends string = string>
     }
     ApplyClientToPostClient = undefined;
 
-    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient<any, any>) => {
         this.typedSchemaColumn = this.schemaColumn as GenericStringField;
 
         if (this.typedSchemaColumn.format !== "markdown") {
@@ -309,7 +309,7 @@ export class GenericIntegerColumnClient<TColumnName extends string = string>
     }
     ApplyClientToPostClient = undefined;
 
-    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient<any, any>) => {
         this.GridColProps = {
             type: "string", // we will do our own number conversion
             renderEditCell: (params: GridRenderEditCellParams) => {
@@ -388,7 +388,7 @@ export class SongLengthSecondsColumnClient extends DB3ClientCore.IColumnClient {
     }
     ApplyClientToPostClient = undefined;
 
-    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient<any, any>) => {
         // TODO: this can be enhanced like renderForNewDialog
         this.GridColProps = {
             type: "string", // we will do our own number conversion
@@ -463,7 +463,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
     }
     ApplyClientToPostClient = undefined;
 
-    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient<any, any>) => {
         this.GridColProps = {
             renderCell: (params: GridRenderCellParams) => {
                 return <div className='MuiDataGrid-cellContent'><Checkbox checked={params.value} disabled /></div>;
@@ -620,7 +620,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
         fieldName={this.columnName}
     />
 
-    onSchemaConnected(tableClient: DB3ClientCore.xTableRenderClient) {
+    onSchemaConnected(tableClient: DB3ClientCore.xTableRenderClient<any, any>) {
         this.enumSchemaColumn = this.schemaColumn as db3fields.ConstEnumStringField;
 
         this.gridOptions = Object.entries(this.enumSchemaColumn.options).map(([k, v]) => {
@@ -711,7 +711,7 @@ export class IconFieldClient extends ConstEnumStringFieldClient {
     }
     ApplyClientToPostClient = undefined;
 
-    onSchemaConnected(tableClient: DB3ClientCore.xTableRenderClient) {
+    onSchemaConnected(tableClient: DB3ClientCore.xTableRenderClient<any, any>) {
         super.onSchemaConnected(tableClient);
         this.GridColProps!.renderCell = (params) => {
             return RenderMuiIcon(params.value);
@@ -869,7 +869,7 @@ export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
     }
     ApplyClientToPostClient = undefined;
 
-    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient<any, any>) => {
         this.typedSchemaColumn = this.schemaColumn as db3fields.CreatedAtField;
         this.GridColProps = {
             type: "dateTime",
@@ -948,7 +948,7 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
     }
     ApplyClientToPostClient = undefined;
 
-    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient<any, any>) => {
         //this.typedSchemaColumn = this.schemaColumn as db3fields.CreatedAtField;
         this.GridColProps = {
             type: "dateTime",
@@ -1062,7 +1062,7 @@ export class AnyColumnClient extends DB3ClientCore.IColumnClient {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const useInsertMutationClient = (schema: db3.xTable, enabled = true) => {
-    const mutationCtx = DB3ClientCore.useTableRenderContext({
+    const mutationCtx = DB3ClientCore.useLegacyTableRenderContext({
         requestedCaps: enabled
             ? DB3ClientCore.xTableClientCaps.Mutation
             : DB3ClientCore.xTableClientCaps.None,
@@ -1081,7 +1081,7 @@ export interface UseDb3QueryArgs {
     filterSpec?: CMDBTableFilterModel | undefined;
     enable?: boolean;
     requestedCaps?: DB3ClientCore.xTableClientCaps;
-    tableSpec?: DB3ClientCore.xTableClientSpec;
+    tableSpec?: DB3ClientCore.xTableClientSpec<undefined>;
 };
 
 export interface UseDb3QueryArgsWithEnable extends UseDb3QueryArgs {
@@ -1093,23 +1093,23 @@ export interface UseDb3ViewQueryArgs<TView extends db3.AnyDB3View> {
     filterSpec?: CMDBTableFilterModel | undefined;
     enable?: boolean;
     requestedCaps?: DB3ClientCore.xTableClientCaps;
-    tableSpec?: DB3ClientCore.xTableClientSpec;
+    tableSpec?: DB3ClientCore.xTableClientSpec<undefined>;
 };
 
 export interface UseDb3ViewQueryArgsWithEnable<TView extends db3.AnyDB3View> extends UseDb3ViewQueryArgs<TView> {
     enable: boolean;
 };
 
-export function useDb3Query<TView extends db3.AnyDB3View>(args: UseDb3ViewQueryArgsWithEnable<TView>): DB3ClientCore.xTableRenderClient<db3.ClientOf<TView>> | undefined;
-export function useDb3Query<TView extends db3.AnyDB3View>(args: UseDb3ViewQueryArgs<TView>): DB3ClientCore.xTableRenderClient<db3.ClientOf<TView>>;
+export function useDb3Query<TView extends db3.AnyDB3View>(args: UseDb3ViewQueryArgsWithEnable<TView>): DB3ClientCore.xTableRenderClient<TView> | undefined;
+export function useDb3Query<TView extends db3.AnyDB3View>(args: UseDb3ViewQueryArgs<TView>): DB3ClientCore.xTableRenderClient<TView>;
 // Overload: when enable is explicitly provided, return type includes undefined
-export function useDb3Query<Trow extends TAnyModel>(args: UseDb3QueryArgsWithEnable): DB3ClientCore.xTableRenderClient<Trow> | undefined;
+export function useDb3Query<Trow extends TAnyModel>(args: UseDb3QueryArgsWithEnable): DB3ClientCore.xLegacyTableRenderClient<Trow> | undefined;
 // Overload: when enable is not provided (or optional), return type never includes undefined  
-export function useDb3Query<Trow extends TAnyModel>(args: UseDb3QueryArgs): DB3ClientCore.xTableRenderClient<Trow>;
+export function useDb3Query<Trow extends TAnyModel>(args: UseDb3QueryArgs): DB3ClientCore.xLegacyTableRenderClient<Trow>;
 // Implementation
 export function useDb3Query(
     args: UseDb3QueryArgs | UseDb3ViewQueryArgs<db3.AnyDB3View>,
-): DB3ClientCore.xTableRenderClient<TAnyModel> | undefined {
+): DB3ClientCore.xTableRenderClient<any, any> | undefined {
     const { enable = true, filterSpec } = args;
     const ctx = useDashboardContext();
     if (!enable) {
@@ -1117,24 +1117,32 @@ export function useDb3Query(
     }
     const view = "view" in args ? args.view : undefined;
     const schema = "view" in args ? args.view.entity.schema : args.schema;
-    const mutationCtx = DB3ClientCore.useTableRenderContext({
+    const legacySpec = args.tableSpec ?? DB3ClientCore.defineLegacyDynamicTableClientSpec({
+        table: schema,
+        columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
+    });
+    if (view) {
+        const tableSpec = DB3ClientCore.bindLegacyTableClientSpecToView({ view, tableSpec: legacySpec });
+        return DB3ClientCore.useTableRenderContext({
+            requestedCaps: args.requestedCaps ?? DB3ClientCore.xTableClientCaps.Query,
+            tableSpec,
+            referenceProvider: ctx.referenceStore,
+            filterModel: filterSpec,
+        });
+    }
+    return DB3ClientCore.useLegacyTableRenderContext({
         requestedCaps: args.requestedCaps ?? DB3ClientCore.xTableClientCaps.Query,
-        tableSpec: args.tableSpec ?? DB3ClientCore.defineLegacyDynamicTableClientSpec({
-            table: schema,
-            columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
-        }),
-        queryView: view,
+        tableSpec: legacySpec,
         referenceProvider: ctx.referenceStore,
         filterModel: filterSpec,
     });
-    return mutationCtx;
 }
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const useDb3Update = <Trow extends TAnyModel,>(schema: db3.xTable) => {
     const ctx = useDashboardContext();
-    const mutationCtx = DB3ClientCore.useTableRenderContext<Trow>({
+    const mutationCtx = DB3ClientCore.useLegacyTableRenderContext<Trow>({
         requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
         tableSpec: DB3ClientCore.defineLegacyDynamicTableClientSpec({
             table: schema,

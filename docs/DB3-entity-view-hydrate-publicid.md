@@ -99,9 +99,13 @@ factory, verifies the resulting runtime member, and preserves object insertion
 order in `xTable.columns`. The keyed field map is therefore the compile-time
 authority while `xTable.columns` remains the ordered runtime representation. A
 field whose database/DTO value differs from its client value declares a
-`DB3ReadCodec<Transport, Client>` next to the runtime conversion.
-`DB3SchemaClientModel<Dto, Fields>` applies those declarations to a DTO while
-preserving its optional members. The historical `new xTable({ columns })`
+`DB3FieldCodec<ReadTransport, Client, WriteTransport>`. Its `decode()` and
+`encode()` implementations are the shared runtime authority, and its strict
+write schema describes the command-side value. `DB3SchemaClientModel<Dto,
+Fields>` applies decoding to a DTO while preserving its optional members;
+`DB3SchemaMutationModel<Client, Fields>` derives the corresponding same-key
+command values while allowing authorization to omit fields. The historical
+`new xTable({ columns })`
 constructor shape remains only as an explicit runtime-only compatibility path;
 in-tree schema declarations no longer use it.
 
@@ -407,8 +411,8 @@ similar to `useTableRenderContext()`, plus a CRUD-enabled view. It:
 - queries and hydrates through the supplied view;
 - infers its row type as `ClientOf<TView>` and its identity as
   `EntityIdOf<EntityOf<TView>>`;
-- uses the existing TableClient/client-column preparation behavior for create
-  and update values;
+- uses typed client-column mutation projections followed by field codec
+  encoding for create and update values;
 - computes an update patch from the prepared previous and next values;
 - invokes the view's generated commands; and
 - owns the conventional refetch and invalidation lifecycle.
@@ -424,10 +428,21 @@ at runtime use `defineLegacyDynamicTableClientSpec()` and receive no static key
 validation. Direct construction is deprecated. A runtime guard also rejects
 pairing a view-bound spec with a different CRUD view.
 
-Propagating the spec's `TView` through the general `useTableRenderContext()`
-return type remains separate work; until then that legacy hook still defaults
-its `items` to `TAnyModel[]`. The command-backed CRUD hook already returns
-`xTableRenderClient<ClientOf<TView>>`.
+`TView` propagates from the spec through `useTableRenderContext()` and
+`xTableRenderClient<TView>`. The spec's view is the single runtime source for
+the query `viewID` and hydration, so `items` is `ClientOf<TView>[]` without a
+caller-supplied row generic. Table-only callers use the separately named
+`useLegacyTableRenderContext()` and retain the old caller-declared row type.
+`bindLegacyTableClientSpecToView()` is the explicit migration adapter for an
+existing table-only column set; specs produced through that adapter retain a
+runtime legacy marker rather than silently becoming new typed specs.
+
+Mutation preparation follows three distinct stages: a client column returns a
+mutation patch (composite date-range columns can return several fields), xTable
+field codecs encode rich values such as `ColorPaletteEntry`, and authorization
+may remove keys. `prepareMutation()` therefore returns the view-derived partial
+command-value model. The old mutable `ApplyClientToPostClient` fallback is
+accepted only by an explicitly legacy spec.
 
 `DB3EditGrid` should use that hook internally. The ordinary call site remains
 limited to presentation metadata and the semantic view:
@@ -728,11 +743,12 @@ a per-row compatibility flag or a second lookup mode.
 - `defineView()`, `DbPayloadOf<>`, `DtoOf<>`, `ClientOf<>`,
   `ClientEntityOf<>`, and typed `useDb3Query({ view })` establish the intended
   inference chain without result casts.
-- `defineTable()`, field `DB3ReadCodec`s, and
-  `DB3SchemaClientModel<>` establish the typed schema-to-client link for the
-  `InstrumentFunctionalGroup` pilot. Its `color` member is inferred as
-  `ColorPaletteEntry | null | undefined`, while its table keys and public-ID
-  identity remain statically checked.
+- `defineTable()`, field `DB3FieldCodec`s, `DB3SchemaClientModel<>`, and
+  `DB3SchemaMutationModel<>` establish both directions of the typed schema link
+  for the `InstrumentFunctionalGroup` pilot. Its hydrated `color` member is
+  inferred as `ColorPaletteEntry | null | undefined`; its prepared and generated
+  command value is `string | null | undefined`; and its public-ID identity
+  remains statically checked through the TableClient.
 - All in-tree `xTable` declarations now use keyed `makeColumnSet()` factories,
   and fixed-name TableClient declarations use keyed client factories. Reusable
   column sets follow the same contract. Composite event date-range columns are
@@ -1007,6 +1023,9 @@ direct mutation calls.
   unbounded object graph.
 - Hydration is deterministic, synchronous, and free of I/O.
 - Hydration traverses only the finite graph declared by its named view.
+- Do not pretend arbitrary view hydration is reversible. Use field codecs only
+  for genuinely reversible values and named command serializers for semantic or
+  aggregate models.
 - Preserve the difference between absent, null, and empty.
 - Prefer semantic client values over persistence-shaped bags of fields.
 - Do not use a hydrated read model as an implicit write model.

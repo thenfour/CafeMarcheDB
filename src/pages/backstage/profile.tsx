@@ -58,7 +58,12 @@ const MainContent = () => {
             feature: ActivityFeature.profile_edit,
         });
         try {
-            await editCommands.update(updateObj, client.items[0]!);
+            // DB3EditRowButton still exposes a legacy untyped draft callback;
+            // the backing client/view prove the expected hydrated row type.
+            await editCommands.update(
+                updateObj as db3.ClientOf<typeof db3.userEditorView>,
+                client.items[0]!,
+            );
             showSnackbar({ severity: "success", children: "updated" });
         } catch (error) {
             console.log(error);

@@ -68,7 +68,7 @@ export const FileBreadcrumbs = (props: FileBreadcrumbProps) => {
 interface FileDetailProps {
     file: EnrichedFile<db3.FilePayload>;
     readonly: boolean;
-    tableClient: DB3Client.xTableRenderClient<db3.FilePayload>;
+    tableClient: DB3Client.xLegacyTableRenderClient<db3.FilePayload>;
 };
 
 
@@ -259,7 +259,7 @@ const MyComponent = ({ fileId }: { fileId: number | null }) => {
 
     queryArgs.filterModel!.tableParams!.fileId = fileId;
 
-    const tableClient = DB3Client.useTableRenderContext<db3.FilePayload>(queryArgs);
+    const tableClient = DB3Client.useLegacyTableRenderContext<db3.FilePayload>(queryArgs);
     if (tableClient.items.length > 1) throw new Error(`db returned too many files; issues with filtering? exploited slug/id? count=${tableClient.items.length}`);
     if (tableClient.items.length < 1) throw new Error(`File not found`);
 

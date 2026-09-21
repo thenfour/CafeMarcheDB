@@ -169,11 +169,35 @@ const AutoAssignInstrumentTester = () => {
     });
 
 
-    const tableClient = DB3Client.useTableRenderContext({
+    const tableClient = DB3Client.useLegacyTableRenderContext({
         tableSpec,
         requestedCaps: DB3Client.xTableClientCaps.Query,
     });
     const allInstruments = tableClient.items as Prisma.InstrumentGetPayload<{}>[];
+
+
+    // const tableSpec = DB3Client.defineTableClientSpec({
+    //     view: db3.instrumentDashboardView,
+    //     columns: {
+    //         id: columnName => new DB3Client.PKColumnClient({ columnName }),
+    //         name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
+    //         description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+    //         autoAssignFileLeafRegex: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200, fieldCaption: "Regex" }),
+    //         sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
+    //         functionalGroup: columnName => new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupClientPayload>({
+    //             columnName,
+    //             cellWidth: 200,
+    //             selectionView: db3.instrumentFunctionalGroupEditorView,
+    //         }),
+    //         instrumentTags: columnName => new DB3Client.TagsFieldClient<db3.InstrumentTagAssociationPayload>({ columnName, cellWidth: 220, allowDeleteFromCell: false }),
+    //     },
+    // });
+    // const tableClient = DB3Client.useTableRenderContext({
+    //     tableSpec,
+    //     requestedCaps: DB3Client.xTableClientCaps.Query,
+    // });
+    // const allInstruments = tableClient.items;// as Prisma.InstrumentGetPayload<{}>[];
+
 
     const lines = text.split('\n').filter(l => !IsNullOrWhitespace(l));
     const results: { leaf: string, instruments: Prisma.InstrumentGetPayload<{}>[] }[] = [];

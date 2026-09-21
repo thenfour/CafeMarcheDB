@@ -448,7 +448,7 @@ export const FileEditor = (props: FileEditorProps) => {
             taggedWikiPages: columnName => new DB3Client.TagsFieldClient<db3.FileWikiPageTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
         },
     });
-    const tableRenderClient = DB3Client.useTableRenderContext({
+    const tableRenderClient = DB3Client.useLegacyTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.None,
         tableSpec,
     });

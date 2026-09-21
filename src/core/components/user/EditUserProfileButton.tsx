@@ -1,5 +1,5 @@
 import type { xTableRenderClient } from "src/core/db3/components/DB3ClientCore";
-import { useCrudViewCommands } from "src/core/db3/components/useCrudViewCommands";
+import { useLegacyCrudViewCommands } from "src/core/db3/components/useCrudViewCommands";
 import { userEditorView } from "src/core/db3/shared/entities/user/userViews";
 import { CMUserMgmtButton } from "../CMCoreComponents2";
 import { EditFieldsDialogButton } from "../EditFieldsDialog";
@@ -8,14 +8,14 @@ import type { EnrichedVerboseUser } from "./UserListItem";
 
 type EditUserProfileButtonProps = {
     readonly: boolean;
-    tableClient: xTableRenderClient;
+    tableClient: xTableRenderClient<typeof userEditorView>;
     user: EnrichedVerboseUser;
     onOK: () => void;
 };
 
 export const EditUserProfileButton = ({ readonly, tableClient, user, onOK }: EditUserProfileButtonProps) => {
     const snackbar = useSnackbar();
-    const editCommands = useCrudViewCommands({
+    const editCommands = useLegacyCrudViewCommands({
         view: userEditorView,
         tableClient,
     });

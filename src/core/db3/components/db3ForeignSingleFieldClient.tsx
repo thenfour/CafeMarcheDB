@@ -270,10 +270,12 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
         this.selectStyle = args.selectStyle || "dialog";
     }
 
-    ApplyClientToPostClient = (clientRow: TAnyModel, updateModel: TAnyModel, mode: db3.DB3RowMode) => {
-        updateModel[this.typedSchemaColumn.fkidMember!] = clientRow[this.typedSchemaColumn.fkidMember!];
-        updateModel[this.columnName] = clientRow[this.columnName];
-    };
+    projectMutation = (clientRow: TAnyModel) => ({
+        [this.typedSchemaColumn.fkidMember!]: clientRow[this.typedSchemaColumn.fkidMember!],
+        [this.columnName]: clientRow[this.columnName],
+    });
+
+    ApplyClientToPostClient = undefined;
 
     defaultRenderAsChip = (args: RenderAsChipParams<TForeign>) => {
         if (!args.value) {
@@ -323,7 +325,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
         value: <>{this.defaultRenderAsChip({ value: params.value, colorVariant: StandardVariationSpec.Strong })}</>,
     });
 
-    onSchemaConnected = (tableClient: xTableRenderClient) => {
+    onSchemaConnected = (tableClient: xTableRenderClient<any, any>) => {
         this.typedSchemaColumn = this.schemaColumn as db3.ForeignSingleField<TForeign>;
 
 

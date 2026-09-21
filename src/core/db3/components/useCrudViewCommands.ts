@@ -1,16 +1,19 @@
 'use client';
 
-import type { TAnyModel } from "@/shared/rootroot";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
-import type { AnyDB3CrudView } from "../db3";
+import type { TAnyModel } from "@/shared/rootroot";
+import type { AnyDB3CrudView, ClientOf, EntityIdOf, EntityOf } from "../db3";
 import { createEntityCrudUpdatePatch } from "../db3";
 import type { xTableRenderClient } from "./DB3ClientCore";
 import { useDB3Command } from "./useDB3Command";
 
-export interface CrudViewCommandClient {
-    create(row: TAnyModel): Promise<unknown>;
-    update(row: TAnyModel, previousRow: TAnyModel): Promise<unknown>;
-    delete(identity: number | string): Promise<unknown>;
+export interface CrudViewCommandClient<
+    TView extends AnyDB3CrudView = AnyDB3CrudView,
+    TRow extends TAnyModel = ClientOf<TView>,
+> {
+    create(row: Partial<TRow>): Promise<unknown>;
+    update(row: TRow, previousRow: TRow): Promise<unknown>;
+    delete(identity: EntityIdOf<EntityOf<TView>>): Promise<unknown>;
 }
 
 /**
@@ -18,10 +21,16 @@ export interface CrudViewCommandClient {
  * for its established editor-value preparation and query refresh behavior.
  * The client's query view may be richer than the CRUD view's strict write DTO.
  */
-export function useCrudViewCommands(args: {
-    readonly view: AnyDB3CrudView;
-    readonly tableClient: xTableRenderClient;
-}): CrudViewCommandClient {
+export function useCrudViewCommands<
+    TView extends AnyDB3CrudView,
+    TTableClient extends xTableRenderClient<any, any>,
+>(args: {
+    readonly view: TView;
+    readonly tableClient: TTableClient;
+}): CrudViewCommandClient<
+    TView,
+    TTableClient extends xTableRenderClient<TView, any> ? ClientOf<TView> : TAnyModel
+> {
     // Legacy read schemas can select a richer shape under a distinct tableID
     // (for example xEventArgs_Verbose) while still describing the same
     // persistence table and editor-value conversion contract.
@@ -69,4 +78,18 @@ export function useCrudViewCommands(args: {
             return result;
         },
     };
+}
+
+/**
+ * Migration adapter for editors whose local enriched row is intentionally not
+ * the client model declared by their CRUD view.
+ */
+export function useLegacyCrudViewCommands<TView extends AnyDB3CrudView>(args: {
+    readonly view: TView;
+    readonly tableClient: xTableRenderClient<any, any>;
+}): CrudViewCommandClient<TView, TAnyModel> {
+    const commands = useCrudViewCommands(args);
+    // The legacy contract deliberately erases only the editor-row parameter;
+    // command identity and runtime preparation still come from the typed view.
+    return commands as CrudViewCommandClient<TView, TAnyModel>;
 }

@@ -1457,7 +1457,7 @@ type SetlistPlannerDocumentEditorProps = {
     costCalcConfig: SetlistPlanCostPenalties;
     mutator: SetlistPlanMutator;
     colorScheme: SetlistPlannerColorScheme;
-    groupTableClient: DB3Client.xTableRenderClient<db3.SetlistPlanGroupPayload>
+    groupTableClient: DB3Client.xTableRenderClient<typeof db3.setlistPlanGroupEditorView>
     onSave: (doc: SetlistPlan) => void;
     onCancel: () => void;
     onDelete: () => void;
