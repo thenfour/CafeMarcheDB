@@ -57,7 +57,7 @@ const UserListContent: React.FC<{}> = () => {
 
     return <DB3EditGrid
         tableSpec={tableSpec}
-        legacyMutationTransport
+        view={db3.userEditorView}
         renderExtraActions={extraActions}
         defaultSortModel={[{ field: "id", sort: "desc" }]}
     />;

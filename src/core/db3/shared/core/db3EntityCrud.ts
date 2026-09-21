@@ -5,6 +5,7 @@ import { z } from "zod";
 import { defineCommand, type AnyDB3Command } from "./db3Command";
 import type { AnyDB3Entity, EntityIdOf } from "./db3Entity";
 
+// is this a duplication?
 const identityResultSchema = <TIdentitySchema extends z.ZodTypeAny>(
     identitySchema: TIdentitySchema,
 ) => z.object({
@@ -57,6 +58,43 @@ interface EntityCreateUpdateCommandArgs<
     updateFieldsSchema: TUpdateFieldsSchema;
 }
 
+function createEntityUpdateSchema<
+    TEntity extends AnyDB3Entity,
+    TIdentitySchema extends z.ZodType<EntityIdOf<TEntity>>,
+    TUpdateFieldsSchema extends z.AnyZodObject,
+>(
+    entity: TEntity,
+    identitySchema: TIdentitySchema,
+    updateFieldsSchema: TUpdateFieldsSchema,
+) {
+    requireWritableSchemasDoNotOwnIdentity(entity, "update schema", updateFieldsSchema);
+
+    const patchSchema: z.ZodType<Partial<z.infer<TUpdateFieldsSchema>>> = updateFieldsSchema
+        .strict()
+        .partial()
+        .superRefine((patch, ctx) => {
+            const presentEntries = Object.entries(patch);
+            if (presentEntries.length === 0) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Update patch must contain at least one field.",
+                });
+            }
+            for (const [fieldName, value] of presentEntries) {
+                if (value !== undefined) continue;
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: [fieldName],
+                    message: "Patch fields cannot be undefined; omit unchanged fields instead.",
+                });
+            }
+        });
+    return z.object({
+        identity: identitySchema,
+        patch: patchSchema,
+    }).strict();
+}
+
 /**
  * Defines the ordinary single-row write contract for an entity.
  *
@@ -78,38 +116,14 @@ export function defineEntityCreateUpdateCommands<
 >) {
     requireWritableSchemasDoNotOwnIdentity(args.entity, "create schema", args.createSchema);
 
-    // when updating, the patch object is separate from the "what to update" identity.
-    // make sure the patch doesn't include it.
-    requireWritableSchemasDoNotOwnIdentity(args.entity, "update schema", args.updateFieldsSchema);
-
     // Zod's methods on the AnyZodObject constraint widen the inferred shape;
     // preserve the caller's concrete DTO type while tightening runtime parsing.
     const createSchema = args.createSchema.strict() as TCreateSchema;
-    const patchSchema: z.ZodType<Partial<z.infer<TUpdateFieldsSchema>>> = args
-        .updateFieldsSchema
-        .strict()
-        .partial()
-        .superRefine((patch, ctx) => {
-            const presentEntries = Object.entries(patch);
-            if (presentEntries.length === 0) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message: "Update patch must contain at least one field.",
-                });
-            }
-            for (const [fieldName, value] of presentEntries) {
-                if (value !== undefined) continue;
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: [fieldName],
-                    message: "Patch fields cannot be undefined; omit unchanged fields instead.",
-                });
-            }
-        });
-    const updateSchema = z.object({
-        identity: args.identitySchema,
-        patch: patchSchema,
-    }).strict();
+    const updateSchema = createEntityUpdateSchema(
+        args.entity,
+        args.identitySchema,
+        args.updateFieldsSchema,
+    );
     const resultSchema = identityResultSchema(args.identitySchema);
     const invalidation = {
         mode: "caller" as const,
@@ -138,6 +152,7 @@ export function defineEntityCreateUpdateCommands<
     } as const;
 }
 
+// 
 export function defineEntityCrudCommands<
     TEntity extends AnyDB3Entity,
     TIdentitySchema extends z.ZodType<EntityIdOf<TEntity>>,
@@ -173,25 +188,92 @@ export function defineEntityCrudCommands<
     } as const;
 }
 
-export interface AnyDB3EntityCreateUpdateCommands {
-    readonly entity: AnyDB3Entity;
-    readonly identitySchema: z.ZodTypeAny;
-    readonly createCommand: AnyDB3Command;
-    readonly updateCommand: AnyDB3Command;
+// 
+export function defineEntityUpdateDeleteCommands<
+    TEntity extends AnyDB3Entity,
+    TIdentitySchema extends z.ZodType<EntityIdOf<TEntity>>,
+    TUpdateFieldsSchema extends z.AnyZodObject,
+>(args: {
+    entity: TEntity;
+    identitySchema: TIdentitySchema;
+    updateFieldsSchema: TUpdateFieldsSchema;
+}) {
+    const updateSchema = createEntityUpdateSchema(
+        args.entity,
+        args.identitySchema,
+        args.updateFieldsSchema,
+    );
+    const deleteSchema = z.object({
+        identity: args.identitySchema,
+    }).strict();
+    const resultSchema = identityResultSchema(args.identitySchema);
+    const invalidation = {
+        mode: "caller" as const,
+        entityIDs: [args.entity.entityID],
+    };
+
+    return {
+        entity: args.entity,
+        identitySchema: args.identitySchema,
+        updateCommand: defineCommand({
+            commandID: `${args.entity.entityID}_Update`,
+            entity: args.entity,
+            dtoSchema: updateSchema,
+            resultSchema,
+            serialize: (input: z.infer<typeof updateSchema>) => input,
+            invalidation,
+        }),
+        deleteType: getDeleteType(args.entity),
+        deleteCommand: defineCommand({
+            commandID: `${args.entity.entityID}_Delete`,
+            entity: args.entity,
+            dtoSchema: deleteSchema,
+            resultSchema,
+            serialize: (input: z.infer<typeof deleteSchema>) => input,
+            invalidation,
+        }),
+    } as const;
 }
 
-export interface AnyDB3EntityCrudCommands extends AnyDB3EntityCreateUpdateCommands {
+// basic version supports only update
+export interface AnyDB3EntityUpdateCommands {
+    // src info
+    readonly entity: AnyDB3Entity;
+    readonly identitySchema: z.ZodTypeAny;
+
+    readonly updateCommand: AnyDB3Command; // the command
+}
+
+export interface AnyDB3EntityCreateUpdateCommands extends AnyDB3EntityUpdateCommands {
+    readonly createCommand: AnyDB3Command;
+}
+
+export interface AnyDB3EntityDeleteCommands {
     readonly deleteType: "softWhenPossible" | "hard";
     readonly deleteCommand: AnyDB3Command;
 }
 
+export interface AnyDB3EntityCrudCommands
+    extends AnyDB3EntityCreateUpdateCommands, AnyDB3EntityDeleteCommands { }
+
+export interface AnyDB3EntityUpdateDeleteCommands
+    extends AnyDB3EntityUpdateCommands, AnyDB3EntityDeleteCommands { }
+
 export type AnyDB3EntityEditorCommands =
     | AnyDB3EntityCreateUpdateCommands
-    | AnyDB3EntityCrudCommands;
+    | AnyDB3EntityCrudCommands
+    | AnyDB3EntityUpdateDeleteCommands;
+
+// this i find hacky; we have distinct types; we should probably have a flags member or `hasCreateCommand` and `hasDeleteCommand` methods instead of relying on `in` checks
+export function hasGeneratedCreateCommand(
+    commands: AnyDB3EntityEditorCommands,
+): commands is AnyDB3EntityCreateUpdateCommands {
+    return "createCommand" in commands;
+}
 
 export function hasGeneratedDeleteCommand(
     commands: AnyDB3EntityEditorCommands,
-): commands is AnyDB3EntityCrudCommands {
+): commands is AnyDB3EntityEditorCommands & AnyDB3EntityDeleteCommands {
     return "deleteCommand" in commands;
 }
 

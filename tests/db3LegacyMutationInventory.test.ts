@@ -62,11 +62,8 @@ const legacyMutationCallSites: Record<string, InventoryEntry> = {
 };
 
 const legacyGridSites: Record<string, LegacyWriterCategory> = {
-    "src/pages/backstage/adminUsers.tsx": "ordinary-grid",
     "src/pages/backstage/editEventAttendances.tsx": "nested-row",
-    "src/pages/backstage/editEvents.tsx": "ordinary-grid",
     "src/pages/backstage/editEventSegments.tsx": "nested-row",
-    "src/pages/backstage/editFiles.tsx": "ordinary-grid",
     "src/pages/backstage/editSongCredits.tsx": "nested-row",
     "src/pages/backstage/userInstruments.tsx": "relationship",
 };

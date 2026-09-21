@@ -29,5 +29,4 @@ export const wikiPageTagEditorView = defineCrudView({
     selection: wikiPageTagEditorSelection,
     dtoSchema: WikiPageTagEditorDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.id,
 });

@@ -60,5 +60,4 @@ export const roleEditorView = defineCreateUpdateView({
     selection: roleEditorSelection,
     dtoSchema: RoleEditorDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.id,
 });

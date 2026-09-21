@@ -63,10 +63,16 @@ const ClipboardControls = (props: ClipboardControlsProps) => {
 
 
 
-function CustomToolbar({ onNewClicked, tableSpec }: { onNewClicked: any, tableSpec: DB3Client.xTableClientSpec }) {
+function CustomToolbar({ onNewClicked, tableSpec, disableCreate }: {
+    onNewClicked: any,
+    tableSpec: DB3Client.xTableClientSpec,
+    disableCreate?: boolean,
+}) {
     return (
         <GridToolbarContainer>
-            <CMButton startIcon={<AddIcon />} onClick={onNewClicked}>insert {tableSpec.args.table.tableName}</CMButton>
+            {!disableCreate && <CMButton startIcon={<AddIcon />} onClick={onNewClicked}>
+                insert {tableSpec.args.table.tableName}
+            </CMButton>}
 
             {/* <GridToolbarColumnsButton /> */}
             <GridToolbarFilterButton />
@@ -89,6 +95,7 @@ type DB3EditGridBaseProps = {
     readOnly?: boolean,
     defaultSortModel?: GridSortModel,
     includeDeleted?: boolean,
+    disableCreate?: boolean,
     onUpdateRow?: (newRow: TAnyModel, oldRow: TAnyModel, client: DB3Client.xTableRenderClient) => Promise<TAnyModel>;
     isCellEditable?: (row: TAnyModel, field: string) => boolean;
 };
@@ -253,6 +260,7 @@ function DB3CrudEditGrid({ view, tableSpec, ...props }: DB3EditGridProps & { vie
     });
     return <DB3EditGridImpl
         {...props}
+        disableCreate={props.disableCreate || !db3.hasGeneratedCreateCommand(view.crud)}
         tableSpec={tableSpec}
         tableClient={tableClient}
         queryState={queryState}
@@ -583,6 +591,7 @@ function DB3EditGridImpl({
                 toolbar: {
                     onNewClicked: () => { setShowingNewDialog(true); },
                     tableSpec: tableSpec,
+                    disableCreate: props.disableCreate,
                 }
             }}
             getRowHeight={() => 'auto'}

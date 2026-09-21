@@ -185,7 +185,6 @@ export const fileSearchView = defineView({
                 wikiPage: association.wikiPage,
             }]),
     }),
-    getIdentity: client => client.id,
 });
 
 export type FileSearchDto = DtoOf<typeof fileSearchView>;

@@ -1,9 +1,14 @@
-import { getDB3CrudViewForCommand, hasGeneratedDeleteCommand } from "../db3";
+import {
+    getDB3CrudViewForCommand,
+    hasGeneratedCreateCommand,
+    hasGeneratedDeleteCommand,
+} from "../db3";
 import type { AnyDB3CommandHandler } from "./db3CommandCore";
 import { DB3CommandError } from "./db3CommandCore";
 import {
     defineEntityCreateUpdateCommandHandlers,
     defineEntityCrudCommandHandlers,
+    defineEntityUpdateDeleteCommandHandlers,
 } from "./db3EntityCrudCommand";
 import { eventSongListSaveCommandHandler } from "./commands/eventSongListSaveCommand";
 import { rolePermissionSetCommandHandler } from "./commands/rolePermissionSetCommand";
@@ -37,9 +42,11 @@ function getGeneratedCrudCommandHandler(commandID: string): AnyDB3CommandHandler
 
     const view = getDB3CrudViewForCommand(commandID);
     if (!view) return undefined;
-    const handlers = hasGeneratedDeleteCommand(view.crud)
-        ? defineEntityCrudCommandHandlers(view.crud)
-        : defineEntityCreateUpdateCommandHandlers(view.crud);
+    const handlers = hasGeneratedCreateCommand(view.crud)
+        ? (hasGeneratedDeleteCommand(view.crud)
+            ? defineEntityCrudCommandHandlers(view.crud)
+            : defineEntityCreateUpdateCommandHandlers(view.crud))
+        : defineEntityUpdateDeleteCommandHandlers(view.crud);
     for (const handler of handlers.all) {
         registerDB3CommandHandler(handler);
     }

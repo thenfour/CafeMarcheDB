@@ -1,5 +1,4 @@
 import { CMButton } from "@/src/core/components/CMCoreComponents2";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { BlitzPage } from "@blitzjs/next";
 import DashboardLayout from "@components/dashboard/DashboardLayout";
 import { EventTableClientColumns } from "@components/event/EventComponentsBase";
@@ -27,8 +26,6 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
 };
 
 const MainContent = () => {
-    const dashboardContext = useDashboardContext();
-
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEvent,
         columns: [
@@ -62,7 +59,7 @@ const MainContent = () => {
         <SettingMarkdown setting="editEvents_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
-            legacyMutationTransport
+            view={db3.eventEditorView}
             renderExtraActions={(args) => {
                 return <ExtraActions gridArgs={args} />
             }}

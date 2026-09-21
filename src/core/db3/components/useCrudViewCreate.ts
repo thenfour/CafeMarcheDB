@@ -68,7 +68,11 @@ export interface CrudViewCreateToken<TView extends db3.AnyDB3CrudView> {
 export function useCrudViewCreate<TView extends db3.AnyDB3CrudView>(
     view: TView | undefined,
 ): CrudViewCreateToken<TView> | undefined {
-    const command = useDB3Command(view?.crud.createCommand);
+    const command = useDB3Command(
+        view && db3.hasGeneratedCreateCommand(view.crud)
+            ? view.crud.createCommand
+            : undefined,
+    );
     const dashboard = useDashboardContext();
     if (!view || !command) return undefined;
 

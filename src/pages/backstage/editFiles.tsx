@@ -5,6 +5,12 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 
+const makeDisplayOnlyColumn = <T extends DB3Client.IColumnClient>(column: T): T => {
+    column.editable = false;
+    column.renderForNewDialog = undefined;
+    column.ApplyClientToPostClient = () => { };
+    return column;
+};
 
 const MainContent = () => {
     const tableSpec = new DB3Client.xTableClientSpec({
@@ -12,14 +18,14 @@ const MainContent = () => {
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.GenericStringColumnClient({ columnName: "fileLeafName", cellWidth: 150 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "storedLeafName", cellWidth: 150 }),
+            makeDisplayOnlyColumn(new DB3Client.GenericStringColumnClient({ columnName: "storedLeafName", cellWidth: 150 })),
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
-            new DB3Client.CreatedAtColumn({ columnName: "uploadedAt", cellWidth: 150 }),
+            makeDisplayOnlyColumn(new DB3Client.CreatedAtColumn({ columnName: "uploadedAt", cellWidth: 150 })),
             new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
-            new DB3Client.GenericIntegerColumnClient({ columnName: "sizeBytes", cellWidth: 80 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "customData", cellWidth: 150 }),
+            makeDisplayOnlyColumn(new DB3Client.GenericIntegerColumnClient({ columnName: "sizeBytes", cellWidth: 80 })),
+            makeDisplayOnlyColumn(new DB3Client.GenericStringColumnClient({ columnName: "customData", cellWidth: 150 })),
 
-            new DB3Client.ForeignSingleFieldClient({ columnName: "uploadedByUser", cellWidth: 120, }),
+            makeDisplayOnlyColumn(new DB3Client.ForeignSingleFieldClient({ columnName: "uploadedByUser", cellWidth: 120, })),
             new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, }),
 
             new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
@@ -35,7 +41,7 @@ const MainContent = () => {
         <SettingMarkdown setting="EditFilesPage_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
-            legacyMutationTransport
+            view={db3.fileEditorView}
         />
     </>;
 };

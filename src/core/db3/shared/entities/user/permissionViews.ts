@@ -33,5 +33,4 @@ export const permissionEditorView = defineCreateUpdateView({
     selection: permissionEditorSelection,
     dtoSchema: PermissionEditorDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.id,
 });

@@ -4,6 +4,8 @@ import { z as zod } from "zod";
 import {
     defineEntityCreateUpdateCommands,
     defineEntityCrudCommands,
+    defineEntityUpdateDeleteCommands,
+    hasGeneratedCreateCommand,
     hasGeneratedDeleteCommand,
     type AnyDB3EntityEditorCommands,
 } from "./db3EntityCrud";
@@ -104,8 +106,8 @@ function createPreparedMutationSchema(
 
 function registerCrudView(view: AnyDB3CrudView): void {
     const commands = [
-        view.crud.createCommand,
         view.crud.updateCommand,
+        ...(hasGeneratedCreateCommand(view.crud) ? [view.crud.createCommand] : []),
         ...(hasGeneratedDeleteCommand(view.crud) ? [view.crud.deleteCommand] : []),
     ];
     for (const command of commands) {
@@ -135,7 +137,6 @@ export function defineCrudView<
     selection: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
     dtoSchema: TDtoSchema;
     hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
-    getIdentity: (client: TClient) => EntityIdOf<TEntity>;
 }) {
     const view = defineView({
         ...args,
@@ -179,7 +180,6 @@ export function defineCreateUpdateView<
     selection: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
     dtoSchema: TDtoSchema;
     hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
-    getIdentity: (client: TClient) => EntityIdOf<TEntity>;
 }) {
     if (args.entity.schema.deletePolicy !== "disabled") {
         // well, we *could* allow this; if a client view wants to restrict deletion go ahead.
@@ -202,6 +202,52 @@ export function defineCreateUpdateView<
         entity: args.entity,
         identitySchema: createIdentitySchema(args.entity),
         createSchema,
+        updateFieldsSchema,
+    });
+    const crudView = Object.assign(view, { crud }) as DB3CrudView<
+        TEntity,
+        TSelection,
+        TDtoSchema,
+        TClient,
+        typeof crud
+    >;
+    registerCrudView(crudView as unknown as AnyDB3CrudView);
+    return crudView;
+}
+
+/**
+ * Defines a named editor view whose entity can be updated and deleted, while
+ * creation remains owned by a separate workflow (for example file upload).
+ */
+export function defineUpdateDeleteView<
+    TEntity extends AnyDB3Entity,
+    TSelection,
+    TDtoSchema extends z.AnyZodObject,
+    TClient extends TAnyModel,
+>(args: {
+    viewID: string;
+    entity: TEntity;
+    selection: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
+    dtoSchema: TDtoSchema;
+    hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
+    getIdentity: (client: TClient) => EntityIdOf<TEntity>;
+}) {
+    if (args.entity.schema.deletePolicy === "disabled") {
+        throw new Error(
+            `${args.entity.entityID} does not permit deletion; define a create/update view instead.`,
+        );
+    }
+    const view = defineView({
+        ...args,
+        hydrate: (dto, references) => args.hydrate(
+            applyTableSchemaDbToClient(args.entity, dto, "view"),
+            references,
+        ),
+    });
+    const updateFieldsSchema = createPreparedMutationSchema(args.entity, args.dtoSchema, "update");
+    const crud = defineEntityUpdateDeleteCommands({
+        entity: args.entity,
+        identitySchema: createIdentitySchema(args.entity),
         updateFieldsSchema,
     });
     const crudView = Object.assign(view, { crud }) as DB3CrudView<

@@ -2,6 +2,7 @@ import { Prisma } from "db";
 import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } from "../../core/db3View";
+import { EventTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { permissionEntity } from "../user/userEntities";
 import { hydrateEventDateRange } from "./eventDateRange";
 import { eventEntity, eventStatusEntity, eventTagEntity, eventTypeEntity } from "./eventEntities";
@@ -15,6 +16,19 @@ const EventTypeEditorDtoSchema = z.object({
     significance: z.string().nullable().optional(),
     iconName: z.string().nullable().optional(),
     isDeleted: z.boolean().optional(),
+});
+
+const eventTypeEditorSelection = Prisma.validator<Prisma.EventTypeDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        significance: true,
+        iconName: true,
+        isDeleted: true,
+    },
 });
 
 const EventStatusEditorDtoSchema = z.object({
@@ -36,19 +50,6 @@ const EventTagEditorDtoSchema = z.object({
     sortOrder: z.number().int().optional(),
     significance: z.string().nullable().optional(),
     visibleOnFrontpage: z.boolean().optional(),
-});
-
-const eventTypeEditorSelection = Prisma.validator<Prisma.EventTypeDefaultArgs>()({
-    select: {
-        id: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        significance: true,
-        iconName: true,
-        isDeleted: true,
-    },
 });
 
 const eventStatusEditorSelection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
@@ -82,7 +83,6 @@ export const eventTypeEditorView = defineCrudView({
     selection: eventTypeEditorSelection,
     dtoSchema: EventTypeEditorDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.id,
 });
 
 export const eventStatusEditorView = defineCrudView({
@@ -91,7 +91,6 @@ export const eventStatusEditorView = defineCrudView({
     selection: eventStatusEditorSelection,
     dtoSchema: EventStatusEditorDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.id,
 });
 
 export const eventTagEditorView = defineCrudView({
@@ -100,7 +99,203 @@ export const eventTagEditorView = defineCrudView({
     selection: eventTagEditorSelection,
     dtoSchema: EventTagEditorDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.id,
+});
+
+const EventEditorTypeDtoSchema = z.object({
+    id: z.number().int(),
+    text: z.string().optional(),
+    description: z.string().optional(),
+    color: z.string().nullable().optional(),
+    sortOrder: z.number().int().optional(),
+    significance: z.string().nullable().optional(),
+    iconName: z.string().nullable().optional(),
+});
+
+const EventEditorStatusDtoSchema = z.object({
+    id: z.number().int(),
+    label: z.string().optional(),
+    description: z.string().optional(),
+    color: z.string().nullable().optional(),
+    sortOrder: z.number().int().optional(),
+    significance: z.string().nullable().optional(),
+    iconName: z.string().nullable().optional(),
+});
+
+const EventEditorTagDtoSchema = z.object({
+    id: z.number().int(),
+    text: z.string().optional(),
+    description: z.string().optional(),
+    color: z.string().nullable().optional(),
+    sortOrder: z.number().int().optional(),
+    significance: z.string().nullable().optional(),
+    visibleOnFrontpage: z.boolean().optional(),
+});
+
+const EventEditorDtoSchema = z.object({
+    id: z.number().int(),
+    revision: z.number().int().optional(),
+    name: z.string().optional(),
+    startsAt: z.date().nullable().optional(),
+    durationMillis: z.bigint().optional(),
+    isAllDay: z.boolean().optional(),
+    isDeleted: z.boolean().optional(),
+    locationDescription: z.string().optional(),
+    locationURL: z.string().optional(),
+    createdAt: z.date().optional(),
+    typeId: z.number().int().nullable().optional(),
+    type: EventEditorTypeDtoSchema.nullable().optional(),
+    statusId: z.number().int().nullable().optional(),
+    status: EventEditorStatusDtoSchema.nullable().optional(),
+    tags: z.array(z.object({
+        id: z.number().int(),
+        eventId: z.number().int().optional(),
+        eventTagId: z.number().int().optional(),
+        eventTag: EventEditorTagDtoSchema.optional(),
+    })).optional(),
+    segmentBehavior: z.string().nullable().optional(),
+    expectedAttendanceUserTagId: z.number().int().nullable().optional(),
+    expectedAttendanceUserTag: z.object({
+        id: z.number().int(),
+        text: z.string().optional(),
+        description: z.string().optional(),
+        color: z.string().nullable().optional(),
+        sortOrder: z.number().int().optional(),
+        cssClass: z.string().nullable().optional(),
+        significance: z.string().nullable().optional(),
+    }).nullable().optional(),
+    createdByUserId: z.number().int().nullable().optional(),
+    createdByUser: z.object({
+        id: z.number().int(),
+        name: z.string().optional(),
+        cssClass: z.string().nullable().optional(),
+    }).nullable().optional(),
+    visiblePermissionId: z.number().int().nullable().optional(),
+    visiblePermission: z.object({
+        id: z.number().int(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        isVisibility: z.boolean().optional(),
+        sortOrder: z.number().int().optional(),
+        significance: z.string().nullable().optional(),
+        color: z.string().nullable().optional(),
+        iconName: z.string().nullable().optional(),
+    }).nullable().optional(),
+    frontpageVisible: z.boolean().optional(),
+    frontpageDate: z.string().optional(),
+    frontpageTime: z.string().optional(),
+    frontpageDetails: z.string().optional(),
+    frontpageTitle: z.string().nullable().optional(),
+    frontpageLocation: z.string().nullable().optional(),
+    frontpageLocationURI: z.string().nullable().optional(),
+    frontpageTags: z.string().nullable().optional(),
+});
+
+const eventEditorSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
+    select: {
+        id: true,
+        revision: true,
+        name: true,
+        startsAt: true,
+        durationMillis: true,
+        isAllDay: true,
+        isDeleted: true,
+        locationDescription: true,
+        locationURL: true,
+        createdAt: true,
+        typeId: true,
+        type: {
+            select: {
+                id: true,
+                text: true,
+                description: true,
+                color: true,
+                sortOrder: true,
+                significance: true,
+                iconName: true,
+            },
+        },
+        statusId: true,
+        status: {
+            select: {
+                id: true,
+                label: true,
+                description: true,
+                color: true,
+                sortOrder: true,
+                significance: true,
+                iconName: true,
+            },
+        },
+        tags: {
+            select: {
+                id: true,
+                eventId: true,
+                eventTagId: true,
+                eventTag: {
+                    select: {
+                        id: true,
+                        text: true,
+                        description: true,
+                        color: true,
+                        sortOrder: true,
+                        significance: true,
+                        visibleOnFrontpage: true,
+                    },
+                },
+            },
+            orderBy: EventTagAssignmentNaturalOrderBy,
+        },
+        segmentBehavior: true,
+        expectedAttendanceUserTagId: true,
+        expectedAttendanceUserTag: {
+            select: {
+                id: true,
+                text: true,
+                description: true,
+                color: true,
+                sortOrder: true,
+                cssClass: true,
+                significance: true,
+            },
+        },
+        createdByUserId: true,
+        createdByUser: {
+            select: {
+                id: true,
+                name: true,
+                cssClass: true,
+            },
+        },
+        visiblePermissionId: true,
+        visiblePermission: {
+            select: {
+                id: true,
+                name: true,
+                description: true,
+                isVisibility: true,
+                sortOrder: true,
+                significance: true,
+                color: true,
+                iconName: true,
+            },
+        },
+        frontpageVisible: true,
+        frontpageDate: true,
+        frontpageTime: true,
+        frontpageDetails: true,
+        frontpageTitle: true,
+        frontpageLocation: true,
+        frontpageLocationURI: true,
+        frontpageTags: true,
+    },
+});
+
+export const eventEditorView = defineCrudView({
+    viewID: "Event_Editor",
+    entity: eventEntity,
+    selection: eventEditorSelection,
+    dtoSchema: EventEditorDtoSchema,
+    hydrate: dto => dto,
 });
 
 const EventTagAssignmentDtoSchema = z.object({
@@ -289,7 +484,6 @@ export const eventSearchView = defineView({
                 hydrateEventDateRange(segment)),
         };
     },
-    getIdentity: client => client.id,
 });
 
 export type EventSearchDto = DtoOf<typeof eventSearchView>;

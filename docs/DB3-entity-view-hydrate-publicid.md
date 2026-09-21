@@ -770,7 +770,7 @@ The existing writers are grouped by the replacement they need:
 
 | Category | Remaining surfaces | Intended replacement |
 | --- | --- | --- |
-| Ordinary grids | User/Event/File grids | Add a CRUD-enabled named view, pass it to `DB3EditGrid`, and remove the legacy marker. Split out any operation that proves not to be ordinary row CRUD. |
+| Ordinary grids | None | User, Event, and File now use command-backed editor views. File creation remains owned by the upload workflow rather than the metadata grid. |
 | Entity detail editors | Event, Song, File, User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
 | Nested rows and relationships | Event segments, song credits/files, user instruments, and setlist-plan groups | Choose a generated row/association command only when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
 | Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
@@ -839,6 +839,19 @@ and the finite Song-tag association shape. Tagged files, credits, and the
 pinned-recording workflow remain outside this row contract. Generated Song
 CRUD reconciles the desired tag-ID set transactionally and retains the table's
 soft-delete policy and existing recovery authorization.
+
+The eighth slice completes the ordinary administration grids. User, Event,
+and File now read through finite editor views and write through their generated
+entity commands. The User view preserves the grid's profile and taxonomy sets
+while keeping role and Sysadmin state display-only; dedicated account
+lifecycle, role-assignment, authentication, and impersonation flows remain
+separate. The Event view owns only the displayed event row, lookup references,
+and event-tag set; segments and song lists remain separate nested editors. The
+File view owns editable metadata, visibility, and tag sets while storage name,
+upload provenance, size, and derived custom data are display-only. File
+creation is disabled in this grid because upload and derived-file creation own
+the storage transaction; generated File updates still retain schema-enforced
+storage-field rejection and soft-delete/recovery policy.
 
 ## Design principles
 
@@ -997,8 +1010,11 @@ boundary safely.
     hard-delete policy.
   - [x] Migrate the Song administration grid, retaining creator/visibility
     references, tag-set editing, and the existing soft-delete/recovery boundary.
-  - [ ] Migrate the remaining ordinary grids, then entity-detail,
-    nested/relationship, collection, and workflow categories in that order.
+  - [x] Migrate the remaining User, Event, and File ordinary grids while
+    retaining privileged User workflows, nested Event editors, and File upload
+    creation on their existing explicit boundaries.
+  - [ ] Migrate the entity-detail, nested/relationship, collection, and workflow
+    categories in that order.
     Split out named domain commands wherever row CRUD is not truthful, and
     separately migrate selection create-from-string consumers to the matching
     CRUD views.

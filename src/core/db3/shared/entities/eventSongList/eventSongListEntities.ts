@@ -4,15 +4,12 @@ import { xEventSongList, xEventSongListDivider, xEventSongListSong } from "../..
 
 export const eventSongListEntity = defineEntity<Prisma.EventSongListDelegate>()({
     schema: xEventSongList,
-    getIdentity: (songList: { id: number }) => songList.id,
 });
 
 export const eventSongListSongEntity = defineEntity<Prisma.EventSongListSongDelegate>()({
     schema: xEventSongListSong,
-    getIdentity: (song: { id: number }) => song.id,
 });
 
 export const eventSongListDividerEntity = defineEntity<Prisma.EventSongListDividerDelegate>()({
     schema: xEventSongListDivider,
-    getIdentity: (divider: { id: number }) => divider.id,
 });

@@ -381,6 +381,186 @@ describe("DB3 command boundary", () => {
     })
   })
 
+  it("updates User profile sets through generated create/update commands without adding generic deletion", async () => {
+    const actor = createAuthorizationTestUser("sysadmin", { id: 98 })
+    const target = createAuthorizationTestUser("normal", {
+      id: 99,
+      name: "Original user",
+      email: "original@example.test",
+    })
+    const instrument = {
+      id: 41,
+      name: "Trumpet",
+      description: "",
+      sortOrder: 1,
+      functionalGroupId: 1,
+    }
+    const userTag = {
+      id: 42,
+      text: "Band",
+      description: "",
+      sortOrder: 1,
+      color: null,
+      cssClass: null,
+      significance: null,
+    }
+    authorizationTestDb.reset({
+      user: [actor, target],
+      instrument: [instrument],
+      userTag: [userTag],
+      userInstrument: [],
+      userTagAssignment: [],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: actor.id })
+
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.userEditorView.crud.updateCommand.commandID,
+      payload: {
+        identity: target.id,
+        patch: {
+          name: "Updated user",
+          phone: "+32 123",
+          instruments: [instrument.id],
+          tags: [userTag.id],
+        },
+      },
+    }, ctx)).resolves.toEqual({ identity: target.id })
+
+    expect(authorizationTestDb.snapshot("user")).toContainEqual(
+      expect.objectContaining({ id: target.id, name: "Updated user", phone: "+32 123" }),
+    )
+    expect(authorizationTestDb.snapshot("userInstrument")).toEqual([
+      expect.objectContaining({ userId: target.id, instrumentId: instrument.id }),
+    ])
+    expect(authorizationTestDb.snapshot("userTagAssignment")).toEqual([
+      expect.objectContaining({ userId: target.id, userTagId: userTag.id }),
+    ])
+    expect(db3.getDB3CrudViewForCommand("User_Delete")).toBeUndefined()
+  })
+
+  it("updates an Event row and tag set through generated CRUD", async () => {
+    const actor = createAuthorizationTestUser("sysadmin", { id: 100 })
+    const eventTag = {
+      id: 51,
+      text: "Public",
+      description: "",
+      sortOrder: 1,
+      color: null,
+      significance: null,
+      visibleOnFrontpage: true,
+    }
+    const event = makeEvent({
+      id: 101,
+      locationURL: "",
+      durationMillis: BigInt(0),
+      isAllDay: false,
+      statusId: null,
+      segmentBehavior: null,
+    })
+    authorizationTestDb.reset({
+      user: [actor],
+      permission: [publicVisibility],
+      event: [event],
+      eventTag: [eventTag],
+      eventTagAssignment: [],
+      eventSegment: [],
+      eventStatus: [],
+      setting: [],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: actor.id })
+
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.eventEditorView.crud.updateCommand.commandID,
+      payload: {
+        identity: event.id,
+        patch: {
+          locationDescription: "Main hall",
+          segmentBehavior: "Sets",
+          tags: [eventTag.id],
+        },
+      },
+    }, ctx)).resolves.toEqual({ identity: event.id })
+
+    expect(authorizationTestDb.snapshot("event")).toEqual([
+      expect.objectContaining({
+        id: event.id,
+        locationDescription: "Main hall",
+        segmentBehavior: "Sets",
+      }),
+    ])
+    expect(authorizationTestDb.snapshot("eventTagAssignment")).toEqual([
+      expect.objectContaining({ eventId: event.id, eventTagId: eventTag.id }),
+    ])
+  })
+
+  it("updates File metadata and tags while rejecting storage-field changes through generated CRUD", async () => {
+    const actor = createAuthorizationTestUser("sysadmin", { id: 102 })
+    const fileTag = {
+      id: 61,
+      text: "Chart",
+      description: "",
+      sortOrder: 1,
+      color: null,
+      significance: null,
+    }
+    const file = {
+      id: 62,
+      fileLeafName: "old-name.pdf",
+      storedLeafName: "server-storage-id.pdf",
+      description: "",
+      isDeleted: false,
+      uploadedAt: new Date("2026-09-20T10:00:00.000Z"),
+      uploadedByUserId: actor.id,
+      visiblePermissionId: publicVisibility.id,
+      sizeBytes: 123,
+      mimeType: "application/pdf",
+      customData: null,
+    }
+    authorizationTestDb.reset({
+      user: [actor],
+      permission: [publicVisibility],
+      file: [file],
+      fileTag: [fileTag],
+      fileTagAssignment: [],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: actor.id })
+
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.fileEditorView.crud.updateCommand.commandID,
+      payload: {
+        identity: file.id,
+        patch: {
+          fileLeafName: "new-name.pdf",
+          description: "Program",
+          tags: [fileTag.id],
+        },
+      },
+    }, ctx)).resolves.toEqual({ identity: file.id })
+
+    expect(authorizationTestDb.snapshot("file")).toEqual([
+      expect.objectContaining({
+        id: file.id,
+        fileLeafName: "new-name.pdf",
+        storedLeafName: "server-storage-id.pdf",
+        description: "Program",
+      }),
+    ])
+    expect(authorizationTestDb.snapshot("fileTagAssignment")).toEqual([
+      expect.objectContaining({ fileId: file.id, fileTagId: fileTag.id }),
+    ])
+
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.fileEditorView.crud.updateCommand.commandID,
+      payload: {
+        identity: file.id,
+        patch: { storedLeafName: "forged.pdf" },
+      },
+    }, ctx)).rejects.toThrow("Not authorized to mutate File fields: storedLeafName")
+  })
+
   it("revalidates command DTOs and enforces server-side entity authorization", async () => {
     const permissions = [Permission.login, Permission.view_events]
     const actor = createAuthorizationTestUser("normal", { id: 92, permissions })

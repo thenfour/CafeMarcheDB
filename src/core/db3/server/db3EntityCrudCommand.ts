@@ -1,9 +1,8 @@
-// i mean considering the R of "CRUD" means Read, and we only deal with mutation,
-// it still has a better ring than "CUD"
 import type { TAnyModel } from "@/shared/rootroot";
 import type {
     AnyDB3EntityCreateUpdateCommands,
     AnyDB3EntityCrudCommands,
+    AnyDB3EntityUpdateDeleteCommands,
     EntityIdOf,
 } from "../db3";
 import {
@@ -28,6 +27,15 @@ type CreateUpdateCommandHandlers<TCommands extends AnyDB3EntityCreateUpdateComma
     readonly all: readonly [
         DB3CommandHandler<TCommands["createCommand"]>,
         DB3CommandHandler<TCommands["updateCommand"]>,
+    ];
+};
+
+type UpdateDeleteCommandHandlers<TCommands extends AnyDB3EntityUpdateDeleteCommands> = {
+    readonly update: DB3CommandHandler<TCommands["updateCommand"]>;
+    readonly delete: DB3CommandHandler<TCommands["deleteCommand"]>;
+    readonly all: readonly [
+        DB3CommandHandler<TCommands["updateCommand"]>,
+        DB3CommandHandler<TCommands["deleteCommand"]>,
     ];
 };
 
@@ -81,4 +89,30 @@ export function defineEntityCrudCommandHandlers<
         delete: deleteHandler,
         all: [create, update, deleteHandler],
     };
+}
+
+export function defineEntityUpdateDeleteCommandHandlers<
+    TCommands extends AnyDB3EntityUpdateDeleteCommands,
+>(commands: TCommands): UpdateDeleteCommandHandlers<TCommands> {
+    const update = defineCommandHandler(commands.updateCommand, async (dto, context) => {
+        const { identity, patch } = dto as { identity: unknown; patch: TAnyModel };
+        await context.rowServices.update(
+            commands.entity,
+            identity as EntityIdOf<TCommands["entity"]>,
+            patch,
+        );
+        return commands.updateCommand.parseResult({ identity });
+    });
+
+    const deleteHandler = defineCommandHandler(commands.deleteCommand, async (dto, context) => {
+        const { identity } = dto as { identity: unknown };
+        await context.rowServices.delete(
+            commands.entity,
+            identity as EntityIdOf<TCommands["entity"]>,
+            commands.deleteType,
+        );
+        return commands.deleteCommand.parseResult({ identity });
+    });
+
+    return { update, delete: deleteHandler, all: [update, deleteHandler] };
 }

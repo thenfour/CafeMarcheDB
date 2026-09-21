@@ -4,7 +4,11 @@ import { useDashboardContext } from "src/core/components/dashboardContext/Dashbo
 import type { CMDBTableFilterModel } from "../shared/apiTypes";
 import type { GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import type { AnyDB3CrudView, ClientOf } from "../db3";
-import { createEntityCrudUpdatePatch, hasGeneratedDeleteCommand } from "../db3";
+import {
+    createEntityCrudUpdatePatch,
+    hasGeneratedCreateCommand,
+    hasGeneratedDeleteCommand,
+} from "../db3";
 import {
     useTableRenderContext,
     type xTableClientSpec,
@@ -39,7 +43,11 @@ export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
     }
 
     const dashboardContext = useDashboardContext();
-    const create = useDB3Command(args.view.crud.createCommand);
+    const create = useDB3Command(
+        hasGeneratedCreateCommand(args.view.crud)
+            ? args.view.crud.createCommand
+            : undefined,
+    );
     const update = useDB3Command(args.view.crud.updateCommand);
     const deleteCommand = useDB3Command(
         hasGeneratedDeleteCommand(args.view.crud)
@@ -66,6 +74,9 @@ export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
     };
 
     tableClient.doInsertMutation = async row => {
+        if (!create) {
+            throw new Error(`DB3 editor view '${args.view.viewID}' does not permit creation.`);
+        }
         const values = tableClient.prepareInsertMutation(row);
         const result = await create.invoke(values);
         await refresh();
@@ -77,7 +88,7 @@ export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
                 `Command-backed updates for '${args.view.viewID}' require the previous row.`,
             );
         }
-        const identity = args.view.getIdentity(row);
+        const identity = args.view.entity.getIdentity(row);
         const previousValues = tableClient.prepareMutation(previousRow, "update");
         const nextValues = tableClient.prepareMutation(row, "update");
         const patch = createEntityCrudUpdatePatch(previousValues, nextValues);

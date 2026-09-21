@@ -157,7 +157,6 @@ export const songTagEditorView = defineCrudView({
     selection: songTagEditorSelection,
     dtoSchema: SongTagEditorDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.id,
 });
 
 export const songCreditTypeEditorView = defineCrudView({
@@ -166,7 +165,6 @@ export const songCreditTypeEditorView = defineCrudView({
     selection: songCreditTypeEditorSelection,
     dtoSchema: SongCreditTypeEditorDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.id,
 });
 
 export const songEditorView = defineCrudView({
@@ -175,7 +173,6 @@ export const songEditorView = defineCrudView({
     selection: songEditorSelection,
     dtoSchema: SongEditorDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.id,
 });
 
 const SongTagAssociationDtoSchema = z.object({
@@ -317,7 +314,6 @@ export const songSearchView = defineView({
             }
         })),
     }),
-    getIdentity: client => client.id,
 });
 
 export type SongSearchDto = DtoOf<typeof songSearchView>;
@@ -434,7 +430,6 @@ export const songDetailView = defineView({
             }]),
         credits: references.mapOptionalCollection(dto.credits, credit => credit),
     }),
-    getIdentity: client => client.id,
 });
 
 export type SongDetailDto = DtoOf<typeof songDetailView>;

@@ -19,17 +19,14 @@ const InstrumentFunctionalGroupPublicIdSchema = z.custom<InstrumentFunctionalGro
 
 export const instrumentFunctionalGroupEntity = defineEntity<Prisma.InstrumentFunctionalGroupDelegate>()({
     schema: xInstrumentFunctionalGroup,
-    getIdentity: (entity: InstrumentFunctionalGroupClientPayload) => entity.publicId,
 });
 
 export const instrumentTagEntity = defineEntity<Prisma.InstrumentTagDelegate>()({
     schema: xInstrumentTag,
-    getIdentity: (entity: Prisma.InstrumentTagGetPayload<{}>) => entity.id,
 });
 
 export const instrumentEntity = defineEntity<Prisma.InstrumentDelegate>()({
     schema: xInstrument,
-    getIdentity: (entity: InstrumentClientPayload) => entity.id,
 });
 
 // The list view deliberately makes non-identity fields optional. Its selection
@@ -153,7 +150,6 @@ export const instrumentFunctionalGroupListView = defineView({
     selection: InstrumentFunctionalGroupArgs,
     dtoSchema: InstrumentFunctionalGroupListDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.publicId,
 });
 
 export const instrumentFunctionalGroupEditorView = defineCrudView({
@@ -162,7 +158,6 @@ export const instrumentFunctionalGroupEditorView = defineCrudView({
     selection: InstrumentFunctionalGroupArgs,
     dtoSchema: InstrumentFunctionalGroupListDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.publicId,
 });
 
 export const instrumentFunctionalGroupDashboardView = defineView({
@@ -171,7 +166,6 @@ export const instrumentFunctionalGroupDashboardView = defineView({
     selection: InstrumentFunctionalGroupArgs,
     dtoSchema: InstrumentFunctionalGroupDashboardDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.publicId,
 });
 
 export const instrumentTagEditorView = defineCrudView({
@@ -180,7 +174,6 @@ export const instrumentTagEditorView = defineCrudView({
     selection: instrumentTagEditorSelection,
     dtoSchema: InstrumentTagDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.id,
 });
 
 export const instrumentEditorView = defineCrudView({
@@ -189,7 +182,6 @@ export const instrumentEditorView = defineCrudView({
     selection: instrumentEditorSelection,
     dtoSchema: InstrumentEditorDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.id,
 });
 
 export const instrumentDashboardView = defineView({
@@ -213,7 +205,6 @@ export const instrumentDashboardView = defineView({
             ),
         })).sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
     }),
-    getIdentity: client => client.id,
 });
 
 export type InstrumentFunctionalGroupListItem = ClientOf<typeof instrumentFunctionalGroupListView>;

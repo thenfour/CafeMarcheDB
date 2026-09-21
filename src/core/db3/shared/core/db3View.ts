@@ -26,7 +26,6 @@ export interface DB3View<
     readonly dtoSchema: TDtoSchema;
     readonly getSelectionArgs: (context: DB3ViewSelectionContext) => TSelection;
     readonly hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
-    readonly getIdentity: (client: TClient) => EntityIdOf<TEntity>;
 
     parseDto(value: unknown): z.infer<TDtoSchema>;
 }
@@ -58,7 +57,6 @@ export function defineView<
     selection: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
     dtoSchema: TDtoSchema;
     hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
-    getIdentity: (client: TClient) => EntityIdOf<TEntity>;
 }): DB3View<TEntity, TSelection, TDtoSchema, TClient> {
     const view: DB3View<TEntity, TSelection, TDtoSchema, TClient> = {
         viewID: args.viewID,
@@ -70,7 +68,6 @@ export function defineView<
             ? args.selection as (context: DB3ViewSelectionContext) => TSelection
             : () => args.selection as TSelection,
         hydrate: args.hydrate,
-        getIdentity: args.getIdentity,
         parseDto: value => args.dtoSchema.parse(value),
     };
 

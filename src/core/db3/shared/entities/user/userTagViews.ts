@@ -31,5 +31,4 @@ export const userTagEditorView = defineCrudView({
     selection: userTagEditorSelection,
     dtoSchema: UserTagEditorDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.id,
 });

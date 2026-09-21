@@ -144,7 +144,6 @@ export const eventSongListDetailView = defineView({
     selection: eventSongListDetailSelection,
     dtoSchema: EventSongListDetailDtoSchema,
     hydrate: hydrateEventSongListDetailDto,
-    getIdentity: client => client.id,
 });
 
 export type EventSongListDetailClient = ClientOf<typeof eventSongListDetailView>;

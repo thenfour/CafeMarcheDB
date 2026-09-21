@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { z } from "zod";
-import { defineCrudView } from "../../core/db3CrudView";
+import { defineCrudView, defineUpdateDeleteView } from "../../core/db3CrudView";
 import type { DB3ReferenceProvider } from "../../core/db3Hydration";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { instrumentEntity } from "../instrument/instrumentViews";
@@ -327,6 +327,58 @@ export function hydrateFileDetailDto(
             }]),
     };
 }
+
+const FileEditorDtoSchema = FileDetailDtoSchema.pick({
+    id: true,
+    fileLeafName: true,
+    description: true,
+    uploadedAt: true,
+    uploadedByUserId: true,
+    uploadedByUser: true,
+    visiblePermissionId: true,
+    sizeBytes: true,
+    storedLeafName: true,
+    tags: true,
+    taggedUsers: true,
+    taggedSongs: true,
+    taggedEvents: true,
+    taggedInstruments: true,
+    taggedWikiPages: true,
+}).extend({
+    isDeleted: z.boolean().optional(),
+    customData: z.string().nullable().optional(),
+});
+
+const fileEditorSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
+    select: {
+        id: true,
+        fileLeafName: true,
+        storedLeafName: true,
+        description: true,
+        uploadedAt: true,
+        isDeleted: true,
+        sizeBytes: true,
+        customData: true,
+        uploadedByUserId: true,
+        uploadedByUser: fileDetailSelection.select.uploadedByUser,
+        visiblePermissionId: true,
+        tags: fileDetailSelection.select.tags,
+        taggedUsers: fileDetailSelection.select.taggedUsers,
+        taggedSongs: fileDetailSelection.select.taggedSongs,
+        taggedEvents: fileDetailSelection.select.taggedEvents,
+        taggedInstruments: fileDetailSelection.select.taggedInstruments,
+        taggedWikiPages: fileDetailSelection.select.taggedWikiPages,
+    },
+});
+
+export const fileEditorView = defineUpdateDeleteView({
+    viewID: "File_Editor",
+    entity: fileEntity,
+    selection: fileEditorSelection,
+    dtoSchema: FileEditorDtoSchema,
+    hydrate: (dto, references) => hydrateFileDetailDto(dto, references),
+    getIdentity: client => client.id,
+});
 
 export const fileDetailView = defineView({
     viewID: "File_Detail",

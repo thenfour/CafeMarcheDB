@@ -404,6 +404,8 @@ describe("DB3 commands", () => {
             db3.roleEditorView,
             db3.instrumentEditorView,
             db3.songEditorView,
+            db3.userEditorView,
+            db3.eventEditorView,
         ];
 
         for (const view of views) {
@@ -692,6 +694,146 @@ describe("DB3 commands", () => {
             patch: { pinnedRecordingId: 40 },
         })).toThrow();
         expect(db3.songEditorView.crud.deleteType).toBe("softWhenPossible");
+    });
+
+    it("defines finite command-backed views for the remaining ordinary grids", () => {
+        expect(db3.userEditorView.parseDto({
+            id: 10,
+            name: "Ada",
+            email: "ada@example.test",
+            phone: null,
+            cssClass: null,
+            isDeleted: false,
+            isSysAdmin: false,
+            createdAt: new Date("2026-09-20T10:00:00.000Z"),
+            roleId: 2,
+            role: { id: 2, name: "Members" },
+            instruments: [{
+                id: 30,
+                userId: 10,
+                instrumentId: 4,
+                isPrimary: true,
+                instrument: { id: 4, name: "Trumpet" },
+            }],
+            tags: [{
+                id: 31,
+                userId: 10,
+                userTagId: 5,
+                userTag: { id: 5, text: "Band" },
+            }],
+        })).toMatchObject({
+            id: 10,
+            role: { name: "Members" },
+            instruments: [{ instrument: { name: "Trumpet" } }],
+            tags: [{ userTag: { text: "Band" } }],
+        });
+        expect(db3.userEditorView.crud.updateCommand.parseDto({
+            identity: 10,
+            patch: { name: "Ada Lovelace", instruments: [4], tags: [5] },
+        })).toEqual({
+            identity: 10,
+            patch: { name: "Ada Lovelace", instruments: [4], tags: [5] },
+        });
+        expect(() => db3.userEditorView.crud.updateCommand.parseDto({
+            identity: 10,
+            patch: { signInMethods: [] },
+        })).toThrow();
+        expect(db3.hasGeneratedDeleteCommand(db3.userEditorView.crud)).toBe(false);
+
+        expect(db3.eventEditorView.parseDto({
+            id: 20,
+            revision: 3,
+            name: "Autumn concert",
+            startsAt: new Date("2026-10-10T18:00:00.000Z"),
+            durationMillis: BigInt(7_200_000),
+            isAllDay: false,
+            typeId: 6,
+            type: { id: 6, text: "Concert" },
+            statusId: 7,
+            status: { id: 7, label: "Confirmed" },
+            tags: [{
+                id: 32,
+                eventId: 20,
+                eventTagId: 8,
+                eventTag: { id: 8, text: "Public" },
+            }],
+        })).toMatchObject({
+            id: 20,
+            durationMillis: BigInt(7_200_000),
+            type: { text: "Concert" },
+            tags: [{ eventTag: { text: "Public" } }],
+        });
+        expect(db3.eventEditorView.crud.updateCommand.parseDto({
+            identity: 20,
+            patch: {
+                startsAt: new Date("2026-10-10T19:00:00.000Z"),
+                durationMillis: 3_600_000,
+                isAllDay: false,
+                tags: [8],
+            },
+        })).toMatchObject({ identity: 20, patch: { tags: [8] } });
+        expect(() => db3.eventEditorView.crud.updateCommand.parseDto({
+            identity: 20,
+            patch: { segments: [] },
+        })).toThrow();
+        expect(db3.eventEditorView.crud.deleteType).toBe("softWhenPossible");
+
+        expect(db3.fileEditorView.parseDto({
+            id: 40,
+            fileLeafName: "concert.pdf",
+            storedLeafName: "storage-id.pdf",
+            description: "Program",
+            uploadedAt: new Date("2026-09-20T10:00:00.000Z"),
+            isDeleted: false,
+            sizeBytes: 1234,
+            customData: null,
+            uploadedByUserId: 10,
+            uploadedByUser: { id: 10, name: "Ada" },
+            visiblePermissionId: null,
+            tags: [],
+            taggedUsers: [],
+            taggedSongs: [],
+            taggedEvents: [],
+            taggedInstruments: [],
+            taggedWikiPages: [],
+        })).toMatchObject({
+            id: 40,
+            fileLeafName: "concert.pdf",
+            storedLeafName: "storage-id.pdf",
+            uploadedByUser: { name: "Ada" },
+        });
+        expect(db3.fileEditorView.crud.updateCommand.parseDto({
+            identity: 40,
+            patch: {
+                fileLeafName: "concert-program.pdf",
+                visiblePermissionId: null,
+                tags: [11],
+                taggedEvents: [20],
+            },
+        })).toEqual({
+            identity: 40,
+            patch: {
+                fileLeafName: "concert-program.pdf",
+                visiblePermissionId: null,
+                tags: [11],
+                taggedEvents: [20],
+            },
+        });
+        expect(() => db3.fileEditorView.crud.updateCommand.parseDto({
+            identity: 40,
+            patch: { childFiles: [] },
+        })).toThrow();
+        expect(db3.hasGeneratedCreateCommand(db3.fileEditorView.crud)).toBe(false);
+        expect(db3.getDB3CrudViewForCommand("File_Create")).toBeUndefined();
+        expect(db3.getDB3CrudViewForCommand(db3.fileEditorView.crud.updateCommand.commandID))
+            .toBe(db3.fileEditorView);
+        expect(db3.getDB3CrudViewForCommand(db3.fileEditorView.crud.deleteCommand.commandID))
+            .toBe(db3.fileEditorView);
+        expect(getDB3CommandHandler(db3.fileEditorView.crud.updateCommand.commandID).command)
+            .toBe(db3.fileEditorView.crud.updateCommand);
+        expect(getDB3CommandHandler(db3.fileEditorView.crud.deleteCommand.commandID).command)
+            .toBe(db3.fileEditorView.crud.deleteCommand);
+        expect(db3.fileEditorView.crud.deleteType).toBe("softWhenPossible");
     });
 
     it("preserves xTable client-value transforms across CRUD reads and writes", () => {
