@@ -103,6 +103,23 @@ const search = async (value: string) => {
 const open = async () => { await render(); await click(button("Edit Instruments")); };
 
 describe("shared DB3 tags selection", () => {
+    it("queries tag options with the nested DB3 table descriptor", async () => {
+        await open();
+
+        const queryInput = vi.mocked(useQuery).mock.calls
+            .map(call => call[1] as any)
+            .find(input => input?.cmdbQueryContext === "TagsFieldRenderContext for table.field: File.taggedInstruments");
+
+        expect(queryInput).toMatchObject({
+            table: {
+                tableID: "Instrument",
+                tableName: "Instrument",
+            },
+        });
+        expect(queryInput).not.toHaveProperty("tableID");
+        expect(queryInput).not.toHaveProperty("tableName");
+    });
+
     it("keeps a draft until Apply and preserves existing association metadata after reselection", async () => {
         await open();
         expect(checkbox("Trumpet").checked).toBe(true);

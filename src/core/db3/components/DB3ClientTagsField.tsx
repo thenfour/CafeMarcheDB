@@ -486,8 +486,10 @@ export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
 
         // returns the foreign items.
         const [result, queryStatus] = useQuery(db3queries, {
-            tableID: args.spec.typedSchemaColumn.getForeignTableShema().tableID,
-            tableName: args.spec.typedSchemaColumn.getForeignTableShema().tableName,
+            table: {
+                tableID: args.spec.typedSchemaColumn.getForeignTableShema().tableID,
+                tableName: args.spec.typedSchemaColumn.getForeignTableShema().tableName,
+            },
             orderBy: undefined,
             filter: {
                 tableParams: {},
