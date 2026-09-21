@@ -26,6 +26,7 @@ const wikiPageTagEditorSelection = Prisma.validator<Prisma.WikiPageTagDefaultArg
 export const wikiPageTagEditorView = defineCrudView({
     viewID: "WikiPageTag_Editor",
     entity: wikiPageTagEntity,
+    operations: { create: true, update: true, delete: true },
     selection: wikiPageTagEditorSelection,
     dtoSchema: WikiPageTagEditorDtoSchema,
     hydrate: dto => dto,

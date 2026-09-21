@@ -263,7 +263,7 @@ describe("DB3 command boundary", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
     await expect(invokeResolver(executeDB3CommandMutation, {
-      commandID: db3.instrumentEditorView.crud.updateCommand.commandID,
+      commandID: db3.instrumentEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: instrument.id,
         patch: {
@@ -349,7 +349,7 @@ describe("DB3 command boundary", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
     await expect(invokeResolver(executeDB3CommandMutation, {
-      commandID: db3.songEditorView.crud.updateCommand.commandID,
+      commandID: db3.songEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: song.id,
         patch: {
@@ -372,7 +372,7 @@ describe("DB3 command boundary", () => {
     ])
 
     await expect(invokeResolver(executeDB3CommandMutation, {
-      commandID: db3.songEditorView.crud.deleteCommand.commandID,
+      commandID: db3.songEditorView.crud.operations.delete.command.commandID,
       payload: { identity: song.id },
     }, ctx)).resolves.toEqual({ identity: song.id })
     expect(authorizationTestDb.snapshot("song")[0]).toMatchObject({
@@ -415,7 +415,7 @@ describe("DB3 command boundary", () => {
     const { ctx } = createAuthorizationPersona("sysadmin", { id: actor.id })
 
     await expect(invokeResolver(executeDB3CommandMutation, {
-      commandID: db3.userEditorView.crud.updateCommand.commandID,
+      commandID: db3.userEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: target.id,
         patch: {
@@ -472,7 +472,7 @@ describe("DB3 command boundary", () => {
     const { ctx } = createAuthorizationPersona("sysadmin", { id: actor.id })
 
     await expect(invokeResolver(executeDB3CommandMutation, {
-      commandID: db3.eventEditorView.crud.updateCommand.commandID,
+      commandID: db3.eventEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: event.id,
         patch: {
@@ -529,7 +529,7 @@ describe("DB3 command boundary", () => {
     const { ctx } = createAuthorizationPersona("sysadmin", { id: actor.id })
 
     await expect(invokeResolver(executeDB3CommandMutation, {
-      commandID: db3.fileEditorView.crud.updateCommand.commandID,
+      commandID: db3.fileEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: file.id,
         patch: {
@@ -553,7 +553,7 @@ describe("DB3 command boundary", () => {
     ])
 
     await expect(invokeResolver(executeDB3CommandMutation, {
-      commandID: db3.fileEditorView.crud.updateCommand.commandID,
+      commandID: db3.fileEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: file.id,
         patch: { storedLeafName: "forged.pdf" },

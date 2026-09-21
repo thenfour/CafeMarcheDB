@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { z } from "zod";
-import { defineCrudView, defineUpdateDeleteView } from "../../core/db3CrudView";
+import { defineCrudView } from "../../core/db3CrudView";
 import type { DB3ReferenceProvider } from "../../core/db3Hydration";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { instrumentEntity } from "../instrument/instrumentViews";
@@ -30,6 +30,7 @@ const fileTagEditorSelection = Prisma.validator<Prisma.FileTagDefaultArgs>()({
 export const fileTagEditorView = defineCrudView({
     viewID: "FileTag_Editor",
     entity: fileTagEntity,
+    operations: { create: true, update: true, delete: true },
     selection: fileTagEditorSelection,
     dtoSchema: FileTagEditorDtoSchema,
     hydrate: dto => dto,
@@ -104,6 +105,7 @@ const frontpageGalleryItemEditorSelection = Prisma.validator<Prisma.FrontpageGal
 export const frontpageGalleryItemEditorView = defineCrudView({
     viewID: "FrontpageGalleryItem_Editor",
     entity: frontpageGalleryItemEntity,
+    operations: { create: true, update: true, delete: true },
     selection: frontpageGalleryItemEditorSelection,
     dtoSchema: FrontpageGalleryItemEditorDtoSchema,
     hydrate: dto => dto,
@@ -369,9 +371,10 @@ const fileEditorSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     },
 });
 
-export const fileEditorView = defineUpdateDeleteView({
+export const fileEditorView = defineCrudView({
     viewID: "File_Editor",
     entity: fileEntity,
+    operations: { update: true, delete: true },
     selection: fileEditorSelection,
     dtoSchema: FileEditorDtoSchema,
     hydrate: (dto, references) => hydrateFileDetailDto(dto, references),

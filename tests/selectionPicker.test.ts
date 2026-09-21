@@ -229,7 +229,7 @@ describe("DB3 picker adapters", () => {
                 schema,
                 getIdentity: (item: typeof existing) => item.publicId,
             },
-            crud: { createCommand: {} },
+            crud: { operations: { create: { kind: "create", command: {} } } },
         } as any;
         vi.mocked(useInsertMutationClient).mockReturnValue({ doInsertMutation: legacyInsert } as any);
         vi.mocked(useCrudViewCreate).mockReturnValue({ create } as any);

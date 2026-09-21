@@ -295,7 +295,7 @@ describe("shared DB3 foreign-single selection", () => {
             },
             parseDto: (value: unknown) => value,
             hydrate: (dto: Instrument) => ({ ...dto, publicId: `public-id-${dto.id}` }),
-            crud: { createCommand: {} },
+            crud: { operations: { create: { kind: "create", command: {} } } },
         } as any;
         spec.args.selectionView = view;
         const created = { id: 4, publicId: "AbCdEfGhIjKlMn02", name: "Flute" };

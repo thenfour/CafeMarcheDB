@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { z } from "zod";
-import { defineCreateUpdateView } from "../../core/db3CrudView";
+import { defineCrudView } from "../../core/db3CrudView";
 import { defineEntity } from "../../core/db3Entity";
 import { xSetting } from "../../db3schema";
 
@@ -23,9 +23,10 @@ const settingEditorSelection = Prisma.validator<Prisma.SettingDefaultArgs>()({
     },
 });
 
-export const settingEditorView = defineCreateUpdateView({
+export const settingEditorView = defineCrudView({
     viewID: "Setting_Editor",
     entity: settingEntity,
+    operations: { create: true, update: true },
     selection: settingEditorSelection,
     dtoSchema: SettingEditorDtoSchema,
     hydrate: dto => dto,

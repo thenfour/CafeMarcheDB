@@ -298,8 +298,11 @@ mutation envelope merely because the implementation delegates to mature DB3
 row services.
 
 `defineEntityCrudCommands()` is the low-level foundation for that contract. It
-establishes create/update/delete descriptors from an entity, its runtime
-identity schema, and create/update field schemas:
+establishes the enabled operation descriptors from an entity, explicit
+operation flags, its runtime identity schema, and create/update field schemas.
+The returned contract always has fixed `create`, `update`, and `delete` slots;
+unsupported optional operations are `undefined`, while every enabled operation
+carries its discriminating `kind` and command descriptor:
 
 - create accepts the strict create DTO directly; natural and public identity
   fields are server-owned and cannot be declared by the writable schema;
@@ -308,7 +311,7 @@ identity schema, and create/update field schemas:
   than being confused with omission, while `null` remains field-schema-defined;
 - delete accepts only `{ identity }`; hard-versus-soft behavior comes from the
   trusted `xTable.deletePolicy`, not from client input; and
-- all three operations return the strict `{ identity }` result needed to find
+- all enabled operations return the strict `{ identity }` result needed to find
   or refetch the affected row without returning a persistence-shaped object.
 
 The shared generated handlers compose `DB3CommandExecutionContext.rowServices`,
@@ -329,8 +332,12 @@ a conventional editor is automatic once its schema and columns are declared.
 Ordinary row editing should be exposed through a CRUD-enabled named view. A
 generic `defineCrudView()` composes the normal `defineView()` contract with the
 generated CRUD command foundation. It receives the same entity, selection, DTO
-schema, and hydration as a normal view, and returns a
-view carrying generated create/update/delete command metadata.
+schema, and hydration as a normal view, plus an explicit capability object such
+as `operations: { create: true, update: true, delete: true }`. Update is the
+required baseline; create or delete can be omitted independently. The returned
+view carries the same fixed operation slots at `view.crud.operations`, so
+consumers use `create?.command`, `update.command`, and `delete?.command` without
+permutation-specific view types or presence guards.
 
 The CRUD contract is derived from two existing authorities:
 
@@ -392,10 +399,12 @@ edit-draft abstraction is separate work.
 Because command descriptors and handlers must also exist on the server,
 `defineCrudView()` performs module-level composition and registration while
 `useCrudTableRenderContext()` only performs client-side invocation. Generated
-CRUD views are discoverable by generic server CRUD-handler infrastructure, so
-an ordinary entity does not need its own handler file or manual command-registry
-entries. This registration remains an allowlist of declared CRUD views; clients
-cannot nominate arbitrary database tables.
+CRUD views are discoverable by one operation-driven server handler factory,
+which iterates the enabled descriptors and dispatches on their `kind`. An
+ordinary entity therefore does not need its own handler file, manual
+command-registry entries, or a factory for each capability permutation. This
+registration remains an allowlist of declared CRUD views; clients cannot
+nominate arbitrary database tables.
 
 A handwritten command is preferable to generated CRUD when the operation:
 

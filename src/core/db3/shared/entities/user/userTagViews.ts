@@ -28,6 +28,7 @@ const userTagEditorSelection = Prisma.validator<Prisma.UserTagDefaultArgs>()({
 export const userTagEditorView = defineCrudView({
     viewID: "UserTag_Editor",
     entity: userTagEntity,
+    operations: { create: true, update: true, delete: true },
     selection: userTagEditorSelection,
     dtoSchema: UserTagEditorDtoSchema,
     hydrate: dto => dto,

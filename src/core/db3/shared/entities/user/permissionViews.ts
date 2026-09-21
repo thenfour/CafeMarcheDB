@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { z } from "zod";
-import { defineCreateUpdateView } from "../../core/db3CrudView";
+import { defineCrudView } from "../../core/db3CrudView";
 import { permissionEntity } from "./userEntities";
 
 const PermissionEditorDtoSchema = z.object({
@@ -27,9 +27,10 @@ const permissionEditorSelection = Prisma.validator<Prisma.PermissionDefaultArgs>
     },
 });
 
-export const permissionEditorView = defineCreateUpdateView({
+export const permissionEditorView = defineCrudView({
     viewID: "Permission_Editor",
     entity: permissionEntity,
+    operations: { create: true, update: true },
     selection: permissionEditorSelection,
     dtoSchema: PermissionEditorDtoSchema,
     hydrate: dto => dto,

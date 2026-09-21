@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { z } from "zod";
-import { defineCreateUpdateView } from "../../core/db3CrudView";
+import { defineCrudView } from "../../core/db3CrudView";
 import {
     UserInstrumentNaturalOrderBy,
     UserTagAssignmentNaturalOrderBy,
@@ -131,9 +131,10 @@ const userEditorSelection = Prisma.validator<Prisma.UserDefaultArgs>()({
     },
 });
 
-export const userEditorView = defineCreateUpdateView({
+export const userEditorView = defineCrudView({
     viewID: "User_Editor",
     entity: userEntity,
+    operations: { create: true, update: true },
     selection: userEditorSelection,
     dtoSchema: UserEditorDtoSchema,
     hydrate: dto => dto,

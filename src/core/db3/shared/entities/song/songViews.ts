@@ -154,6 +154,7 @@ const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
 export const songTagEditorView = defineCrudView({
     viewID: "SongTag_Editor",
     entity: songTagEntity,
+    operations: { create: true, update: true, delete: true },
     selection: songTagEditorSelection,
     dtoSchema: SongTagEditorDtoSchema,
     hydrate: dto => dto,
@@ -162,6 +163,7 @@ export const songTagEditorView = defineCrudView({
 export const songCreditTypeEditorView = defineCrudView({
     viewID: "SongCreditType_Editor",
     entity: songCreditTypeEntity,
+    operations: { create: true, update: true, delete: true },
     selection: songCreditTypeEditorSelection,
     dtoSchema: SongCreditTypeEditorDtoSchema,
     hydrate: dto => dto,
@@ -170,6 +172,7 @@ export const songCreditTypeEditorView = defineCrudView({
 export const songEditorView = defineCrudView({
     viewID: "Song_Editor",
     entity: songEntity,
+    operations: { create: true, update: true, delete: true },
     selection: songEditorSelection,
     dtoSchema: SongEditorDtoSchema,
     hydrate: dto => dto,

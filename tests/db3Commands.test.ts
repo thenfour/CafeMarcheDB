@@ -70,6 +70,7 @@ const InstrumentFunctionalGroupPublicIdSchema = z.custom<InstrumentFunctionalGro
 const instrumentFunctionalGroupCrud = db3.defineEntityCrudCommands({
     entity: db3.instrumentFunctionalGroupEntity,
     identitySchema: InstrumentFunctionalGroupPublicIdSchema,
+    operations: { create: true, update: true, delete: true },
     createSchema: z.object({
         name: z.string().min(1),
         description: z.string(),
@@ -114,14 +115,14 @@ describe("DB3 commands", () => {
     });
 
     it("defines strict generated CRUD DTOs with present-keys-only patch semantics", () => {
-        expectTypeOf<db3.CommandClientInputOf<typeof instrumentFunctionalGroupCrud.createCommand>>()
+        expectTypeOf<db3.CommandClientInputOf<typeof instrumentFunctionalGroupCrud.operations.create.command>>()
             .toEqualTypeOf<{
                 name: string;
                 description: string;
                 sortOrder: number;
                 color: string | null;
             }>();
-        expectTypeOf<db3.CommandClientInputOf<typeof instrumentFunctionalGroupCrud.updateCommand>>()
+        expectTypeOf<db3.CommandClientInputOf<typeof instrumentFunctionalGroupCrud.operations.update.command>>()
             .toEqualTypeOf<{
                 identity: InstrumentFunctionalGroupPublicId;
                 patch: {
@@ -131,23 +132,23 @@ describe("DB3 commands", () => {
                     color?: string | null;
                 };
             }>();
-        expectTypeOf<db3.CommandResultOf<typeof instrumentFunctionalGroupCrud.deleteCommand>>()
+        expectTypeOf<db3.CommandResultOf<typeof instrumentFunctionalGroupCrud.operations.delete.command>>()
             .toEqualTypeOf<{ identity: InstrumentFunctionalGroupPublicId }>();
-        expect(instrumentFunctionalGroupCrud.createCommand.commandID)
+        expect(instrumentFunctionalGroupCrud.operations.create.command.commandID)
             .toBe("InstrumentFunctionalGroup_Create");
-        expect(instrumentFunctionalGroupCrud.updateCommand.commandID)
+        expect(instrumentFunctionalGroupCrud.operations.update.command.commandID)
             .toBe("InstrumentFunctionalGroup_Update");
-        expect(instrumentFunctionalGroupCrud.deleteCommand.commandID)
+        expect(instrumentFunctionalGroupCrud.operations.delete.command.commandID)
             .toBe("InstrumentFunctionalGroup_Delete");
-        expect(instrumentFunctionalGroupCrud.deleteType).toBe("hard");
-        expect(instrumentFunctionalGroupCrud.updateCommand.parseDto({
+        expect(instrumentFunctionalGroupCrud.operations.delete.deleteType).toBe("hard");
+        expect(instrumentFunctionalGroupCrud.operations.update.command.parseDto({
             identity: functionalGroupPublicId,
             patch: { color: null },
         })).toEqual({
             identity: functionalGroupPublicId,
             patch: { color: null },
         });
-        expect(() => instrumentFunctionalGroupCrud.createCommand.parseDto({
+        expect(() => instrumentFunctionalGroupCrud.operations.create.command.parseDto({
             name: "Brass",
             description: "",
             sortOrder: 0,
@@ -157,26 +158,27 @@ describe("DB3 commands", () => {
         expect(() => db3.defineEntityCrudCommands({
             entity: db3.instrumentFunctionalGroupEntity,
             identitySchema: InstrumentFunctionalGroupPublicIdSchema,
+            operations: { create: true, update: true, delete: true },
             createSchema: z.object({ publicId: InstrumentFunctionalGroupPublicIdSchema }),
             updateFieldsSchema: z.object({ name: z.string() }),
         })).toThrow("must not declare server-owned identity fields: publicId");
-        expect(() => instrumentFunctionalGroupCrud.updateCommand.parseDto({
+        expect(() => instrumentFunctionalGroupCrud.operations.update.command.parseDto({
             identity: functionalGroupPublicId,
             patch: {},
         })).toThrow("Update patch must contain at least one field");
-        expect(() => instrumentFunctionalGroupCrud.updateCommand.parseDto({
+        expect(() => instrumentFunctionalGroupCrud.operations.update.command.parseDto({
             identity: functionalGroupPublicId,
             patch: { name: undefined },
         })).toThrow("Patch fields cannot be undefined");
-        expect(() => instrumentFunctionalGroupCrud.updateCommand.parseDto({
+        expect(() => instrumentFunctionalGroupCrud.operations.update.command.parseDto({
             identity: 42,
             patch: { name: "Brass" },
         })).toThrow();
-        expect(() => instrumentFunctionalGroupCrud.deleteCommand.parseDto({
+        expect(() => instrumentFunctionalGroupCrud.operations.delete.command.parseDto({
             identity: functionalGroupPublicId,
             deleteType: "hard",
         })).toThrow();
-        expect(instrumentFunctionalGroupCrud.createCommand.invalidation).toEqual({
+        expect(instrumentFunctionalGroupCrud.operations.create.command.invalidation).toEqual({
             mode: "caller",
             entityIDs: [db3.instrumentFunctionalGroupEntity.entityID],
         });
@@ -340,8 +342,8 @@ describe("DB3 commands", () => {
     it("composes and registers CRUD from the InstrumentFunctionalGroup editor view", async () => {
         const view = db3.instrumentFunctionalGroupEditorView;
         expect(view.entity).toBe(db3.instrumentFunctionalGroupEntity);
-        expect(db3.getDB3CrudViewForCommand(view.crud.createCommand.commandID)).toBe(view);
-        expect(view.crud.createCommand.parseDto({
+        expect(db3.getDB3CrudViewForCommand(view.crud.operations.create.command.commandID)).toBe(view);
+        expect(view.crud.operations.create.command.parseDto({
             name: "Brass",
             description: "",
             sortOrder: 0,
@@ -352,27 +354,27 @@ describe("DB3 commands", () => {
             sortOrder: 0,
             color: null,
         });
-        expect(() => view.crud.createCommand.parseDto({
+        expect(() => view.crud.operations.create.command.parseDto({
             name: "Brass",
             publicId: functionalGroupPublicId,
         })).toThrow();
-        expect(() => view.crud.createCommand.parseDto({
+        expect(() => view.crud.operations.create.command.parseDto({
             name: "Brass",
             instruments: [],
         })).toThrow();
-        expect(() => view.crud.createCommand.parseDto({ name: 42 }))
+        expect(() => view.crud.operations.create.command.parseDto({ name: 42 }))
             .toThrow("field is of unknown type");
-        expect(() => view.crud.updateCommand.parseDto({
+        expect(() => view.crud.operations.update.command.parseDto({
             identity: functionalGroupPublicId,
             patch: { sortOrder: "not a number" },
         })).toThrow("Input string was not convertible to integer");
-        expect(() => view.crud.updateCommand.parseDto({
+        expect(() => view.crud.operations.update.command.parseDto({
             identity: functionalGroupPublicId,
             patch: { unknownField: true },
         })).toThrow();
 
-        const createHandler = getDB3CommandHandler(view.crud.createCommand.commandID);
-        expect(createHandler.command).toBe(view.crud.createCommand);
+        const createHandler = getDB3CommandHandler(view.crud.operations.create.command.commandID);
+        expect(createHandler.command).toBe(view.crud.operations.create.command);
         const { context, insert } = createContext();
         insert.mockResolvedValueOnce({
             id: 15,
@@ -409,18 +411,18 @@ describe("DB3 commands", () => {
         ];
 
         for (const view of views) {
-            expect(db3.getDB3CrudViewForCommand(view.crud.createCommand.commandID)).toBe(view);
-            expect(getDB3CommandHandler(view.crud.createCommand.commandID).command)
-                .toBe(view.crud.createCommand);
-            expect(getDB3CommandHandler(view.crud.updateCommand.commandID).command)
-                .toBe(view.crud.updateCommand);
-            if (db3.hasGeneratedDeleteCommand(view.crud)) {
-                expect(getDB3CommandHandler(view.crud.deleteCommand.commandID).command)
-                    .toBe(view.crud.deleteCommand);
+            expect(db3.getDB3CrudViewForCommand(view.crud.operations.create.command.commandID)).toBe(view);
+            expect(getDB3CommandHandler(view.crud.operations.create.command.commandID).command)
+                .toBe(view.crud.operations.create.command);
+            expect(getDB3CommandHandler(view.crud.operations.update.command.commandID).command)
+                .toBe(view.crud.operations.update.command);
+            if (view.crud.operations.delete) {
+                expect(getDB3CommandHandler(view.crud.operations.delete.command.commandID).command)
+                    .toBe(view.crud.operations.delete.command);
             }
         }
 
-        expect(db3.eventTypeEditorView.crud.createCommand.parseDto({
+        expect(db3.eventTypeEditorView.crud.operations.create.command.parseDto({
             text: "Concert",
             description: "",
             color: null,
@@ -429,19 +431,19 @@ describe("DB3 commands", () => {
             iconName: null,
             isDeleted: false,
         })).toMatchObject({ text: "Concert", sortOrder: 0 });
-        expect(() => db3.eventTypeEditorView.crud.createCommand.parseDto({
+        expect(() => db3.eventTypeEditorView.crud.operations.create.command.parseDto({
             text: "Concert",
             events: [],
         })).toThrow();
-        expect(() => db3.eventStatusEditorView.crud.updateCommand.parseDto({
+        expect(() => db3.eventStatusEditorView.crud.operations.update.command.parseDto({
             identity: 1,
             patch: { id: 2 },
         })).toThrow();
-        expect(() => db3.eventTagEditorView.crud.deleteCommand.parseDto({
+        expect(() => db3.eventTagEditorView.crud.operations.delete.command.parseDto({
             identity: 1,
             deleteType: "hard",
         })).toThrow();
-        expect(db3.songTagEditorView.crud.createCommand.parseDto({
+        expect(db3.songTagEditorView.crud.operations.create.command.parseDto({
             text: "Ballad",
             group: "Style",
             indicator: "B",
@@ -452,42 +454,42 @@ describe("DB3 commands", () => {
             indicator: "B",
             indicatorCssClass: "ballad",
         });
-        expect(db3.userTagEditorView.crud.updateCommand.parseDto({
+        expect(db3.userTagEditorView.crud.operations.update.command.parseDto({
             identity: 1,
             patch: { cssClass: null },
         })).toEqual({
             identity: 1,
             patch: { cssClass: null },
         });
-        expect(() => db3.fileTagEditorView.crud.createCommand.parseDto({
+        expect(() => db3.fileTagEditorView.crud.operations.create.command.parseDto({
             text: "Chart",
             fileAssignments: [],
         })).toThrow();
-        expect(() => db3.wikiPageTagEditorView.crud.createCommand.parseDto({
+        expect(() => db3.wikiPageTagEditorView.crud.operations.create.command.parseDto({
             text: "Policy",
             wikiPages: [],
         })).toThrow();
-        expect(db3.permissionEditorView.crud.updateCommand.parseDto({
+        expect(db3.permissionEditorView.crud.operations.update.command.parseDto({
             identity: 1,
             patch: { isVisibility: true, significance: null },
         })).toEqual({
             identity: 1,
             patch: { isVisibility: true, significance: null },
         });
-        expect(() => db3.permissionEditorView.crud.updateCommand.parseDto({
+        expect(() => db3.permissionEditorView.crud.operations.update.command.parseDto({
             identity: 1,
             patch: { roles: [] },
         })).toThrow();
-        expect(db3.hasGeneratedDeleteCommand(db3.permissionEditorView.crud)).toBe(false);
+        expect(db3.permissionEditorView.crud.operations.delete).toBeUndefined();
         expect(db3.getDB3CrudViewForCommand("Permission_Delete")).toBeUndefined();
-        expect(db3.settingEditorView.crud.createCommand.parseDto({
+        expect(db3.settingEditorView.crud.operations.create.command.parseDto({
             name: "settings_markdown",
             value: "Welcome",
         })).toEqual({
             name: "settings_markdown",
             value: "Welcome",
         });
-        expect(db3.hasGeneratedDeleteCommand(db3.settingEditorView.crud)).toBe(false);
+        expect(db3.settingEditorView.crud.operations.delete).toBeUndefined();
         expect(db3.getDB3CrudViewForCommand("Setting_Delete")).toBeUndefined();
         expect(db3.frontpageGalleryItemEditorView.parseDto({
             id: 1,
@@ -517,7 +519,7 @@ describe("DB3 commands", () => {
             createdByUser: { id: 7, name: "Editor" },
             visiblePermission: { id: 3, name: "visibility_public" },
         });
-        expect(db3.frontpageGalleryItemEditorView.crud.createCommand.parseDto({
+        expect(db3.frontpageGalleryItemEditorView.crud.operations.create.command.parseDto({
             caption: "Opening night",
             caption_nl: "",
             caption_fr: "",
@@ -532,11 +534,11 @@ describe("DB3 commands", () => {
             fileId: 42,
             displayParams: "{}",
         });
-        expect(() => db3.frontpageGalleryItemEditorView.crud.updateCommand.parseDto({
+        expect(() => db3.frontpageGalleryItemEditorView.crud.operations.update.command.parseDto({
             identity: 1,
             patch: { file: { id: 42 } },
         })).toThrow();
-        expect(db3.frontpageGalleryItemEditorView.crud.deleteType)
+        expect(db3.frontpageGalleryItemEditorView.crud.operations.delete.deleteType)
             .toBe("softWhenPossible");
         expect(db3.roleEditorView.parseDto({
             id: 10,
@@ -559,18 +561,18 @@ describe("DB3 commands", () => {
             id: 10,
             permissions: [{ permissionId: 20, permission: { name: "edit_content" } }],
         });
-        expect(db3.roleEditorView.crud.updateCommand.parseDto({
+        expect(db3.roleEditorView.crud.operations.update.command.parseDto({
             identity: 10,
             patch: { name: "Editors", permissions: [20, 30] },
         })).toEqual({
             identity: 10,
             patch: { name: "Editors", permissions: [20, 30] },
         });
-        expect(() => db3.roleEditorView.crud.updateCommand.parseDto({
+        expect(() => db3.roleEditorView.crud.operations.update.command.parseDto({
             identity: 10,
             patch: { isSysAdminRole: true },
         })).toThrow();
-        expect(db3.hasGeneratedDeleteCommand(db3.roleEditorView.crud)).toBe(false);
+        expect(db3.roleEditorView.crud.operations.delete).toBeUndefined();
         expect(db3.getDB3CrudViewForCommand("Role_Delete")).toBeUndefined();
         expect(db3.instrumentEditorView.parseDto({
             id: 7,
@@ -605,7 +607,7 @@ describe("DB3 commands", () => {
             functionalGroup: { publicId: functionalGroupPublicId },
             instrumentTags: [{ tagId: 20, tag: { text: "Uses electricity" } }],
         });
-        expect(db3.instrumentEditorView.crud.updateCommand.parseDto({
+        expect(db3.instrumentEditorView.crud.operations.update.command.parseDto({
             identity: 7,
             patch: {
                 functionalGroupId: functionalGroupPublicId,
@@ -618,11 +620,11 @@ describe("DB3 commands", () => {
                 instrumentTags: [20, 30],
             },
         });
-        expect(() => db3.instrumentEditorView.crud.updateCommand.parseDto({
+        expect(() => db3.instrumentEditorView.crud.operations.update.command.parseDto({
             identity: 7,
             patch: { functionalGroup: { publicId: functionalGroupPublicId } },
         })).toThrow();
-        expect(db3.instrumentEditorView.crud.deleteType).toBe("hard");
+        expect(db3.instrumentEditorView.crud.operations.delete.deleteType).toBe("hard");
         expect(db3.songEditorView.parseDto({
             id: 8,
             name: "Autumn Leaves",
@@ -668,7 +670,7 @@ describe("DB3 commands", () => {
             visiblePermission: { id: 3, name: "visibility_public" },
             tags: [{ tagId: 20, tag: { text: "Jazz" } }],
         });
-        expect(db3.songEditorView.crud.updateCommand.parseDto({
+        expect(db3.songEditorView.crud.operations.update.command.parseDto({
             identity: 8,
             patch: {
                 visiblePermissionId: 3,
@@ -681,19 +683,19 @@ describe("DB3 commands", () => {
                 tags: [20, 30],
             },
         });
-        expect(() => db3.songEditorView.crud.updateCommand.parseDto({
+        expect(() => db3.songEditorView.crud.operations.update.command.parseDto({
             identity: 8,
             patch: { taggedFiles: [40] },
         })).toThrow();
-        expect(() => db3.songEditorView.crud.updateCommand.parseDto({
+        expect(() => db3.songEditorView.crud.operations.update.command.parseDto({
             identity: 8,
             patch: { credits: [50] },
         })).toThrow();
-        expect(() => db3.songEditorView.crud.updateCommand.parseDto({
+        expect(() => db3.songEditorView.crud.operations.update.command.parseDto({
             identity: 8,
             patch: { pinnedRecordingId: 40 },
         })).toThrow();
-        expect(db3.songEditorView.crud.deleteType).toBe("softWhenPossible");
+        expect(db3.songEditorView.crud.operations.delete.deleteType).toBe("softWhenPossible");
     });
 
     it("defines finite command-backed views for the remaining ordinary grids", () => {
@@ -727,18 +729,18 @@ describe("DB3 commands", () => {
             instruments: [{ instrument: { name: "Trumpet" } }],
             tags: [{ userTag: { text: "Band" } }],
         });
-        expect(db3.userEditorView.crud.updateCommand.parseDto({
+        expect(db3.userEditorView.crud.operations.update.command.parseDto({
             identity: 10,
             patch: { name: "Ada Lovelace", instruments: [4], tags: [5] },
         })).toEqual({
             identity: 10,
             patch: { name: "Ada Lovelace", instruments: [4], tags: [5] },
         });
-        expect(() => db3.userEditorView.crud.updateCommand.parseDto({
+        expect(() => db3.userEditorView.crud.operations.update.command.parseDto({
             identity: 10,
             patch: { signInMethods: [] },
         })).toThrow();
-        expect(db3.hasGeneratedDeleteCommand(db3.userEditorView.crud)).toBe(false);
+        expect(db3.userEditorView.crud.operations.delete).toBeUndefined();
 
         expect(db3.eventEditorView.parseDto({
             id: 20,
@@ -763,7 +765,7 @@ describe("DB3 commands", () => {
             type: { text: "Concert" },
             tags: [{ eventTag: { text: "Public" } }],
         });
-        expect(db3.eventEditorView.crud.updateCommand.parseDto({
+        expect(db3.eventEditorView.crud.operations.update.command.parseDto({
             identity: 20,
             patch: {
                 startsAt: new Date("2026-10-10T19:00:00.000Z"),
@@ -772,11 +774,11 @@ describe("DB3 commands", () => {
                 tags: [8],
             },
         })).toMatchObject({ identity: 20, patch: { tags: [8] } });
-        expect(() => db3.eventEditorView.crud.updateCommand.parseDto({
+        expect(() => db3.eventEditorView.crud.operations.update.command.parseDto({
             identity: 20,
             patch: { segments: [] },
         })).toThrow();
-        expect(db3.eventEditorView.crud.deleteType).toBe("softWhenPossible");
+        expect(db3.eventEditorView.crud.operations.delete.deleteType).toBe("softWhenPossible");
 
         expect(db3.fileEditorView.parseDto({
             id: 40,
@@ -802,7 +804,7 @@ describe("DB3 commands", () => {
             storedLeafName: "storage-id.pdf",
             uploadedByUser: { name: "Ada" },
         });
-        expect(db3.fileEditorView.crud.updateCommand.parseDto({
+        expect(db3.fileEditorView.crud.operations.update.command.parseDto({
             identity: 40,
             patch: {
                 fileLeafName: "concert-program.pdf",
@@ -819,21 +821,21 @@ describe("DB3 commands", () => {
                 taggedEvents: [20],
             },
         });
-        expect(() => db3.fileEditorView.crud.updateCommand.parseDto({
+        expect(() => db3.fileEditorView.crud.operations.update.command.parseDto({
             identity: 40,
             patch: { childFiles: [] },
         })).toThrow();
-        expect(db3.hasGeneratedCreateCommand(db3.fileEditorView.crud)).toBe(false);
+        expect(db3.fileEditorView.crud.operations.create).toBeUndefined();
         expect(db3.getDB3CrudViewForCommand("File_Create")).toBeUndefined();
-        expect(db3.getDB3CrudViewForCommand(db3.fileEditorView.crud.updateCommand.commandID))
+        expect(db3.getDB3CrudViewForCommand(db3.fileEditorView.crud.operations.update.command.commandID))
             .toBe(db3.fileEditorView);
-        expect(db3.getDB3CrudViewForCommand(db3.fileEditorView.crud.deleteCommand.commandID))
+        expect(db3.getDB3CrudViewForCommand(db3.fileEditorView.crud.operations.delete.command.commandID))
             .toBe(db3.fileEditorView);
-        expect(getDB3CommandHandler(db3.fileEditorView.crud.updateCommand.commandID).command)
-            .toBe(db3.fileEditorView.crud.updateCommand);
-        expect(getDB3CommandHandler(db3.fileEditorView.crud.deleteCommand.commandID).command)
-            .toBe(db3.fileEditorView.crud.deleteCommand);
-        expect(db3.fileEditorView.crud.deleteType).toBe("softWhenPossible");
+        expect(getDB3CommandHandler(db3.fileEditorView.crud.operations.update.command.commandID).command)
+            .toBe(db3.fileEditorView.crud.operations.update.command);
+        expect(getDB3CommandHandler(db3.fileEditorView.crud.operations.delete.command.commandID).command)
+            .toBe(db3.fileEditorView.crud.operations.delete.command);
+        expect(db3.fileEditorView.crud.operations.delete.deleteType).toBe("softWhenPossible");
     });
 
     it("preserves xTable client-value transforms across CRUD reads and writes", () => {
@@ -862,7 +864,7 @@ describe("DB3 commands", () => {
                 "update",
             );
             expect(prepared.color).toBe(colorId);
-            expect(view.crud.updateCommand.parseDto({
+            expect(view.crud.operations.update.command.parseDto({
                 identity: functionalGroupPublicId,
                 patch: { color: prepared.color },
             })).toEqual({
@@ -873,7 +875,7 @@ describe("DB3 commands", () => {
     });
 
     it("routes Role permission-set edits through the generated Role update command", async () => {
-        const handler = getDB3CommandHandler(db3.roleEditorView.crud.updateCommand.commandID);
+        const handler = getDB3CommandHandler(db3.roleEditorView.crud.operations.update.command.commandID);
         const { context, update } = createContext();
 
         await expect(handler.execute({

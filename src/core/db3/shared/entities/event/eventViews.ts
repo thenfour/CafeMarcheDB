@@ -80,6 +80,7 @@ const eventTagEditorSelection = Prisma.validator<Prisma.EventTagDefaultArgs>()({
 export const eventTypeEditorView = defineCrudView({
     viewID: "EventType_Editor",
     entity: eventTypeEntity,
+    operations: { create: true, update: true, delete: true },
     selection: eventTypeEditorSelection,
     dtoSchema: EventTypeEditorDtoSchema,
     hydrate: dto => dto,
@@ -88,6 +89,7 @@ export const eventTypeEditorView = defineCrudView({
 export const eventStatusEditorView = defineCrudView({
     viewID: "EventStatus_Editor",
     entity: eventStatusEntity,
+    operations: { create: true, update: true, delete: true },
     selection: eventStatusEditorSelection,
     dtoSchema: EventStatusEditorDtoSchema,
     hydrate: dto => dto,
@@ -96,6 +98,7 @@ export const eventStatusEditorView = defineCrudView({
 export const eventTagEditorView = defineCrudView({
     viewID: "EventTag_Editor",
     entity: eventTagEntity,
+    operations: { create: true, update: true, delete: true },
     selection: eventTagEditorSelection,
     dtoSchema: EventTagEditorDtoSchema,
     hydrate: dto => dto,
@@ -293,6 +296,7 @@ const eventEditorSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
 export const eventEditorView = defineCrudView({
     viewID: "Event_Editor",
     entity: eventEntity,
+    operations: { create: true, update: true, delete: true },
     selection: eventEditorSelection,
     dtoSchema: EventEditorDtoSchema,
     hydrate: dto => dto,

@@ -4,11 +4,7 @@ import { useDashboardContext } from "src/core/components/dashboardContext/Dashbo
 import type { CMDBTableFilterModel } from "../shared/apiTypes";
 import type { GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import type { AnyDB3CrudView, ClientOf } from "../db3";
-import {
-    createEntityCrudUpdatePatch,
-    hasGeneratedCreateCommand,
-    hasGeneratedDeleteCommand,
-} from "../db3";
+import { createEntityCrudUpdatePatch } from "../db3";
 import {
     useTableRenderContext,
     type xTableClientSpec,
@@ -43,17 +39,9 @@ export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
     }
 
     const dashboardContext = useDashboardContext();
-    const create = useDB3Command(
-        hasGeneratedCreateCommand(args.view.crud)
-            ? args.view.crud.createCommand
-            : undefined,
-    );
-    const update = useDB3Command(args.view.crud.updateCommand);
-    const deleteCommand = useDB3Command(
-        hasGeneratedDeleteCommand(args.view.crud)
-            ? args.view.crud.deleteCommand
-            : undefined,
-    );
+    const create = useDB3Command(args.view.crud.operations.create?.command);
+    const update = useDB3Command(args.view.crud.operations.update.command);
+    const deleteCommand = useDB3Command(args.view.crud.operations.delete?.command);
     const tableClient = useTableRenderContext<ClientOf<TView>>({
         requestedCaps: args.paginated
             ? xTableClientCaps.PaginatedQuery

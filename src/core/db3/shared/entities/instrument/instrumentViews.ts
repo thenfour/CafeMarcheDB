@@ -158,6 +158,7 @@ export const instrumentFunctionalGroupListView = defineView({
 export const instrumentFunctionalGroupEditorView = defineCrudView({
     viewID: "InstrumentFunctionalGroup_Editor",
     entity: instrumentFunctionalGroupEntity,
+    operations: { create: true, update: true, delete: true },
     selection: InstrumentFunctionalGroupArgs,
     dtoSchema: InstrumentFunctionalGroupListDtoSchema,
     hydrate: dto => dto,
@@ -174,6 +175,7 @@ export const instrumentFunctionalGroupDashboardView = defineView({
 export const instrumentTagEditorView = defineCrudView({
     viewID: "InstrumentTag_Editor",
     entity: instrumentTagEntity,
+    operations: { create: true, update: true, delete: true },
     selection: instrumentTagEditorSelection,
     dtoSchema: InstrumentTagDtoSchema,
     hydrate: dto => dto,
@@ -182,6 +184,7 @@ export const instrumentTagEditorView = defineCrudView({
 export const instrumentEditorView = defineCrudView({
     viewID: "Instrument_Editor",
     entity: instrumentEntity,
+    operations: { create: true, update: true, delete: true },
     selection: instrumentEditorSelection,
     dtoSchema: InstrumentEditorDtoSchema,
     hydrate: dto => dto,

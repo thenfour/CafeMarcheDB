@@ -260,7 +260,7 @@ function DB3CrudEditGrid({ view, tableSpec, ...props }: DB3EditGridProps & { vie
     });
     return <DB3EditGridImpl
         {...props}
-        disableCreate={props.disableCreate || !db3.hasGeneratedCreateCommand(view.crud)}
+        disableCreate={props.disableCreate || !view.crud.operations.create}
         tableSpec={tableSpec}
         tableClient={tableClient}
         queryState={queryState}
