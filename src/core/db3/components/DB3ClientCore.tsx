@@ -320,6 +320,11 @@ function instantiateClientColumns(factories: DB3ClientColumnFactoryMap): AnyICol
  * New view-bound table specification. Its column tuple is checked against the
  * hydrated client row inferred from the concrete view.
  */
+
+// note that __invalidColumnKeys is pretty broad: it doesn't report which column
+// is the issue.
+// note that __invalidColumnKeys can occur also when the datatypes just don't match --
+// in particular, nullability mismatch.
 export function defineTableClientSpec<
     TView extends db3.AnyDB3View,
     TFactories extends { [K in keyof TFactories]: DB3ClientColumnFactory },

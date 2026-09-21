@@ -119,7 +119,7 @@ export interface GenericStringColumnArgs<TColumnName extends string = string> {
 };
 
 export class GenericStringColumnClient<TColumnName extends string = string>
-    extends DB3ClientCore.IColumnClient<TColumnName, string> {
+    extends DB3ClientCore.IColumnClient<TColumnName, string | null> {
     typedSchemaColumn: GenericStringField;
     renderCell?: undefined | ((params: GridRenderCellParams) => React.ReactNode);
 

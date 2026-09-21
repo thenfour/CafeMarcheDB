@@ -27,8 +27,9 @@ import { RenderMuiIcon } from "src/core/db3/components/IconMap";
 import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
-import { AutoAssignInstrumentPartition } from "src/core/db3/shared/apiTypes";
 import { ChipFilterGroup, FilterControls } from "../../core/components/search/FilterControl";
+import { ClientOf } from "src/core/db3/db3";
+import { AutoAssignInstrumentPartition } from "@/src/core/db3/shared/autoAssignInstrumentPartition";
 
 interface FilterSpec {
     qfText: string;
@@ -151,8 +152,8 @@ const AutoAssignInstrumentTester = () => {
     paperspaceships07x - E-Hangdrum.pdf
     paperspaceships5x - Alto Sax.pdf`);
 
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xInstrument,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.instrumentDashboardView,
         columns: {
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
@@ -167,40 +168,16 @@ const AutoAssignInstrumentTester = () => {
             instrumentTags: columnName => new DB3Client.TagsFieldClient<db3.InstrumentTagAssociationPayload>({ columnName, cellWidth: 220, allowDeleteFromCell: false }),
         },
     });
-
-
-    const tableClient = DB3Client.useLegacyTableRenderContext({
+    const tableClient = DB3Client.useTableRenderContext({
         tableSpec,
         requestedCaps: DB3Client.xTableClientCaps.Query,
     });
-    const allInstruments = tableClient.items as Prisma.InstrumentGetPayload<{}>[];
-
-
-    // const tableSpec = DB3Client.defineTableClientSpec({
-    //     view: db3.instrumentDashboardView,
-    //     columns: {
-    //         id: columnName => new DB3Client.PKColumnClient({ columnName }),
-    //         name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
-    //         description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
-    //         autoAssignFileLeafRegex: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200, fieldCaption: "Regex" }),
-    //         sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
-    //         functionalGroup: columnName => new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupClientPayload>({
-    //             columnName,
-    //             cellWidth: 200,
-    //             selectionView: db3.instrumentFunctionalGroupEditorView,
-    //         }),
-    //         instrumentTags: columnName => new DB3Client.TagsFieldClient<db3.InstrumentTagAssociationPayload>({ columnName, cellWidth: 220, allowDeleteFromCell: false }),
-    //     },
-    // });
-    // const tableClient = DB3Client.useTableRenderContext({
-    //     tableSpec,
-    //     requestedCaps: DB3Client.xTableClientCaps.Query,
-    // });
-    // const allInstruments = tableClient.items;// as Prisma.InstrumentGetPayload<{}>[];
+    const allInstruments = tableClient.items;
+    type InstrumentPayload = ClientOf<typeof db3.instrumentDashboardView>;
 
 
     const lines = text.split('\n').filter(l => !IsNullOrWhitespace(l));
-    const results: { leaf: string, instruments: Prisma.InstrumentGetPayload<{}>[] }[] = [];
+    const results: { leaf: string, instruments: InstrumentPayload[] }[] = [];
 
     const localStripExtension = (filename: string) => {
         const lastDotIndex = filename.lastIndexOf('.');
