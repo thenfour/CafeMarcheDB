@@ -41,10 +41,6 @@ const compatibilitySites: Record<string, InventoryEntry[]> = {
         { api: "defineLegacyTableClientSpec", category: "table-only-query", count: 1 },
         { api: "useLegacyTableRenderContext", category: "table-only-query", count: 1 },
     ],
-    "src/core/components/event/EventSegmentComponents.tsx": [
-        { api: "defineLegacyTableClientSpec", category: "render-only-editor", count: 1 },
-        { api: "useLegacyTableRenderContext", category: "render-only-editor", count: 1 },
-    ],
     "src/core/components/event/NewEventComponents.tsx": [
         { api: "defineLegacyTableClientSpec", category: "render-only-editor", count: 2 },
         { api: "useLegacyTableRenderContext", category: "render-only-editor", count: 2 },
@@ -56,14 +52,6 @@ const compatibilitySites: Record<string, InventoryEntry[]> = {
     "src/core/components/SearchableNameColumnClient.tsx": [
         { api: "defineLegacyDynamicTableClientSpec", category: "runtime-dynamic-query", count: 1 },
         { api: "useLegacyTableRenderContext", category: "runtime-dynamic-query", count: 1 },
-    ],
-    "src/core/components/song/SongComponents.tsx": [
-        { api: "defineLegacyTableClientSpec", category: "render-only-editor", count: 1 },
-        { api: "useLegacyTableRenderContext", category: "render-only-editor", count: 1 },
-    ],
-    "src/core/components/SongFileComponents.tsx": [
-        { api: "defineLegacyTableClientSpec", category: "render-only-editor", count: 1 },
-        { api: "useLegacyTableRenderContext", category: "render-only-editor", count: 1 },
     ],
     "src/core/components/wiki/WikiPageComponentsBase.tsx": [
         { api: "defineLegacyTableClientSpec", category: "named-view-candidate", count: 1 },

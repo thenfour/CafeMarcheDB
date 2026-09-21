@@ -408,8 +408,8 @@ export const FileEditor = (props: FileEditorProps) => {
 
 
 
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xFile,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.fileEditorView,
         columns: {
             // Any columns updated by the file CRUD command need to be specified here.
             // if they shouldn't be displayed to users, make a hidden version.
@@ -447,17 +447,24 @@ export const FileEditor = (props: FileEditorProps) => {
             taggedWikiPages: DB3Client.tagsFieldClientGen<db3.FileWikiPageTagPayload>({ allowDeleteFromCell: false }),
         },
     });
-    const tableRenderClient = DB3Client.useLegacyTableRenderContext({
+    const tableRenderClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.None,
         tableSpec,
+        referenceProvider: dashboardContext.referenceStore,
     });
     const editCommands = DB3Client.useCrudViewCommands({
         view: db3.fileEditorView,
         tableClient: tableRenderClient,
     });
+    const editorInitialValue: db3.ClientOf<typeof db3.fileEditorView> = {
+        ...props.initialValue,
+        visiblePermission: props.initialValue.visiblePermission ?? undefined,
+        isDeleted: undefined,
+        customData: undefined,
+    };
 
     return <DB3EditObjectDialog
-        initialValue={props.initialValue}
+        initialValue={editorInitialValue}
         onCancel={() => props.onClose()}
         onDelete={() => {
             void recordFeature({
@@ -478,7 +485,9 @@ export const FileEditor = (props: FileEditorProps) => {
                 feature: ActivityFeature.file_edit,
                 fileId: props.initialValue.id,
             });
-            editCommands.update(value, props.initialValue).then(() => {
+            // DB3EditObjectDialog is still a transitional untyped dialog boundary.
+            const editorValue = value as db3.ClientOf<typeof db3.fileEditorView>;
+            editCommands.update(editorValue, editorInitialValue).then(() => {
                 showSnackbar({ severity: "success", children: "file edit successful" });
             }).catch((e) => {
                 console.log(e);

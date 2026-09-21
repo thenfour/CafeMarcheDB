@@ -190,13 +190,15 @@ export const SongDescriptionControl = ({ song, refetch, readonly }: { song: Song
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+type SongCreditEditorClient = db3.ClientOf<typeof db3.songCreditEditorView>;
+
 export interface SongCreditEditButtonProps {
     //songData: SongWithMetadata;
     value: NonNullable<db3.SongDetailClient["credits"]>[number];
     refetch: () => void;
     readonly: boolean;
-    creditsTableClient: DB3Client.xTableRenderClient;
-    creditsCommands: DB3Client.CrudViewCommandClient;
+    creditsTableClient: DB3Client.xTableRenderClient<typeof db3.songCreditEditorView>;
+    creditsCommands: DB3Client.CrudViewCommandClient<typeof db3.songCreditEditorView>;
 };
 // also checks authorization & readonly to hide this button
 export const SongCreditEditButton = ({ creditsTableClient, creditsCommands, ...props }: SongCreditEditButtonProps) => {
@@ -225,7 +227,9 @@ export const SongCreditEditButton = ({ creditsTableClient, creditsCommands, ...p
             feature: ActivityFeature.song_credit_edit,
             songCreditTypeId: props.value.typeId,
         });
-        creditsCommands.update(newRow, props.value).then(() => {
+        // DB3EditRowButton is still a transitional untyped dialog boundary.
+        const editorRow = newRow as SongCreditEditorClient;
+        creditsCommands.update(editorRow, props.value).then(() => {
             showSnackbar({ severity: "success", children: "updated" });
             api.closeDialog();
         }).catch(e => {
@@ -264,8 +268,8 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xSongCredit,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.songCreditEditorView,
         columns: {
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
             user: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
@@ -276,9 +280,10 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
         },
     });
 
-    const creditsTableClient = DB3Client.useLegacyTableRenderContext({
+    const creditsTableClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.None,
         tableSpec,
+        referenceProvider: dashboardContext.referenceStore,
     });
     const creditsCommands = DB3Client.useCrudViewCommands({
         view: db3.songCreditEditorView,
@@ -289,7 +294,9 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
         void recordFeature({
             feature: ActivityFeature.song_credit_add,
         });
-        creditsCommands.create(updateObj).then(() => {
+        // DB3EditRowButton is still a transitional untyped dialog boundary.
+        const editorRow = updateObj as Partial<SongCreditEditorClient>;
+        creditsCommands.create(editorRow).then(() => {
             showSnackbar({ severity: "success", children: "updated" });
         }).catch(e => {
             console.log(e);

@@ -1007,6 +1007,11 @@ conversions.
 - [x] Remove `bindLegacyTableClientSpecToView()`. The named-view overload of
   `useDb3Query()` now accepts a typed view-bound spec or creates an empty typed
   query-only spec; Song detail supplies its typed presentation columns.
+- [x] Convert the embedded Event Segment, Song Credit, and File editors that
+  already own CRUD views to typed view-bound specs, render contexts, and command
+  clients. The shared edit-dialog callback remains a documented untyped draft
+  boundary; File editing normalizes its detail row into the editor view shape
+  before entering that boundary.
 - [ ] Convert the remaining view-backed inventory to the typed path. Retain a
   separately documented
   runtime-dynamic/query-only API only where static view binding is genuinely
