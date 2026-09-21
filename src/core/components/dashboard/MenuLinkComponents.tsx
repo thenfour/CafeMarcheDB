@@ -212,30 +212,25 @@ export const MenuLinkList = () => {
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
-    const tableSpec = DB3Client.bindLegacyTableClientSpecToView({
+    const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.menuLinkListView,
-        tableSpec: DB3Client.defineLegacyTableClientSpec({
-            table: db3.xMenuLink,
-            columns: {
-                id: columnName => new DB3Client.PKColumnClient({ columnName }),
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
 
-                applicationPage: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Section name" }),
-                groupName: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Group name" }),
-                caption: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Item text", className: "titleText" }),
-                iconName: columnName => new DB3Client.IconFieldClient({ columnName, cellWidth: 120, fieldCaption: "Icon" }),
+            applicationPage: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Section name" }),
+            groupName: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Group name" }),
+            caption: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Item text", className: "titleText" }),
+            iconName: columnName => new DB3Client.IconFieldClient({ columnName, cellWidth: 120, fieldCaption: "Icon" }),
 
-                linkType: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 120, fieldCaption: "Type" }),
-                externalURI: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "External URL" }),
-                wikiSlug: columnName => new SearchableWikiSlugColumnClient({ columnName, cellWidth: 250 }),
+            linkType: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 120, fieldCaption: "Type" }),
+            externalURI: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "External URL" }),
+            wikiSlug: columnName => new SearchableWikiSlugColumnClient({ columnName, cellWidth: 250 }),
 
-                visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
+            visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
 
-                groupCssClass: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Group CSS class" }),
-                itemCssClass: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Item CSS class" }),
-
-
-            },
-        }),
+            groupCssClass: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Group CSS class" }),
+            itemCssClass: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Item CSS class" }),
+        },
     });
     const client = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,

@@ -62,23 +62,6 @@ function createIdentitySchema<TEntity extends AnyDB3Entity>(
 }
 
 /**
- * Legacy migration-only compat
- * this is a hydrate() impl which acts like the old-style ApplyDbToClient,
- * where the returned model is cast to TModel which may not be an honest representation
- * (e.g. ColorField)
- */
-function applyLegacyTableSchemaDbToClient<TModel extends TAnyModel>(
-    entity: AnyDB3Entity,
-    model: TModel,
-    mode: "view" | "new" | "update",
-): TModel {
-    // Legacy views have no typed field map from which to derive the changed
-    // result. This cast documents the old contract precisely; it must not be
-    // used by the new defineCrudView() path.
-    return entity.schema.getClientModel(model, mode) as TModel;
-}
-
-/**
  * Builds the strict transport-key boundary for prepared TableClient values.
  * Field values are still parsed and authorized by the authoritative xTable
  * mutation services; this schema prevents identities and unknown members from
@@ -205,34 +188,6 @@ export function defineCrudView<
     >;
     registerCrudView(crudView as unknown as AnyDB3CrudView);
     return crudView;
-}
-
-/**
- * Migration-only CRUD view constructor preserving the historical
- * implicit xTable DTO-to-client conversion (ApplyDbToClient style field replacements)
- * Note that if there are no special columns doing that conversion, the legacy behavior is effectively a nop.
- */
-export function defineLegacyCrudView<
-    TEntity extends AnyDB3Entity,
-    TDtoSchema extends z.AnyZodObject,
-    TClient extends TAnyModel,
-    TOperations extends DB3CrudOperationFlags,
-    TSelection extends DB3ViewSelectionArgs<TEntity> | undefined = undefined,
->(args: {
-    viewID: string;
-    entity: TEntity;
-    selection?: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
-    dtoSchema: TDtoSchema;
-    hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
-    operations: TOperations;
-}) {
-    return defineCrudView({
-        ...args,
-        hydrate: (dto, references) => args.hydrate(
-            applyLegacyTableSchemaDbToClient(args.entity, dto, "view"),
-            references,
-        ),
-    });
 }
 
 export function getDB3CrudViewForCommand(commandID: string): AnyDB3CrudView | undefined {

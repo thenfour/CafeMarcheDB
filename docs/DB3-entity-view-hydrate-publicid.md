@@ -387,11 +387,10 @@ field behavior such as `ColorField.ApplyDbToClient`, where a stored color ID is
 represented by a `ColorPaletteEntry`, without falsely typing the hydrator input
 as the unchanged DTO.
 
-Existing CRUD views that depended on the old hidden conversion must opt into
-`defineLegacyCrudView()`. That constructor is migration-only: it contains the
-single unsound DTO/client compatibility cast and makes the old intention
-visible at every remaining declaration. New views must not use it. Prepared
-command values still travel in the opposite, database-shaped direction;
+All in-tree CRUD views now use `defineCrudView()` and explicitly own DTO-to-client
+hydration. The zero-consumer `defineLegacyCrudView()` compatibility constructor
+and its unsound DTO/client cast have been removed. Prepared command values still
+travel in the opposite, database-shaped direction;
 generated command schemas convert each value back through the table contract
 before invoking the field's client-value validator.
 
@@ -998,10 +997,15 @@ This is a bounded cleanup pass, not another exploratory architecture phase. Its
 purpose is to leave one clearly supported path before multiplying public-ID
 conversions.
 
-- [ ] Inventory every use of `defineLegacyCrudView()`,
-  `defineLegacyTableClientSpec()`, `defineLegacyDynamicTableClientSpec()`,
-  `bindLegacyTableClientSpecToView()`, and `useLegacyTableRenderContext()`.
-  Convert view-backed callers to the typed path; retain a separately documented
+- [x] Establish a categorized, non-growth source inventory for
+  `defineLegacyCrudView()`, `defineLegacyTableClientSpec()`,
+  `defineLegacyDynamicTableClientSpec()`, `bindLegacyTableClientSpecToView()`,
+  and `useLegacyTableRenderContext()`. Delete the zero-consumer legacy CRUD-view
+  constructor and convert the direct Custom Link and Menu Link view adapters to
+  typed `defineTableClientSpec()` declarations.
+- [ ] Convert the remaining view-backed inventory to the typed path. The only
+  remaining `bindLegacyTableClientSpecToView()` call is the generic
+  `useDb3Query()` migration bridge; retain a separately documented
   runtime-dynamic/query-only API only where static view binding is genuinely
   impossible.
 - [ ] Convert remaining `enrich*` consumers and duplicate asserted Prisma query
