@@ -1,4 +1,4 @@
-# DB3 entity, view, hydration, commands, and public identity
+# DB3 entity/view architecture and public-ID migration
 
 GitHub issues:
 
@@ -6,9 +6,11 @@ GitHub issues:
 - [#697 introduce entity/view/hydrate for better design, automation, typesafety](https://github.com/thenfour/CafeMarcheDB/issues/697)
 - [#698 xTable to strengthen typesafety](https://github.com/thenfour/CafeMarcheDB/issues/698)
 
-This is a living design document. It describes the intended boundaries and the
-current transitional implementation; it is not a claim that all DB3 consumers
-have already been migrated.
+This is a living design document. The entity/view/hydration/command architecture
+described here is the supported DB3 baseline. The active project is no longer to
+prove those primitives: it is to remove their remaining compatibility paths and
+then migrate client-facing identity from numeric database IDs to `publicId`, one
+bounded entity slice at a time.
 
 ## Motivation
 
@@ -44,7 +46,7 @@ Prisma selection
 Writes have a separate pipeline:
 
 ```text
-arbitrary client input (often an editable draft)
+operation-specific client input
     -> named command serializer
     -> runtime-validated command DTO
     -> generic command RPC envelope
@@ -64,7 +66,7 @@ The intended converged client boundary is therefore:
 
 ```text
 reads:  Entity -> View -> DTO -> hydrated client value
-writes: edit model or action input -> Command DTO -> command handler -> persistence
+writes: row or action input -> Command DTO -> command handler -> persistence
 ```
 
 Commands are intended to become the only DB3 client-to-server write transport.
@@ -76,22 +78,21 @@ command system should support two authoring levels:
 - handwritten domain commands for aggregates, workflows, and other operations
   whose contract is not meaningfully row-shaped.
 
-The goal is one mutation architecture with a simple form and an expressive form,
-not an easy legacy path beside a more type-safe command path. The current
-TableClient CRUD facade provides useful automatic editor ergonomics and may
-remain, but its legacy generic mutation transport is migration infrastructure
-until the facade is command-backed.
+The result is one mutation architecture with a simple form and an expressive
+form, not an easy legacy path beside a more type-safe command path. The
+TableClient CRUD facade retains useful automatic editor ergonomics, but it is now
+command-backed; the former generic mutation transport has been removed.
 
 ## Current vocabulary and responsibilities
 
 ### `xTable`: policy and persistence metadata
 
-`xTable` is still the authoritative DB3 schema today. It owns table and column
+`xTable` is the authoritative DB3 schema. It owns table and column
 authorization, relation metadata, query/filter behavior, mutation behavior, and
 the natural database primary-key member.
 
-The entity/view work is being introduced around `xTable`, not by replacing all
-of it at once.
+Entities and views form the typed transport and client boundary around that
+schema; they do not replace its persistence policy.
 
 Tables use `defineTable({ fields: makeColumnSet({ ... }) })`. The object key is
 the single source of each field name: `makeColumnSet()` supplies it to the field
@@ -290,7 +291,7 @@ belong to the command handler.
 - callers depend on a shared operation contract, not on a server resolver
   module or its incidental parameter shape.
 
-| Concern | Raw `useMutation()` | Legacy DB3 TableClient | `useDB3Command()` |
+| Concern | Raw `useMutation()` | Retired generic TableClient transport | `useDB3Command()` |
 | --- | --- | --- | --- |
 | Client input | Resolver input | Table/client-column row | Arbitrary command input |
 | Client transformation | Caller or endpoint-specific helper | Generic `prepareMutation()` | Command-owned `serialize()` |
@@ -311,22 +312,21 @@ migrated or that do not need a DB3 command contract. It leaves input shaping,
 endpoint selection, result interpretation, and any client-side runtime checking
 to each caller.
 
-The legacy DB3 TableClient (`xTableRenderClient`) currently solves a different
-problem. Its mutation methods provide generic single-table CRUD.
-`prepareMutation()` walks configured client columns and `xTable` columns,
-converts client fields to database-shaped fields, performs advisory client-side
-authorization filtering, selects numeric or public identity, invokes the
-generic table mutation endpoint, and may refetch the table query. Those are
-important capabilities to preserve, but the TableClient mutation transport is
-not part of the target architecture.
+The former generic TableClient mutation transport combined row preparation,
+transport, and refetching behind a table-name envelope. The supported
+TableClient remains a useful query/render and row-preparation facade, but writes
+now invoke generated entity CRUD commands. `prepareMutation()` still walks the
+configured client columns and `xTable` fields, converts client values to
+database-shaped command values, and performs advisory client-side authorization
+filtering. It no longer selects a generic mutation endpoint.
 
-Generated entity CRUD commands should make conventional row editing as easy as
-the legacy path while providing strict operation-specific input and result
-types. They may reuse existing column transformation, validation, authorization,
-auditing, hook, and public-ID machinery internally. The public client contract
-must not expose `TAnyModel`, table names, numeric table IDs, or the generic
-mutation envelope merely because the implementation delegates to mature DB3
-row services.
+Generated entity CRUD commands make conventional row editing as automatic as
+the old path while providing strict operation-specific input and result types.
+They reuse existing column transformation, validation, authorization, auditing,
+hook, and public-ID machinery internally. The public client contract does not
+expose `TAnyModel`, table names, numeric table IDs, or a generic mutation
+envelope merely because the implementation delegates to mature DB3 row
+services.
 
 `defineEntityCrudCommands()` is the low-level foundation for that contract. It
 establishes the enabled operation descriptors from an entity, explicit
@@ -444,7 +444,7 @@ may remove keys. `prepareMutation()` therefore returns the view-derived partial
 command-value model. The old mutable `ApplyClientToPostClient` fallback is
 accepted only by an explicitly legacy spec.
 
-`DB3EditGrid` should use that hook internally. The ordinary call site remains
+`DB3EditGrid` uses that hook internally. The ordinary call site remains
 limited to presentation metadata and the semantic view:
 
 ```tsx
@@ -454,10 +454,10 @@ limited to presentation metadata and the semantic view:
 />
 ```
 
-It must not require per-entity command hooks, DTO mappers, mutation adapters, or
-knowledge of command IDs. Creation may initially retain the same new-row model
-and limitations as the current TableClient; defining a more general first-class
-edit-draft abstraction is separate work.
+It does not require per-entity command hooks, DTO mappers, mutation adapters, or
+knowledge of command IDs. Creation intentionally retains the current row-shaped
+TableClient model and limitations. A more general first-class edit-draft
+abstraction is separate, deferred work.
 
 Because command descriptors and handlers must also exist on the server,
 `defineCrudView()` performs module-level composition and registration while
@@ -477,21 +477,17 @@ A handwritten command is preferable to generated CRUD when the operation:
 - must enforce aggregate invariants in one transaction; or
 - should hide insert/update choice and persistence layout from the component.
 
-Handwritten commands do not call the legacy client `prepareMutation()` path.
+Handwritten commands do not call the row-shaped `prepareMutation()` path.
 Their serializer is the explicit client-input-to-DTO transformation, while the
 server command row services reuse the authoritative DB3 row mutation core. A
 generated CRUD view may reuse TableClient's current mutation preparation because
 its purpose is precisely the same constrained row-shaped editing behavior. This
 does not make that table-shaped serializer responsible for aggregate semantics.
 
-During migration, the existing TableClient CRUD facade may delegate to generated
-commands so generic editors can move without a flag day. The high-level
-automatic CRUD ergonomics may remain; the compatibility seam to remove is its
-legacy generic mutation transport, table-name envelope, and RPC endpoint. Once
-all consumers of that transport have moved, remove the legacy mutation
-capability flag and generic mutation RPC surface. Do not remove a useful
-high-level grid/editor facade merely because its implementation used to call
-the legacy endpoint.
+The TableClient CRUD facade now delegates to generated commands. Its old generic
+mutation transport, table-name envelope, capability flag, and RPC endpoint have
+been removed. The high-level grid/editor facade remains because its automatic
+editor ergonomics are useful independently of the retired transport.
 
 ### Client values, editable drafts, and mutation commands are distinct
 
@@ -518,39 +514,35 @@ and update. Its registered server handler performs parent and child writes in
 one serializable transaction, verifies that persisted child IDs belong to the
 setlist, checks referenced event/song visibility, composes the DB3 row services,
 and runs final aggregate mutation effects. Authorization-incomplete client
-values cannot become editable drafts. Generic DB3 editing still uses legacy
-mechanisms in many places, so this pattern is not yet universal.
+values cannot become editable drafts. This is a domain-specific aggregate
+model, not a required abstraction for ordinary DB3 row editing.
 
 A read DTO's optional fields must not silently become optional write semantics.
 An editor should either require the complete fields needed to construct its
 draft or use a purpose-specific patch command. The server always validates and
 authorizes a command again against persisted state.
 
-### Direction: first-class edit models
+### Deferred: first-class edit models
 
-The setlist migration also exposes a remaining client-side seam. Draft creation,
+The setlist migration exposes a useful general DB3 enhancement: draft creation,
 hydrated-client-to-draft adaptation, deep cloning, and temporary client identity
-allocation are still separate domain functions, with some identity allocation
-visible in components. These operations describe one edit-model lifecycle and
-are candidates for a typed `DB3EditModel` contract.
+allocation could be expressed by a typed `DB3EditModel`. That enhancement is
+explicitly outside the active public-ID migration.
 
-Such a contract could provide `create`, `beginEdit`, and `clone` operations and
-be referenced by an editable command. `useDB3Command()` could expose those pure
-facilities for convenient call sites, or a later `useDB3Editor()` could compose
-a view, edit model, save command, and optional delete command. The underlying
-draft should remain detached mutable data; hydrated query objects should not
-gain hidden I/O methods or be mutated in place because they may share canonical
-references or query-cache identity.
+The current supported boundary is sufficient for identity conversion:
 
-This direction is not implemented yet and must be proved before it becomes a
-mandatory abstraction for editable entity commands. Commands that represent
-actions such as publish, approve, reorder, or merge may have no meaningful edit
-model, so draft lifecycle must not become mandatory for every command. Setlist
-temporary identity should also eventually distinguish an optional persisted
-identity from an opaque always-local key instead of encoding persistence in the
-sign of `clientId`.
+- ordinary row editors use the command-backed CRUD-view/TableClient model;
+- aggregates may define purpose-specific drafts and handwritten commands; and
+- commands that represent actions such as publish, approve, reorder, or merge
+  accept their operation-specific inputs directly.
 
-### Transitional escape hatches
+A future edit-model project may compose `create`, `beginEdit`, and `clone`
+operations through a `useDB3Editor()`-style API. It must keep drafts detached
+from hydrated query values and should distinguish persisted identity from an
+opaque local key. None of those decisions blocks converting an entity or its
+relations to public identity, so they are not roadmap prerequisites here.
+
+### Remaining compatibility boundaries
 
 The target design has no generic query/view `customData` bag. A domain that
 needs an unusual shape should define that shape in its view DTO and hydration
@@ -729,15 +721,18 @@ startups safe.
 Legacy numeric URLs are intentionally invalidated rather than supported through
 a per-row compatibility flag or a second lookup mode.
 
-### Current status and known transition limits
+### Established baseline and remaining migration limits
 
 - `InstrumentFunctionalGroup` is the public-ID pilot and currently the only
   converted DB3 entity.
-- Broad public-ID rollout should not proceed as a big-bang schema exercise while
-  entity/view/command boundaries are still being proved. However, `publicId` is
-  now an acceptance criterion for those primitives rather than a distant final
-  phase: new generic CRUD, association, filtering, and edit-model facilities
-  should be proved against the existing public-ID pilot.
+- The entity/view/hydration/command boundaries are established well enough to
+  begin broad public-ID migration. Further general DB3 architecture work is not
+  a prerequisite unless a concrete entity conversion exposes a missing identity
+  capability.
+- Public-ID rollout remains incremental rather than a big-bang schema exercise.
+  Every converted slice must include its reads, writes, relations, filters,
+  caches, routes, and non-DB3 boundaries before its numeric client identity is
+  considered removed.
 - Entity/view/hydration/command primitives exist, and initial instrument, event,
   file, song, and event-song-list views use the read-side primitives.
 - `defineView()`, `DbPayloadOf<>`, `DtoOf<>`, `ClientOf<>`,
@@ -749,6 +744,11 @@ a per-row compatibility flag or a second lookup mode.
   inferred as `ColorPaletteEntry | null | undefined`; its prepared and generated
   command value is `string | null | undefined`; and its public-ID identity
   remains statically checked through the TableClient.
+- `TView` now propagates through view-bound TableClient specs and
+  `useTableRenderContext()`, so query results expose `ClientOf<TView>[]` and
+  client columns are checked against the hydrated row type. Explicitly legacy
+  table-only and runtime-dynamic specs remain cleanup targets rather than an
+  alternate typed architecture.
 - All in-tree `xTable` declarations now use keyed `makeColumnSet()` factories,
   and fixed-name TableClient declarations use keyed client factories. Reusable
   column sets follow the same contract. Composite event date-range columns are
@@ -828,15 +828,14 @@ a per-row compatibility flag or a second lookup mode.
   participating entities are converted.
 - Raw SQL returned in `SearchResultsRet` is intentionally unchanged for now and
   is expected to be removed separately.
-- Most unconverted named views still expose numeric identities. That is
-  transitional evidence for the view/hydration design, not permission to treat
-  numeric IDs as part of the final client contract.
+- Most unconverted named views still expose numeric identities. They are the
+  input inventory for the active migration, not a permanent client contract.
 - The legacy TableClient mutation transport has been removed. Ordinary row
   editors use generated entity CRUD commands; aggregate and workflow operations
   use their existing explicit endpoints or named domain commands while those
   boundaries are migrated independently.
 
-### Legacy TableClient mutation inventory and deletion gate
+### Retired TableClient mutation transport guard
 
 The source test `tests/db3LegacyMutationInventory.test.ts` now enforces an empty
 legacy inventory: there may be no `xTableClientCaps.Mutation` acquisition and no
@@ -850,171 +849,25 @@ now supply a CRUD-enabled `view`; the writable legacy branch and its
 still use the query-only TableClient facade without requesting mutation
 capability.
 
-The existing writers are grouped by the replacement they need:
+The resulting stable writer boundaries are:
 
-| Category | Remaining surfaces | Intended replacement |
+| Category | Remaining generic-transport surfaces | Supported boundary |
 | --- | --- | --- |
 | Row CRUD grids | None | Every writable `DB3EditGrid` now uses a command-backed editor view. File creation remains owned by the upload workflow rather than the metadata grid. |
 | Entity detail editors | None | Song, Event, File, User/Profile, and Wiki tag metadata now use generated CRUD commands for row-shaped patches. Privileged and operation-specific actions remain named workflows. |
 | Nested rows and relationships | None | Embedded Event Segment, Song Credit, File metadata, profile instrument-set, and Setlist Plan Group edits now use generated CRUD commands. Setlist group reordering remains an explicit ordered operation. |
 | Collection editors | None | Custom Link and Menu Link row edits use generated CRUD commands over narrow editor DTOs. Menu Link ordering remains an explicit scoped collection operation. |
-| Workflows and aggregates | None use the generic TableClient transport. Gallery baking/reordering, setlist planning, and similar multi-step flows remain explicit workflow boundaries. | Move remaining ad hoc workflow RPCs to handwritten named commands when their aggregate contracts are addressed. |
+| Workflows and aggregates | None use the generic TableClient transport. | Gallery baking/reordering, setlist planning, and similar multi-step flows remain explicit endpoints or named commands according to their existing domain boundary; redesign is not a public-ID prerequisite. |
 | Compatibility infrastructure | None in production | The capability flag, client mutation methods/helpers, selection fallbacks, and generic table-selected mutation RPC have been deleted. |
 
 The retired RPC's hostile-input and row-authorization coverage remains in a
 clearly test-only compatibility resolver. It composes the same production row
 services but is not an application RPC endpoint.
 
-The first post-inventory category slice migrates the Event Type, Event Status,
-and Event Tag administration grids. Each now has one registered editor CRUD
-view and uses generated create/update/delete commands. Their editor DTOs keep
-authorization-removable fields optional, omit relation collections that the
-grid does not edit, and retain the existing `xTable` client-value conversion
-behavior for fields such as color.
-
-The second slice completes the standalone lookup-grid category: File Tag,
-Instrument Tag, Song Tag, Song Credit Type, User Tag, and Wiki Page Tag now use
-the same CRUD-view path. Song Tag's additional grouping and indicator fields
-and User Tag's CSS class are part of their strict editor DTOs; schema-owned
-association collections are deliberately absent. This migrates the admin-grid
-writers and supplies the same views to create-from-string consumers, so lookup
-creation returns the view's authorized hydrated client value.
-
-The third slice starts the remaining ordinary-grid category with the two scalar
-configuration grids: Permission and Setting. Their command-backed editor views
-generate create/update commands but no delete command, preserving both tables'
-schema-owned disabled-delete policy. Each view exposes only the columns edited
-by its grid. In particular, the Permission DTO omits
-the `roles` association, which remains owned by the explicit role-permission
-command, while Setting writes continue through the existing row service and
-therefore retain setting-name/value validation. The Role grid and the larger
-User/Event/File/Song/Instrument/gallery grids are not part of this scalar
-batch: their visible columns include associations, privileged operations, or
-workflow semantics that must be separated before selecting CRUD or a named
-domain command.
-
-The fourth slice migrates the standalone Frontpage Gallery Item administration
-grid. Its editor view owns the finite file, creator, and visibility-permission
-reference shapes required by the grid, while mutations carry only their scalar
-foreign keys. The table's existing soft-delete and recovery policy remains the
-authority for generated deletion. This does not migrate the separate
-frontpage-gallery composition workflow: upload, crop/display adjustment,
-caption editing, deletion/restoration, and reorder remain inventoried as a
-multi-step workflow that needs named domain commands.
-
-The fifth slice migrates the Role administration grid. Its strict editor view
-contains the editable role metadata and the finite permission-association shape
-needed by the tag column. The generated `Role_Create` and `Role_Update`
-commands apply the desired permission-ID set through the existing schema-owned
-association service in the command transaction; deletion remains disabled.
-Built-in-role designations are deliberately absent from the editor DTO and
-continue through `setRoleDesignation`. The separate role-permission matrix
-continues to use its explicit pairwise `RolePermission_Set` command.
-
-The sixth slice migrates the Instrument administration grid. Its strict editor
-view carries editable scalar fields, the functional-group public reference,
-and the finite instrument-tag association shape. Generated Instrument CRUD
-uses the existing public-FK resolver and schema-owned association service in
-the command transaction, retaining the table's hard-delete policy. The grid's
-stale link to the removed Instrument `slug` column is replaced with its numeric
-identity, which is the value consumed by the current placeholder detail route.
-
-The seventh slice migrates the Song administration grid. Its strict editor
-view contains the displayed scalar fields, creator and visibility references,
-and the finite Song-tag association shape. Tagged files, credits, and the
-pinned-recording workflow remain outside this row contract. Generated Song
-CRUD reconciles the desired tag-ID set transactionally and retains the table's
-soft-delete policy and existing recovery authorization.
-
-The eighth slice completes the ordinary administration grids. User, Event,
-and File now read through finite editor views and write through their generated
-entity commands. The User view preserves the grid's profile and taxonomy sets
-while keeping role and Sysadmin state display-only; dedicated account
-lifecycle, role-assignment, authentication, and impersonation flows remain
-separate. The Event view owns only the displayed event row, lookup references,
-and event-tag set; segments and song lists remain separate nested editors. The
-File view owns editable metadata, visibility, and tag sets while storage name,
-upload provenance, size, and derived custom data are display-only. File
-creation is disabled in this grid because upload and derived-file creation own
-the storage transaction; generated File updates still retain schema-enforced
-storage-field rejection and soft-delete/recovery policy.
-
-The ninth slice migrates the four remaining writable `DB3EditGrid` surfaces:
-Event Attendance, Event Segment, Song Credit, and User Instrument. Although
-three are parent-associated rows and one is a direct relationship row, each
-grid edits one independently addressable record at a time, so generated CRUD
-is the truthful contract. Their finite editor views retain parent query
-parameters, foreign-reference display shapes, table-owned authorization, and
-the existing hard- or soft-delete policy. With every writable grid now
-command-backed, the `legacyMutationTransport` prop and writable legacy grid
-branch are deleted. Embedded detail editors for the same entities remain in
-the direct TableClient inventory and can migrate separately by reusing these
-commands where their interaction remains row-shaped.
-
-The tenth slice begins the entity-detail category with Song. The page continues
-to query and hydrate the finite `songDetailView`, while its edit dialog prepares
-the existing TableClient editor values and invokes the generated update/delete
-commands owned by `songEditorView`. The dialog accepts the query-only render
-client instead of acquiring legacy mutation capability for itself, and update
-patches are computed from explicit previous and next values. Embedded song
-credit editing and the new-song workflow remain in their later nested-row and
-workflow categories. This slice intentionally preserves Song's current natural
-identity; public-ID conversion follows the entity/view/command migration.
-
-The eleventh slice migrates Event detail update/delete. The full detail page
-continues to use its existing verbose query and enrichment because the current
-`eventSearchView` deliberately omits richer attendance, file, segment, and
-setlist data needed by this consumer. That render client is now query-only and
-is injected into the edit dialog for field rendering; `eventEditorView` owns
-the generated update/delete commands and strict write DTO. Event segments,
-attendance, setlists, description content, and other nested actions remain on
-their existing boundaries for later slices. Event retains its natural identity.
-
-The twelfth slice migrates File detail update/delete. The landing page retains
-its existing query and `enrichFile()` path because its parent/child, preview,
-gallery, and pinned-song graph is broader than the current finite
-`fileDetailView`, and several of those relations still use transitional
-`GhostField` metadata. Its query-only render client is injected into the dialog
-for editor-value preparation, while `fileEditorView` supplies the generated
-update/delete commands. Upload remains the only File creation workflow;
-storage-owned fields and file-association workflows remain outside this slice.
-File retains its natural identity.
-
-The thirteenth slice completes the entity-detail category as one larger batch.
-The User detail page, self-profile editor, admin profile editor, and inline role
-control now read through `userEditorView` and send row-shaped changes through
-its generated update command. Existing account lifecycle, authentication,
-email-correction, merge, password, impersonation, and Sysadmin operations stay
-on their dedicated boundaries. Wiki tag metadata now has a finite
-`wikiPageEditorView` over a typed WikiPage entity; it owns only the complete tag
-projection and an update command. Wiki content/revisions, edit locking, and
-visibility remain explicit workflows. Both entities retain their natural
-identities.
-
-The fourteenth slice completes the nested-row and relationship category as one
-larger batch. Embedded Event Segment and Song Credit create/update/delete,
-embedded File metadata update/delete, the self-profile instrument set, and
-Setlist Plan Group create/update/delete now invoke generated CRUD commands.
-The finite Song Credit write DTO now includes the dialog's `year` and `comment`
-fields, and the File editor DTO includes its editable `fileCreatedAt` metadata.
-Setlist Plan Group gains its own entity and finite editor view; drag reordering
-stays on the existing explicit scoped sort operation because it mutates an
-ordered set rather than one row. The standalone edit dialog no longer has a
-mutation-capable fallback: every caller must inject a query-only or render-only
-TableClient for editor preparation. Dedicated Event response-copy/clear and
-primary-instrument commands remain separate domain operations.
-
-The fifteenth slice completes the collection-editor category. Custom Link and
-Menu Link each gain a typed entity, a finite list view for display-only data,
-and a narrower CRUD editor view for independent row create/update/delete. The
-Custom Link list view owns creator metadata and visit counts without exposing
-either to its command DTO. The Menu Link list view hydrates visibility from the
-shared reference store, while its editor command deliberately excludes
-`sortOrder`, realm, and creator metadata. Drag reordering therefore stays on
-the existing authorization-tested scoped sort operation, which owns the
-collection-wide ordering change. Both component trees now query through their
-named list views and contain no legacy TableClient mutation capability or
-direct mutation calls.
+The completed conversion history is intentionally not reproduced here. The
+current source and tests are authoritative; the relevant stable result is
+that all production writers use generated CRUD or explicit workflow/aggregate
+boundaries, and none use the retired generic TableClient mutation transport.
 
 ## Design principles
 
@@ -1039,15 +892,14 @@ direct mutation calls.
 - Compose ordinary CRUD from a named view and its linked `xTable`; do not repeat
   table policy, writable schemas, field serializers, handlers, or registry
   wiring for each simple entity.
-- Preserve the automatic TableClient/grid facade while replacing its legacy
-  generic mutation transport underneath it.
+- Preserve the command-backed TableClient/grid facade as the supported automatic
+  row-editor API.
 - Treat `useDB3Command()` serialization and validation as client contract
   ergonomics, never as a replacement for server validation or authorization.
 - Compose aggregate command handlers from the existing authoritative DB3 row
   mutation services instead of copying table authorization and mutation rules.
-- Treat the legacy TableClient mutation transport as temporary migration
-  infrastructure. Do not add new consumers, and delete each legacy transport
-  capability once its consumers have moved to commands.
+- Do not reintroduce the retired generic TableClient mutation transport or add a
+  second write path beside commands.
 - Keep domain-specific filters and selection behavior out of DB3 core.
 - Do not add generic untyped payload bags where a named DTO/client shape can
   express the requirement.
@@ -1058,13 +910,12 @@ direct mutation calls.
 
 ## Migration method
 
-Migration proceeds through vertical slices with deletion gates. The current
-stage adapts the as-is database schema and natural identities to the
-entity/view/command system: each slice must prove its replacement, migrate the
-relevant consumers, and remove the superseded path. After those read and write
-boundaries are established and the legacy mutation transport is gone, convert
-entities to public IDs one bounded model slice at a time. Compatibility seams
-are acceptable only while a known set of consumers is in flight.
+Migration proceeds through vertical slices with deletion gates. The read and
+write foundations and command-backed generic CRUD path are complete. First
+remove or normalize the remaining explicitly transitional view/query adapters;
+then convert entities to public IDs one bounded model slice at a time.
+Compatibility seams are acceptable only while a named entity slice is in
+flight, and must be removed when that slice lands.
 
 Migrate one bounded entity/view/consumer slice at a time:
 
@@ -1077,10 +928,12 @@ Migrate one bounded entity/view/consumer slice at a time:
 4. Hydrate to the semantic client value and consume it through typed
    `useDb3Query({ view })`; remove the corresponding manual enrichment and
    result casts in the migrated slice.
-5. For a rich or aggregate editable value, introduce an explicit draft and
+5. For a rich or aggregate operation, use an explicit client input and
    handwritten command rather than sending the hydrated read model back to the
-   server. Put the client-input-to-DTO transformation on the command and compose
-   its writes from DB3 row services inside the command transaction.
+   server. A domain-specific draft is appropriate when the editor needs one,
+   but no generic edit-model contract is required. Put client-input-to-DTO
+   transformation on the command and compose its writes from DB3 row services
+   inside the command transaction.
 6. For ordinary row editing, define a CRUD-enabled view and let the generic
    table-render context derive and invoke generated CRUD. Preserve the current
    limited TableClient payload behavior rather than adding per-entity adapters;
@@ -1091,7 +944,7 @@ Migrate one bounded entity/view/consumer slice at a time:
    hydration failure paths, inferred result types, and relevant write/identity
    behavior.
 9. Migrate every consumer in the bounded capability, then remove the replaced
-   TableClient transport, RPC, enrichment, compatibility, or numeric-identity
+   enrichment, compatibility adapter, dual identity, or numeric-identity
    surface.
 
 Do not combine all public-ID migrations into one architecture refactor. Convert
@@ -1108,8 +961,8 @@ An entity is complete only when the applicable items below are true:
 - it has stable typed entity metadata and named client views;
 - view DTOs are runtime validated and hydrate without result casts or
   supplemental `enrich*` work;
-- editable uses have an appropriate edit model or action input; ordinary
-  row-shaped CRUD may retain the limited table-client edit model;
+- ordinary editable rows use generated CRUD commands, while aggregates and
+  actions use explicit operation inputs and handwritten commands as needed;
 - all client writes use strict generated or handwritten commands;
 - no consumer uses the legacy TableClient generic mutation transport for the
   entity, although a command-backed TableClient CRUD facade may remain;
@@ -1124,124 +977,77 @@ Track these facts per entity. This is more useful than counting converted schema
 columns, because it records whether an entity has actually crossed every client
 boundary safely.
 
-## Roadmap
+## Active roadmap
 
-- [x] Establish typed entity, named-view, DTO, and hydration primitives.
-- [x] Establish a normalized reference store and public-ID pilot.
-- [x] Prove richer hydration with search/detail views, structured event date
-  ranges, and event-song-list content.
-- [x] Separate setlist hydrated content, editable draft, and validated mutation
-  command.
-- [x] Establish typed command descriptors, `useDB3Command()`, a generic RPC and
-  registry, an authorized transactional context, and reusable DB3 row services.
-- [x] Migrate setlist create/update to one atomic aggregate save command and
-  remove its legacy RPC and raw child-synchronization paths.
-- [x] Define strict generated entity CRUD command contracts and shared handlers,
-  including create/update/delete identity, patch semantics, result types,
-  validation, error behavior, and refetch/invalidation expectations.
-- [x] Define a generic CRUD-enabled view and command-backed table-render context
-  that derive typed row/identity behavior and generated command invocation from
-  a named view plus its linked `xTable`.
-- [x] Prove generated CRUD against `InstrumentFunctionalGroup`, the existing
-  public-ID pilot. Its `DB3EditGrid` call site should need only `tableSpec` and
-  the CRUD-enabled view, without entity-specific command schemas, serializers,
-  handler files, registry wiring, command hooks, mutation adapters, table names,
-  numeric table IDs, `TAnyModel`, or the generic mutation envelope.
-- [x] Make generic editing infrastructure command-backed.
-  - [x] `DB3EditGrid` and its injected-client `DB3NewObjectDialog` path.
-  - [x] Selection-source creation, proved through the public-ID
-    `InstrumentFunctionalGroup` CRUD view.
-  - [x] `DB3AssociationMatrix`, using an explicit association-command contract
-    rather than ordinary row CRUD.
-- [x] Prohibit new consumers of the legacy TableClient mutation transport, then
-  migrate existing writers by category: generated CRUD for ordinary rows and
-  named commands for aggregates or workflows.
-  - [x] Add a source-enforced deletion inventory for mutation capability,
-    direct legacy method calls, and legacy writable-grid call sites.
-  - [x] Require remaining writable legacy grids to opt in explicitly; ensure
-    read-only grids never acquire mutation capability.
-  - [x] Migrate the Event Type, Event Status, and Event Tag lookup-grid batch to
-    generated CRUD views and commands.
-  - [x] Migrate the remaining standalone lookup grids: File Tag, Instrument
-    Tag, Song Tag, Song Credit Type, User Tag, and Wiki Page Tag.
-  - [x] Migrate the scalar Permission and Setting configuration grids with
-    generated create/update commands and no delete command, keeping
-    permission-role associations and bulk setting import on their existing
-    explicit command/RPC boundaries.
-  - [x] Migrate the standalone Frontpage Gallery Item administration grid,
-    retaining the separate gallery-composition workflow in the named-command
-    migration inventory.
-  - [x] Migrate the Role administration grid, preserving bulk permission-set
-    editing while keeping built-in designations and the pairwise permission
-    matrix on their explicit command boundaries.
-  - [x] Migrate the Instrument administration grid, including its public-ID
-    functional-group reference and finite tag set, while retaining the existing
-    hard-delete policy.
-  - [x] Migrate the Song administration grid, retaining creator/visibility
-    references, tag-set editing, and the existing soft-delete/recovery boundary.
-  - [x] Migrate the remaining User, Event, and File ordinary grids while
-    retaining privileged User workflows, nested Event editors, and File upload
-    creation on their existing explicit boundaries.
-  - [x] Migrate the remaining writable Event Attendance, Event Segment, Song
-    Credit, and User Instrument grids, removing the writable legacy-grid branch.
-  - [x] Begin the entity-detail category with Song update/delete, retaining the
-    rich detail view for reads and using `songEditorView` commands for writes.
-  - [x] Migrate Event detail update/delete through `eventEditorView`, retaining
-    the existing verbose read/enrichment path until a finite detail view owns
-    that complete graph.
-  - [x] Migrate File detail update/delete through `fileEditorView`, preserving
-    upload-owned creation and the broader legacy detail read graph.
-  - [x] Complete the entity-detail category by migrating User/Profile,
-    user-administration profile and role edits, and Wiki tag metadata through
-    finite named views and generated update commands.
-  - [x] Migrate embedded Event Segment, Song Credit, File metadata, profile
-    instrument-set, and Setlist Plan Group writes through generated CRUD,
-    retaining ordered group reordering and dedicated domain actions on their
-    explicit boundaries.
-  - [x] Migrate Custom Link and Menu Link collection editors through finite
-    list/editor views and generated row CRUD, retaining Menu Link reorder on its
-    explicit scoped sort boundary.
-  - [x] Remove the workflow category's dependence on the generic TableClient
-    transport. New-song creation and row-shaped gallery writes use generated
-    CRUD; create-from-string consumers use their matching CRUD views. Existing
-    aggregate-specific workflow endpoints remain explicit and can migrate to
-    handwritten commands independently.
-- [ ] Validate or normalize the combined setlist song/divider position namespace
-  on the server, independent of the client serializer.
-- [ ] Decide and prove the first-class edit-model contract for draft creation,
-  hydrated-client adaptation, cloning, and local identity allocation.
-- [ ] Decide whether setlist delete/reorder should become commands or remain
-  separate generated/domain commands based on their actual aggregate semantics.
-- [ ] Finish the setlist aggregate proof, including edit-model lifecycle,
-  ordering invariants, concurrency/lost-update policy, deletion/reordering, and
-  removal of every remaining legacy setlist write path.
-- [x] Remove the legacy TableClient mutation implementation, mutation capability
-  flag, table-name envelope, and generic DB3 mutation RPC after their final
-  consumers have moved; retain a command-backed high-level CRUD facade where it
-  preserves automatic editor ergonomics.
-- [ ] Convert remaining legacy `enrich*` consumers and duplicate query-shape
-  declarations to named views.
-- [ ] Remove remaining generic query/view escape hatches and replace relation
-  `GhostField`s where recursive policy or hydration is required.
-- [ ] Complete `xTable` typing beyond the pilot and decide which stable metadata
-  should ultimately move to entity definitions.
-  - [x] Add keyed typed-table construction, field-level read codecs, inferred
-    DTO-to-client results, and a view-bound TableClient spec; prove them with
-    `InstrumentFunctionalGroup` and its public identity.
-  - [x] Convert in-tree table and fixed-name client-column declarations to keyed
-    factories so each field/column name is written once and checked.
-  - [ ] Propagate `TView` through the general `useTableRenderContext()` result so
-    view-bound specs expose `ClientOf<TView>[]` without an explicit row generic.
-- [ ] Infer and validate typed view-specific query parameters instead of exposing
-  untyped `tableParams` to callers.
-- [ ] Generalize public-ID translation for association/tag mutation commands
-  before converting entities used through those mutation shapes.
-- [ ] Audit generic sort/reorder, association-matrix, raw SQL, exports, routes,
-  and non-DB3 Prisma endpoints for identity assumptions.
-- [ ] Migrate all client-facing entities to `publicId`, one bounded model slice at
-  a time.
+### Completed foundation
+
+- [x] Establish typed entities, named views, runtime DTOs, hydration, normalized
+  references, and inferred `ClientOf<TView>` query results.
+- [x] Establish keyed typed `xTable` and TableClient declarations, field codecs,
+  typed mutation projection, and view-bound `useTableRenderContext()` results.
+- [x] Establish typed commands, generated entity CRUD, aggregate command
+  composition, and command-backed generic editors.
+- [x] Remove the generic TableClient mutation transport, its capability flag,
+  table-name envelope, and production RPC.
+- [x] Prove the complete read/write/public-identity chain with
+  `InstrumentFunctionalGroup`.
+
+### Stabilization gate
+
+This is a bounded cleanup pass, not another exploratory architecture phase. Its
+purpose is to leave one clearly supported path before multiplying public-ID
+conversions.
+
+- [ ] Inventory every use of `defineLegacyCrudView()`,
+  `defineLegacyTableClientSpec()`, `defineLegacyDynamicTableClientSpec()`,
+  `bindLegacyTableClientSpecToView()`, and `useLegacyTableRenderContext()`.
+  Convert view-backed callers to the typed path; retain a separately documented
+  runtime-dynamic/query-only API only where static view binding is genuinely
+  impossible.
+- [ ] Convert remaining `enrich*` consumers and duplicate asserted Prisma query
+  shapes to named views where those values cross a client boundary.
+- [ ] Replace relation `GhostField`s that participate in client projection,
+  recursive authorization, hydration, or mutation. Keep deliberately opaque
+  server-only fields explicit rather than treating every `GhostField` as a
+  migration failure.
+- [ ] Normalize the remaining query parameter boundary so a view declares and
+  validates its parameter type instead of callers depending on an untyped
+  `tableParams` bag.
+- [ ] Remove obsolete compatibility constructors, markers, and casts once their
+  inventories reach zero. Retain focused source guards that prevent the retired
+  paths from returning. Any necessary cast at an external or dynamic boundary
+  must state the runtime invariant that makes it safe.
+
+### Public-ID migration
+
+- [ ] Catalog client-facing entities and order them by identity dependencies:
+  independent lookup entities first, then scalar foreign-key dependants,
+  association/tag graphs, and finally central routed entities such as Event and
+  User.
+- [ ] Generalize public-ID translation for association/tag command inputs before
+  converting an entity used through those mutation shapes.
+- [ ] Audit and adapt the shared identity-sensitive infrastructure: exact lookup,
+  generic sorting/reordering, association matrices, caches, React keys, raw SQL,
+  search results, imports/exports, routes, and non-DB3 Prisma endpoints.
+- [ ] Convert every client-facing entity to `publicId`, one bounded model slice
+  at a time. Each slice must satisfy the definition of a migrated entity above
+  and delete its numeric client-identity compatibility path before the next
+  dependent slice begins.
   - [x] `InstrumentFunctionalGroup`
-  - [ ] catalog remaining candidate entities and their relation/mutation shapes
-  - [ ] choose successive pilots that exercise scalar foreign keys,
-    associations/tags, and route/search identity before converting central
-    entities such as Event and User
+  - [ ] Select the next independent lookup/public-reference slice from the
+    dependency catalog.
+  - [ ] Exercise a scalar public foreign key.
+  - [ ] Exercise an association/tag command with public identities.
+  - [ ] Exercise route and search identity before converting Event and User.
+
+### Deferred DB3 enhancements
+
+The following may be worthwhile, but they are not prerequisites for public-ID
+migration and should be tracked separately from this roadmap:
+
+- a first-class `DB3EditModel`/edit-session abstraction;
+- generalized draft cloning and local identity allocation;
+- setlist concurrency, combined-position normalization, and delete/reorder
+  workflow redesign beyond correctness fixes required independently; and
+- broader reshaping of stable `xTable` metadata that is not required by a
+  concrete public-ID slice.
