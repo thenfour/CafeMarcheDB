@@ -331,8 +331,11 @@ Prisma selection in its inferred schema output. Selected root scalar members use
 the xTable field's transport value, nullability, and read-presence contract.
 Foreign-key members use the Prisma payload type and remain conservatively
 optional. Nested relation value/null/array shapes come from the Prisma payload;
-their selected row members are also conservatively optional until relation
-fields carry their target xTable type statically as well as its runtime table ID.
+their selected row members are also conservatively optional. Relation fields
+can now carry their target xTable type as phantom metadata alongside the
+cycle-safe runtime table ID. Annotated relations use that metadata to derive
+the recursively hydrated consumer type; unannotated legacy relations retain a
+safe broad nested consumer type until migrated.
 Callers must preserve the literal selection (for example with
 `Prisma.validator`) rather than first widening it to `Prisma.*DefaultArgs` if
 they want an exact derived DTO type.
@@ -401,9 +404,10 @@ Implementation status: `deriveViewContract(entity, selection)` returns the
 original selection, its derived DTO schema, the shared compiled member
 description, and a default hydrator. The hydrator validates the complete DTO
 before applying any conversion, skips authorization-absent members, and invokes
-each present root scalar field's codec once. Foreign-key members and embedded
-relations remain transport-shaped in this step; normalized reference and
-recursive relation hydration are added separately below.
+each present scalar field's codec once. Embedded single and collection relations
+recurse through the same compiled member tree, preserving absent and null edges.
+Foreign-key members remain transport-shaped until normalized reference
+hydration is added separately below.
 
 The generated hydrator accepts the same reference-provider input shape used by
 current view hydration, even when a scalar-only view does not need it:
@@ -587,7 +591,7 @@ sound.
         decode or identity conversion. Test nullable and authorization-absent values
         and prove codecs run exactly once.
 
-12. [ ] **Add nested embedded relation support.** Recursively compile supported
+12. [x] **Add nested embedded relation support.** Recursively compile supported
         relation selections through the related entity. Preserve relation
         nullability and authorization absence; never repair an authorization-removed
         relation from an ID.

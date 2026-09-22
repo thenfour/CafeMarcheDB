@@ -12,7 +12,7 @@ import { DateTimeRange } from "shared/time";
 import { CoalesceBool, gIconOptions, smartTruncate } from "shared/utils";
 import { type CMDBTableFilterModel } from "../apiTypes";
 import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../columnTypes/genericString";
-import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignCollectionField, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, TagsField } from "../columnTypes/xTableColumnTypes";
+import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignCollectionField, foreignRefMaker, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, TagsField } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import {
     EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, type EventAttendancePayload,
@@ -321,14 +321,12 @@ export const xEventTagAssignment = db3.defineTable({
     },
     fields: db3.makeColumnSet({
         id: () => MakePKfield(),
-        eventTag: columnName => new ForeignSingleField<Prisma.EventTagGetPayload<{}>>({
-            columnName,
-            fkidMember: "eventTagId",
-            allowNull: false,
-            foreignTableID: "EventTag",
-            authMap: xEventAuthMap_R_EOwn_EManagers,
-            getQuickFilterWhereClause: (query: string) => false,
-        }),
+        eventTag: foreignRefMaker<Prisma.EventTagGetPayload<{}>, typeof xEventTag>(
+            "EventTag",
+            "eventTagId",
+            xEventAuthMap_R_EOwn_EManagers,
+            (query: string) => false,
+        ),
     })
 });
 
@@ -538,7 +536,10 @@ export const xEventArgs_Base = db3.defineTableDesc({
             authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        status: columnName => new ForeignSingleField<Prisma.EventStatusGetPayload<{}>>({
+        status: columnName => new ForeignSingleField<
+            Prisma.EventStatusGetPayload<{}>,
+            typeof xEventStatus
+        >({
             columnName,
             fkidMember: "statusId",
             allowNull: true,
@@ -581,7 +582,10 @@ export const xEventArgs_Base = db3.defineTableDesc({
         frontpageLocationURI_fr: columnName => MakeNullableRawTextField(columnName, { authMap: xEventAuthMap_Homepage, }),
         frontpageTags_fr: columnName => MakeNullableRawTextField(columnName, { authMap: xEventAuthMap_Homepage, }),
 
-        tags: columnName => new TagsField<EventTagAssignmentPayload>({
+        tags: columnName => new TagsField<
+            EventTagAssignmentPayload,
+            typeof xEventTagAssignment
+        >({
             columnName,
             associationForeignIDMember: "eventTagId",
             associationForeignObjectMember: "eventTag",

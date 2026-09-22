@@ -8,7 +8,7 @@ import {
 } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
 import {
-    type DB3AuthSpec, type DB3FieldPrismaMember, type DB3RowMode, ErrorValidateAndParseResult,
+    type DB3AuthSpec, type DB3FieldPrismaMember, type DB3RelationTargetField, type DB3RowMode, ErrorValidateAndParseResult,
     FieldBase, GetTableById, makeNullableReadTransportSchema, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
@@ -33,7 +33,18 @@ export type ForeignSingleFieldArgs<TForeign> = {
 
 // The write member is fkidMember rather than this field-map key, so it is not a
 // same-key mutation field. Its projected key is supplied by the client column.
-export class ForeignSingleField<TForeign> extends FieldBase<TForeign, undefined, false> {
+export class ForeignSingleField<
+    // The type of the foreign object that this field represents.
+    // typically Prisma.MyModelGetPayload<{}>
+    // needed for strong typing of view DTOs / hydrated objects, picking fields from here.
+    TForeign,
+
+    // 
+    TTargetTable extends xTable = xTable,
+
+> extends FieldBase<TForeign, undefined, false>
+    implements DB3RelationTargetField<TTargetTable> {
+    declare readonly __relationTargetTable: TTargetTable;
     requireVisibleTarget: boolean;
     foreignTableID: string;
     localTableSpec: xTable;
@@ -335,4 +346,20 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign, undefined,
         };
     };
 };
+
+
+
+export const foreignRefMaker = <TForeign, TTargetTable extends xTable>(
+    foreignTableID: string,
+    fkidMember: string,
+    authMap: any,
+    getQuickFilterWhereClause: (query: string) => TAnyModel | boolean,
+) => columnName => new ForeignSingleField<TForeign, TTargetTable>({
+    columnName,
+    fkidMember,
+    allowNull: false,
+    foreignTableID,
+    authMap,
+    getQuickFilterWhereClause,
+});
 

@@ -370,3 +370,138 @@ describe("DB3 derived scalar hydration", () => {
     expect(decode).not.toHaveBeenCalled()
   })
 })
+
+describe("DB3 derived embedded-relation hydration", () => {
+  it("recursively hydrates a nullable foreign-single object", () => {
+    const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: {
+        status: {
+          select: {
+            id: true,
+            label: true,
+            color: true,
+          },
+        },
+      },
+    })
+    const derived = db3.deriveViewContract(db3.eventEntity, selection)
+    const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
+
+    expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
+      status?: {
+        id?: number
+        label?: string
+        color?: ColorPaletteEntry | null
+      } | null
+    }>()
+
+    const hydrated = derived.hydrate({
+      status: {
+        id: 4,
+        label: "Confirmed",
+        color: "green",
+      },
+    }, new db3.DB3ReferenceStore())
+
+    expect(hydrated).toEqual({
+      status: {
+        id: 4,
+        label: "Confirmed",
+        color: expect.objectContaining({ id: "green" }),
+      },
+    })
+    expect(decode).toHaveBeenCalledTimes(1)
+    expect(decode).toHaveBeenCalledWith("green")
+  })
+
+  it("preserves absent and null relation edges without invoking nested codecs", () => {
+    const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: {
+        status: {
+          select: { color: true },
+        },
+      },
+    })
+    const derived = db3.deriveViewContract(db3.eventEntity, selection)
+    const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
+    const references = new db3.DB3ReferenceStore()
+
+    expect(derived.hydrate({}, references)).toEqual({})
+    expect(derived.hydrate({ status: null }, references)).toEqual({ status: null })
+    expect(decode).not.toHaveBeenCalled()
+  })
+
+  it("does not reconstruct an authorization-absent relation from its selected ID", () => {
+    const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: {
+        statusId: true,
+        status: {
+          select: { color: true },
+        },
+      },
+    })
+    const derived = db3.deriveViewContract(db3.eventEntity, selection)
+    const references = new db3.DB3ReferenceStore()
+    const getReference = vi.spyOn(references, "get")
+    const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
+
+    expect(derived.hydrate({ statusId: 4 }, references)).toEqual({ statusId: 4 })
+    expect(getReference).not.toHaveBeenCalled()
+    expect(decode).not.toHaveBeenCalled()
+  })
+
+  it("recursively hydrates relation collections and their nested relations", () => {
+    const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: {
+        tags: {
+          select: {
+            eventTagId: true,
+            eventTag: {
+              select: {
+                id: true,
+                text: true,
+                color: true,
+              },
+            },
+          },
+        },
+      },
+    })
+    const derived = db3.deriveViewContract(db3.eventEntity, selection)
+    const decode = vi.spyOn(db3.xEventTag.fields.color.codec, "decode")
+
+    expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
+      tags?: Array<{
+        eventTagId?: number
+        eventTag?: {
+          id?: number
+          text?: string
+          color?: ColorPaletteEntry | null
+        }
+      }>
+    }>()
+
+    const hydrated = derived.hydrate({
+      tags: [{
+        eventTagId: 12,
+        eventTag: {
+          id: 12,
+          text: "Festival",
+          color: "green",
+        },
+      }],
+    }, new db3.DB3ReferenceStore())
+
+    expect(hydrated).toEqual({
+      tags: [{
+        eventTagId: 12,
+        eventTag: {
+          id: 12,
+          text: "Festival",
+          color: expect.objectContaining({ id: "green" }),
+        },
+      }],
+    })
+    expect(decode).toHaveBeenCalledTimes(1)
+  })
+})

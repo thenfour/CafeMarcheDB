@@ -724,6 +724,11 @@ export type DB3ReadTransportValueOf<TField> =
     ? TReadTransportValue
     : never;
 
+export type DB3ReadConsumerValueOf<TField> =
+    TField extends FieldBase<any, any, any, any, infer TReadConsumerValue, any>
+    ? TReadConsumerValue
+    : never;
+
 export type DB3ReadPresenceOf<TField> =
     TField extends FieldBase<any, any, any, any, any, infer TReadPresence>
     ? TReadPresence
@@ -740,6 +745,22 @@ export type DB3FieldMap = Readonly<Record<string, AnyDB3Field>>;
 
 export type DB3FieldsOf<TTable extends xTable> =
     TTable extends xTable<infer TFields> ? TFields : DB3FieldMap;
+
+/**
+ * Type-only relation metadata. Relation fields retain runtime table IDs for
+ * cycle-safe lookup while optionally carrying the concrete target xTable type
+ * needed by recursively derived consumer models.
+ */
+export interface DB3RelationTargetField<
+    TTargetTable extends xTable = xTable,
+> {
+    readonly __relationTargetTable: TTargetTable;
+}
+
+export type DB3RelationTargetTableOf<TField> =
+    TField extends DB3RelationTargetField<infer TTargetTable>
+    ? TTargetTable
+    : never;
 
 /**
  * Defers field construction until makeColumnSet() can supply the authoritative

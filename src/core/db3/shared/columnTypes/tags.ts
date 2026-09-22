@@ -7,7 +7,7 @@ import {
 } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
 import {
-    ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3FieldPrismaMember, type DB3RowMode,
+    ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3FieldPrismaMember, type DB3RelationTargetField, type DB3RowMode,
     FieldBase, GetTableById, type SqlGetSortableQueryElementsAPI,
     SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
@@ -41,7 +41,12 @@ export type TagsFieldArgs<TAssociation> = {
 
 // Tags encode an association collection rather than a same-key scalar value;
 // their exact write shape belongs to their explicit mutation projection.
-export class TagsField<TAssociation> extends FieldBase<TAssociation[], undefined, false> {
+export class TagsField<
+    TAssociation,
+    TAssociationTable extends xTable = xTable,
+> extends FieldBase<TAssociation[], undefined, false>
+    implements DB3RelationTargetField<TAssociationTable> {
+    declare readonly __relationTargetTable: TAssociationTable;
     localTableSpec: xTable;
     associationTableID: string;
     foreignTableID: string;
