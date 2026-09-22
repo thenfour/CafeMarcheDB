@@ -1,13 +1,132 @@
 import type { TAnyModel } from "@/shared/rootroot";
+import type { Prisma } from "db";
 import { z } from "zod";
 import {
+    type DB3FieldsOf,
     GetTableById,
     type AnyDB3Field,
     type DB3PrismaMemberOwnership,
+    type DB3ReadPresenceOf,
+    type DB3ReadTransportValueOf,
     type xTable,
 } from "../db3core";
-import type { AnyDB3Entity } from "./db3Entity";
+import type {
+    AnyDB3Entity,
+    PrismaDelegateOf,
+    SchemaOf,
+} from "./db3Entity";
 import type { DB3ViewSelectionArgs } from "./db3View";
+
+type ArrayItem<TValue> = TValue extends readonly (infer TItem)[] ? TItem : never;
+
+type DB3SelectionSelect<TSelection> = TSelection extends {
+    readonly select?: infer TSelect;
+} ? NonNullable<TSelect> : never;
+
+type DB3SelectedKeys<TSelect> = Extract<{
+    [TKey in keyof TSelect]-?: TSelect[TKey] extends false | null | undefined
+    ? never
+    : TKey;
+}[keyof TSelect], string>;
+
+type DB3NestedSelect<TMemberSelection> = TMemberSelection extends {
+    readonly select?: infer TSelect;
+} ? NonNullable<TSelect> : never;
+
+type DB3NestedDto<
+    TPayload,
+    TSelect,
+> = {
+    [TKey in Extract<DB3SelectedKeys<TSelect>, keyof TPayload>]?:
+    DB3SelectedPayloadValue<TPayload[TKey], TSelect[TKey]>;
+};
+
+type DB3NestedRelationValue<
+    TPayloadValue,
+    TNestedSelect,
+> = TPayloadValue extends null | undefined
+    ? TPayloadValue
+    : TPayloadValue extends readonly (infer TItem)[]
+    ? DB3NestedDto<TItem, TNestedSelect>[]
+    : TPayloadValue extends object
+    ? DB3NestedDto<TPayloadValue, TNestedSelect>
+    : TPayloadValue;
+
+type DB3SelectedPayloadValue<
+    TPayloadValue,
+    TMemberSelection,
+> = TMemberSelection extends true
+    ? TPayloadValue
+    : DB3NestedSelect<TMemberSelection> extends never
+    ? TPayloadValue
+    : DB3NestedRelationValue<TPayloadValue, DB3NestedSelect<TMemberSelection>>;
+
+type DB3PrismaPayload<
+    TEntity extends AnyDB3Entity,
+    TSelection extends DB3ViewSelectionArgs<TEntity>,
+> = ArrayItem<Prisma.Result<
+    PrismaDelegateOf<TEntity>,
+    TSelection,
+    "findMany"
+>>;
+
+type DB3RootMemberValue<
+    TEntity extends AnyDB3Entity,
+    TSelection extends DB3ViewSelectionArgs<TEntity>,
+    TKey extends string,
+    TSelect = DB3SelectionSelect<TSelection>,
+    TPayload = DB3PrismaPayload<TEntity, TSelection>,
+    TFields = DB3FieldsOf<SchemaOf<TEntity>>,
+> = TKey extends keyof TPayload
+    ? TKey extends keyof TSelect
+    ? TSelect[TKey] extends true
+    ? TKey extends keyof TFields
+    ? DB3ReadTransportValueOf<TFields[TKey]>
+    : TPayload[TKey]
+    : DB3SelectedPayloadValue<TPayload[TKey], TSelect[TKey]>
+    : never
+    : never;
+
+type DB3RequiredRootKeys<
+    TEntity extends AnyDB3Entity,
+    TSelection extends DB3ViewSelectionArgs<TEntity>,
+    TSelect = DB3SelectionSelect<TSelection>,
+    TFields = DB3FieldsOf<SchemaOf<TEntity>>,
+> = {
+    [TKey in DB3SelectedKeys<TSelect>]: TKey extends keyof TFields
+    ? DB3ReadPresenceOf<TFields[TKey]> extends "required"
+    ? TKey
+    : never
+    : never;
+}[DB3SelectedKeys<TSelect>];
+
+type Simplify<TValue> = { [TKey in keyof TValue]: TValue[TKey] };
+
+/** The statically known DTO output for an entity and explicit Prisma selection. */
+export type DB3DtoForSelection<
+    TEntity extends AnyDB3Entity,
+    TSelection extends DB3ViewSelectionArgs<TEntity>,
+    TSelectedKey extends string = DB3SelectedKeys<DB3SelectionSelect<TSelection>>,
+    TRequiredKey extends string = DB3RequiredRootKeys<TEntity, TSelection>,
+> = Simplify<{
+    [TKey in Extract<TSelectedKey, TRequiredKey>]:
+    DB3RootMemberValue<TEntity, TSelection, TKey>;
+} & {
+    [TKey in Exclude<TSelectedKey, TRequiredKey>]?:
+    DB3RootMemberValue<TEntity, TSelection, TKey>;
+}>;
+
+/** A runtime Zod object whose inferred output is the selection-derived DTO. */
+export type DB3DerivedDtoSchema<
+    TEntity extends AnyDB3Entity,
+    TSelection extends DB3ViewSelectionArgs<TEntity>,
+> = z.ZodObject<
+    z.ZodRawShape,
+    "strip",
+    z.ZodTypeAny,
+    DB3DtoForSelection<TEntity, TSelection>,
+    DB3DtoForSelection<TEntity, TSelection>
+>;
 
 interface DB3CompiledMemberBase {
     readonly member: string;
@@ -32,9 +151,12 @@ export interface DB3CompiledRelationMember extends DB3CompiledMemberBase {
 
 export type DB3CompiledMember = DB3CompiledValueMember | DB3CompiledRelationMember;
 
-export interface DB3CompiledSelection<TSelection> {
+export interface DB3CompiledSelection<
+    TEntity extends AnyDB3Entity,
+    TSelection extends DB3ViewSelectionArgs<TEntity>,
+> {
     readonly prismaSelection: TSelection;
-    readonly dtoSchema: z.AnyZodObject;
+    readonly dtoSchema: DB3DerivedDtoSchema<TEntity, TSelection>;
     readonly members: readonly DB3CompiledMember[];
 }
 
@@ -219,7 +341,7 @@ export function compileDB3Selection<
 >(
     entity: TEntity,
     selection: TSelection,
-): DB3CompiledSelection<TSelection> {
+): DB3CompiledSelection<TEntity, TSelection> {
     const selectionValue = selection as TAnyModel;
     const select = getExplicitSelect(entity, selectionValue, entity.entityID);
     const compiled = compileSelect(
@@ -231,6 +353,18 @@ export function compileDB3Selection<
 
     return {
         prismaSelection: selection,
-        ...compiled,
+        dtoSchema: compiled.dtoSchema as DB3DerivedDtoSchema<TEntity, TSelection>,
+        members: compiled.members,
     };
+}
+
+/** Derives the validated DTO schema for an explicit Prisma selection. */
+export function deriveDtoSchema<
+    TEntity extends AnyDB3Entity,
+    const TSelection extends DB3ViewSelectionArgs<TEntity>,
+>(
+    entity: TEntity,
+    selection: TSelection,
+): DB3DerivedDtoSchema<TEntity, TSelection> {
+    return compileDB3Selection(entity, selection).dtoSchema;
 }

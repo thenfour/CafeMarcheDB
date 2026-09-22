@@ -326,6 +326,17 @@ fetch data.
 if useful. Internally, DTO derivation and hydration should use the same compiled
 selection description so they cannot drift.
 
+Implementation status: `deriveDtoSchema` is public and preserves a literal
+Prisma selection in its inferred schema output. Selected root scalar members use
+the xTable field's transport value, nullability, and read-presence contract.
+Foreign-key members use the Prisma payload type and remain conservatively
+optional. Nested relation value/null/array shapes come from the Prisma payload;
+their selected row members are also conservatively optional until relation
+fields carry their target xTable type statically as well as its runtime table ID.
+Callers must preserve the literal selection (for example with
+`Prisma.validator`) rather than first widening it to `Prisma.*DefaultArgs` if
+they want an exact derived DTO type.
+
 ### Selection rules
 
 The first implementation should support a deliberately small, explicit subset:
@@ -559,7 +570,7 @@ sound.
        optionality. Return the original selection unchanged. Errors must include
        the entity and complete selection path.
 
-10. [ ] **Expose `deriveDtoSchema` and/or `deriveViewContract`.** Ensure DTO
+10. [x] **Expose `deriveDtoSchema` and/or `deriveViewContract`.** Ensure DTO
         schema construction and hydration share one compiled description. Add type
         tests for selected versus unselected, nullable versus non-null, and inherited
         versus independently authorized fields.

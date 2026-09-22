@@ -1,5 +1,6 @@
 import { Prisma } from "db"
-import { describe, expect, it } from "vitest"
+import type { z } from "zod"
+import { describe, expect, expectTypeOf, it } from "vitest"
 
 import * as db3 from "src/core/db3/db3"
 import { compileDB3Selection } from "src/core/db3/shared/core/db3ViewContract"
@@ -15,6 +16,13 @@ describe("DB3 scalar selection compiler", () => {
     })
 
     const compiled = compileDB3Selection(db3.eventStatusEntity, selection)
+
+    expectTypeOf(compiled.prismaSelection).toEqualTypeOf<typeof selection>()
+    expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
+      id: number
+      label: string
+      iconName: string | null
+    }>()
 
     expect(compiled.prismaSelection).toBe(selection)
     expect(compiled.members.map(member => ({
@@ -52,6 +60,11 @@ describe("DB3 scalar selection compiler", () => {
 
     const compiled = compileDB3Selection(db3.eventEntity, selection)
 
+    expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
+      name?: string
+      locationDescription?: string
+    }>()
+
     expect(compiled.members.every(member => member.required === false)).toBe(true)
     expect(compiled.dtoSchema.parse({})).toEqual({})
     expect(compiled.dtoSchema.parse({ name: "Visible event" }))
@@ -67,6 +80,10 @@ describe("DB3 scalar selection compiler", () => {
     })
 
     const compiled = compileDB3Selection(db3.eventStatusEntity, selection)
+
+    expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
+      id: number
+    }>()
 
     expect(compiled.members.map(member => member.member)).toEqual(["id"])
     expect(compiled.dtoSchema.parse({ id: 10, label: "stripped" })).toEqual({ id: 10 })
@@ -99,6 +116,10 @@ describe("DB3 scalar selection compiler", () => {
 
     const compiled = compileDB3Selection(db3.eventEntity, selection)
 
+    expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
+      statusId?: number | null
+    }>()
+
     expect(compiled.members[0]).toMatchObject({
       kind: "value",
       ownershipKind: "foreignKey",
@@ -119,6 +140,13 @@ describe("DB3 scalar selection compiler", () => {
     })
 
     const compiled = compileDB3Selection(db3.eventEntity, selection)
+
+    expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
+      status?: {
+        id?: number
+        label?: string
+      } | null
+    }>()
 
     expect(compiled.members[0]).toMatchObject({
       kind: "relation",
@@ -198,5 +226,52 @@ describe("DB3 scalar selection compiler", () => {
       ...dto,
       tags: [{ ...dto.tags[0], eventTagId: "12" }],
     }).success).toBe(false)
+  })
+
+  it("derives the selected nested DTO type without widening Prisma arguments", () => {
+    const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: {
+        locationURL: true,
+        tags: {
+          select: {
+            eventTagId: true,
+            eventTag: {
+              select: {
+                id: true,
+                text: true,
+              },
+            },
+          },
+          orderBy: { eventTagId: "asc" },
+          where: { eventTagId: { gt: 0 } },
+        },
+      },
+    })
+
+    const schema = db3.deriveDtoSchema(db3.eventEntity, selection)
+
+    expectTypeOf<z.infer<typeof schema>>().toEqualTypeOf<{
+      locationURL?: string
+      tags?: Array<{
+        eventTagId?: number
+        eventTag?: {
+          id?: number
+          text?: string
+        }
+      }>
+    }>()
+    expect(schema.parse({
+      locationURL: "https://example.com",
+      tags: [{
+        eventTagId: 12,
+        eventTag: { id: 12, text: "Festival" },
+      }],
+    })).toEqual({
+      locationURL: "https://example.com",
+      tags: [{
+        eventTagId: 12,
+        eventTag: { id: 12, text: "Festival" },
+      }],
+    })
   })
 })
