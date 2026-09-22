@@ -115,6 +115,16 @@ const FileWikiPageTagDtoSchema = z.object({
     }).nullable().optional(),
 });
 
+const FileDetailRelatedFileDtoSchema = z.object({
+    id: z.number().int(),
+    fileLeafName: z.string().optional(),
+});
+
+const FileDetailPinnedSongDtoSchema = z.object({
+    id: z.number().int(),
+    name: z.string().optional(),
+});
+
 // This is the requested maximum shape. Apart from the transport identity, fields
 // remain optional because recursive DB3 authorization may remove any of them.
 export const FileDetailDtoSchema = z.object({
@@ -131,6 +141,7 @@ export const FileDetailDtoSchema = z.object({
     sizeBytes: z.number().int().nullable().optional(),
     storedLeafName: z.string().optional(),
     mimeType: z.string().nullable().optional(),
+    customData: z.string().nullable().optional(),
     externalURI: z.string().nullable().optional(),
     fileCreatedAt: z.date().nullable().optional(),
     parentFileId: z.number().int().nullable().optional(),
@@ -141,7 +152,25 @@ export const FileDetailDtoSchema = z.object({
     taggedEvents: z.array(FileEventTagDtoSchema).optional(),
     taggedInstruments: z.array(FileInstrumentTagDtoSchema).optional(),
     taggedWikiPages: z.array(FileWikiPageTagDtoSchema).optional(),
+    frontpageGalleryItems: z.array(z.object({
+        id: z.number().int(),
+    })).optional(),
+    parentFile: FileDetailRelatedFileDtoSchema.nullable().optional(),
+    childFiles: z.array(FileDetailRelatedFileDtoSchema).optional(),
+    previewFile: FileDetailRelatedFileDtoSchema.nullable().optional(),
+    previewForFile: z.array(FileDetailRelatedFileDtoSchema).optional(),
+    pinnedForSongs: z.array(FileDetailPinnedSongDtoSchema).optional(),
 });
+
+const fileDetailRelatedFileSelection = {
+    select: {
+        id: true,
+        fileLeafName: true,
+        uploadedByUserId: true,
+        visiblePermissionId: true,
+        isDeleted: true,
+    },
+} as const;
 
 export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
@@ -161,6 +190,7 @@ export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
         sizeBytes: true,
         storedLeafName: true,
         mimeType: true,
+        customData: true,
         externalURI: true,
         fileCreatedAt: true,
         parentFileId: true,
@@ -235,6 +265,22 @@ export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
                 },
             },
         },
+        frontpageGalleryItems: {
+            select: { id: true },
+        },
+        parentFile: fileDetailRelatedFileSelection,
+        childFiles: fileDetailRelatedFileSelection,
+        previewFile: fileDetailRelatedFileSelection,
+        previewForFile: fileDetailRelatedFileSelection,
+        pinnedForSongs: {
+            select: {
+                id: true,
+                name: true,
+                createdByUserId: true,
+                visiblePermissionId: true,
+                isDeleted: true,
+            },
+        },
     },
 });
 
@@ -304,9 +350,9 @@ const FileEditorDtoSchema = FileDetailDtoSchema.pick({
     taggedEvents: true,
     taggedInstruments: true,
     taggedWikiPages: true,
+    customData: true,
 }).extend({
     isDeleted: z.boolean().optional(),
-    customData: z.string().nullable().optional(),
 });
 
 const fileEditorSelection = Prisma.validator<Prisma.FileDefaultArgs>()({

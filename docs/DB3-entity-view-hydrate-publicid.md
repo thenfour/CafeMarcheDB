@@ -1017,6 +1017,10 @@ conversions.
   actually reads while generated writes remain limited to the gallery entity's
   prepared fields. Delete the unused WikiPage TableClient module instead of
   manufacturing a view consumer for it.
+- [x] Move the backstage File detail page onto `fileDetailView`, expand that
+  read DTO only with the relationship-panel and image-metadata fields the page
+  renders, retain `fileEditorView` as the narrower write contract, and remove
+  the page from the legacy-read compatibility inventory.
 - [ ] Convert the remaining view-backed inventory to the typed path. Retain a
   separately documented
   runtime-dynamic/query-only API only where static view binding is genuinely

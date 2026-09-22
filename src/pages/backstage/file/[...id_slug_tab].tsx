@@ -22,9 +22,8 @@ import { SongChip } from "@/src/core/components/song/SongChip";
 import { UserChip } from "@/src/core/components/user/userChip";
 import { WikiPageChip } from "@/src/core/components/wiki/WikiPageChip";
 import { gIconMap } from "@/src/core/db3/components/IconMap";
-import { EnrichedFile, enrichFile } from "@/src/core/db3/shared/schema/enrichedFileTypes";
 import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
-import { BlitzPage, useParams } from "@blitzjs/next";
+import { BlitzPage } from "@blitzjs/next";
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs } from "@mui/material";
 import db from "db";
@@ -38,7 +37,7 @@ import * as db3 from "src/core/db3/db3";
 
 ////////////////////////////////////////////////////////////////
 export interface FileBreadcrumbProps {
-    file: EnrichedFile<db3.FilePayload>,
+    file: db3.FileDetailClient,
 };
 export const FileBreadcrumbs = (props: FileBreadcrumbProps) => {
     const dashboardContext = useDashboardContext();
@@ -66,15 +65,17 @@ export const FileBreadcrumbs = (props: FileBreadcrumbProps) => {
 
 
 interface FileDetailProps {
-    file: EnrichedFile<db3.FilePayload>;
+    file: db3.FileDetailClient;
     readonly: boolean;
-    tableClient: DB3Client.xLegacyTableRenderClient<db3.FilePayload>;
+    tableClient: DB3Client.xTableRenderClient<typeof db3.fileDetailView>;
 };
 
 
 const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
     const dashboardContext = useDashboardContext();
-    const visInfo = dashboardContext.getVisibilityInfo(file);
+    const visInfo = dashboardContext.getVisibilityInfo({
+        visiblePermissionId: file.visiblePermissionId ?? null,
+    });
     const recordFeature = useFeatureRecorder();
     const snackbar = useSnackbar();
     const editCommands = DB3Client.useCrudViewCommands({
@@ -85,7 +86,16 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
     const mimeInfo = parseMimeType(file.mimeType);
     const isAudio = mimeInfo?.type === 'audio';
 
-    const imageInfo = SharedAPI.files.getImageFileDimensions(file);
+    const imageInfo = file.storedLeafName !== undefined
+        && file.customData !== undefined
+        && file.mimeType !== undefined
+        ? SharedAPI.files.getImageFileDimensions({
+            id: file.id,
+            storedLeafName: file.storedLeafName,
+            customData: file.customData,
+            mimeType: file.mimeType,
+        })
+        : undefined;
 
     return (
         <div className={`fileDetail ${visInfo.className}`} style={{ maxWidth: '800px', margin: '20px 0' }}>
@@ -99,7 +109,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                 tableSpec={tableClient.tableSpec}
                 tableRenderClient={tableClient}
                 onCancel={() => { }}
-                onOK={async (obj, _tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                onOK={async (obj, _tableClient, api: EditFieldsDialogButtonApi) => {
                     void recordFeature({
                         feature: ActivityFeature.file_edit,
                         context: "file edit dialog",
@@ -163,14 +173,28 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                     "Tagged Songs": (file.taggedSongs && file.taggedSongs.length > 0) ?
                         (<CMChipContainer>
                             {file.taggedSongs.map((taggedSong, index) => (
-                                <SongChip key={index} value={taggedSong.song} />
+                                taggedSong.song.name !== undefined
+                                    ? <SongChip key={index} value={{ id: taggedSong.song.id, name: taggedSong.song.name }} />
+                                    : null
                             ))}
                         </CMChipContainer>) : "",
                     "Tagged Events": (file.taggedEvents && file.taggedEvents.length > 0) ?
                         (<CMChipContainer>
-                            {file.taggedEvents.map((taggedEvent, index) => (
-                                <EventChip key={index} value={taggedEvent.event} />
-                            ))}
+                            {file.taggedEvents.map((taggedEvent, index) => {
+                                const event = taggedEvent.event;
+                                return event.name !== undefined
+                                    && event.startsAt !== undefined
+                                    && event.statusId !== undefined
+                                    && event.typeId !== undefined
+                                    ? <EventChip key={index} value={{
+                                        id: event.id,
+                                        name: event.name,
+                                        startsAt: event.startsAt,
+                                        statusId: event.statusId,
+                                        typeId: event.typeId,
+                                    }} />
+                                    : null;
+                            })}
                         </CMChipContainer>) : "",
                     "Tagged Instruments": (file.taggedInstruments && file.taggedInstruments.length >
                         0) ? (
@@ -182,7 +206,9 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                     "Tagged Wiki Pages": (file.taggedWikiPages && file.taggedWikiPages.length > 0) ?
                         (<CMChipContainer>
                             {file.taggedWikiPages.map((taggedWikiPage, index) => (
-                                <WikiPageChip key={index} slug={taggedWikiPage.wikiPage.slug} />
+                                taggedWikiPage.wikiPage.slug !== undefined
+                                    ? <WikiPageChip key={index} slug={taggedWikiPage.wikiPage.slug} />
+                                    : null
                             ))}
                         </CMChipContainer>) : "",
                     "Frontpage gallery usage": file.frontpageGalleryItems && file.frontpageGalleryItems.length || "",
@@ -205,7 +231,9 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                     "Pinned for songs": <CMChipContainer>
                         {file.pinnedForSongs && file.pinnedForSongs.length > 0 && (
                             file.pinnedForSongs.map((pinnedSong, index) => (
-                                <SongChip key={index} value={pinnedSong} />
+                                pinnedSong.name !== undefined
+                                    ? <SongChip key={index} value={{ id: pinnedSong.id, name: pinnedSong.name }} />
+                                    : null
                             ))
                         )}</CMChipContainer>,
                     ...(dashboardContext.isShowingAdminControls && file.customData ? {
@@ -223,48 +251,43 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
 };
 
 const MyComponent = ({ fileId }: { fileId: number | null }) => {
-    const params = useParams();
-    const [id__, slug, tab] = params.id_slug_tab as string[];
     if (!fileId) throw new Error(`file not found`);
 
     const dashboardContext = useDashboardContext();
 
     useRecordFeatureUse({ feature: ActivityFeature.file_detail_view, fileId });
 
-    const queryArgs: DB3Client.xTableClientArgs = {
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.fileDetailView,
+        columns: DB3Client.makeClientColumnSelection(
+            FileTableClientColumns.id,
+            FileTableClientColumns.fileLeafName,
+            FileTableClientColumns.description,
+            FileTableClientColumns.tags,
+            FileTableClientColumns.taggedEvents,
+            FileTableClientColumns.taggedUsers,
+            FileTableClientColumns.taggedInstruments,
+            FileTableClientColumns.taggedSongs,
+            FileTableClientColumns.taggedWikiPages,
+            FileTableClientColumns.visiblePermission,
+
+            FileTableClientColumns.mimeType,
+            FileTableClientColumns.sizeBytes,
+            FileTableClientColumns.customData,
+        ),
+    });
+    const tableClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
-        tableSpec: DB3Client.defineLegacyTableClientSpec({
-            table: db3.xFile,
-            columns: DB3Client.makeClientColumnSelection(
-                FileTableClientColumns.id,
-                FileTableClientColumns.fileLeafName,
-                FileTableClientColumns.description,
-                FileTableClientColumns.tags,
-                FileTableClientColumns.taggedEvents,
-                FileTableClientColumns.taggedUsers,
-                FileTableClientColumns.taggedInstruments,
-                FileTableClientColumns.taggedSongs,
-                FileTableClientColumns.taggedWikiPages,
-                FileTableClientColumns.visiblePermission,
-
-                FileTableClientColumns.mimeType,
-                FileTableClientColumns.sizeBytes,
-                FileTableClientColumns.customData,
-            ),
-        }),
+        tableSpec,
+        referenceProvider: dashboardContext.referenceStore,
         filterModel: {
-            tableParams: {}
-        }
-    };
-
-    queryArgs.filterModel!.tableParams!.fileId = fileId;
-
-    const tableClient = DB3Client.useLegacyTableRenderContext<db3.FilePayload>(queryArgs);
+            tableParams: { fileId },
+        },
+    });
     if (tableClient.items.length > 1) throw new Error(`db returned too many files; issues with filtering? exploited slug/id? count=${tableClient.items.length}`);
     if (tableClient.items.length < 1) throw new Error(`File not found`);
 
-    const fileRaw = tableClient.items[0]!;
-    const file = enrichFile(fileRaw, dashboardContext);
+    const file = tableClient.items[0]!;
 
     return (
         <div className="fileDetailComponent">

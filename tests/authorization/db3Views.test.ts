@@ -467,6 +467,72 @@ describe("DB3 named views", () => {
         expectTypeOf(hydrated).toEqualTypeOf<db3.FileSearchClient>();
     });
 
+    it("hydrates the File detail view with its relationship panels", () => {
+        const references = new db3.DB3ReferenceStore();
+        const permission = {
+            id: 4,
+            name: "members",
+            description: "",
+            isVisibility: true,
+            sortOrder: 1,
+            significance: null,
+            color: null,
+            iconName: null,
+        };
+        const fileTag = {
+            id: 30,
+            text: "Partition",
+            description: "",
+            color: null,
+            sortOrder: 1,
+            significance: db3.FileTagSignificance.Partition,
+        };
+        references.register(db3.permissionEntity, [permission]);
+        references.register(db3.fileTagEntity, [fileTag]);
+
+        const selection = db3.fileDetailView.getSelectionArgs({
+            filter: { items: [] },
+            authorization: db3.createDB3Authorization(null, new PermissionSet([])),
+        });
+        expect(selection).toMatchObject({
+            select: {
+                customData: true,
+                isDeleted: true,
+                frontpageGalleryItems: { select: { id: true } },
+                parentFile: { select: { id: true, fileLeafName: true } },
+                childFiles: { select: { id: true, fileLeafName: true } },
+                previewFile: { select: { id: true, fileLeafName: true } },
+                previewForFile: { select: { id: true, fileLeafName: true } },
+                pinnedForSongs: { select: { id: true, name: true } },
+            },
+        });
+
+        const dto = db3.fileDetailView.parseDto({
+            id: 8,
+            fileLeafName: "score.pdf",
+            customData: "{\"width\":1200}",
+            visiblePermissionId: permission.id,
+            tags: [{ id: 80, fileTagId: fileTag.id }],
+            frontpageGalleryItems: [{ id: 90 }],
+            parentFile: { id: 7, fileLeafName: "source.pdf" },
+            childFiles: [{ id: 9, fileLeafName: "part.pdf" }],
+            previewFile: { id: 10, fileLeafName: "preview.png" },
+            previewForFile: [{ id: 11, fileLeafName: "poster.pdf" }],
+            pinnedForSongs: [{ id: 12, name: "A song" }],
+        });
+        const hydrated = db3.hydrateView(db3.fileDetailView, dto, references);
+
+        expect(hydrated.visiblePermission).toBe(permission);
+        expect(hydrated.tags?.[0]?.fileTag).toBe(fileTag);
+        expect(hydrated.frontpageGalleryItems).toEqual([{ id: 90 }]);
+        expect(hydrated.parentFile).toEqual({ id: 7, fileLeafName: "source.pdf" });
+        expect(hydrated.childFiles).toEqual([{ id: 9, fileLeafName: "part.pdf" }]);
+        expect(hydrated.previewFile).toEqual({ id: 10, fileLeafName: "preview.png" });
+        expect(hydrated.previewForFile).toEqual([{ id: 11, fileLeafName: "poster.pdf" }]);
+        expect(hydrated.pinnedForSongs).toEqual([{ id: 12, name: "A song" }]);
+        expectTypeOf(hydrated).toEqualTypeOf<db3.FileDetailClient>();
+    });
+
     it("builds Event search selections from the authenticated actor, never client identity", () => {
         const authorization = db3.createDB3Authorization({ id: 42 }, new PermissionSet([]));
         const selection = db3.eventSearchView.getSelectionArgs({

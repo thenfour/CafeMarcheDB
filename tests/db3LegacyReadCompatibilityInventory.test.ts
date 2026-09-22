@@ -74,10 +74,6 @@ const compatibilitySites: Record<string, InventoryEntry[]> = {
         { api: "defineLegacyTableClientSpec", category: "render-only-editor", count: 2 },
         { api: "useLegacyTableRenderContext", category: "render-only-editor", count: 2 },
     ],
-    "src/pages/backstage/file/[...id_slug_tab].tsx": [
-        { api: "defineLegacyTableClientSpec", category: "named-view-candidate", count: 1 },
-        { api: "useLegacyTableRenderContext", category: "named-view-candidate", count: 1 },
-    ],
     "src/pages/backstage/frontpageEvents.tsx": [
         { api: "defineLegacyTableClientSpec", category: "named-view-candidate", count: 1 },
         { api: "useLegacyTableRenderContext", category: "named-view-candidate", count: 1 },
