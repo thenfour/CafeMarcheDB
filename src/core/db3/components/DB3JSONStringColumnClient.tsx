@@ -22,7 +22,7 @@ import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { ColorSwatch } from "../../components/color/ColorSwatch";
 import { gGeneralPaletteList, gStrong } from "../../components/color/palette";
 import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
-import { GenericStringField } from "../shared/genericStringField";
+import { GenericStringField } from "../shared/columnTypes/genericString";
 
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;

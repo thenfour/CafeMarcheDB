@@ -3,9 +3,9 @@ import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { gIconOptions } from "shared/utils";
 import { DynamicMenuLinkRealm, DynamicMenuLinkType } from "../../../../../shared/dynMenuTypes";
-import { ConstEnumStringField, MakeCreatedAtField, MakeIconField, MakePKfield, MakeSortOrderField } from "../db3basicFields";
+import { ConstEnumStringField, MakeCreatedAtField, MakeIconField, MakePKfield, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
-import { GenericStringField, MakeTitleField } from "../genericStringField";
+import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
 import { UserMinimalSelect } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 

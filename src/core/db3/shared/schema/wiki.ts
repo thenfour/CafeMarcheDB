@@ -3,10 +3,10 @@ import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { ForeignSingleField, GhostField, MakeCreatedAtField, MakePKfield, TagsField } from "../db3basicFields";
+import { ForeignSingleField, GhostField, MakeCreatedAtField, MakePKfield, TagsField } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
-import { GenericStringField, MakeTitleField } from "../genericStringField";
+import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
 import { WikiPageTagAssignmentPayload } from "./prismArgs";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 

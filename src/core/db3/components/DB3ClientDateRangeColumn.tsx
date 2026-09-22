@@ -10,7 +10,7 @@ import { EventDateRangeText } from "src/core/components/DateTime/EventDateRangeT
 
 import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { EventDateTimeRangeControl } from "src/core/components/DateTime/DateTimeRangeControl";
-import * as db3fields from "../shared/db3basicFields";
+import * as db3fields from "../shared/columnTypes/xTableColumnTypes";
 import * as DB3ClientCore from "./DB3ClientCore";
 //import { API } from '../clientAPI';
 import * as db3 from "../db3";

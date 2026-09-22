@@ -9,7 +9,7 @@ import {
 } from "src/core/db3/components/DB3ClientCore";
 import * as db3 from "src/core/db3/db3";
 import type { InstrumentFunctionalGroupPublicId } from "shared/publicId";
-import { GhostField } from "src/core/db3/shared/db3basicFields";
+import { GhostField } from "@/src/core/db3/shared/columnTypes/xTableColumnTypes";
 import { makeColumnSet } from "src/core/db3/shared/db3core";
 import { useCrudTableRenderContext } from "src/core/db3/components/useCrudTableRenderContext";
 

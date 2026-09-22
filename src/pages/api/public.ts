@@ -58,7 +58,19 @@ async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
     // empty reference store. hydration on eventFrontpageView shall not use references; all data should come from the prisma selection.
     const referenceStore = new db3.DB3ReferenceStore();
 
-    const hydrated = eventsResult.map(event => db3.eventFrontpageView.hydrate(event, referenceStore));
+    // adapt events result to what hydrate expects; ugh. need this migration to be over.
+    const eventsAdapted = eventsResult.map(event => {
+        return {
+            ...event,
+            tags: event.tags.map(assoc => ({
+                ...assoc,
+            }))
+        };
+    });
+
+    const aoeu = eventsAdapted[0]?.tags;
+
+    const hydrated = eventsAdapted.map(event => db3.eventFrontpageView.hydrate(event, referenceStore));
 
     const payload = MakePublicFeedResponseSpec(hydrated, lang, galleryResult);
 

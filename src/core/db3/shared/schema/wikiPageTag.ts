@@ -4,9 +4,9 @@ import {
     WikiPageTagArgs, WikiPageTagNaturalOrderBy, WikiPageTagPayload,
     WikiPageTagAssignmentArgs, WikiPageTagAssignmentNaturalOrderBy, WikiPageTagAssignmentPayload
 } from "./prismArgs";
-import { ForeignSingleField, GhostField, MakeColorField, MakePKfield, MakeSignificanceField, MakeSortOrderField } from "../db3basicFields";
+import { ForeignSingleField, GhostField, MakeColorField, MakePKfield, MakeSignificanceField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
 import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, defineTable, makeColumnSet } from "../db3core";
-import { MakeDescriptionField, MakeTitleField } from "../genericStringField";
+import { MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 ////////////////////////////////////////////////////////////////

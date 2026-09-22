@@ -18,7 +18,7 @@ import { CoalesceBool, CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace
 import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import * as db3 from "../db3";
-import * as db3fields from "../shared/db3basicFields";
+import * as db3fields from "../shared/columnTypes/xTableColumnTypes";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { IconEditCell } from "./IconSelectDialog";
 // NB: do not use API.* here due to circular dependencies
@@ -29,7 +29,7 @@ import { RenderMuiIcon } from "./IconMap";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import type { SettingKey } from "shared/settingKeys";
-import { GenericStringField } from "../shared/genericStringField";
+import { GenericStringField } from "../shared/columnTypes/genericString";
 import { ColorSwatch } from "../../components/color/ColorSwatch";
 import type { ColorPaletteEntry } from "../../components/color/palette";
 import { ColorPick } from "../../components/color/ColorPick";

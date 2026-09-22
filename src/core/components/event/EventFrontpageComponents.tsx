@@ -407,7 +407,10 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     const titleResetter = () => ({ en: props.event.name || "", fr: "", nl: "" });
     const locationResetter = () => ({ en: props.event.locationDescription || "", fr: "", nl: "" });
     const tagsResetter = () => ({
-        en: props.event.tags?.filter(t => t.eventTag.visibleOnFrontpage).map(t => `#${t.eventTag.text}`).join(" ") || "",
+        en: props.event.tags
+            ?.filter(t => t.eventTag?.visibleOnFrontpage)
+            .map(t => `#${t.eventTag?.text}`)
+            .join(" ") || "",
         fr: "",
         nl: "",
     });

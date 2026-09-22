@@ -28,6 +28,27 @@ const EventTypeDtoSchema = z.object({
     significance: db3s.authNeeded(z.string().nullable()),
 });
 
+// the dto can contain many undefined fields due to auth stripping.
+// but many components want a complete payload with all fields present.
+// this is temporary; i want to improve our xTable schema to understand when
+// fields are guaranteed to be present if the row is returned.
+type EventTypeWithUndefineds = z.infer<typeof EventTypeDtoSchema>;
+const EventTypeArgs = ZodToPrismaSelection(EventTypeDtoSchema);
+type EventTypeConcrete = Prisma.EventTypeGetPayload<typeof EventTypeArgs>;
+const coalesceEventType = (inp: EventTypeWithUndefineds | null | undefined): EventTypeConcrete | null => {
+    if (!inp) return null;
+    return {
+        id: inp.id,
+        isDeleted: inp.isDeleted ?? false,
+        description: inp.description ?? "",
+        color: inp.color ?? "",
+        sortOrder: inp.sortOrder ?? 0,
+        iconName: inp.iconName ?? "",
+        text: inp.text ?? "",
+        significance: inp.significance ?? null,
+    };
+};
+
 export const eventTypeEditorView = defineCrudView({
     viewID: "EventType_Editor",
     entity: eventTypeEntity,
@@ -47,6 +68,28 @@ const EventStatusDtoSchema = z.object({
     significance: z.string().nullable().optional(),
 });
 
+// the dto can contain many undefined fields due to auth stripping.
+// but many components want a complete payload with all fields present.
+// this is temporary; i want to improve our xTable schema to understand when
+// fields are guaranteed to be present if the row is returned.
+type EventStatusWithUndefineds = z.infer<typeof EventStatusDtoSchema>;
+const EventStatusArgs = ZodToPrismaSelection(EventStatusDtoSchema);
+type EventStatusConcrete = Prisma.EventStatusGetPayload<typeof EventStatusArgs>;
+const coalesceEventStatus = (inp: EventStatusWithUndefineds | null | undefined): EventStatusConcrete | null => {
+    if (!inp) return null;
+    return {
+        id: inp.id,
+        isDeleted: inp.isDeleted ?? false,
+        description: inp.description ?? "",
+        color: inp.color ?? "",
+        sortOrder: inp.sortOrder ?? 0,
+        iconName: inp.iconName ?? "",
+        label: inp.label ?? "",
+        significance: inp.significance ?? null,
+    };
+};
+
+
 export const eventStatusEditorView = defineCrudView({
     viewID: "EventStatus_Editor",
     entity: eventStatusEntity,
@@ -64,6 +107,49 @@ const EventTagEditorDtoSchema = z.object({
     significance: z.string().nullable().optional(),
     visibleOnFrontpage: z.boolean().optional(),
 });
+
+
+// the dto can contain many undefined fields due to auth stripping.
+// but many components want a complete payload with all fields present.
+// this is temporary; i want to improve our xTable schema to understand when
+// fields are guaranteed to be present if the row is returned.
+type EventTagWithUndefineds = z.infer<typeof EventTagEditorDtoSchema>;
+const EventTagArgs = ZodToPrismaSelection(EventTagEditorDtoSchema);
+type EventTagConcrete = Prisma.EventTagGetPayload<typeof EventTagArgs>;
+
+const coalesceEventTag = (inp: EventTagWithUndefineds): EventTagConcrete => {
+    //if (!inp) return null;
+    return {
+        id: inp.id,
+        description: inp.description ?? "",
+        color: inp.color ?? "",
+        sortOrder: inp.sortOrder ?? 0,
+        text: inp.text ?? "",
+        significance: inp.significance ?? null,
+        visibleOnFrontpage: inp.visibleOnFrontpage ?? false,
+    };
+};
+
+type EventTagAssociationWithUndefineds = {
+    id: number;
+    eventTagId: number;
+    eventTag: EventTagWithUndefineds;
+};
+
+type EventTagAssociationConcrete = {
+    id: number;
+    eventTagId: number;
+    eventTag: EventTagConcrete;
+};
+
+const coalesceEventTags = (inp: EventTagAssociationWithUndefineds[] | null | undefined): EventTagAssociationConcrete[] => {
+    if (!inp) return [];
+    return (inp ?? []).map(x => ({
+        id: x.id,
+        eventTagId: x.eventTagId,
+        eventTag: coalesceEventTag(x.eventTag),
+    }));
+};
 
 export const eventTagEditorView = defineCrudView({
     viewID: "EventTag_Editor",
@@ -98,27 +184,6 @@ export const eventAttendanceEditorView = defineCrudView({
 });
 
 // event editor ------------------------------------------
-// const EventEditorTypeDtoSchema = z.object({
-//     id: z.number().int(),
-
-//     description: z.string().optional(),
-//     color: z.string().nullable().optional(),
-//     sortOrder: z.number().int().optional(),
-//     iconName: z.string().nullable().optional(),
-
-//     text: z.string().optional(),
-//     significance: z.string().nullable().optional(),
-// });
-
-// const EventEditorStatusDtoSchema = z.object({
-//     id: z.number().int(),
-//     label: z.string().optional(),
-//     description: z.string().optional(),
-//     color: z.string().nullable().optional(),
-//     sortOrder: z.number().int().optional(),
-//     significance: z.string().nullable().optional(),
-//     iconName: z.string().nullable().optional(),
-// });
 
 // over model EventSegment
 const EventSegmentEditorDtoSchema = z.object({
@@ -287,14 +352,14 @@ const EventBasicSchema = {
 
     ...db3s.dateRange(),
     visiblePermissionId: z.number().int().nullable().optional(),
-    tags: z.array(z.object({
-        id: z.number().int(),
-        eventTagId: z.number().int(), // not optional;  if you have access to view the tag, assume you can see its identity
-    })).optional(),
 };
 
 const EventSearchDtoSchema = z.object({
     ...EventBasicSchema,
+    tags: z.array(z.object({
+        id: z.number().int(),
+        eventTagId: z.number().int(), // not optional;  if you have access to view the tag, assume you can see its identity
+    })).optional(),
 
     //id: z.number().int(),
     revision: z.number().int().optional(),
@@ -324,7 +389,6 @@ export const eventSearchSelection = ({ authorization }: DB3ViewSelectionContext)
     // A named Event_Search view always carries responses for the actor making
     // the request. Client input never chooses whose responses are returned.
     const actorUserId = authorization.userId ?? -1;
-
 
     return Prisma.validator<Prisma.EventDefaultArgs>()({
         select: {
@@ -441,7 +505,53 @@ const EventFrontpageSchema = {
 const EventFrontpageDtoSchema = z.object({
     ...EventBasicSchema,
     ...EventFrontpageSchema,
+    // frontpage editing shares this schema, and wants minimal type & status.
+    type: EventTypeDtoSchema.nullable().optional(),
+    status: EventStatusDtoSchema.nullable().optional(),
+    tags: z.array(z.object({
+        id: z.number().int(),
+        eventTagId: z.number().int(), // not optional; assume same auth as the tag itself
+        eventTag: z.object({
+            id: z.number().int(),
+            visibleOnFrontpage: z.boolean().optional(),
+            text: z.string().optional(),
+        }),
+    })).optional(),
 });
+
+// ///const srhtsnsth = ZodToPrismaSelection(EventFrontpageDtoSchema);
+// // const zy: typeof zx = 0 as any;
+// const xsnth8 = Prisma.validator<Prisma.EventDefaultArgs>()({
+//     select: {
+//         type: {
+//             select: {
+//                 id,
+//                 significance,
+//                 text
+//             }
+//         }
+//     }
+// });
+
+// // const x = Prisma.validator<Prisma.EventDefaultArgs>()({
+//     //select: ZodToPrismaSelection(EventFrontpageDtoSchema)
+//     select: {
+//         ...zx.select,
+//         // tags: {
+//         //     select: {
+//         //         id: true,
+//         //         eventTag: {
+//         //             select: {
+//         //                 id: true,
+//         //                 visibleOnFrontpage: true,
+//         //                 text: true,
+//         //                 izzou: true,
+//         //             }
+//         //         }
+//         //     }
+//         // }
+//     }
+// });
 
 // const EventFrontpageDtoSchema = EventSearchDtoSchema.pick({
 //     id: true,
@@ -562,13 +672,21 @@ export const eventFrontpageView = defineView({
     viewID: "Event_Frontpage",
     entity: eventEntity,
     dtoSchema: EventFrontpageDtoSchema,
-    // do not use references; the server has no reference provider
+    // do not use references; the server has no reference provider.
+    // coalesce type/status fields
     hydrate: (dto, _) => ({
         ...hydrateEventDateRange(dto),
+        type: coalesceEventType(dto.type),
+        status: coalesceEventStatus(dto.status),
+        tags: coalesceEventTags(dto.tags),
     }),
 });
 
 export type EventSearchDto = DtoOf<typeof eventSearchView>;
 export type EventSearchClient = ClientOf<typeof eventSearchView>;
+
+//type aoeu = EventSearchClient["status"];
+
 export type EventFrontpageDto = DtoOf<typeof eventFrontpageView>;
 export type EventFrontpageClient = ClientOf<typeof eventFrontpageView>;
+//type aoeus = EventFrontpageClient;

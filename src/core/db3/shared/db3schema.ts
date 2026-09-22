@@ -7,9 +7,9 @@
 
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { MakePKfield } from "./db3basicFields";
+import { MakePKfield } from "./columnTypes/xTableColumnTypes";
 import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, defineTable, makeColumnSet, SqlSpecialColumnFunction } from "./db3core";
-import { GenericStringField } from "./genericStringField";
+import { GenericStringField } from "./columnTypes/genericString";
 
 
 export const xSettingsAuthMap: DB3AuthContextPermissionMap = {

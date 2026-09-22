@@ -16,6 +16,7 @@ import { GetVisibilityWhereExpression } from "./db3Helpers";
 import type { UserWithRolesPayload } from "./schema/userPayloads";
 import type { ColorPaletteEntry } from "../../components/color/palette";
 
+// this may be a hack
 export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "foreignObject" | "calculated";
 
 ////////////////////////////////////////////////////////////////
@@ -362,6 +363,7 @@ export abstract class FieldBase<
     TCodec extends AnyDB3FieldCodec | undefined = undefined,
     TClientWritable extends boolean = true,
 > {
+    // this may be a hack
     fieldTableAssociation: FieldAssociationWithTable;
     member: string;
     fkidMember?: string | undefined; // if this is a foreign key field, this is the member name of the foreign key column.
