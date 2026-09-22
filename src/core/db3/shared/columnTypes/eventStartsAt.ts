@@ -4,6 +4,7 @@
 import { TAnyModel } from "@/shared/rootroot";
 import { assert } from "blitz";
 import { assertIsNumberArray } from "shared/arrayUtils";
+import { z } from "zod";
 import { gSwatchColors } from "../../../components/color/palette";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType,
@@ -62,6 +63,7 @@ export class EventStartsAtField extends FieldBase<Date> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : new Date(),
+            readTransportSchema: args.allowNull ? z.date().nullable() : z.date(),
             authMap: (args as any).authMap || null,
             specialFunction: undefined,
             _customAuth: (args as any)._customAuth || null,

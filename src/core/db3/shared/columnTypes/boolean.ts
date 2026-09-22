@@ -1,12 +1,13 @@
 
 import { TAnyModel } from "@/shared/rootroot";
 import { CoerceToNullableBoolean } from "shared/utils";
+import { z } from "zod";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
 import {
-    type DB3AuthSpec, type DB3RowMode, ErrorValidateAndParseResult,
+    type DB3AuthSpec, type DB3FieldCodec, type DB3RowMode, ErrorValidateAndParseResult,
     FieldBase,
     type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
@@ -26,19 +27,32 @@ export type BoolFieldArgs = {
     specialFunction?: SqlSpecialColumnFunction | undefined;
 } & DB3AuthSpec;
 
-export class BoolField extends FieldBase<boolean> {
+export class BoolField extends FieldBase<
+    boolean,
+    DB3FieldCodec<boolean | null, boolean | null>
+> {
     allowNull: boolean;
+    readonly codec: DB3FieldCodec<boolean | null, boolean | null>;
 
     constructor(args: BoolFieldArgs) {
+        const transportSchema: z.ZodType<boolean | null> = args.allowNull
+            ? z.boolean().nullable()
+            : z.boolean();
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.defaultValue,
+            readTransportSchema: transportSchema,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
             specialFunction: args.specialFunction,
         });
         this.allowNull = args.allowNull;
+        this.codec = {
+            decode: value => CoerceToNullableBoolean(value, this.defaultValue),
+            encode: value => value,
+            writeSchema: transportSchema,
+        };
     }
 
     connectToTable = (table: xTable) => { };
@@ -63,7 +77,7 @@ export class BoolField extends FieldBase<boolean> {
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         const dbVal: boolean | null = dbModel[this.member]; // db may have null values so need to coalesce
-        clientModel[this.member] = CoerceToNullableBoolean(dbVal, this.defaultValue);
+        clientModel[this.member] = this.codec.decode(dbVal);
     }
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {

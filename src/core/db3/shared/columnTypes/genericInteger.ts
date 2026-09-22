@@ -1,6 +1,7 @@
 
 import { TAnyModel } from "@/shared/rootroot";
 import { CoerceToBoolean, CoerceToNumberOrNull } from "shared/utils";
+import { z } from "zod";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion,
     type SearchResultsFacetQuery, type SortQueryElements
@@ -15,23 +16,40 @@ import {
 import { type UserWithRolesPayload } from "../schema/userPayloads";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export type GenericIntegerFieldArgs = {
+export type GenericIntegerReadTransportType = "number" | "bigint";
+
+export type GenericIntegerReadTransportValue<T extends GenericIntegerReadTransportType> =
+    T extends "bigint" ? bigint : number;
+
+export type GenericIntegerFieldArgs<
+    TReadTransportType extends GenericIntegerReadTransportType = "number",
+> = {
     columnName: string;
     allowNull: boolean;
+    readTransportType?: TReadTransportType;
     allowSearchingThisField?: boolean;
     specialFunction?: SqlSpecialColumnFunction | undefined;
 } & DB3AuthSpec;
 
-export class GenericIntegerField extends FieldBase<number> {
+export class GenericIntegerField<
+    TReadTransportType extends GenericIntegerReadTransportType = "number",
+> extends FieldBase<
+    number,
+    undefined,
+    true,
+    GenericIntegerReadTransportValue<TReadTransportType> | null
+> {
 
     allowNull: boolean;
     allowSearchingThisField: boolean;
 
-    constructor(args: GenericIntegerFieldArgs) {
+    constructor(args: GenericIntegerFieldArgs<TReadTransportType>) {
+        const scalarSchema = args.readTransportType === "bigint" ? z.bigint() : z.number().int();
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : 0,
+            readTransportSchema: args.allowNull ? scalarSchema.nullable() : scalarSchema,
             specialFunction: args.specialFunction,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,

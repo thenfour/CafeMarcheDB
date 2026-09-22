@@ -1,5 +1,6 @@
 
 import { TAnyModel } from "@/shared/rootroot";
+import { z } from "zod";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion,
     type SearchResultsFacetQuery, type SortQueryElements
@@ -27,6 +28,7 @@ export class CreatedAtField extends FieldBase<Date> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: new Date(),
+            readTransportSchema: z.date(),
             specialFunction: args.specialFunction || SqlSpecialColumnFunction.createdAt,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,

@@ -1,5 +1,6 @@
 
 import { TAnyModel } from "@/shared/rootroot";
+import { z } from "zod";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion,
     type SearchResultsFacetQuery, type SortQueryElements
@@ -28,12 +29,13 @@ export type PKFieldArgs = {
     naturalIdVisibility?: "all" | "sysadmin";
 };// & DB3AuthSpec;
 
-export class PKField extends FieldBase<number, undefined, false> {
+export class PKField extends FieldBase<number, undefined, false, number> {
     constructor(args: PKFieldArgs) {
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: null,
+            readTransportSchema: z.number().int(),
             authMap: args.naturalIdVisibility === "sysadmin"
                 ? createAuthContextMap_SysadminNaturalPK()
                 : createAuthContextMap_PK(),

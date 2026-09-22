@@ -2,6 +2,7 @@
 import { TAnyModel } from "@/shared/rootroot";
 import { MysqlEscape } from "shared/mysqlUtils";
 import { CoalesceBool, CoerceToBoolean, isValidURL } from "shared/utils";
+import { z } from "zod";
 import { type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType, type SearchResultsFacetQuery, type SortQueryElements } from "../apiTypes";
 import {
     type DB3AuthSpec, ErrorValidateAndParseResult, FieldBase,
@@ -39,6 +40,7 @@ export class GenericStringField extends FieldBase<string> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : "",
+            readTransportSchema: args.allowNull ? z.string().nullable() : z.string(),
             specialFunction: args.specialFunction,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,

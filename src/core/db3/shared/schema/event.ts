@@ -244,7 +244,13 @@ export const xEventStatus = db3.defineTable({
         isDeleted: () => MakeIsDeletedField({ authMap: xEventStatusAuthMap, }),
         label: columnName => MakeTitleField(columnName, { authMap: xEventStatusAuthMap, }),
         description: () => MakeDescriptionField({ authMap: xEventStatusAuthMap, }),
-        sortOrder: () => MakeSortOrderField({ authMap: xEventStatusAuthMap, }),
+        sortOrder: columnName => new GenericIntegerField({
+            columnName,
+            allowNull: false,
+            allowSearchingThisField: false,
+            specialFunction: db3.SqlSpecialColumnFunction.sortOrder,
+            authMap: xEventStatusAuthMap,
+        }),
         color: () => MakeColorField({ authMap: xEventStatusAuthMap, }),
         significance: columnName => MakeSignificanceField(columnName, EventStatusSignificance, { authMap: xEventStatusAuthMap, }),
         iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xEventStatusAuthMap, }),
@@ -640,6 +646,7 @@ export const xEventArgs_Base = db3.defineTableDesc({
             allowNull: false,
             allowSearchingThisField: false,
             columnName,
+            readTransportType: "bigint",
             authMap: xEventAuthMap_Homepage,
         }),
         isAllDay: columnName => new BoolField({
@@ -789,6 +796,7 @@ export const xEventSegment = db3.defineTable({
             allowNull: false,
             columnName,
             allowSearchingThisField: false,
+            readTransportType: "bigint",
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
         isAllDay: columnName => new BoolField({

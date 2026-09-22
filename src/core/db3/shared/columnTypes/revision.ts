@@ -2,6 +2,7 @@
 
 
 import { TAnyModel } from "@/shared/rootroot";
+import { z } from "zod";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion,
     type SearchResultsFacetQuery, type SortQueryElements
@@ -22,7 +23,7 @@ export type RevisionFieldArgs = {
     applyToUpdates: boolean;
 } & DB3AuthSpec;
 
-export class RevisionField extends FieldBase<number> {
+export class RevisionField extends FieldBase<number, undefined, true, number> {
     applyToUpdates: boolean;
 
     constructor(args: RevisionFieldArgs) {
@@ -30,6 +31,7 @@ export class RevisionField extends FieldBase<number> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: 0,
+            readTransportSchema: z.number().int(),
             specialFunction: undefined,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,

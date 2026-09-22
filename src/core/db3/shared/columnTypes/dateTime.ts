@@ -1,5 +1,6 @@
 
 import { TAnyModel } from "@/shared/rootroot";
+import { z } from "zod";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion,
     type SearchResultsFacetQuery, type SortQueryElements
@@ -32,6 +33,7 @@ export class DateTimeField extends FieldBase<Date> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : new Date(),
+            readTransportSchema: args.allowNull ? z.date().nullable() : z.date(),
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
             specialFunction: args.specialFunction,

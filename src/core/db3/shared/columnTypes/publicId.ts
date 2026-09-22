@@ -1,6 +1,7 @@
 
 import { TAnyModel } from "@/shared/rootroot";
 import { isPublicId } from "shared/publicId";
+import { z } from "zod";
 import {
     type CriterionQueryElements,
     type SearchResultsFacetQuery, type SortQueryElements
@@ -17,12 +18,13 @@ import {
 ////////////////////////////////////////////////////////////////
 // Stable, opaque identity used whenever a converted row crosses the client
 // boundary. Generation remains server-owned.
-export class PublicIdField extends FieldBase<string, undefined, false> {
+export class PublicIdField extends FieldBase<string, undefined, false, string> {
     constructor(columnName = "publicId") {
         super({
             member: columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: null,
+            readTransportSchema: z.string().refine(isPublicId, "invalid public ID"),
             authMap: createAuthContextMap_PK(),
             specialFunction: SqlSpecialColumnFunction.publicId,
             _customAuth: null,

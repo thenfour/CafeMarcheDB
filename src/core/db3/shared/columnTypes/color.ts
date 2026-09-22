@@ -50,6 +50,7 @@ export class ColorField extends FieldBase<
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : args.palette.defaultEntry,
+            readTransportSchema: args.allowNull ? z.string().nullable() : z.string(),
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
             specialFunction: SqlSpecialColumnFunction.color,

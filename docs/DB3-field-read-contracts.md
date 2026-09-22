@@ -284,6 +284,14 @@ An unsupported field class must fail derivation with a message containing the
 entity, selected member path, and field class. It must not silently fall back to
 `z.any()`.
 
+Implementation status: the scalar field classes now expose this schema and the
+base field contract provides parse, identity-hydration, and codec-hydration
+helpers. Prisma `Int` and `BigInt` members are distinguished explicitly because
+they share the existing `GenericIntegerField` class. Relations and compound
+fields intentionally remain unsupported until selection-member ownership is
+introduced in Phase 3. Existing view and `getClientModel` behavior is unchanged;
+the new helpers validate more strictly before hydrating.
+
 ## Phase 3: selection-aware DTO derivation
 
 ### Proposed helper
@@ -517,12 +525,12 @@ sound.
        display metadata; its `events` and `eventSegments` relations remain
        independently authorized.
 
-6. [ ] **Add `readTransportSchema` to the scalar field contract.** Define
+6. [x] **Add `readTransportSchema` to the scalar field contract.** Define
        presence and nullability rules, add schemas to the scalar classes needed by
        the pilot, and add field-level parse tests. Leave authorization optionality
        out of the field's base schema.
 
-7. [ ] **Unify default scalar decode behavior.** Make the new read contract
+7. [x] **Unify default scalar decode behavior.** Make the new read contract
        expose identity hydration or `DB3FieldCodec.decode`. Characterize any
        differences from current `ApplyDbToClient` before sharing or delegating its
        implementation.

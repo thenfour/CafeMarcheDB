@@ -1,5 +1,4 @@
 export type { DB3Authorization } from "./db3Authorization";
-import { type DB3Authorization } from "./db3Authorization";
 import { assert } from "blitz";
 import { Prisma } from "db";
 import { isEmptyArray } from "shared/arrayUtils";
@@ -7,16 +6,17 @@ import { CalculateChanges, type CalculateChangesResult, createEmptyCalculateChan
 import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import type { SortDirection, TAnyModel } from "shared/rootroot";
+import { z } from "zod";
+import type { ColorPaletteEntry } from "../../components/color/palette";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements,
     type DiscreteCriterion, type GetSearchResultsSortModel,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "./apiTypes";
+import { type DB3Authorization } from "./db3Authorization";
 import { GetVisibilityWhereExpression } from "./db3Helpers";
 import type { UserWithRolesPayload } from "./schema/userPayloads";
-import type { ColorPaletteEntry } from "../../components/color/palette";
 
-// this may be a hack
 export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "foreignObject" | "calculated";
 
 ////////////////////////////////////////////////////////////////
@@ -263,6 +263,7 @@ export type FieldBaseArgs<FieldDataType> = {
     fieldTableAssociation: FieldAssociationWithTable;
     member: string;
     defaultValue: FieldDataType | null;
+    readTransportSchema?: z.ZodTypeAny;
     authMap: DB3AuthContextPermissionMap | null;
     specialFunction: SqlSpecialColumnFunction | undefined;
     fkidMember?: string | undefined;
@@ -359,17 +360,28 @@ export interface DB3FieldCodec<
 > {
     readonly decode: (value: TReadTransportValue) => TClientValue;
     readonly encode: (value: TClientValue) => TWriteTransportValue;
-    readonly writeSchema: import("zod").z.ZodType<TWriteTransportValue>;
+    readonly writeSchema: z.ZodType<TWriteTransportValue>;
 }
 
 export type AnyDB3FieldCodec = DB3FieldCodec<any, any, any>;
+
+// extracts the TReadTransportValue from the codec;
+// falls back to the field data type.
+type DefaultReadTransportValue<TCodec, FieldDataType> = TCodec extends DB3FieldCodec<infer TReadTransportValue, any, any>
+    ? TReadTransportValue
+    : FieldDataType | null
+
+type DefaultReadConsumerValue<TCodec, TReadTransportValue> = TCodec extends DB3FieldCodec<any, infer TClientValue, any>
+    ? TClientValue
+    : TReadTransportValue;
 
 export abstract class FieldBase<
     FieldDataType,
     TCodec extends AnyDB3FieldCodec | undefined = undefined,
     TClientWritable extends boolean = true,
+    TReadTransportValue = DefaultReadTransportValue<TCodec, FieldDataType>,
+    TReadConsumerValue = DefaultReadConsumerValue<TCodec, TReadTransportValue>,
 > {
-    // this may be a hack
     fieldTableAssociation: FieldAssociationWithTable;
     member: string;
     fkidMember?: string | undefined; // if this is a foreign key field, this is the member name of the foreign key column.
@@ -381,6 +393,14 @@ export abstract class FieldBase<
      * runtime implementation and the type-level declaration of a conversion.
      */
     readonly codec?: TCodec;
+
+    /**
+     * The validated DTO value when this member is selected and present.
+     * Authorization optionality is added by the view-contract compiler, not by
+     * this schema. Relation/composite fields omit this until they declare a
+     * supported read contract.
+     */
+    readonly readTransportSchema?: z.ZodTypeAny;
 
     /** Type-only marker used when deriving prepared command values. */
     readonly __clientWritable?: TClientWritable;
@@ -438,6 +458,30 @@ export abstract class FieldBase<
     isReadRequiredAfterRowAuth = (): boolean => {
         return this.readAuthorizationInheritsRow("PostQuery")
             && this.readAuthorizationInheritsRow("PostQueryAsOwner");
+    };
+
+    getReadTransportSchema = (): z.ZodTypeAny => {
+        if (!this.readTransportSchema) {
+            throw new Error(`DB3 field '${this.member}' does not declare readTransportSchema.`);
+        }
+        return this.readTransportSchema;
+    };
+
+    parseReadTransportValue = (value: unknown): TReadTransportValue => {
+        return this.getReadTransportSchema().parse(value) as TReadTransportValue;
+    };
+
+    hydrateReadTransportValue = (value: TReadTransportValue): TReadConsumerValue => {
+        this.getReadTransportSchema();
+        if (value === undefined) {
+            throw new Error(`DB3 field '${this.member}' cannot hydrate an absent read transport value.`);
+        }
+        const codec = this.codec as AnyDB3FieldCodec | undefined;
+        return (codec ? codec.decode(value) : value) as TReadConsumerValue;
+    };
+
+    parseAndHydrateReadTransportValue = (value: unknown): TReadConsumerValue => {
+        return this.hydrateReadTransportValue(this.parseReadTransportValue(value));
     };
 
     authorize = (args: DB3AuthorizeAndSanitizeFieldInput<TAnyModel>): boolean => {
@@ -571,7 +615,7 @@ export interface TableDesc {
 
 };
 
-export type AnyDB3Field = FieldBase<any, AnyDB3FieldCodec | undefined, boolean>;
+export type AnyDB3Field = FieldBase<any, AnyDB3FieldCodec | undefined, boolean, any, any>;
 
 export type DB3FieldMap = Readonly<Record<string, AnyDB3Field>>;
 

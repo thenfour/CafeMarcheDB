@@ -1,5 +1,6 @@
 
 import { TAnyModel } from "@/shared/rootroot";
+import { z } from "zod";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion,
     type SearchResultsFacetQuery, type SortQueryElements
@@ -33,10 +34,15 @@ export class ConstEnumStringField extends FieldBase<string> {
     allowNull: boolean;
 
     constructor(args: ConstEnumStringFieldArgs) {
+        const enumSchema = z.string().refine(
+            value => Object.values(args.options).includes(value),
+            value => ({ message: `unrecognized option '${value}'` }),
+        );
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.defaultValue,
+            readTransportSchema: args.allowNull ? enumSchema.nullable() : enumSchema,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
             specialFunction: args.specialFunction,
