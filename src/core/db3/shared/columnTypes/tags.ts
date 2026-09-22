@@ -74,7 +74,7 @@ export class TagsField<
     getPrismaMemberDescriptors = (): readonly DB3FieldPrismaMember[] => [{
         member: this.member,
         kind: "relationCollection",
-        targetTableID: this.associationTableID,
+        getTargetTable: () => GetTableById(this.associationTableID),
     }];
 
     get allowInsertFromString() {

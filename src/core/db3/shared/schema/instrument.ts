@@ -8,7 +8,7 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GhostField, MakePKfield, MakePublicIdField, MakeSortOrderField, TagsField } from "../columnTypes/xTableColumnTypes";
+import { ColorField, ConstEnumStringField, foreignRef, GenericIntegerField, GhostField, MakePKfield, MakePublicIdField, MakeSortOrderField, TagsField } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance } from "./prismArgs";
 import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
@@ -36,6 +36,7 @@ export const xInstrumentTableAuthMap: db3.DB3AuthTablePermissionMap = {
 
 
 export const xInstrumentFunctionalGroup = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.InstrumentFunctionalGroupDelegate>(),
     getSelectionArgs: (): Prisma.InstrumentFunctionalGroupDefaultArgs => {
         return InstrumentFunctionalGroupArgs;
     },
@@ -83,6 +84,7 @@ export const xInstrumentFunctionalGroup = db3.defineTable({
 
 
 export const xInstrumentTag = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.InstrumentTagDelegate>(),
     getSelectionArgs: (): Prisma.InstrumentTagDefaultArgs => {
         return InstrumentTagArgs;
     },
@@ -145,6 +147,7 @@ export const xInstrumentTag = db3.defineTable({
 
 // this is mostly only in order to define the tags field in xInstruments.
 export const xInstrumentTagAssociation = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.InstrumentTagAssociationDelegate>(),
     tableName: "InstrumentTagAssociation",
     deletePolicy: "hard",
     getSelectionArgs: (): Prisma.InstrumentTagAssociationDefaultArgs => {
@@ -168,13 +171,9 @@ export const xInstrumentTagAssociation = db3.defineTable({
         // do not add the `instrument` column here; this is used only as an association FROM the instrument table; excluding it
         // 1. enforces this purpose (minor)
         // 2. avoids a circular reference to xInstrument (major)
-        tag: columnName => new ForeignSingleField<Prisma.InstrumentTagGetPayload<{}>>({
-            columnName,
+        tag: foreignRef(() => xInstrumentTag, {
             fkidMember: "tagId",
-            allowNull: false,
-            foreignTableID: "InstrumentTag",
             authMap: xInstrumentAuthMap_R_EAdmins,
-            getQuickFilterWhereClause: (query: string) => false,
         }),
     })
 });
@@ -182,6 +181,7 @@ export const xInstrumentTagAssociation = db3.defineTable({
 ////////////////////////////////////////////////////////////////
 
 export const xInstrument = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.InstrumentDelegate>(),
     getSelectionArgs: (): Prisma.InstrumentDefaultArgs => {
         return InstrumentArgs;
     },
@@ -220,11 +220,8 @@ export const xInstrument = db3.defineTable({
         }),
 
         sortOrder: () => MakeSortOrderField({ authMap: xInstrumentAuthMap_R_EAdmins }),
-        functionalGroup: columnName => new ForeignSingleField<InstrumentFunctionalGroupPayload>({
-            columnName,
+        functionalGroup: foreignRef(() => xInstrumentFunctionalGroup, {
             fkidMember: "functionalGroupId",
-            foreignTableID: "InstrumentFunctionalGroup",
-            allowNull: false,
             authMap: xInstrumentAuthMap_R_EAdmins,
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 functionalGroup: {

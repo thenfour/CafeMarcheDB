@@ -4,8 +4,8 @@ import {
     WikiPageTagArgs, WikiPageTagNaturalOrderBy, WikiPageTagPayload,
     WikiPageTagAssignmentArgs, WikiPageTagAssignmentNaturalOrderBy, WikiPageTagAssignmentPayload
 } from "./prismArgs";
-import { ForeignSingleField, GhostField, MakeColorField, MakePKfield, MakeSignificanceField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
-import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, defineTable, makeColumnSet } from "../db3core";
+import { foreignRef, GhostField, MakeColorField, MakePKfield, MakeSignificanceField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
+import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, defineTable, makeColumnSet, prismaModel } from "../db3core";
 import { MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
@@ -50,6 +50,7 @@ const wikiPageTagAssignmentTableAuthMap: DB3AuthTablePermissionMap = {
 
 //////////////////////////////////////////////////////////////
 export const xWikiPageTag = defineTable({
+    prismaModel: prismaModel<Prisma.WikiPageTagDelegate>(),
     getSelectionArgs: (): Prisma.WikiPageTagDefaultArgs => {
         return WikiPageTagArgs;
     },
@@ -86,6 +87,7 @@ export const xWikiPageTag = defineTable({
 
 //////////////////////////////////////////////////////////////
 export const xWikiPageTagAssignment = defineTable({
+    prismaModel: prismaModel<Prisma.WikiPageTagAssignmentDelegate>(),
     tableName: "WikiPageTagAssignment",
     deletePolicy: "hard",
     naturalOrderBy: WikiPageTagAssignmentNaturalOrderBy,
@@ -104,13 +106,9 @@ export const xWikiPageTagAssignment = defineTable({
     },
     fields: makeColumnSet({
         id: () => MakePKfield(),
-        tag: columnName => new ForeignSingleField<Prisma.WikiPageTagGetPayload<{}>>({
-            columnName,
+        tag: foreignRef(() => xWikiPageTag, {
             fkidMember: "tagId",
-            allowNull: false,
-            foreignTableID: "WikiPageTag",
             authMap: wikiPageTagAssignmentAuthMap,
-            getQuickFilterWhereClause: (query: string) => false,
         }),
     })
 });

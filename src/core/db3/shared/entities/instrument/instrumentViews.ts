@@ -17,17 +17,17 @@ const InstrumentFunctionalGroupPublicIdSchema = z.custom<InstrumentFunctionalGro
     "Expected an InstrumentFunctionalGroup public ID.",
 );
 
-export const instrumentFunctionalGroupEntity = defineEntity<Prisma.InstrumentFunctionalGroupDelegate>()({
+export const instrumentFunctionalGroupEntity = defineEntity({
     schema: xInstrumentFunctionalGroup,
     getIdentity: (entity: InstrumentFunctionalGroupClientPayload) => entity.publicId,
 });
 
-export const instrumentTagEntity = defineEntity<Prisma.InstrumentTagDelegate>()({
+export const instrumentTagEntity = defineEntity({
     schema: xInstrumentTag,
     getIdentity: (entity: Prisma.InstrumentTagGetPayload<{}>) => entity.id,
 });
 
-export const instrumentEntity = defineEntity<Prisma.InstrumentDelegate>()({
+export const instrumentEntity = defineEntity({
     schema: xInstrument,
     getIdentity: (entity: InstrumentClientPayload) => entity.id,
 });

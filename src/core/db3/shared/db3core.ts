@@ -429,12 +429,12 @@ export type DB3FieldPrismaMember =
     })
     | (DB3FieldPrismaMemberBase & {
         readonly kind: "foreignObject";
-        readonly targetTableID: string;
+        readonly getTargetTable: () => xTable; // lazy to avoid type cycles
         readonly nullable: boolean;
     })
     | (DB3FieldPrismaMemberBase & {
         readonly kind: "relationCollection";
-        readonly targetTableID: string;
+        readonly getTargetTable: () => xTable; // lazy to avoid type cycles
     });
 
 // extracts the TReadTransportValue from the codec;
@@ -719,6 +719,17 @@ export type DB3PrismaMemberOwnership = DB3FieldPrismaMember & {
     readonly field: AnyDB3Field;
 };
 
+/**
+ * Type-only Prisma model metadata owned by an xTable. Keeping the delegate on
+ * the table lets views and relation fields derive payloads without repeating a
+ * particular `Prisma.ModelGetPayload<{}>` at each use site.
+ */
+export interface DB3PrismaModel<TDelegate> {
+    readonly __delegate?: TDelegate;
+}
+
+export const prismaModel = <TDelegate,>(): DB3PrismaModel<TDelegate> => ({});
+
 export type DB3ReadTransportValueOf<TField> =
     TField extends FieldBase<any, any, any, infer TReadTransportValue, any, any>
     ? TReadTransportValue
@@ -744,12 +755,24 @@ export type DB3ReadFieldProperty<
 export type DB3FieldMap = Readonly<Record<string, AnyDB3Field>>;
 
 export type DB3FieldsOf<TTable extends xTable> =
-    TTable extends xTable<infer TFields> ? TFields : DB3FieldMap;
+    TTable extends xTable<infer TFields, any> ? TFields : DB3FieldMap;
+
+export type DB3PrismaDelegateOf<TTable extends xTable> =
+    TTable extends xTable<any, infer TDelegate> ? TDelegate : never;
+
+type DB3ArrayItem<TValue> = TValue extends readonly (infer TItem)[] ? TItem : never;
+
+/** The unselected Prisma row represented by an xTable's model delegate. */
+export type DB3PrismaPayloadOf<TTable extends xTable> = DB3ArrayItem<Prisma.Result<
+    DB3PrismaDelegateOf<TTable>,
+    {},
+    "findMany"
+>>;
 
 /**
- * Type-only relation metadata. Relation fields retain runtime table IDs for
- * cycle-safe lookup while optionally carrying the concrete target xTable type
- * needed by recursively derived consumer models.
+ * Type-only relation metadata. Relation fields carry the concrete target
+ * xTable type needed by recursively derived consumer models; runtime traversal
+ * uses a lazy target resolver so module initialization remains cycle-safe.
  */
 export interface DB3RelationTargetField<
     TTargetTable extends xTable = xTable,
@@ -858,9 +881,12 @@ export type DB3DeletePolicy = "disabled" | "hard" | "softOnly";
 // we don't care about createinput, because updateinput is the same thing with optional fields so it's a bit too redundant.
 export class xTable<
     TFields extends DB3FieldMap = DB3FieldMap,
+    TDelegate = any,
 > /* implements TableDesc*/ {
     tableName: string; // the actual name of the table in the database; can be used in prisma db[t.tableName]
     tableID: string; // unique name for the instance
+    /** Type-only Prisma model authority supplied by defineTable(). */
+    declare readonly __prismaDelegate?: TDelegate;
     columns: AnyDB3Field[];
     readonly prismaMemberRegistry: ReadonlyMap<string, DB3PrismaMemberOwnership>;
 
@@ -1668,33 +1694,46 @@ export class xTable<
 
 };
 
-export type DB3TypedTableDesc<TFields extends DB3FieldMap> =
+export type DB3TypedTableDesc<
+    TFields extends DB3FieldMap,
+    TDelegate,
+> =
     Omit<TableDesc, "columns"> & {
         readonly fields: TFields;
+        readonly prismaModel: DB3PrismaModel<TDelegate>;
     };
 
 /** Preserves a reusable typed table descriptor before one or more tables use it. */
-export function defineTableDesc<TFields extends DB3FieldMap>(
-    args: DB3TypedTableDesc<TFields>,
-): DB3TypedTableDesc<TFields> {
+export function defineTableDesc<
+    TFields extends DB3FieldMap,
+    TDelegate,
+>(
+    args: DB3TypedTableDesc<TFields, TDelegate>,
+): DB3TypedTableDesc<TFields, TDelegate> {
     return args;
 }
 
 /** The type-bearing xTable shape returned by defineTable(). */
-export type DB3TypedTable<TFields extends DB3FieldMap> =
+export type DB3TypedTable<
+    TFields extends DB3FieldMap,
+    TDelegate,
+> =
     {
         readonly fields: TFields;
         readonly columns: Array<TFields[keyof TFields]>;
-    } & xTable<TFields>;
+    } & xTable<TFields, TDelegate>;
 
 /**
  * New typed table construction path. The keyed field map is the type authority;
  * xTable.columns remains only the ordered runtime representation used by the
  * existing DB3 algorithms.
  */
-export function defineTable<TFields extends DB3FieldMap>(
-    args: DB3TypedTableDesc<TFields>,
-): DB3TypedTable<TFields> {
+export function defineTable<
+    TFields extends DB3FieldMap,
+    TDelegate,
+>(
+    args: DB3TypedTableDesc<TFields, TDelegate>,
+): DB3TypedTable<TFields, TDelegate> {
     const columns = Object.entries(args.fields).map(([member, field]) => {
         if (field.member !== member) {
             throw new Error(
@@ -1703,8 +1742,8 @@ export function defineTable<TFields extends DB3FieldMap>(
         }
         return field;
     });
-    const { fields, ...legacyArgs } = args;
-    const table = new xTable<TFields>({
+    const { fields, prismaModel: _prismaModel, ...legacyArgs } = args;
+    const table = new xTable<TFields, TDelegate>({
         ...legacyArgs,
         columns,
     });
@@ -1718,7 +1757,7 @@ export function defineTable<TFields extends DB3FieldMap>(
     // executes the codec stored on those same field instances. The cast only
     // exposes that construction invariant to TypeScript; it does not invent a
     // separate model declaration or conversion path.
-    return table as unknown as DB3TypedTable<TFields>;
+    return table as unknown as DB3TypedTable<TFields, TDelegate>;
 }
 
 ////////////////////////////////////////////////////////////////

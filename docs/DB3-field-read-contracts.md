@@ -331,11 +331,15 @@ Prisma selection in its inferred schema output. Selected root scalar members use
 the xTable field's transport value, nullability, and read-presence contract.
 Foreign-key members use the Prisma payload type and remain conservatively
 optional. Nested relation value/null/array shapes come from the Prisma payload;
-their selected row members are also conservatively optional. Relation fields
-can now carry their target xTable type as phantom metadata alongside the
-cycle-safe runtime table ID. Annotated relations use that metadata to derive
-the recursively hydrated consumer type; unannotated legacy relations retain a
-safe broad nested consumer type until migrated.
+their selected row members are also conservatively optional. Every typed
+`xTable` now declares a type-only Prisma delegate through `prismaModel()`, and
+`defineEntity()` derives its delegate from that table rather than repeating it.
+`foreignRef(() => xTarget, options)` derives the referenced Prisma payload,
+concrete target table type, and runtime table ID from the target xTable. Its
+target resolver remains lazy through the Prisma-member registry, so forward and
+cross-module references are not evaluated during table construction. The two
+recursive `File -> File` fields retain the legacy constructor as the explicit
+self-type escape hatch.
 Callers must preserve the literal selection (for example with
 `Prisma.validator`) rather than first widening it to `Prisma.*DefaultArgs` if
 they want an exact derived DTO type.
@@ -596,30 +600,36 @@ sound.
         nullability and authorization absence; never repair an authorization-removed
         relation from an ID.
 
-13. [ ] **Add normalized `ForeignSingleField` hydration.** When a view selects
+13. [x] **Centralize Prisma model and foreign-reference metadata.** Make each
+        typed xTable the Prisma delegate authority, infer entity delegates from
+        their table, and provide a lazy `foreignRef()` declaration that derives
+        payload type, target table type, and runtime table ID. Keep an explicit
+        legacy escape hatch for recursively typed self-relations.
+
+14. [ ] **Add normalized `ForeignSingleField` hydration.** When a view selects
         the ID rather than the object, declare the reference dependency and resolve
         it from the supplied provider. Test null, absent, present, and missing
         provider entries.
 
-14. [ ] **Convert one small view end to end.** Use an audited lookup view to
+15. [ ] **Convert one small view end to end.** Use an audited lookup view to
         compare the old explicit DTO and hydrator with the derived versions at both
         compile time and runtime. Preserve its `viewID` and selection.
 
-15. [ ] **Convert one event view with explicit date-range composition.** Derive
+16. [ ] **Convert one event view with explicit date-range composition.** Derive
         scalar/relation hydration, then wrap it with the existing or new
         event-date-range helper. This is the test that compound-field support is not
         required for the initial value.
 
-16. [ ] **Assess the pilot before broad rollout.** Record unsupported selection
+17. [ ] **Assess the pilot before broad rollout.** Record unsupported selection
         patterns, type-quality regressions, authorization surprises, and remaining
         duplication. Decide separately whether to add general compound fields or
         refactor the mutation path.
 
-17. [ ] **Migrate simple views incrementally.** Prefer views whose selections are
+18. [ ] **Migrate simple views incrementally.** Prefer views whose selections are
         entirely covered by the compiler. Keep explicit schemas and hydration for
         exceptional views rather than weakening the derived contract.
 
-18. [ ] **Update the architecture documentation.** Once behavior is proven,
+19. [ ] **Update the architecture documentation.** Once behavior is proven,
         update the broader entity/view/hydration document and mark superseded
         examples. Keep this checklist as the record of the migration sequence and
         decisions.

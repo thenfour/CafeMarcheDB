@@ -3,7 +3,6 @@ import type { Prisma } from "db";
 import { z } from "zod";
 import {
     type DB3FieldsOf,
-    GetTableById,
     type AnyDB3Field,
     type DB3PrismaMemberOwnership,
     type DB3ReadConsumerValueOf,
@@ -347,7 +346,7 @@ function compileSelect(
                     memberSelection,
                     selectionPath,
                 );
-                const targetTable = GetTableById(ownership.targetTableID);
+                const targetTable = ownership.getTargetTable();
                 const nested = compileSelect(
                     entity,
                     targetTable,

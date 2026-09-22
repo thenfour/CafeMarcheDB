@@ -1,3 +1,4 @@
+import { Prisma } from "db"
 import { describe, expect, expectTypeOf, it, vi } from "vitest"
 
 import type { ColorPaletteEntry } from "src/core/components/color/palette"
@@ -18,6 +19,50 @@ const eventStatusTransport = {
 const eventStatusScalarMembers = Object.keys(eventStatusTransport) as Array<
   keyof typeof eventStatusTransport
 >
+
+describe("DB3 xTable Prisma model metadata", () => {
+  it("derives the default payload and entity delegate from the target table", () => {
+    expectTypeOf<db3.DB3PrismaPayloadOf<typeof db3.xEventTag>>()
+      .toEqualTypeOf<Prisma.EventTagGetPayload<{}>>()
+    expectTypeOf<db3.PrismaDelegateOf<typeof db3.eventTagEntity>>()
+      .toEqualTypeOf<Prisma.EventTagDelegate>()
+    expectTypeOf(db3.xEventTagAssignment.fields.eventTag).toEqualTypeOf<
+      db3.ForeignSingleField<
+        Prisma.EventTagGetPayload<{}>,
+        typeof db3.xEventTag
+      >
+    >()
+  })
+
+  it("keeps target resolution lazy while deriving the runtime table ID", () => {
+    const getTarget = vi.fn(() => db3.xEventTag)
+    const field = db3.foreignRef(getTarget, {
+      fkidMember: "eventTagId",
+      authMap: db3.createAuthContextMap_GrantAll(),
+    })("eventTag")
+
+    expect(getTarget).not.toHaveBeenCalled()
+    const descriptor = field.getPrismaMemberDescriptors()[0]!
+    expect(getTarget).not.toHaveBeenCalled()
+    expect(descriptor.kind).toBe("foreignObject")
+    if (descriptor.kind !== "foreignObject") throw new Error("expected relation descriptor")
+    expect(descriptor.getTargetTable()).toBe(db3.xEventTag)
+    expect(field.foreignTableID).toBe("EventTag")
+    expect(field.allowNull).toBe(false)
+    expect(field.getQuickFilterWhereClause("anything")).toBe(false)
+  })
+
+  it("resolves migrated schema relations directly to their target xTable", () => {
+    const field = db3.xEventTagAssignment.fields.eventTag
+
+    expect(field.getForeignTableSchema()).toBe(db3.xEventTag)
+    expect(field.foreignTableID).toBe(db3.xEventTag.tableID)
+    expect(db3.xWikiPage.fields.currentRevision.getForeignTableSchema())
+      .toBe(db3.xWikiPageRevision)
+    expect(db3.xWikiPageRevision.fields.wikiPage.getForeignTableSchema())
+      .toBe(db3.xWikiPage)
+  })
+})
 
 describe("DB3 scalar field read contracts", () => {
   it("retains nullability and authorization presence in field types", () => {

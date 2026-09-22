@@ -8,10 +8,11 @@ import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
 import { CMDBTableFilterModel, PermissionSignificance } from "../apiTypes";
-import { BoolField, ForeignCollectionField, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../columnTypes/xTableColumnTypes";
+import { BoolField, ForeignCollectionField, foreignRef, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { PermissionArgs, PermissionForVisibilityArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserPayloadMinimum, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
+import { xInstrument } from "./instrument";
 
 // Basic profile data is self-service for the account owner and readable for
 // other users only through the explicit member-profile capability.
@@ -160,6 +161,7 @@ const xVisibilityPermissionTableAuthMap: db3.DB3AuthTablePermissionMap = {
 
 
 export const xUserMinimum = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.UserDelegate>(),
     getSelectionArgs: (): Prisma.UserDefaultArgs => {
         return UserMinimumArgs;
     },
@@ -246,6 +248,7 @@ export const xUserMinimum = db3.defineTable({
 
 
 export const xPermissionBaseArgs = db3.defineTableDesc({
+    prismaModel: db3.prismaModel<Prisma.PermissionDelegate>(),
     getSelectionArgs: (): Prisma.PermissionDefaultArgs => {
         return PermissionArgs;
     },
@@ -325,6 +328,7 @@ export const xPermissionForVisibility = db3.defineTable({
 
 // this schema is required for tags selection dlg.
 export const xRolePermissionAssociation = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.RolePermissionDelegate>(),
     tableName: "RolePermission",
     deletePolicy: "disabled",
     getSelectionArgs: (): Prisma.RolePermissionDefaultArgs => {
@@ -340,20 +344,12 @@ export const xRolePermissionAssociation = db3.defineTable({
     }),
     fields: db3.makeColumnSet({
         id: () => MakePKfield(),
-        permission: columnName => new ForeignSingleField<PermissionPayload>({
-            columnName,
+        permission: foreignRef(() => xPermission, {
             fkidMember: "permissionId",
-            allowNull: false,
-            foreignTableID: "Permission",
-            getQuickFilterWhereClause: (query: string) => false,
             authMap: xPermissionMetadataAuthMap,
         }),
-        role: columnName => new ForeignSingleField<RolePayload>({
-            columnName,
+        role: foreignRef(() => xRole, {
             fkidMember: "roleId",
-            allowNull: false,
-            foreignTableID: "Role",
-            getQuickFilterWhereClause: (query: string) => false,
             authMap: xPermissionMetadataAuthMap,
         }),
     })
@@ -362,6 +358,7 @@ export const xRolePermissionAssociation = db3.defineTable({
 ////////////////////////////////////////////////////////////////
 
 export const xRole = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.RoleDelegate>(),
     getSelectionArgs: (): Prisma.RoleDefaultArgs => {
         return RoleArgs;
     },
@@ -442,6 +439,7 @@ export const xRole = db3.defineTable({
 
 
 export const xUserInstrument = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.UserInstrumentDelegate>(),
     tableName: "UserInstrument",
     deletePolicy: "hard",
     tableAuthMap: xUserTableAuthMap,
@@ -461,21 +459,13 @@ export const xUserInstrument = db3.defineTable({
     fields: db3.makeColumnSet({
         id: () => MakePKfield(),
         isPrimary: columnName => new BoolField({ columnName, defaultValue: false, authMap: xUserBasicProfileAuthMap, allowNull: false }),
-        instrument: columnName => new ForeignSingleField<Prisma.UserInstrumentGetPayload<{}>>({ // tags field should include the foreign object (tag object)
-            columnName,
+        instrument: foreignRef(() => xInstrument, {
             fkidMember: "instrumentId",
-            allowNull: false,
-            foreignTableID: "Instrument",
-            getQuickFilterWhereClause: (query: string) => false,
             authMap: xUserBasicProfileAuthMap,
         }),
-        user: columnName => new ForeignSingleField<Prisma.UserGetPayload<{}>>({ // tags field should include the foreign object (tag object)
-            columnName,
+        user: foreignRef(() => xUser, {
             fkidMember: "userId",
-            allowNull: false,
-            foreignTableID: "user",
             specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
-            getQuickFilterWhereClause: (query: string) => false,
             authMap: xUserBasicProfileAuthMap,
         }),
         // don't include local object because of dependencies / redundancy issues
@@ -499,6 +489,7 @@ export interface UserTagTableParams {
 
 
 const userTagBaseArgs = db3.defineTableDesc({
+    prismaModel: db3.prismaModel<Prisma.UserTagDelegate>(),
     getSelectionArgs: (): Prisma.UserTagDefaultArgs => {
         return UserTagArgs;
     },
@@ -614,6 +605,7 @@ export const xUserTagForEventSearch = db3.defineTable({
 
 
 export const xUserTagAssignment = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.UserTagAssignmentDelegate>(),
     tableName: "UserTagAssignment",
     deletePolicy: "hard",
     naturalOrderBy: UserTagAssignmentNaturalOrderBy,
@@ -636,12 +628,8 @@ export const xUserTagAssignment = db3.defineTable({
     ,
     fields: db3.makeColumnSet({
         id: () => MakePKfield(),
-        userTag: columnName => new ForeignSingleField<Prisma.UserTagGetPayload<{}>>({
-            columnName,
+        userTag: foreignRef(() => xUserTag, {
             fkidMember: "userTagId",
-            allowNull: false,
-            foreignTableID: "UserTag",
-            getQuickFilterWhereClause: (query: string) => false,
             authMap: xUserBasicProfileManagerWriteAuthMap,
         }),
         userId: memberName => new GhostField({
@@ -686,6 +674,7 @@ export interface UserTablParams {
 };
 
 const userBaseArgs = db3.defineTableDesc({
+    prismaModel: db3.prismaModel<Prisma.UserDelegate>(),
     getSelectionArgs: (): Prisma.UserDefaultArgs => {
         return UserSafeArgs;
     },
@@ -755,11 +744,9 @@ const userBaseArgs = db3.defineTableDesc({
             authMap: xUserOperationalMetadataAuthMap,
             allowNull: false,
         }),
-        role: columnName => new ForeignSingleField<Prisma.RoleGetPayload<{}>>({
-            columnName,
+        role: foreignRef(() => xRole, {
             allowNull: true,
             fkidMember: "roleId",
-            foreignTableID: "Role",
             authMap: xUserOperationalMetadataAuthMap,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 OR: [
@@ -847,12 +834,15 @@ export type CreatedByUserFieldArgs = {
     _customAuth?: (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean;
 };
 
-export class CreatedByUserField extends ForeignSingleField<UserPayload> {
+export class CreatedByUserField extends ForeignSingleField<
+    db3.DB3PrismaPayloadOf<typeof xUser>,
+    typeof xUser
+> {
     constructor(args: CreatedByUserFieldArgs) {
         super({
             columnName: args.columnName || "createdByUser",
             fkidMember: args.fkidMember || "createdByUserId",
-            foreignTableID: "User",
+            getForeignTable: () => xUser,
             allowNull: true,
             specialFunction: args.specialFunction || db3.SqlSpecialColumnFunction.createdByUser,
             getQuickFilterWhereClause: () => false,
@@ -894,12 +884,15 @@ export type VisiblePermissionFieldArgs = {
     fkMember?: string; // "visiblePermissionId"
 } & db3.DB3AuthSpec;
 
-export class VisiblePermissionField extends ForeignSingleField<PermissionPayload> {
+export class VisiblePermissionField extends ForeignSingleField<
+    db3.DB3PrismaPayloadOf<typeof xPermissionForVisibility>,
+    typeof xPermissionForVisibility
+> {
     constructor(args: VisiblePermissionFieldArgs) {
         super({
             columnName: args.columnName || "visiblePermission",
             fkidMember: args.fkMember || "visiblePermissionId",
-            foreignTableID: "xPermissionForVisibility",
+            getForeignTable: () => xPermissionForVisibility,
             specialFunction: db3.SqlSpecialColumnFunction.visiblePermission,
             allowNull: true,
             getQuickFilterWhereClause: () => false,

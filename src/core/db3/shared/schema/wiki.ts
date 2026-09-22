@@ -3,7 +3,7 @@ import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { ForeignSingleField, GhostField, MakeCreatedAtField, MakePKfield, TagsField } from "../columnTypes/xTableColumnTypes";
+import { foreignRef, GhostField, MakeCreatedAtField, MakePKfield, TagsField } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
@@ -80,6 +80,7 @@ export const WikiPageNaturalOrderBy: Prisma.WikiPageOrderByWithRelationInput[] =
 
 ////////////////////////////////////////////////////////////////
 export const xWikiPage = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.WikiPageDelegate>(),
     getSelectionArgs: (): Prisma.WikiPageDefaultArgs => {
         return WikiPageArgs;
     },
@@ -133,13 +134,10 @@ export const xWikiPage = db3.defineTable({
             }),
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.WikiPageWhereInput | boolean => false,
         }),
-        currentRevision: columnName => new ForeignSingleField<Prisma.WikiPageRevisionGetPayload<{}>>({
-            columnName,
+        currentRevision: foreignRef(() => xWikiPageRevision, {
             fkidMember: "currentRevisionId",
             allowNull: true,
-            foreignTableID: "WikiPageRevision",
             authMap: wikiPageCurrentRevisionAuthMap,
-            getQuickFilterWhereClause: () => false,
         }),
         lockedByUserId: memberName => new GhostField({
             authMap: wikiPageAdministrationAuthMap,
@@ -217,6 +215,7 @@ export interface WikiPageRevisionTableParams {
 
 ////////////////////////////////////////////////////////////////
 export const xWikiPageRevision = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.WikiPageRevisionDelegate>(),
     getSelectionArgs: (): Prisma.WikiPageRevisionDefaultArgs => {
         return WikiPageRevisionArgs;
     },
@@ -243,12 +242,8 @@ export const xWikiPageRevision = db3.defineTable({
             authMap: wikiPageRevisionAuthMap,
         }),
 
-        wikiPage: columnName => new ForeignSingleField<Prisma.WikiPageGetPayload<{}>>({
-            columnName,
+        wikiPage: foreignRef(() => xWikiPage, {
             fkidMember: "wikiPageId",
-            allowNull: false,
-            foreignTableID: "WikiPage",
-            getQuickFilterWhereClause: (query: string) => false,
             authMap: wikiPageRevisionAuthMap,
         }),
     })

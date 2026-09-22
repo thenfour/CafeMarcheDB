@@ -1,5 +1,5 @@
 import type { TAnyModel } from "@/shared/rootroot";
-import type { xTable } from "../db3core";
+import type { DB3PrismaDelegateOf as PrismaDelegateOfTable, xTable } from "../db3core";
 
 export type DB3EntityId = number | string;
 
@@ -39,18 +39,18 @@ export type EntityIdOf<TEntity extends AnyDB3Entity> =
 export type SchemaOf<TEntity extends AnyDB3Entity> = TEntity["schema"];
 
 /**
- * Curried so the Prisma delegate can be supplied once while the client entity
- * and identity types are inferred from getIdentity.
+ * Defines an entity from its table. The table is the single Prisma-model type
+ * authority; the client entity and identity remain inferred from getIdentity.
  */
-export const defineEntity = <TDelegate,>() => <
+export const defineEntity = <
+    TSchema extends xTable,
     TClientEntity extends TAnyModel,
     TId extends DB3EntityId,
-    TSchema extends xTable,
 >(args: {
     entityID?: string;
     schema: TSchema;
     getIdentity: (entity: TClientEntity) => TId;
-}): DB3Entity<TDelegate, TClientEntity, TId, TSchema> => ({
+}): DB3Entity<PrismaDelegateOfTable<TSchema>, TClientEntity, TId, TSchema> => ({
     entityID: args.entityID || args.schema.tableID,
     schema: args.schema,
     getIdentity: args.getIdentity,

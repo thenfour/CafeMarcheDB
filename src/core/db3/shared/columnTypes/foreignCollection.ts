@@ -3,7 +3,7 @@ import { TAnyModel } from "@/shared/rootroot";
 import type { DB3Authorization } from "../db3Authorization";
 import {
     ApplyIncludeFilteringToRelation, type DB3FieldPrismaMember,
-    type DB3RelationTargetField, type xTable,
+    type DB3RelationTargetField, GetTableById, type xTable,
 } from "../db3core";
 import { GhostField, GhostFieldArgs } from "./ghost";
 
@@ -25,7 +25,7 @@ export class ForeignCollectionField<
     getPrismaMemberDescriptors = (): readonly DB3FieldPrismaMember[] => [{
         member: this.member,
         kind: "relationCollection",
-        targetTableID: this.foreignTableID,
+        getTargetTable: () => GetTableById(this.foreignTableID),
     }];
 
     ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3Authorization, includeDeleted: boolean) => {

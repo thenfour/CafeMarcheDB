@@ -1,9 +1,10 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { ForeignSingleField, GenericIntegerField, GhostField, MakePKfield } from "../columnTypes/xTableColumnTypes";
+import { foreignRef, GenericIntegerField, GhostField, MakePKfield } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { ChangeNaturalOrderBy, type ChangePayload } from "./prismArgs";
 import { GenericStringField } from "../columnTypes/genericString";
+import { xUser } from "./user";
 
 
 export const xSysadminTableAuthMap: db3.DB3AuthTablePermissionMap = {
@@ -30,6 +31,7 @@ export interface ChangeTableParams {
 };
 
 export const xChange = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.ChangeDelegate>(),
     tableName: "Change",
     deletePolicy: "disabled",
     queryParameters: {
@@ -140,12 +142,8 @@ export const xChange = db3.defineTable({
             authMap: xSysadminColumnAuthMap,
         }),
 
-        user: columnName => new ForeignSingleField<Prisma.UserGetPayload<{}>>({
-            columnName,
+        user: foreignRef(() => xUser, {
             fkidMember: "userId",
-            allowNull: false,
-            foreignTableID: "User",
-            getQuickFilterWhereClause: (query: string) => false,
             authMap: xSysadminColumnAuthMap,
         }),
 

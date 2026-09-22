@@ -4,7 +4,7 @@ import { defineCrudView } from "../../core/db3CrudView";
 import { defineEntity } from "../../core/db3Entity";
 import { xSetting } from "../../db3schema";
 
-export const settingEntity = defineEntity<Prisma.SettingDelegate>()({
+export const settingEntity = defineEntity({
     schema: xSetting,
     getIdentity: (setting: Prisma.SettingGetPayload<{}>) => setting.id,
 });

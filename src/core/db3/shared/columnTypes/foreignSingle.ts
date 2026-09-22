@@ -8,7 +8,7 @@ import {
 } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
 import {
-    type DB3AuthSpec, type DB3FieldPrismaMember, type DB3RelationTargetField, type DB3RowMode, ErrorValidateAndParseResult,
+    type DB3AuthSpec, type DB3FieldPrismaMember, type DB3PrismaPayloadOf, type DB3RelationTargetField, type DB3RowMode, ErrorValidateAndParseResult,
     FieldBase, GetTableById, makeNullableReadTransportSchema, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
@@ -18,10 +18,9 @@ import { type UserWithRolesPayload } from "../schema/userPayloads";
 ////////////////////////////////////////////////////////////////
 // a single select field where the items are a db table with relation
 // on client side, there is NO foreign key field (like instrumentId). Only the foreign object ('instrument').
-export type ForeignSingleFieldArgs<TForeign> = {
+type ForeignSingleFieldValueArgs<TForeign> = {
     columnName: string; // "instrumentType"
     fkidMember: string; // "instrumentTypeId"
-    foreignTableID: string; // for circular referencing don't force caller to use the xTable.
     allowNull: boolean;
     // Omit the local row when its target cannot be read. Use for dependent
     // records, such as a setlist entry whose song must remain private.
@@ -29,7 +28,26 @@ export type ForeignSingleFieldArgs<TForeign> = {
     defaultValue?: TForeign | null;
     getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
     specialFunction?: SqlSpecialColumnFunction | undefined;
-} & DB3AuthSpec;
+};
+
+type ForeignSingleFieldCommonArgs<TForeign> =
+    ForeignSingleFieldValueArgs<TForeign> & DB3AuthSpec;
+
+export type ForeignSingleFieldArgs<
+    TForeign,
+    TTargetTable extends xTable = xTable,
+> = ForeignSingleFieldCommonArgs<TForeign> & (
+        | {
+            /** Legacy cycle-safe lookup. Prefer foreignRef() for new fields. */
+            foreignTableID: string;
+            getForeignTable?: never;
+        }
+        | {
+            /** Deferred so self, forward, and circular references initialize safely. */
+            getForeignTable: () => TTargetTable;
+            foreignTableID?: never;
+        }
+    );
 
 // The write member is fkidMember rather than this field-map key, so it is not a
 // same-key mutation field. Its projected key is supplied by the client column.
@@ -46,21 +64,24 @@ export class ForeignSingleField<
     implements DB3RelationTargetField<TTargetTable> {
     declare readonly __relationTargetTable: TTargetTable;
     requireVisibleTarget: boolean;
-    foreignTableID: string;
+    private readonly declaredForeignTableID?: string;
+    private readonly getForeignTable__: () => xTable;
     localTableSpec: xTable;
     allowNull: boolean;
     readonly foreignKeyReadTransportSchema: z.ZodType<number | null>;
     defaultValue: TForeign | null;
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
 
-    getForeignTableSchema = () => {
-        return GetTableById(this.foreignTableID);
-    };
+    get foreignTableID(): string {
+        return this.declaredForeignTableID ?? this.getForeignTableSchema().tableID;
+    }
+
+    getForeignTableSchema = () => this.getForeignTable__();
 
     getPrismaMemberDescriptors = (): readonly DB3FieldPrismaMember[] => [{
         member: this.member,
         kind: "foreignObject",
-        targetTableID: this.foreignTableID,
+        getTargetTable: this.getForeignTableSchema,
         nullable: this.allowNull,
     }, {
         member: this.fkidMember!,
@@ -68,7 +89,7 @@ export class ForeignSingleField<
         readTransportSchema: this.foreignKeyReadTransportSchema,
     }];
 
-    constructor(args: ForeignSingleFieldArgs<TForeign>) {
+    constructor(args: ForeignSingleFieldArgs<TForeign, TTargetTable>) {
         super({
             member: args.columnName,
             fieldTableAssociation: "foreignObject",
@@ -102,7 +123,9 @@ export class ForeignSingleField<
         );
         this.requireVisibleTarget = args.requireVisibleTarget === true;
         this.defaultValue = args.defaultValue || null;
-        this.foreignTableID = args.foreignTableID;
+        this.declaredForeignTableID = args.foreignTableID;
+        this.getForeignTable__ = args.getForeignTable
+            ?? (() => GetTableById(args.foreignTableID!));
         this.getQuickFilterWhereClause__ = args.getQuickFilterWhereClause;
         //this.getForeignQuickFilterWhereClause = args.getForeignQuickFilterWhereClause;
         //this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
@@ -349,17 +372,44 @@ export class ForeignSingleField<
 
 
 
-export const foreignRefMaker = <TForeign, TTargetTable extends xTable>(
-    foreignTableID: string,
-    fkidMember: string,
-    authMap: any,
-    getQuickFilterWhereClause: (query: string) => TAnyModel | boolean,
-) => columnName => new ForeignSingleField<TForeign, TTargetTable>({
-    columnName,
-    fkidMember,
-    allowNull: false,
-    foreignTableID,
-    authMap,
-    getQuickFilterWhereClause,
-});
+export type ForeignRefArgs<TTargetTable extends xTable> = Omit<
+    ForeignSingleFieldValueArgs<DB3PrismaPayloadOf<TTargetTable>>,
+    "columnName" | "allowNull" | "getQuickFilterWhereClause"
+> & DB3AuthSpec & {
+    allowNull?: boolean;
+    getQuickFilterWhereClause?: (query: string) => TAnyModel | boolean;
+};
+
+/**
+ * Declares a foreign-single field from its target xTable. The table supplies
+ * both runtime identity and the Prisma payload type; the thunk remains
+ * untouched until relation metadata is actually traversed.
+ */
+export const foreignRef = <TTargetTable extends xTable>(
+    getForeignTable: () => TTargetTable,
+    args: ForeignRefArgs<TTargetTable>,
+) => (columnName: string) => {
+    const valueArgs = {
+        columnName,
+        fkidMember: args.fkidMember,
+        allowNull: args.allowNull ?? false,
+        requireVisibleTarget: args.requireVisibleTarget,
+        defaultValue: args.defaultValue,
+        specialFunction: args.specialFunction,
+        getForeignTable,
+        getQuickFilterWhereClause: args.getQuickFilterWhereClause ?? (() => false),
+    };
+
+    if ("authMap" in args) {
+        return new ForeignSingleField<
+            DB3PrismaPayloadOf<TTargetTable>,
+            TTargetTable
+        >({ ...valueArgs, authMap: args.authMap });
+    }
+
+    return new ForeignSingleField<
+        DB3PrismaPayloadOf<TTargetTable>,
+        TTargetTable
+    >({ ...valueArgs, _customAuth: args._customAuth });
+};
 

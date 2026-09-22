@@ -8,7 +8,7 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { MakePKfield } from "./columnTypes/xTableColumnTypes";
-import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, defineTable, makeColumnSet, SqlSpecialColumnFunction } from "./db3core";
+import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, defineTable, makeColumnSet, prismaModel, SqlSpecialColumnFunction } from "./db3core";
 import { GenericStringField } from "./columnTypes/genericString";
 
 
@@ -36,6 +36,7 @@ export const SettingNaturalOrderBy: Prisma.SettingOrderByWithRelationInput[] = [
 ];
 
 export const xSetting = defineTable({
+    prismaModel: prismaModel<Prisma.SettingDelegate>(),
     getSelectionArgs: () => ({}),
     tableName: "Setting",
     deletePolicy: "disabled",

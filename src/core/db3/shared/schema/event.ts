@@ -12,7 +12,7 @@ import { DateTimeRange } from "shared/time";
 import { CoalesceBool, gIconOptions, smartTruncate } from "shared/utils";
 import { type CMDBTableFilterModel } from "../apiTypes";
 import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../columnTypes/genericString";
-import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignCollectionField, foreignRefMaker, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, TagsField } from "../columnTypes/xTableColumnTypes";
+import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, TagsField } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import {
     EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, type EventAttendancePayload,
@@ -27,7 +27,10 @@ import {
     type InstrumentClientOrDbPayload,
     type UserWithInstrumentsPayload
 } from "./prismArgs";
-import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField } from "./user";
+import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField, xUser, xUserTag } from "./user";
+import { xInstrument } from "./instrument";
+import { xSong } from "./song";
+import { xWikiPage } from "./wiki";
 
 
 export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
@@ -172,6 +175,7 @@ export const getEventSegmentMinDate = (event: EventPayload): Date | null => {
 };
 
 export const xEventType = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.EventTypeDelegate>(),
     getSelectionArgs: (): Prisma.EventTypeDefaultArgs => {
         return EventTypeArgs;
     },
@@ -214,6 +218,7 @@ export const xEventType = db3.defineTable({
 
 
 export const xEventStatus = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.EventStatusDelegate>(),
     getSelectionArgs: (): Prisma.EventStatusDefaultArgs => {
         return EventStatusArgs;
     },
@@ -263,6 +268,7 @@ export const xEventStatus = db3.defineTable({
 ////////////////////////////////////////////////////////////////
 
 export const xEventTag = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.EventTagDelegate>(),
     tableName: "EventTag",
     deletePolicy: "hard",
     getSelectionArgs: (): Prisma.EventTagDefaultArgs => {
@@ -303,6 +309,7 @@ export const xEventTag = db3.defineTable({
 ////////////////////////////////////////////////////////////////
 
 export const xEventTagAssignment = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.EventTagAssignmentDelegate>(),
     tableName: "EventTagAssignment",
     deletePolicy: "hard",
     naturalOrderBy: EventTagAssignmentNaturalOrderBy,
@@ -321,12 +328,10 @@ export const xEventTagAssignment = db3.defineTable({
     },
     fields: db3.makeColumnSet({
         id: () => MakePKfield(),
-        eventTag: foreignRefMaker<Prisma.EventTagGetPayload<{}>, typeof xEventTag>(
-            "EventTag",
-            "eventTagId",
-            xEventAuthMap_R_EOwn_EManagers,
-            (query: string) => false,
-        ),
+        eventTag: foreignRef(() => xEventTag, {
+            fkidMember: "eventTagId",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
+        }),
     })
 });
 
@@ -387,6 +392,7 @@ export const EventAPI = {
 
 
 export const xEventArgs_Base = db3.defineTableDesc({
+    prismaModel: db3.prismaModel<Prisma.EventDelegate>(),
     // modifying an event means multiple related changes; see the mutation event hooks.
     tableName: "Event", // case matters :(
     deletePolicy: "softOnly",
@@ -528,32 +534,20 @@ export const xEventArgs_Base = db3.defineTableDesc({
             options: EventSegmentBehavior,
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
-        type: columnName => new ForeignSingleField<Prisma.EventTypeGetPayload<{}>>({
-            columnName,
+        type: foreignRef(() => xEventType, {
             fkidMember: "typeId",
             allowNull: true,
-            foreignTableID: "EventType",
             authMap: xEventAuthMap_R_EOwn_EManagers,
-            getQuickFilterWhereClause: (query: string) => false,
         }),
-        status: columnName => new ForeignSingleField<
-            Prisma.EventStatusGetPayload<{}>,
-            typeof xEventStatus
-        >({
-            columnName,
+        status: foreignRef(() => xEventStatus, {
             fkidMember: "statusId",
             allowNull: true,
-            foreignTableID: "EventStatus",
             authMap: xEventAuthMap_R_EOwn_EManagers,
-            getQuickFilterWhereClause: (query: string) => false,
         }),
-        expectedAttendanceUserTag: columnName => new ForeignSingleField<Prisma.UserTagGetPayload<{}>>({
-            columnName,
+        expectedAttendanceUserTag: foreignRef(() => xUserTag, {
             fkidMember: "expectedAttendanceUserTagId",
             allowNull: true,
-            foreignTableID: "UserTag",
             authMap: xEventAuthMap_R_EOwn_EManagers,
-            getQuickFilterWhereClause: (query: string) => false,
         }),
 
         frontpageVisible: columnName => new BoolField({ columnName, defaultValue: false, authMap: xEventAuthMap_Homepage, allowNull: false }),
@@ -628,13 +622,10 @@ export const xEventArgs_Base = db3.defineTableDesc({
         segments: memberName => new ForeignCollectionField({ memberName, foreignTableID: "EventSegment", authMap: xEventAuthMap_R_EOwn_EManagers }),
         responses: memberName => new ForeignCollectionField({ memberName, foreignTableID: "EventUserResponse", authMap: xEventAuthMap_R_EOwn_EManagers }),
         songLists: memberName => new ForeignCollectionField({ memberName, foreignTableID: "EventSongList", authMap: xEventAuthMap_R_EOwn_EManagers }),
-        descriptionWikiPage: columnName => new ForeignSingleField<Prisma.WikiPageGetPayload<{}>>({
-            columnName,
+        descriptionWikiPage: foreignRef(() => xWikiPage, {
             fkidMember: "descriptionWikiPageId",
             allowNull: true,
-            foreignTableID: "WikiPage",
             authMap: xEventAuthMap_R_EOwn_EManagers,
-            getQuickFilterWhereClause: () => false,
         }),
 
         // because this is used for generating icals
@@ -757,6 +748,7 @@ export const xEventSearch = db3.defineTable(xEventArgs_Search);
 
 
 export const xEventSegment = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.EventSegmentDelegate>(),
     tableName: "EventSegment",
     deletePolicy: "hard",
     queryParameters: {
@@ -809,21 +801,14 @@ export const xEventSegment = db3.defineTable({
             authMap: xEventAuthMap_R_EOwn_EManagers,
             allowNull: false
         }),
-        status: columnName => new ForeignSingleField<Prisma.EventStatusGetPayload<{}>>({
-            columnName,
+        status: foreignRef(() => xEventStatus, {
             fkidMember: "statusId",
             allowNull: true,
-            foreignTableID: "EventStatus",
             authMap: xEventAuthMap_R_EOwn_EManagers,
-            getQuickFilterWhereClause: (query: string) => false,
         }),
 
-        event: columnName => new ForeignSingleField<Prisma.EventGetPayload<{}>>({
-            columnName,
+        event: foreignRef(() => xEvent, {
             fkidMember: "eventId",
-            allowNull: false,
-            foreignTableID: "Event",
-            getQuickFilterWhereClause: (query: string) => false,
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
 
@@ -855,6 +840,7 @@ export const xEventSegment = db3.defineTable({
 ////////////////////////////////////////////////////////////////
 
 export const xEventAttendance = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.EventAttendanceDelegate>(),
     getSelectionArgs: (): Prisma.EventAttendanceDefaultArgs => {
         return EventAttendanceArgs;
     },
@@ -899,6 +885,7 @@ export const xEventAttendance = db3.defineTable({
 
 
 export const xEventSegmentUserResponse = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.EventSegmentUserResponseDelegate>(),
     getSelectionArgs: (): Prisma.EventSegmentUserResponseDefaultArgs => {
         return EventSegmentUserResponseArgs;
     },
@@ -929,29 +916,18 @@ export const xEventSegmentUserResponse = db3.defineTable({
         createdByUser: () => MakeCreatedByField(),
         updatedAt: () => MakeUpdatedAtField(),
         updatedByUser: () => MakeUpdatedByField(),
-        eventSegment: columnName => new ForeignSingleField<Prisma.EventSegmentGetPayload<{}>>({
-            columnName,
+        eventSegment: foreignRef(() => xEventSegment, {
             fkidMember: "eventSegmentId",
-            allowNull: false,
-            foreignTableID: "EventSegment",
-            getQuickFilterWhereClause: (query: string) => false,
             authMap: xEventAuthMap_UserResponseRelation,
         }),
-        user: columnName => new ForeignSingleField<Prisma.UserGetPayload<{}>>({
-            columnName,
+        user: foreignRef(() => xUser, {
             fkidMember: "userId",
-            allowNull: false,
-            foreignTableID: "User",
             specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
-            getQuickFilterWhereClause: (query: string) => false,
             authMap: xEventAuthMap_UserResponseRelation,
         }),
-        attendance: columnName => new ForeignSingleField<Prisma.EventAttendanceGetPayload<{}>>({
-            columnName,
+        attendance: foreignRef(() => xEventAttendance, {
             fkidMember: "attendanceId",
             allowNull: true,
-            foreignTableID: "EventAttendance",
-            getQuickFilterWhereClause: (query: string) => false,
             authMap: xEventAuthMap_UserResponse,
         }),
     })
@@ -960,6 +936,7 @@ export const xEventSegmentUserResponse = db3.defineTable({
 
 
 export const xEventUserResponse = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.EventUserResponseDelegate>(),
     getSelectionArgs: (): Prisma.EventUserResponseDefaultArgs => {
         return EventUserResponseArgs;
     },
@@ -995,21 +972,14 @@ export const xEventUserResponse = db3.defineTable({
         }),
         isInvited: columnName => new BoolField({ columnName, defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: true }),
         eventId: columnName => MakeIntegerField(columnName, { authMap: xEventAuthMap_UserResponseRelation, }),
-        user: columnName => new ForeignSingleField<Prisma.UserGetPayload<{}>>({
-            columnName,
+        user: foreignRef(() => xUser, {
             fkidMember: "userId",
-            allowNull: false,
-            foreignTableID: "User",
             specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
-            getQuickFilterWhereClause: (query: string) => false,
             authMap: xEventAuthMap_UserResponseRelation,
         }),
-        instrument: columnName => new ForeignSingleField<Prisma.InstrumentGetPayload<{}>>({
-            columnName,
+        instrument: foreignRef(() => xInstrument, {
             fkidMember: "instrumentId",
             allowNull: true,
-            foreignTableID: "Instrument",
-            getQuickFilterWhereClause: (query: string) => false,
             authMap: xEventAuthMap_UserResponse,
         }),
 
@@ -1027,6 +997,7 @@ export const xEventUserResponse = db3.defineTable({
 
 
 export const xEventSongList = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.EventSongListDelegate>(),
     getSelectionArgs: (): Prisma.EventSongListDefaultArgs => {
         return EventSongListArgs;
     },
@@ -1062,13 +1033,9 @@ export const xEventSongList = db3.defineTable({
         isOrdered: columnName => new BoolField({ columnName, defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         isActuallyPlayed: columnName => new BoolField({ columnName, defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
 
-        event: columnName => new ForeignSingleField<Prisma.EventGetPayload<{}>>({
-            columnName,
+        event: foreignRef(() => xEvent, {
             fkidMember: "eventId",
-            allowNull: false,
-            foreignTableID: "Event",
             authMap: xEventAuthMap_R_EOwn_EManagers,
-            getQuickFilterWhereClause: (query: string) => false,
         }),
         songs: columnName => new TagsField<Prisma.EventSongListGetPayload<{}>>({
             columnName,
@@ -1090,6 +1057,7 @@ export const xEventSongList = db3.defineTable({
 
 
 export const xEventSongListSong = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.EventSongListSongDelegate>(),
     getSelectionArgs: (): Prisma.EventSongListSongDefaultArgs => {
         return EventSongListSongArgs;
     },
@@ -1119,22 +1087,14 @@ export const xEventSongListSong = db3.defineTable({
         id: () => MakePKfield(),
         subtitle: columnName => MakePlainTextField(columnName, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         sortOrder: () => MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        song: columnName => new ForeignSingleField<Prisma.SongGetPayload<{}>>({
-            columnName,
+        song: foreignRef(() => xSong, {
             fkidMember: "songId",
-            allowNull: false,
             requireVisibleTarget: true,
-            foreignTableID: "Song",
             authMap: xEventAuthMap_R_EOwn_EManagers,
-            getQuickFilterWhereClause: (query: string) => false,
         }),
-        eventSongList: columnName => new ForeignSingleField<Prisma.EventSongListGetPayload<{}>>({
-            columnName,
+        eventSongList: foreignRef(() => xEventSongList, {
             fkidMember: "eventSongListId",
-            allowNull: false,
-            foreignTableID: "EventSongList",
             authMap: xEventAuthMap_R_EOwn_EManagers,
-            getQuickFilterWhereClause: (query: string) => false,
         }),
     })
 });
@@ -1142,6 +1102,7 @@ export const xEventSongListSong = db3.defineTable({
 
 
 export const xEventSongListDivider = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.EventSongListDividerDelegate>(),
     getSelectionArgs: (): Prisma.EventSongListDividerDefaultArgs => {
         return EventSongListDividerArgs;
     },
@@ -1179,13 +1140,9 @@ export const xEventSongListDivider = db3.defineTable({
 
         isInterruption: columnName => new BoolField({ columnName, defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         textStyle: columnName => new ConstEnumStringField({ allowNull: true, authMap: xEventAuthMap_R_EOwn_EManagers, columnName, defaultValue: EventSongListDividerTextStyle.Default, options: EventSongListDividerTextStyle }),
-        eventSongList: columnName => new ForeignSingleField<Prisma.EventSongListGetPayload<{}>>({
-            columnName,
+        eventSongList: foreignRef(() => xEventSongList, {
             fkidMember: "eventSongListId",
-            allowNull: false,
-            foreignTableID: "EventSongList",
             authMap: xEventAuthMap_R_EOwn_EManagers,
-            getQuickFilterWhereClause: (query: string) => false,
         }),
     })
 });

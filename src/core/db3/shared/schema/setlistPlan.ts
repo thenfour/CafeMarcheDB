@@ -55,6 +55,7 @@ export const SetlistPlanGroupNaturalOrderBy: Prisma.SetlistPlanGroupOrderByWithR
 
 ////////////////////////////////////////////////////////////////
 export const xSetlistPlanGroup = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.SetlistPlanGroupDelegate>(),
     getSelectionArgs: (): Prisma.SetlistPlanGroupDefaultArgs => {
         return SetlistPlanGroupArgs;
     },
@@ -100,6 +101,7 @@ export const SetlistPlanNaturalOrderBy: Prisma.SetlistPlanOrderByWithRelationInp
 
 ////////////////////////////////////////////////////////////////
 export const xSetlistPlan = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.SetlistPlanDelegate>(),
     getSelectionArgs: (): Prisma.SetlistPlanDefaultArgs => {
         return {};
     },

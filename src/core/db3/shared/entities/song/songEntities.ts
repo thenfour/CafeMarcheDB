@@ -2,22 +2,22 @@ import { Prisma } from "db";
 import { defineEntity } from "../../core/db3Entity";
 import { xSong, xSongCredit, xSongCreditType, xSongTag } from "../../schema/song";
 
-export const songEntity = defineEntity<Prisma.SongDelegate>()({
+export const songEntity = defineEntity({
     schema: xSong,
     getIdentity: (song: { id: number }) => song.id,
 });
 
-export const songCreditEntity = defineEntity<Prisma.SongCreditDelegate>()({
+export const songCreditEntity = defineEntity({
     schema: xSongCredit,
     getIdentity: (credit: { id: number }) => credit.id,
 });
 
-export const songTagEntity = defineEntity<Prisma.SongTagDelegate>()({
+export const songTagEntity = defineEntity({
     schema: xSongTag,
     getIdentity: (tag: Prisma.SongTagGetPayload<{}>) => tag.id,
 });
 
-export const songCreditTypeEntity = defineEntity<Prisma.SongCreditTypeDelegate>()({
+export const songCreditTypeEntity = defineEntity({
     schema: xSongCreditType,
     getIdentity: (creditType: Prisma.SongCreditTypeGetPayload<{}>) => creditType.id,
 });
