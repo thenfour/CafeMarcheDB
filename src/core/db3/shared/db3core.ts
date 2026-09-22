@@ -274,7 +274,7 @@ export type DB3MaybeNull<TValue, TAllowNull extends boolean> =
 // const y = makeNullableReadTransportSchema(z.string(), false); // z.ZodType<string>
 export function makeNullableReadTransportSchema<
     TSchema extends z.ZodTypeAny,
-    TAllowNull extends boolean, // inferred at call site
+    const TAllowNull extends boolean, // inferred at call site
 >(
     schema: TSchema,
     allowNull: TAllowNull,

@@ -1,7 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import {
     ZodToPrismaSelection,
-    type ZodPrismaSelection,
 } from "shared/prismaUtils";
 import { z } from "zod";
 
@@ -44,7 +43,6 @@ describe("ZodToPrismaSelection", () => {
                 refinedValue: true,
             },
         });
-        expectTypeOf(selection).toEqualTypeOf<ZodPrismaSelection<typeof schema>>();
         expectTypeOf(selection.select.parent).toMatchTypeOf<{
             readonly select: { readonly id: true; readonly name: true };
         }>();

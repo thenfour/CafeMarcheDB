@@ -30,8 +30,8 @@ export type GenericStringFieldArgs<
 } & TAuthSpec;
 
 export class GenericStringField<
-    TAllowNull extends boolean = boolean,
-    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+    const TAllowNull extends boolean = boolean,
+    const TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
 > extends FieldBase<
     string,
     undefined,
@@ -339,14 +339,14 @@ export class GenericStringField<
 
 
 
-export const MakePlainTextField = <TAuthSpec extends DB3AuthSpec>(columnName: string, authSpec: TAuthSpec) => (
+export const MakePlainTextField = <const TAuthSpec extends DB3AuthSpec>(columnName: string, authSpec: TAuthSpec) => (
     new GenericStringField({
         ...authSpec,
         columnName,
         allowNull: false,
         format: "plain",
     }));
-export const MakeNullableRawTextField = <TAuthSpec extends DB3AuthSpec>(columnName: string, authSpec: TAuthSpec) => (
+export const MakeNullableRawTextField = <const TAuthSpec extends DB3AuthSpec>(columnName: string, authSpec: TAuthSpec) => (
     new GenericStringField({
         ...authSpec,
         columnName,
@@ -354,8 +354,8 @@ export const MakeNullableRawTextField = <TAuthSpec extends DB3AuthSpec>(columnNa
         format: "raw",
     }));
 export const MakeRawTextField = <
-    TAuthSpec extends DB3AuthSpec,
-    TAllowNull extends boolean = false,
+    const TAuthSpec extends DB3AuthSpec,
+    const TAllowNull extends boolean = false,
 >(columnName: string, authSpec: TAuthSpec, allowNull?: TAllowNull) => (
     new GenericStringField<TAllowNull, TAuthSpec>({
         ...authSpec,
@@ -364,8 +364,8 @@ export const MakeRawTextField = <
         format: "raw",
     }));
 export const MakeMarkdownTextField = <
-    TAuthSpec extends DB3AuthSpec,
-    TAllowNull extends boolean = false,
+    const TAuthSpec extends DB3AuthSpec,
+    const TAllowNull extends boolean = false,
 >(columnName: string, authSpec: TAuthSpec, allowNull?: TAllowNull) => (
     new GenericStringField<TAllowNull, TAuthSpec>({
         ...authSpec,
@@ -374,7 +374,7 @@ export const MakeMarkdownTextField = <
         allowQuickFilter: false,
         format: "markdown",
     }));
-export const MakeTitleField = <TAuthSpec extends DB3AuthSpec>(columnName: string, authSpec: TAuthSpec) => (
+export const MakeTitleField = <const TAuthSpec extends DB3AuthSpec>(columnName: string, authSpec: TAuthSpec) => (
     new GenericStringField({
         ...authSpec,
         columnName,
@@ -384,7 +384,7 @@ export const MakeTitleField = <TAuthSpec extends DB3AuthSpec>(columnName: string
         allowQuickFilter: true,
     }));
 
-export const MakeDescriptionField = <TAuthSpec extends DB3AuthSpec>(args: { columnName?: string } & TAuthSpec) => (
+export const MakeDescriptionField = <const TAuthSpec extends DB3AuthSpec>(args: { columnName?: string } & TAuthSpec) => (
     new GenericStringField<false, TAuthSpec>({
         ...args,
         columnName: args.columnName ?? "description",
@@ -396,8 +396,8 @@ export const MakeDescriptionField = <TAuthSpec extends DB3AuthSpec>(args: { colu
 
 // this does not convert to colorpaletteentry
 export const MakeColorAsStringField = <
-    TAuthSpec extends DB3AuthSpec,
-    TAllowNull extends boolean = true,
+    const TAuthSpec extends DB3AuthSpec,
+    const TAllowNull extends boolean = true,
 >(args: { columnName?: string, allowNull?: TAllowNull } & TAuthSpec) => (
     new GenericStringField<TAllowNull, TAuthSpec>({
         ...args,

@@ -35,7 +35,7 @@ export type PKFieldArgs<TVisibility extends PKNaturalIdVisibility = undefined> =
 };// & DB3AuthSpec;
 
 export class PKField<
-    TVisibility extends PKNaturalIdVisibility = undefined,
+    const TVisibility extends PKNaturalIdVisibility = undefined,
 > extends FieldBase<
     number,
     undefined,
@@ -124,7 +124,7 @@ export class PKField<
 
 
 export const MakePKfield = <
-    TVisibility extends PKNaturalIdVisibility = undefined,
+    const TVisibility extends PKNaturalIdVisibility = undefined,
 >(args: { isRowOwner?: boolean, naturalIdVisibility?: TVisibility } = {}) => new PKField<TVisibility>({
     columnName: "id",
     isRowOwner: args.isRowOwner,

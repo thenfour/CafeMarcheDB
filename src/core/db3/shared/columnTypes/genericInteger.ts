@@ -34,9 +34,9 @@ export type GenericIntegerFieldArgs<
 } & TAuthSpec;
 
 export class GenericIntegerField<
-    TReadTransportType extends GenericIntegerReadTransportType = "number",
-    TAllowNull extends boolean = boolean,
-    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+    const TReadTransportType extends GenericIntegerReadTransportType = "number",
+    const TAllowNull extends boolean = boolean,
+    const TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
 > extends FieldBase<
     number,
     undefined,
@@ -148,7 +148,7 @@ export class GenericIntegerField<
 
 
 
-export const MakeIntegerField = <TAuthSpec extends DB3AuthSpec>(columnName: string, authSpec: TAuthSpec) => (
+export const MakeIntegerField = <const TAuthSpec extends DB3AuthSpec>(columnName: string, authSpec: TAuthSpec) => (
     new GenericIntegerField({
         ...authSpec,
         columnName,

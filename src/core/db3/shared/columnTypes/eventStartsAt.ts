@@ -49,8 +49,8 @@ export interface EventStartsAtFieldDiscreteFilterDomain {
 const gTbdId = 9999;
 
 export class EventStartsAtField<
-    TAllowNull extends boolean = boolean,
-    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+    const TAllowNull extends boolean = boolean,
+    const TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
 > extends FieldBase<
     Date,
     undefined,

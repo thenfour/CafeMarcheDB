@@ -38,8 +38,8 @@ export type ColorFieldArgs<
 } & TAuthSpec;
 
 export class ColorField<
-    TAllowNull extends boolean = boolean,
-    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+    const TAllowNull extends boolean = boolean,
+    const TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
 > extends FieldBase<
     ColorPaletteEntry, // client-facing field datatype
     DB3FieldCodec< // transport codec for converting between DB(DTO) and client representations
@@ -142,7 +142,7 @@ export class ColorField<
 
 
 // color fields convert to colorpaletteentry on query
-export const MakeColorField = <TAuthSpec extends DB3AuthSpec>(args: { columnName?: string } & TAuthSpec) => (
+export const MakeColorField = <const TAuthSpec extends DB3AuthSpec>(args: { columnName?: string } & TAuthSpec) => (
     new ColorField<true, TAuthSpec>({
         ...args,
         columnName: args.columnName ?? "color",

@@ -24,7 +24,7 @@ export type RevisionFieldArgs<TAuthSpec extends DB3AuthSpec> = {
 } & TAuthSpec;
 
 export class RevisionField<
-    TAuthSpec extends DB3AuthSpec,
+    const TAuthSpec extends DB3AuthSpec,
 > extends FieldBase<
     number,
     undefined,

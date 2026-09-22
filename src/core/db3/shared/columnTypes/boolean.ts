@@ -32,8 +32,8 @@ export type BoolFieldArgs<
 } & TAuthSpec;
 
 export class BoolField<
-    TAllowNull extends boolean = boolean,
-    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+    const TAllowNull extends boolean = boolean,
+    const TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
 > extends FieldBase<
     boolean,
     DB3FieldCodec<
@@ -125,7 +125,7 @@ export class BoolField<
 
 
 
-export const MakeIsDeletedField = <TAuthSpec extends DB3AuthSpec>(args: { columnName?: string } & TAuthSpec) => (
+export const MakeIsDeletedField = <const TAuthSpec extends DB3AuthSpec>(args: { columnName?: string } & TAuthSpec) => (
     new BoolField<false, TAuthSpec>({
         ...args,
         columnName: args.columnName ?? "isDeleted",

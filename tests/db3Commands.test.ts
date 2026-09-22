@@ -876,8 +876,9 @@ describe("DB3 commands", () => {
     it("preserves xTable client-value transforms across CRUD reads and writes", () => {
         const view = db3.instrumentFunctionalGroupEditorView;
         const colorField = db3.xInstrumentFunctionalGroup.getColumn("color")!;
+        const typedColorField: typeof db3.xInstrumentFunctionalGroup.fields.color = colorField;
 
-        expectTypeOf(colorField).toEqualTypeOf<db3.ColorField>();
+        expect(typedColorField).toBe(db3.xInstrumentFunctionalGroup.fields.color);
         expectTypeOf<db3.ClientOf<typeof view>["publicId"]>()
             .toEqualTypeOf<InstrumentFunctionalGroupPublicId>();
         expectTypeOf<db3.ClientOf<typeof view>["color"]>()

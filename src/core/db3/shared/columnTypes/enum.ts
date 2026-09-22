@@ -32,8 +32,8 @@ export type ConstEnumStringFieldArgs<
 } & TAuthSpec;
 
 export class ConstEnumStringField<
-    TAllowNull extends boolean = boolean,
-    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+    const TAllowNull extends boolean = boolean,
+    const TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
 > extends FieldBase<
     string,
     undefined,
@@ -122,7 +122,7 @@ export class ConstEnumStringField<
 };
 
 
-export const MakeSignificanceField = <TAuthSpec extends DB3AuthSpec>(columnName: string, options: TAnyModel, authSpec: TAuthSpec) => (
+export const MakeSignificanceField = <const TAuthSpec extends DB3AuthSpec>(columnName: string, options: TAnyModel, authSpec: TAuthSpec) => (
     new ConstEnumStringField({
         ...authSpec,
         columnName,
@@ -131,7 +131,7 @@ export const MakeSignificanceField = <TAuthSpec extends DB3AuthSpec>(columnName:
         options,
     }));
 
-export const MakeIconField = <TAuthSpec extends DB3AuthSpec>(columnName: string, options: TAnyModel, authSpec: TAuthSpec) => (
+export const MakeIconField = <const TAuthSpec extends DB3AuthSpec>(columnName: string, options: TAnyModel, authSpec: TAuthSpec) => (
     new ConstEnumStringField({
         ...authSpec,
         columnName,
