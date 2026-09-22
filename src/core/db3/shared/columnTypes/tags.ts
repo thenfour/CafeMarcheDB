@@ -7,7 +7,7 @@ import {
 } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
 import {
-    ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3RowMode,
+    ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3FieldPrismaMember, type DB3RowMode,
     FieldBase, GetTableById, type SqlGetSortableQueryElementsAPI,
     SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
@@ -65,6 +65,12 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[], undefined
     getForeignTableShema = () => {
         return GetTableById(this.foreignTableID);
     };
+
+    getPrismaMemberDescriptors = (): readonly DB3FieldPrismaMember[] => [{
+        member: this.member,
+        kind: "relationCollection",
+        targetTableID: this.associationTableID,
+    }];
 
     get allowInsertFromString() {
         return !!this.getForeignTableShema().createInsertModelFromString;

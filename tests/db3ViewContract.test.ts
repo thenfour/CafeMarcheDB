@@ -2,7 +2,7 @@ import { Prisma } from "db"
 import { describe, expect, it } from "vitest"
 
 import * as db3 from "src/core/db3/db3"
-import { compileDB3ScalarSelection } from "src/core/db3/shared/core/db3ViewContract"
+import { compileDB3Selection } from "src/core/db3/shared/core/db3ViewContract"
 
 describe("DB3 scalar selection compiler", () => {
   it("preserves the Prisma selection and derives required nullable scalar schemas", () => {
@@ -14,7 +14,7 @@ describe("DB3 scalar selection compiler", () => {
       },
     })
 
-    const compiled = compileDB3ScalarSelection(db3.eventStatusEntity, selection)
+    const compiled = compileDB3Selection(db3.eventStatusEntity, selection)
 
     expect(compiled.prismaSelection).toBe(selection)
     expect(compiled.members.map(member => ({
@@ -50,7 +50,7 @@ describe("DB3 scalar selection compiler", () => {
       },
     })
 
-    const compiled = compileDB3ScalarSelection(db3.eventEntity, selection)
+    const compiled = compileDB3Selection(db3.eventEntity, selection)
 
     expect(compiled.members.every(member => member.required === false)).toBe(true)
     expect(compiled.dtoSchema.parse({})).toEqual({})
@@ -66,14 +66,14 @@ describe("DB3 scalar selection compiler", () => {
       },
     })
 
-    const compiled = compileDB3ScalarSelection(db3.eventStatusEntity, selection)
+    const compiled = compileDB3Selection(db3.eventStatusEntity, selection)
 
     expect(compiled.members.map(member => member.member)).toEqual(["id"])
     expect(compiled.dtoSchema.parse({ id: 10, label: "stripped" })).toEqual({ id: 10 })
   })
 
   it("reports the entity and complete path for unknown selected members", () => {
-    expect(() => compileDB3ScalarSelection(db3.eventStatusEntity, {
+    expect(() => compileDB3Selection(db3.eventStatusEntity, {
       select: { unknownMember: true },
     } as any)).toThrow(
       "DB3 entity 'EventStatus' cannot compile selection path "
@@ -86,33 +86,52 @@ describe("DB3 scalar selection compiler", () => {
       select: { events: true },
     })
 
-    expect(() => compileDB3ScalarSelection(db3.eventStatusEntity, selection)).toThrow(
-      "'EventStatus.select.events': GhostField field 'events' does not declare readTransportSchema",
+    expect(() => compileDB3Selection(db3.eventStatusEntity, selection)).toThrow(
+      "'EventStatus.select.events': GhostField field 'events' does not declare "
+      + "a read transport schema for its field member 'events'",
     )
   })
 
-  it("recognizes normalized foreign keys but defers their relation semantics", () => {
+  it("derives normalized foreign-key transport schemas", () => {
     const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
       select: { statusId: true },
     })
 
-    expect(() => compileDB3ScalarSelection(db3.eventEntity, selection)).toThrow(
-      "'Event.select.statusId': ForeignSingleField field 'status' owns this as foreignKey",
-    )
+    const compiled = compileDB3Selection(db3.eventEntity, selection)
+
+    expect(compiled.members[0]).toMatchObject({
+      kind: "value",
+      ownershipKind: "foreignKey",
+      member: "statusId",
+    })
+    expect(compiled.dtoSchema.parse({ statusId: null })).toEqual({ statusId: null })
+    expect(compiled.dtoSchema.parse({ statusId: 12 })).toEqual({ statusId: 12 })
+    expect(compiled.dtoSchema.safeParse({ statusId: "12" }).success).toBe(false)
   })
 
-  it("rejects nested relation selections until recursive compilation is supported", () => {
+  it("recursively compiles nested foreign-single selections", () => {
     const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
       select: {
         status: {
-          select: { id: true },
+          select: { id: true, label: true },
         },
       },
     })
 
-    expect(() => compileDB3ScalarSelection(db3.eventEntity, selection)).toThrow(
-      "'Event.select.status': ForeignSingleField field 'status' owns this as foreignObject",
-    )
+    const compiled = compileDB3Selection(db3.eventEntity, selection)
+
+    expect(compiled.members[0]).toMatchObject({
+      kind: "relation",
+      ownershipKind: "foreignObject",
+      cardinality: "one",
+      member: "status",
+    })
+    expect(compiled.dtoSchema.parse({ status: null })).toEqual({ status: null })
+    expect(compiled.dtoSchema.parse({ status: { id: 4, label: "Confirmed" } }))
+      .toEqual({ status: { id: 4, label: "Confirmed" } })
+    expect(compiled.dtoSchema.safeParse({
+      status: { id: "4", label: "Confirmed" },
+    }).success).toBe(false)
   })
 
   it("rejects include-only selections explicitly", () => {
@@ -120,8 +139,64 @@ describe("DB3 scalar selection compiler", () => {
       include: { status: true },
     })
 
-    expect(() => compileDB3ScalarSelection(db3.eventEntity, selection)).toThrow(
-      "'Event.include': the scalar compiler supports explicit 'select' selections only",
+    expect(() => compileDB3Selection(db3.eventEntity, selection)).toThrow(
+      "'Event.include': selection derivation currently supports explicit 'select' shapes only",
     )
+  })
+
+  it("preserves shape-neutral nested relation arguments like orderBy and where", () => {
+    const args: Prisma.EventDefaultArgs = {
+      select: {
+        locationURL: true,
+        tags: {
+          select: {
+            eventTagId: true,
+            eventTag: {
+              select: {
+                id: true,
+                text: true,
+              },
+            },
+          },
+          orderBy: {
+            eventTagId: "asc"
+          },
+          where: {
+            eventTagId: { gt: 0 },
+          },
+        },
+      },
+    }
+
+    const validated = Prisma.validator<Prisma.EventDefaultArgs>()(args)
+    const compiled = compileDB3Selection(db3.eventEntity, validated)
+    const dto = {
+      locationURL: "https://example.com",
+      tags: [{
+        eventTagId: 12,
+        eventTag: {
+          id: 12,
+          text: "Festival",
+        },
+      }],
+    }
+
+    expect(compiled.prismaSelection).toBe(validated)
+    expect(compiled.prismaSelection.select?.tags).toMatchObject({
+      orderBy: { eventTagId: "asc" },
+      where: { eventTagId: { gt: 0 } },
+    })
+    expect(compiled.members).toHaveLength(2)
+    expect(compiled.members[1]).toMatchObject({
+      kind: "relation",
+      ownershipKind: "relationCollection",
+      cardinality: "many",
+      member: "tags",
+    })
+    expect(compiled.dtoSchema.parse(dto)).toEqual(dto)
+    expect(compiled.dtoSchema.safeParse({
+      ...dto,
+      tags: [{ ...dto.tags[0], eventTagId: "12" }],
+    }).success).toBe(false)
   })
 })

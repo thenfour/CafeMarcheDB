@@ -1,6 +1,7 @@
 
 import { TAnyModel } from "@/shared/rootroot";
 import { assertIsNumberArray } from "shared/arrayUtils";
+import { z } from "zod";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType,
     type SearchResultsFacetQuery, type SortQueryElements
@@ -8,7 +9,7 @@ import {
 import type { DB3Authorization } from "../db3Authorization";
 import {
     type DB3AuthSpec, type DB3FieldPrismaMember, type DB3RowMode, ErrorValidateAndParseResult,
-    FieldBase, GetTableById, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
+    FieldBase, GetTableById, makeNullableReadTransportSchema, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
 } from "../db3core";
@@ -37,6 +38,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign, undefined,
     foreignTableID: string;
     localTableSpec: xTable;
     allowNull: boolean;
+    readonly foreignKeyReadTransportSchema: z.ZodType<number | null>;
     defaultValue: TForeign | null;
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
 
@@ -47,9 +49,12 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign, undefined,
     getPrismaMemberDescriptors = (): readonly DB3FieldPrismaMember[] => [{
         member: this.member,
         kind: "foreignObject",
+        targetTableID: this.foreignTableID,
+        nullable: this.allowNull,
     }, {
         member: this.fkidMember!,
         kind: "foreignKey",
+        readTransportSchema: this.foreignKeyReadTransportSchema,
     }];
 
     constructor(args: ForeignSingleFieldArgs<TForeign>) {
@@ -80,6 +85,10 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign, undefined,
 
         //this.fkMember = args.fkMember;
         this.allowNull = args.allowNull;
+        this.foreignKeyReadTransportSchema = makeNullableReadTransportSchema(
+            z.number().int(),
+            args.allowNull,
+        );
         this.requireVisibleTarget = args.requireVisibleTarget === true;
         this.defaultValue = args.defaultValue || null;
         this.foreignTableID = args.foreignTableID;

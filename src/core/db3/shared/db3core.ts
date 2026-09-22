@@ -416,12 +416,26 @@ export type AnyDB3FieldCodec = DB3FieldCodec<any, any, any>;
  * fields own only their ordinary member. Foreign-single fields additionally
  * own the scalar foreign-key member used by normalized selections.
  */
-export type DB3PrismaMemberKind = "field" | "foreignObject" | "foreignKey";
+export type DB3PrismaMemberKind = "field" | "foreignObject" | "foreignKey" | "relationCollection";
 
-export interface DB3FieldPrismaMember {
+interface DB3FieldPrismaMemberBase {
     readonly member: string;
-    readonly kind: DB3PrismaMemberKind;
+    readonly readTransportSchema?: z.ZodTypeAny;
 }
+
+export type DB3FieldPrismaMember =
+    | (DB3FieldPrismaMemberBase & {
+        readonly kind: "field" | "foreignKey";
+    })
+    | (DB3FieldPrismaMemberBase & {
+        readonly kind: "foreignObject";
+        readonly targetTableID: string;
+        readonly nullable: boolean;
+    })
+    | (DB3FieldPrismaMemberBase & {
+        readonly kind: "relationCollection";
+        readonly targetTableID: string;
+    });
 
 // extracts the TReadTransportValue from the codec;
 // falls back to the field data type.
@@ -522,6 +536,7 @@ export abstract class FieldBase<
     getPrismaMemberDescriptors = (): readonly DB3FieldPrismaMember[] => [{
         member: this.member,
         kind: "field",
+        readTransportSchema: this.readTransportSchema,
     }];
 
     readAuthorizationInheritsRow = (
@@ -700,9 +715,9 @@ export type AnyDB3Field = FieldBase<
     DB3FieldReadPresence
 >;
 
-export interface DB3PrismaMemberOwnership extends DB3FieldPrismaMember {
+export type DB3PrismaMemberOwnership = DB3FieldPrismaMember & {
     readonly field: AnyDB3Field;
-}
+};
 
 export type DB3ReadTransportValueOf<TField> =
     TField extends FieldBase<any, any, any, infer TReadTransportValue, any, any>

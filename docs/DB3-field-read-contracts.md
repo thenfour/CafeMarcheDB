@@ -331,11 +331,18 @@ selection description so they cannot drift.
 The first implementation should support a deliberately small, explicit subset:
 
 -  scalar members selected with `true`;
--  supported single relations with `select` or `include` shapes that the walker
-   can interpret safely;
+-  supported single and collection relations with explicit nested `select`
+   shapes that the walker can interpret safely;
 -  nested selection recursion through registered DB3 entities;
--  Prisma relation modifiers that do not alter the selected value shape, where
-   they can be passed through without interpretation.
+-  Prisma relation modifiers such as `where`, `orderBy`, pagination, and
+   `distinct` that do not alter the selected value shape. The compiler ignores
+   these while returning the original Prisma arguments unchanged.
+
+`include` remains unsupported in the first derived contract. Prisma `include`
+implicitly returns all scalar members, and the current xTable catalog cannot
+soundly distinguish every persisted scalar from legacy ghost/calculated
+members. An explicit `select` at each level keeps the returned shape finite and
+auditable.
 
 The helper should reject:
 

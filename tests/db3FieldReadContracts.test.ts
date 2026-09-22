@@ -175,7 +175,7 @@ describe("DB3 Prisma-member ownership", () => {
   it("registers ordinary scalar members against their field contracts", () => {
     const ownership = db3.xEventStatus.resolvePrismaMember("label")
 
-    expect(ownership).toEqual({
+    expect(ownership).toMatchObject({
       member: "label",
       kind: "field",
       field: db3.xEventStatus.fields.label,
