@@ -169,9 +169,15 @@ export const EmptyValidateAndComputeDiffResult = SuccessfulValidateAndComputeDif
 export type DB3RowMode = "new" | "view" | "update";
 
 ////////////////////////////////////////////////////////////////
+export const DB3FieldReadAuth = Object.freeze({
+    inheritRow: "inheritRow",
+} as const);
+
+export type DB3FieldReadAuthRequirement = Permission | typeof DB3FieldReadAuth.inheritRow;
+
 export type DB3AuthContextPermissionMap = {
-    PostQuery: Permission;
-    PostQueryAsOwner: Permission;
+    PostQuery: DB3FieldReadAuthRequirement;
+    PostQueryAsOwner: DB3FieldReadAuthRequirement;
     PreInsert: Permission;
     PreMutate: Permission;
     PreMutateAsOwner: Permission;
@@ -190,8 +196,8 @@ export const createAuthContextMap_GrantAll = (): DB3AuthContextPermissionMap => 
 export const createAuthContextMap_PK = (): DB3AuthContextPermissionMap => ({
     // A primary key is safe only after the table/row itself has been authorized.
     // It must not be used as the thing that makes an otherwise-protected row visible.
-    PostQuery: Permission.always_grant,
-    PostQueryAsOwner: Permission.always_grant,
+    PostQuery: DB3FieldReadAuth.inheritRow,
+    PostQueryAsOwner: DB3FieldReadAuth.inheritRow,
     PreInsert: Permission.never_grant,
     PreMutate: Permission.never_grant,
     PreMutateAsOwner: Permission.never_grant,
@@ -422,6 +428,18 @@ export abstract class FieldBase<
         return (memberName.toLowerCase() === this.member.toLowerCase());
     };
 
+    readAuthorizationInheritsRow = (
+        authContext: "PostQuery" | "PostQueryAsOwner",
+    ): boolean => {
+        if (this._customAuth || !this.authMap) return false;
+        return this.authMap[authContext] === DB3FieldReadAuth.inheritRow;
+    };
+
+    isReadRequiredAfterRowAuth = (): boolean => {
+        return this.readAuthorizationInheritsRow("PostQuery")
+            && this.readAuthorizationInheritsRow("PostQueryAsOwner");
+    };
+
     authorize = (args: DB3AuthorizeAndSanitizeFieldInput<TAnyModel>): boolean => {
         if (!!this._customAuth) {
             const r = this._customAuth(args);
@@ -441,6 +459,13 @@ export abstract class FieldBase<
             }
         }
         const requiredPermission = this.authMap[args.authContext];
+        if (requiredPermission === DB3FieldReadAuth.inheritRow) {
+            assert(
+                args.authContext === "PostQuery" || args.authContext === "PostQueryAsOwner",
+                `inheritRow is valid only for field read authorization; field:${this.member}, contextDesc:${args.contextDesc}`,
+            );
+            return true;
+        }
         const isAuthorized = args.publicData.effectivePermissions.includesName(requiredPermission);
         //console.log(`Authorization check for field "${this.member}" with required permission "${requiredPermission}":`, isAuthorized);
         return isAuthorized;
@@ -923,8 +948,15 @@ export class xTable<
             && (args.publicData.userId === ownerUserId);
         const col = this.getColumnForAuthorization(args.columnName);
         if (!col) return false;
+        const authContext = isOwner ? "PostQueryAsOwner" : "PostQuery";
+        if (col.readAuthorizationInheritsRow(authContext)) {
+            const rowIsAuthorized = args.model
+                ? this.authorizeRowForView({ model: args.model, publicData: args.publicData })
+                : this.authorizeTableForView(args.publicData);
+            if (!rowIsAuthorized) return false;
+        }
         return col.authorize({
-            authContext: isOwner ? "PostQueryAsOwner" : "PostQuery",
+            authContext,
             rowMode: "view",
             isOwner: isOwner,
             contextDesc: "(authorizeColumnForView)",

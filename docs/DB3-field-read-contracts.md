@@ -155,22 +155,23 @@ Widen only the read entries of the existing field authorization map so that
 they can state `inheritRow` explicitly. The write entries remain permission
 requirements.
 
-The exact exported names can follow existing DB3 naming conventions, but the
-shape should be equivalent to:
+The implemented exported contract is:
 
 ```ts
-const FieldReadAuth = {
-   inheritRow: "inheritRow",
-} as const
+const DB3FieldReadAuth = Object.freeze({
+  inheritRow: "inheritRow",
+} as const)
 
-type FieldReadAuthRequirement = Permission | typeof FieldReadAuth.inheritRow
+type DB3FieldReadAuthRequirement =
+  | Permission
+  | typeof DB3FieldReadAuth.inheritRow
 
 type DB3AuthContextPermissionMap = {
-   PostQuery: FieldReadAuthRequirement
-   PostQueryAsOwner: FieldReadAuthRequirement
-   PreInsert: Permission
-   PreMutate: Permission
-   PreMutateAsOwner: Permission
+  PostQuery: DB3FieldReadAuthRequirement
+  PostQueryAsOwner: DB3FieldReadAuthRequirement
+  PreInsert: Permission
+  PreMutate: Permission
+  PreMutateAsOwner: Permission
 }
 ```
 
@@ -181,8 +182,8 @@ Example:
 
 ```ts
 authMap: {
-  PostQuery: FieldReadAuth.inheritRow,
-  PostQueryAsOwner: FieldReadAuth.inheritRow,
+  PostQuery: DB3FieldReadAuth.inheritRow,
+  PostQueryAsOwner: DB3FieldReadAuth.inheritRow,
   PreInsert: Permission.manage_events,
   PreMutate: Permission.manage_events,
   PreMutateAsOwner: Permission.manage_events,
@@ -490,29 +491,31 @@ Complete these steps in order. Each step should leave the repository in a
 passing, usable state; later steps must not be required to make an earlier step
 sound.
 
-1. [ ] **Capture current authorization behavior.** Add focused tests for row
+1. [x] **Capture current authorization behavior.** Add focused tests for row
        authorization followed by field sanitization, owner versus non-owner reads,
        field removal, and preflight filter/order authorization. Include a table with
        public row access so exposure changes are visible.
 
-2. [ ] **Add the `inheritRow` read-auth value.** Widen only `PostQuery` and
+2. [x] **Add the `inheritRow` read-auth value.** Widen only `PostQuery` and
        `PostQueryAsOwner`; reject it in mutation contexts at the type level. Keep all
        existing permission entries working without migration.
 
-3. [ ] **Implement `inheritRow` runtime semantics.** Update row sanitization and
+3. [x] **Implement `inheritRow` runtime semantics.** Update row sanitization and
        every model-free read preflight call site. Prove with tests that row denial
        still wins, inherited fields survive field sanitization, and filters/order do
        not bypass table or row authorization.
 
-4. [ ] **Expose a field presence guarantee.** Add one core predicate used by
+4. [x] **Expose a field presence guarantee.** Add one core predicate used by
        schema derivation, such as `field.isReadRequiredAfterRowAuth()`. It returns
        true only when every applicable read branch inherits the row decision. Test
        mixed owner/non-owner maps.
 
-5. [ ] **Pilot `inheritRow` on an audited entity.** Choose a small lookup entity,
+5. [x] **Pilot `inheritRow` on an audited entity.** Choose a small lookup entity,
        review its table `View`/`ViewOwn` policy, migrate only genuinely intrinsic
        fields, and add an authorization snapshot or integration test. Do not change
-       a field solely to eliminate `| undefined`.
+       a field solely to eliminate `| undefined`. The pilot is EventStatus scalar
+       display metadata; its `events` and `eventSegments` relations remain
+       independently authorized.
 
 6. [ ] **Add `readTransportSchema` to the scalar field contract.** Define
        presence and nullability rules, add schemas to the scalar classes needed by

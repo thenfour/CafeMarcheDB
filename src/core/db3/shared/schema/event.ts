@@ -85,6 +85,17 @@ export const xEventAuthMap_Homepage: db3.DB3AuthContextPermissionMap = {
     PreInsert: Permission.edit_public_homepage,
 };
 
+// Event-status display metadata is part of the row's public identity. Once the
+// row is readable, these scalar values are readable as a unit; mutation policy
+// remains unchanged.
+const xEventStatusAuthMap: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+    PostQuery: db3.DB3FieldReadAuth.inheritRow,
+    PreMutateAsOwner: xEventAuthMap_R_EOwn_EManagers.PreMutateAsOwner,
+    PreMutate: xEventAuthMap_R_EOwn_EManagers.PreMutate,
+    PreInsert: xEventAuthMap_R_EOwn_EManagers.PreInsert,
+};
+
 
 
 
@@ -230,13 +241,13 @@ export const xEventStatus = db3.defineTable({
     }),
     fields: db3.makeColumnSet({
         id: () => MakePKfield(),
-        isDeleted: () => MakeIsDeletedField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        label: columnName => MakeTitleField(columnName, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        description: () => MakeDescriptionField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        sortOrder: () => MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        color: () => MakeColorField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        significance: columnName => MakeSignificanceField(columnName, EventStatusSignificance, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        isDeleted: () => MakeIsDeletedField({ authMap: xEventStatusAuthMap, }),
+        label: columnName => MakeTitleField(columnName, { authMap: xEventStatusAuthMap, }),
+        description: () => MakeDescriptionField({ authMap: xEventStatusAuthMap, }),
+        sortOrder: () => MakeSortOrderField({ authMap: xEventStatusAuthMap, }),
+        color: () => MakeColorField({ authMap: xEventStatusAuthMap, }),
+        significance: columnName => MakeSignificanceField(columnName, EventStatusSignificance, { authMap: xEventStatusAuthMap, }),
+        iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xEventStatusAuthMap, }),
         events: memberName => new GhostField({ memberName, authMap: xEventAuthMap_R_EOwn_EManagers }),
         eventSegments: memberName => new GhostField({ memberName, authMap: xEventAuthMap_R_EOwn_EManagers }),
     })
