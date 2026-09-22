@@ -1021,6 +1021,10 @@ conversions.
   read DTO only with the relationship-panel and image-metadata fields the page
   renders, retain `fileEditorView` as the narrower write contract, and remove
   the page from the legacy-read compatibility inventory.
+- [x] Move the homepage-agenda editor onto a finite `eventFrontpageView`, apply
+  its intended `forFrontPageAgenda` query parameter, and replace the verbose
+  Event graph plus manual enrichment with the typed summary and frontpage-field
+  contract the page actually renders.
 - [ ] Convert the remaining view-backed inventory to the typed path. Retain a
   separately documented
   runtime-dynamic/query-only API only where static view binding is genuinely

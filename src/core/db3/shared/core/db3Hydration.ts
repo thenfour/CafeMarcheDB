@@ -13,10 +13,14 @@ export class DB3HydrationError extends Error {
 }
 
 export interface DB3ReferenceProvider {
+    // - if entity is not found, returns undefined
+    // - if id is undefined, returns undefined
+    // - if id is null, returns null
+    // so yea there's no way to know if an entity was not found vs. id undefined.
     get<TEntity extends AnyDB3Entity>(
         entity: TEntity,
         id: EntityIdOf<TEntity> | null | undefined,
-    ): ClientEntityOf<TEntity> | undefined;
+    ): ClientEntityOf<TEntity> | undefined | null;
 
     // Preserves the distinction between an authorized empty collection and a
     // collection omitted by field authorization.
@@ -51,8 +55,11 @@ export class DB3ReferenceStore implements DB3ReferenceProvider {
     get<TEntity extends AnyDB3Entity>(
         entity: TEntity,
         id: EntityIdOf<TEntity> | null | undefined, // null/undefined supported for convenience to callers to avoid ternaries everywhere.
-    ): ClientEntityOf<TEntity> | undefined {
-        if (id == null) {
+    ): ClientEntityOf<TEntity> | undefined | null {
+        if (id === null) {
+            return null;
+        }
+        if (id === undefined) {
             return undefined;
         }
         return this.entities.get(entity.entityID)?.get(id) as ClientEntityOf<TEntity> | undefined;

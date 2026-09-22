@@ -1,27 +1,26 @@
 import { formatEventDateRangeTranslations } from "shared/dateTimePresentation";
 import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 
+import * as db3 from "@db3/db3";
 import { FormControlLabel, Switch } from "@mui/material";
 import { Prisma } from "db";
 import React from "react";
 import { EnNlFr, LangSelectStringWithDetail } from "shared/lang";
 import { DateTimeRange } from "shared/time";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import * as db3 from "@db3/db3"
 import { API } from '../../db3/clientAPI';
 import { gIconMap } from "../../db3/components/IconMap";
 import { getAgendaItem } from "../../db3/shared/publicFeedApi";
 import { PublicAgendaItemSpec } from "../../db3/shared/publicTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { EditTextField } from "../CMCoreComponents";
-import { CMDialog } from "../CMDialog";
 import { CMButton, CMDialogContentText } from "../CMCoreComponents2";
+import { CMDialog } from "../CMDialog";
 import { useConfirm } from "../ConfirmationDialog";
+import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { AgendaItem } from '../frontpage/homepageComponents';
 import { SettingMarkdown } from "../SettingMarkdown";
-import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
-import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 
 
 
@@ -64,27 +63,27 @@ const EditTextDialog = (props: EditTextDialogProps) => {
         <CMDialogContentText>
             {props.description}
         </CMDialogContentText>
-            <h3>EN</h3>
-            <EditTextField
-                columnSpec={props.columnSpecEn}
+        <h3>EN</h3>
+        <EditTextField
+            columnSpec={props.columnSpecEn}
 
-                onChange={(newValue) => { setValueEn(newValue) }}
-                value={valueEn}
-            />
-            <h3>NL</h3>
-            <EditTextField
-                columnSpec={props.columnSpecNl}
+            onChange={(newValue) => { setValueEn(newValue) }}
+            value={valueEn}
+        />
+        <h3>NL</h3>
+        <EditTextField
+            columnSpec={props.columnSpecNl}
 
-                onChange={(newValue) => { setValueNl(newValue) }}
-                value={valueNl}
-            />
-            <h3>FR</h3>
-            <EditTextField
-                columnSpec={props.columnSpecFr}
+            onChange={(newValue) => { setValueNl(newValue) }}
+            value={valueNl}
+        />
+        <h3>FR</h3>
+        <EditTextField
+            columnSpec={props.columnSpecFr}
 
-                onChange={(newValue) => { setValueFr(newValue) }}
-                value={valueFr}
-            />
+            onChange={(newValue) => { setValueFr(newValue) }}
+            value={valueFr}
+        />
     </CMDialog>;
 };
 
@@ -183,8 +182,41 @@ interface FrontpageControlSpec {
     renderIcon: () => JSX.Element;
 }
 
+// export type EventFrontpageEvent = Pick<Prisma.EventGetPayload<{}>,
+//     | "id"
+//     | "name"
+//     | "locationDescription"
+//     | "frontpageVisible"
+//     | "frontpageDate"
+//     | "frontpageTime"
+//     | "frontpageDetails"
+//     | "frontpageTitle"
+//     | "frontpageLocation"
+//     | "frontpageLocationURI"
+//     | "frontpageTags"
+//     | "frontpageDate_nl"
+//     | "frontpageTime_nl"
+//     | "frontpageDetails_nl"
+//     | "frontpageTitle_nl"
+//     | "frontpageLocation_nl"
+//     | "frontpageLocationURI_nl"
+//     | "frontpageTags_nl"
+//     | "frontpageDate_fr"
+//     | "frontpageTime_fr"
+//     | "frontpageDetails_fr"
+//     | "frontpageTitle_fr"
+//     | "frontpageLocation_fr"
+//     | "frontpageLocationURI_fr"
+//     | "frontpageTags_fr"
+// > & {
+//     visiblePermissionId?: number | null;
+//     tags: Array<{
+//         eventTag: Pick<Prisma.EventTagGetPayload<{}>, "text" | "visibleOnFrontpage">;
+//     }>;
+// };
+
 interface EventFrontpageControlProps {
-    event: db3.EventWithStatusPayload;
+    event: db3.EventFrontpageClient;
     refetch: () => void;
     fieldSpec: FrontpageControlSpec;
     readonly: boolean;
@@ -309,13 +341,11 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
 
 
 
-
-
-
-
 ////////////////////////////////////////////////////////////////
 export interface EventFrontpageTabContentProps {
-    event: EventEnrichedVerbose_Event;
+    //event: EventEnrichedVerbose_Event;
+    event: db3.EventFrontpageClient;
+    dateRange: DateTimeRange;
     refetch: () => void;
     readonly: boolean;
 };
@@ -347,7 +377,11 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
         });
     }
 
-    const agendaItem: PublicAgendaItemSpec = getAgendaItem(props.event, previewLang);
+    const agendaItem: PublicAgendaItemSpec = getAgendaItem({
+        ...props.event,
+        dateRange: props.dateRange,
+        //startsAt: props.dateRange.getSpec().startsAtDateTime,
+    }, previewLang);
 
     const canEdit_frontpageVisible = db3.xEvent.authorizeColumnForEdit({
         publicData,
@@ -356,11 +390,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
         fallbackOwnerId: null,
     });
 
-    let dateRange = new DateTimeRange({
-        startsAtDateTime: props.event.startsAt,
-        durationMillis: Number(props.event.durationMillis),
-        isAllDay: props.event.isAllDay,
-    });
+    const dateRange = props.dateRange;
     const presentation = dashboardContext.eventDatePresentation;
     let dateTimeDisplayStrings = formatEventDateRangeTranslations(dateRange, { ...presentation, viewerTimeZone: presentation.bandTimeZone });
 
@@ -374,10 +404,10 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
         nl: dateTimeDisplayStrings.nl.time || "",
         fr: dateTimeDisplayStrings.fr.time || "",
     });
-    const titleResetter = () => ({ en: props.event.name, fr: "", nl: "" });
-    const locationResetter = () => ({ en: props.event.locationDescription, fr: "", nl: "" });
+    const titleResetter = () => ({ en: props.event.name || "", fr: "", nl: "" });
+    const locationResetter = () => ({ en: props.event.locationDescription || "", fr: "", nl: "" });
     const tagsResetter = () => ({
-        en: props.event.tags.filter(t => t.eventTag.visibleOnFrontpage).map(t => `#${t.eventTag.text}`).join(" "),
+        en: props.event.tags?.filter(t => t.eventTag.visibleOnFrontpage).map(t => `#${t.eventTag.text}`).join(" ") || "",
         fr: "",
         nl: "",
     });
@@ -396,9 +426,9 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
                 <h3>Time</h3>
                 <EventFrontpageValuesTable valueEn={timeValues.en} valueFr={timeValues.fr} valueNl={timeValues.nl} />
                 <h3>Title</h3>
-                <EventFrontpageValuesTable valueEn={titleValues.en} valueFr={titleValues.fr} valueNl={titleValues.nl} />
+                <EventFrontpageValuesTable valueEn={titleValues.en || ""} valueFr={titleValues.fr} valueNl={titleValues.nl} />
                 <h3>Location</h3>
-                <EventFrontpageValuesTable valueEn={locationValues.en} valueFr={locationValues.fr} valueNl={locationValues.nl} />
+                <EventFrontpageValuesTable valueEn={locationValues.en || ""} valueFr={locationValues.fr} valueNl={locationValues.nl} />
                 <h3>Tags</h3>
                 <EventFrontpageValuesTable valueEn={tagsValues.en} valueFr={tagsValues.fr} valueNl={tagsValues.nl} />
             </>
@@ -460,7 +490,9 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
                     label="Show this event on the front page?"
                 />
 
-                {!dashboardContext.isPublic(props.event) && <div className="warning CMSidenote">❗This event still won't be visible, because it has restricted visibility</div>}
+                {props.event.visiblePermissionId !== undefined
+                    && !dashboardContext.isPublic({ visiblePermissionId: props.event.visiblePermissionId })
+                    && <div className="warning CMSidenote">❗This event still won't be visible, because it has restricted visibility</div>}
 
             </div>
             <div className='editButtonContainer'>

@@ -339,6 +339,8 @@ export interface SqlGetSortableQueryElementsAPI {
 };
 
 /**
+ * Codecs are for client-side conversion
+ * 
  * A reversible field-level transport/client conversion. Read and write
  * transport values are separate because a command DTO need not have exactly
  * the same representation as a query DTO.
@@ -636,9 +638,9 @@ export type DB3SchemaMutationModel<
     TSource,
     TFields extends DB3FieldMap,
 > = Partial<{
-        [K in DB3WritableFieldKeys<TSource, TFields>]:
-        DB3EncodedFieldValue<TFields[K], TSource[K]>;
-    }>;
+    [K in DB3WritableFieldKeys<TSource, TFields>]:
+    DB3EncodedFieldValue<TFields[K], TSource[K]>;
+}>;
 
 export type DB3DeletePolicy = "disabled" | "hard" | "softOnly";
 

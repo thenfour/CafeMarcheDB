@@ -3,16 +3,15 @@ import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import type { DB3ReferenceProvider } from "../../core/db3Hydration";
 import { defineView, type ClientOf } from "../../core/db3View";
+import { db3s } from "../common/viewCommon";
 import { instrumentEntity } from "../instrument/instrumentViews";
 import { permissionEntity } from "../user/userEntities";
 import { fileEntity, fileTagEntity, frontpageGalleryItemEntity } from "./fileEntities";
 
 const FileTagEditorDtoSchema = z.object({
-    id: z.number().int(),
+    ...db3s.id(),
     text: z.string().optional(),
-    description: z.string().optional(),
-    color: z.string().nullable().optional(),
-    sortOrder: z.number().int().optional(),
+    ...db3s.descriptionColorSortOrder(),
     significance: z.string().nullable().optional(),
 });
 
@@ -44,22 +43,12 @@ const FrontpageGalleryItemEditorDtoSchema = z.object({
         uploadedByUserId: z.number().int().nullable(),
     }),
     displayParams: z.string(),
-    createdByUserId: z.number().int().nullable(),
-    createdByUser: z.object({
-        id: z.number().int(),
-        name: z.string(),
-    }).nullable(),
-    visiblePermissionId: z.number().int().nullable(),
-    visiblePermission: z.object({
-        id: z.number().int(),
-        name: z.string(),
-        isVisibility: z.boolean(),
-        description: z.string().nullable(),
-        sortOrder: z.number().int(),
-        significance: z.string().nullable(),
-        color: z.string().nullable(),
-        iconName: z.string().nullable(),
-    }).nullable(),
+
+    ...db3s.createdByUserId(),
+    ...db3s.createdByUser(),
+
+    ...db3s.visiblePermissionId(),
+    ...db3s.visiblePermission(),
 });
 
 export const frontpageGalleryItemEditorView = defineCrudView({
@@ -162,6 +151,7 @@ export const FileDetailDtoSchema = z.object({
     pinnedForSongs: z.array(FileDetailPinnedSongDtoSchema).optional(),
 });
 
+
 const fileDetailRelatedFileSelection = {
     select: {
         id: true,
@@ -171,6 +161,8 @@ const fileDetailRelatedFileSelection = {
         isDeleted: true,
     },
 } as const;
+
+
 
 export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {

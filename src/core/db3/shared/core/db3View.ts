@@ -33,6 +33,8 @@ export interface DB3View<
     TDtoSchema extends z.ZodTypeAny,
     TClient extends TAnyModel,
 > {
+    // viewID is needed similar to tableID - the server does its own lookup and
+    // verification
     readonly viewID: string;
     readonly entity: TEntity;
     readonly tableID: string;

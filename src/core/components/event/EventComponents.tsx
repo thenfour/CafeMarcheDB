@@ -27,8 +27,8 @@ import { wikiMakeWikiPathFromEventDescription } from '../../wiki/shared/wikiUtil
 import { AppContextMarker } from '../AppContext';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
 import { InstrumentChip, InstrumentFunctionalGroupChip } from '../CMCoreComponents';
-import { CMDialog } from '../CMDialog';
 import { AdminInspectObject, CMButton, CMDialogContentText, DotMenu, EventDateField, NameValuePair } from '../CMCoreComponents2';
+import { CMDialog } from '../CMDialog';
 import { CMLink } from '../CMLink';
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
 import { ColorVariationSpec, gLightSwatchColors, StandardVariationSpec } from '../color/palette';
@@ -269,41 +269,41 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             <CMButton onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</CMButton>
         </>}
     >
-            <CMDialogContentText>
-                <SettingMarkdown setting="EventAttendanceEditDialog_DescriptionMarkdown" />
-            </CMDialogContentText>
+        <CMDialogContentText>
+            <SettingMarkdown setting="EventAttendanceEditDialog_DescriptionMarkdown" />
+        </CMDialogContentText>
 
-            <div className="NameValuePairList">
-                {eventResponseTableSpec.renderEditor("isInvited", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
-                {eventResponseTableSpec.renderEditor("instrument", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
+        <div className="NameValuePairList">
+            {eventResponseTableSpec.renderEditor("isInvited", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
+            {eventResponseTableSpec.renderEditor("instrument", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
 
-                {(cancelledSegments.length > 0) && dashboardContext.isAuthorized(Permission.manage_events) &&
-                    <FormControlLabel
-                        control={
-                            <Switch checked={showCancelledSegments} onChange={e => {
-                                setShowCancelledSegments(!showCancelledSegments);
-                            }} />
-                        }
-                        label="Show cancelled segments?"
-                    />
-                }
+            {(cancelledSegments.length > 0) && dashboardContext.isAuthorized(Permission.manage_events) &&
+                <FormControlLabel
+                    control={
+                        <Switch checked={showCancelledSegments} onChange={e => {
+                            setShowCancelledSegments(!showCancelledSegments);
+                        }} />
+                    }
+                    label="Show cancelled segments?"
+                />
+            }
 
-                {
-                    segmentsToShow.map(segment => {
-                        const validationResult = eventSegmentValidationResults[segment.id]!;
-                        const response = eventSegmentResponseValues[segment.id]!;
-                        const augmentedResponse = { ...response, attendance: dashboardContext.eventAttendance.getById(response.attendanceId) };
-                        return <div key={segment.id} className='editSegmentResponse segment'>
-                            <div>
-                                <div className='segmentName'>{segment.name}</div>
-                                {eventSegmentResponseTableSpec.renderEditor("attendance", augmentedResponse, validationResult, (n) => handleChangedEventSegmentResponse(segment, n), false)}
-                            </div>
-                        </div>;
-                    })
-                }
-                {eventResponseTableSpec.renderEditor("userComment", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
+            {
+                segmentsToShow.map(segment => {
+                    const validationResult = eventSegmentValidationResults[segment.id]!;
+                    const response = eventSegmentResponseValues[segment.id]!;
+                    const augmentedResponse = { ...response, attendance: dashboardContext.eventAttendance.getById(response.attendanceId) };
+                    return <div key={segment.id} className='editSegmentResponse segment'>
+                        <div>
+                            <div className='segmentName'>{segment.name}</div>
+                            {eventSegmentResponseTableSpec.renderEditor("attendance", augmentedResponse, validationResult, (n) => handleChangedEventSegmentResponse(segment, n), false)}
+                        </div>
+                    </div>;
+                })
+            }
+            {eventResponseTableSpec.renderEditor("userComment", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
 
-            </div>
+        </div>
     </CMDialog>;
 };
 
@@ -1116,7 +1116,12 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             enabled={dashboardContext.brand.hostingMode === HostingMode.CafeMarche}
         >
             <AppContextMarker name="frontpage tab">
-                <EventFrontpageTabContent event={event} refetch={refetch} readonly={props.readonly} />
+                <EventFrontpageTabContent
+                    event={event}
+                    dateRange={eventData.dateRange}
+                    refetch={refetch}
+                    readonly={props.readonly}
+                />
             </AppContextMarker>
         </CMTab>
 
@@ -1201,16 +1206,41 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
 };
 
 
+type EventSearchItemEvent = Pick<db3.EventSearchClient,
+    | "id"
+    | "name"
+    | "dateRange"
+    | "visiblePermissionId"
+    | "typeId"
+    | "type"
+    | "statusId"
+    | "status"
+    | "relevanceClassOverride"
+    | "locationDescription"
+    | "tags"
+>;
+
 export interface EventSearchItemContainerProps {
-    event: db3.EventSearchClient;
+    event: EventSearchItemEvent;
 
     highlightTagIds?: number[];
     highlightStatusIds?: number[];
     highlightTypeIds?: number[];
     reducedInfo?: boolean; // show less info
+    fadePastEvents?: boolean;
+    hideTagsWhenCancelled?: boolean;
+    showVisibility?: boolean;
+    refetch?: () => void;
 }
 
-export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: React.PropsWithChildren<EventSearchItemContainerProps>) => {
+export const EventSearchItemContainer = ({
+    reducedInfo = false,
+    fadePastEvents = true,
+    hideTagsWhenCancelled = true,
+    showVisibility = false,
+    refetch = () => { },
+    ...props
+}: React.PropsWithChildren<EventSearchItemContainerProps>) => {
     const dashboardContext = useDashboardContext();
     const event = props.event;
 
@@ -1237,7 +1267,7 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
         `ApplyBorderLeftColor`,
         event.type?.text,
         visibilityClassName,
-        ((eventTiming === Timing.Past)) ? "past" : "notPast",
+        (fadePastEvents && eventTiming === Timing.Past) ? "past" : "notPast",
         `status_${event.status?.significance}`,
     ];
 
@@ -1291,7 +1321,7 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
                         name: event.name,
                         visiblePermissionId: event.visiblePermissionId,
                         relevanceClassOverride: event.relevanceClassOverride,
-                    }} showVisibility={false} refetch={() => { }} />}
+                    }} showVisibility={showVisibility} refetch={refetch} />}
             </div>
 
             <div className='content'>
@@ -1317,7 +1347,7 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
                         </div>
                     </div>}
 
-                {(event.status?.significance !== db3.EventStatusSignificance.Cancelled) &&
+                {(!hideTagsWhenCancelled || event.status?.significance !== db3.EventStatusSignificance.Cancelled) &&
                     <CMChipContainer>
                         {event.tags?.map(tag => <CMStandardDBChip
                             key={tag.id}

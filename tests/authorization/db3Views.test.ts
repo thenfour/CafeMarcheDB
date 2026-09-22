@@ -589,6 +589,94 @@ describe("DB3 named views", () => {
         expectTypeOf(hydrated).toEqualTypeOf<db3.EventSearchClient>();
     });
 
+    it("hydrates the finite Event frontpage editor view without the verbose Event graph", () => {
+        const references = new db3.DB3ReferenceStore();
+        const eventType = {
+            id: 2, text: "Concert", description: "", color: null, sortOrder: 1,
+            significance: null, iconName: null, isDeleted: false,
+        };
+        const eventStatus = {
+            id: 3, label: "Confirmed", description: "", color: null, sortOrder: 1,
+            significance: null, iconName: null, isDeleted: false,
+        };
+        const eventTag = {
+            id: 4, text: "Public", description: "", color: null, sortOrder: 1,
+            significance: null, visibleOnFrontpage: true,
+        };
+        references.register(db3.eventTypeEntity, [eventType]);
+        references.register(db3.eventStatusEntity, [eventStatus]);
+        references.register(db3.eventTagEntity, [eventTag]);
+
+        const selection = db3.eventFrontpageView.getSelectionArgs({
+            filter: { items: [] },
+            authorization: db3.createDB3Authorization(null, new PermissionSet([])),
+        });
+        expect(selection).toMatchObject({
+            select: {
+                createdByUserId: true,
+                isDeleted: true,
+                tags: { select: { id: true, eventTagId: true } },
+                frontpageVisible: true,
+                frontpageDate: true,
+                frontpageDate_nl: true,
+                frontpageDate_fr: true,
+                frontpageDetails: true,
+                frontpageDetails_nl: true,
+                frontpageDetails_fr: true,
+            },
+        });
+        expect(selection.select).not.toHaveProperty("responses");
+        expect(selection.select).not.toHaveProperty("segments");
+        expect(selection.select).not.toHaveProperty("songLists");
+        expect(selection.select).not.toHaveProperty("descriptionWikiPage");
+
+        const startsAt = new Date("2026-10-03T18:00:00Z");
+        const dto = db3.eventFrontpageView.parseDto({
+            id: 1,
+            name: "Frontpage concert",
+            typeId: eventType.id,
+            statusId: eventStatus.id,
+            locationDescription: "Main hall",
+            startsAt,
+            durationMillis: BigInt(7_200_000),
+            isAllDay: false,
+            tags: [{ id: 10, eventTagId: eventTag.id }],
+            frontpageVisible: true,
+            frontpageDate: "3 October",
+            frontpageTime: "20:00",
+            frontpageDetails: "Doors at 19:30",
+            frontpageTitle: null,
+            frontpageLocation: null,
+            frontpageLocationURI: null,
+            frontpageTags: null,
+            frontpageDate_nl: "3 oktober",
+            frontpageTime_nl: null,
+            frontpageDetails_nl: null,
+            frontpageTitle_nl: null,
+            frontpageLocation_nl: null,
+            frontpageLocationURI_nl: null,
+            frontpageTags_nl: null,
+            frontpageDate_fr: "3 octobre",
+            frontpageTime_fr: null,
+            frontpageDetails_fr: null,
+            frontpageTitle_fr: null,
+            frontpageLocation_fr: null,
+            frontpageLocationURI_fr: null,
+            frontpageTags_fr: null,
+        });
+        const hydrated = db3.hydrateView(db3.eventFrontpageView, dto, references);
+
+        expect(hydrated.type).toBe(eventType);
+        expect(hydrated.status).toBe(eventStatus);
+        expect(hydrated.tags?.[0]?.eventTag).toBe(eventTag);
+        expect(hydrated.dateRange?.getBounds()).toEqual({
+            start: startsAt,
+            end: new Date("2026-10-03T20:00:00Z"),
+        });
+        expect("startsAt" in hydrated).toBe(false);
+        expectTypeOf(hydrated).toEqualTypeOf<db3.EventFrontpageClient>();
+    });
+
     it("hydrates complete Event timing tuples into DateTimeRange value objects", () => {
         const references = new db3.DB3ReferenceStore();
         const segmentStart = new Date("2026-09-20T19:00:00Z");

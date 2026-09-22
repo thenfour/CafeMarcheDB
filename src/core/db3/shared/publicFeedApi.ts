@@ -1,43 +1,44 @@
 import { EnNlFr, LangSelectString } from "@/shared/lang";
 import { Prisma } from "db";
+import * as db3 from "../db3";
 import { sortEvents } from "./apiTypes";
 import { PublicAgendaItemSpec, PublicFeedResponseSpec, PublicGalleryItemSpec } from "./publicTypes";
 import { SharedAPI } from "./sharedAPI";
 
-type GetAgendaItemEvent = Prisma.EventGetPayload<{
-    select: {
-        id: true;
-        startsAt: true;
-        frontpageDate: true;
-        frontpageDate_nl: true;
-        frontpageDate_fr: true;
-        frontpageTime: true;
-        frontpageTime_nl: true;
-        frontpageTime_fr: true;
-        frontpageDetails: true;
-        frontpageDetails_nl: true;
-        frontpageDetails_fr: true;
-        frontpageLocation: true;
-        frontpageLocation_nl: true;
-        frontpageLocation_fr: true;
-        frontpageLocationURI: true;
-        frontpageLocationURI_nl: true;
-        frontpageLocationURI_fr: true;
-        frontpageTags: true;
-        frontpageTags_nl: true;
-        frontpageTags_fr: true;
-        frontpageTitle: true;
-        frontpageTitle_nl: true;
-        frontpageTitle_fr: true;
-    }
-}>;
+// type GetAgendaItemEvent = Prisma.EventGetPayload<{
+//     select: {
+//         id: true;
+//         startsAt: true;
+//         frontpageDate: true;
+//         frontpageDate_nl: true;
+//         frontpageDate_fr: true;
+//         frontpageTime: true;
+//         frontpageTime_nl: true;
+//         frontpageTime_fr: true;
+//         frontpageDetails: true;
+//         frontpageDetails_nl: true;
+//         frontpageDetails_fr: true;
+//         frontpageLocation: true;
+//         frontpageLocation_nl: true;
+//         frontpageLocation_fr: true;
+//         frontpageLocationURI: true;
+//         frontpageLocationURI_nl: true;
+//         frontpageLocationURI_fr: true;
+//         frontpageTags: true;
+//         frontpageTags_nl: true;
+//         frontpageTags_fr: true;
+//         frontpageTitle: true;
+//         frontpageTitle_nl: true;
+//         frontpageTitle_fr: true;
+//     }
+// }>;
 
 // null-or-whitespace values in EN will not show the field
 // null-or-whitespace values in NL and FR fallback to english
-export function getAgendaItem(event: GetAgendaItemEvent, lang: EnNlFr): PublicAgendaItemSpec {
+export function getAgendaItem(event: db3.EventFrontpageClient, lang: EnNlFr): PublicAgendaItemSpec {
     const ret: PublicAgendaItemSpec = {
         id: event.id,
-        startsAt: event.startsAt,
+        startsAt: event.dateRange?.getStartDateTime() || null,
         date: LangSelectString(lang, event.frontpageDate, event.frontpageDate_nl, event.frontpageDate_fr) || "",
         time: LangSelectString(lang, event.frontpageTime, event.frontpageTime_nl, event.frontpageTime_fr) || "",
         detailsMarkdown: LangSelectString(lang, event.frontpageDetails, event.frontpageDetails_nl, event.frontpageDetails_fr) || "",
@@ -79,7 +80,7 @@ function convertGalleryItem(item: PrismaFrontpageGalleryItemWithFile): PublicGal
     };
 };
 
-export function MakePublicFeedResponseSpec(events: GetAgendaItemEvent[], lang: EnNlFr, gallery: PrismaFrontpageGalleryItemWithFile[]): PublicFeedResponseSpec {
+export function MakePublicFeedResponseSpec(events: db3.EventFrontpageClient[], lang: EnNlFr, gallery: PrismaFrontpageGalleryItemWithFile[]): PublicFeedResponseSpec {
     const agenda: PublicAgendaItemSpec[] = events.map(e => getAgendaItem(e, lang));
     const sortedAgenda = sortEvents(agenda);
     const publicGallery: PublicGalleryItemSpec[] = gallery.map(g => convertGalleryItem(g));
