@@ -7,7 +7,7 @@ import {
 } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
 import {
-    type DB3AuthSpec, type DB3RowMode, ErrorValidateAndParseResult,
+    type DB3AuthSpec, type DB3FieldPrismaMember, type DB3RowMode, ErrorValidateAndParseResult,
     FieldBase, GetTableById, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
@@ -43,6 +43,14 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign, undefined,
     getForeignTableSchema = () => {
         return GetTableById(this.foreignTableID);
     };
+
+    getPrismaMemberDescriptors = (): readonly DB3FieldPrismaMember[] => [{
+        member: this.member,
+        kind: "foreignObject",
+    }, {
+        member: this.fkidMember!,
+        kind: "foreignKey",
+    }];
 
     constructor(args: ForeignSingleFieldArgs<TForeign>) {
         super({

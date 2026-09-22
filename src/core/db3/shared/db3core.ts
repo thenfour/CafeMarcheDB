@@ -411,6 +411,18 @@ export interface DB3FieldCodec<
 
 export type AnyDB3FieldCodec = DB3FieldCodec<any, any, any>;
 
+/**
+ * Describes one Prisma payload member owned by a logical DB3 field. Most
+ * fields own only their ordinary member. Foreign-single fields additionally
+ * own the scalar foreign-key member used by normalized selections.
+ */
+export type DB3PrismaMemberKind = "field" | "foreignObject" | "foreignKey";
+
+export interface DB3FieldPrismaMember {
+    readonly member: string;
+    readonly kind: DB3PrismaMemberKind;
+}
+
 // extracts the TReadTransportValue from the codec;
 // falls back to the field data type.
 type DefaultReadTransportValue<TCodec, FieldDataType> = TCodec extends DB3FieldCodec<infer TReadTransportValue, any, any>
@@ -506,6 +518,11 @@ export abstract class FieldBase<
         }
         return (memberName.toLowerCase() === this.member.toLowerCase());
     };
+
+    getPrismaMemberDescriptors = (): readonly DB3FieldPrismaMember[] => [{
+        member: this.member,
+        kind: "field",
+    }];
 
     readAuthorizationInheritsRow = (
         authContext: "PostQuery" | "PostQueryAsOwner",
@@ -683,6 +700,10 @@ export type AnyDB3Field = FieldBase<
     DB3FieldReadPresence
 >;
 
+export interface DB3PrismaMemberOwnership extends DB3FieldPrismaMember {
+    readonly field: AnyDB3Field;
+}
+
 export type DB3ReadTransportValueOf<TField> =
     TField extends FieldBase<any, any, any, infer TReadTransportValue, any, any>
     ? TReadTransportValue
@@ -805,6 +826,7 @@ export class xTable<
     tableName: string; // the actual name of the table in the database; can be used in prisma db[t.tableName]
     tableID: string; // unique name for the instance
     columns: AnyDB3Field[];
+    readonly prismaMemberRegistry: ReadonlyMap<string, DB3PrismaMemberOwnership>;
 
     getSelectionArgs: (filterModel: CMDBTableFilterModel, authorization: DB3Authorization) => TAnyModel;
 
@@ -851,6 +873,26 @@ export class xTable<
         }
 
         this.tableID = args.tableUniqueName || args.tableName;
+
+        const prismaMemberRegistry = new Map<string, DB3PrismaMemberOwnership>();
+        for (const field of args.columns) {
+            for (const descriptor of field.getPrismaMemberDescriptors()) {
+                const existing = prismaMemberRegistry.get(descriptor.member);
+                if (existing) {
+                    throw new Error(
+                        `DB3 table '${this.tableID}' has ambiguous Prisma member '${descriptor.member}': `
+                        + `fields '${existing.field.member}' (${existing.kind}) and `
+                        + `'${field.member}' (${descriptor.kind}) both claim it.`,
+                    );
+                }
+                prismaMemberRegistry.set(descriptor.member, {
+                    ...descriptor,
+                    field,
+                });
+            }
+        }
+        this.prismaMemberRegistry = prismaMemberRegistry;
+
         gAllTables[this.tableID.toLowerCase()] = this;
 
         // for each sql special column, find its field.
@@ -1562,6 +1604,21 @@ export class xTable<
     getColumnForAuthorization = (name: string) => {
         return this.columns.find(c => c.matchesMemberForAuthorization(name));
     }
+
+    // gets the owning field given a Prisma member name
+    resolvePrismaMember = (
+        member: string,
+        selectionPath: string = member,
+    ): DB3PrismaMemberOwnership => {
+        const ownership = this.prismaMemberRegistry.get(member);
+        if (!ownership) {
+            throw new Error(
+                `DB3 table '${this.tableID}' does not own selected Prisma member `
+                + `'${selectionPath}' (member '${member}').`,
+            );
+        }
+        return ownership;
+    };
 
     // create a new row object (no primary key etc)
     // to later be used by insertion.

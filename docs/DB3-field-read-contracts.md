@@ -542,7 +542,7 @@ sound.
        differences from current `ApplyDbToClient` before sharing or delegating its
        implementation.
 
-8. [ ] **Add an entity Prisma-member registry.** Resolve each selected Prisma
+8. [x] **Add an entity Prisma-member registry.** Resolve each selected Prisma
        member to exactly one field read contract. Register the ordinary member for
        all fields and both relation/object and foreign-key members for
        `ForeignSingleField`. Detect duplicate and unknown ownership early.

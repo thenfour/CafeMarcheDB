@@ -170,3 +170,68 @@ describe("DB3 scalar field read contracts", () => {
     expect(db3.xEventStatus.fields.label.getReadTransportSchema().parse("Visible")).toBe("Visible")
   })
 })
+
+describe("DB3 Prisma-member ownership", () => {
+  it("registers ordinary scalar members against their field contracts", () => {
+    const ownership = db3.xEventStatus.resolvePrismaMember("label")
+
+    expect(ownership).toEqual({
+      member: "label",
+      kind: "field",
+      field: db3.xEventStatus.fields.label,
+    })
+    expect(db3.xEventStatus.prismaMemberRegistry.get("label")).toBe(ownership)
+  })
+
+  it("registers both the relation object and scalar key for foreign-single fields", () => {
+    const relation = db3.xEvent.resolvePrismaMember("status")
+    const foreignKey = db3.xEvent.resolvePrismaMember("statusId")
+
+    expect(relation).toMatchObject({ member: "status", kind: "foreignObject" })
+    expect(foreignKey).toMatchObject({ member: "statusId", kind: "foreignKey" })
+    expect(relation.field).toBe(db3.xEvent.fields.status)
+    expect(foreignKey.field).toBe(db3.xEvent.fields.status)
+  })
+
+  it("reports the table and full selection path for unknown members", () => {
+    expect(() => db3.xEvent.resolvePrismaMember("missing", "event.status.missing"))
+      .toThrow("DB3 table 'Event' does not own selected Prisma member 'event.status.missing' (member 'missing')")
+  })
+
+  it("rejects ambiguous member ownership while constructing the table", () => {
+    const authMap = db3.createAuthContextMap_GrantAll()
+
+    expect(() => new db3.xTable({
+      tableName: "DuplicatePrismaMemberFixture",
+      deletePolicy: "hard",
+      tableAuthMap: {
+        ViewOwn: Permission.always_grant,
+        View: Permission.always_grant,
+        EditOwn: Permission.always_grant,
+        Edit: Permission.always_grant,
+        Insert: Permission.always_grant,
+      },
+      getSelectionArgs: () => ({}),
+      getRowInfo: row => ({
+        pk: row.id,
+        name: String(row.id),
+        ownerUserId: null,
+      }),
+      columns: [
+        db3.MakePKfield(),
+        new db3.ForeignSingleField({
+          columnName: "status",
+          fkidMember: "statusId",
+          foreignTableID: "EventStatus",
+          allowNull: true,
+          authMap,
+          getQuickFilterWhereClause: () => false,
+        }),
+        db3.MakeIntegerField("statusId", { authMap }),
+      ],
+    })).toThrow(
+      "DB3 table 'DuplicatePrismaMemberFixture' has ambiguous Prisma member 'statusId': "
+      + "fields 'status' (foreignKey) and 'statusId' (field) both claim it",
+    )
+  })
+})
