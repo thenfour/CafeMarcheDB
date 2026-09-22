@@ -547,7 +547,7 @@ sound.
        all fields and both relation/object and foreign-key members for
        `ForeignSingleField`. Detect duplicate and unknown ownership early.
 
-9. [ ] **Implement the selection compiler for scalars.** Walk an explicit Prisma
+9. [x] **Implement the selection compiler for scalars.** Walk an explicit Prisma
        selection, resolve members, apply transport schemas, and add authorization
        optionality. Return the original selection unchanged. Errors must include
        the entity and complete selection path.
