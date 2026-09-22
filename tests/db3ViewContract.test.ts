@@ -1,9 +1,14 @@
 import { Prisma } from "db"
 import type { z } from "zod"
-import { describe, expect, expectTypeOf, it } from "vitest"
+import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest"
 
+import type { ColorPaletteEntry } from "src/core/components/color/palette"
 import * as db3 from "src/core/db3/db3"
 import { compileDB3Selection } from "src/core/db3/shared/core/db3ViewContract"
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe("DB3 scalar selection compiler", () => {
   it("preserves the Prisma selection and derives required nullable scalar schemas", () => {
@@ -273,5 +278,95 @@ describe("DB3 scalar selection compiler", () => {
         eventTag: { id: 12, text: "Festival" },
       }],
     })
+  })
+})
+
+describe("DB3 derived scalar hydration", () => {
+  it("derives distinct DTO and consumer types and decodes each present scalar once", () => {
+    const selection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
+      select: {
+        id: true,
+        label: true,
+        color: true,
+      },
+    })
+    const derived = db3.deriveViewContract(db3.eventStatusEntity, selection)
+    const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
+    const dto = {
+      id: 10,
+      label: "Confirmed",
+      color: "green",
+    }
+
+    expectTypeOf<Parameters<typeof derived.hydrate>[0]>().toEqualTypeOf<{
+      id: number
+      label: string
+      color: string | null
+    }>()
+    expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
+      id: number
+      label: string
+      color: ColorPaletteEntry | null
+    }>()
+
+    const hydrated = derived.hydrate(dto, new db3.DB3ReferenceStore())
+
+    expect(hydrated).toEqual({
+      id: 10,
+      label: "Confirmed",
+      color: expect.objectContaining({ id: "green" }),
+    })
+    expect(dto.color).toBe("green")
+    expect(decode).toHaveBeenCalledTimes(1)
+    expect(decode).toHaveBeenCalledWith("green")
+  })
+
+  it("passes nullable transport values through the codec exactly once", () => {
+    const selection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
+      select: { color: true },
+    })
+    const derived = db3.deriveViewContract(db3.eventStatusEntity, selection)
+    const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
+
+    expect(derived.hydrate({ color: null }, new db3.DB3ReferenceStore()))
+      .toEqual({ color: null })
+    expect(decode).toHaveBeenCalledTimes(1)
+    expect(decode).toHaveBeenCalledWith(null)
+  })
+
+  it("preserves authorization absence without invoking the field codec", () => {
+    const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: { isDeleted: true },
+    })
+    const derived = db3.deriveViewContract(db3.eventEntity, selection)
+    const decode = vi.spyOn(db3.xEvent.fields.isDeleted.codec, "decode")
+    const references = new db3.DB3ReferenceStore()
+
+    expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
+      isDeleted?: boolean
+    }>()
+    expect(derived.hydrate({}, references)).toEqual({})
+    expect(decode).not.toHaveBeenCalled()
+
+    expect(derived.hydrate({ isDeleted: false }, references))
+      .toEqual({ isDeleted: false })
+    expect(decode).toHaveBeenCalledTimes(1)
+  })
+
+  it("validates the complete DTO before invoking any codec", () => {
+    const selection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
+      select: {
+        color: true,
+        sortOrder: true,
+      },
+    })
+    const derived = db3.deriveViewContract(db3.eventStatusEntity, selection)
+    const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
+
+    expect(() => derived.hydrate({
+      color: "green",
+      sortOrder: 1.5,
+    }, new db3.DB3ReferenceStore())).toThrow()
+    expect(decode).not.toHaveBeenCalled()
   })
 })

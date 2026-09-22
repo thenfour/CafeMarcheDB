@@ -8,6 +8,7 @@ import {
     type DB3PrismaMemberOwnership,
     type DB3ReadPresenceOf,
     type DB3ReadTransportValueOf,
+    type DB3SchemaClientModel,
     type xTable,
 } from "../db3core";
 import type {
@@ -15,6 +16,7 @@ import type {
     PrismaDelegateOf,
     SchemaOf,
 } from "./db3Entity";
+import type { DB3ReferenceProvider } from "./db3Hydration";
 import type { DB3ViewSelectionArgs } from "./db3View";
 
 type ArrayItem<TValue> = TValue extends readonly (infer TItem)[] ? TItem : never;
@@ -128,6 +130,15 @@ export type DB3DerivedDtoSchema<
     DB3DtoForSelection<TEntity, TSelection>
 >;
 
+/** The default consumer model after applying selected root-field codecs. */
+export type DB3ClientForSelection<
+    TEntity extends AnyDB3Entity,
+    TSelection extends DB3ViewSelectionArgs<TEntity>,
+> = DB3SchemaClientModel<
+    DB3DtoForSelection<TEntity, TSelection>,
+    DB3FieldsOf<SchemaOf<TEntity>>
+>;
+
 interface DB3CompiledMemberBase {
     readonly member: string;
     readonly selectionPath: string;
@@ -158,6 +169,16 @@ export interface DB3CompiledSelection<
     readonly prismaSelection: TSelection;
     readonly dtoSchema: DB3DerivedDtoSchema<TEntity, TSelection>;
     readonly members: readonly DB3CompiledMember[];
+}
+
+export interface DB3DerivedViewContract<
+    TEntity extends AnyDB3Entity,
+    TSelection extends DB3ViewSelectionArgs<TEntity>,
+> extends DB3CompiledSelection<TEntity, TSelection> {
+    readonly hydrate: (
+        dto: DB3DtoForSelection<TEntity, TSelection>,
+        references: DB3ReferenceProvider,
+    ) => DB3ClientForSelection<TEntity, TSelection>;
 }
 
 function selectionError(
@@ -367,4 +388,48 @@ export function deriveDtoSchema<
     selection: TSelection,
 ): DB3DerivedDtoSchema<TEntity, TSelection> {
     return compileDB3Selection(entity, selection).dtoSchema;
+}
+
+function hydrateCompiledScalars<
+    TEntity extends AnyDB3Entity,
+    TSelection extends DB3ViewSelectionArgs<TEntity>,
+>(
+    compiled: DB3CompiledSelection<TEntity, TSelection>,
+    dto: DB3DtoForSelection<TEntity, TSelection>,
+): DB3ClientForSelection<TEntity, TSelection> {
+    // Parse the complete DTO before running any codec. A later invalid member
+    // therefore cannot leave earlier members partially hydrated.
+    const parsedDto = compiled.dtoSchema.parse(dto) as TAnyModel;
+    const clientModel = { ...parsedDto };
+
+    for (const member of compiled.members) {
+        if (member.kind !== "value" || member.ownershipKind !== "field") continue;
+
+        const value = parsedDto[member.member];
+        // Optional members removed by authorization do not participate in
+        // hydration, and their codecs must not receive undefined.
+        if (value === undefined) continue;
+        clientModel[member.member] = member.field.hydrateReadTransportValue(value);
+    }
+
+    return clientModel as DB3ClientForSelection<TEntity, TSelection>;
+}
+
+/**
+ * Derives the selection, DTO schema, and default scalar consumer hydrator from
+ * one compiled description. Embedded relations remain transport-shaped until
+ * recursive relation hydration is enabled separately.
+ */
+export function deriveViewContract<
+    TEntity extends AnyDB3Entity,
+    const TSelection extends DB3ViewSelectionArgs<TEntity>,
+>(
+    entity: TEntity,
+    selection: TSelection,
+): DB3DerivedViewContract<TEntity, TSelection> {
+    const compiled = compileDB3Selection(entity, selection);
+    return {
+        ...compiled,
+        hydrate: (dto, _references) => hydrateCompiledScalars(compiled, dto),
+    };
 }

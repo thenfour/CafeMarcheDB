@@ -397,6 +397,14 @@ This makes codec application automatic for views that opt into derivation. It
 does not change current views implicitly, and it does not require codecs to be
 Zod transforms.
 
+Implementation status: `deriveViewContract(entity, selection)` returns the
+original selection, its derived DTO schema, the shared compiled member
+description, and a default hydrator. The hydrator validates the complete DTO
+before applying any conversion, skips authorization-absent members, and invokes
+each present root scalar field's codec once. Foreign-key members and embedded
+relations remain transport-shaped in this step; normalized reference and
+recursive relation hydration are added separately below.
+
 The generated hydrator accepts the same reference-provider input shape used by
 current view hydration, even when a scalar-only view does not need it:
 
@@ -575,7 +583,7 @@ sound.
         tests for selected versus unselected, nullable versus non-null, and inherited
         versus independently authorized fields.
 
-11. [ ] **Implement scalar automatic hydration.** Parse first, then apply codec
+11. [x] **Implement scalar automatic hydration.** Parse first, then apply codec
         decode or identity conversion. Test nullable and authorization-absent values
         and prove codecs run exactly once.
 
