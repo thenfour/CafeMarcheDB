@@ -20,17 +20,31 @@ import { type UserWithRolesPayload } from "../schema/userPayloads";
 // };
 
 
-export type PKFieldArgs = {
+export type PKNaturalIdVisibility = "all" | "sysadmin" | undefined;
+
+type PKReadPresence<TVisibility extends PKNaturalIdVisibility> =
+    TVisibility extends "sysadmin" ? "optional" : "required";
+
+export type PKFieldArgs<TVisibility extends PKNaturalIdVisibility = undefined> = {
     columnName: string;
     isRowOwner?: boolean;
 
     // "all" = visible to all users; the default for tables without publicId (only natural monotonic id)
     // "sysadmin" = show natural id only to system administrators; this is useful on tables with publicId where we don't normally show the id; this grants an exception to sysadmins only.
-    naturalIdVisibility?: "all" | "sysadmin";
+    naturalIdVisibility?: TVisibility;
 };// & DB3AuthSpec;
 
-export class PKField extends FieldBase<number, undefined, false, number> {
-    constructor(args: PKFieldArgs) {
+export class PKField<
+    TVisibility extends PKNaturalIdVisibility = undefined,
+> extends FieldBase<
+    number,
+    undefined,
+    false,
+    number,
+    number,
+    PKReadPresence<TVisibility>
+> {
+    constructor(args: PKFieldArgs<TVisibility>) {
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
@@ -109,7 +123,9 @@ export class PKField extends FieldBase<number, undefined, false, number> {
 }
 
 
-export const MakePKfield = (args: { isRowOwner?: boolean, naturalIdVisibility?: "all" | "sysadmin" } = {}) => new PKField({
+export const MakePKfield = <
+    TVisibility extends PKNaturalIdVisibility = undefined,
+>(args: { isRowOwner?: boolean, naturalIdVisibility?: TVisibility } = {}) => new PKField<TVisibility>({
     columnName: "id",
     isRowOwner: args.isRowOwner,
     naturalIdVisibility: args.naturalIdVisibility,

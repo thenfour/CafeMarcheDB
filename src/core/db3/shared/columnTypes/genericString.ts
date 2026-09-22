@@ -1,11 +1,12 @@
 
 import { TAnyModel } from "@/shared/rootroot";
 import { MysqlEscape } from "shared/mysqlUtils";
-import { CoalesceBool, CoerceToBoolean, isValidURL } from "shared/utils";
+import { CoerceToBoolean, isValidURL } from "shared/utils";
 import { z } from "zod";
 import { type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType, type SearchResultsFacetQuery, type SortQueryElements } from "../apiTypes";
 import {
-    type DB3AuthSpec, ErrorValidateAndParseResult, FieldBase,
+    type DB3AuthSpec, type DB3MaybeNull, type DB3ReadPresenceForAuthSpec,
+    ErrorValidateAndParseResult, FieldBase, makeNullableReadTransportSchema,
     type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult,
     UndefinedValidateAndParseResult, type ValidateAndParseArgs, type ValidateAndParseResult, xTable
 } from "../db3core";
@@ -15,17 +16,30 @@ import type { UserWithRolesPayload } from "../schema/userPayloads";
 // for validation and client UI behavior.
 export type StringFieldFormatOptions = "plain" | "email" | "markdown" | "title" | "raw" | "uri" | "customLinkSlug";
 
-export type GenericStringFieldArgs = {
+export type GenericStringFieldArgs<
+    TAllowNull extends boolean,
+    TAuthSpec extends DB3AuthSpec,
+> = {
     columnName: string;
     format: StringFieldFormatOptions;
-    allowNull: boolean;
+    allowNull: TAllowNull;
     caseSensitive?: boolean;
     allowQuickFilter?: boolean;
     allowDiscreteCriteria?: boolean;
     specialFunction?: SqlSpecialColumnFunction | undefined;
-} & DB3AuthSpec;
+} & TAuthSpec;
 
-export class GenericStringField extends FieldBase<string> {
+export class GenericStringField<
+    TAllowNull extends boolean = boolean,
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+> extends FieldBase<
+    string,
+    undefined,
+    true,
+    DB3MaybeNull<string, TAllowNull>,
+    DB3MaybeNull<string, TAllowNull>,
+    DB3ReadPresenceForAuthSpec<TAuthSpec>
+> {
     caseSensitive: boolean;
     allowNull: boolean;
     minLength: number;
@@ -35,12 +49,12 @@ export class GenericStringField extends FieldBase<string> {
     allowDiscreteCriteria: boolean;
     table?: xTable;
 
-    constructor(args: GenericStringFieldArgs) {
+    constructor(args: GenericStringFieldArgs<TAllowNull, TAuthSpec>) {
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : "",
-            readTransportSchema: args.allowNull ? z.string().nullable() : z.string(),
+            readTransportSchema: makeNullableReadTransportSchema(z.string(), args.allowNull),
             specialFunction: args.specialFunction,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
@@ -325,67 +339,69 @@ export class GenericStringField extends FieldBase<string> {
 
 
 
-export const MakePlainTextField = (columnName: string, authSpec: DB3AuthSpec) => (
+export const MakePlainTextField = <TAuthSpec extends DB3AuthSpec>(columnName: string, authSpec: TAuthSpec) => (
     new GenericStringField({
+        ...authSpec,
         columnName,
         allowNull: false,
         format: "plain",
-        authMap: (authSpec as any).authMap || null,
-        _customAuth: (authSpec as any)._customAuth || null,
     }));
-export const MakeNullableRawTextField = (columnName: string, authSpec: DB3AuthSpec) => (
+export const MakeNullableRawTextField = <TAuthSpec extends DB3AuthSpec>(columnName: string, authSpec: TAuthSpec) => (
     new GenericStringField({
+        ...authSpec,
         columnName,
         allowNull: true,
         format: "raw",
-        authMap: (authSpec as any).authMap || null,
-        _customAuth: (authSpec as any)._customAuth || null,
     }));
-export const MakeRawTextField = (columnName: string, authSpec: DB3AuthSpec, allowNull?: boolean) => (
-    new GenericStringField({
+export const MakeRawTextField = <
+    TAuthSpec extends DB3AuthSpec,
+    TAllowNull extends boolean = false,
+>(columnName: string, authSpec: TAuthSpec, allowNull?: TAllowNull) => (
+    new GenericStringField<TAllowNull, TAuthSpec>({
+        ...authSpec,
         columnName,
-        allowNull: CoalesceBool(allowNull, false),
+        allowNull: (allowNull ?? false) as TAllowNull,
         format: "raw",
-        authMap: (authSpec as any).authMap || null,
-        _customAuth: (authSpec as any)._customAuth || null,
     }));
-export const MakeMarkdownTextField = (columnName: string, authSpec: DB3AuthSpec, allowNull?: boolean) => (
-    new GenericStringField({
+export const MakeMarkdownTextField = <
+    TAuthSpec extends DB3AuthSpec,
+    TAllowNull extends boolean = false,
+>(columnName: string, authSpec: TAuthSpec, allowNull?: TAllowNull) => (
+    new GenericStringField<TAllowNull, TAuthSpec>({
+        ...authSpec,
         columnName,
-        allowNull: CoalesceBool(allowNull, false),
+        allowNull: (allowNull ?? false) as TAllowNull,
         allowQuickFilter: false,
         format: "markdown",
-        authMap: (authSpec as any).authMap || null,
-        _customAuth: (authSpec as any)._customAuth || null,
     }));
-export const MakeTitleField = (columnName: string, authSpec: DB3AuthSpec) => (
+export const MakeTitleField = <TAuthSpec extends DB3AuthSpec>(columnName: string, authSpec: TAuthSpec) => (
     new GenericStringField({
+        ...authSpec,
         columnName,
         allowNull: false,
         format: "title",
         specialFunction: SqlSpecialColumnFunction.name,
         allowQuickFilter: true,
-        authMap: (authSpec as any).authMap || null,
-        _customAuth: (authSpec as any)._customAuth || null,
     }));
 
-export const MakeDescriptionField = ({ columnName = "description", ...authSpec }: { columnName?: string } & DB3AuthSpec) => (
-    new GenericStringField({
-        columnName,
+export const MakeDescriptionField = <TAuthSpec extends DB3AuthSpec>(args: { columnName?: string } & TAuthSpec) => (
+    new GenericStringField<false, TAuthSpec>({
+        ...args,
+        columnName: args.columnName ?? "description",
         allowNull: false,
         format: "markdown",
         specialFunction: SqlSpecialColumnFunction.description,
-        authMap: (authSpec as any).authMap || null,
-        _customAuth: (authSpec as any)._customAuth || null,
     })
 );
 
 // this does not convert to colorpaletteentry
-export const MakeColorAsStringField = ({ columnName = "color", allowNull = true, ...authSpec }: { columnName?: string, allowNull?: boolean } & DB3AuthSpec) => (
-    new GenericStringField({
-        columnName,
-        allowNull,
+export const MakeColorAsStringField = <
+    TAuthSpec extends DB3AuthSpec,
+    TAllowNull extends boolean = true,
+>(args: { columnName?: string, allowNull?: TAllowNull } & TAuthSpec) => (
+    new GenericStringField<TAllowNull, TAuthSpec>({
+        ...args,
+        columnName: args.columnName ?? "color",
+        allowNull: (args.allowNull ?? true) as TAllowNull,
         format: "raw",
-        authMap: (authSpec as any).authMap || null,
-        _customAuth: (authSpec as any)._customAuth || null,
     }));

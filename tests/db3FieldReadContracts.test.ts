@@ -20,6 +20,53 @@ const eventStatusScalarMembers = Object.keys(eventStatusTransport) as Array<
 >
 
 describe("DB3 scalar field read contracts", () => {
+  it("retains nullability and authorization presence in field types", () => {
+    type RequiredNonNull = db3.DB3ReadFieldProperty<
+      "label",
+      typeof db3.xEventStatus.fields.label
+    >
+    type RequiredNullable = db3.DB3ReadFieldProperty<
+      "iconName",
+      typeof db3.xEventStatus.fields.iconName
+    >
+
+    const permissionControlled = new db3.GenericStringField({
+      columnName: "value",
+      allowNull: false,
+      format: "plain",
+      authMap: db3.createAuthContextMap_GrantAll(),
+    })
+    type OptionalNonNull = db3.DB3ReadFieldProperty<
+      "value",
+      typeof permissionControlled
+    >
+    const mixedOwnerPolicy = new db3.GenericStringField({
+      columnName: "mixed",
+      allowNull: false,
+      format: "plain",
+      authMap: {
+        PostQuery: db3.DB3FieldReadAuth.inheritRow,
+        PostQueryAsOwner: Permission.always_grant,
+        PreInsert: Permission.never_grant,
+        PreMutate: Permission.never_grant,
+        PreMutateAsOwner: Permission.never_grant,
+      },
+    })
+    type MixedPolicyOptional = db3.DB3ReadFieldProperty<
+      "mixed",
+      typeof mixedOwnerPolicy
+    >
+
+    expectTypeOf<RequiredNonNull>().toEqualTypeOf<{ label: string }>()
+    expectTypeOf<RequiredNullable>().toEqualTypeOf<{ iconName: string | null }>()
+    expectTypeOf<OptionalNonNull>().toEqualTypeOf<{ value?: string }>()
+    expectTypeOf<MixedPolicyOptional>().toEqualTypeOf<{ mixed?: string }>()
+    expectTypeOf(db3.xEventStatus.fields.label.parseReadTransportValue("Visible"))
+      .toEqualTypeOf<string>()
+    expectTypeOf(db3.xEventStatus.fields.iconName.parseReadTransportValue(null))
+      .toEqualTypeOf<string | null>()
+  })
+
   it("validates present EventStatus transport values without adding authorization optionality", () => {
     for (const member of eventStatusScalarMembers) {
       const field = db3.xEventStatus.getColumn(member) as db3.AnyDB3Field
@@ -81,7 +128,7 @@ describe("DB3 scalar field read contracts", () => {
   it("describes Prisma BigInt fields separately from ordinary integers", () => {
     const durationValue = BigInt(60_000)
     const duration = db3.xEvent.fields.durationMillis.parseReadTransportValue(durationValue)
-    expectTypeOf(duration).toEqualTypeOf<bigint | null>()
+    expectTypeOf(duration).toEqualTypeOf<bigint>()
     expect(duration).toBe(durationValue)
     expect(db3.xEvent.fields.durationMillis.readTransportSchema!
       .safeParse(60_000).success).toBe(false)
@@ -89,7 +136,7 @@ describe("DB3 scalar field read contracts", () => {
       .safeParse(durationValue).success).toBe(true)
 
     const sortOrder = db3.xEventStatus.fields.sortOrder.parseReadTransportValue(1)
-    expectTypeOf(sortOrder).toEqualTypeOf<number | null>()
+    expectTypeOf(sortOrder).toEqualTypeOf<number>()
     expect(sortOrder).toBe(1)
   })
 

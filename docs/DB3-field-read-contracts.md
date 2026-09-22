@@ -292,6 +292,13 @@ fields intentionally remain unsupported until selection-member ownership is
 introduced in Phase 3. Existing view and `getClientModel` behavior is unchanged;
 the new helpers validate more strictly before hydrating.
 
+Scalar field types retain literal nullability, and the field contract carries a
+type-level `required`/`optional` read-presence marker. Auth maps intended to
+produce required fields must preserve their literal `inheritRow` values (for
+example with `satisfies DB3AuthContextPermissionMap`); a widened map is treated
+as optional at compile time. This is deliberately conservative and mirrors the
+runtime rule that both owner and non-owner read branches must inherit row access.
+
 ## Phase 3: selection-aware DTO derivation
 
 ### Proposed helper

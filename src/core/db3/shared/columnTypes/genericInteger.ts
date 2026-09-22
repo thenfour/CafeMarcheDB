@@ -7,8 +7,8 @@ import {
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
 import {
-    type DB3AuthSpec, type DB3RowMode, ErrorValidateAndParseResult,
-    FieldBase,
+    type DB3AuthSpec, type DB3MaybeNull, type DB3ReadPresenceForAuthSpec,
+    type DB3RowMode, ErrorValidateAndParseResult, FieldBase, makeNullableReadTransportSchema,
     type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult, createAuthContextMap_GrantAll,
     xTable
@@ -23,33 +23,41 @@ export type GenericIntegerReadTransportValue<T extends GenericIntegerReadTranspo
 
 export type GenericIntegerFieldArgs<
     TReadTransportType extends GenericIntegerReadTransportType = "number",
+    TAllowNull extends boolean = boolean,
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
 > = {
     columnName: string;
-    allowNull: boolean;
+    allowNull: TAllowNull;
     readTransportType?: TReadTransportType;
     allowSearchingThisField?: boolean;
     specialFunction?: SqlSpecialColumnFunction | undefined;
-} & DB3AuthSpec;
+} & TAuthSpec;
 
 export class GenericIntegerField<
     TReadTransportType extends GenericIntegerReadTransportType = "number",
+    TAllowNull extends boolean = boolean,
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
 > extends FieldBase<
     number,
     undefined,
     true,
-    GenericIntegerReadTransportValue<TReadTransportType> | null
+    DB3MaybeNull<GenericIntegerReadTransportValue<TReadTransportType>, TAllowNull>,
+    DB3MaybeNull<GenericIntegerReadTransportValue<TReadTransportType>, TAllowNull>,
+    DB3ReadPresenceForAuthSpec<TAuthSpec>
 > {
 
     allowNull: boolean;
     allowSearchingThisField: boolean;
 
-    constructor(args: GenericIntegerFieldArgs<TReadTransportType>) {
-        const scalarSchema = args.readTransportType === "bigint" ? z.bigint() : z.number().int();
+    constructor(args: GenericIntegerFieldArgs<TReadTransportType, TAllowNull, TAuthSpec>) {
+        const scalarSchema = (
+            args.readTransportType === "bigint" ? z.bigint() : z.number().int()
+        ) as unknown as z.ZodType<GenericIntegerReadTransportValue<TReadTransportType>>;
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : 0,
-            readTransportSchema: args.allowNull ? scalarSchema.nullable() : scalarSchema,
+            readTransportSchema: makeNullableReadTransportSchema(scalarSchema, args.allowNull),
             specialFunction: args.specialFunction,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
@@ -140,13 +148,12 @@ export class GenericIntegerField<
 
 
 
-export const MakeIntegerField = (columnName: string, authSpec: DB3AuthSpec) => (
+export const MakeIntegerField = <TAuthSpec extends DB3AuthSpec>(columnName: string, authSpec: TAuthSpec) => (
     new GenericIntegerField({
+        ...authSpec,
         columnName,
         allowSearchingThisField: false,
         allowNull: false,
-        authMap: (authSpec as any).authMap || null,
-        _customAuth: (authSpec as any)._customAuth || null,
     }));
 
 

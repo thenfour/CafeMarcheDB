@@ -6,8 +6,8 @@ import {
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
 import {
-    type DB3AuthSpec, type DB3RowMode, ErrorValidateAndParseResult,
-    FieldBase,
+    type DB3AuthSpec, type DB3MaybeNull, type DB3ReadPresenceForAuthSpec,
+    type DB3RowMode, ErrorValidateAndParseResult, FieldBase, makeNullableReadTransportSchema,
     type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
@@ -20,20 +20,33 @@ import { type UserWithRolesPayload } from "../schema/userPayloads";
 // a single select field where
 // - the db value is a string (no relationship enforced)
 // - the enum value is a const typescript key val object (not an 'enum' type, but rather a const MyEnum { val1: "val1", val2: "val2" })
-export type ConstEnumStringFieldArgs = {
+export type ConstEnumStringFieldArgs<
+    TAllowNull extends boolean,
+    TAuthSpec extends DB3AuthSpec,
+> = {
     columnName: string,
     options: TAnyModel,
-    defaultValue: string | null;
-    allowNull: boolean,
+    defaultValue: DB3MaybeNull<string, TAllowNull>;
+    allowNull: TAllowNull,
     specialFunction?: SqlSpecialColumnFunction | undefined;
-} & DB3AuthSpec;
+} & TAuthSpec;
 
-export class ConstEnumStringField extends FieldBase<string> {
+export class ConstEnumStringField<
+    TAllowNull extends boolean = boolean,
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+> extends FieldBase<
+    string,
+    undefined,
+    true,
+    DB3MaybeNull<string, TAllowNull>,
+    DB3MaybeNull<string, TAllowNull>,
+    DB3ReadPresenceForAuthSpec<TAuthSpec>
+> {
     options: TAnyModel;
     defaultValue: string | null;
     allowNull: boolean;
 
-    constructor(args: ConstEnumStringFieldArgs) {
+    constructor(args: ConstEnumStringFieldArgs<TAllowNull, TAuthSpec>) {
         const enumSchema = z.string().refine(
             value => Object.values(args.options).includes(value),
             value => ({ message: `unrecognized option '${value}'` }),
@@ -42,7 +55,7 @@ export class ConstEnumStringField extends FieldBase<string> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.defaultValue,
-            readTransportSchema: args.allowNull ? enumSchema.nullable() : enumSchema,
+            readTransportSchema: makeNullableReadTransportSchema(enumSchema, args.allowNull),
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
             specialFunction: args.specialFunction,
@@ -109,23 +122,21 @@ export class ConstEnumStringField extends FieldBase<string> {
 };
 
 
-export const MakeSignificanceField = (columnName: string, options: TAnyModel, authSpec: DB3AuthSpec) => (
+export const MakeSignificanceField = <TAuthSpec extends DB3AuthSpec>(columnName: string, options: TAnyModel, authSpec: TAuthSpec) => (
     new ConstEnumStringField({
+        ...authSpec,
         columnName,
         allowNull: true,
         defaultValue: null,
         options,
-        authMap: (authSpec as any).authMap || null,
-        _customAuth: (authSpec as any)._customAuth || null,
     }));
 
-export const MakeIconField = (columnName: string, options: TAnyModel, authSpec: DB3AuthSpec) => (
+export const MakeIconField = <TAuthSpec extends DB3AuthSpec>(columnName: string, options: TAnyModel, authSpec: TAuthSpec) => (
     new ConstEnumStringField({
+        ...authSpec,
         columnName,
         allowNull: true,
         defaultValue: null,
         options,
         specialFunction: SqlSpecialColumnFunction.iconName,
-        authMap: (authSpec as any).authMap || null,
-        _customAuth: (authSpec as any)._customAuth || null,
     }));

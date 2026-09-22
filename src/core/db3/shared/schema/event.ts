@@ -88,13 +88,13 @@ export const xEventAuthMap_Homepage: db3.DB3AuthContextPermissionMap = {
 // Event-status display metadata is part of the row's public identity. Once the
 // row is readable, these scalar values are readable as a unit; mutation policy
 // remains unchanged.
-const xEventStatusAuthMap: db3.DB3AuthContextPermissionMap = {
+const xEventStatusAuthMap = {
     PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
     PostQuery: db3.DB3FieldReadAuth.inheritRow,
     PreMutateAsOwner: xEventAuthMap_R_EOwn_EManagers.PreMutateAsOwner,
     PreMutate: xEventAuthMap_R_EOwn_EManagers.PreMutate,
     PreInsert: xEventAuthMap_R_EOwn_EManagers.PreInsert,
-};
+} satisfies db3.DB3AuthContextPermissionMap;
 
 
 

@@ -6,8 +6,8 @@ import {
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
 import {
-    type DB3AuthSpec, type DB3RowMode, ErrorValidateAndParseResult,
-    FieldBase,
+    type DB3AuthSpec, type DB3MaybeNull, type DB3ReadPresenceForAuthSpec,
+    type DB3RowMode, ErrorValidateAndParseResult, FieldBase, makeNullableReadTransportSchema,
     type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
@@ -17,23 +17,36 @@ import { type UserWithRolesPayload } from "../schema/userPayloads";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export type DateTimeFieldArgs = {
+export type DateTimeFieldArgs<
+    TAllowNull extends boolean,
+    TAuthSpec extends DB3AuthSpec,
+> = {
     columnName: string;
-    allowNull: boolean;
+    allowNull: TAllowNull;
     specialFunction?: SqlSpecialColumnFunction | undefined;
 
-} & DB3AuthSpec;
+} & TAuthSpec;
 
-export class DateTimeField extends FieldBase<Date> {
+export class DateTimeField<
+    TAllowNull extends boolean = boolean,
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+> extends FieldBase<
+    Date,
+    undefined,
+    true,
+    DB3MaybeNull<Date, TAllowNull>,
+    DB3MaybeNull<Date, TAllowNull>,
+    DB3ReadPresenceForAuthSpec<TAuthSpec>
+> {
 
     allowNull: boolean;
 
-    constructor(args: DateTimeFieldArgs) {
+    constructor(args: DateTimeFieldArgs<TAllowNull, TAuthSpec>) {
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : new Date(),
-            readTransportSchema: args.allowNull ? z.date().nullable() : z.date(),
+            readTransportSchema: makeNullableReadTransportSchema(z.date(), args.allowNull),
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
             specialFunction: args.specialFunction,

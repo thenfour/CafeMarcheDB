@@ -18,7 +18,7 @@ import {
 ////////////////////////////////////////////////////////////////
 // Stable, opaque identity used whenever a converted row crosses the client
 // boundary. Generation remains server-owned.
-export class PublicIdField extends FieldBase<string, undefined, false, string> {
+export class PublicIdField extends FieldBase<string, undefined, false, string, string, "required"> {
     constructor(columnName = "publicId") {
         super({
             member: columnName,
@@ -65,4 +65,3 @@ export class PublicIdField extends FieldBase<string, undefined, false, string> {
 
 
 export const MakePublicIdField = () => new PublicIdField("publicId");
-

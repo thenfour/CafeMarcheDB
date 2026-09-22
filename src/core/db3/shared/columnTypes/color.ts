@@ -9,8 +9,10 @@ import {
 import {
     type DB3AuthSpec,
     type DB3FieldCodec,
+    type DB3MaybeNull,
+    type DB3ReadPresenceForAuthSpec,
     type DB3RowMode, ErrorValidateAndParseResult,
-    FieldBase,
+    FieldBase, makeNullableReadTransportSchema,
     type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
@@ -26,31 +28,49 @@ import { type UserWithRolesPayload } from "../schema/userPayloads";
 // 
 // this means the datagrid row model has a ColorPaletteEntry, NOT a string. not both.
 // this is the gateway to doing foreign key items.
-export type ColorFieldArgs = {
+export type ColorFieldArgs<
+    TAllowNull extends boolean,
+    TAuthSpec extends DB3AuthSpec,
+> = {
     columnName: string;
-    allowNull: boolean;
+    allowNull: TAllowNull;
     palette: ColorPaletteList;
-} & DB3AuthSpec;
+} & TAuthSpec;
 
-export class ColorField extends FieldBase<
-    ColorPaletteEntry,
-    DB3FieldCodec<string | null, ColorPaletteEntry | null>
+export class ColorField<
+    TAllowNull extends boolean = boolean,
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+> extends FieldBase<
+    ColorPaletteEntry, // client-facing field datatype
+    DB3FieldCodec< // transport codec for converting between DB(DTO) and client representations
+        DB3MaybeNull<string, TAllowNull>, // DB representation
+        ColorPaletteEntry | null, // client-facing representation, (todo: shall this be DB3MaybeNull?)
+        string | null // write transport representation (todo: shall this be DB3MaybeNull?)
+    >,
+    true, // TClientWritable, indicates if the client can write to this field
+    DB3MaybeNull<string, TAllowNull>, // read transport value
+    ColorPaletteEntry | null, // client-facing representation
+    DB3ReadPresenceForAuthSpec<TAuthSpec> // read presence (whether it can be auth-stripped -> zod schema needs .optional())
 > {
     allowNull: boolean;
     palette: ColorPaletteList;
 
-    readonly codec: DB3FieldCodec<string | null, ColorPaletteEntry | null> = {
-        decode: value => this.palette.findEntry(value),
-        encode: value => value?.id || null,
-        writeSchema: z.string().nullable(),
-    };
+    readonly codec: DB3FieldCodec<
+        DB3MaybeNull<string, TAllowNull>,
+        ColorPaletteEntry | null,
+        string | null
+    > = {
+            decode: value => this.palette.findEntry(value),
+            encode: value => value?.id || null,
+            writeSchema: z.string().nullable(),
+        };
 
-    constructor(args: ColorFieldArgs) {
+    constructor(args: ColorFieldArgs<TAllowNull, TAuthSpec>) {
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : args.palette.defaultEntry,
-            readTransportSchema: args.allowNull ? z.string().nullable() : z.string(),
+            readTransportSchema: makeNullableReadTransportSchema(z.string(), args.allowNull),
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
             specialFunction: SqlSpecialColumnFunction.color,
@@ -77,9 +97,12 @@ export class ColorField extends FieldBase<
     ApplyIncludeFiltering = (include: TAnyModel) => { };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
+        // todo: stop using TAnyModel
         if (dbModel[this.member] === undefined) return;
         const dbVal: string | null = dbModel[this.member];
-        clientModel[this.member] = this.codec.decode(dbVal);
+        clientModel[this.member] = this.codec.decode(
+            dbVal as DB3MaybeNull<string, TAllowNull>,
+        );
     }
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
@@ -119,11 +142,10 @@ export class ColorField extends FieldBase<
 
 
 // color fields convert to colorpaletteentry on query
-export const MakeColorField = ({ columnName = "color", ...authSpec }: { columnName?: string } & DB3AuthSpec) => (
-    new ColorField({
-        columnName,
+export const MakeColorField = <TAuthSpec extends DB3AuthSpec>(args: { columnName?: string } & TAuthSpec) => (
+    new ColorField<true, TAuthSpec>({
+        ...args,
+        columnName: args.columnName ?? "color",
         allowNull: true,
         palette: gGeneralPaletteList,
-        authMap: (authSpec as any).authMap || null,
-        _customAuth: (authSpec as any)._customAuth || null,
     }));

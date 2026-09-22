@@ -8,7 +8,7 @@ import {
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
 import {
-    type DB3AuthSpec, type DB3RowMode,
+    type DB3AuthSpec, type DB3ReadPresenceForAuthSpec, type DB3RowMode,
     FieldBase,
     type SqlGetSortableQueryElementsAPI,
     SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
@@ -18,15 +18,24 @@ import {
 import { type UserWithRolesPayload } from "../schema/userPayloads";
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export type RevisionFieldArgs = {
+export type RevisionFieldArgs<TAuthSpec extends DB3AuthSpec> = {
     columnName: string;
     applyToUpdates: boolean;
-} & DB3AuthSpec;
+} & TAuthSpec;
 
-export class RevisionField extends FieldBase<number, undefined, true, number> {
+export class RevisionField<
+    TAuthSpec extends DB3AuthSpec,
+> extends FieldBase<
+    number,
+    undefined,
+    true,
+    number,
+    number,
+    DB3ReadPresenceForAuthSpec<TAuthSpec>
+> {
     applyToUpdates: boolean;
 
-    constructor(args: RevisionFieldArgs) {
+    constructor(args: RevisionFieldArgs<TAuthSpec>) {
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",

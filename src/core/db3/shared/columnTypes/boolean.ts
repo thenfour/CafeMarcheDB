@@ -7,8 +7,9 @@ import {
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
 import {
-    type DB3AuthSpec, type DB3FieldCodec, type DB3RowMode, ErrorValidateAndParseResult,
-    FieldBase,
+    type DB3AuthSpec, type DB3FieldCodec, type DB3MaybeNull,
+    type DB3ReadPresenceForAuthSpec, type DB3RowMode, ErrorValidateAndParseResult,
+    FieldBase, makeNullableReadTransportSchema,
     type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
@@ -20,24 +21,38 @@ import { type UserWithRolesPayload } from "../schema/userPayloads";
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // booleans are simple checkboxes; therefore null is not supported.
 // for null support use a radio / multi select style field.
-export type BoolFieldArgs = {
+export type BoolFieldArgs<
+    TAllowNull extends boolean,
+    TAuthSpec extends DB3AuthSpec,
+> = {
     columnName: string;
-    defaultValue: boolean | null;
-    allowNull: boolean;
+    defaultValue: DB3MaybeNull<boolean, TAllowNull>;
+    allowNull: TAllowNull;
     specialFunction?: SqlSpecialColumnFunction | undefined;
-} & DB3AuthSpec;
+} & TAuthSpec;
 
-export class BoolField extends FieldBase<
+export class BoolField<
+    TAllowNull extends boolean = boolean,
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+> extends FieldBase<
     boolean,
-    DB3FieldCodec<boolean | null, boolean | null>
+    DB3FieldCodec<
+        DB3MaybeNull<boolean, TAllowNull>,
+        DB3MaybeNull<boolean, TAllowNull>
+    >,
+    true,
+    DB3MaybeNull<boolean, TAllowNull>,
+    DB3MaybeNull<boolean, TAllowNull>,
+    DB3ReadPresenceForAuthSpec<TAuthSpec>
 > {
     allowNull: boolean;
-    readonly codec: DB3FieldCodec<boolean | null, boolean | null>;
+    readonly codec: DB3FieldCodec<
+        DB3MaybeNull<boolean, TAllowNull>,
+        DB3MaybeNull<boolean, TAllowNull>
+    >;
 
-    constructor(args: BoolFieldArgs) {
-        const transportSchema: z.ZodType<boolean | null> = args.allowNull
-            ? z.boolean().nullable()
-            : z.boolean();
+    constructor(args: BoolFieldArgs<TAllowNull, TAuthSpec>) {
+        const transportSchema = makeNullableReadTransportSchema(z.boolean(), args.allowNull);
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
@@ -49,7 +64,10 @@ export class BoolField extends FieldBase<
         });
         this.allowNull = args.allowNull;
         this.codec = {
-            decode: value => CoerceToNullableBoolean(value, this.defaultValue),
+            decode: value => CoerceToNullableBoolean(
+                value,
+                args.defaultValue,
+            ) as DB3MaybeNull<boolean, TAllowNull>,
             encode: value => value,
             writeSchema: transportSchema,
         };
@@ -77,7 +95,9 @@ export class BoolField extends FieldBase<
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         const dbVal: boolean | null = dbModel[this.member]; // db may have null values so need to coalesce
-        clientModel[this.member] = this.codec.decode(dbVal);
+        clientModel[this.member] = this.codec.decode(
+            dbVal as DB3MaybeNull<boolean, TAllowNull>,
+        );
     }
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
@@ -105,14 +125,13 @@ export class BoolField extends FieldBase<
 
 
 
-export const MakeIsDeletedField = ({ columnName = "isDeleted", ...authSpec }: { columnName?: string } & DB3AuthSpec) => (
-    new BoolField({
-        columnName,
+export const MakeIsDeletedField = <TAuthSpec extends DB3AuthSpec>(args: { columnName?: string } & TAuthSpec) => (
+    new BoolField<false, TAuthSpec>({
+        ...args,
+        columnName: args.columnName ?? "isDeleted",
         allowNull: false,
         defaultValue: false,
         specialFunction: SqlSpecialColumnFunction.isDeleted,
-        authMap: (authSpec as any).authMap || null,
-        _customAuth: (authSpec as any)._customAuth || null,
     })
 );
 

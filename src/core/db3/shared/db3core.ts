@@ -176,11 +176,11 @@ export const DB3FieldReadAuth = Object.freeze({
 export type DB3FieldReadAuthRequirement = Permission | typeof DB3FieldReadAuth.inheritRow;
 
 export type DB3AuthContextPermissionMap = {
-    PostQuery: DB3FieldReadAuthRequirement;
-    PostQueryAsOwner: DB3FieldReadAuthRequirement;
-    PreInsert: Permission;
-    PreMutate: Permission;
-    PreMutateAsOwner: Permission;
+    readonly PostQuery: DB3FieldReadAuthRequirement;
+    readonly PostQueryAsOwner: DB3FieldReadAuthRequirement;
+    readonly PreInsert: Permission;
+    readonly PreMutate: Permission;
+    readonly PreMutateAsOwner: Permission;
 };
 
 export const createAuthContextMap_Mono = (p: Permission): DB3AuthContextPermissionMap => ({
@@ -193,7 +193,7 @@ export const createAuthContextMap_Mono = (p: Permission): DB3AuthContextPermissi
 
 export const createAuthContextMap_DenyAll = (): DB3AuthContextPermissionMap => createAuthContextMap_Mono(Permission.never_grant);
 export const createAuthContextMap_GrantAll = (): DB3AuthContextPermissionMap => createAuthContextMap_Mono(Permission.always_grant);
-export const createAuthContextMap_PK = (): DB3AuthContextPermissionMap => ({
+export const createAuthContextMap_PK = () => ({
     // A primary key is safe only after the table/row itself has been authorized.
     // It must not be used as the thing that makes an otherwise-protected row visible.
     PostQuery: DB3FieldReadAuth.inheritRow,
@@ -201,7 +201,7 @@ export const createAuthContextMap_PK = (): DB3AuthContextPermissionMap => ({
     PreInsert: Permission.never_grant,
     PreMutate: Permission.never_grant,
     PreMutateAsOwner: Permission.never_grant,
-});
+} satisfies DB3AuthContextPermissionMap);
 
 export const createAuthContextMap_SysadminNaturalPK = (): DB3AuthContextPermissionMap => ({
     PostQuery: Permission.sysadmin,
@@ -233,10 +233,56 @@ export type DB3AuthTablePermissionMap = {
 
 
 export type DB3AuthSpec = {
-    authMap: DB3AuthContextPermissionMap;
+    readonly authMap: DB3AuthContextPermissionMap;
 } | {
-    _customAuth: (args: DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean;
+    readonly _customAuth: (args: DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean;
 };
+
+export type DB3FieldReadPresence = "required" | "optional";
+
+/**
+ * Static counterpart of FieldBase.isReadRequiredAfterRowAuth(). Auth-map
+ * literals must be preserved for this to resolve to "required"; widened maps
+ * deliberately fall back to the safe "optional" result.
+ */
+export type DB3ReadPresenceForAuthSpec<TAuthSpec> =
+    TAuthSpec extends { readonly _customAuth: (...args: any[]) => boolean }
+    ? "optional"
+    : TAuthSpec extends {
+        readonly authMap: {
+            readonly PostQuery: typeof DB3FieldReadAuth.inheritRow;
+            readonly PostQueryAsOwner: typeof DB3FieldReadAuth.inheritRow;
+        };
+    }
+    ? "required"
+    : "optional";
+
+// conditionally apply nullability.
+// type t = DB3MaybeNull<string, true>; // string | null
+// type t2 = DB3MaybeNull<string, false>; // string
+export type DB3MaybeNull<TValue, TAllowNull extends boolean> =
+    boolean extends TAllowNull
+    ? TValue | null
+    : TAllowNull extends true
+    ? TValue | null
+    : TValue;
+
+
+
+// helper for making a Zod schema nullable based on a boolean flag, preserving type info.
+// const x = makeNullableReadTransportSchema(z.string(), true); // z.ZodType<string | null>
+// const y = makeNullableReadTransportSchema(z.string(), false); // z.ZodType<string>
+export function makeNullableReadTransportSchema<
+    TSchema extends z.ZodTypeAny,
+    TAllowNull extends boolean, // inferred at call site
+>(
+    schema: TSchema,
+    allowNull: TAllowNull,
+): z.ZodType<DB3MaybeNull<z.output<TSchema>, TAllowNull>> {
+    return (allowNull ? schema.nullable() : schema) as z.ZodType<
+        DB3MaybeNull<z.output<TSchema>, TAllowNull>
+    >;
+}
 
 
 export type DB3AuthorizationContext = keyof DB3AuthContextPermissionMap;// "PostQuery" | "PostQueryAsOwner" | "PreInsert" | "PreMutate" | "PreMutateAsOwner";
@@ -259,11 +305,11 @@ export enum SqlSpecialColumnFunction {
     updatedAt = "updatedAt",
 };
 
-export type FieldBaseArgs<FieldDataType> = {
+export type FieldBaseArgs<FieldDataType, TReadTransportValue> = {
     fieldTableAssociation: FieldAssociationWithTable;
     member: string;
     defaultValue: FieldDataType | null;
-    readTransportSchema?: z.ZodTypeAny;
+    readTransportSchema?: z.ZodType<TReadTransportValue>;
     authMap: DB3AuthContextPermissionMap | null;
     specialFunction: SqlSpecialColumnFunction | undefined;
     fkidMember?: string | undefined;
@@ -381,6 +427,15 @@ export abstract class FieldBase<
     TClientWritable extends boolean = true,
     TReadTransportValue = DefaultReadTransportValue<TCodec, FieldDataType>,
     TReadConsumerValue = DefaultReadConsumerValue<TCodec, TReadTransportValue>,
+
+    // this deals with auth stripping fields. even if the prisma & DTO schema include
+    // a value, you may not be authorized to view it so it becomes `undefined`.
+    // those types of columns shall have an auth map where read : inheritRow;
+    // that means if the row is visible, then the field is also visible and therefore
+    // never `undefined`.
+    //
+    // this param determines whether to mark the dto Zod schema as `optional()`
+    TReadPresence extends DB3FieldReadPresence = "optional",
 > {
     fieldTableAssociation: FieldAssociationWithTable;
     member: string;
@@ -400,16 +455,20 @@ export abstract class FieldBase<
      * this schema. Relation/composite fields omit this until they declare a
      * supported read contract.
      */
-    readonly readTransportSchema?: z.ZodTypeAny;
+    readonly readTransportSchema?: z.ZodType<TReadTransportValue>;
 
     /** Type-only marker used when deriving prepared command values. */
     readonly __clientWritable?: TClientWritable;
+
+    /** Type-only marker used by selection-aware DTO derivation. */
+    // "required" | "optional"
+    readonly __readPresence?: TReadPresence;
 
     authMap: DB3AuthContextPermissionMap | null;
     _customAuth: ((args: DB3AuthorizeAndSanitizeFieldInput<TAnyModel>) => boolean) | null;
     _matchesMemberForAuthorization?: ((memberName: string) => boolean) | null; // needed for multi-member columns like foreignsingle
 
-    constructor(args: FieldBaseArgs<FieldDataType>) {
+    constructor(args: FieldBaseArgs<FieldDataType, TReadTransportValue>) {
         Object.assign(this, args);
     };
 
@@ -460,7 +519,7 @@ export abstract class FieldBase<
             && this.readAuthorizationInheritsRow("PostQueryAsOwner");
     };
 
-    getReadTransportSchema = (): z.ZodTypeAny => {
+    getReadTransportSchema = (): z.ZodType<TReadTransportValue> => {
         if (!this.readTransportSchema) {
             throw new Error(`DB3 field '${this.member}' does not declare readTransportSchema.`);
         }
@@ -468,7 +527,7 @@ export abstract class FieldBase<
     };
 
     parseReadTransportValue = (value: unknown): TReadTransportValue => {
-        return this.getReadTransportSchema().parse(value) as TReadTransportValue;
+        return this.getReadTransportSchema().parse(value);
     };
 
     hydrateReadTransportValue = (value: TReadTransportValue): TReadConsumerValue => {
@@ -615,7 +674,31 @@ export interface TableDesc {
 
 };
 
-export type AnyDB3Field = FieldBase<any, AnyDB3FieldCodec | undefined, boolean, any, any>;
+export type AnyDB3Field = FieldBase<
+    any,
+    AnyDB3FieldCodec | undefined,
+    boolean,
+    any,
+    any,
+    DB3FieldReadPresence
+>;
+
+export type DB3ReadTransportValueOf<TField> =
+    TField extends FieldBase<any, any, any, infer TReadTransportValue, any, any>
+    ? TReadTransportValue
+    : never;
+
+export type DB3ReadPresenceOf<TField> =
+    TField extends FieldBase<any, any, any, any, any, infer TReadPresence>
+    ? TReadPresence
+    : never;
+
+export type DB3ReadFieldProperty<
+    TMember extends PropertyKey,
+    TField extends AnyDB3Field,
+> = DB3ReadPresenceOf<TField> extends "required"
+    ? { [TKey in TMember]: DB3ReadTransportValueOf<TField> }
+    : { [TKey in TMember]?: DB3ReadTransportValueOf<TField> };
 
 export type DB3FieldMap = Readonly<Record<string, AnyDB3Field>>;
 
@@ -661,7 +744,7 @@ export function makeColumnSet<TFactories extends DB3ColumnFactoryMap>(
 }
 
 type DB3CodecResult<TField, TSourceValue> =
-    TField extends FieldBase<any, infer TCodec, boolean>
+    TField extends FieldBase<any, infer TCodec, boolean, any, any, any>
     ? TCodec extends DB3FieldCodec<infer TTransportValue, infer TClientValue, any>
     ? Exclude<TSourceValue, undefined> extends TTransportValue
     ? TClientValue | Extract<TSourceValue, undefined>

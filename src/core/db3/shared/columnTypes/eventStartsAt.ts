@@ -12,8 +12,8 @@ import {
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
 import {
-    type DB3AuthSpec, type DB3RowMode, ErrorValidateAndParseResult,
-    FieldBase,
+    type DB3AuthSpec, type DB3MaybeNull, type DB3ReadPresenceForAuthSpec,
+    type DB3RowMode, ErrorValidateAndParseResult, FieldBase, makeNullableReadTransportSchema,
     type SqlGetSortableQueryElementsAPI,
     SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
@@ -24,10 +24,13 @@ import { type UserWithRolesPayload } from "../schema/userPayloads";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export type EventStartsAtFieldArgs = {
+export type EventStartsAtFieldArgs<
+    TAllowNull extends boolean,
+    TAuthSpec extends DB3AuthSpec,
+> = {
     columnName: string;
-    allowNull: boolean;
-} & DB3AuthSpec;
+    allowNull: TAllowNull;
+} & TAuthSpec;
 
 type EventStartsAtFieldDiscreteFilterTRow = {
     id: number, // facet IDs for this custom faceting are not database pks, they are contrived. but required for selecting etc.
@@ -45,7 +48,17 @@ export interface EventStartsAtFieldDiscreteFilterDomain {
 
 const gTbdId = 9999;
 
-export class EventStartsAtField extends FieldBase<Date> {
+export class EventStartsAtField<
+    TAllowNull extends boolean = boolean,
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+> extends FieldBase<
+    Date,
+    undefined,
+    true,
+    DB3MaybeNull<Date, TAllowNull>,
+    DB3MaybeNull<Date, TAllowNull>,
+    DB3ReadPresenceForAuthSpec<TAuthSpec>
+> {
 
     allowNull: boolean;
     localTableSpec: xTable;
@@ -58,12 +71,12 @@ export class EventStartsAtField extends FieldBase<Date> {
 
     searchDomains: EventStartsAtFieldDiscreteFilterDomain[];
 
-    constructor(args: EventStartsAtFieldArgs) {
+    constructor(args: EventStartsAtFieldArgs<TAllowNull, TAuthSpec>) {
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : new Date(),
-            readTransportSchema: args.allowNull ? z.date().nullable() : z.date(),
+            readTransportSchema: makeNullableReadTransportSchema(z.date(), args.allowNull),
             authMap: (args as any).authMap || null,
             specialFunction: undefined,
             _customAuth: (args as any)._customAuth || null,

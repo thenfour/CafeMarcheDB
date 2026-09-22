@@ -22,7 +22,7 @@ export type CreatedAtFieldArgs = {
     specialFunction?: SqlSpecialColumnFunction;
 } & Partial<DB3AuthSpec>;
 
-export class CreatedAtField extends FieldBase<Date> {
+export class CreatedAtField extends FieldBase<Date, undefined, true, Date, Date> {
     constructor(args: CreatedAtFieldArgs) {
         super({
             member: args.columnName,
