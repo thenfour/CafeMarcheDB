@@ -2,7 +2,7 @@ import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/rootroot";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { DateTimeField, foreignRef, foreignRefByTableId, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { DateTimeField, foreignRef, ForeignCollectionField, foreignRefByTableId, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FileWikiPageTagArgs, FileWikiPageTagNaturalOrderBy, FileWikiPageTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
 import { CreatedByUserField, MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
@@ -589,16 +589,31 @@ const xFileBaseArgs = {
         // fields above. The old array repeated them as later GhostFields; those
         // duplicates could not be addressed independently and are not carried
         // into the new one-key-per-field contract.
-        childFiles: memberName => new GhostField({ memberName, authMap: xFileAuthMap_FileObjects }),
-        frontpageGalleryItems: memberName => new GhostField({ memberName, authMap: xFileAuthMap_FileObjects }),
-        pinnedForSongs: memberName => new GhostField({ memberName, authMap: xFileAuthMap_FileObjects }),
-        previewForFile: memberName => new GhostField({ memberName, authMap: xFileAuthMap_FileObjects }),
+        childFiles: memberName => new ForeignCollectionField({
+            memberName,
+            foreignTableID: "File",
+            authMap: xFileAuthMap_FileObjects,
+        }),
+        frontpageGalleryItems: memberName => new ForeignCollectionField({
+            memberName,
+            foreignTableID: "FrontpageGalleryItem",
+            authMap: xFileAuthMap_FileObjects,
+        }),
+        pinnedForSongs: memberName => new ForeignCollectionField({
+            memberName,
+            foreignTableID: "Song",
+            authMap: xFileAuthMap_FileObjects,
+        }),
+        previewForFile: memberName => new ForeignCollectionField({
+            memberName,
+            foreignTableID: "File",
+            authMap: xFileAuthMap_FileObjects,
+        }),
     })
 
 };
 
 export const xFile = db3.defineTable(xFileBaseArgs);
-export const xFileVerbose = db3.defineTable(xFileBaseArgs);
 
 
 
@@ -726,5 +741,6 @@ declare module "../db3core" {
         FileEventTag: typeof xFileEventTag;
         FileInstrumentTag: typeof xFileInstrumentTag;
         FileWikiPageTag: typeof xFileWikiPageTag;
+        FrontpageGalleryItem: typeof xFrontpageGalleryItem;
     }
 }

@@ -3,7 +3,11 @@ import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { PermissionForVisibilityArgs, SongTagAssociationNaturalOrderBy } from "../../schema/prismArgs";
-import { fileCardSelection, fileCardTransportSelection } from "../file/fileViews";
+import {
+    fileCardSelection,
+    fileCardTransportSelection,
+    normalizeFileClient,
+} from "../file/fileViews";
 import { xSongCredit, xSongCreditType, xSong, xSongTag } from "../../schema/song";
 
 export const songTagEditorSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()({
@@ -361,40 +365,7 @@ export const songDetailView = defineView({
             taggedFiles: hydrated.taggedFiles
                 ?.flatMap(association => association.file == null ? [] : [{
                     ...association,
-                    file: {
-                        ...association.file,
-                        visiblePermission: association.file.visiblePermission,
-                        tags: association.file.tags
-                            ?.flatMap(tagAssociation => tagAssociation.fileTag == null ? [] : [{
-                                ...tagAssociation,
-                                fileTag: tagAssociation.fileTag,
-                            }]),
-                        taggedUsers: association.file.taggedUsers
-                            ?.flatMap(tagAssociation => tagAssociation.user == null ? [] : [{
-                                ...tagAssociation,
-                                user: tagAssociation.user,
-                            }]),
-                        taggedSongs: association.file.taggedSongs
-                            ?.flatMap(tagAssociation => tagAssociation.song == null ? [] : [{
-                                ...tagAssociation,
-                                song: tagAssociation.song,
-                            }]),
-                        taggedEvents: association.file.taggedEvents
-                            ?.flatMap(tagAssociation => tagAssociation.event == null ? [] : [{
-                                ...tagAssociation,
-                                event: tagAssociation.event,
-                            }]),
-                        taggedInstruments: association.file.taggedInstruments
-                            ?.flatMap(tagAssociation => tagAssociation.instrument == null ? [] : [{
-                                ...tagAssociation,
-                                instrument: tagAssociation.instrument,
-                            }]),
-                        taggedWikiPages: association.file.taggedWikiPages
-                            ?.flatMap(tagAssociation => tagAssociation.wikiPage == null ? [] : [{
-                                ...tagAssociation,
-                                wikiPage: tagAssociation.wikiPage,
-                            }]),
-                    },
+                    file: normalizeFileClient(association.file),
                 }]),
         };
     },

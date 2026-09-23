@@ -800,6 +800,16 @@ sound.
         target types. Remove the final `enrichSong` call and module after proving
         its only consumer already reads the selected Song primitive directly.
 
+28. [x] **Migrate File detail and editor contracts.** Derive `FileTag_Editor`,
+        `File_Detail`, and `File_Editor` DTO schemas and recursive hydration from
+        their Prisma selections. Describe File reverse relations as typed
+        collection fields so self-relations remain finite and compiler-checked.
+        Keep authorization-only selection members outside the transport shape,
+        and centralize inaccessible association-target pruning in one typed File
+        client normalizer reused by embedded Song file cards. Remove the unused
+        duplicate `xFileVerbose`; retain the remaining `enrichFile` call only at
+        the legacy Event payload boundary until that view is migrated.
+
 ## Pilot completion criteria
 
 The pilot is successful when all of the following are true:

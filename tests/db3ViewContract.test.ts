@@ -736,6 +736,96 @@ describe("UserTag Event search derived-view migration", () => {
   })
 })
 
+describe("File derived-view migration", () => {
+  it("derives File Tag transport and consumer codecs", () => {
+    type Dto = db3.DtoOf<typeof db3.fileTagEditorView>
+    type Client = db3.ClientOf<typeof db3.fileTagEditorView>
+
+    expectTypeOf<Dto["id"]>().toEqualTypeOf<number>()
+    expectTypeOf<Dto["text"]>().toEqualTypeOf<string | undefined>()
+    expectTypeOf<Dto["color"]>()
+      .toEqualTypeOf<string | null | undefined>()
+    expectTypeOf<Client["color"]>()
+      .toEqualTypeOf<ColorPaletteEntry | null | undefined>()
+    expect(db3.fileTagEditorView.getSelectionArgs(
+      {} as db3.DB3ViewSelectionContext,
+    )).toBe(db3.fileTagEditorSelection)
+  })
+
+  it("derives finite File Detail DTO relations and normalized client associations", () => {
+    type Dto = db3.FileDetailDto
+    type Client = db3.FileDetailClient
+    type RelatedFileDto = NonNullable<Dto["childFiles"]>[number]
+    type PinnedSongDto = NonNullable<Dto["pinnedForSongs"]>[number]
+    type ClientFileTag = NonNullable<Client["tags"]>[number]
+    type ClientUserTag = NonNullable<Client["taggedUsers"]>[number]
+    type ClientSongTag = NonNullable<Client["taggedSongs"]>[number]
+    type ClientEventTag = NonNullable<Client["taggedEvents"]>[number]
+    type ClientInstrumentTag = NonNullable<Client["taggedInstruments"]>[number]
+    type ClientWikiPageTag = NonNullable<Client["taggedWikiPages"]>[number]
+    type RootAuthorizationOnlyKeys = Extract<keyof Dto, "isDeleted">
+    type RelatedAuthorizationOnlyKeys = Extract<
+      keyof RelatedFileDto,
+      "uploadedByUserId" | "visiblePermissionId" | "isDeleted"
+    >
+    type PinnedAuthorizationOnlyKeys = Extract<
+      keyof PinnedSongDto,
+      "createdByUserId" | "visiblePermissionId" | "isDeleted"
+    >
+
+    expectTypeOf<Dto["customData"]>()
+      .toEqualTypeOf<string | null | undefined>()
+    expectTypeOf<RelatedFileDto>().toEqualTypeOf<{
+      id: number
+      fileLeafName?: string
+    }>()
+    expectTypeOf<PinnedSongDto>().toEqualTypeOf<{
+      id: number
+      name?: string
+    }>()
+    expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<RelatedAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<PinnedAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<ClientFileTag["fileTag"]>()
+      .toEqualTypeOf<NonNullable<ClientFileTag["fileTag"]>>()
+    expectTypeOf<ClientUserTag["user"]>()
+      .toEqualTypeOf<NonNullable<ClientUserTag["user"]>>()
+    expectTypeOf<ClientSongTag["song"]>()
+      .toEqualTypeOf<NonNullable<ClientSongTag["song"]>>()
+    expectTypeOf<ClientEventTag["event"]>()
+      .toEqualTypeOf<NonNullable<ClientEventTag["event"]>>()
+    expectTypeOf<ClientInstrumentTag["instrument"]>()
+      .toEqualTypeOf<NonNullable<ClientInstrumentTag["instrument"]>>()
+    expectTypeOf<ClientWikiPageTag["wikiPage"]>()
+      .toEqualTypeOf<NonNullable<ClientWikiPageTag["wikiPage"]>>()
+    expect(db3.fileDetailView.getSelectionArgs(
+      {} as db3.DB3ViewSelectionContext,
+    )).toBe(db3.fileDetailSelection)
+  })
+
+  it("derives the File Editor subset without widening its transport", () => {
+    type Dto = db3.DtoOf<typeof db3.fileEditorView>
+    type Client = db3.ClientOf<typeof db3.fileEditorView>
+    type ClientFileTag = NonNullable<Client["tags"]>[number]
+    type DetailOnlyKeys = Extract<
+      keyof Dto,
+      "frontpageGalleryItems" | "parentFile" | "childFiles" | "pinnedForSongs"
+    >
+
+    expectTypeOf<Dto["id"]>().toEqualTypeOf<number>()
+    expectTypeOf<Dto["isDeleted"]>()
+      .toEqualTypeOf<boolean | undefined>()
+    expectTypeOf<Dto["customData"]>()
+      .toEqualTypeOf<string | null | undefined>()
+    expectTypeOf<DetailOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<ClientFileTag["fileTag"]>()
+      .toEqualTypeOf<NonNullable<ClientFileTag["fileTag"]>>()
+    expect(db3.fileEditorView.getSelectionArgs(
+      {} as db3.DB3ViewSelectionContext,
+    )).toBe(db3.fileEditorSelection)
+  })
+})
+
 describe("Song derived-view migration", () => {
   it("preserves exact nullable transport typing for primitive ghost fields", () => {
     const selection = Prisma.validator<Prisma.SongDefaultArgs>()({

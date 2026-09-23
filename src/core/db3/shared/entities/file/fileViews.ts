@@ -1,26 +1,31 @@
 import { Prisma } from "db";
 import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
-import type { DB3ReferenceProvider } from "../../core/db3Hydration";
-import { defineView, type ClientOf } from "../../core/db3View";
+import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
+import { deriveViewContract } from "../../core/db3ViewContract";
 import { db3s } from "../common/viewCommon";
-import { xInstrument } from "../../schema/instrument";
-import { xPermission } from "../../schema/user";
 import { xFile, xFileTag, xFrontpageGalleryItem } from "../../schema/file";
 
-const FileTagEditorDtoSchema = z.object({
-    ...db3s.id(),
-    text: z.string().optional(),
-    ...db3s.descriptionColorSortOrder(),
-    significance: z.string().nullable().optional(),
+export const fileTagEditorSelection = Prisma.validator<Prisma.FileTagDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        significance: true,
+    },
 });
+
+const fileTagEditorContract = deriveViewContract(xFileTag, fileTagEditorSelection);
 
 export const fileTagEditorView = defineCrudView({
     viewID: "FileTag_Editor",
     entity: xFileTag,
     operations: { create: true, update: true, delete: true },
-    dtoSchema: FileTagEditorDtoSchema,
-    hydrate: dto => xFileTag.getClientModel(dto, "view"),
+    selection: fileTagEditorContract.prismaSelection,
+    dtoSchema: fileTagEditorContract.dtoSchema,
+    hydrate: fileTagEditorContract.hydrate,
 });
 
 const FrontpageGalleryItemEditorDtoSchema = z.object({
@@ -59,104 +64,34 @@ export const frontpageGalleryItemEditorView = defineCrudView({
     hydrate: dto => xFrontpageGalleryItem.getClientModel(dto, "view"),
 });
 
-const FileTagAssignmentDtoSchema = z.object({
-    id: z.number().int(),
-    fileTagId: z.number().int().optional(),
-});
-
-const FileUserTagDtoSchema = z.object({
-    id: z.number().int(),
-    user: z.object({
-        id: z.number().int(),
-        name: z.string().optional(),
-    }).nullable().optional(),
-});
-
-const FileSongTagDtoSchema = z.object({
-    id: z.number().int(),
-    song: z.object({
-        id: z.number().int(),
-        name: z.string().optional(),
-    }).nullable().optional(),
-});
-
-const FileEventTagDtoSchema = z.object({
-    id: z.number().int(),
-    event: z.object({
-        id: z.number().int(),
-        name: z.string().optional(),
-        startsAt: z.date().nullable().optional(),
-        statusId: z.number().int().nullable().optional(),
-        typeId: z.number().int().nullable().optional(),
-    }).nullable().optional(),
-});
-
-const FileInstrumentTagDtoSchema = z.object({
-    id: z.number().int(),
-    instrumentId: z.number().int().optional(),
-});
-
-const FileWikiPageTagDtoSchema = z.object({
-    id: z.number().int(),
-    wikiPage: z.object({
-        id: z.number().int(),
-        slug: z.string().optional(),
-    }).nullable().optional(),
-});
-
-const FileDetailRelatedFileDtoSchema = z.object({
-    id: z.number().int(),
-    fileLeafName: z.string().optional(),
-});
-
-const FileDetailPinnedSongDtoSchema = z.object({
-    id: z.number().int(),
-    name: z.string().optional(),
-});
-
-// This is the requested maximum shape. Apart from the transport identity, fields
-// remain optional because recursive DB3 authorization may remove any of them.
-export const FileDetailDtoSchema = z.object({
-    id: z.number().int(),
-    fileLeafName: z.string().optional(),
-    description: z.string().optional(),
-    uploadedAt: z.date().optional(),
-    uploadedByUserId: z.number().int().nullable().optional(),
-    uploadedByUser: z.object({
-        id: z.number().int(),
-        name: z.string().optional(),
-    }).nullable().optional(),
-    visiblePermissionId: z.number().int().nullable().optional(),
-    sizeBytes: z.number().int().nullable().optional(),
-    storedLeafName: z.string().optional(),
-    mimeType: z.string().nullable().optional(),
-    customData: z.string().nullable().optional(),
-    externalURI: z.string().nullable().optional(),
-    fileCreatedAt: z.date().nullable().optional(),
-    parentFileId: z.number().int().nullable().optional(),
-    previewFileId: z.number().int().nullable().optional(),
-    tags: z.array(FileTagAssignmentDtoSchema).optional(),
-    taggedUsers: z.array(FileUserTagDtoSchema).optional(),
-    taggedSongs: z.array(FileSongTagDtoSchema).optional(),
-    taggedEvents: z.array(FileEventTagDtoSchema).optional(),
-    taggedInstruments: z.array(FileInstrumentTagDtoSchema).optional(),
-    taggedWikiPages: z.array(FileWikiPageTagDtoSchema).optional(),
-    frontpageGalleryItems: z.array(z.object({
-        id: z.number().int(),
-    })).optional(),
-    parentFile: FileDetailRelatedFileDtoSchema.nullable().optional(),
-    childFiles: z.array(FileDetailRelatedFileDtoSchema).optional(),
-    previewFile: FileDetailRelatedFileDtoSchema.nullable().optional(),
-    previewForFile: z.array(FileDetailRelatedFileDtoSchema).optional(),
-    pinnedForSongs: z.array(FileDetailPinnedSongDtoSchema).optional(),
-});
-
+const fileDetailRelatedFileTransportSelection = {
+    select: {
+        id: true,
+        fileLeafName: true,
+    },
+} as const;
 
 const fileDetailRelatedFileSelection = {
     select: {
         id: true,
         fileLeafName: true,
         uploadedByUserId: true,
+        visiblePermissionId: true,
+        isDeleted: true,
+    },
+} as const;
+
+const fileDetailPinnedSongTransportSelection = {
+    select: {
+        id: true,
+        name: true,
+    },
+} as const;
+
+const fileDetailPinnedSongSelection = {
+    select: {
+        ...fileDetailPinnedSongTransportSelection.select,
+        createdByUserId: true,
         visiblePermissionId: true,
         isDeleted: true,
     },
@@ -312,6 +247,20 @@ export const fileCardSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
 
 
 
+const fileDetailTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
+    select: {
+        ...fileCardTransportSelection.select,
+        frontpageGalleryItems: {
+            select: { id: true },
+        },
+        parentFile: fileDetailRelatedFileTransportSelection,
+        childFiles: fileDetailRelatedFileTransportSelection,
+        previewFile: fileDetailRelatedFileTransportSelection,
+        previewForFile: fileDetailRelatedFileTransportSelection,
+        pinnedForSongs: fileDetailPinnedSongTransportSelection,
+    },
+});
+
 export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
         ...fileCardSelection.select,
@@ -322,90 +271,102 @@ export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
         childFiles: fileDetailRelatedFileSelection,
         previewFile: fileDetailRelatedFileSelection,
         previewForFile: fileDetailRelatedFileSelection,
-        pinnedForSongs: {
-            select: {
-                id: true,
-                name: true,
-                createdByUserId: true,
-                visiblePermissionId: true,
-                isDeleted: true,
-            },
-        },
+        pinnedForSongs: fileDetailPinnedSongSelection,
     },
 });
 
-export type FileDetailDto = z.infer<typeof FileDetailDtoSchema>;
+const fileDetailContract = deriveViewContract(
+    xFile,
+    fileDetailSelection,
+    { transportSelection: fileDetailTransportSelection },
+);
 
-export function hydrateFileDetailDto(
-    dto: FileDetailDto,
-    references: DB3ReferenceProvider,
-    path = `File(${dto.id})`,
-) {
-    return {
-        ...dto,
-        visiblePermission: references.get(xPermission, dto.visiblePermissionId),
-        tags: references.mapOptionalCollection(dto.tags, (association, index) => ({
-            ...association,
-            fileTag: references.require(
-                xFileTag,
-                association.fileTagId,
-                `${path}.tags[${index}].fileTagId`,
-            ),
-        })),
-        taggedUsers: references.mapOptionalCollection(dto.taggedUsers, association => association)
-            ?.flatMap(association => association.user == null ? [] : [{
-                ...association,
-                user: association.user,
-            }]),
-        taggedSongs: references.mapOptionalCollection(dto.taggedSongs, association => association)
-            ?.flatMap(association => association.song == null ? [] : [{
-                ...association,
-                song: association.song,
-            }]),
-        taggedEvents: references.mapOptionalCollection(dto.taggedEvents, association => association)
-            ?.flatMap(association => association.event == null ? [] : [{
-                ...association,
-                event: association.event,
-            }]),
-        taggedInstruments: references.mapOptionalCollection(dto.taggedInstruments, (association, index) => ({
-            ...association,
-            instrument: references.require(
-                xInstrument,
-                association.instrumentId,
-                `${path}.taggedInstruments[${index}].instrumentId`,
-            ),
-        })),
-        taggedWikiPages: references.mapOptionalCollection(dto.taggedWikiPages, association => association)
-            ?.flatMap(association => association.wikiPage == null ? [] : [{
-                ...association,
-                wikiPage: association.wikiPage,
-            }]),
-    };
+type DerivedFileDetailClient = ReturnType<typeof fileDetailContract.hydrate>;
+
+type WithPresentMember<
+    TAssociation,
+    TMember extends keyof TAssociation,
+> = TAssociation & {
+    [TKey in TMember]-?: NonNullable<TAssociation[TKey]>;
+};
+
+type CollectionWithPresentMember<
+    TCollection,
+    TMember extends PropertyKey,
+> = NonNullable<TCollection> extends readonly (infer TAssociation)[]
+    ? TMember extends keyof TAssociation
+    ? WithPresentMember<TAssociation, TMember>[] | Extract<TCollection, null | undefined>
+    : never
+    : never;
+
+type NormalizedFileAssociationMember =
+    | "tags"
+    | "taggedUsers"
+    | "taggedSongs"
+    | "taggedEvents"
+    | "taggedInstruments"
+    | "taggedWikiPages";
+
+export type NormalizedFileClient<
+    TFile extends DerivedFileDetailClient,
+> = Omit<TFile, NormalizedFileAssociationMember | "visiblePermission"> & {
+    visiblePermission: TFile["visiblePermission"];
+    tags: CollectionWithPresentMember<TFile["tags"], "fileTag">;
+    taggedUsers: CollectionWithPresentMember<TFile["taggedUsers"], "user">;
+    taggedSongs: CollectionWithPresentMember<TFile["taggedSongs"], "song">;
+    taggedEvents: CollectionWithPresentMember<TFile["taggedEvents"], "event">;
+    taggedInstruments: CollectionWithPresentMember<
+        TFile["taggedInstruments"],
+        "instrument"
+    >;
+    taggedWikiPages: CollectionWithPresentMember<
+        TFile["taggedWikiPages"],
+        "wikiPage"
+    >;
+};
+
+function keepAssociationsWithMember<
+    TAssociation,
+    TMember extends keyof TAssociation,
+>(
+    associations: readonly TAssociation[] | undefined,
+    member: TMember,
+): WithPresentMember<TAssociation, TMember>[] | undefined {
+    return associations?.filter(
+        (association): association is WithPresentMember<TAssociation, TMember> =>
+            association[member] != null,
+    );
 }
 
-const FileEditorDtoSchema = FileDetailDtoSchema.pick({
-    id: true,
-    fileLeafName: true,
-    description: true,
-    fileCreatedAt: true,
-    uploadedAt: true,
-    uploadedByUserId: true,
-    uploadedByUser: true,
-    visiblePermissionId: true,
-    sizeBytes: true,
-    storedLeafName: true,
-    tags: true,
-    taggedUsers: true,
-    taggedSongs: true,
-    taggedEvents: true,
-    taggedInstruments: true,
-    taggedWikiPages: true,
-    customData: true,
-}).extend({
-    isDeleted: z.boolean().optional(),
-});
+// Relation fields may be removed by nested row authorization. Once a relation
+// survives that boundary, normalize its possibly elided nested member into the
+// concrete member shape consumed by File cards and editors.
+export function normalizeFileClient<TFile extends DerivedFileDetailClient>(
+    file: TFile,
+): NormalizedFileClient<TFile> {
+    const normalized = {
+        ...file,
+        visiblePermission: file.visiblePermission,
+        tags: keepAssociationsWithMember(file.tags, "fileTag"),
+        taggedUsers: keepAssociationsWithMember(file.taggedUsers, "user"),
+        taggedSongs: keepAssociationsWithMember(file.taggedSongs, "song"),
+        taggedEvents: keepAssociationsWithMember(file.taggedEvents, "event"),
+        taggedInstruments: keepAssociationsWithMember(
+            file.taggedInstruments,
+            "instrument",
+        ),
+        taggedWikiPages: keepAssociationsWithMember(
+            file.taggedWikiPages,
+            "wikiPage",
+        ),
+    };
+    // Object spread retains TFile's overridden keys as intersections during
+    // generic inference. The mapped return type deliberately replaces them;
+    // keepAssociationsWithMember enforces that exact runtime invariant.
+    return normalized as unknown as NormalizedFileClient<TFile>;
+}
 
-const fileEditorSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
+const fileEditorTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
         id: true,
         fileLeafName: true,
@@ -417,39 +378,54 @@ const fileEditorSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
         sizeBytes: true,
         customData: true,
         uploadedByUserId: true,
-        uploadedByUser: fileDetailSelection.select.uploadedByUser,
+        uploadedByUser: fileCardTransportSelection.select.uploadedByUser,
         visiblePermissionId: true,
-        tags: fileDetailSelection.select.tags,
-        taggedUsers: fileDetailSelection.select.taggedUsers,
-        taggedSongs: fileDetailSelection.select.taggedSongs,
-        taggedEvents: fileDetailSelection.select.taggedEvents,
-        taggedInstruments: fileDetailSelection.select.taggedInstruments,
-        taggedWikiPages: fileDetailSelection.select.taggedWikiPages,
+        tags: fileCardTransportSelection.select.tags,
+        taggedUsers: fileCardTransportSelection.select.taggedUsers,
+        taggedSongs: fileCardTransportSelection.select.taggedSongs,
+        taggedEvents: fileCardTransportSelection.select.taggedEvents,
+        taggedInstruments: fileCardTransportSelection.select.taggedInstruments,
+        taggedWikiPages: fileCardTransportSelection.select.taggedWikiPages,
     },
 });
+
+export const fileEditorSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
+    select: {
+        ...fileEditorTransportSelection.select,
+        taggedUsers: fileCardSelection.select.taggedUsers,
+        taggedSongs: fileCardSelection.select.taggedSongs,
+        taggedEvents: fileCardSelection.select.taggedEvents,
+        taggedInstruments: fileCardSelection.select.taggedInstruments,
+        taggedWikiPages: fileCardSelection.select.taggedWikiPages,
+    },
+});
+
+const fileEditorContract = deriveViewContract(
+    xFile,
+    fileEditorSelection,
+    { transportSelection: fileEditorTransportSelection },
+);
 
 export const fileEditorView = defineCrudView({
     viewID: "File_Editor",
     entity: xFile,
     operations: { update: true, delete: true },
-    selection: fileEditorSelection,
-    dtoSchema: FileEditorDtoSchema,
-    hydrate: (dto, references) => {
-        const client = xFile.getClientModel(dto, "view");
-        return {
-            ...hydrateFileDetailDto(client, references),
-            isDeleted: client.isDeleted,
-            customData: client.customData,
-        };
-    },
+    selection: fileEditorContract.prismaSelection,
+    dtoSchema: fileEditorContract.dtoSchema,
+    hydrate: (dto, references) => normalizeFileClient(
+        fileEditorContract.hydrate(dto, references),
+    ),
 });
 
 export const fileDetailView = defineView({
     viewID: "File_Detail",
     entity: xFile,
-    selection: fileDetailSelection,
-    dtoSchema: FileDetailDtoSchema,
-    hydrate: (dto, references) => hydrateFileDetailDto(dto, references),
+    selection: fileDetailContract.prismaSelection,
+    dtoSchema: fileDetailContract.dtoSchema,
+    hydrate: (dto, references) => normalizeFileClient(
+        fileDetailContract.hydrate(dto, references),
+    ),
 });
 
+export type FileDetailDto = DtoOf<typeof fileDetailView>;
 export type FileDetailClient = ClientOf<typeof fileDetailView>;

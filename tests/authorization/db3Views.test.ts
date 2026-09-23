@@ -623,8 +623,14 @@ describe("DB3 named views", () => {
             id: 8,
             fileLeafName: "score.pdf",
             customData: "{\"width\":1200}",
+            isDeleted: true,
             visiblePermissionId: permission.id,
             tags: [{ id: 80, fileTagId: fileTag.id }],
+            taggedUsers: [{ id: 81 }],
+            taggedSongs: [{ id: 82 }],
+            taggedEvents: [{ id: 83 }],
+            taggedInstruments: [{ id: 84 }],
+            taggedWikiPages: [{ id: 85 }],
             frontpageGalleryItems: [{ id: 90 }],
             parentFile: { id: 7, fileLeafName: "source.pdf" },
             childFiles: [{ id: 9, fileLeafName: "part.pdf" }],
@@ -635,7 +641,13 @@ describe("DB3 named views", () => {
         const hydrated = db3.hydrateView(db3.fileDetailView, dto, references);
 
         expect(hydrated.visiblePermission).toBe(permission);
+        expect(dto).not.toHaveProperty("isDeleted");
         expect(hydrated.tags?.[0]?.fileTag).toBe(fileTag);
+        expect(hydrated.taggedUsers).toEqual([]);
+        expect(hydrated.taggedSongs).toEqual([]);
+        expect(hydrated.taggedEvents).toEqual([]);
+        expect(hydrated.taggedInstruments).toEqual([]);
+        expect(hydrated.taggedWikiPages).toEqual([]);
         expect(hydrated.frontpageGalleryItems).toEqual([{ id: 90 }]);
         expect(hydrated.parentFile).toEqual({ id: 7, fileLeafName: "source.pdf" });
         expect(hydrated.childFiles).toEqual([{ id: 9, fileLeafName: "part.pdf" }]);

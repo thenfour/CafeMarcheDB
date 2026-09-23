@@ -223,6 +223,18 @@ uses the same derived contract mechanism over a narrower embedded File-card
 projection, instead of inheriting unrelated File-detail reverse collections.
 The final `enrichSong` caller and module have consequently been removed.
 
+`FileTag_Editor`, `File_Detail`, and `File_Editor` likewise derive their DTO and
+recursive hydration contracts from explicit Prisma selections. The full File
+queries can still select hidden authorization-support members, while their
+transport selections define the smaller public payload. File reverse relations
+are registered, finite collection edges rather than untyped ghost fields. A
+single typed File client normalizer removes association rows whose protected
+target was elided and guarantees that every retained association has a concrete
+target; Song's embedded File cards reuse the same boundary. The unused
+`xFileVerbose` duplicate has been removed. The remaining `enrichFile` call is
+confined to the legacy Event payload path and can disappear with that view's
+migration.
+
 ### DTO: the authorized transport boundary
 
 A DTO is neither a Prisma model nor the final rich client object. It is the
