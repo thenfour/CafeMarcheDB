@@ -48,8 +48,8 @@ export const xUserPresentationMetadataAuthMap = db3.defineAuthMap({
 // Taxonomy definitions must be available when an authenticated user views or
 // edits their own profile; assignments still use the profile maps above.
 const xUserTaxonomyDefinitionAuthMap = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.login,
-    PostQuery: Permission.login,
+    PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+    PostQuery: db3.DB3FieldReadAuth.inheritRow,
     PreMutateAsOwner: Permission.manage_user_taxonomy,
     PreMutate: Permission.manage_user_taxonomy,
     PreInsert: Permission.manage_user_taxonomy,
