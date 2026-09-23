@@ -12,7 +12,7 @@ import { DateTimeRange } from "shared/time";
 import { CoalesceBool, gIconOptions, smartTruncate } from "shared/utils";
 import { type CMDBTableFilterModel } from "../apiTypes";
 import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../columnTypes/genericString";
-import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, TagsField } from "../columnTypes/xTableColumnTypes";
+import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import {
     EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, type EventAttendancePayload,
@@ -21,7 +21,7 @@ import {
     EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
     type EventSegmentUserResponsePayload, EventSongListArgs, EventSongListDividerArgs, type EventSongListDividerPayload, EventSongListDividerTextStyle, EventSongListNaturalOrderBy, type EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy,
     type EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, type EventStatusPayload, EventStatusSignificance, EventTagArgs, EventTagAssignmentArgs,
-    EventTagAssignmentNaturalOrderBy, type EventTagAssignmentPayload, EventTagNaturalOrderBy, type EventTagPayload, EventTagSignificance, type EventTaggedFilesPayload,
+    EventTagAssignmentNaturalOrderBy, type EventTagAssignmentPayload, EventTagNaturalOrderBy, type EventTagPayload, EventTagSignificance,
     EventTypeArgs, EventTypeNaturalOrderBy, type EventTypePayload, EventTypeSignificance, EventUserResponseArgs, EventUserResponseNaturalOrderBy,
     type EventUserResponsePayload,
     type InstrumentClientOrDbPayload,
@@ -581,19 +581,10 @@ export const xEventArgs_Base = db3.defineTableDesc({
         frontpageLocationURI_fr: columnName => MakeNullableRawTextField(columnName, { authMap: xEventAuthMap_Homepage, }),
         frontpageTags_fr: columnName => MakeNullableRawTextField(columnName, { authMap: xEventAuthMap_Homepage, }),
 
-        tags: columnName => new TagsField<
-            EventTagAssignmentPayload,
-            typeof xEventTagAssignment,
-            { readonly authMap: typeof xEventAuthMap_Homepage }
-        >({
-            columnName,
-            associationForeignIDMember: "eventTagId",
+        tags: tagsRef("EventTagAssignment", "EventTag", {
             associationForeignObjectMember: "eventTag",
-            associationLocalIDMember: "eventId",
             associationLocalObjectMember: "event",
-            associationTableID: "EventTagAssignment",
             authMap: xEventAuthMap_Homepage,
-            foreignTableID: "EventTag",
             // don't allow quick search on tag; it interferes with getEventFilterInfo.ts
             getQuickFilterWhereClause: () => false,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.EventWhereInput | boolean => {
@@ -612,14 +603,9 @@ export const xEventArgs_Base = db3.defineTableDesc({
                 // });
             },
         }), // tags
-        fileTags: columnName => new TagsField<EventTaggedFilesPayload>({
-            columnName,
-            foreignTableID: "File",
-            associationTableID: "FileEventTag",
-            associationForeignIDMember: "fileId",
+        fileTags: tagsRef("FileEventTag", "File", {
             associationForeignObjectMember: "file",
             authMap: xEventAuthMap_R_EOwn_EManagers,
-            associationLocalIDMember: "eventId",
             associationLocalObjectMember: "event",
             getQuickFilterWhereClause: (query: string): Prisma.EventWhereInput | boolean => false,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.EventWhereInput | boolean => false,
@@ -1047,13 +1033,8 @@ export const xEventSongList = db3.defineTable({
             fkidMember: "eventId",
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
-        songs: columnName => new TagsField<Prisma.EventSongListGetPayload<{}>>({
-            columnName,
-            foreignTableID: "Song",
-            associationTableID: "eventSongListSong",
-            associationForeignIDMember: "songId",
+        songs: tagsRef("EventSongListSong", "Song", {
             associationForeignObjectMember: "song",
-            associationLocalIDMember: "eventSongListId",
             associationLocalObjectMember: "eventSongList",
             authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string): Prisma.EventSongListWhereInput | boolean => false,
@@ -1164,9 +1145,13 @@ export const xEventSongListDivider = db3.defineTable({
 // static string table id.
 declare module "../db3core" {
     interface DB3TableTypeRegistry {
+        Event: typeof xEvent;
+        EventTag: typeof xEventTag;
+        EventTagAssignment: typeof xEventTagAssignment;
         EventSegment: typeof xEventSegment;
         EventSegmentUserResponse: typeof xEventSegmentUserResponse;
         EventSongList: typeof xEventSongList;
+        EventSongListSong: typeof xEventSongListSong;
         EventSongListDivider: typeof xEventSongListDivider;
         EventUserResponse: typeof xEventUserResponse;
     }

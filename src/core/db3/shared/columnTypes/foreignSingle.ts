@@ -8,7 +8,7 @@ import {
 } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
 import {
-    type DB3AuthSpec, type DB3FieldPrismaMember, type DB3ForeignSingleReferenceField, type DB3IdentityOf, type DB3PrismaPayloadOf, type DB3ReadPresenceForAuthSpec, type DB3RowMode, type DB3TableTypeRegistry, ErrorValidateAndParseResult,
+    type DB3AuthSpec, type DB3FieldPrismaMember, type DB3ForeignSingleReferenceField, type DB3IdentityOf, type DB3PrismaPayloadOf, type DB3ReadPresenceForAuthSpec, type DB3RegisteredTableID, type DB3RowMode, ErrorValidateAndParseResult,
     FieldBase, GetTableById, makeNullableReadTransportSchema, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
@@ -470,7 +470,7 @@ export const foreignRef = <
 };
 
 export type ForeignSingleFieldByTableId<
-    TTargetTableID extends Extract<keyof DB3TableTypeRegistry, string>,
+    TTargetTableID extends DB3RegisteredTableID,
     TForeignKeyMember extends string,
     TAuthSpec extends DB3AuthSpec,
 > = Omit<
@@ -495,7 +495,7 @@ export type ForeignRefByTableIdArgs<
  * actually traverses this edge.
  */
 export const foreignRefByTableId = <
-    const TTargetTableID extends Extract<keyof DB3TableTypeRegistry, string>,
+    const TTargetTableID extends DB3RegisteredTableID,
     const TForeignKeyMember extends string,
     const TAuthSpec extends DB3AuthSpec,
 >(

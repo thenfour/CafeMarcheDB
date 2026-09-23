@@ -1,8 +1,8 @@
-import { FileEventTag, FileInstrumentTag, FileSongTag, FileUserTag, FileWikiPageTag, Prisma } from "db";
+import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/rootroot";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { DateTimeField, foreignRef, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../columnTypes/xTableColumnTypes";
+import { DateTimeField, foreignRef, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FileWikiPageTagArgs, FileWikiPageTagNaturalOrderBy, FileWikiPageTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
 import { CreatedByUserField, MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
@@ -488,14 +488,9 @@ const xFileBaseArgs = {
             getQuickFilterWhereClause: (query: string) => false,
         }),
 
-        tags: columnName => new TagsField<FileTagAssignmentPayload>({
-            columnName,
-            associationForeignIDMember: "fileTagId",
+        tags: tagsRef("FileTagAssignment", "FileTag", {
             associationForeignObjectMember: "fileTag",
-            associationLocalIDMember: "fileId",
             associationLocalObjectMember: "file",
-            associationTableID: "FileTagAssignment",
-            foreignTableID: "FileTag",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 tags: {
@@ -514,14 +509,9 @@ const xFileBaseArgs = {
             },
         }), // column: tags
 
-        taggedUsers: columnName => new TagsField<FileUserTag>({
-            columnName,
-            associationForeignIDMember: "userId",
+        taggedUsers: tagsRef("FileUserTag", "User", {
             associationForeignObjectMember: "user",
-            associationLocalIDMember: "fileId",
             associationLocalObjectMember: "file",
-            associationTableID: "FileUserTag",
-            foreignTableID: "User",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 taggedUsers: {
@@ -537,14 +527,9 @@ const xFileBaseArgs = {
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedUsers
 
-        taggedSongs: columnName => new TagsField<FileSongTag>({
-            columnName,
-            associationForeignIDMember: "songId",
+        taggedSongs: tagsRef("FileSongTag", "Song", {
             associationForeignObjectMember: "song",
-            associationLocalIDMember: "fileId",
             associationLocalObjectMember: "file",
-            associationTableID: "FileSongTag",
-            foreignTableID: "Song",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 taggedSongs: {
@@ -560,14 +545,9 @@ const xFileBaseArgs = {
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedSongs
 
-        taggedEvents: columnName => new TagsField<FileEventTag>({
-            columnName,
-            associationForeignIDMember: "eventId",
+        taggedEvents: tagsRef("FileEventTag", "Event", {
             associationForeignObjectMember: "event",
-            associationLocalIDMember: "fileId",
             associationLocalObjectMember: "file",
-            associationTableID: "FileEventTag",
-            foreignTableID: "Event",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 taggedEvents: {
@@ -583,14 +563,9 @@ const xFileBaseArgs = {
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedEvents
 
-        taggedInstruments: columnName => new TagsField<FileInstrumentTag>({
-            columnName,
-            associationForeignIDMember: "instrumentId",
+        taggedInstruments: tagsRef("FileInstrumentTag", "Instrument", {
             associationForeignObjectMember: "instrument",
-            associationLocalIDMember: "fileId",
             associationLocalObjectMember: "file",
-            associationTableID: "FileInstrumentTag",
-            foreignTableID: "Instrument",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 taggedInstruments: {
@@ -606,14 +581,9 @@ const xFileBaseArgs = {
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedInstruments
 
-        taggedWikiPages: columnName => new TagsField<FileWikiPageTag>({
-            columnName,
-            associationForeignIDMember: "wikiPageId",
+        taggedWikiPages: tagsRef("FileWikiPageTag", "WikiPage", {
             associationForeignObjectMember: "wikiPage",
-            associationLocalIDMember: "fileId",
             associationLocalObjectMember: "file",
-            associationTableID: "FileWikiPageTag",
-            foreignTableID: "WikiPage",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 taggedWikiPages: {
@@ -759,3 +729,16 @@ export const xFileWikiPageTag = db3.defineTable({
         }),
     })
 });
+
+declare module "../db3core" {
+    interface DB3TableTypeRegistry {
+        File: typeof xFile;
+        FileTag: typeof xFileTag;
+        FileTagAssignment: typeof xFileTagAssignment;
+        FileUserTag: typeof xFileUserTag;
+        FileSongTag: typeof xFileSongTag;
+        FileEventTag: typeof xFileEventTag;
+        FileInstrumentTag: typeof xFileInstrumentTag;
+        FileWikiPageTag: typeof xFileWikiPageTag;
+    }
+}

@@ -359,6 +359,12 @@ schema edges can instead retain a stable table-ID descriptor with
 concrete xTable only when a finite view selection traverses the edge, avoiding
 eager recursive expansion of the schema graph. The two recursive `File -> File`
 fields retain the legacy constructor as the explicit self-type escape hatch.
+Association collections use `tagsRef(associationTableID, foreignTableID, args)`.
+It checks both IDs and relation members against Prisma's non-recursive model
+metadata, derives the conventional local and foreign `${member}Id` keys, and
+retains the association table ID for selection-bounded xTable resolution. Direct
+`TagsField` construction is unavailable; only its consumer-facing type is
+exported.
 Callers must preserve the literal selection (for example with
 `Prisma.validator`) rather than first widening it to `Prisma.*DefaultArgs` if
 they want an exact derived DTO type.
@@ -489,9 +495,12 @@ The safe broad-rollout boundary is now concrete:
   `any` or require an arbitrary recursion-depth limit. Collection descriptors
   accept only registered IDs, so missing type metadata is a compiler error
   rather than a silent fallback to an untyped table.
-- `TagsField` can retain its exact authorization spec. The Event tags declaration
-  now carries its `inheritRow` presence through to the derived DTO, making the
-  selected collection required at both compile time and runtime.
+- `tagsRef` retains its exact authorization spec, so the Event tags declaration
+  carries `inheritRow` through to the derived DTO and makes the selected
+  collection required at both compile time and runtime. Association IDs, local
+  and foreign relation members, derived `${member}Id` keys, and the foreign
+  model are compiler-checked. Unsupported naming shapes are rejected rather
+  than widened, and the low-level `TagsField` constructor is not exported.
 - `Event_Search` now derives its finite nested transport and hydration graph. Its
   full per-actor Prisma selection may contain authorization-only members, while a
   checked `transportSelection` subset prevents those members from entering the
@@ -732,6 +741,13 @@ sound.
         transport subset so authorization-only fields do not enter the DTO. Prove
         nested relation members retain exact types and do not silently become
         `any`.
+
+22. [x] **Close association-field declaration gaps with `tagsRef`.** Resolve the
+        association xTable lazily by registered ID, but validate model IDs,
+        relation members, conventional foreign-key members, and the exact foreign
+        target against Prisma's flat model metadata at declaration time. Derive
+        the association value and authorization presence, migrate every schema
+        declaration, and make direct `TagsField` construction a compiler error.
 
 ## Pilot completion criteria
 

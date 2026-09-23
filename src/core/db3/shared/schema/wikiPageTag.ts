@@ -113,3 +113,10 @@ export const xWikiPageTagAssignment = defineTable({
         }),
     })
 });
+
+declare module "../db3core" {
+    interface DB3TableTypeRegistry {
+        WikiPageTag: typeof xWikiPageTag;
+        WikiPageTagAssignment: typeof xWikiPageTagAssignment;
+    }
+}

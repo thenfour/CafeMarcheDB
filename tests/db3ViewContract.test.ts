@@ -15,6 +15,30 @@ afterEach(() => {
 })
 
 describe("DB3 scalar selection compiler", () => {
+  it("makes unsupported tag relation declarations compile-time errors", () => {
+    const args = {
+      associationForeignObjectMember: "eventTag",
+      associationLocalObjectMember: "event",
+      authMap: db3.xEventAuthMap_Homepage,
+      getQuickFilterWhereClause: () => false,
+      getCustomFilterWhereClause: () => false,
+    } as const
+
+    const factory = db3.tagsRef("EventTagAssignment", "EventTag", args)
+    expect(factory("tags").foreignTableID).toBe("EventTag")
+
+    if (false) {
+      // @ts-expect-error The foreign table must be the target of eventTag.
+      db3.tagsRef("EventTagAssignment", "UserTag", args)
+      // @ts-expect-error Association IDs must be registered Prisma model IDs.
+      db3.tagsRef("eventTagAssignment", "EventTag", args)
+      // @ts-expect-error Local members must be Prisma relations backed by `${member}Id`.
+      db3.tagsRef("EventTagAssignment", "EventTag", { ...args, associationLocalObjectMember: "notARelation" })
+      // @ts-expect-error TagsField construction is intentionally restricted to tagsRef().
+      new db3.TagsField({} as never)
+    }
+  })
+
   it("derives the finite Event Search relation graph without recursive widening", () => {
     const selection = db3.eventSearchSelection({
       filter: { items: [] },
@@ -40,8 +64,18 @@ describe("DB3 scalar selection compiler", () => {
 
     expectTypeOf<db3.DB3RelationTargetTableOf<typeof db3.xEvent.fields.segments>>()
       .toEqualTypeOf<typeof db3.xEventSegment>()
+    expectTypeOf<db3.DB3RelationTargetTableOf<typeof db3.xEvent.fields.tags>>()
+      .toEqualTypeOf<typeof db3.xEventTagAssignment>()
     expectTypeOf<db3.DB3RelationTargetTableOf<typeof db3.xWikiPage.fields.currentRevision>>()
       .toEqualTypeOf<typeof db3.xWikiPageRevision>()
+    expectTypeOf<typeof db3.xEvent.fields.tags.associationTableID>()
+      .toEqualTypeOf<"EventTagAssignment">()
+    expectTypeOf<typeof db3.xEvent.fields.tags.foreignTableID>()
+      .toEqualTypeOf<"EventTag">()
+    expectTypeOf<typeof db3.xEvent.fields.tags.associationLocalIDMember>()
+      .toEqualTypeOf<"eventId">()
+    expectTypeOf<typeof db3.xEvent.fields.tags.associationForeignIDMember>()
+      .toEqualTypeOf<"eventTagId">()
     expectTypeOf<Segment>().toEqualTypeOf<{
       id: number
       name?: string

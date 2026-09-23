@@ -8,7 +8,7 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { ColorField, ConstEnumStringField, foreignRef, GenericIntegerField, GhostField, MakePKfield, MakePublicIdField, MakeSortOrderField, TagsField } from "../columnTypes/xTableColumnTypes";
+import { ColorField, ConstEnumStringField, foreignRef, GenericIntegerField, GhostField, MakePKfield, MakePublicIdField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { InstrumentArgs, type InstrumentClientPayload, InstrumentFunctionalGroupArgs, type InstrumentFunctionalGroupClientPayload, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance } from "./prismArgs";
 import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
@@ -232,14 +232,9 @@ export const xInstrument = db3.defineTable({
                 }
             }),
         }),
-        instrumentTags: columnName => new TagsField<InstrumentTagAssociationPayload>({
-            columnName,
-            associationForeignIDMember: "tagId",
+        instrumentTags: tagsRef("InstrumentTagAssociation", "InstrumentTag", {
             associationForeignObjectMember: "tag",
-            associationLocalIDMember: "instrumentId",
             associationLocalObjectMember: "instrument",
-            associationTableID: "InstrumentTagAssociation",
-            foreignTableID: "InstrumentTag",
             authMap: xInstrumentAuthMap_R_EAdmins,
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 instrumentTags: {
@@ -256,5 +251,13 @@ export const xInstrument = db3.defineTable({
         }),
     })
 });
+
+declare module "../db3core" {
+    interface DB3TableTypeRegistry {
+        Instrument: typeof xInstrument;
+        InstrumentTag: typeof xInstrumentTag;
+        InstrumentTagAssociation: typeof xInstrumentTagAssociation;
+    }
+}
 
 

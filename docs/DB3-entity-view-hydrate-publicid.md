@@ -171,6 +171,13 @@ fallback. If a Prisma query also needs fields solely for authorization,
 subset; the full selection is executed while only the subset defines the DTO and
 hydration graph.
 
+Association collections follow the same rule through `tagsRef`. The helper uses
+Prisma's flat model metadata to validate the registered association and foreign
+table IDs, both relation member names, their supported `${member}Id` scalar
+members, and the exact foreign target without resolving the recursive xTable
+types. The association xTable is resolved through `DB3TableTypeRegistry` only
+when a view selection traverses that collection.
+
 `ZodToPrismaSelection()` remains a supported primitive and existing explicit
 DTO-first views remain valid. It recursively maps DTO shape to a Prisma select,
 but it is no longer the preferred authority for a migrated read view because it

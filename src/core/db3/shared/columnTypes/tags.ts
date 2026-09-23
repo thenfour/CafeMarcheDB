@@ -1,5 +1,6 @@
 
 import { TAnyModel } from "@/shared/rootroot";
+import type { Prisma } from "db";
 import { assertIsNumberArray } from "shared/arrayUtils";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType,
@@ -7,7 +8,9 @@ import {
 } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
 import {
-    ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3FieldPrismaMember, type DB3ReadPresenceForAuthSpec, type DB3RelationTargetField, type DB3RowMode,
+    ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3FieldPrismaMember,
+    type DB3ReadPresenceForAuthSpec, type DB3RegisteredTableID,
+    type DB3RelationTargetField, type DB3RowMode,
     FieldBase, GetTableById, type SqlGetSortableQueryElementsAPI,
     SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
@@ -17,15 +20,41 @@ import { type UserWithRolesPayload } from "../schema/userPayloads";
 
 
 ////////////////////////////////////////////////////////////////
-// tags fields are arrays of associations
-// on client side, there is NO foreign key field (like instrumentId). Only the foreign object ('instrument').
-export type TagsFieldArgs<
+// Tags fields are arrays of association rows. The selected Prisma relation
+// targets the association xTable. Prisma's non-recursive model metadata checks
+// both relation ends without eagerly expanding the xTable relation graph.
+type TagsFieldArgs<
     TAssociation,
+    TAssociationTableID extends DB3RegisteredTableID,
+    TAssociationLocalObjectMember extends string,
+    TAssociationForeignObjectMember extends string,
+    TForeignTableID extends DB3RegisteredTableID,
     TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+> = Omit<
+    TagsFieldValueArgs<
+        TAssociation,
+        TAssociationTableID,
+        TAssociationLocalObjectMember,
+        TAssociationForeignObjectMember,
+        TForeignTableID
+    >,
+    "columnName" | "associationTableID" | "foreignTableID"
+> & TAuthSpec & {
+    columnName: string;
+    associationTableID: TAssociationTableID;
+    foreignTableID: TForeignTableID;
+};
+
+type TagsFieldValueArgs<
+    TAssociation,
+    TAssociationTableID extends DB3RegisteredTableID,
+    TAssociationLocalObjectMember extends string,
+    TAssociationForeignObjectMember extends string,
+    TForeignTableID extends DB3RegisteredTableID,
 > = {
     columnName: string; // "instrumentType"
-    associationTableID: string;
-    foreignTableID: string;
+    associationTableID: TAssociationTableID;
+    foreignTableID: TForeignTableID;
     getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
     getCustomFilterWhereClause: (query: CMDBTableFilterModel) => TAnyModel | boolean;
     doesItemExactlyMatchText?: (item: TAssociation, filterText: string) => boolean;
@@ -36,17 +65,90 @@ export type TagsFieldArgs<
 
     // mutations needs to where:{} to find associations for local rows. so "getForeignID()" is not going to work.
     // better to 
-    associationLocalIDMember: string;
-    associationForeignIDMember: string;
-    associationLocalObjectMember: string;
-    associationForeignObjectMember: string;
-} & TAuthSpec;
+    associationLocalObjectMember: TAssociationLocalObjectMember;
+    associationForeignObjectMember: TAssociationForeignObjectMember;
+};
+
+type DB3RegisteredPrismaTableID = Extract<DB3RegisteredTableID, Prisma.ModelName>;
+
+type DB3PrismaModelPayload<TTableID extends Prisma.ModelName> =
+    Prisma.TypeMap["model"][TTableID]["payload"];
+
+type DB3PrismaRelationKeys<TTableID extends Prisma.ModelName> = Extract<
+    keyof DB3PrismaModelPayload<TTableID>["objects"],
+    string
+>;
+
+type DB3PrismaScalarKeys<TTableID extends Prisma.ModelName> = Extract<
+    keyof DB3PrismaModelPayload<TTableID>["scalars"],
+    string
+>;
+
+type DB3SupportedTagsRelationKeys<TTableID extends Prisma.ModelName> = Extract<{
+    [TMember in DB3PrismaRelationKeys<TTableID>]:
+    `${TMember}Id` extends DB3PrismaScalarKeys<TTableID>
+    ? TMember
+    : never;
+}[DB3PrismaRelationKeys<TTableID>], string>;
+
+type DB3PrismaRelationTargetID<
+    TTableID extends Prisma.ModelName,
+    TRelationMember extends DB3PrismaRelationKeys<TTableID>,
+> = Extract<
+    DB3PrismaModelPayload<TTableID>["objects"][TRelationMember] extends { name: infer TName }
+    ? TName
+    : never,
+    Prisma.ModelName
+>;
+
+type DB3PrismaRelationScalarPayload<
+    TTableID extends Prisma.ModelName,
+    TRelationMember extends DB3PrismaRelationKeys<TTableID>,
+> = DB3PrismaModelPayload<TTableID>["objects"][TRelationMember] extends {
+    scalars: infer TScalars;
+} ? TScalars : never;
+
+type DB3TagsAssociationValue<
+    TAssociationTableID extends Prisma.ModelName,
+    TForeignObjectMember extends DB3PrismaRelationKeys<TAssociationTableID>,
+> = DB3PrismaModelPayload<TAssociationTableID>["scalars"] & {
+    [TMember in TForeignObjectMember]: DB3PrismaRelationScalarPayload<
+        TAssociationTableID,
+        TForeignObjectMember
+    >;
+};
+
+export type TagsRefArgs<
+    TAssociationTableID extends DB3RegisteredPrismaTableID,
+    TForeignObjectMember extends DB3SupportedTagsRelationKeys<TAssociationTableID>,
+    TLocalObjectMember extends DB3SupportedTagsRelationKeys<TAssociationTableID>,
+    TForeignTableID extends Extract<
+        DB3PrismaRelationTargetID<TAssociationTableID, TForeignObjectMember>,
+        DB3RegisteredTableID
+    >,
+    TAuthSpec extends DB3AuthSpec,
+> = Omit<
+    TagsFieldValueArgs<
+        DB3TagsAssociationValue<
+            TAssociationTableID,
+            TForeignObjectMember
+        >,
+        TAssociationTableID,
+        TLocalObjectMember,
+        TForeignObjectMember,
+        TForeignTableID
+    >,
+    "columnName" | "associationTableID" | "foreignTableID"
+> & TAuthSpec;
 
 // Tags encode an association collection rather than a same-key scalar value;
 // their exact write shape belongs to their explicit mutation projection.
-export class TagsField<
+class TagsFieldImpl<
     TAssociation,
-    TAssociationTable extends xTable = xTable,
+    TAssociationTableID extends DB3RegisteredTableID = DB3RegisteredTableID,
+    TAssociationLocalObjectMember extends string = string,
+    TAssociationForeignObjectMember extends string = string,
+    TForeignTableID extends DB3RegisteredTableID = DB3RegisteredTableID,
     const TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
 > extends FieldBase<
     TAssociation[],
@@ -56,11 +158,11 @@ export class TagsField<
     TAssociation[],
     DB3ReadPresenceForAuthSpec<TAuthSpec>
 >
-    implements DB3RelationTargetField<TAssociationTable> {
-    declare readonly __relationTargetTable: TAssociationTable;
+    implements DB3RelationTargetField<TAssociationTableID> {
+    declare readonly __relationTargetTable: TAssociationTableID;
     localTableSpec: xTable;
-    associationTableID: string;
-    foreignTableID: string;
+    readonly associationTableID: TAssociationTableID;
+    readonly foreignTableID: TForeignTableID;
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
     getCustomFilterWhereClause__: (query: CMDBTableFilterModel) => TAnyModel | boolean;
 
@@ -70,10 +172,16 @@ export class TagsField<
     // getChipColor?: (value: TAssociation) => ColorPaletteEntry;
     // getChipDescription?: (value: TAssociation) => string;
 
-    associationLocalIDMember: string;
-    associationForeignIDMember: string;
-    associationLocalObjectMember: string;
-    associationForeignObjectMember: string;
+    readonly associationLocalObjectMember: TAssociationLocalObjectMember;
+    readonly associationForeignObjectMember: TAssociationForeignObjectMember;
+
+    get associationLocalIDMember(): `${TAssociationLocalObjectMember}Id` {
+        return `${this.associationLocalObjectMember}Id`;
+    }
+
+    get associationForeignIDMember(): `${TAssociationForeignObjectMember}Id` {
+        return `${this.associationForeignObjectMember}Id`;
+    }
 
     getAssociationTableShema = () => {
         return GetTableById(this.associationTableID);
@@ -92,7 +200,14 @@ export class TagsField<
         return !!this.getForeignTableShema().createInsertModelFromString;
     }
 
-    constructor(args: TagsFieldArgs<TAssociation, TAuthSpec>) {
+    constructor(args: TagsFieldArgs<
+        TAssociation,
+        TAssociationTableID,
+        TAssociationLocalObjectMember,
+        TAssociationForeignObjectMember,
+        TForeignTableID,
+        TAuthSpec
+    >) {
         super({
             member: args.columnName,
             fieldTableAssociation: "associationRecord",
@@ -118,8 +233,6 @@ export class TagsField<
         this.getQuickFilterWhereClause__ = args.getQuickFilterWhereClause;
         this.getCustomFilterWhereClause__ = args.getCustomFilterWhereClause;
         this.createMockAssociation = args.createMockAssociation || this.createMockAssociation_DefaultImpl;
-        this.associationForeignIDMember = args.associationForeignIDMember;
-        this.associationLocalIDMember = args.associationLocalIDMember;
         this.associationLocalObjectMember = args.associationLocalObjectMember;
         this.associationForeignObjectMember = args.associationForeignObjectMember;
         //this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
@@ -343,4 +456,63 @@ export class TagsField<
         }
     } // SqlGetFacetInfoQuery
 
-}; // TagsField
+}; // TagsFieldImpl
+
+/** Public type used by generic DB3 consumers; values are created by tagsRef(). */
+export type TagsField<
+    TAssociation,
+    TAssociationTableID extends DB3RegisteredTableID = DB3RegisteredTableID,
+    TAssociationLocalObjectMember extends string = string,
+    TAssociationForeignObjectMember extends string = string,
+    TForeignTableID extends DB3RegisteredTableID = DB3RegisteredTableID,
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+> = TagsFieldImpl<
+    TAssociation,
+    TAssociationTableID,
+    TAssociationLocalObjectMember,
+    TAssociationForeignObjectMember,
+    TForeignTableID,
+    TAuthSpec
+>;
+
+/**
+ * Declares a tags/association relation between registered DB3 tables. Prisma
+ * metadata verifies both relation members, their conventional `${member}Id`
+ * scalar keys, and the exact foreign model. Relationships that do not follow
+ * that currently supported shape fail here and need an explicit new contract.
+ */
+export const tagsRef = <
+    const TAssociationTableID extends DB3RegisteredPrismaTableID,
+    const TForeignObjectMember extends DB3SupportedTagsRelationKeys<TAssociationTableID>,
+    const TLocalObjectMember extends DB3SupportedTagsRelationKeys<TAssociationTableID>,
+    const TForeignTableID extends Extract<
+        DB3PrismaRelationTargetID<TAssociationTableID, TForeignObjectMember>,
+        DB3RegisteredTableID
+    >,
+    const TAuthSpec extends DB3AuthSpec,
+>(
+    associationTableID: TAssociationTableID,
+    foreignTableID: TForeignTableID,
+    args: TagsRefArgs<
+        TAssociationTableID,
+        TForeignObjectMember,
+        TLocalObjectMember,
+        TForeignTableID,
+        TAuthSpec
+    >,
+) => (columnName: string) => new TagsFieldImpl<
+    DB3TagsAssociationValue<
+        TAssociationTableID,
+        TForeignObjectMember
+    >,
+    TAssociationTableID,
+    TLocalObjectMember,
+    TForeignObjectMember,
+    TForeignTableID,
+    TAuthSpec
+>({
+    ...args,
+    columnName,
+    associationTableID,
+    foreignTableID,
+});

@@ -857,6 +857,8 @@ export type DB3PrismaPayloadOf<TTable extends xTable> = DB3ArrayItem<Prisma.Resu
  */
 export interface DB3TableTypeRegistry { }
 
+export type DB3RegisteredTableID = Extract<keyof DB3TableTypeRegistry, string>;
+
 export type DB3ResolvedRelationTarget<TTarget> =
     TTarget extends xTable
     ? TTarget

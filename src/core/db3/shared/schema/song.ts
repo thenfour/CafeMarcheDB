@@ -5,10 +5,10 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { ColorField, ConstEnumStringField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../columnTypes/xTableColumnTypes";
+import { ColorField, ConstEnumStringField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { SongArgs, SongArgs_Verbose, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance, SongTaggedFilesPayload } from "./prismArgs";
+import { SongArgs, SongArgs_Verbose, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { TAnyModel } from "@/shared/rootroot";
@@ -235,14 +235,9 @@ const xSongArgs_Base = db3.defineTableDesc({
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
 
-        tags: columnName => new TagsField<SongTagAssociationPayload>({
-            columnName,
-            associationForeignIDMember: "tagId",
+        tags: tagsRef("SongTagAssociation", "SongTag", {
             associationForeignObjectMember: "tag",
-            associationLocalIDMember: "songId",
             associationLocalObjectMember: "song",
-            associationTableID: "SongTagAssociation",
-            foreignTableID: "SongTag",
             authMap: xSongAuthMap_R_EOwn_EManagers,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.SongWhereInput | boolean => {
                 if (!query.tagIds?.length) return false;
@@ -268,14 +263,9 @@ const xSongArgs_Base = db3.defineTableDesc({
             //     }
             // }),
         }),
-        taggedFiles: columnName => new TagsField<SongTaggedFilesPayload>({
-            columnName,
-            foreignTableID: "File",
-            associationTableID: "FileSongTag",
-            associationForeignIDMember: "fileId",
+        taggedFiles: tagsRef("FileSongTag", "File", {
             associationForeignObjectMember: "file",
             authMap: xSongAuthMap_R_EOwn_EManagers,
-            associationLocalIDMember: "songId",
             associationLocalObjectMember: "song",
             getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput | boolean => false,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.SongWhereInput | boolean => false,
@@ -420,6 +410,9 @@ export const xSongCredit = db3.defineTable({
 // static string table id.
 declare module "../db3core" {
     interface DB3TableTypeRegistry {
+        Song: typeof xSong;
+        SongTag: typeof xSongTag;
+        SongTagAssociation: typeof xSongTagAssociation;
         SongCredit: typeof xSongCredit;
     }
 }

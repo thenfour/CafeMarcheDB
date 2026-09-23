@@ -117,6 +117,24 @@ describe("DB3 xTable model metadata", () => {
     expect(db3.xWikiPageRevision.fields.wikiPage.getForeignTableSchema())
       .toBe(db3.xWikiPage)
   })
+
+  it("derives tag relation IDs and targets from the checked relation declaration", () => {
+    const eventTags = db3.xEvent.fields.tags
+
+    expect(eventTags.associationTableID).toBe("EventTagAssignment")
+    expect(eventTags.associationLocalIDMember).toBe("eventId")
+    expect(eventTags.associationForeignIDMember).toBe("eventTagId")
+    expect(eventTags.foreignTableID).toBe("EventTag")
+    expect(eventTags.getAssociationTableShema()).toBe(db3.xEventTagAssignment)
+    expect(eventTags.getForeignTableShema()).toBe(db3.xEventTag)
+
+    const songs = db3.xEventSongList.fields.songs
+    expect(songs.associationTableID).toBe("EventSongListSong")
+    expect(songs.associationLocalIDMember).toBe("eventSongListId")
+    expect(songs.associationForeignIDMember).toBe("songId")
+    expect(songs.getAssociationTableShema()).toBe(db3.xEventSongListSong)
+    expect(songs.getForeignTableShema()).toBe(db3.xSong)
+  })
 })
 
 describe("DB3 scalar field read contracts", () => {

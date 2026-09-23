@@ -3,11 +3,10 @@ import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { foreignRef, foreignRefByTableId, GhostField, MakeCreatedAtField, MakePKfield, TagsField } from "../columnTypes/xTableColumnTypes";
+import { foreignRef, foreignRefByTableId, GhostField, MakeCreatedAtField, MakePKfield, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
-import { WikiPageTagAssignmentPayload } from "./prismArgs";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 const wikiPageAuthMap = db3.defineAuthMap({
@@ -115,14 +114,9 @@ export const xWikiPage = db3.defineTable({
             allowDiscreteCriteria: true,
             authMap: wikiPageAuthMap,
         }),
-        tags: columnName => new TagsField<WikiPageTagAssignmentPayload>({
-            columnName,
-            associationForeignIDMember: "tagId",
+        tags: tagsRef("WikiPageTagAssignment", "WikiPageTag", {
             associationForeignObjectMember: "tag",
-            associationLocalIDMember: "wikiPageId",
             associationLocalObjectMember: "wikiPage",
-            associationTableID: "WikiPageTagAssignment",
-            foreignTableID: "WikiPageTag",
             authMap: wikiPageAuthMap,
             getQuickFilterWhereClause: (query: string): Prisma.WikiPageWhereInput => ({
                 tags: {
@@ -255,6 +249,7 @@ export const xWikiPageRevision = db3.defineTable({
 // static string table id.
 declare module "../db3core" {
     interface DB3TableTypeRegistry {
+        WikiPage: typeof xWikiPage;
         WikiPageRevision: typeof xWikiPageRevision;
     }
 }

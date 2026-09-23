@@ -9,7 +9,7 @@ import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
 import { z } from "zod";
 import { CMDBTableFilterModel, PermissionSignificance } from "../apiTypes";
-import { BoolField, ForeignCollectionField, foreignRef, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../columnTypes/xTableColumnTypes";
+import { BoolField, ForeignCollectionField, foreignRef, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { PermissionArgs, PermissionForVisibilityArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserPayloadMinimum, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
@@ -287,14 +287,9 @@ export const xPermissionBaseArgs = db3.defineTableDesc({
         significance: columnName => MakeSignificanceField(columnName, PermissionSignificance, { authMap: xPermissionMetadataAuthMap }),
         color: () => MakeColorField({ authMap: xPermissionMetadataAuthMap }),
         iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xPermissionMetadataAuthMap }),
-        roles: columnName => new TagsField<RolePermissionAssociationPayload>({
-            columnName,
-            associationForeignIDMember: "roleId",
+        roles: tagsRef("RolePermission", "Role", {
             associationForeignObjectMember: "role",
-            associationLocalIDMember: "permissionId",
             associationLocalObjectMember: "permission",
-            associationTableID: "RolePermission",
-            foreignTableID: "Role",
             getCustomFilterWhereClause: (query: CMDBTableFilterModel) => false,
             getQuickFilterWhereClause: (query: string): Prisma.PermissionWhereInput | boolean => false,
             authMap: xPermissionMetadataAuthMap,
@@ -420,14 +415,9 @@ export const xRole = db3.defineTable({
         sortOrder: () => MakeSortOrderField({ authMap: xPermissionMetadataAuthMap }),
         color: () => MakeColorField({ authMap: xPermissionMetadataAuthMap }),
         significance: columnName => MakeSignificanceField(columnName, RoleSignificance, { authMap: xPermissionMetadataAuthMap }),
-        permissions: columnName => new TagsField<RolePermissionAssociationPayload>({
-            columnName,
-            associationForeignIDMember: "permissionId",
+        permissions: tagsRef("RolePermission", "Permission", {
             associationForeignObjectMember: "permission",
-            associationLocalIDMember: "roleId",
             associationLocalObjectMember: "role",
-            associationTableID: "RolePermission",
-            foreignTableID: "Permission",
             authMap: xPermissionMetadataAuthMap,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
@@ -658,6 +648,12 @@ export const xUserTagAssignment = db3.defineTable({
 // static string table id.
 declare module "../db3core" {
     interface DB3TableTypeRegistry {
+        Permission: typeof xPermission;
+        Role: typeof xRole;
+        RolePermission: typeof xRolePermissionAssociation;
+        User: typeof xUser;
+        UserTag: typeof xUserTag;
+        UserInstrument: typeof xUserInstrument;
         UserTagAssignment: typeof xUserTagAssignment;
     }
 }
@@ -778,26 +774,16 @@ const userBaseArgs = db3.defineTableDesc({
                 ]
             }),
         }),
-        instruments: columnName => new TagsField<UserInstrumentPayload>({
-            columnName,
-            associationForeignIDMember: "instrumentId",
+        instruments: tagsRef("UserInstrument", "Instrument", {
             associationForeignObjectMember: "instrument",
-            associationLocalIDMember: "userId",
             associationLocalObjectMember: "user",
-            associationTableID: "UserInstrument",
-            foreignTableID: "Instrument",
             authMap: xUserBasicProfileAuthMap,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        tags: columnName => new TagsField<UserTagAssignmentPayload>({
-            columnName,
-            associationForeignIDMember: "userTagId",
+        tags: tagsRef("UserTagAssignment", "UserTag", {
             associationForeignObjectMember: "userTag",
-            associationLocalIDMember: "userId",
             associationLocalObjectMember: "user",
-            associationTableID: "UserTagAssignment",
-            foreignTableID: "UserTag",
             authMap: xUserBasicProfileManagerWriteAuthMap, // tags affect invitations, so owners may view but only managers may edit them.
             getQuickFilterWhereClause: (query: string): Prisma.UserWhereInput => ({
                 tags: {
