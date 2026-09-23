@@ -8,10 +8,11 @@ import { CMDBTableFilterModel } from "../apiTypes";
 import { ColorField, ConstEnumStringField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { SongArgs, SongArgs_Verbose, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance } from "./prismArgs";
+import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { TAnyModel } from "@/shared/rootroot";
+import { z } from "zod";
 
 
 export const xSongAuthMap_R_EOwn_EManagers = db3.defineAuthMap({
@@ -143,7 +144,11 @@ export const xSongTagAssociation = db3.defineTable({
     }),
     fields: db3.makeColumnSet({
         id: () => MakePKfield(),
-        songId: memberName => new GhostField({ memberName, authMap: xSongAuthMap_R_EOwn_EManagers }),
+        songId: memberName => new GhostField({
+            memberName,
+            readTransportSchema: z.number().int(),
+            authMap: xSongAuthMap_R_EOwn_EManagers,
+        }),
         tag: foreignRef(() => xSongTag, {
             fkidMember: "tagId",
             authMap: xSongAuthMap_R_EOwn_EManagers,
@@ -276,19 +281,15 @@ const xSongArgs_Base = db3.defineTableDesc({
             foreignTableID: "SongCredit",
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
-        pinnedRecordingId: memberName => new GhostField({ memberName, authMap: xSongAuthMap_R_EOwn_EManagers }),
+        pinnedRecordingId: memberName => new GhostField({
+            memberName,
+            readTransportSchema: z.number().int().nullable(),
+            authMap: xSongAuthMap_R_EOwn_EManagers,
+        }),
     })
 });
 
 export const xSong = db3.defineTable(xSongArgs_Base);
-
-export const xSong_Verbose = db3.defineTable({
-    ...xSongArgs_Base,
-    tableUniqueName: "xSong_Verbose",
-    getSelectionArgs: (): Prisma.SongDefaultArgs => {
-        return SongArgs_Verbose;
-    },
-});
 
 ////////////////////////////////////////////////////////////////
 export const xSongCreditType = db3.defineTable({

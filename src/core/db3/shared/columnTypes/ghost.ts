@@ -17,20 +17,26 @@ import { type UserWithRolesPayload } from "../schema/userPayloads";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // field types
-export type GhostFieldArgs = {
+export type GhostFieldArgs<TReadTransportValue = never> = {
     memberName: string;
     specialFunction?: SqlSpecialColumnFunction;
     // optional DTO schema
-    readTransportSchema?: z.ZodType<number>;
+    readTransportSchema?: z.ZodType<TReadTransportValue>;
 } & DB3AuthSpec;
 
 // sometimes you have a query containing a payload and you don't need to have a full FieldSpec for handling it. you just need to access its raw value as returned by the db.
 // often something like a include:{...}
-export class GhostField extends FieldBase<number, undefined, true, number, number> {
+export class GhostField<TReadTransportValue = never> extends FieldBase<
+    number,
+    undefined,
+    true,
+    TReadTransportValue,
+    TReadTransportValue
+> {
 
     table: xTable;
 
-    constructor(args: GhostFieldArgs) {
+    constructor(args: GhostFieldArgs<TReadTransportValue>) {
         super({
             member: args.memberName,
             authMap: (args as any).authMap || null,

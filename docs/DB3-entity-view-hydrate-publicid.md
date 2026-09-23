@@ -209,11 +209,18 @@ The view is also the source of result-type inference:
 
 `useDb3Query({ view })` carries `ClientOf<typeof view>` through to `items`.
 Consumers should not need assertions such as
-`songsClient.items as SongPayload_Verbose[]`. A cast at that boundary is a sign
+`songsClient.items as SomePrismaPayload[]`. A cast at that boundary is a sign
 that the view, DTO schema, hydration type, or query API is not expressing its
 contract completely. Named-view query execution validates and hydrates results
 automatically; ordinary consumers should not remember to call `enrich*` or a
 hydrator manually.
+
+The former Song filter path's `xSong_Verbose` table variant and
+`SongPayload_Verbose` alias have been removed. It now queries canonical `xSong`
+through `Song_Search`; the view owns the payload shape while its transport subset
+keeps authorization-only selection members out of the DTO. `Song_Detail` remains
+explicit for now because its embedded File detail graph includes
+presentation-only ghost collections without relation read contracts.
 
 ### DTO: the authorized transport boundary
 

@@ -781,6 +781,18 @@ sound.
         table parameter and the obsolete `xEventSearch` and
         `xUserTagForEventSearch` variants.
 
+26. [x] **Migrate the compiler-supported Song views.** Derive the Song Tag,
+        Song Credit Type, Song Credit, and Song editor transport and hydration
+        contracts from their selections. Derive `Song_Search` from a transport
+        subset of its authorization selection, retaining only the small
+        normalization wrapper that removes inaccessible association targets.
+        Replace `xSong_Verbose` with canonical `xSong` plus the named search view,
+        and remove its legacy Prisma payload aliases. Primitive `GhostField`
+        schemas now infer exact transport types, demonstrated by non-null
+        `songId` and nullable `pinnedRecordingId`. Keep `Song_Detail` explicit
+        until the embedded File detail presentation-only ghost collections have
+        relation read contracts.
+
 ## Pilot completion criteria
 
 The pilot is successful when all of the following are true:

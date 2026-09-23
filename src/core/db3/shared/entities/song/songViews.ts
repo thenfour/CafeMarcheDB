@@ -1,185 +1,147 @@
 import { Prisma } from "db";
-import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
-import { SongTagAssociationNaturalOrderBy } from "../../schema/prismArgs";
-import { xFileTag } from "../../schema/file";
+import { deriveViewContract } from "../../core/db3ViewContract";
+import { PermissionForVisibilityArgs, SongTagAssociationNaturalOrderBy } from "../../schema/prismArgs";
 import { FileDetailDtoSchema, fileDetailSelection, hydrateFileDetailDto } from "../file/fileViews";
 import { xPermission } from "../../schema/user";
 import { xSongCredit, xSongCreditType, xSong, xSongTag } from "../../schema/song";
 
-const SongTagEditorDtoSchema = z.object({
-    id: z.number().int(),
-    text: z.string().optional(),
-    description: z.string().optional(),
-    color: z.string().nullable().optional(),
-    sortOrder: z.number().int().optional(),
-    significance: z.string().nullable().optional(),
-    group: z.string().nullable().optional(),
-    indicator: z.string().nullable().optional(),
-    indicatorCssClass: z.string().nullable().optional(),
-});
-
-const SongCreditTypeEditorDtoSchema = z.object({
-    id: z.number().int(),
-    text: z.string().optional(),
-    description: z.string().optional(),
-    color: z.string().nullable().optional(),
-    sortOrder: z.number().int().optional(),
-    significance: z.string().nullable().optional(),
-});
-
-const SongCreditEditorDtoSchema = z.object({
-    id: z.number().int(),
-    comment: z.string().optional(),
-    year: z.string().optional(),
-    userId: z.number().int().nullable().optional(),
-    user: z.object({
-        id: z.number().int(),
-        name: z.string().optional(),
-    }).nullable().optional(),
-    songId: z.number().int().optional(),
-    song: z.object({
-        id: z.number().int(),
-        name: z.string().optional(),
-        description: z.string().optional(),
-    }).optional(),
-    typeId: z.number().int().optional(),
-    type: SongCreditTypeEditorDtoSchema.optional(),
-});
-
-const SongEditorUserDtoSchema = z.object({
-    id: z.number().int(),
-    name: z.string().optional(),
-    cssClass: z.string().nullable().optional(),
-});
-
-const SongEditorVisibilityDtoSchema = z.object({
-    id: z.number().int(),
-    name: z.string().optional(),
-    description: z.string().optional(),
-    isVisibility: z.boolean().optional(),
-    sortOrder: z.number().int().optional(),
-    significance: z.string().nullable().optional(),
-    color: z.string().nullable().optional(),
-    iconName: z.string().nullable().optional(),
-});
-
-const SongTagAssociationEditorDtoSchema = z.object({
-    id: z.number().int(),
-    songId: z.number().int().optional(),
-    tagId: z.number().int().optional(),
-    tag: SongTagEditorDtoSchema.optional(),
-});
-
-const SongEditorDtoSchema = z.object({
-    id: z.number().int(),
-    name: z.string().optional(),
-    aliases: z.string().optional(),
-    description: z.string().optional(),
-    startBPM: z.number().int().nullable().optional(),
-    endBPM: z.number().int().nullable().optional(),
-    introducedYear: z.number().int().nullable().optional(),
-    lengthSeconds: z.number().int().nullable().optional(),
-    isDeleted: z.boolean().optional(),
-    createdByUserId: z.number().int().nullable().optional(),
-    createdByUser: SongEditorUserDtoSchema.nullable().optional(),
-    visiblePermissionId: z.number().int().nullable().optional(),
-    visiblePermission: SongEditorVisibilityDtoSchema.nullable().optional(),
-    tags: z.array(SongTagAssociationEditorDtoSchema).optional(),
-});
-
-const songEditorBaseSelection = ZodToPrismaSelection(SongEditorDtoSchema);
-const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
+export const songTagEditorSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()({
     select: {
-        ...songEditorBaseSelection.select,
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        significance: true,
+        group: true,
+        indicator: true,
+        indicatorCssClass: true,
+    },
+});
+
+const songTagEditorContract = deriveViewContract(xSongTag, songTagEditorSelection);
+
+export const songCreditTypeEditorSelection = Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        significance: true,
+    },
+});
+
+const songCreditTypeEditorContract = deriveViewContract(
+    xSongCreditType,
+    songCreditTypeEditorSelection,
+);
+
+export const songCreditEditorSelection = Prisma.validator<Prisma.SongCreditDefaultArgs>()({
+    select: {
+        id: true,
+        comment: true,
+        year: true,
+        userId: true,
+        user: {
+            select: {
+                id: true,
+                name: true,
+            },
+        },
+        songId: true,
+        song: {
+            select: {
+                id: true,
+                name: true,
+                description: true,
+            },
+        },
+        typeId: true,
+        type: songCreditTypeEditorSelection,
+    },
+});
+
+const songCreditEditorContract = deriveViewContract(
+    xSongCredit,
+    songCreditEditorSelection,
+);
+
+export const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
+    select: {
+        id: true,
+        name: true,
+        aliases: true,
+        description: true,
+        startBPM: true,
+        endBPM: true,
+        introducedYear: true,
+        lengthSeconds: true,
+        isDeleted: true,
+        createdByUserId: true,
+        createdByUser: {
+            select: {
+                id: true,
+                name: true,
+                cssClass: true,
+            },
+        },
+        visiblePermissionId: true,
+        visiblePermission: PermissionForVisibilityArgs,
         tags: {
-            ...songEditorBaseSelection.select.tags,
+            select: {
+                id: true,
+                songId: true,
+                tagId: true,
+                tag: songTagEditorSelection,
+            },
             orderBy: SongTagAssociationNaturalOrderBy,
         },
     },
 });
 
+const songEditorContract = deriveViewContract(xSong, songEditorSelection);
+
 export const songTagEditorView = defineCrudView({
     viewID: "SongTag_Editor",
     entity: xSongTag,
     operations: { create: true, update: true, delete: true },
-    dtoSchema: SongTagEditorDtoSchema,
-    hydrate: dto => xSongTag.getClientModel(dto, "view"),
+    selection: songTagEditorContract.prismaSelection,
+    dtoSchema: songTagEditorContract.dtoSchema,
+    hydrate: songTagEditorContract.hydrate,
 });
 
 export const songCreditTypeEditorView = defineCrudView({
     viewID: "SongCreditType_Editor",
     entity: xSongCreditType,
     operations: { create: true, update: true, delete: true },
-    dtoSchema: SongCreditTypeEditorDtoSchema,
-    hydrate: dto => xSongCreditType.getClientModel(dto, "view"),
+    selection: songCreditTypeEditorContract.prismaSelection,
+    dtoSchema: songCreditTypeEditorContract.dtoSchema,
+    hydrate: songCreditTypeEditorContract.hydrate,
 });
 
 export const songCreditEditorView = defineCrudView({
     viewID: "SongCredit_Editor",
     entity: xSongCredit,
     operations: { create: true, update: true, delete: true },
-    dtoSchema: SongCreditEditorDtoSchema,
-    hydrate: dto => xSongCredit.getClientModel(dto, "view"),
+    selection: songCreditEditorContract.prismaSelection,
+    dtoSchema: songCreditEditorContract.dtoSchema,
+    hydrate: songCreditEditorContract.hydrate,
 });
 
 export const songEditorView = defineCrudView({
     viewID: "Song_Editor",
     entity: xSong,
     operations: { create: true, update: true, delete: true },
-    selection: songEditorSelection,
-    dtoSchema: SongEditorDtoSchema,
-    hydrate: dto => xSong.getClientModel(dto, "view"),
+    selection: songEditorContract.prismaSelection,
+    dtoSchema: songEditorContract.dtoSchema,
+    hydrate: songEditorContract.hydrate,
 });
 
-const SongTagAssociationDtoSchema = z.object({
-    id: z.number().int(),
-    tagId: z.number().int().optional(),
-});
-
-const SongSearchFileTagDtoSchema = z.object({
-    id: z.number().int(),
-    fileTagId: z.number().int().optional(),
-});
-
-const SongSearchTaggedFileDtoSchema = z.object({
-    id: z.number().int(),
-    file: z.object({
-        id: z.number().int(),
-        tags: z.array(SongSearchFileTagDtoSchema).optional(),
-    }).optional(),
-});
-
-const SongSearchCreditDtoSchema = z.object({
-    id: z.number().int(),
-    typeId: z.number().int().optional(),
-    year: z.string().optional(),
-    comment: z.string().optional(),
-    user: z.object({
-        id: z.number().int(),
-        name: z.string().optional(),
-    }).nullable().optional(),
-});
-
-// This is the requested maximum shape. Every non-identity field is optional in
-// the DTO because field authorization can remove it after Prisma returns.
-const SongSearchDtoSchema = z.object({
-    id: z.number().int(),
-    name: z.string().optional(),
-    aliases: z.string().optional(),
-    startBPM: z.number().int().nullable().optional(),
-    endBPM: z.number().int().nullable().optional(),
-    introducedYear: z.number().int().nullable().optional(),
-    lengthSeconds: z.number().int().nullable().optional(),
-    visiblePermissionId: z.number().int().nullable().optional(),
-    tags: z.array(SongTagAssociationDtoSchema).optional(),
-    taggedFiles: z.array(SongSearchTaggedFileDtoSchema).optional(),
-    credits: z.array(SongSearchCreditDtoSchema).optional(),
-});
-
-export const songSearchSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
+const songSearchTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
     select: {
         id: true,
         name: true,
@@ -188,27 +150,19 @@ export const songSearchSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
         endBPM: true,
         introducedYear: true,
         lengthSeconds: true,
-        createdByUserId: true,
         visiblePermissionId: true,
-        isDeleted: true,
         tags: {
             select: {
                 id: true,
-                songId: true,
                 tagId: true,
             },
         },
         taggedFiles: {
             select: {
                 id: true,
-                fileId: true,
-                songId: true,
                 file: {
                     select: {
                         id: true,
-                        uploadedByUserId: true,
-                        visiblePermissionId: true,
-                        isDeleted: true,
                         tags: {
                             select: {
                                 id: true,
@@ -218,13 +172,10 @@ export const songSearchSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
                     },
                 },
             },
-            orderBy: { file: { uploadedAt: "desc" } },
         },
         credits: {
             select: {
                 id: true,
-                userId: true,
-                songId: true,
                 typeId: true,
                 year: true,
                 comment: true,
@@ -239,44 +190,90 @@ export const songSearchSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
     },
 });
 
+export const songSearchSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
+    select: {
+        ...songSearchTransportSelection.select,
+        createdByUserId: true,
+        isDeleted: true,
+        tags: {
+            ...songSearchTransportSelection.select.tags,
+            select: {
+                ...songSearchTransportSelection.select.tags.select,
+                songId: true,
+            },
+        },
+        taggedFiles: {
+            ...songSearchTransportSelection.select.taggedFiles,
+            select: {
+                ...songSearchTransportSelection.select.taggedFiles.select,
+                fileId: true,
+                songId: true,
+                file: {
+                    ...songSearchTransportSelection.select.taggedFiles.select.file,
+                    select: {
+                        ...songSearchTransportSelection.select.taggedFiles.select.file.select,
+                        uploadedByUserId: true,
+                        visiblePermissionId: true,
+                        isDeleted: true,
+                    },
+                },
+            },
+            orderBy: { file: { uploadedAt: "desc" } },
+        },
+        credits: {
+            ...songSearchTransportSelection.select.credits,
+            select: {
+                ...songSearchTransportSelection.select.credits.select,
+                userId: true,
+                songId: true,
+            },
+        },
+    },
+});
+
+const songSearchContract = deriveViewContract(
+    xSong,
+    songSearchSelection,
+    { transportSelection: songSearchTransportSelection },
+);
+
 export const songSearchView = defineView({
     viewID: "Song_Search",
     entity: xSong,
     selection: songSearchSelection,
-    dtoSchema: SongSearchDtoSchema,
-    hydrate: (dto, references) => ({
-        ...dto,
-        visiblePermission: references.get(xPermission, dto.visiblePermissionId),
-
-        tags: references.mapOptionalCollection(dto.tags, (assoc, index) => ({
-            ...assoc,
-            tag: references.require(
-                xSongTag,
-                assoc.tagId,
-                `Song(${dto.id}).tags[${index}].tagId`,
-            ),
-        }))
-            ?.sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
-
-        taggedFiles: references.mapOptionalCollection(dto.taggedFiles, (association, associationIndex) => ({
-            ...association,
-            file: association.file && {
-                ...association.file,
-                tags: references.mapOptionalCollection(association.file.tags, (tagAssociation, tagIndex) => ({
-                    ...tagAssociation,
-                    fileTag: references.require(
-                        xFileTag,
-                        tagAssociation.fileTagId,
-                        `Song(${dto.id}).taggedFiles[${associationIndex}].file.tags[${tagIndex}].fileTagId`,
-                    ),
-                })),
-            }
-        })),
-    }),
+    dtoSchema: songSearchContract.dtoSchema,
+    hydrate: (dto, references) => {
+        const hydrated = songSearchContract.hydrate(dto, references);
+        return {
+            ...hydrated,
+            tags: hydrated.tags
+                ?.flatMap(association => association.tag == null ? [] : [{
+                    ...association,
+                    tag: association.tag,
+                }])
+                .sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
+            taggedFiles: hydrated.taggedFiles?.map(association => ({
+                ...association,
+                file: association.file && {
+                    ...association.file,
+                    tags: association.file.tags
+                        ?.flatMap(tagAssociation => tagAssociation.fileTag == null ? [] : [{
+                            ...tagAssociation,
+                            fileTag: tagAssociation.fileTag,
+                        }]),
+                },
+            })),
+        };
+    },
 });
 
 export type SongSearchDto = DtoOf<typeof songSearchView>;
 export type SongSearchClient = ClientOf<typeof songSearchView>;
+
+const SongTagAssociationDtoSchema = z.object({
+    id: z.number().int(),
+    tagId: z.number().int().optional(),
+});
 
 const SongDetailTaggedFileDtoSchema = z.object({
     id: z.number().int(),
@@ -313,6 +310,8 @@ const SongDetailDtoSchema = z.object({
     credits: z.array(SongDetailCreditDtoSchema).optional(),
 });
 
+// Song_Detail remains explicit because File_Detail still contains presentation-only
+// ghost collections that do not yet declare relation read contracts.
 export const songDetailSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
     select: {
         id: true,

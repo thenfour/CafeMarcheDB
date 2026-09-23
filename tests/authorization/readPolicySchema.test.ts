@@ -223,11 +223,13 @@ describe("read-policy composition boundaries", () => {
   })
 
   it("awaits visibility filtering for protected relation includes", async () => {
-    const selection = await db3.xSong_Verbose.CalculateSelectionArgs(
+    const selection = await db3.xSong.CalculateSelectionArgs(
       createAuthorizationSchemaData(actor),
       emptyFilter,
+      false,
+      db3.songSearchView.getSelectionArgs,
     )
-    const fileWhere = selection!.include.taggedFiles.where.file
+    const fileWhere = selection!.select.taggedFiles.where.file
     const visibleFile = makePolicyRow(db3.xFile, { id: 21 })
 
     expect(matchesWhere(visibleFile, fileWhere)).toBe(true)

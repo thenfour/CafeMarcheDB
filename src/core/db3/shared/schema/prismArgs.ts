@@ -667,51 +667,6 @@ export type FileWithTagsPayload = Prisma.FileGetPayload<typeof FileWithTagsArgs>
 
 
 
-////////////////////////////////////////////////////////////////
-// for full song page display.
-
-export const SongCreditArgsFromSong = Prisma.validator<Prisma.SongCreditDefaultArgs>()({
-    include: {
-        user: true
-    }
-});
-
-export const SongArgs_Verbose = Prisma.validator<Prisma.SongDefaultArgs>()({
-    include: {
-        //visiblePermission: VisiblePermissionInclude,
-        createdByUser: AuxUserArgs,
-        tags: true,
-        // {
-        //     include: {
-        //         tag: true, // include foreign object
-        //     },
-        //     orderBy: SongTagAssociationNaturalOrderBy,
-        // },
-        taggedFiles: {
-            include: {
-                file: FileWithTagsArgs,
-            },
-            orderBy: { file: { uploadedAt: 'desc' } }
-        },
-        credits: SongCreditArgsFromSong,
-        // comments
-        // songLists   EventSongListSong[]
-    }
-});
-
-export type SongPayload_Verbose = Prisma.SongGetPayload<typeof SongArgs_Verbose>;
-
-export type SongCreditPayloadFromVerboseSong = Prisma.SongCreditGetPayload<typeof SongCreditArgsFromSong>;
-
-
-export type SongTaggedFilesPayload = Prisma.FileSongTagGetPayload<{
-    include: {
-        file: typeof FileWithTagsArgs,
-    }
-}>;
-
-
-
 // export const EventSongListDividerTextStyle = {
 //     Default: "Default",
 //     MonospaceTitle: "MonospaceTitle",

@@ -736,6 +736,119 @@ describe("UserTag Event search derived-view migration", () => {
   })
 })
 
+describe("Song derived-view migration", () => {
+  it("preserves exact nullable transport typing for primitive ghost fields", () => {
+    const selection = Prisma.validator<Prisma.SongDefaultArgs>()({
+      select: { pinnedRecordingId: true },
+    })
+    const derived = db3.deriveViewContract(db3.xSong, selection)
+    type Dto = z.infer<typeof derived.dtoSchema>
+
+    expectTypeOf<Dto>().toEqualTypeOf<{
+      pinnedRecordingId?: number | null
+    }>()
+    expect(derived.dtoSchema.parse({ pinnedRecordingId: null }))
+      .toEqual({ pinnedRecordingId: null })
+    expect(derived.dtoSchema.parse({ pinnedRecordingId: 12 }))
+      .toEqual({ pinnedRecordingId: 12 })
+    expect(derived.dtoSchema.safeParse({ pinnedRecordingId: "12" }).success)
+      .toBe(false)
+  })
+
+  it("derives the Song metadata and credit editor contracts", () => {
+    type TagDto = db3.DtoOf<typeof db3.songTagEditorView>
+    type TagClient = db3.ClientOf<typeof db3.songTagEditorView>
+    type CreditTypeDto = db3.DtoOf<typeof db3.songCreditTypeEditorView>
+    type CreditTypeClient = db3.ClientOf<typeof db3.songCreditTypeEditorView>
+    type CreditDto = db3.DtoOf<typeof db3.songCreditEditorView>
+    type CreditClient = db3.ClientOf<typeof db3.songCreditEditorView>
+    type NestedCreditTypeDto = NonNullable<CreditDto["type"]>
+    type NestedCreditTypeClient = NonNullable<CreditClient["type"]>
+
+    expectTypeOf<TagDto["id"]>().toEqualTypeOf<number>()
+    expectTypeOf<TagDto["text"]>().toEqualTypeOf<string | undefined>()
+    expectTypeOf<TagDto["color"]>().toEqualTypeOf<string | null | undefined>()
+    expectTypeOf<TagClient["color"]>()
+      .toEqualTypeOf<ColorPaletteEntry | null | undefined>()
+    expectTypeOf<CreditTypeDto["color"]>()
+      .toEqualTypeOf<string | null | undefined>()
+    expectTypeOf<CreditTypeClient["color"]>()
+      .toEqualTypeOf<ColorPaletteEntry | null | undefined>()
+    expectTypeOf<CreditDto["userId"]>()
+      .toEqualTypeOf<number | null | undefined>()
+    expectTypeOf<CreditDto["songId"]>().toEqualTypeOf<number | undefined>()
+    expectTypeOf<NestedCreditTypeDto["color"]>()
+      .toEqualTypeOf<string | null | undefined>()
+    expectTypeOf<NestedCreditTypeClient["color"]>()
+      .toEqualTypeOf<ColorPaletteEntry | null | undefined>()
+
+    expect(db3.songTagEditorView.getSelectionArgs(
+      {} as db3.DB3ViewSelectionContext,
+    )).toBe(db3.songTagEditorSelection)
+    expect(db3.songCreditTypeEditorView.getSelectionArgs(
+      {} as db3.DB3ViewSelectionContext,
+    )).toBe(db3.songCreditTypeEditorSelection)
+    expect(db3.songCreditEditorView.getSelectionArgs(
+      {} as db3.DB3ViewSelectionContext,
+    )).toBe(db3.songCreditEditorSelection)
+  })
+
+  it("derives Song Editor nested transport and consumer codecs", () => {
+    type Dto = db3.DtoOf<typeof db3.songEditorView>
+    type Client = db3.ClientOf<typeof db3.songEditorView>
+    type PermissionDto = NonNullable<Dto["visiblePermission"]>
+    type PermissionClient = NonNullable<Client["visiblePermission"]>
+    type TagDto = NonNullable<NonNullable<Dto["tags"]>[number]["tag"]>
+    type TagClient = NonNullable<NonNullable<Client["tags"]>[number]["tag"]>
+
+    expectTypeOf<Dto["id"]>().toEqualTypeOf<number>()
+    expectTypeOf<Dto["name"]>().toEqualTypeOf<string | undefined>()
+    expectTypeOf<Dto["visiblePermissionId"]>()
+      .toEqualTypeOf<number | null | undefined>()
+    expectTypeOf<PermissionDto["name"]>().toEqualTypeOf<string>()
+    expectTypeOf<PermissionDto["color"]>().toEqualTypeOf<string | null>()
+    expectTypeOf<PermissionClient["color"]>()
+      .toEqualTypeOf<ColorPaletteEntry | null>()
+    expectTypeOf<TagDto["color"]>()
+      .toEqualTypeOf<string | null | undefined>()
+    expectTypeOf<TagClient["color"]>()
+      .toEqualTypeOf<ColorPaletteEntry | null | undefined>()
+    expect(db3.songEditorView.getSelectionArgs(
+      {} as db3.DB3ViewSelectionContext,
+    )).toBe(db3.songEditorSelection)
+  })
+
+  it("derives Song Search without leaking authorization support fields", () => {
+    type Dto = db3.SongSearchDto
+    type Client = db3.SongSearchClient
+    type DtoTag = NonNullable<Dto["tags"]>[number]
+    type ClientTag = NonNullable<Client["tags"]>[number]
+    type DtoFileAssociation = NonNullable<Dto["taggedFiles"]>[number]
+    type ClientFile = NonNullable<
+      NonNullable<Client["taggedFiles"]>[number]["file"]
+    >
+    type ClientFileTag = NonNullable<ClientFile["tags"]>[number]
+    type DtoCredit = NonNullable<Dto["credits"]>[number]
+    type RootAuthorizationOnlyKeys = Extract<keyof Dto, "createdByUserId" | "isDeleted">
+    type TagAuthorizationOnlyKeys = Extract<keyof DtoTag, "songId">
+    type FileAuthorizationOnlyKeys = Extract<keyof DtoFileAssociation, "fileId" | "songId">
+    type CreditAuthorizationOnlyKeys = Extract<keyof DtoCredit, "userId" | "songId">
+
+    expectTypeOf<Dto["aliases"]>().toEqualTypeOf<string | undefined>()
+    expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<TagAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<FileAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<CreditAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<ClientTag["tag"]>()
+      .toEqualTypeOf<NonNullable<ClientTag["tag"]>>()
+    expectTypeOf<ClientFileTag["fileTag"]>()
+      .toEqualTypeOf<NonNullable<ClientFileTag["fileTag"]>>()
+    expect(db3.songSearchView.getSelectionArgs(
+      {} as db3.DB3ViewSelectionContext,
+    )).toBe(db3.songSearchSelection)
+  })
+})
+
 describe("Event frontpage derived-view migration", () => {
   const makeDto = (): db3.EventFrontpageDto => ({
     id: 41,

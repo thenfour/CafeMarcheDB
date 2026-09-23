@@ -144,8 +144,13 @@ describe("explicit DB3 authorization", () => {
     const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
     const resolved = await loadUserAuthorization(actor as any)
     const authorization = db3.createDB3Authorization(resolved.user, resolved.effectivePermissions)
-    const selection = await db3.xSong_Verbose.CalculateSelectionArgs(authorization, { items: [] }, true)
-    const fileWhere = selection!.include.taggedFiles.where.file
+    const selection = await db3.xSong.CalculateSelectionArgs(
+      authorization,
+      { items: [] },
+      true,
+      db3.songSearchView.getSelectionArgs,
+    )
+    const fileWhere = selection!.select.taggedFiles.where.file
     const deletedFile = { id: 1, isDeleted: true, visiblePermissionId: null, uploadedByUserId: actor.id }
     expect(matchesWhere(deletedFile, fileWhere)).toBe(true)
     expect(matchesWhere({ ...deletedFile, uploadedByUserId: actor.id + 1 }, fileWhere)).toBe(false)

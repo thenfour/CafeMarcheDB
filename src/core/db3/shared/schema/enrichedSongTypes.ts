@@ -1,5 +1,4 @@
 import { Prisma } from "db";
-import * as db3 from "@db3/db3";
 import { TableAccessor } from "@/shared/rootroot";
 
 export type EnrichSongInput = Partial<Prisma.SongGetPayload<{
@@ -19,9 +18,6 @@ export type EnrichedSong<T extends EnrichSongInput> = Omit<T,
         },
     }
 }>;
-
-export type EnrichedVerboseSong = EnrichedSong<db3.SongPayload_Verbose>;
-
 
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
 export function enrichSong<T extends EnrichSongInput>(

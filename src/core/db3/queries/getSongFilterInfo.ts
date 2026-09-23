@@ -172,7 +172,7 @@ export default resolver.pipe(
 
 
             // FULL EVENT DETAILS USING DB3.
-            let fullSongs: db3.SongPayload_Verbose[] = [];
+            let fullSongs: db3.SongSearchDto[] = [];
             if (songIds.length) {
                 const tableParams: db3.SongTableParams = {
                     songIds: songIds.map(e => e.SongId), // prevent fetching the entire table!
@@ -180,14 +180,19 @@ export default resolver.pipe(
 
                 const queryResult = await queryTable({
                     cmdbQueryContext: "getSongFilterInfo",
-                    table: db3.xSong_Verbose,
+                    table: {
+                        tableID: db3.xSong.tableID,
+                        tableName: db3.xSong.tableName,
+                        viewID: db3.songSearchView.viewID,
+                    },
                     filter: {
                         tableParams,
                     },
                     orderBy: undefined,
                 }, await getRequestAuthorization(ctx.session));
 
-                fullSongs = queryResult.items as db3.SongPayload_Verbose[];
+                // queryTable's legacy return type does not yet carry its view.
+                fullSongs = queryResult.items as db3.SongSearchDto[];
             }
 
 
