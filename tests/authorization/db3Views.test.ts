@@ -451,18 +451,49 @@ describe("DB3 named views", () => {
             id: 8,
             fileLeafName: "score.pdf",
             visiblePermissionId: permission.id,
-            tags: [{ id: 80, fileTagId: fileTag.id }],
-            taggedSongs: [{ id: 81, song: { id: 7, name: "A song" } }],
-            taggedInstruments: [{ id: 82, instrumentId: instrument.id }],
+            tags: [
+                { id: 80, fileTagId: fileTag.id },
+                { id: 83 },
+            ],
+            taggedSongs: [
+                { id: 81, song: { id: 7, name: "A song" } },
+                { id: 84 },
+            ],
+            taggedEvents: [
+                {
+                    id: 85,
+                    event: {
+                        id: 9,
+                        name: "A concert",
+                        startsAt: new Date("2026-06-01T19:00:00Z"),
+                        statusId: 10,
+                        typeId: 11,
+                    },
+                },
+                { id: 86 },
+            ],
+            taggedInstruments: [
+                { id: 82, instrumentId: instrument.id },
+                { id: 87 },
+            ],
+            taggedWikiPages: [
+                { id: 88, wikiPage: { id: 12, slug: "repertoire" } },
+                { id: 89 },
+            ],
         });
         const hydrated = db3.hydrateView(db3.fileSearchView, dto, references);
 
         expect(hydrated.visiblePermission).toBe(permission);
+        expect(hydrated.tags).toHaveLength(1);
         expect(hydrated.tags?.[0]?.fileTag).toBe(fileTag);
+        expect(hydrated.taggedSongs).toHaveLength(1);
         expect(hydrated.taggedSongs?.[0]?.song.name).toBe("A song");
+        expect(hydrated.taggedEvents).toHaveLength(1);
+        expect(hydrated.taggedEvents?.[0]?.event.name).toBe("A concert");
+        expect(hydrated.taggedInstruments).toHaveLength(1);
         expect(hydrated.taggedInstruments?.[0]?.instrument).toBe(instrument);
-        expect(hydrated.taggedEvents).toBeUndefined();
-        expect(hydrated.taggedWikiPages).toBeUndefined();
+        expect(hydrated.taggedWikiPages).toHaveLength(1);
+        expect(hydrated.taggedWikiPages?.[0]?.wikiPage.slug).toBe("repertoire");
         expectTypeOf(dto.description).toEqualTypeOf<string | undefined>();
         expectTypeOf(hydrated).toEqualTypeOf<db3.FileSearchClient>();
     });

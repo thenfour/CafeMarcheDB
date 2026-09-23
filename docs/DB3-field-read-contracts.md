@@ -506,6 +506,12 @@ The safe broad-rollout boundary is now concrete:
   checked `transportSelection` subset prevents those members from entering the
   DTO. View-level hydration still composes date ranges and policy-specific
   reference identity where those semantics do not belong to field codecs.
+- `File_Search` now derives five association-collection shapes from one finite
+  transport selection. Normalized tag and instrument IDs hydrate through the
+  reference provider, while embedded song, event, and wiki-page values recurse
+  through their target xTables. Its view-level transform only maps the canonical
+  Permission reference and removes associations whose target was omitted by
+  authorization; the consumer type therefore exposes concrete relation targets.
 - `ForeignCollectionField` and ghost members need an explicit read transport
   contract before a selected primitive can derive. This is deliberate: unknown
   transport values are rejected rather than guessed.
@@ -748,6 +754,13 @@ sound.
         target against Prisma's flat model metadata at declaration time. Derive
         the association value and authorization presence, migrate every schema
         declaration, and make direct `TagsField` construction a compiler error.
+
+23. [x] **Migrate `File_Search` as the association-collection proof.** Separate
+        authorization-only Prisma members from its finite transport selection,
+        derive all scalar and nested relation schemas and hydration, and retain
+        only canonical Permission mapping plus explicit pruning of inaccessible
+        relation targets. Prove that hidden fields stay out of the DTO and that
+        concrete consumer relations neither become optional nor widen to `any`.
 
 ## Pilot completion criteria
 

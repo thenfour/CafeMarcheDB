@@ -99,6 +99,42 @@ describe("DB3 scalar selection compiler", () => {
     expectTypeOf<WikiAuthorizationOnlyKeys>().toEqualTypeOf<never>()
   })
 
+  it("derives the File Search transport and concrete consumer relations", () => {
+    type TransportDto = db3.FileSearchDto
+    type Client = db3.FileSearchClient
+    type DtoTag = NonNullable<TransportDto["tags"]>[number]
+    type ClientTag = NonNullable<Client["tags"]>[number]
+    type ClientSongTag = NonNullable<Client["taggedSongs"]>[number]
+    type ClientEventTag = NonNullable<Client["taggedEvents"]>[number]
+    type ClientInstrumentTag = NonNullable<Client["taggedInstruments"]>[number]
+    type ClientWikiPageTag = NonNullable<Client["taggedWikiPages"]>[number]
+    type DtoSong = NonNullable<NonNullable<TransportDto["taggedSongs"]>[number]["song"]>
+    type RootAuthorizationOnlyKeys = Extract<
+      keyof TransportDto,
+      "uploadedByUserId" | "isDeleted"
+    >
+    type SongAuthorizationOnlyKeys = Extract<
+      keyof DtoSong,
+      "createdByUserId" | "visiblePermissionId" | "isDeleted"
+    >
+    type FileTagIsAny = 0 extends (1 & ClientTag["fileTag"]) ? true : false
+
+    expectTypeOf<DtoTag["fileTagId"]>().toEqualTypeOf<number | undefined>()
+    expectTypeOf<ClientTag["fileTag"]>()
+      .toEqualTypeOf<NonNullable<ClientTag["fileTag"]>>()
+    expectTypeOf<ClientSongTag["song"]>()
+      .toEqualTypeOf<NonNullable<ClientSongTag["song"]>>()
+    expectTypeOf<ClientEventTag["event"]>()
+      .toEqualTypeOf<NonNullable<ClientEventTag["event"]>>()
+    expectTypeOf<ClientInstrumentTag["instrument"]>()
+      .toEqualTypeOf<NonNullable<ClientInstrumentTag["instrument"]>>()
+    expectTypeOf<ClientWikiPageTag["wikiPage"]>()
+      .toEqualTypeOf<NonNullable<ClientWikiPageTag["wikiPage"]>>()
+    expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<SongAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<FileTagIsAny>().toEqualTypeOf<false>()
+  })
+
   it("derives transport DTOs from a fetched selection subset", () => {
     const prismaSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
       select: {

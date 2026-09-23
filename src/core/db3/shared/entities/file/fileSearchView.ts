@@ -1,77 +1,15 @@
 import { Prisma } from "db";
-import { z } from "zod";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
-import { xInstrument } from "../../schema/instrument";
+import { deriveViewContract } from "../../core/db3ViewContract";
+import { xFile } from "../../schema/file";
 import { xPermission } from "../../schema/user";
-import { xFile, xFileTag } from "../../schema/file";
 
-const FileSearchTagDtoSchema = z.object({
-    id: z.number().int(),
-    fileTagId: z.number().int().optional(),
-});
-
-const FileSearchSongTagDtoSchema = z.object({
-    id: z.number().int(),
-    song: z.object({
-        id: z.number().int(),
-        name: z.string().optional(),
-    }).nullable().optional(),
-});
-
-const FileSearchEventTagDtoSchema = z.object({
-    id: z.number().int(),
-    event: z.object({
-        id: z.number().int(),
-        name: z.string().optional(),
-        startsAt: z.date().nullable().optional(),
-        statusId: z.number().int().nullable().optional(),
-        typeId: z.number().int().nullable().optional(),
-    }).nullable().optional(),
-});
-
-const FileSearchInstrumentTagDtoSchema = z.object({
-    id: z.number().int(),
-    instrumentId: z.number().int().optional(),
-});
-
-const FileSearchWikiPageTagDtoSchema = z.object({
-    id: z.number().int(),
-    wikiPage: z.object({
-        id: z.number().int(),
-        slug: z.string().optional(),
-    }).nullable().optional(),
-});
-
-// This is the maximum shape requested by the File search UI. Every field
-// except transport identities remains optional after recursive authorization.
-const FileSearchDtoSchema = z.object({
-    id: z.number().int(),
-    fileLeafName: z.string().optional(),
-    description: z.string().optional(),
-    uploadedAt: z.date().optional(),
-    uploadedByUser: z.object({
-        id: z.number().int(),
-        name: z.string().optional(),
-    }).nullable().optional(),
-    visiblePermissionId: z.number().int().nullable().optional(),
-    sizeBytes: z.number().int().nullable().optional(),
-    storedLeafName: z.string().optional(),
-    mimeType: z.string().nullable().optional(),
-    externalURI: z.string().nullable().optional(),
-    tags: z.array(FileSearchTagDtoSchema).optional(),
-    taggedSongs: z.array(FileSearchSongTagDtoSchema).optional(),
-    taggedEvents: z.array(FileSearchEventTagDtoSchema).optional(),
-    taggedInstruments: z.array(FileSearchInstrumentTagDtoSchema).optional(),
-    taggedWikiPages: z.array(FileSearchWikiPageTagDtoSchema).optional(),
-});
-
-export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
+const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
         id: true,
         fileLeafName: true,
         description: true,
         uploadedAt: true,
-        uploadedByUserId: true,
         uploadedByUser: {
             select: {
                 id: true,
@@ -79,7 +17,6 @@ export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
             },
         },
         visiblePermissionId: true,
-        isDeleted: true,
         sizeBytes: true,
         storedLeafName: true,
         mimeType: true,
@@ -93,14 +30,10 @@ export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
         taggedSongs: {
             select: {
                 id: true,
-                songId: true,
                 song: {
                     select: {
                         id: true,
                         name: true,
-                        createdByUserId: true,
-                        visiblePermissionId: true,
-                        isDeleted: true,
                     },
                 },
             },
@@ -108,7 +41,6 @@ export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
         taggedEvents: {
             select: {
                 id: true,
-                eventId: true,
                 event: {
                     select: {
                         id: true,
@@ -116,9 +48,6 @@ export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
                         startsAt: true,
                         statusId: true,
                         typeId: true,
-                        createdByUserId: true,
-                        visiblePermissionId: true,
-                        isDeleted: true,
                     },
                 },
             },
@@ -132,11 +61,63 @@ export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
         taggedWikiPages: {
             select: {
                 id: true,
-                wikiPageId: true,
                 wikiPage: {
                     select: {
                         id: true,
                         slug: true,
+                    },
+                },
+            },
+        },
+    },
+});
+
+export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
+    select: {
+        ...fileSearchTransportSelection.select,
+        uploadedByUserId: true,
+        isDeleted: true,
+        taggedSongs: {
+            ...fileSearchTransportSelection.select.taggedSongs,
+            select: {
+                ...fileSearchTransportSelection.select.taggedSongs.select,
+                songId: true,
+                song: {
+                    ...fileSearchTransportSelection.select.taggedSongs.select.song,
+                    select: {
+                        ...fileSearchTransportSelection.select.taggedSongs.select.song.select,
+                        createdByUserId: true,
+                        visiblePermissionId: true,
+                        isDeleted: true,
+                    },
+                },
+            },
+        },
+        taggedEvents: {
+            ...fileSearchTransportSelection.select.taggedEvents,
+            select: {
+                ...fileSearchTransportSelection.select.taggedEvents.select,
+                eventId: true,
+                event: {
+                    ...fileSearchTransportSelection.select.taggedEvents.select.event,
+                    select: {
+                        ...fileSearchTransportSelection.select.taggedEvents.select.event.select,
+                        createdByUserId: true,
+                        visiblePermissionId: true,
+                        isDeleted: true,
+                    },
+                },
+            },
+        },
+        taggedWikiPages: {
+            ...fileSearchTransportSelection.select.taggedWikiPages,
+            select: {
+                ...fileSearchTransportSelection.select.taggedWikiPages.select,
+                wikiPageId: true,
+                wikiPage: {
+                    ...fileSearchTransportSelection.select.taggedWikiPages.select.wikiPage,
+                    select: {
+                        ...fileSearchTransportSelection.select.taggedWikiPages.select.wikiPage.select,
                         visiblePermissionId: true,
                     },
                 },
@@ -145,46 +126,51 @@ export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     },
 });
 
+const fileSearchViewContract = deriveViewContract(
+    xFile,
+    fileSearchSelection,
+    { transportSelection: fileSearchTransportSelection },
+);
+
 export const fileSearchView = defineView({
     viewID: "File_Search",
     entity: xFile,
     selection: fileSearchSelection,
-    dtoSchema: FileSearchDtoSchema,
-    hydrate: (dto, references) => ({
-        ...dto,
-        visiblePermission: references.get(xPermission, dto.visiblePermissionId),
-        tags: references.mapOptionalCollection(dto.tags, (association, index) => ({
-            ...association,
-            fileTag: references.require(
-                xFileTag,
-                association.fileTagId,
-                `File(${dto.id}).tags[${index}].fileTagId`,
-            ),
-        })),
-        taggedSongs: references.mapOptionalCollection(dto.taggedSongs, association => association)
-            ?.flatMap(association => association.song == null ? [] : [{
-                ...association,
-                song: association.song,
-            }]),
-        taggedEvents: references.mapOptionalCollection(dto.taggedEvents, association => association)
-            ?.flatMap(association => association.event == null ? [] : [{
-                ...association,
-                event: association.event,
-            }]),
-        taggedInstruments: references.mapOptionalCollection(dto.taggedInstruments, (association, index) => ({
-            ...association,
-            instrument: references.require(
-                xInstrument,
-                association.instrumentId,
-                `File(${dto.id}).taggedInstruments[${index}].instrumentId`,
-            ),
-        })),
-        taggedWikiPages: references.mapOptionalCollection(dto.taggedWikiPages, association => association)
-            ?.flatMap(association => association.wikiPage == null ? [] : [{
-                ...association,
-                wikiPage: association.wikiPage,
-            }]),
-    }),
+    dtoSchema: fileSearchViewContract.dtoSchema,
+    hydrate: (dto, references) => {
+        const hydrated = fileSearchViewContract.hydrate(dto, references);
+        return {
+            ...hydrated,
+            // Visibility authorization traverses a policy-specific xTable,
+            // while dashboard reference stores own the canonical Permission table.
+            visiblePermission: references.get(xPermission, dto.visiblePermissionId),
+            tags: hydrated.tags
+                ?.flatMap(association => association.fileTag == null ? [] : [{
+                    ...association,
+                    fileTag: association.fileTag,
+                }]),
+            taggedSongs: hydrated.taggedSongs
+                ?.flatMap(association => association.song == null ? [] : [{
+                    ...association,
+                    song: association.song,
+                }]),
+            taggedEvents: hydrated.taggedEvents
+                ?.flatMap(association => association.event == null ? [] : [{
+                    ...association,
+                    event: association.event,
+                }]),
+            taggedInstruments: hydrated.taggedInstruments
+                ?.flatMap(association => association.instrument == null ? [] : [{
+                    ...association,
+                    instrument: association.instrument,
+                }]),
+            taggedWikiPages: hydrated.taggedWikiPages
+                ?.flatMap(association => association.wikiPage == null ? [] : [{
+                    ...association,
+                    wikiPage: association.wikiPage,
+                }]),
+        };
+    },
 });
 
 export type FileSearchDto = DtoOf<typeof fileSearchView>;

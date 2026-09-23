@@ -178,6 +178,12 @@ members, and the exact foreign target without resolving the recursive xTable
 types. The association xTable is resolved through `DB3TableTypeRegistry` only
 when a view selection traverses that collection.
 
+`File_Search` is the association-heavy proof: its five relation collections are
+derived from a transport subset, normalized IDs use the reference provider, and
+embedded targets recurse through their registered xTables. The small remaining
+view transform maps the canonical Permission reference and drops associations
+whose target was removed by authorization.
+
 `ZodToPrismaSelection()` remains a supported primitive and existing explicit
 DTO-first views remain valid. It recursively maps DTO shape to a Prisma select,
 but it is no longer the preferred authority for a migrated read view because it
