@@ -4,6 +4,7 @@ import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import type { DB3ReferenceProvider } from "../../core/db3Hydration";
 import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } from "../../core/db3View";
+import { deriveViewContract } from "../../core/db3ViewContract";
 import { EventTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { db3s } from "../common/viewCommon";
 import { xPermission } from "../../schema/user";
@@ -90,13 +91,34 @@ const coalesceEventStatus = (inp: EventStatusWithUndefineds | null | undefined):
 };
 
 
+export const eventStatusEditorSelection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
+    select: {
+        id: true,
+        isDeleted: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        iconName: true,
+        label: true,
+        significance: true,
+    },
+});
+
+const eventStatusViewContract = deriveViewContract(
+    xEventStatus,
+    eventStatusEditorSelection,
+);
+
 export const eventStatusEditorView = defineCrudView({
     viewID: "EventStatus_Editor",
     entity: xEventStatus,
     operations: { create: true, update: true, delete: true },
-    dtoSchema: EventStatusDtoSchema,
-    hydrate: dto => xEventStatus.getClientModel(dto, "view"),
+    selection: eventStatusViewContract.prismaSelection,
+    dtoSchema: eventStatusViewContract.dtoSchema,
+    hydrate: eventStatusViewContract.hydrate,
 });
+
+// type aoeu = typeof eventStatusEditorView.dtoSchema;
 
 // event tag ------------------------------------------
 const EventTagEditorDtoSchema = z.object({
@@ -519,103 +541,6 @@ const EventFrontpageDtoSchema = z.object({
     })).optional(),
 });
 
-// ///const srhtsnsth = ZodToPrismaSelection(EventFrontpageDtoSchema);
-// // const zy: typeof zx = 0 as any;
-// const xsnth8 = Prisma.validator<Prisma.EventDefaultArgs>()({
-//     select: {
-//         type: {
-//             select: {
-//                 id,
-//                 significance,
-//                 text
-//             }
-//         }
-//     }
-// });
-
-// // const x = Prisma.validator<Prisma.EventDefaultArgs>()({
-//     //select: ZodToPrismaSelection(EventFrontpageDtoSchema)
-//     select: {
-//         ...zx.select,
-//         // tags: {
-//         //     select: {
-//         //         id: true,
-//         //         eventTag: {
-//         //             select: {
-//         //                 id: true,
-//         //                 visibleOnFrontpage: true,
-//         //                 text: true,
-//         //                 izzou: true,
-//         //             }
-//         //         }
-//         //     }
-//         // }
-//     }
-// });
-
-// const EventFrontpageDtoSchema = EventSearchDtoSchema.pick({
-//     id: true,
-//     name: true,
-//     typeId: true,
-//     locationDescription: true,
-//     statusId: true,
-//     relevanceClassOverride: true,
-//     startsAt: true,
-//     durationMillis: true,
-//     isAllDay: true,
-//     visiblePermissionId: true,
-//     tags: true,
-// }).extend({
-// });
-
-// export const eventFrontpageSelection =
-//     Prisma.validator<Prisma.EventDefaultArgs>()(ZodToPrismaSelection(EventFrontpageDtoSchema));
-
-// export const eventFrontpageSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
-//     select: {
-//         id: true,
-//         name: true,
-//         typeId: true,
-//         locationDescription: true,
-//         statusId: true,
-//         relevanceClassOverride: true,
-//         startsAt: true,
-//         durationMillis: true,
-//         isAllDay: true,
-//         createdByUserId: true,
-//         visiblePermissionId: true,
-//         tags: {
-//             select: {
-//                 id: true,
-//                 eventTagId: true,
-//             },
-//         },
-
-//         isDeleted: true,
-//         frontpageVisible: true,
-//         frontpageDate: true,
-//         frontpageTime: true,
-//         frontpageDetails: true,
-//         frontpageTitle: true,
-//         frontpageLocation: true,
-//         frontpageLocationURI: true,
-//         frontpageTags: true,
-//         frontpageDate_nl: true,
-//         frontpageTime_nl: true,
-//         frontpageDetails_nl: true,
-//         frontpageTitle_nl: true,
-//         frontpageLocation_nl: true,
-//         frontpageLocationURI_nl: true,
-//         frontpageTags_nl: true,
-//         frontpageDate_fr: true,
-//         frontpageTime_fr: true,
-//         frontpageDetails_fr: true,
-//         frontpageTitle_fr: true,
-//         frontpageLocation_fr: true,
-//         frontpageLocationURI_fr: true,
-//         frontpageTags_fr: true,
-//     },
-// });
 
 interface HydratableEventSummaryDto {
     id: number;

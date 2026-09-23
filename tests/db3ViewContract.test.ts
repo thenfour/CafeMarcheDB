@@ -1,9 +1,10 @@
 import { Prisma } from "db"
-import type { z } from "zod"
+import { z } from "zod"
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest"
 
 import type { ColorPaletteEntry } from "src/core/components/color/palette"
 import * as db3 from "src/core/db3/db3"
+import { ZodToPrismaSelection } from "shared/prismaUtils"
 import { parsePublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId"
 import { compileDB3Selection } from "src/core/db3/shared/core/db3ViewContract"
 
@@ -369,6 +370,89 @@ describe("DB3 derived scalar hydration", () => {
       sortOrder: 1.5,
     }, new db3.DB3ReferenceStore())).toThrow()
     expect(decode).not.toHaveBeenCalled()
+  })
+})
+
+describe("EventStatus editor derived-view pilot", () => {
+  const legacyDtoSchema = z.object({
+    id: z.number().int(),
+    isDeleted: z.boolean().optional(),
+    description: z.string().optional(),
+    color: z.string().nullable().optional(),
+    sortOrder: z.number().int().optional(),
+    iconName: z.string().nullable().optional(),
+    label: z.string().optional(),
+    significance: z.string().nullable().optional(),
+  })
+
+  it("preserves the view identity and former DTO-derived Prisma selection", () => {
+    expect(db3.eventStatusEditorView.viewID).toBe("EventStatus_Editor")
+    expect(db3.eventStatusEditorView.getSelectionArgs(
+      {} as db3.DB3ViewSelectionContext,
+    )).toBe(db3.eventStatusEditorSelection)
+    expect(db3.eventStatusEditorSelection).toEqual(
+      ZodToPrismaSelection(legacyDtoSchema),
+    )
+  })
+
+  it("strengthens inherited DTO presence while retaining transport nullability", () => {
+    type LegacyDto = z.infer<typeof legacyDtoSchema>
+    type DerivedDto = db3.DtoOf<typeof db3.eventStatusEditorView>
+
+    expectTypeOf<DerivedDto>().toMatchTypeOf<LegacyDto>()
+    expectTypeOf<DerivedDto>().toEqualTypeOf<{
+      id: number
+      isDeleted: boolean
+      description: string
+      color: string | null
+      sortOrder: number
+      iconName: string | null
+      label: string
+      significance: string | null
+    }>()
+    expectTypeOf<db3.ClientOf<typeof db3.eventStatusEditorView>>()
+      .toEqualTypeOf<{
+        id: number
+        isDeleted: boolean
+        description: string
+        color: ColorPaletteEntry | null
+        sortOrder: number
+        iconName: string | null
+        label: string
+        significance: string | null
+      }>()
+
+    expect(legacyDtoSchema.safeParse({ id: 4 }).success).toBe(true)
+    expect(db3.eventStatusEditorView.dtoSchema.safeParse({ id: 4 }).success)
+      .toBe(false)
+    expect(db3.eventStatusEditorView.dtoSchema.safeParse({
+      id: 4,
+      isDeleted: false,
+      description: "Public display metadata",
+      color: null,
+      sortOrder: 1,
+      iconName: null,
+      label: "Confirmed",
+      significance: null,
+    }).success).toBe(true)
+  })
+
+  it("matches the former xTable hydrator for a complete DTO", () => {
+    const dto: db3.DtoOf<typeof db3.eventStatusEditorView> = {
+      id: 4,
+      isDeleted: false,
+      description: "Public display metadata",
+      color: "green",
+      sortOrder: 1,
+      iconName: null,
+      label: "Confirmed",
+      significance: db3.EventStatusSignificance.FinalConfirmation,
+    }
+
+    expect(db3.eventStatusEditorView.hydrate(
+      dto,
+      new db3.DB3ReferenceStore(),
+    )).toEqual(db3.xEventStatus.getClientModel(dto, "view"))
   })
 })
 

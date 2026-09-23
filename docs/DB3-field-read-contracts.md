@@ -417,6 +417,14 @@ hydration retains the key and adds the relation from the supplied provider.
 Target xTable identity metadata determines the transport and consumer types, so
 public-ID targets do not fall back to Prisma's numeric database-key type.
 
+`EventStatus_Editor` is the first end-to-end migrated view. It now owns an
+explicit Prisma selection and supplies the selection, DTO schema, and hydrator
+from `deriveViewContract` to `defineCrudView`. Its `viewID` and selected members
+are unchanged. Compared with the previous explicit schema, selected
+`inheritRow` fields are now required at compile time and runtime, nullable
+fields remain nullable, and complete DTOs hydrate to the same client values as
+the former xTable hydrator.
+
 The generated hydrator accepts the same reference-provider input shape used by
 current view hydration, even when a scalar-only view does not need it:
 
@@ -616,7 +624,7 @@ sound.
         it from the supplied provider. Test null, absent, present, and missing
         provider entries.
 
-15. [ ] **Convert one small view end to end.** Use an audited lookup view to
+15. [x] **Convert one small view end to end.** Use an audited lookup view to
         compare the old explicit DTO and hydrator with the derived versions at both
         compile time and runtime. Preserve its `viewID` and selection.
 

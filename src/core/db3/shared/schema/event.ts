@@ -81,8 +81,8 @@ export const xEventAuthMap_R_EAdmin: db3.DB3AuthContextPermissionMap = {
 export const xEventAuthMap_CreatedAt = xEventAuthMap_R_EAdmin;
 
 export const xEventAuthMap_Homepage: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.public,
-    PostQuery: Permission.public,
+    PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+    PostQuery: db3.DB3FieldReadAuth.inheritRow,
     PreMutateAsOwner: Permission.edit_public_homepage,
     PreMutate: Permission.edit_public_homepage,
     PreInsert: Permission.edit_public_homepage,
@@ -91,15 +91,13 @@ export const xEventAuthMap_Homepage: db3.DB3AuthContextPermissionMap = {
 // Event-status display metadata is part of the row's public identity. Once the
 // row is readable, these scalar values are readable as a unit; mutation policy
 // remains unchanged.
-const xEventStatusAuthMap = {
+const xEventChipsAuthMap = {
     PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
     PostQuery: db3.DB3FieldReadAuth.inheritRow,
     PreMutateAsOwner: xEventAuthMap_R_EOwn_EManagers.PreMutateAsOwner,
     PreMutate: xEventAuthMap_R_EOwn_EManagers.PreMutate,
     PreInsert: xEventAuthMap_R_EOwn_EManagers.PreInsert,
 } satisfies db3.DB3AuthContextPermissionMap;
-
-
 
 
 export const xEventTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
@@ -203,14 +201,14 @@ export const xEventType = db3.defineTable({
     }),
     fields: db3.makeColumnSet({
         id: () => MakePKfield(),
-        isDeleted: () => MakeIsDeletedField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        text: columnName => MakeTitleField(columnName, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        description: () => MakeDescriptionField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        sortOrder: () => MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        color: () => MakeColorField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        significance: columnName => MakeSignificanceField(columnName, EventTypeSignificance, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        events: memberName => new GhostField({ memberName, authMap: xEventAuthMap_R_EOwn_EManagers }),
+        isDeleted: () => MakeIsDeletedField({ authMap: xEventChipsAuthMap, }),
+        text: columnName => MakeTitleField(columnName, { authMap: xEventChipsAuthMap, }),
+        description: () => MakeDescriptionField({ authMap: xEventChipsAuthMap, }),
+        sortOrder: () => MakeSortOrderField({ authMap: xEventChipsAuthMap, }),
+        color: () => MakeColorField({ authMap: xEventChipsAuthMap, }),
+        significance: columnName => MakeSignificanceField(columnName, EventTypeSignificance, { authMap: xEventChipsAuthMap, }),
+        iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xEventChipsAuthMap, }),
+        events: memberName => new GhostField({ memberName, authMap: xEventChipsAuthMap }),
     })
 });
 
@@ -248,21 +246,15 @@ export const xEventStatus = db3.defineTable({
     }),
     fields: db3.makeColumnSet({
         id: () => MakePKfield(),
-        isDeleted: () => MakeIsDeletedField({ authMap: xEventStatusAuthMap, }),
-        label: columnName => MakeTitleField(columnName, { authMap: xEventStatusAuthMap, }),
-        description: () => MakeDescriptionField({ authMap: xEventStatusAuthMap, }),
-        sortOrder: columnName => new GenericIntegerField({
-            columnName,
-            allowNull: false,
-            allowSearchingThisField: false,
-            specialFunction: db3.SqlSpecialColumnFunction.sortOrder,
-            authMap: xEventStatusAuthMap,
-        }),
-        color: () => MakeColorField({ authMap: xEventStatusAuthMap, }),
-        significance: columnName => MakeSignificanceField(columnName, EventStatusSignificance, { authMap: xEventStatusAuthMap, }),
-        iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xEventStatusAuthMap, }),
-        events: memberName => new GhostField({ memberName, authMap: xEventAuthMap_R_EOwn_EManagers }),
-        eventSegments: memberName => new GhostField({ memberName, authMap: xEventAuthMap_R_EOwn_EManagers }),
+        isDeleted: () => MakeIsDeletedField({ authMap: xEventChipsAuthMap, }),
+        label: columnName => MakeTitleField(columnName, { authMap: xEventChipsAuthMap, }),
+        description: () => MakeDescriptionField({ authMap: xEventChipsAuthMap, }),
+        sortOrder: () => MakeSortOrderField({ authMap: xEventChipsAuthMap, }),
+        color: () => MakeColorField({ authMap: xEventChipsAuthMap, }),
+        significance: columnName => MakeSignificanceField(columnName, EventStatusSignificance, { authMap: xEventChipsAuthMap, }),
+        iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xEventChipsAuthMap, }),
+        events: memberName => new GhostField({ memberName, authMap: xEventChipsAuthMap }),
+        eventSegments: memberName => new GhostField({ memberName, authMap: xEventChipsAuthMap }),
     })
 });
 
@@ -297,13 +289,13 @@ export const xEventTag = db3.defineTable({
     }),
     fields: db3.makeColumnSet({
         id: () => MakePKfield(),
-        text: columnName => MakeTitleField(columnName, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        visibleOnFrontpage: columnName => new BoolField({ columnName, defaultValue: false, authMap: xEventAuthMap_Homepage, allowNull: false }),
-        description: () => MakeDescriptionField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        sortOrder: () => MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        color: () => MakeColorField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        significance: columnName => MakeSignificanceField(columnName, EventTagSignificance, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        events: memberName => new GhostField({ memberName, authMap: xEventAuthMap_R_EOwn_EManagers }),
+        text: columnName => MakeTitleField(columnName, { authMap: xEventChipsAuthMap, }),
+        visibleOnFrontpage: columnName => new BoolField({ columnName, defaultValue: false, authMap: xEventChipsAuthMap, allowNull: false }),
+        description: () => MakeDescriptionField({ authMap: xEventChipsAuthMap, }),
+        sortOrder: () => MakeSortOrderField({ authMap: xEventChipsAuthMap, }),
+        color: () => MakeColorField({ authMap: xEventChipsAuthMap, }),
+        significance: columnName => MakeSignificanceField(columnName, EventTagSignificance, { authMap: xEventChipsAuthMap, }),
+        events: memberName => new GhostField({ memberName, authMap: xEventChipsAuthMap }),
     })
 });
 
@@ -333,7 +325,7 @@ export const xEventTagAssignment = db3.defineTable({
         id: () => MakePKfield(),
         eventTag: foreignRef(() => xEventTag, {
             fkidMember: "eventTagId",
-            authMap: xEventAuthMap_R_EOwn_EManagers,
+            authMap: xEventChipsAuthMap,
         }),
     })
 });
@@ -659,6 +651,7 @@ export const xEventArgs_Base = db3.defineTableDesc({
     })
 });
 
+// todo: these variants of xEvent** will be replaced by using different views
 export const xEvent = db3.defineTable(xEventArgs_Base);
 
 const xEventArgs_Verbose = db3.defineTableDesc({
