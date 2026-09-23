@@ -8,7 +8,7 @@ import {
 } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
 import {
-    type DB3AuthSpec, type DB3FieldPrismaMember, type DB3ForeignSingleReferenceField, type DB3IdentityOf, type DB3PrismaPayloadOf, type DB3RowMode, ErrorValidateAndParseResult,
+    type DB3AuthSpec, type DB3FieldPrismaMember, type DB3ForeignSingleReferenceField, type DB3IdentityOf, type DB3PrismaPayloadOf, type DB3ReadPresenceForAuthSpec, type DB3RowMode, ErrorValidateAndParseResult,
     FieldBase, GetTableById, makeNullableReadTransportSchema, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
@@ -37,13 +37,15 @@ type ForeignSingleFieldValueArgs<
 type ForeignSingleFieldCommonArgs<
     TForeign,
     TForeignKeyMember extends string = string,
-> = ForeignSingleFieldValueArgs<TForeign, TForeignKeyMember> & DB3AuthSpec;
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+> = ForeignSingleFieldValueArgs<TForeign, TForeignKeyMember> & TAuthSpec;
 
 export type ForeignSingleFieldArgs<
     TForeign,
     TTargetTable extends xTable = xTable,
     TForeignKeyMember extends string = string,
-> = ForeignSingleFieldCommonArgs<TForeign, TForeignKeyMember> & (
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+> = ForeignSingleFieldCommonArgs<TForeign, TForeignKeyMember, TAuthSpec> & (
         | {
             /** Legacy cycle-safe lookup. Prefer foreignRef() for new fields. */
             foreignTableID: string;
@@ -70,7 +72,18 @@ export class ForeignSingleField<
     // The scalar Prisma member used by normalized read selections.
     TForeignKeyMember extends string = string,
 
-> extends FieldBase<TForeign, undefined, false>
+    // Preserve inheritRow literals so selected relation members and foreign
+    // keys get the same compile-time presence guarantee as runtime auth.
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+
+> extends FieldBase<
+    TForeign,
+    undefined,
+    false,
+    TForeign | null,
+    TForeign | null,
+    DB3ReadPresenceForAuthSpec<TAuthSpec>
+>
     implements DB3ForeignSingleReferenceField<TTargetTable, TForeignKeyMember> {
     declare readonly __relationTargetTable: TTargetTable;
     declare readonly __foreignKeyMember: TForeignKeyMember;
@@ -103,7 +116,12 @@ export class ForeignSingleField<
         getTargetTable: this.getForeignTableSchema,
     }];
 
-    constructor(args: ForeignSingleFieldArgs<TForeign, TTargetTable, TForeignKeyMember>) {
+    constructor(args: ForeignSingleFieldArgs<
+        TForeign,
+        TTargetTable,
+        TForeignKeyMember,
+        TAuthSpec
+    >) {
         super({
             member: args.columnName,
             fieldTableAssociation: "foreignObject",
@@ -401,10 +419,11 @@ export class ForeignSingleField<
 export type ForeignRefArgs<
     TTargetTable extends xTable,
     TForeignKeyMember extends string = string,
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
 > = Omit<
     ForeignSingleFieldValueArgs<DB3PrismaPayloadOf<TTargetTable>, TForeignKeyMember>,
     "columnName" | "allowNull" | "getQuickFilterWhereClause"
-> & DB3AuthSpec & {
+> & TAuthSpec & {
     allowNull?: boolean;
     getQuickFilterWhereClause?: (query: string) => TAnyModel | boolean;
 };
@@ -417,9 +436,10 @@ export type ForeignRefArgs<
 export const foreignRef = <
     TTargetTable extends xTable,
     const TForeignKeyMember extends string,
+    const TAuthSpec extends DB3AuthSpec,
 >(
     getForeignTable: () => TTargetTable,
-    args: ForeignRefArgs<TTargetTable, TForeignKeyMember>,
+    args: ForeignRefArgs<TTargetTable, TForeignKeyMember, TAuthSpec>,
 ) => (columnName: string) => {
     const valueArgs = {
         columnName,
@@ -436,14 +456,16 @@ export const foreignRef = <
         return new ForeignSingleField<
             DB3PrismaPayloadOf<TTargetTable>,
             TTargetTable,
-            TForeignKeyMember
+            TForeignKeyMember,
+            TAuthSpec
         >({ ...valueArgs, authMap: args.authMap });
     }
 
     return new ForeignSingleField<
         DB3PrismaPayloadOf<TTargetTable>,
         TTargetTable,
-        TForeignKeyMember
+        TForeignKeyMember,
+        TAuthSpec
     >({ ...valueArgs, _customAuth: args._customAuth });
 };
 

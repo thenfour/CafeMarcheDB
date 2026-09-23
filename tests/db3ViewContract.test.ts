@@ -6,6 +6,7 @@ import type { ColorPaletteEntry } from "src/core/components/color/palette"
 import * as db3 from "src/core/db3/db3"
 import { ZodToPrismaSelection } from "shared/prismaUtils"
 import { parsePublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId"
+import type { DateTimeRange } from "shared/time"
 import { compileDB3Selection } from "src/core/db3/shared/core/db3ViewContract"
 
 afterEach(() => {
@@ -60,22 +61,22 @@ describe("DB3 scalar selection compiler", () => {
   it("adds Zod optionality for independently authorized fields", () => {
     const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
       select: {
-        name: true,
-        locationDescription: true,
+        isDeleted: true,
+        relevanceClassOverride: true,
       },
     })
 
     const compiled = compileDB3Selection(db3.xEvent, selection)
 
     expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
-      name?: string
-      locationDescription?: string
+      isDeleted?: boolean
+      relevanceClassOverride?: number | null
     }>()
 
     expect(compiled.members.every(member => member.required === false)).toBe(true)
     expect(compiled.dtoSchema.parse({})).toEqual({})
-    expect(compiled.dtoSchema.parse({ name: "Visible event" }))
-      .toEqual({ name: "Visible event" })
+    expect(compiled.dtoSchema.parse({ isDeleted: false }))
+      .toEqual({ isDeleted: false })
   })
 
   it("ignores Prisma members explicitly excluded with false", () => {
@@ -116,6 +117,24 @@ describe("DB3 scalar selection compiler", () => {
     )
   })
 
+  it("allows an explicitly typed primitive ghost member", () => {
+    const selection = Prisma.validator<Prisma.UserTagDefaultArgs>()({
+      select: {
+        userAssignments: {
+          select: { userId: true },
+        },
+      },
+    })
+
+    const compiled = compileDB3Selection(db3.xUserTag, selection)
+
+    expect(compiled.dtoSchema.parse({ userAssignments: [{ userId: 12 }] }))
+      .toEqual({ userAssignments: [{ userId: 12 }] })
+    expect(compiled.dtoSchema.safeParse({
+      userAssignments: [{ userId: "12" }],
+    }).success).toBe(false)
+  })
+
   it("derives normalized foreign-key transport schemas", () => {
     const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
       select: { statusId: true },
@@ -150,8 +169,8 @@ describe("DB3 scalar selection compiler", () => {
 
     expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
       status?: {
-        id?: number
-        label?: string
+        id: number
+        label: string
       } | null
     }>()
 
@@ -258,12 +277,12 @@ describe("DB3 scalar selection compiler", () => {
     const schema = db3.deriveDtoSchema(db3.xEvent, selection)
 
     expectTypeOf<z.infer<typeof schema>>().toEqualTypeOf<{
-      locationURL?: string
+      locationURL: string
       tags?: Array<{
-        eventTagId?: number
-        eventTag?: {
-          id?: number
-          text?: string
+        eventTagId: number
+        eventTag: {
+          id: number
+          text: string
         }
       }>
     }>()
@@ -456,6 +475,233 @@ describe("EventStatus editor derived-view pilot", () => {
   })
 })
 
+describe("Event lookup editor derived-view rollout", () => {
+  it("migrates EventType with required intrinsic fields and codec hydration", () => {
+    type Dto = db3.DtoOf<typeof db3.eventTypeEditorView>
+    type Client = db3.ClientOf<typeof db3.eventTypeEditorView>
+
+    expectTypeOf<Dto>().toEqualTypeOf<{
+      id: number
+      isDeleted: boolean
+      description: string
+      color: string | null
+      sortOrder: number
+      iconName: string | null
+      text: string
+      significance: string | null
+    }>()
+    expectTypeOf<Client["color"]>().toEqualTypeOf<ColorPaletteEntry | null>()
+    expect(db3.eventTypeEditorView.getSelectionArgs(
+      {} as db3.DB3ViewSelectionContext,
+    )).toBe(db3.eventTypeEditorSelection)
+
+    const dto: Dto = {
+      id: 2,
+      isDeleted: false,
+      description: "Public concert",
+      color: "green",
+      sortOrder: 1,
+      iconName: null,
+      text: "Concert",
+      significance: db3.EventTypeSignificance.Concert,
+    }
+    expect(db3.eventTypeEditorView.hydrate(
+      dto,
+      new db3.DB3ReferenceStore(),
+    )).toEqual(db3.xEventType.getClientModel(dto, "view"))
+  })
+
+  it("migrates EventTag with required intrinsic fields and codec hydration", () => {
+    type Dto = db3.DtoOf<typeof db3.eventTagEditorView>
+    type Client = db3.ClientOf<typeof db3.eventTagEditorView>
+
+    expectTypeOf<Dto>().toEqualTypeOf<{
+      id: number
+      description: string
+      color: string | null
+      sortOrder: number
+      text: string
+      significance: string | null
+      visibleOnFrontpage: boolean
+    }>()
+    expectTypeOf<Client["color"]>().toEqualTypeOf<ColorPaletteEntry | null>()
+    expect(db3.eventTagEditorView.getSelectionArgs(
+      {} as db3.DB3ViewSelectionContext,
+    )).toBe(db3.eventTagEditorSelection)
+
+    const dto: Dto = {
+      id: 5,
+      description: "Public event",
+      color: "orange",
+      sortOrder: 1,
+      text: "Public",
+      significance: null,
+      visibleOnFrontpage: true,
+    }
+    expect(db3.eventTagEditorView.hydrate(
+      dto,
+      new db3.DB3ReferenceStore(),
+    )).toEqual(db3.xEventTag.getClientModel(dto, "view"))
+  })
+})
+
+describe("Event frontpage derived-view migration", () => {
+  const makeDto = (): db3.EventFrontpageDto => ({
+    id: 41,
+    name: "Autumn concert",
+    typeId: 2,
+    locationDescription: "Town hall",
+    locationURL: "https://example.com",
+    statusId: 3,
+    relevanceClassOverride: null,
+    startsAt: new Date("2026-10-03T18:00:00.000Z"),
+    durationMillis: BigInt(7_200_000),
+    isAllDay: false,
+    visiblePermissionId: 9,
+    frontpageVisible: true,
+    frontpageDate: "3 October",
+    frontpageTime: "20:00",
+    frontpageDetails: "Doors at 19:30",
+    frontpageTitle: "Autumn concert",
+    frontpageLocation: "Town hall",
+    frontpageLocationURI: "https://example.com/venue",
+    frontpageTags: "#concert",
+    frontpageDate_nl: "3 oktober",
+    frontpageTime_nl: "20:00",
+    frontpageDetails_nl: "Deuren om 19:30",
+    frontpageTitle_nl: "Herfstconcert",
+    frontpageLocation_nl: "Stadhuis",
+    frontpageLocationURI_nl: "https://example.com/venue",
+    frontpageTags_nl: "#concert",
+    frontpageDate_fr: "3 octobre",
+    frontpageTime_fr: "20:00",
+    frontpageDetails_fr: "Portes a 19:30",
+    frontpageTitle_fr: "Concert d'automne",
+    frontpageLocation_fr: "Hotel de ville",
+    frontpageLocationURI_fr: "https://example.com/venue",
+    frontpageTags_fr: "#concert",
+    type: {
+      id: 2,
+      isDeleted: false,
+      description: "Public concert",
+      color: "green",
+      sortOrder: 1,
+      iconName: null,
+      text: "Concert",
+      significance: db3.EventTypeSignificance.Concert,
+    },
+    status: {
+      id: 3,
+      isDeleted: false,
+      description: "Public status",
+      color: "blue",
+      sortOrder: 1,
+      iconName: null,
+      label: "Confirmed",
+      significance: db3.EventStatusSignificance.FinalConfirmation,
+    },
+    tags: [{
+      id: 71,
+      eventTagId: 5,
+      eventTag: {
+        id: 5,
+        description: "Public event",
+        color: "orange",
+        sortOrder: 1,
+        visibleOnFrontpage: true,
+        text: "Public",
+        significance: null,
+      },
+    }],
+  })
+
+  it("preserves the named Prisma selection and derives inherited presence", () => {
+    type Dto = db3.EventFrontpageDto
+    type Client = db3.EventFrontpageClient
+
+    expect(db3.eventFrontpageView.viewID).toBe("Event_Frontpage")
+    expect(db3.eventFrontpageView.getSelectionArgs(
+      {} as db3.DB3ViewSelectionContext,
+    )).toBe(db3.eventFrontpageSelection)
+    expect(db3.eventFrontpageSelection.select.tags.orderBy)
+      .toBe(db3.EventTagAssignmentNaturalOrderBy)
+
+    expectTypeOf<Pick<Dto,
+      | "id"
+      | "name"
+      | "locationDescription"
+      | "locationURL"
+      | "startsAt"
+      | "durationMillis"
+      | "isAllDay"
+      | "frontpageVisible"
+      | "frontpageTitle"
+    >>().toEqualTypeOf<{
+      id: number
+      name: string
+      locationDescription: string
+      locationURL: string
+      startsAt: Date | null
+      durationMillis: bigint
+      isAllDay: boolean
+      frontpageVisible: boolean
+      frontpageTitle: string | null
+    }>()
+    expectTypeOf<NonNullable<Dto["type"]>>().toEqualTypeOf<{
+      id: number
+      isDeleted: boolean
+      description: string
+      color: string | null
+      sortOrder: number
+      iconName: string | null
+      text: string
+      significance: string | null
+    }>()
+    expectTypeOf<Client>().toMatchTypeOf<{ dateRange: DateTimeRange }>()
+    expectTypeOf<Extract<
+      keyof Client,
+      "startsAt" | "durationMillis" | "isAllDay"
+    >>().toEqualTypeOf<never>()
+
+    const dto = makeDto()
+    const { name: _name, ...withoutName } = dto
+    expect(db3.eventFrontpageView.dtoSchema.safeParse(withoutName).success)
+      .toBe(false)
+    expect(db3.eventFrontpageView.dtoSchema.safeParse({
+      ...dto,
+      type: { ...dto.type!, text: undefined },
+    }).success).toBe(false)
+  })
+
+  it("hydrates embedded codecs and composes the date range without references", () => {
+    const typeColorDecode = vi.spyOn(db3.xEventType.fields.color.codec, "decode")
+    const statusColorDecode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
+    const tagColorDecode = vi.spyOn(db3.xEventTag.fields.color.codec, "decode")
+
+    const hydrated = db3.eventFrontpageView.hydrate(
+      makeDto(),
+      new db3.DB3ReferenceStore(),
+    )
+
+    expect(hydrated.dateRange.getSpec()).toEqual({
+      startsAtDateTime: new Date("2026-10-03T18:00:00.000Z"),
+      durationMillis: 7_200_000,
+      isAllDay: false,
+    })
+    expect(hydrated).not.toHaveProperty("startsAt")
+    expect(hydrated).not.toHaveProperty("durationMillis")
+    expect(hydrated).not.toHaveProperty("isAllDay")
+    expect(hydrated).not.toHaveProperty("visiblePermission")
+    expect(hydrated.type?.color).toEqual(expect.objectContaining({ id: "green" }))
+    expect(hydrated.status?.color).toEqual(expect.objectContaining({ id: "blue" }))
+    expect(hydrated.tags?.[0]?.eventTag.color)
+      .toEqual(expect.objectContaining({ id: "orange" }))
+    expect(typeColorDecode).toHaveBeenCalledTimes(1)
+    expect(statusColorDecode).toHaveBeenCalledTimes(1)
+    expect(tagColorDecode).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe("DB3 normalized foreign-single hydration", () => {
   it("declares and resolves a selected foreign key while retaining its transport member", () => {
     const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
@@ -518,12 +764,26 @@ describe("DB3 normalized foreign-single hydration", () => {
       select: { statusId: true },
     })
     const derived = db3.deriveViewContract(db3.xEvent, selection)
+    const references = new db3.DB3ReferenceStore()
+    references.register(db3.xEventStatus, [])
 
     expect(() => derived.hydrate({
       statusId: 404,
-    }, new db3.DB3ReferenceStore())).toThrow(
+    }, references)).toThrow(
       "Unable to hydrate Event.status: EventStatus '404' is not available.",
     )
+  })
+
+  it("leaves an optional normalized relation absent when its table is not registered", () => {
+    const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: { statusId: true },
+    })
+    const derived = db3.deriveViewContract(db3.xEvent, selection)
+    const references = new db3.DB3ReferenceStore()
+    const requireReference = vi.spyOn(references, "require")
+
+    expect(derived.hydrate({ statusId: 4 }, references)).toEqual({ statusId: 4 })
+    expect(requireReference).not.toHaveBeenCalled()
   })
 
   it("uses the target xTable identity for public-ID foreign-key transport", () => {
@@ -579,8 +839,8 @@ describe("DB3 normalized foreign-single hydration", () => {
 
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
       tags?: Array<{
-        eventTagId?: number
-        eventTag?: Prisma.EventTagGetPayload<{}>
+        eventTagId: number
+        eventTag: Prisma.EventTagGetPayload<{}>
       }>
     }>()
     expect(derived.referenceDependencies).toEqual([
@@ -618,9 +878,9 @@ describe("DB3 derived embedded-relation hydration", () => {
 
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
       status?: {
-        id?: number
-        label?: string
-        color?: ColorPaletteEntry | null
+        id: number
+        label: string
+        color: ColorPaletteEntry | null
       } | null
     }>()
 
@@ -702,11 +962,11 @@ describe("DB3 derived embedded-relation hydration", () => {
 
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
       tags?: Array<{
-        eventTagId?: number
-        eventTag?: {
-          id?: number
-          text?: string
-          color?: ColorPaletteEntry | null
+        eventTagId: number
+        eventTag: {
+          id: number
+          text: string
+          color: ColorPaletteEntry | null
         }
       }>
     }>()

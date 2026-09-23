@@ -5,37 +5,35 @@ import { sortEvents } from "./apiTypes";
 import { PublicAgendaItemSpec, PublicFeedResponseSpec, PublicGalleryItemSpec } from "./publicTypes";
 import { SharedAPI } from "./sharedAPI";
 
-// type GetAgendaItemEvent = Prisma.EventGetPayload<{
-//     select: {
-//         id: true;
-//         startsAt: true;
-//         frontpageDate: true;
-//         frontpageDate_nl: true;
-//         frontpageDate_fr: true;
-//         frontpageTime: true;
-//         frontpageTime_nl: true;
-//         frontpageTime_fr: true;
-//         frontpageDetails: true;
-//         frontpageDetails_nl: true;
-//         frontpageDetails_fr: true;
-//         frontpageLocation: true;
-//         frontpageLocation_nl: true;
-//         frontpageLocation_fr: true;
-//         frontpageLocationURI: true;
-//         frontpageLocationURI_nl: true;
-//         frontpageLocationURI_fr: true;
-//         frontpageTags: true;
-//         frontpageTags_nl: true;
-//         frontpageTags_fr: true;
-//         frontpageTitle: true;
-//         frontpageTitle_nl: true;
-//         frontpageTitle_fr: true;
-//     }
-// }>;
-
 // null-or-whitespace values in EN will not show the field
 // null-or-whitespace values in NL and FR fallback to english
-export function getAgendaItem(event: db3.EventFrontpageClient, lang: EnNlFr): PublicAgendaItemSpec {
+type AgendaItemSource = Pick<db3.EventFrontpageClient,
+    | "id"
+    | "dateRange"
+    | "frontpageDate"
+    | "frontpageDate_nl"
+    | "frontpageDate_fr"
+    | "frontpageTime"
+    | "frontpageTime_nl"
+    | "frontpageTime_fr"
+    | "frontpageDetails"
+    | "frontpageDetails_nl"
+    | "frontpageDetails_fr"
+    | "frontpageLocation"
+    | "frontpageLocation_nl"
+    | "frontpageLocation_fr"
+    | "frontpageLocationURI"
+    | "frontpageLocationURI_nl"
+    | "frontpageLocationURI_fr"
+    | "frontpageTags"
+    | "frontpageTags_nl"
+    | "frontpageTags_fr"
+    | "frontpageTitle"
+    | "frontpageTitle_nl"
+    | "frontpageTitle_fr"
+>;
+
+export function getAgendaItem(event: AgendaItemSource, lang: EnNlFr): PublicAgendaItemSpec {
     const ret: PublicAgendaItemSpec = {
         id: event.id,
         startsAt: event.dateRange?.getStartDateTime() || null,

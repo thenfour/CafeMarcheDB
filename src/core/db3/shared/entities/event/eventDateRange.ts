@@ -6,10 +6,13 @@ export interface EventDateRangeDtoFields {
     isAllDay?: boolean;
 }
 
+type CompleteEventDateRangeDtoFields = Required<EventDateRangeDtoFields>;
+
 export type WithEventDateRange<T extends EventDateRangeDtoFields> =
-    Omit<T, keyof EventDateRangeDtoFields> & {
-        dateRange?: DateTimeRange;
-    };
+    Omit<T, keyof EventDateRangeDtoFields>
+    & (T extends CompleteEventDateRangeDtoFields
+        ? { dateRange: DateTimeRange }
+        : { dateRange?: DateTimeRange });
 
 /**
  * Converts the persisted Event timing tuple into its client-side value object.
@@ -21,7 +24,7 @@ export function hydrateEventDateRange<T extends EventDateRangeDtoFields>(
 ): WithEventDateRange<T> {
     const { startsAt, durationMillis, isAllDay, ...rest } = dto;
     if (startsAt === undefined || durationMillis === undefined || isAllDay === undefined) {
-        return rest;
+        return rest as WithEventDateRange<T>;
     }
 
     return {
@@ -31,5 +34,5 @@ export function hydrateEventDateRange<T extends EventDateRangeDtoFields>(
             durationMillis: Number(durationMillis),
             isAllDay,
         }),
-    };
+    } as WithEventDateRange<T>;
 }

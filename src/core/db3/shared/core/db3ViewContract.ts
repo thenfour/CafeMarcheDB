@@ -106,14 +106,36 @@ type DB3SelectedMemberValue<
         TField
     >;
 
+type DB3RequiredSelectedKeys<
+    TTable extends xTable,
+    TSelect,
+    TFields = DB3FieldsOf<TTable>,
+> = {
+    [TKey in DB3SelectedKeys<TSelect>]:
+    DB3ReadPresenceOf<DB3FieldForMember<TFields, TKey>> extends "required"
+    ? TKey
+    : never
+}[DB3SelectedKeys<TSelect>];
+
 type DB3NestedDto<
     TPayload,
     TSelect,
     TTable extends xTable,
-> = {
-    [TKey in Extract<DB3SelectedKeys<TSelect>, keyof TPayload>]?:
+    TSelectedKey extends keyof TPayload & keyof TSelect = Extract<
+        DB3SelectedKeys<TSelect>,
+        keyof TPayload & keyof TSelect
+    >,
+    TRequiredKey extends TSelectedKey = Extract<
+        DB3RequiredSelectedKeys<TTable, TSelect>,
+        TSelectedKey
+    >,
+> = Simplify<{
+    [TKey in Extract<TSelectedKey, TRequiredKey>]-?:
     DB3SelectedMemberValue<TPayload, TSelect, TTable, TKey>;
-};
+} & {
+    [TKey in Exclude<TSelectedKey, TRequiredKey>]?:
+    DB3SelectedMemberValue<TPayload, TSelect, TTable, TKey>;
+}>;
 
 type DB3PrismaPayload<
     TEntity extends AnyDB3Table,
@@ -140,13 +162,7 @@ type DB3RequiredRootKeys<
     TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
     TSelect = DB3SelectionSelect<TSelection>,
-    TFields = DB3FieldsOf<TEntity>,
-> = {
-    [TKey in DB3SelectedKeys<TSelect>]:
-    DB3ReadPresenceOf<DB3FieldForMember<TFields, TKey>> extends "required"
-    ? TKey
-    : never
-}[DB3SelectedKeys<TSelect>];
+> = DB3RequiredSelectedKeys<TEntity, TSelect>;
 
 type Simplify<TValue> = { [TKey in keyof TValue]: TValue[TKey] };
 
@@ -587,13 +603,15 @@ function hydrateCompiledMembers(
                 clientModel[member.member] = member.field.hydrateReadTransportValue(value);
             } else if (member.referenceDependency) {
                 const dependency = member.referenceDependency;
-                clientModel[dependency.relationMember] = value === null
-                    ? null
-                    : references.require(
+                if (value === null) {
+                    clientModel[dependency.relationMember] = null;
+                } else if (member.required || references.hasTable(dependency.targetTable)) {
+                    clientModel[dependency.relationMember] = references.require(
                         dependency.targetTable,
                         value,
                         `${dependency.sourceTable.tableID}.${dependency.relationMember}`,
                     );
+                }
             }
             continue;
         }

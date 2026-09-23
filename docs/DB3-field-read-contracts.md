@@ -425,6 +425,22 @@ are unchanged. Compared with the previous explicit schema, selected
 fields remain nullable, and complete DTOs hydrate to the same client values as
 the former xTable hydrator.
 
+`Event_Frontpage` is the event-level proof. The view now owns one explicit
+Prisma selection and derives its DTO schema plus scalar and embedded-relation
+hydration from `xEvent`. It then composes `hydrateEventDateRange` as an ordinary
+view-level transform. A complete selected timing tuple produces a required
+consumer `dateRange`; the three transport members do not leak into the consumer
+shape. Both the TableClient and public feed query through the named view, so the
+selection, authorization projection, DTO parse, and hydration form one read
+path. This demonstrates that date-range composition does not require a general
+compound-field abstraction. The migration also removes the frontpage-only
+type/status/tag default-filling helpers: audited `inheritRow` fields are
+required instead of being silently fabricated.
+
+`EventType_Editor` and `EventTag_Editor` are the first incremental lookup-view
+rollout after the pilots. Like `EventStatus_Editor`, they retain their view IDs
+and selected members while deriving the read schema and codec hydration.
+
 The generated hydrator accepts the same reference-provider input shape used by
 current view hydration, even when a scalar-only view does not need it:
 
@@ -434,6 +450,37 @@ hydrate(dto, references)
 
 That keeps a uniform view API and permits relation support to be added without
 changing the caller contract.
+
+For normalized optional foreign keys, provider registration expresses whether
+consumer enrichment was requested. An unregistered target table leaves the
+relation absent; a registered table with a missing identity is an error. A
+required normalized relation always requires successful resolution. Embedded
+relations remain authoritative and never consult the provider.
+
+### Pilot assessment
+
+The safe broad-rollout boundary is now concrete:
+
+- Explicit `select` trees over scalar fields, typed foreign-single relations,
+  and typed association collections derive cleanly. `include` remains rejected.
+- Legacy collection fields that identify targets only by string table ID can be
+  compiled at runtime, but they do not retain enough target type information to
+  infer useful nested DTO types. Adding eager target types to the recursive
+  Event/EventSegment graph creates circular inference problems; that is not part
+  of this migration.
+- `TagsField` still widens its own authorization spec, so an outer tag collection
+  can remain compile-time optional even when its runtime map uses `inheritRow`.
+  Its typed association target still gives correct nested field types. Fixing
+  the outer presence type can be a separate, narrow follow-up.
+- Dynamic `Event_Search` still combines per-actor selection additions and legacy
+  collection descriptors. It remains explicit rather than weakening the
+  derived contract or introducing casts.
+- `ForeignCollectionField` and ghost members need an explicit read transport
+  contract before a selected primitive can derive. This is deliberate: unknown
+  transport values are rejected rather than guessed.
+- The mutation path remains unchanged. Nothing here attempts to unify
+  `ApplyToNewRow`, `ApplyClientToDb`, `separateMutationValues`, or association
+  mutation behavior.
 
 ## Foreign-single fields and multiple Prisma members
 
@@ -628,21 +675,24 @@ sound.
         compare the old explicit DTO and hydrator with the derived versions at both
         compile time and runtime. Preserve its `viewID` and selection.
 
-16. [ ] **Convert one event view with explicit date-range composition.** Derive
+16. [x] **Convert one event view with explicit date-range composition.** Derive
         scalar/relation hydration, then wrap it with the existing or new
         event-date-range helper. This is the test that compound-field support is not
-        required for the initial value.
+        required for the initial value. `Event_Frontpage` is the proof; its
+        complete inherited timing tuple produces a required consumer date range.
 
-17. [ ] **Assess the pilot before broad rollout.** Record unsupported selection
+17. [x] **Assess the pilot before broad rollout.** Record unsupported selection
         patterns, type-quality regressions, authorization surprises, and remaining
-        duplication. Decide separately whether to add general compound fields or
-        refactor the mutation path.
+        duplication. The assessment above keeps legacy/cyclic collection typing,
+        general compound fields, and mutation refactoring outside this rollout.
 
-18. [ ] **Migrate simple views incrementally.** Prefer views whose selections are
+18. [x] **Migrate simple views incrementally.** Prefer views whose selections are
         entirely covered by the compiler. Keep explicit schemas and hydration for
         exceptional views rather than weakening the derived contract.
+        `EventType_Editor` and `EventTag_Editor` now join `EventStatus_Editor`;
+        `Event_Search` remains explicit as an intentional exception.
 
-19. [ ] **Update the architecture documentation.** Once behavior is proven,
+19. [x] **Update the architecture documentation.** Once behavior is proven,
         update the broader entity/view/hydration document and mark superseded
         examples. Keep this checklist as the record of the migration sequence and
         decisions.

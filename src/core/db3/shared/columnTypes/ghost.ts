@@ -1,5 +1,6 @@
 
 import { TAnyModel } from "@/shared/rootroot";
+import type { z } from "zod";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion,
     type SearchResultsFacetQuery, type SortQueryElements
@@ -19,6 +20,8 @@ import { type UserWithRolesPayload } from "../schema/userPayloads";
 export type GhostFieldArgs = {
     memberName: string;
     specialFunction?: SqlSpecialColumnFunction;
+    // optional DTO schema
+    readTransportSchema?: z.ZodType<number>;
 } & DB3AuthSpec;
 
 // sometimes you have a query containing a payload and you don't need to have a full FieldSpec for handling it. you just need to access its raw value as returned by the db.
@@ -34,6 +37,7 @@ export class GhostField extends FieldBase<number> {
             _customAuth: (args as any)._customAuth || null,
             fieldTableAssociation: "tableColumn",
             defaultValue: null,
+            readTransportSchema: args.readTransportSchema,
             specialFunction: args.specialFunction,
         });
     }

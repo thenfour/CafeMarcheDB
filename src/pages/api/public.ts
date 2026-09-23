@@ -33,7 +33,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
     const eventsCall = queryTable({
         filter: eventsFilterModel,
         cmdbQueryContext: "publicDataFeed",
-        table: xEvent,
+        table: {
+            tableID: xEvent.tableID,
+            tableName: xEvent.tableName,
+            viewID: db3.eventFrontpageView.viewID,
+        },
         orderBy: undefined,
     },
         authorization);
@@ -52,25 +56,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
         galleryCall,
     ]);
 
-    const eventsResult: db3.EventWithTagsPayload[] = eventsResultRaw.items as db3.EventWithTagsPayload[];
     const galleryResult: db3.FrontpageGalleryItemPayload[] = galleryResultRaw.items as db3.FrontpageGalleryItemPayload[];
 
     // empty reference store. hydration on eventFrontpageView shall not use references; all data should come from the prisma selection.
     const referenceStore = new db3.DB3ReferenceStore();
 
-    // adapt events result to what hydrate expects; ugh. need this migration to be over.
-    const eventsAdapted = eventsResult.map(event => {
-        return {
-            ...event,
-            tags: event.tags.map(assoc => ({
-                ...assoc,
-            }))
-        };
-    });
-
-    const aoeu = eventsAdapted[0]?.tags;
-
-    const hydrated = eventsAdapted.map(event => db3.eventFrontpageView.hydrate(event, referenceStore));
+    const hydrated = eventsResultRaw.items.map(event => db3.eventFrontpageView.hydrate(
+        db3.eventFrontpageView.parseDto(event),
+        referenceStore,
+    ));
 
     const payload = MakePublicFeedResponseSpec(hydrated, lang, galleryResult);
 

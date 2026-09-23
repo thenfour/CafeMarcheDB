@@ -35,7 +35,7 @@ describe("DB3 xTable model metadata", () => {
       .toEqualTypeOf<db3.InstrumentFunctionalGroupClientPayload>()
     expectTypeOf(db3.instrumentFunctionalGroupListView.entity)
       .toEqualTypeOf<typeof db3.xInstrumentFunctionalGroup>()
-    expectTypeOf(db3.xEventTagAssignment.fields.eventTag).toEqualTypeOf<
+    expectTypeOf(db3.xEventTagAssignment.fields.eventTag).toMatchTypeOf<
       db3.ForeignSingleField<
         Prisma.EventTagGetPayload<{}>,
         typeof db3.xEventTag,

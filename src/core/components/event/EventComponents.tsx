@@ -1212,13 +1212,17 @@ type EventSearchItemEvent = Pick<db3.EventSearchClient,
     | "dateRange"
     | "visiblePermissionId"
     | "typeId"
-    | "type"
     | "statusId"
-    | "status"
     | "relevanceClassOverride"
     | "locationDescription"
-    | "tags"
->;
+> & {
+    // Event_Search still exposes legacy transport colors, while derived views
+    // expose hydrated palette entries. This component is intentionally shared
+    // by both consumer shapes.
+    type?: db3.EventSearchClient["type"] | db3.EventFrontpageClient["type"];
+    status?: db3.EventSearchClient["status"] | db3.EventFrontpageClient["status"];
+    tags?: db3.EventSearchClient["tags"] | db3.EventFrontpageClient["tags"];
+};
 
 export interface EventSearchItemContainerProps {
     event: EventSearchItemEvent;

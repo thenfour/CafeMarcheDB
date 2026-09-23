@@ -7,6 +7,7 @@ import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
+import { z } from "zod";
 import { CMDBTableFilterModel, PermissionSignificance } from "../apiTypes";
 import { BoolField, ForeignCollectionField, foreignRef, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
@@ -639,6 +640,7 @@ export const xUserTagAssignment = db3.defineTable({
         }),
         userId: memberName => new GhostField({
             memberName,
+            readTransportSchema: z.number().int(),
             specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
             authMap: xUserBasicProfileManagerWriteAuthMap,
         }),

@@ -102,7 +102,10 @@ authority while `xTable.columns` remains the ordered runtime representation. A
 field whose database/DTO value differs from its client value declares a
 `DB3FieldCodec<ReadTransport, Client, WriteTransport>`. Its `decode()` and
 `encode()` implementations are the shared runtime authority, and its strict
-write schema describes the command-side value. `DB3SchemaClientModel<Dto,
+one-way `readTransportSchema` validates a selected database value before decode
+while its strict write schema describes the command-side value. Authorization
+presence is derived separately: a selected field is required only when every
+read branch uses `inheritRow`. `DB3SchemaClientModel<Dto,
 Fields>` applies decoding to a DTO while preserving its optional members;
 `DB3SchemaMutationModel<Client, Fields>` derives the corresponding same-key
 command values while allowing authorization to omit fields. The historical
@@ -142,25 +145,25 @@ contracts without coupling callers to a particular view.
 `defineView()` represents one use-specific read shape for an entity. A view owns:
 
 - a globally registered `viewID` tied to exactly one entity/table;
-- a Prisma selection, derived from its Zod DTO schema by default or supplied
-  explicitly when query behavior requires it;
+- a Prisma selection describing exactly what the database should return;
 - a Zod DTO schema for the authorized transport shape;
 - a pure hydration function from DTO plus references to a client value.
 
-`ZodToPrismaSelection()` recursively maps DTO scalars to `true`, nested objects
-to nested `select` clauses, and arrays to their element selection. Optionality,
-nullability, defaults, brands, and refinements do not affect which database
-member is selected. Its mapped return type preserves the literal selection
-shape used by Prisma payload inference. Consequently, ordinary views declare
-only `dtoSchema`; `defineView()` and `defineCrudView()` derive their selection.
+For migrated views, `deriveViewContract(xTable, selection)` preserves the
+literal Prisma selection unchanged and compiles the DTO schema plus default
+hydrator from xTable field read contracts. Scalars use their transport schemas
+and codecs; embedded relations recurse through their target xTables; a selected
+normalized foreign key can resolve its consumer relation through the reference
+provider. This keeps value representation on xTable and query shape on the
+view. A view may then compose domain hydration such as the Event date-range
+transform without teaching DB3 core that domain concept.
 
-An explicit selection remains part of the view contract when it adds meaning
-that a transport schema cannot express: relation ordering or filtering,
-request-authorization-dependent clauses, authorization-only fields that must
-not enter the DTO, or hidden relation data required for public-ID projection.
-Such selections can spread the result of `ZodToPrismaSelection(dtoSchema)` and
-add only those query concerns. Ambiguous Zod relation shapes fail explicitly
-rather than producing a guessed Prisma query.
+`ZodToPrismaSelection()` remains a supported primitive and existing explicit
+DTO-first views remain valid. It recursively maps DTO shape to a Prisma select,
+but it is no longer the preferred authority for a migrated read view because it
+cannot obtain field nullability, codec behavior, or authorization presence from
+the entity. Dynamic or exceptional views may retain handwritten schemas and
+hydrators rather than weakening the derived contract.
 
 The selection is the maximum data the view may need. DB3 still applies `xTable`
 row, field, relation, soft-delete, and visibility authorization before validating
@@ -751,7 +754,10 @@ a per-row compatibility flag or a second lookup mode.
   explicit configuration. Runtime-selected legacy clients are separately named
   and intentionally retain no inferred key or row contract.
 - Event timing proves hydration into a behavioral `DateTimeRange` value rather
-  than merely renaming fields.
+  than merely renaming fields. `Event_Frontpage` now proves that this transform
+  composes after xTable-derived scalar/relation hydration; EventStatus,
+  EventType, and EventTag editor views derive their full read contracts from
+  explicit Prisma selections.
 - Event song lists prove collection reshaping and a separate write model:
   `EventSongListContent` merges songs and dividers, the editor consumes an
   `EventSongListDraft`, and `saveEventSongListCommand` owns draft-to-DTO
@@ -986,6 +992,9 @@ boundary safely.
   table-name envelope, and production RPC.
 - [x] Prove the complete read/write/public-identity chain with
   `InstrumentFunctionalGroup`.
+- [x] Establish selection-first read derivation from xTable field contracts,
+  including `inheritRow` presence, scalar codecs, embedded and normalized
+  foreign relations, and explicit Event date-range composition.
 
 ### Stabilization gate
 

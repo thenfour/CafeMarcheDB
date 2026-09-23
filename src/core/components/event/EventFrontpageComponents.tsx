@@ -21,6 +21,7 @@ import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/Das
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { AgendaItem } from '../frontpage/homepageComponents';
 import { SettingMarkdown } from "../SettingMarkdown";
+import type { EventEnrichedVerbose_Event } from "./EventComponentsBase";
 
 
 
@@ -215,8 +216,10 @@ interface FrontpageControlSpec {
 //     }>;
 // };
 
+type EventFrontpageEditorEvent = db3.EventFrontpageClient | EventEnrichedVerbose_Event;
+
 interface EventFrontpageControlProps {
-    event: db3.EventFrontpageClient;
+    event: EventFrontpageEditorEvent;
     refetch: () => void;
     fieldSpec: FrontpageControlSpec;
     readonly: boolean;
@@ -343,8 +346,7 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
 
 ////////////////////////////////////////////////////////////////
 export interface EventFrontpageTabContentProps {
-    //event: EventEnrichedVerbose_Event;
-    event: db3.EventFrontpageClient;
+    event: EventFrontpageEditorEvent;
     dateRange: DateTimeRange;
     refetch: () => void;
     readonly: boolean;

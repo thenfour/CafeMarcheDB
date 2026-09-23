@@ -13,6 +13,13 @@ export class DB3HydrationError extends Error {
 }
 
 export interface DB3ReferenceProvider {
+    /**
+     * Whether this provider owns the complete lookup set for an entity. An
+     * unregistered table means normalized hydration is not requested for that
+     * relation; a registered table with a missing identity is still an error.
+     */
+    hasTable<TEntity extends AnyDB3Table>(entity: TEntity): boolean;
+
     // - if entity is not found, returns undefined
     // - if id is undefined, returns undefined
     // - if id is null, returns null
@@ -50,6 +57,10 @@ export class DB3ReferenceStore implements DB3ReferenceProvider {
         this.entities.set(entity.tableID, new Map(
             rows.map(row => [entity.getIdentity(row), row]),
         ));
+    }
+
+    hasTable<TEntity extends AnyDB3Table>(entity: TEntity): boolean {
+        return this.entities.has(entity.tableID);
     }
 
     get<TEntity extends AnyDB3Table>(
