@@ -162,9 +162,9 @@ const fileDetailRelatedFileSelection = {
     },
 } as const;
 
-
-
-export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
+// Reusable File projection for embedded file cards. It deliberately excludes
+// File_Detail-only reverse relations such as childFiles and pinnedForSongs.
+export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
         id: true,
         fileLeafName: true,
@@ -178,7 +178,6 @@ export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
             },
         },
         visiblePermissionId: true,
-        isDeleted: true,
         sizeBytes: true,
         storedLeafName: true,
         mimeType: true,
@@ -196,7 +195,6 @@ export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
         taggedUsers: {
             select: {
                 id: true,
-                userId: true,
                 user: {
                     select: {
                         id: true,
@@ -208,14 +206,10 @@ export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
         taggedSongs: {
             select: {
                 id: true,
-                songId: true,
                 song: {
                     select: {
                         id: true,
                         name: true,
-                        createdByUserId: true,
-                        visiblePermissionId: true,
-                        isDeleted: true,
                     },
                 },
             },
@@ -223,7 +217,6 @@ export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
         taggedEvents: {
             select: {
                 id: true,
-                eventId: true,
                 event: {
                     select: {
                         id: true,
@@ -231,9 +224,6 @@ export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
                         startsAt: true,
                         statusId: true,
                         typeId: true,
-                        createdByUserId: true,
-                        visiblePermissionId: true,
-                        isDeleted: true,
                     },
                 },
             },
@@ -247,16 +237,84 @@ export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
         taggedWikiPages: {
             select: {
                 id: true,
-                wikiPageId: true,
                 wikiPage: {
                     select: {
                         id: true,
                         slug: true,
+                    },
+                },
+            },
+        },
+    },
+});
+
+// Authorization needs a few additional members which must not cross the DTO
+// boundary. Keep the full Prisma selection distinct from its transport shape.
+export const fileCardSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
+    select: {
+        ...fileCardTransportSelection.select,
+        isDeleted: true,
+        taggedUsers: {
+            ...fileCardTransportSelection.select.taggedUsers,
+            select: {
+                ...fileCardTransportSelection.select.taggedUsers.select,
+                userId: true,
+            },
+        },
+        taggedSongs: {
+            ...fileCardTransportSelection.select.taggedSongs,
+            select: {
+                ...fileCardTransportSelection.select.taggedSongs.select,
+                songId: true,
+                song: {
+                    ...fileCardTransportSelection.select.taggedSongs.select.song,
+                    select: {
+                        ...fileCardTransportSelection.select.taggedSongs.select.song.select,
+                        createdByUserId: true,
+                        visiblePermissionId: true,
+                        isDeleted: true,
+                    },
+                },
+            },
+        },
+        taggedEvents: {
+            ...fileCardTransportSelection.select.taggedEvents,
+            select: {
+                ...fileCardTransportSelection.select.taggedEvents.select,
+                eventId: true,
+                event: {
+                    ...fileCardTransportSelection.select.taggedEvents.select.event,
+                    select: {
+                        ...fileCardTransportSelection.select.taggedEvents.select.event.select,
+                        createdByUserId: true,
+                        visiblePermissionId: true,
+                        isDeleted: true,
+                    },
+                },
+            },
+        },
+        taggedWikiPages: {
+            ...fileCardTransportSelection.select.taggedWikiPages,
+            select: {
+                ...fileCardTransportSelection.select.taggedWikiPages.select,
+                wikiPageId: true,
+                wikiPage: {
+                    ...fileCardTransportSelection.select.taggedWikiPages.select.wikiPage,
+                    select: {
+                        ...fileCardTransportSelection.select.taggedWikiPages.select.wikiPage.select,
                         visiblePermissionId: true,
                     },
                 },
             },
         },
+    },
+});
+
+
+
+export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
+    select: {
+        ...fileCardSelection.select,
         frontpageGalleryItems: {
             select: { id: true },
         },

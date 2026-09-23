@@ -22,7 +22,6 @@ import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import getSongPinnedRecording from '../db3/queries/getSongPinnedRecording';
 import { TSongPinnedRecording } from '../db3/shared/apiTypes';
-import { enrichSong } from '../db3/shared/schema/enrichedSongTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AppContextMarker } from './AppContext';
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
@@ -908,9 +907,7 @@ export const EventSongListValueEditorDividerSongRow = (
 const EventSongListValueEditorSongRow = (
     props: EventSongListValueEditorRowPropsFor<SetlistAPI.EventSongListSongItem>,
 ) => {
-    const dashboardContext = useDashboardContext();
     const mediaPlayer = useMediaPlayer();
-    const enrichedSong = enrichSong(props.value.song, dashboardContext);
     const bpmValue = getRowStartBpm(props.value);
     const tempoCellStyle = getBpmBarStyle(bpmValue, props.maxBpm);
 
@@ -974,7 +971,7 @@ const EventSongListValueEditorSongRow = (
                 : (props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>)}
         </div>
         <div className="td tempo" style={tempoCellStyle}>
-            {enrichedSong.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
+            {props.value.song.startBPM && <MetronomeButton bpm={props.value.song.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
         </div>
         <div className="td comment">
             <div className="comment">

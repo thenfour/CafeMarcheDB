@@ -2,7 +2,7 @@ import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/rootroot";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { DateTimeField, foreignRef, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { DateTimeField, foreignRef, foreignRefByTableId, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FileWikiPageTagArgs, FileWikiPageTagNaturalOrderBy, FileWikiPageTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
 import { CreatedByUserField, MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
@@ -461,29 +461,15 @@ const xFileBaseArgs = {
             allowNull: true,
             authMap: xFileAuthMap_FileObjects,
         }),
-        // Recursive target: keep the legacy constructor to avoid making xFile's
-        // inferred field map depend on its own complete type.
-        previewFile: columnName => new ForeignSingleField<
-            Prisma.FileGetPayload<{}>,
-            db3.xTable,
-            "previewFileId"
-        >({
-            columnName,
+        previewFile: foreignRefByTableId("File", {
             fkidMember: "previewFileId",
             allowNull: true,
-            foreignTableID: "File",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        parentFile: columnName => new ForeignSingleField<
-            Prisma.FileGetPayload<{}>,
-            db3.xTable,
-            "parentFileId"
-        >({
-            columnName,
+        parentFile: foreignRefByTableId("File", {
             fkidMember: "parentFileId",
             allowNull: true,
-            foreignTableID: "File",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),

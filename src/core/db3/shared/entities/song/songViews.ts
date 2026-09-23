@@ -1,11 +1,9 @@
 import { Prisma } from "db";
-import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { PermissionForVisibilityArgs, SongTagAssociationNaturalOrderBy } from "../../schema/prismArgs";
-import { FileDetailDtoSchema, fileDetailSelection, hydrateFileDetailDto } from "../file/fileViews";
-import { xPermission } from "../../schema/user";
+import { fileCardSelection, fileCardTransportSelection } from "../file/fileViews";
 import { xSongCredit, xSongCreditType, xSong, xSongTag } from "../../schema/song";
 
 export const songTagEditorSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()({
@@ -270,49 +268,7 @@ export const songSearchView = defineView({
 export type SongSearchDto = DtoOf<typeof songSearchView>;
 export type SongSearchClient = ClientOf<typeof songSearchView>;
 
-const SongTagAssociationDtoSchema = z.object({
-    id: z.number().int(),
-    tagId: z.number().int().optional(),
-});
-
-const SongDetailTaggedFileDtoSchema = z.object({
-    id: z.number().int(),
-    file: FileDetailDtoSchema.optional(),
-});
-
-const SongDetailCreditDtoSchema = z.object({
-    id: z.number().int(),
-    userId: z.number().int().nullable().optional(),
-    songId: z.number().int().optional(),
-    typeId: z.number().int().optional(),
-    year: z.string().optional(),
-    comment: z.string().optional(),
-    user: z.object({
-        id: z.number().int(),
-        name: z.string().optional(),
-    }).nullable().optional(),
-});
-
-const SongDetailDtoSchema = z.object({
-    id: z.number().int(),
-    name: z.string().optional(),
-    aliases: z.string().optional(),
-    description: z.string().optional(),
-    startBPM: z.number().int().nullable().optional(),
-    endBPM: z.number().int().nullable().optional(),
-    introducedYear: z.number().int().nullable().optional(),
-    lengthSeconds: z.number().int().nullable().optional(),
-    createdByUserId: z.number().int().nullable().optional(),
-    visiblePermissionId: z.number().int().nullable().optional(),
-    pinnedRecordingId: z.number().int().nullable().optional(),
-    tags: z.array(SongTagAssociationDtoSchema).optional(),
-    taggedFiles: z.array(SongDetailTaggedFileDtoSchema).optional(),
-    credits: z.array(SongDetailCreditDtoSchema).optional(),
-});
-
-// Song_Detail remains explicit because File_Detail still contains presentation-only
-// ghost collections that do not yet declare relation read contracts.
-export const songDetailSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
+const songDetailTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
     select: {
         id: true,
         name: true,
@@ -325,22 +281,17 @@ export const songDetailSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
         createdByUserId: true,
         visiblePermissionId: true,
         pinnedRecordingId: true,
-        isDeleted: true,
         tags: {
             select: {
                 id: true,
-                songId: true,
                 tagId: true,
             },
         },
         taggedFiles: {
             select: {
                 id: true,
-                fileId: true,
-                songId: true,
-                file: fileDetailSelection,
+                file: fileCardTransportSelection,
             },
-            orderBy: { file: { uploadedAt: "desc" } },
         },
         credits: {
             select: {
@@ -356,38 +307,97 @@ export const songDetailSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
                         name: true,
                     },
                 },
+                type: songCreditTypeEditorSelection,
             },
         },
     },
 });
 
+export const songDetailSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
+    select: {
+        ...songDetailTransportSelection.select,
+        isDeleted: true,
+        tags: {
+            ...songDetailTransportSelection.select.tags,
+            select: {
+                ...songDetailTransportSelection.select.tags.select,
+                songId: true,
+            },
+        },
+        taggedFiles: {
+            ...songDetailTransportSelection.select.taggedFiles,
+            select: {
+                ...songDetailTransportSelection.select.taggedFiles.select,
+                fileId: true,
+                songId: true,
+                file: fileCardSelection,
+            },
+            orderBy: { file: { uploadedAt: "desc" } },
+        },
+    },
+});
+
+const songDetailContract = deriveViewContract(
+    xSong,
+    songDetailSelection,
+    { transportSelection: songDetailTransportSelection },
+);
+
 export const songDetailView = defineView({
     viewID: "Song_Detail",
     entity: xSong,
     selection: songDetailSelection,
-    dtoSchema: SongDetailDtoSchema,
-    hydrate: (dto, references) => ({
-        ...dto,
-        visiblePermission: references.get(xPermission, dto.visiblePermissionId),
-        tags: references.mapOptionalCollection(dto.tags, (association, index) => ({
-            ...association,
-            tag: references.require(
-                xSongTag,
-                association.tagId,
-                `Song(${dto.id}).tags[${index}].tagId`,
-            ),
-        }))?.sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
-        taggedFiles: references.mapOptionalCollection(dto.taggedFiles, association => association)
-            ?.flatMap((association, index) => association.file == null ? [] : [{
-                ...association,
-                file: hydrateFileDetailDto(
-                    association.file,
-                    references,
-                    `Song(${dto.id}).taggedFiles[${index}].file`,
-                ),
-            }]),
-        credits: references.mapOptionalCollection(dto.credits, credit => credit),
-    }),
+    dtoSchema: songDetailContract.dtoSchema,
+    hydrate: (dto, references) => {
+        const hydrated = songDetailContract.hydrate(dto, references);
+        return {
+            ...hydrated,
+            tags: hydrated.tags
+                ?.flatMap(association => association.tag == null ? [] : [{
+                    ...association,
+                    tag: association.tag,
+                }])
+                .sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
+            taggedFiles: hydrated.taggedFiles
+                ?.flatMap(association => association.file == null ? [] : [{
+                    ...association,
+                    file: {
+                        ...association.file,
+                        visiblePermission: association.file.visiblePermission,
+                        tags: association.file.tags
+                            ?.flatMap(tagAssociation => tagAssociation.fileTag == null ? [] : [{
+                                ...tagAssociation,
+                                fileTag: tagAssociation.fileTag,
+                            }]),
+                        taggedUsers: association.file.taggedUsers
+                            ?.flatMap(tagAssociation => tagAssociation.user == null ? [] : [{
+                                ...tagAssociation,
+                                user: tagAssociation.user,
+                            }]),
+                        taggedSongs: association.file.taggedSongs
+                            ?.flatMap(tagAssociation => tagAssociation.song == null ? [] : [{
+                                ...tagAssociation,
+                                song: tagAssociation.song,
+                            }]),
+                        taggedEvents: association.file.taggedEvents
+                            ?.flatMap(tagAssociation => tagAssociation.event == null ? [] : [{
+                                ...tagAssociation,
+                                event: tagAssociation.event,
+                            }]),
+                        taggedInstruments: association.file.taggedInstruments
+                            ?.flatMap(tagAssociation => tagAssociation.instrument == null ? [] : [{
+                                ...tagAssociation,
+                                instrument: tagAssociation.instrument,
+                            }]),
+                        taggedWikiPages: association.file.taggedWikiPages
+                            ?.flatMap(tagAssociation => tagAssociation.wikiPage == null ? [] : [{
+                                ...tagAssociation,
+                                wikiPage: tagAssociation.wikiPage,
+                            }]),
+                    },
+                }]),
+        };
+    },
 });
 
 export type SongDetailDto = DtoOf<typeof songDetailView>;

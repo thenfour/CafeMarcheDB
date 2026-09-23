@@ -940,7 +940,7 @@ describe("DB3 named views", () => {
         expect(result.items[0]?.credits?.[0]).not.toHaveProperty("songId");
     });
 
-    it("hydrates the Song detail view, including its reusable File detail shape", () => {
+    it("hydrates the Song detail view, including its reusable File-card shape", () => {
         const references = new db3.DB3ReferenceStore();
         const permission = {
             id: 4,

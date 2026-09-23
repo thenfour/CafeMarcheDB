@@ -847,6 +847,52 @@ describe("Song derived-view migration", () => {
       {} as db3.DB3ViewSelectionContext,
     )).toBe(db3.songSearchSelection)
   })
+
+  it("derives Song Detail and its embedded File-card graph", () => {
+    type Dto = db3.SongDetailDto
+    type Client = db3.SongDetailClient
+    type DtoTag = NonNullable<Dto["tags"]>[number]
+    type DtoFileAssociation = NonNullable<Dto["taggedFiles"]>[number]
+    type DtoFile = NonNullable<DtoFileAssociation["file"]>
+    type DtoFileSongAssociation = NonNullable<DtoFile["taggedSongs"]>[number]
+    type DtoFileSong = NonNullable<DtoFileSongAssociation["song"]>
+    type ClientFile = NonNullable<
+      NonNullable<Client["taggedFiles"]>[number]["file"]
+    >
+    type ClientFileTag = NonNullable<ClientFile["tags"]>[number]
+    type ClientCredit = NonNullable<Client["credits"]>[number]
+    type ClientCreditType = NonNullable<ClientCredit["type"]>
+    type RootAuthorizationOnlyKeys = Extract<keyof Dto, "isDeleted">
+    type TagAuthorizationOnlyKeys = Extract<keyof DtoTag, "songId">
+    type FileAssociationAuthorizationOnlyKeys = Extract<
+      keyof DtoFileAssociation,
+      "fileId" | "songId"
+    >
+    type FileAuthorizationOnlyKeys = Extract<keyof DtoFile, "isDeleted">
+    type FileSongAuthorizationOnlyKeys = Extract<
+      keyof DtoFileSong,
+      "createdByUserId" | "visiblePermissionId" | "isDeleted"
+    >
+
+    expectTypeOf<Dto["pinnedRecordingId"]>()
+      .toEqualTypeOf<number | null | undefined>()
+    expectTypeOf<DtoFile["parentFileId"]>()
+      .toEqualTypeOf<number | null | undefined>()
+    expectTypeOf<DtoFile["previewFileId"]>()
+      .toEqualTypeOf<number | null | undefined>()
+    expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<TagAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<FileAssociationAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<FileAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<FileSongAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<ClientFileTag["fileTag"]>()
+      .toEqualTypeOf<NonNullable<ClientFileTag["fileTag"]>>()
+    expectTypeOf<ClientCreditType["color"]>()
+      .toEqualTypeOf<ColorPaletteEntry | null | undefined>()
+    expect(db3.songDetailView.getSelectionArgs(
+      {} as db3.DB3ViewSelectionContext,
+    )).toBe(db3.songDetailSelection)
+  })
 })
 
 describe("Event frontpage derived-view migration", () => {

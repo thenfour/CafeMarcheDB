@@ -789,9 +789,16 @@ sound.
         Replace `xSong_Verbose` with canonical `xSong` plus the named search view,
         and remove its legacy Prisma payload aliases. Primitive `GhostField`
         schemas now infer exact transport types, demonstrated by non-null
-        `songId` and nullable `pinnedRecordingId`. Keep `Song_Detail` explicit
-        until the embedded File detail presentation-only ghost collections have
-        relation read contracts.
+        `songId` and nullable `pinnedRecordingId`.
+
+27. [x] **Complete the Song view migration.** Replace `Song_Detail`'s dependency
+        on the complete File detail graph with a reusable File-card selection
+        containing only the data its leaf consumer uses. Derive the Song detail
+        DTO and recursive hydration from separate transport and authorization
+        selections, leaving only inaccessible-target pruning and tag ordering in
+        the view wrapper. Give recursive File foreign keys cycle-safe registered
+        target types. Remove the final `enrichSong` call and module after proving
+        its only consumer already reads the selected Song primitive directly.
 
 ## Pilot completion criteria
 
