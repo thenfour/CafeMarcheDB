@@ -15,13 +15,13 @@ import { GenericStringField, MakeTitleField } from "../columnTypes/genericString
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 // Instrument management has one administrative surface and one capability.
-export const xInstrumentAuthMap_R_EAdmins: db3.DB3AuthContextPermissionMap = {
+export const xInstrumentAuthMap_R_EAdmins = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
     PostQuery: Permission.login,
     PreMutateAsOwner: Permission.admin_instruments,
     PreMutate: Permission.admin_instruments,
     PreInsert: Permission.admin_instruments,
-};
+});
 
 
 export const xInstrumentTableAuthMap: db3.DB3AuthTablePermissionMap = {

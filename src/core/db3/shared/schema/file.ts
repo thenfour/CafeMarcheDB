@@ -31,13 +31,13 @@ export const xFileTableAuth_AdminObjects: db3.DB3AuthTablePermissionMap = {
     Insert: Permission.admin_files,
 };
 
-export const xFileAuthMap_AdminObjects: db3.DB3AuthContextPermissionMap = {
+export const xFileAuthMap_AdminObjects = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_files,
     PostQuery: Permission.view_files,
     PreMutateAsOwner: Permission.view_files,
     PreMutate: Permission.admin_files,
     PreInsert: Permission.admin_files,
-};
+});
 
 
 // files for example, where
@@ -52,22 +52,22 @@ export const xFileTableAuth_FileObjects: db3.DB3AuthTablePermissionMap = {
     Insert: Permission.upload_files,
 };
 
-export const xFileAuthMap_FileObjects: db3.DB3AuthContextPermissionMap = {
+export const xFileAuthMap_FileObjects = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_files,
     PostQuery: Permission.view_files,
     PreMutateAsOwner: Permission.upload_files,
     PreMutate: Permission.manage_files,
     PreInsert: Permission.upload_files,
-};
+});
 
 // mime type or those kinds of things can only be edited by admins.
-export const xFileAuthMap_FileObjects_AdminEdit: db3.DB3AuthContextPermissionMap = {
+export const xFileAuthMap_FileObjects_AdminEdit = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_files,
     PostQuery: Permission.view_files,
     PreMutateAsOwner: Permission.admin_files,
     PreMutate: Permission.admin_files,
     PreInsert: Permission.upload_files,
-};
+});
 
 // some fields are server-owned -- like storage identity UUID / derived metadata
 // that, if user-edited, could break integrity.
@@ -648,13 +648,13 @@ export const xFileVerbose = db3.defineTable(xFileBaseArgs);
 
 
 
-export const xFrontpageAuthMap_Basic: db3.DB3AuthContextPermissionMap = {
+export const xFrontpageAuthMap_Basic = db3.defineAuthMap({
     PostQueryAsOwner: Permission.public,
     PostQuery: Permission.public,
     PreMutateAsOwner: Permission.edit_public_homepage,
     PreMutate: Permission.edit_public_homepage,
     PreInsert: Permission.edit_public_homepage,
-};
+});
 
 
 

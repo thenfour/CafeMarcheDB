@@ -8,17 +8,17 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { MakePKfield } from "./columnTypes/xTableColumnTypes";
-import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, defineTable, makeColumnSet, prismaModel, SqlSpecialColumnFunction } from "./db3core";
+import { DB3AuthTablePermissionMap, defineAuthMap, defineTable, makeColumnSet, prismaModel, SqlSpecialColumnFunction } from "./db3core";
 import { GenericStringField } from "./columnTypes/genericString";
 
 
-export const xSettingsAuthMap: DB3AuthContextPermissionMap = {
+export const xSettingsAuthMap = defineAuthMap({
     PostQueryAsOwner: Permission.sysadmin,
     PostQuery: Permission.sysadmin,
     PreMutateAsOwner: Permission.sysadmin,
     PreMutate: Permission.sysadmin,
     PreInsert: Permission.sysadmin,
-};
+});
 
 export const xSettingsTableAuthMap: DB3AuthTablePermissionMap = {
     ViewOwn: Permission.sysadmin,

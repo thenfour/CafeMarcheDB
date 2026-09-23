@@ -10,13 +10,13 @@ import { GenericStringField, MakeTitleField } from "../columnTypes/genericString
 import { WikiPageTagAssignmentPayload } from "./prismArgs";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
-const wikiPageAuthMap: db3.DB3AuthContextPermissionMap = {
+const wikiPageAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_wiki_pages,
     PostQuery: Permission.view_wiki_pages,
     PreMutateAsOwner: Permission.edit_wiki_pages,
     PreMutate: Permission.edit_wiki_pages,
     PreInsert: Permission.edit_wiki_pages,
-} as const;
+});
 
 const wikiPageTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.view_wiki_pages,
@@ -26,21 +26,21 @@ const wikiPageTableAuthMap: db3.DB3AuthTablePermissionMap = {
     Insert: Permission.edit_wiki_pages,
 } as const;
 
-const wikiPageAdministrationAuthMap: db3.DB3AuthContextPermissionMap = {
+const wikiPageAdministrationAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_wiki_pages,
     PostQuery: Permission.view_wiki_pages,
     PreMutateAsOwner: Permission.admin_wiki_pages,
     PreMutate: Permission.admin_wiki_pages,
     PreInsert: Permission.admin_wiki_pages,
-} as const;
+});
 
-const wikiPageRevisionAuthMap: db3.DB3AuthContextPermissionMap = {
+const wikiPageRevisionAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_wiki_page_revisions,
     PostQuery: Permission.view_wiki_page_revisions,
     PreMutateAsOwner: Permission.admin_wiki_pages,
     PreMutate: Permission.admin_wiki_pages,
     PreInsert: Permission.admin_wiki_pages,
-} as const;
+});
 
 const wikiPageRevisionTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.view_wiki_page_revisions,
@@ -50,13 +50,13 @@ const wikiPageRevisionTableAuthMap: db3.DB3AuthTablePermissionMap = {
     Insert: Permission.admin_wiki_pages,
 } as const;
 
-const wikiPageCurrentRevisionAuthMap: db3.DB3AuthContextPermissionMap = {
+const wikiPageCurrentRevisionAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_wiki_page_revisions,
     PostQuery: Permission.view_wiki_page_revisions,
     PreMutateAsOwner: Permission.admin_wiki_pages,
     PreMutate: Permission.admin_wiki_pages,
     PreInsert: Permission.admin_wiki_pages,
-} as const;
+});
 
 
 ////////////////////////////////////////////////////////////////

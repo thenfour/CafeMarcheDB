@@ -174,8 +174,9 @@ export const DB3FieldReadAuth = Object.freeze({
 } as const);
 
 export type DB3FieldReadAuthRequirement = Permission | typeof DB3FieldReadAuth.inheritRow;
+export type DB3FieldReadPresence = "required" | "optional";
 
-export type DB3AuthContextPermissionMap = {
+export type DB3AuthContextPermissionMapShape = {
     readonly PostQuery: DB3FieldReadAuthRequirement;
     readonly PostQueryAsOwner: DB3FieldReadAuthRequirement;
     readonly PreInsert: Permission;
@@ -183,7 +184,54 @@ export type DB3AuthContextPermissionMap = {
     readonly PreMutateAsOwner: Permission;
 };
 
-export const createAuthContextMap_Mono = (p: Permission): DB3AuthContextPermissionMap => ({
+declare const db3AuthMapReadPresence: unique symbol;
+
+/**
+ * A validated field authorization map carrying its compile-time read-presence
+ * contract. Construct these only through defineAuthMap(); the opaque brand
+ * prevents a widened or raw map from silently losing inheritRow semantics.
+ */
+export type DB3AuthContextPermissionMap<
+    TReadPresence extends DB3FieldReadPresence,
+> = DB3AuthContextPermissionMapShape & {
+    readonly [db3AuthMapReadPresence]: TReadPresence;
+};
+
+type DB3ReadPresenceForAuthMap<TMap extends DB3AuthContextPermissionMapShape> =
+    TMap extends {
+        readonly PostQuery: typeof DB3FieldReadAuth.inheritRow;
+        readonly PostQueryAsOwner: typeof DB3FieldReadAuth.inheritRow;
+    }
+    ? "required"
+    : "optional";
+
+type DB3ReadRequirementIsAmbiguous<
+    TRequirement extends DB3FieldReadAuthRequirement,
+> = typeof DB3FieldReadAuth.inheritRow extends TRequirement
+    ? TRequirement extends typeof DB3FieldReadAuth.inheritRow
+    ? false
+    : true
+    : false;
+
+type DB3AuthMapHasAmbiguousReadPresence<
+    TMap extends DB3AuthContextPermissionMapShape,
+> = true extends
+    | DB3ReadRequirementIsAmbiguous<TMap["PostQuery"]>
+    | DB3ReadRequirementIsAmbiguous<TMap["PostQueryAsOwner"]>
+    ? true
+    : false;
+
+export function defineAuthMap<const TMap extends DB3AuthContextPermissionMapShape>(
+    map: TMap,
+    ...ambiguousReadPresence: DB3AuthMapHasAmbiguousReadPresence<TMap> extends true
+        ? ["defineAuthMap requires exact PostQuery and PostQueryAsOwner values"]
+        : []
+): TMap & DB3AuthContextPermissionMap<DB3ReadPresenceForAuthMap<TMap>>;
+export function defineAuthMap(map: DB3AuthContextPermissionMapShape): DB3AuthContextPermissionMapShape {
+    return map;
+}
+
+export const createAuthContextMap_Mono = (p: Permission) => defineAuthMap({
     PostQuery: p,
     PostQueryAsOwner: p,
     PreInsert: p,
@@ -191,9 +239,9 @@ export const createAuthContextMap_Mono = (p: Permission): DB3AuthContextPermissi
     PreMutateAsOwner: p,
 });
 
-export const createAuthContextMap_DenyAll = (): DB3AuthContextPermissionMap => createAuthContextMap_Mono(Permission.never_grant);
-export const createAuthContextMap_GrantAll = (): DB3AuthContextPermissionMap => createAuthContextMap_Mono(Permission.always_grant);
-export const createAuthContextMap_PK = () => ({
+export const createAuthContextMap_DenyAll = () => createAuthContextMap_Mono(Permission.never_grant);
+export const createAuthContextMap_GrantAll = () => createAuthContextMap_Mono(Permission.always_grant);
+export const createAuthContextMap_PK = () => defineAuthMap({
     // A primary key is safe only after the table/row itself has been authorized.
     // It must not be used as the thing that makes an otherwise-protected row visible.
     PostQuery: DB3FieldReadAuth.inheritRow,
@@ -201,9 +249,9 @@ export const createAuthContextMap_PK = () => ({
     PreInsert: Permission.never_grant,
     PreMutate: Permission.never_grant,
     PreMutateAsOwner: Permission.never_grant,
-} satisfies DB3AuthContextPermissionMap);
+});
 
-export const createAuthContextMap_SysadminNaturalPK = (): DB3AuthContextPermissionMap => ({
+export const createAuthContextMap_SysadminNaturalPK = () => defineAuthMap({
     PostQuery: Permission.sysadmin,
     PostQueryAsOwner: Permission.sysadmin,
     PreInsert: Permission.never_grant,
@@ -212,7 +260,7 @@ export const createAuthContextMap_SysadminNaturalPK = (): DB3AuthContextPermissi
 });
 
 // adding this because crafting auth maps for all fields takes a lot of work and i want to shortcut the effort
-export const createAuthContextMap_TODO = (): DB3AuthContextPermissionMap => createAuthContextMap_Mono(Permission.always_grant);
+export const createAuthContextMap_TODO = () => createAuthContextMap_Mono(Permission.always_grant);
 
 
 ////////////////////////////////////////////////////////////////
@@ -233,28 +281,25 @@ export type DB3AuthTablePermissionMap = {
 
 
 export type DB3AuthSpec = {
-    readonly authMap: DB3AuthContextPermissionMap;
+    readonly authMap: DB3AuthContextPermissionMap<"required">;
+} | {
+    readonly authMap: DB3AuthContextPermissionMap<"optional">;
 } | {
     readonly _customAuth: (args: DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean;
 };
 
-export type DB3FieldReadPresence = "required" | "optional";
-
 /**
  * Static counterpart of FieldBase.isReadRequiredAfterRowAuth(). Auth-map
- * literals must be preserved for this to resolve to "required"; widened maps
- * deliberately fall back to the safe "optional" result.
+ * must have passed through defineAuthMap(), which preserves the result even
+ * when the map is later passed through another typed declaration.
  */
 export type DB3ReadPresenceForAuthSpec<TAuthSpec> =
     TAuthSpec extends { readonly _customAuth: (...args: any[]) => boolean }
     ? "optional"
     : TAuthSpec extends {
-        readonly authMap: {
-            readonly PostQuery: typeof DB3FieldReadAuth.inheritRow;
-            readonly PostQueryAsOwner: typeof DB3FieldReadAuth.inheritRow;
-        };
+        readonly authMap: DB3AuthContextPermissionMap<infer TReadPresence>;
     }
-    ? "required"
+    ? TReadPresence
     : "optional";
 
 // conditionally apply nullability.
@@ -285,7 +330,7 @@ export function makeNullableReadTransportSchema<
 }
 
 
-export type DB3AuthorizationContext = keyof DB3AuthContextPermissionMap;// "PostQuery" | "PostQueryAsOwner" | "PreInsert" | "PreMutate" | "PreMutateAsOwner";
+export type DB3AuthorizationContext = keyof DB3AuthContextPermissionMapShape;// "PostQuery" | "PostQueryAsOwner" | "PreInsert" | "PreMutate" | "PreMutateAsOwner";
 
 export enum SqlSpecialColumnFunction {
     pk = "pk",
@@ -310,7 +355,7 @@ export type FieldBaseArgs<FieldDataType, TReadTransportValue> = {
     member: string;
     defaultValue: FieldDataType | null;
     readTransportSchema?: z.ZodType<TReadTransportValue>;
-    authMap: DB3AuthContextPermissionMap | null;
+    authMap: DB3AuthContextPermissionMapShape | null;
     specialFunction: SqlSpecialColumnFunction | undefined;
     fkidMember?: string | undefined;
     _customAuth: ((args: DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean) | null;
@@ -495,7 +540,7 @@ export abstract class FieldBase<
     // "required" | "optional"
     readonly __readPresence?: TReadPresence;
 
-    authMap: DB3AuthContextPermissionMap | null;
+    authMap: DB3AuthContextPermissionMapShape | null;
     _customAuth: ((args: DB3AuthorizeAndSanitizeFieldInput<TAnyModel>) => boolean) | null;
     _matchesMemberForAuthorization?: ((memberName: string) => boolean) | null; // needed for multi-member columns like foreignsingle
 

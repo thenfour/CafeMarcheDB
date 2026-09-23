@@ -7,13 +7,13 @@ import { MakeDescriptionField, MakeTitleField } from "../columnTypes/genericStri
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
-const xAuthMap: db3.DB3AuthContextPermissionMap = {
+const xAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.setlist_planner_access,
     PostQuery: Permission.setlist_planner_access,
     PreMutateAsOwner: Permission.setlist_planner_access,
     PreMutate: Permission.setlist_planner_access,
     PreInsert: Permission.setlist_planner_access,
-} as const;
+});
 
 const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.setlist_planner_access,

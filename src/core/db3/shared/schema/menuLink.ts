@@ -9,13 +9,13 @@ import { GenericStringField, MakeTitleField } from "../columnTypes/genericString
 import { UserMinimalSelect } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 
-const xAuthMap: db3.DB3AuthContextPermissionMap = {
+const xAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.public,
     PostQuery: Permission.public,
     PreMutateAsOwner: Permission.customize_menu,
     PreMutate: Permission.customize_menu,
     PreInsert: Permission.customize_menu,
-} as const;
+});
 
 const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.public,

@@ -15,13 +15,13 @@ export const xSysadminTableAuthMap: db3.DB3AuthTablePermissionMap = {
     Insert: Permission.sysadmin,
 } as const;
 
-export const xSysadminColumnAuthMap: db3.DB3AuthContextPermissionMap = {
+export const xSysadminColumnAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.sysadmin,
     PostQuery: Permission.sysadmin,
     PreMutateAsOwner: Permission.sysadmin,
     PreMutate: Permission.sysadmin,
     PreInsert: Permission.sysadmin,
-} as const;
+});
 
 
 export interface ChangeTableParams {

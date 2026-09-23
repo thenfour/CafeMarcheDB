@@ -5,7 +5,7 @@ import {
     WikiPageTagAssignmentArgs, WikiPageTagAssignmentNaturalOrderBy, WikiPageTagAssignmentPayload
 } from "./prismArgs";
 import { foreignRef, GhostField, MakeColorField, MakePKfield, MakeSignificanceField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
-import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, defineTable, makeColumnSet, prismaModel } from "../db3core";
+import { DB3AuthTablePermissionMap, defineAuthMap, defineTable, makeColumnSet, prismaModel } from "../db3core";
 import { MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
@@ -16,13 +16,13 @@ export enum WikiPageTagSignificance {
     Project = "Project",
 };
 
-const wikiPageTagAuthMap: DB3AuthContextPermissionMap = {
+const wikiPageTagAuthMap = defineAuthMap({
     PostQueryAsOwner: Permission.view_wiki_pages,
     PostQuery: Permission.view_wiki_pages,
     PreMutateAsOwner: Permission.admin_wiki_pages,
     PreMutate: Permission.admin_wiki_pages,
     PreInsert: Permission.admin_wiki_pages,
-} as const;
+});
 
 const wikiPageTagTableAuthMap: DB3AuthTablePermissionMap = {
     ViewOwn: Permission.view_wiki_pages,
@@ -32,13 +32,13 @@ const wikiPageTagTableAuthMap: DB3AuthTablePermissionMap = {
     Insert: Permission.admin_wiki_pages,
 } as const;
 
-const wikiPageTagAssignmentAuthMap: DB3AuthContextPermissionMap = {
+const wikiPageTagAssignmentAuthMap = defineAuthMap({
     PostQueryAsOwner: Permission.view_wiki_pages,
     PostQuery: Permission.view_wiki_pages,
     PreMutateAsOwner: Permission.edit_wiki_pages,
     PreMutate: Permission.edit_wiki_pages,
     PreInsert: Permission.edit_wiki_pages,
-} as const;
+});
 
 const wikiPageTagAssignmentTableAuthMap: DB3AuthTablePermissionMap = {
     ViewOwn: Permission.view_wiki_pages,

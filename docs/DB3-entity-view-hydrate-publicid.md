@@ -105,7 +105,10 @@ field whose database/DTO value differs from its client value declares a
 one-way `readTransportSchema` validates a selected database value before decode
 while its strict write schema describes the command-side value. Authorization
 presence is derived separately: a selected field is required only when every
-read branch uses `inheritRow`. `DB3SchemaClientModel<Dto,
+read branch uses `inheritRow`. Field authorization maps are declared through
+`defineAuthMap()`, which records that result in an opaque type-level marker and
+prevents raw or widened maps from silently losing required presence.
+`DB3SchemaClientModel<Dto,
 Fields>` applies decoding to a DTO while preserving its optional members;
 `DB3SchemaMutationModel<Client, Fields>` derives the corresponding same-key
 command values while allowing authorization to omit fields. The historical

@@ -14,29 +14,29 @@ import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { TAnyModel } from "@/shared/rootroot";
 
 
-export const xSongAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
+export const xSongAuthMap_R_EOwn_EManagers = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_songs,
     PostQuery: Permission.view_songs,
     PreMutateAsOwner: Permission.view_songs,
     PreMutate: Permission.manage_songs,
     PreInsert: Permission.manage_songs,
-};
+});
 
-export const xSongAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
+export const xSongAuthMap_R_EManagers = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_songs,
     PostQuery: Permission.view_songs,
     PreMutateAsOwner: Permission.manage_songs,
     PreMutate: Permission.manage_songs,
     PreInsert: Permission.manage_songs,
-};
+});
 
-export const xSongAuthMap_R_EAdmin: db3.DB3AuthContextPermissionMap = {
+export const xSongAuthMap_R_EAdmin = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_songs,
     PostQuery: Permission.view_songs,
     PreMutateAsOwner: Permission.admin_songs,
     PreMutate: Permission.admin_songs,
     PreInsert: Permission.admin_songs,
-};
+});
 
 
 

@@ -17,93 +17,93 @@ import { xInstrument } from "./instrument";
 
 // Basic profile data is self-service for the account owner and readable for
 // other users only through the explicit member-profile capability.
-export const xUserBasicProfileAuthMap: db3.DB3AuthContextPermissionMap = {
+export const xUserBasicProfileAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
     PostQuery: Permission.view_users_basic_info,
     PreMutateAsOwner: Permission.login,
     PreMutate: Permission.manage_users,
     PreInsert: Permission.manage_users,
-} as const;
+});
 
 // Tags and other manager-owned profile fields remain readable as basic profile
 // data, but owning the account does not grant write access.
-export const xUserBasicProfileManagerWriteAuthMap: db3.DB3AuthContextPermissionMap = {
+export const xUserBasicProfileManagerWriteAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
     PostQuery: Permission.view_users_basic_info,
     PreMutateAsOwner: Permission.manage_users,
     PreMutate: Permission.manage_users,
     PreInsert: Permission.manage_users,
-} as const;
+});
 
 // User presentation metadata follows basic-profile visibility while taxonomy
 // managers retain its distinct write authority.
-export const xUserPresentationMetadataAuthMap: db3.DB3AuthContextPermissionMap = {
+export const xUserPresentationMetadataAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
     PostQuery: Permission.view_users_basic_info,
     PreMutateAsOwner: Permission.manage_user_taxonomy,
     PreMutate: Permission.manage_user_taxonomy,
     PreInsert: Permission.manage_user_taxonomy,
-} as const;
+});
 
 // Taxonomy definitions must be available when an authenticated user views or
 // edits their own profile; assignments still use the profile maps above.
-const xUserTaxonomyDefinitionAuthMap: db3.DB3AuthContextPermissionMap = {
+const xUserTaxonomyDefinitionAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
     PostQuery: Permission.login,
     PreMutateAsOwner: Permission.manage_user_taxonomy,
     PreMutate: Permission.manage_user_taxonomy,
     PreInsert: Permission.manage_user_taxonomy,
-} as const;
+});
 
 // Contact information has a separate non-owner read capability. Phone remains
 // self-editable; email writes are owned by dedicated account-maintenance flows.
-const xUserContactInfoAuthMap: db3.DB3AuthContextPermissionMap = {
+const xUserContactInfoAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
     PostQuery: Permission.view_user_contact_info,
     PreMutateAsOwner: Permission.login,
     PreMutate: Permission.manage_users,
     PreInsert: Permission.manage_users,
-} as const;
+});
 
-const xUserEmailAuthMap: db3.DB3AuthContextPermissionMap = {
+const xUserEmailAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
     PostQuery: Permission.view_user_contact_info,
     PreMutateAsOwner: Permission.sysadmin,
     PreMutate: Permission.sysadmin,
     PreInsert: Permission.sysadmin,
-} as const;
+});
 
 // Operational account metadata is visible to user maintainers. Its mutation
 // authority stays separate and is enforced by existing dedicated flows.
-const xUserOperationalMetadataAuthMap: db3.DB3AuthContextPermissionMap = {
+const xUserOperationalMetadataAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.manage_users,
     PostQuery: Permission.manage_users,
     PreMutateAsOwner: Permission.sysadmin,
     PreMutate: Permission.sysadmin,
     PreInsert: Permission.sysadmin,
-} as const;
+});
 
 // Raw authentication fields remain unavailable to generic DB3 queries. These
 // virtual fields centralize authorization for the coarse sign-in summary and
 // sign-in-email search. Global search uses PostQuery, so only user maintainers
 // can search another account's sign-in email.
-const xUserSignInMetadataAuthMap: db3.DB3AuthContextPermissionMap = {
+const xUserSignInMetadataAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
     PostQuery: Permission.manage_users,
     PreMutateAsOwner: Permission.never_grant,
     PreMutate: Permission.never_grant,
     PreInsert: Permission.never_grant,
-} as const;
+});
 
 // Permission and role tables are Sysadmin-only at table level. The visibility
 // selector variant deliberately exposes their display metadata after login.
-const xPermissionMetadataAuthMap: db3.DB3AuthContextPermissionMap = {
+const xPermissionMetadataAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
     PostQuery: Permission.login,
     PreMutateAsOwner: Permission.sysadmin,
     PreMutate: Permission.sysadmin,
     PreInsert: Permission.sysadmin,
-} as const;
+});
 
 // These fields are owned by dedicated authentication/calendar flows. Keep
 // them known to request validation so crafted writes fail as unauthorized
@@ -840,7 +840,7 @@ export type CreatedByUserFieldArgs<
     columnName?: string; // "instrumentType"
     fkidMember?: TForeignKeyMember; // "instrumentTypeId"
     specialFunction?: db3.SqlSpecialColumnFunction;
-    authMap?: db3.DB3AuthContextPermissionMap;
+    authMap?: db3.DB3AuthContextPermissionMap<"required"> | db3.DB3AuthContextPermissionMap<"optional">;
     _customAuth?: (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean;
 };
 

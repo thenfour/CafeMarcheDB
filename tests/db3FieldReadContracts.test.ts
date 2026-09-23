@@ -22,6 +22,45 @@ const eventStatusScalarMembers = Object.keys(eventStatusTransport) as Array<
 >
 
 describe("DB3 xTable model metadata", () => {
+  it("requires auth maps to retain their compile-time read presence", () => {
+    const rawMap = {
+      PostQuery: db3.DB3FieldReadAuth.inheritRow,
+      PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+      PreInsert: Permission.never_grant,
+      PreMutate: Permission.never_grant,
+      PreMutateAsOwner: Permission.never_grant,
+    } as const
+    const definedMap = db3.defineAuthMap(rawMap)
+
+    expectTypeOf(definedMap).toMatchTypeOf<
+      db3.DB3AuthContextPermissionMap<"required">
+    >()
+    expect(definedMap).toBe(rawMap)
+
+    if (false) {
+      const widenedMap: db3.DB3AuthContextPermissionMapShape = rawMap
+      // @ts-expect-error defineAuthMap must capture exact read requirements at declaration time.
+      db3.defineAuthMap(widenedMap)
+
+      new db3.GenericStringField({
+        columnName: "raw",
+        allowNull: false,
+        format: "plain",
+        // @ts-expect-error Raw maps must pass through defineAuthMap before use by a field.
+        authMap: rawMap,
+      })
+
+      const erasedMap: db3.DB3AuthContextPermissionMap<db3.DB3FieldReadPresence> = definedMap
+      new db3.GenericStringField({
+        columnName: "erased",
+        allowNull: false,
+        format: "plain",
+        // @ts-expect-error A presence-erased map cannot silently make a field optional.
+        authMap: erasedMap,
+      })
+    }
+  })
+
   it("derives Prisma and application identity types from the table", () => {
     expectTypeOf<db3.DB3PrismaPayloadOf<typeof db3.xEventTag>>()
       .toEqualTypeOf<Prisma.EventTagGetPayload<{}>>()
@@ -105,13 +144,13 @@ describe("DB3 scalar field read contracts", () => {
       columnName: "mixed",
       allowNull: false,
       format: "plain",
-      authMap: {
+      authMap: db3.defineAuthMap({
         PostQuery: db3.DB3FieldReadAuth.inheritRow,
         PostQueryAsOwner: Permission.always_grant,
         PreInsert: Permission.never_grant,
         PreMutate: Permission.never_grant,
         PreMutateAsOwner: Permission.never_grant,
-      },
+      }),
     })
     type MixedPolicyOptional = db3.DB3ReadFieldProperty<
       "mixed",

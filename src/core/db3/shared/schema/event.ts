@@ -33,7 +33,7 @@ import { xSong } from "./song";
 import { xWikiPage } from "./wiki";
 
 
-export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
+export const xEventAuthMap_UserResponse = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_events_nonpublic,
     PostQuery: Permission.view_events_nonpublic,
     PreMutateAsOwner: Permission.respond_to_events,
@@ -42,9 +42,9 @@ export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
     // cross-user capability may use that path. Self-service insertion goes
     // through updateUserEventAttendanceMutation, which binds the actor itself.
     PreInsert: Permission.change_others_event_responses,
-};
+});
 
-export const xEventAuthMap_UserResponseRelation: db3.DB3AuthContextPermissionMap = {
+export const xEventAuthMap_UserResponseRelation = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_events_nonpublic,
     PostQuery: Permission.view_events_nonpublic,
     // An owner must not be able to authorize changing the user or parent event
@@ -52,52 +52,52 @@ export const xEventAuthMap_UserResponseRelation: db3.DB3AuthContextPermissionMap
     PreMutateAsOwner: Permission.change_others_event_responses,
     PreMutate: Permission.change_others_event_responses,
     PreInsert: Permission.change_others_event_responses,
-};
+});
 
-export const xEventAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
+export const xEventAuthMap_R_EOwn_EManagers = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_events_nonpublic,
     PostQuery: Permission.view_events_nonpublic,
     PreMutateAsOwner: Permission.view_events_nonpublic,
     PreMutate: Permission.manage_events,
     PreInsert: Permission.manage_events,
-};
+});
 
-export const xEventAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
+export const xEventAuthMap_R_EManagers = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_events_nonpublic,
     PostQuery: Permission.view_events_nonpublic,
     PreMutateAsOwner: Permission.manage_events,
     PreMutate: Permission.manage_events,
     PreInsert: Permission.manage_events,
-};
+});
 
-export const xEventAuthMap_R_EAdmin: db3.DB3AuthContextPermissionMap = {
+export const xEventAuthMap_R_EAdmin = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_events_nonpublic,
     PostQuery: Permission.view_events_nonpublic,
     PreMutateAsOwner: Permission.admin_events,
     PreMutate: Permission.admin_events,
     PreInsert: Permission.admin_events,
-};
+});
 
 export const xEventAuthMap_CreatedAt = xEventAuthMap_R_EAdmin;
 
-export const xEventAuthMap_Homepage = {
+export const xEventAuthMap_Homepage = db3.defineAuthMap({
     PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
     PostQuery: db3.DB3FieldReadAuth.inheritRow,
     PreMutateAsOwner: Permission.edit_public_homepage,
     PreMutate: Permission.edit_public_homepage,
     PreInsert: Permission.edit_public_homepage,
-} satisfies db3.DB3AuthContextPermissionMap;
+});
 
 // Event-status display metadata is part of the row's public identity. Once the
 // row is readable, these scalar values are readable as a unit; mutation policy
 // remains unchanged.
-const xEventChipsAuthMap = {
+const xEventChipsAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
     PostQuery: db3.DB3FieldReadAuth.inheritRow,
     PreMutateAsOwner: xEventAuthMap_R_EOwn_EManagers.PreMutateAsOwner,
     PreMutate: xEventAuthMap_R_EOwn_EManagers.PreMutate,
     PreInsert: xEventAuthMap_R_EOwn_EManagers.PreInsert,
-} satisfies db3.DB3AuthContextPermissionMap;
+});
 
 const makeEventChipSortOrderField = () => new GenericIntegerField({
     columnName: "sortOrder",

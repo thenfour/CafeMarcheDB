@@ -155,7 +155,7 @@ Widen only the read entries of the existing field authorization map so that
 they can state `inheritRow` explicitly. The write entries remain permission
 requirements.
 
-The implemented exported contract is:
+The essential implemented contract (with the widened-input guard elided) is:
 
 ```ts
 const DB3FieldReadAuth = Object.freeze({
@@ -166,13 +166,25 @@ type DB3FieldReadAuthRequirement =
   | Permission
   | typeof DB3FieldReadAuth.inheritRow
 
-type DB3AuthContextPermissionMap = {
+type DB3AuthContextPermissionMapShape = {
   PostQuery: DB3FieldReadAuthRequirement
   PostQueryAsOwner: DB3FieldReadAuthRequirement
   PreInsert: Permission
   PreMutate: Permission
   PreMutateAsOwner: Permission
 }
+
+declare const db3AuthMapReadPresence: unique symbol
+
+type DB3AuthContextPermissionMap<
+  TReadPresence extends "required" | "optional",
+> = DB3AuthContextPermissionMapShape & {
+  readonly [db3AuthMapReadPresence]: TReadPresence
+}
+
+const defineAuthMap = <const TMap extends DB3AuthContextPermissionMapShape>(
+  map: TMap,
+): TMap & DB3AuthContextPermissionMap<ReadPresenceOf<TMap>> => map
 ```
 
 This preserves the current map and current permission-based behavior. It adds
@@ -181,13 +193,13 @@ one explicit invariant without introducing a parallel authorization system.
 Example:
 
 ```ts
-authMap: {
+authMap: defineAuthMap({
   PostQuery: DB3FieldReadAuth.inheritRow,
   PostQueryAsOwner: DB3FieldReadAuth.inheritRow,
   PreInsert: Permission.manage_events,
   PreMutate: Permission.manage_events,
   PreMutateAsOwner: Permission.manage_events,
-}
+})
 ```
 
 ### Meaning
@@ -293,11 +305,13 @@ introduced in Phase 3. Existing view and `getClientModel` behavior is unchanged;
 the new helpers validate more strictly before hydrating.
 
 Scalar field types retain literal nullability, and the field contract carries a
-type-level `required`/`optional` read-presence marker. Auth maps intended to
-produce required fields must preserve their literal `inheritRow` values (for
-example with `satisfies DB3AuthContextPermissionMap`); a widened map is treated
-as optional at compile time. This is deliberately conservative and mirrors the
-runtime rule that both owner and non-owner read branches must inherit row access.
+type-level `required`/`optional` read-presence marker. Every field auth map must
+be created with `defineAuthMap()` at its declaration site. The helper preserves
+the exact `inheritRow` result in an opaque type-level marker; raw maps, maps whose
+read requirements were already widened, and maps whose marker was erased are
+rejected at field boundaries. This mirrors the runtime rule that both owner and
+non-owner read branches must inherit row access and prevents a missing
+`satisfies` annotation from silently changing a required DTO member to optional.
 
 ## Phase 3: selection-aware DTO derivation
 
@@ -696,6 +710,12 @@ sound.
         update the broader entity/view/hydration document and mark superseded
         examples. Keep this checklist as the record of the migration sequence and
         decisions.
+
+20. [x] **Make auth-map read presence construction explicit.** Require every
+        field auth map to pass through `defineAuthMap()`, preserve its exact
+        `required`/`optional` result with an opaque compile-time marker, and reject
+        raw, widened, or presence-erased maps at field boundaries. Migrate existing
+        declarations and cover the rejection contract with compiler tests.
 
 ## Pilot completion criteria
 

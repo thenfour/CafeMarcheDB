@@ -24,13 +24,13 @@ import { forgeDb3Insert, forgeDb3Update } from "./support/db3RequestBuilders"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 
-const rowScopedSortAuthMap: db3.DB3AuthContextPermissionMap = {
+const rowScopedSortAuthMap = db3.defineAuthMap({
   PostQueryAsOwner: Permission.view_events,
   PostQuery: Permission.view_events,
   PreMutateAsOwner: Permission.respond_to_events,
   PreMutate: Permission.manage_events,
   PreInsert: Permission.manage_events,
-}
+})
 
 // This test-only table proves that every shifted row is checked before the
 // bulk operation writes anything. Production tables opt in alongside their

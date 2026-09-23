@@ -7,13 +7,13 @@ import * as db3 from "../db3core";
 import { MakeCreatedByField } from "./user";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 
-const xAuthMap: db3.DB3AuthContextPermissionMap = {
+const xAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_custom_links,
     PostQuery: Permission.view_custom_links,
     PreMutateAsOwner: Permission.manage_custom_links,
     PreMutate: Permission.manage_custom_links,
     PreInsert: Permission.manage_custom_links,
-} as const;
+});
 
 const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.view_custom_links,

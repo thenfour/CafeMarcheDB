@@ -22,19 +22,22 @@ const authorization = (...names: Permission[]): db3.DB3Authorization => ({
   effectivePermissions: new PermissionSet(names.map((name, index) => ({ id: index + 1, name }))),
 })
 
-const inheritedReadMap: db3.DB3AuthContextPermissionMap = {
+const inheritedReadMap = db3.defineAuthMap({
   PostQuery: db3.DB3FieldReadAuth.inheritRow,
   PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
   PreInsert: Permission.never_grant,
   PreMutate: Permission.never_grant,
   PreMutateAsOwner: Permission.never_grant,
-}
+})
 
-const invalidInheritedWriteMap: db3.DB3AuthContextPermissionMap = {
-  ...inheritedReadMap,
+const invalidInheritedWriteMap = {
+  PostQuery: db3.DB3FieldReadAuth.inheritRow,
+  PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
   // @ts-expect-error inheritRow is a read invariant, not a mutation permission.
   PreInsert: db3.DB3FieldReadAuth.inheritRow,
-}
+  PreMutate: Permission.never_grant,
+  PreMutateAsOwner: Permission.never_grant,
+} satisfies db3.DB3AuthContextPermissionMapShape
 void invalidInheritedWriteMap
 
 describe("metadata and association mutation entry points", () => {
@@ -121,10 +124,10 @@ describe("inherited field read authorization", () => {
   it("requires every row-read branch before declaring a field required", () => {
     const mixedField = new db3.GhostField({
       memberName: "mixed",
-      authMap: {
+      authMap: db3.defineAuthMap({
         ...inheritedReadMap,
         PostQueryAsOwner: Permission.login,
-      },
+      }),
     })
     const customField = new db3.GhostField({
       memberName: "custom",
