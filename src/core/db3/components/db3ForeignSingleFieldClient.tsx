@@ -213,7 +213,7 @@ export interface ForeignSingleFieldClientArgs<TForeign extends TAnyModel> {
     columnName: string;
     cellWidth?: number;
     // the db3 view used for populating selection dialogs
-    selectionView?: db3.AnyDB3CrudView;
+    selectionView?: db3.AnyDB3View;
 
     renderAsChip?: (args: RenderAsChipParams<TForeign>) => React.ReactNode;
 
@@ -475,16 +475,19 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
         const selectionView = this.args.spec.args.selectionView;
         if (selectionView && selectionView.entity !== foreignSchema) {
             throw new Error(
-                `DB3 CRUD view '${selectionView.viewID}' does not belong to table '${foreignSchema.tableID}'.`,
+                `DB3 view '${selectionView.viewID}' does not belong to table '${foreignSchema.tableID}'.`,
             );
         }
-        if (this.args.spec.typedSchemaColumn.allowInsertFromString && !selectionView) {
+        const creationView = selectionView && "crud" in selectionView
+            ? selectionView as db3.AnyDB3CrudView
+            : undefined;
+        if (this.args.spec.typedSchemaColumn.allowInsertFromString && !creationView) {
             throw new Error(
-                `Foreign field '${this.args.spec.columnName}' requires a selectionView to create options.`,
+                `Foreign field '${this.args.spec.columnName}' requires a CRUD selectionView to create options.`,
             );
         }
         const dashboard = useDashboardContext();
-        this.crudCreate = useCrudViewCreate(selectionView);
+        this.crudCreate = useCrudViewCreate(creationView);
 
         const [result, queryStatus] = useQuery(db3queries, {
             table: {

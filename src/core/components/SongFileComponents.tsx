@@ -414,7 +414,9 @@ export const FileEditor = (props: FileEditorProps) => {
             // Any columns updated by the file CRUD command need to be specified here.
             // if they shouldn't be displayed to users, make a hidden version.
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
-            visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
+            visiblePermission: DB3Client.foreignRefFieldGen({
+                selectionView: db3.permissionVisibilityView,
+            }),
             fileLeafName: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150, fieldCaption: "File name" }),
             description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 150 }),
             fileCreatedAt: columnName => new DB3Client.DateTimeColumn({ columnName }),

@@ -9,15 +9,15 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from "../../db3/clientAPI";
-import { RenderMuiIcon, gIconMap } from "../../db3/components/IconMap";
+import { gIconMap, RenderMuiIcon } from "../../db3/components/IconMap";
 import { DB3EditRowButton, type DB3EditRowButtonAPI } from '../../db3/components/db3NewObjectDialog';
-import { ActivityFeature } from "../featureReports/activityTracking";
+import { AppContextMarker } from "../AppContext";
 import { KeyValueDisplay } from '../CMCoreComponents2';
+import { CMLink } from "../CMLink";
 import { CMTextInputBase, type CMTextInputBaseProps } from "../CMTextField";
 import { VisibilityValue } from "../VisibilityControl";
-import { AppContextMarker } from "../AppContext";
-import { CMLink } from "../CMLink";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
+import { ActivityFeature } from "../featureReports/activityTracking";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -226,7 +226,9 @@ export const MenuLinkList = () => {
             externalURI: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "External URL" }),
             wikiSlug: columnName => new SearchableWikiSlugColumnClient({ columnName, cellWidth: 250 }),
 
-            visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
+            visiblePermission: DB3Client.foreignRefFieldGen({
+                selectionView: db3.permissionVisibilityView,
+            }),
 
             groupCssClass: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Group CSS class" }),
             itemCssClass: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Item CSS class" }),

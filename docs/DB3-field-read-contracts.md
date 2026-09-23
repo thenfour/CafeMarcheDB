@@ -762,6 +762,17 @@ sound.
         relation targets. Prove that hidden fields stay out of the DTO and that
         concrete consumer relations neither become optional nor widen to `any`.
 
+24. [x] **Move consumer-specific Permission filtering into a named view.** Add an
+        optional, typed root `where` contract to `defineView()` and AND it with
+        xTable/caller predicates for both row queries and paginated counts. Keep
+        nested Prisma `where` clauses in the selection args, including actor-aware
+        clauses returned by a selection callback. Replace
+        `xPermissionForVisibility` with one canonical `xPermission`, make its
+        intrinsic display metadata inherit row reads, keep role assignments
+        independently Sysadmin-only, and bind visibility selectors to
+        `Permission_Visibility`. Canonical foreign-reference hydration now removes
+        the former Permission repair code from Event and File search views.
+
 ## Pilot completion criteria
 
 The pilot is successful when all of the following are true:

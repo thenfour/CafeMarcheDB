@@ -26,7 +26,9 @@ const MainContent = () => {
             customData: columnName => makeDisplayOnlyColumn(new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 })),
 
             uploadedByUser: columnName => makeDisplayOnlyColumn(new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, })),
-            visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
+            visiblePermission: DB3Client.foreignRefFieldGen({
+                selectionView: db3.permissionVisibilityView,
+            }),
 
             tags: columnName => new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false, selectionView: db3.fileTagEditorView }),
             taggedUsers: columnName => new DB3Client.TagsFieldClient<db3.FileUserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),

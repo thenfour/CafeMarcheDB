@@ -69,14 +69,52 @@ describe("explicit DB3 authorization", () => {
   })
 
   it("offers visibility choices from all effective roles", async () => {
-    const actor = createAuthorizationTestUser("sysadmin", { permissions: [Permission.login] })
+    const { user: actor, ctx } = createAuthorizationPersona("sysadmin", {
+      permissions: [Permission.login],
+    })
     const resolved = await loadUserAuthorization(actor as any)
     const authorization = db3.createDB3Authorization(resolved.user, resolved.effectivePermissions)
-    const where = await db3.xPermissionForVisibility.CalculateWhereClause({
-      publicData: authorization, filterModel: { items: [] },
+    const where = db3.permissionVisibilityView.getWhereClause({
+      authorization,
+      filter: { items: [] },
     })
     expect(matchesWhere({ id: 920_002, isVisibility: true }, where)).toBe(true)
     expect(matchesWhere({ id: 999_999, isVisibility: true }, where)).toBe(false)
+
+    const permission = (id: number, name: Permission, isVisibility: boolean) => ({
+      id,
+      name,
+      isVisibility,
+      description: name,
+      sortOrder: id,
+      significance: null,
+      color: null,
+      iconName: null,
+    })
+    authorizationTestDb.reset({
+      user: [actor!],
+      permission: [
+        permission(920_002, Permission.visibility_public, true),
+        permission(999_999, Permission.visibility_members, true),
+        permission(1, Permission.login, false),
+      ],
+    })
+    const request = forgeDb3Query("Permission", {
+      table: {
+        tableID: "Permission",
+        tableName: "Permission",
+        viewID: db3.permissionVisibilityView.viewID,
+      },
+    })
+    const result = await invokeResolver(db3Query, request, ctx)
+    const paginated = await invokeResolver(db3PaginatedQuery, {
+      ...request,
+      skip: 0,
+      take: 20,
+    }, ctx)
+    expect(result.items.map(item => item.id)).toEqual([920_002])
+    expect(paginated.items.map(item => item.id)).toEqual([920_002])
+    expect(paginated.count).toBe(1)
   })
 
   it.each([undefined, false, true])("honors includeDeleted=%s for Sysadmin queries and counts", async includeDeleted => {

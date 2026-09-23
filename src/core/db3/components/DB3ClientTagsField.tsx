@@ -310,7 +310,7 @@ export interface TagsFieldClientArgs<TAssociation> {
     cellWidth?: number;
     allowDeleteFromCell: boolean,
     // The foreign-row view used for selection queries and option creation.
-    selectionView?: db3.AnyDB3CrudView;
+    selectionView?: db3.AnyDB3View;
 
     renderAsChip?: (args: RenderAsChipParams<TAssociation>) => React.ReactNode;
 
@@ -490,16 +490,19 @@ export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
         const selectionView = args.spec.args.selectionView;
         if (selectionView && selectionView.entity !== foreignSchema) {
             throw new Error(
-                `DB3 CRUD view '${selectionView.viewID}' does not belong to table '${foreignSchema.tableID}'.`,
+                `DB3 view '${selectionView.viewID}' does not belong to table '${foreignSchema.tableID}'.`,
             );
         }
-        if (args.spec.typedSchemaColumn.allowInsertFromString && !selectionView) {
+        const creationView = selectionView && "crud" in selectionView
+            ? selectionView as db3.AnyDB3CrudView
+            : undefined;
+        if (args.spec.typedSchemaColumn.allowInsertFromString && !creationView) {
             throw new Error(
-                `Tags field '${args.spec.columnName}' requires a selectionView to create options.`,
+                `Tags field '${args.spec.columnName}' requires a CRUD selectionView to create options.`,
             );
         }
         const dashboard = useDashboardContext();
-        this.crudCreate = useCrudViewCreate(selectionView);
+        this.crudCreate = useCrudViewCreate(creationView);
 
         // returns the foreign items.
         const [result, queryStatus] = useQuery(db3queries, {

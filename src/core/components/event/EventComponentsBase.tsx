@@ -2,7 +2,6 @@
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import { DateTimeRange, Timing } from 'shared/time';
-import { calculateEventAttendance, EventAttendanceResult } from "./attendanceCalculation";
 import { getUniqueNegativeID } from 'shared/utils';
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -11,6 +10,7 @@ import { EnrichedEvent } from '../../db3/shared/schema/enrichedEventTypes';
 import { EventResponseInfo, fn_makeMockEventSegmentResponse, fn_makeMockEventUserResponse, GetEventResponseInfo, UserInstrumentList } from '../../db3/shared/schema/eventAPI';
 import { DashboardContextData, useDashboardContext } from '../dashboardContext/DashboardContext';
 import { DashboardContextDataBase } from '../dashboardContext/dashboardContextTypes';
+import { calculateEventAttendance, EventAttendanceResult } from "./attendanceCalculation";
 
 
 export type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & {
@@ -385,7 +385,10 @@ export const EventTableClientColumns = DB3Client.makeClientColumnSet({
     expectedAttendanceUserTag: columnName => new DB3Client.ForeignSingleFieldClient<db3.UserTagPayload>({ columnName, cellWidth: 150, fieldCaption: "Who's invited?", selectionView: db3.userTagEditorView }),
     tags: columnName => new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false, fieldCaption: "Tags", selectionView: db3.eventTagEditorView }),
 
-    visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, fieldCaption: "Who can view this event?" }),
+    visiblePermission: DB3Client.foreignRefFieldGen({
+        selectionView: db3.permissionVisibilityView,
+        fieldCaption: "Who can view this event?",
+    }),
 
     createdAt: columnName => new DB3Client.CreatedAtColumn({ columnName, cellWidth: 150 }),
     createdByUser: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),

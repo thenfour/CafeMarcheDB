@@ -48,7 +48,9 @@ export const SongClientColumns = DB3Client.makeClientColumnSet({
     tags: columnName => new DB3Client.TagsFieldClient({ columnName, cellWidth: 200, allowDeleteFromCell: false, selectionView: db3.songTagEditorView }),
     createdByUser: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
     visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({
-        columnName, cellWidth: 120, nullItemInfo: {
+        columnName,
+        selectionView: db3.permissionVisibilityView,
+        nullItemInfo: {
             label: "Private",
             color: "red",
             tooltip: "Only you will be able to view this item for now. You can make it public later when you're ready."

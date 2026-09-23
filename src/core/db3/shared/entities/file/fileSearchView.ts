@@ -2,7 +2,6 @@ import { Prisma } from "db";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { xFile } from "../../schema/file";
-import { xPermission } from "../../schema/user";
 
 const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
@@ -141,9 +140,6 @@ export const fileSearchView = defineView({
         const hydrated = fileSearchViewContract.hydrate(dto, references);
         return {
             ...hydrated,
-            // Visibility authorization traverses a policy-specific xTable,
-            // while dashboard reference stores own the canonical Permission table.
-            visiblePermission: references.get(xPermission, dto.visiblePermissionId),
             tags: hydrated.tags
                 ?.flatMap(association => association.fileTag == null ? [] : [{
                     ...association,

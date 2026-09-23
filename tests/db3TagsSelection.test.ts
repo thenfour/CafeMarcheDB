@@ -79,6 +79,7 @@ beforeEach(() => {
         entity: foreignSchema,
         parseDto: (item: typeof options[number]) => item,
         hydrate: (item: typeof options[number]) => item,
+        crud: { operations: { create: { kind: "create", command: {} } } },
     };
     spec = new TagsFieldClient<Association>({
         columnName: "taggedInstruments", fieldCaption: "Instruments", cellWidth: 150, allowDeleteFromCell: false,

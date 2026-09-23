@@ -1554,7 +1554,7 @@ describe("BA-U002 delegated user administration", () => {
 
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3Update("xPermissionForVisibility", visibilityPermission.id, {
+      forgeDb3Update("Permission", visibilityPermission.id, {
         id: visibilityPermission.id,
         description: "Forged",
       }, { tableName: "Permission" }),

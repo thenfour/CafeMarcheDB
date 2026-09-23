@@ -22,6 +22,10 @@ export type DB3ViewSelectionArgs<TEntity extends AnyDB3Table> = Partial<Pick<
     "select" | "include"
 >>;
 
+export type DB3ViewWhere<TEntity extends AnyDB3Table> = NonNullable<
+    Prisma.Args<DB3PrismaDelegateOf<TEntity>, "findMany">["where"]
+>;
+
 export type DerivedDB3ViewSelection<
     TEntity extends AnyDB3Table,
     TDtoSchema extends z.AnyZodObject,
@@ -41,6 +45,9 @@ export interface DB3View<
     readonly tableName: string;
     readonly dtoSchema: TDtoSchema;
     readonly getSelectionArgs: (context: DB3ViewSelectionContext) => TSelection;
+    readonly getWhereClause: (
+        context: DB3ViewSelectionContext,
+    ) => DB3ViewWhere<TEntity> | undefined;
     readonly hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
 
     parseDto(value: unknown): z.infer<TDtoSchema>;
@@ -70,12 +77,17 @@ interface DefineViewBaseArgs<
     viewID: string;
     entity: TEntity;
     dtoSchema: TDtoSchema;
+    where?: DB3ViewWhereInput<TEntity>;
     hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
 }
 
 type DB3ViewSelectionInput<
     TSelection,
 > = TSelection | ((context: DB3ViewSelectionContext) => TSelection);
+
+type DB3ViewWhereInput<TEntity extends AnyDB3Table> =
+    | DB3ViewWhere<TEntity>
+    | ((context: DB3ViewSelectionContext) => DB3ViewWhere<TEntity>);
 
 // overload with no selection specified (will be deduced from the DTO schema)
 export function defineView<
@@ -124,6 +136,11 @@ export function defineView<
             : typeof args.selection === "function"
                 ? args.selection as (context: DB3ViewSelectionContext) => TSelection
                 : () => args.selection as TSelection,
+        getWhereClause: args.where === undefined
+            ? () => undefined
+            : typeof args.where === "function"
+                ? args.where
+                : () => args.where,
         hydrate: args.hydrate,
         parseDto: value => args.dtoSchema.parse(value),
     };

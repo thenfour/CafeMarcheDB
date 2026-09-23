@@ -607,7 +607,9 @@ const MainContent = () => {
             caption_nl: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 120 }),
             caption_fr: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 120 }),
             displayParams: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 120 }),
-            visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
+            visiblePermission: DB3Client.foreignRefFieldGen({
+                selectionView: db3.permissionVisibilityView,
+            }),
         },
     });
 

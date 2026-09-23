@@ -22,6 +22,7 @@ import {
     type DB3View,
     type DB3ViewSelectionArgs,
     type DB3ViewSelectionContext,
+    type DB3ViewWhere,
     type DerivedDB3ViewSelection,
 } from "./db3View";
 import type { DB3ReferenceProvider } from "./db3Hydration";
@@ -153,6 +154,7 @@ export function defineCrudView<
     viewID: string;
     entity: TEntity;
     selection?: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
+    where?: DB3ViewWhere<TEntity> | ((context: DB3ViewSelectionContext) => DB3ViewWhere<TEntity>);
     dtoSchema: TDtoSchema;
     hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
     operations: TOperations;
@@ -161,6 +163,7 @@ export function defineCrudView<
         viewID: args.viewID,
         entity: args.entity,
         dtoSchema: args.dtoSchema,
+        where: args.where,
         hydrate: args.hydrate,
     };
     type TResolvedSelection = CrudViewSelection<TEntity, TDtoSchema, TSelection>;

@@ -40,7 +40,14 @@ async function prepareTableQuery(input: db3.QueryInputBase, authorization: Reque
     Object.keys(input.filter.tableParams || {}).forEach(parameterName => {
         if (!table.authorizeQueryParameter(parameterName, publicData)) throw new DB3QueryAuthorizationError();
     });
-    const where = await table.CalculateWhereClause({ publicData, includeDeleted, filterModel: input.filter });
+    const tableWhere = await table.CalculateWhereClause({ publicData, includeDeleted, filterModel: input.filter });
+    const viewWhere = view?.getWhereClause({
+        filter: input.filter,
+        authorization: publicData,
+    });
+    const where = tableWhere && viewWhere
+        ? { AND: [tableWhere, viewWhere] }
+        : tableWhere || viewWhere;
     const selectionArgs = await table.CalculateSelectionArgs(
         publicData,
         input.filter,

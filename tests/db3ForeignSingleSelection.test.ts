@@ -80,6 +80,7 @@ beforeEach(() => {
         entity: foreignSchema,
         parseDto: (item: Instrument) => item,
         hydrate: (item: Instrument) => item,
+        crud: { operations: { create: { kind: "create", command: {} } } },
     };
     spec = new ForeignSingleFieldClient<Instrument>({
         columnName: "instrument", fieldCaption: "Instrument", cellWidth: 150,

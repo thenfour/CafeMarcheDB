@@ -12,7 +12,7 @@ import { CMDBTableFilterModel, PermissionSignificance } from "../apiTypes";
 import { BoolField, ForeignCollectionField, foreignRef, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { PermissionArgs, PermissionForVisibilityArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserPayloadMinimum, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
+import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserPayloadMinimum, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
 import { xInstrument } from "./instrument";
 
 // Basic profile data is self-service for the account owner and readable for
@@ -95,11 +95,19 @@ const xUserSignInMetadataAuthMap = db3.defineAuthMap({
     PreInsert: Permission.never_grant,
 });
 
-// Permission and role tables are Sysadmin-only at table level. The visibility
-// selector variant deliberately exposes their display metadata after login.
+// Permission display metadata is intrinsic to an authorized Permission row.
+// Role assignments remain independently Sysadmin-only below.
 const xPermissionMetadataAuthMap = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.login,
-    PostQuery: Permission.login,
+    PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+    PostQuery: db3.DB3FieldReadAuth.inheritRow,
+    PreMutateAsOwner: Permission.sysadmin,
+    PreMutate: Permission.sysadmin,
+    PreInsert: Permission.sysadmin,
+});
+
+const xRoleAdministrationFieldAuthMap = db3.defineAuthMap({
+    PostQueryAsOwner: Permission.sysadmin,
+    PostQuery: Permission.sysadmin,
     PreMutateAsOwner: Permission.sysadmin,
     PreMutate: Permission.sysadmin,
     PreInsert: Permission.sysadmin,
@@ -144,19 +152,17 @@ export const xUserTaxonomyTableAuthMap: db3.DB3AuthTablePermissionMap = {
     Insert: Permission.manage_user_taxonomy,
 } as const;
 
-// todo: viewing a permission is not really a security concern; todo:
-// remove xPermissionTableAuthMap in favor of the login/sysadmin pattern below.
 export const xPermissionTableAuthMap: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.sysadmin,
-    View: Permission.sysadmin,
+    ViewOwn: Permission.public,
+    View: Permission.public,
     EditOwn: Permission.sysadmin,
     Edit: Permission.sysadmin,
     Insert: Permission.sysadmin,
 } as const;
 
-const xVisibilityPermissionTableAuthMap: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.login,
-    View: Permission.login,
+const xRoleAdministrationTableAuthMap: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.sysadmin,
+    View: Permission.sysadmin,
     EditOwn: Permission.sysadmin,
     Edit: Permission.sysadmin,
     Insert: Permission.sysadmin,
@@ -292,37 +298,13 @@ export const xPermissionBaseArgs = db3.defineTableDesc({
             associationLocalObjectMember: "permission",
             getCustomFilterWhereClause: (query: CMDBTableFilterModel) => false,
             getQuickFilterWhereClause: (query: string): Prisma.PermissionWhereInput | boolean => false,
-            authMap: xPermissionMetadataAuthMap,
+            authMap: xRoleAdministrationFieldAuthMap,
         }),
 
     })
 });
 
 export const xPermission = db3.defineTable(xPermissionBaseArgs);
-
-export const xPermissionForVisibility = db3.defineTable({
-    ...xPermissionBaseArgs,
-    tableUniqueName: "xPermissionForVisibility",
-    tableAuthMap: xVisibilityPermissionTableAuthMap,
-    getSelectionArgs: () => PermissionForVisibilityArgs,
-    queryParameters: {},
-    getParameterizedWhereClause: (params: { userId?: number }, publicData: db3.DB3Authorization): Prisma.PermissionWhereInput[] => {
-        return [
-            {
-                isVisibility: {
-                    equals: true
-                }
-            },
-            {
-                // when you are selecting a visibility permission it makes no sense to include visibilities you can't see yourself.
-                // todo: move this logic into the pickers or views; it's not something to handle via this entity def.
-                // or even don't use this filter at all because it's embedding a real auth policy here in a where clause,
-                // rather than in auth code; the returned permission should be removed if you don't have access.
-                id: { in: publicData.effectivePermissions.ids }
-            }
-        ];
-    },
-});
 
 
 // if we think of role-permission as tags relationship,
@@ -337,7 +319,7 @@ export const xRolePermissionAssociation = db3.defineTable({
     getSelectionArgs: (): Prisma.RolePermissionDefaultArgs => {
         return RolePermissionArgs;
     },
-    tableAuthMap: xPermissionTableAuthMap,
+    tableAuthMap: xRoleAdministrationTableAuthMap,
     naturalOrderBy: RolePermissionNaturalOrderBy,
     getRowInfo: (row: RolePermissionAssociationPayload) => ({
         pk: row.id,
@@ -349,11 +331,11 @@ export const xRolePermissionAssociation = db3.defineTable({
         id: () => MakePKfield(),
         permission: foreignRef(() => xPermission, {
             fkidMember: "permissionId",
-            authMap: xPermissionMetadataAuthMap,
+            authMap: xRoleAdministrationFieldAuthMap,
         }),
         role: foreignRef(() => xRole, {
             fkidMember: "roleId",
-            authMap: xPermissionMetadataAuthMap,
+            authMap: xRoleAdministrationFieldAuthMap,
         }),
     })
 });
@@ -368,7 +350,7 @@ export const xRole = db3.defineTable({
     },
     tableName: "Role",
     deletePolicy: "disabled",
-    tableAuthMap: xPermissionTableAuthMap,
+    tableAuthMap: xRoleAdministrationTableAuthMap,
     naturalOrderBy: RoleNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.RoleCreateInput => {
         return {
@@ -391,9 +373,9 @@ export const xRole = db3.defineTable({
             allowNull: false,
             format: "plain",
             specialFunction: db3.SqlSpecialColumnFunction.name,
-            authMap: xPermissionMetadataAuthMap,
+            authMap: xRoleAdministrationFieldAuthMap,
         }),
-        description: () => MakeDescriptionField({ authMap: xPermissionMetadataAuthMap }),
+        description: () => MakeDescriptionField({ authMap: xRoleAdministrationFieldAuthMap }),
         isRoleForNewUsers: columnName => new BoolField({
             columnName,
             defaultValue: false,
@@ -412,13 +394,13 @@ export const xRole = db3.defineTable({
             _customAuth: authorizeBuiltInRoleFlag("isSysAdminRole"),
             allowNull: false,
         }),
-        sortOrder: () => MakeSortOrderField({ authMap: xPermissionMetadataAuthMap }),
-        color: () => MakeColorField({ authMap: xPermissionMetadataAuthMap }),
-        significance: columnName => MakeSignificanceField(columnName, RoleSignificance, { authMap: xPermissionMetadataAuthMap }),
+        sortOrder: () => MakeSortOrderField({ authMap: xRoleAdministrationFieldAuthMap }),
+        color: () => MakeColorField({ authMap: xRoleAdministrationFieldAuthMap }),
+        significance: columnName => MakeSignificanceField(columnName, RoleSignificance, { authMap: xRoleAdministrationFieldAuthMap }),
         permissions: tagsRef("RolePermission", "Permission", {
             associationForeignObjectMember: "permission",
             associationLocalObjectMember: "role",
-            authMap: xPermissionMetadataAuthMap,
+            authMap: xRoleAdministrationFieldAuthMap,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 permissions: {
@@ -907,15 +889,15 @@ export type VisiblePermissionFieldArgs<
 export class VisiblePermissionField<
     TForeignKeyMember extends string = "visiblePermissionId",
 > extends ForeignSingleField<
-    db3.DB3PrismaPayloadOf<typeof xPermissionForVisibility>,
-    typeof xPermissionForVisibility,
+    db3.DB3PrismaPayloadOf<typeof xPermission>,
+    typeof xPermission,
     TForeignKeyMember
 > {
     constructor(args: VisiblePermissionFieldArgs<TForeignKeyMember>) {
         super({
             columnName: args.columnName || "visiblePermission",
             fkidMember: (args.fkMember || "visiblePermissionId") as TForeignKeyMember,
-            getForeignTable: () => xPermissionForVisibility,
+            getForeignTable: () => xPermission,
             specialFunction: db3.SqlSpecialColumnFunction.visiblePermission,
             allowNull: true,
             getQuickFilterWhereClause: () => false,

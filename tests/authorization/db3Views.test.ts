@@ -7,6 +7,8 @@ import { PermissionSet } from "src/auth/shared/PermissionSet";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { DateTimeRange } from "shared/time";
+import { Prisma } from "db";
+import { z } from "zod";
 
 const groupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
 const group = {
@@ -80,9 +82,88 @@ describe("DB3 named views", () => {
                 { tag: { sortOrder: "asc" } },
                 { tag: { text: "asc" } },
             ]);
+        expect(db3.eventTypeEditorView.getWhereClause(context)).toBeUndefined();
+        expect(db3.permissionVisibilityView.getWhereClause(context)).toEqual({
+            isVisibility: { equals: true },
+            id: { in: [] },
+        });
+
+        const permissionDto = db3.permissionVisibilityView.parseDto({
+            id: 1,
+            name: Permission.visibility_public,
+            description: "Public",
+            sortOrder: 1,
+            isVisibility: true,
+            significance: null,
+            color: "green",
+            iconName: null,
+        });
+        expectTypeOf(permissionDto.name).toEqualTypeOf<string>();
+        expectTypeOf(permissionDto.description).toEqualTypeOf<string>();
+        expectTypeOf(permissionDto.isVisibility).toEqualTypeOf<boolean>();
 
         expectTypeOf<db3.DbPayloadOf<typeof db3.eventTypeEditorView>>()
             .toMatchTypeOf<{ id: number; text: string }>();
+    });
+
+    it("composes a root view predicate without disturbing nested Prisma where clauses", async () => {
+        const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
+            select: {
+                id: true,
+                tags: {
+                    select: { id: true },
+                    where: { eventTagId: { gt: 0 } },
+                },
+            },
+        });
+        const view = db3.defineView({
+            viewID: "Test_EventNestedWhere",
+            entity: db3.xEvent,
+            selection,
+            where: ({ authorization }) => ({
+                createdByUserId: authorization.userId,
+            }),
+            dtoSchema: z.object({
+                id: z.number().int(),
+                tags: z.array(z.object({ id: z.number().int() })).optional(),
+            }),
+            hydrate: dto => dto,
+        });
+        const findMany = vi.fn(async (_args: unknown) => []);
+        const effectivePermissions = new PermissionSet([
+            { id: 1, name: Permission.always_grant },
+            { id: 2, name: Permission.public },
+            { id: 3, name: Permission.view_events },
+            { id: 4, name: Permission.visibility_public },
+        ]);
+
+        await queryTable({
+            table: {
+                tableID: "Event",
+                tableName: "Event",
+                viewID: view.viewID,
+            },
+            orderBy: undefined,
+            filter: { items: [] },
+            cmdbQueryContext: "db3-view-where-composition-test",
+        }, {
+            user: { id: 42 } as any,
+            effectivePermissions,
+        }, {
+            Event: { findMany },
+        } as any);
+
+        const prismaArgs = findMany.mock.calls[0]![0] as any;
+        expect(prismaArgs.where.AND).toEqual(expect.arrayContaining([
+            { createdByUserId: 42 },
+        ]));
+        expect(prismaArgs.select.tags.where.AND).toEqual(expect.arrayContaining([
+            { eventTagId: { gt: 0 } },
+        ]));
+        expectTypeOf(view.getWhereClause({
+            filter: { items: [] },
+            authorization: db3.createDB3Authorization({ id: 42 }, effectivePermissions),
+        })).toEqualTypeOf<Prisma.EventWhereInput | undefined>();
     });
 
     it("validates view ownership as part of the query contract", () => {

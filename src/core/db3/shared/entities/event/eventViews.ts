@@ -6,7 +6,6 @@ import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } f
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { EventTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { db3s } from "../common/viewCommon";
-import { xPermission } from "../../schema/user";
 import { hydrateEventDateRange } from "./eventDateRange";
 import {
     xEventAttendance,
@@ -487,10 +486,6 @@ export const eventSearchView = defineView({
         const { segments, tags, ...eventDto } = eventSearchViewContract.hydrate(dto, references);
         return {
             ...hydrateEventDateRange(eventDto),
-            // Visibility uses a policy-specific xTable variant for recursive
-            // authorization, while the dashboard reference store owns the
-            // canonical Permission table.
-            visiblePermission: references.get(xPermission, dto.visiblePermissionId),
             tags: [...tags].sort((a, b) => a.eventTag.sortOrder - b.eventTag.sortOrder),
             segments: segments?.map(segment => hydrateEventDateRange(segment)),
         };

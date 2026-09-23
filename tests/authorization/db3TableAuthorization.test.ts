@@ -210,7 +210,7 @@ describe("inherited field read authorization", () => {
 })
 
 describe("schema-owned table authorization", () => {
-  it.each([db3.xRole, db3.xPermission, db3.xRolePermissionAssociation, db3.xSetting])(
+  it.each([db3.xRole, db3.xRolePermissionAssociation, db3.xSetting])(
     "uses the operation map for $tableName access",
     table => {
       expect(table.authorizeTableForView(sysadminGrant)).toBe(true)
@@ -222,15 +222,20 @@ describe("schema-owned table authorization", () => {
     },
   )
 
-  it("keeps visibility choices readable while applying the metadata mutation policy", () => {
-    expect(db3.xPermissionForVisibility.authorizeTableForView(userManager)).toBe(true)
-    expect(db3.xPermissionForVisibility.authorizeTableForEdit(userManager)).toBe(false)
-    expect(db3.xPermissionForVisibility.authorizeTableForEdit(sysadminGrant)).toBe(true)
+  it("keeps canonical permission metadata public and mutations Sysadmin-only", () => {
+    const publicGrant = authorization(Permission.public)
+    expect(db3.xPermission.authorizeTableForView(publicGrant)).toBe(true)
+    expect(db3.xPermission.authorizeTableForEdit(publicGrant)).toBe(false)
+    expect(db3.xPermission.authorizeTableForEdit(userManager)).toBe(false)
+    expect(db3.xPermission.authorizeTableForEdit(sysadminGrant)).toBe(true)
+
+    expect(db3.xPermission.fields.name.isReadRequiredAfterRowAuth()).toBe(true)
+    expect(db3.xPermission.fields.color.isReadRequiredAfterRowAuth()).toBe(true)
+    expect(db3.xPermission.fields.roles.isReadRequiredAfterRowAuth()).toBe(false)
   })
 
   it.each([
     [db3.xPermission, { description: "Updated", color: "red", roles: [200] }],
-    [db3.xPermissionForVisibility, { description: "Updated", color: "red" }],
     [db3.xRole, { description: "Updated", color: "red", permissions: [300] }],
     [db3.xRolePermissionAssociation, { roleId: 200, permissionId: 300 }],
   ] as const)("authorizes %s metadata without a user-management grant", (table, model) => {
