@@ -38,9 +38,16 @@ describe("DB3 xTable model metadata", () => {
     expectTypeOf(db3.xEventTagAssignment.fields.eventTag).toEqualTypeOf<
       db3.ForeignSingleField<
         Prisma.EventTagGetPayload<{}>,
-        typeof db3.xEventTag
+        typeof db3.xEventTag,
+        "eventTagId"
       >
     >()
+    expectTypeOf<db3.DB3ForeignKeyMemberOf<
+      typeof db3.xEvent.fields.visiblePermission
+    >>().toEqualTypeOf<"visiblePermissionId">()
+    expectTypeOf<db3.DB3ForeignKeyMemberOf<
+      typeof db3.xFile.fields.uploadedByUser
+    >>().toEqualTypeOf<"uploadedByUserId">()
   })
 
   it("keeps target resolution lazy while deriving the runtime table ID", () => {

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest"
 
 import type { ColorPaletteEntry } from "src/core/components/color/palette"
 import * as db3 from "src/core/db3/db3"
+import { parsePublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId"
 import { compileDB3Selection } from "src/core/db3/shared/core/db3ViewContract"
 
 afterEach(() => {
@@ -371,6 +372,150 @@ describe("DB3 derived scalar hydration", () => {
   })
 })
 
+describe("DB3 normalized foreign-single hydration", () => {
+  it("declares and resolves a selected foreign key while retaining its transport member", () => {
+    const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: { statusId: true },
+    })
+    const derived = db3.deriveViewContract(db3.xEvent, selection)
+    const status = {
+      id: 4,
+      label: "Confirmed",
+      description: "Public display metadata",
+      color: "green",
+      sortOrder: 1,
+      significance: db3.EventStatusSignificance.FinalConfirmation,
+      iconName: null,
+      isDeleted: false,
+    } satisfies Prisma.EventStatusGetPayload<{}>
+    const references = new db3.DB3ReferenceStore()
+    references.register(db3.xEventStatus, [status])
+
+    expectTypeOf<Parameters<typeof derived.hydrate>[0]>().toEqualTypeOf<{
+      statusId?: number | null
+    }>()
+    expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
+      statusId?: number | null
+      status?: Prisma.EventStatusGetPayload<{}> | null
+    }>()
+    expect(derived.referenceDependencies).toEqual([
+      expect.objectContaining({
+        sourceTable: db3.xEvent,
+        targetTable: db3.xEventStatus,
+        foreignKeyMember: "statusId",
+        relationMember: "status",
+        selectionPath: "Event.select.statusId",
+      }),
+    ])
+    expect(derived.hydrate({ statusId: status.id }, references)).toEqual({
+      statusId: status.id,
+      status,
+    })
+  })
+
+  it("preserves absent and null normalized references without consulting the provider", () => {
+    const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: { statusId: true },
+    })
+    const derived = db3.deriveViewContract(db3.xEvent, selection)
+    const references = new db3.DB3ReferenceStore()
+    const requireReference = vi.spyOn(references, "require")
+
+    expect(derived.hydrate({}, references)).toEqual({})
+    expect(derived.hydrate({ statusId: null }, references)).toEqual({
+      statusId: null,
+      status: null,
+    })
+    expect(requireReference).not.toHaveBeenCalled()
+  })
+
+  it("reports the source field, target table and identity for a missing dependency", () => {
+    const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: { statusId: true },
+    })
+    const derived = db3.deriveViewContract(db3.xEvent, selection)
+
+    expect(() => derived.hydrate({
+      statusId: 404,
+    }, new db3.DB3ReferenceStore())).toThrow(
+      "Unable to hydrate Event.status: EventStatus '404' is not available.",
+    )
+  })
+
+  it("uses the target xTable identity for public-ID foreign-key transport", () => {
+    const selection = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
+      select: { functionalGroupId: true },
+    })
+    const derived = db3.deriveViewContract(db3.xInstrument, selection)
+    const publicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01")
+    const group: db3.InstrumentFunctionalGroupClientPayload = {
+      publicId,
+      name: "Brass",
+      description: "Brass instruments",
+      color: "orange",
+      sortOrder: 1,
+    }
+    const references = new db3.DB3ReferenceStore()
+    references.register(db3.xInstrumentFunctionalGroup, [group])
+
+    expectTypeOf<Parameters<typeof derived.hydrate>[0]>().toEqualTypeOf<{
+      functionalGroupId?: InstrumentFunctionalGroupPublicId
+    }>()
+    expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
+      functionalGroupId?: InstrumentFunctionalGroupPublicId
+      functionalGroup?: db3.InstrumentFunctionalGroupClientPayload
+    }>()
+    expect(derived.dtoSchema.safeParse({ functionalGroupId: 54 }).success).toBe(false)
+    expect(derived.hydrate({ functionalGroupId: publicId }, references)).toEqual({
+      functionalGroupId: publicId,
+      functionalGroup: group,
+    })
+  })
+
+  it("resolves normalized references inside selected relation collections", () => {
+    const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: {
+        tags: {
+          select: { eventTagId: true },
+        },
+      },
+    })
+    const derived = db3.deriveViewContract(db3.xEvent, selection)
+    const tag = {
+      id: 12,
+      text: "Festival",
+      description: "Festival event",
+      color: "green",
+      significance: null,
+      sortOrder: 1,
+      visibleOnFrontpage: true,
+    } satisfies Prisma.EventTagGetPayload<{}>
+    const references = new db3.DB3ReferenceStore()
+    references.register(db3.xEventTag, [tag])
+
+    expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
+      tags?: Array<{
+        eventTagId?: number
+        eventTag?: Prisma.EventTagGetPayload<{}>
+      }>
+    }>()
+    expect(derived.referenceDependencies).toEqual([
+      expect.objectContaining({
+        sourceTable: db3.xEventTagAssignment,
+        targetTable: db3.xEventTag,
+        foreignKeyMember: "eventTagId",
+        relationMember: "eventTag",
+        selectionPath: "Event.select.tags.select.eventTagId",
+      }),
+    ])
+    expect(derived.hydrate({
+      tags: [{ eventTagId: tag.id }],
+    }, references)).toEqual({
+      tags: [{ eventTagId: tag.id, eventTag: tag }],
+    })
+  })
+})
+
 describe("DB3 derived embedded-relation hydration", () => {
   it("recursively hydrates a nullable foreign-single object", () => {
     const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
@@ -446,6 +591,7 @@ describe("DB3 derived embedded-relation hydration", () => {
     const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
 
     expect(derived.hydrate({ statusId: 4 }, references)).toEqual({ statusId: 4 })
+    expect(derived.referenceDependencies).toEqual([])
     expect(getReference).not.toHaveBeenCalled()
     expect(decode).not.toHaveBeenCalled()
   })

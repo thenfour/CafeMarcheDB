@@ -832,22 +832,27 @@ export const xUserWithInstrument = db3.defineTable({
 
 // let's create a "created by" field which is a specialization of ForeignSingle, specialized to User payload
 // automatically populated with current user on creation (see ApplyToNewRow)
-export type CreatedByUserFieldArgs = {
+export type CreatedByUserFieldArgs<
+    TForeignKeyMember extends string = "createdByUserId",
+> = {
     columnName?: string; // "instrumentType"
-    fkidMember?: string; // "instrumentTypeId"
+    fkidMember?: TForeignKeyMember; // "instrumentTypeId"
     specialFunction?: db3.SqlSpecialColumnFunction;
     authMap?: db3.DB3AuthContextPermissionMap;
     _customAuth?: (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean;
 };
 
-export class CreatedByUserField extends ForeignSingleField<
+export class CreatedByUserField<
+    TForeignKeyMember extends string = "createdByUserId",
+> extends ForeignSingleField<
     db3.DB3PrismaPayloadOf<typeof xUser>,
-    typeof xUser
+    typeof xUser,
+    TForeignKeyMember
 > {
-    constructor(args: CreatedByUserFieldArgs) {
+    constructor(args: CreatedByUserFieldArgs<TForeignKeyMember>) {
         super({
             columnName: args.columnName || "createdByUser",
-            fkidMember: args.fkidMember || "createdByUserId",
+            fkidMember: (args.fkidMember || "createdByUserId") as TForeignKeyMember,
             getForeignTable: () => xUser,
             allowNull: true,
             specialFunction: args.specialFunction || db3.SqlSpecialColumnFunction.createdByUser,
@@ -869,35 +874,44 @@ export class CreatedByUserField extends ForeignSingleField<
     }
 };
 
-export const MakeCreatedByField = (args?: CreatedByUserFieldArgs) => (
-    new CreatedByUserField(args || {})
+export const MakeCreatedByField = <
+    const TForeignKeyMember extends string = "createdByUserId",
+>(args?: CreatedByUserFieldArgs<TForeignKeyMember>) => (
+    new CreatedByUserField<TForeignKeyMember>(args || {})
 );
 
-export const MakeUpdatedByField = (args?: CreatedByUserFieldArgs) => (
-    new CreatedByUserField({
+export const MakeUpdatedByField = <
+    const TForeignKeyMember extends string = "updatedByUserId",
+>(args?: CreatedByUserFieldArgs<TForeignKeyMember>) => (
+    new CreatedByUserField<TForeignKeyMember>({
         specialFunction: db3.SqlSpecialColumnFunction.updatedByUser,
         columnName: "updatedByUser",
-        fkidMember: "updatedByUserId",
         ...args || {},
+        fkidMember: (args?.fkidMember || "updatedByUserId") as TForeignKeyMember,
     })
 );
 
 
 // let's create a "visiblePermission" column which is ForeignSingle for a permission, but only for "visibility" permissions.
 // in theory this will apply a filter over permissions for isVisibility = TRUE; however that is already done in a different way.
-export type VisiblePermissionFieldArgs = {
+export type VisiblePermissionFieldArgs<
+    TForeignKeyMember extends string = "visiblePermissionId",
+> = {
     columnName?: string; // "visiblePermission"
-    fkMember?: string; // "visiblePermissionId"
+    fkMember?: TForeignKeyMember; // "visiblePermissionId"
 } & db3.DB3AuthSpec;
 
-export class VisiblePermissionField extends ForeignSingleField<
+export class VisiblePermissionField<
+    TForeignKeyMember extends string = "visiblePermissionId",
+> extends ForeignSingleField<
     db3.DB3PrismaPayloadOf<typeof xPermissionForVisibility>,
-    typeof xPermissionForVisibility
+    typeof xPermissionForVisibility,
+    TForeignKeyMember
 > {
-    constructor(args: VisiblePermissionFieldArgs) {
+    constructor(args: VisiblePermissionFieldArgs<TForeignKeyMember>) {
         super({
             columnName: args.columnName || "visiblePermission",
-            fkidMember: args.fkMember || "visiblePermissionId",
+            fkidMember: (args.fkMember || "visiblePermissionId") as TForeignKeyMember,
             getForeignTable: () => xPermissionForVisibility,
             specialFunction: db3.SqlSpecialColumnFunction.visiblePermission,
             allowNull: true,

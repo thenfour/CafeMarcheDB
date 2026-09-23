@@ -318,9 +318,10 @@ The result should contain:
 }
 ```
 
-`referenceDependencies` may be empty initially, but including it in the result
-makes normalized relation requirements inspectable without causing hydration to
-fetch data.
+`referenceDependencies` makes normalized relation requirements inspectable
+without causing hydration to fetch data. Each dependency names the source
+table, selected foreign-key member, logical relation member, target xTable, and
+complete selection path.
 
 `deriveDtoSchema(entity, selection)` can also be exposed as a narrower helper
 if useful. Internally, DTO derivation and hydration should use the same compiled
@@ -411,8 +412,10 @@ description, and a default hydrator. The hydrator validates the complete DTO
 before applying any conversion, skips authorization-absent members, and invokes
 each present scalar field's codec once. Embedded single and collection relations
 recurse through the same compiled member tree, preserving absent and null edges.
-Foreign-key members remain transport-shaped until normalized reference
-hydration is added separately below.
+A foreign key selected without its relation declares a reference dependency;
+hydration retains the key and adds the relation from the supplied provider.
+Target xTable identity metadata determines the transport and consumer types, so
+public-ID targets do not fall back to Prisma's numeric database-key type.
 
 The generated hydrator accepts the same reference-provider input shape used by
 current view hydration, even when a scalar-only view does not need it:
@@ -608,7 +611,7 @@ sound.
         and runtime table ID. Keep an explicit legacy escape hatch for recursively
         typed self-relations.
 
-14. [ ] **Add normalized `ForeignSingleField` hydration.** When a view selects
+14. [x] **Add normalized `ForeignSingleField` hydration.** When a view selects
         the ID rather than the object, declare the reference dependency and resolve
         it from the supplied provider. Test null, absent, present, and missing
         provider entries.

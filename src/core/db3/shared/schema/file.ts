@@ -419,7 +419,7 @@ const xFileBaseArgs = {
         description: () => MakeDescriptionField({ authMap: xFileAuthMap_FileObjects }),
         uploadedAt: columnName => MakeCreatedAtField({ columnName }),
         isDeleted: () => MakeIsDeletedField({ authMap: xFileAuthMap_FileObjects, }),
-        uploadedByUser: columnName => new CreatedByUserField({
+        uploadedByUser: columnName => new CreatedByUserField<"uploadedByUserId">({
             columnName,
             fkidMember: "uploadedByUserId",
             _customAuth: authorizeFileServerOwnedField,
@@ -463,7 +463,11 @@ const xFileBaseArgs = {
         }),
         // Recursive target: keep the legacy constructor to avoid making xFile's
         // inferred field map depend on its own complete type.
-        previewFile: columnName => new ForeignSingleField<Prisma.FileGetPayload<{}>>({
+        previewFile: columnName => new ForeignSingleField<
+            Prisma.FileGetPayload<{}>,
+            db3.xTable,
+            "previewFileId"
+        >({
             columnName,
             fkidMember: "previewFileId",
             allowNull: true,
@@ -471,7 +475,11 @@ const xFileBaseArgs = {
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        parentFile: columnName => new ForeignSingleField<Prisma.FileGetPayload<{}>>({
+        parentFile: columnName => new ForeignSingleField<
+            Prisma.FileGetPayload<{}>,
+            db3.xTable,
+            "parentFileId"
+        >({
             columnName,
             fkidMember: "parentFileId",
             allowNull: true,

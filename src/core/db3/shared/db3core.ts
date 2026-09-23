@@ -425,7 +425,12 @@ interface DB3FieldPrismaMemberBase {
 
 export type DB3FieldPrismaMember =
     | (DB3FieldPrismaMemberBase & {
-        readonly kind: "field" | "foreignKey";
+        readonly kind: "field";
+    })
+    | (DB3FieldPrismaMemberBase & {
+        readonly kind: "foreignKey";
+        readonly relationMember: string;
+        readonly getTargetTable: () => xTable; // lazy to avoid type cycles
     })
     | (DB3FieldPrismaMemberBase & {
         readonly kind: "foreignObject";
@@ -809,6 +814,23 @@ export interface DB3RelationTargetField<
 > {
     readonly __relationTargetTable: TTargetTable;
 }
+
+/**
+ * Type-only metadata for the normalized member owned by a foreign-single
+ * field. Keeping the literal key lets a derived view map (for example)
+ * `statusId` back to its logical `status` field and target table.
+ */
+export interface DB3ForeignSingleReferenceField<
+    TTargetTable extends xTable = xTable,
+    TForeignKeyMember extends string = string,
+> extends DB3RelationTargetField<TTargetTable> {
+    readonly __foreignKeyMember: TForeignKeyMember;
+}
+
+export type DB3ForeignKeyMemberOf<TField> =
+    TField extends DB3ForeignSingleReferenceField<any, infer TForeignKeyMember>
+    ? TForeignKeyMember
+    : never;
 
 export type DB3RelationTargetTableOf<TField> =
     TField extends DB3RelationTargetField<infer TTargetTable>
