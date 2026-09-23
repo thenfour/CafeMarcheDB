@@ -1,7 +1,7 @@
 // shared db3 command infrastructure
 
 import type { z } from "zod";
-import type { AnyDB3Entity } from "./db3Entity";
+import type { AnyDB3Table } from "../db3core";
 
 export interface DB3CommandInvalidation {
     /**
@@ -23,7 +23,7 @@ export interface DB3CommandInvalidation {
  * 
  */
 export interface DB3Command<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TClientInput,
     TDtoSchema extends z.ZodTypeAny,
     TResultSchema extends z.ZodTypeAny,
@@ -50,11 +50,11 @@ export interface DB3Command<
     parseResult(value: unknown): z.infer<TResultSchema>;
 }
 
-export type AnyDB3Command = DB3Command<AnyDB3Entity, any, z.ZodTypeAny, z.ZodTypeAny>;
+export type AnyDB3Command = DB3Command<AnyDB3Table, any, z.ZodTypeAny, z.ZodTypeAny>;
 
 // extract the rich client input model type
 export type CommandClientInputOf<TCommand extends AnyDB3Command> =
-    TCommand extends DB3Command<AnyDB3Entity, infer TClientInput, z.ZodTypeAny, z.ZodTypeAny>
+    TCommand extends DB3Command<AnyDB3Table, infer TClientInput, z.ZodTypeAny, z.ZodTypeAny>
     ? TClientInput
     : never;
 
@@ -65,7 +65,7 @@ export type CommandResultOf<TCommand extends AnyDB3Command> =
     z.infer<TCommand["resultSchema"]>;
 
 export function defineCommand<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TClientInput,
     TDtoSchema extends z.ZodTypeAny,
     TResultSchema extends z.ZodTypeAny,
@@ -81,7 +81,7 @@ export function defineCommand<
         ...args,
         invalidation: args.invalidation ?? {
             mode: "caller",
-            entityIDs: [args.entity.entityID],
+            entityIDs: [args.entity.tableID],
         },
         parseDto: value => args.dtoSchema.parse(value),
         parseResult: value => args.resultSchema.parse(value),

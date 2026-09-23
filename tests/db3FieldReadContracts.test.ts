@@ -4,6 +4,7 @@ import { describe, expect, expectTypeOf, it, vi } from "vitest"
 import type { ColorPaletteEntry } from "src/core/components/color/palette"
 import * as db3 from "src/core/db3/db3"
 import { Permission } from "shared/permissions"
+import type { InstrumentFunctionalGroupPublicId } from "shared/publicId"
 
 const eventStatusTransport = {
   id: 10,
@@ -20,12 +21,20 @@ const eventStatusScalarMembers = Object.keys(eventStatusTransport) as Array<
   keyof typeof eventStatusTransport
 >
 
-describe("DB3 xTable Prisma model metadata", () => {
-  it("derives the default payload and entity delegate from the target table", () => {
+describe("DB3 xTable model metadata", () => {
+  it("derives Prisma and application identity types from the table", () => {
     expectTypeOf<db3.DB3PrismaPayloadOf<typeof db3.xEventTag>>()
       .toEqualTypeOf<Prisma.EventTagGetPayload<{}>>()
-    expectTypeOf<db3.PrismaDelegateOf<typeof db3.eventTagEntity>>()
+    expectTypeOf<db3.DB3PrismaDelegateOf<typeof db3.xEventTag>>()
       .toEqualTypeOf<Prisma.EventTagDelegate>()
+    expectTypeOf<db3.DB3IdentityOf<typeof db3.xEventTag>>()
+      .toEqualTypeOf<number>()
+    expectTypeOf<db3.DB3IdentityOf<typeof db3.xInstrumentFunctionalGroup>>()
+      .toEqualTypeOf<InstrumentFunctionalGroupPublicId>()
+    expectTypeOf<db3.DB3ReferenceValueOf<typeof db3.xInstrumentFunctionalGroup>>()
+      .toEqualTypeOf<db3.InstrumentFunctionalGroupClientPayload>()
+    expectTypeOf(db3.instrumentFunctionalGroupListView.entity)
+      .toEqualTypeOf<typeof db3.xInstrumentFunctionalGroup>()
     expectTypeOf(db3.xEventTagAssignment.fields.eventTag).toEqualTypeOf<
       db3.ForeignSingleField<
         Prisma.EventTagGetPayload<{}>,

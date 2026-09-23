@@ -2,10 +2,10 @@ import { z } from "zod";
 import { defineCommand } from "../../core/db3Command";
 import type { EventSongListDraft } from "./eventSongListDraft";
 import {
-    eventSongListDividerEntity,
-    eventSongListEntity,
-    eventSongListSongEntity,
-} from "./eventSongListEntities";
+    xEventSongListDivider,
+    xEventSongList,
+    xEventSongListSong,
+} from "../../schema/event";
 
 const PersistedIdSchema = z.number().int().positive();
 const SortOrderSchema = z.number().int();
@@ -55,15 +55,15 @@ export type EventSongListSaveResult = z.infer<typeof EventSongListSaveResultSche
 
 export const saveEventSongListCommand = defineCommand({
     commandID: "EventSongList_Save",
-    entity: eventSongListEntity,
+    entity: xEventSongList,
     dtoSchema: EventSongListMutationCommandSchema,
     resultSchema: EventSongListSaveResultSchema,
     invalidation: {
         mode: "caller",
         entityIDs: [
-            eventSongListEntity.entityID,
-            eventSongListSongEntity.entityID,
-            eventSongListDividerEntity.entityID,
+            xEventSongList.tableID,
+            xEventSongListSong.tableID,
+            xEventSongListDivider.tableID,
         ],
     },
     // converts a mutable client react code facing draft object

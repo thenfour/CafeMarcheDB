@@ -5,12 +5,12 @@ import type { AuthenticatedCtx } from "blitz";
 import db from "db";
 import type {
     AnyDB3Command,
-    AnyDB3Entity,
+    AnyDB3Table,
     CommandDtoOf,
     CommandResultOf,
     DB3Authorization,
     DB3CommandRequest,
-    EntityIdOf
+    DB3IdentityOf
 } from "../db3";
 import { createDb3RequestAuthorization } from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
@@ -34,29 +34,29 @@ export class DB3CommandError extends Error {
 export interface DB3CommandRowService {
 
     // wraps insertImpl
-    insert<TEntity extends AnyDB3Entity>(
+    insert<TEntity extends AnyDB3Table>(
         entity: TEntity,
         values: TAnyModel,
     ): Promise<TAnyModel>;
 
-    update<TEntity extends AnyDB3Entity>(
+    update<TEntity extends AnyDB3Table>(
         entity: TEntity,
-        identity: EntityIdOf<TEntity>,
+        identity: DB3IdentityOf<TEntity>,
         values: TAnyModel,
     ): Promise<TAnyModel>;
 
-    delete<TEntity extends AnyDB3Entity>(
+    delete<TEntity extends AnyDB3Table>(
         entity: TEntity,
-        identity: EntityIdOf<TEntity>,
+        identity: DB3IdentityOf<TEntity>,
         deleteType?: "softWhenPossible" | "hard",
     ): Promise<void>;
 
-    requireVisible<TEntity extends AnyDB3Entity>(
+    requireVisible<TEntity extends AnyDB3Table>(
         entity: TEntity,
-        identity: EntityIdOf<TEntity>,
+        identity: DB3IdentityOf<TEntity>,
     ): Promise<TAnyModel>;
 
-    afterMutation<TEntity extends AnyDB3Entity>(
+    afterMutation<TEntity extends AnyDB3Table>(
         entity: TEntity,
         model: TAnyModel & { id: number },
     ): Promise<void>;
@@ -96,17 +96,17 @@ export function defineCommandHandler<TCommand extends AnyDB3Command>(
 // entities already have a getIdentity() method,
 // but that operates on the entity model, not the id value
 // this function resolves public ID using async db calls so it's a little bit special and deserves to be here at least for now.
-async function resolveEntityIdentity<TEntity extends AnyDB3Entity>(
+async function resolveEntityIdentity<TEntity extends AnyDB3Table>(
     entity: TEntity,
-    identity: EntityIdOf<TEntity>,
+    identity: DB3IdentityOf<TEntity>,
     authorization: DB3Authorization,
     transactionalDb: TransactionalPrismaClient,
 ): Promise<number | string> {
-    if (!entity.schema.publicIdMember) return identity;
+    if (!entity.publicIdMember) return identity;
     if (typeof identity !== "string") {
-        throw new DB3CommandError(`Expected a public ID for ${entity.entityID}.`);
+        throw new DB3CommandError(`Expected a public ID for ${entity.tableID}.`);
     }
-    return resolvePublicId(entity.schema, identity, authorization, transactionalDb, true);
+    return resolvePublicId(entity, identity, authorization, transactionalDb, true);
 }
 
 // creates wrappers around the internal `*Impl` functions; more consistent and type-aware.
@@ -118,12 +118,12 @@ function createCommandRowServices(
     return {
         insert: async (entity, values) => {
             const resolvedValues = await resolvePublicForeignIds(
-                entity.schema,
+                entity,
                 values,
                 authorization,
                 transactionalDb,
             );
-            return insertImpl<TAnyModel>(entity.schema, resolvedValues, ctx, transactionalDb);
+            return insertImpl<TAnyModel>(entity, resolvedValues, ctx, transactionalDb);
         },
 
         update: async (entity, identity, values) => {
@@ -134,16 +134,16 @@ function createCommandRowServices(
                 transactionalDb,
             );
             if (typeof resolvedIdentity !== "number") {
-                throw new DB3CommandError(`Resolved identity for ${entity.entityID} is not numeric.`);
+                throw new DB3CommandError(`Resolved identity for ${entity.tableID} is not numeric.`);
             }
             const resolvedValues = await resolvePublicForeignIds(
-                entity.schema,
+                entity,
                 values,
                 authorization,
                 transactionalDb,
             );
             return (await updateImpl(
-                entity.schema,
+                entity,
                 resolvedIdentity,
                 resolvedValues,
                 ctx,
@@ -159,14 +159,14 @@ function createCommandRowServices(
                 transactionalDb,
             );
             if (typeof resolvedIdentity !== "number") {
-                throw new DB3CommandError(`Resolved identity for ${entity.entityID} is not numeric.`);
+                throw new DB3CommandError(`Resolved identity for ${entity.tableID} is not numeric.`);
             }
-            await deleteImpl(entity.schema, resolvedIdentity, ctx, deleteType, transactionalDb);
+            await deleteImpl(entity, resolvedIdentity, ctx, deleteType, transactionalDb);
         },
 
         requireVisible: async (entity, identity) => {
-            if (!entity.schema.authorizeTableForView(authorization)) {
-                throw new DB3MutationAuthorizationError(entity.schema.tableName, [entity.schema.pkMember]);
+            if (!entity.authorizeTableForView(authorization)) {
+                throw new DB3MutationAuthorizationError(entity.tableName, [entity.pkMember]);
             }
             const resolvedIdentity = await resolveEntityIdentity(
                 entity,
@@ -174,14 +174,14 @@ function createCommandRowServices(
                 authorization,
                 transactionalDb,
             );
-            const model = await transactionalDb[entity.schema.tableName].findFirst({
-                where: { [entity.schema.pkMember]: resolvedIdentity },
+            const model = await transactionalDb[entity.tableName].findFirst({
+                where: { [entity.pkMember]: resolvedIdentity },
             });
             if (!model) {
-                throw new DB3CommandError(`${entity.entityID} '${String(identity)}' was not found.`);
+                throw new DB3CommandError(`${entity.tableID} '${String(identity)}' was not found.`);
             }
-            const authorized = entity.schema.authorizeAndSanitize({
-                contextDesc: `command reference:${entity.entityID}`,
+            const authorized = entity.authorizeAndSanitize({
+                contextDesc: `command reference:${entity.tableID}`,
                 model,
                 publicData: authorization,
                 rowMode: "view",
@@ -189,14 +189,14 @@ function createCommandRowServices(
                 fallbackOwnerId: null,
             });
             if (!authorized.rowIsAuthorized) {
-                throw new DB3MutationAuthorizationError(entity.schema.tableName, [entity.schema.pkMember]);
+                throw new DB3MutationAuthorizationError(entity.tableName, [entity.pkMember]);
             }
             return model;
         },
 
         afterMutation: async (entity, model) => {
             await CallMutateEventHooks({
-                tableNameOrSpecialMutationKey: entity.schema.tableName,
+                tableNameOrSpecialMutationKey: entity.tableName,
                 model,
                 db: transactionalDb,
             });

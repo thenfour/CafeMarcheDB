@@ -6,9 +6,9 @@ import db3queries from "../queries/db3queries";
 import { useDB3Command } from "./useDB3Command";
 
 export class DB3CreatedRowNotReadableError extends Error {
-    constructor(view: db3.AnyDB3CrudView, identity: db3.DB3EntityId) {
+    constructor(view: db3.AnyDB3CrudView, identity: db3.DB3Identity) {
         super(
-            `Created ${view.entity.entityID} '${String(identity)}', but it is not readable through CRUD view '${view.viewID}'.`,
+            `Created ${view.entity.tableID} '${String(identity)}', but it is not readable through CRUD view '${view.viewID}'.`,
         );
         this.name = "DB3CreatedRowNotReadableError";
     }
@@ -21,10 +21,10 @@ export class DB3CreatedRowNotReadableError extends Error {
  */
 export async function fetchCreatedCrudViewRow<TView extends db3.AnyDB3CrudView>(
     view: TView,
-    identity: db3.EntityIdOf<db3.EntityOf<TView>>,
+    identity: db3.DB3IdentityOf<db3.TableOf<TView>>,
     references: db3.DB3ReferenceProvider,
 ): Promise<db3.ClientOf<TView>> {
-    const schema = view.entity.schema;
+    const schema = view.entity;
     const filter = schema.publicIdMember
         ? { items: [], publicIds: [String(identity)] }
         : {
@@ -78,7 +78,7 @@ export function useCrudViewCreate<TView extends db3.AnyDB3CrudView>(
             dashboard.refreshCachedData();
             return fetchCreatedCrudViewRow(
                 view,
-                result.identity as db3.EntityIdOf<db3.EntityOf<TView>>,
+                result.identity as db3.DB3IdentityOf<db3.TableOf<TView>>,
                 dashboard.referenceStore,
             );
         },

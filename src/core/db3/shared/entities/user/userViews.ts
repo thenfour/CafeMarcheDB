@@ -6,7 +6,7 @@ import {
     UserInstrumentNaturalOrderBy,
     UserTagAssignmentNaturalOrderBy,
 } from "../../schema/prismArgs";
-import { userEntity, userInstrumentEntity } from "./userEntities";
+import { xUser, xUserInstrument } from "../../schema/user";
 
 const UserEditorRoleDtoSchema = z.object({
     id: z.number().int(),
@@ -83,11 +83,11 @@ const userEditorSelection = Prisma.validator<Prisma.UserDefaultArgs>()({
 
 export const userEditorView = defineCrudView({
     viewID: "User_Editor",
-    entity: userEntity,
+    entity: xUser,
     operations: { create: true, update: true },
     selection: userEditorSelection,
     dtoSchema: UserEditorDtoSchema,
-    hydrate: dto => userEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xUser.getClientModel(dto, "view"),
 });
 
 const UserInstrumentEditorDtoSchema = z.object({
@@ -112,8 +112,8 @@ const UserInstrumentEditorDtoSchema = z.object({
 
 export const userInstrumentEditorView = defineCrudView({
     viewID: "UserInstrument_Editor",
-    entity: userInstrumentEntity,
+    entity: xUserInstrument,
     operations: { create: true, update: true, delete: true },
     dtoSchema: UserInstrumentEditorDtoSchema,
-    hydrate: dto => userInstrumentEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xUserInstrument.getClientModel(dto, "view"),
 });

@@ -107,6 +107,7 @@ const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeInput<TA
 
 export const xFileTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileTagDelegate>(),
+    getIdentity: (tag: Prisma.FileTagGetPayload<{}>) => tag.id,
     getSelectionArgs: (): Prisma.FileTagDefaultArgs => {
         return FileTagArgs;
     },
@@ -385,6 +386,7 @@ export interface xFileFilterParams {
 
 const xFileBaseArgs = {
     prismaModel: db3.prismaModel<Prisma.FileDelegate>(),
+    getIdentity: (file: { id: number }) => file.id,
     tableName: "File",
     deletePolicy: "softOnly" as const,
     viewDeletedPermission: Permission.recover_files,
@@ -664,6 +666,7 @@ export const xFrontpageAuthMap_Basic: db3.DB3AuthContextPermissionMap = {
 //   }
 export const xFrontpageGalleryItem = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FrontpageGalleryItemDelegate>(),
+    getIdentity: (item: { id: number }) => item.id,
     tableName: "FrontpageGalleryItem",
     deletePolicy: "softOnly",
     viewDeletedPermission: Permission.edit_public_homepage,

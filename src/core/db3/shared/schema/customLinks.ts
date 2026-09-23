@@ -54,6 +54,7 @@ export const CustomLinkRedirectType = {
 ////////////////////////////////////////////////////////////////
 export const xCustomLink = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.CustomLinkDelegate>(),
+    getIdentity: (link: { id: number }) => link.id,
     getSelectionArgs: (): Prisma.CustomLinkDefaultArgs => {
         return CustomLinkArgs;
     },

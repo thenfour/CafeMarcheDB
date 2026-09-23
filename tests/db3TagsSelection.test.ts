@@ -70,12 +70,13 @@ beforeEach(() => {
     const foreignSchema = {
         tableID: "Instrument",
         tableName: "Instrument",
+        getIdentity: (item: typeof options[number]) => item.id,
         createInsertModelFromString: (name: string) => ({ name }),
         authorizeRowBeforeInsert: () => insertAuthorized,
     };
     const selectionView = {
         viewID: "Instrument_Editor",
-        entity: { schema: foreignSchema },
+        entity: foreignSchema,
         parseDto: (item: typeof options[number]) => item,
         hydrate: (item: typeof options[number]) => item,
     };

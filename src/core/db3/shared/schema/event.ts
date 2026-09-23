@@ -176,6 +176,7 @@ export const getEventSegmentMinDate = (event: EventPayload): Date | null => {
 
 export const xEventType = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventTypeDelegate>(),
+    getIdentity: (eventType: Prisma.EventTypeGetPayload<{}>) => eventType.id,
     getSelectionArgs: (): Prisma.EventTypeDefaultArgs => {
         return EventTypeArgs;
     },
@@ -219,6 +220,7 @@ export const xEventType = db3.defineTable({
 
 export const xEventStatus = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventStatusDelegate>(),
+    getIdentity: (eventStatus: Prisma.EventStatusGetPayload<{}>) => eventStatus.id,
     getSelectionArgs: (): Prisma.EventStatusDefaultArgs => {
         return EventStatusArgs;
     },
@@ -269,6 +271,7 @@ export const xEventStatus = db3.defineTable({
 
 export const xEventTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventTagDelegate>(),
+    getIdentity: (eventTag: Prisma.EventTagGetPayload<{}>) => eventTag.id,
     tableName: "EventTag",
     deletePolicy: "hard",
     getSelectionArgs: (): Prisma.EventTagDefaultArgs => {
@@ -393,6 +396,7 @@ export const EventAPI = {
 
 export const xEventArgs_Base = db3.defineTableDesc({
     prismaModel: db3.prismaModel<Prisma.EventDelegate>(),
+    getIdentity: (event: { id: number }) => event.id,
     // modifying an event means multiple related changes; see the mutation event hooks.
     tableName: "Event", // case matters :(
     deletePolicy: "softOnly",
@@ -749,6 +753,7 @@ export const xEventSearch = db3.defineTable(xEventArgs_Search);
 
 export const xEventSegment = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventSegmentDelegate>(),
+    getIdentity: (segment: { id: number }) => segment.id,
     tableName: "EventSegment",
     deletePolicy: "hard",
     queryParameters: {
@@ -841,6 +846,7 @@ export const xEventSegment = db3.defineTable({
 
 export const xEventAttendance = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventAttendanceDelegate>(),
+    getIdentity: (attendance: { id: number }) => attendance.id,
     getSelectionArgs: (): Prisma.EventAttendanceDefaultArgs => {
         return EventAttendanceArgs;
     },
@@ -998,6 +1004,7 @@ export const xEventUserResponse = db3.defineTable({
 
 export const xEventSongList = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventSongListDelegate>(),
+    getIdentity: (songList: { id: number }) => songList.id,
     getSelectionArgs: (): Prisma.EventSongListDefaultArgs => {
         return EventSongListArgs;
     },
@@ -1058,6 +1065,7 @@ export const xEventSongList = db3.defineTable({
 
 export const xEventSongListSong = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventSongListSongDelegate>(),
+    getIdentity: (song: { id: number }) => song.id,
     getSelectionArgs: (): Prisma.EventSongListSongDefaultArgs => {
         return EventSongListSongArgs;
     },
@@ -1103,6 +1111,7 @@ export const xEventSongListSong = db3.defineTable({
 
 export const xEventSongListDivider = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventSongListDividerDelegate>(),
+    getIdentity: (divider: { id: number }) => divider.id,
     getSelectionArgs: (): Prisma.EventSongListDividerDefaultArgs => {
         return EventSongListDividerArgs;
     },

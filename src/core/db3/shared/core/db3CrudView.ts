@@ -7,12 +7,13 @@ import { z as zod } from "zod";
 import {
     defineEntityCrudCommands,
     getDefinedCrudOperations,
-    type AnyDB3EntityEditorCommands,
+    type AnyDB3TableEditorCommands,
     type DB3CrudOperationFlags,
 } from "./db3EntityCrud";
-import type { AnyDB3Entity, EntityIdOf, SchemaOf } from "./db3Entity";
 import type {
+    AnyDB3Table,
     DB3FieldsOf,
+    DB3IdentityOf,
     DB3SchemaClientModel,
     DB3SchemaMutationModel,
 } from "../db3core";
@@ -26,24 +27,24 @@ import {
 import type { DB3ReferenceProvider } from "./db3Hydration";
 
 export interface DB3CrudView<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TSelection,
     TDtoSchema extends z.ZodTypeAny,
     TClient extends TAnyModel,
-    TCrud extends AnyDB3EntityEditorCommands,
+    TCrud extends AnyDB3TableEditorCommands,
 > extends DB3View<TEntity, TSelection, TDtoSchema, TClient> {
     readonly crud: TCrud;
 }
 
 export type AnyDB3CrudView = DB3View<
-    AnyDB3Entity,
+    AnyDB3Table,
     any,
     z.ZodTypeAny,
     TAnyModel
-> & { readonly crud: AnyDB3EntityEditorCommands };
+> & { readonly crud: AnyDB3TableEditorCommands };
 
 type CrudViewSelection<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TDtoSchema extends z.AnyZodObject,
     TSelection,
 > = [TSelection] extends [undefined]
@@ -52,13 +53,13 @@ type CrudViewSelection<
 
 const crudViewsByCommandID = new Map<string, AnyDB3CrudView>();
 
-function createIdentitySchema<TEntity extends AnyDB3Entity>(
+function createIdentitySchema<TEntity extends AnyDB3Table>(
     entity: TEntity,
-): z.ZodType<EntityIdOf<TEntity>> {
-    const schema = entity.schema.publicIdMember
+): z.ZodType<DB3IdentityOf<TEntity>> {
+    const schema = entity.publicIdMember
         ? zod.string().length(16).regex(/^[A-Za-z0-9_-]+$/)
         : zod.number().int();
-    return schema as z.ZodType<EntityIdOf<TEntity>>;
+    return schema as unknown as z.ZodType<DB3IdentityOf<TEntity>>;
 }
 
 /**
@@ -68,18 +69,18 @@ function createIdentitySchema<TEntity extends AnyDB3Entity>(
  * entering the generated-command envelope.
  */
 type PreparedMutationValues<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TDtoSchema extends z.AnyZodObject,
 > = DB3SchemaMutationModel<
-    DB3SchemaClientModel<z.infer<TDtoSchema>, DB3FieldsOf<SchemaOf<TEntity>>>,
-    DB3FieldsOf<SchemaOf<TEntity>>
+    DB3SchemaClientModel<z.infer<TDtoSchema>, DB3FieldsOf<TEntity>>,
+    DB3FieldsOf<TEntity>
 >;
 
 type PreparedMutationSchema<TValues extends TAnyModel> =
     z.AnyZodObject & z.ZodType<TValues>;
 
 function createPreparedMutationSchema<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TDtoSchema extends z.AnyZodObject,
 >(
     entity: TEntity,
@@ -88,13 +89,13 @@ function createPreparedMutationSchema<
 ): PreparedMutationSchema<PreparedMutationValues<TEntity, TDtoSchema>> {
     const shape: z.ZodRawShape = {};
     const dtoMembers = new Set(Object.keys(dtoSchema.shape));
-    for (const field of entity.schema.columns) {
+    for (const field of entity.columns) {
         if (!dtoMembers.has(field.member)
             && (!field.fkidMember || !dtoMembers.has(field.fkidMember))) {
             continue;
         }
         const member = field.fkidMember || field.member;
-        if (member === entity.schema.pkMember || member === entity.schema.publicIdMember) {
+        if (member === entity.pkMember || member === entity.publicIdMember) {
             continue;
         }
         const transportSchema = field.codec?.writeSchema ?? zod.unknown();
@@ -102,7 +103,7 @@ function createPreparedMutationSchema<
             // Prepared mutation values have already passed through
             // ApplyClientToDb. Convert them back to the table's client shape
             // before invoking the field's client-value validator.
-            const clientModel = entity.schema.getClientModel({ [member]: value }, mode);
+            const clientModel = entity.getClientModel({ [member]: value }, mode);
             const validation = field.ValidateAndParse({
                 row: clientModel,
                 mode,
@@ -143,7 +144,7 @@ function registerCrudView(view: AnyDB3CrudView): void {
  * defaults, and delete policy.
  */
 export function defineCrudView<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TDtoSchema extends z.AnyZodObject,
     TClient extends TAnyModel,
     TOperations extends DB3CrudOperationFlags,

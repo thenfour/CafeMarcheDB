@@ -346,8 +346,8 @@ describe("DB3 named views", () => {
 
     it("hydrates a finite view graph from an explicit reference provider", () => {
         const references = new db3.DB3ReferenceStore();
-        references.register(db3.instrumentFunctionalGroupEntity, [group]);
-        references.register(db3.instrumentTagEntity, [tag]);
+        references.register(db3.xInstrumentFunctionalGroup, [group]);
+        references.register(db3.xInstrumentTag, [tag]);
 
         const dto = db3.instrumentDashboardView.parseDto({
             id: 7,
@@ -385,9 +385,9 @@ describe("DB3 named views", () => {
         };
         const songTag = { id: 20, text: "March", description: "", color: null, sortOrder: 1, significance: null, group: null, indicator: null, indicatorCssClass: null };
         const fileTag = { id: 30, text: "Partition", description: "", color: null, sortOrder: 1, significance: db3.FileTagSignificance.Partition };
-        references.register(db3.permissionEntity, [permission]);
-        references.register(db3.songTagEntity, [songTag]);
-        references.register(db3.fileTagEntity, [fileTag]);
+        references.register(db3.xPermission, [permission]);
+        references.register(db3.xSongTag, [songTag]);
+        references.register(db3.xFileTag, [fileTag]);
 
         const dto = db3.songSearchView.parseDto({
             id: 7,
@@ -443,9 +443,9 @@ describe("DB3 named views", () => {
             functionalGroup: group,
             instrumentTags: [],
         };
-        references.register(db3.permissionEntity, [permission]);
-        references.register(db3.fileTagEntity, [fileTag]);
-        references.register(db3.instrumentEntity, [instrument]);
+        references.register(db3.xPermission, [permission]);
+        references.register(db3.xFileTag, [fileTag]);
+        references.register(db3.xInstrument, [instrument]);
 
         const dto = db3.fileSearchView.parseDto({
             id: 8,
@@ -487,8 +487,8 @@ describe("DB3 named views", () => {
             sortOrder: 1,
             significance: db3.FileTagSignificance.Partition,
         };
-        references.register(db3.permissionEntity, [permission]);
-        references.register(db3.fileTagEntity, [fileTag]);
+        references.register(db3.xPermission, [permission]);
+        references.register(db3.xFileTag, [fileTag]);
 
         const selection = db3.fileDetailView.getSelectionArgs({
             filter: { items: [] },
@@ -560,9 +560,9 @@ describe("DB3 named views", () => {
             id: 4, text: "Public", description: "", color: null, sortOrder: 1,
             significance: null, visibleOnFrontpage: true,
         };
-        references.register(db3.eventTypeEntity, [eventType]);
-        references.register(db3.eventStatusEntity, [eventStatus]);
-        references.register(db3.eventTagEntity, [eventTag]);
+        references.register(db3.xEventType, [eventType]);
+        references.register(db3.xEventStatus, [eventStatus]);
+        references.register(db3.xEventTag, [eventTag]);
 
         const dto = db3.eventSearchView.parseDto({
             id: 1,
@@ -829,10 +829,10 @@ describe("DB3 named views", () => {
             functionalGroup: group,
             instrumentTags: [],
         };
-        references.register(db3.permissionEntity, [permission]);
-        references.register(db3.songTagEntity, [songTag]);
-        references.register(db3.fileTagEntity, [fileTag]);
-        references.register(db3.instrumentEntity, [instrument]);
+        references.register(db3.xPermission, [permission]);
+        references.register(db3.xSongTag, [songTag]);
+        references.register(db3.xFileTag, [fileTag]);
+        references.register(db3.xInstrument, [instrument]);
 
         const dto = db3.songDetailView.parseDto({
             id: 7,
@@ -1317,7 +1317,7 @@ describe("DB3 named views", () => {
 
     it("reports the exact missing reference path", () => {
         const references = new db3.DB3ReferenceStore();
-        references.register(db3.instrumentFunctionalGroupEntity, [group]);
+        references.register(db3.xInstrumentFunctionalGroup, [group]);
         const dto = db3.instrumentDashboardView.parseDto({
             id: 7,
             name: "Trumpet",

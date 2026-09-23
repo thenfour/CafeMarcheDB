@@ -4,9 +4,9 @@ import { defineCrudView } from "../../core/db3CrudView";
 import type { DB3ReferenceProvider } from "../../core/db3Hydration";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { db3s } from "../common/viewCommon";
-import { instrumentEntity } from "../instrument/instrumentViews";
-import { permissionEntity } from "../user/userEntities";
-import { fileEntity, fileTagEntity, frontpageGalleryItemEntity } from "./fileEntities";
+import { xInstrument } from "../../schema/instrument";
+import { xPermission } from "../../schema/user";
+import { xFile, xFileTag, xFrontpageGalleryItem } from "../../schema/file";
 
 const FileTagEditorDtoSchema = z.object({
     ...db3s.id(),
@@ -17,10 +17,10 @@ const FileTagEditorDtoSchema = z.object({
 
 export const fileTagEditorView = defineCrudView({
     viewID: "FileTag_Editor",
-    entity: fileTagEntity,
+    entity: xFileTag,
     operations: { create: true, update: true, delete: true },
     dtoSchema: FileTagEditorDtoSchema,
-    hydrate: dto => fileTagEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xFileTag.getClientModel(dto, "view"),
 });
 
 const FrontpageGalleryItemEditorDtoSchema = z.object({
@@ -53,10 +53,10 @@ const FrontpageGalleryItemEditorDtoSchema = z.object({
 
 export const frontpageGalleryItemEditorView = defineCrudView({
     viewID: "FrontpageGalleryItem_Editor",
-    entity: frontpageGalleryItemEntity,
+    entity: xFrontpageGalleryItem,
     operations: { create: true, update: true, delete: true },
     dtoSchema: FrontpageGalleryItemEditorDtoSchema,
-    hydrate: dto => frontpageGalleryItemEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xFrontpageGalleryItem.getClientModel(dto, "view"),
 });
 
 const FileTagAssignmentDtoSchema = z.object({
@@ -285,11 +285,11 @@ export function hydrateFileDetailDto(
 ) {
     return {
         ...dto,
-        visiblePermission: references.get(permissionEntity, dto.visiblePermissionId),
+        visiblePermission: references.get(xPermission, dto.visiblePermissionId),
         tags: references.mapOptionalCollection(dto.tags, (association, index) => ({
             ...association,
             fileTag: references.require(
-                fileTagEntity,
+                xFileTag,
                 association.fileTagId,
                 `${path}.tags[${index}].fileTagId`,
             ),
@@ -312,7 +312,7 @@ export function hydrateFileDetailDto(
         taggedInstruments: references.mapOptionalCollection(dto.taggedInstruments, (association, index) => ({
             ...association,
             instrument: references.require(
-                instrumentEntity,
+                xInstrument,
                 association.instrumentId,
                 `${path}.taggedInstruments[${index}].instrumentId`,
             ),
@@ -372,12 +372,12 @@ const fileEditorSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
 
 export const fileEditorView = defineCrudView({
     viewID: "File_Editor",
-    entity: fileEntity,
+    entity: xFile,
     operations: { update: true, delete: true },
     selection: fileEditorSelection,
     dtoSchema: FileEditorDtoSchema,
     hydrate: (dto, references) => {
-        const client = fileEntity.schema.getClientModel(dto, "view");
+        const client = xFile.getClientModel(dto, "view");
         return {
             ...hydrateFileDetailDto(client, references),
             isDeleted: client.isDeleted,
@@ -388,7 +388,7 @@ export const fileEditorView = defineCrudView({
 
 export const fileDetailView = defineView({
     viewID: "File_Detail",
-    entity: fileEntity,
+    entity: xFile,
     selection: fileDetailSelection,
     dtoSchema: FileDetailDtoSchema,
     hydrate: (dto, references) => hydrateFileDetailDto(dto, references),

@@ -1,14 +1,14 @@
 import type { TAnyModel } from "@/shared/rootroot";
 import { z } from "zod";
+import type {
+    AnyDB3Table,
+    DB3IdentityOf,
+    DB3ReferenceValueOf,
+} from "../db3core";
 import {
     defineCommand,
     type DB3Command,
 } from "./db3Command";
-import type {
-    AnyDB3Entity,
-    ClientEntityOf,
-    EntityIdOf,
-} from "./db3Entity";
 
 export interface DB3AssociationChange<
     TLocal extends TAnyModel,
@@ -20,13 +20,13 @@ export interface DB3AssociationChange<
 }
 
 export type DB3AssociationCommand<
-    TLocalEntity extends AnyDB3Entity,
-    TForeignEntity extends AnyDB3Entity,
-    TLocalIdentitySchema extends z.ZodType<EntityIdOf<TLocalEntity>>,
-    TForeignIdentitySchema extends z.ZodType<EntityIdOf<TForeignEntity>>,
+    TLocalEntity extends AnyDB3Table,
+    TForeignEntity extends AnyDB3Table,
+    TLocalIdentitySchema extends z.ZodType<DB3IdentityOf<TLocalEntity>>,
+    TForeignIdentitySchema extends z.ZodType<DB3IdentityOf<TForeignEntity>>,
 > = DB3Command<
     TLocalEntity,
-    DB3AssociationChange<ClientEntityOf<TLocalEntity>, ClientEntityOf<TForeignEntity>>,
+    DB3AssociationChange<DB3ReferenceValueOf<TLocalEntity>, DB3ReferenceValueOf<TForeignEntity>>,
     z.ZodObject<{
         localIdentity: TLocalIdentitySchema;
         foreignIdentity: TForeignIdentitySchema;
@@ -43,8 +43,8 @@ export type DB3AssociationCommand<
 };
 
 export type AnyDB3AssociationCommand = DB3AssociationCommand<
-    AnyDB3Entity,
-    AnyDB3Entity,
+    AnyDB3Table,
+    AnyDB3Table,
     z.ZodType<any>,
     z.ZodType<any>
 >;
@@ -56,10 +56,10 @@ export type AnyDB3AssociationCommand = DB3AssociationCommand<
  * CRUD.
  */
 export function defineAssociationCommand<
-    TLocalEntity extends AnyDB3Entity,
-    TForeignEntity extends AnyDB3Entity,
-    TLocalIdentitySchema extends z.ZodType<EntityIdOf<TLocalEntity>>,
-    TForeignIdentitySchema extends z.ZodType<EntityIdOf<TForeignEntity>>,
+    TLocalEntity extends AnyDB3Table,
+    TForeignEntity extends AnyDB3Table,
+    TLocalIdentitySchema extends z.ZodType<DB3IdentityOf<TLocalEntity>>,
+    TForeignIdentitySchema extends z.ZodType<DB3IdentityOf<TForeignEntity>>,
 >(args: {
     readonly commandID: string;
     readonly localEntity: TLocalEntity;
@@ -85,19 +85,23 @@ export function defineAssociationCommand<
         resultSchema: payloadSchema,
         serialize: (
             input: DB3AssociationChange<
-                ClientEntityOf<TLocalEntity>,
-                ClientEntityOf<TForeignEntity>
+                DB3ReferenceValueOf<TLocalEntity>,
+                DB3ReferenceValueOf<TForeignEntity>
             >,
         ) => ({
-            localIdentity: args.localEntity.getIdentity(input.local),
-            foreignIdentity: args.foreignEntity.getIdentity(input.foreign),
+            localIdentity: args.localIdentitySchema.parse(
+                args.localEntity.getIdentity(input.local),
+            ),
+            foreignIdentity: args.foreignIdentitySchema.parse(
+                args.foreignEntity.getIdentity(input.foreign),
+            ),
             isAssociated: input.isAssociated,
         }),
         invalidation: {
             mode: "caller",
             entityIDs: [
-                args.localEntity.entityID,
-                args.foreignEntity.entityID,
+                args.localEntity.tableID,
+                args.foreignEntity.tableID,
                 ...(args.additionalInvalidationEntityIDs || []),
             ],
         },

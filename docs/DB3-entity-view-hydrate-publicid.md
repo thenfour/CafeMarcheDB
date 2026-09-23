@@ -119,28 +119,23 @@ responses to the requesting actor is an event-search concern expressed as
 The longer-term type-safe API should infer a view's query parameters just as it
 infers its DTO and client result.
 
-### Entity: stable identity and table-level type anchor
+### xTable: stable identity and model anchor
 
-`defineEntity()` describes the stable, view-independent identity of an entity.
-It currently binds together:
+The typed `xTable` is the stable, view-independent application description of a
+database model. It binds together:
 
-- the existing `xTable` schema;
-- type-only Prisma delegate metadata, from which views can derive their selected
+- keyed field and policy metadata;
+- type-only Prisma delegate metadata, from which views derive their selected
   database payload type;
-- the canonical client entity type; and
-- `getIdentity()`, including whether that identity is a numeric legacy ID or a
-  `publicId`.
+- the canonical normalized reference value type; and
+- an explicit `getIdentity()`, including whether consumer identity is a numeric
+  legacy ID or a branded `publicId`.
 
-At this stage an entity does **not** define its own columns and does not replace
-`xTable`. It is the typed anchor shared by multiple views and by the reference
-store. Moving more stable metadata out of `xTable` may be a later refactor, but
-views must remain independent of query shape either way.
-
-`ClientEntityOf<TEntity>` is the canonical normalized reference shape for an
-entity; it need not be the richest client shape available for that entity.
-`EntityIdOf<TEntity>` and `PrismaDelegateOf<TEntity>` expose the corresponding
-identity and type-only Prisma delegate contracts without coupling callers to a
-particular view.
+The former `DB3Entity`/`defineEntity()` wrapper duplicated the table, delegate,
+and identifier and has been removed. A view's `entity` property now references
+its xTable directly. `DB3ReferenceValueOf<TTable>`, `DB3IdentityOf<TTable>`, and
+`DB3PrismaDelegateOf<TTable>` expose the table's reference, identity, and Prisma
+contracts without coupling callers to a particular view.
 
 ### View: one named read contract
 
@@ -409,7 +404,7 @@ similar to `useTableRenderContext()`, plus a CRUD-enabled view. It:
 
 - queries and hydrates through the supplied view;
 - infers its row type as `ClientOf<TView>` and its identity as
-  `EntityIdOf<EntityOf<TView>>`;
+  `DB3IdentityOf<TableOf<TView>>`;
 - uses typed client-column mutation projections followed by field codec
   encoding for create and update values;
 - computes an update patch from the prepared previous and next values;
@@ -736,7 +731,7 @@ a per-row compatibility flag or a second lookup mode.
 - Entity/view/hydration/command primitives exist, and initial instrument, event,
   file, song, and event-song-list views use the read-side primitives.
 - `defineView()`, `DbPayloadOf<>`, `DtoOf<>`, `ClientOf<>`,
-  `ClientEntityOf<>`, and typed `useDb3Query({ view })` establish the intended
+  `DB3ReferenceValueOf<>`, and typed `useDb3Query({ view })` establish the intended
   inference chain without result casts.
 - `defineTable()`, field `DB3FieldCodec`s, `DB3SchemaClientModel<>`, and
   `DB3SchemaMutationModel<>` establish both directions of the typed schema link

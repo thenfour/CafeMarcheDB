@@ -3,7 +3,7 @@ import { Prisma } from "db";
 import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf } from "../../core/db3View";
-import { customLinkEntity } from "./customLinkEntities";
+import { xCustomLink } from "../../schema/customLinks";
 
 const CustomLinkEditorDtoSchema = z.object({
     id: z.number().int(),
@@ -20,10 +20,10 @@ const CustomLinkEditorDtoSchema = z.object({
 
 export const customLinkEditorView = defineCrudView({
     viewID: "CustomLink_Editor",
-    entity: customLinkEntity,
+    entity: xCustomLink,
     operations: { create: true, update: true, delete: true },
     dtoSchema: CustomLinkEditorDtoSchema,
-    hydrate: dto => customLinkEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xCustomLink.getClientModel(dto, "view"),
 });
 
 const CustomLinkListDtoSchema = z.object({
@@ -45,7 +45,7 @@ const customLinkListSelection = Prisma.validator<Prisma.CustomLinkDefaultArgs>()
 
 export const customLinkListView = defineView({
     viewID: "CustomLink_List",
-    entity: customLinkEntity,
+    entity: xCustomLink,
     selection: customLinkListSelection,
     dtoSchema: CustomLinkListDtoSchema,
     hydrate: dto => dto,

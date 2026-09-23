@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
-import { permissionEntity } from "./userEntities";
+import { xPermission } from "../../schema/user";
 
 const PermissionEditorDtoSchema = z.object({
     id: z.number().int(),
@@ -15,8 +15,8 @@ const PermissionEditorDtoSchema = z.object({
 
 export const permissionEditorView = defineCrudView({
     viewID: "Permission_Editor",
-    entity: permissionEntity,
+    entity: xPermission,
     operations: { create: true, update: true },
     dtoSchema: PermissionEditorDtoSchema,
-    hydrate: dto => permissionEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xPermission.getClientModel(dto, "view"),
 });

@@ -7,8 +7,8 @@ import type { Prisma } from "db";
 import type { z } from "zod";
 import type { CMDBTableFilterModel } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
+import type { AnyDB3Table, DB3PrismaDelegateOf } from "../db3core";
 import type { DB3ReferenceProvider } from "./db3Hydration";
-import type { AnyDB3Entity, PrismaDelegateOf } from "./db3Entity";
 
 type ArrayItem<T> = T extends readonly (infer TItem)[] ? TItem : never;
 
@@ -17,18 +17,18 @@ export interface DB3ViewSelectionContext {
     readonly authorization: DB3Authorization;
 }
 
-export type DB3ViewSelectionArgs<TEntity extends AnyDB3Entity> = Partial<Pick<
-    Prisma.Args<PrismaDelegateOf<TEntity>, "findMany">,
+export type DB3ViewSelectionArgs<TEntity extends AnyDB3Table> = Partial<Pick<
+    Prisma.Args<DB3PrismaDelegateOf<TEntity>, "findMany">,
     "select" | "include"
 >>;
 
 export type DerivedDB3ViewSelection<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TDtoSchema extends z.AnyZodObject,
 > = ZodPrismaSelection<TDtoSchema> & DB3ViewSelectionArgs<TEntity>;
 
 export interface DB3View<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TSelection,
     TDtoSchema extends z.ZodTypeAny,
     TClient extends TAnyModel,
@@ -46,12 +46,12 @@ export interface DB3View<
     parseDto(value: unknown): z.infer<TDtoSchema>;
 }
 
-export type AnyDB3View = DB3View<AnyDB3Entity, any, z.ZodTypeAny, TAnyModel>;
+export type AnyDB3View = DB3View<AnyDB3Table, any, z.ZodTypeAny, TAnyModel>;
 
-export type EntityOf<TView extends AnyDB3View> = TView["entity"];
+export type TableOf<TView extends AnyDB3View> = TView["entity"];
 
 export type DbPayloadOf<TView extends AnyDB3View> = ArrayItem<Prisma.Result<
-    PrismaDelegateOf<EntityOf<TView>>,
+    DB3PrismaDelegateOf<TableOf<TView>>,
     ReturnType<TView["getSelectionArgs"]>,
     "findMany"
 >>;
@@ -63,7 +63,7 @@ export type ClientOf<TView extends AnyDB3View> = ReturnType<TView["hydrate"]>;
 const views = new Map<string, AnyDB3View>();
 
 interface DefineViewBaseArgs<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TDtoSchema extends z.AnyZodObject,
     TClient extends TAnyModel,
 > {
@@ -79,7 +79,7 @@ type DB3ViewSelectionInput<
 
 // overload with no selection specified (will be deduced from the DTO schema)
 export function defineView<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TDtoSchema extends z.AnyZodObject,
     TClient extends TAnyModel,
 >(args: DefineViewBaseArgs<TEntity, TDtoSchema, TClient> & {
@@ -93,7 +93,7 @@ export function defineView<
 
 // overload with a selection specified explicitly and concretely.
 export function defineView<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
     TDtoSchema extends z.AnyZodObject,
     TClient extends TAnyModel,
@@ -103,7 +103,7 @@ export function defineView<
 
 // implementation handling both overloads
 export function defineView<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
     TDtoSchema extends z.AnyZodObject,
     TClient extends TAnyModel,
@@ -116,8 +116,8 @@ export function defineView<
     const view: DB3View<TEntity, TSelection, TDtoSchema, TClient> = {
         viewID: args.viewID,
         entity: args.entity,
-        tableID: args.entity.schema.tableID,
-        tableName: args.entity.schema.tableName,
+        tableID: args.entity.tableID,
+        tableName: args.entity.tableName,
         dtoSchema: args.dtoSchema,
         getSelectionArgs: args.selection === undefined
             ? () => derivedSelection as TSelection
@@ -129,9 +129,9 @@ export function defineView<
     };
 
     const existing = views.get(view.viewID);
-    if (existing && existing.entity.entityID !== view.entity.entityID) {
+    if (existing && existing.entity.tableID !== view.entity.tableID) {
         throw new Error(
-            `DB3 view '${view.viewID}' is already registered for ${existing.entity.entityID}.`,
+            `DB3 view '${view.viewID}' is already registered for ${existing.entity.tableID}.`,
         );
     }
     views.set(view.viewID, view as AnyDB3View);

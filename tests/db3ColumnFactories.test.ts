@@ -85,7 +85,7 @@ describe("DB3 keyed column factories", () => {
         });
 
         expect(queryOnlySpec.args.view).toBe(db3.eventSearchView);
-        expect(queryOnlySpec.args.table).toBe(db3.eventSearchView.entity.schema);
+        expect(queryOnlySpec.args.table).toBe(db3.eventSearchView.entity);
         expect(queryOnlySpec.args.columns).toEqual([]);
         expect(queryOnlySpec.args.legacyMutationProjection).toBe(false);
     });

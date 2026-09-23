@@ -15,20 +15,20 @@ function createContext(seed?: {
     dividers?: Record<string, unknown>[];
 }) {
     const insert = vi.fn(async (
-        entity: db3.AnyDB3Entity,
+        entity: db3.AnyDB3Table,
         values: Record<string, unknown>,
     ): Promise<Record<string, unknown>> => ({
-        id: entity.entityID === db3.eventSongListEntity.entityID ? 50 : 900,
+        id: entity.tableID === db3.xEventSongList.tableID ? 50 : 900,
         ...values,
     }));
-    const update = vi.fn(async (_entity: db3.AnyDB3Entity, id: db3.DB3EntityId, values: Record<string, unknown>) => ({
+    const update = vi.fn(async (_entity: db3.AnyDB3Table, id: db3.DB3Identity, values: Record<string, unknown>) => ({
         id,
         ...values,
     }));
     const deleteRow = vi.fn(async () => undefined);
-    const requireVisible = vi.fn(async (entity: db3.AnyDB3Entity, identity: db3.DB3EntityId) => ({
+    const requireVisible = vi.fn(async (entity: db3.AnyDB3Table, identity: db3.DB3Identity) => ({
         id: identity,
-        entityID: entity.entityID,
+        tableID: entity.tableID,
     }));
     const afterMutation = vi.fn(async () => undefined);
     const context: DB3CommandExecutionContext = {
@@ -69,7 +69,7 @@ const InstrumentFunctionalGroupPublicIdSchema = z.custom<InstrumentFunctionalGro
     "Expected an InstrumentFunctionalGroup public ID.",
 );
 const instrumentFunctionalGroupCrud = db3.defineEntityCrudCommands({
-    entity: db3.instrumentFunctionalGroupEntity,
+    entity: db3.xInstrumentFunctionalGroup,
     identitySchema: InstrumentFunctionalGroupPublicIdSchema,
     operations: { create: true, update: true, delete: true },
     createSchema: z.object({
@@ -92,8 +92,8 @@ const functionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCd
 const otherFunctionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn02");
 const publicIdentityAssociationCommand = db3.defineAssociationCommand({
     commandID: "InstrumentFunctionalGroup_RelationshipTest",
-    localEntity: db3.instrumentFunctionalGroupEntity,
-    foreignEntity: db3.instrumentFunctionalGroupEntity,
+    localEntity: db3.xInstrumentFunctionalGroup,
+    foreignEntity: db3.xInstrumentFunctionalGroup,
     localIdentitySchema: InstrumentFunctionalGroupPublicIdSchema,
     foreignIdentitySchema: InstrumentFunctionalGroupPublicIdSchema,
 });
@@ -157,7 +157,7 @@ describe("DB3 commands", () => {
             publicId: functionalGroupPublicId,
         })).toThrow();
         expect(() => db3.defineEntityCrudCommands({
-            entity: db3.instrumentFunctionalGroupEntity,
+            entity: db3.xInstrumentFunctionalGroup,
             identitySchema: InstrumentFunctionalGroupPublicIdSchema,
             operations: { create: true, update: true, delete: true },
             createSchema: z.object({ publicId: InstrumentFunctionalGroupPublicIdSchema }),
@@ -181,7 +181,7 @@ describe("DB3 commands", () => {
         })).toThrow();
         expect(instrumentFunctionalGroupCrud.operations.create.command.invalidation).toEqual({
             mode: "caller",
-            entityIDs: [db3.instrumentFunctionalGroupEntity.entityID],
+            entityIDs: [db3.xInstrumentFunctionalGroup.tableID],
         });
     });
 
@@ -199,7 +199,7 @@ describe("DB3 commands", () => {
             sortOrder: 0,
             color: null,
         }, context)).resolves.toEqual({ identity: functionalGroupPublicId });
-        expect(insert).toHaveBeenLastCalledWith(db3.instrumentFunctionalGroupEntity, {
+        expect(insert).toHaveBeenLastCalledWith(db3.xInstrumentFunctionalGroup, {
             name: "Brass",
             description: "",
             sortOrder: 0,
@@ -211,7 +211,7 @@ describe("DB3 commands", () => {
             patch: { name: "Winds" },
         }, context)).resolves.toEqual({ identity: functionalGroupPublicId });
         expect(update).toHaveBeenLastCalledWith(
-            db3.instrumentFunctionalGroupEntity,
+            db3.xInstrumentFunctionalGroup,
             functionalGroupPublicId,
             { name: "Winds" },
         );
@@ -220,7 +220,7 @@ describe("DB3 commands", () => {
             identity: functionalGroupPublicId,
         }, context)).resolves.toEqual({ identity: functionalGroupPublicId });
         expect(deleteRow).toHaveBeenLastCalledWith(
-            db3.instrumentFunctionalGroupEntity,
+            db3.xInstrumentFunctionalGroup,
             functionalGroupPublicId,
             "hard",
         );
@@ -309,7 +309,7 @@ describe("DB3 commands", () => {
             isAssociated: true,
         });
         expect(update).toHaveBeenLastCalledWith(
-            db3.permissionEntity,
+            db3.xPermission,
             300,
             { roles: [100, 200, 250] },
         );
@@ -320,7 +320,7 @@ describe("DB3 commands", () => {
             isAssociated: false,
         }, context);
         expect(update).toHaveBeenLastCalledWith(
-            db3.permissionEntity,
+            db3.xPermission,
             300,
             { roles: [100] },
         );
@@ -331,18 +331,18 @@ describe("DB3 commands", () => {
             isAssociated: true,
         }, context);
         expect(update).toHaveBeenLastCalledWith(
-            db3.permissionEntity,
+            db3.xPermission,
             300,
             { roles: [100, 200] },
         );
-        expect(requireVisible).toHaveBeenCalledWith(db3.permissionEntity, 300);
-        expect(requireVisible).toHaveBeenCalledWith(db3.roleEntity, 250);
+        expect(requireVisible).toHaveBeenCalledWith(db3.xPermission, 300);
+        expect(requireVisible).toHaveBeenCalledWith(db3.xRole, 250);
         expect(findMany).toHaveBeenCalledWith({ where: { permissionId: 300 } });
     });
 
     it("composes and registers CRUD from the InstrumentFunctionalGroup editor view", async () => {
         const view = db3.instrumentFunctionalGroupEditorView;
-        expect(view.entity).toBe(db3.instrumentFunctionalGroupEntity);
+        expect(view.entity).toBe(db3.xInstrumentFunctionalGroup);
         expect(db3.getDB3CrudViewForCommand(view.crud.operations.create.command.commandID)).toBe(view);
         expect(view.crud.operations.create.command.parseDto({
             name: "Brass",
@@ -385,7 +385,7 @@ describe("DB3 commands", () => {
         await expect(createHandler.execute({ name: "Brass" }, context))
             .resolves.toEqual({ identity: functionalGroupPublicId });
         expect(insert).toHaveBeenCalledWith(
-            db3.instrumentFunctionalGroupEntity,
+            db3.xInstrumentFunctionalGroup,
             { name: "Brass" },
         );
     });
@@ -946,7 +946,7 @@ describe("DB3 commands", () => {
             },
         }, context)).resolves.toEqual({ identity: 10 });
         expect(update).toHaveBeenCalledWith(
-            db3.roleEntity,
+            db3.xRole,
             10,
             { name: "Editors", permissions: [20, 30] },
         );
@@ -987,16 +987,16 @@ describe("DB3 commands", () => {
         }, context);
 
         expect(result).toEqual({ id: 50 });
-        expect(requireVisible).toHaveBeenNthCalledWith(1, db3.eventEntity, 5);
-        expect(requireVisible).toHaveBeenNthCalledWith(2, db3.songEntity, 7);
-        expect(insert).toHaveBeenNthCalledWith(1, db3.eventSongListEntity, parentFields);
-        expect(insert).toHaveBeenNthCalledWith(2, db3.eventSongListSongEntity, {
+        expect(requireVisible).toHaveBeenNthCalledWith(1, db3.xEvent, 5);
+        expect(requireVisible).toHaveBeenNthCalledWith(2, db3.xSong, 7);
+        expect(insert).toHaveBeenNthCalledWith(1, db3.xEventSongList, parentFields);
+        expect(insert).toHaveBeenNthCalledWith(2, db3.xEventSongListSong, {
             eventSongListId: 50,
             songId: 7,
             sortOrder: 0,
             subtitle: "Open quietly",
         });
-        expect(insert).toHaveBeenNthCalledWith(3, db3.eventSongListDividerEntity, {
+        expect(insert).toHaveBeenNthCalledWith(3, db3.xEventSongListDivider, {
             eventSongListId: 50,
             sortOrder: 1,
             color: null,
@@ -1007,7 +1007,7 @@ describe("DB3 commands", () => {
             textStyle: null,
             subtitle: "Break",
         });
-        expect(afterMutation).toHaveBeenCalledWith(db3.eventSongListEntity, { id: 50 });
+        expect(afterMutation).toHaveBeenCalledWith(db3.xEventSongList, { id: 50 });
     });
 
     it("synchronizes persisted children and rejects IDs owned by another setlist", async () => {
@@ -1037,19 +1037,19 @@ describe("DB3 commands", () => {
             dividers: [],
         }, context);
 
-        expect(update).toHaveBeenCalledWith(db3.eventSongListEntity, 50, {
+        expect(update).toHaveBeenCalledWith(db3.xEventSongList, 50, {
             name: parentFields.name,
             description: parentFields.description,
             isActuallyPlayed: parentFields.isActuallyPlayed,
             isOrdered: parentFields.isOrdered,
             sortOrder: parentFields.sortOrder,
         });
-        expect(update).toHaveBeenCalledWith(db3.eventSongListSongEntity, 501, {
+        expect(update).toHaveBeenCalledWith(db3.xEventSongListSong, 501, {
             songId: 7,
             sortOrder: 0,
             subtitle: "Changed",
         });
-        expect(deleteRow).toHaveBeenCalledWith(db3.eventSongListSongEntity, 502, "hard");
+        expect(deleteRow).toHaveBeenCalledWith(db3.xEventSongListSong, 502, "hard");
 
         await expect(eventSongListSaveCommandHandler.execute({
             id: 50,

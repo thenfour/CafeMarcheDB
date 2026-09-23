@@ -51,6 +51,7 @@ const wikiPageTagAssignmentTableAuthMap: DB3AuthTablePermissionMap = {
 //////////////////////////////////////////////////////////////
 export const xWikiPageTag = defineTable({
     prismaModel: prismaModel<Prisma.WikiPageTagDelegate>(),
+    getIdentity: (tag: Prisma.WikiPageTagGetPayload<{}>) => tag.id,
     getSelectionArgs: (): Prisma.WikiPageTagDefaultArgs => {
         return WikiPageTagArgs;
     },

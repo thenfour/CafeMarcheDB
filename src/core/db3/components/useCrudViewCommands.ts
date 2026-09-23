@@ -2,7 +2,7 @@
 
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import type { TAnyModel } from "@/shared/rootroot";
-import type { AnyDB3CrudView, ClientOf, EntityIdOf, EntityOf } from "../db3";
+import type { AnyDB3CrudView, ClientOf, DB3IdentityOf, TableOf } from "../db3";
 import { createEntityCrudUpdatePatch } from "../db3";
 import type { xTableRenderClient } from "./DB3ClientCore";
 import { useDB3Command } from "./useDB3Command";
@@ -11,9 +11,9 @@ export interface CrudViewCommandClient<
     TView extends AnyDB3CrudView = AnyDB3CrudView,
     TRow extends TAnyModel = ClientOf<TView>,
 > {
-    create(row: Partial<TRow>): Promise<{ identity: EntityIdOf<EntityOf<TView>> }>;
-    update(row: TRow, previousRow: TRow): Promise<{ identity: EntityIdOf<EntityOf<TView>> }>;
-    delete(identity: EntityIdOf<EntityOf<TView>>): Promise<{ identity: EntityIdOf<EntityOf<TView>> }>;
+    create(row: Partial<TRow>): Promise<{ identity: DB3IdentityOf<TableOf<TView>> }>;
+    update(row: TRow, previousRow: TRow): Promise<{ identity: DB3IdentityOf<TableOf<TView>> }>;
+    delete(identity: DB3IdentityOf<TableOf<TView>>): Promise<{ identity: DB3IdentityOf<TableOf<TView>> }>;
 }
 
 /**
@@ -34,7 +34,7 @@ export function useCrudViewCommands<
     // Legacy read schemas can select a richer shape under a distinct tableID
     // (for example xEventArgs_Verbose) while still describing the same
     // persistence table and editor-value conversion contract.
-    if (args.tableClient.schema.tableName !== args.view.entity.schema.tableName) {
+    if (args.tableClient.schema.tableName !== args.view.entity.tableName) {
         throw new Error(
             `DB3 CRUD view '${args.view.viewID}' does not belong to table '${args.tableClient.schema.tableName}'.`,
         );

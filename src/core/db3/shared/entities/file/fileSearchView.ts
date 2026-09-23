@@ -1,9 +1,9 @@
 import { Prisma } from "db";
 import { z } from "zod";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
-import { instrumentEntity } from "../instrument/instrumentViews";
-import { permissionEntity } from "../user/userEntities";
-import { fileEntity, fileTagEntity } from "./fileEntities";
+import { xInstrument } from "../../schema/instrument";
+import { xPermission } from "../../schema/user";
+import { xFile, xFileTag } from "../../schema/file";
 
 const FileSearchTagDtoSchema = z.object({
     id: z.number().int(),
@@ -147,16 +147,16 @@ export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
 
 export const fileSearchView = defineView({
     viewID: "File_Search",
-    entity: fileEntity,
+    entity: xFile,
     selection: fileSearchSelection,
     dtoSchema: FileSearchDtoSchema,
     hydrate: (dto, references) => ({
         ...dto,
-        visiblePermission: references.get(permissionEntity, dto.visiblePermissionId),
+        visiblePermission: references.get(xPermission, dto.visiblePermissionId),
         tags: references.mapOptionalCollection(dto.tags, (association, index) => ({
             ...association,
             fileTag: references.require(
-                fileTagEntity,
+                xFileTag,
                 association.fileTagId,
                 `File(${dto.id}).tags[${index}].fileTagId`,
             ),
@@ -174,7 +174,7 @@ export const fileSearchView = defineView({
         taggedInstruments: references.mapOptionalCollection(dto.taggedInstruments, (association, index) => ({
             ...association,
             instrument: references.require(
-                instrumentEntity,
+                xInstrument,
                 association.instrumentId,
                 `File(${dto.id}).taggedInstruments[${index}].instrumentId`,
             ),

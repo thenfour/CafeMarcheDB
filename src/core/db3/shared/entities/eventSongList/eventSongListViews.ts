@@ -2,7 +2,7 @@ import { Prisma } from "db";
 import { z } from "zod";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { EventSongListContent } from "./eventSongListContent";
-import { eventSongListEntity } from "./eventSongListEntities";
+import { xEventSongList } from "../../schema/event";
 
 const CompleteSongTagAssociationDtoSchema = z.object({
     id: z.number().int(),
@@ -140,7 +140,7 @@ export function hydrateEventSongListDetailDto(dto: EventSongListDetailDto) {
 
 export const eventSongListDetailView = defineView({
     viewID: "EventSongList_Detail",
-    entity: eventSongListEntity,
+    entity: xEventSongList,
     selection: eventSongListDetailSelection,
     dtoSchema: EventSongListDetailDtoSchema,
     hydrate: hydrateEventSongListDetailDto,

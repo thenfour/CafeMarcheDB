@@ -183,7 +183,7 @@ export class xTableClientSpec<
         legacyMutationProjection?: boolean;
     }): xTableClientSpec<TView> {
         const spec = new xTableClientSpec({
-            table: args.view.entity.schema,
+            table: args.view.entity,
             columns: args.columns,
         });
         // The legacy constructor deliberately produces the `undefined` view
@@ -458,7 +458,7 @@ export type PreparedTableMutationOf<TView extends db3.AnyDB3View | undefined> =
     TView extends db3.AnyDB3View
     ? db3.DB3SchemaMutationModel<
         db3.ClientOf<TView>,
-        db3.DB3FieldsOf<db3.SchemaOf<db3.EntityOf<TView>>>
+        db3.DB3FieldsOf<db3.TableOf<TView>>
     >
     // A table-only client has no view/field-map contract from which to infer a
     // prepared DTO. Its deliberately explicit legacy API retains the old type.
@@ -744,7 +744,7 @@ export interface FetchAsyncResult<T> {
 
 // allows fetching without suspense interaction
 export function fetchUnsuspended<T>(args: FetchAsyncArgs<T>): FetchAsyncResult<T> {
-    if (args.view && args.view.entity.schema !== args.schema) {
+    if (args.view && args.view.entity !== args.schema) {
         throw new Error(
             `DB3 view '${args.view.viewID}' does not belong to table '${args.schema.tableID}'.`,
         );

@@ -332,8 +332,9 @@ the xTable field's transport value, nullability, and read-presence contract.
 Foreign-key members use the Prisma payload type and remain conservatively
 optional. Nested relation value/null/array shapes come from the Prisma payload;
 their selected row members are also conservatively optional. Every typed
-`xTable` now declares a type-only Prisma delegate through `prismaModel()`, and
-`defineEntity()` derives its delegate from that table rather than repeating it.
+`xTable` now declares a type-only Prisma delegate through `prismaModel()` and an
+explicit application identity through `getIdentity()`. Views and commands use
+that xTable directly; the duplicative `DB3Entity` wrapper has been removed.
 `foreignRef(() => xTarget, options)` derives the referenced Prisma payload,
 concrete target table type, and runtime table ID from the target xTable. Its
 target resolver remains lazy through the Prisma-member registry, so forward and
@@ -601,10 +602,11 @@ sound.
         relation from an ID.
 
 13. [x] **Centralize Prisma model and foreign-reference metadata.** Make each
-        typed xTable the Prisma delegate authority, infer entity delegates from
-        their table, and provide a lazy `foreignRef()` declaration that derives
-        payload type, target table type, and runtime table ID. Keep an explicit
-        legacy escape hatch for recursively typed self-relations.
+        typed xTable the Prisma delegate, canonical reference-value, and identity
+        authority. Remove the duplicative `DB3Entity` wrapper, and provide a lazy
+        `foreignRef()` declaration that derives payload type, target table type,
+        and runtime table ID. Keep an explicit legacy escape hatch for recursively
+        typed self-relations.
 
 14. [ ] **Add normalized `ForeignSingleField` hydration.** When a view selects
         the ID rather than the object, declare the reference dependency and resolve

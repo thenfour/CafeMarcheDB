@@ -2,13 +2,10 @@ import { z } from "zod";
 import { Prisma } from "db";
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { isPublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId";
-import { defineEntity } from "../../core/db3Entity";
 import { defineCrudView } from "../../core/db3CrudView";
 import { type ClientOf, type DtoOf, defineView } from "../../core/db3View";
 import { xInstrument, xInstrumentFunctionalGroup, xInstrumentTag } from "../../schema/instrument";
 import {
-    type InstrumentClientPayload,
-    type InstrumentFunctionalGroupClientPayload,
     InstrumentTagAssociationNaturalOrderBy,
 } from "../../schema/prismArgs";
 
@@ -16,21 +13,6 @@ const InstrumentFunctionalGroupPublicIdSchema = z.custom<InstrumentFunctionalGro
     (value): value is InstrumentFunctionalGroupPublicId => isPublicId(value),
     "Expected an InstrumentFunctionalGroup public ID.",
 );
-
-export const instrumentFunctionalGroupEntity = defineEntity({
-    schema: xInstrumentFunctionalGroup,
-    getIdentity: (entity: InstrumentFunctionalGroupClientPayload) => entity.publicId,
-});
-
-export const instrumentTagEntity = defineEntity({
-    schema: xInstrumentTag,
-    getIdentity: (entity: Prisma.InstrumentTagGetPayload<{}>) => entity.id,
-});
-
-export const instrumentEntity = defineEntity({
-    schema: xInstrument,
-    getIdentity: (entity: InstrumentClientPayload) => entity.id,
-});
 
 // The list view deliberately makes non-identity fields optional. Its selection
 // is the maximum requested shape; per-field authorization may omit any of them.
@@ -104,14 +86,14 @@ const DashboardInstrumentDtoSchema = z.object({
 
 export const instrumentFunctionalGroupListView = defineView({
     viewID: "InstrumentFunctionalGroup_List",
-    entity: instrumentFunctionalGroupEntity,
+    entity: xInstrumentFunctionalGroup,
     dtoSchema: InstrumentFunctionalGroupListDtoSchema,
     hydrate: dto => dto,
 });
 
 export const instrumentFunctionalGroupEditorView = defineCrudView({
     viewID: "InstrumentFunctionalGroup_Editor",
-    entity: instrumentFunctionalGroupEntity,
+    entity: xInstrumentFunctionalGroup,
     operations: { create: true, update: true, delete: true },
     dtoSchema: InstrumentFunctionalGroupListDtoSchema,
     hydrate: dto => xInstrumentFunctionalGroup.getClientModel(dto, "view"),
@@ -119,43 +101,43 @@ export const instrumentFunctionalGroupEditorView = defineCrudView({
 
 export const instrumentFunctionalGroupDashboardView = defineView({
     viewID: "InstrumentFunctionalGroup_Dashboard",
-    entity: instrumentFunctionalGroupEntity,
+    entity: xInstrumentFunctionalGroup,
     dtoSchema: InstrumentFunctionalGroupDashboardDtoSchema,
     hydrate: dto => dto,
 });
 
 export const instrumentTagEditorView = defineCrudView({
     viewID: "InstrumentTag_Editor",
-    entity: instrumentTagEntity,
+    entity: xInstrumentTag,
     operations: { create: true, update: true, delete: true },
     dtoSchema: InstrumentTagDtoSchema,
-    hydrate: dto => instrumentTagEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xInstrumentTag.getClientModel(dto, "view"),
 });
 
 export const instrumentEditorView = defineCrudView({
     viewID: "Instrument_Editor",
-    entity: instrumentEntity,
+    entity: xInstrument,
     operations: { create: true, update: true, delete: true },
     selection: instrumentEditorSelection,
     dtoSchema: InstrumentEditorDtoSchema,
-    hydrate: dto => instrumentEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xInstrument.getClientModel(dto, "view"),
 });
 
 export const instrumentDashboardView = defineView({
     viewID: "Instrument_Dashboard",
-    entity: instrumentEntity,
+    entity: xInstrument,
     dtoSchema: DashboardInstrumentDtoSchema,
     hydrate: (dto, references) => ({
         ...dto,
         functionalGroup: references.require(
-            instrumentFunctionalGroupEntity,
+            xInstrumentFunctionalGroup,
             dto.functionalGroupId,
             `Instrument(${dto.id}).functionalGroupId`,
         ),
         instrumentTags: dto.instrumentTags.map((association, index) => ({
             ...association,
             tag: references.require(
-                instrumentTagEntity,
+                xInstrumentTag,
                 association.tagId,
                 `Instrument(${dto.id}).instrumentTags[${index}].tagId`,
             ),

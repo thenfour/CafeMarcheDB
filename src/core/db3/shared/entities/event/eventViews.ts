@@ -6,16 +6,16 @@ import type { DB3ReferenceProvider } from "../../core/db3Hydration";
 import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } from "../../core/db3View";
 import { EventTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { db3s } from "../common/viewCommon";
-import { permissionEntity } from "../user/userEntities";
+import { xPermission } from "../../schema/user";
 import { hydrateEventDateRange } from "./eventDateRange";
 import {
-    eventAttendanceEntity,
-    eventEntity,
-    eventSegmentEntity,
-    eventStatusEntity,
-    eventTagEntity,
-    eventTypeEntity,
-} from "./eventEntities";
+    xEventAttendance,
+    xEvent,
+    xEventSegment,
+    xEventStatus,
+    xEventTag,
+    xEventType,
+} from "../../schema/event";
 
 // event type ------------------------------------------
 const EventTypeDtoSchema = z.object({
@@ -51,10 +51,10 @@ const coalesceEventType = (inp: EventTypeWithUndefineds | null | undefined): Eve
 
 export const eventTypeEditorView = defineCrudView({
     viewID: "EventType_Editor",
-    entity: eventTypeEntity,
+    entity: xEventType,
     operations: { create: true, update: true, delete: true },
     dtoSchema: EventTypeDtoSchema,
-    hydrate: dto => eventTypeEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xEventType.getClientModel(dto, "view"),
 });
 
 // event status ------------------------------------------
@@ -92,10 +92,10 @@ const coalesceEventStatus = (inp: EventStatusWithUndefineds | null | undefined):
 
 export const eventStatusEditorView = defineCrudView({
     viewID: "EventStatus_Editor",
-    entity: eventStatusEntity,
+    entity: xEventStatus,
     operations: { create: true, update: true, delete: true },
     dtoSchema: EventStatusDtoSchema,
-    hydrate: dto => eventStatusEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xEventStatus.getClientModel(dto, "view"),
 });
 
 // event tag ------------------------------------------
@@ -153,10 +153,10 @@ const coalesceEventTags = (inp: EventTagAssociationWithUndefineds[] | null | und
 
 export const eventTagEditorView = defineCrudView({
     viewID: "EventTag_Editor",
-    entity: eventTagEntity,
+    entity: xEventTag,
     operations: { create: true, update: true, delete: true },
     dtoSchema: EventTagEditorDtoSchema,
-    hydrate: dto => eventTagEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xEventTag.getClientModel(dto, "view"),
 });
 
 // event attendance ------------------------------------------
@@ -177,10 +177,10 @@ const EventAttendanceEditorDtoSchema = z.object({
 
 export const eventAttendanceEditorView = defineCrudView({
     viewID: "EventAttendance_Editor",
-    entity: eventAttendanceEntity,
+    entity: xEventAttendance,
     operations: { create: true, update: true, delete: true },
     dtoSchema: EventAttendanceEditorDtoSchema,
-    hydrate: dto => eventAttendanceEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xEventAttendance.getClientModel(dto, "view"),
 });
 
 // event editor ------------------------------------------
@@ -208,10 +208,10 @@ const EventSegmentEditorDtoSchema = z.object({
 
 export const eventSegmentEditorView = defineCrudView({
     viewID: "EventSegment_Editor",
-    entity: eventSegmentEntity,
+    entity: xEventSegment,
     operations: { create: true, update: true, delete: true },
     dtoSchema: EventSegmentEditorDtoSchema,
-    hydrate: dto => eventSegmentEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xEventSegment.getClientModel(dto, "view"),
 });
 
 
@@ -288,11 +288,11 @@ const eventEditorSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
 
 export const eventEditorView = defineCrudView({
     viewID: "Event_Editor",
-    entity: eventEntity,
+    entity: xEvent,
     operations: { create: true, update: true, delete: true },
     selection: eventEditorSelection,
     dtoSchema: EventEditorDtoSchema,
-    hydrate: dto => eventEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xEvent.getClientModel(dto, "view"),
 });
 
 // const EventTagAssignmentDtoSchema = z.object({
@@ -639,13 +639,13 @@ function hydrateEventSummaryDto<TDto extends HydratableEventSummaryDto>(
     const { tags, ...eventDto } = dto;
     return {
         ...hydrateEventDateRange(eventDto),
-        type: references.get(eventTypeEntity, dto.typeId),
-        status: references.get(eventStatusEntity, dto.statusId),
-        visiblePermission: references.get(permissionEntity, dto.visiblePermissionId),
+        type: references.get(xEventType, dto.typeId),
+        status: references.get(xEventStatus, dto.statusId),
+        visiblePermission: references.get(xPermission, dto.visiblePermissionId),
         tags: references.mapOptionalCollection(tags, (association, index) => ({
             ...association,
             eventTag: references.require(
-                eventTagEntity,
+                xEventTag,
                 association.eventTagId,
                 `Event(${dto.id}).tags[${index}].eventTagId`,
             ),
@@ -655,7 +655,7 @@ function hydrateEventSummaryDto<TDto extends HydratableEventSummaryDto>(
 
 export const eventSearchView = defineView({
     viewID: "Event_Search",
-    entity: eventEntity,
+    entity: xEvent,
     selection: eventSearchSelection,
     dtoSchema: EventSearchDtoSchema,
     hydrate: (dto, references) => {
@@ -670,7 +670,7 @@ export const eventSearchView = defineView({
 
 export const eventFrontpageView = defineView({
     viewID: "Event_Frontpage",
-    entity: eventEntity,
+    entity: xEvent,
     dtoSchema: EventFrontpageDtoSchema,
     // do not use references; the server has no reference provider.
     // coalesce type/status fields

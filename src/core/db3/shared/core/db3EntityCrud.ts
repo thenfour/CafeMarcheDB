@@ -2,8 +2,8 @@
 
 import type { TAnyModel } from "@/shared/rootroot";
 import { z } from "zod";
+import type { AnyDB3Table, DB3IdentityOf } from "../db3core";
 import { defineCommand, type AnyDB3Command } from "./db3Command";
-import type { AnyDB3Entity, EntityIdOf } from "./db3Entity";
 
 // is this a duplication?
 const identityResultSchema = <TIdentitySchema extends z.ZodTypeAny>(
@@ -15,13 +15,13 @@ const identityResultSchema = <TIdentitySchema extends z.ZodTypeAny>(
 // ensure that the given zod schema does not contain the server-owned identity fields
 // `id` or `publicId` typically.
 function requireWritableSchemasDoNotOwnIdentity(
-    entity: AnyDB3Entity,
+    entity: AnyDB3Table,
     schemaName: string,
     schema: z.AnyZodObject,
 ): void {
     const identityMembers = new Set([
-        entity.schema.pkMember,
-        entity.schema.publicIdMember,
+        entity.pkMember,
+        entity.publicIdMember,
     ].filter((member): member is string => !!member));
 
     const declaredIdentityMembers = //
@@ -30,19 +30,19 @@ function requireWritableSchemasDoNotOwnIdentity(
 
     if (declaredIdentityMembers.length > 0) {
         throw new Error(
-            `${entity.entityID} ${schemaName} must not declare server-owned identity fields: ${declaredIdentityMembers.join(", ")}.`,
+            `${entity.tableID} ${schemaName} must not declare server-owned identity fields: ${declaredIdentityMembers.join(", ")}.`,
         );
     }
 }
 
-function getDeleteType(entity: AnyDB3Entity): "softWhenPossible" | "hard" {
-    switch (entity.schema.deletePolicy) {
+function getDeleteType(entity: AnyDB3Table): "softWhenPossible" | "hard" {
+    switch (entity.deletePolicy) {
         case "hard":
             return "hard";
         case "softOnly":
             return "softWhenPossible";
         case "disabled":
-            throw new Error(`${entity.entityID} does not permit generated delete commands.`);
+            throw new Error(`${entity.tableID} does not permit generated delete commands.`);
     }
 }
 
@@ -53,8 +53,8 @@ export interface DB3CrudOperationFlags {
 }
 
 interface EntityCrudCommandArgs<
-    TEntity extends AnyDB3Entity,
-    TIdentitySchema extends z.ZodType<EntityIdOf<TEntity>>,
+    TEntity extends AnyDB3Table,
+    TIdentitySchema extends z.ZodType<DB3IdentityOf<TEntity>>,
     TCreateSchema extends z.AnyZodObject,
     TUpdateFieldsSchema extends z.AnyZodObject,
 > {
@@ -66,8 +66,8 @@ interface EntityCrudCommandArgs<
 }
 
 function createEntityUpdateSchema<
-    TEntity extends AnyDB3Entity,
-    TIdentitySchema extends z.ZodType<EntityIdOf<TEntity>>,
+    TEntity extends AnyDB3Table,
+    TIdentitySchema extends z.ZodType<DB3IdentityOf<TEntity>>,
     TUpdateFieldsSchema extends z.AnyZodObject,
 >(
     entity: TEntity,
@@ -103,8 +103,8 @@ function createEntityUpdateSchema<
 }
 
 function defineCreateOperation<
-    TEntity extends AnyDB3Entity,
-    TIdentitySchema extends z.ZodType<EntityIdOf<TEntity>>,
+    TEntity extends AnyDB3Table,
+    TIdentitySchema extends z.ZodType<DB3IdentityOf<TEntity>>,
     TCreateSchema extends z.AnyZodObject,
     TUpdateFieldsSchema extends z.AnyZodObject,
 >(args: EntityCrudCommandArgs<
@@ -121,13 +121,13 @@ function defineCreateOperation<
     const resultSchema = identityResultSchema(args.identitySchema);
     const invalidation = {
         mode: "caller" as const,
-        entityIDs: [args.entity.entityID],
+        entityIDs: [args.entity.tableID],
     };
 
     return {
         kind: "create" as const,
         command: defineCommand({
-            commandID: `${args.entity.entityID}_Create`,
+            commandID: `${args.entity.tableID}_Create`,
             entity: args.entity,
             dtoSchema: createSchema,
             resultSchema,
@@ -138,8 +138,8 @@ function defineCreateOperation<
 }
 
 function defineUpdateOperation<
-    TEntity extends AnyDB3Entity,
-    TIdentitySchema extends z.ZodType<EntityIdOf<TEntity>>,
+    TEntity extends AnyDB3Table,
+    TIdentitySchema extends z.ZodType<DB3IdentityOf<TEntity>>,
     TCreateSchema extends z.AnyZodObject,
     TUpdateFieldsSchema extends z.AnyZodObject,
 >(args: EntityCrudCommandArgs<
@@ -156,13 +156,13 @@ function defineUpdateOperation<
     const resultSchema = identityResultSchema(args.identitySchema);
     const invalidation = {
         mode: "caller" as const,
-        entityIDs: [args.entity.entityID],
+        entityIDs: [args.entity.tableID],
     };
 
     return {
         kind: "update" as const,
         command: defineCommand({
-            commandID: `${args.entity.entityID}_Update`,
+            commandID: `${args.entity.tableID}_Update`,
             entity: args.entity,
             dtoSchema: updateSchema,
             resultSchema,
@@ -173,8 +173,8 @@ function defineUpdateOperation<
 }
 
 function defineDeleteOperation<
-    TEntity extends AnyDB3Entity,
-    TIdentitySchema extends z.ZodType<EntityIdOf<TEntity>>,
+    TEntity extends AnyDB3Table,
+    TIdentitySchema extends z.ZodType<DB3IdentityOf<TEntity>>,
     TCreateSchema extends z.AnyZodObject,
     TUpdateFieldsSchema extends z.AnyZodObject,
 >(args: EntityCrudCommandArgs<
@@ -189,14 +189,14 @@ function defineDeleteOperation<
     const resultSchema = identityResultSchema(args.identitySchema);
     const invalidation = {
         mode: "caller" as const,
-        entityIDs: [args.entity.entityID],
+        entityIDs: [args.entity.tableID],
     };
 
     return {
         kind: "delete" as const,
         deleteType: getDeleteType(args.entity),
         command: defineCommand({
-            commandID: `${args.entity.entityID}_Delete`,
+            commandID: `${args.entity.tableID}_Delete`,
             entity: args.entity,
             dtoSchema: deleteSchema,
             resultSchema,
@@ -230,9 +230,9 @@ export type AnyDB3GeneratedCrudOperation =
     | DB3GeneratedUpdateOperation
     | DB3GeneratedDeleteOperation;
 
-export interface DB3EntityEditorCommands<
-    TEntity extends AnyDB3Entity,
-    TIdentitySchema extends z.ZodType<EntityIdOf<TEntity>>,
+export interface DB3TableEditorCommands<
+    TEntity extends AnyDB3Table,
+    TIdentitySchema extends z.ZodType<DB3IdentityOf<TEntity>>,
     TCreateOperation extends DB3GeneratedCreateOperation | undefined,
     TUpdateOperation extends DB3GeneratedUpdateOperation,
     TDeleteOperation extends DB3GeneratedDeleteOperation | undefined,
@@ -246,8 +246,8 @@ export interface DB3EntityEditorCommands<
     };
 }
 
-export interface AnyDB3EntityEditorCommands {
-    readonly entity: AnyDB3Entity;
+export interface AnyDB3TableEditorCommands {
+    readonly entity: AnyDB3Table;
     readonly identitySchema: z.ZodTypeAny;
     readonly operations: {
         readonly create: DB3GeneratedCreateOperation | undefined;
@@ -265,8 +265,8 @@ export interface AnyDB3EntityEditorCommands {
  * IDs, or the legacy generic mutation envelope.
  */
 export function defineEntityCrudCommands<
-    TEntity extends AnyDB3Entity,
-    TIdentitySchema extends z.ZodType<EntityIdOf<TEntity>>,
+    TEntity extends AnyDB3Table,
+    TIdentitySchema extends z.ZodType<DB3IdentityOf<TEntity>>,
     TCreateSchema extends z.AnyZodObject,
     TUpdateFieldsSchema extends z.AnyZodObject,
     TOperations extends DB3CrudOperationFlags,
@@ -292,7 +292,7 @@ export function defineEntityCrudCommands<
             update: updateOperation,
             delete: deleteOperation,
         },
-    } as unknown as DB3EntityEditorCommands<
+    } as unknown as DB3TableEditorCommands<
         TEntity,
         TIdentitySchema,
         TOperations["create"] extends true ? NonNullable<typeof createOperation> : undefined,
@@ -302,7 +302,7 @@ export function defineEntityCrudCommands<
 }
 
 export function getDefinedCrudOperations(
-    commands: AnyDB3EntityEditorCommands,
+    commands: AnyDB3TableEditorCommands,
 ): AnyDB3GeneratedCrudOperation[] {
     return [
         commands.operations.create,

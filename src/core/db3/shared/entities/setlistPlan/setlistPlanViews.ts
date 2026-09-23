@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import type { ClientOf } from "../../core/db3View";
-import { setlistPlanGroupEntity } from "./setlistPlanEntities";
+import { xSetlistPlanGroup } from "../../schema/setlistPlan";
 
 const SetlistPlanGroupEditorDtoSchema = z.object({
     id: z.number().int(),
@@ -15,10 +15,10 @@ const SetlistPlanGroupEditorDtoSchema = z.object({
 
 export const setlistPlanGroupEditorView = defineCrudView({
     viewID: "SetlistPlanGroup_Editor",
-    entity: setlistPlanGroupEntity,
+    entity: xSetlistPlanGroup,
     operations: { create: true, update: true, delete: true },
     dtoSchema: SetlistPlanGroupEditorDtoSchema,
-    hydrate: dto => setlistPlanGroupEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xSetlistPlanGroup.getClientModel(dto, "view"),
 });
 
 export type SetlistPlanGroupEditorClient = ClientOf<typeof setlistPlanGroupEditorView>;

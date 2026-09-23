@@ -488,7 +488,7 @@ export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
         this.args = args;
         const foreignSchema = args.spec.typedSchemaColumn.getForeignTableShema();
         const selectionView = args.spec.args.selectionView;
-        if (selectionView && selectionView.entity.schema !== foreignSchema) {
+        if (selectionView && selectionView.entity !== foreignSchema) {
             throw new Error(
                 `DB3 CRUD view '${selectionView.viewID}' does not belong to table '${foreignSchema.tableID}'.`,
             );

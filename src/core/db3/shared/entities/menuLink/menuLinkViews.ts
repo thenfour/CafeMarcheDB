@@ -3,8 +3,8 @@ import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import type { DB3ReferenceProvider } from "../../core/db3Hydration";
 import { defineView, type ClientOf } from "../../core/db3View";
-import { permissionEntity } from "../user/userEntities";
-import { menuLinkEntity } from "./menuLinkEntities";
+import { xPermission } from "../../schema/user";
+import { xMenuLink } from "../../schema/menuLink";
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 
 const MenuLinkEditorDtoSchema = z.object({
@@ -23,10 +23,10 @@ const MenuLinkEditorDtoSchema = z.object({
 
 export const menuLinkEditorView = defineCrudView({
     viewID: "MenuLink_Editor",
-    entity: menuLinkEntity,
+    entity: xMenuLink,
     operations: { create: true, update: true, delete: true },
     dtoSchema: MenuLinkEditorDtoSchema,
-    hydrate: dto => menuLinkEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xMenuLink.getClientModel(dto, "view"),
 });
 
 const MenuLinkListDtoSchema = z.object({
@@ -53,13 +53,13 @@ export function hydrateMenuLinkListDto(
 ) {
     return {
         ...dto,
-        visiblePermission: references.get(permissionEntity, dto.visiblePermissionId),
+        visiblePermission: references.get(xPermission, dto.visiblePermissionId),
     };
 }
 
 export const menuLinkListView = defineView({
     viewID: "MenuLink_List",
-    entity: menuLinkEntity,
+    entity: xMenuLink,
     selection: menuLinkListSelection,
     dtoSchema: MenuLinkListDtoSchema,
     hydrate: hydrateMenuLinkListDto,

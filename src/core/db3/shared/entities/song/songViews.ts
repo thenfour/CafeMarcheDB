@@ -4,10 +4,10 @@ import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { SongTagAssociationNaturalOrderBy } from "../../schema/prismArgs";
-import { fileTagEntity } from "../file/fileEntities";
+import { xFileTag } from "../../schema/file";
 import { FileDetailDtoSchema, fileDetailSelection, hydrateFileDetailDto } from "../file/fileViews";
-import { permissionEntity } from "../user/userEntities";
-import { songCreditEntity, songCreditTypeEntity, songEntity, songTagEntity } from "./songEntities";
+import { xPermission } from "../../schema/user";
+import { xSongCredit, xSongCreditType, xSong, xSongTag } from "../../schema/song";
 
 const SongTagEditorDtoSchema = z.object({
     id: z.number().int(),
@@ -103,35 +103,35 @@ const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
 
 export const songTagEditorView = defineCrudView({
     viewID: "SongTag_Editor",
-    entity: songTagEntity,
+    entity: xSongTag,
     operations: { create: true, update: true, delete: true },
     dtoSchema: SongTagEditorDtoSchema,
-    hydrate: dto => songTagEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xSongTag.getClientModel(dto, "view"),
 });
 
 export const songCreditTypeEditorView = defineCrudView({
     viewID: "SongCreditType_Editor",
-    entity: songCreditTypeEntity,
+    entity: xSongCreditType,
     operations: { create: true, update: true, delete: true },
     dtoSchema: SongCreditTypeEditorDtoSchema,
-    hydrate: dto => songCreditTypeEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xSongCreditType.getClientModel(dto, "view"),
 });
 
 export const songCreditEditorView = defineCrudView({
     viewID: "SongCredit_Editor",
-    entity: songCreditEntity,
+    entity: xSongCredit,
     operations: { create: true, update: true, delete: true },
     dtoSchema: SongCreditEditorDtoSchema,
-    hydrate: dto => songCreditEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xSongCredit.getClientModel(dto, "view"),
 });
 
 export const songEditorView = defineCrudView({
     viewID: "Song_Editor",
-    entity: songEntity,
+    entity: xSong,
     operations: { create: true, update: true, delete: true },
     selection: songEditorSelection,
     dtoSchema: SongEditorDtoSchema,
-    hydrate: dto => songEntity.schema.getClientModel(dto, "view"),
+    hydrate: dto => xSong.getClientModel(dto, "view"),
 });
 
 const SongTagAssociationDtoSchema = z.object({
@@ -241,17 +241,17 @@ export const songSearchSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
 
 export const songSearchView = defineView({
     viewID: "Song_Search",
-    entity: songEntity,
+    entity: xSong,
     selection: songSearchSelection,
     dtoSchema: SongSearchDtoSchema,
     hydrate: (dto, references) => ({
         ...dto,
-        visiblePermission: references.get(permissionEntity, dto.visiblePermissionId),
+        visiblePermission: references.get(xPermission, dto.visiblePermissionId),
 
         tags: references.mapOptionalCollection(dto.tags, (assoc, index) => ({
             ...assoc,
             tag: references.require(
-                songTagEntity,
+                xSongTag,
                 assoc.tagId,
                 `Song(${dto.id}).tags[${index}].tagId`,
             ),
@@ -265,7 +265,7 @@ export const songSearchView = defineView({
                 tags: references.mapOptionalCollection(association.file.tags, (tagAssociation, tagIndex) => ({
                     ...tagAssociation,
                     fileTag: references.require(
-                        fileTagEntity,
+                        xFileTag,
                         tagAssociation.fileTagId,
                         `Song(${dto.id}).taggedFiles[${associationIndex}].file.tags[${tagIndex}].fileTagId`,
                     ),
@@ -364,16 +364,16 @@ export const songDetailSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
 
 export const songDetailView = defineView({
     viewID: "Song_Detail",
-    entity: songEntity,
+    entity: xSong,
     selection: songDetailSelection,
     dtoSchema: SongDetailDtoSchema,
     hydrate: (dto, references) => ({
         ...dto,
-        visiblePermission: references.get(permissionEntity, dto.visiblePermissionId),
+        visiblePermission: references.get(xPermission, dto.visiblePermissionId),
         tags: references.mapOptionalCollection(dto.tags, (association, index) => ({
             ...association,
             tag: references.require(
-                songTagEntity,
+                xSongTag,
                 association.tagId,
                 `Song(${dto.id}).tags[${index}].tagId`,
             ),

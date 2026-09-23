@@ -20,7 +20,7 @@ describe("DB3 scalar selection compiler", () => {
       },
     })
 
-    const compiled = compileDB3Selection(db3.eventStatusEntity, selection)
+    const compiled = compileDB3Selection(db3.xEventStatus, selection)
 
     expectTypeOf(compiled.prismaSelection).toEqualTypeOf<typeof selection>()
     expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
@@ -63,7 +63,7 @@ describe("DB3 scalar selection compiler", () => {
       },
     })
 
-    const compiled = compileDB3Selection(db3.eventEntity, selection)
+    const compiled = compileDB3Selection(db3.xEvent, selection)
 
     expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
       name?: string
@@ -84,7 +84,7 @@ describe("DB3 scalar selection compiler", () => {
       },
     })
 
-    const compiled = compileDB3Selection(db3.eventStatusEntity, selection)
+    const compiled = compileDB3Selection(db3.xEventStatus, selection)
 
     expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
       id: number
@@ -95,10 +95,10 @@ describe("DB3 scalar selection compiler", () => {
   })
 
   it("reports the entity and complete path for unknown selected members", () => {
-    expect(() => compileDB3Selection(db3.eventStatusEntity, {
+    expect(() => compileDB3Selection(db3.xEventStatus, {
       select: { unknownMember: true },
     } as any)).toThrow(
-      "DB3 entity 'EventStatus' cannot compile selection path "
+      "DB3 table 'EventStatus' cannot compile selection path "
       + "'EventStatus.select.unknownMember'",
     )
   })
@@ -108,7 +108,7 @@ describe("DB3 scalar selection compiler", () => {
       select: { events: true },
     })
 
-    expect(() => compileDB3Selection(db3.eventStatusEntity, selection)).toThrow(
+    expect(() => compileDB3Selection(db3.xEventStatus, selection)).toThrow(
       "'EventStatus.select.events': GhostField field 'events' does not declare "
       + "a read transport schema for its field member 'events'",
     )
@@ -119,7 +119,7 @@ describe("DB3 scalar selection compiler", () => {
       select: { statusId: true },
     })
 
-    const compiled = compileDB3Selection(db3.eventEntity, selection)
+    const compiled = compileDB3Selection(db3.xEvent, selection)
 
     expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
       statusId?: number | null
@@ -144,7 +144,7 @@ describe("DB3 scalar selection compiler", () => {
       },
     })
 
-    const compiled = compileDB3Selection(db3.eventEntity, selection)
+    const compiled = compileDB3Selection(db3.xEvent, selection)
 
     expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
       status?: {
@@ -172,7 +172,7 @@ describe("DB3 scalar selection compiler", () => {
       include: { status: true },
     })
 
-    expect(() => compileDB3Selection(db3.eventEntity, selection)).toThrow(
+    expect(() => compileDB3Selection(db3.xEvent, selection)).toThrow(
       "'Event.include': selection derivation currently supports explicit 'select' shapes only",
     )
   })
@@ -202,7 +202,7 @@ describe("DB3 scalar selection compiler", () => {
     }
 
     const validated = Prisma.validator<Prisma.EventDefaultArgs>()(args)
-    const compiled = compileDB3Selection(db3.eventEntity, validated)
+    const compiled = compileDB3Selection(db3.xEvent, validated)
     const dto = {
       locationURL: "https://example.com",
       tags: [{
@@ -253,7 +253,7 @@ describe("DB3 scalar selection compiler", () => {
       },
     })
 
-    const schema = db3.deriveDtoSchema(db3.eventEntity, selection)
+    const schema = db3.deriveDtoSchema(db3.xEvent, selection)
 
     expectTypeOf<z.infer<typeof schema>>().toEqualTypeOf<{
       locationURL?: string
@@ -290,7 +290,7 @@ describe("DB3 derived scalar hydration", () => {
         color: true,
       },
     })
-    const derived = db3.deriveViewContract(db3.eventStatusEntity, selection)
+    const derived = db3.deriveViewContract(db3.xEventStatus, selection)
     const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
     const dto = {
       id: 10,
@@ -325,7 +325,7 @@ describe("DB3 derived scalar hydration", () => {
     const selection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
       select: { color: true },
     })
-    const derived = db3.deriveViewContract(db3.eventStatusEntity, selection)
+    const derived = db3.deriveViewContract(db3.xEventStatus, selection)
     const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
 
     expect(derived.hydrate({ color: null }, new db3.DB3ReferenceStore()))
@@ -338,7 +338,7 @@ describe("DB3 derived scalar hydration", () => {
     const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
       select: { isDeleted: true },
     })
-    const derived = db3.deriveViewContract(db3.eventEntity, selection)
+    const derived = db3.deriveViewContract(db3.xEvent, selection)
     const decode = vi.spyOn(db3.xEvent.fields.isDeleted.codec, "decode")
     const references = new db3.DB3ReferenceStore()
 
@@ -360,7 +360,7 @@ describe("DB3 derived scalar hydration", () => {
         sortOrder: true,
       },
     })
-    const derived = db3.deriveViewContract(db3.eventStatusEntity, selection)
+    const derived = db3.deriveViewContract(db3.xEventStatus, selection)
     const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
 
     expect(() => derived.hydrate({
@@ -384,7 +384,7 @@ describe("DB3 derived embedded-relation hydration", () => {
         },
       },
     })
-    const derived = db3.deriveViewContract(db3.eventEntity, selection)
+    const derived = db3.deriveViewContract(db3.xEvent, selection)
     const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
 
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
@@ -422,7 +422,7 @@ describe("DB3 derived embedded-relation hydration", () => {
         },
       },
     })
-    const derived = db3.deriveViewContract(db3.eventEntity, selection)
+    const derived = db3.deriveViewContract(db3.xEvent, selection)
     const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
     const references = new db3.DB3ReferenceStore()
 
@@ -440,7 +440,7 @@ describe("DB3 derived embedded-relation hydration", () => {
         },
       },
     })
-    const derived = db3.deriveViewContract(db3.eventEntity, selection)
+    const derived = db3.deriveViewContract(db3.xEvent, selection)
     const references = new db3.DB3ReferenceStore()
     const getReference = vi.spyOn(references, "get")
     const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
@@ -467,7 +467,7 @@ describe("DB3 derived embedded-relation hydration", () => {
         },
       },
     })
-    const derived = db3.deriveViewContract(db3.eventEntity, selection)
+    const derived = db3.deriveViewContract(db3.xEvent, selection)
     const decode = vi.spyOn(db3.xEventTag.fields.color.codec, "decode")
 
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{

@@ -37,6 +37,7 @@ export const SettingNaturalOrderBy: Prisma.SettingOrderByWithRelationInput[] = [
 
 export const xSetting = defineTable({
     prismaModel: prismaModel<Prisma.SettingDelegate>(),
+    getIdentity: (setting: Prisma.SettingGetPayload<{}>) => setting.id,
     getSelectionArgs: () => ({}),
     tableName: "Setting",
     deletePolicy: "disabled",

@@ -42,7 +42,7 @@ export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
             `DB3 table client view '${specView?.viewID ?? "<missing>"}' cannot be used with CRUD view '${args.view.viewID}'.`,
         );
     }
-    if (args.tableSpec.args.table !== args.view.entity.schema) {
+    if (args.tableSpec.args.table !== args.view.entity) {
         throw new Error(
             `DB3 CRUD view '${args.view.viewID}' does not belong to table '${args.tableSpec.args.table.tableID}'.`,
         );

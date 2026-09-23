@@ -473,7 +473,7 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
         this.args = args;
         const foreignSchema = this.args.spec.typedSchemaColumn.getForeignTableSchema();
         const selectionView = this.args.spec.args.selectionView;
-        if (selectionView && selectionView.entity.schema !== foreignSchema) {
+        if (selectionView && selectionView.entity !== foreignSchema) {
             throw new Error(
                 `DB3 CRUD view '${selectionView.viewID}' does not belong to table '${foreignSchema.tableID}'.`,
             );

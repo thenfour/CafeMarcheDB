@@ -1,12 +1,12 @@
 import type { TAnyModel } from "@/shared/rootroot";
 import type { Prisma } from "db";
 import {
-    eventEntity,
-    eventSongListDividerEntity,
-    eventSongListEntity,
-    eventSongListSongEntity,
+    xEvent,
+    xEventSongListDivider,
+    xEventSongList,
+    xEventSongListSong,
     saveEventSongListCommand,
-    songEntity,
+    xSong,
     type EventSongListDividerCommand,
     type EventSongListMutationCommand,
     type EventSongListSongCommand,
@@ -67,14 +67,14 @@ async function synchronizeSongs(
     const desiredIds = new Set(desired.flatMap(item => item.id === undefined ? [] : [item.id]));
     for (const existing of current) {
         if (!desiredIds.has(existing.id)) {
-            await context.rowServices.delete(eventSongListSongEntity, existing.id, "hard");
+            await context.rowServices.delete(xEventSongListSong, existing.id, "hard");
         }
     }
 
     for (const item of desired) {
         const { id, ...values } = item;
         if (id === undefined) {
-            await context.rowServices.insert(eventSongListSongEntity, {
+            await context.rowServices.insert(xEventSongListSong, {
                 ...values,
                 eventSongListId: songListId,
             });
@@ -83,7 +83,7 @@ async function synchronizeSongs(
 
         const existing = currentById.get(id)!;
         if (fieldsDiffer(existing, values)) {
-            await context.rowServices.update(eventSongListSongEntity, id, values);
+            await context.rowServices.update(xEventSongListSong, id, values);
         }
     }
 }
@@ -104,14 +104,14 @@ async function synchronizeDividers(
     const desiredIds = new Set(desired.flatMap(item => item.id === undefined ? [] : [item.id]));
     for (const existing of current) {
         if (!desiredIds.has(existing.id)) {
-            await context.rowServices.delete(eventSongListDividerEntity, existing.id, "hard");
+            await context.rowServices.delete(xEventSongListDivider, existing.id, "hard");
         }
     }
 
     for (const item of desired) {
         const { id, ...values } = item;
         if (id === undefined) {
-            await context.rowServices.insert(eventSongListDividerEntity, {
+            await context.rowServices.insert(xEventSongListDivider, {
                 ...values,
                 eventSongListId: songListId,
             });
@@ -120,7 +120,7 @@ async function synchronizeDividers(
 
         const existing = currentById.get(id)!;
         if (fieldsDiffer(existing, values)) {
-            await context.rowServices.update(eventSongListDividerEntity, id, values);
+            await context.rowServices.update(xEventSongListDivider, id, values);
         }
     }
 }
@@ -131,14 +131,14 @@ async function saveEventSongList(
 ): Promise<{ id: number }> {
     const { id, eventId, songs, dividers, ...parentValues } = dto;
 
-    await context.rowServices.requireVisible(eventEntity, eventId);
+    await context.rowServices.requireVisible(xEvent, eventId);
     for (const songId of new Set(songs.map(item => item.songId))) {
-        await context.rowServices.requireVisible(songEntity, songId);
+        await context.rowServices.requireVisible(xSong, songId);
     }
 
     let songListId: number;
     if (id === undefined) {
-        const inserted = await context.rowServices.insert(eventSongListEntity, {
+        const inserted = await context.rowServices.insert(xEventSongList, {
             ...parentValues,
             eventId,
         });
@@ -155,13 +155,13 @@ async function saveEventSongList(
                 `EventSongList '${id}' does not belong to event '${eventId}'.`,
             );
         }
-        await context.rowServices.update(eventSongListEntity, id, parentValues);
+        await context.rowServices.update(xEventSongList, id, parentValues);
         songListId = id;
     }
 
     await synchronizeSongs(songListId, songs, context);
     await synchronizeDividers(songListId, dividers, context);
-    await context.rowServices.afterMutation(eventSongListEntity, { id: songListId });
+    await context.rowServices.afterMutation(xEventSongList, { id: songListId });
     return { id: songListId };
 }
 

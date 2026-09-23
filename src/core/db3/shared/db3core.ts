@@ -662,6 +662,18 @@ export interface DB3QueryParameterSpec {
 
 export type DB3QueryParameterMap = Record<string, DB3QueryParameterSpec>;
 
+export type DB3Identity = number | string;
+
+/**
+ * An xTable's canonical consumer/reference value and its stable application
+ * identity. Keeping the complete accessor type lets callers recover both the
+ * accepted value shape and the returned identity type.
+ */
+export type DB3IdentityAccessor<
+    TReferenceValue extends TAnyModel = TAnyModel,
+    TIdentity extends DB3Identity = DB3Identity,
+> = (value: TReferenceValue) => TIdentity;
+
 export interface TableDesc {
     tableName: string;
     tableUniqueName?: string; // DB tables have multiple variations (event vs. event verbose / permission vs. permission for visibility / et al). therefore tableName is not sufficient. use this instead.
@@ -670,6 +682,13 @@ export interface TableDesc {
      * defineTable(), which accepts a keyed field map and derives this array.
      */
     columns: AnyDB3Field[];
+
+    /**
+     * Canonical application identity for values represented by this table.
+     * Legacy/runtime-only tables may omit it, but views and commands require an
+     * identified typed table.
+     */
+    getIdentity?: DB3IdentityAccessor;
 
     getSelectionArgs: (filterModel: CMDBTableFilterModel, authorization: DB3Authorization) => TAnyModel,
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
@@ -755,10 +774,21 @@ export type DB3ReadFieldProperty<
 export type DB3FieldMap = Readonly<Record<string, AnyDB3Field>>;
 
 export type DB3FieldsOf<TTable extends xTable> =
-    TTable extends xTable<infer TFields, any> ? TFields : DB3FieldMap;
+    TTable extends xTable<infer TFields, any, any> ? TFields : DB3FieldMap;
 
 export type DB3PrismaDelegateOf<TTable extends xTable> =
-    TTable extends xTable<any, infer TDelegate> ? TDelegate : never;
+    TTable extends xTable<any, infer TDelegate, any> ? TDelegate : never;
+
+export type DB3IdentityAccessorOf<TTable extends xTable> =
+    TTable extends xTable<any, any, infer TIdentityAccessor>
+    ? NonNullable<TIdentityAccessor>
+    : never;
+
+export type DB3IdentityOf<TTable extends xTable> =
+    ReturnType<DB3IdentityAccessorOf<TTable>>;
+
+export type DB3ReferenceValueOf<TTable extends xTable> =
+    Parameters<DB3IdentityAccessorOf<TTable>>[0];
 
 type DB3ArrayItem<TValue> = TValue extends readonly (infer TItem)[] ? TItem : never;
 
@@ -882,11 +912,15 @@ export type DB3DeletePolicy = "disabled" | "hard" | "softOnly";
 export class xTable<
     TFields extends DB3FieldMap = DB3FieldMap,
     TDelegate = any,
+    TIdentityAccessor extends DB3IdentityAccessor | undefined = DB3IdentityAccessor | undefined,
 > /* implements TableDesc*/ {
     tableName: string; // the actual name of the table in the database; can be used in prisma db[t.tableName]
     tableID: string; // unique name for the instance
     /** Type-only Prisma model authority supplied by defineTable(). */
     declare readonly __prismaDelegate?: TDelegate;
+    /** Type-only canonical reference value and identity authority. */
+    declare readonly __identityAccessor?: TIdentityAccessor;
+    readonly getIdentity: TIdentityAccessor;
     columns: AnyDB3Field[];
     readonly prismaMemberRegistry: ReadonlyMap<string, DB3PrismaMemberOwnership>;
 
@@ -1697,19 +1731,22 @@ export class xTable<
 export type DB3TypedTableDesc<
     TFields extends DB3FieldMap,
     TDelegate,
+    TIdentityAccessor extends DB3IdentityAccessor | undefined = undefined,
 > =
-    Omit<TableDesc, "columns"> & {
+    Omit<TableDesc, "columns" | "getIdentity"> & {
         readonly fields: TFields;
         readonly prismaModel: DB3PrismaModel<TDelegate>;
+        readonly getIdentity?: TIdentityAccessor;
     };
 
 /** Preserves a reusable typed table descriptor before one or more tables use it. */
 export function defineTableDesc<
     TFields extends DB3FieldMap,
     TDelegate,
+    TIdentityAccessor extends DB3IdentityAccessor | undefined = undefined,
 >(
-    args: DB3TypedTableDesc<TFields, TDelegate>,
-): DB3TypedTableDesc<TFields, TDelegate> {
+    args: DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor>,
+): DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor> {
     return args;
 }
 
@@ -1717,11 +1754,28 @@ export function defineTableDesc<
 export type DB3TypedTable<
     TFields extends DB3FieldMap,
     TDelegate,
+    TIdentityAccessor extends DB3IdentityAccessor | undefined = undefined,
 > =
     {
         readonly fields: TFields;
         readonly columns: Array<TFields[keyof TFields]>;
-    } & xTable<TFields, TDelegate>;
+    } & xTable<TFields, TDelegate, TIdentityAccessor>;
+
+// A typed xTable that can anchor views, reference hydration, and commands.
+// needed because of type  info nesting.
+// a view wants recursive deep type info throughout a prisma selection
+// but a xTable cannot provide that because it would mean cycles.
+export type DB3IdentifiedTable<
+    TFields extends DB3FieldMap = DB3FieldMap,
+    TDelegate = any,
+    TIdentityAccessor extends DB3IdentityAccessor = DB3IdentityAccessor<any, DB3Identity>,
+> = DB3TypedTable<TFields, TDelegate, TIdentityAccessor>;
+
+export type AnyDB3Table = DB3IdentifiedTable<
+    DB3FieldMap,
+    any,
+    DB3IdentityAccessor<any, DB3Identity>
+>;
 
 /**
  * New typed table construction path. The keyed field map is the type authority;
@@ -1731,9 +1785,10 @@ export type DB3TypedTable<
 export function defineTable<
     TFields extends DB3FieldMap,
     TDelegate,
+    TIdentityAccessor extends DB3IdentityAccessor | undefined = undefined,
 >(
-    args: DB3TypedTableDesc<TFields, TDelegate>,
-): DB3TypedTable<TFields, TDelegate> {
+    args: DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor>,
+): DB3TypedTable<TFields, TDelegate, TIdentityAccessor> {
     const columns = Object.entries(args.fields).map(([member, field]) => {
         if (field.member !== member) {
             throw new Error(
@@ -1743,7 +1798,7 @@ export function defineTable<
         return field;
     });
     const { fields, prismaModel: _prismaModel, ...legacyArgs } = args;
-    const table = new xTable<TFields, TDelegate>({
+    const table = new xTable<TFields, TDelegate, TIdentityAccessor>({
         ...legacyArgs,
         columns,
     });
@@ -1757,7 +1812,7 @@ export function defineTable<
     // executes the codec stored on those same field instances. The cast only
     // exposes that construction invariant to TypeScript; it does not invent a
     // separate model declaration or conversion path.
-    return table as unknown as DB3TypedTable<TFields, TDelegate>;
+    return table as unknown as DB3TypedTable<TFields, TDelegate, TIdentityAccessor>;
 }
 
 ////////////////////////////////////////////////////////////////

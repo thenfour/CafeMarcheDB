@@ -227,7 +227,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.refetchDashboardData = refetch;
     valueRef.current.permission = new TableAccessor(dashboardData.permission);
     valueRef.current.referenceStore.register(
-        db3.permissionEntity,
+        db3.xPermission,
         valueRef.current.permission.items,
     );
 
@@ -243,15 +243,15 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.wikiPageTag = new TableAccessor(dashboardData.wikiPageTag);
     valueRef.current.role = new TableAccessor(dashboardData.role);
     valueRef.current.eventType = new TableAccessor(dashboardData.eventType);
-    valueRef.current.referenceStore.register(db3.eventTypeEntity, valueRef.current.eventType.items);
+    valueRef.current.referenceStore.register(db3.xEventType, valueRef.current.eventType.items);
     valueRef.current.eventStatus = new TableAccessor(dashboardData.eventStatus);
-    valueRef.current.referenceStore.register(db3.eventStatusEntity, valueRef.current.eventStatus.items);
+    valueRef.current.referenceStore.register(db3.xEventStatus, valueRef.current.eventStatus.items);
     valueRef.current.eventTag = new TableAccessor(dashboardData.eventTag);
-    valueRef.current.referenceStore.register(db3.eventTagEntity, valueRef.current.eventTag.items);
+    valueRef.current.referenceStore.register(db3.xEventTag, valueRef.current.eventTag.items);
     valueRef.current.eventAttendance = new TableAccessor(dashboardData.eventAttendance);
     valueRef.current.fileTag = new TableAccessor(dashboardData.fileTag);
     valueRef.current.referenceStore.register(
-        db3.fileTagEntity,
+        db3.xFileTag,
         valueRef.current.fileTag.items,
     );
     valueRef.current.instrumentTag = new TableAccessor(dashboardData.instrumentTag);
@@ -260,16 +260,16 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         group => group.publicId,
     );
     valueRef.current.referenceStore.register(
-        db3.instrumentFunctionalGroupEntity,
+        db3.xInstrumentFunctionalGroup,
         valueRef.current.instrumentFunctionalGroup.items,
     );
     valueRef.current.referenceStore.register(
-        db3.instrumentTagEntity,
+        db3.xInstrumentTag,
         valueRef.current.instrumentTag.items,
     );
     valueRef.current.songTag = new TableAccessor(dashboardData.songTag);
     valueRef.current.referenceStore.register(
-        db3.songTagEntity,
+        db3.xSongTag,
         valueRef.current.songTag.items,
     );
     valueRef.current.songCreditType = new TableAccessor(dashboardData.songCreditType);
@@ -306,7 +306,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         db3.instrumentDashboardView.parseDto(dto),
         valueRef.current.referenceStore,
     )));
-    valueRef.current.referenceStore.register(db3.instrumentEntity, valueRef.current.instrument.items);
+    valueRef.current.referenceStore.register(db3.xInstrument, valueRef.current.instrument.items);
 
     return (
         <DashboardContext.Provider value={{ data: valueRef.current }}>

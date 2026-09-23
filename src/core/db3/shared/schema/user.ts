@@ -249,6 +249,7 @@ export const xUserMinimum = db3.defineTable({
 
 export const xPermissionBaseArgs = db3.defineTableDesc({
     prismaModel: db3.prismaModel<Prisma.PermissionDelegate>(),
+    getIdentity: (permission: Prisma.PermissionGetPayload<{}>) => permission.id,
     getSelectionArgs: (): Prisma.PermissionDefaultArgs => {
         return PermissionArgs;
     },
@@ -329,6 +330,7 @@ export const xPermissionForVisibility = db3.defineTable({
 // this schema is required for tags selection dlg.
 export const xRolePermissionAssociation = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.RolePermissionDelegate>(),
+    getIdentity: (rolePermission: Prisma.RolePermissionGetPayload<{}>) => rolePermission.id,
     tableName: "RolePermission",
     deletePolicy: "disabled",
     getSelectionArgs: (): Prisma.RolePermissionDefaultArgs => {
@@ -359,6 +361,7 @@ export const xRolePermissionAssociation = db3.defineTable({
 
 export const xRole = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.RoleDelegate>(),
+    getIdentity: (role: Prisma.RoleGetPayload<{}>) => role.id,
     getSelectionArgs: (): Prisma.RoleDefaultArgs => {
         return RoleArgs;
     },
@@ -440,6 +443,7 @@ export const xRole = db3.defineTable({
 
 export const xUserInstrument = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.UserInstrumentDelegate>(),
+    getIdentity: (association: { id: number }) => association.id,
     tableName: "UserInstrument",
     deletePolicy: "hard",
     tableAuthMap: xUserTableAuthMap,
@@ -490,6 +494,7 @@ export interface UserTagTableParams {
 
 const userTagBaseArgs = db3.defineTableDesc({
     prismaModel: db3.prismaModel<Prisma.UserTagDelegate>(),
+    getIdentity: (tag: Prisma.UserTagGetPayload<{}>) => tag.id,
     getSelectionArgs: (): Prisma.UserTagDefaultArgs => {
         return UserTagArgs;
     },
@@ -675,6 +680,7 @@ export interface UserTablParams {
 
 const userBaseArgs = db3.defineTableDesc({
     prismaModel: db3.prismaModel<Prisma.UserDelegate>(),
+    getIdentity: (user: { id: number }) => user.id,
     getSelectionArgs: (): Prisma.UserDefaultArgs => {
         return UserSafeArgs;
     },

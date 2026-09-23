@@ -81,6 +81,7 @@ export const WikiPageNaturalOrderBy: Prisma.WikiPageOrderByWithRelationInput[] =
 ////////////////////////////////////////////////////////////////
 export const xWikiPage = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.WikiPageDelegate>(),
+    getIdentity: (page: { id: number }) => page.id,
     getSelectionArgs: (): Prisma.WikiPageDefaultArgs => {
         return WikiPageArgs;
     },

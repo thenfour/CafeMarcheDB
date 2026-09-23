@@ -1,6 +1,6 @@
 import {
-    permissionEntity,
-    roleEntity,
+    xPermission,
+    xRole,
     setRolePermissionCommand,
 } from "../../db3";
 import { defineCommandHandler } from "../db3CommandCore";
@@ -10,15 +10,15 @@ export const rolePermissionSetCommandHandler = defineCommandHandler(
     setRolePermissionCommand,
     async (dto, context) => {
         const permission = await context.rowServices.requireVisible(
-            permissionEntity,
+            xPermission,
             dto.localIdentity,
         );
         const role = await context.rowServices.requireVisible(
-            roleEntity,
+            xRole,
             dto.foreignIdentity,
         );
-        const permissionId = permission[permissionEntity.schema.pkMember] as number;
-        const roleId = role[roleEntity.schema.pkMember] as number;
+        const permissionId = permission[xPermission.pkMember] as number;
+        const roleId = role[xRole.pkMember] as number;
         const currentAssociations = await context.transaction.rolePermission.findMany({
             where: { permissionId },
         });
@@ -30,7 +30,7 @@ export const rolePermissionSetCommandHandler = defineCommandHandler(
         // Use the parent association field so its field/row authorization,
         // auditing, and RolePermission mutation hooks remain authoritative.
         await context.rowServices.update(
-            permissionEntity,
+            xPermission,
             dto.localIdentity,
             { roles: desiredRoleIds },
         );

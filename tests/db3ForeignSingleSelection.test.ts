@@ -68,6 +68,7 @@ beforeEach(() => {
     });
     const foreignSchema = {
         pkMember: "id", clientIdMember: "id", tableID: "Instrument", tableName: "Instrument",
+        getIdentity: (item: Instrument) => item.id,
         getRowInfo: (item: Instrument) => ({ name: item.name }),
         createInsertModelFromString: (name: string) => ({ name }),
         authorizeRowBeforeInsert: () => insertAuthorized,
@@ -76,7 +77,7 @@ beforeEach(() => {
     };
     const selectionView = {
         viewID: "Instrument_Editor",
-        entity: { schema: foreignSchema },
+        entity: foreignSchema,
         parseDto: (item: Instrument) => item,
         hydrate: (item: Instrument) => item,
     };
@@ -298,10 +299,7 @@ describe("shared DB3 foreign-single selection", () => {
         (spec.schemaColumn as any).getForeignTableSchema = () => foreignSchema;
         const view = {
             viewID: "InstrumentFunctionalGroup_Editor",
-            entity: {
-                schema: foreignSchema,
-                getIdentity: (item: { publicId: string }) => item.publicId,
-            },
+            entity: foreignSchema,
             parseDto: (value: unknown) => value,
             hydrate: (dto: Instrument) => ({ ...dto, publicId: `public-id-${dto.id}` }),
             crud: { operations: { create: { kind: "create", command: {} } } },

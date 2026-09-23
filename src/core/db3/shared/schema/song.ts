@@ -60,6 +60,7 @@ export const xSongTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
 
 export const xSongTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.SongTagDelegate>(),
+    getIdentity: (tag: Prisma.SongTagGetPayload<{}>) => tag.id,
     getSelectionArgs: (): Prisma.SongTagDefaultArgs => {
         return SongTagArgs;
     },
@@ -162,6 +163,7 @@ export interface SongTableParams {
 ////////////////////////////////////////////////////////////////
 const xSongArgs_Base = db3.defineTableDesc({
     prismaModel: db3.prismaModel<Prisma.SongDelegate>(),
+    getIdentity: (song: { id: number }) => song.id,
     tableName: "Song",
     deletePolicy: "softOnly",
     viewDeletedPermission: Permission.recover_songs,
@@ -301,6 +303,7 @@ export const xSong_Verbose = db3.defineTable({
 ////////////////////////////////////////////////////////////////
 export const xSongCreditType = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.SongCreditTypeDelegate>(),
+    getIdentity: (creditType: Prisma.SongCreditTypeGetPayload<{}>) => creditType.id,
     getSelectionArgs: (): Prisma.SongCreditTypeDefaultArgs => {
         return SongCreditTypeArgs;
     },
@@ -357,6 +360,7 @@ export const xSongCreditType = db3.defineTable({
 ////////////////////////////////////////////////////////////////
 export const xSongCredit = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.SongCreditDelegate>(),
+    getIdentity: (credit: { id: number }) => credit.id,
     getSelectionArgs: (): Prisma.SongCreditDefaultArgs => {
         return SongCreditArgs;
     },

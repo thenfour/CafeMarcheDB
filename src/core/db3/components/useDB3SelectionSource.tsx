@@ -24,7 +24,7 @@ interface DB3SelectionSourceProps<T> {
 
 // DB3 decides how to query, name, render and create rows; generic pickers own the UX.
 export function useDB3SelectionSource<T extends TAnyModel>(props: DB3SelectionSourceProps<T>): SelectionSource<T> {
-    if (props.view && props.view.entity.schema !== props.schema) {
+    if (props.view && props.view.entity !== props.schema) {
         throw new Error(
             `DB3 CRUD view '${props.view.viewID}' does not belong to table '${props.schema.tableID}'.`,
         );

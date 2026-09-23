@@ -1,18 +1,18 @@
 import { z } from "zod";
 import { defineAssociationCommand } from "../../core/db3AssociationCommand";
 import {
-    permissionEntity,
-    roleEntity,
-    rolePermissionEntity,
-} from "./userEntities";
+    xPermission,
+    xRole,
+    xRolePermissionAssociation,
+} from "../../schema/user";
 
 const NaturalIdSchema = z.number().int().positive();
 
 export const setRolePermissionCommand = defineAssociationCommand({
     commandID: "RolePermission_Set",
-    localEntity: permissionEntity,
-    foreignEntity: roleEntity,
+    localEntity: xPermission,
+    foreignEntity: xRole,
     localIdentitySchema: NaturalIdSchema,
     foreignIdentitySchema: NaturalIdSchema,
-    additionalInvalidationEntityIDs: [rolePermissionEntity.entityID],
+    additionalInvalidationEntityIDs: [xRolePermissionAssociation.tableID],
 });

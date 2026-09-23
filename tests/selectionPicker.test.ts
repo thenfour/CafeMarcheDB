@@ -180,6 +180,7 @@ describe("DB3 picker adapters", () => {
         let allowed = false;
         const schema = {
             tableID: "Instrument",
+            getIdentity: (item: typeof instrument) => item.id,
             getRowInfo: (item: typeof instrument) => ({ pk: item.id, name: item.name, color: "gold" }),
             createInsertModelFromString: (name: string) => ({ name }),
             authorizeRowBeforeInsert: () => allowed,
@@ -188,7 +189,7 @@ describe("DB3 picker adapters", () => {
         // The picker test needs only identity and schema ownership from a view.
         const view = {
             viewID: "Instrument_Editor",
-            entity: { schema, getIdentity: (item: typeof instrument) => item.id },
+            entity: schema,
         } as any;
         // The hook mock implements the token surface used by the picker.
         vi.mocked(useCrudViewCreate).mockReturnValue({ create } as any);
@@ -222,6 +223,7 @@ describe("DB3 picker adapters", () => {
         const create = vi.fn().mockResolvedValue(created);
         const schema = {
             tableID: "InstrumentFunctionalGroup",
+            getIdentity: (item: typeof existing) => item.publicId,
             getRowInfo: (item: typeof existing) => ({ pk: item.publicId, name: item.name, color: null }),
             createInsertModelFromString: (name: string) => ({ name, description: "", sortOrder: 0 }),
             authorizeRowBeforeInsert: () => true,
@@ -229,10 +231,7 @@ describe("DB3 picker adapters", () => {
         } as any;
         const view = {
             viewID: "InstrumentFunctionalGroup_Editor",
-            entity: {
-                schema,
-                getIdentity: (item: typeof existing) => item.publicId,
-            },
+            entity: schema,
             crud: { operations: { create: { kind: "create", command: {} } } },
         } as any;
         vi.mocked(useCrudViewCreate).mockReturnValue({ create } as any);

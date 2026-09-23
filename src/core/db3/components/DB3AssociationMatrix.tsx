@@ -87,11 +87,11 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
         // use the table's natural sort
     });
 
-    if (props.associationCommand.localEntity.schema.tableID
+    if (props.associationCommand.localEntity.tableID
         !== props.localTableSpec.args.table.tableID) {
         throw new Error("Association command local entity does not match the matrix row table.");
     }
-    if (props.associationCommand.foreignEntity.schema.tableID
+    if (props.associationCommand.foreignEntity.tableID
         !== props.foreignTableSpec.args.table.tableID) {
         throw new Error("Association command foreign entity does not match the matrix column table.");
     }

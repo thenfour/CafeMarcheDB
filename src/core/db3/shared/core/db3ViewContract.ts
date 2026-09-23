@@ -9,13 +9,10 @@ import {
     type DB3ReadPresenceOf,
     type DB3ReadTransportValueOf,
     type DB3RelationTargetTableOf,
+    type AnyDB3Table,
+    type DB3PrismaDelegateOf,
     type xTable,
 } from "../db3core";
-import type {
-    AnyDB3Entity,
-    PrismaDelegateOf,
-    SchemaOf,
-} from "./db3Entity";
 import type { DB3ReferenceProvider } from "./db3Hydration";
 import type { DB3ViewSelectionArgs } from "./db3View";
 
@@ -64,21 +61,21 @@ type DB3SelectedPayloadValue<
     : DB3NestedRelationValue<TPayloadValue, DB3NestedSelect<TMemberSelection>>;
 
 type DB3PrismaPayload<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
 > = ArrayItem<Prisma.Result<
-    PrismaDelegateOf<TEntity>,
+    DB3PrismaDelegateOf<TEntity>,
     TSelection,
     "findMany"
 >>;
 
 type DB3RootMemberValue<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
     TKey extends string,
     TSelect = DB3SelectionSelect<TSelection>,
     TPayload = DB3PrismaPayload<TEntity, TSelection>,
-    TFields = DB3FieldsOf<SchemaOf<TEntity>>,
+    TFields = DB3FieldsOf<TEntity>,
 > = TKey extends keyof TPayload
     ? TKey extends keyof TSelect
     ? TSelect[TKey] extends true
@@ -90,10 +87,10 @@ type DB3RootMemberValue<
     : never;
 
 type DB3RequiredRootKeys<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
     TSelect = DB3SelectionSelect<TSelection>,
-    TFields = DB3FieldsOf<SchemaOf<TEntity>>,
+    TFields = DB3FieldsOf<TEntity>,
 > = {
     [TKey in DB3SelectedKeys<TSelect>]: TKey extends keyof TFields
     ? DB3ReadPresenceOf<TFields[TKey]> extends "required"
@@ -106,7 +103,7 @@ type Simplify<TValue> = { [TKey in keyof TValue]: TValue[TKey] };
 
 /** The statically known DTO output for an entity and explicit Prisma selection. */
 export type DB3DtoForSelection<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
     TSelectedKey extends string = DB3SelectedKeys<DB3SelectionSelect<TSelection>>,
     TRequiredKey extends string = DB3RequiredRootKeys<TEntity, TSelection>,
@@ -120,7 +117,7 @@ export type DB3DtoForSelection<
 
 /** A runtime Zod object whose inferred output is the selection-derived DTO. */
 export type DB3DerivedDtoSchema<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
 > = z.ZodObject<
     z.ZodRawShape,
@@ -168,11 +165,11 @@ type DB3ClientModelForTable<
 
 /** The default consumer model after recursively applying selected field codecs. */
 export type DB3ClientForSelection<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
 > = DB3ClientModelForTable<
     DB3DtoForSelection<TEntity, TSelection>,
-    SchemaOf<TEntity>
+    TEntity
 >;
 
 interface DB3CompiledMemberBase {
@@ -199,7 +196,7 @@ export interface DB3CompiledRelationMember extends DB3CompiledMemberBase {
 export type DB3CompiledMember = DB3CompiledValueMember | DB3CompiledRelationMember;
 
 export interface DB3CompiledSelection<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
 > {
     readonly prismaSelection: TSelection;
@@ -208,7 +205,7 @@ export interface DB3CompiledSelection<
 }
 
 export interface DB3DerivedViewContract<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
 > extends DB3CompiledSelection<TEntity, TSelection> {
     readonly hydrate: (
@@ -218,18 +215,18 @@ export interface DB3DerivedViewContract<
 }
 
 function selectionError(
-    entity: AnyDB3Entity,
+    entity: AnyDB3Table,
     selectionPath: string,
     reason: string,
 ): Error {
     return new Error(
-        `DB3 entity '${entity.entityID}' cannot compile selection path `
+        `DB3 table '${entity.tableID}' cannot compile selection path `
         + `'${selectionPath}': ${reason}`,
     );
 }
 
 function getExplicitSelect(
-    entity: AnyDB3Entity,
+    entity: AnyDB3Table,
     args: TAnyModel,
     argsPath: string,
 ): TAnyModel {
@@ -268,7 +265,7 @@ function unsupportedMemberKind(ownership: never): never {
 }
 
 function compileSelect(
-    entity: AnyDB3Entity,
+    entity: AnyDB3Table,
     table: xTable,
     select: TAnyModel,
     selectPath: string,
@@ -393,19 +390,19 @@ function compileSelect(
  * each level's select object contributes to the DTO schema.
  */
 export function compileDB3Selection<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     const TSelection extends DB3ViewSelectionArgs<TEntity>,
 >(
     entity: TEntity,
     selection: TSelection,
 ): DB3CompiledSelection<TEntity, TSelection> {
     const selectionValue = selection as TAnyModel;
-    const select = getExplicitSelect(entity, selectionValue, entity.entityID);
+    const select = getExplicitSelect(entity, selectionValue, entity.tableID);
     const compiled = compileSelect(
         entity,
-        entity.schema,
+        entity,
         select,
-        `${entity.entityID}.select`,
+        `${entity.tableID}.select`,
     );
 
     return {
@@ -417,7 +414,7 @@ export function compileDB3Selection<
 
 /** Derives the validated DTO schema for an explicit Prisma selection. */
 export function deriveDtoSchema<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     const TSelection extends DB3ViewSelectionArgs<TEntity>,
 >(
     entity: TEntity,
@@ -455,7 +452,7 @@ function hydrateCompiledMembers(
 }
 
 function hydrateCompiledSelection<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
 >(
     compiled: DB3CompiledSelection<TEntity, TSelection>,
@@ -476,7 +473,7 @@ function hydrateCompiledSelection<
  * the nested member tree; normalized foreign keys remain a separate concern.
  */
 export function deriveViewContract<
-    TEntity extends AnyDB3Entity,
+    TEntity extends AnyDB3Table,
     const TSelection extends DB3ViewSelectionArgs<TEntity>,
 >(
     entity: TEntity,
