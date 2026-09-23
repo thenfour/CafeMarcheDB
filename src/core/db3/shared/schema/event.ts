@@ -4,7 +4,6 @@
 
 import { TAnyModel } from "@/shared/rootroot";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
-import { assert } from "blitz";
 import { Prisma } from "db";
 import { assertIsNumberArray, assertIsStringArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
@@ -353,7 +352,6 @@ export interface EventTableParams {
     minDate?: Date;
     forFrontPageAgenda?: boolean; // returns future + recent events + any event that's showing on front page
     refreshSerial?: number; // ignored but useful to force a refresh
-    limitResponsesToActor?: boolean;
 };
 
 const EventQueryParameters = {
@@ -365,19 +363,7 @@ const EventQueryParameters = {
     minDate: { kind: "date", authorizeAs: "endDateTime" },
     forFrontPageAgenda: { kind: "boolean", authorizeAs: ["frontpageVisible", "typeId", "endDateTime"] },
     refreshSerial: { kind: "integer", authorizeAs: null },
-    limitResponsesToActor: { kind: "boolean", authorizeAs: "responses" },
 } satisfies db3.DB3QueryParameterMap;
-
-export type UserTagWithAssignmentPayload = Prisma.UserTagGetPayload<{
-    select: {
-        id: true,
-        userAssignments: {
-            select: {
-                userId: true,
-            }
-        }
-    }
-}>;
 
 export const EventAPI = {
     getLabel: ({ name = "", startsAt }: Prisma.EventGetPayload<{ select: { startsAt: true, name: true } }>, options?: {
@@ -647,7 +633,6 @@ export const xEventArgs_Base = db3.defineTableDesc({
     })
 });
 
-// todo: these variants of xEvent** will be replaced by using different views
 export const xEvent = db3.defineTable(xEventArgs_Base);
 
 const xEventArgs_Verbose = db3.defineTableDesc({
@@ -659,86 +644,6 @@ const xEventArgs_Verbose = db3.defineTableDesc({
 });
 
 export const xEventVerbose = db3.defineTable(xEventArgs_Verbose);
-
-
-
-// parameterized
-export const EventSearchArgs = (userId: number) => Prisma.validator<Prisma.EventDefaultArgs>()({
-    include: {
-        tags: true,
-        // NOTE: responses will be limited to only the current user! for efficiency.
-        responses: {
-            where: {
-                userId,
-            }
-        }, // instrument and isinvited are the only things we care about.
-        segments: {
-            include: {
-                responses: {
-                    where: {
-                        userId,
-                    }
-                },
-            }
-        },
-    },
-});
-
-// not parameterized so easier to use in types
-export const EventSearchArgsNP = Prisma.validator<Prisma.EventDefaultArgs>()({
-    include: {
-        tags: true,
-        // NOTE: responses will be limited to only the current user! for efficiency.
-        songLists: true,
-        responses: true, // instrument and isinvited are the only things we care about.
-        segments: {
-            include: {
-                responses: true,
-            }
-        },
-        descriptionWikiPage: {
-            include: {
-                currentRevision: true,
-            }
-        }
-    },
-});
-
-export type EventSearch_Event = Prisma.EventGetPayload<typeof EventSearchArgsNP>;
-export type EventSearch_EventUserResponse = Prisma.EventUserResponseGetPayload<typeof EventSearchArgsNP.include.responses>;
-export type EventSearch_EventSegment = Prisma.EventSegmentGetPayload<typeof EventSearchArgsNP.include.segments>;
-export type EventSearch_EventSegmentUserResponse = Prisma.EventSegmentUserResponseGetPayload<typeof EventSearchArgsNP.include.segments.include.responses>;
-
-
-
-
-
-
-const xEventArgs_Search = db3.defineTableDesc({
-    ...xEventArgs_Base,
-    tableUniqueName: "xEventArgs_Search",
-    queryParameters: {
-        ...EventQueryParameters,
-        limitResponsesToActor: { kind: "boolean", authorizeAs: "responses", required: true },
-    },
-    getSelectionArgs: (filterModel, authorization): Prisma.EventDefaultArgs => {
-        const tableParams = filterModel.tableParams as EventTableParams;
-        assert(tableParams.limitResponsesToActor === true, "event search responses must be limited to the actor");
-        assert(authorization.userId, "event search responses require an authenticated actor");
-        return EventSearchArgs(authorization.userId);
-    },
-});
-
-export const xEventSearch = db3.defineTable(xEventArgs_Search);
-
-
-
-
-
-
-
-
-
 
 export const xEventSegment = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventSegmentDelegate>(),

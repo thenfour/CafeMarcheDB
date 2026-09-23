@@ -282,11 +282,18 @@ describe("DB3 scalar selection compiler", () => {
     })
 
     const compiled = compileDB3Selection(db3.xUserTag, selection)
+    type Dto = z.infer<typeof compiled.dtoSchema>
 
+    expectTypeOf<Dto["userAssignments"]>().toEqualTypeOf<{
+      userId?: number
+    }[] | undefined>()
     expect(compiled.dtoSchema.parse({ userAssignments: [{ userId: 12 }] }))
       .toEqual({ userAssignments: [{ userId: 12 }] })
     expect(compiled.dtoSchema.safeParse({
       userAssignments: [{ userId: "12" }],
+    }).success).toBe(false)
+    expect(compiled.dtoSchema.safeParse({
+      userAssignments: [{ userId: null }],
     }).success).toBe(false)
   })
 
@@ -697,6 +704,35 @@ describe("Event lookup editor derived-view rollout", () => {
       dto,
       new db3.DB3ReferenceStore(),
     )).toEqual(db3.xEventTag.getClientModel(dto, "view"))
+  })
+})
+
+describe("UserTag Event search derived-view migration", () => {
+  it("keeps the relation shape on a named view over canonical xUserTag", () => {
+    type Dto = db3.DtoOf<typeof db3.userTagEventSearchView>
+    type Client = db3.ClientOf<typeof db3.userTagEventSearchView>
+
+    expectTypeOf<Dto["id"]>().toEqualTypeOf<number>()
+    expectTypeOf<Dto["userAssignments"]>().toEqualTypeOf<{
+      userId?: number
+    }[] | undefined>()
+    expectTypeOf<Client["id"]>().toEqualTypeOf<number>()
+    expectTypeOf<Client["userAssignments"]>().toEqualTypeOf<{
+      userId?: number
+    }[] | undefined>()
+    expect(db3.userTagEventSearchView.entity).toBe(db3.xUserTag)
+    expect(db3.userTagEventSearchView.getSelectionArgs(
+      {} as db3.DB3ViewSelectionContext,
+    )).toBe(db3.userTagEventSearchSelection)
+
+    const dto: Dto = {
+      id: 5,
+      userAssignments: [{ userId: 42 }],
+    }
+    expect(db3.userTagEventSearchView.hydrate(
+      dto,
+      new db3.DB3ReferenceStore(),
+    )).toEqual(dto)
   })
 })
 

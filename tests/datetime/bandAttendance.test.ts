@@ -10,6 +10,7 @@ vi.mock("src/core/db3/DB3Client", () => ({
   makeClientColumnSet: (factories: Record<string, (columnName: string) => unknown>) => Object.fromEntries(
     Object.entries(factories).map(([columnName, factory]) => [columnName, factory(columnName)]),
   ),
+  foreignRefFieldGen: () => (columnName: string) => ({ columnName }),
 }))
 vi.mock("src/core/db3/components/DB3ClientCore", () => ({}))
 vi.mock("src/core/db3/clientAPI", () => ({ API: { events: {} } }))

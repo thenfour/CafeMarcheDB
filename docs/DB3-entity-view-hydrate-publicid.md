@@ -118,12 +118,13 @@ in-tree schema declarations no longer use it.
 
 Domain-specific query behavior belongs with the table/entity or view that owns
 it, not in DB3 core. `CMDBTableFilterModel.tableParams` is the transitional
-carrier for this behavior, with `xTable.queryParameters` providing runtime
-validation and field-authorization mapping. For example, limiting event
-responses to the requesting actor is an event-search concern expressed as
-`limitResponsesToActor`; it is not a generic `userIdForResponses` DB3 feature.
-The longer-term type-safe API should infer a view's query parameters just as it
-infers its DTO and client result.
+carrier for table-level filtering, with `xTable.queryParameters` providing
+runtime validation and field-authorization mapping. View-specific Prisma
+behavior belongs directly in the view selection callback. For example,
+`Event_Search` limits nested responses to the authenticated actor without a
+client-supplied `limitResponsesToActor` flag. The longer-term type-safe API
+should infer a view's query parameters just as it infers its DTO and client
+result.
 
 ### xTable: stable identity and model anchor
 

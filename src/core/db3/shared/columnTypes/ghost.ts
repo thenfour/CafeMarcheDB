@@ -26,7 +26,7 @@ export type GhostFieldArgs = {
 
 // sometimes you have a query containing a payload and you don't need to have a full FieldSpec for handling it. you just need to access its raw value as returned by the db.
 // often something like a include:{...}
-export class GhostField extends FieldBase<number> {
+export class GhostField extends FieldBase<number, undefined, true, number, number> {
 
     table: xTable;
 

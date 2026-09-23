@@ -545,12 +545,6 @@ export const xUserTag = db3.defineTable(userTagBaseArgs);
 
 
 
-export const UserTagForEventSearchArgs = Prisma.validator<Prisma.UserTagDefaultArgs>()({
-    include: {
-        userAssignments: true,
-    }
-});
-
 export type EventResponses_ExpectedUserTag = Prisma.UserTagGetPayload<{
     select: {
         id: true,
@@ -561,14 +555,6 @@ export type EventResponses_ExpectedUserTag = Prisma.UserTagGetPayload<{
         }
     }
 }>;
-
-export const xUserTagForEventSearch = db3.defineTable({
-    ...userTagBaseArgs,
-    tableUniqueName: "xUserTagForEventSearch",
-    getSelectionArgs: (): Prisma.UserTagDefaultArgs => {
-        return UserTagForEventSearchArgs;
-    },
-});
 
 
 

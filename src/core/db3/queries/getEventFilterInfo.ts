@@ -229,23 +229,28 @@ export default resolver.pipe(
             const rowCountResult: { rowCount: bigint }[] = pq[4] as any;
 
             // FULL EVENT DETAILS USING DB3.
-            let fullEvents: db3.EventSearch_Event[] = [];
+            let fullEvents: db3.EventSearchDto[] = [];
             if (eventIds.length) {
                 const tableParams: db3.EventTableParams = {
                     eventIds: eventIds.map(e => e.EventId), // prevent fetching the entire table!
-                    limitResponsesToActor: true,
                 };
 
                 const queryResult = await queryTable({
                     cmdbQueryContext: "getEventFilterInfo",
-                    table: db3.xEventSearch,
+                    table: {
+                        tableID: db3.xEvent.tableID,
+                        tableName: db3.xEvent.tableName,
+                        viewID: db3.eventSearchView.viewID,
+                    },
                     filter: {
                         tableParams,
                     },
                     orderBy: undefined,
                 }, await getRequestAuthorization(ctx.session));
 
-                fullEvents = queryResult.items as any;
+                // queryTable's legacy return type is intentionally untyped; the
+                // named view validates every item against this DTO contract.
+                fullEvents = queryResult.items as db3.EventSearchDto[];
 
                 switch (args.filterSpec.orderBy) {
                     default:
@@ -264,7 +269,7 @@ export default resolver.pipe(
                 expectedAttendanceUserTagIds.add(e.expectedAttendanceUserTagId);
             });
 
-            let userTags: db3.EventResponses_ExpectedUserTag[] = [];
+            let userTags: db3.DtoOf<typeof db3.userTagEventSearchView>[] = [];
 
             if (expectedAttendanceUserTagIds.size) {
                 const tableParams: db3.UserTagTableParams = {
@@ -273,14 +278,19 @@ export default resolver.pipe(
 
                 const queryResult = await queryTable({
                     cmdbQueryContext: "getEventFilterInfo-userTags",
-                    table: db3.xUserTagForEventSearch,
+                    table: {
+                        tableID: db3.xUserTag.tableID,
+                        tableName: db3.xUserTag.tableName,
+                        viewID: db3.userTagEventSearchView.viewID,
+                    },
                     filter: {
                         tableParams,
                     },
                     orderBy: undefined,
                 }, await getRequestAuthorization(ctx.session));
 
-                userTags = queryResult.items as db3.EventResponses_ExpectedUserTag[];
+                // queryTable's legacy return type does not yet carry its view.
+                userTags = queryResult.items as db3.DtoOf<typeof db3.userTagEventSearchView>[];
             }
 
             const statuses: GetEventFilterInfoChipInfo[] = statusesResult.map(r => ({

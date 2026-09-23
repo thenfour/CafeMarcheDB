@@ -773,6 +773,14 @@ sound.
         `Permission_Visibility`. Canonical foreign-reference hydration now removes
         the former Permission repair code from Event and File search views.
 
+25. [x] **Remove duplicate Event-search xTables.** Route the remaining legacy
+        event-filter resolver through canonical `xEvent` plus `Event_Search`, whose
+        actor-aware selection callback owns all nested response predicates. Route its
+        invitation-tag lookup through canonical `xUserTag` plus
+        `UserTag_EventSearch`. Remove the client-supplied `limitResponsesToActor`
+        table parameter and the obsolete `xEventSearch` and
+        `xUserTagForEventSearch` variants.
+
 ## Pilot completion criteria
 
 The pilot is successful when all of the following are true:
