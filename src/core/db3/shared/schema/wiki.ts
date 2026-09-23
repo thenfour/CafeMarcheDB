@@ -3,7 +3,7 @@ import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { foreignRef, GhostField, MakeCreatedAtField, MakePKfield, TagsField } from "../columnTypes/xTableColumnTypes";
+import { foreignRef, foreignRefByTableId, GhostField, MakeCreatedAtField, MakePKfield, TagsField } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
@@ -135,7 +135,7 @@ export const xWikiPage = db3.defineTable({
             }),
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.WikiPageWhereInput | boolean => false,
         }),
-        currentRevision: foreignRef(() => xWikiPageRevision, {
+        currentRevision: foreignRefByTableId("WikiPageRevision", {
             fkidMember: "currentRevisionId",
             allowNull: true,
             authMap: wikiPageCurrentRevisionAuthMap,
@@ -249,6 +249,15 @@ export const xWikiPageRevision = db3.defineTable({
         }),
     })
 });
+
+// statically-typed registration
+// allows retaining type information even when looking up a table by
+// static string table id.
+declare module "../db3core" {
+    interface DB3TableTypeRegistry {
+        WikiPageRevision: typeof xWikiPageRevision;
+    }
+}
 
 
 

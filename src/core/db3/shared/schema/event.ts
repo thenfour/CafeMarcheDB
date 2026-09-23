@@ -583,7 +583,8 @@ export const xEventArgs_Base = db3.defineTableDesc({
 
         tags: columnName => new TagsField<
             EventTagAssignmentPayload,
-            typeof xEventTagAssignment
+            typeof xEventTagAssignment,
+            { readonly authMap: typeof xEventAuthMap_Homepage }
         >({
             columnName,
             associationForeignIDMember: "eventTagId",
@@ -1157,6 +1158,19 @@ export const xEventSongListDivider = db3.defineTable({
         }),
     })
 });
+
+// statically-typed registration
+// allows retaining type information even when looking up a table by
+// static string table id.
+declare module "../db3core" {
+    interface DB3TableTypeRegistry {
+        EventSegment: typeof xEventSegment;
+        EventSegmentUserResponse: typeof xEventSegmentUserResponse;
+        EventSongList: typeof xEventSongList;
+        EventSongListDivider: typeof xEventSongListDivider;
+        EventUserResponse: typeof xEventUserResponse;
+    }
+}
 
 
 

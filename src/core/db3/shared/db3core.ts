@@ -850,14 +850,22 @@ export type DB3PrismaPayloadOf<TTable extends xTable> = DB3ArrayItem<Prisma.Resu
 >>;
 
 /**
- * Type-only relation metadata. Relation fields carry the concrete target
- * xTable type needed by recursively derived consumer models; runtime traversal
- * uses a lazy target resolver so module initialization remains cycle-safe.
+ * Type-only registry used by cycle-safe relation descriptors. Schema modules
+ * augment this interface with their table-ID-to-xTable mappings. Keeping only
+ * the literal ID on a field prevents table declaration types from eagerly
+ * embedding an entire circular relation graph.
  */
-export interface DB3RelationTargetField<
-    TTargetTable extends xTable = xTable,
-> {
-    readonly __relationTargetTable: TTargetTable;
+export interface DB3TableTypeRegistry { }
+
+export type DB3ResolvedRelationTarget<TTarget> =
+    TTarget extends xTable
+    ? TTarget
+    : TTarget extends keyof DB3TableTypeRegistry
+    ? Extract<DB3TableTypeRegistry[TTarget], xTable>
+    : never;
+
+export interface DB3RelationTargetField<TTarget = xTable> {
+    readonly __relationTargetTable: TTarget;
 }
 
 /**
@@ -866,9 +874,9 @@ export interface DB3RelationTargetField<
  * `statusId` back to its logical `status` field and target table.
  */
 export interface DB3ForeignSingleReferenceField<
-    TTargetTable extends xTable = xTable,
+    TTarget = xTable,
     TForeignKeyMember extends string = string,
-> extends DB3RelationTargetField<TTargetTable> {
+> extends DB3RelationTargetField<TTarget> {
     readonly __foreignKeyMember: TForeignKeyMember;
 }
 
@@ -878,8 +886,8 @@ export type DB3ForeignKeyMemberOf<TField> =
     : never;
 
 export type DB3RelationTargetTableOf<TField> =
-    TField extends DB3RelationTargetField<infer TTargetTable>
-    ? TTargetTable
+    TField extends DB3RelationTargetField<infer TTarget>
+    ? DB3ResolvedRelationTarget<TTarget>
     : never;
 
 /**

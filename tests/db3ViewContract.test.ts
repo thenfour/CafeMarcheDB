@@ -8,12 +8,97 @@ import { ZodToPrismaSelection } from "shared/prismaUtils"
 import { parsePublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId"
 import type { DateTimeRange } from "shared/time"
 import { compileDB3Selection } from "src/core/db3/shared/core/db3ViewContract"
+import { PermissionSet } from "src/auth/shared/PermissionSet"
 
 afterEach(() => {
   vi.restoreAllMocks()
 })
 
 describe("DB3 scalar selection compiler", () => {
+  it("derives the finite Event Search relation graph without recursive widening", () => {
+    const selection = db3.eventSearchSelection({
+      filter: { items: [] },
+      authorization: db3.createDB3Authorization(null, new PermissionSet([])),
+    })
+    const derived = db3.deriveViewContract(db3.xEvent, selection)
+    type FullDto = z.infer<typeof derived.dtoSchema>
+    type Segment = NonNullable<FullDto["segments"]>[number]
+    type SegmentResponse = NonNullable<Segment["responses"]>[number]
+    type EventResponse = NonNullable<FullDto["responses"]>[number]
+    type TransportDto = db3.EventSearchDto
+    type DescriptionWikiPage = NonNullable<TransportDto["descriptionWikiPage"]>
+    type CurrentRevision = NonNullable<DescriptionWikiPage["currentRevision"]>
+    type RootAuthorizationOnlyKeys = Extract<
+      keyof TransportDto,
+      "createdByUserId" | "isDeleted"
+    >
+    type WikiAuthorizationOnlyKeys = Extract<
+      keyof DescriptionWikiPage,
+      "createdByUserId" | "visiblePermissionId"
+    >
+    type ContentIsAny = 0 extends (1 & CurrentRevision["content"]) ? true : false
+
+    expectTypeOf<db3.DB3RelationTargetTableOf<typeof db3.xEvent.fields.segments>>()
+      .toEqualTypeOf<typeof db3.xEventSegment>()
+    expectTypeOf<db3.DB3RelationTargetTableOf<typeof db3.xWikiPage.fields.currentRevision>>()
+      .toEqualTypeOf<typeof db3.xWikiPageRevision>()
+    expectTypeOf<Segment>().toEqualTypeOf<{
+      id: number
+      name?: string
+      startsAt?: Date | null
+      durationMillis?: bigint
+      isAllDay?: boolean
+      statusId?: number | null
+      responses?: Array<{
+        id: number
+        userId?: number
+        attendanceId?: number | null
+      }>
+    }>()
+    expectTypeOf<SegmentResponse["id"]>().toEqualTypeOf<number>()
+    expectTypeOf<EventResponse["id"]>().toEqualTypeOf<number>()
+    expectTypeOf<TransportDto["name"]>().toEqualTypeOf<string>()
+    expectTypeOf<TransportDto["tags"]>().toBeArray()
+    expectTypeOf<ContentIsAny>().toEqualTypeOf<false>()
+    expectTypeOf<CurrentRevision["content"]>().toEqualTypeOf<string | undefined>()
+    expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<WikiAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+  })
+
+  it("derives transport DTOs from a fetched selection subset", () => {
+    const prismaSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: {
+        id: true,
+        isDeleted: true,
+      },
+    })
+    const transportSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: { id: true },
+    })
+    const derived = db3.deriveViewContract(db3.xEvent, prismaSelection, {
+      transportSelection,
+    })
+
+    expectTypeOf(derived.prismaSelection).toEqualTypeOf<typeof prismaSelection>()
+    expectTypeOf<z.infer<typeof derived.dtoSchema>>().toEqualTypeOf<{ id: number }>()
+    expect(derived.dtoSchema.parse({ id: 1, isDeleted: false })).toEqual({ id: 1 })
+  })
+
+  it("rejects transport members absent from the Prisma selection", () => {
+    const prismaSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: { id: true },
+    })
+    const transportSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: { id: true, name: true },
+    })
+
+    expect(() => db3.deriveViewContract(db3.xEvent, prismaSelection, {
+      transportSelection,
+    })).toThrow(
+      "'Event.select.name': transport selection member is not fetched by the Prisma selection",
+    )
+  })
+
   it("preserves the Prisma selection and derives required nullable scalar schemas", () => {
     const selection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
       select: {
@@ -278,7 +363,7 @@ describe("DB3 scalar selection compiler", () => {
 
     expectTypeOf<z.infer<typeof schema>>().toEqualTypeOf<{
       locationURL: string
-      tags?: Array<{
+      tags: Array<{
         eventTagId: number
         eventTag: {
           id: number
@@ -838,7 +923,7 @@ describe("DB3 normalized foreign-single hydration", () => {
     references.register(db3.xEventTag, [tag])
 
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
-      tags?: Array<{
+      tags: Array<{
         eventTagId: number
         eventTag: Prisma.EventTagGetPayload<{}>
       }>
@@ -961,7 +1046,7 @@ describe("DB3 derived embedded-relation hydration", () => {
     const decode = vi.spyOn(db3.xEventTag.fields.color.codec, "decode")
 
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
-      tags?: Array<{
+      tags: Array<{
         eventTagId: number
         eventTag: {
           id: number

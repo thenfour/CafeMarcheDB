@@ -161,6 +161,16 @@ provider. This keeps value representation on xTable and query shape on the
 view. A view may then compose domain hydration such as the Event date-range
 transform without teaching DB3 core that domain concept.
 
+The xTable relation graph may itself be cyclic, but generated DTO and client
+graphs are not expanded from that graph eagerly. Relation fields may retain a
+stable table-ID descriptor, which a type registry resolves only as the compiler
+walks the view's finite explicit selection. This makes recursive schema
+relationships type-safe without a recursion-depth cutoff or widened `any`
+fallback. If a Prisma query also needs fields solely for authorization,
+`deriveViewContract` accepts a recursively validated `transportSelection`
+subset; the full selection is executed while only the subset defines the DTO and
+hydration graph.
+
 `ZodToPrismaSelection()` remains a supported primitive and existing explicit
 DTO-first views remain valid. It recursively maps DTO shape to a Prisma select,
 but it is no longer the preferred authority for a migrated read view because it
@@ -878,8 +888,9 @@ boundaries, and none use the retired generic TableClient mutation transport.
 - Define an entity once; define multiple named views for its use-specific shapes.
 - Keep authorization and visibility policy on the server and schema-owned.
 - Treat the DTO schema as a real runtime boundary, not only a TypeScript aid.
-- Make relation graphs finite and explicit; do not recursively hydrate an
-  unbounded object graph.
+- Make view relation graphs finite and explicit. Cycles in the schema metadata
+  are valid, but derive only the edges named by the Prisma selection; do not
+  recursively hydrate an unbounded object graph.
 - Hydration is deterministic, synchronous, and free of I/O.
 - Hydration traverses only the finite graph declared by its named view.
 - Do not pretend arbitrary view hydration is reversible. Use field codecs only

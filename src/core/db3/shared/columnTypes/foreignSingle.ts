@@ -8,7 +8,7 @@ import {
 } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
 import {
-    type DB3AuthSpec, type DB3FieldPrismaMember, type DB3ForeignSingleReferenceField, type DB3IdentityOf, type DB3PrismaPayloadOf, type DB3ReadPresenceForAuthSpec, type DB3RowMode, ErrorValidateAndParseResult,
+    type DB3AuthSpec, type DB3FieldPrismaMember, type DB3ForeignSingleReferenceField, type DB3IdentityOf, type DB3PrismaPayloadOf, type DB3ReadPresenceForAuthSpec, type DB3RowMode, type DB3TableTypeRegistry, ErrorValidateAndParseResult,
     FieldBase, GetTableById, makeNullableReadTransportSchema, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
@@ -467,5 +467,69 @@ export const foreignRef = <
         TForeignKeyMember,
         TAuthSpec
     >({ ...valueArgs, _customAuth: args._customAuth });
+};
+
+export type ForeignSingleFieldByTableId<
+    TTargetTableID extends Extract<keyof DB3TableTypeRegistry, string>,
+    TForeignKeyMember extends string,
+    TAuthSpec extends DB3AuthSpec,
+> = Omit<
+    ForeignSingleField<TAnyModel, xTable, TForeignKeyMember, TAuthSpec>,
+    "__relationTargetTable"
+> & DB3ForeignSingleReferenceField<TTargetTableID, TForeignKeyMember>;
+
+export type ForeignRefByTableIdArgs<
+    TForeignKeyMember extends string,
+    TAuthSpec extends DB3AuthSpec,
+> = Omit<
+    ForeignSingleFieldValueArgs<TAnyModel, TForeignKeyMember>,
+    "columnName" | "allowNull" | "getQuickFilterWhereClause"
+> & TAuthSpec & {
+    allowNull?: boolean;
+    getQuickFilterWhereClause?: (query: string) => TAnyModel | boolean;
+};
+
+/**
+ * Cycle-safe foreign reference. The field type retains only the stable table
+ * ID; DB3TableTypeRegistry resolves the full target xTable if a selected view
+ * actually traverses this edge.
+ */
+export const foreignRefByTableId = <
+    const TTargetTableID extends Extract<keyof DB3TableTypeRegistry, string>,
+    const TForeignKeyMember extends string,
+    const TAuthSpec extends DB3AuthSpec,
+>(
+    foreignTableID: TTargetTableID,
+    args: ForeignRefByTableIdArgs<TForeignKeyMember, TAuthSpec>,
+) => (columnName: string): ForeignSingleFieldByTableId<
+    TTargetTableID,
+    TForeignKeyMember,
+    TAuthSpec
+> => {
+    const valueArgs = {
+        columnName,
+        fkidMember: args.fkidMember,
+        allowNull: args.allowNull ?? false,
+        requireVisibleTarget: args.requireVisibleTarget,
+        defaultValue: args.defaultValue,
+        specialFunction: args.specialFunction,
+        foreignTableID,
+        getQuickFilterWhereClause: args.getQuickFilterWhereClause ?? (() => false),
+    };
+
+    const field = "authMap" in args
+        ? new ForeignSingleField<TAnyModel, xTable, TForeignKeyMember, TAuthSpec>({
+            ...valueArgs,
+            authMap: args.authMap,
+        })
+        : new ForeignSingleField<TAnyModel, xTable, TForeignKeyMember, TAuthSpec>({
+            ...valueArgs,
+            _customAuth: args._customAuth,
+        });
+    return field as unknown as ForeignSingleFieldByTableId<
+        TTargetTableID,
+        TForeignKeyMember,
+        TAuthSpec
+    >;
 };
 

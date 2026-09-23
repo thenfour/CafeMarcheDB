@@ -233,9 +233,9 @@ type DB3NormalizedReferenceFieldKeys<
 }[keyof TFields], keyof TFields>;
 
 type DB3NormalizedReferenceValue<TDto, TField> =
-    TField extends DB3ForeignSingleReferenceField<infer TTargetTable, infer TForeignKeyMember>
+    TField extends DB3ForeignSingleReferenceField<any, infer TForeignKeyMember>
     ? TForeignKeyMember extends keyof TDto
-    ? DB3ReferenceValueOf<TTargetTable>
+    ? DB3ReferenceValueOf<Extract<DB3RelationTargetTableOf<TField>, xTable>>
     | Extract<TDto[TForeignKeyMember], null | undefined>
     : never
     : never;
@@ -334,11 +334,16 @@ export interface DB3CompiledSelection<
 export interface DB3DerivedViewContract<
     TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
-> extends DB3CompiledSelection<TEntity, TSelection> {
+    TTransportSelection extends DB3ViewSelectionArgs<TEntity> = TSelection,
+> {
+    readonly prismaSelection: TSelection;
+    readonly dtoSchema: DB3DerivedDtoSchema<TEntity, TTransportSelection>;
+    readonly members: readonly DB3CompiledMember[];
+    readonly referenceDependencies: readonly DB3ReferenceDependency[];
     readonly hydrate: (
-        dto: DB3DtoForSelection<TEntity, TSelection>,
+        dto: DB3DtoForSelection<TEntity, TTransportSelection>,
         references: DB3ReferenceProvider,
-    ) => DB3ClientForSelection<TEntity, TSelection>;
+    ) => DB3ClientForSelection<TEntity, TTransportSelection>;
 }
 
 function selectionError(
@@ -374,6 +379,61 @@ function getExplicitSelect(
         );
     }
     return select;
+}
+
+function assertTransportSelectionIsFetched(
+    entity: AnyDB3Table,
+    prismaArgs: TAnyModel,
+    transportArgs: TAnyModel,
+    argsPath: string,
+): void {
+    const prismaSelect = getExplicitSelect(entity, prismaArgs, argsPath);
+    const transportSelect = getExplicitSelect(entity, transportArgs, `${argsPath}.transport`);
+
+    for (const [member, transportMemberSelection] of Object.entries(transportSelect)) {
+        if (transportMemberSelection === false || transportMemberSelection === undefined) continue;
+
+        const selectionPath = `${argsPath}.select.${member}`;
+        const prismaMemberSelection = prismaSelect[member];
+        if (prismaMemberSelection === false
+            || prismaMemberSelection === null
+            || prismaMemberSelection === undefined) {
+            throw selectionError(
+                entity,
+                selectionPath,
+                "transport selection member is not fetched by the Prisma selection.",
+            );
+        }
+
+        if (transportMemberSelection === true) {
+            if (prismaMemberSelection !== true) {
+                throw selectionError(
+                    entity,
+                    selectionPath,
+                    "transport scalar selection does not match the Prisma selection shape.",
+                );
+            }
+            continue;
+        }
+
+        if (!transportMemberSelection || typeof transportMemberSelection !== "object"
+            || Array.isArray(transportMemberSelection)
+            || !prismaMemberSelection || typeof prismaMemberSelection !== "object"
+            || Array.isArray(prismaMemberSelection)) {
+            throw selectionError(
+                entity,
+                selectionPath,
+                "transport relation selection does not match the Prisma selection shape.",
+            );
+        }
+
+        assertTransportSelectionIsFetched(
+            entity,
+            prismaMemberSelection,
+            transportMemberSelection,
+            selectionPath,
+        );
+    }
 }
 
 function applyReadPresence(
@@ -656,13 +716,26 @@ function hydrateCompiledSelection<
 export function deriveViewContract<
     TEntity extends AnyDB3Table,
     const TSelection extends DB3ViewSelectionArgs<TEntity>,
+    const TTransportSelection extends DB3ViewSelectionArgs<TEntity> = TSelection,
 >(
     entity: TEntity,
     selection: TSelection,
-): DB3DerivedViewContract<TEntity, TSelection> {
-    const compiled = compileDB3Selection(entity, selection);
+    options?: { readonly transportSelection: TTransportSelection },
+): DB3DerivedViewContract<TEntity, TSelection, TTransportSelection> {
+    const transportSelection = options?.transportSelection
+        ?? (selection as unknown as TTransportSelection);
+    if (options) {
+        assertTransportSelectionIsFetched(
+            entity,
+            selection as TAnyModel,
+            transportSelection as TAnyModel,
+            entity.tableID,
+        );
+    }
+    const compiled = compileDB3Selection(entity, transportSelection);
     return {
         ...compiled,
+        prismaSelection: selection,
         hydrate: (dto, references) => hydrateCompiledSelection(compiled, dto, references),
     };
 }

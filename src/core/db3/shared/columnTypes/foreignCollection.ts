@@ -3,7 +3,7 @@ import { TAnyModel } from "@/shared/rootroot";
 import type { DB3Authorization } from "../db3Authorization";
 import {
     ApplyIncludeFilteringToRelation, type DB3FieldPrismaMember,
-    type DB3RelationTargetField, GetTableById, type xTable,
+    type DB3RelationTargetField, type DB3TableTypeRegistry, GetTableById,
 } from "../db3core";
 import { GhostField, GhostFieldArgs } from "./ghost";
 
@@ -12,12 +12,12 @@ import { GhostField, GhostFieldArgs } from "./ghost";
 // A direct child collection, with the same value handling as a GhostField but
 // an explicit target schema for authorization and nested relation traversal.
 export class ForeignCollectionField<
-    TTargetTable extends xTable = xTable,
-> extends GhostField implements DB3RelationTargetField<TTargetTable> {
-    declare readonly __relationTargetTable: TTargetTable;
-    foreignTableID: string;
+    const TTargetTableID extends Extract<keyof DB3TableTypeRegistry, string>,
+> extends GhostField implements DB3RelationTargetField<TTargetTableID> {
+    declare readonly __relationTargetTable: TTargetTableID;
+    foreignTableID: TTargetTableID;
 
-    constructor(args: GhostFieldArgs & { foreignTableID: string }) {
+    constructor(args: GhostFieldArgs & { foreignTableID: TTargetTableID }) {
         super(args);
         this.foreignTableID = args.foreignTableID;
     }

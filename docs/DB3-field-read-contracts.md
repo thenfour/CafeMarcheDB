@@ -353,9 +353,12 @@ that xTable directly; the duplicative `DB3Entity` wrapper has been removed.
 `foreignRef(() => xTarget, options)` derives the referenced Prisma payload,
 concrete target table type, and runtime table ID from the target xTable. Its
 target resolver remains lazy through the Prisma-member registry, so forward and
-cross-module references are not evaluated during table construction. The two
-recursive `File -> File` fields retain the legacy constructor as the explicit
-self-type escape hatch.
+cross-module references are not evaluated during table construction. Reciprocal
+schema edges can instead retain a stable table-ID descriptor with
+`foreignRefByTableId()`. `DB3TableTypeRegistry` resolves that descriptor to the
+concrete xTable only when a finite view selection traverses the edge, avoiding
+eager recursive expansion of the schema graph. The two recursive `File -> File`
+fields retain the legacy constructor as the explicit self-type escape hatch.
 Callers must preserve the literal selection (for example with
 `Prisma.validator`) rather than first widening it to `Prisma.*DefaultArgs` if
 they want an exact derived DTO type.
@@ -422,9 +425,12 @@ Zod transforms.
 
 Implementation status: `deriveViewContract(entity, selection)` returns the
 original selection, its derived DTO schema, the shared compiled member
-description, and a default hydrator. The hydrator validates the complete DTO
-before applying any conversion, skips authorization-absent members, and invokes
-each present scalar field's codec once. Embedded single and collection relations
+description, and a default hydrator. It also accepts a `transportSelection`
+subset when the full Prisma selection contains authorization-only members. The
+subset is checked recursively at construction time, and only that subset defines
+the DTO and hydration graph. The hydrator validates the complete DTO before
+applying any conversion, skips authorization-absent members, and invokes each
+present scalar field's codec once. Embedded single and collection relations
 recurse through the same compiled member tree, preserving absent and null edges.
 A foreign key selected without its relation declares a reference dependency;
 hydration retains the key and adds the relation from the supplied provider.
@@ -477,18 +483,20 @@ The safe broad-rollout boundary is now concrete:
 
 - Explicit `select` trees over scalar fields, typed foreign-single relations,
   and typed association collections derive cleanly. `include` remains rejected.
-- Legacy collection fields that identify targets only by string table ID can be
-  compiled at runtime, but they do not retain enough target type information to
-  infer useful nested DTO types. Adding eager target types to the recursive
-  Event/EventSegment graph creates circular inference problems; that is not part
-  of this migration.
-- `TagsField` still widens its own authorization spec, so an outer tag collection
-  can remain compile-time optional even when its runtime map uses `inheritRow`.
-  Its typed association target still gives correct nested field types. Fixing
-  the outer presence type can be a separate, narrow follow-up.
-- Dynamic `Event_Search` still combines per-actor selection additions and legacy
-  collection descriptors. It remains explicit rather than weakening the
-  derived contract or introducing casts.
+- Relation fields may retain stable table-ID descriptors. A type registry maps
+  those IDs to concrete xTables only when the compiler traverses the finite
+  selection, so reciprocal schema relations do not widen nested DTO members to
+  `any` or require an arbitrary recursion-depth limit. Collection descriptors
+  accept only registered IDs, so missing type metadata is a compiler error
+  rather than a silent fallback to an untyped table.
+- `TagsField` can retain its exact authorization spec. The Event tags declaration
+  now carries its `inheritRow` presence through to the derived DTO, making the
+  selected collection required at both compile time and runtime.
+- `Event_Search` now derives its finite nested transport and hydration graph. Its
+  full per-actor Prisma selection may contain authorization-only members, while a
+  checked `transportSelection` subset prevents those members from entering the
+  DTO. View-level hydration still composes date ranges and policy-specific
+  reference identity where those semantics do not belong to field codecs.
 - `ForeignCollectionField` and ghost members need an explicit read transport
   contract before a selected primitive can derive. This is deliberate: unknown
   transport values are rejected rather than guessed.
@@ -697,14 +705,14 @@ sound.
 
 17. [x] **Assess the pilot before broad rollout.** Record unsupported selection
         patterns, type-quality regressions, authorization surprises, and remaining
-        duplication. The assessment above keeps legacy/cyclic collection typing,
-        general compound fields, and mutation refactoring outside this rollout.
+        duplication. The assessment above keeps general compound fields and
+        mutation refactoring outside this rollout; the later Event Search migration
+        resolves cyclic relation typing without expanding that scope.
 
 18. [x] **Migrate simple views incrementally.** Prefer views whose selections are
         entirely covered by the compiler. Keep explicit schemas and hydration for
         exceptional views rather than weakening the derived contract.
-        `EventType_Editor` and `EventTag_Editor` now join `EventStatus_Editor`;
-        `Event_Search` remains explicit as an intentional exception.
+        `EventType_Editor` and `EventTag_Editor` now join `EventStatus_Editor`.
 
 19. [x] **Update the architecture documentation.** Once behavior is proven,
         update the broader entity/view/hydration document and mark superseded
@@ -716,6 +724,14 @@ sound.
         `required`/`optional` result with an opaque compile-time marker, and reject
         raw, widened, or presence-erased maps at field boundaries. Migrate existing
         declarations and cover the rejection contract with compiler tests.
+
+21. [x] **Use `Event_Search` to make recursive derivation selection-bounded.**
+        Resolve stable relation table IDs through a type registry only when a
+        selected edge is traversed; never eagerly expand the complete xTable graph
+        or cap recursion depth. Separate the full Prisma selection from a validated
+        transport subset so authorization-only fields do not enter the DTO. Prove
+        nested relation members retain exact types and do not silently become
+        `any`.
 
 ## Pilot completion criteria
 

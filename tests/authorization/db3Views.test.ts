@@ -567,6 +567,11 @@ describe("DB3 named views", () => {
         const dto = db3.eventSearchView.parseDto({
             id: 1,
             name: "Actor-scoped event",
+            locationDescription: "",
+            locationURL: "",
+            startsAt: null,
+            durationMillis: BigInt(3_600_000),
+            isAllDay: false,
             typeId: eventType.id,
             statusId: eventStatus.id,
             tags: [{ id: 10, eventTagId: eventTag.id }],
@@ -582,7 +587,7 @@ describe("DB3 named views", () => {
         expect(hydrated.status).toBe(eventStatus);
         expect(hydrated.tags?.[0]?.eventTag).toBe(eventTag);
         expect(hydrated.expectedAttendanceUserTag?.userAssignments?.[0]?.userId).toBe(42);
-        expect(hydrated.dateRange).toBeUndefined();
+        expect(hydrated.dateRange).toBeInstanceOf(DateTimeRange);
         expect("startsAt" in hydrated).toBe(false);
         expect(hydrated.segments).toBeUndefined();
         expect(hydrated.songLists).toBeUndefined();
@@ -594,9 +599,13 @@ describe("DB3 named views", () => {
         const segmentStart = new Date("2026-09-20T19:00:00Z");
         const dto = db3.eventSearchView.parseDto({
             id: 1,
+            name: "Timed event",
+            locationDescription: "",
+            locationURL: "",
             startsAt: null,
             durationMillis: BigInt(86_400_000),
             isAllDay: true,
+            tags: [],
             segments: [
                 {
                     id: 2,
@@ -639,7 +648,7 @@ describe("DB3 named views", () => {
             "startsAt" | "durationMillis" | "isAllDay">;
         expectTypeOf<EventRawTimingKeys>().toEqualTypeOf<never>();
         expectTypeOf<SegmentRawTimingKeys>().toEqualTypeOf<never>();
-        expectTypeOf(hydrated.dateRange).toEqualTypeOf<DateTimeRange | undefined>();
+        expectTypeOf(hydrated.dateRange).toEqualTypeOf<DateTimeRange>();
     });
 
     it("applies nested Event view authorization before returning its DTO", async () => {
@@ -678,7 +687,15 @@ describe("DB3 named views", () => {
                 id: 5,
                 userAssignments: [{ id: 22, userId: 42 }],
             },
-            descriptionWikiPage: null,
+            descriptionWikiPage: {
+                id: 30,
+                createdByUserId: 42,
+                visiblePermissionId: null,
+                currentRevision: {
+                    id: 31,
+                    content: "Event details",
+                },
+            },
         }]);
         const permissionNames = [
             Permission.always_grant,
@@ -720,9 +737,15 @@ describe("DB3 named views", () => {
             expectedAttendanceUserTag: expect.objectContaining({
                 userAssignments: [expect.objectContaining({ userId: 42 })],
             }),
+            descriptionWikiPage: {
+                id: 30,
+                currentRevision: { id: 31, content: "Event details" },
+            },
         })]);
         expect(result.items[0]).not.toHaveProperty("createdByUserId");
         expect(result.items[0]).not.toHaveProperty("isDeleted");
+        expect(result.items[0]!.descriptionWikiPage).not.toHaveProperty("createdByUserId");
+        expect(result.items[0]!.descriptionWikiPage).not.toHaveProperty("visiblePermissionId");
 
         const queryArgs = findMany.mock.calls[0]![0] as any;
         expect(queryArgs.select.responses.where.AND[0]).toEqual({ userId: 42 });

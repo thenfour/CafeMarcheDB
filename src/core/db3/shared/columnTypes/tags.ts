@@ -7,7 +7,7 @@ import {
 } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
 import {
-    ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3FieldPrismaMember, type DB3RelationTargetField, type DB3RowMode,
+    ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3FieldPrismaMember, type DB3ReadPresenceForAuthSpec, type DB3RelationTargetField, type DB3RowMode,
     FieldBase, GetTableById, type SqlGetSortableQueryElementsAPI,
     SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
@@ -19,7 +19,10 @@ import { type UserWithRolesPayload } from "../schema/userPayloads";
 ////////////////////////////////////////////////////////////////
 // tags fields are arrays of associations
 // on client side, there is NO foreign key field (like instrumentId). Only the foreign object ('instrument').
-export type TagsFieldArgs<TAssociation> = {
+export type TagsFieldArgs<
+    TAssociation,
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+> = {
     columnName: string; // "instrumentType"
     associationTableID: string;
     foreignTableID: string;
@@ -37,14 +40,22 @@ export type TagsFieldArgs<TAssociation> = {
     associationForeignIDMember: string;
     associationLocalObjectMember: string;
     associationForeignObjectMember: string;
-} & DB3AuthSpec;
+} & TAuthSpec;
 
 // Tags encode an association collection rather than a same-key scalar value;
 // their exact write shape belongs to their explicit mutation projection.
 export class TagsField<
     TAssociation,
     TAssociationTable extends xTable = xTable,
-> extends FieldBase<TAssociation[], undefined, false>
+    const TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+> extends FieldBase<
+    TAssociation[],
+    undefined,
+    false,
+    TAssociation[],
+    TAssociation[],
+    DB3ReadPresenceForAuthSpec<TAuthSpec>
+>
     implements DB3RelationTargetField<TAssociationTable> {
     declare readonly __relationTargetTable: TAssociationTable;
     localTableSpec: xTable;
@@ -81,7 +92,7 @@ export class TagsField<
         return !!this.getForeignTableShema().createInsertModelFromString;
     }
 
-    constructor(args: TagsFieldArgs<TAssociation>) {
+    constructor(args: TagsFieldArgs<TAssociation, TAuthSpec>) {
         super({
             member: args.columnName,
             fieldTableAssociation: "associationRecord",

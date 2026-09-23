@@ -144,6 +144,8 @@ export const xUserTaxonomyTableAuthMap: db3.DB3AuthTablePermissionMap = {
     Insert: Permission.manage_user_taxonomy,
 } as const;
 
+// todo: viewing a permission is not really a security concern; todo:
+// remove xPermissionTableAuthMap in favor of the login/sysadmin pattern below.
 export const xPermissionTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.sysadmin,
     View: Permission.sysadmin,
@@ -318,6 +320,9 @@ export const xPermissionForVisibility = db3.defineTable({
             },
             {
                 // when you are selecting a visibility permission it makes no sense to include visibilities you can't see yourself.
+                // todo: move this logic into the pickers or views; it's not something to handle via this entity def.
+                // or even don't use this filter at all because it's embedding a real auth policy here in a where clause,
+                // rather than in auth code; the returned permission should be removed if you don't have access.
                 id: { in: publicData.effectivePermissions.ids }
             }
         ];
@@ -646,6 +651,16 @@ export const xUserTagAssignment = db3.defineTable({
         }),
     })
 });
+
+// register in the DB3 table type registry; this is separate from
+// the gAllTables array which erases types and should only be used for cross-network
+// lookups. This allows retaining type information even when looking up a table by
+// static string table id.
+declare module "../db3core" {
+    interface DB3TableTypeRegistry {
+        UserTagAssignment: typeof xUserTagAssignment;
+    }
+}
 
 
 

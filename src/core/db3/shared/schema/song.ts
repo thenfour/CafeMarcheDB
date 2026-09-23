@@ -414,3 +414,12 @@ export const xSongCredit = db3.defineTable({
         }),
     })
 });
+
+// statically-typed registration
+// allows retaining type information even when looking up a table by
+// static string table id.
+declare module "../db3core" {
+    interface DB3TableTypeRegistry {
+        SongCredit: typeof xSongCredit;
+    }
+}
