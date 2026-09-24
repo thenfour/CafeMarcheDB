@@ -10,7 +10,7 @@ const db = new PrismaClient({ datasourceUrl: url })
 describe.skipIf(!url)("calendar overlap SQL with real MySQL", () => {
   beforeAll(async () => {
     if (!url || !/^\/cmdb_datetime_test_[a-f0-9]{16}$/.test(new URL(url).pathname)) throw new Error("A disposable datetime-test database is required.")
-    await db.eventStatus.create({ data: { id: 9, label: "Cancelled", description: "", significance: "Cancelled" } })
+    await db.eventStatus.create({ data: { id: 9, publicId: "DateStatusTest01", label: "Cancelled", description: "", significance: "Cancelled" } })
     const segment = (start: string | null, duration: number, allDay = false, statusId: number | null = null) => {
       const authored = allDay && start ? createAllDayRange({ startDate: start.slice(0, 10), endDateExclusive: addCalendarDays(start.slice(0, 10), Math.max(1, Math.round(duration / 86400000))) }, "Europe/Brussels") : null
       return { name: "Segment", description: "", startsAt: authored ? authored.getStartDateTime() : start ? new Date(start) : null, durationMillis: BigInt(authored ? authored.getDurationMillis() : duration), isAllDay: allDay, statusId,

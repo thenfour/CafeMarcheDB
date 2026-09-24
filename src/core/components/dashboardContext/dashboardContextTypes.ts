@@ -5,7 +5,7 @@ import { ServerStartInfo } from "@/shared/serverStateBase";
 import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
 import { Prisma } from "db";
-import type { FileTagPublicId, InstrumentFunctionalGroupPublicId, InstrumentTagPublicId, SongTagPublicId, WikiPageTagPublicId } from "shared/publicId";
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, FileTagPublicId, InstrumentFunctionalGroupPublicId, InstrumentTagPublicId, SongTagPublicId, WikiPageTagPublicId } from "shared/publicId";
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
 import { resolveUserSettings, UserSettings } from "shared/userSettings";
 
@@ -14,9 +14,9 @@ export abstract class DashboardContextDataBase {
     userSettings: UserSettings = resolveUserSettings();
     bandTimeZone: string = DEFAULT_BAND_TIME_ZONE;
     userTag: TableAccessor<db3.UserTagDashboardClient>;
-    eventType: TableAccessor<db3.ClientOf<typeof db3.eventTypeDashboardView>>;
-    eventStatus: TableAccessor<db3.ClientOf<typeof db3.eventStatusDashboardView>>;
-    eventTag: TableAccessor<db3.ClientOf<typeof db3.eventTagDashboardView>>;
+    eventType: TableAccessor<db3.ClientOf<typeof db3.eventTypeDashboardView>, EventTypePublicId>;
+    eventStatus: TableAccessor<db3.ClientOf<typeof db3.eventStatusDashboardView>, EventStatusPublicId>;
+    eventTag: TableAccessor<db3.ClientOf<typeof db3.eventTagDashboardView>, EventTagPublicId>;
     eventAttendance: TableAccessor<db3.CompleteEventAttendanceDashboardClient>;
     fileTag: TableAccessor<db3.ClientOf<typeof db3.fileTagDashboardView>, FileTagPublicId>;
     songTag: TableAccessor<db3.ClientOf<typeof db3.songTagDashboardView>, SongTagPublicId>;
@@ -127,7 +127,9 @@ export abstract class DashboardContextDataBase {
 
     brand: DbBrandConfig;
 
-    abstract partitionEventSegmentsByCancellation<Tseg extends Prisma.EventSegmentGetPayload<{ select: { statusId: true } }>>(segments: Tseg[]): [Tseg[], Tseg[]];
+    abstract partitionEventSegmentsByCancellation<
+        Tseg extends { statusId: EventStatusPublicId | null },
+    >(segments: Tseg[]): [Tseg[], Tseg[]];
     abstract sortInstruments<Tinst extends { sortOrder: number, functionalGroupId: InstrumentFunctionalGroupPublicId }>(instruments: Tinst[]): Tinst[];
     abstract isAttendanceIdGoing(attendanceId: number | null): boolean;
     abstract getVisibilityPermissions(): db3.ClientOf<typeof db3.permissionDashboardView>[];

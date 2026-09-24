@@ -10,6 +10,7 @@ import { EventResponseInfo, fn_makeMockEventSegmentResponse, fn_makeMockEventUse
 import { DashboardContextData, useDashboardContext } from '../dashboardContext/DashboardContext';
 import { DashboardContextDataBase } from '../dashboardContext/dashboardContextTypes';
 import { calculateEventAttendance, EventAttendanceResult } from "./attendanceCalculation";
+import type { EventStatusPublicId } from 'shared/publicId';
 
 
 export type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & {
@@ -123,7 +124,7 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
     const eventData = CalculateEventMetadata<
         EventEnrichedVerbose_Event,
         db3.EventVerbose_EventUserResponse,
-        db3.EventVerbose_EventSegment,
+        db3.EventVerbose_EventSegmentClient,
         db3.EventVerbose_EventSegmentUserResponse
     >(event, new DateTimeRange({
         startsAtDateTime: event.startsAt,
@@ -208,7 +209,10 @@ export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttend
         segments: props.eventData.event.segments,
         eventTiming: props.eventData.eventTiming,
         eventIsCancelled: props.eventData.event.status?.significance === db3.EventStatusSignificance.Cancelled,
-        cancelledStatusIds: db3.getCancelledStatusIds(dashboardContext.eventStatus.items),
+        cancelledStatusIds: db3.getCancelledStatusIds(
+            dashboardContext.eventStatus.items,
+            status => db3.xEventStatus.getIdentity(status),
+        ),
         attendances: dashboardContext.eventAttendance.items,
     });
 };
@@ -224,7 +228,7 @@ export interface EventListItemProps {
 type ReadyEventSearchSegment = NonNullable<db3.EventSearchClient["segments"]>[number] & {
     name: string;
     dateRange: DateTimeRange;
-    statusId: number | null;
+    statusId: EventStatusPublicId | null;
     responses: db3.EventResponses_MinimalEventSegmentUserResponse[];
 };
 
@@ -378,11 +382,11 @@ export const EventTableClientColumns = DB3Client.makeClientColumnSet({
     isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
     locationDescription: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150, fieldCaption: "Location" }),
     locationURL: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150, fieldCaption: "Location URL" }),
-    type: columnName => new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName, cellWidth: 150, selectStyle: "inline", fieldCaption: "Event Type", selectionView: db3.eventTypeEditorView }),
-    status: columnName => new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName, cellWidth: 150, fieldCaption: "Status", selectionView: db3.eventStatusEditorView }),
+    type: columnName => new DB3Client.ForeignSingleFieldClient<db3.EventTypeDashboardClient>({ columnName, cellWidth: 150, selectStyle: "inline", fieldCaption: "Event Type", selectionView: db3.eventTypeEditorView }),
+    status: columnName => new DB3Client.ForeignSingleFieldClient<db3.EventStatusDashboardClient>({ columnName, cellWidth: 150, fieldCaption: "Status", selectionView: db3.eventStatusEditorView }),
     segmentBehavior: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 220, fieldCaption: "Behavior of segments" }),
     expectedAttendanceUserTag: columnName => new DB3Client.ForeignSingleFieldClient<db3.UserTagPayload>({ columnName, cellWidth: 150, fieldCaption: "Who's invited?", selectionView: db3.userTagEditorView }),
-    tags: columnName => new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false, fieldCaption: "Tags", selectionView: db3.eventTagEditorView }),
+    tags: columnName => new DB3Client.TagsFieldClient<db3.EventTagAssignmentClientPayload & { eventTag: db3.EventTagDashboardClient }>({ columnName, cellWidth: 150, allowDeleteFromCell: false, fieldCaption: "Tags", selectionView: db3.eventTagEditorView }),
 
     visiblePermission: DB3Client.foreignRefFieldGen({
         selectionView: db3.permissionVisibilityView,

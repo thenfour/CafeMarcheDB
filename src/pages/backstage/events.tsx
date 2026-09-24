@@ -13,6 +13,7 @@ import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId } from "shared/publicId";
 
 // for serializing in compact querystring
 interface EventsFilterSpecStatic {
@@ -24,15 +25,15 @@ interface EventsFilterSpecStatic {
 
     typeFilterEnabled: boolean;
     typeFilterBehavior: DiscreteCriterionFilterType;
-    typeFilterOptions: number[];
+    typeFilterOptions: EventTypePublicId[];
 
     tagFilterEnabled: boolean;
     tagFilterBehavior: DiscreteCriterionFilterType;
-    tagFilterOptions: number[];
+    tagFilterOptions: EventTagPublicId[];
 
     statusFilterEnabled: boolean;
     statusFilterBehavior: DiscreteCriterionFilterType;
-    statusFilterOptions: number[];
+    statusFilterOptions: EventStatusPublicId[];
 
     dateFilterEnabled: boolean;
     dateFilterBehavior: DiscreteCriterionFilterType;
@@ -41,7 +42,20 @@ interface EventsFilterSpecStatic {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-const gStaticFilters: EventsFilterSpecStatic[] = [
+const makeStaticFilters = (
+    dashboardContext: ReturnType<typeof useDashboardContext>,
+): EventsFilterSpecStatic[] => {
+    const rehearsalTypeIds = dashboardContext.eventType
+        .filter(type => type.significance === db3.EventTypeSignificance.Rehearsal)
+        .map(type => type.publicId);
+    const concertTypeIds = dashboardContext.eventType
+        .filter(type => type.significance === db3.EventTypeSignificance.Concert)
+        .map(type => type.publicId);
+    const confirmedStatusIds = dashboardContext.eventStatus
+        .filter(status => status.significance === db3.EventStatusSignificance.FinalConfirmation)
+        .map(status => status.publicId);
+
+    return [
     {
         label: "All",
         helpText: "Searching all events",
@@ -66,20 +80,16 @@ const gStaticFilters: EventsFilterSpecStatic[] = [
         "orderByColumn": "startsAt",
         "orderByDirection": "asc",
         "statusFilterEnabled": false,
-        "statusFilterBehavior": "hasNone" as any,
-        "statusFilterOptions": [
-            2
-        ],
+        "statusFilterBehavior": DiscreteCriterionFilterType.hasNone,
+        "statusFilterOptions": [],
         "typeFilterEnabled": false,
-        "typeFilterBehavior": "hasSomeOf" as any,
-        "typeFilterOptions": [
-            3
-        ],
+        "typeFilterBehavior": DiscreteCriterionFilterType.hasSomeOf,
+        "typeFilterOptions": [],
         "tagFilterEnabled": false,
-        "tagFilterBehavior": "hasAllOf" as any,
+        "tagFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
         "tagFilterOptions": [],
         "dateFilterEnabled": true,
-        "dateFilterBehavior": "hasAllOf" as any,
+        "dateFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
         "dateFilterOptions": [
             10002
         ]
@@ -90,20 +100,16 @@ const gStaticFilters: EventsFilterSpecStatic[] = [
         "orderByColumn": "startsAt",
         "orderByDirection": "asc",
         "statusFilterEnabled": false,
-        "statusFilterBehavior": "hasNone" as any,
-        "statusFilterOptions": [
-            2
-        ],
+        "statusFilterBehavior": DiscreteCriterionFilterType.hasNone,
+        "statusFilterOptions": [],
         "typeFilterEnabled": true,
-        "typeFilterBehavior": "doesntHaveAnyOf" as any,
-        "typeFilterOptions": [
-            3
-        ],
+        "typeFilterBehavior": DiscreteCriterionFilterType.doesntHaveAnyOf,
+        "typeFilterOptions": rehearsalTypeIds,
         "tagFilterEnabled": false,
-        "tagFilterBehavior": "hasAllOf" as any,
+        "tagFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
         "tagFilterOptions": [],
         "dateFilterEnabled": true,
-        "dateFilterBehavior": "hasAllOf" as any,
+        "dateFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
         "dateFilterOptions": [
             10002
         ]
@@ -114,20 +120,16 @@ const gStaticFilters: EventsFilterSpecStatic[] = [
         "orderByColumn": "startsAt",
         "orderByDirection": "desc",
         "statusFilterEnabled": false,
-        "statusFilterBehavior": "hasNone" as any,
-        "statusFilterOptions": [
-            2
-        ],
+        "statusFilterBehavior": DiscreteCriterionFilterType.hasNone,
+        "statusFilterOptions": [],
         "typeFilterEnabled": true,
-        "typeFilterBehavior": "hasSomeOf" as any,
-        "typeFilterOptions": [
-            3
-        ],
+        "typeFilterBehavior": DiscreteCriterionFilterType.hasSomeOf,
+        "typeFilterOptions": rehearsalTypeIds,
         "tagFilterEnabled": false,
-        "tagFilterBehavior": "hasAllOf" as any,
+        "tagFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
         "tagFilterOptions": [],
         "dateFilterEnabled": true,
-        "dateFilterBehavior": "hasAllOf" as any,
+        "dateFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
         "dateFilterOptions": [
             10003
         ]
@@ -138,71 +140,69 @@ const gStaticFilters: EventsFilterSpecStatic[] = [
         "orderByColumn": "startsAt",
         "orderByDirection": "desc",
         "statusFilterEnabled": true,
-        "statusFilterBehavior": "hasSomeOf" as any,
-        "statusFilterOptions": [
-            3
-        ],
+        "statusFilterBehavior": DiscreteCriterionFilterType.hasSomeOf,
+        "statusFilterOptions": confirmedStatusIds,
         "typeFilterEnabled": true,
-        "typeFilterBehavior": "hasSomeOf" as any,
-        "typeFilterOptions": [
-            1
-        ],
+        "typeFilterBehavior": DiscreteCriterionFilterType.hasSomeOf,
+        "typeFilterOptions": concertTypeIds,
         "tagFilterEnabled": false,
-        "tagFilterBehavior": "hasAllOf" as any,
+        "tagFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
         "tagFilterOptions": [],
         "dateFilterEnabled": true,
-        "dateFilterBehavior": "hasAllOf" as any,
+        "dateFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
         "dateFilterOptions": [
             10000
         ]
     },
-];
+    ];
+};
 
 const gDefaultStaticFilterName = "Relevant" as const;
-const gDefaultStaticFilterValue = gStaticFilters.find(x => x.label === gDefaultStaticFilterName)!;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const EventListOuter = () => {
     const dashboardContext = useDashboardContext();
+    const staticFilters = makeStaticFilters(dashboardContext);
+    const defaultStaticFilterValue = staticFilters.find(x => x.label === gDefaultStaticFilterName)!;
 
     // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({
         urlPrefix: "tg",
         db3Column: "tags",
-        defaultBehavior: gDefaultStaticFilterValue.tagFilterBehavior,
-        defaultOptions: gDefaultStaticFilterValue.tagFilterOptions,
-        defaultEnabled: gDefaultStaticFilterValue.tagFilterEnabled,
+        defaultBehavior: defaultStaticFilterValue.tagFilterBehavior,
+        defaultOptions: defaultStaticFilterValue.tagFilterOptions,
+        defaultEnabled: defaultStaticFilterValue.tagFilterEnabled,
     });
 
     const statusFilter = useDiscreteFilter({
         urlPrefix: "st",
         db3Column: "status",
-        defaultBehavior: gDefaultStaticFilterValue.statusFilterBehavior,
-        defaultOptions: gDefaultStaticFilterValue.statusFilterOptions,
-        defaultEnabled: gDefaultStaticFilterValue.statusFilterEnabled,
+        defaultBehavior: defaultStaticFilterValue.statusFilterBehavior,
+        defaultOptions: defaultStaticFilterValue.statusFilterOptions,
+        defaultEnabled: defaultStaticFilterValue.statusFilterEnabled,
     });
 
     const typeFilter = useDiscreteFilter({
         urlPrefix: "tp",
         db3Column: "type",
-        defaultBehavior: gDefaultStaticFilterValue.typeFilterBehavior,
-        defaultOptions: gDefaultStaticFilterValue.typeFilterOptions,
-        defaultEnabled: gDefaultStaticFilterValue.typeFilterEnabled,
+        defaultBehavior: defaultStaticFilterValue.typeFilterBehavior,
+        defaultOptions: defaultStaticFilterValue.typeFilterOptions,
+        defaultEnabled: defaultStaticFilterValue.typeFilterEnabled,
     });
 
     const dateFilter = useDiscreteFilter({
         urlPrefix: "dt",
         db3Column: "startsAt",
-        defaultBehavior: gDefaultStaticFilterValue.dateFilterBehavior,
-        defaultOptions: gDefaultStaticFilterValue.dateFilterOptions,
-        defaultEnabled: gDefaultStaticFilterValue.dateFilterEnabled,
+        defaultBehavior: defaultStaticFilterValue.dateFilterBehavior,
+        defaultOptions: defaultStaticFilterValue.dateFilterOptions,
+        defaultEnabled: defaultStaticFilterValue.dateFilterEnabled,
     });
 
     // Using useSearchPage hook for centralized search page logic
     const searchPage = useSearchPage<EventsFilterSpecStatic, EventsFilterSpec>({
-        staticFilters: gStaticFilters,
-        defaultStaticFilter: gDefaultStaticFilterValue,
+        staticFilters,
+        defaultStaticFilter: defaultStaticFilterValue,
         sortColumnKey: "orderByColumn",
         sortDirectionKey: "orderByDirection",
         filterMappings: [
@@ -233,13 +233,13 @@ const EventListOuter = () => {
                 orderByDirection: sortDirection,
                 statusFilterEnabled: statusFilter.enabled,
                 statusFilterBehavior: statusFilter.criterion.behavior,
-                statusFilterOptions: statusFilter.criterion.options as number[],
+                statusFilterOptions: statusFilter.criterion.options,
                 typeFilterEnabled: typeFilter.enabled,
                 typeFilterBehavior: typeFilter.criterion.behavior,
-                typeFilterOptions: typeFilter.criterion.options as number[],
+                typeFilterOptions: typeFilter.criterion.options,
                 tagFilterEnabled: tagFilter.enabled,
                 tagFilterBehavior: tagFilter.criterion.behavior,
-                tagFilterOptions: tagFilter.criterion.options as number[],
+                tagFilterOptions: tagFilter.criterion.options,
                 dateFilterEnabled: dateFilter.enabled,
                 dateFilterBehavior: dateFilter.criterion.behavior,
                 dateFilterOptions: dateFilter.criterion.options as number[],
@@ -250,8 +250,8 @@ const EventListOuter = () => {
 
     // Configuration for the generic SearchPageContent component
     const config: SearchPageContentConfig<EventsFilterSpecStatic, EventsFilterSpec, db3.EventSearchDto, db3.EventSearchClient> = {
-        staticFilters: gStaticFilters,
-        defaultStaticFilter: gDefaultStaticFilterValue,
+        staticFilters,
+        defaultStaticFilter: defaultStaticFilterValue,
         sortColumnOptions: EventOrderByColumnOptions,
         sortColumnNames: EventOrderByColumnNames,
         searchConfig: eventSearchConfig,

@@ -3,8 +3,9 @@ import type * as db3 from "src/core/db3/db3";
 import { compareEventSegments } from "src/core/db3/shared/schema/prismArgs";
 import { Timing } from "shared/time";
 import { isAttendanceGoing, isAttendanceNotGoing } from "shared/eventAttendance";
+import type { EventStatusPublicId } from "shared/publicId";
 
-type Segment = Prisma.EventSegmentGetPayload<{
+type SegmentDb = Prisma.EventSegmentGetPayload<{
     select: {
         id: true,
         name: true,
@@ -14,6 +15,10 @@ type Segment = Prisma.EventSegmentGetPayload<{
         isAllDay: true,
     }
 }>;
+type StatusIdentity = number | EventStatusPublicId;
+type Segment = Omit<SegmentDb, "statusId"> & {
+    statusId: StatusIdentity | null;
+};
 
 export interface EventAttendanceResult {
     eventUserResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>;
@@ -55,14 +60,14 @@ export interface EventAttendanceCalculationInput {
     segments: Segment[];//(Omit<db3.EventSegmentPayloadMinimum, "dateTimeVersion">)[];
     eventTiming: Timing;
     eventIsCancelled: boolean;
-    cancelledStatusIds: number[];
+    cancelledStatusIds: StatusIdentity[];
     attendances: db3.EventAttendanceDisplay[];
 }
 
 // Shared by production and the scenario page. Keep behavioral changes separate
 // from this extraction so scenarios expose the existing decisions faithfully.
 export const calculateEventAttendance = (props: EventAttendanceCalculationInput): EventAttendanceResult => {
-    const isCancelledSegment = (segment: { statusId: number | null }) =>
+    const isCancelledSegment = (segment: { statusId: StatusIdentity | null }) =>
         !!segment.statusId && props.cancelledStatusIds.includes(segment.statusId);
     const segmentUserResponses = [...props.segmentUserResponses].sort((a, b) =>
         compareEventSegments(a.segment, b.segment, props.cancelledStatusIds));

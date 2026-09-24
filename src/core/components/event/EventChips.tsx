@@ -3,8 +3,8 @@
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 //import dynamic from 'next/dynamic';
-import { Prisma } from "db";
 import React from "react";
+import type { EventStatusPublicId, EventTypePublicId } from "shared/publicId";
 import { CoalesceBool, getHashedColor, IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { CMChip, CMChipSizeOptions, CMStandardDBChip } from "../CMChip";
@@ -19,8 +19,8 @@ import { useDashboardContext } from "../dashboardContext/DashboardContext";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 
 export interface EventStatusChipProps {
-    statusId: number | null | undefined;
-    highlightStatusIds?: number[];
+    statusId: EventStatusPublicId | null | undefined;
+    highlightStatusIds?: EventStatusPublicId[];
     displayStyle?: "default" | "iconOnly";
     size?: "small" | "big";
 };
@@ -31,7 +31,7 @@ export const EventStatusChip = ({ statusId, highlightStatusIds = [], displayStyl
     const status = dashboardContext.eventStatus.getById(statusId);
     if (!status) return null;
     return <CMStandardDBChip
-        variation={{ ...StandardVariationSpec.Strong, selected: highlightStatusIds.includes(statusId || -1) }}
+        variation={{ ...StandardVariationSpec.Strong, selected: statusId != null && highlightStatusIds.includes(statusId) }}
         border='border'
         shape="rectangle"
         model={status}
@@ -44,15 +44,13 @@ export const EventStatusChip = ({ statusId, highlightStatusIds = [], displayStyl
 
 
 export interface EventChipProps {
-    value: Prisma.EventGetPayload<{
-        select: {
-            id: true,
-            name: true,
-            startsAt: true,
-            statusId: true,
-            typeId: true
-        }
-    }>;
+    value: {
+        id: number;
+        name: string;
+        startsAt: Date | null;
+        statusId: EventStatusPublicId | null;
+        typeId: EventTypePublicId | null;
+    };
     showDate?: boolean;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
@@ -94,7 +92,7 @@ export const EventChip = ({ renderAsLink = true, ...props }: EventChipProps) => 
 
 
 
-export const EventStatusMinimal = ({ statusId }: { statusId: number | null | undefined }) => {
+export const EventStatusMinimal = ({ statusId }: { statusId: EventStatusPublicId | null | undefined }) => {
     const dashboardContext = useDashboardContext();
     const status = dashboardContext.eventStatus.getById(statusId);
     if (!status) return null;
@@ -117,7 +115,7 @@ export const EventStatusMinimal = ({ statusId }: { statusId: number | null | und
 
 export interface EventStatusValueProps {
     onClick?: () => void;
-    statusId: number | null | undefined;
+    statusId: EventStatusPublicId | null | undefined;
     size: "small";
 };
 export const EventStatusValue = (props: EventStatusValueProps) => {

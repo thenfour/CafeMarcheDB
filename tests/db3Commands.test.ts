@@ -9,10 +9,13 @@ import type { ColorPaletteEntry } from "@components/color/palette";
 import {
     isPublicId,
     parsePublicId,
+    type EventStatusPublicId,
     type InstrumentFunctionalGroupPublicId,
     type InstrumentTagPublicId,
 } from "shared/publicId";
 import { z } from "zod";
+
+const eventStatusPublicId: EventStatusPublicId = parsePublicId<"EventStatus">("CommandStatus001");
 
 function createContext(seed?: {
     songList?: Record<string, unknown> | null;
@@ -809,8 +812,8 @@ describe("DB3 commands", () => {
             startsAt: new Date("2026-10-10T18:00:00.000Z"),
             durationMillis: BigInt(3_600_000),
             isAllDay: false,
-            statusId: 3,
-            status: { id: 3, label: "Confirmed" },
+            statusId: eventStatusPublicId,
+            status: { publicId: eventStatusPublicId, label: "Confirmed" },
             eventId: 4,
             event: {
                 id: 4,

@@ -3,6 +3,10 @@ import type { ColorPaletteEntry } from "@/src/core/components/color/palette";
 import type {
     FileTagAssignmentPublicId,
     FileTagPublicId,
+    EventStatusPublicId,
+    EventTagAssignmentPublicId,
+    EventTagPublicId,
+    EventTypePublicId,
     InstrumentFunctionalGroupPublicId,
     InstrumentPublicId,
     InstrumentTagAssociationPublicId,
@@ -736,7 +740,12 @@ export const FileWithTagsArgs = Prisma.validator<Prisma.FileArgs>()({
         // },
         taggedEvents: {
             include: {
-                event: true,
+                event: {
+                    include: {
+                        type: { select: { publicId: true } },
+                        status: { select: { publicId: true } },
+                    },
+                },
             }
         },
         taggedInstruments: {
@@ -767,12 +776,25 @@ export const FileWithTagsArgs = Prisma.validator<Prisma.FileArgs>()({
 );
 export type FileWithTagsPayload = Prisma.FileGetPayload<typeof FileWithTagsArgs>;
 
+type FileWithTagsEventClientPayload = Omit<
+    FileWithTagsPayload["taggedEvents"][number]["event"],
+    "typeId" | "statusId" | "type" | "status"
+> & {
+    typeId: EventTypePublicId | null;
+    statusId: EventStatusPublicId | null;
+    type: { publicId: EventTypePublicId } | null;
+    status: { publicId: EventStatusPublicId } | null;
+};
+
 export type FileWithTagsClientPayload = Omit<
     FileWithTagsPayload,
-    "tags" | "taggedInstruments"
+    "tags" | "taggedInstruments" | "taggedEvents"
 > & {
     tags: FileTagAssignmentReferenceClientPayload[];
     taggedInstruments: FileInstrumentTagReferenceClientPayload[];
+    taggedEvents: Array<Omit<FileWithTagsPayload["taggedEvents"][number], "event"> & {
+        event: FileWithTagsEventClientPayload;
+    }>;
 };
 
 
@@ -941,6 +963,7 @@ export const EventSegmentArgs = Prisma.validator<Prisma.EventSegmentArgs>()({
     //orderBy: { startsAt: "desc" },
     include: {
         event: true,
+        status: { select: { publicId: true } },
         responses: EventSegmentUserResponseArgs,
     }
 });
@@ -976,16 +999,19 @@ export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationI
     { id: "asc" },
 ];
 
-export function getCancelledStatusIds<T extends Prisma.EventStatusGetPayload<{ select: { id: true, significance: true } }>>(eventStatuses: T[]): number[] {
+export function getCancelledStatusIds<TStatus extends { significance: string | null }, TIdentity extends number | string>(
+    eventStatuses: TStatus[],
+    getIdentity: (status: TStatus) => TIdentity,
+): TIdentity[] {
     return eventStatuses
-        .filter(s => s.significance === EventStatusSignificance.Cancelled)
-        .map(x => x.id);
+        .filter(status => status.significance === EventStatusSignificance.Cancelled)
+        .map(getIdentity);
 }
 
-export const compareEventSegments = (
-    a: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, statusId: true } }>,
-    b: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, statusId: true } }>,
-    cancelledStatusIds: number[],
+export const compareEventSegments = <TStatusIdentity extends number | string>(
+    a: { startsAt: Date | null; statusId: TStatusIdentity | null },
+    b: { startsAt: Date | null; statusId: TStatusIdentity | null },
+    cancelledStatusIds: TStatusIdentity[],
 ) => {
     const a_isCancelled = a.statusId && cancelledStatusIds.includes(a.statusId);
     const b_isCancelled = b.statusId && cancelledStatusIds.includes(b.statusId);
@@ -1017,7 +1043,12 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
                 userAssignments: true
             }
         },
-        tags: true,
+        tags: {
+            include: {
+                // Selected only so public-ID projection can replace eventTagId.
+                eventTag: { select: { publicId: true } },
+            },
+        },
         fileTags: {
             include: {
                 file: FileWithTagsArgs,
@@ -1042,7 +1073,36 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
 export type EventVerbose_EventSegmentPayload = Prisma.EventSegmentGetPayload<typeof EventSegmentArgs>;
 
 type EventDbPayload_Verbose = Prisma.EventGetPayload<typeof EventArgs_Verbose>;
-export type EventClientPayload_Verbose = Omit<EventDbPayload_Verbose, "fileTags"> & {
+export type EventStatusClientPayload = Omit<Prisma.EventStatusGetPayload<{}>, "id" | "publicId"> & {
+    publicId: EventStatusPublicId;
+};
+export type EventTypeClientPayload = Omit<Prisma.EventTypeGetPayload<{}>, "id" | "publicId"> & {
+    publicId: EventTypePublicId;
+};
+export type EventTagClientPayload = Omit<Prisma.EventTagGetPayload<{}>, "id" | "publicId"> & {
+    publicId: EventTagPublicId;
+};
+export type EventTagAssignmentClientPayload = Omit<
+    EventDbPayload_Verbose["tags"][number],
+    "id" | "publicId" | "eventTagId" | "eventTag"
+> & {
+    publicId: EventTagAssignmentPublicId;
+    eventTagId: EventTagPublicId;
+};
+type EventVerboseDbSegment = Prisma.EventSegmentGetPayload<typeof EventArgs_Verbose.include.segments>;
+export type EventVerbose_EventSegmentClient = Omit<EventVerboseDbSegment, "statusId"> & {
+    statusId: EventStatusPublicId | null;
+};
+
+export type EventClientPayload_Verbose = Omit<
+    EventDbPayload_Verbose,
+    "fileTags" | "statusId" | "typeId" | "status" | "tags" | "segments"
+> & {
+    statusId: EventStatusPublicId | null;
+    typeId: EventTypePublicId | null;
+    status: EventStatusClientPayload | null;
+    tags: EventTagAssignmentClientPayload[];
+    segments: EventVerbose_EventSegmentClient[];
     fileTags: Array<Omit<EventDbPayload_Verbose["fileTags"][number], "file"> & {
         file: FileWithTagsClientPayload;
     }>;
@@ -1128,7 +1188,10 @@ export const EventTypeNaturalOrderBy: Prisma.EventTypeOrderByWithRelationInput[]
 
 
 
-export type EventPayloadClient = EventPayload; // used to include calculated fields
+export type EventPayloadClient = Omit<EventPayload, "statusId" | "typeId"> & {
+    statusId: EventStatusPublicId | null;
+    typeId: EventTypePublicId | null;
+}; // used to include calculated fields
 
 export const EventNaturalOrderBy: Prisma.EventOrderByWithRelationInput[] = [
     // while you can order by relation (ex orderByRelation): https://github.com/prisma/prisma/issues/5008
@@ -1273,10 +1336,23 @@ export const FileEventTagArgs = Prisma.validator<Prisma.FileEventTagArgs>()({
         file: {
             include: { visiblePermission: { include: { roles: true } } }
         },
-        event: true,
+        event: {
+            include: {
+                type: { select: { publicId: true } },
+                status: { select: { publicId: true } },
+            },
+        },
     }
 });
 export type FileEventTagPayload = Prisma.FileEventTagGetPayload<typeof FileEventTagArgs>;
+export type FileEventTagClientPayload = Omit<FileEventTagPayload, "event"> & {
+    event: Omit<FileEventTagPayload["event"], "typeId" | "statusId" | "type" | "status"> & {
+        typeId: EventTypePublicId | null;
+        statusId: EventStatusPublicId | null;
+        type: { publicId: EventTypePublicId } | null;
+        status: { publicId: EventStatusPublicId } | null;
+    };
+};
 
 
 // because it comes from the event payload, it doesn't include the event.
@@ -1561,37 +1637,37 @@ export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
 // generates 4 columns to link up this relationship:
 // local tags field
 // foreign tags field
-export interface DefineManyToManyRelationshipArgs<TLocalPayload, TAssociationPayload, TForeignPayload> {
-    // LOCAL
-    localTableID: string; // "event"
-    localColumnName: string; // "tags"
+// export interface DefineManyToManyRelationshipArgs<TLocalPayload, TAssociationPayload, TForeignPayload> {
+//     // LOCAL
+//     localTableID: string; // "event"
+//     localColumnName: string; // "tags"
 
-    local_getQuickFilterWhereClause?: (query: string) => TAnyModel; // basically this prevents the need to subclass and implement.
-    local_getCustomFilterWhereClause?: (query: CMDBTableFilterModel) => TAnyModel;
-    local_doesItemExactlyMatchText?: (item: TAssociationPayload, filterText: string) => boolean;
+//     local_getQuickFilterWhereClause?: (query: string) => TAnyModel; // basically this prevents the need to subclass and implement.
+//     local_getCustomFilterWhereClause?: (query: CMDBTableFilterModel) => TAnyModel;
+//     local_doesItemExactlyMatchText?: (item: TAssociationPayload, filterText: string) => boolean;
 
-    // ASSOCIATION
-    associationTableID: string; // "eventTagAssociation"
-    associationLocalIDMember: string; // "eventID"
-    associationLocalObjectMember: string; // "event"
-    associationForeignIDMember: string; // eventTagID
-    associationForeignObjectMember: string; // eventTag
-    // when we get a list of tag options, they're foreign models (tags).
-    // but we need our list to be association objects (itemTagAssocitaion)
-    createMockAssociation?: (row: TAnyModel, item: TAnyModel) => TAssociationPayload;
+//     // ASSOCIATION
+//     associationTableID: string; // "eventTagAssociation"
+//     associationLocalIDMember: string; // "eventID"
+//     associationLocalObjectMember: string; // "event"
+//     associationForeignIDMember: string; // eventTagID
+//     associationForeignObjectMember: string; // eventTag
+//     // when we get a list of tag options, they're foreign models (tags).
+//     // but we need our list to be association objects (itemTagAssocitaion)
+//     createMockAssociation?: (row: TAnyModel, item: TAnyModel) => TAssociationPayload;
 
-    // FOREIGN
-    foreignTableID: string; // "eventTag"
-    foreignColumnName: string; // "events"
+//     // FOREIGN
+//     foreignTableID: string; // "eventTag"
+//     foreignColumnName: string; // "events"
 
-    foreign_getQuickFilterWhereClause?: (query: string) => TAnyModel; // basically this prevents the need to subclass and implement.
-    foreign_getCustomFilterWhereClause?: (query: CMDBTableFilterModel) => TAnyModel;
-    foreign_doesItemExactlyMatchText?: (item: TAssociationPayload, filterText: string) => boolean;
-};
+//     foreign_getQuickFilterWhereClause?: (query: string) => TAnyModel; // basically this prevents the need to subclass and implement.
+//     foreign_getCustomFilterWhereClause?: (query: CMDBTableFilterModel) => TAnyModel;
+//     foreign_doesItemExactlyMatchText?: (item: TAssociationPayload, filterText: string) => boolean;
+// };
 
-export const DefineManyToManyRelationship = <TLocalPayload, TAssociationPayload, TForeignPayload>(args: DefineManyToManyRelationshipArgs<TLocalPayload, TAssociationPayload, TForeignPayload>) => {
+// export const DefineManyToManyRelationship = <TLocalPayload, TAssociationPayload, TForeignPayload>(args: DefineManyToManyRelationshipArgs<TLocalPayload, TAssociationPayload, TForeignPayload>) => {
 
-};
+// };
 
 export type DashboardDynMenuLink = Prisma.MenuLinkGetPayload<{ include: { createdByUser, visiblePermission } }>;
 

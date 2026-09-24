@@ -1,4 +1,5 @@
 import { CalendarDate } from "shared/dateTimePolicy";
+import { parsePublicId } from "shared/publicId";
 
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
@@ -219,12 +220,13 @@ export default resolver.pipe(
 
             //ret.event.description = edr.afterSeparator || "";
 
-            ret.event.statusId = (await db.eventStatus.findFirst({
+            ret.event.statusId = parsePublicId<"EventStatus">((await db.eventStatus.findFirst({
                 where: {
                     significance: db3.EventStatusSignificance.FinalConfirmation,
                     isDeleted: false,
-                }
-            }))!.id;
+                },
+                select: { publicId: true },
+            }))!.publicId);
 
 
             const defaultInvitationUserTag = (await db.userTag.findFirst({
@@ -242,21 +244,23 @@ export default resolver.pipe(
             // extract event type. either concert or rehearsal
             const concertPattern = /\bconcert|performance\b/i;
             if (concertPattern.test(eventTxt)) {
-                ret.event.typeId = (await db.eventType.findFirst({
+                ret.event.typeId = parsePublicId<"EventType">((await db.eventType.findFirst({
                     where: {
                         significance: db3.EventTypeSignificance.Concert,
                         isDeleted: false,
-                    }
-                }))!.id;//eventType.find(t => t.significance === db3.EventTypeSignificance.Concert)!);
+                    },
+                    select: { publicId: true },
+                }))!.publicId);//eventType.find(t => t.significance === db3.EventTypeSignificance.Concert)!);
             }
             const rehearsalPattern = /\brehearsal|repetitie\b/i;
             if (rehearsalPattern.test(eventTxt)) {
-                ret.event.typeId = (await db.eventType.findFirst({
+                ret.event.typeId = parsePublicId<"EventType">((await db.eventType.findFirst({
                     where: {
                         significance: db3.EventTypeSignificance.Rehearsal,
                         isDeleted: false,
-                    }
-                }))!.id;
+                    },
+                    select: { publicId: true },
+                }))!.publicId);
             }
 
             // find a fallback year by searching for "y2024"

@@ -27,7 +27,7 @@ export const useEventsForDateRange = (dateRange: CalendarRange) => {
                 db3Column: "status", behavior: DiscreteCriterionFilterType.doesntHaveAnyOf, options:
                     dashboardContext.eventStatus.items
                         .filter(status => status.significance === EventStatusSignificance.Cancelled)
-                        .map(status => status.id)
+                        .map(status => status.publicId)
             },
             typeFilter: { db3Column: "type", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
             dateFilter: { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },

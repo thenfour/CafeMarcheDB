@@ -6,7 +6,9 @@ import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetSongActivityReportArgs, GetSongActivityReportRet, GetSongActivityReportRetEvent } from "../shared/apiTypes";
-import { assertIsNumberArray } from "shared/arrayUtils";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { resolvePublicIds } from "../server/db3PublicIds";
+import { assertIsNumberArray } from "@/shared/arrayUtils";
 
 export default resolver.pipe(
     resolver.authorize(Permission.view_songs),
@@ -21,6 +23,16 @@ export default resolver.pipe(
             }
 
             const songId = new Number(args.songId).valueOf();
+            const authorization = await getRequestAuthorization(ctx.session);
+            const publicData = db3.createDB3Authorization(
+                authorization.user,
+                authorization.effectivePermissions,
+            );
+            const [eventTypeIds, eventStatusIds, eventTagIds] = await Promise.all([
+                resolvePublicIds(db3.xEventType, args.filterSpec.eventTypeIds, publicData, db),
+                resolvePublicIds(db3.xEventStatus, args.filterSpec.eventStatusIds, publicData, db),
+                resolvePublicIds(db3.xEventTag, args.filterSpec.eventTagIds, publicData, db),
+            ]);
 
             const filters: string[] = [];
 
@@ -44,24 +56,24 @@ export default resolver.pipe(
                     break;
             }
 
-            if (args.filterSpec.eventTypeIds && args.filterSpec.eventTypeIds.length > 0) {
-                assertIsNumberArray(args.filterSpec.eventTypeIds);
-                filters.push(`(e.typeId in (${args.filterSpec.eventTypeIds.join(",")}))`);
+            if (eventTypeIds.length > 0) {
+                assertIsNumberArray(eventTypeIds);
+                filters.push(`(e.typeId in (${eventTypeIds.join(",")}))`);
             }
 
-            if (args.filterSpec.eventStatusIds && args.filterSpec.eventStatusIds.length > 0) {
-                assertIsNumberArray(args.filterSpec.eventStatusIds);
-                filters.push(`(e.statusId in (${args.filterSpec.eventStatusIds.join(",")}))`);
+            if (eventStatusIds.length > 0) {
+                assertIsNumberArray(eventStatusIds);
+                filters.push(`(e.statusId in (${eventStatusIds.join(",")}))`);
             }
 
             let havingClause = "";
 
-            if (args.filterSpec.eventTagIds && args.filterSpec.eventTagIds.length > 0) {
-                assertIsNumberArray(args.filterSpec.eventTagIds);
-                filters.push(`(eta.eventTagId in (${args.filterSpec.eventTagIds.join(",")}))`);
+            if (eventTagIds.length > 0) {
+                assertIsNumberArray(eventTagIds);
+                filters.push(`(eta.eventTagId in (${eventTagIds.join(",")}))`);
                 havingClause = `
                 HAVING
-    				COUNT(DISTINCT eta.eventTagId) = ${args.filterSpec.eventTagIds.length}
+					COUNT(DISTINCT eta.eventTagId) = ${eventTagIds.length}
                 `;
             }
 

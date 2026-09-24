@@ -21,6 +21,10 @@ const fileTagPublicId = parsePublicId<"FileTag">("AbCdEfGhIjKlMn07");
 const fileTagAssignmentPublicId = parsePublicId<"FileTagAssignment">("AbCdEfGhIjKlMn08");
 const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("AbCdEfGhIjKlMn09");
 const wikiPageTagAssignmentPublicId = parsePublicId<"WikiPageTagAssignment">("AbCdEfGhIjKlMn10");
+const eventTypePublicId = parsePublicId<"EventType">("AbCdEfGhIjKlMn11");
+const eventStatusPublicId = parsePublicId<"EventStatus">("AbCdEfGhIjKlMn12");
+const eventTagPublicId = parsePublicId<"EventTag">("AbCdEfGhIjKlMn13");
+const eventTagAssignmentPublicId = parsePublicId<"EventTagAssignment">("AbCdEfGhIjKlMn14");
 const group = {
     publicId: groupPublicId,
     name: "Brass",
@@ -138,7 +142,7 @@ describe("DB3 named views", () => {
 
         expect(db3.eventTypeEditorView.getSelectionArgs(context)).toEqual({
             select: {
-                id: true,
+                publicId: true,
                 text: true,
                 description: true,
                 color: true,
@@ -205,7 +209,7 @@ describe("DB3 named views", () => {
         expectTypeOf(permissionDto.isVisibility).toEqualTypeOf<boolean>();
 
         expectTypeOf<db3.DbPayloadOf<typeof db3.eventTypeEditorView>>()
-            .toMatchTypeOf<{ id: number; text: string }>();
+            .toMatchTypeOf<{ publicId: string; text: string }>();
     });
 
     it("composes a root view predicate without disturbing nested Prisma where clauses", async () => {
@@ -717,7 +721,7 @@ describe("DB3 named views", () => {
             instrumentFunctionalGroup: [hydratedGroup],
             instrument: [instrument],
             eventStatus: [{
-                id: 10,
+                publicId: eventStatusPublicId,
                 label: "Confirmed",
                 description: "",
                 color: null,
@@ -727,7 +731,7 @@ describe("DB3 named views", () => {
                 isDeleted: false,
             }],
             eventType: [{
-                id: 11,
+                publicId: eventTypePublicId,
                 text: "Concert",
                 description: "",
                 color: null,
@@ -753,8 +757,8 @@ describe("DB3 named views", () => {
                         id: 9,
                         name: "A concert",
                         startsAt: new Date("2026-06-01T19:00:00Z"),
-                        statusId: 10,
-                        typeId: 11,
+                        statusId: eventStatusPublicId,
+                        typeId: eventTypePublicId,
                     },
                 },
             ],
@@ -820,7 +824,7 @@ describe("DB3 named views", () => {
             instrumentFunctionalGroup: [hydratedGroup],
             instrument: [instrument],
             eventType: [{
-                id: 2,
+                publicId: eventTypePublicId,
                 text: "Concert",
                 description: "",
                 color: null,
@@ -869,7 +873,7 @@ describe("DB3 named views", () => {
                     name: "A concert",
                     startsAt: null,
                     statusId: null,
-                    typeId: 2,
+                    typeId: eventTypePublicId,
                 },
             }],
             taggedInstruments: [{ id: 84, instrumentId: instrument.publicId }],
@@ -925,15 +929,15 @@ describe("DB3 named views", () => {
     it("hydrates Event search data into one typed client shape and preserves omitted collections", () => {
         const references = db3.createDashboardReferenceStore();
         const eventType = {
-            id: 2, text: "Concert", description: "", color: null, sortOrder: 1,
+            publicId: eventTypePublicId, text: "Concert", description: "", color: null, sortOrder: 1,
             significance: null, iconName: null, isDeleted: false,
         };
         const eventStatus = {
-            id: 3, label: "Confirmed", description: "", color: null, sortOrder: 1,
+            publicId: eventStatusPublicId, label: "Confirmed", description: "", color: null, sortOrder: 1,
             significance: null, iconName: null, isDeleted: false,
         };
         const eventTag = {
-            id: 4, text: "Public", description: "", color: null, sortOrder: 1,
+            publicId: eventTagPublicId, text: "Public", description: "", color: null, sortOrder: 1,
             significance: null, visibleOnFrontpage: true,
         };
         db3.registerDashboardReferences(references, {
@@ -950,9 +954,9 @@ describe("DB3 named views", () => {
             startsAt: null,
             durationMillis: BigInt(3_600_000),
             isAllDay: false,
-            typeId: eventType.id,
-            statusId: eventStatus.id,
-            tags: [{ id: 10, eventTagId: eventTag.id }],
+            typeId: eventType.publicId,
+            statusId: eventStatus.publicId,
+            tags: [{ publicId: eventTagAssignmentPublicId, eventTagId: eventTag.publicId }],
             responses: [{ id: 11, userId: 42, instrumentId: null, isInvited: true, userComment: null }],
             expectedAttendanceUserTag: {
                 id: 5,
@@ -962,13 +966,13 @@ describe("DB3 named views", () => {
         const hydrated = db3.hydrateView(db3.eventSearchView, dto, references);
 
         expect(hydrated.type).toEqual(
-            references.require(db3.xEventType, eventType.id, "test"),
+            references.require(db3.xEventType, eventType.publicId, "test"),
         );
         expect(hydrated.status).toEqual(
-            references.require(db3.xEventStatus, eventStatus.id, "test"),
+            references.require(db3.xEventStatus, eventStatus.publicId, "test"),
         );
         expect(hydrated.tags?.[0]?.eventTag).toEqual(
-            references.require(db3.xEventTag, eventTag.id, "test"),
+            references.require(db3.xEventTag, eventTag.publicId, "test"),
         );
         expect(hydrated.expectedAttendanceUserTag?.userAssignments?.[0]?.userId).toBe(42);
         expect(hydrated.dateRange).toBeInstanceOf(DateTimeRange);
@@ -1055,7 +1059,12 @@ describe("DB3 named views", () => {
             visiblePermissionId: null,
             isDeleted: false,
             expectedAttendanceUserTagId: 5,
-            tags: [{ id: 10, eventTagId: 4 }],
+            tags: [{
+                id: 10,
+                publicId: eventTagAssignmentPublicId,
+                eventTagId: 4,
+                eventTag: { publicId: eventTagPublicId },
+            }],
             responses: [{ id: 11, userId: 42, instrumentId: null, isInvited: true, userComment: null }],
             segments: [{
                 id: 20,
@@ -1136,6 +1145,93 @@ describe("DB3 named views", () => {
         expect(queryArgs.select.segments.select.responses.where.AND[0]).toEqual({ userId: 42 });
         expect(queryArgs.select.expectedAttendanceUserTag.select.userAssignments.where.AND[0])
             .toEqual({ userId: 42 });
+    });
+
+    it("queries Wiki Event context through the named view and projects classification identities", async () => {
+        const startsAt = new Date("2026-09-20T18:00:00Z");
+        const findMany = vi.fn(async () => [{
+            id: 17,
+            name: "Wiki-linked event",
+            createdByUserId: 42,
+            visiblePermissionId: null,
+            isDeleted: false,
+            typeId: 101,
+            type: { publicId: eventTypePublicId },
+            statusId: 102,
+            status: { publicId: eventStatusPublicId },
+            uid: "event-uid",
+            startsAt,
+            endDateTime: new Date("2026-09-20T19:00:00Z"),
+            isAllDay: false,
+            durationMillis: BigInt(3_600_000),
+            segmentBehavior: "Sets",
+            segments: [{
+                id: 18,
+                name: "Main set",
+                statusId: 103,
+                status: { publicId: eventStatusPublicId },
+                uid: "segment-uid",
+                startsAt,
+                isAllDay: false,
+                durationMillis: BigInt(3_600_000),
+            }],
+        }]);
+        const permissionNames = [
+            Permission.always_grant,
+            Permission.public,
+            Permission.view_events_nonpublic,
+        ];
+        const effectivePermissions = new PermissionSet(permissionNames.map((name, index) => ({
+            id: index + 1,
+            name,
+        })));
+
+        const result = await queryView({
+            view: db3.eventWikiPageContextView,
+            filter: { items: [], tableParams: { eventId: 17 } },
+            orderBy: undefined,
+            take: 1,
+            cmdbQueryContext: "wiki-event-context-view-test",
+        }, {
+            // This focused authorization fixture only needs the actor identity.
+            user: { id: 42 } as any,
+            effectivePermissions,
+        }, new db3.DB3ReferenceStore(), {
+            Event: { findMany },
+        } as any); // The focused database double deliberately implements only the queried Event delegate.
+
+        expect(result.items).toEqual([{
+            id: 17,
+            name: "Wiki-linked event",
+            typeId: eventTypePublicId,
+            statusId: eventStatusPublicId,
+            uid: "event-uid",
+            startsAt,
+            endDateTime: new Date("2026-09-20T19:00:00Z"),
+            isAllDay: false,
+            durationMillis: BigInt(3_600_000),
+            segmentBehavior: "Sets",
+            segments: [{
+                id: 18,
+                name: "Main set",
+                statusId: eventStatusPublicId,
+                uid: "segment-uid",
+                startsAt,
+                isAllDay: false,
+                durationMillis: BigInt(3_600_000),
+            }],
+        }]);
+        expect(result.items[0]).not.toHaveProperty("type");
+        expect(result.items[0]).not.toHaveProperty("status");
+        expect(result.items[0]!.segments?.[0]).not.toHaveProperty("status");
+        expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+            take: 1,
+            select: expect.objectContaining({
+                type: { select: { publicId: true } },
+                status: { select: { publicId: true } },
+            }),
+        }));
+        expectTypeOf(result.items).toEqualTypeOf<db3.EventWikiPageContextClient[]>();
     });
 
     it("projects the Song search DTO through nested field authorization", async () => {

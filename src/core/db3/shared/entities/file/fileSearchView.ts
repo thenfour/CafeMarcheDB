@@ -104,6 +104,8 @@ export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
                             createdByUserId: true,
                             visiblePermissionId: true,
                             isDeleted: true,
+                            type: { select: { publicId: true } },
+                            status: { select: { publicId: true } },
                         },
                     },
                 },

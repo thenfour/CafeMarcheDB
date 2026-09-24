@@ -6,6 +6,8 @@ import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TinsertEventArgs } from "../shared/apiTypes";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { resolvePublicForeignIds } from "../server/db3PublicIds";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
@@ -17,21 +19,34 @@ export default resolver.pipe(
             assert(!!currentUser, "user required to insert an event")
 
 
-            // verbose on purpose in order to validate args type against UncheckedUpdateInput
+            const authorization = await getRequestAuthorization(ctx.session);
+            const publicData = db3.createDB3Authorization(
+                authorization.user,
+                authorization.effectivePermissions,
+            );
+            const resolvedEventFields = await resolvePublicForeignIds(
+                db3.xEvent,
+                args.event,
+                publicData,
+                tx,
+            );
+
+            // Verbose on purpose in order to validate the resolved model against
+            // Prisma's natural-key input at the trusted server boundary.
             const eventFields: Prisma.EventUncheckedCreateInput & { tags: number[] } = {
                 //createdAt: new Date(), // this is automatic though right?
                 //createdByUserId: currentUser.id, // done in impl
                 //updatedAt: new Date(), // this is automatic though right?
-                name: args.event.name,
-                locationDescription: args.event.locationDescription || "",
+                name: resolvedEventFields.name,
+                locationDescription: resolvedEventFields.locationDescription || "",
                 //description: args.event.description || "",
                 //slug: args.event.slug,
-                typeId: args.event.typeId,
-                statusId: args.event.statusId,
-                tags: args.event.tags,
+                typeId: resolvedEventFields.typeId,
+                statusId: resolvedEventFields.statusId,
+                tags: resolvedEventFields.tags,
                 revision: 0,
-                expectedAttendanceUserTagId: args.event.expectedAttendanceUserTagId,
-                visiblePermissionId: args.event.visiblePermissionId,
+                expectedAttendanceUserTagId: resolvedEventFields.expectedAttendanceUserTagId,
+                visiblePermissionId: resolvedEventFields.visiblePermissionId,
             };
 
             // create the root event,

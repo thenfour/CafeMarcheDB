@@ -12,13 +12,15 @@ import { shouldIncludeEventInCalendarFeed } from "src/core/db3/shared/calendarAt
 import { createAuthorizationTestUser } from "./authorization/support/authorizationFixtures";
 import { authorizationTestDb } from "./authorization/support/inMemoryPrisma";
 import type { UserForCalBackendPayload } from "src/core/db3/shared/schema/prismArgs";
+import { parsePublicId, type EventStatusPublicId } from "shared/publicId";
 
 const owner = { ...createAuthorizationTestUser("normal", { id: 10 }), uid: "owner-uid" };
-const cancelledId = 99;
+const cancelledDbId = 99;
+const cancelledId = parsePublicId<"EventStatus">("CalendarStatus01");
 const attendanceRows = [0, 33, 50, 51, 66, 100].map(strength => ({
     id: strength + 1, strength, isDeleted: true, isActive: false,
 }));
-const segment = (id: number, strength?: number | null, statusId: number | null = null) => ({
+const segment = (id: number, strength?: number | null, statusId: EventStatusPublicId | null = null) => ({
     id, name: `Segment ${id}`, uid: `segment-${id}`, description: "", statusId,
     startsAt: new Date("2026-10-01T10:00:00Z") as Date | null, isAllDay: false, durationMillis: BigInt(3_600_000),
     responses: strength === undefined ? [] : [{ userId: owner.id, attendanceId: strength === null ? null : strength + 1 }],
@@ -82,7 +84,7 @@ beforeEach(() => {
         user: [owner],
         userSetting: [{ id: 1, userId: owner.id, name: "calendar.showDeclinedEvents", value: false }],
         eventAttendance: attendanceRows,
-        eventStatus: [{ id: cancelledId, significance: "Cancelled", isDeleted: true }],
+        eventStatus: [{ id: cancelledDbId, publicId: cancelledId, significance: "Cancelled", isDeleted: true }],
     });
 });
 

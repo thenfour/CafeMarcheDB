@@ -19,4 +19,4 @@ See `docs/testing.md` for the rationale and full conventions.
 
 - Use strict typescript typing
 - Type casts (`x as T`, especially `as any`) must be given a brief comment
-  justifying why it was necessary.
+  justifying why stronger typing was either chosen, or impossible.

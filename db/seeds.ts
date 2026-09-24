@@ -188,7 +188,7 @@ const main = async () => {
       "color": null,
       "significance": "TownHall"
     }
-  ]);
+  ].map(tag => ({ ...tag, publicId: generatePublicId<"EventTag">() })));
 
   await SeedTable("eventStatus", gState.prisma.eventStatus,
     [
@@ -232,7 +232,7 @@ const main = async () => {
         "significance": "Cancelled",
         "iconName": "Cancel"
       }
-    ]
+    ].map(status => ({ ...status, publicId: generatePublicId<"EventStatus">() }))
   );
 
   await SeedTable("eventType", gState.prisma.eventType,
@@ -269,7 +269,7 @@ const main = async () => {
         "significance": "Weekend",
         "iconName": "Celebration"
       }
-    ]
+    ].map(type => ({ ...type, publicId: generatePublicId<"EventType">() }))
   );
 
 

@@ -7,6 +7,7 @@ import { useQuery } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
 import React, { Suspense } from "react";
 import { CalendarDate } from "shared/dateTimePolicy";
+import type { EventStatusPublicId, EventTypePublicId } from "shared/publicId";
 import { createAllDayRange, DateTimeRange, gMillisecondsPerDay } from "shared/time";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMStandardDBChip } from "src/core/components/CMChip";
@@ -38,10 +39,13 @@ interface NewEventDialogProps {
 
 type NewEventValue = Omit<
     db3.EventPayload,
-    "type" | "status" | "visiblePermission" | "expectedAttendanceUserTag"
+    "type" | "typeId" | "status" | "statusId" | "tags" | "visiblePermission" | "expectedAttendanceUserTag"
 > & {
+    typeId: EventTypePublicId | null;
     type: db3.EventTypeDashboardClient | null | undefined;
+    statusId: EventStatusPublicId | null;
     status: db3.EventStatusDashboardClient | null | undefined;
+    tags: Array<db3.EventTagAssignmentClientPayload & { eventTag: db3.EventTagDashboardClient }>;
     visiblePermission: VisibilityControlValue;
     expectedAttendanceUserTag: db3.UserTagDashboardClient | null | undefined;
 };
@@ -53,12 +57,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
 
     const dashboardContext = useDashboardContext();
     const [eventValue, setEventValue] = React.useState<NewEventValue>(() => {
-        // xTable.createNew returns the legacy generic row shape; this form
-        // immediately supplies the typed Event fields before persistence.
-        const ret = db3.xEvent.createNew(currentUser) as Partial<db3.EventPayload>;
-        // createNew supplies schema defaults, while the hydrated relation fields
-        // are populated from dashboard stores before the draft is submitted.
-        return ret as NewEventValue;
+        return db3.xEvent.createNew(currentUser);
     });
     const [segmentValue, setSegmentValue] = React.useState<db3.EventSegmentPayload>(() => {
         // xTable.createNew returns the legacy generic row shape; the segment
@@ -83,7 +82,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
             name: props.serverData?.event.name || "",
             //description: props.serverData?.event.description || "",
             type: dashboardContext.eventType.getById(props.serverData?.event.typeId),
-            typeId: props.serverData?.event.typeId || 1,
+            typeId: props.serverData?.event.typeId || null,
             status: dashboardContext.eventStatus.getById(props.serverData?.event.statusId),
             statusId: props.serverData?.event.statusId || null,
             expectedAttendanceUserTag: dashboardContext.userTag.getById(props.serverData?.event.expectedAttendanceUserTagId),

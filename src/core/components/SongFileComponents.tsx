@@ -6,7 +6,7 @@ import { Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { Permission } from 'shared/permissions';
-import type { FileTagPublicId } from 'shared/publicId';
+import type { EventStatusPublicId, EventTypePublicId, FileTagPublicId } from 'shared/publicId';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { formatFileSize, SortDirection } from 'shared/rootroot';
 import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
@@ -51,14 +51,14 @@ const hasEventChipFields = (event: {
     id: number;
     name?: string;
     startsAt?: Date | null;
-    statusId?: number | null;
-    typeId?: number | null;
+    statusId?: EventStatusPublicId | null;
+    typeId?: EventTypePublicId | null;
 }): event is {
     id: number;
     name: string;
     startsAt: Date | null;
-    statusId: number | null;
-    typeId: number | null;
+    statusId: EventStatusPublicId | null;
+    typeId: EventTypePublicId | null;
 } => event.name !== undefined
 && event.startsAt !== undefined
 && event.statusId !== undefined
@@ -449,7 +449,7 @@ export const FileEditor = (props: FileEditorProps) => {
             }),
             taggedUsers: DB3Client.tagsFieldClientGen<db3.FileUserTagPayload>({ allowDeleteFromCell: false }),
             taggedSongs: DB3Client.tagsFieldClientGen<db3.FileSongTagPayload>({ allowDeleteFromCell: false }),
-            taggedEvents: DB3Client.tagsFieldClientGen<db3.FileEventTagPayload>({
+            taggedEvents: DB3Client.tagsFieldClientGen<db3.FileEventTagClientPayload>({
                 cellWidth: 150,
                 allowDeleteFromCell: false,
                 renderAsChip: (args) => {
@@ -498,6 +498,14 @@ export const FileEditor = (props: FileEditorProps) => {
                 association.instrumentId,
                 `File(${props.initialValue.id}).taggedInstruments.instrument`,
             ),
+        })),
+        taggedEvents: props.initialValue.taggedEvents.map(association => ({
+            ...association,
+            event: {
+                ...association.event,
+                type: dashboardContext.eventType.getById(association.event.typeId) ?? null,
+                status: dashboardContext.eventStatus.getById(association.event.statusId) ?? null,
+            },
         })),
         isDeleted: "isDeleted" in props.initialValue
             ? props.initialValue.isDeleted

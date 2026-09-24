@@ -11,7 +11,7 @@ import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 import { Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
-import type { InstrumentPublicId } from "shared/publicId";
+import type { EventStatusPublicId, EventTypePublicId, InstrumentPublicId } from "shared/publicId";
 import { RenderMuiIcon } from "../db3/components/IconMap";
 import { CMChip, CMChipBorderOption, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
 import { CMLink } from "./CMLink";
@@ -353,7 +353,13 @@ export const PermissionBoundary = (props: React.PropsWithChildren<PermissionBoun
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const EventTextLink = (props: {
-    event: Prisma.EventGetPayload<{ select: { id: true, name: true, startsAt: true, statusId: true, typeId: true } }>,
+    event: {
+        id: number;
+        name: string;
+        startsAt: Date | null;
+        statusId?: EventStatusPublicId | null;
+        typeId?: EventTypePublicId | null;
+    },
     className?: string | undefined,
 }) => {
     const dashboardContext = useDashboardContext();

@@ -3,6 +3,7 @@ import { CalendarDate } from "../../shared/dateTimePolicy";
 import { faker } from '@faker-js/faker';
 import { Prisma } from '@prisma/client';
 import { SeedingState } from './base';
+import { generatePublicId } from '../../src/server/publicId';
 //import { EventTypeSignificance } from 'src/core/db3/db3';
 
 const BAND_TIME_ZONE = "Europe/Brussels";
@@ -132,6 +133,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
     await tags.forEach(async (tag) => {
         await gState.prisma.eventTagAssignment.create({
             data: {
+                publicId: generatePublicId<"EventTagAssignment">(),
                 eventTagId: tag.id,
                 eventId: event.id,
             }

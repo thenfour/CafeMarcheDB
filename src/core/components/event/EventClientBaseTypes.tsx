@@ -1,6 +1,7 @@
 import { CalendarWindow } from "shared/dateTimePolicy";
 import { SortDirection } from "@/shared/rootroot";
 import { DiscreteCriterion } from "../../db3/shared/apiTypes";
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId } from "shared/publicId";
 
 // //////////////////////////////////////////////////////////////////////////////////////////////////
 export enum EventOrderByColumnOptions {
@@ -24,8 +25,8 @@ export interface EventsFilterSpec {
     orderByColumn: EventOrderByColumnOption;
     orderByDirection: SortDirection;
 
-    typeFilter: DiscreteCriterion;
-    tagFilter: DiscreteCriterion;
-    statusFilter: DiscreteCriterion;
-    dateFilter: DiscreteCriterion;
+    typeFilter: DiscreteCriterion<EventTypePublicId>;
+    tagFilter: DiscreteCriterion<EventTagPublicId>;
+    statusFilter: DiscreteCriterion<EventStatusPublicId>;
+    dateFilter: DiscreteCriterion<number>;
 };

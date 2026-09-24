@@ -22,7 +22,6 @@ import { type EventEnrichedVerbose_Event, EventTableClientColumns } from "./Even
 import { Markdown } from "../markdown/Markdown";
 import { SettingMarkdown } from "../SettingMarkdown";
 import { toSorted } from "shared/arrayUtils";
-import { Prisma } from "db";
 import { EventStatusValue } from "../event/EventChips";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { CMButton } from "../CMCoreComponents2";
@@ -55,7 +54,7 @@ type EventSegmentEditorCommands = DB3Client.CrudViewCommandClient<typeof db3.eve
 
 ////////////////////////////////////////////////////////////////
 interface EventSegmentEditDialogProps {
-    initialValue: db3.EventVerbose_EventSegment;
+    initialValue: EventSegmentEditorClient;
     //isNewObject: boolean,
     markdownSettingPrefix: string,
     onSave: (
@@ -118,7 +117,7 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
 
 ////////////////////////////////////////////////////////////////
 interface NewEventSegmentButtonProps {
-    event: Prisma.EventGetPayload<{}>;
+    event: { id: number };
     initialName: string;
     refetch: () => void;
 };
@@ -129,10 +128,9 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
     const currentUser = useCurrentUser()[0]!;
 
     const publicData = useDB3Authorization();
-    const blankObject: db3.EventSegmentPayload = db3.xEventSegment.createNew(currentUser) as any;
+    const blankObject: EventSegmentEditorClient = db3.xEventSegment.createNew(currentUser);
     blankObject.name = props.initialName;
     blankObject.eventId = event.id;
-    blankObject.event = event;
 
     const authorized = db3.xEventSegment.authorizeRowBeforeInsert({
         publicData,
@@ -167,7 +165,7 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
 ////////////////////////////////////////////////////////////////
 export interface EventSegmentPanelProps {
     event: EventEnrichedVerbose_Event,
-    segment: db3.EventVerbose_EventSegment,
+    segment: db3.EventVerbose_EventSegmentClient,
     readonly: boolean;
     refetch: () => void;
 };
@@ -255,7 +253,11 @@ interface SegmentListProps {
 export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) => {
 
     const dashboardContext = useDashboardContext();
-    const segments = toSorted(event.segments, (a, b) => db3.compareEventSegments(a, b, db3.getCancelledStatusIds(dashboardContext.eventStatus.items)));
+    const cancelledStatusIds = db3.getCancelledStatusIds(
+        dashboardContext.eventStatus.items,
+        status => db3.xEventStatus.getIdentity(status),
+    );
+    const segments = toSorted(event.segments, (a, b) => db3.compareEventSegments(a, b, cancelledStatusIds));
 
     // if there is only 1 segment and there's no description for the segment, don't display at all.
     // the only time to show segment lists is when there's something that's not shown elsewhere.
@@ -284,7 +286,7 @@ export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) 
 
 export interface EditSingleSegmentDateButtonProps {
     event: EventEnrichedVerbose_Event,
-    segment: db3.EventVerbose_EventSegment,
+    segment: db3.EventVerbose_EventSegmentClient,
     readonly: boolean;
     refetch: () => void;
 };
@@ -335,8 +337,8 @@ export const EditSingleSegmentDateButton = (props: EditSingleSegmentDateButtonPr
 
 interface EventSegmentDotMenuCopyUserResponsesFromMenuItemProps {
     event: EventEnrichedVerbose_Event,
-    fromSegment: db3.EventVerbose_EventSegment,
-    toSegment: db3.EventVerbose_EventSegment,
+    fromSegment: db3.EventVerbose_EventSegmentClient,
+    toSegment: db3.EventVerbose_EventSegmentClient,
     readonly: boolean;
     refetch: () => void;
     onClose: () => void;
@@ -371,7 +373,7 @@ export const EventSegmentDotMenuCopyUserResponsesFromMenuItem = (props: EventSeg
 
 interface EventSegmentDotMenuProps {
     event: EventEnrichedVerbose_Event,
-    segment: db3.EventVerbose_EventSegment,
+    segment: db3.EventVerbose_EventSegmentClient,
     readonly: boolean;
     refetch: () => void;
     getAttendeeNames: (copyInstrumentNames: boolean) => string[];

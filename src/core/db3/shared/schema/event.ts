@@ -5,13 +5,20 @@
 import { TAnyModel } from "@/shared/rootroot";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { Prisma } from "db";
+import { z } from "zod";
 import { assertIsNumberArray, assertIsStringArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
 import { CoalesceBool, gIconOptions, smartTruncate } from "shared/utils";
+import type {
+    EventStatusPublicId,
+    EventTagAssignmentPublicId,
+    EventTagPublicId,
+    EventTypePublicId,
+} from "shared/publicId";
 import { type CMDBTableFilterModel } from "../apiTypes";
 import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../columnTypes/genericString";
-import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import {
     EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, type EventAttendancePayload,
@@ -181,7 +188,7 @@ export const getEventSegmentMinDate = (event: EventPayload): Date | null => {
 
 export const xEventType = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventTypeDelegate>(),
-    getIdentity: (eventType: Prisma.EventTypeGetPayload<{}>) => eventType.id,
+    getIdentity: (eventType: { publicId: EventTypePublicId }) => eventType.publicId,
     getSelectionArgs: (): Prisma.EventTypeDefaultArgs => {
         return EventTypeArgs;
     },
@@ -191,7 +198,7 @@ export const xEventType = db3.defineTable({
     restorePermission: Permission.recover_events,
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventTypeNaturalOrderBy,
-    createInsertModelFromString: (input: string): Prisma.EventTypeCreateInput => {
+    createInsertModelFromString: (input: string): Partial<EventTypePayload> => {
         return {
             text: input,
             description: "auto-created",
@@ -200,14 +207,15 @@ export const xEventType = db3.defineTable({
         };
     },
     getRowInfo: (row: EventTypePayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<EventTypePublicId>(),
         isDeleted: () => MakeIsDeletedField({ authMap: xEventChipsAuthMap, }),
         text: columnName => MakeTitleField(columnName, { authMap: xEventChipsAuthMap, }),
         description: () => MakeDescriptionField({ authMap: xEventChipsAuthMap, }),
@@ -225,7 +233,7 @@ export const xEventType = db3.defineTable({
 
 export const xEventStatus = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventStatusDelegate>(),
-    getIdentity: (eventStatus: Prisma.EventStatusGetPayload<{}>) => eventStatus.id,
+    getIdentity: (eventStatus: { publicId: EventStatusPublicId }) => eventStatus.publicId,
     getSelectionArgs: (): Prisma.EventStatusDefaultArgs => {
         return EventStatusArgs;
     },
@@ -237,7 +245,7 @@ export const xEventStatus = db3.defineTable({
     restorePermission: Permission.recover_events,
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventStatusNaturalOrderBy,
-    createInsertModelFromString: (input: string): Prisma.EventStatusCreateInput => {
+    createInsertModelFromString: (input: string): Partial<EventStatusPayload> => {
         return {
             label: input,
             description: "auto-created",
@@ -245,14 +253,15 @@ export const xEventStatus = db3.defineTable({
         };
     },
     getRowInfo: (row: EventStatusPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.label,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<EventStatusPublicId>(),
         isDeleted: () => MakeIsDeletedField({ authMap: xEventChipsAuthMap, }),
         label: columnName => MakeTitleField(columnName, { authMap: xEventChipsAuthMap, }),
         description: () => MakeDescriptionField({ authMap: xEventChipsAuthMap, }),
@@ -270,7 +279,7 @@ export const xEventStatus = db3.defineTable({
 
 export const xEventTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventTagDelegate>(),
-    getIdentity: (eventTag: Prisma.EventTagGetPayload<{}>) => eventTag.id,
+    getIdentity: (eventTag: { publicId: EventTagPublicId }) => eventTag.publicId,
     tableName: "EventTag",
     deletePolicy: "hard",
     getSelectionArgs: (): Prisma.EventTagDefaultArgs => {
@@ -278,7 +287,7 @@ export const xEventTag = db3.defineTable({
     },
     naturalOrderBy: EventTagNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
-    createInsertModelFromString: (input: string): Prisma.EventTagCreateInput => {
+    createInsertModelFromString: (input: string): Partial<EventTagPayload> => {
         return {
             text: input,
             description: "auto-created",
@@ -288,14 +297,15 @@ export const xEventTag = db3.defineTable({
         };
     },
     getRowInfo: (row: EventTagPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<EventTagPublicId>(),
         text: columnName => MakeTitleField(columnName, { authMap: xEventChipsAuthMap, }),
         visibleOnFrontpage: columnName => new BoolField({ columnName, defaultValue: false, authMap: xEventChipsAuthMap, allowNull: false }),
         description: () => MakeDescriptionField({ authMap: xEventChipsAuthMap, }),
@@ -313,6 +323,7 @@ export const xEventTag = db3.defineTable({
 
 export const xEventTagAssignment = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventTagAssignmentDelegate>(),
+    getIdentity: (assignment: { publicId: EventTagAssignmentPublicId }) => assignment.publicId,
     tableName: "EventTagAssignment",
     deletePolicy: "hard",
     naturalOrderBy: EventTagAssignmentNaturalOrderBy,
@@ -322,7 +333,7 @@ export const xEventTagAssignment = db3.defineTable({
     },
     getRowInfo: (row: EventTagAssignmentPayload) => {
         return {
-            pk: row.id,
+            pk: row.publicId,
             name: row.eventTag?.text || "",
             description: row.eventTag?.description || "",
             color: gGeneralPaletteList.findEntry(row.eventTag?.color || null),
@@ -330,7 +341,8 @@ export const xEventTagAssignment = db3.defineTable({
         };
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<EventTagAssignmentPublicId>(),
         eventTag: foreignRef(() => xEventTag, {
             fkidMember: "eventTagId",
             authMap: xEventChipsAuthMap,
@@ -347,19 +359,35 @@ export interface EventTableParams {
     eventId?: number;
     eventIds?: number[];
     eventUids?: string[];
-    eventTypeIds?: number[];
-    eventStatusIds?: number[];
+    eventTypeIds?: EventTypePublicId[];
+    eventStatusIds?: EventStatusPublicId[];
     minDate?: Date;
     forFrontPageAgenda?: boolean; // returns future + recent events + any event that's showing on front page
     refreshSerial?: number; // ignored but useful to force a refresh
 };
 
+interface ResolvedEventTableParams extends Omit<
+    EventTableParams,
+    "eventTypeIds" | "eventStatusIds"
+> {
+    eventTypeIds?: number[];
+    eventStatusIds?: number[];
+}
+
 const EventQueryParameters = {
     eventId: { kind: "integer", authorizeAs: "id" },
     eventIds: { kind: "integerArray", authorizeAs: "id" },
     eventUids: { kind: "stringArray", authorizeAs: "uid" },
-    eventTypeIds: { kind: "integerArray", authorizeAs: "typeId" },
-    eventStatusIds: { kind: "integerArray", authorizeAs: "statusId" },
+    eventTypeIds: {
+        kind: "entityIdentityArray",
+        targetTableID: "EventType",
+        authorizeAs: "typeId",
+    },
+    eventStatusIds: {
+        kind: "entityIdentityArray",
+        targetTableID: "EventStatus",
+        authorizeAs: "statusId",
+    },
     minDate: { kind: "date", authorizeAs: "endDateTime" },
     forFrontPageAgenda: { kind: "boolean", authorizeAs: ["frontpageVisible", "typeId", "endDateTime"] },
     refreshSerial: { kind: "integer", authorizeAs: null },
@@ -402,7 +430,7 @@ export const xEventArgs_Base = db3.defineTableDesc({
         ownerUserId: row.createdByUserId,
     }),
 
-    getParameterizedWhereClause: (params: EventTableParams): (Prisma.EventWhereInput[]) => {
+    getParameterizedWhereClause: (params: ResolvedEventTableParams): (Prisma.EventWhereInput[]) => {
         const ret: Prisma.EventWhereInput[] = [];
 
         if (params.eventId !== undefined) {
@@ -607,7 +635,11 @@ export const xEventArgs_Base = db3.defineTableDesc({
         }),
 
         // because this is used for generating icals
-        uid: memberName => new GhostField({ memberName, authMap: xEventAuthMap_Homepage }),
+        uid: memberName => new GhostField({
+            memberName,
+            readTransportSchema: z.string(),
+            authMap: xEventAuthMap_Homepage,
+        }),
         calendarInputHash: memberName => new GhostField({ memberName, authMap: xEventAuthMap_R_EAdmin }),
 
         startsAt: columnName => new EventStartsAtField({
@@ -629,7 +661,11 @@ export const xEventArgs_Base = db3.defineTableDesc({
             allowNull: false
         }),
 
-        endDateTime: memberName => new GhostField({ memberName, authMap: xEventAuthMap_Homepage }),
+        endDateTime: memberName => new GhostField({
+            memberName,
+            readTransportSchema: z.date().nullable(),
+            authMap: xEventAuthMap_Homepage,
+        }),
     })
 });
 
@@ -714,6 +750,7 @@ export const xEventSegment = db3.defineTable({
         // Prisma generates this stable identifier; expose it without allowing edits.
         uid: memberName => new GhostField({
             memberName,
+            readTransportSchema: z.string().nullable(),
             authMap: {
                 ...xEventAuthMap_R_EOwn_EManagers,
                 PreInsert: Permission.never_grant,
@@ -1051,6 +1088,8 @@ export const xEventSongListDivider = db3.defineTable({
 declare module "../db3core" {
     interface DB3TableTypeRegistry {
         Event: typeof xEvent;
+        EventType: typeof xEventType;
+        EventStatus: typeof xEventStatus;
         EventTag: typeof xEventTag;
         EventTagAssignment: typeof xEventTagAssignment;
         EventSegment: typeof xEventSegment;
@@ -1100,7 +1139,12 @@ export const EventResponses_MinimalEventSegmentArgs = Prisma.validator<Prisma.Ev
         statusId: true,
     }
 });
-export type EventResponses_MinimalEventSegment = Prisma.EventSegmentGetPayload<typeof EventResponses_MinimalEventSegmentArgs>;
+type EventResponses_MinimalEventSegmentDb = Prisma.EventSegmentGetPayload<typeof EventResponses_MinimalEventSegmentArgs>;
+export type EventResponses_MinimalEventSegment = Omit<EventResponses_MinimalEventSegmentDb, "statusId"> & {
+    // Shared attendance algorithms also run against trusted server/test rows.
+    // Concrete client views narrow this union to EventStatusPublicId.
+    statusId: number | EventStatusPublicId | null;
+};
 
 
 export type EventResponses_MinimalEvent = Prisma.EventGetPayload<{

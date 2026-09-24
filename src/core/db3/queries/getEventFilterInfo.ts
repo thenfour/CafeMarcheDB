@@ -11,15 +11,16 @@ import { queryTable } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter } from "../shared/apiTypes";
 import { SplitQuickFilter } from "shared/quickFilter";
-import { assertIsNumberArray } from "shared/arrayUtils";
 import { MysqlEscape } from "shared/mysqlUtils";
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId } from "shared/publicId";
+import { resolvePublicIds } from "../server/db3PublicIds";
 
 interface TArgs {
     filterSpec: {
         quickFilter: string,
-        typeIds: number[];
-        tagIds: number[];
-        statusIds: number[];
+        typeIds: EventTypePublicId[];
+        tagIds: EventTagPublicId[];
+        statusIds: EventStatusPublicId[];
 
         // none, past, future, all
         timingFilter: TimingFilter;
@@ -43,10 +44,16 @@ export default resolver.pipe(
             const pageSize = Math.min(args.filterSpec.pageSize, 100); // sanity.
 
             const startTimestamp = Date.now();
-
-            assertIsNumberArray(args.filterSpec.statusIds);
-            assertIsNumberArray(args.filterSpec.tagIds);
-            assertIsNumberArray(args.filterSpec.typeIds);
+            const authorization = await getRequestAuthorization(ctx.session);
+            const publicData = db3.createDB3Authorization(
+                authorization.user,
+                authorization.effectivePermissions,
+            );
+            const [statusIds, tagIds, typeIds] = await Promise.all([
+                resolvePublicIds(db3.xEventStatus, args.filterSpec.statusIds, publicData, db),
+                resolvePublicIds(db3.xEventTag, args.filterSpec.tagIds, publicData, db),
+                resolvePublicIds(db3.xEventType, args.filterSpec.typeIds, publicData, db),
+            ]);
 
             const eventFilterExpressions: string[] = [];
             if (!IsNullOrWhitespace(args.filterSpec.quickFilter)) {
@@ -64,12 +71,12 @@ export default resolver.pipe(
                 eventFilterExpressions.push(`(${tokensExpr.join(" AND ")})`);
             }
 
-            if (args.filterSpec.typeIds.length > 0) {
-                eventFilterExpressions.push(`(Event.typeId IN (${args.filterSpec.typeIds}))`);
+            if (typeIds.length > 0) {
+                eventFilterExpressions.push(`(Event.typeId IN (${typeIds}))`);
             }
 
-            if (args.filterSpec.statusIds.length > 0) {
-                eventFilterExpressions.push(`(Event.statusId IN (${args.filterSpec.statusIds}))`);
+            if (statusIds.length > 0) {
+                eventFilterExpressions.push(`(Event.statusId IN (${statusIds}))`);
             }
 
             const timingFilterExpressions: Record<TimingFilter, string | null> = {
@@ -86,12 +93,12 @@ export default resolver.pipe(
 
             let havingClause = "";
 
-            if (args.filterSpec.tagIds.length > 0) {
-                eventFilterExpressions.push(`(EventTagAssignment.eventTagId IN (${args.filterSpec.tagIds}))`);
+            if (tagIds.length > 0) {
+                eventFilterExpressions.push(`(EventTagAssignment.eventTagId IN (${tagIds}))`);
                 // make sure items have matched ALL tags, not just any.
                 havingClause = `
                 HAVING
-    				COUNT(DISTINCT EventTagAssignment.eventTagId) = ${args.filterSpec.tagIds.length}
+					COUNT(DISTINCT EventTagAssignment.eventTagId) = ${tagIds.length}
                 `;
             }
 
@@ -132,7 +139,11 @@ export default resolver.pipe(
             const statusesQuery = `
         ${filteredEventsCTE}
         SELECT 
-            EventStatus.*,
+            EventStatus.publicId AS id,
+            EventStatus.label,
+            EventStatus.color,
+            EventStatus.iconName,
+            EventStatus.description,
             count(distinct(FilteredEvents.EventId)) AS event_count
         FROM 
             EventStatus
@@ -151,7 +162,11 @@ export default resolver.pipe(
             const typesQuery = `
         ${filteredEventsCTE}
         SELECT 
-            EventType.*,
+            EventType.publicId AS id,
+            EventType.text,
+            EventType.color,
+            EventType.iconName,
+            EventType.description,
             count(distinct(FilteredEvents.EventId)) AS event_count
         FROM 
             EventType
@@ -170,7 +185,10 @@ export default resolver.pipe(
             const tagsQuery = `
         ${filteredEventsCTE}
     select
-        ET.*,
+        ET.publicId AS id,
+        ET.text,
+        ET.color,
+        ET.description,
         count(distinct(FE.EventId)) as event_count
     from
         FilteredEvents as FE
@@ -222,9 +240,32 @@ export default resolver.pipe(
                 db.$queryRaw(Prisma.raw(totalRowCountQuery)),
             ]);
 
-            const statusesResult: ({ event_count: bigint } & Prisma.EventStatusGetPayload<{}>)[] = pq[0] as any;
-            const typesResult: ({ event_count: bigint } & Prisma.EventTypeGetPayload<{}>)[] = pq[1] as any;
-            const tagsResult: ({ event_count: bigint } & Prisma.EventTagGetPayload<{}>)[] = pq[2] as any;
+            // Raw SQL results are validated structurally by the explicit selected columns above.
+            const statusesResult = pq[0] as Array<{
+                id: EventStatusPublicId;
+                label: string;
+                color: string | null;
+                iconName: string | null;
+                description: string;
+                event_count: bigint;
+            }>;
+            // Raw SQL results are validated structurally by the explicit selected columns above.
+            const typesResult = pq[1] as Array<{
+                id: EventTypePublicId;
+                text: string;
+                color: string | null;
+                iconName: string | null;
+                description: string;
+                event_count: bigint;
+            }>;
+            // Raw SQL results are validated structurally by the explicit selected columns above.
+            const tagsResult = pq[2] as Array<{
+                id: EventTagPublicId;
+                text: string;
+                color: string | null;
+                description: string;
+                event_count: bigint;
+            }>;
             const eventIds: { EventId: number }[] = pq[3] as any;
             const rowCountResult: { rowCount: bigint }[] = pq[4] as any;
 
@@ -246,7 +287,7 @@ export default resolver.pipe(
                         tableParams,
                     },
                     orderBy: undefined,
-                }, await getRequestAuthorization(ctx.session));
+                }, authorization);
 
                 // queryTable's legacy return type is intentionally untyped; the
                 // named view validates every item against this DTO contract.
@@ -287,13 +328,13 @@ export default resolver.pipe(
                         tableParams,
                     },
                     orderBy: undefined,
-                }, await getRequestAuthorization(ctx.session));
+                }, authorization);
 
                 // queryTable's legacy return type does not yet carry its view.
                 userTags = queryResult.items as db3.DtoOf<typeof db3.userTagEventSearchView>[];
             }
 
-            const statuses: GetEventFilterInfoChipInfo[] = statusesResult.map(r => ({
+            const statuses: GetEventFilterInfoChipInfo<EventStatusPublicId>[] = statusesResult.map(r => ({
                 color: r.color,
                 iconName: r.iconName,
                 id: r.id,
@@ -302,7 +343,7 @@ export default resolver.pipe(
                 rowCount: new Number(r.event_count).valueOf(),
             }));
 
-            const types: GetEventFilterInfoChipInfo[] = typesResult.map(r => ({
+            const types: GetEventFilterInfoChipInfo<EventTypePublicId>[] = typesResult.map(r => ({
                 color: r.color,
                 iconName: r.iconName,
                 id: r.id,
@@ -311,7 +352,7 @@ export default resolver.pipe(
                 rowCount: new Number(r.event_count).valueOf(),
             }));
 
-            const tags: GetEventFilterInfoChipInfo[] = tagsResult.map(r => ({
+            const tags: GetEventFilterInfoChipInfo<EventTagPublicId>[] = tagsResult.map(r => ({
                 color: r.color,
                 iconName: null,
                 id: r.id,

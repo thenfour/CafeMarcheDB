@@ -1,19 +1,19 @@
 import { isAttendanceGoing, isAttendanceNotGoing } from "shared/eventAttendance";
 
-type CalendarAttendanceSegment = {
-    statusId: number | null;
+type CalendarAttendanceSegment<TStatusIdentity extends number | string> = {
+    statusId: TStatusIdentity | null;
     responses: readonly { userId: number; attendanceId: number | null }[];
 };
 
 // Applies the subscriber's invitation and attendance preferences to a whole event.
 // Event visibility, deletion and other export filters are handled separately.
-export const shouldIncludeEventInCalendarFeed = (args: {
+export const shouldIncludeEventInCalendarFeed = <TStatusIdentity extends number | string>(args: {
     userId: number;
     showDeclinedEvents: boolean;
     showUninvitedEvents: boolean;
     isInvited: boolean;
-    segments: readonly CalendarAttendanceSegment[];
-    cancelledStatusIds: ReadonlySet<number>;
+    segments: readonly CalendarAttendanceSegment<TStatusIdentity>[];
+    cancelledStatusIds: ReadonlySet<TStatusIdentity>;
     attendanceById: ReadonlyMap<number, { strength: number }>;
 }): boolean => {
     const requiresGoingResponse = !args.showUninvitedEvents && !args.isInvited;

@@ -5,7 +5,6 @@ import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetGlobalStatsArgs, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance } from "../shared/apiTypes";
-import { assertIsNumberArray } from "shared/arrayUtils";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import { resolvePublicIds } from "../server/db3PublicIds";
 
@@ -23,6 +22,17 @@ export default resolver.pipe(
                 };
             }
 
+            const authorization = await getRequestAuthorization(ctx.session);
+            const publicData = db3.createDB3Authorization(
+                authorization.user,
+                authorization.effectivePermissions,
+            );
+            const [eventTypeIds, eventStatusIds, eventTagIds, songTagIds] = await Promise.all([
+                resolvePublicIds(db3.xEventType, args.filterSpec.eventTypeIds, publicData, db),
+                resolvePublicIds(db3.xEventStatus, args.filterSpec.eventStatusIds, publicData, db),
+                resolvePublicIds(db3.xEventTag, args.filterSpec.eventTagIds, publicData, db),
+                resolvePublicIds(db3.xSongTag, args.filterSpec.songTagIds, publicData, db),
+            ]);
 
             const eventFilters: string[] = [];
 
@@ -46,37 +56,26 @@ export default resolver.pipe(
                     break;
             }
 
-            if (args.filterSpec.eventTypeIds && args.filterSpec.eventTypeIds.length > 0) {
-                assertIsNumberArray(args.filterSpec.eventTypeIds);
-                eventFilters.push(`(e.typeId in (${args.filterSpec.eventTypeIds.join(",")}))`);
+            if (eventTypeIds.length > 0) {
+                eventFilters.push(`(e.typeId in (${eventTypeIds.join(",")}))`);
             }
 
-            if (args.filterSpec.eventStatusIds && args.filterSpec.eventStatusIds.length > 0) {
-                assertIsNumberArray(args.filterSpec.eventStatusIds);
-                eventFilters.push(`(e.statusId in (${args.filterSpec.eventStatusIds.join(",")}))`);
+            if (eventStatusIds.length > 0) {
+                eventFilters.push(`(e.statusId in (${eventStatusIds.join(",")}))`);
             }
 
             let eventHavingClause = "";
 
-            if (args.filterSpec.eventTagIds && args.filterSpec.eventTagIds.length > 0) {
-                assertIsNumberArray(args.filterSpec.eventTagIds);
-                eventFilters.push(`(eta.eventTagId in (${args.filterSpec.eventTagIds.join(",")}))`);
+            if (eventTagIds.length > 0) {
+                eventFilters.push(`(eta.eventTagId in (${eventTagIds.join(",")}))`);
                 eventHavingClause = `
                 HAVING
-    				COUNT(DISTINCT eta.eventTagId) = ${args.filterSpec.eventTagIds.length}
+					COUNT(DISTINCT eta.eventTagId) = ${eventTagIds.length}
                 `;
             }
 
             const songFilters: string[] = ["true"];
             let songHavingClause = "";
-            const authorization = await getRequestAuthorization(ctx.session);
-            const songTagIds = await resolvePublicIds(
-                db3.xSongTag,
-                args.filterSpec.songTagIds,
-                db3.createDB3Authorization(authorization.user, authorization.effectivePermissions),
-                db,
-            );
-
             if (songTagIds.length > 0) {
                 songFilters.push(`(sta.tagId in (${songTagIds.join(",")}))`);
                 songHavingClause = `
@@ -137,13 +136,15 @@ export default resolver.pipe(
                 e.durationMillis,
                 e.isAllDay,
                 e.endDateTime,
-                e.statusId,
-                e.typeId
+                eventStatus.publicId statusId,
+                eventType.publicId typeId
             from
                 popularSongs as ps
                 inner join EventSongListSong esls on esls.songId = ps.id
                 inner join EventSongList esl on esls.eventSongListId = esl.id
                 inner join e on e.id = esl.eventId
+                left join EventStatus eventStatus on eventStatus.id = e.statusId
+                left join EventType eventType on eventType.id = e.typeId
             group by
                 e.id,
                 ps.id       
@@ -174,10 +175,12 @@ export default resolver.pipe(
                 e.durationMillis,
                 e.isAllDay,
                 e.endDateTime,
-                e.statusId,
-                e.typeId
+                eventStatus.publicId statusId,
+                eventType.publicId typeId
             from
                 e
+                left join EventStatus eventStatus on eventStatus.id = e.statusId
+                left join EventType eventType on eventType.id = e.typeId
                 
         `;
 

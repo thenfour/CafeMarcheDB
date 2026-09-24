@@ -1,7 +1,8 @@
 import { Prisma } from "db";
+import { diffChars, diffLines } from 'diff';
 import { z } from "zod";
 import { slugify } from "../../../../shared/rootroot";
-import { diffChars, diffLines } from 'diff';
+import type { EventWikiPageContextClient } from "../../db3/shared/entities/event/eventViews";
 
 
 export const enum SpecialWikiNamespace {
@@ -154,35 +155,6 @@ export const ZTAdminClearPageLockArgs = z.object({
 });
 export type TAdminClearPageLockArgs = z.infer<typeof ZTAdminClearPageLockArgs>;
 
-export const WikiPageEventContextArgs = Prisma.validator<Prisma.EventDefaultArgs>()({
-    select: {
-        name: true,
-        id: true,
-        typeId: true,
-        statusId: true,
-        uid: true,
-        startsAt: true,
-        endDateTime: true,
-        isAllDay: true,
-        durationMillis: true,
-        segmentBehavior: true,
-        segments: {
-            select: {
-                id: true,
-                name: true,
-                statusId: true,
-                uid: true,
-                startsAt: true,
-                isAllDay: true,
-                durationMillis: true,
-            }
-        }
-    }
-});
-
-export type WikiPageEventContext = Prisma.EventGetPayload<typeof WikiPageEventContextArgs>;
-
-
 // Wiki URIs look like:
 // http://localhost:10455/backstage/wiki/EventDescription/542/the-big-festival
 // * All wiki pages are under /backstage/wiki/ (the wiki root)
@@ -199,7 +171,7 @@ export type WikiPath = {
 
 
 export type WikiPageData = {
-    eventContext: WikiPageEventContext | null,
+    eventContext: EventWikiPageContextClient | null,
     wikiPage: WikiPageApiPayload | null; // new pages = null
     titleIsEditable: boolean;
     specialWikiNamespace: SpecialWikiNamespace | null;
@@ -269,7 +241,6 @@ export const wikiParseCanonicalWikiPath = (canonicalWikiPath: string): WikiPath 
 };
 
 
-export type WikiNamespacePlugin = (namespace: string, slugWithoutNamespace: string, inp: WikiPageData) => Promise<WikiPageData>;
 
 
 

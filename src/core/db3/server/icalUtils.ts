@@ -100,6 +100,20 @@ export type EventSongListForCal = Prisma.EventSongListGetPayload<typeof EventSon
 export type EventForCal = Prisma.EventGetPayload<typeof EventForCalArgs>;
 export type EventSegmentForCal = Prisma.EventSegmentGetPayload<typeof EventSegmentForCalArgs>;
 
+export type EventSegmentForCalInput<TStatusIdentity extends number | string> = Omit<
+    EventSegmentForCal,
+    "statusId"
+> & {
+    statusId: TStatusIdentity | null;
+};
+
+export type EventForCalInput<TStatusIdentity extends number | string> = Omit<
+    EventForCal,
+    "segments"
+> & {
+    segments: EventSegmentForCalInput<TStatusIdentity>[];
+};
+
 
 
 /*
@@ -152,13 +166,13 @@ export type EventCalendarInput = Pick<EventForCal,
 // does some processing on an Event db model in order to prepare it for calendar export. the idea is to
 // grab just the info needed to know if a revision # is necessary.
 // returns null if no event can be generated
-type GetEventSegmentCalendarInputArgs = {
-    event: Partial<EventForCal>;
-    segment: EventSegmentForCal;
+type GetEventSegmentCalendarInputArgs<TStatusIdentity extends number | string> = {
+    event: Partial<EventForCalInput<TStatusIdentity>>;
+    segment: EventSegmentForCalInput<TStatusIdentity>;
     descriptionText: string;
     bandTimeZone: string;
 };
-export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, bandTimeZone, ...args }: GetEventSegmentCalendarInputArgs): EventCalendarInput | null => {
+export const GetEventSegmentCalendarInput = <TStatusIdentity extends number | string>({ segment, event, descriptionText, bandTimeZone, ...args }: GetEventSegmentCalendarInputArgs<TStatusIdentity>): EventCalendarInput | null => {
     if (!segment.startsAt) return null;
     const isAllDay = CoalesceBool(segment.isAllDay, true);
 
@@ -236,7 +250,11 @@ type GetEventCalendarInputResult = {
     inputHash: string;
     segments: EventCalendarInput[];
 };
-export const GetEventCalendarInput = (event: Partial<EventForCal>, cancelledStatusIds: number[], bandTimeZone: string): GetEventCalendarInputResult | null => {
+export const GetEventCalendarInput = <TStatusIdentity extends number | string>(
+    event: Partial<EventForCalInput<TStatusIdentity>>,
+    cancelledStatusIds: TStatusIdentity[],
+    bandTimeZone: string,
+): GetEventCalendarInputResult | null => {
     // if you pass in something that is insufficient for using as an event.
     // it's theoretical because it's always going to be an event object.
     if (event.revision === undefined) return null;

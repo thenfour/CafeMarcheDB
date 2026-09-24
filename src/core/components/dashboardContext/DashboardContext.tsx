@@ -22,6 +22,7 @@ import { DashboardContextDataBase } from './dashboardContextTypes';
 import { PermissionSet } from '@/src/auth/shared/PermissionSet';
 import { isAttendanceGoing } from 'shared/eventAttendance';
 import { partition, zip } from "@/shared/arrayUtils";
+import { EventStatusPublicId } from "@/shared/publicId";
 
 type CmdbWindow = Window & {
     cmdbDashboardContext?: DashboardContextData;
@@ -133,8 +134,10 @@ export class DashboardContextData extends DashboardContextDataBase {
             .filter(s => s.significance === db3.EventStatusSignificance.Cancelled);
     }
 
-    partitionEventSegmentsByCancellation<Tseg extends Prisma.EventSegmentGetPayload<{ select: { statusId: true } }>>(segments: Tseg[]): [Tseg[], Tseg[]] {
-        const cancelledEventStatusIds = this.getCancelledStatuses().map(x => x.id);
+    partitionEventSegmentsByCancellation<
+        Tseg extends { statusId: EventStatusPublicId | null },
+    >(segments: Tseg[]): [Tseg[], Tseg[]] {
+        const cancelledEventStatusIds = this.getCancelledStatuses().map(x => x.publicId);
         const isCancelled = (seg: Tseg) => {
             if (seg.statusId == null) return false;
             return cancelledEventStatusIds.includes(seg.statusId);
@@ -241,9 +244,18 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         tag => db3.xWikiPageTag.getIdentity(tag),
     );
     valueRef.current.role = new TableAccessor(dashboardData.role);
-    valueRef.current.eventType = new TableAccessor(dashboardData.eventType);
-    valueRef.current.eventStatus = new TableAccessor(dashboardData.eventStatus);
-    valueRef.current.eventTag = new TableAccessor(dashboardData.eventTag);
+    valueRef.current.eventType = new TableAccessor(
+        dashboardData.eventType,
+        value => db3.xEventType.getIdentity(value),
+    );
+    valueRef.current.eventStatus = new TableAccessor(
+        dashboardData.eventStatus,
+        value => db3.xEventStatus.getIdentity(value),
+    );
+    valueRef.current.eventTag = new TableAccessor(
+        dashboardData.eventTag,
+        value => db3.xEventTag.getIdentity(value),
+    );
     valueRef.current.eventAttendance = new TableAccessor(dashboardData.eventAttendance);
     valueRef.current.fileTag = new TableAccessor(
         dashboardData.fileTag,

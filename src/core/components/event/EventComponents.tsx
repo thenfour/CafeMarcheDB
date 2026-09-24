@@ -14,6 +14,7 @@ import { toSorted } from 'shared/arrayUtils';
 import { isAttendanceGoing, isAttendanceNotGoing } from 'shared/eventAttendance';
 import { Permission } from 'shared/permissions';
 import { Timing } from 'shared/time';
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId } from 'shared/publicId';
 import { IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
@@ -70,7 +71,7 @@ import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from '.
 
 type VerboseEventResponseInfo = EventResponseInfo<
     EventEnrichedVerbose_Event,
-    db3.EventVerbose_EventSegment,
+    db3.EventVerbose_EventSegmentClient,
     db3.EventVerbose_EventUserResponse,
     db3.EventVerbose_EventSegmentUserResponse
 >;
@@ -78,7 +79,7 @@ type VerboseEventResponseInfo = EventResponseInfo<
 type VerboseEventWithMetadata = EventWithMetadata<
     EventEnrichedVerbose_Event,
     db3.EventVerbose_EventUserResponse,
-    db3.EventVerbose_EventSegment,
+    db3.EventVerbose_EventSegmentClient,
     db3.EventVerbose_EventSegmentUserResponse
 >;
 
@@ -245,7 +246,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         setEventResponseValue(n);
     };
 
-    const handleChangedEventSegmentResponse = (segment: db3.EventSegmentPayloadMinimum, n: db3.EventVerbose_EventSegmentUserResponse) => {
+    const handleChangedEventSegmentResponse = (segment: { id: number }, n: db3.EventVerbose_EventSegmentUserResponse) => {
         const newval = {
             ...eventSegmentResponseValues,
             [segment.id]: n
@@ -438,7 +439,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [sortField, setSortField] = React.useState<EventAttendanceDetailSortField>("instrument");
     const [sortSegmentId, setSortSegmentId] = React.useState<number>(0); // support invalid IDs
-    const [sortSegment, setSortSegment] = React.useState<db3.EventVerbose_EventSegment | null>(null);
+    const [sortSegment, setSortSegment] = React.useState<db3.EventVerbose_EventSegmentClient | null>(null);
     const recordFeature = useFeatureRecorder();
 
     const [showCancelledSegments, setShowCancelledSegments] = React.useState<boolean>(false);
@@ -621,12 +622,12 @@ export const EventDescriptionControl = ({ event, refetch, readonly }: { event: P
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type SegmentResponseStat = {
-    segment: db3.EventVerbose_EventSegment;
+    segment: db3.EventVerbose_EventSegmentClient;
     notGoingCount: number;
     goingCount: number;
 };
 
-const GetSegmentResponseStats = (segments: db3.EventVerbose_EventSegment[], dashboardContext: DashboardContextData): SegmentResponseStat[] => {
+const GetSegmentResponseStats = (segments: db3.EventVerbose_EventSegmentClient[], dashboardContext: DashboardContextData): SegmentResponseStat[] => {
     return segments.map(seg => ({
         segment: seg,
         notGoingCount: seg.responses.filter(resp => {
@@ -856,9 +857,9 @@ export interface EventDetailContainerProps {
     fadePastEvents: boolean;
     showVisibility?: boolean;
 
-    highlightTagIds?: number[];
-    highlightStatusId?: number[];
-    highlightTypeId?: number[];
+    highlightTagIds?: EventTagPublicId[];
+    highlightStatusId?: EventStatusPublicId[];
+    highlightTypeId?: EventTypePublicId[];
 }
 
 export const EventDetailContainer = ({ eventData, tableClient, editCommands, refetch, ...props }: React.PropsWithChildren<EventDetailContainerProps>) => {
@@ -999,7 +1000,7 @@ export const EventDetailContainer = ({ eventData, tableClient, editCommands, ref
 
             <CMChipContainer>
                 {eventData.event.tags.map(tag => <CMStandardDBChip
-                    key={tag.id}
+                    key={db3.xEventTagAssignment.getIdentity(tag)}
                     model={tag.eventTag}
                     size='small'
                     variation={{ ...StandardVariationSpec.Weak, selected: highlightTagIds.includes(tag.eventTagId) }}
@@ -1227,9 +1228,9 @@ type EventSearchItemEvent = Pick<db3.EventSearchClient,
 export interface EventSearchItemContainerProps {
     event: EventSearchItemEvent;
 
-    highlightTagIds?: number[];
-    highlightStatusIds?: number[];
-    highlightTypeIds?: number[];
+    highlightTagIds?: EventTagPublicId[];
+    highlightStatusIds?: EventStatusPublicId[];
+    highlightTypeIds?: EventTypePublicId[];
     reducedInfo?: boolean; // show less info
     fadePastEvents?: boolean;
     hideTagsWhenCancelled?: boolean;
@@ -1354,7 +1355,7 @@ export const EventSearchItemContainer = ({
                 {(!hideTagsWhenCancelled || event.status?.significance !== db3.EventStatusSignificance.Cancelled) &&
                     <CMChipContainer>
                         {event.tags?.map(tag => <CMStandardDBChip
-                            key={tag.id}
+                            key={db3.xEventTagAssignment.getIdentity(tag)}
                             model={tag.eventTag}
                             size='small'
                             variation={{ ...StandardVariationSpec.Weak, selected: tag.eventTagId !== undefined && highlightTagIds.includes(tag.eventTagId) }}
@@ -1384,9 +1385,9 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
 
     return <EventSearchItemContainer
         event={event}
-        highlightTagIds={props.filterSpec ? props.filterSpec.tagFilter.options as number[] : []}
-        highlightStatusIds={props.filterSpec ? props.filterSpec.statusFilter.options as number[] : []}
-        highlightTypeIds={props.filterSpec ? props.filterSpec.typeFilter.options as number[] : []}
+        highlightTagIds={props.filterSpec ? props.filterSpec.tagFilter.options : []}
+        highlightStatusIds={props.filterSpec ? props.filterSpec.statusFilter.options : []}
+        highlightTypeIds={props.filterSpec ? props.filterSpec.typeFilter.options : []}
         reducedInfo={reducedInfo}
     //queryText={props.queryText}
     >

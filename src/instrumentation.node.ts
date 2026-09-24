@@ -168,6 +168,38 @@ export async function CorrectWikiPageTagAssignmentPublicIds() {
     console.log(`Replaced ${replacementCount} WikiPageTagAssignment public-ID placeholders.`);
 }
 
+export async function CorrectEventTypePublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.eventType,
+        modelName: "EventType",
+    });
+    console.log(`Replaced ${replacementCount} EventType public-ID placeholders.`);
+}
+
+export async function CorrectEventStatusPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.eventStatus,
+        modelName: "EventStatus",
+    });
+    console.log(`Replaced ${replacementCount} EventStatus public-ID placeholders.`);
+}
+
+export async function CorrectEventTagPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.eventTag,
+        modelName: "EventTag",
+    });
+    console.log(`Replaced ${replacementCount} EventTag public-ID placeholders.`);
+}
+
+export async function CorrectEventTagAssignmentPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.eventTagAssignment,
+        modelName: "EventTagAssignment",
+    });
+    console.log(`Replaced ${replacementCount} EventTagAssignment public-ID placeholders.`);
+}
+
 export async function registerNodeInstrumentation() {
     console.log(`INSTRUMENTATION RUNNING`);
     await instrumentationSetup();
@@ -186,6 +218,10 @@ export async function registerNodeInstrumentation() {
     await CorrectFileTagAssignmentPublicIds();
     await CorrectWikiPageTagPublicIds();
     await CorrectWikiPageTagAssignmentPublicIds();
+    await CorrectEventTypePublicIds();
+    await CorrectEventStatusPublicIds();
+    await CorrectEventTagPublicIds();
+    await CorrectEventTagAssignmentPublicIds();
 
     //const startupState = getServerStartStateRef();
     process.env.CMDB_START_TIME = `${new Date().valueOf()}`;

@@ -74,3 +74,19 @@ export function forgeDb3Delete(
     ...overrides,
   } as MutatorInput
 }
+
+export function forgeDb3PublicDelete(
+  tableID: string,
+  deletePublicId: string,
+  deleteType: "softWhenPossible" | "hard" = "hard",
+  overrides: Partial<MutatorInput> = {},
+): MutatorInput {
+  return {
+    tableID,
+    tableName: tableID,
+    mutationType: "delete",
+    deletePublicId,
+    deleteType,
+    ...overrides,
+  } as MutatorInput // Test builders intentionally construct requests before runtime table validation.
+}

@@ -225,6 +225,8 @@ export const fileCardSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
                             createdByUserId: true,
                             visiblePermissionId: true,
                             isDeleted: true,
+                            type: { select: { publicId: true } },
+                            status: { select: { publicId: true } },
                         },
                     },
                 },

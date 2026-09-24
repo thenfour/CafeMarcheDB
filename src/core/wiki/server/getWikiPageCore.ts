@@ -2,9 +2,9 @@ import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { GetWikiPageUpdatability, WikiPageApiPayloadArgs, WikiPageData, wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
 import { ProcessEventDescriptionForWikiPage } from "./wikiNamespaceEventDescription";
 import { AuthenticatedCtx } from "blitz";
-import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
 import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
 import { xWikiPage } from "src/core/db3/shared/schema/wiki";
+import { getRequestAuthorization } from "src/auth/server/requestAuthorization";
 
 interface GetWikiPageCoreArgs {
     canonicalWikiSlug: string;
@@ -18,7 +18,8 @@ interface GetWikiPageCoreArgs {
 
 export async function GetWikiPageCore({ canonicalWikiSlug, dbt, ctx, ...args }: GetWikiPageCoreArgs): Promise<WikiPageData> {
 
-    const currentUser = await getCurrentUserCore(ctx);
+    const authorization = await getRequestAuthorization(ctx.session);
+    const currentUser = authorization.user;
     if (!currentUser) throw new Error("Current user was not found.");
 
     const page = await dbt.wikiPage.findFirst({
@@ -50,7 +51,13 @@ export async function GetWikiPageCore({ canonicalWikiSlug, dbt, ctx, ...args }: 
 
     // if the page is of a special namespace, the title should be calculated and uneditable.
     if (path.namespace) {
-        ret = await ProcessEventDescriptionForWikiPage(path.namespace, path.slugWithoutNamespace, ret);
+        ret = await ProcessEventDescriptionForWikiPage(
+            path.namespace,
+            path.slugWithoutNamespace,
+            ret,
+            authorization,
+            dbt,
+        );
     }
 
     return ret;

@@ -10,7 +10,13 @@ import { CMSelectNullBehavior, makeLocalSelectionSource, withNullSelection } fro
 import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from "../SettingMarkdown";
 import { SnackbarContext } from "../SnackbarContext";
 
-export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { event: db3.EventWithAttendanceUserTagPayload; refetch: () => void; readonly: boolean }) => {
+interface EventAttendanceUserTagControlEvent {
+    id: number;
+    createdByUserId: number | null;
+    expectedAttendanceUserTag: db3.UserTagDisplay | null;
+}
+
+export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { event: EventAttendanceUserTagControlEvent; refetch: () => void; readonly: boolean }) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage } = React.useContext(SnackbarContext);
     const dashboard = useDashboardContext();

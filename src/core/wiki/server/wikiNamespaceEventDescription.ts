@@ -1,8 +1,22 @@
-import db from "db";
 import { IsEntirelyIntegral } from "shared/utils";
-import { SpecialWikiNamespace, WikiNamespacePlugin, WikiPageData, WikiPageEventContext, WikiPageEventContextArgs } from "../../wiki/shared/wikiUtils";
+import type { RequestAuthorization } from "src/auth/server/requestAuthorization";
+import { DB3ReferenceStore } from "../../db3/shared/core/db3Hydration";
+import { eventWikiPageContextView } from "../../db3/shared/entities/event/eventViews";
+import { queryView } from "../../db3/server/db3QueryCore";
+import type { TransactionalPrismaClient } from "../../db3/shared/apiTypes";
+import { SpecialWikiNamespace, WikiPageData } from "../../wiki/shared/wikiUtils";
 
-export const ProcessEventDescriptionForWikiPage: WikiNamespacePlugin = async (namespace: string, slugWithoutNamespace: string, inp: WikiPageData): Promise<WikiPageData> => {
+
+
+// under the "EventDescription" wiki namespace, we attach some event info to the
+// wiki context for a more ergonomic experience.
+export const ProcessEventDescriptionForWikiPage = async (
+    namespace: string,
+    slugWithoutNamespace: string,
+    inp: WikiPageData,
+    authorization: RequestAuthorization,
+    database: TransactionalPrismaClient,
+): Promise<WikiPageData> => {
     if (namespace.toLowerCase() !== SpecialWikiNamespace.EventDescription.toLowerCase()) {
         return inp;
     }
@@ -11,12 +25,15 @@ export const ProcessEventDescriptionForWikiPage: WikiNamespacePlugin = async (na
     }
     const eventId = parseInt(slugWithoutNamespace);
 
-    // This is truly messed up, but typescript will crash if i query the event table here.
-    // I have to avoid strong typing as a workaround.
-    const eventContext = await (db.event as any).findUniqueOrThrow({
-        where: { id: eventId },
-        ...WikiPageEventContextArgs,
-    }) as WikiPageEventContext;
+    const result = await queryView({
+        view: eventWikiPageContextView,
+        filter: { items: [], tableParams: { eventId } },
+        orderBy: undefined,
+        take: 1,
+        cmdbQueryContext: "wiki/EventDescription",
+    }, authorization, new DB3ReferenceStore(), database);
+    const eventContext = result.items[0];
+    if (!eventContext) throw new Error(`Event ${eventId} was not found.`);
 
     if (inp.wikiPage?.currentRevision) {
         inp.wikiPage.currentRevision.name = eventContext.name;

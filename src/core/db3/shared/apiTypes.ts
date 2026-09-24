@@ -2,7 +2,7 @@ import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 
 import { Prisma } from "db";
 import { z } from "zod";
-import { isPublicId, type InstrumentPublicId, type SongTagAssociationPublicId, type SongTagPublicId } from "shared/publicId";
+import { isPublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type InstrumentPublicId, type SongTagAssociationPublicId, type SongTagPublicId } from "shared/publicId";
 
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 
@@ -178,9 +178,9 @@ export interface TinsertEventArgs {
         //description: string,
         locationDescription: string | null,
         //slug: string,
-        typeId: number | null,
-        statusId: number | null,
-        tags: number[],
+        typeId: EventTypePublicId | null,
+        statusId: EventStatusPublicId | null,
+        tags: EventTagPublicId[],
         expectedAttendanceUserTagId: number | null,
         visiblePermissionId: number | null;
     },
@@ -290,9 +290,9 @@ export interface GetEventFilterInfoRet {
     rowCount: number;
     eventIds: number[];
 
-    types: GetEventFilterInfoChipInfo[];
-    statuses: GetEventFilterInfoChipInfo[];
-    tags: GetEventFilterInfoChipInfo[];
+    types: GetEventFilterInfoChipInfo<EventTypePublicId>[];
+    statuses: GetEventFilterInfoChipInfo<EventStatusPublicId>[];
+    tags: GetEventFilterInfoChipInfo<EventTagPublicId>[];
     //timings: GetEventFilterInfoChipInfo[];
 
     typesQuery: string;
@@ -418,10 +418,10 @@ export enum GetSongActivityReportFilterSpecTimingFilter {
 };
 
 export interface GetSongActivityReportFilterSpec {
-    eventTypeIds: number[];
+    eventTypeIds: EventTypePublicId[];
     timing: keyof typeof GetSongActivityReportFilterSpecTimingFilter;
-    eventTagIds: number[];
-    eventStatusIds: number[];
+    eventTagIds: EventTagPublicId[];
+    eventStatusIds: EventStatusPublicId[];
 };
 
 export interface GetSongActivityReportArgs {
@@ -444,10 +444,10 @@ export interface GetSongActivityReportRet {
 };
 
 export interface GetGlobalStatsFilterSpec {
-    eventTypeIds: number[];
+    eventTypeIds: EventTypePublicId[];
     timing: keyof typeof GetSongActivityReportFilterSpecTimingFilter;
-    eventTagIds: number[];
-    eventStatusIds: number[];
+    eventTagIds: EventTagPublicId[];
+    eventStatusIds: EventStatusPublicId[];
     songTagIds: SongTagPublicId[];
 };
 
@@ -462,8 +462,8 @@ export interface GetGlobalStatsRetEvent {
     durationMillis: bigint,
     isAllDay: boolean,
     endDateTime: null | Date,
-    typeId: number | null,
-    statusId: number | null,
+    typeId: EventTypePublicId | null,
+    statusId: EventStatusPublicId | null,
 };
 
 export interface GetGlobalStatsRetPopularSongOccurrance {
@@ -471,8 +471,8 @@ export interface GetGlobalStatsRetPopularSongOccurrance {
     songName: string,
     eventId: number,
     eventName: string,
-    typeId: number | null,
-    statusId: number | null,
+    typeId: EventTypePublicId | null,
+    statusId: EventStatusPublicId | null,
     startsAt: null | Date,
     durationMillis: bigint,
     isAllDay: boolean,
@@ -496,9 +496,9 @@ export interface TGetImportEventDataRet {
     event: {
         name: string,
         //description: string;
-        typeId: number | null,
-        statusId: number | null,
-        tags: number[],
+        typeId: EventTypePublicId | null,
+        statusId: EventStatusPublicId | null,
+        tags: EventTagPublicId[],
         expectedAttendanceUserTagId: number | null,
         visiblePermissionId: number | null;
     },

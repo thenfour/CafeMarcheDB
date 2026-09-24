@@ -40,7 +40,7 @@ import { xWikiPageTag } from "../schema/wikiPageTag";
 
 const dashboardEventTypeSelection = Prisma.validator<Prisma.EventTypeDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         isDeleted: true,
         description: true,
         color: true,
@@ -90,7 +90,7 @@ const dashboardWikiPageTagSelection = Prisma.validator<Prisma.WikiPageTagDefault
 
 const dashboardEventStatusSelection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         isDeleted: true,
         description: true,
         color: true,
@@ -103,7 +103,7 @@ const dashboardEventStatusSelection = Prisma.validator<Prisma.EventStatusDefault
 
 const dashboardEventTagSelection = Prisma.validator<Prisma.EventTagDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         description: true,
         color: true,
         sortOrder: true,
@@ -551,13 +551,13 @@ export function registerDashboardReferences(
         store.register(xWikiPageTag, input.wikiPageTag, value => xWikiPageTag.getIdentity(value));
     }
     if (input.eventType) {
-        store.register(xEventType, input.eventType, value => value.id);
+        store.register(xEventType, input.eventType, value => xEventType.getIdentity(value));
     }
     if (input.eventStatus) {
-        store.register(xEventStatus, input.eventStatus, value => value.id);
+        store.register(xEventStatus, input.eventStatus, value => xEventStatus.getIdentity(value));
     }
     if (input.eventTag) {
-        store.register(xEventTag, input.eventTag, value => value.id);
+        store.register(xEventTag, input.eventTag, value => xEventTag.getIdentity(value));
     }
     if (input.eventAttendance) {
         store.register(xEventAttendance, input.eventAttendance, value => value.id);

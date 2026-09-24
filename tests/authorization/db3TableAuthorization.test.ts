@@ -118,7 +118,8 @@ describe("inherited field read authorization", () => {
       PostQuery: db3.DB3FieldReadAuth.inheritRow,
       PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
     })
-    expect(db3.xEventStatus.fields.id.isReadRequiredAfterRowAuth()).toBe(true)
+    expect(db3.xEventStatus.fields.id.isReadRequiredAfterRowAuth()).toBe(false)
+    expect(db3.xEventStatus.fields.publicId.isReadRequiredAfterRowAuth()).toBe(true)
   })
 
   it("requires every row-read branch before declaring a field required", () => {
@@ -146,8 +147,13 @@ describe("inherited field read authorization", () => {
     expect(db3.xEventStatus.authorizeColumnForView({
       model: null,
       publicData,
-      columnName: "id",
+      columnName: "publicId",
     })).toBe(true)
+    expect(db3.xEventStatus.authorizeColumnForView({
+      model: null,
+      publicData,
+      columnName: "id",
+    })).toBe(false)
     expect(db3.xChange.authorizeColumnForView({
       model: null,
       publicData,
@@ -169,6 +175,7 @@ describe("inherited field read authorization", () => {
     const publicData = authorization(Permission.always_grant, Permission.public)
     const model = {
       id: 10,
+      publicId: "AuthEventStat001",
       isDeleted: false,
       label: "Confirmed",
       description: "Public display metadata",
@@ -186,8 +193,12 @@ describe("inherited field read authorization", () => {
     })
 
     expect(result.rowIsAuthorized).toBe(true)
-    expect(result.authorizedModel).toEqual(model)
-    expect(result.unauthorizedColumnCount).toBe(0)
+    expect(result.authorizedModel).toEqual(expect.objectContaining({
+      publicId: model.publicId,
+      label: model.label,
+    }))
+    expect(result.authorizedModel).not.toHaveProperty("id")
+    expect(result.unauthorizedColumnCount).toBe(1)
     expect(db3.xEventStatus.fields.label.isReadRequiredAfterRowAuth()).toBe(true)
     expect(db3.xEventStatus.fields.events.isReadRequiredAfterRowAuth()).toBe(false)
   })

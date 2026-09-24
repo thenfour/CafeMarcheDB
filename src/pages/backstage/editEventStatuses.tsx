@@ -9,7 +9,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 const tableSpec = DB3Client.defineTableClientSpec({
     view: db3.eventStatusEditorView,
     columns: {
-        id: columnName => new DB3Client.PKColumnClient({ columnName }),
+        publicId: DB3Client.publicIdFieldGen(),
         isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
         label: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
         description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),

@@ -3,6 +3,7 @@ import { xCustomLink, xEvent, xMenuLink, xSong, xWikiPage } from "@/src/core/db3
 import { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
 import { hash256 } from "@blitzjs/auth";
 import { z } from "zod";
+import { parsePublicId } from "shared/publicId";
 import { FacetedBreakdownResult, ZFeatureReportFilterSpec } from "../activityReportTypes";
 import { DeviceClasses, PointerTypes } from "../activityTracking";
 
@@ -450,19 +451,24 @@ const eventsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['eve
             SELECT
               e.id AS eventId,
               e.name,
+              e.startsAt,
+              eventStatus.publicId AS statusId,
+              eventType.publicId AS typeId,
               fs.count
             FROM FilteredSet fs
             JOIN Event e ON fs.eventId = e.id
+            LEFT JOIN EventStatus eventStatus ON eventStatus.id = e.statusId
+            LEFT JOIN EventType eventType ON eventType.id = e.typeId
             WHERE ${xEvent.SqlGetVisFilterExpression(currentUser, "e")}
           `;
     },
-    postProcessRow: (row: { eventId: number, name: string, statusId: number | null, typeId: number | null, startsAt: Date | null, count: bigint }) => ({
+    postProcessRow: (row: { eventId: number, name: string, statusId: string | null, typeId: string | null, startsAt: Date | null, count: bigint }) => ({
         eventId: row.eventId,
         count: Number(row.count),
         name: row.name,
         startsAt: row.startsAt,
-        statusId: row.statusId,
-        typeId: row.typeId,
+        statusId: row.statusId ? parsePublicId<"EventStatus">(row.statusId) : null,
+        typeId: row.typeId ? parsePublicId<"EventType">(row.typeId) : null,
     }),
     getFilterSqlConditions: (filterSpec, conditions) => {
         if (filterSpec.includeEventIds.length > 0) {

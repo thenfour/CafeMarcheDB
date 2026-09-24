@@ -664,6 +664,7 @@ model EventSegment {
 
 model EventType {
   id           Int     @id @default(autoincrement())
+  publicId     String  @unique @db.Char(16)
   text         String  @db.VarChar(768)
   description  String  @db.MediumText
   color        String?
@@ -681,6 +682,7 @@ model EventType {
 
 model EventStatus {
   id           Int     @id @default(autoincrement())
+  publicId     String  @unique @db.Char(16)
   label        String  @db.VarChar(768)
   description  String  @db.MediumText
   color        String?
@@ -700,6 +702,7 @@ model EventStatus {
 
 model EventTag {
   id                 Int                  @id @default(autoincrement())
+  publicId           String               @unique @db.Char(16)
   text               String               @db.VarChar(768)
   description        String               @db.MediumText
   color              String?
@@ -716,6 +719,7 @@ model EventTag {
 
 model EventTagAssignment {
   id         Int      @id @default(autoincrement())
+  publicId   String   @unique @db.Char(16)
   eventId    Int
   event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade) // events are soft-delete.
   eventTagId Int

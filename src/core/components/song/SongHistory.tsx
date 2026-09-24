@@ -12,6 +12,7 @@ import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from '../search/
 import { arraysContainSameValues } from 'shared/arrayUtils';
 import { AdminInspectObject } from '../CMCoreComponents2';
 import { useDashboardContext } from '../dashboardContext/DashboardContext';
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId } from 'shared/publicId';
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,8 +53,8 @@ export const SongHistoryFilterControls = ({ filterSpec, setFilterSpec, defaultFi
         <div className='divider'></div>
         <ChipFilterGroup
             style='toggle'
-            items={dashboardContext.eventType.map((s): ChipFilterGroupItem<number> => ({
-                id: s.id,
+            items={dashboardContext.eventType.map((s): ChipFilterGroupItem<EventTypePublicId> => ({
+                id: s.publicId,
                 label: s.text,
                 color: s.color,
             }))}
@@ -62,8 +63,8 @@ export const SongHistoryFilterControls = ({ filterSpec, setFilterSpec, defaultFi
         />
         <ChipFilterGroup
             style='toggle'
-            items={dashboardContext.eventStatus.map((s): ChipFilterGroupItem<number> => ({
-                id: s.id,
+            items={dashboardContext.eventStatus.map((s): ChipFilterGroupItem<EventStatusPublicId> => ({
+                id: s.publicId,
                 label: s.label,
                 color: s.color,
                 shape: 'rectangle',
@@ -73,8 +74,8 @@ export const SongHistoryFilterControls = ({ filterSpec, setFilterSpec, defaultFi
         />
         <ChipFilterGroup
             style='toggle'
-            items={dashboardContext.eventTag.map((s): ChipFilterGroupItem<number> => ({
-                id: s.id,
+            items={dashboardContext.eventTag.map((s): ChipFilterGroupItem<EventTagPublicId> => ({
+                id: s.publicId,
                 label: s.text,
                 color: s.color,
             }))}

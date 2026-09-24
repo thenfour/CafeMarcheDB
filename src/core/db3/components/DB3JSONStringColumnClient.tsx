@@ -117,42 +117,48 @@ const ActivityLogEvent = ({ eventId, cacheData }: { eventId: number | null | und
     return <ActivityLogChip uri={dashboardContext.routingApi.getURIForEvent(foundEvent)}>{EventAPI.getLabel(foundEvent)}#{foundEvent.id}</ActivityLogChip>;
 };
 
-const ActivityLogEventTag = ({ eventTagId, cacheData }: { eventTagId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
+const ActivityLogEventTag = ({ eventTagId }: { eventTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
-    const foundEventTag = dashboardContext.eventTag.getById(eventTagId);
+    const foundEventTag = isPublicId(eventTagId)
+        ? dashboardContext.eventTag.getById(parsePublicId<"EventTag">(eventTagId))
+        : undefined;
     if (!foundEventTag) {
         return <ActivityLogChip><Id value={eventTagId} /></ActivityLogChip>;
     }
     return <ActivityLogChip
         color={foundEventTag.color}
     >
-        {foundEventTag.text}#{foundEventTag.id}
+        {foundEventTag.text}
     </ActivityLogChip>;
 };
 
-const ActivityLogEventStatus = ({ eventStatusId, cacheData }: { eventStatusId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
+const ActivityLogEventStatus = ({ eventStatusId }: { eventStatusId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
-    const foundEventStatus = dashboardContext.eventStatus.getById(eventStatusId);
+    const foundEventStatus = isPublicId(eventStatusId)
+        ? dashboardContext.eventStatus.getById(parsePublicId<"EventStatus">(eventStatusId))
+        : undefined;
     if (!foundEventStatus) {
         return <ActivityLogChip><Id value={eventStatusId} /></ActivityLogChip>;
     }
     return <ActivityLogChip
         color={foundEventStatus.color}
     >
-        {foundEventStatus.label}#{foundEventStatus.id}
+        {foundEventStatus.label}
     </ActivityLogChip>;
 };
 
-const ActivityLogEventType = ({ eventTypeId, cacheData }: { eventTypeId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
+const ActivityLogEventType = ({ eventTypeId }: { eventTypeId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
-    const found = dashboardContext.eventType.getById(eventTypeId);
+    const found = isPublicId(eventTypeId)
+        ? dashboardContext.eventType.getById(parsePublicId<"EventType">(eventTypeId))
+        : undefined;
     if (!found) {
         return <ActivityLogChip><Id value={eventTypeId} /></ActivityLogChip>;
     }
     return <ActivityLogChip
         color={found.color}
     >
-        {found.text}#{found.id}
+        {found.text}
     </ActivityLogChip>;
 };
 

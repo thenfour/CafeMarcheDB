@@ -513,8 +513,10 @@ describe("DB3 command boundary", () => {
 
   it("updates an Event row and tag set through generated CRUD", async () => {
     const actor = createAuthorizationTestUser("sysadmin", { id: 100 })
+    const eventTagPublicId = parsePublicId<"EventTag">("EventTagPublic01")
     const eventTag = {
       id: 51,
+      publicId: eventTagPublicId,
       text: "Public",
       description: "",
       sortOrder: 1,
@@ -550,7 +552,7 @@ describe("DB3 command boundary", () => {
         patch: {
           locationDescription: "Main hall",
           segmentBehavior: "Sets",
-          tags: [eventTag.id],
+          tags: [eventTag.publicId],
         },
       },
     }, ctx)).resolves.toEqual({ identity: event.id })
@@ -563,8 +565,13 @@ describe("DB3 command boundary", () => {
       }),
     ])
     expect(authorizationTestDb.snapshot("eventTagAssignment")).toEqual([
-      expect.objectContaining({ eventId: event.id, eventTagId: eventTag.id }),
+      expect.objectContaining({
+        eventId: event.id,
+        eventTagId: eventTag.id,
+        publicId: expect.any(String),
+      }),
     ])
+    expect(isPublicId(authorizationTestDb.snapshot("eventTagAssignment")[0]?.publicId)).toBe(true)
   })
 
   it("updates File metadata and tags while rejecting storage-field changes through generated CRUD", async () => {

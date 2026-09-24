@@ -1135,15 +1135,37 @@ The current pressure-led sequence is:
    also stopped fabricating `id: -1` association records: `TagsField` now owns
    replacement drafts through `withForeignObjects()`, keeping relation shape
    and identity policy out of React code.
-5. **Next:** treat `EventType`, `EventStatus`, `EventTag`, and
-   `EventTagAssignment` as one
-   event-classification batch so their shared DTO, dashboard, filtering,
-   reporting, and import surfaces are changed coherently. The SongTag work
-   should make their identity-bearing filters an application of an established
-   contract rather than a second query-translation design.
-6. Keep `UserTag` plus `UserTagAssignment` and the central Song, File, WikiPage,
-   Event, User, and setlist identities in the later application-pressure phase,
-   unless a bounded audit reveals a genuinely uncovered identity capability.
+5. **Completed:** migrate `EventType`, `EventStatus`, `EventTag`, and
+   `EventTagAssignment` as one event-classification batch. Editor and dashboard
+   views, Event search and detail DTOs, static and interactive filters, raw-SQL
+   facets/reports, import and insert workflows, calendar consumers, activity
+   reports, embedded File and Wiki event summaries, caches, and React keys now
+   carry branded public identities. Trusted query and mutation boundaries batch
+   resolve those identities before Prisma or SQL uses natural keys.
+
+   This slice exposed two reusable design requirements. First, shared domain
+   algorithms such as cancellation classification must not hard-code either a
+   natural or public identity; they accept an explicit identity extractor, with
+   client callers supplying the xTable identity API and trusted server callers
+   supplying the database key deliberately. Second, an embedded event summary
+   is still a client boundary: File, Wiki, analytics, media-player, and calendar
+   DTOs must project classification identities before React sees them instead
+   of making UI components accept both identity domains. Historical activity
+   log values remain an explicit legacy-data exception: current public IDs are
+   resolved through public-keyed caches, while old numeric audit values are
+   rendered only as opaque fallback text. The Wiki EventDescription context is
+   now a dedicated named Event view queried through `queryView()`; it uses the
+   standard authorization, recursive projection, DTO validation, and hydration
+   path instead of a raw Prisma query and a caller-owned projection helper.
+6. **Next pressure audit:** treat `UserTag` and `UserTagAssignment` as one
+   candidate slice. Audit invitation membership, user administration,
+   association matrices, File user tagging, dashboard references, and event
+   attendance defaults together before editing. If that audit shows the slice
+   is dominated by application-policy work rather than a new identity scenario,
+   defer it and take the narrower `SongCreditType` lookup slice next.
+7. Keep the central Song, File, WikiPage, Event, User, and setlist identities in
+   the later application-pressure phase unless a bounded audit reveals a
+   genuinely uncovered identity capability.
 
 ## Active roadmap
 
@@ -1248,6 +1270,10 @@ conversions.
   - [x] `FileTagAssignment`
   - [x] `WikiPageTag`
   - [x] `WikiPageTagAssignment`
+  - [x] `EventType`
+  - [x] `EventStatus`
+  - [x] `EventTag`
+  - [x] `EventTagAssignment`
   - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
   - [x] Exercise an association/tag command with public identities
     (`Instrument.instrumentTags`).
@@ -1259,6 +1285,9 @@ conversions.
   - [x] Replace a hand-authored association DTO and component-owned mock-row
     shape with derived views, normalized references, and `TagsField` draft
     construction (`WikiPageTag` and Wiki page editing).
+  - [x] Exercise one classification family across dashboard caches, embedded
+    summaries, raw-SQL facets/reports, import/insert workflows, and shared
+    server/client algorithms (`EventType`, `EventStatus`, and `EventTag`).
 
 ### Deferred DB3 enhancements
 

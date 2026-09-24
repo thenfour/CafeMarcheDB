@@ -19,6 +19,10 @@ export type FileTagPublicId = PublicId<"FileTag">;
 export type FileTagAssignmentPublicId = PublicId<"FileTagAssignment">;
 export type WikiPageTagPublicId = PublicId<"WikiPageTag">;
 export type WikiPageTagAssignmentPublicId = PublicId<"WikiPageTagAssignment">;
+export type EventTypePublicId = PublicId<"EventType">;
+export type EventStatusPublicId = PublicId<"EventStatus">;
+export type EventTagPublicId = PublicId<"EventTag">;
+export type EventTagAssignmentPublicId = PublicId<"EventTagAssignment">;
 // todo: define other table-specific public ID types as needed here.
 
 export function isPublicId(value: unknown): value is PublicId {

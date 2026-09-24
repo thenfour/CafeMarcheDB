@@ -3,13 +3,18 @@ import { assert, AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
-import { InstrumentPublicId, parsePublicId } from "shared/publicId";
+import {
+    parsePublicId,
+    type EventStatusPublicId,
+    type EventTypePublicId,
+    type InstrumentPublicId,
+} from "shared/publicId";
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 import { xEvent } from "../shared/schema/event";
 
-type UserEventAttendanceQueryResult_EventSegment = Prisma.EventSegmentGetPayload<{
+type UserEventAttendanceQueryResult_EventSegment = Omit<Prisma.EventSegmentGetPayload<{
     select: {
         id: true,
         name: true,
@@ -18,11 +23,12 @@ type UserEventAttendanceQueryResult_EventSegment = Prisma.EventSegmentGetPayload
         durationMillis: true,
         isAllDay: true,
     }
-}> & {
+}>, "statusId"> & {
+    statusId: EventStatusPublicId | null;
     attendanceId: number | null;
 };
 
-type UserEventAttendanceQueryResult_Event = Prisma.EventGetPayload<{
+type UserEventAttendanceQueryResult_Event = Omit<Prisma.EventGetPayload<{
     select: {
         id: true,
         name: true,
@@ -33,7 +39,9 @@ type UserEventAttendanceQueryResult_Event = Prisma.EventGetPayload<{
         isAllDay: true,
         expectedAttendanceUserTagId: true,
     }
-}> & {
+}>, "statusId" | "typeId"> & {
+    statusId: EventStatusPublicId | null;
+    typeId: EventTypePublicId | null;
     instrumentId: InstrumentPublicId | null;
     userComment: string | null;
     isInvited: boolean | null;
@@ -97,8 +105,11 @@ export default resolver.pipe(
 
             const q = await db.event.findMany({
                 include: {
+                    type: { select: { publicId: true } },
+                    status: { select: { publicId: true } },
                     segments: {
                         include: {
+                            status: { select: { publicId: true } },
                             responses: {
                                 where: { userId: args.userId }
                             },
@@ -129,8 +140,8 @@ export default resolver.pipe(
                     const eventRet: UserEventAttendanceQueryResult_Event = {
                         id: event.id,
                         name: event.name,
-                        statusId: event.statusId,
-                        typeId: event.typeId,
+                        statusId: event.status ? parsePublicId<"EventStatus">(event.status.publicId) : null,
+                        typeId: event.type ? parsePublicId<"EventType">(event.type.publicId) : null,
                         startsAt: event.startsAt,
                         durationMillis: event.durationMillis,
                         isAllDay: event.isAllDay,
@@ -147,7 +158,7 @@ export default resolver.pipe(
                             const segRet: UserEventAttendanceQueryResult_EventSegment = {
                                 id: seg.id,
                                 name: seg.name,
-                                statusId: seg.statusId,
+                                statusId: seg.status ? parsePublicId<"EventStatus">(seg.status.publicId) : null,
                                 startsAt: seg.startsAt,
                                 durationMillis: seg.durationMillis,
                                 isAllDay: seg.isAllDay,

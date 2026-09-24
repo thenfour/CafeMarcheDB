@@ -5,13 +5,14 @@ import { floorLocalToLocalDay } from "shared/time";
 import { queryTable } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
 import { MakeICalEventUid } from "../shared/apiTypes";
-import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
+import { EventCalendarInput, GetEventCalendarInput } from "./icalUtils";
 import { Setting } from "@/shared/settingKeys";
 import { isAttendanceGoing } from "shared/eventAttendance";
 import { isUserInvitedToEvent } from "shared/eventInvitation";
 import { loadUserSettings } from "src/auth/server/userSettings";
 import { shouldIncludeEventInCalendarFeed } from "../shared/calendarAttendance";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
+import { parsePublicId, type EventStatusPublicId } from "shared/publicId";
 
 interface ICalSettings {
     calendarName: string;
@@ -146,10 +147,10 @@ export const addEventToCalendar2 = (
 export const addEventToCalendar = async (
     calendar: ICalCalendar,
     user: null | db3.UserForCalBackendPayload,
-    event: EventForCal,
+    event: db3.EventClientPayload_Verbose,
     eventVerbose: db3.EventClientPayload_Verbose,
     eventAttendanceIdsRepresentingGoing: number[],
-    cancelledStatusIds: number[],
+    cancelledStatusIds: EventStatusPublicId[],
     icalSettings: ICalSettings,
     bandTimeZone: string,
 ): Promise<ICalEvent[]> => {
@@ -216,7 +217,10 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
     // an option unavailable for future selection but does not erase its meaning.
     const eventAttendances = await db.eventAttendance.findMany();
 
-    const cancelledStatusIds = (await db.eventStatus.findMany({ select: { id: true }, where: { significance: db3.EventStatusSignificance.Cancelled } })).map(x => x.id);
+    const cancelledStatusIds = (await db.eventStatus.findMany({
+        select: { publicId: true },
+        where: { significance: db3.EventStatusSignificance.Cancelled },
+    })).map(status => parsePublicId<"EventStatus">(status.publicId));
     const userSettings = await loadUserSettings(currentUser.id);
     const attendanceById = new Map(eventAttendances.map(attendance => [attendance.id, attendance]));
     const cancelledStatuses = new Set(cancelledStatusIds);

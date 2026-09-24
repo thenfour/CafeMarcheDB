@@ -1,6 +1,7 @@
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { Prisma } from "db";
 import { z } from "zod";
+import { isPublicId, type EventStatusPublicId, type EventTagAssignmentPublicId, type EventTagPublicId, type EventTypePublicId } from "shared/publicId";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
@@ -19,7 +20,7 @@ import {
 
 // event type ------------------------------------------
 const EventTypeDtoSchema = z.object({
-    ...db3s.id(),
+    publicId: z.custom<EventTypePublicId>(isPublicId),
     ...db3s.isDeleted(),
     ...db3s.descriptionColorSortOrder(),
     ...db3s.iconName(),
@@ -30,7 +31,7 @@ const EventTypeDtoSchema = z.object({
 
 export const eventTypeEditorSelection = Prisma.validator<Prisma.EventTypeDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         isDeleted: true,
         description: true,
         color: true,
@@ -57,7 +58,7 @@ export const eventTypeEditorView = defineCrudView({
 
 // event status ------------------------------------------
 const EventStatusDtoSchema = z.object({
-    ...db3s.id(),
+    publicId: z.custom<EventStatusPublicId>(isPublicId),
     ...db3s.isDeleted(),
     ...db3s.descriptionColorSortOrder(),
     ...db3s.iconName(),
@@ -68,7 +69,7 @@ const EventStatusDtoSchema = z.object({
 
 export const eventStatusEditorSelection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         isDeleted: true,
         description: true,
         color: true,
@@ -96,7 +97,7 @@ export const eventStatusEditorView = defineCrudView({
 // event tag ------------------------------------------
 export const eventTagEditorSelection = Prisma.validator<Prisma.EventTagDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         description: true,
         color: true,
         sortOrder: true,
@@ -154,7 +155,7 @@ const EventSegmentEditorDtoSchema = z.object({
 
     ...db3s.dateRange(),
 
-    statusId: z.number().int().nullable().optional(),
+    statusId: z.custom<EventStatusPublicId>(isPublicId).nullable().optional(),
     status: EventStatusDtoSchema.nullable().optional(),
 
     eventId: z.number().int().optional(),
@@ -177,7 +178,7 @@ export const eventSegmentEditorView = defineCrudView({
 
 
 const EventEditorTagDtoSchema = z.object({
-    ...db3s.id(),
+    publicId: z.custom<EventTagPublicId>(isPublicId),
     text: z.string().optional(),
     ...db3s.descriptionColorSortOrder(),
     significance: z.string().nullable().optional(),
@@ -196,16 +197,16 @@ const EventEditorDtoSchema = z.object({
 
     ...db3s.dateRange(),
 
-    typeId: z.number().int().nullable().optional(),
+    typeId: z.custom<EventTypePublicId>(isPublicId).nullable().optional(),
     type: EventTypeDtoSchema.nullable().optional(),
 
-    statusId: z.number().int().nullable().optional(),
+    statusId: z.custom<EventStatusPublicId>(isPublicId).nullable().optional(),
     status: EventStatusDtoSchema.nullable().optional(),
 
     tags: z.array(z.object({
-        id: z.number().int(),
+        publicId: z.custom<EventTagAssignmentPublicId>(isPublicId),
         eventId: z.number().int().optional(),
-        eventTagId: z.number().int().optional(),
+        eventTagId: z.custom<EventTagPublicId>(isPublicId).optional(),
         eventTag: EventEditorTagDtoSchema.optional(),
     })).optional(),
 
@@ -276,7 +277,7 @@ const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
         visiblePermissionId: true,
         tags: {
             select: {
-                id: true,
+                publicId: true,
                 eventTagId: true,
             },
         },
@@ -345,6 +346,13 @@ const makeEventSearchSelection = (actorUserId: number) => (
             select: {
                 createdByUserId: true,
                 isDeleted: true,
+                type: { select: { publicId: true } },
+                status: { select: { publicId: true } },
+                tags: {
+                    select: {
+                        eventTag: { select: { publicId: true } },
+                    },
+                },
                 responses: {
                     where: { userId: actorUserId },
                     select: {
@@ -428,7 +436,7 @@ export const eventFrontpageSelection = Prisma.validator<Prisma.EventDefaultArgs>
         frontpageTags_fr: true,
         type: {
             select: {
-                id: true,
+                publicId: true,
                 isDeleted: true,
                 description: true,
                 color: true,
@@ -440,7 +448,7 @@ export const eventFrontpageSelection = Prisma.validator<Prisma.EventDefaultArgs>
         },
         status: {
             select: {
-                id: true,
+                publicId: true,
                 isDeleted: true,
                 description: true,
                 color: true,
@@ -453,11 +461,11 @@ export const eventFrontpageSelection = Prisma.validator<Prisma.EventDefaultArgs>
         tags: {
             orderBy: EventTagAssignmentNaturalOrderBy,
             select: {
-                id: true,
+                publicId: true,
                 eventTagId: true,
                 eventTag: {
                     select: {
-                        id: true,
+                        publicId: true,
                         description: true,
                         color: true,
                         sortOrder: true,
@@ -505,6 +513,63 @@ export const eventFrontpageView = defineView({
     ),
 });
 
+const eventWikiPageContextTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
+    select: {
+        id: true,
+        name: true,
+        typeId: true,
+        statusId: true,
+        uid: true,
+        startsAt: true,
+        endDateTime: true,
+        isAllDay: true,
+        durationMillis: true,
+        segmentBehavior: true,
+        segments: {
+            select: {
+                id: true,
+                name: true,
+                statusId: true,
+                uid: true,
+                startsAt: true,
+                isAllDay: true,
+                durationMillis: true,
+            },
+        },
+    },
+});
+
+const eventWikiPageContextSelection = Prisma.validator<Prisma.EventDefaultArgs>()(
+    graft(eventWikiPageContextTransportSelection, {
+        select: {
+            createdByUserId: true,
+            visiblePermissionId: true,
+            isDeleted: true,
+            type: { select: { publicId: true } },
+            status: { select: { publicId: true } },
+            segments: {
+                select: {
+                    status: { select: { publicId: true } },
+                },
+            },
+        },
+    }),
+);
+
+const eventWikiPageContextViewContract = deriveViewContract(
+    xEvent,
+    eventWikiPageContextSelection,
+    { transportSelection: eventWikiPageContextTransportSelection },
+);
+
+export const eventWikiPageContextView = defineView({
+    viewID: "Event_WikiPageContext",
+    entity: xEvent,
+    selection: eventWikiPageContextViewContract.prismaSelection,
+    dtoSchema: eventWikiPageContextViewContract.dtoSchema,
+    hydrate: eventWikiPageContextViewContract.hydrate,
+});
+
 export type EventSearchDto = DtoOf<typeof eventSearchView>;
 export type EventSearchClient = ClientOf<typeof eventSearchView>;
 
@@ -512,4 +577,5 @@ export type EventSearchClient = ClientOf<typeof eventSearchView>;
 
 export type EventFrontpageDto = DtoOf<typeof eventFrontpageView>;
 export type EventFrontpageClient = ClientOf<typeof eventFrontpageView>;
+export type EventWikiPageContextClient = ClientOf<typeof eventWikiPageContextView>;
 //type aoeus = EventFrontpageClient;

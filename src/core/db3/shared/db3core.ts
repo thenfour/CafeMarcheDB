@@ -516,7 +516,10 @@ export abstract class FieldBase<
 > {
     fieldTableAssociation: FieldAssociationWithTable;
     member: string;
-    fkidMember?: string | undefined; // if this is a foreign key field, this is the member name of the foreign key column.
+
+    // if this is a foreign key field, this is the member name of the foreign key column
+    // (`statusId`, `typeId`)
+    fkidMember?: string | undefined;
     defaultValue: FieldDataType | null;
     specialFunction: SqlSpecialColumnFunction | undefined;
 

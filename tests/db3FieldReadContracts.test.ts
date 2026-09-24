@@ -4,10 +4,10 @@ import { describe, expect, expectTypeOf, it, vi } from "vitest"
 import type { ColorPaletteEntry } from "src/core/components/color/palette"
 import * as db3 from "src/core/db3/db3"
 import { Permission } from "shared/permissions"
-import type { InstrumentFunctionalGroupPublicId } from "shared/publicId"
+import { parsePublicId, type EventTagPublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId"
 
 const eventStatusTransport = {
-  id: 10,
+  publicId: parsePublicId<"EventStatus">("AbCdEfGhIjKlMn12"),
   isDeleted: false,
   label: "Confirmed",
   description: "Public display metadata",
@@ -67,7 +67,7 @@ describe("DB3 xTable model metadata", () => {
     expectTypeOf<db3.DB3PrismaDelegateOf<typeof db3.xEventTag>>()
       .toEqualTypeOf<Prisma.EventTagDelegate>()
     expectTypeOf<db3.DB3IdentityOf<typeof db3.xEventTag>>()
-      .toEqualTypeOf<number>()
+      .toEqualTypeOf<EventTagPublicId>()
     expectTypeOf<db3.DB3IdentityOf<typeof db3.xInstrumentFunctionalGroup>>()
       .toEqualTypeOf<InstrumentFunctionalGroupPublicId>()
     expectTypeOf<db3.DB3ReferenceValueOf<

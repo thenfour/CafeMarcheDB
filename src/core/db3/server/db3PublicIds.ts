@@ -193,15 +193,27 @@ export function projectDB3ModelPublicIds(
 
     for (const field of table.columns) {
         if (field.fieldTableAssociation === "foreignObject" && field.fkidMember) {
+            // i'm going to use `status` / `statusId` as an example of what's going on.
+            // this branch turns `statusId` from it's internal numeric id to its public ID
             const foreignTable = (field as db3.ForeignSingleField<TAnyModel>).getForeignTableSchema();
             const foreignModel = ret[field.member];
-            if (foreignModel && typeof foreignModel === "object") {
+            if (foreignModel && typeof foreignModel === "object")// foreign object is present (`status`); recurse.
+            {
                 ret[field.member] = projectDB3ModelPublicIds(foreignTable, foreignModel, publicData);
                 if (foreignTable.publicIdMember) {
+                    // foreign refs also have a 2nd representation as the fkid (`statusId`)
                     ret[field.fkidMember] = foreignModel[foreignTable.publicIdMember];
                 }
-            } else if (foreignTable.publicIdMember && !isPublicId(ret[field.fkidMember])) {
+            } else if (
+                foreignTable.publicIdMember // foreign table uses public IDs
+                && ret[field.fkidMember] !== null // The foreign _key_ is not null; a relationship exists but its object isn't there
+                && !isPublicId(ret[field.fkidMember] // the fkid hasn't been converted to a public ID yet.
+                )
+            ) {
+                // so `statusId` = 42, but `status` is not present, and the status entity
+                // uses publicIds. It means we don't know its public ID (it's still unresolved);
                 // Never retain an unresolved database FK for a converted target.
+                // Null is the public representation of an absent optional relation.
                 delete ret[field.fkidMember];
             }
             continue;

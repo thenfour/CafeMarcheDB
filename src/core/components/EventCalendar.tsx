@@ -20,6 +20,7 @@ import { StandardVariationSpec } from "./color/palette";
 import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
 import { DateTimeRange, localTimeZone } from "@/shared/time";
+import type { EventStatusPublicId } from "shared/publicId";
 
 
 // attach useful data to the event for passing around the calendar.
@@ -31,7 +32,7 @@ type EventWithSearchResult = {
 type EventCalendarSegment = NonNullable<db3.EventSearchClient["segments"]>[number] & {
     name: string;
     dateRange: DateTimeRange;
-    statusId: number | null;
+    statusId: EventStatusPublicId | null;
 };
 
 type TCalendarEventItem = {

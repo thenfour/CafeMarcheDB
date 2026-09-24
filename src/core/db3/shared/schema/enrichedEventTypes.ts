@@ -1,10 +1,9 @@
-import { Prisma } from "db";
 import { TableAccessor } from "@/shared/rootroot";
 import { assert } from "blitz";
 import * as db3 from "@db3/db3";
 
 ////////////////////////////////////////////////////////////////
-export type EnrichEventInput = Partial<Prisma.EventGetPayload<{ include: { tags: true } }>>;
+export type EnrichEventInput = Partial<db3.EventClientPayload_Verbose>;
 export type EnrichedEvent<T extends EnrichEventInput> = Omit<
     T,
     "status" | "type" | "visiblePermission" | "tags"
@@ -12,7 +11,7 @@ export type EnrichedEvent<T extends EnrichEventInput> = Omit<
     status: db3.EventStatusDashboardClient | null;
     type: db3.EventTypeDashboardClient | null;
     visiblePermission: db3.PermissionDashboardClient | null;
-    tags: (Prisma.EventTagAssignmentGetPayload<{}> & {
+    tags: (db3.EventTagAssignmentClientPayload & {
         eventTag: db3.EventTagDashboardClient;
     })[];
 };

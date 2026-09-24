@@ -1,6 +1,11 @@
 import { ActivityReportTimeBucketSize } from "@/shared/mysqlUtils";
 import { Prisma } from "db";
-import { parsePublicId, type InstrumentPublicId } from "shared/publicId";
+import {
+    parsePublicId,
+    type EventStatusPublicId,
+    type EventTypePublicId,
+    type InstrumentPublicId,
+} from "shared/publicId";
 import { z } from "zod";
 import { ActivityFeature, Browsers, DeviceClasses, OperatingSystem, PointerTypes } from "./activityTracking";
 //import { gFeatureReportFacetProcessors } from "./server/facetProcessor";
@@ -117,8 +122,8 @@ export interface FacetedBreakdownResult {
             //id: true,
             name: string,
             startsAt: Date | null,
-            statusId: number | null,
-            typeId: number | null,
+            statusId: EventStatusPublicId | null,
+            typeId: EventTypePublicId | null,
             count: number;
         }[],
         wikiPages: {
@@ -235,9 +240,9 @@ const GetFeatureReportDetailResultArgsUnvalidated /*: Prisma.ActionDefaultArgs*/
             select: {
                 id: true,
                 name: true,
-                typeId: true,
-                statusId: true,
                 startsAt: true,
+                type: { select: { publicId: true } },
+                status: { select: { publicId: true } },
             }
         },
         song: {
@@ -272,17 +277,28 @@ export const GetFeatureReportDetailResultArgs = Prisma.validator<Prisma.ActionDe
 
 type GetFeatureReportDetailDbPayload = Prisma.ActionGetPayload<typeof GetFeatureReportDetailResultArgsUnvalidated>;
 
-export type GetFeatureReportDetailItemPayload = Omit<GetFeatureReportDetailDbPayload, "instrument"> & {
+export type GetFeatureReportDetailItemPayload = Omit<GetFeatureReportDetailDbPayload, "instrument" | "event"> & {
     instrumentId: InstrumentPublicId | null;
+    event: null | (Omit<NonNullable<GetFeatureReportDetailDbPayload["event"]>, "type" | "status"> & {
+        typeId: EventTypePublicId | null;
+        statusId: EventStatusPublicId | null;
+    });
 };
 
 export function projectFeatureReportDetailItem(
     row: GetFeatureReportDetailDbPayload,
 ): GetFeatureReportDetailItemPayload {
-    const { instrument, ...rest } = row;
+    const { instrument, event, ...rest } = row;
     return {
         ...rest,
         instrumentId: instrument ? parsePublicId<"Instrument">(instrument.publicId) : null,
+        event: event ? {
+            id: event.id,
+            name: event.name,
+            startsAt: event.startsAt,
+            typeId: event.type ? parsePublicId<"EventType">(event.type.publicId) : null,
+            statusId: event.status ? parsePublicId<"EventStatus">(event.status.publicId) : null,
+        } : null,
     };
 }
 

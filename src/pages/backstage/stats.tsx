@@ -15,7 +15,7 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { EventAPI, EventStatusSignificance, EventTypeSignificance } from "src/core/db3/db3";
 import getGlobalStats from "src/core/db3/queries/getGlobalStats";
 import { GetGlobalStatsFilterSpec, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance, GetSongActivityReportFilterSpecTimingFilter } from "src/core/db3/shared/apiTypes";
-import type { SongTagPublicId } from "shared/publicId";
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, SongTagPublicId } from "shared/publicId";
 
 
 
@@ -59,8 +59,8 @@ export const GlobalStatsFilterControls = ({ filterSpec, setFilterSpec, defaultFi
         <div className='divider'></div>
         <ChipFilterGroup
             style='toggle'
-            items={dashboardContext.eventType.map((s): ChipFilterGroupItem<number> => ({
-                id: s.id,
+            items={dashboardContext.eventType.map((s): ChipFilterGroupItem<EventTypePublicId> => ({
+                id: s.publicId,
                 label: s.text,
                 color: s.color,
             }))}
@@ -69,8 +69,8 @@ export const GlobalStatsFilterControls = ({ filterSpec, setFilterSpec, defaultFi
         />
         <ChipFilterGroup
             style='toggle'
-            items={dashboardContext.eventStatus.map((s): ChipFilterGroupItem<number> => ({
-                id: s.id,
+            items={dashboardContext.eventStatus.map((s): ChipFilterGroupItem<EventStatusPublicId> => ({
+                id: s.publicId,
                 label: s.label,
                 color: s.color,
                 shape: 'rectangle',
@@ -80,8 +80,8 @@ export const GlobalStatsFilterControls = ({ filterSpec, setFilterSpec, defaultFi
         />
         <ChipFilterGroup
             style='toggle'
-            items={dashboardContext.eventTag.map((s): ChipFilterGroupItem<number> => ({
-                id: s.id,
+            items={dashboardContext.eventTag.map((s): ChipFilterGroupItem<EventTagPublicId> => ({
+                id: s.publicId,
                 label: s.text,
                 color: s.color,
             }))}
@@ -194,8 +194,8 @@ const StatsPageInner = () => {
         timing: "All",
 
         // extra
-        eventStatusIds: dashboardContext.eventStatus.filter(s => s.significance === EventStatusSignificance.FinalConfirmation).map(s => s.id),// dashboardContext.eventStatus.filter(s => s.significance !== EventStatusSignificance.Cancelled).map(s => s.id), // everything
-        eventTypeIds: dashboardContext.eventType.filter(t => [EventTypeSignificance.Concert].includes(t.significance as any)).map(t => t.id), // concerts & rehearsals & weekend are the only thing that matter for songs
+        eventStatusIds: dashboardContext.eventStatus.filter(s => s.significance === EventStatusSignificance.FinalConfirmation).map(s => s.publicId),// dashboardContext.eventStatus.filter(s => s.significance !== EventStatusSignificance.Cancelled).map(s => s.publicId), // everything
+        eventTypeIds: dashboardContext.eventType.filter(t => t.significance === EventTypeSignificance.Concert).map(t => t.publicId), // concerts & rehearsals & weekend are the only thing that matter for songs
         eventTagIds: [],
         songTagIds: [],
     };

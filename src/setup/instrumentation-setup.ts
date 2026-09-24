@@ -168,7 +168,10 @@ async function EnsureEventStatuses() {
         return;
     }
 
-    await SeedTable("eventStatus", db.eventStatus, eventStatuses);
+    await SeedTable("eventStatus", db.eventStatus, eventStatuses.map(status => ({
+        ...status,
+        publicId: generatePublicId<"EventStatus">(),
+    })));
 };
 
 async function EnsureEventTypes() {
@@ -214,7 +217,10 @@ async function EnsureEventTypes() {
         return;
     }
 
-    await SeedTable("eventType", db.eventType, eventTypes);
+    await SeedTable("eventType", db.eventType, eventTypes.map(type => ({
+        ...type,
+        publicId: generatePublicId<"EventType">(),
+    })));
 };
 
 async function EnsureEventAttendanceOptions() {

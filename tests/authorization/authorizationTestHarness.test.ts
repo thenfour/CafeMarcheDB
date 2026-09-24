@@ -38,6 +38,7 @@ import {
 import { queryTable } from "@db3/server/db3QueryCore"
 import type { UserWithRolesPayload } from "@db3/shared/schema/userPayloads"
 import { Permission } from "shared/permissions"
+import { parsePublicId } from "shared/publicId"
 import { PermissionSet } from "src/auth/shared/PermissionSet"
 import {
   asUserManagementActor,
@@ -51,6 +52,7 @@ import {
 import {
   forgeDb3Delete,
   forgeDb3Insert,
+  forgeDb3PublicDelete,
   forgeDb3Query,
   forgeDb3Update,
 } from "./support/db3RequestBuilders"
@@ -308,12 +310,14 @@ describe("BA-A001 generic DB3 request validation", () => {
   })
 
   it("uses database authorization and excludes deleted rows for every actor by default", async () => {
+    const visibleEventTypePublicId = parsePublicId<"EventType">("AuthEventType001")
+    const deletedEventTypePublicId = parsePublicId<"EventType">("AuthEventType002")
     authorizationTestDb.reset({
       user: [sysadmin, moderator, { ...target, isDeleted: true }],
       change: [],
       eventType: [
-        { id: 10, isDeleted: false, text: "Visible event type" },
-        { id: 11, isDeleted: true, text: "Deleted event type" },
+        { id: 10, publicId: visibleEventTypePublicId, isDeleted: false, text: "Visible event type" },
+        { id: 11, publicId: deletedEventTypePublicId, isDeleted: true, text: "Deleted event type" },
       ],
     })
 
@@ -332,10 +336,10 @@ describe("BA-A001 generic DB3 request validation", () => {
     const { ctx: publicCtx } = createAuthorizationPersona("public")
     const publicResult = await invokeResolver(db3Query, forgeDb3Query("EventType"), publicCtx)
     expect(publicResult.items).toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: 10 })]),
+      expect.arrayContaining([expect.objectContaining({ publicId: visibleEventTypePublicId })]),
     )
     expect(publicResult.items).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: 11 })]),
+      expect.arrayContaining([expect.objectContaining({ publicId: deletedEventTypePublicId })]),
     )
     expect(sysadminResult).not.toHaveProperty("authorization")
   })
@@ -404,7 +408,15 @@ describe("BA-A002 generic DB3 query authorization", () => {
   it.each([
     { name: "filter", request: { filter: { items: [{ field: "isDeleted", operator: "equals" as const, value: true }] } } },
     { name: "order", request: { orderBy: { isDeleted: "asc" as const } } },
-    { name: "parameter", request: { filter: { items: [], tableParams: { eventTypeIds: [12] } } } },
+    {
+      name: "parameter",
+      request: {
+        filter: {
+          items: [],
+          tableParams: { eventTypeIds: [parsePublicId<"EventType">("AuthEventType003")] },
+        },
+      },
+    },
   ])("rejects a protected $name field before querying", async ({ request }) => {
     const findMany = vi.spyOn(authorizationTestDb.getDelegate("event"), "findMany")
     const { ctx } = createAuthorizationPersona("public")
@@ -2147,6 +2159,7 @@ describe("BA-A005 delete authorization", () => {
 
   const eventTag = {
     id: 100,
+    publicId: parsePublicId<"EventTag">("AuthEventTag0001"),
     text: "Delete test tag",
     description: "",
     color: null,
@@ -2156,6 +2169,7 @@ describe("BA-A005 delete authorization", () => {
   }
   const eventType = {
     id: 101,
+    publicId: parsePublicId<"EventType">("AuthEventType004"),
     text: "Delete test type",
     description: "",
     color: null,
@@ -2202,16 +2216,16 @@ describe("BA-A005 delete authorization", () => {
   })
 
   it.each([
-    ["soft", "EventType", eventType.id, "softWhenPossible"],
-    ["hard", "EventTag", eventTag.id, "hard"],
-  ] as const)("does not let login alone perform a %s delete", async (_kind, tableName, id, deleteType) => {
+    ["soft", "EventType", eventType.publicId, "softWhenPossible"],
+    ["hard", "EventTag", eventTag.publicId, "hard"],
+  ] as const)("does not let login alone perform a %s delete", async (_kind, tableName, publicId, deleteType) => {
     const { ctx } = createAuthorizationPersona("limited", { id: limited.id })
     const delegate = authorizationTestDb.getDelegate(tableName)
     const update = vi.spyOn(delegate, "update")
     const deleteMany = vi.spyOn(delegate, "deleteMany")
 
     await expect(
-      invokeResolver(db3Mutation, forgeDb3Delete(tableName, id, deleteType), ctx),
+      invokeResolver(db3Mutation, forgeDb3PublicDelete(tableName, publicId, deleteType), ctx),
     ).rejects.toThrow(`Not authorized to mutate ${tableName} fields`)
 
     expect(update).not.toHaveBeenCalled()
@@ -2230,7 +2244,7 @@ describe("BA-A005 delete authorization", () => {
 
     await invokeResolver(
       db3Mutation,
-      forgeDb3Delete("EventType", eventType.id, "softWhenPossible"),
+      forgeDb3PublicDelete("EventType", eventType.publicId, "softWhenPossible"),
       ctx,
     )
 
@@ -2246,7 +2260,7 @@ describe("BA-A005 delete authorization", () => {
     const deleteMany = vi.spyOn(delegate, "deleteMany")
 
     await expect(
-      invokeResolver(db3Mutation, forgeDb3Delete("EventType", eventType.id, "hard"), ctx),
+      invokeResolver(db3Mutation, forgeDb3PublicDelete("EventType", eventType.publicId, "hard"), ctx),
     ).rejects.toThrow("Not authorized to mutate EventType fields")
 
     expect(update).not.toHaveBeenCalled()
@@ -2266,7 +2280,7 @@ describe("BA-A005 delete authorization", () => {
 
     await invokeResolver(
       db3Mutation,
-      forgeDb3Delete("EventTag", eventTag.id, "softWhenPossible"),
+      forgeDb3PublicDelete("EventTag", eventTag.publicId, "softWhenPossible"),
       ctx,
     )
 

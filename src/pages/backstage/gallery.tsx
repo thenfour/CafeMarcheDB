@@ -29,13 +29,13 @@ import * as db3 from "src/core/db3/db3";
 import { ClientOf } from "src/core/db3/db3";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 import { ChipFilterGroup, FilterControls } from "../../core/components/search/FilterControl";
-import type { SongTagPublicId } from "shared/publicId";
+import type { EventTagPublicId, EventTypePublicId, SongTagPublicId } from "shared/publicId";
 
 interface FilterSpec {
     qfText: string;
-    selectedEventTypeId: number | null;
+    selectedEventTypeId: EventTypePublicId | null;
     selectedSongTagIds: SongTagPublicId[];
-    selectedEventTagIds: number[];
+    selectedEventTagIds: EventTagPublicId[];
     selectedTiming: Timing;
 };
 
@@ -80,7 +80,7 @@ const FilterControlsTester = () => {
             style="radiotoggle"
             selectedIds={spec.selectedEventTypeId ? [spec.selectedEventTypeId] : []}
             items={dashboardContext.eventType.map(t => ({
-                id: t.id,
+                id: t.publicId,
                 label: <>{RenderMuiIcon(t.iconName)}{t.text}</>,
                 shape: "rectangle",
                 color: t.color,
@@ -91,7 +91,7 @@ const FilterControlsTester = () => {
             style="toggle"
             selectedIds={spec.selectedEventTagIds}
             items={dashboardContext.eventTag.map(t => ({
-                id: t.id,
+                id: t.publicId,
                 label: t.text,
                 color: t.color,
             }))}
