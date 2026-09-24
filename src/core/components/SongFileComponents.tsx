@@ -6,6 +6,7 @@ import { Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { Permission } from 'shared/permissions';
+import type { FileTagPublicId } from 'shared/publicId';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { formatFileSize, SortDirection } from 'shared/rootroot';
 import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
@@ -44,7 +45,7 @@ type SongDetailFile = NonNullable<
 >;
 type DetailFile = db3.FileDetailClient
     | SongDetailFile
-    | EnrichedFile<db3.FileWithTagsPayload>;
+    | EnrichedFile<db3.FileWithTagsClientPayload>;
 
 const hasEventChipFields = (event: {
     id: number;
@@ -185,7 +186,7 @@ export const FileExternalLink = ({ file, highlight }: { file: DetailFile, highli
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface FileViewerHiddenTagIds {
-    fileTagIds?: number[];
+    fileTagIds?: FileTagPublicId[];
     userTagIds?: number[];
     instrumentTagIds?: db3.InstrumentIdentity[];
     songTagIds?: number[];
@@ -318,8 +319,16 @@ export const FileValueViewer = (props: FileViewerProps) => {
                 <CMChipContainer>
                     {(tags.length > 0) && (
                         tags
-                            .filter(a => !props.hiddenTagIds.fileTagIds || !existsInArray(props.hiddenTagIds.fileTagIds, a.fileTag.id))
-                            .map(a => <CMStandardDBChip key={a.id} model={a.fileTag} size="small" variation={variation} />)
+                            .filter(a => !props.hiddenTagIds.fileTagIds || !existsInArray(
+                                props.hiddenTagIds.fileTagIds,
+                                db3.xFileTag.getIdentity(a.fileTag),
+                            ))
+                            .map(a => <CMStandardDBChip
+                                key={db3.xFileTagAssignment.getIdentity(a)}
+                                model={a.fileTag}
+                                size="small"
+                                variation={variation}
+                            />)
                     )}
 
                     {(taggedEvents.length > 0) && (
@@ -539,7 +548,7 @@ export const FileEditor = (props: FileEditorProps) => {
 // this filtering & sorting is done at runtime, not db fetch time.
 interface FileFilterAndSortSpec {
     quickFilter: string;
-    tagIds: number[];
+    tagIds: FileTagPublicId[];
     taggedUserIds: number[];
     taggedInstrumentIds: db3.InstrumentIdentity[];
     taggedSongIds: number[];
@@ -561,7 +570,7 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         const taggedSongs = item.file.taggedSongs ?? [];
         const taggedEvents = item.file.taggedEvents ?? [];
         const taggedWikiPages = item.file.taggedWikiPages ?? [];
-        const tagIds = tags.map(tag => tag.fileTag.id);
+        const tagIds = tags.map(tag => db3.xFileTag.getIdentity(tag.fileTag));
         if (spec.tagIds.length && !tagIds.some(id => spec.tagIds.includes(id))) return false;
 
         const userIds = taggedUsers.map(user => user.user.id);
@@ -723,7 +732,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
         return fg.color;
     };
 
-    const uniqueTags = CalculateUniqueTags<db3.FileTagPayloadMinimum>({ field: db3.xFile.fields.tags, fileTags: props.fileTags });
+    const uniqueTags = CalculateUniqueTags<db3.FileTagDashboardClient>({ field: db3.xFile.fields.tags, fileTags: props.fileTags });
     const uniqueInstrumentTags = CalculateUniqueTags<db3.InstrumentClientPayload>({ field: db3.xFile.fields.taggedInstruments, fileTags: props.fileTags });
     const uniqueEventTags = CalculateUniqueTags<db3.InstrumentPayloadMinimum>({ field: db3.xFile.fields.taggedEvents, fileTags: props.fileTags });
     const uniqueUserTags = CalculateUniqueTags<db3.UserPayloadMinimum>({ field: db3.xFile.fields.taggedUsers, fileTags: props.fileTags });
@@ -773,12 +782,24 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                                     {uniqueTags.length > 1 && <CMChipContainer>
                                         {uniqueTags.map(t => (
                                             <CMChip
-                                                key={t.tag.id}
+                                                key={db3.xFileTag.getIdentity(t.tag)}
                                                 color={t.tag.color}
                                                 tooltip={t.tag.description}
                                                 size='small'
-                                                variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.tagIds, t.tag.id) }}
-                                                onClick={() => props.onChange({ ...props.value, tagIds: toggleValueInArray(props.value.tagIds, t.tag.id) })}
+                                                variation={{
+                                                    ...StandardVariationSpec.Strong,
+                                                    selected: existsInArray(
+                                                        props.value.tagIds,
+                                                        db3.xFileTag.getIdentity(t.tag),
+                                                    ),
+                                                }}
+                                                onClick={() => props.onChange({
+                                                    ...props.value,
+                                                    tagIds: toggleValueInArray(
+                                                        props.value.tagIds,
+                                                        db3.xFileTag.getIdentity(t.tag),
+                                                    ),
+                                                })}
                                             >
                                                 {t.tag.text} ({t.count})
                                             </CMChip>))}

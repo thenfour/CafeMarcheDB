@@ -18,8 +18,8 @@ export interface DiscreteFilterConfig<T extends number | boolean | string = numb
 export interface DiscreteFilterState<T extends number | boolean | string = number> {
     enabled: boolean;
     setEnabled: (enabled: boolean) => void;
-    criterion: DiscreteCriterion;
-    setCriterion: (criterion: DiscreteCriterion) => void;
+    criterion: DiscreteCriterion<T>;
+    setCriterion: (criterion: DiscreteCriterion<T>) => void;
     // For convenience, individual setters
     setBehavior: (behavior: DiscreteCriterionFilterType) => void;
     setOptions: (options: T[]) => void;
@@ -47,13 +47,13 @@ export function useDiscreteFilter<T extends number | boolean | string = number>(
         config.defaultEnabled
     );
 
-    const criterion: DiscreteCriterion = {
+    const criterion: DiscreteCriterion<T> = {
         db3Column: config.db3Column,
         behavior,
         options,
-    }; const setCriterion = (newCriterion: DiscreteCriterion) => {
+    }; const setCriterion = (newCriterion: DiscreteCriterion<T>) => {
         setBehavior(newCriterion.behavior);
-        setOptions(newCriterion.options as T[]);
+        setOptions(newCriterion.options);
     };
 
     return {

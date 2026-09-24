@@ -6,6 +6,7 @@ import ViewAgendaIcon from "@mui/icons-material/ViewAgenda";
 import ViewWeekIcon from "@mui/icons-material/ViewWeek";
 import React from "react";
 import { Permission } from 'shared/permissions';
+import type { FileTagPublicId } from "shared/publicId";
 import { IsNullOrWhitespace, parseMimeType } from 'shared/utils';
 import { gCharMap } from '../../db3/components/IconMap';
 import { CMDBUploadFile } from '../file/CMDBUploadFile';
@@ -85,7 +86,7 @@ interface Markdown3EditorPropsBase {
         taggedInstrumentId?: number;
         taggedWikiPageId?: number;
         taggedUserId?: number;
-        fileTagId?: number;
+        fileTagId?: FileTagPublicId;
         visiblePermissionId?: number;
         visiblePermission?: string;
     };

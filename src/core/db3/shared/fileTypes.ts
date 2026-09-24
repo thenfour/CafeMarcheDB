@@ -1,5 +1,6 @@
 import { Coord2D, Size } from "@/shared/rootroot";
 import { Prisma } from "db";
+import type { FileTagPublicId } from "shared/publicId";
 
 export interface TClientFileUploadTags {
     taggedUserId?: number;
@@ -7,7 +8,7 @@ export interface TClientFileUploadTags {
     taggedEventId?: number;
     taggedInstrumentId?: number;
     taggedWikiPageId?: number;
-    fileTagId?: number;
+    fileTagId?: FileTagPublicId;
 };
 
 // interface from upload.ts to mutation. files themselves contain much of the data; this is only for associations.
@@ -24,7 +25,7 @@ export interface TClientUpdateFile {
     isDeleted?: boolean; // allow soft delete via mutation
     visiblePermissionId?: number | null;
 
-    tagsIds?: number[];
+    tagsIds?: FileTagPublicId[];
     taggedUserIds?: number[];
     taggedSongIds?: number[];
     taggedEventIds?: number[];

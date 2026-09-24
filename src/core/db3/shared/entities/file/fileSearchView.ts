@@ -24,7 +24,7 @@ const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
         externalURI: true,
         tags: {
             select: {
-                id: true,
+                publicId: true,
                 fileTagId: true,
             },
         },
@@ -78,6 +78,12 @@ export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
         select: {
             uploadedByUserId: true,
             isDeleted: true,
+            tags: {
+                select: {
+                    fileId: true,
+                    fileTag: { select: { publicId: true } },
+                },
+            },
             taggedSongs: {
                 select: {
                     songId: true,

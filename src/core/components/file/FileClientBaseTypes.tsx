@@ -1,5 +1,6 @@
 import { SortDirection } from 'shared/rootroot';
 import { DiscreteCriterion } from "../../db3/shared/apiTypes";
+import type { FileTagPublicId, InstrumentPublicId } from "shared/publicId";
 
 export enum FileOrderByColumnOptions {
     //id = "id",
@@ -26,7 +27,7 @@ export interface FilesFilterSpec {
 
     // File-specific filters
     //typeFilter: DiscreteCriterion; // MIME types
-    tagFilter: DiscreteCriterion; // file tags
+    tagFilter: DiscreteCriterion<FileTagPublicId>; // file tags
     //uploaderFilter: DiscreteCriterion; // uploaded by user
     //sizeFilter: DiscreteCriterion; // file size ranges
 
@@ -34,5 +35,5 @@ export interface FilesFilterSpec {
     // taggedUserFilter: DiscreteCriterion;
     // taggedEventFilter: DiscreteCriterion;
     // taggedSongFilter: DiscreteCriterion;
-    taggedInstrumentFilter: DiscreteCriterion;
+    taggedInstrumentFilter: DiscreteCriterion<InstrumentPublicId>;
 }

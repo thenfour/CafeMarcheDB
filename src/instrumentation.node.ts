@@ -136,6 +136,22 @@ export async function CorrectSongTagAssociationPublicIds() {
     console.log(`Replaced ${replacementCount} SongTagAssociation public-ID placeholders.`);
 }
 
+export async function CorrectFileTagPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.fileTag,
+        modelName: "FileTag",
+    });
+    console.log(`Replaced ${replacementCount} FileTag public-ID placeholders.`);
+}
+
+export async function CorrectFileTagAssignmentPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.fileTagAssignment,
+        modelName: "FileTagAssignment",
+    });
+    console.log(`Replaced ${replacementCount} FileTagAssignment public-ID placeholders.`);
+}
+
 export async function registerNodeInstrumentation() {
     console.log(`INSTRUMENTATION RUNNING`);
     await instrumentationSetup();
@@ -150,6 +166,8 @@ export async function registerNodeInstrumentation() {
     await CorrectInstrumentTagAssociationPublicIds();
     await CorrectSongTagPublicIds();
     await CorrectSongTagAssociationPublicIds();
+    await CorrectFileTagPublicIds();
+    await CorrectFileTagAssignmentPublicIds();
 
     //const startupState = getServerStartStateRef();
     process.env.CMDB_START_TIME = `${new Date().valueOf()}`;

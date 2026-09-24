@@ -169,7 +169,7 @@ const main = async () => {
       "color": null,
       "significance": "Rider"
     }
-  ]);
+  ].map(tag => ({ ...tag, publicId: generatePublicId<"FileTag">() })));
 
   await SeedTable("eventTag", gState.prisma.eventTag, [
     {

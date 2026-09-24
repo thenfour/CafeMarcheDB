@@ -14,6 +14,8 @@ const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn04");
 const otherSongTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn05");
 const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn06");
 const instrumentPublicId = parsePublicId<"Instrument">("AbCdEfGhIjKlMn07");
+const fileTagPublicId = parsePublicId<"FileTag">("AbCdEfGhIjKlMn08");
+const fileTagAssociationPublicId = parsePublicId<"FileTagAssignment">("AbCdEfGhIjKlMn09");
 const instrumentId = 7;
 const group = {
     id: 54,
@@ -125,6 +127,17 @@ describe("instrument catalog public-ID transport", () => {
 
         const projectedFile = projectDB3ModelPublicIds(db3.xFile, {
             id: 90,
+            tags: [{
+                id: 92,
+                publicId: fileTagAssociationPublicId,
+                fileId: 90,
+                fileTagId: 21,
+                fileTag: {
+                    id: 21,
+                    publicId: fileTagPublicId,
+                    text: "Partition",
+                },
+            }],
             taggedInstruments: [{
                 id: 91,
                 fileId: 90,
@@ -138,6 +151,13 @@ describe("instrument catalog public-ID transport", () => {
         expect(nestedInstrument).not.toHaveProperty("id");
         expect(nestedInstrument.functionalGroupId).toBe(publicId);
         expect(nestedInstrument.functionalGroup).not.toHaveProperty("id");
+        expect(projectedFile.tags[0]).toMatchObject({
+            publicId: fileTagAssociationPublicId,
+            fileTagId: fileTagPublicId,
+            fileTag: { publicId: fileTagPublicId, text: "Partition" },
+        });
+        expect(projectedFile.tags[0]).not.toHaveProperty("id");
+        expect(projectedFile.tags[0].fileTag).not.toHaveProperty("id");
 
         const projectedSong = projectDB3ModelPublicIds(db3.xSong, {
             id: 92,
@@ -195,6 +215,16 @@ describe("instrument catalog public-ID transport", () => {
             table: { tableID: "Song", tableName: "Song" },
             filter: { items: [], tableParams: { songTagIds: [94] } },
             cmdbQueryContext: "song-tag-natural-id-test",
+        })).toThrow("Expected string, received number");
+        expect(() => validateDB3QueryRequest({
+            table: { tableID: "File", tableName: "File" },
+            filter: { items: [], tableParams: { fileTagIds: [fileTagPublicId] } },
+            cmdbQueryContext: "file-tag-public-id-test",
+        })).not.toThrow();
+        expect(() => validateDB3QueryRequest({
+            table: { tableID: "File", tableName: "File" },
+            filter: { items: [], tableParams: { fileTagIds: [21] } },
+            cmdbQueryContext: "file-tag-natural-id-test",
         })).toThrow("Expected string, received number");
 
         expect(() => validateDB3MutationRequest({
@@ -276,6 +306,20 @@ describe("instrument catalog public-ID transport", () => {
             mutationType: "update",
             updatePublicId: songTagAssociationPublicId,
             updateModel: { tagId: songTagPublicId },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "FileTag",
+            tableName: "FileTag",
+            mutationType: "update",
+            updatePublicId: fileTagPublicId,
+            updateModel: { text: "Chart" },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "FileTagAssignment",
+            tableName: "FileTagAssignment",
+            mutationType: "update",
+            updatePublicId: fileTagAssociationPublicId,
+            updateModel: { fileTagId: fileTagPublicId },
         })).not.toThrow();
     });
 

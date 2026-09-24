@@ -13,7 +13,7 @@ import {
 
 export const fileTagEditorSelection = Prisma.validator<Prisma.FileTagDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         text: true,
         description: true,
         color: true,
@@ -128,7 +128,7 @@ export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArg
         previewFileId: true,
         tags: {
             select: {
-                id: true,
+                publicId: true,
                 fileTagId: true,
             },
         },
@@ -194,6 +194,12 @@ export const fileCardSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
     graft(fileCardTransportSelection, {
         select: {
             isDeleted: true,
+            tags: {
+                select: {
+                    fileId: true,
+                    fileTag: { select: { publicId: true } },
+                },
+            },
             taggedUsers: {
                 select: {
                     userId: true,

@@ -5,6 +5,7 @@ import { FileOrderByColumnNames, FileOrderByColumnOption, FileOrderByColumnOptio
 import { FileListItem } from "@/src/core/components/file/FileListItem";
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
+import type { FileTagPublicId, InstrumentPublicId } from "shared/publicId";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
@@ -24,11 +25,11 @@ interface FilesFilterSpecStatic {
 
     tagFilterEnabled: boolean;
     tagFilterBehavior: DiscreteCriterionFilterType;
-    tagFilterOptions: number[];
+    tagFilterOptions: FileTagPublicId[];
 
     taggedInstrumentFilterEnabled: boolean;
     taggedInstrumentFilterBehavior: DiscreteCriterionFilterType;
-    taggedInstrumentFilterOptions: number[];
+    taggedInstrumentFilterOptions: InstrumentPublicId[];
 }
 
 // predefined filter sets
@@ -55,7 +56,7 @@ const FileListOuter = () => {
     const dashboardContext = useDashboardContext();
 
     // Individual filter hooks - still needed for the search page hook
-    const tagFilter = useDiscreteFilter({
+    const tagFilter = useDiscreteFilter<FileTagPublicId>({
         urlPrefix: "ta",
         db3Column: "tags",
         defaultBehavior: gDefaultStaticFilterValue.tagFilterBehavior,
@@ -63,7 +64,7 @@ const FileListOuter = () => {
         defaultEnabled: gDefaultStaticFilterValue.tagFilterEnabled,
     });
 
-    const taggedInstrumentFilter = useDiscreteFilter({
+    const taggedInstrumentFilter = useDiscreteFilter<InstrumentPublicId>({
         urlPrefix: "ti",
         db3Column: "taggedInstruments",
         defaultBehavior: gDefaultStaticFilterValue.taggedInstrumentFilterBehavior,
@@ -100,10 +101,10 @@ const FileListOuter = () => {
                 orderByDirection: sortDirection,
                 tagFilterEnabled: tagFilter.enabled,
                 tagFilterBehavior: tagFilter.criterion.behavior,
-                tagFilterOptions: tagFilter.criterion.options as number[],
+                tagFilterOptions: tagFilter.criterion.options,
                 taggedInstrumentFilterEnabled: taggedInstrumentFilter.enabled,
                 taggedInstrumentFilterBehavior: taggedInstrumentFilter.criterion.behavior,
-                taggedInstrumentFilterOptions: taggedInstrumentFilter.criterion.options as number[],
+                taggedInstrumentFilterOptions: taggedInstrumentFilter.criterion.options,
             };
             return staticSpec;
         }

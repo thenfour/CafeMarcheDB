@@ -850,6 +850,7 @@ model EventSegmentUserResponse {
 // tech rider, partition, invoice, contract, event media, other, what is the usage?
 model FileTag {
   id              Int                 @id @default(autoincrement())
+  publicId        String              @unique @db.Char(16)
   text            String              @db.VarChar(768)
   description     String              @db.MediumText
   color           String?
@@ -864,6 +865,7 @@ model FileTag {
 
 model FileTagAssignment {
   id        Int     @id @default(autoincrement())
+  publicId  String  @unique @db.Char(16)
   fileId    Int
   file      File    @relation(fields: [fileId], references: [id], onDelete: Cascade) // files are soft-delete.
   fileTagId Int

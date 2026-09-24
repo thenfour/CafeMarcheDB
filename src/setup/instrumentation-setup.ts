@@ -6,6 +6,7 @@ import { assertValidSysadminRole } from "@/src/auth/server/sessionInvalidation";
 import db from "db";
 import { SeedTable } from "./setupUtils";
 import { ValidateRouteRegistry } from "../auth/shared/backstageRoutes";
+import { generatePublicId } from "../server/publicId";
 
 // Ensure all permissions in code are present in the database
 async function SyncPermissionsTable() {
@@ -412,7 +413,7 @@ async function EnsureFileTags() {
             "color": null,
             "significance": "Rider"
         },
-    ];
+    ].map(tag => ({ ...tag, publicId: generatePublicId<"FileTag">() }));
 
     // seed only if the table is empty
     const count = await db.fileTag.count();

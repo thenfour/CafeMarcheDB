@@ -5,7 +5,13 @@ import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest"
 import type { ColorPaletteEntry } from "src/core/components/color/palette"
 import * as db3 from "src/core/db3/db3"
 import { ZodToPrismaSelection } from "shared/prismaUtils"
-import { parsePublicId, type InstrumentFunctionalGroupPublicId, type SongTagPublicId } from "shared/publicId"
+import {
+  parsePublicId,
+  type FileTagAssignmentPublicId,
+  type FileTagPublicId,
+  type InstrumentFunctionalGroupPublicId,
+  type SongTagPublicId,
+} from "shared/publicId"
 import type { DateTimeRange } from "shared/time"
 import { compileDB3Selection } from "src/core/db3/shared/core/db3ViewContract"
 import { PermissionSet } from "src/auth/shared/PermissionSet"
@@ -119,7 +125,9 @@ describe("DB3 scalar selection compiler", () => {
     >
     type FileTagIsAny = 0 extends (1 & ClientTag["fileTag"]) ? true : false
 
-    expectTypeOf<DtoTag["fileTagId"]>().toEqualTypeOf<number>()
+    expectTypeOf<DtoTag["publicId"]>().toEqualTypeOf<FileTagAssignmentPublicId>()
+    expectTypeOf<DtoTag["fileTagId"]>().toEqualTypeOf<FileTagPublicId>()
+    expectTypeOf<Extract<keyof DtoTag, "id">>().toEqualTypeOf<never>()
     expectTypeOf<ClientTag["fileTag"]>()
       .toEqualTypeOf<NonNullable<ClientTag["fileTag"]>>()
     expectTypeOf<ClientSongTag["song"]>()
@@ -741,7 +749,8 @@ describe("File derived-view migration", () => {
     type Dto = db3.DtoOf<typeof db3.fileTagEditorView>
     type Client = db3.ClientOf<typeof db3.fileTagEditorView>
 
-    expectTypeOf<Dto["id"]>().toEqualTypeOf<number>()
+    expectTypeOf<Dto["publicId"]>().toEqualTypeOf<FileTagPublicId>()
+    expectTypeOf<Extract<keyof Dto, "id">>().toEqualTypeOf<never>()
     expectTypeOf<Dto["text"]>().toEqualTypeOf<string>()
     expectTypeOf<Dto["color"]>()
       .toEqualTypeOf<string | null>()

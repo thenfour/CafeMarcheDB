@@ -161,8 +161,11 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                     'Size': file.sizeBytes ? formatFileSize(file.sizeBytes) : 'Unknown',
                     "Tags": (file.tags && file.tags.length > 0) ? (
                         <CMChipContainer>
-                            {file.tags.map((tag, index) => (
-                                <FileTagChip key={index} value={tag} />))}
+                            {file.tags.map(tag => (
+                                <FileTagChip
+                                    key={db3.xFileTagAssignment.getIdentity(tag)}
+                                    value={tag.fileTag}
+                                />))}
                         </CMChipContainer>) : "",
                     "Tagged Users": (file.taggedUsers && file.taggedUsers.length > 0) ? (
                         <CMChipContainer>

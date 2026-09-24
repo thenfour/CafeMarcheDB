@@ -1,8 +1,9 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
+import type { FileTagAssignmentPublicId, FileTagPublicId } from "shared/publicId";
 import { TAnyModel } from "shared/rootroot";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { DateTimeField, foreignRef, ForeignCollectionField, foreignRefByTableId, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { DateTimeField, foreignRef, ForeignCollectionField, foreignRefByTableId, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FileWikiPageTagArgs, FileWikiPageTagNaturalOrderBy, FileWikiPageTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
 import { CreatedByUserField, MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
@@ -107,7 +108,7 @@ const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeInput<TA
 
 export const xFileTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileTagDelegate>(),
-    getIdentity: (tag: Prisma.FileTagGetPayload<{}>) => tag.id,
+    getIdentity: (tag: { publicId: FileTagPublicId }) => tag.publicId,
     getSelectionArgs: (): Prisma.FileTagDefaultArgs => {
         return FileTagArgs;
     },
@@ -115,7 +116,7 @@ export const xFileTag = db3.defineTable({
     deletePolicy: "hard",
     naturalOrderBy: FileTagNaturalOrderBy,
     tableAuthMap: xFileTableAuth_AdminObjects,
-    createInsertModelFromString: (input: string): Prisma.FileTagCreateInput => {
+    createInsertModelFromString: (input: string): Partial<FileTagPayload> => {
         return {
             text: input,
             description: "auto-created",
@@ -125,14 +126,15 @@ export const xFileTag = db3.defineTable({
         };
     },
     getRowInfo: (row: FileTagPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<FileTagPublicId>(),
         text: columnName => MakeTitleField(columnName, { authMap: xFileAuthMap_AdminObjects }),
         description: columnName => MakeMarkdownTextField(columnName, { authMap: xFileAuthMap_AdminObjects }),
         sortOrder: () => MakeSortOrderField({ authMap: xFileAuthMap_AdminObjects }),
@@ -145,6 +147,7 @@ export const xFileTag = db3.defineTable({
 
 export const xFileTagAssignment = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileTagAssignmentDelegate>(),
+    getIdentity: (association: { publicId: FileTagAssignmentPublicId }) => association.publicId,
     tableName: "FileTagAssignment",
     deletePolicy: "hard",
     naturalOrderBy: FileTagAssignmentNaturalOrderBy,
@@ -154,7 +157,7 @@ export const xFileTagAssignment = db3.defineTable({
     },
     getRowInfo: (row: FileTagAssignmentPayload) => {
         return {
-            pk: row.id,
+            pk: row.publicId,
             name: row.fileTag?.text || "",
             description: row.fileTag?.description || "",
             color: gGeneralPaletteList.findEntry(row.fileTag?.color || null),
@@ -166,7 +169,8 @@ export const xFileTagAssignment = db3.defineTable({
     }
     ,
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<FileTagAssignmentPublicId>(),
         fileTag: foreignRef(() => xFileTag, {
             fkidMember: "fileTagId",
             authMap: xFileAuthMap_FileObjects,
@@ -381,8 +385,12 @@ export const xFileInstrumentTag = db3.defineTable({
 
 export interface xFileFilterParams {
     fileId?: number;
-    fileTagIds: number[];
+    fileTagIds: FileTagPublicId[];
 };
+
+interface ResolvedFileFilterParams extends Omit<xFileFilterParams, "fileTagIds"> {
+    fileTagIds: number[];
+}
 
 const xFileBaseArgs = {
     prismaModel: db3.prismaModel<Prisma.FileDelegate>(),
@@ -393,17 +401,28 @@ const xFileBaseArgs = {
     restorePermission: Permission.recover_files,
     queryParameters: {
         fileId: { kind: "integer", authorizeAs: "id" },
-        fileTagIds: { kind: "integerArray", authorizeAs: "tags" },
+        fileTagIds: {
+            kind: "entityIdentityArray",
+            targetTableID: "FileTag",
+            authorizeAs: "tags",
+        },
     } satisfies db3.DB3QueryParameterMap,
     getSelectionArgs: (): Prisma.FileDefaultArgs => {
         return FileArgs;
     },
     tableAuthMap: xFileTableAuth_FileObjects,
     naturalOrderBy: FileNaturalOrderBy,
-    getParameterizedWhereClause: (params: xFileFilterParams): (Prisma.FileWhereInput[]) => {
+    getParameterizedWhereClause: (params: ResolvedFileFilterParams): (Prisma.FileWhereInput[]) => {
         const ret: Prisma.FileWhereInput[] = [];
         if (params.fileId !== undefined) {
             ret.push({ id: params.fileId, });
+        }
+        if (params.fileTagIds?.length) {
+            ret.push({
+                AND: params.fileTagIds.map(fileTagId => ({
+                    tags: { some: { fileTagId } },
+                })),
+            });
         }
         return ret;
     },

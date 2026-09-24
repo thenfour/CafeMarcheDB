@@ -168,7 +168,7 @@ const songSearchTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
                         id: true,
                         tags: {
                             select: {
-                                id: true,
+                                publicId: true,
                                 fileTagId: true,
                             },
                         },
@@ -216,6 +216,12 @@ export const songSearchSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
                             uploadedByUserId: true,
                             visiblePermissionId: true,
                             isDeleted: true,
+                            tags: {
+                                select: {
+                                    fileId: true,
+                                    fileTag: { select: { publicId: true } },
+                                },
+                            },
                         },
                     },
                 },

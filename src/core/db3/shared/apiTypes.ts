@@ -612,13 +612,15 @@ export enum DiscreteCriterionFilterType {
 // criterion for discrete items like tags or foreign references.
 // could also be integers, boolean, enum values, that kind of thing.
 // but would not work for dates, strings, floats, etc.
-export interface DiscreteCriterion {
+export interface DiscreteCriterion<
+    TOption extends number | boolean | string = number | boolean | string,
+> {
     // the db3 column name. for a foreign ref for example this would be "type" or "tag", NOT "typeId" etc;
     // because SQL query is passed to the column where the correct SQL column would be used.
     db3Column: string;
 
     // which items has the user selected for filtering.
-    options: (number | boolean | string)[];
+    options: TOption[];
 
     // type of filtering
     behavior: DiscreteCriterionFilterType;

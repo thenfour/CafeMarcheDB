@@ -1,6 +1,8 @@
 import { Prisma } from "db";
 import type { ColorPaletteEntry } from "@/src/core/components/color/palette";
 import type {
+    FileTagAssignmentPublicId,
+    FileTagPublicId,
     InstrumentFunctionalGroupPublicId,
     InstrumentPublicId,
     InstrumentTagAssociationPublicId,
@@ -713,7 +715,13 @@ export const FileWithTagsArgs = Prisma.validator<Prisma.FileArgs>()({
     include: {
         //visiblePermission: VisiblePermissionInclude,
         uploadedByUser: { select: UserMinimalSelect },
-        tags: true,
+        tags: {
+            include: {
+                // Selected only so the legacy projection boundary can replace
+                // fileTagId with the target's public identity.
+                fileTag: { select: { publicId: true } },
+            },
+        },
         // {
         //     include: {
         //         fileTag: true,
@@ -729,7 +737,12 @@ export const FileWithTagsArgs = Prisma.validator<Prisma.FileArgs>()({
                 event: true,
             }
         },
-        taggedInstruments: true,
+        taggedInstruments: {
+            include: {
+                // Same projection support for the already-converted Instrument target.
+                instrument: { select: { publicId: true } },
+            },
+        },
         taggedSongs: {
             include: {
                 song: true,
@@ -751,6 +764,14 @@ export const FileWithTagsArgs = Prisma.validator<Prisma.FileArgs>()({
 }
 );
 export type FileWithTagsPayload = Prisma.FileGetPayload<typeof FileWithTagsArgs>;
+
+export type FileWithTagsClientPayload = Omit<
+    FileWithTagsPayload,
+    "tags" | "taggedInstruments"
+> & {
+    tags: FileTagAssignmentReferenceClientPayload[];
+    taggedInstruments: FileInstrumentTagReferenceClientPayload[];
+};
 
 
 
@@ -1018,7 +1039,12 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
 
 export type EventVerbose_EventSegmentPayload = Prisma.EventSegmentGetPayload<typeof EventSegmentArgs>;
 
-export type EventClientPayload_Verbose = Prisma.EventGetPayload<typeof EventArgs_Verbose>;
+type EventDbPayload_Verbose = Prisma.EventGetPayload<typeof EventArgs_Verbose>;
+export type EventClientPayload_Verbose = Omit<EventDbPayload_Verbose, "fileTags"> & {
+    fileTags: Array<Omit<EventDbPayload_Verbose["fileTags"][number], "file"> & {
+        file: FileWithTagsClientPayload;
+    }>;
+};
 
 export type EventVerbose_Event = Prisma.EventGetPayload<typeof EventArgs_Verbose>;
 export type EventVerbose_EventUserResponse = Prisma.EventUserResponseGetPayload<typeof EventArgs_Verbose.include.responses>;
@@ -1120,7 +1146,14 @@ export const FileTagArgs = Prisma.validator<Prisma.FileTagArgs>()({
 });
 
 export type FileTagPayload = Prisma.FileTagGetPayload<typeof FileTagArgs>;
-export type FileTagPayloadMinimum = Prisma.FileTagGetPayload<{}>;
+
+export type FileTagClientPayload = Omit<
+    Prisma.FileTagGetPayload<{}>,
+    "id" | "publicId" | "color"
+> & {
+    publicId: FileTagPublicId;
+    color: ColorPaletteEntry | null;
+};
 
 export const FileTagNaturalOrderBy: Prisma.FileTagOrderByWithRelationInput[] = [
     { sortOrder: 'asc' },
@@ -1137,6 +1170,20 @@ export const FileTagAssignmentArgs = Prisma.validator<Prisma.FileTagAssignmentAr
     }
 });
 export type FileTagAssignmentPayload = Prisma.FileTagAssignmentGetPayload<typeof FileTagAssignmentArgs>;
+
+export type FileTagAssignmentClientPayload = Omit<
+    Prisma.FileTagAssignmentGetPayload<{ include: { fileTag: true } }>,
+    "id" | "publicId" | "fileTagId" | "fileTag"
+> & {
+    publicId: FileTagAssignmentPublicId;
+    fileTagId: FileTagPublicId;
+    fileTag: FileTagClientPayload;
+};
+
+export type FileTagAssignmentReferenceClientPayload = Pick<
+    FileTagAssignmentClientPayload,
+    "publicId" | "fileId" | "fileTagId"
+>;
 
 
 export const FileTagAssignmentNaturalOrderBy: Prisma.FileTagAssignmentOrderByWithRelationInput[] = [
@@ -1256,6 +1303,12 @@ export const FileInstrumentTagArgs = Prisma.validator<Prisma.FileInstrumentTagAr
     }
 });
 export type FileInstrumentTagPayload = Prisma.FileInstrumentTagGetPayload<typeof FileInstrumentTagArgs>;
+export type FileInstrumentTagReferenceClientPayload = Omit<
+    Prisma.FileInstrumentTagGetPayload<{}>,
+    "instrumentId"
+> & {
+    instrumentId: InstrumentPublicId;
+};
 export type FileInstrumentTagClientPayload = Omit<FileInstrumentTagPayload, "instrumentId" | "instrument"> & {
     instrumentId: InstrumentPublicId;
     instrument: InstrumentWithFunctionalGroupClientPayload;

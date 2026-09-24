@@ -1117,16 +1117,23 @@ The current pressure-led sequence is:
    returns a branded public identity and public-ID URL; dashboard caches,
    editors, attendance, telemetry/reporting, file/user references, gallery
    tooling, and React keys no longer require its natural ID on the client.
-3. Reclassify the remaining tag-like graphs after those capabilities are
-   proven. `FileTag` plus `FileTagAssignment` should then be repetition;
-   `WikiPageTag` plus `WikiPageTagAssignment` is repetition plus cleanup of its
-   hand-authored DTO and draft seams.
-4. Treat `EventType`, `EventStatus`, `EventTag`, and `EventTagAssignment` as one
+3. **Completed:** migrate `FileTag` and `FileTagAssignment` together as the
+   first repetition slice. File views, dashboard references, search criteria,
+   filters, upload context, association commands, and React keys now use typed
+   public identities. The raw multipart upload route validates and resolves a
+   file-tag public ID once at its trusted boundary. The remaining legacy Event
+   detail adapter explicitly selects target public identity for projection and
+   enriches from public-keyed caches; it no longer depends on a numeric tag FK.
+   This slice also made discrete-criterion option types generic so branded
+   identities remain visible through file-search UI state.
+4. Migrate `WikiPageTag` plus `WikiPageTagAssignment` next. This should be
+   repetition plus cleanup of its hand-authored DTO and draft seams.
+5. Treat `EventType`, `EventStatus`, `EventTag`, and `EventTagAssignment` as one
    event-classification batch so their shared DTO, dashboard, filtering,
    reporting, and import surfaces are changed coherently. The SongTag work
    should make their identity-bearing filters an application of an established
    contract rather than a second query-translation design.
-5. Keep `UserTag` plus `UserTagAssignment` and the central Song, File, WikiPage,
+6. Keep `UserTag` plus `UserTagAssignment` and the central Song, File, WikiPage,
    Event, User, and setlist identities in the later application-pressure phase,
    unless a bounded audit reveals a genuinely uncovered identity capability.
 
@@ -1229,12 +1236,16 @@ conversions.
   - [x] `SongTag`
   - [x] `SongTagAssociation`
   - [x] `Instrument`
+  - [x] `FileTag`
+  - [x] `FileTagAssignment`
   - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
   - [x] Exercise an association/tag command with public identities
     (`Instrument.instrumentTags`).
   - [x] Exercise identity-bearing query parameters, batched translation, and
     public search facets (`Song.songTagIds` and Song `tags` criteria).
   - [x] Exercise route and search identity before converting Event and User.
+  - [x] Exercise a raw multipart upload boundary and public-keyed legacy file
+    enrichment (`FileTag` upload context and Event detail files).
 
 ### Deferred DB3 enhancements
 

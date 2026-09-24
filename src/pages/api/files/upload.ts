@@ -8,10 +8,12 @@ import db, { Prisma } from "db";
 import formidable, { PersistentFile } from 'formidable';
 import * as mime from 'mime';
 import { Permission } from "shared/permissions";
+import { parsePublicId } from "shared/publicId";
 import { CoerceToNumberOrNull, CoerceToString, IsNullOrWhitespace, isValidURL } from 'shared/utils';
 import { api } from "src/blitz-server";
 import * as db3 from 'src/core/db3/db3';
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
+import { resolvePublicId } from "src/core/db3/server/db3PublicIds";
 
 var path = require('path');
 var fs = require('fs');
@@ -63,7 +65,18 @@ export default api(async (req, res, origCtx: Ctx) => {
                     args.taggedUserId = fields.taggedUserId && (CoerceToNumberOrNull(fields.taggedUserId[0]));
                     args.taggedWikiPageId = fields.taggedWikiPageId && (CoerceToNumberOrNull(fields.taggedWikiPageId[0]));
                     args.visiblePermissionId = fields.visiblePermissionId && (CoerceToNumberOrNull(fields.visiblePermissionId[0]));
-                    args.fileTagId = fields.fileTagId && (CoerceToNumberOrNull(fields.fileTagId[0]));
+                    args.fileTagId = fields.fileTagId && parsePublicId<"FileTag">(
+                        fields.fileTagId[0],
+                    );
+
+                    const resolvedFileTagId = args.fileTagId === undefined
+                        ? undefined
+                        : await resolvePublicId(
+                            db3.xFileTag,
+                            args.fileTagId,
+                            await db3.createDb3RequestAuthorization(ctx),
+                            db,
+                        );
 
                     const visiblePermission = fields.visiblePermission && (CoerceToString(fields.visiblePermission[0]));
 
@@ -99,7 +112,7 @@ export default api(async (req, res, origCtx: Ctx) => {
 
                             if (args.taggedEventId) fields.taggedEvents = [args.taggedEventId];
                             if (args.taggedInstrumentId) fields.taggedInstruments = [args.taggedInstrumentId];
-                            if (args.fileTagId) fields.tags = [args.fileTagId];
+                            if (resolvedFileTagId) fields.tags = [resolvedFileTagId];
                             if (args.taggedSongId) fields.taggedSongs = [args.taggedSongId];
                             if (args.taggedUserId) fields.taggedUsers = [args.taggedUserId];
                             if (args.taggedWikiPageId) fields.taggedWikiPages = [args.taggedWikiPageId];
@@ -159,8 +172,8 @@ export default api(async (req, res, origCtx: Ctx) => {
                             const recordingTag = allTags.find(t => t.significance === db3.FileTagSignificance.Recording);
 
                             // automatically tag some things.
-                            const tags = new Set();
-                            if (args.fileTagId) tags.add(args.fileTagId);
+                            const tags = new Set<number>();
+                            if (resolvedFileTagId) tags.add(resolvedFileTagId);
 
                             if (mimeType?.startsWith("audio/") && recordingTag) {
                                 tags.add(recordingTag.id);

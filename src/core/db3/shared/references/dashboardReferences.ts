@@ -132,7 +132,7 @@ const dashboardEventAttendanceSelection = Prisma.validator<Prisma.EventAttendanc
 
 const dashboardFileTagSelection = Prisma.validator<Prisma.FileTagDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         text: true,
         description: true,
         color: true,
@@ -559,7 +559,7 @@ export function registerDashboardReferences(
         store.register(xEventAttendance, input.eventAttendance, value => value.id);
     }
     if (input.fileTag) {
-        store.register(xFileTag, input.fileTag, value => value.id);
+        store.register(xFileTag, input.fileTag, value => xFileTag.getIdentity(value));
     }
     if (input.instrumentFunctionalGroup) {
         store.register(

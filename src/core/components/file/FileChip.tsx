@@ -4,8 +4,8 @@ import { Prisma } from "@prisma/client";
 import * as db3 from "src/core/db3/db3";
 import { CMChip, CMChipSizeOptions } from "../CMChip";
 import { ColorVariationSpec } from "../color/palette";
-import { Markdown } from "../markdown/Markdown";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import { Markdown } from "../markdown/Markdown";
 
 
 export interface FileChipProps {
@@ -39,28 +39,24 @@ export const FileChip = (props: FileChipProps) => {
 
 
 export interface FileTagChipProps {
-    value: number | { id: number };
+    value: db3.FileTagDashboardClient;
     size?: CMChipSizeOptions;
     onClick?: () => void;
     className?: string;
 };
 
 export const FileTagChip = (props: FileTagChipProps) => {
-    const dashboardContext = useDashboardContext();
-    let tagId = typeof (props.value) === "number" ? props.value : props.value.id;
-    let tag = dashboardContext.fileTag.getById(tagId);
-
     return <CMChip
         variation={undefined}
         size={props.size}
         onClick={props.onClick}
         className={props.className}
-        color={tag?.color}
+        color={props.value.color}
         shape={"rectangle"}
         border={"noBorder"}
-        tooltip={tag?.description && <Markdown markdown={tag.description} />}
+        tooltip={props.value.description && <Markdown markdown={props.value.description} />}
     >
-        {tag?.text || "<null>"}
+        {props.value.text}
     </CMChip>
 }
 

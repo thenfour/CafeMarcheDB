@@ -1,17 +1,23 @@
 import { Prisma } from "db";
 import * as db3 from "@db3/db3";
 import { TableAccessor } from "@/shared/rootroot";
+import type { FileTagPublicId, InstrumentPublicId } from "shared/publicId";
 
 
-export type EnrichFileInput = Partial<Prisma.FileGetPayload<{
-    include: {
-        tags: true,
-        taggedInstruments: true,
-    },
-}>>;
+export type EnrichFileInput = Omit<
+    Partial<Prisma.FileGetPayload<{}>>,
+    "tags" | "taggedInstruments"
+> & {
+    tags?: db3.FileTagAssignmentReferenceClientPayload[];
+    taggedInstruments?: db3.FileInstrumentTagReferenceClientPayload[];
+};
 
-type EnrichedFileInstrumentTag = Prisma.FileInstrumentTagGetPayload<{}> & {
+type EnrichedFileInstrumentTag = db3.FileInstrumentTagReferenceClientPayload & {
     instrument: db3.InstrumentDashboardClient;
+};
+
+type EnrichedFileTag = db3.FileTagAssignmentReferenceClientPayload & {
+    fileTag: db3.FileTagDashboardClient;
 };
 
 export type EnrichedFile<T extends EnrichFileInput> = Omit<T,
@@ -21,23 +27,17 @@ export type EnrichedFile<T extends EnrichFileInput> = Omit<T,
     | "taggedInstruments"
 > & {
     visiblePermission: db3.PermissionDashboardClient | null | undefined;
-    tags: (Prisma.FileTagAssignmentGetPayload<{}> & {
-        fileTag: db3.FileTagDashboardClient;
-    })[];
+    tags: EnrichedFileTag[];
     taggedInstruments: EnrichedFileInstrumentTag[];
 };
-
-
-export type EnrichedVerboseFile = EnrichedFile<db3.FilePayload>;
-
 
 
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
 export function enrichFile<
     T extends EnrichFileInput,
     TData extends {
-        instrument: TableAccessor<db3.InstrumentDashboardClient>;
-        fileTag: TableAccessor<db3.FileTagDashboardClient>;
+        instrument: TableAccessor<db3.InstrumentDashboardClient, InstrumentPublicId>;
+        fileTag: TableAccessor<db3.FileTagDashboardClient, FileTagPublicId>;
         permission: TableAccessor<db3.PermissionDashboardClient>;
     }>(
         item: T,
@@ -52,16 +52,12 @@ export function enrichFile<
         taggedInstruments: (item.taggedInstruments || []).map((t) => {
             const ret: EnrichedFileInstrumentTag = {
                 ...t,
-                instrument: data.instrument.find(
-                    instrument => db3.getInstrumentIdentity(instrument) === t.instrumentId,
-                )!, // enrich!
+                instrument: data.instrument.getById(t.instrumentId)!, // enrich!
             };
             return ret;
         }),
         tags: (item.tags || []).map((t) => {
-            const ret: Prisma.FileTagAssignmentGetPayload<{}> & {
-                fileTag: db3.FileTagDashboardClient;
-            } = {
+            const ret: EnrichedFileTag = {
                 ...t,
                 fileTag: data.fileTag.getById(t.fileTagId)!, // enrich!
             };

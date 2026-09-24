@@ -16,7 +16,7 @@ import deleteEventSongList from "src/core/db3/mutations/deleteEventSongList"
 import updateGenericSortOrder from "src/core/db3/mutations/updateGenericSortOrder"
 import updateUserEventAttendance from "src/core/db3/mutations/updateUserEventAttendanceMutation"
 import { Permission } from "shared/permissions"
-import { isPublicId } from "shared/publicId"
+import { isPublicId, parsePublicId } from "shared/publicId"
 import {
   createAuthorizationPersona,
   createAuthorizationTestUser,
@@ -566,8 +566,10 @@ describe("DB3 command boundary", () => {
 
   it("updates File metadata and tags while rejecting storage-field changes through generated CRUD", async () => {
     const actor = createAuthorizationTestUser("sysadmin", { id: 102 })
+    const fileTagPublicId = parsePublicId<"FileTag">("FileTagPublic001")
     const fileTag = {
       id: 61,
+      publicId: fileTagPublicId,
       text: "Chart",
       description: "",
       sortOrder: 1,
@@ -604,7 +606,7 @@ describe("DB3 command boundary", () => {
         patch: {
           fileLeafName: "new-name.pdf",
           description: "Program",
-          tags: [fileTag.id],
+          tags: [fileTag.publicId],
         },
       },
     }, ctx)).resolves.toEqual({ identity: file.id })
@@ -618,8 +620,13 @@ describe("DB3 command boundary", () => {
       }),
     ])
     expect(authorizationTestDb.snapshot("fileTagAssignment")).toEqual([
-      expect.objectContaining({ fileId: file.id, fileTagId: fileTag.id }),
+      expect.objectContaining({
+        fileId: file.id,
+        fileTagId: fileTag.id,
+        publicId: expect.any(String),
+      }),
     ])
+    expect(isPublicId(authorizationTestDb.snapshot("fileTagAssignment")[0]?.publicId)).toBe(true)
 
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.fileEditorView.crud.operations.update.command.commandID,

@@ -7,6 +7,8 @@ describe("DB3 table identity authority", () => {
     const instrumentPublicId = parsePublicId<"Instrument">("InstrumentPub001");
 
     it("extracts and validates public and natural identities through xTable", () => {
+        const fileTagPublicId = parsePublicId<"FileTag">("FileTagPublic001");
+        const fileTagAssignmentPublicId = parsePublicId<"FileTagAssignment">("FileTagAssign001");
         expect(db3.xInstrument.getIdentity({ publicId: instrumentPublicId }))
             .toBe(instrumentPublicId);
         expect(db3.xInstrument.isIdentity(instrumentPublicId)).toBe(true);
@@ -16,6 +18,9 @@ describe("DB3 table identity authority", () => {
         expect(db3.xSong.getIdentity({ id: 42 })).toBe(42);
         expect(db3.xSong.parseIdentity(42)).toBe(42);
         expect(db3.xInstrument.parseDatabaseIdentity(42)).toBe(42);
+        expect(db3.xFileTag.getIdentity({ publicId: fileTagPublicId })).toBe(fileTagPublicId);
+        expect(db3.xFileTagAssignment.getIdentity({ publicId: fileTagAssignmentPublicId }))
+            .toBe(fileTagAssignmentPublicId);
         expect(db3.xSong.isIdentity(-1)).toBe(false);
         expect(db3.xSong.isIdentity(1.5)).toBe(false);
     });

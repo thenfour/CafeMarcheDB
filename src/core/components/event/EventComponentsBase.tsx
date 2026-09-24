@@ -1,6 +1,5 @@
 
 import { assert } from 'blitz';
-import { Prisma } from "db";
 import { DateTimeRange, Timing } from 'shared/time';
 import { getUniqueNegativeID } from 'shared/utils';
 import * as db3 from "src/core/db3/db3";
@@ -76,7 +75,7 @@ export function CalculateEventMetadata<
 
 
 
-export type EventEnrichedVerbose_Event = EnrichedEvent<Prisma.EventGetPayload<typeof db3.EventArgs_Verbose>>;
+export type EventEnrichedVerbose_Event = EnrichedEvent<db3.EventClientPayload_Verbose>;
 
 interface CalculateEventMetadata_VerboseArgs {
     event: EventEnrichedVerbose_Event,
