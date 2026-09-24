@@ -1,7 +1,7 @@
 import React from "react";
 import { SearchPageFilterControls, createFilterGroupConfig } from "./SearchPageFilterControls";
 import { SearchResultsList } from "./SearchResultsList";
-import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { SearchResultsFacetOption, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { DiscreteFilterState, useSearchPage } from "src/core/hooks/useSearchFilters";
 import { SearchableListConfig, useSearchableList } from "src/core/hooks/useSearchableList";
 import type { TAnyModel } from "shared/rootroot";
@@ -15,7 +15,7 @@ export interface FilterGroupDefinition {
     label: string; // Display label (e.g., "Tags", "Status")
     type: "tags" | "foreignSingle" | "radio" | string; // Filter UI type
     column: string; // Column for options lookup (e.g., "tags", "status")
-    chipTransformer?: (option: any) => any; // Optional chip transformer
+    chipTransformer?: (option: SearchResultsFacetOption) => SearchResultsFacetOption; // Optional chip transformer
 }
 
 export interface SearchPageContentConfig<

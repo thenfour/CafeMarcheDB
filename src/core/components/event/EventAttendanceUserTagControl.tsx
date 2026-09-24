@@ -28,7 +28,10 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
 
     const handleChange = (value: db3.UserTagDisplay | null | undefined) => {
         void recordFeature({ feature: ActivityFeature.event_change_invite_tag });
-        mutationToken.invoke({ eventId: event.id, expectedAttendanceUserTagId: value?.id ?? null }).then(() => {
+        mutationToken.invoke({
+            eventId: event.id,
+            expectedAttendanceUserTagId: value ? db3.xUserTag.getIdentity(value) : null,
+        }).then(() => {
             showMessage({ severity: "success", children: "Successfully updated event attendance tag" });
         }).catch(error => {
             console.error(error);
@@ -38,7 +41,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
 
     const source = withNullSelection(makeLocalSelectionSource<db3.UserTagDisplay>({
         items: dashboard.userTag.items,
-        getKey: tag => tag.id,
+        getKey: tag => db3.xUserTag.getIdentity(tag),
         getLabel: tag => tag.text,
         renderValue: tag => <CMStandardDBChip model={tag} />,
     }), CMSelectNullBehavior.AllowNull, () => "No tags are invited");

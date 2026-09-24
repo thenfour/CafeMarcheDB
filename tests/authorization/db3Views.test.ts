@@ -25,6 +25,7 @@ const eventTypePublicId = parsePublicId<"EventType">("AbCdEfGhIjKlMn11");
 const eventStatusPublicId = parsePublicId<"EventStatus">("AbCdEfGhIjKlMn12");
 const eventTagPublicId = parsePublicId<"EventTag">("AbCdEfGhIjKlMn13");
 const eventTagAssignmentPublicId = parsePublicId<"EventTagAssignment">("AbCdEfGhIjKlMn14");
+const userTagPublicId = parsePublicId<"UserTag">("AbCdEfGhIjKlMn15");
 const group = {
     publicId: groupPublicId,
     name: "Brass",
@@ -959,8 +960,8 @@ describe("DB3 named views", () => {
             tags: [{ publicId: eventTagAssignmentPublicId, eventTagId: eventTag.publicId }],
             responses: [{ id: 11, userId: 42, instrumentId: null, isInvited: true, userComment: null }],
             expectedAttendanceUserTag: {
-                id: 5,
-                userAssignments: [{ id: 12, userId: 42 }],
+                publicId: userTagPublicId,
+                userAssignments: [{ userId: 42 }],
             },
         });
         const hydrated = db3.hydrateView(db3.eventSearchView, dto, references);
@@ -1078,6 +1079,7 @@ describe("DB3 named views", () => {
             songLists: [],
             expectedAttendanceUserTag: {
                 id: 5,
+                publicId: userTagPublicId,
                 userAssignments: [{ id: 22, userId: 42 }],
             },
             descriptionWikiPage: {

@@ -6,7 +6,7 @@ import { xUserTag } from "../../schema/user";
 
 const UserTagArgs = Prisma.validator<Prisma.UserTagDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         text: true,
         description: true,
         color: true,
@@ -32,8 +32,12 @@ export const userTagEditorView = defineCrudView({
 
 export const userTagEventSearchSelection = Prisma.validator<Prisma.UserTagDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
+        text: true,
         userAssignments: {
+            where: {
+                user: { isDeleted: false },
+            },
             select: {
                 userId: true,
             },

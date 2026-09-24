@@ -333,7 +333,7 @@ async function EnsureUserTags() {
     const userTags = [
         {
             "text": "Current member",
-            "description": "Current member of Café Marché",
+            "description": "Active member of the band",
             "sortOrder": 10,
             "color": "light_teal",
             "cssClass": null,
@@ -372,7 +372,10 @@ async function EnsureUserTags() {
         return;
     }
 
-    await SeedTable("userTag", db.userTag, userTags);
+    await SeedTable("userTag", db.userTag, userTags.map(tag => ({
+        ...tag,
+        publicId: generatePublicId<"UserTag">(),
+    })));
 };
 
 async function EnsureFileTags() {

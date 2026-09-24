@@ -200,6 +200,22 @@ export async function CorrectEventTagAssignmentPublicIds() {
     console.log(`Replaced ${replacementCount} EventTagAssignment public-ID placeholders.`);
 }
 
+export async function CorrectUserTagPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.userTag,
+        modelName: "UserTag",
+    });
+    console.log(`Replaced ${replacementCount} UserTag public-ID placeholders.`);
+}
+
+export async function CorrectUserTagAssignmentPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.userTagAssignment,
+        modelName: "UserTagAssignment",
+    });
+    console.log(`Replaced ${replacementCount} UserTagAssignment public-ID placeholders.`);
+}
+
 export async function registerNodeInstrumentation() {
     console.log(`INSTRUMENTATION RUNNING`);
     await instrumentationSetup();
@@ -222,6 +238,8 @@ export async function registerNodeInstrumentation() {
     await CorrectEventStatusPublicIds();
     await CorrectEventTagPublicIds();
     await CorrectEventTagAssignmentPublicIds();
+    await CorrectUserTagPublicIds();
+    await CorrectUserTagAssignmentPublicIds();
 
     //const startupState = getServerStartStateRef();
     process.env.CMDB_START_TIME = `${new Date().valueOf()}`;

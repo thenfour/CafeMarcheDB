@@ -15,6 +15,8 @@ import type {
     SongTagPublicId,
     WikiPageTagAssignmentPublicId,
     WikiPageTagPublicId,
+    UserTagAssignmentPublicId,
+    UserTagPublicId,
 } from "shared/publicId";
 //import * as db3 from "../db3core"; // circular
 import { TAnyModel } from "shared/rootroot";
@@ -460,8 +462,23 @@ export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
 });
 
 export type UserPayload = Prisma.UserGetPayload<typeof UserArgs>;
-export type UserClientPayload = Omit<UserPayload, "instruments"> & {
+export type UserTagClientPayload = Omit<
+    UserPayload["tags"][number]["userTag"],
+    "id" | "publicId"
+> & {
+    publicId: UserTagPublicId;
+};
+export type UserTagAssignmentClientPayload = Omit<
+    UserPayload["tags"][number],
+    "id" | "publicId" | "userTagId" | "userTag"
+> & {
+    publicId: UserTagAssignmentPublicId;
+    userTagId: UserTagPublicId;
+    userTag: UserTagClientPayload;
+};
+export type UserClientPayload = Omit<UserPayload, "instruments" | "tags"> & {
     instruments: UserInstrumentClientPayload[];
+    tags: UserTagAssignmentClientPayload[];
 };
 
 // Generic user queries must not expose role grants. Server authorization code
@@ -553,12 +570,22 @@ export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserDefaultArgs>(
 });
 
 export type UserWithInstrumentsDbPayload = Prisma.UserGetPayload<typeof UserWithInstrumentsArgs>;
-export type UserWithInstrumentsClientPayload = Omit<UserWithInstrumentsDbPayload, "instruments"> & {
+export type UserWithInstrumentsClientPayload = Omit<
+    UserWithInstrumentsDbPayload,
+    "instruments" | "tags"
+> & {
     instruments: Array<Omit<UserWithInstrumentsDbPayload["instruments"][number], "instrumentId"> & {
-        instrumentId: InstrumentPublicId;
+        instrumentId: InstrumentIdentity;
+    }>;
+    tags: Array<Omit<
+        UserWithInstrumentsDbPayload["tags"][number],
+        "id" | "publicId" | "userTagId"
+    > & {
+        publicId: UserTagAssignmentPublicId;
+        userTagId: UserTagPublicId;
     }>;
 };
-export type UserWithInstrumentsPayload = UserWithInstrumentsDbPayload | UserWithInstrumentsClientPayload;
+export type UserWithInstrumentsPayload = UserWithInstrumentsClientPayload;
 
 
 export const UserNaturalOrderBy: Prisma.UserOrderByWithRelationInput[] = [
@@ -1093,16 +1120,32 @@ type EventVerboseDbSegment = Prisma.EventSegmentGetPayload<typeof EventArgs_Verb
 export type EventVerbose_EventSegmentClient = Omit<EventVerboseDbSegment, "statusId"> & {
     statusId: EventStatusPublicId | null;
 };
+type EventVerboseDbExpectedUserTag = NonNullable<EventDbPayload_Verbose["expectedAttendanceUserTag"]>;
+export type EventExpectedAttendanceUserTagClientPayload = Omit<
+    EventVerboseDbExpectedUserTag,
+    "id" | "publicId" | "userAssignments"
+> & {
+    publicId: UserTagPublicId;
+    userAssignments: Array<Omit<
+        EventVerboseDbExpectedUserTag["userAssignments"][number],
+        "id" | "publicId" | "userTagId"
+    > & {
+        publicId: UserTagAssignmentPublicId;
+    }>;
+};
 
 export type EventClientPayload_Verbose = Omit<
     EventDbPayload_Verbose,
     "fileTags" | "statusId" | "typeId" | "status" | "tags" | "segments"
+    | "expectedAttendanceUserTagId" | "expectedAttendanceUserTag"
 > & {
     statusId: EventStatusPublicId | null;
     typeId: EventTypePublicId | null;
     status: EventStatusClientPayload | null;
     tags: EventTagAssignmentClientPayload[];
     segments: EventVerbose_EventSegmentClient[];
+    expectedAttendanceUserTagId: UserTagPublicId | null;
+    expectedAttendanceUserTag: EventExpectedAttendanceUserTagClientPayload | null;
     fileTags: Array<Omit<EventDbPayload_Verbose["fileTags"][number], "file"> & {
         file: FileWithTagsClientPayload;
     }>;

@@ -2,9 +2,10 @@ import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 
 import { Prisma } from "db";
 import { z } from "zod";
-import { isPublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type InstrumentPublicId, type SongTagAssociationPublicId, type SongTagPublicId } from "shared/publicId";
+import { isPublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type InstrumentPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId } from "shared/publicId";
 
 import type { SortDirection, TAnyModel } from "shared/rootroot";
+import { ColorPaletteEntry } from "../../components/color/palette";
 
 // this really loves to break the typescript compiler... safest to just use "any"
 //export type TransactionalPrismaClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
@@ -102,12 +103,12 @@ export interface TupdateEventBasicFieldsArgs {
     name?: string;
     //slug?: string;
     //description?: string;
-    typeId?: number;
+    typeId?: EventTypePublicId;
     locationDescription?: string;
     locationURL?: string;
     isDeleted?: boolean;
-    statusId?: number;
-    expectedAttendanceUserTagId?: number | null;
+    statusId?: EventStatusPublicId;
+    expectedAttendanceUserTagId?: UserTagPublicId | null;
     visiblePermissionId?: number | null;
     createdByUserId?: number;
 
@@ -181,7 +182,7 @@ export interface TinsertEventArgs {
         typeId: EventTypePublicId | null,
         statusId: EventStatusPublicId | null,
         tags: EventTagPublicId[],
-        expectedAttendanceUserTagId: number | null,
+        expectedAttendanceUserTagId: UserTagPublicId | null,
         visiblePermissionId: number | null;
     },
     segment: {
@@ -499,7 +500,7 @@ export interface TGetImportEventDataRet {
         typeId: EventTypePublicId | null,
         statusId: EventStatusPublicId | null,
         tags: EventTagPublicId[],
-        expectedAttendanceUserTagId: number | null,
+        expectedAttendanceUserTagId: UserTagPublicId | null,
         visiblePermissionId: number | null;
     },
     segment: {
@@ -521,7 +522,7 @@ export interface SearchResultsFacetOption {
     extraInfo?: unknown; // for things like filtering by date facets, this could specify what kind of facet it is, or additional type-specific info about the facet.
 
     label: string | null;
-    color: string | null;
+    color: ColorPaletteEntry | string | null;
     iconName: string | null;
     tooltip: string | null;
     shape: "rounded" | "rectangle" | undefined;

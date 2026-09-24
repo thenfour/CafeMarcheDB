@@ -5,7 +5,7 @@ import { ServerStartInfo } from "@/shared/serverStateBase";
 import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
 import { Prisma } from "db";
-import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, FileTagPublicId, InstrumentFunctionalGroupPublicId, InstrumentTagPublicId, SongTagPublicId, WikiPageTagPublicId } from "shared/publicId";
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, FileTagPublicId, InstrumentFunctionalGroupPublicId, InstrumentTagPublicId, SongTagPublicId, UserTagPublicId, WikiPageTagPublicId } from "shared/publicId";
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
 import { resolveUserSettings, UserSettings } from "shared/userSettings";
 
@@ -13,7 +13,7 @@ export abstract class DashboardContextDataBase {
     readonly referenceStore = db3.createDashboardReferenceStore();
     userSettings: UserSettings = resolveUserSettings();
     bandTimeZone: string = DEFAULT_BAND_TIME_ZONE;
-    userTag: TableAccessor<db3.UserTagDashboardClient>;
+    userTag: TableAccessor<db3.UserTagDashboardClient, UserTagPublicId>;
     eventType: TableAccessor<db3.ClientOf<typeof db3.eventTypeDashboardView>, EventTypePublicId>;
     eventStatus: TableAccessor<db3.ClientOf<typeof db3.eventStatusDashboardView>, EventStatusPublicId>;
     eventTag: TableAccessor<db3.ClientOf<typeof db3.eventTagDashboardView>, EventTagPublicId>;

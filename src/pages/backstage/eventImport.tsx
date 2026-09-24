@@ -7,7 +7,7 @@ import { useQuery } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
 import React, { Suspense } from "react";
 import { CalendarDate } from "shared/dateTimePolicy";
-import type { EventStatusPublicId, EventTypePublicId } from "shared/publicId";
+import type { EventStatusPublicId, EventTypePublicId, UserTagPublicId } from "shared/publicId";
 import { createAllDayRange, DateTimeRange, gMillisecondsPerDay } from "shared/time";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMStandardDBChip } from "src/core/components/CMChip";
@@ -39,7 +39,8 @@ interface NewEventDialogProps {
 
 type NewEventValue = Omit<
     db3.EventPayload,
-    "type" | "typeId" | "status" | "statusId" | "tags" | "visiblePermission" | "expectedAttendanceUserTag"
+    "type" | "typeId" | "status" | "statusId" | "tags" | "visiblePermission"
+    | "expectedAttendanceUserTagId" | "expectedAttendanceUserTag"
 > & {
     typeId: EventTypePublicId | null;
     type: db3.EventTypeDashboardClient | null | undefined;
@@ -47,6 +48,7 @@ type NewEventValue = Omit<
     status: db3.EventStatusDashboardClient | null | undefined;
     tags: Array<db3.EventTagAssignmentClientPayload & { eventTag: db3.EventTagDashboardClient }>;
     visiblePermission: VisibilityControlValue;
+    expectedAttendanceUserTagId: UserTagPublicId | null;
     expectedAttendanceUserTag: db3.UserTagDashboardClient | null | undefined;
 };
 

@@ -1,29 +1,47 @@
 // updateEventBasicFields
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import { Prisma } from "db";
+import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
+import { resolvePublicForeignIds } from "../server/db3PublicIds";
 import { TupdateEventBasicFieldsArgs } from "../shared/apiTypes";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     resolver.authorize(Permission.login),
     async (args: TupdateEventBasicFieldsArgs, ctx: AuthenticatedCtx) => {
+        const authorization = await getRequestAuthorization(ctx.session);
+        const publicData = db3.createDB3Authorization(
+            authorization.user,
+            authorization.effectivePermissions,
+        );
+        const resolvedForeignIds = await resolvePublicForeignIds(
+            db3.xEvent,
+            {
+                typeId: args.typeId,
+                statusId: args.statusId,
+                expectedAttendanceUserTagId: args.expectedAttendanceUserTagId,
+            },
+            publicData,
+            db,
+        );
 
-        // verbose on purpose in order to validate args type against UncheckedUpdateInput
+        // Verbose on purpose in order to validate the resolved public identities
+        // against Prisma's natural-key update input at the trusted boundary.
         const fields: Prisma.EventUncheckedUpdateInput = {
             name: args.name,
             //slug: args.slug,
             //description: args.description,
-            typeId: args.typeId,
+            typeId: resolvedForeignIds.typeId,
             visiblePermissionId: args.visiblePermissionId,
             locationDescription: args.locationDescription,
             locationURL: args.locationURL,
             isDeleted: args.isDeleted,
-            statusId: args.statusId,
-            expectedAttendanceUserTagId: args.expectedAttendanceUserTagId,
+            statusId: resolvedForeignIds.statusId,
+            expectedAttendanceUserTagId: resolvedForeignIds.expectedAttendanceUserTagId,
             createdByUserId: args.createdByUserId, // TODO: validate client info
 
             frontpageVisible: args.frontpageVisible,

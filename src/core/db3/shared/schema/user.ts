@@ -5,11 +5,12 @@ import { Prisma } from "db";
 import { assertIsNumberArray } from "shared/arrayUtils";
 import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
+import type { UserTagAssignmentPublicId, UserTagPublicId } from "shared/publicId";
 import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
 import { z } from "zod";
 import { CMDBTableFilterModel, PermissionSignificance } from "../apiTypes";
-import { BoolField, ForeignCollectionField, foreignRef, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { BoolField, ForeignCollectionField, foreignRef, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserPayloadMinimum, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
@@ -471,26 +472,30 @@ export const xUserInstrument = db3.defineTable({
 
 
 export interface UserTagTableParams {
-    userTagId?: number;
-    ids?: number[];
+    userTagId?: UserTagPublicId;
+    ids?: UserTagPublicId[];
 };
 
+interface ResolvedUserTagTableParams {
+    userTagId?: number;
+    ids?: number[];
+}
 
 const userTagBaseArgs = db3.defineTableDesc({
     prismaModel: db3.prismaModel<Prisma.UserTagDelegate>(),
-    getIdentity: (tag: Prisma.UserTagGetPayload<{}>) => tag.id,
+    getIdentity: (tag: { publicId: UserTagPublicId }) => tag.publicId,
     getSelectionArgs: (): Prisma.UserTagDefaultArgs => {
         return UserTagArgs;
     },
     tableName: "UserTag",
     deletePolicy: "hard",
     queryParameters: {
-        userTagId: { kind: "integer", authorizeAs: "id" },
-        ids: { kind: "integerArray", authorizeAs: "id" },
-    },
+        userTagId: { kind: "entityIdentity", targetTableID: "UserTag", authorizeAs: "publicId" },
+        ids: { kind: "entityIdentityArray", targetTableID: "UserTag", authorizeAs: "publicId" },
+    } satisfies db3.DB3QueryParameterMap,
     tableAuthMap: xUserTaxonomyTableAuthMap,
     naturalOrderBy: UserTagNaturalOrderBy,
-    getParameterizedWhereClause: (params: UserTagTableParams): (Prisma.UserTagWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: ResolvedUserTagTableParams): (Prisma.UserTagWhereInput[] | false) => {
         const ret: Prisma.UserTagWhereInput[] = [];
 
         if (params.userTagId != null) {
@@ -507,7 +512,7 @@ const userTagBaseArgs = db3.defineTableDesc({
         }
         return ret;
     },
-    createInsertModelFromString: (input: string): Prisma.UserTagCreateInput => {
+    createInsertModelFromString: (input: string): Partial<UserTagPayload> => {
         return {
             text: input,
             description: "auto-created",
@@ -524,7 +529,8 @@ const userTagBaseArgs = db3.defineTableDesc({
         ownerUserId: null,
     }),
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<UserTagPublicId>(),
         text: columnName => MakeTitleField(columnName, { authMap: xUserTaxonomyDefinitionAuthMap }),
         description: () => MakeDescriptionField({ authMap: xUserTaxonomyDefinitionAuthMap }),
         sortOrder: () => MakeSortOrderField({ authMap: xUserTaxonomyDefinitionAuthMap }),
@@ -553,7 +559,7 @@ export const xUserTag = db3.defineTable(userTagBaseArgs);
 
 export type EventResponses_ExpectedUserTag = Prisma.UserTagGetPayload<{
     select: {
-        id: true,
+        publicId: true,
         userAssignments: {
             select: {
                 userId,
@@ -581,6 +587,7 @@ export type EventResponses_ExpectedUserTag = Prisma.UserTagGetPayload<{
 
 export const xUserTagAssignment = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.UserTagAssignmentDelegate>(),
+    getIdentity: (assignment: { publicId: UserTagAssignmentPublicId }) => assignment.publicId,
     tableName: "UserTagAssignment",
     deletePolicy: "hard",
     naturalOrderBy: UserTagAssignmentNaturalOrderBy,
@@ -593,7 +600,7 @@ export const xUserTagAssignment = db3.defineTable({
     },
     getRowInfo: (row: UserTagAssignmentPayload) => {
         return {
-            pk: row.id,
+            pk: row.publicId,
             name: row.userTag?.text || "",
             description: row.userTag?.description || "",
             color: gGeneralPaletteList.findEntry(row.userTag?.color || null),
@@ -602,7 +609,8 @@ export const xUserTagAssignment = db3.defineTable({
     }
     ,
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<UserTagAssignmentPublicId>(),
         userTag: foreignRef(() => xUserTag, {
             fkidMember: "userTagId",
             authMap: xUserBasicProfileManagerWriteAuthMap,

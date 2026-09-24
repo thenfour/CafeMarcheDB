@@ -1,6 +1,6 @@
 import React from "react";
 import { Checkbox, FormControlLabel } from "@mui/material";
-import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { SearchResultsFacetOption, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { AdminInspectObject, CMSmallButton } from "../CMCoreComponents2";
 import { FilterControls, SortByGroup, TagsFilterGroup } from "./FilterControl";
@@ -21,7 +21,7 @@ export interface FilterGroupConfig {
     filterHook: DiscreteFilterState<any>;
 
     // Optional customization
-    sanitize?: (item: any) => any; // for transforming facet items (e.g., adding colors, tooltips)
+    sanitize?: (item: SearchResultsFacetOption) => SearchResultsFacetOption; // for transforming facet items (e.g., adding colors, tooltips)
 }
 
 export interface SortConfig {

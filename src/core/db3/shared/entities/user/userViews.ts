@@ -1,6 +1,11 @@
 import { Prisma } from "db";
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { z } from "zod";
+import {
+    isPublicId,
+    type UserTagAssignmentPublicId,
+    type UserTagPublicId,
+} from "shared/publicId";
 import { defineCrudView } from "../../core/db3CrudView";
 import {
     UserInstrumentNaturalOrderBy,
@@ -35,11 +40,11 @@ const UserEditorInstrumentAssociationDtoSchema = z.object({
 });
 
 const UserEditorTagAssociationDtoSchema = z.object({
-    id: z.number().int(),
+    publicId: z.custom<UserTagAssignmentPublicId>(isPublicId),
     userId: z.number().int().optional(),
-    userTagId: z.number().int().optional(),
+    userTagId: z.custom<UserTagPublicId>(isPublicId).optional(),
     userTag: z.object({
-        id: z.number().int(),
+        publicId: z.custom<UserTagPublicId>(isPublicId),
         text: z.string().optional(),
         description: z.string().optional(),
         color: z.string().nullable().optional(),

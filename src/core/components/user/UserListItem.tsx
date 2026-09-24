@@ -42,7 +42,7 @@ export const UserListItem = (props: UserListItemProps) => {
             <>
                 <CMChipContainer className="songTags">
                     {props.user.tags.map(tag => <CMStandardDBChip
-                        key={tag.id}
+                        key={db3.xUserTagAssignment.getIdentity(tag)}
                         size='small'
                         model={tag.userTag}
                         variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.userTagId) }}

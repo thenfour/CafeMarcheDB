@@ -10,7 +10,7 @@ import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { CMSmallButton, NameValuePair, SetlistBreakIcon } from "src/core/components/CMCoreComponents2";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { useSnackbar } from "src/core/components/SnackbarContext";
-import { EventAPI } from "../db3";
+import { EventAPI, xUserTag } from "../db3";
 import getAdminLogItemInfo from "../queries/getAdminLogItemInfo";
 import getDistinctChangeFilterValues from "../queries/getDistinctChangeFilterValues";
 import type { EventSongListMutationCommand } from "../shared/entities/eventSongList/eventSongListCommands";
@@ -201,16 +201,18 @@ const ActivityLogRole = ({ roleId, cacheData }: { roleId: number | null | undefi
     </ActivityLogChip>;
 };
 
-const ActivityLogUserTag = ({ userTagId, cacheData }: { userTagId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
+const ActivityLogUserTag = ({ userTagId, cacheData }: { userTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
-    const found = dashboardContext.userTag.getById(userTagId);
+    const found = xUserTag.isIdentity(userTagId)
+        ? dashboardContext.userTag.getById(userTagId)
+        : undefined;
     if (!found) {
         return <ActivityLogChip><Id value={userTagId} /></ActivityLogChip>;
     }
     return <ActivityLogChip
         color={found.color}
     >
-        {found.text}#{found.id}
+        {found.text}
     </ActivityLogChip>;
 };
 

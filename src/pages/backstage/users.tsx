@@ -12,6 +12,7 @@ import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { userSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import { Permission } from "@/shared/permissions";
+import type { UserTagPublicId } from "shared/publicId";
 
 
 // for serializing in compact querystring
@@ -24,7 +25,7 @@ interface UsersFilterSpecStatic {
 
     tagFilterEnabled: boolean;
     tagFilterBehavior: DiscreteCriterionFilterType;
-    tagFilterOptions: number[];
+    tagFilterOptions: UserTagPublicId[];
 
     roleFilterEnabled: boolean;
     roleFilterBehavior: DiscreteCriterionFilterType;
@@ -85,7 +86,7 @@ const UserListOuter = () => {
         : gStaticFilters.filter(filter => filter.label !== "New");
 
     // Individual filter hooks - still needed for the search page hook
-    const tagFilter = useDiscreteFilter({
+    const tagFilter = useDiscreteFilter<UserTagPublicId>({
         urlPrefix: "tg",
         db3Column: "tags",
         defaultBehavior: gDefaultStaticFilterValue.tagFilterBehavior,
@@ -142,7 +143,7 @@ const UserListOuter = () => {
                 orderByDirection: sortDirection,
                 tagFilterEnabled: tagFilter.enabled,
                 tagFilterBehavior: tagFilter.criterion.behavior,
-                tagFilterOptions: tagFilter.criterion.options as number[],
+                tagFilterOptions: tagFilter.criterion.options,
                 roleFilterEnabled: canManageUsers && roleFilter.enabled,
                 roleFilterBehavior: roleFilter.criterion.behavior,
                 roleFilterOptions: roleFilter.criterion.options as number[],
@@ -201,7 +202,7 @@ const UserListOuter = () => {
             column: "tags",
             chipTransformer: (x) => {
                 if (!x.id) return x;
-                const tag = dashboardContext.userTag.getById(x.id)!;
+                const tag = dashboardContext.userTag.getById(db3.xUserTag.parseIdentity(x.id))!;
                 return {
                     ...x,
                     color: tag.color || null,
@@ -218,7 +219,7 @@ const UserListOuter = () => {
             column: "role",
             chipTransformer: (x) => {
                 if (!x.id) return x;
-                const role = dashboardContext.role.getById(x.id)!;
+                const role = dashboardContext.role.getById(db3.xRole.parseIdentity(x.id))!;
                 return {
                     ...x,
                     color: role.color || null,
@@ -235,7 +236,7 @@ const UserListOuter = () => {
             column: "instruments",
             chipTransformer: (x) => {
                 if (!x.id) return x;
-                const instrument = dashboardContext.instrument.getById(x.id);
+                const instrument = dashboardContext.instrument.getById(db3.xInstrument.parseIdentity(x.id));
                 if (!instrument) return x;
                 const instrumentGroup = dashboardContext.instrumentFunctionalGroup.getById(instrument.functionalGroupId);
                 if (!instrumentGroup) return x;

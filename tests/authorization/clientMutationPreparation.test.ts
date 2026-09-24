@@ -13,7 +13,11 @@ describe("DB3 client mutation preparation", () => {
 
   it("omits viewable login fields while retaining an authorized user-tag edit", () => {
     const { schemaAuthorization: publicData } = createAuthorizationPersona("bandAdmin", { id: 2 })
-    const tags = [{ id: 1, userId: target.id, userTagId: 7 }]
+    const tags = [{
+      publicId: "UserTagAsgn00001",
+      userId: target.id,
+      userTagId: "UserTagPublic007",
+    }]
 
     const result = omitUnauthorizedMutationFields({
       schema: xUser,

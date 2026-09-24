@@ -30,6 +30,7 @@ const permissions = [
   Permission.login,
   Permission.view_songs,
   Permission.view_files,
+  Permission.view_users_basic_info,
   Permission.view_wiki_pages,
   Permission.view_wiki_page_revisions,
   Permission.setlist_planner_access,
@@ -241,15 +242,25 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
   })
 
   it("scopes public user-tag assignments to active users", async () => {
+    const userTagPublicId = "UserTagPublic061"
+    authorizationTestDb.getDelegate("userTag").reset([{
+      id: 61,
+      publicId: userTagPublicId,
+      text: "Members",
+      description: "",
+      userAssignments: [],
+    }])
     const findMany = vi.spyOn(authorizationTestDb.getDelegate("userTag"), "findMany")
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(getUserTagWithAssignments, { userTagIds: [61] }, ctx)
+    await invokeResolver(getUserTagWithAssignments, { userTagIds: [userTagPublicId] }, ctx)
 
     expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
       select: expect.objectContaining({
         userAssignments: expect.objectContaining({
-          where: { user: { isDeleted: false } },
+          where: expect.objectContaining({
+            AND: expect.arrayContaining([{ user: { isDeleted: false } }]),
+          }),
         }),
       }),
     }))

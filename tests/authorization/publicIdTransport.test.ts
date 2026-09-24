@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
-import { projectDB3ModelPublicIds, resolvePublicIds } from "@db3/server/db3PublicIds";
+import { projectDB3ModelPublicIds, resolvePublicForeignIds, resolvePublicIds } from "@db3/server/db3PublicIds";
 import { queryTable } from "@db3/server/db3QueryCore";
 import { validateDB3MutationRequest, validateDB3QueryRequest } from "@db3/server/db3RequestValidation";
 import { PermissionSet } from "src/auth/shared/PermissionSet";
@@ -18,6 +18,8 @@ const fileTagPublicId = parsePublicId<"FileTag">("AbCdEfGhIjKlMn08");
 const fileTagAssociationPublicId = parsePublicId<"FileTagAssignment">("AbCdEfGhIjKlMn09");
 const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("AbCdEfGhIjKlMn10");
 const wikiPageTagAssignmentPublicId = parsePublicId<"WikiPageTagAssignment">("AbCdEfGhIjKlMn11");
+const userTagPublicId = parsePublicId<"UserTag">("AbCdEfGhIjKlMn12");
+const userTagAssignmentPublicId = parsePublicId<"UserTagAssignment">("AbCdEfGhIjKlMn13");
 const instrumentId = 7;
 const group = {
     id: 54,
@@ -204,6 +206,29 @@ describe("instrument catalog public-ID transport", () => {
         });
         expect(projectedWikiPage.tags[0]).not.toHaveProperty("id");
         expect(projectedWikiPage.tags[0].tag).not.toHaveProperty("id");
+
+        const projectedUser = projectDB3ModelPublicIds(db3.xUser, {
+            id: 99,
+            tags: [{
+                id: 100,
+                publicId: userTagAssignmentPublicId,
+                userId: 99,
+                userTagId: 101,
+                userTag: {
+                    id: 101,
+                    publicId: userTagPublicId,
+                    text: "Members",
+                },
+            }],
+        }, authorization(Permission.view_users_basic_info));
+        expect(projectedUser.tags[0]).toMatchObject({
+            publicId: userTagAssignmentPublicId,
+            userId: 99,
+            userTagId: userTagPublicId,
+            userTag: { publicId: userTagPublicId, text: "Members" },
+        });
+        expect(projectedUser.tags[0]).not.toHaveProperty("id");
+        expect(projectedUser.tags[0].userTag).not.toHaveProperty("id");
     });
 
     it("accepts only public targets for converted-table queries and mutations", () => {
@@ -249,6 +274,16 @@ describe("instrument catalog public-ID transport", () => {
             table: { tableID: "File", tableName: "File" },
             filter: { items: [], tableParams: { fileTagIds: [21] } },
             cmdbQueryContext: "file-tag-natural-id-test",
+        })).toThrow("Expected string, received number");
+        expect(() => validateDB3QueryRequest({
+            table: { tableID: "UserTag", tableName: "UserTag" },
+            filter: { items: [], tableParams: { ids: [userTagPublicId] } },
+            cmdbQueryContext: "user-tag-public-id-test",
+        })).not.toThrow();
+        expect(() => validateDB3QueryRequest({
+            table: { tableID: "UserTag", tableName: "UserTag" },
+            filter: { items: [], tableParams: { ids: [101] } },
+            cmdbQueryContext: "user-tag-natural-id-test",
         })).toThrow("Expected string, received number");
 
         expect(() => validateDB3MutationRequest({
@@ -359,6 +394,33 @@ describe("instrument catalog public-ID transport", () => {
             updatePublicId: wikiPageTagAssignmentPublicId,
             updateModel: { tagId: wikiPageTagPublicId },
         })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "UserTag",
+            tableName: "UserTag",
+            mutationType: "update",
+            updatePublicId: userTagPublicId,
+            updateModel: { text: "Current members" },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "UserTagAssignment",
+            tableName: "UserTagAssignment",
+            mutationType: "update",
+            updatePublicId: userTagAssignmentPublicId,
+            updateModel: { userTagId: userTagPublicId },
+        })).not.toThrow();
+    });
+
+    it("resolves an Event invitation tag public ID before persistence", async () => {
+        const findMany = vi.fn(async () => [{ id: 101, publicId: userTagPublicId }]);
+        const resolved = await resolvePublicForeignIds(
+            db3.xEvent,
+            { expectedAttendanceUserTagId: userTagPublicId },
+            authorization(Permission.login, Permission.view_users_basic_info),
+            { UserTag: { findMany } } as any,
+        );
+
+        expect(resolved.expectedAttendanceUserTagId).toBe(101);
+        expect(findMany).toHaveBeenCalledOnce();
     });
 
     it("resolves identity-bearing query parameters once before building the Prisma where clause", async () => {

@@ -126,6 +126,7 @@ model Action {
 // copied from FileTag
 model UserTag {
   id                        Int                 @id @default(autoincrement())
+  publicId                  String              @unique @db.Char(16)
   text                      String              @db.VarChar(768)
   description               String              @db.MediumText
   color                     String?
@@ -142,6 +143,7 @@ model UserTag {
 // copied from FileTagAssignment
 model UserTagAssignment {
   id        Int     @id @default(autoincrement())
+  publicId  String  @unique @db.Char(16)
   userId    Int
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   userTagId Int

@@ -1,7 +1,7 @@
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { Prisma } from "db";
 import { z } from "zod";
-import { isPublicId, type EventStatusPublicId, type EventTagAssignmentPublicId, type EventTagPublicId, type EventTypePublicId } from "shared/publicId";
+import { isPublicId, type EventStatusPublicId, type EventTagAssignmentPublicId, type EventTagPublicId, type EventTypePublicId, type UserTagPublicId } from "shared/publicId";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
@@ -210,9 +210,9 @@ const EventEditorDtoSchema = z.object({
         eventTag: EventEditorTagDtoSchema.optional(),
     })).optional(),
 
-    expectedAttendanceUserTagId: z.number().int().nullable().optional(),
+    expectedAttendanceUserTagId: z.custom<UserTagPublicId>(isPublicId).nullable().optional(),
     expectedAttendanceUserTag: z.object({
-        ...db3s.id(),
+        publicId: z.custom<UserTagPublicId>(isPublicId),
         text: z.string().optional(),
         ...db3s.descriptionColorSortOrder(),
         cssClass: z.string().nullable().optional(),
@@ -317,10 +317,9 @@ const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
         },
         expectedAttendanceUserTag: {
             select: {
-                id: true,
+                publicId: true,
                 userAssignments: {
                     select: {
-                        id: true,
                         userId: true,
                     },
                 },

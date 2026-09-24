@@ -7,12 +7,12 @@ import { Permission } from "shared/permissions";
 import { DateSortPredicateAsc, DateSortPredicateDesc } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
-import { queryTable } from "../server/db3QueryCore";
+import { queryTable, queryView } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter } from "../shared/apiTypes";
 import { SplitQuickFilter } from "shared/quickFilter";
 import { MysqlEscape } from "shared/mysqlUtils";
-import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId } from "shared/publicId";
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, UserTagPublicId } from "shared/publicId";
 import { resolvePublicIds } from "../server/db3PublicIds";
 
 interface TArgs {
@@ -304,34 +304,29 @@ export default resolver.pipe(
                 }
             }
 
-            const expectedAttendanceUserTagIds = new Set<number>();
+            const expectedAttendanceUserTagIds = new Set<UserTagPublicId>();
             fullEvents.forEach(e => {
                 if (!e.expectedAttendanceUserTagId) return;
                 expectedAttendanceUserTagIds.add(e.expectedAttendanceUserTagId);
             });
 
-            let userTags: db3.DtoOf<typeof db3.userTagEventSearchView>[] = [];
+            let userTags: db3.ClientOf<typeof db3.userTagEventSearchView>[] = [];
 
             if (expectedAttendanceUserTagIds.size) {
                 const tableParams: db3.UserTagTableParams = {
                     ids: [...expectedAttendanceUserTagIds],
                 };
 
-                const queryResult = await queryTable({
+                const queryResult = await queryView({
                     cmdbQueryContext: "getEventFilterInfo-userTags",
-                    table: {
-                        tableID: db3.xUserTag.tableID,
-                        tableName: db3.xUserTag.tableName,
-                        viewID: db3.userTagEventSearchView.viewID,
-                    },
+                    view: db3.userTagEventSearchView,
                     filter: {
                         tableParams,
                     },
                     orderBy: undefined,
-                }, authorization);
+                }, authorization, new db3.DB3ReferenceStore());
 
-                // queryTable's legacy return type does not yet carry its view.
-                userTags = queryResult.items as db3.DtoOf<typeof db3.userTagEventSearchView>[];
+                userTags = queryResult.items;
             }
 
             const statuses: GetEventFilterInfoChipInfo<EventStatusPublicId>[] = statusesResult.map(r => ({

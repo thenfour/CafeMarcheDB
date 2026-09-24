@@ -25,7 +25,7 @@ import getWikiPageRevision from "src/core/wiki/queries/getWikiPageRevision";
 import getWikiPageRevisions from "src/core/wiki/queries/getWikiPageRevisions";
 import { wikiParseCanonicalWikiPath } from "src/core/wiki/shared/wikiUtils";
 
-export type EnrichedVerboseUser = EnrichedUser<db3.UserPayload>;
+export type EnrichedVerboseUser = EnrichedUser<db3.UserClientPayload>;
 
 interface WikiDiffViewerProps {
     revisionIdLeft: number | null;

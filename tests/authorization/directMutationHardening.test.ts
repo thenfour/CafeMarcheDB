@@ -417,6 +417,7 @@ describe("DB3 command boundary", () => {
     }
     const userTag = {
       id: 42,
+      publicId: "UserTagPublic042",
       text: "Band",
       description: "",
       sortOrder: 1,
@@ -442,7 +443,7 @@ describe("DB3 command boundary", () => {
           name: "Updated user",
           phone: "+32 123",
           instruments: [instrument.publicId],
-          tags: [userTag.id],
+          tags: [userTag.publicId],
         },
       },
     }, ctx)).resolves.toEqual({ identity: target.id })
@@ -912,8 +913,8 @@ describe("BA-S003 generic sort-order authorization", () => {
     authorizationTestDb.reset({
       user: [actor],
       userTag: [
-        { id: 1, text: "A", description: "", sortOrder: 0 },
-        { id: 2, text: "B", description: "", sortOrder: 1 },
+        { id: 1, publicId: "UserTagPublic001", text: "A", description: "", sortOrder: 0 },
+        { id: 2, publicId: "UserTagPublic002", text: "B", description: "", sortOrder: 1 },
       ],
       change: [],
     })
@@ -1547,7 +1548,15 @@ describe("Band Admin split mutation boundaries", () => {
     const profileManager = createAuthorizationTestUser("moderator", { id: 62, permissions: profilePermissions })
     const taxonomyPermissions = [...profilePermissions, Permission.manage_user_taxonomy]
     const taxonomyManager = createAuthorizationTestUser("bandAdmin", { id: 63, permissions: taxonomyPermissions })
-    const tag = { id: 64, text: "Brass", description: "", sortOrder: 0, color: null, significance: null }
+    const tag = {
+      id: 64,
+      publicId: "UserTagPublic064",
+      text: "Brass",
+      description: "",
+      sortOrder: 0,
+      color: null,
+      significance: null,
+    }
     authorizationTestDb.reset({ user: [profileManager, taxonomyManager], userTag: [tag], change: [] })
 
     const { ctx: profileCtx } = createAuthorizationPersona("moderator", {
@@ -1556,7 +1565,7 @@ describe("Band Admin split mutation boundaries", () => {
     })
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3Update("UserTag", tag.id, { text: "Winds" }),
+      forgeDb3PublicUpdate("UserTag", tag.publicId, { text: "Winds" }),
       profileCtx,
     )).rejects.toThrow("Not authorized to mutate UserTag fields")
 
@@ -1566,7 +1575,7 @@ describe("Band Admin split mutation boundaries", () => {
     })
     await invokeResolver(
       db3Mutation,
-      forgeDb3Update("UserTag", tag.id, { text: "Winds" }),
+      forgeDb3PublicUpdate("UserTag", tag.publicId, { text: "Winds" }),
       taxonomyCtx,
     )
     expect(authorizationTestDb.snapshot("userTag")).toEqual([

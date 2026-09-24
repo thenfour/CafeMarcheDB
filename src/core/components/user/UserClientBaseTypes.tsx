@@ -1,5 +1,6 @@
 import { SortDirection } from "@/shared/rootroot";
 import { DiscreteCriterion } from "../../db3/shared/apiTypes";
+import type { UserTagPublicId } from "shared/publicId";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -22,7 +23,7 @@ export interface UsersFilterSpec {
     orderByColumn: UserOrderByColumnOptions;
     orderByDirection: SortDirection;
 
-    tagFilter: DiscreteCriterion;
+    tagFilter: DiscreteCriterion<UserTagPublicId>;
     instrumentFilter: DiscreteCriterion;
     roleFilter: DiscreteCriterion;
 };

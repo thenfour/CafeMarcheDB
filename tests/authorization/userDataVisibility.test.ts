@@ -20,6 +20,8 @@ import { forgeDb3Query } from "./support/db3RequestBuilders"
 import { invokeResolver } from "./support/resolverHarness"
 
 const instrumentPublicId = "AbCdEfGhIjKlMn21"
+const userTagPublicId = "UserTagPublic022"
+const userTagAssignmentPublicId = "UserTagAsgn00012"
 const targetInstrument = {
   id: 21,
   publicId: instrumentPublicId,
@@ -28,6 +30,17 @@ const targetInstrument = {
   sortOrder: 1,
   functionalGroupId: 1,
   autoAssignFileLeafRegex: null,
+}
+
+const targetUserTag = {
+  id: 22,
+  publicId: userTagPublicId,
+  text: "Singer",
+  description: "Singing members",
+  color: null,
+  significance: null,
+  sortOrder: 1,
+  cssClass: null,
 }
 
 const owner = {
@@ -58,7 +71,13 @@ const target = {
     instrument: targetInstrument,
     isPrimary: true,
   }],
-  tags: [{ id: 12, userId: 1_202, userTagId: 22 }],
+  tags: [{
+    id: 12,
+    publicId: userTagAssignmentPublicId,
+    userId: 1_202,
+    userTagId: targetUserTag.id,
+    userTag: targetUserTag,
+  }],
   signInMethods: [{ id: 2, type: "google", identifier: "target-google" }],
   hashedPassword: "secret-password-hash",
 }
@@ -161,7 +180,15 @@ describe("focused user data visibility", () => {
         instrument: { publicId: instrumentPublicId },
         isPrimary: true,
       }],
-      tags: target.tags,
+      tags: [{
+        publicId: userTagAssignmentPublicId,
+        userId: target.id,
+        userTagId: userTagPublicId,
+        userTag: {
+          publicId: userTagPublicId,
+          text: targetUserTag.text,
+        },
+      }],
     })
     expect(result).not.toHaveProperty("email")
     expect(result).not.toHaveProperty("phone")

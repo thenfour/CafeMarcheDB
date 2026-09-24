@@ -8,6 +8,7 @@ import {
     type EventStatusPublicId,
     type EventTypePublicId,
     type InstrumentPublicId,
+    type UserTagPublicId,
 } from "shared/publicId";
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
 import { getCurrentUserCore } from "../server/db3mutationCore";
@@ -39,9 +40,10 @@ type UserEventAttendanceQueryResult_Event = Omit<Prisma.EventGetPayload<{
         isAllDay: true,
         expectedAttendanceUserTagId: true,
     }
-}>, "statusId" | "typeId"> & {
+}>, "statusId" | "typeId" | "expectedAttendanceUserTagId"> & {
     statusId: EventStatusPublicId | null;
     typeId: EventTypePublicId | null;
+    expectedAttendanceUserTagId: UserTagPublicId | null;
     instrumentId: InstrumentPublicId | null;
     userComment: string | null;
     isInvited: boolean | null;
@@ -107,6 +109,7 @@ export default resolver.pipe(
                 include: {
                     type: { select: { publicId: true } },
                     status: { select: { publicId: true } },
+                    expectedAttendanceUserTag: { select: { publicId: true } },
                     segments: {
                         include: {
                             status: { select: { publicId: true } },
@@ -145,7 +148,9 @@ export default resolver.pipe(
                         startsAt: event.startsAt,
                         durationMillis: event.durationMillis,
                         isAllDay: event.isAllDay,
-                        expectedAttendanceUserTagId: event.expectedAttendanceUserTagId,
+                        expectedAttendanceUserTagId: event.expectedAttendanceUserTag
+                            ? parsePublicId<"UserTag">(event.expectedAttendanceUserTag.publicId)
+                            : null,
                         //
                         instrumentId: er?.instrument
                             ? parsePublicId<"Instrument">(er.instrument.publicId)

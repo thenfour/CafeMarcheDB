@@ -161,7 +161,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
             {canViewBasicInfo &&
                 <CMChipContainer>
                     {user.tags.map(tag => <CMStandardDBChip
-                        key={tag.id}
+                        key={db3.xUserTagAssignment.getIdentity(tag)}
                         size='small'
                         model={tag.userTag}
                         variation={StandardVariationSpec.Weak}

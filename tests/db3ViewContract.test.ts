@@ -15,6 +15,8 @@ import {
   type FileTagPublicId,
   type InstrumentFunctionalGroupPublicId,
   type SongTagPublicId,
+  type UserTagPublicId,
+  type UserTagAssignmentPublicId,
   type WikiPageTagAssignmentPublicId,
   type WikiPageTagPublicId,
 } from "shared/publicId"
@@ -26,6 +28,8 @@ const eventTypePublicId = parsePublicId<"EventType">("AbCdEfGhIjKlMn11")
 const eventStatusPublicId = parsePublicId<"EventStatus">("AbCdEfGhIjKlMn12")
 const eventTagPublicId = parsePublicId<"EventTag">("AbCdEfGhIjKlMn13")
 const eventTagAssignmentPublicId = parsePublicId<"EventTagAssignment">("AbCdEfGhIjKlMn14")
+const userTagPublicId = parsePublicId<"UserTag">("AbCdEfGhIjKlMn15")
+const userTagAssignmentPublicId = parsePublicId<"UserTagAssignment">("AbCdEfGhIjKlMn16")
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -733,15 +737,37 @@ describe("Event lookup editor derived-view rollout", () => {
 })
 
 describe("UserTag Event search derived-view migration", () => {
+  it("uses public identity in administration, dashboard, and user associations", () => {
+    type TagDto = db3.DtoOf<typeof db3.userTagEditorView>
+    type DashboardTag = db3.UserTagDashboardClient
+    type UserDto = db3.DtoOf<typeof db3.userEditorView>
+    type Assignment = NonNullable<UserDto["tags"]>[number]
+
+    expectTypeOf<TagDto["publicId"]>().toEqualTypeOf<UserTagPublicId>()
+    expectTypeOf<DashboardTag["publicId"]>().toEqualTypeOf<UserTagPublicId>()
+    expectTypeOf<Assignment["publicId"]>()
+      .toEqualTypeOf<UserTagAssignmentPublicId>()
+    expectTypeOf<NonNullable<Assignment["userTagId"]>>()
+      .toEqualTypeOf<UserTagPublicId>()
+    expectTypeOf<NonNullable<Assignment["userTag"]>["publicId"]>()
+      .toEqualTypeOf<UserTagPublicId>()
+    expectTypeOf<Extract<keyof TagDto, "id">>().toEqualTypeOf<never>()
+    expectTypeOf<Extract<keyof Assignment, "id">>().toEqualTypeOf<never>()
+    expect(db3.xUserTag.getIdentity({ publicId: userTagPublicId })).toBe(userTagPublicId)
+    expect(db3.xUserTagAssignment.getIdentity({ publicId: userTagAssignmentPublicId }))
+      .toBe(userTagAssignmentPublicId)
+  })
+
   it("keeps the relation shape on a named view over canonical xUserTag", () => {
     type Dto = db3.DtoOf<typeof db3.userTagEventSearchView>
     type Client = db3.ClientOf<typeof db3.userTagEventSearchView>
 
-    expectTypeOf<Dto["id"]>().toEqualTypeOf<number>()
+    expectTypeOf<Dto["publicId"]>().toEqualTypeOf<UserTagPublicId>()
     expectTypeOf<Dto["userAssignments"]>().toEqualTypeOf<{
       userId?: number
     }[] | undefined>()
-    expectTypeOf<Client["id"]>().toEqualTypeOf<number>()
+    expectTypeOf<Client["publicId"]>().toEqualTypeOf<UserTagPublicId>()
+    expectTypeOf<Client["text"]>().toEqualTypeOf<string>()
     expectTypeOf<Client["userAssignments"]>().toEqualTypeOf<{
       userId?: number
     }[] | undefined>()
@@ -751,7 +777,8 @@ describe("UserTag Event search derived-view migration", () => {
     )).toBe(db3.userTagEventSearchSelection)
 
     const dto: Dto = {
-      id: 5,
+      publicId: userTagPublicId,
+      text: "Members",
       userAssignments: [{ userId: 42 }],
     }
     expect(db3.userTagEventSearchView.hydrate(

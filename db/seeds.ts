@@ -706,7 +706,10 @@ const main = async () => {
         "color": "light_teal",
         "significance": null
       }
-    ]
+    ].map(tag => ({
+      ...tag,
+      publicId: generatePublicId<"UserTag">(),
+    }))
   );
 
   faker.seed(104);
@@ -830,6 +833,7 @@ const main = async () => {
     await tags.forEach(async (tag) => {
       await gState.prisma.userTagAssignment.create({
         data: {
+          publicId: generatePublicId<"UserTagAssignment">(),
           userId: user.id,
           userTagId: tag.id,
         }

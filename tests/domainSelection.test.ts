@@ -4,7 +4,11 @@ import { act, Simulate } from "react-dom/test-utils";
 import { createRoot, Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("src/core/db3/db3", () => ({ xUser: { getRowInfo: (user: any) => ({ pk: user.id, name: user.name }) }, xEvent: { authorizeColumnForEdit: vi.fn() } }));
+vi.mock("src/core/db3/db3", () => ({
+    xUser: { getRowInfo: (user: any) => ({ pk: user.id, name: user.name }) },
+    xEvent: { authorizeColumnForEdit: vi.fn() },
+    xUserTag: { getIdentity: (tag: any) => tag.publicId },
+}));
 vi.mock("src/core/db3/clientAPI", () => ({ API: { events: { updateEventBasicFields: { useToken: vi.fn() } } } }));
 vi.mock("src/core/db3/components/DB3ClientCore", () => ({ fetchUnsuspended: vi.fn() }));
 vi.mock("src/core/db3/components/useCrudViewCreate", () => ({ useCrudViewCreate: vi.fn() }));
@@ -31,7 +35,10 @@ const permissions = [
     { id: 3, name: "Hidden", isVisibility: true },
     { id: 4, name: "Manage events", isVisibility: false },
 ];
-const tags = [{ id: 1, text: "Performers", color: "blue" }, { id: 2, text: "Volunteers", color: "green" }];
+const tags = [
+    { publicId: "UserTagPublic001", text: "Performers", color: "blue" },
+    { publicId: "UserTagPublic002", text: "Volunteers", color: "green" },
+];
 const users = [{ id: 1, name: "Alex Martin" }, { id: 2, name: "Sam Dupont" }, { id: 3, name: "Already invited" }];
 const event = { id: 10, createdByUserId: 4, expectedAttendanceUserTag: tags[0] } as any;
 const onChange = vi.fn();
@@ -144,7 +151,7 @@ describe("migrated domain pickers", () => {
         await click(button("Edit Expected attendance group"));
         await search("volun");
         await click(button("Volunteers"));
-        expect(mutate).toHaveBeenCalledWith({ eventId: 10, expectedAttendanceUserTagId: 2 });
+        expect(mutate).toHaveBeenCalledWith({ eventId: 10, expectedAttendanceUserTagId: "UserTagPublic002" });
         expect(recordFeature).toHaveBeenCalledTimes(1);
         expect(refetch).toHaveBeenCalledTimes(1);
         await click(button("Edit Expected attendance group"));

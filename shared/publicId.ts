@@ -23,6 +23,8 @@ export type EventTypePublicId = PublicId<"EventType">;
 export type EventStatusPublicId = PublicId<"EventStatus">;
 export type EventTagPublicId = PublicId<"EventTag">;
 export type EventTagAssignmentPublicId = PublicId<"EventTagAssignment">;
+export type UserTagPublicId = PublicId<"UserTag">;
+export type UserTagAssignmentPublicId = PublicId<"UserTagAssignment">;
 // todo: define other table-specific public ID types as needed here.
 
 export function isPublicId(value: unknown): value is PublicId {

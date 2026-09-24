@@ -1,14 +1,9 @@
 import { TableAccessor } from "@/shared/rootroot";
 import { Prisma } from "db";
 import * as db3 from "@db3/db3";
+import type { UserTagPublicId } from "shared/publicId";
 
-type EnrichUserDbInput = Partial<Prisma.UserGetPayload<{
-    include: {
-        tags: true,
-        instruments: true,
-    }
-}>>;
-export type EnrichUserInput = EnrichUserDbInput | db3.UserClientPayload;
+export type EnrichUserInput = Partial<db3.UserClientPayload>;
 
 type EnrichedUserInstrument = Omit<Prisma.UserInstrumentGetPayload<{}>, "instrumentId"> & {
     instrumentId: db3.InstrumentIdentity;
@@ -21,7 +16,7 @@ export type EnrichedUser<T extends EnrichUserInput> = Omit<T,
     | 'instruments'
 > & {
     role: db3.CompleteRoleDashboardClient | null | undefined;
-    tags: (Prisma.UserTagAssignmentGetPayload<{}> & {
+    tags: (Omit<db3.UserTagAssignmentClientPayload, "userTag"> & {
         userTag: db3.UserTagDashboardClient;
     })[];
     instruments: EnrichedUserInstrument[];
@@ -32,7 +27,7 @@ export type EnrichedUser<T extends EnrichUserInput> = Omit<T,
 export function enrichUser<T extends EnrichUserInput>(
     item: T,
     roles: TableAccessor<db3.CompleteRoleDashboardClient>,
-    userTags: TableAccessor<db3.UserTagDashboardClient>,
+    userTags: TableAccessor<db3.UserTagDashboardClient, UserTagPublicId>,
     instruments: TableAccessor<db3.InstrumentDashboardClient>
 ): EnrichedUser<T> {
     // original payload type,
@@ -43,7 +38,7 @@ export function enrichUser<T extends EnrichUserInput>(
         role: item.roleId == null ? null : roles.getById(item.roleId),
 
         tags: (item.tags || []).map((assoc) => {
-            const ret: Prisma.UserTagAssignmentGetPayload<{}> & {
+            const ret: Omit<db3.UserTagAssignmentClientPayload, "userTag"> & {
                 userTag: db3.UserTagDashboardClient;
             } = {
                 ...assoc,

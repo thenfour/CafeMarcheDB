@@ -10,11 +10,11 @@ import { EventResponseInfo, fn_makeMockEventSegmentResponse, fn_makeMockEventUse
 import { DashboardContextData, useDashboardContext } from '../dashboardContext/DashboardContext';
 import { DashboardContextDataBase } from '../dashboardContext/dashboardContextTypes';
 import { calculateEventAttendance, EventAttendanceResult } from "./attendanceCalculation";
-import type { EventStatusPublicId } from 'shared/publicId';
+import type { EventStatusPublicId, UserTagPublicId } from 'shared/publicId';
 
 
 export type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & {
-    expectedAttendanceUserTagId: number | null;
+    expectedAttendanceUserTagId: UserTagPublicId | null;
     name: string;
 };
 
@@ -235,7 +235,7 @@ type ReadyEventSearchSegment = NonNullable<db3.EventSearchClient["segments"]>[nu
 type EventSearchMetadataSegment = ReadyEventSearchSegment & db3.EventResponses_MinimalEventSegment;
 
 type EventSearchMetadataEvent = db3.EventSearchClient & {
-    expectedAttendanceUserTagId: number | null;
+    expectedAttendanceUserTagId: UserTagPublicId | null;
     name: string;
     responses: db3.EventResponses_MinimalEventUserResponse[];
     segments: EventSearchMetadataSegment[];
@@ -301,7 +301,7 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
     }
     const expectedAttendanceUserTag: db3.EventResponses_ExpectedUserTag | null = attendanceTag
         ? {
-            id: attendanceTag.id,
+            publicId: attendanceTag.publicId,
             userAssignments: attendanceTag.userAssignments!.map(assignment => ({
                 userId: assignment.userId!,
             })),

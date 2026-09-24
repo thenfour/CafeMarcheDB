@@ -1157,13 +1157,33 @@ The current pressure-led sequence is:
    now a dedicated named Event view queried through `queryView()`; it uses the
    standard authorization, recursive projection, DTO validation, and hydration
    path instead of a raw Prisma query and a caller-owned projection helper.
-6. **Next pressure audit:** treat `UserTag` and `UserTagAssignment` as one
-   candidate slice. Audit invitation membership, user administration,
-   association matrices, File user tagging, dashboard references, and event
-   attendance defaults together before editing. If that audit shows the slice
-   is dominated by application-policy work rather than a new identity scenario,
-   defer it and take the narrower `SongCreditType` lookup slice next.
-7. Keep the central Song, File, WikiPage, Event, User, and setlist identities in
+6. **Completed:** migrate `UserTag` and `UserTagAssignment` together. User-tag
+   administration, user associations, dashboard references, user-search facets,
+   invitation membership, event attendance defaults, event import/update, and
+   React keys now carry branded public identities. The association itself and
+   its tag target use public IDs at the client boundary, while `userId` remains
+   a natural ID because User has deliberately not migrated yet. Trusted Event
+   mutation boundaries resolve the scalar attendance-tag foreign key before
+   Prisma receives it; server-only membership, merge, and seed logic continue
+   to use natural keys.
+
+   This slice confirms that a partially migrated association can express each
+   side in its own identity domain without caller-side type inspection. xTable
+   owns parsing, validation, and identity extraction; React components and
+   search facets consume that API instead of testing `number` versus `string`.
+   The invitation lookup is now the named `UserTag_EventSearch` view queried
+   through `queryView()`, retaining its active-user predicate while using the
+   standard projection and DTO path. Event enrichment normalizes the embedded
+   attendance tag through the public-keyed dashboard reference and preserves
+   the membership data selected by the Event view. The apparent File user-tag
+   surface was also confirmed to be a separate user-association taxonomy, not
+   a hidden `UserTag` identity boundary.
+7. **Next pressure audit:** take the narrower `SongCreditType` lookup slice.
+   Audit Song editor/detail/search credit relations, dashboard/reference
+   lookups, mutation preparation, and React keys together. Its purpose is to
+   test another target-plus-dependent-reference shape without pulling the Song
+   entity itself into the application-pressure phase.
+8. Keep the central Song, File, WikiPage, Event, User, and setlist identities in
    the later application-pressure phase unless a bounded audit reveals a
    genuinely uncovered identity capability.
 

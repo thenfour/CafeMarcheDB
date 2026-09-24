@@ -232,14 +232,17 @@ export default resolver.pipe(
             const defaultInvitationUserTag = (await db.userTag.findFirst({
                 where: {
                     significance: db3.UserTagSignificance.DefaultInvitation,
-                }
+                },
+                select: { publicId: true },
             }));
 
             if (!defaultInvitationUserTag) {
                 ret.log.push("No default invitation user tag found.");
             }
 
-            ret.event.expectedAttendanceUserTagId = defaultInvitationUserTag?.id || null;
+            ret.event.expectedAttendanceUserTagId = defaultInvitationUserTag
+                ? parsePublicId<"UserTag">(defaultInvitationUserTag.publicId)
+                : null;
 
             // extract event type. either concert or rehearsal
             const concertPattern = /\bconcert|performance\b/i;

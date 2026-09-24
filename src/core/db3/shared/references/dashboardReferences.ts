@@ -53,7 +53,7 @@ const dashboardEventTypeSelection = Prisma.validator<Prisma.EventTypeDefaultArgs
 
 const dashboardUserTagSelection = Prisma.validator<Prisma.UserTagDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         text: true,
         description: true,
         color: true,
@@ -442,7 +442,7 @@ export const instrumentDashboardView = defineView({
 
 export type PermissionDashboardClient = ClientOf<typeof permissionDashboardView>;
 export type UserTagDashboardClient = ClientOf<typeof userTagDashboardView>;
-export type UserTagDisplay = Prisma.UserTagGetPayload<{}> | UserTagDashboardClient;
+export type UserTagDisplay = UserTagDashboardClient;
 export type RoleDashboardClient = ClientOf<typeof roleDashboardView>;
 export type CompleteRoleDashboardClient = {
     [TKey in keyof RoleDashboardClient]-?: Exclude<RoleDashboardClient[TKey], undefined>;

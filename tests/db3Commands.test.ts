@@ -16,6 +16,7 @@ import {
 import { z } from "zod";
 
 const eventStatusPublicId: EventStatusPublicId = parsePublicId<"EventStatus">("CommandStatus001");
+const userTagPublicId = parsePublicId<"UserTag">("CommandUserTag01");
 
 function createContext(seed?: {
     songList?: Record<string, unknown> | null;
@@ -479,10 +480,10 @@ describe("DB3 commands", () => {
             indicatorCssClass: "ballad",
         });
         expect(db3.userTagEditorView.crud.operations.update.command.parseDto({
-            identity: 1,
+            identity: userTagPublicId,
             patch: { cssClass: null },
         })).toEqual({
-            identity: 1,
+            identity: userTagPublicId,
             patch: { cssClass: null },
         });
         expect(() => db3.fileTagEditorView.crud.operations.create.command.parseDto({

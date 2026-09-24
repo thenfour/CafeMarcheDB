@@ -89,8 +89,15 @@ async function seedContent() {
         ]
     });
     await db.userSetting.createMany({ data: [{ userId: 10, name: "calendar.showDeclinedEvents", value: false }, { userId: 20, name: "calendar.showDeclinedEvents", value: true }] });
-    await db.userTag.createMany({ data: [{ id: 1, text: "Shared", description: "" }, { id: 2, text: "Retiring only", description: "" }] });
-    await db.userTagAssignment.createMany({ data: [{ userId: 10, userTagId: 1 }, { userId: 20, userTagId: 1 }, { userId: 20, userTagId: 2 }] });
+    await db.userTag.createMany({ data: [
+        { id: 1, publicId: "MergeUserTag0001", text: "Shared", description: "" },
+        { id: 2, publicId: "MergeUserTag0002", text: "Retiring only", description: "" },
+    ] });
+    await db.userTagAssignment.createMany({ data: [
+        { publicId: "MergeUsrAsgn0001", userId: 10, userTagId: 1 },
+        { publicId: "MergeUsrAsgn0002", userId: 20, userTagId: 1 },
+        { publicId: "MergeUsrAsgn0003", userId: 20, userTagId: 2 },
+    ] });
     await db.instrumentFunctionalGroup.create({ data: { id: 1, publicId: "merge_test_group", name: "Group", description: "", sortOrder: 0 } });
     await db.instrument.createMany({ data: [1, 2].map(id => ({
         id,
