@@ -320,12 +320,11 @@ describe("DB3 named views", () => {
         expect(result.items[0]).not.toHaveProperty("id");
         expect(findMany).toHaveBeenCalledOnce();
 
-        const restrictedDto = db3.instrumentFunctionalGroupListView.parseDto({
-            id: 54,
+        expect(() => db3.instrumentFunctionalGroupListView.parseDto({
             publicId: groupPublicId,
-        });
-        expect(restrictedDto).toEqual({ publicId: groupPublicId });
-        expectTypeOf(restrictedDto.name).toEqualTypeOf<string | undefined>();
+        })).toThrow();
+        expectTypeOf<db3.DtoOf<typeof db3.instrumentFunctionalGroupListView>["name"]>()
+            .toEqualTypeOf<string>();
     });
 
     it("preserves a server-computed page order before a view removes database IDs", async () => {
@@ -360,6 +359,58 @@ describe("DB3 named views", () => {
 
         expect(result.items.map(item => item.publicId)).toEqual([secondPublicId, groupPublicId]);
         expect(result.items.every(item => !("id" in item))).toBe(true);
+    });
+
+    it("returns the normalized Instrument editor DTO for reference-store hydration", async () => {
+        const findMany = vi.fn(async () => [{
+            id: 7,
+            name: "Trumpet",
+            description: "",
+            autoAssignFileLeafRegex: null,
+            sortOrder: 1,
+            functionalGroupId: 54,
+            functionalGroup: { publicId: groupPublicId },
+            instrumentTags: [{ id: 70, tagId: tag.id }],
+        }]);
+        const effectivePermissions = new PermissionSet([
+            { id: 1, name: Permission.always_grant },
+            { id: 2, name: Permission.login },
+        ]);
+
+        const result = await queryTable({
+            table: {
+                tableID: "Instrument",
+                tableName: "Instrument",
+                viewID: db3.instrumentEditorView.viewID,
+            },
+            orderBy: undefined,
+            filter: { items: [] },
+            cmdbQueryContext: "instrument-editor-view-test",
+        }, {
+            user: { id: 100 } as any,
+            effectivePermissions,
+        }, {
+            Instrument: { findMany },
+        } as any);
+
+        expect(result.items).toEqual([{
+            id: 7,
+            name: "Trumpet",
+            description: "",
+            autoAssignFileLeafRegex: null,
+            sortOrder: 1,
+            functionalGroupId: groupPublicId,
+            instrumentTags: [{ id: 70, tagId: tag.id }],
+        }]);
+        expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+            select: expect.objectContaining({
+                functionalGroupId: true,
+                functionalGroup: { select: { publicId: true } },
+                instrumentTags: expect.objectContaining({
+                    select: { id: true, tagId: true },
+                }),
+            }),
+        }));
     });
 
     it("queries the finite Custom Link and Menu Link collection views", async () => {

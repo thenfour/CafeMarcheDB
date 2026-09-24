@@ -600,39 +600,55 @@ describe("DB3 commands", () => {
         })).toThrow();
         expect(db3.roleEditorView.crud.operations.delete).toBeUndefined();
         expect(db3.getDB3CrudViewForCommand("Role_Delete")).toBeUndefined();
-        expect(db3.instrumentEditorView.parseDto({
+        const instrumentDto = db3.instrumentEditorView.parseDto({
             id: 7,
             name: "Trumpet",
             description: "",
             autoAssignFileLeafRegex: "trumpet",
             sortOrder: 1,
             functionalGroupId: functionalGroupPublicId,
-            functionalGroup: {
-                publicId: functionalGroupPublicId,
-                name: "Brass",
-                description: "",
-                sortOrder: 1,
-                color: null,
-            },
             instrumentTags: [{
                 id: 70,
-                instrumentId: 7,
                 tagId: 20,
-                tag: {
-                    id: 20,
-                    text: "Uses electricity",
-                    description: "",
-                    sortOrder: 1,
-                    color: null,
-                    significance: "electricity",
-                },
             }],
-        })).toMatchObject({
-            id: 7,
-            functionalGroupId: functionalGroupPublicId,
-            functionalGroup: { publicId: functionalGroupPublicId },
-            instrumentTags: [{ tagId: 20, tag: { text: "Uses electricity" } }],
         });
+        expect(instrumentDto).toEqual({
+            id: 7,
+            name: "Trumpet",
+            description: "",
+            autoAssignFileLeafRegex: "trumpet",
+            sortOrder: 1,
+            functionalGroupId: functionalGroupPublicId,
+            instrumentTags: [{ id: 70, tagId: 20 }],
+        });
+        const functionalGroup: db3.InstrumentFunctionalGroupDashboardClient = {
+            publicId: functionalGroupPublicId,
+            name: "Brass",
+            description: "",
+            sortOrder: 1,
+            color: null,
+        };
+        const instrumentTag: db3.InstrumentTagDashboardClient = {
+            id: 20,
+            text: "Uses electricity",
+            description: "",
+            sortOrder: 1,
+            color: null,
+            significance: "NeedsPower",
+        };
+        const instrumentReferences = db3.createDashboardReferenceStore();
+        db3.registerDashboardReferences(instrumentReferences, {
+            instrumentFunctionalGroup: [functionalGroup],
+            instrumentTag: [instrumentTag],
+        });
+        const hydratedInstrument = db3.hydrateView(
+            db3.instrumentEditorView,
+            instrumentDto,
+            instrumentReferences,
+        );
+        expect(hydratedInstrument.functionalGroup).toBe(functionalGroup);
+        expect(hydratedInstrument.instrumentTags[0]?.tag).toBe(instrumentTag);
+        expectTypeOf(hydratedInstrument).toEqualTypeOf<db3.InstrumentEditorClient>();
         expect(db3.instrumentEditorView.crud.operations.update.command.parseDto({
             identity: 7,
             patch: {
@@ -890,7 +906,7 @@ describe("DB3 commands", () => {
         expectTypeOf<db3.ClientOf<typeof view>["publicId"]>()
             .toEqualTypeOf<InstrumentFunctionalGroupPublicId>();
         expectTypeOf<db3.ClientOf<typeof view>["color"]>()
-            .toEqualTypeOf<ColorPaletteEntry | null | undefined>();
+            .toEqualTypeOf<ColorPaletteEntry | null>();
         type TCreateInput = db3.CommandClientInputOf<
             typeof view.crud.operations.create.command
         >;
@@ -909,6 +925,9 @@ describe("DB3 commands", () => {
         for (const colorId of ["red", "light_red"] as const) {
             const dto = view.parseDto({
                 publicId: functionalGroupPublicId,
+                name: "Brass",
+                description: "",
+                sortOrder: 1,
                 color: colorId,
             });
             const hydrated = db3.hydrateView(

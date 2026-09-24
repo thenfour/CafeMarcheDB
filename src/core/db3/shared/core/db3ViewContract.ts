@@ -375,7 +375,7 @@ export interface DB3CompiledSelection<
     readonly referenceDependencies: readonly DB3ReferenceDependency[];
 }
 
-export interface DB3DerivedViewContract<
+export interface DB3ViewContract<
     TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
     TTransportSelection extends DB3ViewSelectionArgs<TEntity> = TSelection,
@@ -783,7 +783,7 @@ export function deriveViewContract<
         readonly transportSelection?: TTransportSelection;
         readonly references?: TReferences;
     },
-): DB3DerivedViewContract<
+): DB3ViewContract<
     TEntity,
     TSelection,
     TTransportSelection,

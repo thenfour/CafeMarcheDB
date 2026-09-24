@@ -3,7 +3,12 @@
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import type { CMDBTableFilterModel } from "../shared/apiTypes";
 import type { GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
-import type { AnyDB3CrudView, ClientOf } from "../db3";
+import type {
+    AnyDB3CrudView,
+    ClientOf,
+    DB3ReferenceProvider,
+    ReferenceContractOf,
+} from "../db3";
 import {
     useTableRenderContext,
     type xTableClientSpec,
@@ -15,6 +20,7 @@ import { type CrudViewCommandClient, useCrudViewCommands } from "./useCrudViewCo
 export interface UseCrudTableRenderContextArgs<TView extends AnyDB3CrudView> {
     readonly view: TView;
     readonly tableSpec: xTableClientSpec<TView>;
+    readonly referenceProvider?: DB3ReferenceProvider<ReferenceContractOf<TView>>;
     readonly filterModel?: CMDBTableFilterModel;
     readonly sortModel?: GridSortModel;
     readonly paginationModel?: GridPaginationModel;
@@ -54,7 +60,7 @@ export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
             ? xTableClientCaps.PaginatedQuery
             : xTableClientCaps.Query,
         tableSpec: args.tableSpec,
-        referenceProvider: dashboardContext.referenceStore,
+        referenceProvider: args.referenceProvider ?? dashboardContext.referenceStore,
         filterModel: args.filterModel,
         sortModel: args.sortModel,
         paginationModel: args.paginationModel,

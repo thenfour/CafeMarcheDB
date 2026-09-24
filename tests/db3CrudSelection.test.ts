@@ -66,12 +66,19 @@ describe("command-backed DB3 selection creation", () => {
     });
 
     it("validates the read-back DTO and rejects a mismatched canonical identity", async () => {
-        vi.mocked(invoke).mockResolvedValueOnce({ items: [{ name: "Missing identity" }] } as any);
+        vi.mocked(invoke).mockResolvedValueOnce({
+            items: [{
+                name: "Missing identity",
+                description: "",
+                sortOrder: 0,
+                color: null,
+            }],
+        } as any);
         await expect(fetchCreatedCrudViewRow(
             db3.instrumentFunctionalGroupEditorView,
             publicId,
             new db3.DB3ReferenceStore(),
-        )).rejects.toThrow("Expected an InstrumentFunctionalGroup public ID");
+        )).rejects.toThrow("invalid public ID");
 
         vi.mocked(invoke).mockResolvedValueOnce({
             items: [{

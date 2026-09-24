@@ -107,6 +107,7 @@ type DB3CrudEditGridProps<TView extends db3.AnyDB3CrudView> =
     DB3EditGridBaseProps<db3.ClientOf<TView>, DB3Client.CrudTableRenderContext<TView>> & {
         view: TView;
         tableSpec: DB3Client.xTableClientSpec<TView>;
+        referenceProvider?: db3.DB3ReferenceProvider<db3.ReferenceContractOf<TView>>;
     };
 
 type DB3ReadOnlyGridProps = DB3EditGridBaseProps & {
@@ -236,12 +237,14 @@ function DB3ReadOnlyGrid({ tableSpec, ...props }: DB3ReadOnlyGridProps) {
 function DB3CrudEditGrid<TView extends db3.AnyDB3CrudView>({
     view,
     tableSpec,
+    referenceProvider,
     ...props
 }: DB3CrudEditGridProps<TView>) {
     const queryState = useDB3EditGridQueryState(tableSpec, props);
     const tableClient = DB3Client.useCrudTableRenderContext({
         view,
         tableSpec,
+        referenceProvider,
         filterModel: {
             items: queryState.filterModel.items.filter(i => i.value !== undefined).map(i => {
                 console.assert(i.operator === "equals");

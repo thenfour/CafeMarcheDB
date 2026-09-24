@@ -1,10 +1,9 @@
-import { z } from "zod";
 import { Prisma } from "db";
-import { ZodToPrismaSelection } from "@/shared/prismaUtils";
-import { isPublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId";
 import { defineCrudView } from "../../core/db3CrudView";
-import { type ClientOf, type DtoOf, defineView } from "../../core/db3View";
+import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
+import { deriveViewContract } from "../../core/db3ViewContract";
 import {
+    dashboardReferenceContract,
     instrumentDashboardView,
     instrumentFunctionalGroupDashboardView,
 } from "../../references/dashboardReferences";
@@ -17,92 +16,116 @@ import {
     InstrumentTagAssociationNaturalOrderBy,
 } from "../../schema/prismArgs";
 
-const InstrumentFunctionalGroupPublicIdSchema = z.custom<InstrumentFunctionalGroupPublicId>(
-    (value): value is InstrumentFunctionalGroupPublicId => isPublicId(value),
-    "Expected an InstrumentFunctionalGroup public ID.",
-);
-
-// The list view deliberately makes non-identity fields optional. Its selection
-// is the maximum requested shape; per-field authorization may omit any of them.
-const InstrumentFunctionalGroupListDtoSchema = z.object({
-    publicId: InstrumentFunctionalGroupPublicIdSchema,
-    name: z.string().optional(),
-    description: z.string().optional(),
-    sortOrder: z.number().int().optional(),
-    color: z.string().nullable().optional(),
-});
-
-const InstrumentTagDtoSchema = z.object({
-    id: z.number().int(),
-    text: z.string().optional(),
-    description: z.string().optional(),
-    sortOrder: z.number().int().optional(),
-    color: z.string().nullable().optional(),
-    significance: z.string().nullable().optional(),
-});
-
-const InstrumentTagAssociationEditorDtoSchema = z.object({
-    id: z.number().int(),
-    instrumentId: z.number().int().optional(),
-    tagId: z.number().int().optional(),
-    tag: InstrumentTagDtoSchema.optional(),
-});
-
-const InstrumentEditorDtoSchema = z.object({
-    id: z.number().int(),
-    name: z.string().optional(),
-    description: z.string().optional(),
-    autoAssignFileLeafRegex: z.string().nullable().optional(),
-    sortOrder: z.number().int().optional(),
-    functionalGroupId: InstrumentFunctionalGroupPublicIdSchema.optional(),
-    functionalGroup: InstrumentFunctionalGroupListDtoSchema.optional(),
-    instrumentTags: z.array(InstrumentTagAssociationEditorDtoSchema).optional(),
-});
-
-const instrumentEditorBaseSelection = ZodToPrismaSelection(InstrumentEditorDtoSchema);
-const instrumentEditorSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
+// functional group -------------------------------------
+const instrumentFunctionalGroupSelection = Prisma.validator<Prisma.InstrumentFunctionalGroupDefaultArgs>()({
     select: {
-        ...instrumentEditorBaseSelection.select,
-        instrumentTags: {
-            ...instrumentEditorBaseSelection.select.instrumentTags,
-            orderBy: InstrumentTagAssociationNaturalOrderBy,
-        },
+        publicId: true,
+        name: true,
+        description: true,
+        sortOrder: true,
+        color: true,
     },
 });
+
+const instrumentFunctionalGroupViewContract = deriveViewContract(
+    xInstrumentFunctionalGroup,
+    instrumentFunctionalGroupSelection,
+);
 
 export const instrumentFunctionalGroupListView = defineView({
     viewID: "InstrumentFunctionalGroup_List",
     entity: xInstrumentFunctionalGroup,
-    dtoSchema: InstrumentFunctionalGroupListDtoSchema,
-    hydrate: dto => dto,
+    dtoSchema: instrumentFunctionalGroupViewContract.dtoSchema,
+    hydrate: instrumentFunctionalGroupViewContract.hydrate,
+    selection: instrumentFunctionalGroupViewContract.prismaSelection,
 });
 
 export const instrumentFunctionalGroupEditorView = defineCrudView({
     viewID: "InstrumentFunctionalGroup_Editor",
     entity: xInstrumentFunctionalGroup,
     operations: { create: true, update: true, delete: true },
-    dtoSchema: InstrumentFunctionalGroupListDtoSchema,
-    hydrate: dto => xInstrumentFunctionalGroup.getClientModel(dto, "view"),
+    dtoSchema: instrumentFunctionalGroupViewContract.dtoSchema,
+    hydrate: instrumentFunctionalGroupViewContract.hydrate,
+    selection: instrumentFunctionalGroupViewContract.prismaSelection,
 });
 
+// tag -------------------------------------
+const instrumentTagSelection = Prisma.validator<Prisma.InstrumentTagDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        sortOrder: true,
+        color: true,
+        significance: true,
+    },
+});
+
+const instrumentTagViewContract = deriveViewContract(xInstrumentTag, instrumentTagSelection);
 export const instrumentTagEditorView = defineCrudView({
     viewID: "InstrumentTag_Editor",
     entity: xInstrumentTag,
     operations: { create: true, update: true, delete: true },
-    dtoSchema: InstrumentTagDtoSchema,
-    hydrate: dto => xInstrumentTag.getClientModel(dto, "view"),
+    dtoSchema: instrumentTagViewContract.dtoSchema,
+    hydrate: instrumentTagViewContract.hydrate,
+    selection: instrumentTagViewContract.prismaSelection,
 });
+
+// instrument -------------------------------------
+const instrumentEditorTransportSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
+    select: {
+        id: true,
+        name: true,
+        description: true,
+        autoAssignFileLeafRegex: true,
+        sortOrder: true,
+        functionalGroupId: true,
+        instrumentTags: {
+            select: {
+                id: true,
+                tagId: true,
+                // tag: gets grafted via reference provider
+            },
+            orderBy: InstrumentTagAssociationNaturalOrderBy,
+        },
+    },
+});
+
+const instrumentEditorSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
+    select: {
+        ...instrumentEditorTransportSelection.select,
+        // The server uses this relation to project functionalGroupId to its
+        // public identity. The normalized client relation comes from the
+        // dashboard reference provider instead of crossing the view DTO.
+        functionalGroup: {
+            select: { publicId: true },
+        },
+    },
+});
+
+const instrumentViewContract = deriveViewContract(
+    xInstrument,
+    instrumentEditorSelection,
+    {
+        transportSelection: instrumentEditorTransportSelection,
+        references: dashboardReferenceContract,
+    },
+);
 
 export const instrumentEditorView = defineCrudView({
     viewID: "Instrument_Editor",
     entity: xInstrument,
     operations: { create: true, update: true, delete: true },
-    selection: instrumentEditorSelection,
-    dtoSchema: InstrumentEditorDtoSchema,
-    hydrate: dto => xInstrument.getClientModel(dto, "view"),
+    dtoSchema: instrumentViewContract.dtoSchema,
+    hydrate: instrumentViewContract.hydrate,
+    selection: instrumentViewContract.prismaSelection,
+    references: instrumentViewContract.referenceContract,
 });
 
 export type InstrumentFunctionalGroupListItem = ClientOf<typeof instrumentFunctionalGroupListView>;
+export type InstrumentEditorClient = ClientOf<typeof instrumentEditorView>;
+export type InstrumentEditorFunctionalGroup = InstrumentEditorClient["functionalGroup"];
+export type InstrumentEditorTagAssociation = InstrumentEditorClient["instrumentTags"][number];
 export type InstrumentFunctionalGroupDashboardDto = DtoOf<typeof instrumentFunctionalGroupDashboardView>;
 export type InstrumentDashboardDto = DtoOf<typeof instrumentDashboardView>;
 export type InstrumentDashboardClient = ClientOf<typeof instrumentDashboardView>;

@@ -96,7 +96,7 @@ describe("DB3 keyed column factories", () => {
         type TPreparedMutation = ReturnType<TPilotClient["prepareMutation"]>;
 
         expectTypeOf<TPilotRow["color"]>()
-            .toEqualTypeOf<ColorPaletteEntry | null | undefined>();
+            .toEqualTypeOf<ColorPaletteEntry | null>();
         expectTypeOf<TPreparedMutation["color"]>()
             .toEqualTypeOf<string | null | undefined>();
         expectTypeOf<Parameters<TPilotClient["crud"]["delete"]>[0]>()

@@ -88,9 +88,13 @@ interface DefineViewBaseArgs<
 > {
     viewID: string;
     entity: TEntity;
-    dtoSchema: TDtoSchema;
     references?: TReferences;
     where?: DB3ViewWhereInput<TEntity>;
+
+    // todo: wrap dtoSchema, hydrate, selection all in a single DB3ViewContract object,
+    // so that you can just call
+    // defineView(..., deriveViewContract(...));
+    dtoSchema: TDtoSchema;
     hydrate: (
         dto: z.infer<TDtoSchema>,
         references: DB3ReferenceProvider<TReferences>,
