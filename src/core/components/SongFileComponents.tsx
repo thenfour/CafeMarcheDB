@@ -67,7 +67,6 @@ const hasEventChipFields = (event: {
 //const gMaximumFilterTagsPerType = 10 as const;
 
 type SortByKey = "uploadedAt" | "uploadedByUserName" | "mimeType" | "sizeBytes" | "fileCreatedAt" | "fileLeafName";
-type TagKey = "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents" | "taggedInstruments" | "taggedWikiPages";
 
 //////////////////////////////////////////////////////////////////
 
@@ -661,36 +660,32 @@ interface CalculateUniqueTagsReturn<TagPayload> {
 
 const CalculateUniqueTags = <TagPayload,>(props: {
     fileTags: FileTagBase[];
-    selector: TagKey;
-    foreignSelector: string;
-    getIdentity: (tag: TagPayload) => number | string;
+    field: {
+        getAssociations: <TAssociation = unknown>(row: DetailFile) => TAssociation[];
+        getForeignObject: <TForeignObject>(association: unknown) => TForeignObject;
+        getForeignIdentity: (association: unknown) => db3.DB3Identity;
+    };
 }): CalculateUniqueTagsReturn<TagPayload>[] => {
 
-    const uniqueTags: { count: number, tag: TagPayload }[] = [];
+    const uniqueTags = new Map<db3.DB3Identity, CalculateUniqueTagsReturn<TagPayload>>();
 
     for (var ift = 0; ift < props.fileTags.length; ++ift) {
         const ft = props.fileTags[ift]!;
-        const tagsArray = ft.file[props.selector];
-        if (tagsArray) {
-            for (var it = 0; it < tagsArray.length; ++it) {
-                const tag = tagsArray[it]!;
-                const candidate: TagPayload = tag[props.foreignSelector];
-                const xit = uniqueTags.findIndex(ut => props.getIdentity(ut.tag) === props.getIdentity(candidate));
-                if (xit === -1) {
-                    uniqueTags.push({
-                        tag: candidate,
-                        count: 1,
-                    });
-                } else {
-                    uniqueTags[xit]!.count++;
-                }
+        for (const association of props.field.getAssociations(ft.file)) {
+            const identity = props.field.getForeignIdentity(association);
+            const existing = uniqueTags.get(identity);
+            if (existing) {
+                existing.count++;
+            } else {
+                uniqueTags.set(identity, {
+                    tag: props.field.getForeignObject<TagPayload>(association),
+                    count: 1,
+                });
             }
         }
     }
 
-    uniqueTags.sort((a, b) => b.count - a.count); // sort by count desc
-
-    return uniqueTags;// .slice(0, gMaximumFilterTagsPerType);
+    return [...uniqueTags.values()].sort((a, b) => b.count - a.count);
 };
 
 const CalculateUniqueMimeTypes = (props: { fileTags: FileTagBase[] }): CalculateUniqueTagsReturn<string>[] => {
@@ -728,13 +723,12 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
         return fg.color;
     };
 
-    // why are we pulling out IDs like this instead of using the getIdentity method on the respective xTables?
-    const uniqueTags = CalculateUniqueTags<db3.FileTagPayloadMinimum>({ selector: 'tags', foreignSelector: "fileTag", fileTags: props.fileTags, getIdentity: tag => tag.id });
-    const uniqueInstrumentTags = CalculateUniqueTags<db3.InstrumentClientPayload>({ selector: 'taggedInstruments', foreignSelector: "instrument", fileTags: props.fileTags, getIdentity: instrument => instrument.publicId });
-    const uniqueEventTags = CalculateUniqueTags<db3.InstrumentPayloadMinimum>({ selector: 'taggedEvents', foreignSelector: "event", fileTags: props.fileTags, getIdentity: event => event.id });
-    const uniqueUserTags = CalculateUniqueTags<db3.UserPayloadMinimum>({ selector: 'taggedUsers', foreignSelector: "user", fileTags: props.fileTags, getIdentity: user => user.id });
-    const uniqueSongTags = CalculateUniqueTags<db3.SongPayloadMinimum>({ selector: 'taggedSongs', foreignSelector: "song", fileTags: props.fileTags, getIdentity: song => song.id });
-    const uniqueWikiPageTags = CalculateUniqueTags<db3.WikiPagePayload>({ selector: 'taggedWikiPages', foreignSelector: "wikiPage", fileTags: props.fileTags, getIdentity: wikiPage => wikiPage.id });
+    const uniqueTags = CalculateUniqueTags<db3.FileTagPayloadMinimum>({ field: db3.xFile.fields.tags, fileTags: props.fileTags });
+    const uniqueInstrumentTags = CalculateUniqueTags<db3.InstrumentClientPayload>({ field: db3.xFile.fields.taggedInstruments, fileTags: props.fileTags });
+    const uniqueEventTags = CalculateUniqueTags<db3.InstrumentPayloadMinimum>({ field: db3.xFile.fields.taggedEvents, fileTags: props.fileTags });
+    const uniqueUserTags = CalculateUniqueTags<db3.UserPayloadMinimum>({ field: db3.xFile.fields.taggedUsers, fileTags: props.fileTags });
+    const uniqueSongTags = CalculateUniqueTags<db3.SongPayloadMinimum>({ field: db3.xFile.fields.taggedSongs, fileTags: props.fileTags });
+    const uniqueWikiPageTags = CalculateUniqueTags<db3.WikiPagePayload>({ field: db3.xFile.fields.taggedWikiPages, fileTags: props.fileTags });
     const uniqueMimeTypes = CalculateUniqueMimeTypes({ fileTags: props.fileTags });
 
     const sortedInstrumentTags = dashboardContext.sortInstruments(uniqueInstrumentTags.map(t => ({ count: t.count, ...t.tag })));

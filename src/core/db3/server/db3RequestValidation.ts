@@ -163,13 +163,12 @@ function schemaForQueryParameter(spec: db3.DB3QueryParameterSpec): z.ZodTypeAny 
             break;
         case "entityIdentity": {
             const targetTable = db3.GetTableById(spec.targetTableID);
-            schema = targetTable.publicIdMember ? PublicId : RecordId;
+            schema = targetTable.identitySchema;
             break;
         }
         case "entityIdentityArray": {
             const targetTable = db3.GetTableById(spec.targetTableID);
-            const identitySchema = targetTable.publicIdMember ? PublicId : RecordId;
-            schema = z.array(identitySchema).max(MAX_FILTER_VALUES);
+            schema = z.array(targetTable.identitySchema).max(MAX_FILTER_VALUES);
             break;
         }
         case "integer":

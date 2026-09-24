@@ -199,9 +199,7 @@ export const SetlistPlannerLedDef = (props: SetlistPlannerLedDefProps) => {
             value={!props.ledDef.associatedItem ? null : { ...props.ledDef.associatedItem, matchStrength: 0, matchingField: undefined }}
             onChange={(newValue) => props.onChange({
                 ...props.ledDef,
-                associatedItem: newValue && typeof newValue.id === "number"
-                    ? { ...newValue, id: newValue.id }
-                    : null,
+                associatedItem: newValue ? { ...newValue } : null,
             })}
         />
         <NameValuePair name="Auto color" description={`colors based on associated item. user + event = attendance for example.`} value={

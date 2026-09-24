@@ -17,7 +17,7 @@ import { z } from "zod";
 import { CMDBTableFilterModel } from "../apiTypes";
 import { ColorField, ConstEnumStringField, foreignRef, GenericIntegerField, GhostField, MakePKfield, MakePublicIdField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
-import { InstrumentArgs, type InstrumentClientPayload, InstrumentFunctionalGroupArgs, type InstrumentFunctionalGroupClientPayload, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, type InstrumentTagAssociationClientPayload, type InstrumentTagClientPayload, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance } from "./prismArgs";
+import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance } from "./prismArgs";
 import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
@@ -44,7 +44,7 @@ export const xInstrumentTableAuthMap: db3.DB3AuthTablePermissionMap = {
 
 export const xInstrumentFunctionalGroup = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.InstrumentFunctionalGroupDelegate>(),
-    getIdentity: (entity: InstrumentFunctionalGroupClientPayload) => entity.publicId,
+    getIdentity: (entity: { publicId: InstrumentFunctionalGroupPublicId }) => entity.publicId,
     getSelectionArgs: (): Prisma.InstrumentFunctionalGroupDefaultArgs => {
         return InstrumentFunctionalGroupArgs;
     },
@@ -93,7 +93,7 @@ export const xInstrumentFunctionalGroup = db3.defineTable({
 
 export const xInstrumentTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.InstrumentTagDelegate>(),
-    getIdentity: (entity: InstrumentTagClientPayload) => entity.publicId,
+    getIdentity: (entity: { publicId: InstrumentTagPublicId }) => entity.publicId,
     getSelectionArgs: (): Prisma.InstrumentTagDefaultArgs => {
         return InstrumentTagArgs;
     },
@@ -158,7 +158,7 @@ export const xInstrumentTag = db3.defineTable({
 // this is mostly only in order to define the tags field in xInstruments.
 export const xInstrumentTagAssociation = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.InstrumentTagAssociationDelegate>(),
-    getIdentity: (entity: InstrumentTagAssociationClientPayload) => entity.publicId,
+    getIdentity: (entity: { publicId: InstrumentTagAssociationPublicId }) => entity.publicId,
     tableName: "InstrumentTagAssociation",
     deletePolicy: "hard",
     getSelectionArgs: (): Prisma.InstrumentTagAssociationDefaultArgs => {
@@ -195,7 +195,7 @@ export const xInstrumentTagAssociation = db3.defineTable({
 
 export const xInstrument = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.InstrumentDelegate>(),
-    getIdentity: (entity: InstrumentClientPayload) => entity.publicId,
+    getIdentity: (entity: { publicId: InstrumentPublicId }) => entity.publicId,
     getSelectionArgs: (): Prisma.InstrumentDefaultArgs => {
         return InstrumentArgs;
     },

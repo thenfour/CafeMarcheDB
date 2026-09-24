@@ -12,7 +12,7 @@ import { CMDBTableFilterModel } from "../apiTypes";
 import { ColorField, ConstEnumStringField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, type SongTagAssociationClientPayload, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, type SongTagClientPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance } from "./prismArgs";
+import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { TAnyModel } from "@/shared/rootroot";
@@ -65,7 +65,7 @@ export const xSongTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
 
 export const xSongTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.SongTagDelegate>(),
-    getIdentity: (tag: SongTagClientPayload) => tag.publicId,
+    getIdentity: (tag: { publicId: SongTagPublicId }) => tag.publicId,
     getSelectionArgs: (): Prisma.SongTagDefaultArgs => {
         return SongTagArgs;
     },
@@ -133,7 +133,7 @@ export const xSongTag = db3.defineTable({
 
 export const xSongTagAssociation = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.SongTagAssociationDelegate>(),
-    getIdentity: (association: SongTagAssociationClientPayload) => association.publicId,
+    getIdentity: (association: { publicId: SongTagAssociationPublicId }) => association.publicId,
     tableName: "SongTagAssociation",
     deletePolicy: "hard",
     getSelectionArgs: (): Prisma.SongTagAssociationDefaultArgs => {

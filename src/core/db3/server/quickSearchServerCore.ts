@@ -18,7 +18,7 @@ import { parsePublicId } from "shared/publicId";
 // this just sets a practical limit.
 const kItemsPerType = 100;
 
-interface QuickSearchPlugin {
+interface QuickSearchPlugin<TItemType extends QuickSearchItemType> {
     // return true if this plugin can handle the type of item.
     matchesTypeFilter: (type: string) => boolean;
     getMatches: (args: {
@@ -26,7 +26,7 @@ interface QuickSearchPlugin {
         permissionSet: Readonly<PermissionSet>,
         query: ParseQuickFilterResult,
         publicRole: Prisma.RoleGetPayload<{ include: { permissions: true } }>
-    }) => Promise<QuickSearchItemMatch[]>;
+    }) => Promise<QuickSearchItemMatch<TItemType>[]>;
 };
 
 const IsAuthorized = (permissionSet: Readonly<PermissionSet>, permission: Permission): boolean => {
@@ -35,7 +35,7 @@ const IsAuthorized = (permissionSet: Readonly<PermissionSet>, permission: Permis
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-const InstrumentQuickSearchPlugin: QuickSearchPlugin = {
+const InstrumentQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.instrument> = {
     matchesTypeFilter: (type: string) => type === QuickSearchItemType.instrument || type === "i",
     getMatches: async ({ query, permissionSet }) => {
         if (!IsAuthorized(permissionSet, Permission.login)) return [];
@@ -67,7 +67,7 @@ const InstrumentQuickSearchPlugin: QuickSearchPlugin = {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-const SongQuickSearchPlugin: QuickSearchPlugin = {
+const SongQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.song> = {
     matchesTypeFilter: (type: string) => type === QuickSearchItemType.song || type == "s",
     getMatches: async ({ user, query, publicRole, permissionSet }) => {
         const songFields: SearchableTableFieldSpec[] = [
@@ -139,7 +139,7 @@ const SongQuickSearchPlugin: QuickSearchPlugin = {
             });
         }
 
-        const makeSongInfo = (x: typeof songs[0]): QuickSearchItemMatch => {
+        const makeSongInfo = (x: typeof songs[0]): QuickSearchItemMatch<QuickSearchItemType.song> => {
             const absoluteUri = ServerApi.getAbsoluteUri(`/backstage/song/${x.id}/${slugify(x.name || "")}`);
             let bestMatch = CalculateMatchStrength(songFields, x, query);
 
@@ -164,7 +164,7 @@ const SongQuickSearchPlugin: QuickSearchPlugin = {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-const EventQuickSearchPlugin: QuickSearchPlugin = {
+const EventQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.event> = {
     matchesTypeFilter: (type: string) => type === QuickSearchItemType.event || type == "e",
     getMatches: async ({ user, query, publicRole, permissionSet }) => {
 
@@ -253,7 +253,7 @@ const EventQuickSearchPlugin: QuickSearchPlugin = {
                 return queryableTagNames.every(qt => tagNames.some(tn => tn.includes(qt)));
             });
         }
-        const makeEventInfo = (x: typeof events[0]): QuickSearchItemMatch => {
+        const makeEventInfo = (x: typeof events[0]): QuickSearchItemMatch<QuickSearchItemType.event> => {
             const absoluteUri = ServerApi.getAbsoluteUri(`/backstage/event/${x.id}/${slugify(x.name || "")}`);
 
             let bestMatch = CalculateMatchStrength(eventFields, x, query);
@@ -285,7 +285,7 @@ const EventQuickSearchPlugin: QuickSearchPlugin = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-const UserQuickSearchPlugin: QuickSearchPlugin = {
+const UserQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.user> = {
     matchesTypeFilter: (type: string) => type === QuickSearchItemType.user || type == "u",
     getMatches: async ({ user, query, publicRole, permissionSet }) => {
 
@@ -311,7 +311,7 @@ const UserQuickSearchPlugin: QuickSearchPlugin = {
             take: kItemsPerType,
         });
 
-        const makeUserInfo = (x: typeof users[0]): QuickSearchItemMatch => {
+        const makeUserInfo = (x: typeof users[0]): QuickSearchItemMatch<QuickSearchItemType.user> => {
             const bestMatch = CalculateMatchStrength(userFields, x, query);
             return {
                 id: x.id,
@@ -329,7 +329,7 @@ const UserQuickSearchPlugin: QuickSearchPlugin = {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-const WikiPageQuickSearchPlugin: QuickSearchPlugin = {
+const WikiPageQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.wikiPage> = {
     matchesTypeFilter: (type: string) => type === QuickSearchItemType.wikiPage || type == "w",
     getMatches: async ({ user, query, publicRole, permissionSet }) => {
 
@@ -388,7 +388,7 @@ const WikiPageQuickSearchPlugin: QuickSearchPlugin = {
 
         const wikiPages = await db.wikiPage.findMany(wikiArgs);
 
-        const makeWikiPageInfo = (x: typeof wikiPages[0]): QuickSearchItemMatch => {
+        const makeWikiPageInfo = (x: typeof wikiPages[0]): QuickSearchItemMatch<QuickSearchItemType.wikiPage> => {
             const absoluteUri = ServerApi.getAbsoluteUri(`/backstage/wiki/${x.slug}`); // 
             let bestMatch = CalculateMatchStrength(wikiPageFields, x, query);
             if (x.currentRevision) {
@@ -423,7 +423,7 @@ export async function getQuickSearchResults(keyword__: string, user: UserWithRol
     const query = ParseQuickFilter(keyword__);
     const itemsToReturn = 15;
 
-    const plugins: Record<QuickSearchItemType, QuickSearchPlugin> = {
+    const plugins: { [TItemType in QuickSearchItemType]: QuickSearchPlugin<TItemType> } = {
         [QuickSearchItemType.song]: SongQuickSearchPlugin,
         [QuickSearchItemType.event]: EventQuickSearchPlugin,
         [QuickSearchItemType.instrument]: InstrumentQuickSearchPlugin,

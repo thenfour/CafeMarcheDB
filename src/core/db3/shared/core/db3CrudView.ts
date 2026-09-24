@@ -13,10 +13,8 @@ import {
 import type {
     AnyDB3Table,
     DB3FieldsOf,
-    DB3IdentityOf,
     DB3SchemaClientModel,
     DB3SchemaMutationModel,
-    xTable,
 } from "../db3core";
 import type { TagsField } from "../columnTypes/tags";
 import {
@@ -62,17 +60,6 @@ type CrudViewSelection<
 
 const crudViewsByCommandID = new Map<string, AnyDB3CrudView>();
 
-function createIdentitySchema<TEntity extends AnyDB3Table>(
-    entity: TEntity,
-): z.ZodType<DB3IdentityOf<TEntity>>;
-function createIdentitySchema(entity: xTable): z.ZodTypeAny;
-function createIdentitySchema(entity: xTable): z.ZodTypeAny {
-    const schema = entity.publicIdMember
-        ? zod.string().length(16).regex(/^[A-Za-z0-9_-]+$/)
-        : zod.number().int();
-    return schema;
-}
-
 /**
  * Builds the strict transport-key boundary for prepared TableClient values.
  * Field values are still parsed and authorized by the authoritative xTable
@@ -110,10 +97,10 @@ function createPreparedMutationSchema<
             continue;
         }
         const transportSchema = field.fieldTableAssociation === "associationRecord"
-            ? zod.array(createIdentitySchema(
+            ? zod.array(
                 // The runtime discriminator above is the TagsField contract.
-                (field as TagsField<TAnyModel>).getForeignTableShema(),
-            ))
+                (field as TagsField<TAnyModel>).getForeignTableShema().identitySchema,
+            )
             : field.codec?.writeSchema ?? zod.unknown();
         shape[member] = transportSchema.superRefine((value, context) => {
             // Prepared mutation values have already passed through
@@ -199,7 +186,11 @@ export function defineCrudView<
     const updateFieldsSchema = createPreparedMutationSchema(args.entity, args.dtoSchema, "update");
     const crud = defineEntityCrudCommands({
         entity: args.entity,
-        identitySchema: createIdentitySchema(args.entity),
+        // xTable owns this runtime schema; this cast preserves the same
+        // accessor-derived identity type through the generic command builder.
+        identitySchema: args.entity.identitySchema as z.ZodType<
+            ReturnType<NonNullable<TEntity["getIdentity"]>>
+        >,
         operations: args.operations,
         createSchema,
         updateFieldsSchema,

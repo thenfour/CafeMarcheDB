@@ -56,21 +56,35 @@ export enum QuickSearchItemType {
     "wikiPage" = "wikiPage",
 };
 
-export interface QuickSearchItemMatch {
-    id: number | InstrumentPublicId,
+interface QuickSearchIdentityByType {
+    [QuickSearchItemType.event]: number;
+    [QuickSearchItemType.instrument]: InstrumentPublicId;
+    [QuickSearchItemType.song]: number;
+    [QuickSearchItemType.user]: number;
+    [QuickSearchItemType.wikiPage]: number;
+}
+
+interface QuickSearchItemMatchFor<TItemType extends QuickSearchItemType> {
+    id: QuickSearchIdentityByType[TItemType],
     name: string,
     absoluteUri?: string | undefined,
     matchStrength: number;
     matchingField: string | undefined;
-    itemType: QuickSearchItemType;
+    itemType: TItemType;
 
     canonicalWikiSlug?: string | undefined, // for wiki pages return this.
 
     // here give context on the match. a snippet of the matching text with highlights
 };
 
+/** A discriminated search result whose item type determines its identity type. */
+export type QuickSearchItemMatch<
+    TItemType extends QuickSearchItemType = QuickSearchItemType,
+> = TItemType extends QuickSearchItemType
+    ? QuickSearchItemMatchFor<TItemType>
+    : never;
 
-export const QuickSearchItemTypeSets /*: { [k: string]: QuickSearchItemType[] }*/ = {
+export const QuickSearchItemTypeSets = {
     Songs: [QuickSearchItemType.song],
     WikiPages: [QuickSearchItemType.wikiPage],
 	Everything: [
@@ -84,7 +98,7 @@ export const QuickSearchItemTypeSets /*: { [k: string]: QuickSearchItemType[] }*
         QuickSearchItemType.song,
         QuickSearchItemType.user,
     ],
-};
+} as const satisfies Record<string, readonly QuickSearchItemType[]>;
 
 export const ZQuickSearchItemTypeArray = z.array(
 	z.enum(["event", "instrument", "song", "user", "wikiPage"])

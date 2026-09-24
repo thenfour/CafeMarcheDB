@@ -7,11 +7,15 @@ import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { CMTextInputBase } from "./CMTextField";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { useFeatureRecorder } from "./dashboardContext/DashboardContext";
+import * as db3 from "src/core/db3/db3";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // for allowed item types best to use QuickSearchItemTypeSets
-export async function fetchObjectQuery(keyword: string, allowedItemTypes: QuickSearchItemType[]): Promise<QuickSearchItemMatch[]> {
+export async function fetchObjectQuery<TItemType extends QuickSearchItemType>(
+    keyword: string,
+    allowedItemTypes: readonly TItemType[],
+): Promise<QuickSearchItemMatch<TItemType>[]> {
     const params = new URLSearchParams({
         keyword,
         allowedItemTypes: JSON.stringify(allowedItemTypes),
@@ -22,7 +26,9 @@ export async function fetchObjectQuery(keyword: string, allowedItemTypes: QuickS
     if (!response.ok) {
         throw new Error('Network response was not ok');
     }
-    const ret = await response.json() as QuickSearchItemMatch[];
+    // The endpoint returns the discriminated result union requested by the
+    // allowed type list; response.json() itself has no generic result type.
+    const ret = await response.json() as QuickSearchItemMatch<TItemType>[];
     return ret;
 }
 
@@ -77,18 +83,21 @@ export const AssociationValue = (props: AssociationValueProps) => {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface AssociationSelectProps {
+export interface AssociationSelectProps<TItemType extends QuickSearchItemType = QuickSearchItemType> {
     title?: string;
-    value: QuickSearchItemMatch | null;
-    onChange: (newValue: QuickSearchItemMatch | null) => void;
-    allowedItemTypes: QuickSearchItemType[]; // see QuickSearchItemTypeSets
+    value: QuickSearchItemMatch<TItemType> | null;
+    onChange: (newValue: QuickSearchItemMatch<TItemType> | null) => void;
+    allowedItemTypes: readonly TItemType[]; // see QuickSearchItemTypeSets
     allowNull?: boolean;
 };
 
 // could use an AutoComplete, but this is just easier.
-export const AssociationSelect = ({ allowNull = true, ...props }: AssociationSelectProps) => {
+export const AssociationSelect = <TItemType extends QuickSearchItemType,>({
+    allowNull = true,
+    ...props
+}: AssociationSelectProps<TItemType>) => {
     const [query, setQuery] = React.useState<string>("");
-    const [results, setResults] = React.useState<QuickSearchItemMatch[]>([]);
+    const [results, setResults] = React.useState<QuickSearchItemMatch<TItemType>[]>([]);
 
     React.useEffect(() => {
         if (query.length < 2) {
@@ -138,7 +147,7 @@ interface AssociationAutocompleteItemInfo {
     className?: string;
 };
 
-export interface AssociationAutocompleteProps {
+export interface AssociationAutocompleteProps<TItemType extends QuickSearchItemType = QuickSearchItemType> {
     autofocus?: boolean;
     /**
      * The current query text value (controlled).
@@ -162,29 +171,41 @@ export interface AssociationAutocompleteProps {
     /**
      * Called when the user selects a result from the Autocomplete list.
      */
-    onSelect: (newValue: QuickSearchItemMatch | null, queryText: string) => void;
+    onSelect: (newValue: QuickSearchItemMatch<TItemType> | null, queryText: string) => void;
 
     /**
      * Allowed item types for the fetch operation.
      */
-    allowedItemTypes: QuickSearchItemType[];
+    allowedItemTypes: readonly TItemType[];
 
     showSearchIcon?: boolean;
     showClearIcon?: boolean;
     placeholder?: string;
     disableEscapeHandling?: boolean; // if true, pressing escape will not clear the input. this is useful for dialogs that use this component and want to close the dialog instead.
 
-    getItemInfo?: (item: QuickSearchItemMatch) => AssociationAutocompleteItemInfo;
+    getItemInfo?: (item: QuickSearchItemMatch<TItemType>) => AssociationAutocompleteItemInfo;
 }
 
-export const AssociationAutocomplete = ({
+const getActivityIdentities = (value: QuickSearchItemMatch | null) => ({
+    eventId: value?.itemType === QuickSearchItemType.event
+        ? db3.xEvent.getIdentity(value)
+        : undefined,
+    songId: value?.itemType === QuickSearchItemType.song
+        ? db3.xSong.getIdentity(value)
+        : undefined,
+    wikiPageId: value?.itemType === QuickSearchItemType.wikiPage
+        ? db3.xWikiPage.getIdentity(value)
+        : undefined,
+});
+
+export const AssociationAutocomplete = <TItemType extends QuickSearchItemType,>({
     autofocus = false,
     showSearchIcon = true,
     showClearIcon = true,
     placeholder = "Search...",
     disableEscapeHandling = false,
     ...props
-}: AssociationAutocompleteProps) => {
+}: AssociationAutocompleteProps<TItemType>) => {
     const isControlled = props.value !== undefined;
     const recordFeature = useFeatureRecorder();
 
@@ -197,7 +218,7 @@ export const AssociationAutocomplete = ({
     const queryText = isControlled ? props.value! : internalValue;
 
     // Autocomplete search results
-    const [results, setResults] = React.useState<QuickSearchItemMatch[]>([]);
+    const [results, setResults] = React.useState<QuickSearchItemMatch<TItemType>[]>([]);
 
     // When queryText changes, fetch new results
     React.useEffect(() => {
@@ -251,15 +272,7 @@ export const AssociationAutocomplete = ({
                 await recordFeature({
                     feature: ActivityFeature.link_follow_internal,
                     queryText: queryText,
-                    // TODO: do not make it the responsibility of client calling code to understand this.
-                    // this code should be more like:
-                    // bad:
-                    //   typeof newValue.id === "number" ? newValue.id : undefined,
-                    // better:
-                    //   xEvent.getIdentity(newValue),
-                    eventId: newValue?.itemType === QuickSearchItemType.event && typeof newValue.id === "number" ? newValue.id : undefined,
-                    songId: newValue?.itemType === QuickSearchItemType.song && typeof newValue.id === "number" ? newValue.id : undefined,
-                    wikiPageId: newValue?.itemType === QuickSearchItemType.wikiPage && typeof newValue.id === "number" ? newValue.id : undefined,
+                    ...getActivityIdentities(newValue),
                 });
                 props.onSelect(newValue, queryText);
             }}
@@ -268,7 +281,7 @@ export const AssociationAutocomplete = ({
                 if (typeof option === "string") {
                     return option;
                 }
-                return (option as QuickSearchItemMatch).name
+                return option.name
             }
             }
             // getOptionKey is not a standard Autocomplete prop. You can just set a key in renderOption.

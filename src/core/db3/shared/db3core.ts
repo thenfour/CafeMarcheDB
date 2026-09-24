@@ -5,6 +5,7 @@ import { isEmptyArray } from "shared/arrayUtils";
 import { CalculateChanges, type CalculateChangesResult, createEmptyCalculateChangesResult } from "shared/associationUtils";
 import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
+import { isPublicId } from "shared/publicId";
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 import { z } from "zod";
 import type { ColorPaletteEntry } from "../../components/color/palette";
@@ -743,6 +744,12 @@ export type DB3IdentityAccessor<
     TIdentity extends DB3Identity = DB3Identity,
 > = (value: TValue) => TIdentity;
 
+type DB3IdentityForAccessor<
+    TIdentityAccessor extends DB3IdentityAccessor | undefined,
+> = TIdentityAccessor extends DB3IdentityAccessor<any, infer TIdentity>
+    ? TIdentity
+    : DB3Identity;
+
 export interface TableDesc {
     tableName: string;
     tableUniqueName?: string; // DB tables have multiple variations (event vs. event verbose / permission vs. permission for visibility / et al). therefore tableName is not sufficient. use this instead.
@@ -1172,6 +1179,16 @@ export class xTable<
             });
         });
 
+        const configuredGetIdentity = args.getIdentity;
+        if (configuredGetIdentity) {
+            const validatedGetIdentity = (value: TAnyModel) => this.parseIdentity(
+                configuredGetIdentity(value),
+            );
+            // The wrapper preserves the configured accessor's exact input and
+            // output types while adding the table-owned runtime validation.
+            this.getIdentity = validatedGetIdentity as unknown as TIdentityAccessor;
+        }
+
         // sanity checks.
         // we could check if there are conflicting or dupilcate columns / functions.
         if (this.SqlSpecialColumns.visiblePermission && !this.SqlSpecialColumns.ownerUser) {
@@ -1188,6 +1205,48 @@ export class xTable<
     get clientIdMember(): string {
         return this.publicIdMember || this.pkMember;
     }
+
+    /**
+     * Runtime authority for the canonical identity accepted by this table.
+     * Converted tables accept only a valid public ID; legacy tables accept a
+     * positive, safe integer database identity.
+     */
+    isIdentity = (
+        value: unknown,
+    ): value is DB3IdentityForAccessor<TIdentityAccessor> => {
+        if (this.publicIdMember) return isPublicId(value);
+        return this.isDatabaseIdentity(value);
+    };
+
+    /** The table-owned Zod contract used by views, fields, and request parsing. */
+    get identitySchema(): z.ZodType<DB3IdentityForAccessor<TIdentityAccessor>> {
+        const schema: z.ZodTypeAny = this.publicIdMember
+            ? z.string().refine(value => this.isIdentity(value), `Expected a public ID for ${this.tableID}.`)
+            : this.databaseIdentitySchema;
+        // The branch is selected from the same public-ID metadata that defines
+        // the accessor's identity type; Zod cannot express that conditional.
+        return schema as z.ZodType<DB3IdentityForAccessor<TIdentityAccessor>>;
+    }
+
+    /** Parse an untrusted identity according to this table's identity policy. */
+    parseIdentity = (
+        value: unknown,
+    ): DB3IdentityForAccessor<TIdentityAccessor> => this.identitySchema.parse(value);
+
+    /** Natural database identity, for trusted persistence-side work only. */
+    isDatabaseIdentity = (value: unknown): value is number => (
+        typeof value === "number"
+        && Number.isSafeInteger(value)
+        && value > 0
+    );
+
+    get databaseIdentitySchema(): z.ZodType<number> {
+        return z.number().int()
+            .refine(Number.isSafeInteger, "Expected a safe integer")
+            .refine(value => value > 0, "Expected a positive database identity");
+    }
+
+    parseDatabaseIdentity = (value: unknown): number => this.databaseIdentitySchema.parse(value);
 
     // AND this into your query to apply visibility & soft delete logic.
     SqlGetVisFilterExpression(currentUser: UserWithRolesPayload, tableAlias: string, includeDeleted = false, publicData?: DB3Authorization) {

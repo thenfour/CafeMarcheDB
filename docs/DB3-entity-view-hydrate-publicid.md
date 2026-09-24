@@ -137,6 +137,18 @@ database model. It binds together:
 - an explicit `getIdentity()`, including whether consumer identity is a numeric
   legacy ID or a branded `publicId`.
 
+Identity policy is not repeated by consumers. `xTable.isIdentity()`,
+`parseIdentity()`, and `identitySchema` are the runtime authority for the
+table's canonical identity, and `getIdentity()` validates the value produced by
+the table's typed extractor. CRUD commands, identity-bearing query parameters,
+and foreign-reference fields consume that table-owned schema rather than
+reconstructing a number-versus-public-ID test. Association fields similarly own
+reading their relation collection, foreign object, and foreign identity, so a
+React consumer does not need relation member strings or per-entity identity
+callbacks. Persistence-side natural identity is an explicit, separate
+`databaseIdentity` contract; resolving a public ID at the trusted command
+boundary does not weaken the canonical client identity accepted by the table.
+
 The former `DB3Entity`/`defineEntity()` wrapper duplicated the table, delegate,
 and identifier and has been removed. A view's `entity` property now references
 its xTable directly. `DB3IdentityOf<TTable>` and
@@ -793,6 +805,10 @@ a per-row compatibility flag or a second lookup mode.
   `publicId` as canonical identity for public-ID-only client models, while
   explicit identity callbacks preserve internal numeric workflows such as file
   upload auto-assignment.
+- Polymorphic quick-search results are a discriminated union: `itemType`
+  determines the entity-specific identity type. Search/select components retain
+  that correlation from their allowed-type list, then delegate extraction to
+  the matching xTable instead of checking whether an ID happens to be a number.
 - The entity/view/hydration/command boundaries are established well enough to
   begin broad public-ID migration. Further general DB3 architecture work is not
   a prerequisite unless a concrete entity conversion exposes a missing identity

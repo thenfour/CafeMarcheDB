@@ -18,7 +18,6 @@ import {
     xTable
 } from "../db3core";
 import { type UserWithRolesPayload } from "../schema/userPayloads";
-import { isPublicIdIsh } from "@/shared/publicId";
 
 
 ////////////////////////////////////////////////////////////////
@@ -201,6 +200,100 @@ class TagsFieldImpl<
         return GetTableById(this.foreignTableID);
     };
 
+    /** Read this relation's association array from a row. */
+    getAssociations = <TClientAssociation = TAssociation,>(row: TAnyModel): TClientAssociation[] => {
+        const associations = row[this.member];
+        if (associations === undefined) return [];
+        if (!Array.isArray(associations)) {
+            throw new Error(`Expected ${this.localTableSpec.tableID}.${this.member} to be an association array.`);
+        }
+        // The field's declared client value is TAssociation[]; the dynamic row
+        // lookup is the only reason TypeScript cannot retain that element type.
+        return associations as TClientAssociation[];
+    };
+
+    /** Extract and validate the foreign entity carried by an association row. */
+    getForeignObject = <TForeignObject,>(
+        association: TAnyModel,
+    ): TForeignObject => {
+        const foreignObject = association[this.associationForeignObjectMember];
+        if (!foreignObject) {
+            throw new Error(
+                `Expected ${this.associationTableID}.${this.associationForeignObjectMember} to contain its foreign entity.`,
+            );
+        }
+        this.getRuntimeForeignIdentity(foreignObject);
+        // Relation metadata identifies the member and validates its canonical
+        // identity; callers retain the richer hydrated object type they passed.
+        return foreignObject as TForeignObject;
+    };
+
+    private getRuntimeForeignIdentity = (foreignObject: unknown) => {
+        const foreignTable = this.getForeignTableShema();
+        const getIdentity = foreignTable.getIdentity;
+        if (!getIdentity) {
+            throw new Error(`DB3 table ${foreignTable.tableID} does not declare an identity accessor.`);
+        }
+        // Legacy xTable accessors accept model-shaped values; the relation has
+        // already selected the registered target object dynamically.
+        return getIdentity(foreignObject as TAnyModel);
+    };
+
+    /** Extract the canonical foreign identity from an association or transport value. */
+    getForeignIdentity = (
+        association: unknown,
+    ): DB3TagsForeignIdentity<TForeignTableID> => {
+        const foreignTable = this.getForeignTableShema();
+        if (foreignTable.isIdentity(association)) {
+            // The registered foreign table determines this field's exact
+            // identity type; the runtime registry exposes its base xTable.
+            return association as DB3TagsForeignIdentity<TForeignTableID>;
+        }
+
+        if (!association || typeof association !== "object") {
+            throw new Error(`Expected an identity or association value for ${this.localTableSpec.tableID}.${this.member}.`);
+        }
+
+        // The runtime object boundary is safe after the shape check; configured
+        // relation member names select the candidate identity and entity.
+        const associationModel = association as TAnyModel;
+        const directIdentity = associationModel[this.associationForeignIDMember];
+        if (foreignTable.isIdentity(directIdentity)) {
+            // The runtime guard applies the registered foreign table's exact
+            // identity contract, which the base xTable type cannot retain.
+            return directIdentity as DB3TagsForeignIdentity<TForeignTableID>;
+        }
+
+        const foreignObject = associationModel[this.associationForeignObjectMember];
+        const identity = this.getRuntimeForeignIdentity(foreignObject);
+        // Runtime extraction and validation came from the registered target;
+        // DB3TableTypeRegistry supplies the corresponding compile-time type.
+        return identity as DB3TagsForeignIdentity<TForeignTableID>;
+    };
+
+    /**
+     * Extract the resolved natural foreign key used by persistence code. This
+     * is deliberately separate from getForeignIdentity(): converted client
+     * identities remain public IDs, while the trusted command boundary resolves
+     * them before mutation preparation reaches this method.
+     */
+    getForeignDatabaseIdentity = (association: unknown): number => {
+        const foreignTable = this.getForeignTableShema();
+        if (foreignTable.isDatabaseIdentity(association)) return association;
+        if (!association || typeof association !== "object") {
+            throw new Error(`Expected a resolved association value for ${this.localTableSpec.tableID}.${this.member}.`);
+        }
+
+        // Configured relation member names are runtime metadata, so inspect the
+        // already-validated object through the dynamic DB3 model boundary.
+        const associationModel = association as TAnyModel;
+        const directIdentity = associationModel[this.associationForeignIDMember];
+        if (foreignTable.isDatabaseIdentity(directIdentity)) return directIdentity;
+
+        const foreignObject = associationModel[this.associationForeignObjectMember];
+        return foreignTable.parseDatabaseIdentity(foreignObject?.[foreignTable.pkMember]);
+    };
+
     getPrismaMemberDescriptors = (): readonly DB3FieldPrismaMember[] => [{
         member: this.member,
         kind: "relationCollection",
@@ -255,7 +348,6 @@ class TagsFieldImpl<
 
     createMockAssociation_DefaultImpl = (row: TAnyModel, foreignObject: TAnyModel): TAssociation => {
         const localIdentityMember = this.localTableSpec.clientIdMember;
-        const foreignIdentityMember = this.getForeignTableShema().clientIdMember;
         const associationTable = this.getAssociationTableShema();
         // Converted association identities are server-generated; client drafts
         // are compared by their foreign target and must not invent one.
@@ -265,9 +357,9 @@ class TagsFieldImpl<
         const ret = {
             ...mockAssociationIdentity,
             [this.associationLocalObjectMember]: row, // local object
-            [this.associationLocalIDMember]: row[localIdentityMember], // canonical client identity
+            [this.associationLocalIDMember]: this.localTableSpec.parseIdentity(row[localIdentityMember]),
             [this.associationForeignObjectMember]: foreignObject, // local object
-            [this.associationForeignIDMember]: foreignObject[foreignIdentityMember], // canonical client identity
+            [this.associationForeignIDMember]: this.getRuntimeForeignIdentity(foreignObject),
         } as TAssociation /* trust me */;
         return ret;
     };
@@ -318,19 +410,10 @@ class TagsFieldImpl<
         // so basically we just need to reduce associations down to an update/mutate model.
         if (clientModel[this.member] === undefined) return;
 
-        // there's a possibility the client model is the one coming from the serialized format. yea terrible. but support this case
-        // until we have proper clean serialized formats.
-        mutationModel[this.member] = clientModel[this.member].map((association: TAnyModel | number | string) => {
-            if (isPublicIdIsh(association)) {
-                return association;
-            }
-            const directIdentity = association[this.associationForeignIDMember];
-            if (isPublicIdIsh(directIdentity)) {
-                return directIdentity;
-            }
-            const foreignObject = association[this.associationForeignObjectMember];
-            return foreignObject?.[this.getForeignTableShema().clientIdMember];
-        });
+        // Serialized transport values and rich association rows share one
+        // persistence-side extraction path after public IDs have been resolved.
+        mutationModel[this.member] = this.getAssociations(clientModel)
+            .map(association => this.getForeignDatabaseIdentity(association));
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving

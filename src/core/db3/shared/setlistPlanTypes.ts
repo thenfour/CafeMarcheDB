@@ -8,7 +8,12 @@ import { z } from "zod";
 
 // matches MatchingSlugItem on purpose.
 export const ZSetlistPlanAssociatedItem = z.object({
-    itemType: z.enum(["song", "event", "user", "wikiPage"]).transform((val) => val as QuickSearchItemType),
+    itemType: z.union([
+        z.literal(QuickSearchItemType.song),
+        z.literal(QuickSearchItemType.event),
+        z.literal(QuickSearchItemType.user),
+        z.literal(QuickSearchItemType.wikiPage),
+    ]),
     name: z.string(),
     absoluteUri: z.string().optional(),
     id: z.number(),

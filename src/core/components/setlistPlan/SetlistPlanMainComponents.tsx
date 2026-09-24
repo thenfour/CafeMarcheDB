@@ -1662,9 +1662,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                         onChange={(newAssociation) => {
                                             props.mutator.setColumnAssociatedItem(
                                                 segment.columnId,
-                                                newAssociation && typeof newAssociation.id === "number"
-                                                    ? { ...newAssociation, id: newAssociation.id }
-                                                    : null,
+                                                newAssociation ? { ...newAssociation } : null,
                                             );
                                         }}
                                     />

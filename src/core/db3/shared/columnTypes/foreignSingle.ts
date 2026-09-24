@@ -159,15 +159,10 @@ export class ForeignSingleField<
         // The database FK may be numeric while its read transport is a public
         // ID. Resolve the target's canonical identity field only when parsing,
         // preserving lazy/self-referential table initialization.
-        const identitySchema = z.custom<DB3IdentityOf<TTargetTable>>(value => {
-            const targetTable = this.getForeignTableSchema();
-            const identityMember = targetTable.clientIdMember;
-            const identityOwnership = targetTable.resolvePrismaMember(
-                identityMember,
-                `${targetTable.tableID}.${identityMember}`,
-            );
-            return identityOwnership.readTransportSchema?.safeParse(value).success === true;
-        }, "Invalid foreign identity.");
+        const identitySchema = z.custom<DB3IdentityOf<TTargetTable>>(
+            value => this.getForeignTableSchema().isIdentity(value),
+            "Invalid foreign identity.",
+        );
         this.foreignKeyReadTransportSchema = makeNullableReadTransportSchema(
             identitySchema,
             args.allowNull,
