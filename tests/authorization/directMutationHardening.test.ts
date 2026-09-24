@@ -238,6 +238,7 @@ describe("DB3 command boundary", () => {
     }
     const acousticTag = {
       id: 20,
+      publicId: "AcousticTag00001",
       text: "Acoustic",
       description: "",
       sortOrder: 1,
@@ -246,6 +247,7 @@ describe("DB3 command boundary", () => {
     }
     const electricTag = {
       id: 21,
+      publicId: "ElectricTag00001",
       text: "Electric",
       description: "",
       sortOrder: 2,
@@ -269,7 +271,7 @@ describe("DB3 command boundary", () => {
         patch: {
           name: "Cornet",
           functionalGroupId: nextGroup.publicId,
-          instrumentTags: [electricTag.id],
+          instrumentTags: [electricTag.publicId],
         },
       },
     }, ctx)).resolves.toEqual({ identity: instrument.id })

@@ -96,6 +96,14 @@ export async function CorrectInstrumentFunctionalGroupPublicIds() {
     console.log(`Replaced ${replacementCount} InstrumentFunctionalGroup public-ID placeholders.`);
 }
 
+export async function CorrectInstrumentTagPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.instrumentTag,
+        modelName: "InstrumentTag",
+    });
+    console.log(`Replaced ${replacementCount} InstrumentTag public-ID placeholders.`);
+}
+
 export async function registerNodeInstrumentation() {
     console.log(`INSTRUMENTATION RUNNING`);
     await instrumentationSetup();
@@ -103,6 +111,7 @@ export async function registerNodeInstrumentation() {
     await CorrectUserUids();
     await CorrectEventSegmentUids();
     await CorrectInstrumentFunctionalGroupPublicIds();
+    await CorrectInstrumentTagPublicIds();
 
     //const startupState = getServerStartStateRef();
     process.env.CMDB_START_TIME = `${new Date().valueOf()}`;

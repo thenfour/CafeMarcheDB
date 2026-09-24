@@ -44,9 +44,10 @@ export async function resolvePublicId(
     return id;
 }
 
-// takes a model with public ids from the client, 
-// and resolves them to their corresponding numeric IDs in the database.
-// example: { userId: "publicId123" } becomes { userId: 42 } after resolution.
+// Takes a model with public IDs from the client and resolves scalar foreign
+// keys and association target arrays to numeric database IDs.
+// Examples: { userId: "publicId123" } becomes { userId: 42 }, and
+// { tags: ["publicId456"] } becomes { tags: [84] }.
 export async function resolvePublicForeignIds(
     table: db3.xTable,
     model: TAnyModel,
@@ -55,6 +56,24 @@ export async function resolvePublicForeignIds(
 ): Promise<TAnyModel> {
     const ret = { ...model };
     for (const field of table.columns) {
+        if (field.fieldTableAssociation === "associationRecord") {
+            if (!Object.prototype.hasOwnProperty.call(ret, field.member)) continue;
+            const associationField = field as db3.TagsField<TAnyModel>;
+            const foreignTable = associationField.getForeignTableShema();
+            if (!foreignTable.publicIdMember) continue;
+
+            const identities = ret[field.member];
+            if (!Array.isArray(identities)) {
+                throw new DB3PublicIdError(
+                    `Expected public-ID array for ${table.tableID}.${field.member}.`,
+                );
+            }
+            ret[field.member] = await Promise.all(identities.map(identity => (
+                resolvePublicId(foreignTable, identity, publicData, database)
+            )));
+            continue;
+        }
+
         if (field.fieldTableAssociation !== "foreignObject" || !field.fkidMember) {
             // not a foreign object.
             continue;

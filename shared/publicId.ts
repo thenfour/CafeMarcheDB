@@ -10,6 +10,7 @@ export type PublicId<TTable extends string = string> = string & {
 };
 
 export type InstrumentFunctionalGroupPublicId = PublicId<"InstrumentFunctionalGroup">;
+export type InstrumentTagPublicId = PublicId<"InstrumentTag">;
 // todo: define other table-specific public ID types as needed here.
 
 export function isPublicId(value: unknown): value is PublicId {
@@ -21,4 +22,15 @@ export function parsePublicId<TTable extends string = string>(value: unknown): P
         throw new Error(`Expected a ${PUBLIC_ID_LENGTH}-character public ID.`);
     }
     return value as PublicId<TTable>;
+}
+
+// function isNumber(value: unknown): value is number {
+//     return typeof value === "number";
+// }
+// function isString(value: unknown): value is string {
+//     return typeof value === "string";
+// }
+
+export function isPublicIdIsh(value: unknown): value is number | string {
+    return typeof value === "number" || typeof value === "string";
 }

@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import type { ColorPaletteEntry } from "@/src/core/components/color/palette";
-import type { InstrumentFunctionalGroupPublicId } from "shared/publicId";
+import type { InstrumentFunctionalGroupPublicId, InstrumentTagPublicId } from "shared/publicId";
 //import * as db3 from "../db3core"; // circular
 import { TAnyModel } from "shared/rootroot";
 import { AuxUserArgs } from "types";
@@ -579,15 +579,17 @@ export type InstrumentFunctionalGroupClientPayload = Omit<
 
 export type InstrumentTagClientPayload = Omit<
     Prisma.InstrumentTagGetPayload<{}>,
-    "color"
+    "id" | "publicId" | "color"
 > & {
+    publicId: InstrumentTagPublicId;
     color: ColorPaletteEntry | null;
 };
 
 export type InstrumentTagAssociationClientPayload = Omit<
     Prisma.InstrumentTagAssociationGetPayload<{ include: { tag: true } }>,
-    "tag"
+    "tagId" | "tag"
 > & {
+    tagId: InstrumentTagPublicId;
     tag: InstrumentTagClientPayload;
 };
 

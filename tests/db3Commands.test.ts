@@ -6,7 +6,12 @@ import type { DB3CommandExecutionContext } from "@db3/server/db3CommandCore";
 import { getDB3CommandHandler } from "@db3/server/db3CommandRegistry";
 import { defineEntityCrudCommandHandlers } from "@db3/server/db3EntityCrudCommand";
 import type { ColorPaletteEntry } from "@components/color/palette";
-import { isPublicId, parsePublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId";
+import {
+    isPublicId,
+    parsePublicId,
+    type InstrumentFunctionalGroupPublicId,
+    type InstrumentTagPublicId,
+} from "shared/publicId";
 import { z } from "zod";
 
 function createContext(seed?: {
@@ -89,6 +94,8 @@ const instrumentFunctionalGroupCrudHandlers = defineEntityCrudCommandHandlers(
     instrumentFunctionalGroupCrud,
 );
 const functionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
+const instrumentTagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn02");
+const otherInstrumentTagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn03");
 const otherFunctionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn02");
 const publicIdentityAssociationCommand = db3.defineAssociationCommand({
     commandID: "InstrumentFunctionalGroup_RelationshipTest",
@@ -609,7 +616,7 @@ describe("DB3 commands", () => {
             functionalGroupId: functionalGroupPublicId,
             instrumentTags: [{
                 id: 70,
-                tagId: 20,
+                tagId: instrumentTagPublicId,
             }],
         });
         expect(instrumentDto).toEqual({
@@ -619,7 +626,7 @@ describe("DB3 commands", () => {
             autoAssignFileLeafRegex: "trumpet",
             sortOrder: 1,
             functionalGroupId: functionalGroupPublicId,
-            instrumentTags: [{ id: 70, tagId: 20 }],
+            instrumentTags: [{ id: 70, tagId: instrumentTagPublicId }],
         });
         const functionalGroup: db3.InstrumentFunctionalGroupDashboardClient = {
             publicId: functionalGroupPublicId,
@@ -629,7 +636,7 @@ describe("DB3 commands", () => {
             color: null,
         };
         const instrumentTag: db3.InstrumentTagDashboardClient = {
-            id: 20,
+            publicId: instrumentTagPublicId,
             text: "Uses electricity",
             description: "",
             sortOrder: 1,
@@ -649,19 +656,28 @@ describe("DB3 commands", () => {
         expect(hydratedInstrument.functionalGroup).toBe(functionalGroup);
         expect(hydratedInstrument.instrumentTags[0]?.tag).toBe(instrumentTag);
         expectTypeOf(hydratedInstrument).toEqualTypeOf<db3.InstrumentEditorClient>();
+        type InstrumentUpdateInput = db3.CommandClientInputOf<
+            typeof db3.instrumentEditorView.crud.operations.update.command
+        >;
+        expectTypeOf<NonNullable<InstrumentUpdateInput["patch"]["instrumentTags"]>>()
+            .toEqualTypeOf<InstrumentTagPublicId[]>();
         expect(db3.instrumentEditorView.crud.operations.update.command.parseDto({
             identity: 7,
             patch: {
                 functionalGroupId: functionalGroupPublicId,
-                instrumentTags: [20, 30],
+                instrumentTags: [instrumentTagPublicId, otherInstrumentTagPublicId],
             },
         })).toEqual({
             identity: 7,
             patch: {
                 functionalGroupId: functionalGroupPublicId,
-                instrumentTags: [20, 30],
+                instrumentTags: [instrumentTagPublicId, otherInstrumentTagPublicId],
             },
         });
+        expect(() => db3.instrumentEditorView.crud.operations.update.command.parseDto({
+            identity: 7,
+            patch: { instrumentTags: [20] },
+        })).toThrow();
         expect(() => db3.instrumentEditorView.crud.operations.update.command.parseDto({
             identity: 7,
             patch: { functionalGroup: { publicId: functionalGroupPublicId } },

@@ -868,6 +868,15 @@ export interface DB3RelationTargetField<TTarget = xTable> {
 }
 
 /**
+ * Type-only description of a field whose client value is deliberately
+ * projected to a different command-transport value during mutation prep.
+ */
+export interface DB3MutationProjectionField<TClientValue, TWriteTransportValue> {
+    readonly __mutationClientValue: TClientValue;
+    readonly __mutationWriteTransportValue: TWriteTransportValue;
+}
+
+/**
  * Type-only metadata for the normalized member owned by a foreign-single
  * field. Keeping the literal key lets a derived view map (for example)
  * `statusId` back to its logical `status` field and target table.
@@ -953,7 +962,11 @@ export type DB3SchemaClientModel<
     };
 
 type DB3EncodedFieldValue<TField, TSourceValue> =
-    TField extends FieldBase<any, infer TCodec, boolean, any, any, any>
+    TField extends DB3MutationProjectionField<infer TClientValue, infer TWriteTransportValue>
+    ? Exclude<TSourceValue, undefined> extends TClientValue
+    ? TWriteTransportValue | Extract<TSourceValue, undefined>
+    : never
+    : TField extends FieldBase<any, infer TCodec, boolean, any, any, any>
     ? TCodec extends DB3FieldCodec<any, infer TClientValue, infer TWriteTransportValue>
     ? Exclude<TSourceValue, undefined> extends TClientValue
     ? TWriteTransportValue | Extract<TSourceValue, undefined>
@@ -971,8 +984,8 @@ type DB3WritableFieldKeys<TSource, TFields extends DB3FieldMap> = {
 /**
  * The same-key values that a typed xTable can prepare for a command. Every
  * property is optional because field authorization may remove it at runtime.
- * Composite and foreign-key projections remain an explicit client-column
- * concern and are not inferred as same-key fields here.
+ * Scalar codecs and explicitly declared mutation projections determine each
+ * command-transport value.
  */
 export type DB3SchemaMutationModel<
     TSource,

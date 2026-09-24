@@ -14,6 +14,7 @@ import { createAuthorizationTestContext, createAuthorizationTestUser } from "./s
 import { invokeResolver } from "./support/resolverHarness";
 
 const originalPublicId = "originalGroup001";
+const tagPublicId = "originalTag00001";
 const actor = createAuthorizationTestUser("normal", {
     id: 701,
     permissions: [Permission.login, Permission.admin_instruments],
@@ -26,12 +27,22 @@ const group = {
     color: null,
     sortOrder: 1,
 };
+const tag = {
+    id: 20,
+    publicId: tagPublicId,
+    text: "Acoustic",
+    description: "",
+    color: null,
+    significance: null,
+    sortOrder: 1,
+};
 
-describe("InstrumentFunctionalGroup public-ID mutations", () => {
+describe("instrument catalog public-ID mutations", () => {
     beforeEach(() => {
         authorizationTestDb.reset({
             user: [actor],
             instrumentFunctionalGroup: [group],
+            instrumentTag: [tag],
             instrument: [{
                 id: 7,
                 name: "Trumpet",
@@ -79,6 +90,25 @@ describe("InstrumentFunctionalGroup public-ID mutations", () => {
         expect(authorizationTestDb.snapshot("instrumentFunctionalGroup")).toEqual(expect.arrayContaining([
             expect.objectContaining({ name: "Strings", publicId: result.publicId }),
         ]));
+    });
+
+    it("resolves an InstrumentTag public target without returning its natural id", async () => {
+        const result = await invokeResolver(db3Mutation, {
+            tableID: "InstrumentTag",
+            tableName: "InstrumentTag",
+            mutationType: "update",
+            updatePublicId: tagPublicId,
+            updateModel: { text: "Unplugged" },
+        }, createAuthorizationTestContext(actor));
+        if (!result || typeof result !== "object") throw new Error("Expected updated tag payload");
+
+        expect(result).toMatchObject({ publicId: tagPublicId, text: "Unplugged" });
+        expect(result).not.toHaveProperty("id");
+        expect(authorizationTestDb.snapshot("instrumentTag")[0]).toMatchObject({
+            id: tag.id,
+            publicId: tagPublicId,
+            text: "Unplugged",
+        });
     });
 
     it("resolves a public foreign key before Prisma receives an instrument update", async () => {

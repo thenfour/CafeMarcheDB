@@ -66,6 +66,7 @@ const main = async () => {
 
   const instrumentTagSeed: Prisma.InstrumentTagUncheckedCreateInput[] = [
     {
+      "publicId": generatePublicId<"InstrumentTag">(),
       "text": "Needs power",
       "description": "",
       "sortOrder": 0,

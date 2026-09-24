@@ -77,3 +77,43 @@ export const areAllOptionalFieldsPopulated = <T>(obj: T, schema: z.ZodTypeAny): 
     }
     return true;
 };
+
+
+type Grafted<A, B> =
+    A extends readonly unknown[] ? B :
+    B extends readonly unknown[] ? B :
+    A extends object
+    ? B extends object
+    ? {
+        [K in keyof A | keyof B]:
+        K extends keyof B
+        ? K extends keyof A ? Grafted<A[K], B[K]> : B[K]
+        : K extends keyof A ? A[K] : never;
+    }
+    : B
+    : B;
+
+export function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return value !== null
+        && typeof value === "object"
+        && !Array.isArray(value)
+        && (Object.getPrototypeOf(value) === Object.prototype
+            || Object.getPrototypeOf(value) === null);
+}
+
+export function graft<const A extends Record<string, unknown>, const B extends Record<string, unknown>>(
+    base: A,
+    additions: B,
+): Grafted<A, B> {
+    const result: Record<string, unknown> = { ...base };
+
+    for (const [key, value] of Object.entries(additions)) {
+        const previous = result[key];
+        result[key] =
+            isPlainObject(previous) && isPlainObject(value)
+                ? graft(previous, value)
+                : value;
+    }
+
+    return result as Grafted<A, B>;
+}

@@ -9,14 +9,16 @@ import {
 import type { DB3Authorization } from "../db3Authorization";
 import {
     ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3FieldPrismaMember,
+    type DB3IdentityOf, type DB3MutationProjectionField,
     type DB3ReadPresenceForAuthSpec, type DB3RegisteredTableID,
-    type DB3RelationTargetField, type DB3RowMode,
+    type DB3RelationTargetField, type DB3ResolvedRelationTarget, type DB3RowMode,
     FieldBase, GetTableById, type SqlGetSortableQueryElementsAPI,
     SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
 } from "../db3core";
 import { type UserWithRolesPayload } from "../schema/userPayloads";
+import { isPublicIdIsh } from "@/shared/publicId";
 
 
 ////////////////////////////////////////////////////////////////
@@ -70,6 +72,9 @@ type TagsFieldValueArgs<
 };
 
 type DB3RegisteredPrismaTableID = Extract<DB3RegisteredTableID, Prisma.ModelName>;
+
+type DB3TagsForeignIdentity<TTableID extends DB3RegisteredTableID> =
+    DB3IdentityOf<DB3ResolvedRelationTarget<TTableID>>;
 
 type DB3PrismaModelPayload<TTableID extends Prisma.ModelName> =
     Prisma.TypeMap["model"][TTableID]["payload"];
@@ -141,8 +146,8 @@ export type TagsRefArgs<
     "columnName" | "associationTableID" | "foreignTableID"
 > & TAuthSpec;
 
-// Tags encode an association collection rather than a same-key scalar value;
-// their exact write shape belongs to their explicit mutation projection.
+// Tags encode an association collection rather than a same-key scalar value.
+// Client preparation projects the association objects to target identities.
 class TagsFieldImpl<
     TAssociation,
     TAssociationTableID extends DB3RegisteredTableID = DB3RegisteredTableID,
@@ -153,13 +158,19 @@ class TagsFieldImpl<
 > extends FieldBase<
     TAssociation[],
     undefined,
-    false,
+    true,
     TAssociation[],
     TAssociation[],
     DB3ReadPresenceForAuthSpec<TAuthSpec>
 >
-    implements DB3RelationTargetField<TAssociationTableID> {
+    implements DB3RelationTargetField<TAssociationTableID>,
+    DB3MutationProjectionField<
+        readonly unknown[],
+        DB3TagsForeignIdentity<TForeignTableID>[]
+    > {
     declare readonly __relationTargetTable: TAssociationTableID;
+    declare readonly __mutationClientValue: readonly unknown[];
+    declare readonly __mutationWriteTransportValue: DB3TagsForeignIdentity<TForeignTableID>[];
     localTableSpec: xTable;
     readonly associationTableID: TAssociationTableID;
     readonly foreignTableID: TForeignTableID;
@@ -243,12 +254,14 @@ class TagsFieldImpl<
     };
 
     createMockAssociation_DefaultImpl = (row: TAnyModel, foreignObject: TAnyModel): TAssociation => {
+        const localIdentityMember = this.localTableSpec.clientIdMember;
+        const foreignIdentityMember = this.getForeignTableShema().clientIdMember;
         const ret = {
             [this.getAssociationTableShema().pkMember]: -1, // an ID that we can assume is never valid or going to match an existing. we could also put null which may be more accurate but less safe in terms of query compatibiliy.
             [this.associationLocalObjectMember]: row, // local object
-            [this.associationLocalIDMember]: row[this.localTableSpec.pkMember], // local ID
+            [this.associationLocalIDMember]: row[localIdentityMember], // canonical client identity
             [this.associationForeignObjectMember]: foreignObject, // local object
-            [this.associationForeignIDMember]: foreignObject[this.getForeignTableShema().pkMember], // foreign ID
+            [this.associationForeignIDMember]: foreignObject[foreignIdentityMember], // canonical client identity
         } as TAssociation /* trust me */;
         return ret;
     };
@@ -297,9 +310,16 @@ class TagsFieldImpl<
 
         // there's a possibility the client model is the one coming from the serialized format. yea terrible. but support this case
         // until we have proper clean serialized formats.
-        mutationModel[this.member] = clientModel[this.member].map(a => {
-            if (typeof a === 'number') return a;
-            return a[this.associationForeignIDMember];
+        mutationModel[this.member] = clientModel[this.member].map((association: TAnyModel | number | string) => {
+            if (isPublicIdIsh(association)) {
+                return association;
+            }
+            const directIdentity = association[this.associationForeignIDMember];
+            if (isPublicIdIsh(directIdentity)) {
+                return directIdentity;
+            }
+            const foreignObject = association[this.associationForeignObjectMember];
+            return foreignObject?.[this.getForeignTableShema().clientIdMember];
         });
     };
 

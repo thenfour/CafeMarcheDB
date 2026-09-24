@@ -15,6 +15,7 @@ import {
 import {
     InstrumentTagAssociationNaturalOrderBy,
 } from "../../schema/prismArgs";
+import { graft } from "../common/viewCommon";
 
 // functional group -------------------------------------
 const instrumentFunctionalGroupSelection = Prisma.validator<Prisma.InstrumentFunctionalGroupDefaultArgs>()({
@@ -52,7 +53,7 @@ export const instrumentFunctionalGroupEditorView = defineCrudView({
 // tag -------------------------------------
 const instrumentTagSelection = Prisma.validator<Prisma.InstrumentTagDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         text: true,
         description: true,
         sortOrder: true,
@@ -91,17 +92,25 @@ const instrumentEditorTransportSelection = Prisma.validator<Prisma.InstrumentDef
     },
 });
 
-const instrumentEditorSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
-    select: {
-        ...instrumentEditorTransportSelection.select,
-        // The server uses this relation to project functionalGroupId to its
-        // public identity. The normalized client relation comes from the
-        // dashboard reference provider instead of crossing the view DTO.
-        functionalGroup: {
-            select: { publicId: true },
+const instrumentEditorSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()(
+    graft(instrumentEditorTransportSelection, {
+        select: {
+            // The server uses this relation to project functionalGroupId to its
+            // public identity. The normalized client relation comes from the
+            // dashboard reference provider instead of crossing the view DTO.
+            functionalGroup: {
+                select: { publicId: true },
+            },
+            instrumentTags: {
+                select: {
+                    // The relation is projection support. The client receives the
+                    // normalized tag from the reference provider.
+                    tag: { select: { publicId: true } },
+                },
+            },
         },
-    },
-});
+    })
+);
 
 const instrumentViewContract = deriveViewContract(
     xInstrument,
@@ -123,6 +132,7 @@ export const instrumentEditorView = defineCrudView({
 });
 
 export type InstrumentFunctionalGroupListItem = ClientOf<typeof instrumentFunctionalGroupListView>;
+export type InstrumentTagEditorClient = ClientOf<typeof instrumentTagEditorView>;
 export type InstrumentEditorClient = ClientOf<typeof instrumentEditorView>;
 export type InstrumentEditorFunctionalGroup = InstrumentEditorClient["functionalGroup"];
 export type InstrumentEditorTagAssociation = InstrumentEditorClient["instrumentTags"][number];

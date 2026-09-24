@@ -7,12 +7,12 @@
 
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import type { InstrumentFunctionalGroupPublicId } from "shared/publicId";
+import type { InstrumentFunctionalGroupPublicId, InstrumentTagPublicId } from "shared/publicId";
 import { z } from "zod";
 import { CMDBTableFilterModel } from "../apiTypes";
 import { ColorField, ConstEnumStringField, foreignRef, GenericIntegerField, GhostField, MakePKfield, MakePublicIdField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
-import { InstrumentArgs, type InstrumentClientPayload, InstrumentFunctionalGroupArgs, type InstrumentFunctionalGroupClientPayload, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance } from "./prismArgs";
+import { InstrumentArgs, type InstrumentClientPayload, InstrumentFunctionalGroupArgs, type InstrumentFunctionalGroupClientPayload, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, type InstrumentTagClientPayload, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance } from "./prismArgs";
 import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
@@ -88,7 +88,7 @@ export const xInstrumentFunctionalGroup = db3.defineTable({
 
 export const xInstrumentTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.InstrumentTagDelegate>(),
-    getIdentity: (entity: Prisma.InstrumentTagGetPayload<{}>) => entity.id,
+    getIdentity: (entity: InstrumentTagClientPayload) => entity.publicId,
     getSelectionArgs: (): Prisma.InstrumentTagDefaultArgs => {
         return InstrumentTagArgs;
     },
@@ -96,7 +96,7 @@ export const xInstrumentTag = db3.defineTable({
     deletePolicy: "hard",
     tableAuthMap: xInstrumentTableAuthMap,
     naturalOrderBy: InstrumentTagNaturalOrderBy,
-    createInsertModelFromString: (input: string): Prisma.InstrumentTagCreateInput => {
+    createInsertModelFromString: (input: string): Partial<InstrumentTagPayload> => {
         return {
             text: input,
             description: "auto-created",
@@ -106,14 +106,15 @@ export const xInstrumentTag = db3.defineTable({
         };
     },
     getRowInfo: (row: InstrumentTagPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<InstrumentTagPublicId>(),
         text: columnName => MakeTitleField(columnName, { authMap: xInstrumentAuthMap_R_EAdmins }),
         description: columnName => new GenericStringField({
             columnName,

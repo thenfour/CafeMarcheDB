@@ -243,7 +243,10 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.eventTag = new TableAccessor(dashboardData.eventTag);
     valueRef.current.eventAttendance = new TableAccessor(dashboardData.eventAttendance);
     valueRef.current.fileTag = new TableAccessor(dashboardData.fileTag);
-    valueRef.current.instrumentTag = new TableAccessor(dashboardData.instrumentTag);
+    valueRef.current.instrumentTag = new TableAccessor(
+        dashboardData.instrumentTag,
+        tag => tag.publicId,
+    );
     db3.registerDashboardReferences(valueRef.current.referenceStore, {
         permission: dashboardData.permission,
         eventType: dashboardData.eventType,

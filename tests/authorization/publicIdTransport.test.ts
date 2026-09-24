@@ -7,6 +7,7 @@ import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 
 const publicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
+const tagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn02");
 const instrumentId = 7;
 const group = {
     id: 54,
@@ -14,6 +15,15 @@ const group = {
     name: "Brass",
     description: "Brass instruments",
     color: "orange",
+    sortOrder: 1,
+};
+const tag = {
+    id: 20,
+    publicId: tagPublicId,
+    text: "Acoustic",
+    description: "Does not require amplification",
+    color: null,
+    significance: null,
     sortOrder: 1,
 };
 
@@ -37,7 +47,19 @@ const sanitizeGroup = (publicData: db3.DB3Authorization) => {
     return projectDB3ModelPublicIds(db3.xInstrumentFunctionalGroup, result.authorizedModel, publicData);
 };
 
-describe("InstrumentFunctionalGroup public-ID transport", () => {
+const sanitizeTag = (publicData: db3.DB3Authorization) => {
+    const result = db3.xInstrumentTag.authorizeAndSanitize({
+        contextDesc: "public-id-transport-test",
+        model: tag,
+        rowMode: "view",
+        fallbackOwnerId: null,
+        publicData,
+    });
+    expect(result.rowIsAuthorized).toBe(true);
+    return projectDB3ModelPublicIds(db3.xInstrumentTag, result.authorizedModel, publicData);
+};
+
+describe("instrument catalog public-ID transport", () => {
     it("uses publicId as canonical client identity for every role", () => {
         const expected = {
             publicId,
@@ -48,6 +70,17 @@ describe("InstrumentFunctionalGroup public-ID transport", () => {
         };
         expect(sanitizeGroup(authorization(Permission.login))).toEqual(expected);
         expect(sanitizeGroup(authorization(Permission.login, Permission.sysadmin))).toEqual(expected);
+
+        const expectedTag = {
+            publicId: tagPublicId,
+            text: tag.text,
+            description: tag.description,
+            color: tag.color,
+            significance: tag.significance,
+            sortOrder: tag.sortOrder,
+        };
+        expect(sanitizeTag(authorization(Permission.login))).toEqual(expectedTag);
+        expect(sanitizeTag(authorization(Permission.login, Permission.sysadmin))).toEqual(expectedTag);
     });
 
     it("projects converted foreign keys through direct, association, and nested relation payloads", () => {
@@ -59,7 +92,12 @@ describe("InstrumentFunctionalGroup public-ID transport", () => {
             sortOrder: 1,
             functionalGroupId: group.id,
             functionalGroup: group,
-            instrumentTags: [],
+            instrumentTags: [{
+                id: 70,
+                instrumentId,
+                tagId: tag.id,
+                tag,
+            }],
         };
         const publicData = authorization(Permission.login);
 
@@ -67,6 +105,12 @@ describe("InstrumentFunctionalGroup public-ID transport", () => {
         expect(projectedInstrument.functionalGroupId).toBe(publicId);
         expect(projectedInstrument.functionalGroup).toMatchObject({ publicId, name: "Brass" });
         expect(projectedInstrument.functionalGroup).not.toHaveProperty("id");
+        expect(projectedInstrument.instrumentTags[0]).toMatchObject({
+            id: 70,
+            tagId: tagPublicId,
+            tag: { publicId: tagPublicId, text: "Acoustic" },
+        });
+        expect(projectedInstrument.instrumentTags[0].tag).not.toHaveProperty("id");
 
         const projectedFile = projectDB3ModelPublicIds(db3.xFile, {
             id: 90,
@@ -86,6 +130,11 @@ describe("InstrumentFunctionalGroup public-ID transport", () => {
         expect(() => validateDB3QueryRequest({
             table: { tableID: "InstrumentFunctionalGroup", tableName: "InstrumentFunctionalGroup" },
             filter: { items: [], publicIds: [publicId] },
+            cmdbQueryContext: "public-id-test",
+        })).not.toThrow();
+        expect(() => validateDB3QueryRequest({
+            table: { tableID: "InstrumentTag", tableName: "InstrumentTag" },
+            filter: { items: [], publicIds: [tagPublicId] },
             cmdbQueryContext: "public-id-test",
         })).not.toThrow();
         expect(() => validateDB3QueryRequest({
@@ -114,6 +163,21 @@ describe("InstrumentFunctionalGroup public-ID transport", () => {
             mutationType: "insert",
             insertModel: { name: "Winds", publicId },
         })).toThrow("field 'publicId' is server-generated");
+
+        expect(() => validateDB3MutationRequest({
+            tableID: "InstrumentTag",
+            tableName: "InstrumentTag",
+            mutationType: "update",
+            updatePublicId: tagPublicId,
+            updateModel: { text: "Unplugged" },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "InstrumentTag",
+            tableName: "InstrumentTag",
+            mutationType: "update",
+            updateId: tag.id,
+            updateModel: { text: "Unplugged" },
+        })).toThrow("updates require updatePublicId");
 
         expect(() => validateDB3MutationRequest({
             tableID: "Instrument",

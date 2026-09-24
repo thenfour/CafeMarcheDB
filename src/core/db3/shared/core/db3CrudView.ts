@@ -16,7 +16,9 @@ import type {
     DB3IdentityOf,
     DB3SchemaClientModel,
     DB3SchemaMutationModel,
+    xTable,
 } from "../db3core";
+import type { TagsField } from "../columnTypes/tags";
 import {
     defineView,
     type DB3View,
@@ -62,11 +64,13 @@ const crudViewsByCommandID = new Map<string, AnyDB3CrudView>();
 
 function createIdentitySchema<TEntity extends AnyDB3Table>(
     entity: TEntity,
-): z.ZodType<DB3IdentityOf<TEntity>> {
+): z.ZodType<DB3IdentityOf<TEntity>>;
+function createIdentitySchema(entity: xTable): z.ZodTypeAny;
+function createIdentitySchema(entity: xTable): z.ZodTypeAny {
     const schema = entity.publicIdMember
         ? zod.string().length(16).regex(/^[A-Za-z0-9_-]+$/)
         : zod.number().int();
-    return schema as unknown as z.ZodType<DB3IdentityOf<TEntity>>;
+    return schema;
 }
 
 /**
@@ -105,7 +109,12 @@ function createPreparedMutationSchema<
         if (member === entity.pkMember || member === entity.publicIdMember) {
             continue;
         }
-        const transportSchema = field.codec?.writeSchema ?? zod.unknown();
+        const transportSchema = field.fieldTableAssociation === "associationRecord"
+            ? zod.array(createIdentitySchema(
+                // The runtime discriminator above is the TagsField contract.
+                (field as TagsField<TAnyModel>).getForeignTableShema(),
+            ))
+            : field.codec?.writeSchema ?? zod.unknown();
         shape[member] = transportSchema.superRefine((value, context) => {
             // Prepared mutation values have already passed through
             // ApplyClientToDb. Convert them back to the table's client shape

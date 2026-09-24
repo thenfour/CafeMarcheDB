@@ -743,10 +743,11 @@ This translation must be centralized in DB3 or explicitly invoked by a
 non-DB3 server endpoint. A raw Prisma result must not be returned directly merely
 because the endpoint itself is trusted.
 
-Command row services resolve scalar `ForeignSingleField` references at their
-trusted boundary. Public-ID resolution for many-to-many/tag mutation inputs
-remains future work and must be implemented before converting a target used
-through those mutation shapes.
+Command row services resolve both scalar `ForeignSingleField` references and
+many-to-many/tag identity arrays at their trusted boundary. Generated tag-field
+command DTOs derive the array element type and runtime identity schema from the
+association target, so converted targets accept only public identities before
+the row service resolves them to natural join keys.
 
 ### Creation, collision handling, and migration
 
@@ -773,8 +774,8 @@ a per-row compatibility flag or a second lookup mode.
 
 ### Established baseline and remaining migration limits
 
-- `InstrumentFunctionalGroup` is the public-ID pilot and currently the only
-  converted DB3 entity.
+- `InstrumentFunctionalGroup` is the public-ID pilot. `InstrumentTag` is the
+  second converted DB3 entity and proves the association/tag mutation path.
 - The entity/view/hydration/command boundaries are established well enough to
   begin broad public-ID migration. Further general DB3 architecture work is not
   a prerequisite unless a concrete entity conversion exposes a missing identity
@@ -788,9 +789,10 @@ a per-row compatibility flag or a second lookup mode.
 - `defineView()`, `DbPayloadOf<>`, `DtoOf<>`, `ClientOf<>`,
   `DB3ReferenceValueOf<>`, and typed `useDb3Query({ view })` establish the intended
   inference chain without result casts.
-- `defineTable()`, field `DB3FieldCodec`s, `DB3SchemaClientModel<>`, and
-  `DB3SchemaMutationModel<>` establish both directions of the typed schema link
-  for the `InstrumentFunctionalGroup` pilot. Its hydrated `color` member is
+- `defineTable()`, field `DB3FieldCodec`s, explicit mutation projections,
+  `DB3SchemaClientModel<>`, and `DB3SchemaMutationModel<>` establish both
+  directions of the typed schema link. The `InstrumentFunctionalGroup` pilot's
+  hydrated `color` member is
   inferred as `ColorPaletteEntry | null | undefined`; its prepared and generated
   command value is `string | null | undefined`; and its public-ID identity
   remains statically checked through the TableClient.
@@ -842,8 +844,8 @@ a per-row compatibility flag or a second lookup mode.
   canonical identity back through an authorized exact-identity view query
   before publishing it as the selected value. A successful create that is not
   readable through the view fails explicitly rather than manufacturing a
-  partial client row. The Instrument editor's functional-group selector proves
-  this path with public IDs. Create-from-string has no generic mutation
+  partial client row. The Instrument editor's functional-group and tag selectors
+  prove this path with public IDs. Create-from-string has no generic mutation
   fallback: a creatable selector must name the matching CRUD view, and a
   mismatched or missing view fails explicitly.
 - `DB3NewObjectDialog` now requires its table-render client to be injected. The
@@ -857,8 +859,8 @@ a per-row compatibility flag or a second lookup mode.
   set inside the command transaction, then applies the idempotent change through
   the schema-owned `Permission.roles` association field so its authorization,
   auditing, and mutation hooks remain authoritative. Role and Permission still
-  use numeric identities; generalized public-ID association transport remains a
-  separate migration slice.
+  use numeric identities; the same identity-aware command transport can use
+  public identities when either endpoint is converted.
 - The registered event-song-list save handler now performs parent, song, and
   divider synchronization atomically in one serializable transaction by
   composing authorized DB3 row services. The two legacy insert/update RPCs and
@@ -876,9 +878,10 @@ a per-row compatibility flag or a second lookup mode.
   own this consistently.
 - Legacy `enrich*` helpers and asserted Prisma payload aliases remain and should
   disappear as their consumers move to named views.
-- Many-to-many/tag mutation resolution, association-matrix assumptions, generic
-  sorting/reordering, and raw-SQL/search boundaries must be audited as their
-  participating entities are converted.
+- Association-matrix assumptions, generic sorting/reordering, and raw-SQL/search
+  boundaries must be audited as their participating entities are converted.
+  Generated many-to-many/tag command inputs and row-service resolution are
+  already identity-aware.
 - Raw SQL returned in `SearchResultsRet` is intentionally unchanged for now and
   is expected to be removed separately.
 - Most unconverted named views still expose numeric identities. They are the
@@ -1106,7 +1109,7 @@ conversions.
   independent lookup entities first, then scalar foreign-key dependants,
   association/tag graphs, and finally central routed entities such as Event and
   User.
-- [ ] Generalize public-ID translation for association/tag command inputs before
+- [x] Generalize public-ID translation for association/tag command inputs before
   converting an entity used through those mutation shapes.
 - [ ] Audit and adapt the shared identity-sensitive infrastructure: exact lookup,
   generic sorting/reordering, association matrices, caches, React keys, raw SQL,
@@ -1116,10 +1119,10 @@ conversions.
   and delete its numeric client-identity compatibility path before the next
   dependent slice begins.
   - [x] `InstrumentFunctionalGroup`
-  - [ ] Select the next independent lookup/public-reference slice from the
-    dependency catalog.
-  - [ ] Exercise a scalar public foreign key.
-  - [ ] Exercise an association/tag command with public identities.
+  - [x] `InstrumentTag`
+  - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
+  - [x] Exercise an association/tag command with public identities
+    (`Instrument.instrumentTags`).
   - [ ] Exercise route and search identity before converting Event and User.
 
 ### Deferred DB3 enhancements

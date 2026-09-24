@@ -154,7 +154,7 @@ const dashboardInstrumentFunctionalGroupSelection = Prisma.validator<
 
 const dashboardInstrumentTagSelection = Prisma.validator<Prisma.InstrumentTagDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         text: true,
         description: true,
         sortOrder: true,
@@ -211,6 +211,13 @@ const dashboardInstrumentSelection = Prisma.validator<Prisma.InstrumentDefaultAr
         ...dashboardInstrumentTransportSelection.select,
         functionalGroup: {
             select: { publicId: true },
+        },
+        instrumentTags: {
+            ...dashboardInstrumentTransportSelection.select.instrumentTags,
+            select: {
+                ...dashboardInstrumentTransportSelection.select.instrumentTags.select,
+                tag: { select: { publicId: true } },
+            },
         },
     },
 });
@@ -563,7 +570,7 @@ export function registerDashboardReferences(
         );
     }
     if (input.instrumentTag) {
-        store.register(xInstrumentTag, input.instrumentTag, value => value.id);
+        store.register(xInstrumentTag, input.instrumentTag, value => value.publicId);
     }
     if (input.songTag) {
         store.register(xSongTag, input.songTag, value => value.id);

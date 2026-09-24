@@ -12,6 +12,7 @@ import { z } from "zod";
 import { gGeneralPaletteList } from "src/core/components/color/palette";
 
 const groupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
+const tagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn02");
 const group = {
     publicId: groupPublicId,
     name: "Brass",
@@ -25,6 +26,7 @@ const hydratedGroup = {
 };
 const tag = {
     id: 12,
+    publicId: tagPublicId,
     text: "Horn",
     description: "Horn-like instruments",
     color: null,
@@ -370,7 +372,7 @@ describe("DB3 named views", () => {
             sortOrder: 1,
             functionalGroupId: 54,
             functionalGroup: { publicId: groupPublicId },
-            instrumentTags: [{ id: 70, tagId: tag.id }],
+            instrumentTags: [{ id: 70, tagId: tag.id, tag: { publicId: tagPublicId } }],
         }]);
         const effectivePermissions = new PermissionSet([
             { id: 1, name: Permission.always_grant },
@@ -400,14 +402,18 @@ describe("DB3 named views", () => {
             autoAssignFileLeafRegex: null,
             sortOrder: 1,
             functionalGroupId: groupPublicId,
-            instrumentTags: [{ id: 70, tagId: tag.id }],
+            instrumentTags: [{ id: 70, tagId: tagPublicId }],
         }]);
         expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
             select: expect.objectContaining({
                 functionalGroupId: true,
                 functionalGroup: { select: { publicId: true } },
                 instrumentTags: expect.objectContaining({
-                    select: { id: true, tagId: true },
+                    select: {
+                        id: true,
+                        tagId: true,
+                        tag: { select: { publicId: true } },
+                    },
                 }),
             }),
         }));
@@ -582,7 +588,7 @@ describe("DB3 named views", () => {
             autoAssignFileLeafRegex: null,
             sortOrder: 1,
             functionalGroupId: groupPublicId,
-            instrumentTags: [{ id: 70, instrumentId: 7, tagId: tag.id }],
+            instrumentTags: [{ id: 70, instrumentId: 7, tagId: tagPublicId }],
         });
         const hydrated = db3.hydrateView(db3.instrumentDashboardView, dto, references);
 
@@ -590,7 +596,7 @@ describe("DB3 named views", () => {
             references.require(db3.xInstrumentFunctionalGroup, group.publicId, "test"),
         );
         expect(hydrated.instrumentTags[0]!.tag).toEqual(
-            references.require(db3.xInstrumentTag, tag.id, "test"),
+            references.require(db3.xInstrumentTag, tag.publicId, "test"),
         );
         expectTypeOf(hydrated).toEqualTypeOf<db3.InstrumentDashboardClient>();
         expectTypeOf<db3.DbPayloadOf<typeof db3.instrumentDashboardView>>()
@@ -598,7 +604,12 @@ describe("DB3 named views", () => {
                 id: number;
                 functionalGroupId: number;
                 functionalGroup: { publicId: string };
-                instrumentTags: { id: number; instrumentId: number; tagId: number }[];
+                instrumentTags: {
+                    id: number;
+                    instrumentId: number;
+                    tagId: number;
+                    tag: { publicId: string };
+                }[];
             }>();
     });
 
@@ -1740,7 +1751,7 @@ describe("DB3 named views", () => {
             autoAssignFileLeafRegex: null,
             sortOrder: 1,
             functionalGroupId: groupPublicId,
-            instrumentTags: [{ id: 70, instrumentId: 7, tagId: tag.id }],
+            instrumentTags: [{ id: 70, instrumentId: 7, tagId: tagPublicId }],
         });
 
         expect(() => db3.hydrateView(db3.instrumentDashboardView, dto, references))
