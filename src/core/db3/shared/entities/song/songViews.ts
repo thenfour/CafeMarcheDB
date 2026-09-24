@@ -9,10 +9,11 @@ import {
 } from "../file/fileViews";
 import { xSongCredit, xSongCreditType, xSong, xSongTag } from "../../schema/song";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
+import { graft } from "../common/viewCommon";
 
 export const songTagEditorSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         text: true,
         description: true,
         color: true,
@@ -95,7 +96,7 @@ export const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
         visiblePermission: PermissionForVisibilityArgs,
         tags: {
             select: {
-                id: true,
+                publicId: true,
                 songId: true,
                 tagId: true,
                 tag: songTagEditorSelection,
@@ -155,7 +156,7 @@ const songSearchTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
         visiblePermissionId: true,
         tags: {
             select: {
-                id: true,
+                publicId: true,
                 tagId: true,
             },
         },
@@ -192,46 +193,43 @@ const songSearchTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
     },
 });
 
-export const songSearchSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
-    select: {
-        ...songSearchTransportSelection.select,
-        createdByUserId: true,
-        isDeleted: true,
-        tags: {
-            ...songSearchTransportSelection.select.tags,
-            select: {
-                ...songSearchTransportSelection.select.tags.select,
-                songId: true,
-            },
-        },
-        taggedFiles: {
-            ...songSearchTransportSelection.select.taggedFiles,
-            select: {
-                ...songSearchTransportSelection.select.taggedFiles.select,
-                fileId: true,
-                songId: true,
-                file: {
-                    ...songSearchTransportSelection.select.taggedFiles.select.file,
-                    select: {
-                        ...songSearchTransportSelection.select.taggedFiles.select.file.select,
-                        uploadedByUserId: true,
-                        visiblePermissionId: true,
-                        isDeleted: true,
+export const songSearchSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
+    graft(songSearchTransportSelection, {
+        select: {
+            createdByUserId: true,
+            isDeleted: true,
+            tags: {
+                select: {
+                    songId: true,
+                    tag: {
+                        // Projection support; hydration uses the dashboard reference.
+                        select: { publicId: true },
                     },
                 },
             },
-            orderBy: { file: { uploadedAt: "desc" } },
-        },
-        credits: {
-            ...songSearchTransportSelection.select.credits,
-            select: {
-                ...songSearchTransportSelection.select.credits.select,
-                userId: true,
-                songId: true,
+            taggedFiles: {
+                select: {
+                    fileId: true,
+                    songId: true,
+                    file: {
+                        select: {
+                            uploadedByUserId: true,
+                            visiblePermissionId: true,
+                            isDeleted: true,
+                        },
+                    },
+                },
+                orderBy: { file: { uploadedAt: "desc" } },
             },
-        },
-    },
-});
+            credits: {
+                select: {
+                    userId: true,
+                    songId: true,
+                },
+            },
+        }
+    }),
+);
 
 const songSearchContract = deriveViewContract(
     xSong,
@@ -291,7 +289,7 @@ const songDetailTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
         pinnedRecordingId: true,
         tags: {
             select: {
-                id: true,
+                publicId: true,
                 tagId: true,
             },
         },
@@ -321,29 +319,29 @@ const songDetailTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
     },
 });
 
-export const songDetailSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
-    select: {
-        ...songDetailTransportSelection.select,
-        isDeleted: true,
-        tags: {
-            ...songDetailTransportSelection.select.tags,
-            select: {
-                ...songDetailTransportSelection.select.tags.select,
-                songId: true,
+export const songDetailSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
+    graft(songDetailTransportSelection, {
+        select: {
+            isDeleted: true,
+            tags: {
+                select: {
+                    songId: true,
+                    tag: {
+                        // Projection support; hydration uses the dashboard reference.
+                        select: { publicId: true },
+                    },
+                },
+            },
+            taggedFiles: {
+                select: {
+                    fileId: true,
+                    songId: true,
+                    file: fileCardSelection,
+                },
+                orderBy: { file: { uploadedAt: "desc" } },
             },
         },
-        taggedFiles: {
-            ...songDetailTransportSelection.select.taggedFiles,
-            select: {
-                ...songDetailTransportSelection.select.taggedFiles.select,
-                fileId: true,
-                songId: true,
-                file: fileCardSelection,
-            },
-            orderBy: { file: { uploadedAt: "desc" } },
-        },
-    },
-});
+    }));
 
 const songDetailContract = deriveViewContract(
     xSong,

@@ -80,6 +80,7 @@ const main = async () => {
 
   const songTagSeed: Prisma.SongTagUncheckedCreateInput[] = [
     {
+      "publicId": generatePublicId<"SongTag">(),
       "text": "By Heart",
       "description": "",
       "sortOrder": 0,
@@ -87,6 +88,7 @@ const main = async () => {
       "significance": "ByHeart",
     },
     {
+      "publicId": generatePublicId<"SongTag">(),
       "text": "Improv",
       "description": "",
       "sortOrder": 1,
@@ -95,6 +97,7 @@ const main = async () => {
       indicator: "impro",
     },
     {
+      "publicId": generatePublicId<"SongTag">(),
       "text": "Majoretteketet",
       "description": "",
       "sortOrder": 2,
@@ -103,6 +106,7 @@ const main = async () => {
       indicator: "M",
     },
     {
+      "publicId": generatePublicId<"SongTag">(),
       "text": "Singer",
       "description": "",
       "sortOrder": 3,
@@ -110,6 +114,7 @@ const main = async () => {
       "significance": "VocalSolo",
     },
     {
+      "publicId": generatePublicId<"SongTag">(),
       "text": "Street",
       "description": "",
       "sortOrder": 4,
@@ -117,6 +122,7 @@ const main = async () => {
       "significance": "Street",
     },
     {
+      "publicId": generatePublicId<"SongTag">(),
       "text": "Pompoms",
       "description": "",
       "sortOrder": 5,
@@ -127,6 +133,7 @@ const main = async () => {
       indicatorCssClass: "bare",
     },
     {
+      "publicId": generatePublicId<"SongTag">(),
       "text": "Batons",
       "description": "",
       "sortOrder": 6,
@@ -857,6 +864,7 @@ const main = async () => {
     await tags.forEach(async (tag) => {
       await gState.prisma.songTagAssociation.create({
         data: {
+          publicId: generatePublicId<"SongTagAssociation">(),
           songId: song.id,
           tagId: tag.id,
         }

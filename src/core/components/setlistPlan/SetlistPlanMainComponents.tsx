@@ -33,6 +33,7 @@ import { MediaPlayerTrack } from "../mediaPlayer/MediaPlayerTypes";
 import { SongPlayButton } from "../mediaPlayer/SongPlayButton";
 import { useSongsContext } from "../song/SongsContext";
 import { SongTagIndicatorContainer } from "../SongTagIndicatorContainer";
+import type { SongTagPublicId } from "shared/publicId";
 import { VisibilityControl } from "../VisibilityControl";
 import { LerpColor, SetlistPlannerColorScheme } from "./SetlistPlanColorComponents";
 import { SetlistPlanGroupSelect } from "./SetlistPlanGroupComponents";
@@ -209,7 +210,7 @@ type SetlistPlannerMatrixRowProps = {
     rowId: string;
     stats: SetlistPlanStats;
     colorScheme: SetlistPlannerColorScheme;
-    allTagIds: number[];
+    allTagIds: SongTagPublicId[];
 
     rowIndex: number;
     allPinnedRecordings: Record<number, TSongPinnedRecording>;
@@ -812,7 +813,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 
     // Collect all unique tag IDs from all songs in the plan
     const allTagIds = React.useMemo(() => {
-        const tagIds = new Set<number>();
+        const tagIds = new Set<SongTagPublicId>();
         docOrTempDoc.payload.rows.forEach(row => {
             if (row.type === 'song' && row.songId) {
                 const song = allSongs.find(s => s.id === row.songId);

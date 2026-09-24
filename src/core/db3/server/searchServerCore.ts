@@ -10,10 +10,11 @@ import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUti
 import { SplitQuickFilter } from "shared/quickFilter";
 import { Stopwatch, TAnyModel } from "shared/rootroot";
 import { queryTable } from "src/core/db3/server/db3QueryCore";
-import { CalculateFilterQueryResult, DiscreteCriterionFilterType, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchResultsRet, SortQueryElements } from "src/core/db3/shared/apiTypes";
+import { CalculateFilterQueryResult, type DiscreteCriterion, DiscreteCriterionFilterType, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchResultsRet, SortQueryElements } from "src/core/db3/shared/apiTypes";
 import * as db3 from "../../../core/db3/db3";
 import { UserWithRolesPayload } from "../shared/schema/userPayloads";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
+import { resolvePublicIds } from "./db3PublicIds";
 
 
 
@@ -61,6 +62,43 @@ export function processSearchSortModel(table: db3.xTable, args: GetSearchResults
 
     return sortElements;
 };
+
+const optionBearingDiscreteBehaviors = new Set<DiscreteCriterionFilterType>([
+    DiscreteCriterionFilterType.hasSomeOf,
+    DiscreteCriterionFilterType.hasAllOf,
+    DiscreteCriterionFilterType.doesntHaveAnyOf,
+    DiscreteCriterionFilterType.doesntHaveAllOf,
+]);
+
+export async function resolveSearchDiscreteCriteria(
+    table: db3.xTable,
+    criteria: readonly DiscreteCriterion[],
+    publicData: db3.DB3Authorization,
+    database: TransactionalPrismaClient,
+): Promise<DiscreteCriterion[]> {
+    return Promise.all(criteria.map(async criterion => {
+        const column = table.getColumn(criterion.db3Column);
+        if (!column) {
+            throw new Error(`Search column ${criterion.db3Column} not found on table ${table.tableName}`);
+        }
+        const targetTable = column.getDiscreteCriterionTargetTable();
+        if (!targetTable?.publicIdMember) return criterion;
+        if (!optionBearingDiscreteBehaviors.has(criterion.behavior)) {
+            // These modes do not consume options. A UI may retain an old
+            // selection while switching modes, so do not resolve or assert it.
+            return { ...criterion, options: [] };
+        }
+        return {
+            ...criterion,
+            options: await resolvePublicIds(
+                targetTable,
+                criterion.options,
+                publicData,
+                database,
+            ),
+        };
+    }));
+}
 
 // construct a SQL select clause returning filtered items.
 // no pagination or sorting applied yet
@@ -213,7 +251,13 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
             if (criterion.behavior === DiscreteCriterionFilterType.alwaysMatch) return false;
             throw new AuthorizationError();
         });
-        const authorizedSearchArgs = { ...args, discreteCriteria: readableDiscreteCriteria };
+        const resolvedDiscreteCriteria = await resolveSearchDiscreteCriteria(
+            table,
+            readableDiscreteCriteria,
+            publicData,
+            database,
+        );
+        const authorizedSearchArgs = { ...args, discreteCriteria: resolvedDiscreteCriteria };
 
         const sortElements = processSearchSortModel(table, authorizedSearchArgs);
         const bandTimeZone = await loadBandTimeZone(database);

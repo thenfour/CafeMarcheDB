@@ -161,6 +161,17 @@ function schemaForQueryParameter(spec: db3.DB3QueryParameterSpec): z.ZodTypeAny 
         case "date":
             schema = z.date().refine(value => !Number.isNaN(value.valueOf()), "Expected a valid date");
             break;
+        case "entityIdentity": {
+            const targetTable = db3.GetTableById(spec.targetTableID);
+            schema = targetTable.publicIdMember ? PublicId : RecordId;
+            break;
+        }
+        case "entityIdentityArray": {
+            const targetTable = db3.GetTableById(spec.targetTableID);
+            const identitySchema = targetTable.publicIdMember ? PublicId : RecordId;
+            schema = z.array(identitySchema).max(MAX_FILTER_VALUES);
+            break;
+        }
         case "integer":
             schema = SafeInteger;
             break;

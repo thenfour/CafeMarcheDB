@@ -57,10 +57,10 @@ export const SongListItem = (props: SongListItemProps) => {
             <div className="searchBody">
                 <CMChipContainer className="songTags">
                     {(props.song.tags || []).map(tag => <CMStandardDBChip
-                        key={tag.id}
+                        key={tag.publicId}
                         size='small'
                         model={tag.tag}
-                        variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.tag.id) }}
+                        variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.tag.publicId) }}
                         getTooltip={(_) => tag.tag.description ?? null}
                     />)}
                 </CMChipContainer>

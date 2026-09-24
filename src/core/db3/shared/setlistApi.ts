@@ -10,6 +10,7 @@ import { formatSongLength } from "shared/time";
 import { arrayToTSV, IsNullOrWhitespace, StringToEnumValue } from "shared/utils";
 import { getFormattedBPM } from "../clientAPILL";
 import { EventSongListDividerTextStyle } from "./schema/prismArgs";
+import type { SongTagAssociationReferenceClientPayload } from "./schema/prismArgs";
 
 // make song nullable for "add new item" support
 export type EventSongListSongItemDb = Prisma.EventSongListSongGetPayload<{
@@ -22,7 +23,7 @@ export type EventSongListSongItemDb = Prisma.EventSongListSongGetPayload<{
     }
 }>;
 
-export type EventSongListSongItemWithSong = Prisma.EventSongListSongGetPayload<{
+type EventSongListSongItemWithSongDb = Prisma.EventSongListSongGetPayload<{
     select: {
         eventSongListId: true,
         subtitle: true,
@@ -36,12 +37,17 @@ export type EventSongListSongItemWithSong = Prisma.EventSongListSongGetPayload<{
                 lengthSeconds: true,
                 startBPM: true,
                 endBPM: true,
-                tags: true,
                 pinnedRecordingId: true,
             },
         }
     }
 }>;
+
+export type EventSongListSongItemWithSong = Omit<EventSongListSongItemWithSongDb, "song"> & {
+    song: EventSongListSongItemWithSongDb["song"] & {
+        tags: SongTagAssociationReferenceClientPayload[];
+    };
+};
 
 type EventSongListCommonFields = {
     runningTimeSeconds: number | null; // the setlist time AFTER this song is played (no point in the 1st entry always having a 0)
@@ -81,49 +87,55 @@ export type EventSongListNewItem = {
 
 export type EventSongListItem = EventSongListSongItem | EventSongListDividerItem | EventSongListNewItem;
 
-export type LocalSongListPayload = Prisma.EventSongListGetPayload<{
-    select: {
-        songs: {
-            select: {
-                songId: true,
-                eventSongListId: true,
-                id: true,
-                sortOrder: true,
-                subtitle: true,
-                song: {
-                    select: {
-                        id: true,
-                        name: true,
-                        lengthSeconds: true,
-                        startBPM: true,
-                        endBPM: true,
-                        tags: true,
-                        pinnedRecordingId: true,
-                    }
-                }
-            }
-        },
-        dividers: {
-            select: {
-                id: true,
-                eventSongListId: true,
-                isInterruption: true,
-                subtitleIfSong: true,
-                isSong: true,
-                lengthSeconds: true,
-                textStyle: true,
-                subtitle: true,
-                color: true,
-                sortOrder: true,
-            }
+export type LocalSongListPayload = {
+    songs: EventSongListSongItemWithSong[];
+    dividers: Array<Prisma.EventSongListDividerGetPayload<{
+        select: {
+            id: true,
+            eventSongListId: true,
+            isInterruption: true,
+            subtitleIfSong: true,
+            isSong: true,
+            lengthSeconds: true,
+            textStyle: true,
+            subtitle: true,
+            color: true,
+            sortOrder: true,
         }
-    }
-}>;
+    }>>;
+};
 
-export function GetRowItems(songList: LocalSongListPayload): EventSongListItem[] {
+type BasicSongListSongItem = EventSongListSongItemDb & {
+    song: {
+        id: number;
+        name: string;
+        lengthSeconds: number | null;
+        startBPM: number | null;
+        endBPM: number | null;
+    };
+};
+
+export type BasicLocalSongListPayload = {
+    songs: BasicSongListSongItem[];
+    dividers: LocalSongListPayload["dividers"];
+};
+
+type BasicEventSongListSongItem = BasicSongListSongItem & {
+    type: "song";
+    index: number;
+} & EventSongListCommonFields;
+
+type BasicEventSongListItem =
+    | BasicEventSongListSongItem
+    | EventSongListDividerItem
+    | EventSongListNewItem;
+
+export function GetRowItems(songList: LocalSongListPayload): EventSongListItem[];
+export function GetRowItems(songList: BasicLocalSongListPayload): BasicEventSongListItem[];
+export function GetRowItems(songList: BasicLocalSongListPayload): BasicEventSongListItem[] {
     // row items are a combination of songs + dividers, with a new blank row at the end
     // NB: toSorted() is not supported on uberspace server code.
-    const rowItems: EventSongListItem[] = songList.songs.map((s, songArrayIndex) => ({
+    const rowItems: BasicEventSongListItem[] = songList.songs.map((s, songArrayIndex) => ({
         ...s,
         type: "song",
         index: -1, // populated later
@@ -201,11 +213,11 @@ function DividerToString(subtitle: string | null | undefined) {
     return IsNullOrWhitespace(plaintext) ? `--------` : `-- ${plaintext} ------`;
 }
 
-export function SongListNamesToString(setlist: LocalSongListPayload): string {
+export function SongListNamesToString(setlist: BasicLocalSongListPayload): string {
     return SongListItemsNamesToString(GetRowItems(setlist));
 }
 
-export function SongListItemsNamesToString(rowItems: readonly EventSongListItem[]): string {
+export function SongListItemsNamesToString(rowItems: readonly BasicEventSongListItem[]): string {
     return rowItems.map(item => {
         if (item.type === 'divider') {
             if (item.isSong) {
@@ -220,11 +232,11 @@ export function SongListItemsNamesToString(rowItems: readonly EventSongListItem[
     }).join('\n');
 }
 
-export function SongListIndexAndNamesToString(setlist: LocalSongListPayload): string {
+export function SongListIndexAndNamesToString(setlist: BasicLocalSongListPayload): string {
     return SongListItemsIndexAndNamesToString(GetRowItems(setlist));
 }
 
-export function SongListItemsIndexAndNamesToString(rowItems: readonly EventSongListItem[]): string {
+export function SongListItemsIndexAndNamesToString(rowItems: readonly BasicEventSongListItem[]): string {
     const lines: string[] = [];
 
     for (const item of rowItems) {
@@ -246,11 +258,11 @@ export function SongListItemsIndexAndNamesToString(rowItems: readonly EventSongL
 }
 
 
-export function SongListToTSV(setlist: LocalSongListPayload): string {
+export function SongListToTSV(setlist: BasicLocalSongListPayload): string {
     return SongListItemsToTSV(GetRowItems(setlist));
 }
 
-export function SongListItemsToTSV(rowItems: readonly EventSongListItem[]): string {
+export function SongListItemsToTSV(rowItems: readonly BasicEventSongListItem[]): string {
     const csvRows: any[] = [];
 
     for (const item of rowItems) {
@@ -288,11 +300,11 @@ export function SongListItemsToTSV(rowItems: readonly EventSongListItem[]): stri
     return txt;
 }
 
-export function SongListToMarkdown(setlist: LocalSongListPayload) {
+export function SongListToMarkdown(setlist: BasicLocalSongListPayload) {
     return SongListItemsToMarkdown(GetRowItems(setlist));
 }
 
-export function SongListItemsToMarkdown(rowItems: readonly EventSongListItem[]) {
+export function SongListItemsToMarkdown(rowItems: readonly BasicEventSongListItem[]) {
     const lines: string[] = [];
     for (const item of rowItems) {
         if (item.type === 'divider') {

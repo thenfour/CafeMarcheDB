@@ -4,6 +4,8 @@ import type {
     InstrumentFunctionalGroupPublicId,
     InstrumentTagAssociationPublicId,
     InstrumentTagPublicId,
+    SongTagAssociationPublicId,
+    SongTagPublicId,
 } from "shared/publicId";
 //import * as db3 from "../db3core"; // circular
 import { TAnyModel } from "shared/rootroot";
@@ -255,6 +257,28 @@ export const SongTagAssociationArgs = Prisma.validator<Prisma.SongTagAssociation
 });
 
 export type SongTagAssociationPayload = Prisma.SongTagAssociationGetPayload<typeof SongTagAssociationArgs>;
+
+export type SongTagClientPayload = Omit<
+    Prisma.SongTagGetPayload<{}>,
+    "id" | "publicId" | "color"
+> & {
+    publicId: SongTagPublicId;
+    color: ColorPaletteEntry | null;
+};
+
+export type SongTagAssociationClientPayload = Omit<
+    Prisma.SongTagAssociationGetPayload<{ include: { tag: true } }>,
+    "id" | "publicId" | "tagId" | "tag"
+> & {
+    publicId: SongTagAssociationPublicId;
+    tagId: SongTagPublicId;
+    tag: SongTagClientPayload;
+};
+
+export type SongTagAssociationReferenceClientPayload = Pick<
+    SongTagAssociationClientPayload,
+    "publicId" | "songId" | "tagId"
+>;
 
 export const SongTagAssociationNaturalOrderBy: Prisma.SongTagAssociationOrderByWithRelationInput[] = [
     { tag: { sortOrder: 'asc' } },
@@ -543,7 +567,12 @@ export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
         //         roles: true
         //     }
         // },
-        tags: true,
+        tags: {
+            include: {
+                // Projection support for the converted SongTag foreign key.
+                tag: true,
+            },
+        },
         //     include: {
         //         tag: true, // include foreign object
         //     },
@@ -555,6 +584,9 @@ export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
 });
 
 export type SongPayload = Prisma.SongGetPayload<typeof SongArgs>;
+export type SongClientPayload = Omit<SongPayload, "tags"> & {
+    tags: SongTagAssociationClientPayload[];
+};
 export type SongPayloadMinimum = Prisma.SongGetPayload<{
     select: {
         id: true,

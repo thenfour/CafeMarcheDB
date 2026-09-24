@@ -346,6 +346,7 @@ class TagsFieldImpl<
 
     SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
     SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
+    getDiscreteCriterionTargetTable = (): xTable => this.getForeignTableShema();
 
     SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion, tableAlias: string): CriterionQueryElements | null => {
         assertIsNumberArray(crit.options);
@@ -452,7 +453,7 @@ class TagsFieldImpl<
             union all
     
             select
-                FT.${foreignSchema.pkMember} AS id,
+                FT.${foreignSchema.clientIdMember} AS id,
                 ${foreignMembers.name ? `FT.${foreignMembers.name.member}` : "null"} AS label,
                 ${foreignMembers.color ? `FT.${foreignMembers.color.member}` : "null"} AS color,
                 ${foreignMembers.iconName ? `FT.${foreignMembers.iconName.member}` : "null"} AS iconName,
@@ -471,7 +472,14 @@ class TagsFieldImpl<
                 `,
 
             // converts the query result to a styled chip
-            transformResult: (row: { id: number, label: string | null, color: string | null, iconName: string | null, tooltip: string | null, rowCount: bigint }) => {
+            transformResult: (row: {
+                id: number | string,
+                label: string | null,
+                color: string | null,
+                iconName: string | null,
+                tooltip: string | null,
+                rowCount: bigint
+            }) => {
                 const rowCount = new Number(row.rowCount).valueOf();
                 return {
                     id: row.id,

@@ -3,11 +3,12 @@ import { z } from "zod";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { EventSongListContent } from "./eventSongListContent";
 import { xEventSongList } from "../../schema/event";
+import { isPublicId, type SongTagAssociationPublicId, type SongTagPublicId } from "shared/publicId";
 
 const CompleteSongTagAssociationDtoSchema = z.object({
-    id: z.number().int(),
+    publicId: z.custom<SongTagAssociationPublicId>(isPublicId, "invalid SongTagAssociation public ID"),
     songId: z.number().int(),
-    tagId: z.number().int(),
+    tagId: z.custom<SongTagPublicId>(isPublicId, "invalid SongTag public ID"),
 });
 
 const CompleteSetlistSongDtoSchema = z.object({
@@ -98,9 +99,13 @@ export const eventSongListDetailSelection = Prisma.validator<Prisma.EventSongLis
                         isDeleted: true,
                         tags: {
                             select: {
-                                id: true,
+                                publicId: true,
                                 songId: true,
                                 tagId: true,
+                                tag: {
+                                    // Projection support for the public tag FK.
+                                    select: { publicId: true },
+                                },
                             },
                         },
                     },

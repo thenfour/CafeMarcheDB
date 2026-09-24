@@ -394,7 +394,7 @@ export function CalculateSetlistPlanStatsForCostCalc(doc: SetlistPlan): SetlistP
 
 
 
-export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongPayload[]) {
+export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongClientPayload[]) {
     const totalPointsRequired = doc.payload.rows.reduce((acc, song) => song.pointsRequired ? acc + song.pointsRequired : acc, 0);
     const totalPointsAllocated = doc.payload.cells.reduce((acc, x) => acc + (x.pointsAllocated || 0), 0);
     const totalPlanBalance = totalPointsAllocated - totalPointsRequired;

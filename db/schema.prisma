@@ -257,7 +257,7 @@ model UserSignInMethod {
 // intentionally not related to User so the security record survives user removal.
 model AdminBootstrapClaim {
   id              Int      @id @default(autoincrement())
-  tokenHash       String   @unique @db.VarChar(64)
+  tokenHash       String   @db.VarChar(64) // not unique, because certain configurations can allow multiple claims on the same token.
   claimedAt       DateTime @default(now())
   claimedByUserId Int
 
@@ -415,6 +415,7 @@ model SongCredit {
 
 model SongTag {
   id                Int                  @id @default(autoincrement())
+  publicId          String               @unique @db.Char(16)
   text              String               @db.VarChar(768)
   description       String               @db.MediumText
   color             String?
@@ -431,11 +432,12 @@ model SongTag {
 }
 
 model SongTagAssociation {
-  id     Int     @id @default(autoincrement())
-  songId Int
-  song   Song    @relation(fields: [songId], references: [id], onDelete: Cascade)
-  tagId  Int
-  tag    SongTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  id       Int     @id @default(autoincrement())
+  publicId String  @unique @db.Char(16)
+  songId   Int
+  song     Song    @relation(fields: [songId], references: [id], onDelete: Cascade)
+  tagId    Int
+  tag      SongTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([tagId, songId])
 }

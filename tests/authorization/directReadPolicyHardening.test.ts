@@ -89,6 +89,13 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
         isDeleted: false,
         createdByUserId: actor.id + 1,
         visiblePermissionId: membersVisibilityId,
+        tags: [{
+          id: 70,
+          publicId: "SongAssocPublic1",
+          songId: 1,
+          tagId: 20,
+          tag: { id: 20, publicId: "SongTagPublic001" },
+        }],
       },
       {
         id: 2,
@@ -96,6 +103,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
         isDeleted: false,
         createdByUserId: actor.id + 1,
         visiblePermissionId: hiddenVisibilityId,
+        tags: [],
       },
       {
         id: 3,
@@ -103,12 +111,21 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
         isDeleted: true,
         createdByUserId: actor.id + 1,
         visiblePermissionId: membersVisibilityId,
+        tags: [],
       },
     ])
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
     await expect(invokeResolver(getFilteredSongs, { id: 1 }, ctx)).resolves.toEqual({
-      matchingItem: expect.objectContaining({ id: 1, name: "Visible" }),
+      matchingItem: expect.objectContaining({
+        id: 1,
+        name: "Visible",
+        tags: [{
+          publicId: "SongAssocPublic1",
+          songId: 1,
+          tagId: "SongTagPublic001",
+        }],
+      }),
     })
     await expect(invokeResolver(getFilteredSongs, { id: 2 }, ctx)).resolves.toEqual({ matchingItem: null })
     await expect(invokeResolver(getFilteredSongs, { id: 3 }, ctx)).resolves.toEqual({ matchingItem: null })
@@ -122,6 +139,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
         isDeleted: false,
         createdByUserId: actor.id,
         visiblePermissionId: null,
+        tags: [],
       },
       {
         id: 11,
@@ -129,6 +147,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
         isDeleted: false,
         createdByUserId: actor.id,
         visiblePermissionId: null,
+        tags: [],
       },
     ])
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })

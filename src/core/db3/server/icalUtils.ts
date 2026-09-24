@@ -45,6 +45,7 @@ export const EventSongListForCalArgs = Prisma.validator<Prisma.EventSongListDefa
                         id: true,
                         startBPM: true,
                         endBPM: true,
+                        lengthSeconds: true,
                     }
                 }
             },

@@ -97,6 +97,9 @@ const functionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCd
 const instrumentTagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn02");
 const otherInstrumentTagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn03");
 const instrumentTagAssociationPublicId = parsePublicId<"InstrumentTagAssociation">("AbCdEfGhIjKlMn04");
+const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn05");
+const otherSongTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn06");
+const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn07");
 const otherFunctionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn02");
 const publicIdentityAssociationCommand = db3.defineAssociationCommand({
     commandID: "InstrumentFunctionalGroup_RelationshipTest",
@@ -711,11 +714,11 @@ describe("DB3 commands", () => {
                 iconName: null,
             },
             tags: [{
-                id: 80,
+                publicId: songTagAssociationPublicId,
                 songId: 8,
-                tagId: 20,
+                tagId: songTagPublicId,
                 tag: {
-                    id: 20,
+                    publicId: songTagPublicId,
                     text: "Jazz",
                     description: "",
                     color: null,
@@ -730,21 +733,25 @@ describe("DB3 commands", () => {
             id: 8,
             createdByUser: { id: 7, name: "Editor" },
             visiblePermission: { id: 3, name: "visibility_public" },
-            tags: [{ tagId: 20, tag: { text: "Jazz" } }],
+            tags: [{ tagId: songTagPublicId, tag: { text: "Jazz" } }],
         });
         expect(db3.songEditorView.crud.operations.update.command.parseDto({
             identity: 8,
             patch: {
                 visiblePermissionId: 3,
-                tags: [20, 30],
+                tags: [songTagPublicId, otherSongTagPublicId],
             },
         })).toEqual({
             identity: 8,
             patch: {
                 visiblePermissionId: 3,
-                tags: [20, 30],
+                tags: [songTagPublicId, otherSongTagPublicId],
             },
         });
+        expect(() => db3.songEditorView.crud.operations.update.command.parseDto({
+            identity: 8,
+            patch: { tags: [20] },
+        })).toThrow();
         expect(() => db3.songEditorView.crud.operations.update.command.parseDto({
             identity: 8,
             patch: { taggedFiles: [40] },

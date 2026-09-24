@@ -6,6 +6,8 @@ import * as db3 from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetGlobalStatsArgs, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance } from "../shared/apiTypes";
 import { assertIsNumberArray } from "shared/arrayUtils";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { resolvePublicIds } from "../server/db3PublicIds";
 
 export default resolver.pipe(
     resolver.authorize(Permission.view_events_reports),
@@ -67,13 +69,19 @@ export default resolver.pipe(
 
             const songFilters: string[] = ["true"];
             let songHavingClause = "";
+            const authorization = await getRequestAuthorization(ctx.session);
+            const songTagIds = await resolvePublicIds(
+                db3.xSongTag,
+                args.filterSpec.songTagIds,
+                db3.createDB3Authorization(authorization.user, authorization.effectivePermissions),
+                db,
+            );
 
-            if (args.filterSpec.songTagIds && args.filterSpec.songTagIds.length > 0) {
-                assertIsNumberArray(args.filterSpec.songTagIds);
-                songFilters.push(`(sta.tagId in (${args.filterSpec.songTagIds.join(",")}))`);
+            if (songTagIds.length > 0) {
+                songFilters.push(`(sta.tagId in (${songTagIds.join(",")}))`);
                 songHavingClause = `
                 HAVING
-    				COUNT(DISTINCT sta.tagId) = ${args.filterSpec.songTagIds.length}
+					COUNT(DISTINCT sta.tagId) = ${songTagIds.length}
                 `;
             }
 
@@ -174,12 +182,13 @@ export default resolver.pipe(
         `;
 
             const allEvents: GetGlobalStatsRetEvent[] = await db.$queryRaw(Prisma.raw(eventsQuery)) as any;
+            const isSysadmin = authorization.effectivePermissions.includesName(Permission.sysadmin);
 
             return {
-                popularSongsQuery,
+                popularSongsQuery: isSysadmin ? popularSongsQuery : "",
                 popularSongsOccurrances,
                 allEvents,
-                eventsQuery,
+                eventsQuery: isSysadmin ? eventsQuery : "",
             };
         } catch (e) {
             console.error(e);

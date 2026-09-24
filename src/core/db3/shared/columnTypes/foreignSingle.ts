@@ -290,6 +290,7 @@ export class ForeignSingleField<
 
     SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
     SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
+    getDiscreteCriterionTargetTable = (): xTable => this.getForeignTableSchema();
 
     SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => {
         assertIsNumberArray(crit.options);
@@ -387,7 +388,7 @@ export class ForeignSingleField<
         union all
 
         SELECT
-            FT.${foreignSchema.pkMember} id,
+            FT.${foreignSchema.clientIdMember} id,
             ${foreignMembers.name ? `FT.${foreignMembers.name.member}` : "null"} label,
             ${foreignMembers.color ? `FT.${foreignMembers.color.member}` : "null"} color,
             ${foreignMembers.iconName ? `FT.${foreignMembers.iconName.member}` : "null"} iconName,
@@ -405,7 +406,14 @@ export class ForeignSingleField<
         order by
             sortOrder asc
             `,
-            transformResult: (row: { id: number, label: string | null, color: string | null, iconName: string | null, tooltip: string | null, rowCount: bigint }) => {
+            transformResult: (row: {
+                id: number | string,
+                label: string | null,
+                color: string | null,
+                iconName: string | null,
+                tooltip: string | null,
+                rowCount: bigint,
+            }) => {
                 const rowCount = new Number(row.rowCount).valueOf();
                 return {
                     id: row.id,

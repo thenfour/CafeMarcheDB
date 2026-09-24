@@ -329,6 +329,7 @@ describe("DB3 command boundary", () => {
     }
     const oldTag = {
       id: 20,
+      publicId: "OldStyleTag00001",
       text: "Old style",
       description: "",
       color: null,
@@ -340,6 +341,7 @@ describe("DB3 command boundary", () => {
     }
     const jazzTag = {
       id: 21,
+      publicId: "JazzStyleTag0001",
       text: "Jazz",
       description: "",
       color: null,
@@ -354,7 +356,12 @@ describe("DB3 command boundary", () => {
       permission: [visibility],
       song: [song],
       songTag: [oldTag, jazzTag],
-      songTagAssociation: [{ id: 80, songId: song.id, tagId: oldTag.id }],
+      songTagAssociation: [{
+        id: 80,
+        publicId: "OriginalSongAs01",
+        songId: song.id,
+        tagId: oldTag.id,
+      }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
@@ -366,7 +373,7 @@ describe("DB3 command boundary", () => {
         patch: {
           aliases: "Les Feuilles mortes",
           visiblePermissionId: visibility.id,
-          tags: [jazzTag.id],
+          tags: [jazzTag.publicId],
         },
       },
     }, ctx)).resolves.toEqual({ identity: song.id })

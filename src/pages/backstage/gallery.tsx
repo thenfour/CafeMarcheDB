@@ -29,11 +29,12 @@ import * as db3 from "src/core/db3/db3";
 import { ClientOf } from "src/core/db3/db3";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 import { ChipFilterGroup, FilterControls } from "../../core/components/search/FilterControl";
+import type { SongTagPublicId } from "shared/publicId";
 
 interface FilterSpec {
     qfText: string;
     selectedEventTypeId: number | null;
-    selectedSongTagIds: number[];
+    selectedSongTagIds: SongTagPublicId[];
     selectedEventTagIds: number[];
     selectedTiming: Timing;
 };
@@ -102,7 +103,7 @@ const FilterControlsTester = () => {
             style="toggle"
             selectedIds={spec.selectedSongTagIds}
             items={dashboardContext.songTag.map(t => ({
-                id: t.id,
+                id: t.publicId,
                 label: t.text,
                 color: t.color,
             }))}

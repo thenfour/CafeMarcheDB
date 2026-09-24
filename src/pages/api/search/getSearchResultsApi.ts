@@ -26,7 +26,19 @@ export default api(async (req, res, ctx: Ctx) => {
         }
 
         const result = await GetSearchResultsCore(args, authenticatedCtx);
-        return res.status(200).send(superjson.serialize(result));
+        // SQL diagnostics contain trusted natural IDs after public-ID
+        // resolution. Keep those server-side for non-sysadmins even though the timing/error
+        // metadata is useful to the search client.
+        const canSeeSql = effectivePermissions.includesName(Permission.sysadmin);
+        const clientResult = canSeeSql ? result : {
+            ...result,
+            filterQueryResult: {
+                ...result.filterQueryResult,
+                sqlSelect: "",
+            },
+            queryMetrics: result.queryMetrics.map(metric => ({ ...metric, query: "" })),
+        };
+        return res.status(200).send(superjson.serialize(clientResult));
     } catch (error) {
         if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
             return res.status(error.statusCode).json({ error: error.message });

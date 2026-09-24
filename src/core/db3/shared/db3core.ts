@@ -570,6 +570,10 @@ export abstract class FieldBase<
     // return null to not calculate any facet info for this criterion
     abstract SqlGetFacetInfoQuery: (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion) => SearchResultsFacetQuery | null;
 
+    // Search transports use the target's canonical client identity. Server
+    // search resolution translates it to the numeric FK consumed by SQL.
+    getDiscreteCriterionTargetTable = (): xTable | undefined => undefined;
+
     // return a SQL expression for sorting by this value ascending.
     abstract SqlGetSortableQueryElements: (api: SqlGetSortableQueryElementsAPI) => SortQueryElements | null;
 
@@ -699,17 +703,35 @@ export interface CalculateWhereClauseArgs {
     publicData: DB3Authorization;
 };
 
-export type DB3QueryParameterKind = "boolean" | "date" | "integer" | "integerArray" | "string" | "stringArray";
+export type DB3QueryParameterKind =
+    | "boolean"
+    | "date"
+    | "entityIdentity"
+    | "entityIdentityArray"
+    | "integer"
+    | "integerArray"
+    | "string"
+    | "stringArray";
 
-export interface DB3QueryParameterSpec {
-    kind: DB3QueryParameterKind;
+interface DB3QueryParameterSpecBase {
     // The DB3 field(s) whose view permission is required before this parameter
     // may influence a query. Use null only for a parameter that cannot reveal
     // protected row data (for example, a cache-refresh serial).
     authorizeAs: string | readonly string[] | null;
     nullable?: boolean;
     required?: boolean;
-};
+}
+
+export type DB3QueryParameterSpec = DB3QueryParameterSpecBase & (
+    | {
+        kind: Exclude<DB3QueryParameterKind, "entityIdentity" | "entityIdentityArray">;
+        targetTableID?: never;
+    }
+    | {
+        kind: "entityIdentity" | "entityIdentityArray";
+        targetTableID: DB3RegisteredTableID;
+    }
+);
 
 export type DB3QueryParameterMap = Record<string, DB3QueryParameterSpec>;
 

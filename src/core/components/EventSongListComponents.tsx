@@ -21,7 +21,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import getSongPinnedRecording from '../db3/queries/getSongPinnedRecording';
-import { TSongPinnedRecording } from '../db3/shared/apiTypes';
+import { GetFilteredSongsItemSongPayload, TSongPinnedRecording } from '../db3/shared/apiTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AppContextMarker } from './AppContext';
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
@@ -43,6 +43,7 @@ import { MetronomeButton } from './Metronome';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 import { SongTagIndicatorContainer } from './SongTagIndicatorContainer';
+import type { SongTagPublicId } from 'shared/publicId';
 import type { EventEnrichedVerbose_Event } from './event/EventComponentsBase';
 
 const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, TSongPinnedRecording>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, songListId: number }): MediaPlayerTrack => {
@@ -340,7 +341,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
 
     // Collect all unique tag IDs from all songs in the song list
     const allTagIds = React.useMemo(() => {
-        const tagIds = new Set<number>();
+        const tagIds = new Set<SongTagPublicId>();
         props.songList.content?.songItems.forEach(songListItem => {
             songListItem.song.tags.forEach(tag => tagIds.add(tag.tagId));
         });
@@ -914,7 +915,7 @@ const EventSongListValueEditorSongRow = (
 
     // Collect all unique tag IDs from all songs in the song list
     const allTagIds = React.useMemo(() => {
-        const tagIds = new Set<number>();
+        const tagIds = new Set<SongTagPublicId>();
         props.songList.items.forEach(songListItem => {
             if (songListItem.type !== "song") return;
             songListItem.song.tags.forEach(tag => tagIds.add(tag.tagId));
@@ -1041,7 +1042,7 @@ const EventSongListValueEditorDividerRow = (
 const EventSongListValueEditorNewRow = (
     props: EventSongListValueEditorRowPropsFor<SetlistAPI.EventSongListNewItem>,
 ) => {
-    const handleAutocompleteChange = (song: db3.SongPayload | null) => {
+    const handleAutocompleteChange = (song: GetFilteredSongsItemSongPayload | null) => {
         if (!song) return;
         props.onChange({
             type: "song",

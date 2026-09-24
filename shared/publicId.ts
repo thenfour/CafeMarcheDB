@@ -12,6 +12,8 @@ export type PublicId<TTable extends string = string> = string & {
 export type InstrumentFunctionalGroupPublicId = PublicId<"InstrumentFunctionalGroup">;
 export type InstrumentTagPublicId = PublicId<"InstrumentTag">;
 export type InstrumentTagAssociationPublicId = PublicId<"InstrumentTagAssociation">;
+export type SongTagPublicId = PublicId<"SongTag">;
+export type SongTagAssociationPublicId = PublicId<"SongTagAssociation">;
 // todo: define other table-specific public ID types as needed here.
 
 export function isPublicId(value: unknown): value is PublicId {

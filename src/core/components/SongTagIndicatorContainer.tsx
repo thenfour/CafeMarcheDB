@@ -11,26 +11,27 @@ import * as db3 from "src/core/db3/db3";
 import { StandardVariationSpec } from "./color/palette";
 import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
+import type { SongTagPublicId } from "shared/publicId";
 
 // Aligned version that shows all possible tags with consistent spacing
 // Tags with the same sort order can share the same lane
 export const SongTagIndicatorContainer = ({ tagIds, allPossibleTags }: {
-    tagIds: number[],
-    allPossibleTags: number[]
+    tagIds: SongTagPublicId[],
+    allPossibleTags: SongTagPublicId[]
 }) => {
     const dashboardContext = useDashboardContext();
 
     // Get all possible tags that have indicators
     const allTags = allPossibleTags
         .map(tagId => dashboardContext.songTag.getById(tagId))
-        .filter(t => !!t && !IsNullOrWhitespace(t.indicator)) as db3.SongTagPayload[];
+        .filter(t => !!t && !IsNullOrWhitespace(t.indicator)) as db3.SongTagClientPayload[]; // Filtering removes undefined dashboard references.
 
     // Create a set of current song's tag IDs for quick lookup
     const currentTagIds = new Set(tagIds);
-    const getGroupKey = (tag: db3.SongTagPayload) => tag.group || `_5e25847d_${tag.sortOrder.toString()}`;
+    const getGroupKey = (tag: db3.SongTagClientPayload) => tag.group || `_5e25847d_${tag.sortOrder.toString()}`;
 
     // Group tags
-    const groupedTags = new Map<string, db3.SongTagPayload[]>();
+    const groupedTags = new Map<string, db3.SongTagClientPayload[]>();
     allTags.forEach(tag => {
         const groupKey = getGroupKey(tag);
         if (!groupedTags.has(groupKey)) {
@@ -52,7 +53,7 @@ export const SongTagIndicatorContainer = ({ tagIds, allPossibleTags }: {
 
     sortedGroups.forEach(group => {
         const tagsForThisSortOrder = groupedTags.get(group)!;
-        const visibleTagsForThisSortOrder = tagsForThisSortOrder.filter(tag => currentTagIds.has(tag.id));
+        const visibleTagsForThisSortOrder = tagsForThisSortOrder.filter(tag => currentTagIds.has(tag.publicId));
 
         if (visibleTagsForThisSortOrder.length > 0) {
             // Show all visible tags for this sort order

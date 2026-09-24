@@ -4,7 +4,6 @@ import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization"
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
-import { assertIsNumberArray } from "shared/arrayUtils";
 import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { SplitQuickFilter } from "shared/quickFilter";
@@ -13,6 +12,8 @@ import * as db3 from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { queryTable } from "../server/db3QueryCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "../shared/apiTypes";
+import { resolvePublicIds } from "../server/db3PublicIds";
+import { parsePublicId, type SongTagPublicId } from "shared/publicId";
 
 interface TArgs {
     filterSpec: {
@@ -21,7 +22,7 @@ interface TArgs {
         selection: SongSelectionFilter;
 
         quickFilter: string,
-        tagIds: number[];
+        tagIds: SongTagPublicId[];
     }
 };
 
@@ -29,12 +30,18 @@ export default resolver.pipe(
     resolver.authorize(Permission.view_songs),
     async (args: TArgs, ctx: AuthenticatedCtx): Promise<GetSongFilterInfoRet> => {
         try {
+            const authorization = await getRequestAuthorization(ctx.session);
             const u = (await getCurrentUserCore(ctx))!;
             if (!u.role || u.role.permissions.length < 1) {
                 return MakeGetSongFilterInfoRet();
             }
 
-            assertIsNumberArray(args.filterSpec.tagIds);
+            const tagIds = await resolvePublicIds(
+                db3.xSongTag,
+                args.filterSpec.tagIds,
+                db3.createDB3Authorization(authorization.user, authorization.effectivePermissions),
+                db,
+            );
 
             const songFilterExpressions: string[] = [];
             if (!IsNullOrWhitespace(args.filterSpec.quickFilter)) {
@@ -55,12 +62,12 @@ export default resolver.pipe(
 
             let havingClause = "";
 
-            if (args.filterSpec.tagIds.length > 0) {
-                songFilterExpressions.push(`(SongTagAssociation.tagId IN (${args.filterSpec.tagIds}))`);
+            if (tagIds.length > 0) {
+                songFilterExpressions.push(`(SongTagAssociation.tagId IN (${tagIds}))`);
                 // make sure songs have matched ALL tags, not just any.
                 havingClause = `
                 HAVING
-    				COUNT(DISTINCT SongTagAssociation.tagId) = ${args.filterSpec.tagIds.length}
+					COUNT(DISTINCT SongTagAssociation.tagId) = ${tagIds.length}
                 `;
             }
 
@@ -129,10 +136,10 @@ export default resolver.pipe(
 
             const tagsResult: ({ song_count: bigint } & Prisma.SongTagGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(tagsQuery));
 
-            const tags: GetEventFilterInfoChipInfo[] = tagsResult.map(r => ({
+            const tags: GetEventFilterInfoChipInfo<SongTagPublicId>[] = tagsResult.map(r => ({
                 color: r.color,
                 iconName: null,
-                id: r.id,
+                id: parsePublicId<"SongTag">(r.publicId),
                 label: r.text,
                 tooltip: r.description,
                 rowCount: new Number(r.song_count).valueOf(),
@@ -189,22 +196,24 @@ export default resolver.pipe(
                         tableParams,
                     },
                     orderBy: undefined,
-                }, await getRequestAuthorization(ctx.session));
+                }, authorization);
 
                 // queryTable's legacy return type does not yet carry its view.
                 fullSongs = queryResult.items as db3.SongSearchDto[];
             }
 
 
+            const isUserSysadmin = authorization.effectivePermissions.includesName(Permission.sysadmin);
 
             return {
                 rowCount: new Number(rowCountResult[0]!.rowCount).valueOf(),
                 songIds: songIds.map(e => e.SongId),
 
                 tags,
-                tagsQuery,
-                paginatedResultQuery,
-                totalRowCountQuery,
+                // Raw SQL contains trusted natural IDs and remains server-only.
+                tagsQuery: isUserSysadmin ? tagsQuery : "",
+                paginatedResultQuery: isUserSysadmin ? paginatedResultQuery : "",
+                totalRowCountQuery: isUserSysadmin ? totalRowCountQuery : "",
 
                 fullSongs,
             };

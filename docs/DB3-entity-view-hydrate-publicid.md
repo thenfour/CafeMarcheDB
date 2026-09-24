@@ -778,6 +778,12 @@ a per-row compatibility flag or a second lookup mode.
   `InstrumentTagAssociation` join rows are also converted; together they prove
   that tag targets and association records cross the client boundary only with
   public identities.
+- `SongTag` and `SongTagAssociation` extend that proof through identity-bearing
+  query parameters, active-search discrete criteria and facets, direct raw-SQL
+  filters/reporting, dashboard references, autocomplete, and setlist payloads.
+  Clients submit public IDs, one trusted batch resolver supplies natural IDs to
+  Prisma/raw SQL, and SQL diagnostics containing those natural IDs stay
+  server-side. `Song` itself deliberately remains on natural identity.
 - The entity/view/hydration/command boundaries are established well enough to
   begin broad public-ID migration. Further general DB3 architecture work is not
   a prerequisite unless a concrete entity conversion exposes a missing identity
@@ -1069,16 +1075,17 @@ imports/exports, authorization behavior, caches, and React keys. This matrix is
 the basis for deciding whether the next scenario is design pressure or merely a
 consumer rollout.
 
-The current pressure-led continuation is:
+The current pressure-led sequence is:
 
-1. Migrate `SongTag` and `SongTagAssociation` together, without converting
-   `Song`. Use the slice to establish identity-aware query parameters: clients
-   send branded song-tag public IDs, the trusted server boundary validates and
-   resolves them once in a batch, and Prisma or raw-SQL consumers receive only
-   natural IDs. The design must explicitly define malformed, missing,
-   inaccessible, duplicate, and empty-array behavior without creating an
-   existence oracle. Non-DB3 filter and reporting endpoints must reuse the same
-   resolution contract and bind resolved values safely in SQL.
+1. **Completed:** migrate `SongTag` and `SongTagAssociation` together, without
+   converting `Song`. The slice establishes identity-aware query parameters:
+   clients send branded song-tag public IDs, the trusted server boundary
+   validates and resolves them once in a batch, and Prisma or raw-SQL consumers
+   receive only natural IDs. Malformed IDs are rejected, missing and
+   inaccessible IDs share one not-found result, duplicates collapse under the
+   set-valued query contract, and empty arrays require no query. Non-DB3 filter
+   and reporting endpoints reuse the same resolver, while active search resolves
+   discrete criteria before SQL and emits public facet identities.
 2. Migrate `Instrument` as the route/search identity proof, including its
    unavoidable client-facing references. Its functional-group and tag graph is
    already converted, making it the leading bounded candidate for public IDs in
@@ -1158,10 +1165,13 @@ conversions.
   recursive authorization, hydration, or mutation. Keep deliberately opaque
   server-only fields explicit rather than treating every `GhostField` as a
   migration failure.
-- [ ] Normalize the remaining query parameter boundary so a view declares and
-  validates its parameter type instead of callers depending on an untyped
-  `tableParams` bag. The identity-bearing portion is owned by the SongTag
-  public-ID pressure slice below; broader parameter cleanup may remain separate.
+- [x] Add identity-aware query-parameter declarations. The parameter names still
+  live in the table's `tableParams` contract, but `entityIdentity` and
+  `entityIdentityArray` now derive validation from their target table and are
+  resolved centrally before selection or where-clause construction.
+- [ ] Normalize the remaining non-identity query parameter boundary so a view
+  can declare its parameter type instead of callers depending on an untyped
+  `tableParams` bag. This broader cleanup is no longer a public-ID prerequisite.
 - [ ] Remove obsolete compatibility constructors, markers, and casts once their
   inventories reach zero. Retain focused source guards that prevent the retired
   paths from returning. Any necessary cast at an external or dynamic boundary
@@ -1175,8 +1185,9 @@ conversions.
   application-heavy migrations last.
 - [x] Generalize public-ID translation for association/tag command inputs before
   converting an entity used through those mutation shapes.
-- [ ] Migrate `SongTag` and `SongTagAssociation` as the identity-bearing query
-  parameter and raw-SQL translation proof. Do not convert `Song` in this slice.
+- [x] Migrate `SongTag` and `SongTagAssociation` as the identity-bearing query
+  parameter, generic search/facet, and raw-SQL translation proof. `Song` remains
+  unconverted in this slice.
 - [ ] Migrate `Instrument` as the bounded route, exact-lookup, and search identity
   proof before converting Event or User.
 - [ ] Audit and adapt the shared identity-sensitive infrastructure: exact lookup,
@@ -1189,9 +1200,13 @@ conversions.
   - [x] `InstrumentFunctionalGroup`
   - [x] `InstrumentTag`
   - [x] `InstrumentTagAssociation`
+  - [x] `SongTag`
+  - [x] `SongTagAssociation`
   - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
   - [x] Exercise an association/tag command with public identities
     (`Instrument.instrumentTags`).
+  - [x] Exercise identity-bearing query parameters, batched translation, and
+    public search facets (`Song.songTagIds` and Song `tags` criteria).
   - [ ] Exercise route and search identity before converting Event and User.
 
 ### Deferred DB3 enhancements

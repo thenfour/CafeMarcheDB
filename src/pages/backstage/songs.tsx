@@ -13,6 +13,7 @@ import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { songSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
+import { isPublicId, parsePublicId, type SongTagPublicId } from "shared/publicId";
 
 
 // for serializing in compact querystring
@@ -25,7 +26,7 @@ interface SongsFilterSpecStatic {
 
     tagFilterEnabled: boolean;
     tagFilterBehavior: DiscreteCriterionFilterType;
-    tagFilterOptions: number[];
+    tagFilterOptions: SongTagPublicId[];
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -50,7 +51,7 @@ const SongListOuter = () => {
     const dashboardContext = useDashboardContext();
 
     // Individual filter hooks - still needed for the search page hook
-    const tagFilter = useDiscreteFilter({
+    const tagFilter = useDiscreteFilter<SongTagPublicId>({
         urlPrefix: "tg",
         db3Column: "tags",
         defaultBehavior: gDefaultStaticFilterValue.tagFilterBehavior,
@@ -85,7 +86,8 @@ const SongListOuter = () => {
                 orderByDirection: sortDirection,
                 tagFilterEnabled: tagFilter.enabled,
                 tagFilterBehavior: tagFilter.criterion.behavior,
-                tagFilterOptions: tagFilter.criterion.options as number[],
+                // This hook instance owns SongTagPublicId options end to end.
+                tagFilterOptions: tagFilter.criterion.options as SongTagPublicId[],
             };
             return staticSpec;
         }
@@ -134,8 +136,8 @@ const SongListOuter = () => {
             type: "tags",
             column: "tags",
             chipTransformer: (x) => {
-                if (!x.id) return x;
-                const tag = dashboardContext.songTag.getById(x.id)!;
+                if (!isPublicId(x.id)) return x;
+                const tag = dashboardContext.songTag.getById(parsePublicId<"SongTag">(x.id))!;
                 return {
                     ...x,
                     color: tag.color,

@@ -67,7 +67,9 @@ export default resolver.pipe(
                     tx,
                     verifiedConfiguration.tokenHash,
                 );
-                if (previousClaim) failClaim();
+                if (previousClaim && verifiedConfiguration.oneTimeUse) {
+                    failClaim();
+                }
 
                 const recordedClaim = await recordAdminBootstrapTokenClaim(
                     tx,

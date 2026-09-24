@@ -33,15 +33,17 @@ export default resolver.pipe(
         }
 
         const configuration = getAdminBootstrapConfiguration();
-        const previousClaim = configuration
-            ? await hasAdminBootstrapTokenBeenClaimed(db, configuration.tokenHash)
-            : false;
 
-        return {
+        // making the claim one-time-use is an effective shutdown mechanism.
+        // but for DEV environment, bypass that check for simplicity.
+        const blockedByPreviousClaim = configuration?.oneTimeUse ? await hasAdminBootstrapTokenBeenClaimed(db, configuration.tokenHash) : false;
+        const ret = {
             isEligible: true,
             isConfigured: !!configuration,
-            isClaimable: !!configuration && !previousClaim && !user.isSysAdmin,
+            isClaimable: !!configuration && !blockedByPreviousClaim && !user.isSysAdmin,
             isAlreadySysadmin: user.isSysAdmin,
         };
+
+        return ret;
     },
 );

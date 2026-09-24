@@ -2,6 +2,7 @@ import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 
 import { Prisma } from "db";
 import { z } from "zod";
+import type { SongTagAssociationPublicId, SongTagPublicId } from "shared/publicId";
 
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 
@@ -267,10 +268,10 @@ export const ZupdateGenericSortOrderArgs = z.object({
 export type TupdateGenericSortOrderArgs = z.infer<typeof ZupdateGenericSortOrderArgs>;
 
 
-export interface GetEventFilterInfoChipInfo {
+export interface GetEventFilterInfoChipInfo<TIdentity extends number | string = number> {
     rowCount: number;
 
-    id: number;
+    id: TIdentity;
 
     label: string;
     color: string | null;
@@ -335,7 +336,7 @@ export interface GetSongFilterInfoRet {
     rowCount: number;
     songIds: number[];
 
-    tags: GetEventFilterInfoChipInfo[];
+    tags: GetEventFilterInfoChipInfo<SongTagPublicId>[];
     tagsQuery: string;
     paginatedResultQuery: string;
     totalRowCountQuery: string;
@@ -351,15 +352,31 @@ export const GetFilteredSongsItemSongSelect = Prisma.validator<Prisma.SongSelect
     aliases: true,
     startBPM: true,
     endBPM: true,
-    tags: true,
+    pinnedRecordingId: true,
+    tags: {
+        select: {
+            publicId: true,
+            songId: true,
+            tagId: true,
+            tag: { select: { publicId: true } },
+        },
+    },
     //visiblePermission: true,
     lengthSeconds: true,
     introducedYear: true,
 });
 
-export type GetFilteredSongsItemSongPayload = Prisma.SongGetPayload<{
+type GetFilteredSongsItemSongDbPayload = Prisma.SongGetPayload<{
     select: typeof GetFilteredSongsItemSongSelect,
 }>;
+
+export type GetFilteredSongsItemSongPayload = Omit<GetFilteredSongsItemSongDbPayload, "tags"> & {
+    tags: Array<{
+        publicId: SongTagAssociationPublicId;
+        songId: number;
+        tagId: SongTagPublicId;
+    }>;
+};
 
 export interface GetFilteredSongsRet {
     matchingItem: GetFilteredSongsItemSongPayload | null;
@@ -431,7 +448,7 @@ export interface GetGlobalStatsFilterSpec {
     timing: keyof typeof GetSongActivityReportFilterSpecTimingFilter;
     eventTagIds: number[];
     eventStatusIds: number[];
-    songTagIds: number[];
+    songTagIds: SongTagPublicId[];
 };
 
 export interface GetGlobalStatsArgs {
@@ -645,7 +662,11 @@ const ZDiscreteCriterionFilterType = z.nativeEnum(DiscreteCriterionFilterType);
 // Zod schema for DiscreteCriterion
 const ZDiscreteCriterion = z.object({
     db3Column: ZDBSymbol,
-    options: z.array(z.union([z.number(), z.boolean(), ZDBSymbol])),
+    options: z.array(z.union([
+        z.number(),
+        z.boolean(),
+        z.string().max(128).regex(/^[a-zA-Z0-9_-]+$/), // public id
+    ])).max(1000),
     behavior: ZDiscreteCriterionFilterType,
 });
 

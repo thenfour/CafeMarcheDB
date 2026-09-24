@@ -10,6 +10,7 @@ import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
+import type { SongTagPublicId } from "shared/publicId";
 import { API } from '../../db3/clientAPI';
 import { gIconMap } from '../../db3/components/IconMap';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../../db3/components/db3NewObjectDialog';
@@ -402,7 +403,7 @@ export interface SongDetailContainerProps {
     readonly: boolean;
     initialTabIndex?: number;
     showVisibility?: boolean;
-    highlightedTagIds?: number[];
+    highlightedTagIds?: SongTagPublicId[];
     renderAsLinkTo?: string;
 }
 
@@ -503,10 +504,10 @@ export const SongDetailContainer = ({ songData, tableClient, editCommands, ...pr
 
             <CMChipContainer>
                 {song.tags?.map(tag => <CMStandardDBChip
-                    key={tag.id}
+                    key={tag.publicId}
                     size='small'
                     model={tag.tag}
-                    variation={{ ...StandardVariationSpec.Weak, selected: highlightedTagIds.includes(tag.tag.id) }}
+                    variation={{ ...StandardVariationSpec.Weak, selected: highlightedTagIds.includes(tag.tag.publicId) }}
                     getTooltip={(_) => tag.tag.description ?? null}
                 />)}
             </CMChipContainer>

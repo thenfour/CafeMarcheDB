@@ -23,6 +23,7 @@ import { ColorSwatch } from "../../components/color/ColorSwatch";
 import { type ColorPaletteEntry, gGeneralPaletteList, gStrong } from "../../components/color/palette";
 import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
 import { GenericStringField } from "../shared/columnTypes/genericString";
+import { isPublicId, parsePublicId } from "shared/publicId";
 
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;
@@ -228,15 +229,19 @@ const ActivityLogSongListEventChip = ({ songListId, cacheData }: { songListId: n
     return <ActivityLogEvent eventId={found.eventId} cacheData={cacheData} />
 };
 
-const ActivityLogSongTag = ({ songTagId, cacheData }: { songTagId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
+const ActivityLogSongTag = ({ songTagId, cacheData }: { songTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
-    const found = dashboardContext.songTag.find(s => s.id === songTagId);
+    const found = isPublicId(songTagId)
+        ? dashboardContext.songTag.getById(parsePublicId<"SongTag">(songTagId))
+        : undefined;
     if (!found) {
-        return <ActivityLogChip><Id value={songTagId} /></ActivityLogChip>;
+        // Historical log entries may contain a natural ID. Do not render it
+        // when the corresponding public identity cannot be resolved.
+        return <ActivityLogChip>Unknown song tag</ActivityLogChip>;
     }
     return <ActivityLogChip
     >
-        {found.text}#{found.id}
+        {found.text}
     </ActivityLogChip>;
 };
 

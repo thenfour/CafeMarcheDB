@@ -5,7 +5,7 @@ import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest"
 import type { ColorPaletteEntry } from "src/core/components/color/palette"
 import * as db3 from "src/core/db3/db3"
 import { ZodToPrismaSelection } from "shared/prismaUtils"
-import { parsePublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId"
+import { parsePublicId, type InstrumentFunctionalGroupPublicId, type SongTagPublicId } from "shared/publicId"
 import type { DateTimeRange } from "shared/time"
 import { compileDB3Selection } from "src/core/db3/shared/core/db3ViewContract"
 import { PermissionSet } from "src/auth/shared/PermissionSet"
@@ -855,7 +855,7 @@ describe("Song derived-view migration", () => {
     type NestedCreditTypeDto = NonNullable<CreditDto["type"]>
     type NestedCreditTypeClient = NonNullable<CreditClient["type"]>
 
-    expectTypeOf<TagDto["id"]>().toEqualTypeOf<number>()
+    expectTypeOf<TagDto["publicId"]>().toEqualTypeOf<SongTagPublicId>()
     expectTypeOf<TagDto["text"]>().toEqualTypeOf<string>()
     expectTypeOf<TagDto["color"]>().toEqualTypeOf<string | null>()
     expectTypeOf<TagClient["color"]>()

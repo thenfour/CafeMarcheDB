@@ -15,6 +15,7 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { EventAPI, EventStatusSignificance, EventTypeSignificance } from "src/core/db3/db3";
 import getGlobalStats from "src/core/db3/queries/getGlobalStats";
 import { GetGlobalStatsFilterSpec, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance, GetSongActivityReportFilterSpecTimingFilter } from "src/core/db3/shared/apiTypes";
+import type { SongTagPublicId } from "shared/publicId";
 
 
 
@@ -33,6 +34,7 @@ export const GlobalStatsFilterControls = ({ filterSpec, setFilterSpec, defaultFi
         if (!arraysContainSameValues(filterSpec.eventStatusIds, defaultFilterSpec.eventStatusIds)) return true;
         if (!arraysContainSameValues(filterSpec.eventTagIds, defaultFilterSpec.eventTagIds)) return true;
         if (!arraysContainSameValues(filterSpec.eventTypeIds, defaultFilterSpec.eventTypeIds)) return true;
+        if (!arraysContainSameValues(filterSpec.songTagIds, defaultFilterSpec.songTagIds)) return true;
         return false;
     };
 
@@ -89,8 +91,8 @@ export const GlobalStatsFilterControls = ({ filterSpec, setFilterSpec, defaultFi
         <div className='divider'></div>
         <ChipFilterGroup
             style='toggle'
-            items={dashboardContext.songTag.map((s): ChipFilterGroupItem<number> => ({
-                id: s.id,
+            items={dashboardContext.songTag.map((s): ChipFilterGroupItem<SongTagPublicId> => ({
+                id: s.publicId,
                 label: s.text,
                 color: s.color,
             }))}

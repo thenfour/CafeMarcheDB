@@ -14,6 +14,8 @@ import { gGeneralPaletteList } from "src/core/components/color/palette";
 const groupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
 const tagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn02");
 const tagAssociationPublicId = parsePublicId<"InstrumentTagAssociation">("AbCdEfGhIjKlMn03");
+const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn04");
+const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn05");
 const group = {
     publicId: groupPublicId,
     name: "Brass",
@@ -635,7 +637,7 @@ describe("DB3 named views", () => {
             color: null,
             iconName: null,
         };
-        const songTag = { id: 20, text: "March", description: "", color: null, sortOrder: 1, significance: null, group: null, indicator: null, indicatorCssClass: null };
+        const songTag = { publicId: songTagPublicId, text: "March", description: "", color: null, sortOrder: 1, significance: null, group: null, indicator: null, indicatorCssClass: null };
         const fileTag = { id: 30, text: "Partition", description: "", color: null, sortOrder: 1, significance: db3.FileTagSignificance.Partition };
         db3.registerDashboardReferences(references, {
             permission: [permission],
@@ -652,7 +654,7 @@ describe("DB3 named views", () => {
             introducedYear: null,
             lengthSeconds: null,
             visiblePermissionId: permission.id,
-            tags: [{ id: 70, songId: 7, tagId: songTag.id }],
+            tags: [{ publicId: songTagAssociationPublicId, tagId: songTag.publicId }],
             taggedFiles: [{
                 id: 80,
                 fileId: 8,
@@ -670,7 +672,7 @@ describe("DB3 named views", () => {
             references.require(db3.xPermission, permission.id, "test"),
         );
         expect(hydrated.tags?.[0]?.tag).toEqual(
-            references.require(db3.xSongTag, songTag.id, "test"),
+            references.require(db3.xSongTag, songTag.publicId, "test"),
         );
         expect(hydrated.taggedFiles?.[0]?.file?.tags?.[0]?.fileTag).toEqual(
             references.require(db3.xFileTag, fileTag.id, "test"),
@@ -1148,7 +1150,13 @@ describe("DB3 named views", () => {
             createdByUserId: 100,
             visiblePermissionId: null,
             isDeleted: false,
-            tags: [{ id: 70, songId: 7, tagId: 20 }],
+            tags: [{
+                id: 70,
+                publicId: songTagAssociationPublicId,
+                songId: 7,
+                tagId: 20,
+                tag: { publicId: songTagPublicId },
+            }],
             taggedFiles: [{
                 id: 80,
                 fileId: 8,
@@ -1198,7 +1206,10 @@ describe("DB3 named views", () => {
         expect(result.items).toHaveLength(1);
         expect(result.items[0]).toMatchObject({
             id: 7,
-            tags: [{ id: 70, tagId: 20 }],
+            tags: [{
+                publicId: songTagAssociationPublicId,
+                tagId: songTagPublicId,
+            }],
             taggedFiles: [{
                 id: 80,
                 file: { id: 8, tags: [{ id: 90, fileTagId: 30 }] },
@@ -1206,6 +1217,7 @@ describe("DB3 named views", () => {
             credits: [{ id: 100, user: { id: 100, name: "Composer" } }],
         });
         expect(result.items[0]).not.toHaveProperty("createdByUserId");
+        expect(result.items[0]?.tags?.[0]).not.toHaveProperty("id");
         expect(result.items[0]?.taggedFiles?.[0]).not.toHaveProperty("fileId");
         expect(result.items[0]?.credits?.[0]).not.toHaveProperty("songId");
     });
@@ -1222,7 +1234,7 @@ describe("DB3 named views", () => {
             color: null,
             iconName: null,
         };
-        const songTag = { id: 20, text: "March", description: "", color: null, sortOrder: 1, significance: null, group: null, indicator: null, indicatorCssClass: null };
+        const songTag = { publicId: songTagPublicId, text: "March", description: "", color: null, sortOrder: 1, significance: null, group: null, indicator: null, indicatorCssClass: null };
         const fileTag = { id: 30, text: "Partition", description: "", color: null, sortOrder: 1, significance: db3.FileTagSignificance.Partition };
         const instrument = {
             id: 40,
@@ -1253,7 +1265,7 @@ describe("DB3 named views", () => {
             lengthSeconds: null,
             visiblePermissionId: permission.id,
             pinnedRecordingId: null,
-            tags: [{ id: 70, tagId: songTag.id }],
+            tags: [{ publicId: songTagAssociationPublicId, tagId: songTag.publicId }],
             taggedFiles: [{
                 id: 80,
                 fileId: 8,
@@ -1282,7 +1294,7 @@ describe("DB3 named views", () => {
             references.require(db3.xPermission, permission.id, "test"),
         );
         expect(hydrated.tags?.[0]?.tag).toEqual(
-            references.require(db3.xSongTag, songTag.id, "test"),
+            references.require(db3.xSongTag, songTag.publicId, "test"),
         );
         expect(hydrated.taggedFiles?.[0]?.file.visiblePermission).toEqual(
             references.require(db3.xPermission, permission.id, "test"),
@@ -1314,7 +1326,13 @@ describe("DB3 named views", () => {
             visiblePermissionId: 3,
             pinnedRecordingId: null,
             isDeleted: false,
-            tags: [{ id: 70, songId: 7, tagId: 20 }],
+            tags: [{
+                id: 70,
+                publicId: songTagAssociationPublicId,
+                songId: 7,
+                tagId: 20,
+                tag: { publicId: songTagPublicId },
+            }],
             taggedFiles: [{
                 id: 80,
                 fileId: 8,
@@ -1382,6 +1400,10 @@ describe("DB3 named views", () => {
         expect(result.items[0]).toMatchObject({
             id: 7,
             name: "A song",
+            tags: [{
+                publicId: songTagAssociationPublicId,
+                tagId: songTagPublicId,
+            }],
             taggedFiles: [{
                 id: 80,
                 file: {
@@ -1425,7 +1447,11 @@ describe("DB3 named views", () => {
                     startBPM: 110,
                     endBPM: 120,
                     pinnedRecordingId: null,
-                    tags: [{ id: 701, songId: 7, tagId: 9 }],
+                    tags: [{
+                        publicId: songTagAssociationPublicId,
+                        songId: 7,
+                        tagId: songTagPublicId,
+                    }],
                 },
             }, {
                 id: 502,
@@ -1665,7 +1691,13 @@ describe("DB3 named views", () => {
                     createdByUserId: 42,
                     visiblePermissionId: null,
                     isDeleted: false,
-                    tags: [{ id: 701, songId: 7, tagId: 9 }],
+                    tags: [{
+                        id: 701,
+                        publicId: songTagAssociationPublicId,
+                        songId: 7,
+                        tagId: 9,
+                        tag: { publicId: songTagPublicId },
+                    }],
                 },
             }],
             dividers: [],

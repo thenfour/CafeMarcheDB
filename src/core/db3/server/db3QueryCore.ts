@@ -6,7 +6,11 @@ import { getRequestAuthorization, type RequestAuthorization } from "@/src/auth/s
 import * as db3 from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import type { TAnyModel } from "@/shared/rootroot";
-import { authorizeAndProjectDB3ViewModel, projectDB3ModelPublicIds } from "./db3PublicIds";
+import {
+    authorizeAndProjectDB3ViewModel,
+    projectDB3ModelPublicIds,
+    resolvePublicQueryParameters,
+} from "./db3PublicIds";
 
 export class DB3QueryAuthorizationError extends AuthorizationError {
     constructor() {
@@ -16,7 +20,11 @@ export class DB3QueryAuthorizationError extends AuthorizationError {
     }
 }
 
-async function prepareTableQuery(input: db3.QueryInputBase, authorization: RequestAuthorization) {
+async function prepareTableQuery(
+    input: db3.QueryInputBase,
+    authorization: RequestAuthorization,
+    database: TransactionalPrismaClient,
+) {
     const table = db3.GetTableById(input.table.tableID);
     const view = input.table.viewID ? db3.getDB3View(input.table.viewID) : undefined;
     if (view && view.tableID !== table.tableID) {
@@ -40,9 +48,23 @@ async function prepareTableQuery(input: db3.QueryInputBase, authorization: Reque
     Object.keys(input.filter.tableParams || {}).forEach(parameterName => {
         if (!table.authorizeQueryParameter(parameterName, publicData)) throw new DB3QueryAuthorizationError();
     });
-    const tableWhere = await table.CalculateWhereClause({ publicData, includeDeleted, filterModel: input.filter });
+    const resolvedTableParams = await resolvePublicQueryParameters(
+        table,
+        input.filter.tableParams || {},
+        publicData,
+        database,
+    );
+    const resolvedFilter = {
+        ...input.filter,
+        tableParams: resolvedTableParams,
+    };
+    const tableWhere = await table.CalculateWhereClause({
+        publicData,
+        includeDeleted,
+        filterModel: resolvedFilter,
+    });
     const viewWhere = view?.getWhereClause({
-        filter: input.filter,
+        filter: resolvedFilter,
         authorization: publicData,
     });
     const where = tableWhere && viewWhere
@@ -50,7 +72,7 @@ async function prepareTableQuery(input: db3.QueryInputBase, authorization: Reque
         : tableWhere || viewWhere;
     const selectionArgs = await table.CalculateSelectionArgs(
         publicData,
-        input.filter,
+        resolvedFilter,
         includeDeleted,
         view?.getSelectionArgs,
     );
@@ -122,7 +144,7 @@ export async function queryTable(
     executionOptions: QueryTableExecutionOptions = {},
 ) {
     const startTimestamp = Date.now();
-    const query = await prepareTableQuery(input, authorization);
+    const query = await prepareTableQuery(input, authorization, database);
     const items = await database[query.table.tableName].findMany({
         where: query.where,
         orderBy: input.orderBy || query.table.naturalOrderBy,
@@ -198,7 +220,7 @@ export const DB3QueryCore = async (request: db3.QueryRequestInput, ctx: Authenti
 
 export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInput, ctx: AuthenticatedCtx) {
     const startTimestamp = Date.now();
-    const query = await prepareTableQuery(input, await getRequestAuthorization(ctx.session));
+    const query = await prepareTableQuery(input, await getRequestAuthorization(ctx.session), db);
     const delegate = db[query.table.tableName];
     const { items, ...pagination } = await paginate({
         skip: input.skip,

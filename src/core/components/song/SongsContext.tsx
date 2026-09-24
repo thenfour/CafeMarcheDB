@@ -3,7 +3,7 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 
 interface SongsContextValue {
-    songs: db3.SongPayload[];
+    songs: db3.SongClientPayload[];
     //loading: boolean;         // Whether we are currently fetching data
     //error: string | null;     // Any error message
 }
@@ -22,10 +22,10 @@ interface SongsProviderProps {
 export const useSongsContext = () => React.useContext(SongsContext);
 
 export function SongsProvider({ children }: SongsProviderProps) {
-    const client = DB3Client.useDb3Query({ schema: db3.xSong });
+    const client = DB3Client.useDb3Query<db3.SongClientPayload>({ schema: db3.xSong });
 
     return (
-        <SongsContext.Provider value={{ songs: client.items as db3.SongPayload[] }}>
+        <SongsContext.Provider value={{ songs: client.items }}>
             {children}
         </SongsContext.Provider>
     );

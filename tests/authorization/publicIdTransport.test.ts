@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
-import { projectDB3ModelPublicIds } from "@db3/server/db3PublicIds";
+import { projectDB3ModelPublicIds, resolvePublicIds } from "@db3/server/db3PublicIds";
+import { queryTable } from "@db3/server/db3QueryCore";
 import { validateDB3MutationRequest, validateDB3QueryRequest } from "@db3/server/db3RequestValidation";
 import { PermissionSet } from "src/auth/shared/PermissionSet";
 import { Permission } from "shared/permissions";
@@ -9,6 +10,9 @@ import { parsePublicId } from "shared/publicId";
 const publicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
 const tagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn02");
 const tagAssociationPublicId = parsePublicId<"InstrumentTagAssociation">("AbCdEfGhIjKlMn03");
+const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn04");
+const otherSongTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn05");
+const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn06");
 const instrumentId = 7;
 const group = {
     id: 54,
@@ -127,6 +131,28 @@ describe("instrument catalog public-ID transport", () => {
         const nestedInstrument = projectedFile.taggedInstruments[0].instrument;
         expect(nestedInstrument.functionalGroupId).toBe(publicId);
         expect(nestedInstrument.functionalGroup).not.toHaveProperty("id");
+
+        const projectedSong = projectDB3ModelPublicIds(db3.xSong, {
+            id: 92,
+            tags: [{
+                id: 93,
+                publicId: songTagAssociationPublicId,
+                songId: 92,
+                tagId: 94,
+                tag: {
+                    id: 94,
+                    publicId: songTagPublicId,
+                    text: "March",
+                },
+            }],
+        }, authorization(Permission.view_songs));
+        expect(projectedSong.tags[0]).toMatchObject({
+            publicId: songTagAssociationPublicId,
+            tagId: songTagPublicId,
+            tag: { publicId: songTagPublicId, text: "March" },
+        });
+        expect(projectedSong.tags[0]).not.toHaveProperty("id");
+        expect(projectedSong.tags[0].tag).not.toHaveProperty("id");
     });
 
     it("accepts only public targets for converted-table queries and mutations", () => {
@@ -153,6 +179,16 @@ describe("instrument catalog public-ID transport", () => {
             filter: { items: [], publicIds: [publicId] },
             cmdbQueryContext: "public-id-test",
         })).toThrow("does not use public IDs");
+        expect(() => validateDB3QueryRequest({
+            table: { tableID: "Song", tableName: "Song" },
+            filter: { items: [], tableParams: { songTagIds: [songTagPublicId] } },
+            cmdbQueryContext: "song-tag-public-id-test",
+        })).not.toThrow();
+        expect(() => validateDB3QueryRequest({
+            table: { tableID: "Song", tableName: "Song" },
+            filter: { items: [], tableParams: { songTagIds: [94] } },
+            cmdbQueryContext: "song-tag-natural-id-test",
+        })).toThrow("Expected string, received number");
 
         expect(() => validateDB3MutationRequest({
             tableID: "InstrumentFunctionalGroup",
@@ -212,5 +248,100 @@ describe("instrument catalog public-ID transport", () => {
             updateId: instrumentId,
             updateModel: { functionalGroupId: publicId },
         })).not.toThrow();
+
+        expect(() => validateDB3MutationRequest({
+            tableID: "SongTag",
+            tableName: "SongTag",
+            mutationType: "update",
+            updatePublicId: songTagPublicId,
+            updateModel: { text: "Processional" },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "SongTagAssociation",
+            tableName: "SongTagAssociation",
+            mutationType: "update",
+            updatePublicId: songTagAssociationPublicId,
+            updateModel: { tagId: songTagPublicId },
+        })).not.toThrow();
+    });
+
+    it("resolves identity-bearing query parameters once before building the Prisma where clause", async () => {
+        const tagFindMany = vi.fn(async () => [
+            { id: 94, publicId: songTagPublicId },
+            { id: 95, publicId: otherSongTagPublicId },
+        ]);
+        const songFindMany = vi.fn(async () => []);
+        const effectivePermissions = new PermissionSet([
+            { id: 1, name: Permission.always_grant },
+            { id: 2, name: Permission.login },
+            { id: 3, name: Permission.view_songs },
+        ]);
+
+        const result = await queryTable({
+            table: { tableID: "Song", tableName: "Song" },
+            filter: {
+                items: [],
+                tableParams: { songTagIds: [songTagPublicId, otherSongTagPublicId] },
+            },
+            orderBy: undefined,
+            cmdbQueryContext: "song-tag-query-parameter-resolution-test",
+        }, {
+            // RequestAuthorization carries the full session user; this query only reads its ID.
+            user: { id: 100 } as any,
+            effectivePermissions,
+        }, {
+            SongTag: { findMany: tagFindMany },
+            Song: { findMany: songFindMany },
+        } as any); // Focused delegate doubles intentionally implement only the queried models.
+
+        expect(tagFindMany).toHaveBeenCalledOnce();
+        expect(songFindMany).toHaveBeenCalledOnce();
+        expect(JSON.stringify(result.where)).toContain('"tagId":94');
+        expect(JSON.stringify(result.where)).toContain('"tagId":95');
+        expect(JSON.stringify(result.where)).not.toContain(songTagPublicId);
+    });
+
+    it("defines batch resolution behavior without exposing target existence", async () => {
+        const findMany = vi.fn(async () => [{ id: 94, publicId: songTagPublicId }]);
+        const database = {
+            SongTag: { findMany },
+        } as any; // Focused delegate double for the identity target.
+        const readable = authorization(Permission.view_songs);
+
+        await expect(resolvePublicIds(
+            db3.xSongTag,
+            [songTagPublicId, songTagPublicId],
+            readable,
+            database,
+        )).resolves.toEqual([94]);
+        await expect(resolvePublicIds(
+            db3.xSongTag,
+            [],
+            readable,
+            database,
+        )).resolves.toEqual([]);
+        expect(findMany).toHaveBeenCalledOnce();
+
+        findMany.mockResolvedValueOnce([]);
+        await expect(resolvePublicIds(
+            db3.xSongTag,
+            [otherSongTagPublicId],
+            readable,
+            database,
+        )).rejects.toThrow("SongTag was not found.");
+        await expect(resolvePublicIds(
+            db3.xSongTag,
+            [otherSongTagPublicId],
+            authorization(Permission.login),
+            database,
+        )).rejects.toThrow("SongTag was not found.");
+        expect(findMany).toHaveBeenCalledTimes(2);
+
+        await expect(resolvePublicIds(
+            db3.xSongTag,
+            ["not-a-public-id"],
+            readable,
+            database,
+        )).rejects.toThrow("Invalid public ID for SongTag.");
     });
 });

@@ -264,7 +264,10 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         dashboardData.instrumentFunctionalGroup,
         group => group.publicId,
     );
-    valueRef.current.songTag = new TableAccessor(dashboardData.songTag);
+    valueRef.current.songTag = new TableAccessor(
+        dashboardData.songTag,
+        tag => tag.publicId,
+    );
     valueRef.current.songCreditType = new TableAccessor(dashboardData.songCreditType);
     valueRef.current.serverBaseUri = dashboardData.serverBaseUri;
     valueRef.current.serverStartupState = dashboardData.serverStartupState;

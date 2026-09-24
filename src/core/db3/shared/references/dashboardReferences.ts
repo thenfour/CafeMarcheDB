@@ -166,7 +166,7 @@ const dashboardInstrumentTagSelection = Prisma.validator<Prisma.InstrumentTagDef
 
 const dashboardSongTagSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         text: true,
         description: true,
         sortOrder: true,
@@ -573,7 +573,7 @@ export function registerDashboardReferences(
         store.register(xInstrumentTag, input.instrumentTag, value => value.publicId);
     }
     if (input.songTag) {
-        store.register(xSongTag, input.songTag, value => value.id);
+        store.register(xSongTag, input.songTag, value => value.publicId);
     }
     if (input.songCreditType) {
         store.register(xSongCreditType, input.songCreditType, value => value.id);

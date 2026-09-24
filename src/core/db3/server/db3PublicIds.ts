@@ -11,10 +11,51 @@ export class DB3PublicIdError extends Error {
     }
 }
 
-// generic routine that resolves a public ID to its corresponding numeric ID in the database.
-// only supports one at a time for the moment; a batch version may need to be added for larger sets,
-// however this normally only gets called with ids that the client sends which should never be many.
-// throws if not found.
+// Resolve public IDs through the target table's ordinary row-visibility policy.
+// Missing and inaccessible rows intentionally have the same error so this
+// boundary cannot be used as an existence oracle.
+export async function resolvePublicIds(
+    table: db3.xTable,
+    publicIds: readonly unknown[],
+    publicData: db3.DB3Authorization,
+    database: TransactionalPrismaClient,
+    includeDeleted = false,
+): Promise<number[]> {
+    if (!table.publicIdMember || publicIds.some(publicId => !isPublicId(publicId))) {
+        throw new DB3PublicIdError(`Invalid public ID for ${table.tableID}.`);
+    }
+    if (!table.authorizeTableForView(publicData)) {
+        throw new DB3PublicIdError(`${table.tableID} was not found.`);
+    }
+    const uniquePublicIds = [...new Set(publicIds.filter(isPublicId))];
+    if (uniquePublicIds.length === 0) return [];
+
+    const where = await table.CalculateWhereClause({
+        filterModel: { publicIds: uniquePublicIds },
+        publicData,
+        includeDeleted,
+    });
+    const rows = await database[table.tableName].findMany({
+        where,
+        select: {
+            [table.pkMember]: true,
+            [table.publicIdMember]: true,
+        },
+    });
+    const idsByPublicId = new Map<string, number>();
+    rows.forEach((row: TAnyModel) => {
+        const publicId = row[table.publicIdMember!];
+        const id = row[table.pkMember];
+        if (typeof publicId === "string" && typeof id === "number") {
+            idsByPublicId.set(publicId, id);
+        }
+    });
+    if (idsByPublicId.size !== uniquePublicIds.length) {
+        throw new DB3PublicIdError(`${table.tableID} was not found.`);
+    }
+    return uniquePublicIds.map(publicId => idsByPublicId.get(publicId)!);
+}
+
 export async function resolvePublicId(
     table: db3.xTable,
     publicId: string,
@@ -22,26 +63,52 @@ export async function resolvePublicId(
     database: TransactionalPrismaClient,
     includeDeleted = false,
 ): Promise<number> {
-    if (!table.publicIdMember || !isPublicId(publicId)) {
-        throw new DB3PublicIdError(`Invalid public ID for ${table.tableID}.`);
-    }
-    if (!table.authorizeTableForView(publicData)) {
-        throw new DB3PublicIdError(`${table.tableID} was not found.`);
-    }
-    const where = await table.CalculateWhereClause({
-        filterModel: { publicIds: [publicId] },
+    return (await resolvePublicIds(
+        table,
+        [publicId],
         publicData,
+        database,
         includeDeleted,
-    });
-    const row = await database[table.tableName].findFirst({
-        where,
-        select: { [table.pkMember]: true },
-    });
-    const id = row?.[table.pkMember];
-    if (typeof id !== "number") {
-        throw new DB3PublicIdError(`${table.tableID} was not found.`);
+    ))[0]!;
+}
+
+export async function resolvePublicQueryParameters(
+    table: db3.xTable,
+    params: Record<string, unknown>,
+    publicData: db3.DB3Authorization,
+    database: TransactionalPrismaClient,
+): Promise<Record<string, unknown>> {
+    const resolved = { ...params };
+    for (const [parameterName, spec] of Object.entries(table.queryParameters || {})) {
+        if (spec.kind !== "entityIdentity" && spec.kind !== "entityIdentityArray") continue;
+        const value = resolved[parameterName];
+        if (value === undefined || value === null) continue;
+
+        const targetTable = db3.GetTableById(spec.targetTableID);
+        if (!targetTable.publicIdMember) continue;
+
+        if (spec.kind === "entityIdentity") {
+            resolved[parameterName] = await resolvePublicId(
+                targetTable,
+                value as string, // Runtime validation derives this shape from the target table.
+                publicData,
+                database,
+            );
+            continue;
+        }
+        if (!Array.isArray(value)) {
+            throw new DB3PublicIdError(
+                `Expected public-ID array for ${table.tableID}.${parameterName}.`,
+            );
+        }
+        resolved[parameterName] = await resolvePublicIds(
+            targetTable,
+            value,
+            publicData,
+            database,
+        );
     }
-    return id;
+    return resolved;
 }
 
 // Takes a model with public IDs from the client and resolves scalar foreign
@@ -68,9 +135,12 @@ export async function resolvePublicForeignIds(
                     `Expected public-ID array for ${table.tableID}.${field.member}.`,
                 );
             }
-            ret[field.member] = await Promise.all(identities.map(identity => (
-                resolvePublicId(foreignTable, identity, publicData, database)
-            )));
+            ret[field.member] = await resolvePublicIds(
+                foreignTable,
+                identities,
+                publicData,
+                database,
+            );
             continue;
         }
 

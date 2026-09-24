@@ -14,7 +14,7 @@ import { AssociationAutocomplete } from './ItemAssociation';
 
 
 export interface SongAutocompleteProps {
-    value: db3.SongPayload | null;
+    value: Pick<db3.SongClientPayload, "name"> | null;
     onChange: (value: GetFilteredSongsItemSongPayload | null) => void;
     fadedSongIds?: number[];
     autofocus?: boolean;

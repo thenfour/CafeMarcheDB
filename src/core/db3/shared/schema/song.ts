@@ -4,11 +4,15 @@
 
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
+import type {
+    SongTagAssociationPublicId,
+    SongTagPublicId,
+} from "shared/publicId";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { ColorField, ConstEnumStringField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { ColorField, ConstEnumStringField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance } from "./prismArgs";
+import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, type SongTagAssociationClientPayload, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, type SongTagClientPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { TAnyModel } from "@/shared/rootroot";
@@ -61,7 +65,7 @@ export const xSongTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
 
 export const xSongTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.SongTagDelegate>(),
-    getIdentity: (tag: Prisma.SongTagGetPayload<{}>) => tag.id,
+    getIdentity: (tag: SongTagClientPayload) => tag.publicId,
     getSelectionArgs: (): Prisma.SongTagDefaultArgs => {
         return SongTagArgs;
     },
@@ -69,7 +73,7 @@ export const xSongTag = db3.defineTable({
     deletePolicy: "hard",
     tableAuthMap: xSongTableAuthMap_R_EAdmins,
     naturalOrderBy: SongTagNaturalOrderBy,
-    createInsertModelFromString: (input: string): Prisma.SongTagCreateInput => {
+    createInsertModelFromString: (input: string): Partial<SongTagPayload> => {
         return {
             text: input,
             description: "auto-created",
@@ -81,14 +85,15 @@ export const xSongTag = db3.defineTable({
         };
     },
     getRowInfo: (row: SongTagPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<SongTagPublicId>(),
         text: columnName => MakeTitleField(columnName, { authMap: xSongAuthMap_R_EOwn_EManagers }),
         description: () => MakeDescriptionField({ authMap: xSongAuthMap_R_EOwn_EManagers }),
         sortOrder: () => MakeSortOrderField({ authMap: xSongAuthMap_R_EOwn_EManagers, }),
@@ -128,6 +133,7 @@ export const xSongTag = db3.defineTable({
 
 export const xSongTagAssociation = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.SongTagAssociationDelegate>(),
+    getIdentity: (association: SongTagAssociationClientPayload) => association.publicId,
     tableName: "SongTagAssociation",
     deletePolicy: "hard",
     getSelectionArgs: (): Prisma.SongTagAssociationDefaultArgs => {
@@ -137,13 +143,14 @@ export const xSongTagAssociation = db3.defineTable({
     naturalOrderBy: SongTagAssociationNaturalOrderBy,
     getRowInfo: (row: SongTagAssociationPayload) => ({
         name: row.tag?.text || "",
-        pk: row.id,
+        pk: row.publicId,
         description: row.tag?.description || "",
         color: gGeneralPaletteList.findEntry(row.tag?.color || null),
         ownerUserId: null,
     }),
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<SongTagAssociationPublicId>(),
         songId: memberName => new GhostField({
             memberName,
             readTransportSchema: z.number().int(),
@@ -163,7 +170,12 @@ export const xSongTagAssociation = db3.defineTable({
 export interface SongTableParams {
     songId?: number;
     songIds?: number[];
+    songTagIds?: SongTagPublicId[];
 };
+
+interface ResolvedSongTableParams extends Omit<SongTableParams, "songTagIds"> {
+    songTagIds?: number[];
+}
 
 ////////////////////////////////////////////////////////////////
 const xSongArgs_Base = db3.defineTableDesc({
@@ -176,6 +188,12 @@ const xSongArgs_Base = db3.defineTableDesc({
     queryParameters: {
         songId: { kind: "integer", authorizeAs: "id", nullable: true },
         songIds: { kind: "integerArray", authorizeAs: "id", nullable: true },
+        songTagIds: {
+            kind: "entityIdentityArray",
+            targetTableID: "SongTag",
+            authorizeAs: "tags",
+            nullable: true,
+        },
     },
     getSelectionArgs: (): Prisma.SongDefaultArgs => {
         return SongArgs;
@@ -188,7 +206,7 @@ const xSongArgs_Base = db3.defineTableDesc({
         description: row.description,
         ownerUserId: null,
     }),
-    getParameterizedWhereClause: (params: SongTableParams): (Prisma.SongWhereInput[]) => {
+    getParameterizedWhereClause: (params: ResolvedSongTableParams): (Prisma.SongWhereInput[]) => {
         const ret: Prisma.SongWhereInput[] = [];
 
         if (params.songId !== undefined) {
@@ -196,6 +214,13 @@ const xSongArgs_Base = db3.defineTableDesc({
         }
         if (params.songIds !== undefined) {
             ret.push({ id: { in: params.songIds } });
+        }
+        if (params.songTagIds?.length) {
+            ret.push({
+                AND: params.songTagIds.map(tagId => ({
+                    tags: { some: { tagId } },
+                })),
+            });
         }
 
         return ret;
@@ -245,14 +270,9 @@ const xSongArgs_Base = db3.defineTableDesc({
             associationLocalObjectMember: "song",
             authMap: xSongAuthMap_R_EOwn_EManagers,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.SongWhereInput | boolean => {
-                if (!query.tagIds?.length) return false;
-                const tagIds = query!.tagIds;
-
-                return {
-                    AND: tagIds.map(tagId => ({
-                        tags: { some: { tagId: { equals: tagId } } }
-                    }))
-                };
+                // Identity-bearing filters use SongTableParams.songTagIds so
+                // they cross the trusted public-to-natural translation boundary.
+                return false;
             },
             // don't allow quick search on tag; it interferes with getSongFilterInfo.ts
             getQuickFilterWhereClause: () => false,
