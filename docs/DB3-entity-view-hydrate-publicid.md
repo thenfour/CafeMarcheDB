@@ -1036,6 +1036,67 @@ Track these facts per entity. This is more useful than counting converted schema
 columns, because it records whether an entity has actually crossed every client
 boundary safely.
 
+### Migration prioritization: pressure before volume
+
+Migration order is not determined only by entity dependencies or by which table
+looks easiest. Classify the scenarios exercised by a proposed slice:
+
+- **Design pressure** covers a client-identity scenario that has not yet been
+  expressed cleanly by the shared DB3 design. Examples include identity-bearing
+  query parameters, batched translation for raw SQL, and route/search identity.
+  Address these first, using the smallest coherent domain slice that exposes the
+  missing capability.
+- **Trivial repetition** covers models that use only established read, command,
+  foreign-reference, association, query, and transport patterns. Group related
+  target and association models and migrate them together rather than creating
+  a long series of tiny schema-only changes.
+- **Application pressure** covers broad workflows and policy reconciliation that
+  may require substantial consumer work but is unlikely to change the public-ID
+  architecture. Leave central domains such as Event, User, and setlists until
+  the narrower design-pressure work has made their migration mechanical.
+
+These categories apply to scenarios, not permanently to whole entities. A model
+can contain one design-pressure boundary surrounded by application-heavy work.
+Isolate and solve the reusable boundary where practical; after it is proven,
+reclassify later consumers that use it as repetition or application work. Do not
+use a central domain as the first test of a capability when a narrower model can
+exercise the same contract.
+
+Track the capability coverage of each completed slice across CRUD identity,
+scalar foreign references, association targets and join rows, domain query
+parameters, raw SQL/reporting, routes, exact lookup, search results,
+imports/exports, authorization behavior, caches, and React keys. This matrix is
+the basis for deciding whether the next scenario is design pressure or merely a
+consumer rollout.
+
+The current pressure-led continuation is:
+
+1. Migrate `SongTag` and `SongTagAssociation` together, without converting
+   `Song`. Use the slice to establish identity-aware query parameters: clients
+   send branded song-tag public IDs, the trusted server boundary validates and
+   resolves them once in a batch, and Prisma or raw-SQL consumers receive only
+   natural IDs. The design must explicitly define malformed, missing,
+   inaccessible, duplicate, and empty-array behavior without creating an
+   existence oracle. Non-DB3 filter and reporting endpoints must reuse the same
+   resolution contract and bind resolved values safely in SQL.
+2. Migrate `Instrument` as the route/search identity proof, including its
+   unavoidable client-facing references. Its functional-group and tag graph is
+   already converted, making it the leading bounded candidate for public IDs in
+   routes, exact lookup, search navigation, dashboard caches, and React keys
+   before central Event and User identities are attempted.
+3. Reclassify the remaining tag-like graphs after those capabilities are
+   proven. `FileTag` plus `FileTagAssignment` should then be repetition;
+   `WikiPageTag` plus `WikiPageTagAssignment` is repetition plus cleanup of its
+   hand-authored DTO and draft seams.
+4. Treat `EventType`, `EventStatus`, `EventTag`, and `EventTagAssignment` as one
+   event-classification batch so their shared DTO, dashboard, filtering,
+   reporting, and import surfaces are changed coherently. The SongTag work
+   should make their identity-bearing filters an application of an established
+   contract rather than a second query-translation design.
+5. Keep `UserTag` plus `UserTagAssignment` and the central Song, File, WikiPage,
+   Event, User, and setlist identities in the later application-pressure phase,
+   unless a bounded audit reveals a genuinely uncovered identity capability.
+
 ## Active roadmap
 
 ### Completed foundation
@@ -1099,7 +1160,8 @@ conversions.
   migration failure.
 - [ ] Normalize the remaining query parameter boundary so a view declares and
   validates its parameter type instead of callers depending on an untyped
-  `tableParams` bag.
+  `tableParams` bag. The identity-bearing portion is owned by the SongTag
+  public-ID pressure slice below; broader parameter cleanup may remain separate.
 - [ ] Remove obsolete compatibility constructors, markers, and casts once their
   inventories reach zero. Retain focused source guards that prevent the retired
   paths from returning. Any necessary cast at an external or dynamic boundary
@@ -1107,12 +1169,16 @@ conversions.
 
 ### Public-ID migration
 
-- [ ] Catalog client-facing entities and order them by identity dependencies:
-  independent lookup entities first, then scalar foreign-key dependants,
-  association/tag graphs, and finally central routed entities such as Event and
-  User.
+- [ ] Maintain the client-facing entity and capability inventory. Respect
+  identity dependencies, but order work by the pressure model above: uncovered
+  shared identity scenarios first, established patterns second, and central
+  application-heavy migrations last.
 - [x] Generalize public-ID translation for association/tag command inputs before
   converting an entity used through those mutation shapes.
+- [ ] Migrate `SongTag` and `SongTagAssociation` as the identity-bearing query
+  parameter and raw-SQL translation proof. Do not convert `Song` in this slice.
+- [ ] Migrate `Instrument` as the bounded route, exact-lookup, and search identity
+  proof before converting Event or User.
 - [ ] Audit and adapt the shared identity-sensitive infrastructure: exact lookup,
   generic sorting/reordering, association matrices, caches, React keys, raw SQL,
   search results, imports/exports, routes, and non-DB3 Prisma endpoints.
