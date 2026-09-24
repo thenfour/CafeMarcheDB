@@ -2,8 +2,12 @@ import type { TAnyModel } from "@/shared/rootroot";
 import type {
     AnyDB3Table,
     DB3IdentityOf,
-    DB3ReferenceValueOf,
 } from "../db3core";
+import {
+    deriveReferenceViewContract,
+    type DB3ReferenceTransportOf,
+    type DB3ReferenceValueOf,
+} from "./db3ViewContract";
 
 export class DB3HydrationError extends Error {
     constructor(message: string) {
@@ -52,10 +56,29 @@ export class DB3ReferenceStore implements DB3ReferenceProvider {
 
     register<TEntity extends AnyDB3Table>(
         entity: TEntity,
-        rows: readonly DB3ReferenceValueOf<TEntity>[],
+        rows: readonly DB3ReferenceTransportOf<TEntity>[],
     ): void {
+        if (!entity.referenceSelection) {
+            throw new DB3HydrationError(
+                `Unable to register ${entity.tableID}: the table does not declare referenceSelection.`,
+            );
+        }
+        const identityMember = entity.clientIdMember;
+        if (entity.referenceTransportSelection?.select?.[identityMember] !== true) {
+            throw new DB3HydrationError(
+                `Unable to register ${entity.tableID}: reference transport selection must select identity member '${identityMember}'.`,
+            );
+        }
+        const contract = deriveReferenceViewContract(entity);
         this.entities.set(entity.tableID, new Map(
-            rows.map(row => [entity.getIdentity(row), row]),
+            rows.map(row => {
+                const hydrated = contract.hydrate(row, this);
+                // The reference selection is required to include the canonical
+                // identity. getIdentity's accepted row shape is intentionally
+                // independent from the reference consumer contract.
+                const identity = entity.getIdentity(hydrated as never);
+                return [identity, hydrated];
+            }),
         ));
     }
 

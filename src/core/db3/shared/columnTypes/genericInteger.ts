@@ -10,7 +10,7 @@ import {
     type DB3AuthSpec, type DB3MaybeNull, type DB3ReadPresenceForAuthSpec,
     type DB3RowMode, ErrorValidateAndParseResult, FieldBase, makeNullableReadTransportSchema,
     type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
-    type ValidateAndParseArgs, type ValidateAndParseResult, createAuthContextMap_GrantAll,
+    type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
 } from "../db3core";
 import { type UserWithRolesPayload } from "../schema/userPayloads";
@@ -157,11 +157,15 @@ export const MakeIntegerField = <const TAuthSpec extends DB3AuthSpec>(columnName
     }));
 
 
-export const MakeSortOrderField = ({ columnName = "sortOrder", ...authSpec }: { columnName?: string } & DB3AuthSpec) => (
-    new GenericIntegerField({
-        columnName,
+export const MakeSortOrderField = <const TAuthSpec extends DB3AuthSpec>(
+    args: { columnName?: string } & TAuthSpec,
+) => {
+    const fieldArgs = {
+        ...args,
+        columnName: args.columnName ?? "sortOrder",
         allowSearchingThisField: false,
         allowNull: false,
         specialFunction: SqlSpecialColumnFunction.sortOrder,
-        authMap: createAuthContextMap_GrantAll(), // safe enough to never hide this field.
-    }));
+    } as GenericIntegerFieldArgs<"number", false, TAuthSpec>;
+    return new GenericIntegerField<"number", false, TAuthSpec>(fieldArgs);
+};

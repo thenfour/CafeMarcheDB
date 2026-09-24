@@ -39,7 +39,12 @@ import { UserChip } from './user/userChip';
 import { WikiPageChip } from './wiki/WikiPageChip';
 
 
-type DetailFile = db3.FileDetailClient | EnrichedFile<db3.FileWithTagsPayload>;
+type SongDetailFile = NonNullable<
+    NonNullable<db3.SongDetailClient["taggedFiles"]>[number]["file"]
+>;
+type DetailFile = db3.FileDetailClient
+    | SongDetailFile
+    | EnrichedFile<db3.FileWithTagsPayload>;
 
 const hasEventChipFields = (event: {
     id: number;
@@ -460,8 +465,32 @@ export const FileEditor = (props: FileEditorProps) => {
     });
     const editorInitialValue: db3.ClientOf<typeof db3.fileEditorView> = {
         ...props.initialValue,
-        visiblePermission: props.initialValue.visiblePermission ?? undefined,
-        isDeleted: undefined,
+        visiblePermission: props.initialValue.visiblePermissionId == null
+            ? null
+            : dashboardContext.referenceStore.require(
+                db3.xPermission,
+                props.initialValue.visiblePermissionId,
+                `File(${props.initialValue.id}).visiblePermission`,
+            ),
+        tags: props.initialValue.tags.map(association => ({
+            ...association,
+            fileTag: dashboardContext.referenceStore.require(
+                db3.xFileTag,
+                association.fileTagId,
+                `File(${props.initialValue.id}).tags.fileTag`,
+            ),
+        })),
+        taggedInstruments: props.initialValue.taggedInstruments.map(association => ({
+            ...association,
+            instrument: dashboardContext.referenceStore.require(
+                db3.xInstrument,
+                association.instrumentId,
+                `File(${props.initialValue.id}).taggedInstruments.instrument`,
+            ),
+        })),
+        isDeleted: "isDeleted" in props.initialValue
+            ? props.initialValue.isDeleted
+            : false,
         customData: undefined,
     };
 

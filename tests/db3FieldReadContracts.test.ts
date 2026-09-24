@@ -71,7 +71,7 @@ describe("DB3 xTable model metadata", () => {
     expectTypeOf<db3.DB3IdentityOf<typeof db3.xInstrumentFunctionalGroup>>()
       .toEqualTypeOf<InstrumentFunctionalGroupPublicId>()
     expectTypeOf<db3.DB3ReferenceValueOf<typeof db3.xInstrumentFunctionalGroup>>()
-      .toEqualTypeOf<db3.InstrumentFunctionalGroupClientPayload>()
+      .toEqualTypeOf<db3.ClientOf<typeof db3.instrumentFunctionalGroupDashboardView>>()
     expectTypeOf(db3.instrumentFunctionalGroupListView.entity)
       .toEqualTypeOf<typeof db3.xInstrumentFunctionalGroup>()
     expectTypeOf(db3.xEventTagAssignment.fields.eventTag).toMatchTypeOf<

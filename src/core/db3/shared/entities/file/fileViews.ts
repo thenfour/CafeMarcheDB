@@ -4,18 +4,14 @@ import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { db3s } from "../common/viewCommon";
-import { xFile, xFileTag, xFrontpageGalleryItem } from "../../schema/file";
+import {
+    FileTagReferenceSelection,
+    xFile,
+    xFileTag,
+    xFrontpageGalleryItem,
+} from "../../schema/file";
 
-export const fileTagEditorSelection = Prisma.validator<Prisma.FileTagDefaultArgs>()({
-    select: {
-        id: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        significance: true,
-    },
-});
+export const fileTagEditorSelection = FileTagReferenceSelection;
 
 const fileTagEditorContract = deriveViewContract(xFileTag, fileTagEditorSelection);
 
@@ -281,91 +277,6 @@ const fileDetailContract = deriveViewContract(
     { transportSelection: fileDetailTransportSelection },
 );
 
-type DerivedFileDetailClient = ReturnType<typeof fileDetailContract.hydrate>;
-
-type WithPresentMember<
-    TAssociation,
-    TMember extends keyof TAssociation,
-> = TAssociation & {
-    [TKey in TMember]-?: NonNullable<TAssociation[TKey]>;
-};
-
-type CollectionWithPresentMember<
-    TCollection,
-    TMember extends PropertyKey,
-> = NonNullable<TCollection> extends readonly (infer TAssociation)[]
-    ? TMember extends keyof TAssociation
-    ? WithPresentMember<TAssociation, TMember>[] | Extract<TCollection, null | undefined>
-    : never
-    : never;
-
-type NormalizedFileAssociationMember =
-    | "tags"
-    | "taggedUsers"
-    | "taggedSongs"
-    | "taggedEvents"
-    | "taggedInstruments"
-    | "taggedWikiPages";
-
-export type NormalizedFileClient<
-    TFile extends DerivedFileDetailClient,
-> = Omit<TFile, NormalizedFileAssociationMember | "visiblePermission"> & {
-    visiblePermission: TFile["visiblePermission"];
-    tags: CollectionWithPresentMember<TFile["tags"], "fileTag">;
-    taggedUsers: CollectionWithPresentMember<TFile["taggedUsers"], "user">;
-    taggedSongs: CollectionWithPresentMember<TFile["taggedSongs"], "song">;
-    taggedEvents: CollectionWithPresentMember<TFile["taggedEvents"], "event">;
-    taggedInstruments: CollectionWithPresentMember<
-        TFile["taggedInstruments"],
-        "instrument"
-    >;
-    taggedWikiPages: CollectionWithPresentMember<
-        TFile["taggedWikiPages"],
-        "wikiPage"
-    >;
-};
-
-function keepAssociationsWithMember<
-    TAssociation,
-    TMember extends keyof TAssociation,
->(
-    associations: readonly TAssociation[] | undefined,
-    member: TMember,
-): WithPresentMember<TAssociation, TMember>[] | undefined {
-    return associations?.filter(
-        (association): association is WithPresentMember<TAssociation, TMember> =>
-            association[member] != null,
-    );
-}
-
-// Relation fields may be removed by nested row authorization. Once a relation
-// survives that boundary, normalize its possibly elided nested member into the
-// concrete member shape consumed by File cards and editors.
-export function normalizeFileClient<TFile extends DerivedFileDetailClient>(
-    file: TFile,
-): NormalizedFileClient<TFile> {
-    const normalized = {
-        ...file,
-        visiblePermission: file.visiblePermission,
-        tags: keepAssociationsWithMember(file.tags, "fileTag"),
-        taggedUsers: keepAssociationsWithMember(file.taggedUsers, "user"),
-        taggedSongs: keepAssociationsWithMember(file.taggedSongs, "song"),
-        taggedEvents: keepAssociationsWithMember(file.taggedEvents, "event"),
-        taggedInstruments: keepAssociationsWithMember(
-            file.taggedInstruments,
-            "instrument",
-        ),
-        taggedWikiPages: keepAssociationsWithMember(
-            file.taggedWikiPages,
-            "wikiPage",
-        ),
-    };
-    // Object spread retains TFile's overridden keys as intersections during
-    // generic inference. The mapped return type deliberately replaces them;
-    // keepAssociationsWithMember enforces that exact runtime invariant.
-    return normalized as unknown as NormalizedFileClient<TFile>;
-}
-
 const fileEditorTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
         id: true,
@@ -412,9 +323,7 @@ export const fileEditorView = defineCrudView({
     operations: { update: true, delete: true },
     selection: fileEditorContract.prismaSelection,
     dtoSchema: fileEditorContract.dtoSchema,
-    hydrate: (dto, references) => normalizeFileClient(
-        fileEditorContract.hydrate(dto, references),
-    ),
+    hydrate: fileEditorContract.hydrate,
 });
 
 export const fileDetailView = defineView({
@@ -422,9 +331,7 @@ export const fileDetailView = defineView({
     entity: xFile,
     selection: fileDetailContract.prismaSelection,
     dtoSchema: fileDetailContract.dtoSchema,
-    hydrate: (dto, references) => normalizeFileClient(
-        fileDetailContract.hydrate(dto, references),
-    ),
+    hydrate: fileDetailContract.hydrate,
 });
 
 export type FileDetailDto = DtoOf<typeof fileDetailView>;

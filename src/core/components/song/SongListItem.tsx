@@ -61,7 +61,7 @@ export const SongListItem = (props: SongListItemProps) => {
                         size='small'
                         model={tag.tag}
                         variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.tag.id) }}
-                        getTooltip={(_) => tag.tag.description}
+                        getTooltip={(_) => tag.tag.description ?? null}
                     />)}
                 </CMChipContainer>
 

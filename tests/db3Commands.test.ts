@@ -580,6 +580,7 @@ describe("DB3 commands", () => {
                     id: 20,
                     name: "edit_content",
                     description: "Edit content",
+                    sortOrder: 1,
                 },
             }],
         })).toMatchObject({
@@ -787,7 +788,14 @@ describe("DB3 commands", () => {
             songId: 7,
             song: { id: 7, name: "Autumn Leaves", description: "" },
             typeId: 8,
-            type: { id: 8, text: "Composer" },
+            type: {
+                id: 8,
+                text: "Composer",
+                description: "",
+                color: null,
+                sortOrder: 1,
+                significance: null,
+            },
         })).toMatchObject({
             id: 5,
             year: "2026",

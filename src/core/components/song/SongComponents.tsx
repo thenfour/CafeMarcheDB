@@ -507,7 +507,7 @@ export const SongDetailContainer = ({ songData, tableClient, editCommands, ...pr
                     size='small'
                     model={tag.tag}
                     variation={{ ...StandardVariationSpec.Weak, selected: highlightedTagIds.includes(tag.tag.id) }}
-                    getTooltip={(_) => tag.tag.description}
+                    getTooltip={(_) => tag.tag.description ?? null}
                 />)}
             </CMChipContainer>
 

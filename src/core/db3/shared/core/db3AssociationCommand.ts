@@ -2,8 +2,8 @@ import type { TAnyModel } from "@/shared/rootroot";
 import { z } from "zod";
 import type {
     AnyDB3Table,
+    DB3IdentityInputOf,
     DB3IdentityOf,
-    DB3ReferenceValueOf,
 } from "../db3core";
 import {
     defineCommand,
@@ -26,7 +26,7 @@ export type DB3AssociationCommand<
     TForeignIdentitySchema extends z.ZodType<DB3IdentityOf<TForeignEntity>>,
 > = DB3Command<
     TLocalEntity,
-    DB3AssociationChange<DB3ReferenceValueOf<TLocalEntity>, DB3ReferenceValueOf<TForeignEntity>>,
+    DB3AssociationChange<DB3IdentityInputOf<TLocalEntity>, DB3IdentityInputOf<TForeignEntity>>,
     z.ZodObject<{
         localIdentity: TLocalIdentitySchema;
         foreignIdentity: TForeignIdentitySchema;
@@ -85,8 +85,8 @@ export function defineAssociationCommand<
         resultSchema: payloadSchema,
         serialize: (
             input: DB3AssociationChange<
-                DB3ReferenceValueOf<TLocalEntity>,
-                DB3ReferenceValueOf<TForeignEntity>
+                DB3IdentityInputOf<TLocalEntity>,
+                DB3IdentityInputOf<TForeignEntity>
             >,
         ) => ({
             localIdentity: args.localIdentitySchema.parse(

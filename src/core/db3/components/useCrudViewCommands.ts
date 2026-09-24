@@ -12,7 +12,7 @@ export interface CrudViewCommandClient<
     TRow extends TAnyModel = ClientOf<TView>,
 > {
     create(row: Partial<TRow>): Promise<{ identity: DB3IdentityOf<TableOf<TView>> }>;
-    update(row: TRow, previousRow: TRow): Promise<{ identity: DB3IdentityOf<TableOf<TView>> }>;
+    update(row: TRow, previousRow: Partial<TRow>): Promise<{ identity: DB3IdentityOf<TableOf<TView>> }>;
     delete(identity: DB3IdentityOf<TableOf<TView>>): Promise<{ identity: DB3IdentityOf<TableOf<TView>> }>;
 }
 

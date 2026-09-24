@@ -136,37 +136,7 @@ export const fileSearchView = defineView({
     entity: xFile,
     selection: fileSearchSelection,
     dtoSchema: fileSearchViewContract.dtoSchema,
-    hydrate: (dto, references) => {
-        const hydrated = fileSearchViewContract.hydrate(dto, references);
-        return {
-            ...hydrated,
-            tags: hydrated.tags
-                ?.flatMap(association => association.fileTag == null ? [] : [{
-                    ...association,
-                    fileTag: association.fileTag,
-                }]),
-            taggedSongs: hydrated.taggedSongs
-                ?.flatMap(association => association.song == null ? [] : [{
-                    ...association,
-                    song: association.song,
-                }]),
-            taggedEvents: hydrated.taggedEvents
-                ?.flatMap(association => association.event == null ? [] : [{
-                    ...association,
-                    event: association.event,
-                }]),
-            taggedInstruments: hydrated.taggedInstruments
-                ?.flatMap(association => association.instrument == null ? [] : [{
-                    ...association,
-                    instrument: association.instrument,
-                }]),
-            taggedWikiPages: hydrated.taggedWikiPages
-                ?.flatMap(association => association.wikiPage == null ? [] : [{
-                    ...association,
-                    wikiPage: association.wikiPage,
-                }]),
-        };
-    },
+    hydrate: fileSearchViewContract.hydrate,
 });
 
 export type FileSearchDto = DtoOf<typeof fileSearchView>;

@@ -64,7 +64,9 @@ export const useEventsForDateRange = (dateRange: CalendarRange) => {
                         return [{
                             id: event.id.toString(), // Preserve the picker cell's data-event-id.
                             title: event.name || 'Untitled Event',
-                            color: event.type?.color || 'blue',
+                            color: typeof event.type?.color === "string"
+                                ? event.type.color
+                                : event.type?.color?.id || "blue",
                             // Paint the selected band dates into this calendar's date cells.
                             dateRange: new CalendarRange(new CalendarDate(dates.start.date, dateRange.start.timeZone),
                                 new CalendarDate(dates.endExclusive.date, dateRange.start.timeZone)),

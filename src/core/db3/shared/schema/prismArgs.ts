@@ -1,4 +1,5 @@
 import { Prisma } from "db";
+import type { ColorPaletteEntry } from "@/src/core/components/color/palette";
 import type { InstrumentFunctionalGroupPublicId } from "shared/publicId";
 //import * as db3 from "../db3core"; // circular
 import { TAnyModel } from "shared/rootroot";
@@ -568,16 +569,38 @@ export type InstrumentFunctionalGroupPayload = Prisma.InstrumentFunctionalGroupG
 export type InstrumentFunctionalGroupPayloadMinimum = Prisma.InstrumentFunctionalGroupGetPayload<{}>;
 
 // i'm thinking of a generic way to do this, but probably done together with an enrichment step.
-export type InstrumentFunctionalGroupClientPayload = Omit<InstrumentFunctionalGroupPayload, "id" | "publicId"> & {
+export type InstrumentFunctionalGroupClientPayload = Omit<
+    InstrumentFunctionalGroupPayload,
+    "id" | "publicId" | "color"
+> & {
     publicId: InstrumentFunctionalGroupPublicId;
+    color: ColorPaletteEntry | null;
+};
+
+export type InstrumentTagClientPayload = Omit<
+    Prisma.InstrumentTagGetPayload<{}>,
+    "color"
+> & {
+    color: ColorPaletteEntry | null;
+};
+
+export type InstrumentTagAssociationClientPayload = Omit<
+    Prisma.InstrumentTagAssociationGetPayload<{ include: { tag: true } }>,
+    "tag"
+> & {
+    tag: InstrumentTagClientPayload;
 };
 
 // Canonical client representation of an instrument. Instrument itself has not
 // yet been converted to public IDs, so its own id remains numeric; the foreign
 // key to the converted functional-group table does not.
-export type InstrumentClientPayload = Omit<InstrumentPayload, "functionalGroupId" | "functionalGroup"> & {
+export type InstrumentClientPayload = Omit<
+    InstrumentPayload,
+    "functionalGroupId" | "functionalGroup" | "instrumentTags"
+> & {
     functionalGroupId: InstrumentFunctionalGroupPublicId;
     functionalGroup: InstrumentFunctionalGroupClientPayload;
+    instrumentTags: InstrumentTagAssociationClientPayload[];
 };
 
 // Some shared calculation code is also used by server-side/scenario data that

@@ -16,24 +16,24 @@ import { z } from "zod";
 
 
 export const xSongAuthMap_R_EOwn_EManagers = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_songs,
-    PostQuery: Permission.view_songs,
+    PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+    PostQuery: db3.DB3FieldReadAuth.inheritRow,
     PreMutateAsOwner: Permission.view_songs,
     PreMutate: Permission.manage_songs,
     PreInsert: Permission.manage_songs,
 });
 
 export const xSongAuthMap_R_EManagers = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_songs,
-    PostQuery: Permission.view_songs,
+    PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+    PostQuery: db3.DB3FieldReadAuth.inheritRow,
     PreMutateAsOwner: Permission.manage_songs,
     PreMutate: Permission.manage_songs,
     PreInsert: Permission.manage_songs,
 });
 
 export const xSongAuthMap_R_EAdmin = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_songs,
-    PostQuery: Permission.view_songs,
+    PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+    PostQuery: db3.DB3FieldReadAuth.inheritRow,
     PreMutateAsOwner: Permission.admin_songs,
     PreMutate: Permission.admin_songs,
     PreInsert: Permission.admin_songs,
@@ -59,9 +59,24 @@ export const xSongTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
 };
 
 
+export const SongTagReferenceSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        sortOrder: true,
+        color: true,
+        significance: true,
+        indicator: true,
+        indicatorCssClass: true,
+        group: true,
+    },
+});
+
 export const xSongTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.SongTagDelegate>(),
     getIdentity: (tag: Prisma.SongTagGetPayload<{}>) => tag.id,
+    referenceSelection: SongTagReferenceSelection,
     getSelectionArgs: (): Prisma.SongTagDefaultArgs => {
         return SongTagArgs;
     },
@@ -292,9 +307,21 @@ const xSongArgs_Base = db3.defineTableDesc({
 export const xSong = db3.defineTable(xSongArgs_Base);
 
 ////////////////////////////////////////////////////////////////
+export const SongCreditTypeReferenceSelection = Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        significance: true,
+    },
+});
+
 export const xSongCreditType = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.SongCreditTypeDelegate>(),
     getIdentity: (creditType: Prisma.SongCreditTypeGetPayload<{}>) => creditType.id,
+    referenceSelection: SongCreditTypeReferenceSelection,
     getSelectionArgs: (): Prisma.SongCreditTypeDefaultArgs => {
         return SongCreditTypeArgs;
     },
@@ -380,6 +407,7 @@ export const xSongCredit = db3.defineTable({
         user: foreignRef(() => xUser, {
             fkidMember: "userId",
             allowNull: true,
+            hydrateFromReference: false,
             authMap: xSongAuthMap_R_EManagers,
         }),
         comment: columnName => new GenericStringField({
@@ -397,6 +425,7 @@ export const xSongCredit = db3.defineTable({
 
         song: foreignRef(() => xSong, {
             fkidMember: "songId",
+            hydrateFromReference: false,
             authMap: xSongAuthMap_R_EManagers,
         }),
         type: foreignRef(() => xSongCreditType, {

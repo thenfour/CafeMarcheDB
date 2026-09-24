@@ -249,19 +249,27 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.eventTag = new TableAccessor(dashboardData.eventTag);
     valueRef.current.referenceStore.register(db3.xEventTag, valueRef.current.eventTag.items);
     valueRef.current.eventAttendance = new TableAccessor(dashboardData.eventAttendance);
+    valueRef.current.referenceStore.register(
+        db3.xEventAttendance,
+        valueRef.current.eventAttendance.items,
+    );
     valueRef.current.fileTag = new TableAccessor(dashboardData.fileTag);
     valueRef.current.referenceStore.register(
         db3.xFileTag,
         valueRef.current.fileTag.items,
     );
     valueRef.current.instrumentTag = new TableAccessor(dashboardData.instrumentTag);
-    valueRef.current.instrumentFunctionalGroup = new TableAccessor(
-        dashboardData.instrumentFunctionalGroup,
-        group => group.publicId,
-    );
     valueRef.current.referenceStore.register(
         db3.xInstrumentFunctionalGroup,
-        valueRef.current.instrumentFunctionalGroup.items,
+        dashboardData.instrumentFunctionalGroup,
+    );
+    valueRef.current.instrumentFunctionalGroup = new TableAccessor(
+        dashboardData.instrumentFunctionalGroup.map(dto => db3.hydrateView(
+            db3.instrumentFunctionalGroupDashboardView,
+            dto,
+            valueRef.current.referenceStore,
+        )),
+        group => group.publicId,
     );
     valueRef.current.referenceStore.register(
         db3.xInstrumentTag,
@@ -273,6 +281,10 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         valueRef.current.songTag.items,
     );
     valueRef.current.songCreditType = new TableAccessor(dashboardData.songCreditType);
+    valueRef.current.referenceStore.register(
+        db3.xSongCreditType,
+        valueRef.current.songCreditType.items,
+    );
     valueRef.current.serverBaseUri = dashboardData.serverBaseUri;
     valueRef.current.serverStartupState = dashboardData.serverStartupState;
     valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
@@ -301,12 +313,12 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         }
     }));
 
+    valueRef.current.referenceStore.register(db3.xInstrument, dashboardData.instrument);
     valueRef.current.instrument = new TableAccessor(dashboardData.instrument.map(dto => db3.hydrateView(
         db3.instrumentDashboardView,
-        db3.instrumentDashboardView.parseDto(dto),
+        dto,
         valueRef.current.referenceStore,
     )));
-    valueRef.current.referenceStore.register(db3.xInstrument, valueRef.current.instrument.items);
 
     return (
         <DashboardContext.Provider value={{ data: valueRef.current }}>

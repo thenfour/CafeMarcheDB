@@ -14,6 +14,9 @@ import {
     xEventStatus,
     xEventTag,
     xEventType,
+    EventStatusReferenceSelection,
+    EventTagReferenceSelection,
+    EventTypeReferenceSelection,
 } from "../../schema/event";
 
 // event type ------------------------------------------
@@ -27,18 +30,7 @@ const EventTypeDtoSchema = z.object({
     significance: db3s.authNeeded(z.string().nullable()),
 });
 
-export const eventTypeEditorSelection = Prisma.validator<Prisma.EventTypeDefaultArgs>()({
-    select: {
-        id: true,
-        isDeleted: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        iconName: true,
-        text: true,
-        significance: true,
-    },
-});
+export const eventTypeEditorSelection = EventTypeReferenceSelection;
 
 const eventTypeViewContract = deriveViewContract(
     xEventType,
@@ -65,18 +57,7 @@ const EventStatusDtoSchema = z.object({
     significance: z.string().nullable().optional(),
 });
 
-export const eventStatusEditorSelection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
-    select: {
-        id: true,
-        isDeleted: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        iconName: true,
-        label: true,
-        significance: true,
-    },
-});
+export const eventStatusEditorSelection = EventStatusReferenceSelection;
 
 const eventStatusViewContract = deriveViewContract(
     xEventStatus,
@@ -93,17 +74,7 @@ export const eventStatusEditorView = defineCrudView({
 });
 
 // event tag ------------------------------------------
-export const eventTagEditorSelection = Prisma.validator<Prisma.EventTagDefaultArgs>()({
-    select: {
-        id: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        text: true,
-        significance: true,
-        visibleOnFrontpage: true,
-    },
-});
+export const eventTagEditorSelection = EventTagReferenceSelection;
 
 const eventTagViewContract = deriveViewContract(
     xEventTag,

@@ -32,8 +32,8 @@ export const xFileTableAuth_AdminObjects: db3.DB3AuthTablePermissionMap = {
 };
 
 export const xFileAuthMap_AdminObjects = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_files,
-    PostQuery: Permission.view_files,
+    PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+    PostQuery: db3.DB3FieldReadAuth.inheritRow,
     PreMutateAsOwner: Permission.view_files,
     PreMutate: Permission.admin_files,
     PreInsert: Permission.admin_files,
@@ -53,8 +53,8 @@ export const xFileTableAuth_FileObjects: db3.DB3AuthTablePermissionMap = {
 };
 
 export const xFileAuthMap_FileObjects = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_files,
-    PostQuery: Permission.view_files,
+    PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+    PostQuery: db3.DB3FieldReadAuth.inheritRow,
     PreMutateAsOwner: Permission.upload_files,
     PreMutate: Permission.manage_files,
     PreInsert: Permission.upload_files,
@@ -105,9 +105,21 @@ const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeInput<TA
 //   }
 
 
+export const FileTagReferenceSelection = Prisma.validator<Prisma.FileTagDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        significance: true,
+    },
+});
+
 export const xFileTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileTagDelegate>(),
     getIdentity: (tag: Prisma.FileTagGetPayload<{}>) => tag.id,
+    referenceSelection: FileTagReferenceSelection,
     getSelectionArgs: (): Prisma.FileTagDefaultArgs => {
         return FileTagArgs;
     },
@@ -464,12 +476,14 @@ const xFileBaseArgs = {
         previewFile: foreignRefByTableId("File", {
             fkidMember: "previewFileId",
             allowNull: true,
+            hydrateFromReference: false,
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
         parentFile: foreignRefByTableId("File", {
             fkidMember: "parentFileId",
             allowNull: true,
+            hydrateFromReference: false,
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),

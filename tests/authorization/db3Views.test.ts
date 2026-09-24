@@ -99,7 +99,7 @@ describe("DB3 named views", () => {
             iconName: null,
         });
         expectTypeOf(permissionDto.name).toEqualTypeOf<string>();
-        expectTypeOf(permissionDto.description).toEqualTypeOf<string>();
+        expectTypeOf(permissionDto.description).toEqualTypeOf<string | null>();
         expectTypeOf(permissionDto.isVisibility).toEqualTypeOf<boolean>();
 
         expectTypeOf<db3.DbPayloadOf<typeof db3.eventTypeEditorView>>()
@@ -441,13 +441,18 @@ describe("DB3 named views", () => {
         });
         const hydrated = db3.hydrateView(db3.instrumentDashboardView, dto, references);
 
-        expect(hydrated.functionalGroup).toBe(group);
-        expect(hydrated.instrumentTags[0]!.tag).toBe(tag);
+        expect(hydrated.functionalGroup).toEqual(
+            references.require(db3.xInstrumentFunctionalGroup, group.publicId, "test"),
+        );
+        expect(hydrated.instrumentTags[0]!.tag).toEqual(
+            references.require(db3.xInstrumentTag, tag.id, "test"),
+        );
         expectTypeOf(hydrated).toEqualTypeOf<db3.InstrumentDashboardClient>();
         expectTypeOf<db3.DbPayloadOf<typeof db3.instrumentDashboardView>>()
             .toMatchTypeOf<{
                 id: number;
-                functionalGroup: { id: number; publicId: string };
+                functionalGroupId: number;
+                functionalGroup: { publicId: string };
                 instrumentTags: { id: number; instrumentId: number; tagId: number }[];
             }>();
     });
@@ -473,6 +478,11 @@ describe("DB3 named views", () => {
         const dto = db3.songSearchView.parseDto({
             id: 7,
             name: "A song",
+            aliases: "",
+            startBPM: null,
+            endBPM: null,
+            introducedYear: null,
+            lengthSeconds: null,
             visiblePermissionId: permission.id,
             tags: [{ id: 70, songId: 7, tagId: songTag.id }],
             taggedFiles: [{
@@ -484,17 +494,24 @@ describe("DB3 named views", () => {
                     tags: [{ id: 90, fileTagId: fileTag.id }],
                 },
             }],
+            credits: [],
         });
         const hydrated = db3.hydrateView(db3.songSearchView, dto, references);
 
-        expect(hydrated.visiblePermission).toBe(permission);
-        expect(hydrated.tags?.[0]?.tag).toBe(songTag);
-        expect(hydrated.taggedFiles?.[0]?.file?.tags?.[0]?.fileTag).toBe(fileTag);
-        expectTypeOf(dto.aliases).toEqualTypeOf<string | undefined>();
+        expect(hydrated.visiblePermission).toEqual(
+            references.require(db3.xPermission, permission.id, "test"),
+        );
+        expect(hydrated.tags?.[0]?.tag).toEqual(
+            references.require(db3.xSongTag, songTag.id, "test"),
+        );
+        expect(hydrated.taggedFiles?.[0]?.file?.tags?.[0]?.fileTag).toEqual(
+            references.require(db3.xFileTag, fileTag.id, "test"),
+        );
+        expectTypeOf(dto.aliases).toEqualTypeOf<string>();
         expectTypeOf(hydrated).toEqualTypeOf<db3.SongSearchClient>();
     });
 
-    it("hydrates the File search view without restoring authorization-omitted relations", () => {
+    it("hydrates the File search view with normalized reference relations", () => {
         const references = new db3.DB3ReferenceStore();
         const permission = {
             id: 4,
@@ -526,20 +543,17 @@ describe("DB3 named views", () => {
         };
         references.register(db3.xPermission, [permission]);
         references.register(db3.xFileTag, [fileTag]);
+        references.register(db3.xInstrumentFunctionalGroup, [group]);
         references.register(db3.xInstrument, [instrument]);
 
         const dto = db3.fileSearchView.parseDto({
             id: 8,
             fileLeafName: "score.pdf",
+            description: "",
+            externalURI: null,
             visiblePermissionId: permission.id,
-            tags: [
-                { id: 80, fileTagId: fileTag.id },
-                { id: 83 },
-            ],
-            taggedSongs: [
-                { id: 81, song: { id: 7, name: "A song" } },
-                { id: 84 },
-            ],
+            tags: [{ id: 80, fileTagId: fileTag.id }],
+            taggedSongs: [{ id: 81, song: { id: 7, name: "A song" } }],
             taggedEvents: [
                 {
                     id: 85,
@@ -551,31 +565,30 @@ describe("DB3 named views", () => {
                         typeId: 11,
                     },
                 },
-                { id: 86 },
             ],
-            taggedInstruments: [
-                { id: 82, instrumentId: instrument.id },
-                { id: 87 },
-            ],
-            taggedWikiPages: [
-                { id: 88, wikiPage: { id: 12, slug: "repertoire" } },
-                { id: 89 },
-            ],
+            taggedInstruments: [{ id: 82, instrumentId: instrument.id }],
+            taggedWikiPages: [{ id: 88, wikiPage: { id: 12, slug: "repertoire" } }],
         });
         const hydrated = db3.hydrateView(db3.fileSearchView, dto, references);
 
-        expect(hydrated.visiblePermission).toBe(permission);
+        expect(hydrated.visiblePermission).toEqual(
+            references.require(db3.xPermission, permission.id, "test"),
+        );
         expect(hydrated.tags).toHaveLength(1);
-        expect(hydrated.tags?.[0]?.fileTag).toBe(fileTag);
+        expect(hydrated.tags?.[0]?.fileTag).toEqual(
+            references.require(db3.xFileTag, fileTag.id, "test"),
+        );
         expect(hydrated.taggedSongs).toHaveLength(1);
         expect(hydrated.taggedSongs?.[0]?.song.name).toBe("A song");
         expect(hydrated.taggedEvents).toHaveLength(1);
         expect(hydrated.taggedEvents?.[0]?.event.name).toBe("A concert");
         expect(hydrated.taggedInstruments).toHaveLength(1);
-        expect(hydrated.taggedInstruments?.[0]?.instrument).toBe(instrument);
+        expect(hydrated.taggedInstruments?.[0]?.instrument).toEqual(
+            references.require(db3.xInstrument, instrument.id, "test"),
+        );
         expect(hydrated.taggedWikiPages).toHaveLength(1);
         expect(hydrated.taggedWikiPages?.[0]?.wikiPage.slug).toBe("repertoire");
-        expectTypeOf(dto.description).toEqualTypeOf<string | undefined>();
+        expectTypeOf(dto.description).toEqualTypeOf<string>();
         expectTypeOf(hydrated).toEqualTypeOf<db3.FileSearchClient>();
     });
 
@@ -599,8 +612,19 @@ describe("DB3 named views", () => {
             sortOrder: 1,
             significance: db3.FileTagSignificance.Partition,
         };
+        const instrument = {
+            id: 40,
+            name: "Trumpet",
+            description: "",
+            autoAssignFileLeafRegex: null,
+            sortOrder: 1,
+            functionalGroupId: groupPublicId,
+            instrumentTags: [],
+        };
         references.register(db3.xPermission, [permission]);
         references.register(db3.xFileTag, [fileTag]);
+        references.register(db3.xInstrumentFunctionalGroup, [group]);
+        references.register(db3.xInstrument, [instrument]);
 
         const selection = db3.fileDetailView.getSelectionArgs({
             filter: { items: [] },
@@ -622,15 +646,29 @@ describe("DB3 named views", () => {
         const dto = db3.fileDetailView.parseDto({
             id: 8,
             fileLeafName: "score.pdf",
+            description: "",
             customData: "{\"width\":1200}",
+            externalURI: null,
+            fileCreatedAt: null,
+            parentFileId: null,
+            previewFileId: null,
             isDeleted: true,
             visiblePermissionId: permission.id,
             tags: [{ id: 80, fileTagId: fileTag.id }],
-            taggedUsers: [{ id: 81 }],
-            taggedSongs: [{ id: 82 }],
-            taggedEvents: [{ id: 83 }],
-            taggedInstruments: [{ id: 84 }],
-            taggedWikiPages: [{ id: 85 }],
+            taggedUsers: [{ id: 81, user: { id: 13, name: "Ada" } }],
+            taggedSongs: [{ id: 82, song: { id: 14, name: "A song" } }],
+            taggedEvents: [{
+                id: 83,
+                event: {
+                    id: 15,
+                    name: "A concert",
+                    startsAt: null,
+                    statusId: null,
+                    typeId: 2,
+                },
+            }],
+            taggedInstruments: [{ id: 84, instrumentId: instrument.id }],
+            taggedWikiPages: [{ id: 85, wikiPage: { id: 16, slug: "repertoire" } }],
             frontpageGalleryItems: [{ id: 90 }],
             parentFile: { id: 7, fileLeafName: "source.pdf" },
             childFiles: [{ id: 9, fileLeafName: "part.pdf" }],
@@ -640,14 +678,23 @@ describe("DB3 named views", () => {
         });
         const hydrated = db3.hydrateView(db3.fileDetailView, dto, references);
 
-        expect(hydrated.visiblePermission).toBe(permission);
+        expect(hydrated.visiblePermission).toEqual(
+            references.require(db3.xPermission, permission.id, "test"),
+        );
         expect(dto).not.toHaveProperty("isDeleted");
-        expect(hydrated.tags?.[0]?.fileTag).toBe(fileTag);
-        expect(hydrated.taggedUsers).toEqual([]);
-        expect(hydrated.taggedSongs).toEqual([]);
-        expect(hydrated.taggedEvents).toEqual([]);
-        expect(hydrated.taggedInstruments).toEqual([]);
-        expect(hydrated.taggedWikiPages).toEqual([]);
+        expect(hydrated.tags?.[0]?.fileTag).toEqual(
+            references.require(db3.xFileTag, fileTag.id, "test"),
+        );
+        expect(hydrated.taggedUsers).toEqual([{ id: 81, user: { id: 13, name: "Ada" } }]);
+        expect(hydrated.taggedSongs).toEqual([{ id: 82, song: { id: 14, name: "A song" } }]);
+        expect(hydrated.taggedEvents?.[0]?.event.name).toBe("A concert");
+        expect(hydrated.taggedInstruments?.[0]?.instrument).toEqual(
+            references.require(db3.xInstrument, instrument.id, "test"),
+        );
+        expect(hydrated.taggedWikiPages).toEqual([{
+            id: 85,
+            wikiPage: { id: 16, slug: "repertoire" },
+        }]);
         expect(hydrated.frontpageGalleryItems).toEqual([{ id: 90 }]);
         expect(hydrated.parentFile).toEqual({ id: 7, fileLeafName: "source.pdf" });
         expect(hydrated.childFiles).toEqual([{ id: 9, fileLeafName: "part.pdf" }]);
@@ -707,9 +754,15 @@ describe("DB3 named views", () => {
         });
         const hydrated = db3.hydrateView(db3.eventSearchView, dto, references);
 
-        expect(hydrated.type).toBe(eventType);
-        expect(hydrated.status).toBe(eventStatus);
-        expect(hydrated.tags?.[0]?.eventTag).toBe(eventTag);
+        expect(hydrated.type).toEqual(
+            references.require(db3.xEventType, eventType.id, "test"),
+        );
+        expect(hydrated.status).toEqual(
+            references.require(db3.xEventStatus, eventStatus.id, "test"),
+        );
+        expect(hydrated.tags?.[0]?.eventTag).toEqual(
+            references.require(db3.xEventTag, eventTag.id, "test"),
+        );
         expect(hydrated.expectedAttendanceUserTag?.userAssignments?.[0]?.userId).toBe(42);
         expect(hydrated.dateRange).toBeInstanceOf(DateTimeRange);
         expect("startsAt" in hydrated).toBe(false);
@@ -979,13 +1032,20 @@ describe("DB3 named views", () => {
         references.register(db3.xPermission, [permission]);
         references.register(db3.xSongTag, [songTag]);
         references.register(db3.xFileTag, [fileTag]);
+        references.register(db3.xInstrumentFunctionalGroup, [group]);
         references.register(db3.xInstrument, [instrument]);
 
         const dto = db3.songDetailView.parseDto({
             id: 7,
             name: "A song",
+            aliases: "",
             description: "Detail description",
+            startBPM: null,
+            endBPM: null,
+            introducedYear: null,
+            lengthSeconds: null,
             visiblePermissionId: permission.id,
+            pinnedRecordingId: null,
             tags: [{ id: 70, tagId: songTag.id }],
             taggedFiles: [{
                 id: 80,
@@ -993,22 +1053,42 @@ describe("DB3 named views", () => {
                 file: {
                     id: 8,
                     fileLeafName: "score.pdf",
+                    description: "",
+                    externalURI: null,
+                    fileCreatedAt: null,
+                    parentFileId: null,
+                    previewFileId: null,
                     visiblePermissionId: permission.id,
                     tags: [{ id: 90, fileTagId: fileTag.id }],
+                    taggedUsers: [],
+                    taggedSongs: [],
+                    taggedEvents: [],
                     taggedInstruments: [{ id: 100, instrumentId: instrument.id }],
+                    taggedWikiPages: [],
                 },
             }],
+            credits: [],
         });
         const hydrated = db3.hydrateView(db3.songDetailView, dto, references);
 
-        expect(hydrated.visiblePermission).toBe(permission);
-        expect(hydrated.tags?.[0]?.tag).toBe(songTag);
-        expect(hydrated.taggedFiles?.[0]?.file.visiblePermission).toBe(permission);
-        expect(hydrated.taggedFiles?.[0]?.file.tags?.[0]?.fileTag).toBe(fileTag);
-        expect(hydrated.taggedFiles?.[0]?.file.taggedInstruments?.[0]?.instrument).toBe(instrument);
-        expect(hydrated.taggedFiles?.[0]?.file.taggedEvents).toBeUndefined();
-        expect(hydrated.credits).toBeUndefined();
-        expectTypeOf(dto.aliases).toEqualTypeOf<string | undefined>();
+        expect(hydrated.visiblePermission).toEqual(
+            references.require(db3.xPermission, permission.id, "test"),
+        );
+        expect(hydrated.tags?.[0]?.tag).toEqual(
+            references.require(db3.xSongTag, songTag.id, "test"),
+        );
+        expect(hydrated.taggedFiles?.[0]?.file.visiblePermission).toEqual(
+            references.require(db3.xPermission, permission.id, "test"),
+        );
+        expect(hydrated.taggedFiles?.[0]?.file.tags?.[0]?.fileTag).toEqual(
+            references.require(db3.xFileTag, fileTag.id, "test"),
+        );
+        expect(hydrated.taggedFiles?.[0]?.file.taggedInstruments?.[0]?.instrument).toEqual(
+            references.require(db3.xInstrument, instrument.id, "test"),
+        );
+        expect(hydrated.taggedFiles?.[0]?.file.taggedEvents).toEqual([]);
+        expect(hydrated.credits).toEqual([]);
+        expectTypeOf(dto.aliases).toEqualTypeOf<string>();
         expectTypeOf(hydrated).toEqualTypeOf<db3.SongDetailClient>();
     });
 
@@ -1457,7 +1537,7 @@ describe("DB3 named views", () => {
             EventSongList: { findMany },
         } as any);
 
-        expect(result.items).toEqual([{ id: 50, sortOrder: 10 }]);
+        expect(result.items).toEqual([{ id: 50 }]);
         const dto = db3.eventSongListDetailView.parseDto(result.items[0]);
         expect(db3.hydrateEventSongListDetailDto(dto).content).toBeUndefined();
     });

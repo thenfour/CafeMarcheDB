@@ -6,9 +6,8 @@ import { PermissionForVisibilityArgs, SongTagAssociationNaturalOrderBy } from ".
 import {
     fileCardSelection,
     fileCardTransportSelection,
-    normalizeFileClient,
 } from "../file/fileViews";
-import { xSongCredit, xSongCreditType, xSong, xSongTag } from "../../schema/song";
+import { SongCreditTypeReferenceSelection, xSongCredit, xSongCreditType, xSong, xSongTag } from "../../schema/song";
 
 export const songTagEditorSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()({
     select: {
@@ -26,16 +25,7 @@ export const songTagEditorSelection = Prisma.validator<Prisma.SongTagDefaultArgs
 
 const songTagEditorContract = deriveViewContract(xSongTag, songTagEditorSelection);
 
-export const songCreditTypeEditorSelection = Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
-    select: {
-        id: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        significance: true,
-    },
-});
+export const songCreditTypeEditorSelection = SongCreditTypeReferenceSelection;
 
 const songCreditTypeEditorContract = deriveViewContract(
     xSongCreditType,
@@ -362,11 +352,7 @@ export const songDetailView = defineView({
                     tag: association.tag,
                 }])
                 .sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
-            taggedFiles: hydrated.taggedFiles
-                ?.flatMap(association => association.file == null ? [] : [{
-                    ...association,
-                    file: normalizeFileClient(association.file),
-                }]),
+            taggedFiles: hydrated.taggedFiles,
         };
     },
 });

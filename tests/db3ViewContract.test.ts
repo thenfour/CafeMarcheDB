@@ -119,7 +119,7 @@ describe("DB3 scalar selection compiler", () => {
     >
     type FileTagIsAny = 0 extends (1 & ClientTag["fileTag"]) ? true : false
 
-    expectTypeOf<DtoTag["fileTagId"]>().toEqualTypeOf<number | undefined>()
+    expectTypeOf<DtoTag["fileTagId"]>().toEqualTypeOf<number>()
     expectTypeOf<ClientTag["fileTag"]>()
       .toEqualTypeOf<NonNullable<ClientTag["fileTag"]>>()
     expectTypeOf<ClientSongTag["song"]>()
@@ -742,11 +742,11 @@ describe("File derived-view migration", () => {
     type Client = db3.ClientOf<typeof db3.fileTagEditorView>
 
     expectTypeOf<Dto["id"]>().toEqualTypeOf<number>()
-    expectTypeOf<Dto["text"]>().toEqualTypeOf<string | undefined>()
+    expectTypeOf<Dto["text"]>().toEqualTypeOf<string>()
     expectTypeOf<Dto["color"]>()
-      .toEqualTypeOf<string | null | undefined>()
+      .toEqualTypeOf<string | null>()
     expectTypeOf<Client["color"]>()
-      .toEqualTypeOf<ColorPaletteEntry | null | undefined>()
+      .toEqualTypeOf<ColorPaletteEntry | null>()
     expect(db3.fileTagEditorView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
     )).toBe(db3.fileTagEditorSelection)
@@ -781,7 +781,7 @@ describe("File derived-view migration", () => {
     }>()
     expectTypeOf<PinnedSongDto>().toEqualTypeOf<{
       id: number
-      name?: string
+      name: string
     }>()
     expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<RelatedAuthorizationOnlyKeys>().toEqualTypeOf<never>()
@@ -814,7 +814,7 @@ describe("File derived-view migration", () => {
 
     expectTypeOf<Dto["id"]>().toEqualTypeOf<number>()
     expectTypeOf<Dto["isDeleted"]>()
-      .toEqualTypeOf<boolean | undefined>()
+      .toEqualTypeOf<boolean>()
     expectTypeOf<Dto["customData"]>()
       .toEqualTypeOf<string | null | undefined>()
     expectTypeOf<DetailOnlyKeys>().toEqualTypeOf<never>()
@@ -835,7 +835,7 @@ describe("Song derived-view migration", () => {
     type Dto = z.infer<typeof derived.dtoSchema>
 
     expectTypeOf<Dto>().toEqualTypeOf<{
-      pinnedRecordingId?: number | null
+      pinnedRecordingId: number | null
     }>()
     expect(derived.dtoSchema.parse({ pinnedRecordingId: null }))
       .toEqual({ pinnedRecordingId: null })
@@ -856,21 +856,21 @@ describe("Song derived-view migration", () => {
     type NestedCreditTypeClient = NonNullable<CreditClient["type"]>
 
     expectTypeOf<TagDto["id"]>().toEqualTypeOf<number>()
-    expectTypeOf<TagDto["text"]>().toEqualTypeOf<string | undefined>()
-    expectTypeOf<TagDto["color"]>().toEqualTypeOf<string | null | undefined>()
+    expectTypeOf<TagDto["text"]>().toEqualTypeOf<string>()
+    expectTypeOf<TagDto["color"]>().toEqualTypeOf<string | null>()
     expectTypeOf<TagClient["color"]>()
-      .toEqualTypeOf<ColorPaletteEntry | null | undefined>()
+      .toEqualTypeOf<ColorPaletteEntry | null>()
     expectTypeOf<CreditTypeDto["color"]>()
-      .toEqualTypeOf<string | null | undefined>()
+      .toEqualTypeOf<string | null>()
     expectTypeOf<CreditTypeClient["color"]>()
-      .toEqualTypeOf<ColorPaletteEntry | null | undefined>()
+      .toEqualTypeOf<ColorPaletteEntry | null>()
     expectTypeOf<CreditDto["userId"]>()
-      .toEqualTypeOf<number | null | undefined>()
-    expectTypeOf<CreditDto["songId"]>().toEqualTypeOf<number | undefined>()
+      .toEqualTypeOf<number | null>()
+    expectTypeOf<CreditDto["songId"]>().toEqualTypeOf<number>()
     expectTypeOf<NestedCreditTypeDto["color"]>()
-      .toEqualTypeOf<string | null | undefined>()
+      .toEqualTypeOf<string | null>()
     expectTypeOf<NestedCreditTypeClient["color"]>()
-      .toEqualTypeOf<ColorPaletteEntry | null | undefined>()
+      .toEqualTypeOf<ColorPaletteEntry | null>()
 
     expect(db3.songTagEditorView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
@@ -892,17 +892,17 @@ describe("Song derived-view migration", () => {
     type TagClient = NonNullable<NonNullable<Client["tags"]>[number]["tag"]>
 
     expectTypeOf<Dto["id"]>().toEqualTypeOf<number>()
-    expectTypeOf<Dto["name"]>().toEqualTypeOf<string | undefined>()
+    expectTypeOf<Dto["name"]>().toEqualTypeOf<string>()
     expectTypeOf<Dto["visiblePermissionId"]>()
-      .toEqualTypeOf<number | null | undefined>()
+      .toEqualTypeOf<number | null>()
     expectTypeOf<PermissionDto["name"]>().toEqualTypeOf<string>()
     expectTypeOf<PermissionDto["color"]>().toEqualTypeOf<string | null>()
     expectTypeOf<PermissionClient["color"]>()
       .toEqualTypeOf<ColorPaletteEntry | null>()
     expectTypeOf<TagDto["color"]>()
-      .toEqualTypeOf<string | null | undefined>()
+      .toEqualTypeOf<string | null>()
     expectTypeOf<TagClient["color"]>()
-      .toEqualTypeOf<ColorPaletteEntry | null | undefined>()
+      .toEqualTypeOf<ColorPaletteEntry | null>()
     expect(db3.songEditorView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
     )).toBe(db3.songEditorSelection)
@@ -924,7 +924,7 @@ describe("Song derived-view migration", () => {
     type FileAuthorizationOnlyKeys = Extract<keyof DtoFileAssociation, "fileId" | "songId">
     type CreditAuthorizationOnlyKeys = Extract<keyof DtoCredit, "userId" | "songId">
 
-    expectTypeOf<Dto["aliases"]>().toEqualTypeOf<string | undefined>()
+    expectTypeOf<Dto["aliases"]>().toEqualTypeOf<string>()
     expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<TagAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<FileAuthorizationOnlyKeys>().toEqualTypeOf<never>()
@@ -965,11 +965,11 @@ describe("Song derived-view migration", () => {
     >
 
     expectTypeOf<Dto["pinnedRecordingId"]>()
-      .toEqualTypeOf<number | null | undefined>()
+      .toEqualTypeOf<number | null>()
     expectTypeOf<DtoFile["parentFileId"]>()
-      .toEqualTypeOf<number | null | undefined>()
+      .toEqualTypeOf<number | null>()
     expectTypeOf<DtoFile["previewFileId"]>()
-      .toEqualTypeOf<number | null | undefined>()
+      .toEqualTypeOf<number | null>()
     expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<TagAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<FileAssociationAuthorizationOnlyKeys>().toEqualTypeOf<never>()
@@ -978,7 +978,7 @@ describe("Song derived-view migration", () => {
     expectTypeOf<ClientFileTag["fileTag"]>()
       .toEqualTypeOf<NonNullable<ClientFileTag["fileTag"]>>()
     expectTypeOf<ClientCreditType["color"]>()
-      .toEqualTypeOf<ColorPaletteEntry | null | undefined>()
+      .toEqualTypeOf<ColorPaletteEntry | null>()
     expect(db3.songDetailView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
     )).toBe(db3.songDetailSelection)
@@ -1166,7 +1166,7 @@ describe("DB3 normalized foreign-single hydration", () => {
     }>()
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
       statusId?: number | null
-      status?: Prisma.EventStatusGetPayload<{}> | null
+      status?: db3.DB3ReferenceValueOf<typeof db3.xEventStatus> | null
     }>()
     expect(derived.referenceDependencies).toEqual([
       expect.objectContaining({
@@ -1179,7 +1179,7 @@ describe("DB3 normalized foreign-single hydration", () => {
     ])
     expect(derived.hydrate({ statusId: status.id }, references)).toEqual({
       statusId: status.id,
-      status,
+      status: references.require(db3.xEventStatus, status.id, "test"),
     })
   })
 
@@ -1210,7 +1210,7 @@ describe("DB3 normalized foreign-single hydration", () => {
     expect(() => derived.hydrate({
       statusId: 404,
     }, references)).toThrow(
-      "Unable to hydrate Event.status: EventStatus '404' is not available.",
+      "Unable to hydrate Event.statusId: EventStatus '404' is not available.",
     )
   })
 
@@ -1232,7 +1232,7 @@ describe("DB3 normalized foreign-single hydration", () => {
     })
     const derived = db3.deriveViewContract(db3.xInstrument, selection)
     const publicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01")
-    const group: db3.InstrumentFunctionalGroupClientPayload = {
+    const group: db3.DB3ReferenceTransportOf<typeof db3.xInstrumentFunctionalGroup> = {
       publicId,
       name: "Brass",
       description: "Brass instruments",
@@ -1243,16 +1243,20 @@ describe("DB3 normalized foreign-single hydration", () => {
     references.register(db3.xInstrumentFunctionalGroup, [group])
 
     expectTypeOf<Parameters<typeof derived.hydrate>[0]>().toEqualTypeOf<{
-      functionalGroupId?: InstrumentFunctionalGroupPublicId
+      functionalGroupId: InstrumentFunctionalGroupPublicId
     }>()
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
-      functionalGroupId?: InstrumentFunctionalGroupPublicId
-      functionalGroup?: db3.InstrumentFunctionalGroupClientPayload
+      functionalGroupId: InstrumentFunctionalGroupPublicId
+      functionalGroup: db3.DB3ReferenceValueOf<typeof db3.xInstrumentFunctionalGroup>
     }>()
     expect(derived.dtoSchema.safeParse({ functionalGroupId: 54 }).success).toBe(false)
     expect(derived.hydrate({ functionalGroupId: publicId }, references)).toEqual({
       functionalGroupId: publicId,
-      functionalGroup: group,
+      functionalGroup: references.require(
+        db3.xInstrumentFunctionalGroup,
+        publicId,
+        "test",
+      ),
     })
   })
 
@@ -1280,7 +1284,7 @@ describe("DB3 normalized foreign-single hydration", () => {
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
       tags: Array<{
         eventTagId: number
-        eventTag: Prisma.EventTagGetPayload<{}>
+        eventTag: db3.DB3ReferenceValueOf<typeof db3.xEventTag>
       }>
     }>()
     expect(derived.referenceDependencies).toEqual([
@@ -1295,7 +1299,10 @@ describe("DB3 normalized foreign-single hydration", () => {
     expect(derived.hydrate({
       tags: [{ eventTagId: tag.id }],
     }, references)).toEqual({
-      tags: [{ eventTagId: tag.id, eventTag: tag }],
+      tags: [{
+        eventTagId: tag.id,
+        eventTag: references.require(db3.xEventTag, tag.id, "test"),
+      }],
     })
   })
 })

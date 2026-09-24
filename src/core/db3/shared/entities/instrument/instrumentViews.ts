@@ -4,7 +4,12 @@ import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { isPublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId";
 import { defineCrudView } from "../../core/db3CrudView";
 import { type ClientOf, type DtoOf, defineView } from "../../core/db3View";
-import { xInstrument, xInstrumentFunctionalGroup, xInstrumentTag } from "../../schema/instrument";
+import { deriveReferenceViewContract } from "../../core/db3ViewContract";
+import {
+    xInstrument,
+    xInstrumentFunctionalGroup,
+    xInstrumentTag,
+} from "../../schema/instrument";
 import {
     InstrumentTagAssociationNaturalOrderBy,
 } from "../../schema/prismArgs";
@@ -22,14 +27,6 @@ const InstrumentFunctionalGroupListDtoSchema = z.object({
     description: z.string().optional(),
     sortOrder: z.number().int().optional(),
     color: z.string().nullable().optional(),
-});
-
-const InstrumentFunctionalGroupDashboardDtoSchema = z.object({
-    publicId: InstrumentFunctionalGroupPublicIdSchema,
-    name: z.string(),
-    description: z.string(),
-    sortOrder: z.number().int(),
-    color: z.string().nullable(),
 });
 
 const InstrumentTagDtoSchema = z.object({
@@ -70,19 +67,13 @@ const instrumentEditorSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>
     },
 });
 
-const DashboardInstrumentDtoSchema = z.object({
-    id: z.number().int(),
-    name: z.string(),
-    description: z.string(),
-    autoAssignFileLeafRegex: z.string().nullable(),
-    sortOrder: z.number().int(),
-    functionalGroupId: InstrumentFunctionalGroupPublicIdSchema,
-    instrumentTags: z.array(z.object({
-        id: z.number().int(),
-        instrumentId: z.number().int(),
-        tagId: z.number().int(),
-    })),
-});
+const instrumentFunctionalGroupDashboardContract = deriveReferenceViewContract(
+    xInstrumentFunctionalGroup,
+);
+
+const instrumentDashboardContract = deriveReferenceViewContract(
+    xInstrument,
+);
 
 export const instrumentFunctionalGroupListView = defineView({
     viewID: "InstrumentFunctionalGroup_List",
@@ -102,8 +93,9 @@ export const instrumentFunctionalGroupEditorView = defineCrudView({
 export const instrumentFunctionalGroupDashboardView = defineView({
     viewID: "InstrumentFunctionalGroup_Dashboard",
     entity: xInstrumentFunctionalGroup,
-    dtoSchema: InstrumentFunctionalGroupDashboardDtoSchema,
-    hydrate: dto => dto,
+    selection: instrumentFunctionalGroupDashboardContract.prismaSelection,
+    dtoSchema: instrumentFunctionalGroupDashboardContract.dtoSchema,
+    hydrate: instrumentFunctionalGroupDashboardContract.hydrate,
 });
 
 export const instrumentTagEditorView = defineCrudView({
@@ -126,23 +118,16 @@ export const instrumentEditorView = defineCrudView({
 export const instrumentDashboardView = defineView({
     viewID: "Instrument_Dashboard",
     entity: xInstrument,
-    dtoSchema: DashboardInstrumentDtoSchema,
-    hydrate: (dto, references) => ({
-        ...dto,
-        functionalGroup: references.require(
-            xInstrumentFunctionalGroup,
-            dto.functionalGroupId,
-            `Instrument(${dto.id}).functionalGroupId`,
-        ),
-        instrumentTags: dto.instrumentTags.map((association, index) => ({
-            ...association,
-            tag: references.require(
-                xInstrumentTag,
-                association.tagId,
-                `Instrument(${dto.id}).instrumentTags[${index}].tagId`,
-            ),
-        })).sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
-    }),
+    selection: instrumentDashboardContract.prismaSelection,
+    dtoSchema: instrumentDashboardContract.dtoSchema,
+    hydrate: (dto, references) => {
+        const hydrated = instrumentDashboardContract.hydrate(dto, references);
+        return {
+            ...hydrated,
+            instrumentTags: [...hydrated.instrumentTags]
+                .sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
+        };
+    },
 });
 
 export type InstrumentFunctionalGroupListItem = ClientOf<typeof instrumentFunctionalGroupListView>;

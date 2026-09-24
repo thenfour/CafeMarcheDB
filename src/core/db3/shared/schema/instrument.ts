@@ -7,6 +7,8 @@
 
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
+import type { InstrumentFunctionalGroupPublicId } from "shared/publicId";
+import { z } from "zod";
 import { CMDBTableFilterModel } from "../apiTypes";
 import { ColorField, ConstEnumStringField, foreignRef, GenericIntegerField, GhostField, MakePKfield, MakePublicIdField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
@@ -16,8 +18,8 @@ import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 // Instrument management has one administrative surface and one capability.
 export const xInstrumentAuthMap_R_EAdmins = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.login,
-    PostQuery: Permission.login,
+    PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+    PostQuery: db3.DB3FieldReadAuth.inheritRow,
     PreMutateAsOwner: Permission.admin_instruments,
     PreMutate: Permission.admin_instruments,
     PreInsert: Permission.admin_instruments,
@@ -35,9 +37,20 @@ export const xInstrumentTableAuthMap: db3.DB3AuthTablePermissionMap = {
 
 
 
+export const InstrumentFunctionalGroupReferenceSelection = Prisma.validator<Prisma.InstrumentFunctionalGroupDefaultArgs>()({
+    select: {
+        publicId: true,
+        name: true,
+        description: true,
+        sortOrder: true,
+        color: true,
+    },
+});
+
 export const xInstrumentFunctionalGroup = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.InstrumentFunctionalGroupDelegate>(),
     getIdentity: (entity: InstrumentFunctionalGroupClientPayload) => entity.publicId,
+    referenceSelection: InstrumentFunctionalGroupReferenceSelection,
     getSelectionArgs: (): Prisma.InstrumentFunctionalGroupDefaultArgs => {
         return InstrumentFunctionalGroupArgs;
     },
@@ -59,7 +72,7 @@ export const xInstrumentFunctionalGroup = db3.defineTable({
     }),
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
-        publicId: () => MakePublicIdField(),
+        publicId: () => MakePublicIdField<InstrumentFunctionalGroupPublicId>(),
         name: columnName => MakeTitleField(columnName, { authMap: xInstrumentAuthMap_R_EAdmins }),
         description: columnName => new GenericStringField({
             columnName,
@@ -84,9 +97,21 @@ export const xInstrumentFunctionalGroup = db3.defineTable({
 });
 
 
+export const InstrumentTagReferenceSelection = Prisma.validator<Prisma.InstrumentTagDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        sortOrder: true,
+        color: true,
+        significance: true,
+    },
+});
+
 export const xInstrumentTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.InstrumentTagDelegate>(),
     getIdentity: (entity: Prisma.InstrumentTagGetPayload<{}>) => entity.id,
+    referenceSelection: InstrumentTagReferenceSelection,
     getSelectionArgs: (): Prisma.InstrumentTagDefaultArgs => {
         return InstrumentTagArgs;
     },
@@ -168,6 +193,7 @@ export const xInstrumentTagAssociation = db3.defineTable({
         id: () => MakePKfield(),
         instrumentId: memberName => new GhostField({
             memberName,
+            readTransportSchema: z.number().int(),
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
         // do not add the `instrument` column here; this is used only as an association FROM the instrument table; excluding it
@@ -182,9 +208,41 @@ export const xInstrumentTagAssociation = db3.defineTable({
 
 ////////////////////////////////////////////////////////////////
 
+export const InstrumentReferenceTransportSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
+    select: {
+        id: true,
+        name: true,
+        description: true,
+        autoAssignFileLeafRegex: true,
+        sortOrder: true,
+        functionalGroupId: true,
+        instrumentTags: {
+            select: {
+                id: true,
+                instrumentId: true,
+                tagId: true,
+            },
+        },
+    },
+});
+
+// The nested public ID is fetched only so server transport projection can
+// replace Prisma's numeric functionalGroupId. It is stripped before the DTO;
+// normalized hydration supplies the canonical functionalGroup value.
+export const InstrumentReferenceSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
+    select: {
+        ...InstrumentReferenceTransportSelection.select,
+        functionalGroup: {
+            select: { publicId: true },
+        },
+    },
+});
+
 export const xInstrument = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.InstrumentDelegate>(),
     getIdentity: (entity: InstrumentClientPayload) => entity.id,
+    referenceSelection: InstrumentReferenceSelection,
+    referenceTransportSelection: InstrumentReferenceTransportSelection,
     getSelectionArgs: (): Prisma.InstrumentDefaultArgs => {
         return InstrumentArgs;
     },
@@ -217,7 +275,7 @@ export const xInstrument = db3.defineTable({
         }),
         autoAssignFileLeafRegex: columnName => new GenericStringField({
             columnName,
-            allowNull: false,
+            allowNull: true,
             format: "raw",
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),

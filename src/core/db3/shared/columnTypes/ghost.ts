@@ -7,7 +7,7 @@ import {
 } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
 import {
-    type DB3AuthSpec,
+    type DB3AuthSpec, type DB3ReadPresenceForAuthSpec,
     FieldBase,
     type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
@@ -17,26 +17,33 @@ import { type UserWithRolesPayload } from "../schema/userPayloads";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // field types
-export type GhostFieldArgs<TReadTransportValue = never> = {
+export type GhostFieldArgs<
+    TReadTransportValue = never,
+    TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+> = {
     memberName: string;
     specialFunction?: SqlSpecialColumnFunction;
     // optional DTO schema
     readTransportSchema?: z.ZodType<TReadTransportValue>;
-} & DB3AuthSpec;
+} & TAuthSpec;
 
 // sometimes you have a query containing a payload and you don't need to have a full FieldSpec for handling it. you just need to access its raw value as returned by the db.
 // often something like a include:{...}
-export class GhostField<TReadTransportValue = never> extends FieldBase<
+export class GhostField<
+    TReadTransportValue = never,
+    const TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+> extends FieldBase<
     number,
     undefined,
     true,
     TReadTransportValue,
-    TReadTransportValue
+    TReadTransportValue,
+    DB3ReadPresenceForAuthSpec<TAuthSpec>
 > {
 
     table: xTable;
 
-    constructor(args: GhostFieldArgs<TReadTransportValue>) {
+    constructor(args: GhostFieldArgs<TReadTransportValue, TAuthSpec>) {
         super({
             member: args.memberName,
             authMap: (args as any).authMap || null,

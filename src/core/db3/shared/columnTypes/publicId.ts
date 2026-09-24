@@ -18,13 +18,20 @@ import {
 ////////////////////////////////////////////////////////////////
 // Stable, opaque identity used whenever a converted row crosses the client
 // boundary. Generation remains server-owned.
-export class PublicIdField extends FieldBase<string, undefined, false, string, string, "required"> {
+export class PublicIdField<TPublicId extends string = string> extends FieldBase<
+    TPublicId,
+    undefined,
+    false,
+    TPublicId,
+    TPublicId,
+    "required"
+> {
     constructor(columnName = "publicId") {
         super({
             member: columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: null,
-            readTransportSchema: z.string().refine(isPublicId, "invalid public ID"),
+            readTransportSchema: z.custom<TPublicId>(isPublicId, "invalid public ID"),
             authMap: createAuthContextMap_PK(),
             specialFunction: SqlSpecialColumnFunction.publicId,
             _customAuth: null,
@@ -43,15 +50,17 @@ export class PublicIdField extends FieldBase<string, undefined, false, string, s
     getCustomFilterWhereClause = (): TAnyModel | boolean => false;
     getOverallWhereClause = (): TAnyModel | boolean => false;
 
-    ValidateAndParse = (args: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
+    ValidateAndParse = (args: ValidateAndParseArgs<TPublicId>): ValidateAndParseResult<TPublicId | null> => {
         const value = args.row[this.member];
         if (value === undefined) return UndefinedValidateAndParseResult();
         if (!isPublicId(value)) return ErrorValidateAndParseResult("invalid public ID", { [this.member]: value });
-        return SuccessfulValidateAndParseResult({ [this.member]: value });
+        return SuccessfulValidateAndParseResult({
+            [this.member]: value as unknown as TPublicId,
+        });
     };
 
     ApplyToNewRow = () => { };
-    isEqual = (a: string, b: string) => a === b;
+    isEqual = (a: TPublicId, b: TPublicId) => a === b;
     ApplyClientToDb = () => { };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
         if (dbModel[this.member] !== undefined) clientModel[this.member] = dbModel[this.member];
@@ -64,4 +73,6 @@ export class PublicIdField extends FieldBase<string, undefined, false, string, s
 }
 
 
-export const MakePublicIdField = () => new PublicIdField("publicId");
+export const MakePublicIdField = <TPublicId extends string = string>() => (
+    new PublicIdField<TPublicId>("publicId")
+);

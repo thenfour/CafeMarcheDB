@@ -440,8 +440,20 @@ present scalar field's codec once. Embedded single and collection relations
 recurse through the same compiled member tree, preserving absent and null edges.
 A foreign key selected without its relation declares a reference dependency;
 hydration retains the key and adds the relation from the supplied provider.
+Foreign-single fields explicitly opt into that normalized hydration behavior;
+ID-only support or parent-link fields opt out and remain scalar DTO members.
 Target xTable identity metadata determines the transport and consumer types, so
 public-ID targets do not fall back to Prisma's numeric database-key type.
+
+Each normalized-reference target now owns a canonical `referenceSelection` and,
+when server-side public-ID projection needs extra fetched members, a smaller
+`referenceTransportSelection`. `DB3ReferenceStore.register()` accepts the
+derived transport type, parses and recursively hydrates it through the target
+xTable contract, and stores the consumer value. A target color therefore enters
+the store as a transport string and leaves it as a `ColorPaletteEntry`; consumer
+views never repeat that codec work. Public-ID foreign keys may fetch only the
+target public ID as projection support while keeping that nested object out of
+the DTO.
 
 `EventStatus_Editor` is the first end-to-end migrated view. It now owns an
 explicit Prisma selection and supplies the selection, DTO schema, and hydrator
@@ -509,9 +521,9 @@ The safe broad-rollout boundary is now concrete:
 - `File_Search` now derives five association-collection shapes from one finite
   transport selection. Normalized tag and instrument IDs hydrate through the
   reference provider, while embedded song, event, and wiki-page values recurse
-  through their target xTables. Its view-level transform only maps the canonical
-  Permission reference and removes associations whose target was omitted by
-  authorization; the consumer type therefore exposes concrete relation targets.
+  through their target xTables. Audited `inheritRow` contracts make selected
+  association endpoints concrete, so the view uses the generated hydrator
+  directly with no filtering or type-normalization wrapper.
 - `ForeignCollectionField` and ghost members need an explicit read transport
   contract before a selected primitive can derive. This is deliberate: unknown
   transport values are rejected rather than guessed.
@@ -805,10 +817,20 @@ sound.
         their Prisma selections. Describe File reverse relations as typed
         collection fields so self-relations remain finite and compiler-checked.
         Keep authorization-only selection members outside the transport shape,
-        and centralize inaccessible association-target pruning in one typed File
-        client normalizer reused by embedded Song file cards. Remove the unused
-        duplicate `xFileVerbose`; retain the remaining `enrichFile` call only at
-        the legacy Event payload boundary until that view is migrated.
+        and remove the unused duplicate `xFileVerbose`. Retain the remaining
+        `enrichFile` call only at the legacy Event payload boundary until that
+        view is migrated.
+
+29. [x] **Make normalized reference values xTable-owned and remove File
+        normalization plumbing.** Give each provider target a canonical finite
+        reference selection and derive its transport schema and recursively
+        codec-hydrated consumer value. Distinguish fetched Prisma support members
+        from the DTO-visible reference transport for public-ID projection. Make
+        foreign-single reference hydration an explicit field capability so
+        scalar-only parent and ownership IDs stay scalar. Prove the result by
+        using the generated hydrator directly in `File_Search`, `File_Detail`,
+        and `File_Editor`, with concrete `inheritRow` relation endpoints and no
+        `WithPresentMember`, pruning helper, or File-specific normalizer.
 
 ## Pilot completion criteria
 
