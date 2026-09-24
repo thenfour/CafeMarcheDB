@@ -31,6 +31,7 @@ import {
 } from "../schema/song";
 import { xPermission, xRole, xUserTag } from "../schema/user";
 import { xWikiPageTag } from "../schema/wikiPageTag";
+import { graft } from "../entities/common/viewCommon";
 
 // dashboard provider provides "hydrated" objects, not raw db rows
 // (e.g. ColorPaletteEntry rather than `string`).
@@ -198,7 +199,7 @@ const dashboardInstrumentTransportSelection = Prisma.validator<Prisma.Instrument
         functionalGroupId: true,
         instrumentTags: {
             select: {
-                id: true,
+                publicId: true,
                 instrumentId: true,
                 tagId: true,
             },
@@ -206,21 +207,20 @@ const dashboardInstrumentTransportSelection = Prisma.validator<Prisma.Instrument
     },
 });
 
-const dashboardInstrumentSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
-    select: {
-        ...dashboardInstrumentTransportSelection.select,
-        functionalGroup: {
-            select: { publicId: true },
-        },
-        instrumentTags: {
-            ...dashboardInstrumentTransportSelection.select.instrumentTags,
-            select: {
-                ...dashboardInstrumentTransportSelection.select.instrumentTags.select,
-                tag: { select: { publicId: true } },
+const dashboardInstrumentSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()(
+    graft(dashboardInstrumentTransportSelection, {
+        select: {
+            functionalGroup: {
+                select: { publicId: true },
+            },
+            instrumentTags: {
+                select: {
+                    tag: { select: { publicId: true } },
+                },
             },
         },
-    },
-});
+    })
+);
 
 // These projections and conversions are private details of the dashboard
 // provider. DB3 views see only dashboardReferenceContract's per-entity output

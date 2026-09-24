@@ -256,8 +256,14 @@ class TagsFieldImpl<
     createMockAssociation_DefaultImpl = (row: TAnyModel, foreignObject: TAnyModel): TAssociation => {
         const localIdentityMember = this.localTableSpec.clientIdMember;
         const foreignIdentityMember = this.getForeignTableShema().clientIdMember;
+        const associationTable = this.getAssociationTableShema();
+        // Converted association identities are server-generated; client drafts
+        // are compared by their foreign target and must not invent one.
+        const mockAssociationIdentity = associationTable.publicIdMember
+            ? {}
+            : { [associationTable.pkMember]: -1 };
         const ret = {
-            [this.getAssociationTableShema().pkMember]: -1, // an ID that we can assume is never valid or going to match an existing. we could also put null which may be more accurate but less safe in terms of query compatibiliy.
+            ...mockAssociationIdentity,
             [this.associationLocalObjectMember]: row, // local object
             [this.associationLocalIDMember]: row[localIdentityMember], // canonical client identity
             [this.associationForeignObjectMember]: foreignObject, // local object
@@ -273,9 +279,13 @@ class TagsFieldImpl<
             return false; // shortcut
         }
         // ok they are equal length arrays; check all items
-        const asst = this.getAssociationTableShema();
-        const avalues = a.map(x => x[asst.pkMember]);
-        const bvalues = b.map(x => x[asst.pkMember]);
+        // tagsRef's Prisma metadata guarantees this conventional foreign-ID
+        // member exists even though TAssociation remains reusable and generic.
+        const foreignIdentityOf = (association: TAssociation) => (
+            association as TAnyModel
+        )[this.associationForeignIDMember];
+        const avalues = a.map(foreignIdentityOf);
+        const bvalues = b.map(foreignIdentityOf);
         avalues.sort();
         bvalues.sort();
         for (let i = 0; i < avalues.length; ++i) {

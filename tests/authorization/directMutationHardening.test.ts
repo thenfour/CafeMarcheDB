@@ -16,6 +16,7 @@ import deleteEventSongList from "src/core/db3/mutations/deleteEventSongList"
 import updateGenericSortOrder from "src/core/db3/mutations/updateGenericSortOrder"
 import updateUserEventAttendance from "src/core/db3/mutations/updateUserEventAttendanceMutation"
 import { Permission } from "shared/permissions"
+import { isPublicId } from "shared/publicId"
 import {
   createAuthorizationPersona,
   createAuthorizationTestUser,
@@ -259,7 +260,12 @@ describe("DB3 command boundary", () => {
       instrumentFunctionalGroup: [originalGroup, nextGroup],
       instrument: [instrument],
       instrumentTag: [acousticTag, electricTag],
-      instrumentTagAssociation: [{ id: 70, instrumentId: instrument.id, tagId: acousticTag.id }],
+      instrumentTagAssociation: [{
+        id: 70,
+        publicId: "OriginalAssoc001",
+        instrumentId: instrument.id,
+        tagId: acousticTag.id,
+      }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
@@ -283,9 +289,12 @@ describe("DB3 command boundary", () => {
         functionalGroupId: nextGroup.id,
       }),
     ])
-    expect(authorizationTestDb.snapshot("instrumentTagAssociation")).toEqual([
+    const associations = authorizationTestDb.snapshot("instrumentTagAssociation")
+    expect(associations).toEqual([
       expect.objectContaining({ instrumentId: instrument.id, tagId: electricTag.id }),
     ])
+    expect(isPublicId(associations[0]!.publicId)).toBe(true)
+    expect(associations[0]!.publicId).not.toBe("OriginalAssoc001")
   })
 
   it("updates and soft-deletes a Song through generated CRUD", async () => {

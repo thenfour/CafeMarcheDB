@@ -83,7 +83,7 @@ const instrumentEditorTransportSelection = Prisma.validator<Prisma.InstrumentDef
         functionalGroupId: true,
         instrumentTags: {
             select: {
-                id: true,
+                publicId: true,
                 tagId: true,
                 // tag: gets grafted via reference provider
             },

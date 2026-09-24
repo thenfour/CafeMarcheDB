@@ -317,7 +317,8 @@ export interface UpdateAssociationsArgs {
 // this is specifically for arrays of tag IDs. if the association has more to it than just associating two PKs, then you'll need something more sophisticated.
 export const UpdateAssociations = async ({ changeContext, ctx, ...args }: UpdateAssociationsArgs) => {
     const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
-    const associationTableName = args.column.getAssociationTableShema().tableName;
+    const associationTable = args.column.getAssociationTableShema();
+    const associationTableName = associationTable.tableName;
     const publicData = await getMutationPublicData(ctx);
     const rowMode = args.rowMode || "update";
 
@@ -399,9 +400,11 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
         // Note: updatedby / createdby are not supported for associations, because i can't
         // access that table column information from here. i'm also not sure it
         // would be helpful or accurate.
-        const newAssoc = await transactionalDb[associationTableName].create({
+        const newAssoc = await createDB3Row(
+            associationTable,
+            transactionalDb[associationTableName],
             data,
-        });
+        );
         changedAssociations.push(newAssoc);
 
         await RegisterChange({

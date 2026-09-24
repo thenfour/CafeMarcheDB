@@ -104,14 +104,25 @@ export async function CorrectInstrumentTagPublicIds() {
     console.log(`Replaced ${replacementCount} InstrumentTag public-ID placeholders.`);
 }
 
+export async function CorrectInstrumentTagAssociationPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.instrumentTagAssociation,
+        modelName: "InstrumentTagAssociation",
+    });
+    console.log(`Replaced ${replacementCount} InstrumentTagAssociation public-ID placeholders.`);
+}
+
 export async function registerNodeInstrumentation() {
     console.log(`INSTRUMENTATION RUNNING`);
     await instrumentationSetup();
 
     await CorrectUserUids();
     await CorrectEventSegmentUids();
+
+    // public id corrections
     await CorrectInstrumentFunctionalGroupPublicIds();
     await CorrectInstrumentTagPublicIds();
+    await CorrectInstrumentTagAssociationPublicIds();
 
     //const startupState = getServerStartStateRef();
     process.env.CMDB_START_TIME = `${new Date().valueOf()}`;

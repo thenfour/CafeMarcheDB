@@ -774,8 +774,10 @@ a per-row compatibility flag or a second lookup mode.
 
 ### Established baseline and remaining migration limits
 
-- `InstrumentFunctionalGroup` is the public-ID pilot. `InstrumentTag` is the
-  second converted DB3 entity and proves the association/tag mutation path.
+- `InstrumentFunctionalGroup` is the public-ID pilot. `InstrumentTag` and its
+  `InstrumentTagAssociation` join rows are also converted; together they prove
+  that tag targets and association records cross the client boundary only with
+  public identities.
 - The entity/view/hydration/command boundaries are established well enough to
   begin broad public-ID migration. Further general DB3 architecture work is not
   a prerequisite unless a concrete entity conversion exposes a missing identity
@@ -1120,6 +1122,7 @@ conversions.
   dependent slice begins.
   - [x] `InstrumentFunctionalGroup`
   - [x] `InstrumentTag`
+  - [x] `InstrumentTagAssociation`
   - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
   - [x] Exercise an association/tag command with public identities
     (`Instrument.instrumentTags`).

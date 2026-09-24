@@ -504,6 +504,7 @@ model InstrumentTag {
 // association table
 model InstrumentTagAssociation {
   id           Int           @id @default(autoincrement())
+  publicId     String        @unique @db.Char(16)
   instrumentId Int
   instrument   Instrument    @relation(fields: [instrumentId], references: [id], onDelete: Cascade) // cascade delete association
   tagId        Int

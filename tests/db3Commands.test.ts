@@ -96,6 +96,7 @@ const instrumentFunctionalGroupCrudHandlers = defineEntityCrudCommandHandlers(
 const functionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
 const instrumentTagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn02");
 const otherInstrumentTagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn03");
+const instrumentTagAssociationPublicId = parsePublicId<"InstrumentTagAssociation">("AbCdEfGhIjKlMn04");
 const otherFunctionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn02");
 const publicIdentityAssociationCommand = db3.defineAssociationCommand({
     commandID: "InstrumentFunctionalGroup_RelationshipTest",
@@ -615,7 +616,7 @@ describe("DB3 commands", () => {
             sortOrder: 1,
             functionalGroupId: functionalGroupPublicId,
             instrumentTags: [{
-                id: 70,
+                publicId: instrumentTagAssociationPublicId,
                 tagId: instrumentTagPublicId,
             }],
         });
@@ -626,7 +627,10 @@ describe("DB3 commands", () => {
             autoAssignFileLeafRegex: "trumpet",
             sortOrder: 1,
             functionalGroupId: functionalGroupPublicId,
-            instrumentTags: [{ id: 70, tagId: instrumentTagPublicId }],
+            instrumentTags: [{
+                publicId: instrumentTagAssociationPublicId,
+                tagId: instrumentTagPublicId,
+            }],
         });
         const functionalGroup: db3.InstrumentFunctionalGroupDashboardClient = {
             publicId: functionalGroupPublicId,
