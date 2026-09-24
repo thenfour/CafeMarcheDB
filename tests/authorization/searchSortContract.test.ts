@@ -85,4 +85,35 @@ describe("search sort contract", () => {
         expect(optionless[0]?.options).toEqual([]);
         expect(findMany).toHaveBeenCalledOnce();
     });
+
+    it("uses WikiPageTag public identities for wiki search facets", async () => {
+        const publicId = parsePublicId<"WikiPageTag">("WikiTagPublic001");
+        const findMany = vi.fn(async () => [{ id: 31, publicId }]);
+        // The focused authorization path only reads the authenticated user ID.
+        const publicData = db3.createDB3Authorization({ id: 100 } as any, new PermissionSet([
+            { id: 1, name: Permission.always_grant },
+            { id: 2, name: Permission.login },
+            { id: 3, name: Permission.view_wiki_pages },
+        ]));
+        const criterion = {
+            db3Column: "tags",
+            behavior: DiscreteCriterionFilterType.hasAllOf,
+            options: [publicId],
+        };
+
+        const resolved = await resolveSearchDiscreteCriteria(
+            db3.xWikiPage,
+            [criterion],
+            publicData,
+            { WikiPageTag: { findMany } } as any, // Focused identity-target delegate.
+        );
+
+        expect(resolved[0]?.options).toEqual([31]);
+        expect(db3.xWikiPage.fields.tags.SqlGetFacetInfoQuery(
+            {} as any, // The tag facet SQL does not inspect the current-user payload.
+            "select 1 id",
+            "select 1 id",
+            criterion,
+        )?.sql).toContain("FT.publicId AS id");
+    });
 });

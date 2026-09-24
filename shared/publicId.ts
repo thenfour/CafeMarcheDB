@@ -17,6 +17,8 @@ export type SongTagPublicId = PublicId<"SongTag">;
 export type SongTagAssociationPublicId = PublicId<"SongTagAssociation">;
 export type FileTagPublicId = PublicId<"FileTag">;
 export type FileTagAssignmentPublicId = PublicId<"FileTagAssignment">;
+export type WikiPageTagPublicId = PublicId<"WikiPageTag">;
+export type WikiPageTagAssignmentPublicId = PublicId<"WikiPageTagAssignment">;
 // todo: define other table-specific public ID types as needed here.
 
 export function isPublicId(value: unknown): value is PublicId {

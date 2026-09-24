@@ -101,6 +101,7 @@ const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn05");
 const otherSongTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn06");
 const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn07");
 const instrumentPublicId = parsePublicId<"Instrument">("AbCdEfGhIjKlMn08");
+const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("AbCdEfGhIjKlMn09");
 const otherFunctionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn02");
 const publicIdentityAssociationCommand = db3.defineAssociationCommand({
     commandID: "InstrumentFunctionalGroup_RelationshipTest",
@@ -488,6 +489,17 @@ describe("DB3 commands", () => {
         expect(() => db3.wikiPageTagEditorView.crud.operations.create.command.parseDto({
             text: "Policy",
             wikiPages: [],
+        })).toThrow();
+        expect(db3.wikiPageEditorView.crud.operations.update.command.parseDto({
+            identity: 4,
+            patch: { tags: [wikiPageTagPublicId] },
+        })).toEqual({
+            identity: 4,
+            patch: { tags: [wikiPageTagPublicId] },
+        });
+        expect(() => db3.wikiPageEditorView.crud.operations.update.command.parseDto({
+            identity: 4,
+            patch: { tags: [17] },
         })).toThrow();
         expect(db3.permissionEditorView.crud.operations.update.command.parseDto({
             identity: 1,

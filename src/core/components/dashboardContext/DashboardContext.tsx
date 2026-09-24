@@ -236,7 +236,10 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.authorization = db3.createDB3Authorization(currentUser, valueRef.current.effectivePermissions);
 
     valueRef.current.userTag = new TableAccessor(dashboardData.userTag);
-    valueRef.current.wikiPageTag = new TableAccessor(dashboardData.wikiPageTag);
+    valueRef.current.wikiPageTag = new TableAccessor(
+        dashboardData.wikiPageTag,
+        tag => db3.xWikiPageTag.getIdentity(tag),
+    );
     valueRef.current.role = new TableAccessor(dashboardData.role);
     valueRef.current.eventType = new TableAccessor(dashboardData.eventType);
     valueRef.current.eventStatus = new TableAccessor(dashboardData.eventStatus);
@@ -252,6 +255,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     );
     db3.registerDashboardReferences(valueRef.current.referenceStore, {
         permission: dashboardData.permission,
+        wikiPageTag: dashboardData.wikiPageTag,
         eventType: dashboardData.eventType,
         eventStatus: dashboardData.eventStatus,
         eventTag: dashboardData.eventTag,

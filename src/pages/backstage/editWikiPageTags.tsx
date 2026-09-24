@@ -8,7 +8,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 const tableSpec = DB3Client.defineTableClientSpec({
     view: db3.wikiPageTagEditorView,
     columns: {
-        id: columnName => new DB3Client.PKColumnClient({ columnName }),
+        publicId: DB3Client.publicIdFieldGen(),
         text: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
         description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
         color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 300 }),
@@ -20,7 +20,6 @@ const tableSpec = DB3Client.defineTableClientSpec({
 const MainContent = () => {
     return <>
         <SettingMarkdown setting="editWikiPageTags_markdown"></SettingMarkdown>
-        <div>Wiki Page Tags admin page will be available after database migration.</div>
         <DB3EditGrid tableSpec={tableSpec} view={db3.wikiPageTagEditorView} />
     </>;
 };

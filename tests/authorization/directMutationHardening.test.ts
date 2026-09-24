@@ -475,6 +475,7 @@ describe("DB3 command boundary", () => {
     }
     const wikiPageTag = {
       id: 107,
+      publicId: "WikiTagPublic001",
       text: "Policy",
       description: "Policy page",
       color: null,
@@ -494,7 +495,7 @@ describe("DB3 command boundary", () => {
       commandID: db3.wikiPageEditorView.crud.operations.update.command.commandID,
       payload: {
         identity: wikiPage.id,
-        patch: { tags: [wikiPageTag.id] },
+        patch: { tags: [wikiPageTag.publicId] },
       },
     }, ctx)).resolves.toEqual({ identity: wikiPage.id })
 
@@ -502,8 +503,10 @@ describe("DB3 command boundary", () => {
       expect.objectContaining({
         wikiPageId: wikiPage.id,
         tagId: wikiPageTag.id,
+        publicId: expect.any(String),
       }),
     ])
+    expect(isPublicId(authorizationTestDb.snapshot("wikiPageTagAssignment")[0]?.publicId)).toBe(true)
     expect(db3.wikiPageEditorView.crud.operations.create).toBeUndefined()
     expect(db3.wikiPageEditorView.crud.operations.delete).toBeUndefined()
   })

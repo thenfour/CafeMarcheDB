@@ -16,6 +16,8 @@ const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGh
 const instrumentPublicId = parsePublicId<"Instrument">("AbCdEfGhIjKlMn07");
 const fileTagPublicId = parsePublicId<"FileTag">("AbCdEfGhIjKlMn08");
 const fileTagAssociationPublicId = parsePublicId<"FileTagAssignment">("AbCdEfGhIjKlMn09");
+const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("AbCdEfGhIjKlMn10");
+const wikiPageTagAssignmentPublicId = parsePublicId<"WikiPageTagAssignment">("AbCdEfGhIjKlMn11");
 const instrumentId = 7;
 const group = {
     id: 54,
@@ -180,6 +182,28 @@ describe("instrument catalog public-ID transport", () => {
         });
         expect(projectedSong.tags[0]).not.toHaveProperty("id");
         expect(projectedSong.tags[0].tag).not.toHaveProperty("id");
+
+        const projectedWikiPage = projectDB3ModelPublicIds(db3.xWikiPage, {
+            id: 96,
+            tags: [{
+                id: 97,
+                publicId: wikiPageTagAssignmentPublicId,
+                wikiPageId: 96,
+                tagId: 98,
+                tag: {
+                    id: 98,
+                    publicId: wikiPageTagPublicId,
+                    text: "Policy",
+                },
+            }],
+        }, authorization(Permission.view_wiki_pages));
+        expect(projectedWikiPage.tags[0]).toMatchObject({
+            publicId: wikiPageTagAssignmentPublicId,
+            tagId: wikiPageTagPublicId,
+            tag: { publicId: wikiPageTagPublicId, text: "Policy" },
+        });
+        expect(projectedWikiPage.tags[0]).not.toHaveProperty("id");
+        expect(projectedWikiPage.tags[0].tag).not.toHaveProperty("id");
     });
 
     it("accepts only public targets for converted-table queries and mutations", () => {
@@ -320,6 +344,20 @@ describe("instrument catalog public-ID transport", () => {
             mutationType: "update",
             updatePublicId: fileTagAssociationPublicId,
             updateModel: { fileTagId: fileTagPublicId },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "WikiPageTag",
+            tableName: "WikiPageTag",
+            mutationType: "update",
+            updatePublicId: wikiPageTagPublicId,
+            updateModel: { text: "Procedure" },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "WikiPageTagAssignment",
+            tableName: "WikiPageTagAssignment",
+            mutationType: "update",
+            updatePublicId: wikiPageTagAssignmentPublicId,
+            updateModel: { tagId: wikiPageTagPublicId },
         })).not.toThrow();
     });
 

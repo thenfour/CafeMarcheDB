@@ -1123,6 +1123,7 @@ model WikiPageRevision {
 
 model WikiPageTag {
   id           Int                     @id @default(autoincrement())
+  publicId     String                  @unique @db.Char(16)
   text         String                  @db.VarChar(768)
   description  String                  @db.MediumText
   color        String?
@@ -1137,6 +1138,7 @@ model WikiPageTag {
 
 model WikiPageTagAssignment {
   id         Int         @id @default(autoincrement())
+  publicId   String      @unique @db.Char(16)
   wikiPageId Int
   wikiPage   WikiPage    @relation(fields: [wikiPageId], references: [id], onDelete: Cascade)
   tagId      Int

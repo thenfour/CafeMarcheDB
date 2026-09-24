@@ -1126,9 +1126,17 @@ The current pressure-led sequence is:
    enriches from public-keyed caches; it no longer depends on a numeric tag FK.
    This slice also made discrete-criterion option types generic so branded
    identities remain visible through file-search UI state.
-4. Migrate `WikiPageTag` plus `WikiPageTagAssignment` next. This should be
-   repetition plus cleanup of its hand-authored DTO and draft seams.
-5. Treat `EventType`, `EventStatus`, `EventTag`, and `EventTagAssignment` as one
+4. **Completed:** migrate `WikiPageTag` and `WikiPageTagAssignment` together.
+   Wiki tag administration, page associations, dashboard references, search
+   criteria/facets, and React keys now carry branded public identities. The
+   former hand-authored Wiki editor DTO is selection-derived, and Wiki search
+   now uses a named hydrated view instead of a raw Prisma payload. Tag targets
+   are normalized through the dashboard reference contract. The custom editor
+   also stopped fabricating `id: -1` association records: `TagsField` now owns
+   replacement drafts through `withForeignObjects()`, keeping relation shape
+   and identity policy out of React code.
+5. **Next:** treat `EventType`, `EventStatus`, `EventTag`, and
+   `EventTagAssignment` as one
    event-classification batch so their shared DTO, dashboard, filtering,
    reporting, and import surfaces are changed coherently. The SongTag work
    should make their identity-bearing filters an application of an established
@@ -1238,6 +1246,8 @@ conversions.
   - [x] `Instrument`
   - [x] `FileTag`
   - [x] `FileTagAssignment`
+  - [x] `WikiPageTag`
+  - [x] `WikiPageTagAssignment`
   - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
   - [x] Exercise an association/tag command with public identities
     (`Instrument.instrumentTags`).
@@ -1246,6 +1256,9 @@ conversions.
   - [x] Exercise route and search identity before converting Event and User.
   - [x] Exercise a raw multipart upload boundary and public-keyed legacy file
     enrichment (`FileTag` upload context and Event detail files).
+  - [x] Replace a hand-authored association DTO and component-owned mock-row
+    shape with derived views, normalized references, and `TagsField` draft
+    construction (`WikiPageTag` and Wiki page editing).
 
 ### Deferred DB3 enhancements
 

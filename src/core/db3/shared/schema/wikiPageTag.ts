@@ -1,10 +1,11 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
+import type { WikiPageTagAssignmentPublicId, WikiPageTagPublicId } from "shared/publicId";
 import {
     WikiPageTagArgs, WikiPageTagNaturalOrderBy, WikiPageTagPayload,
     WikiPageTagAssignmentArgs, WikiPageTagAssignmentNaturalOrderBy, WikiPageTagAssignmentPayload
 } from "./prismArgs";
-import { foreignRef, GhostField, MakeColorField, MakePKfield, MakeSignificanceField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
+import { foreignRef, GhostField, MakeColorField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
 import { DB3AuthTablePermissionMap, defineAuthMap, defineTable, makeColumnSet, prismaModel } from "../db3core";
 import { MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
@@ -48,7 +49,7 @@ const wikiPageTagAssignmentTableAuthMap: DB3AuthTablePermissionMap = {
 //////////////////////////////////////////////////////////////
 export const xWikiPageTag = defineTable({
     prismaModel: prismaModel<Prisma.WikiPageTagDelegate>(),
-    getIdentity: (tag: Prisma.WikiPageTagGetPayload<{}>) => tag.id,
+    getIdentity: (tag: { publicId: WikiPageTagPublicId }) => tag.publicId,
     getSelectionArgs: (): Prisma.WikiPageTagDefaultArgs => {
         return WikiPageTagArgs;
     },
@@ -56,7 +57,7 @@ export const xWikiPageTag = defineTable({
     deletePolicy: "hard",
     tableAuthMap: wikiPageTagTableAuthMap,
     naturalOrderBy: WikiPageTagNaturalOrderBy,
-    createInsertModelFromString: (input: string): Prisma.WikiPageTagCreateInput => {
+    createInsertModelFromString: (input: string): Partial<WikiPageTagPayload> => {
         return {
             text: input,
             description: "auto-created",
@@ -66,14 +67,15 @@ export const xWikiPageTag = defineTable({
         };
     },
     getRowInfo: (row: WikiPageTagPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
     fields: makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<WikiPageTagPublicId>(),
         text: columnName => MakeTitleField(columnName, { authMap: wikiPageTagAuthMap }),
         description: () => MakeDescriptionField({ authMap: wikiPageTagAuthMap }),
         color: () => MakeColorField({ authMap: wikiPageTagAuthMap }),
@@ -86,6 +88,7 @@ export const xWikiPageTag = defineTable({
 //////////////////////////////////////////////////////////////
 export const xWikiPageTagAssignment = defineTable({
     prismaModel: prismaModel<Prisma.WikiPageTagAssignmentDelegate>(),
+    getIdentity: (assignment: { publicId: WikiPageTagAssignmentPublicId }) => assignment.publicId,
     tableName: "WikiPageTagAssignment",
     deletePolicy: "hard",
     naturalOrderBy: WikiPageTagAssignmentNaturalOrderBy,
@@ -95,7 +98,7 @@ export const xWikiPageTagAssignment = defineTable({
     },
     getRowInfo: (row: WikiPageTagAssignmentPayload) => {
         return {
-            pk: row.id,
+            pk: row.publicId,
             name: row.tag?.text || "",
             description: row.tag?.description || "",
             color: gGeneralPaletteList.findEntry(row.tag?.color || null),
@@ -103,7 +106,8 @@ export const xWikiPageTagAssignment = defineTable({
         };
     },
     fields: makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<WikiPageTagAssignmentPublicId>(),
         tag: foreignRef(() => xWikiPageTag, {
             fkidMember: "tagId",
             authMap: wikiPageTagAssignmentAuthMap,

@@ -81,7 +81,10 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
     const tagsTableSpec = React.useMemo(() => DB3Client.defineTableClientSpec({
         view: db3.wikiPageEditorView,
         columns: {
-            tags: DB3Client.tagsFieldClientGen<db3.WikiPageTagAssignmentPayload>({ allowDeleteFromCell: false, fieldCaption: "Tags" }),
+            tags: DB3Client.tagsFieldClientGen<db3.WikiPageEditorClient["tags"][number]>({
+                allowDeleteFromCell: false,
+                fieldCaption: "Tags",
+            }),
         },
     }), []);
 
@@ -109,7 +112,7 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
         readonly={props.readonly}
         displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
         getOptionInfo={(tag) => ({
-            id: tag.id,
+            id: db3.xWikiPageTag.getIdentity(tag),
             color: tag.color,
             name: tag.text,
             tooltip: tag.description,
@@ -122,18 +125,10 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
                     feature: ActivityFeature.wiki_page_tag_update,
                     context: "WikiPageTagsControl",
                 });
-                await editCommands.update({
-                    id: wikiPageId,
-                    tags: newTags.map(t => ({
-                        id: -1,
-                        tagId: t.id,
-                        tag: {
-                            ...t,
-                            color: typeof t.color === "string" ? t.color : t.color?.id ?? null,
-                        },
-                        wikiPageId: wikiPageId,
-                    })) satisfies db3.WikiPageTagAssignmentPayload[],
-                }, wikiPageRecord);
+                await editCommands.update(
+                    db3.xWikiPage.fields.tags.withForeignObjects(wikiPageRecord, newTags),
+                    wikiPageRecord,
+                );
                 if (props.refetch) {
                     props.refetch();
                 }

@@ -8,6 +8,7 @@ import { UserChip } from "../user/userChip";
 import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from "./WikiClientBaseTypes";
 import { StandardVariationSpec } from "../color/palette";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import * as db3 from "src/core/db3/db3";
 
 export interface WikiPageListItemProps {
     index: number;
@@ -39,12 +40,14 @@ export const WikiPageListItem = (props: WikiPageListItemProps) => {
             <CMChipContainer className="wikiTags">
                 {props.wikiPage.tags?.map(tagAssignment => (
                     <CMStandardDBChip
-                        key={tagAssignment.id}
+                        key={db3.xWikiPageTagAssignment.getIdentity(tagAssignment)}
                         size="small"
                         model={tagAssignment.tag}
                         variation={{
                             ...StandardVariationSpec.Weak,
-                            selected: props.filterSpec.tagFilter.options.includes(tagAssignment.tag.id)
+                            selected: props.filterSpec.tagFilter.options.includes(
+                                db3.xWikiPageTag.getIdentity(tagAssignment.tag),
+                            )
                         }}
                         getTooltip={() => tagAssignment.tag.description}
                     />

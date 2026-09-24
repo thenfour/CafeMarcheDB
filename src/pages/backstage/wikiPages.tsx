@@ -12,6 +12,7 @@ import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { wikiPageSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
+import type { WikiPageTagPublicId } from "shared/publicId";
 
 // for serializing in compact querystring
 interface WikiPagesFilterSpecStatic {
@@ -23,7 +24,7 @@ interface WikiPagesFilterSpecStatic {
 
     tagFilterEnabled: boolean;
     tagFilterBehavior: DiscreteCriterionFilterType;
-    tagFilterOptions: number[];
+    tagFilterOptions: WikiPageTagPublicId[];
 
     namespaceFilterEnabled: boolean;
     namespaceFilterBehavior: DiscreteCriterionFilterType;
@@ -52,7 +53,7 @@ const WikiPageListOuter = () => {
     const dashboardContext = useDashboardContext();
 
     // Individual filter hooks - still needed for the search page hook
-    const tagFilter = useDiscreteFilter({
+    const tagFilter = useDiscreteFilter<WikiPageTagPublicId>({
         urlPrefix: "ta",
         db3Column: "tags",
         defaultBehavior: gDefaultStaticFilterValue.tagFilterBehavior,
@@ -97,17 +98,22 @@ const WikiPageListOuter = () => {
                 orderByDirection: sortDirection,
                 tagFilterEnabled: tagFilter.enabled,
                 tagFilterBehavior: tagFilter.criterion.behavior,
-                tagFilterOptions: tagFilter.criterion.options as number[],
+                tagFilterOptions: tagFilter.criterion.options,
                 namespaceFilterEnabled: namespaceFilter.enabled,
                 namespaceFilterBehavior: namespaceFilter.criterion.behavior,
-                namespaceFilterOptions: namespaceFilter.criterion.options as string[],
+                namespaceFilterOptions: namespaceFilter.criterion.options,
             };
             return staticSpec;
         }
     });
 
     // Configuration for the generic SearchPageContent component
-    const config: SearchPageContentConfig<WikiPagesFilterSpecStatic, WikiPagesFilterSpec, db3.WikiPagePayload, EnrichedVerboseWikiPage> = {
+    const config: SearchPageContentConfig<
+        WikiPagesFilterSpecStatic,
+        WikiPagesFilterSpec,
+        db3.WikiPageSearchDto,
+        EnrichedVerboseWikiPage
+    > = {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: WikiPageOrderByColumnOptions,

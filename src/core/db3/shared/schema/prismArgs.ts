@@ -9,6 +9,8 @@ import type {
     InstrumentTagPublicId,
     SongTagAssociationPublicId,
     SongTagPublicId,
+    WikiPageTagAssignmentPublicId,
+    WikiPageTagPublicId,
 } from "shared/publicId";
 //import * as db3 from "../db3core"; // circular
 import { TAnyModel } from "shared/rootroot";
@@ -1343,6 +1345,13 @@ export const WikiPageTagArgs = Prisma.validator<Prisma.WikiPageTagDefaultArgs>()
     include: {}
 });
 export type WikiPageTagPayload = Prisma.WikiPageTagGetPayload<typeof WikiPageTagArgs>;
+export type WikiPageTagClientPayload = Omit<
+    WikiPageTagPayload,
+    "id" | "publicId" | "color"
+> & {
+    publicId: WikiPageTagPublicId;
+    color: ColorPaletteEntry | null;
+};
 
 export const WikiPageTagNaturalOrderBy: Prisma.WikiPageTagOrderByWithRelationInput[] = [
     { sortOrder: 'asc' },
@@ -1356,6 +1365,14 @@ export const WikiPageTagAssignmentArgs = Prisma.validator<Prisma.WikiPageTagAssi
     }
 });
 export type WikiPageTagAssignmentPayload = Prisma.WikiPageTagAssignmentGetPayload<typeof WikiPageTagAssignmentArgs>;
+export type WikiPageTagAssignmentClientPayload = Omit<
+    WikiPageTagAssignmentPayload,
+    "id" | "publicId" | "tagId" | "tag"
+> & {
+    publicId: WikiPageTagAssignmentPublicId;
+    tagId: WikiPageTagPublicId;
+    tag: WikiPageTagClientPayload;
+};
 
 export const WikiPageTagAssignmentNaturalOrderBy: Prisma.WikiPageTagAssignmentOrderByWithRelationInput[] = [
     { tag: { sortOrder: 'asc' } },

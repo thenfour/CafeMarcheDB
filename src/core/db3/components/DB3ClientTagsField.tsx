@@ -452,9 +452,28 @@ export class TagsFieldClient<TAssociation extends TAnyModel> extends IColumnClie
 
 };
 
+// would be nice to find a better way to do this which avoids having to restate types.
+// for example,
+//
+// instead of:
+// 
+// const tagsTableSpec = DB3Client.defineTableClientSpec({
+//     view: db3.wikiPageEditorView,
+//     columns: {
+//         tags: DB3Client.tagsFieldClientGen<db3.WikiPageEditorClient["tags"][number]>(),
+//     },
+// });
+//
+// this:
+//         tags: DB3Client.tagsFieldClientGen<db3.WikiPageEditorClient["tags"][number]>(),
+// which is really:
+//         tags: columnName => new TagsFieldClient<db3.WikiPageEditorClient["tags"][number]>({ columnName, ...args }),
+// should be:
+//         tags: (column) => new TagsFieldClient<typeof column>({ columnName: column.name, ...args }),
 export const tagsFieldClientGen = <TAssociation extends TAnyModel>(args: Omit<TagsFieldClientArgs<TAssociation>, "columnName">) => (
     columnName => new TagsFieldClient<TAssociation>({ ...args, columnName })
 );
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

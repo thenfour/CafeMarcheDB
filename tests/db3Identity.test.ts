@@ -9,6 +9,8 @@ describe("DB3 table identity authority", () => {
     it("extracts and validates public and natural identities through xTable", () => {
         const fileTagPublicId = parsePublicId<"FileTag">("FileTagPublic001");
         const fileTagAssignmentPublicId = parsePublicId<"FileTagAssignment">("FileTagAssign001");
+        const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("WikiTagPublic001");
+        const wikiPageTagAssignmentPublicId = parsePublicId<"WikiPageTagAssignment">("WikiTagAssign001");
         expect(db3.xInstrument.getIdentity({ publicId: instrumentPublicId }))
             .toBe(instrumentPublicId);
         expect(db3.xInstrument.isIdentity(instrumentPublicId)).toBe(true);
@@ -21,6 +23,10 @@ describe("DB3 table identity authority", () => {
         expect(db3.xFileTag.getIdentity({ publicId: fileTagPublicId })).toBe(fileTagPublicId);
         expect(db3.xFileTagAssignment.getIdentity({ publicId: fileTagAssignmentPublicId }))
             .toBe(fileTagAssignmentPublicId);
+        expect(db3.xWikiPageTag.getIdentity({ publicId: wikiPageTagPublicId }))
+            .toBe(wikiPageTagPublicId);
+        expect(db3.xWikiPageTagAssignment.getIdentity({ publicId: wikiPageTagAssignmentPublicId }))
+            .toBe(wikiPageTagAssignmentPublicId);
         expect(db3.xSong.isIdentity(-1)).toBe(false);
         expect(db3.xSong.isIdentity(1.5)).toBe(false);
     });
@@ -50,6 +56,17 @@ describe("DB3 table identity authority", () => {
             .toBe("Instrument");
         expect(db3.xUserWithInstrument.fields.instruments.getForeignIdentity(instrumentPublicId))
             .toBe(instrumentPublicId);
+
+        const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("WikiTagPublic001");
+        const wikiPage: { id: number; tags: unknown[] } = { id: 12, tags: [] };
+        const wikiTag = { publicId: wikiPageTagPublicId, text: "Policy" };
+        const editedWikiPage = db3.xWikiPage.fields.tags.withForeignObjects(wikiPage, [wikiTag]);
+        expect(editedWikiPage.tags).toEqual([{
+            wikiPage,
+            wikiPageId: wikiPage.id,
+            tag: wikiTag,
+            tagId: wikiPageTagPublicId,
+        }]);
     });
 
     it("keeps polymorphic search identity correlated with the item discriminator", () => {

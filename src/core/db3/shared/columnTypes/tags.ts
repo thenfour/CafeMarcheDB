@@ -364,6 +364,21 @@ class TagsFieldImpl<
         return ret;
     };
 
+    /**
+     * Return an editor row whose association collection targets exactly the
+     * supplied foreign objects. Association draft shape and identity rules stay
+     * owned by the relation rather than leaking into feature components.
+     */
+    withForeignObjects = <TRow extends TAnyModel,>(
+        row: TRow,
+        foreignObjects: readonly TAnyModel[],
+    ): TRow => ({
+        ...row,
+        [this.member]: foreignObjects.map(foreignObject => (
+            this.createMockAssociation(row, foreignObject)
+        )),
+    });
+
     isEqual = (a: TAssociation[], b: TAssociation[]) => {
         console.assert(Array.isArray(a));
         console.assert(Array.isArray(b));

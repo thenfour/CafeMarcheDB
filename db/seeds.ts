@@ -952,7 +952,7 @@ const main = async () => {
       "color": "gray",
       "significance": null,
     }
-  ]);
+  ].map(tag => ({ ...tag, publicId: generatePublicId<"WikiPageTag">() })));
 
   await SeedActivity(gState);
 };

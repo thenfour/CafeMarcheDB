@@ -11,6 +11,8 @@ import {
   type FileTagPublicId,
   type InstrumentFunctionalGroupPublicId,
   type SongTagPublicId,
+  type WikiPageTagAssignmentPublicId,
+  type WikiPageTagPublicId,
 } from "shared/publicId"
 import type { DateTimeRange } from "shared/time"
 import { compileDB3Selection } from "src/core/db3/shared/core/db3ViewContract"
@@ -741,6 +743,54 @@ describe("UserTag Event search derived-view migration", () => {
       dto,
       new db3.DB3ReferenceStore(),
     )).toEqual(dto)
+  })
+})
+
+describe("Wiki page tag derived-view migration", () => {
+  const tagPublicId = parsePublicId<"WikiPageTag">("WikiTagPublic001")
+  const assignmentPublicId = parsePublicId<"WikiPageTagAssignment">("WikiTagAssign001")
+
+  it("uses public identities in tag administration and page association DTOs", () => {
+    type TagDto = db3.DtoOf<typeof db3.wikiPageTagEditorView>
+    type EditorDto = db3.WikiPageEditorDto
+    type SearchDto = db3.WikiPageSearchDto
+    type EditorAssignment = NonNullable<EditorDto["tags"]>[number]
+    type SearchAssignment = NonNullable<SearchDto["tags"]>[number]
+
+    expectTypeOf<TagDto["publicId"]>().toEqualTypeOf<WikiPageTagPublicId>()
+    expectTypeOf<Extract<keyof TagDto, "id">>().toEqualTypeOf<never>()
+    expectTypeOf<EditorAssignment["publicId"]>()
+      .toEqualTypeOf<WikiPageTagAssignmentPublicId>()
+    expectTypeOf<NonNullable<EditorAssignment["tagId"]>>()
+      .toEqualTypeOf<WikiPageTagPublicId>()
+    expectTypeOf<Extract<keyof EditorAssignment, "id" | "tag">>()
+      .toEqualTypeOf<never>()
+    expectTypeOf<SearchAssignment>().toEqualTypeOf<EditorAssignment>()
+  })
+
+  it("hydrates page-tag associations from the dashboard reference contract", () => {
+    const references = db3.createDashboardReferenceStore()
+    const tag: db3.CompleteWikiPageTagDashboardClient = {
+      publicId: tagPublicId,
+      text: "Policy",
+      description: "Policy page",
+      color: null,
+      significance: null,
+      sortOrder: 1,
+    }
+    db3.registerDashboardReferences(references, { wikiPageTag: [tag] })
+
+    const dto = db3.wikiPageEditorView.parseDto({
+      id: 12,
+      tags: [{ publicId: assignmentPublicId, tagId: tagPublicId }],
+    })
+    const hydrated = db3.hydrateView(db3.wikiPageEditorView, dto, references)
+
+    expect(hydrated.tags).toEqual([{
+      publicId: assignmentPublicId,
+      tagId: tagPublicId,
+      tag,
+    }])
   })
 })
 

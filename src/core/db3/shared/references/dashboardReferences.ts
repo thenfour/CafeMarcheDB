@@ -10,6 +10,7 @@ import {
 } from "../core/db3Hydration";
 import { type ClientOf, defineView } from "../core/db3View";
 import { deriveViewContract } from "../core/db3ViewContract";
+import { graft } from "../entities/common/viewCommon";
 import {
     xEventAttendance,
     xEventStatus,
@@ -31,7 +32,6 @@ import {
 } from "../schema/song";
 import { xPermission, xRole, xUserTag } from "../schema/user";
 import { xWikiPageTag } from "../schema/wikiPageTag";
-import { graft } from "../entities/common/viewCommon";
 
 // dashboard provider provides "hydrated" objects, not raw db rows
 // (e.g. ColorPaletteEntry rather than `string`).
@@ -79,7 +79,7 @@ const dashboardRoleSelection = Prisma.validator<Prisma.RoleDefaultArgs>()({
 
 const dashboardWikiPageTagSelection = Prisma.validator<Prisma.WikiPageTagDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         text: true,
         description: true,
         color: true,
@@ -279,6 +279,7 @@ export const dashboardSongCreditTypeResource = deriveViewContract(
 
 export const dashboardLeafReferenceContract = defineReferenceContract({
     permission: reference(xPermission)<ReturnType<typeof dashboardPermissionResource.hydrate>>(),
+    wikiPageTag: reference(xWikiPageTag)<CompleteWikiPageTagDashboardClient>(),
     eventType: reference(xEventType)<ReturnType<typeof dashboardEventTypeResource.hydrate>>(),
     eventStatus: reference(xEventStatus)<ReturnType<typeof dashboardEventStatusResource.hydrate>>(),
     eventTag: reference(xEventTag)<ReturnType<typeof dashboardEventTagResource.hydrate>>(),
@@ -455,8 +456,7 @@ export type CompleteWikiPageTagDashboardClient = {
     >;
 };
 export type WikiPageTagDisplay =
-    | Prisma.WikiPageTagGetPayload<{}>
-    | CompleteWikiPageTagDashboardClient;
+    CompleteWikiPageTagDashboardClient;
 export type EventTypeDashboardClient = ClientOf<typeof eventTypeDashboardView>;
 export type EventStatusDashboardClient = ClientOf<typeof eventStatusDashboardView>;
 export type EventTagDashboardClient = ClientOf<typeof eventTagDashboardView>;
@@ -522,6 +522,7 @@ export type DashboardReferenceStore = DB3ReferenceStore<DashboardReferenceContra
 
 export interface DashboardReferenceInput {
     permission?: readonly ClientOf<typeof permissionDashboardView>[];
+    wikiPageTag?: readonly CompleteWikiPageTagDashboardClient[];
     eventType?: readonly ClientOf<typeof eventTypeDashboardView>[];
     eventStatus?: readonly ClientOf<typeof eventStatusDashboardView>[];
     eventTag?: readonly ClientOf<typeof eventTagDashboardView>[];
@@ -545,6 +546,9 @@ export function registerDashboardReferences(
 ): void {
     if (input.permission) {
         store.register(xPermission, input.permission, value => value.id);
+    }
+    if (input.wikiPageTag) {
+        store.register(xWikiPageTag, input.wikiPageTag, value => xWikiPageTag.getIdentity(value));
     }
     if (input.eventType) {
         store.register(xEventType, input.eventType, value => value.id);

@@ -105,11 +105,11 @@ export const fileSearchConfig = defineViewSearchConfig({
 });
 
 // Wiki page search configuration
-export const wikiPageSearchConfig = defineLegacySearchConfig({
+export const wikiPageSearchConfig = defineViewSearchConfig({
+    view: db3.wikiPageSearchView,
     getQueryArgs: (filterSpec: WikiPagesFilterSpec, offset: number, take: number) => ({
         offset,
         take,
-        tableID: db3.xWikiPage.tableID,
         refreshSerial: filterSpec.refreshSerial,
         sort: [{
             db3Column: filterSpec.orderByColumn,
@@ -121,9 +121,6 @@ export const wikiPageSearchConfig = defineLegacySearchConfig({
             filterSpec.namespaceFilter,
         ],
     }),
-
-    enrichItem: (rawItem: db3.WikiPagePayload, dashboardContext) => rawItem, // Wiki pages don't need enrichment
-    getItemKey: item => item.id,
 
     errorMessage: 'Failed to load more wiki pages.',
 });

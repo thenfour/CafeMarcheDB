@@ -1,6 +1,7 @@
 import * as db3 from "src/core/db3/db3";
 import { SortDirection } from "@/shared/rootroot";
 import { DiscreteCriterion } from "../../db3/shared/apiTypes";
+import type { WikiPageTagPublicId } from "shared/publicId";
 
 export enum WikiPageOrderByColumnOptions {
     //id = "id",
@@ -23,8 +24,8 @@ export interface WikiPagesFilterSpec {
     orderByDirection: SortDirection;
 
     // Wiki-specific filters
-    tagFilter: DiscreteCriterion; // wiki page tags
-    namespaceFilter: DiscreteCriterion; // namespace filtering
+    tagFilter: DiscreteCriterion<WikiPageTagPublicId>; // wiki page tags
+    namespaceFilter: DiscreteCriterion<string>; // namespace filtering
 }
 
-export type EnrichedVerboseWikiPage = db3.WikiPagePayload;
+export type EnrichedVerboseWikiPage = db3.WikiPageSearchClient;

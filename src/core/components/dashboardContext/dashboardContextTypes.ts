@@ -5,7 +5,7 @@ import { ServerStartInfo } from "@/shared/serverStateBase";
 import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
 import { Prisma } from "db";
-import type { FileTagPublicId, InstrumentFunctionalGroupPublicId, InstrumentTagPublicId, SongTagPublicId } from "shared/publicId";
+import type { FileTagPublicId, InstrumentFunctionalGroupPublicId, InstrumentTagPublicId, SongTagPublicId, WikiPageTagPublicId } from "shared/publicId";
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
 import { resolveUserSettings, UserSettings } from "shared/userSettings";
 
@@ -26,7 +26,7 @@ export abstract class DashboardContextDataBase {
         InstrumentTagPublicId
     >;
 
-    wikiPageTag: TableAccessor<db3.CompleteWikiPageTagDashboardClient>;
+    wikiPageTag: TableAccessor<db3.CompleteWikiPageTagDashboardClient, WikiPageTagPublicId>;
 
     dynMenuLinks: TableAccessor<db3.MenuLinkListClient>;
     permission: TableAccessor<db3.ClientOf<typeof db3.permissionDashboardView>>;

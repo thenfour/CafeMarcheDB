@@ -152,6 +152,22 @@ export async function CorrectFileTagAssignmentPublicIds() {
     console.log(`Replaced ${replacementCount} FileTagAssignment public-ID placeholders.`);
 }
 
+export async function CorrectWikiPageTagPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.wikiPageTag,
+        modelName: "WikiPageTag",
+    });
+    console.log(`Replaced ${replacementCount} WikiPageTag public-ID placeholders.`);
+}
+
+export async function CorrectWikiPageTagAssignmentPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.wikiPageTagAssignment,
+        modelName: "WikiPageTagAssignment",
+    });
+    console.log(`Replaced ${replacementCount} WikiPageTagAssignment public-ID placeholders.`);
+}
+
 export async function registerNodeInstrumentation() {
     console.log(`INSTRUMENTATION RUNNING`);
     await instrumentationSetup();
@@ -168,6 +184,8 @@ export async function registerNodeInstrumentation() {
     await CorrectSongTagAssociationPublicIds();
     await CorrectFileTagPublicIds();
     await CorrectFileTagAssignmentPublicIds();
+    await CorrectWikiPageTagPublicIds();
+    await CorrectWikiPageTagAssignmentPublicIds();
 
     //const startupState = getServerStartStateRef();
     process.env.CMDB_START_TIME = `${new Date().valueOf()}`;

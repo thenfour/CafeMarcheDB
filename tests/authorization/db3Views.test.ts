@@ -19,6 +19,8 @@ const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGh
 const instrumentPublicId = parsePublicId<"Instrument">("AbCdEfGhIjKlMn06");
 const fileTagPublicId = parsePublicId<"FileTag">("AbCdEfGhIjKlMn07");
 const fileTagAssignmentPublicId = parsePublicId<"FileTagAssignment">("AbCdEfGhIjKlMn08");
+const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("AbCdEfGhIjKlMn09");
+const wikiPageTagAssignmentPublicId = parsePublicId<"WikiPageTagAssignment">("AbCdEfGhIjKlMn10");
 const group = {
     publicId: groupPublicId,
     name: "Brass",
@@ -534,9 +536,11 @@ describe("DB3 named views", () => {
             visiblePermissionId: null,
             tags: [{
                 id: 16,
+                publicId: wikiPageTagAssignmentPublicId,
                 tagId: 17,
                 tag: {
                     id: 17,
+                    publicId: wikiPageTagPublicId,
                     text: "Policy",
                     description: "Policy page",
                     color: null,
@@ -570,18 +574,12 @@ describe("DB3 named views", () => {
         expect(result.items).toEqual([{
             id: 15,
             tags: [{
-                id: 16,
-                tagId: 17,
-                tag: {
-                    id: 17,
-                    text: "Policy",
-                    description: "Policy page",
-                    color: null,
-                    sortOrder: 1,
-                    significance: "Policy",
-                },
+                publicId: wikiPageTagAssignmentPublicId,
+                tagId: wikiPageTagPublicId,
             }],
         }]);
+        expect(result.items[0]!.tags[0]).not.toHaveProperty("id");
+        expect(result.items[0]!.tags[0]).not.toHaveProperty("wikiPageId");
         expect(result.items[0]).not.toHaveProperty("slug");
         expect(findMany).toHaveBeenCalledOnce();
     });
