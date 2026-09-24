@@ -14,3 +14,9 @@
   exit code to decide whether the run passed.
 
 See `docs/testing.md` for the rationale and full conventions.
+
+## Coding guidelines
+
+- Use strict typescript typing
+- Type casts (`x as T`, especially `as any`) must be given a brief comment
+  justifying why it was necessary.
