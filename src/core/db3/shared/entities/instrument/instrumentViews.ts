@@ -4,7 +4,10 @@ import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { isPublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId";
 import { defineCrudView } from "../../core/db3CrudView";
 import { type ClientOf, type DtoOf, defineView } from "../../core/db3View";
-import { deriveReferenceViewContract } from "../../core/db3ViewContract";
+import {
+    dashboardInstrumentFunctionalGroupResource,
+    dashboardInstrumentResource,
+} from "../../references/dashboardReferences";
 import {
     xInstrument,
     xInstrumentFunctionalGroup,
@@ -67,13 +70,9 @@ const instrumentEditorSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>
     },
 });
 
-const instrumentFunctionalGroupDashboardContract = deriveReferenceViewContract(
-    xInstrumentFunctionalGroup,
-);
+const instrumentFunctionalGroupDashboardContract = dashboardInstrumentFunctionalGroupResource;
 
-const instrumentDashboardContract = deriveReferenceViewContract(
-    xInstrument,
-);
+const instrumentDashboardContract = dashboardInstrumentResource;
 
 export const instrumentFunctionalGroupListView = defineView({
     viewID: "InstrumentFunctionalGroup_List",
@@ -95,6 +94,7 @@ export const instrumentFunctionalGroupDashboardView = defineView({
     entity: xInstrumentFunctionalGroup,
     selection: instrumentFunctionalGroupDashboardContract.prismaSelection,
     dtoSchema: instrumentFunctionalGroupDashboardContract.dtoSchema,
+    references: instrumentFunctionalGroupDashboardContract.referenceContract,
     hydrate: instrumentFunctionalGroupDashboardContract.hydrate,
 });
 
@@ -120,6 +120,7 @@ export const instrumentDashboardView = defineView({
     entity: xInstrument,
     selection: instrumentDashboardContract.prismaSelection,
     dtoSchema: instrumentDashboardContract.dtoSchema,
+    references: instrumentDashboardContract.referenceContract,
     hydrate: (dto, references) => {
         const hydrated = instrumentDashboardContract.hydrate(dto, references);
         return {

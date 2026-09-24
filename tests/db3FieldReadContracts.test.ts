@@ -70,7 +70,10 @@ describe("DB3 xTable model metadata", () => {
       .toEqualTypeOf<number>()
     expectTypeOf<db3.DB3IdentityOf<typeof db3.xInstrumentFunctionalGroup>>()
       .toEqualTypeOf<InstrumentFunctionalGroupPublicId>()
-    expectTypeOf<db3.DB3ReferenceValueOf<typeof db3.xInstrumentFunctionalGroup>>()
+    expectTypeOf<db3.DB3ReferenceValueOf<
+      typeof db3.dashboardReferenceContract,
+      typeof db3.xInstrumentFunctionalGroup
+    >>()
       .toEqualTypeOf<db3.ClientOf<typeof db3.instrumentFunctionalGroupDashboardView>>()
     expectTypeOf(db3.instrumentFunctionalGroupListView.entity)
       .toEqualTypeOf<typeof db3.xInstrumentFunctionalGroup>()

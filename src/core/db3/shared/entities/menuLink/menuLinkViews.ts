@@ -1,11 +1,15 @@
 import { Prisma } from "db";
 import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
-import type { DB3ReferenceProvider } from "../../core/db3Hydration";
+import {
+    getReference,
+    type DB3ReferenceProvider,
+} from "../../core/db3Hydration";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { xPermission } from "../../schema/user";
 import { xMenuLink } from "../../schema/menuLink";
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
+import { dashboardReferenceContract } from "../../references/dashboardReferences";
 
 const MenuLinkEditorDtoSchema = z.object({
     id: z.number().int(),
@@ -49,11 +53,11 @@ type MenuLinkListDto = z.infer<typeof MenuLinkListDtoSchema>;
 
 export function hydrateMenuLinkListDto(
     dto: MenuLinkListDto,
-    references: DB3ReferenceProvider,
+    references: DB3ReferenceProvider<typeof dashboardReferenceContract>,
 ) {
     return {
         ...dto,
-        visiblePermission: references.get(xPermission, dto.visiblePermissionId),
+        visiblePermission: getReference(references, xPermission, dto.visiblePermissionId),
     };
 }
 
@@ -62,6 +66,7 @@ export const menuLinkListView = defineView({
     entity: xMenuLink,
     selection: menuLinkListSelection,
     dtoSchema: MenuLinkListDtoSchema,
+    references: dashboardReferenceContract,
     hydrate: hydrateMenuLinkListDto,
 });
 

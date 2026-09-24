@@ -23,12 +23,10 @@ type ForeignSingleFieldValueArgs<
     TForeign,
     TForeignKeyMember extends string = string,
     TAllowNull extends boolean = boolean,
-    THydrateFromReference extends boolean = true,
 > = {
     columnName: string; // "instrumentType"
     fkidMember: TForeignKeyMember; // "instrumentTypeId"
     allowNull: TAllowNull;
-    hydrateFromReference?: THydrateFromReference;
     // Omit the local row when its target cannot be read. Use for dependent
     // records, such as a setlist entry whose song must remain private.
     requireVisibleTarget?: boolean;
@@ -42,8 +40,7 @@ type ForeignSingleFieldCommonArgs<
     TForeignKeyMember extends string = string,
     TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
     TAllowNull extends boolean = boolean,
-    THydrateFromReference extends boolean = true,
-> = ForeignSingleFieldValueArgs<TForeign, TForeignKeyMember, TAllowNull, THydrateFromReference> & TAuthSpec;
+> = ForeignSingleFieldValueArgs<TForeign, TForeignKeyMember, TAllowNull> & TAuthSpec;
 
 export type ForeignSingleFieldArgs<
     TForeign,
@@ -51,8 +48,7 @@ export type ForeignSingleFieldArgs<
     TForeignKeyMember extends string = string,
     TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
     TAllowNull extends boolean = boolean,
-    THydrateFromReference extends boolean = true,
-> = ForeignSingleFieldCommonArgs<TForeign, TForeignKeyMember, TAuthSpec, TAllowNull, THydrateFromReference> & (
+> = ForeignSingleFieldCommonArgs<TForeign, TForeignKeyMember, TAuthSpec, TAllowNull> & (
     | {
         /** Legacy cycle-safe lookup. Prefer foreignRef() for new fields. */
         foreignTableID: string;
@@ -85,8 +81,6 @@ export class ForeignSingleField<
 
     TAllowNull extends boolean = boolean,
 
-    THydrateFromReference extends boolean = true,
-
 > extends FieldBase<
     TForeign,
     undefined,
@@ -95,18 +89,16 @@ export class ForeignSingleField<
     TForeign | null,
     DB3ReadPresenceForAuthSpec<TAuthSpec>
 >
-    implements DB3ForeignSingleReferenceField<TTargetTable, TForeignKeyMember, TAllowNull, THydrateFromReference> {
+    implements DB3ForeignSingleReferenceField<TTargetTable, TForeignKeyMember, TAllowNull> {
     declare readonly __relationTargetTable: TTargetTable;
     declare readonly __foreignKeyMember: TForeignKeyMember;
     declare readonly __relationNullable: TAllowNull;
-    declare readonly __hydrateFromReference: THydrateFromReference;
     declare readonly fkidMember: TForeignKeyMember;
     requireVisibleTarget: boolean;
     private readonly declaredForeignTableID?: string;
     private readonly getForeignTable__: () => xTable;
     localTableSpec: xTable;
     allowNull: TAllowNull;
-    readonly hydrateFromReference: THydrateFromReference;
     readonly foreignKeyReadTransportSchema: z.ZodType<DB3IdentityOf<TTargetTable> | null>;
     defaultValue: TForeign | null;
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
@@ -128,7 +120,6 @@ export class ForeignSingleField<
         readTransportSchema: this.foreignKeyReadTransportSchema,
         relationMember: this.member,
         getTargetTable: this.getForeignTableSchema,
-        hydrateFromReference: this.hydrateFromReference,
     }];
 
     constructor(args: ForeignSingleFieldArgs<
@@ -136,8 +127,7 @@ export class ForeignSingleField<
         TTargetTable,
         TForeignKeyMember,
         TAuthSpec,
-        TAllowNull,
-        THydrateFromReference
+        TAllowNull
     >) {
         super({
             member: args.columnName,
@@ -166,7 +156,6 @@ export class ForeignSingleField<
 
         //this.fkMember = args.fkMember;
         this.allowNull = args.allowNull;
-        this.hydrateFromReference = (args.hydrateFromReference ?? true) as THydrateFromReference;
         // The database FK may be numeric while its read transport is a public
         // ID. Resolve the target's canonical identity field only when parsing,
         // preserving lazy/self-referential table initialization.
@@ -439,9 +428,8 @@ export type ForeignRefArgs<
     TForeignKeyMember extends string = string,
     TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
     TAllowNull extends boolean = false,
-    THydrateFromReference extends boolean = true, // necessary to be generic for views to deduce hydrated type correctly including grafted references
 > = Omit<
-    ForeignSingleFieldValueArgs<DB3PrismaPayloadOf<TTargetTable>, TForeignKeyMember, TAllowNull, THydrateFromReference>,
+    ForeignSingleFieldValueArgs<DB3PrismaPayloadOf<TTargetTable>, TForeignKeyMember, TAllowNull>,
     "columnName" | "allowNull" | "getQuickFilterWhereClause"
 > & TAuthSpec & {
     allowNull?: TAllowNull;
@@ -458,16 +446,14 @@ export const foreignRef = <
     const TForeignKeyMember extends string,
     const TAuthSpec extends DB3AuthSpec,
     const TAllowNull extends boolean = false,
-    const THydrateFromReference extends boolean = true,
 >(
     getForeignTable: () => TTargetTable,
-    args: ForeignRefArgs<TTargetTable, TForeignKeyMember, TAuthSpec, TAllowNull, THydrateFromReference>,
+    args: ForeignRefArgs<TTargetTable, TForeignKeyMember, TAuthSpec, TAllowNull>,
 ) => (columnName: string) => {
     const valueArgs = {
         columnName,
         fkidMember: args.fkidMember,
         allowNull: (args.allowNull ?? false) as TAllowNull,
-        hydrateFromReference: (args.hydrateFromReference ?? true) as THydrateFromReference,
         requireVisibleTarget: args.requireVisibleTarget,
         defaultValue: args.defaultValue,
         specialFunction: args.specialFunction,
@@ -481,8 +467,7 @@ export const foreignRef = <
             TTargetTable,
             TForeignKeyMember,
             TAuthSpec,
-            TAllowNull,
-            THydrateFromReference
+            TAllowNull
         >({ ...valueArgs, authMap: args.authMap });
     }
 
@@ -491,8 +476,7 @@ export const foreignRef = <
         TTargetTable,
         TForeignKeyMember,
         TAuthSpec,
-        TAllowNull,
-        THydrateFromReference
+        TAllowNull
     >({ ...valueArgs, _customAuth: args._customAuth });
 };
 
@@ -501,19 +485,17 @@ export type ForeignSingleFieldByTableId<
     TForeignKeyMember extends string,
     TAuthSpec extends DB3AuthSpec,
     TAllowNull extends boolean = false,
-    THydrateFromReference extends boolean = true,
 > = Omit<
-    ForeignSingleField<TAnyModel, xTable, TForeignKeyMember, TAuthSpec, TAllowNull, THydrateFromReference>,
+    ForeignSingleField<TAnyModel, xTable, TForeignKeyMember, TAuthSpec, TAllowNull>,
     "__relationTargetTable"
-> & DB3ForeignSingleReferenceField<TTargetTableID, TForeignKeyMember, TAllowNull, THydrateFromReference>;
+> & DB3ForeignSingleReferenceField<TTargetTableID, TForeignKeyMember, TAllowNull>;
 
 export type ForeignRefByTableIdArgs<
     TForeignKeyMember extends string,
     TAuthSpec extends DB3AuthSpec,
     TAllowNull extends boolean = false,
-    THydrateFromReference extends boolean = true,
 > = Omit<
-    ForeignSingleFieldValueArgs<TAnyModel, TForeignKeyMember, TAllowNull, THydrateFromReference>,
+    ForeignSingleFieldValueArgs<TAnyModel, TForeignKeyMember, TAllowNull>,
     "columnName" | "allowNull" | "getQuickFilterWhereClause"
 > & TAuthSpec & {
     allowNull?: TAllowNull;
@@ -530,22 +512,19 @@ export const foreignRefByTableId = <
     const TForeignKeyMember extends string,
     const TAuthSpec extends DB3AuthSpec,
     const TAllowNull extends boolean = false,
-    const THydrateFromReference extends boolean = true,
 >(
     foreignTableID: TTargetTableID,
-    args: ForeignRefByTableIdArgs<TForeignKeyMember, TAuthSpec, TAllowNull, THydrateFromReference>,
+    args: ForeignRefByTableIdArgs<TForeignKeyMember, TAuthSpec, TAllowNull>,
 ) => (columnName: string): ForeignSingleFieldByTableId<
     TTargetTableID,
     TForeignKeyMember,
     TAuthSpec,
-    TAllowNull,
-    THydrateFromReference
+    TAllowNull
 > => {
         const valueArgs = {
             columnName,
             fkidMember: args.fkidMember,
             allowNull: (args.allowNull ?? false) as TAllowNull,
-            hydrateFromReference: (args.hydrateFromReference ?? true) as THydrateFromReference,
             requireVisibleTarget: args.requireVisibleTarget,
             defaultValue: args.defaultValue,
             specialFunction: args.specialFunction,
@@ -554,11 +533,11 @@ export const foreignRefByTableId = <
         };
 
         const field = "authMap" in args
-            ? new ForeignSingleField<TAnyModel, xTable, TForeignKeyMember, TAuthSpec, TAllowNull, THydrateFromReference>({
+            ? new ForeignSingleField<TAnyModel, xTable, TForeignKeyMember, TAuthSpec, TAllowNull>({
                 ...valueArgs,
                 authMap: args.authMap,
             })
-            : new ForeignSingleField<TAnyModel, xTable, TForeignKeyMember, TAuthSpec, TAllowNull, THydrateFromReference>({
+            : new ForeignSingleField<TAnyModel, xTable, TForeignKeyMember, TAuthSpec, TAllowNull>({
                 ...valueArgs,
                 _customAuth: args._customAuth,
             });
@@ -566,8 +545,7 @@ export const foreignRefByTableId = <
             TTargetTableID,
             TForeignKeyMember,
             TAuthSpec,
-            TAllowNull,
-            THydrateFromReference
+            TAllowNull
         >;
     };
 

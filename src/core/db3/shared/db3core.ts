@@ -476,7 +476,6 @@ export type DB3FieldPrismaMember =
         readonly kind: "foreignKey";
         readonly relationMember: string;
         readonly getTargetTable: () => xTable; // lazy to avoid type cycles
-        readonly hydrateFromReference: boolean;
     })
     | (DB3FieldPrismaMemberBase & {
         readonly kind: "foreignObject";
@@ -737,14 +736,6 @@ export interface TableDesc {
      */
     getIdentity?: DB3IdentityAccessor;
 
-    /**
-     * Canonical finite Prisma projection used to populate normalized reference
-     * providers. Its DTO and consumer value are derived by the view compiler.
-     */
-    referenceSelection?: TAnyModel;
-    /** DTO-visible subset when the fetched reference selection contains projection support fields. */
-    referenceTransportSelection?: TAnyModel;
-
     getSelectionArgs: (filterModel: CMDBTableFilterModel, authorization: DB3Authorization) => TAnyModel,
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
@@ -829,13 +820,13 @@ export type DB3ReadFieldProperty<
 export type DB3FieldMap = Readonly<Record<string, AnyDB3Field>>;
 
 export type DB3FieldsOf<TTable extends xTable> =
-    TTable extends xTable<infer TFields, any, any, any, any> ? TFields : DB3FieldMap;
+    TTable extends xTable<infer TFields, any, any> ? TFields : DB3FieldMap;
 
 export type DB3PrismaDelegateOf<TTable extends xTable> =
-    TTable extends xTable<any, infer TDelegate, any, any, any> ? TDelegate : never;
+    TTable extends xTable<any, infer TDelegate, any> ? TDelegate : never;
 
 export type DB3IdentityAccessorOf<TTable extends xTable> =
-    TTable extends xTable<any, any, infer TIdentityAccessor, any, any>
+    TTable extends xTable<any, any, infer TIdentityAccessor>
     ? NonNullable<TIdentityAccessor>
     : never;
 
@@ -844,16 +835,6 @@ export type DB3IdentityOf<TTable extends xTable> =
 
 export type DB3IdentityInputOf<TTable extends xTable> =
     Parameters<DB3IdentityAccessorOf<TTable>>[0];
-
-export type DB3ReferenceSelectionOf<TTable extends xTable> =
-    TTable extends xTable<any, any, any, infer TReferenceSelection, any>
-    ? TReferenceSelection
-    : never;
-
-export type DB3ReferenceTransportSelectionOf<TTable extends xTable> =
-    TTable extends xTable<any, any, any, any, infer TReferenceTransportSelection>
-    ? TReferenceTransportSelection
-    : never;
 
 type DB3ArrayItem<TValue> = TValue extends readonly (infer TItem)[] ? TItem : never;
 
@@ -894,15 +875,13 @@ export interface DB3ForeignSingleReferenceField<
     TTarget = xTable,
     TForeignKeyMember extends string = string,
     TAllowNull extends boolean = boolean,
-    THydrateFromReference extends boolean = true,
 > extends DB3RelationTargetField<TTarget> {
     readonly __foreignKeyMember: TForeignKeyMember;
     readonly __relationNullable: TAllowNull;
-    readonly __hydrateFromReference: THydrateFromReference;
 }
 
 export type DB3ForeignKeyMemberOf<TField> =
-    TField extends DB3ForeignSingleReferenceField<any, infer TForeignKeyMember, any, any>
+    TField extends DB3ForeignSingleReferenceField<any, infer TForeignKeyMember, any>
     ? TForeignKeyMember
     : never;
 
@@ -1009,8 +988,6 @@ export class xTable<
     TFields extends DB3FieldMap = DB3FieldMap,
     TDelegate = any,
     TIdentityAccessor extends DB3IdentityAccessor | undefined = DB3IdentityAccessor | undefined,
-    TReferenceSelection extends TAnyModel | undefined = TAnyModel | undefined,
-    TReferenceTransportSelection extends TAnyModel | undefined = TReferenceSelection,
 > /* implements TableDesc*/ {
     tableName: string; // the actual name of the table in the database; can be used in prisma db[t.tableName]
     tableID: string; // unique name for the instance
@@ -1018,10 +995,6 @@ export class xTable<
     declare readonly __prismaDelegate?: TDelegate;
     /** Type-only identity authority. */
     declare readonly __identityAccessor?: TIdentityAccessor;
-    /** Type-level and runtime canonical normalized-reference projection. */
-    declare readonly referenceSelection: TReferenceSelection;
-    /** Client-visible subset of referenceSelection after server projection. */
-    declare readonly referenceTransportSelection: TReferenceTransportSelection;
     readonly getIdentity: TIdentityAccessor;
     columns: AnyDB3Field[];
     readonly prismaMemberRegistry: ReadonlyMap<string, DB3PrismaMemberOwnership>;
@@ -1834,15 +1807,11 @@ export type DB3TypedTableDesc<
     TFields extends DB3FieldMap,
     TDelegate,
     TIdentityAccessor extends DB3IdentityAccessor | undefined = undefined,
-    TReferenceSelection extends TAnyModel | undefined = undefined,
-    TReferenceTransportSelection extends TAnyModel | undefined = TReferenceSelection,
 > =
-    Omit<TableDesc, "columns" | "getIdentity" | "referenceSelection" | "referenceTransportSelection"> & {
+    Omit<TableDesc, "columns" | "getIdentity"> & {
         readonly fields: TFields;
         readonly prismaModel: DB3PrismaModel<TDelegate>;
         readonly getIdentity?: TIdentityAccessor;
-        readonly referenceSelection?: TReferenceSelection;
-        readonly referenceTransportSelection?: TReferenceTransportSelection;
     };
 
 /** Preserves a reusable typed table descriptor before one or more tables use it. */
@@ -1850,11 +1819,9 @@ export function defineTableDesc<
     TFields extends DB3FieldMap,
     TDelegate,
     TIdentityAccessor extends DB3IdentityAccessor | undefined = undefined,
-    const TReferenceSelection extends TAnyModel | undefined = undefined,
-    const TReferenceTransportSelection extends TAnyModel | undefined = TReferenceSelection,
 >(
-    args: DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor, TReferenceSelection, TReferenceTransportSelection>,
-): DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor, TReferenceSelection, TReferenceTransportSelection> {
+    args: DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor>,
+): DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor> {
     return args;
 }
 
@@ -1863,13 +1830,11 @@ export type DB3TypedTable<
     TFields extends DB3FieldMap,
     TDelegate,
     TIdentityAccessor extends DB3IdentityAccessor | undefined = undefined,
-    TReferenceSelection extends TAnyModel | undefined = undefined,
-    TReferenceTransportSelection extends TAnyModel | undefined = TReferenceSelection,
 > =
     {
         readonly fields: TFields;
         readonly columns: Array<TFields[keyof TFields]>;
-    } & xTable<TFields, TDelegate, TIdentityAccessor, TReferenceSelection, TReferenceTransportSelection>;
+    } & xTable<TFields, TDelegate, TIdentityAccessor>;
 
 // A typed xTable that can anchor views, reference hydration, and commands.
 // needed because of type  info nesting.
@@ -1879,16 +1844,12 @@ export type DB3IdentifiedTable<
     TFields extends DB3FieldMap = DB3FieldMap,
     TDelegate = any,
     TIdentityAccessor extends DB3IdentityAccessor = DB3IdentityAccessor<any, DB3Identity>,
-    TReferenceSelection extends TAnyModel | undefined = TAnyModel | undefined,
-    TReferenceTransportSelection extends TAnyModel | undefined = TReferenceSelection,
-> = DB3TypedTable<TFields, TDelegate, TIdentityAccessor, TReferenceSelection, TReferenceTransportSelection>;
+> = DB3TypedTable<TFields, TDelegate, TIdentityAccessor>;
 
 export type AnyDB3Table = DB3IdentifiedTable<
     DB3FieldMap,
     any,
-    DB3IdentityAccessor<any, DB3Identity>,
-    TAnyModel | undefined,
-    TAnyModel | undefined
+    DB3IdentityAccessor<any, DB3Identity>
 >;
 
 /**
@@ -1900,11 +1861,9 @@ export function defineTable<
     TFields extends DB3FieldMap,
     TDelegate,
     TIdentityAccessor extends DB3IdentityAccessor | undefined = undefined,
-    const TReferenceSelection extends TAnyModel | undefined = undefined,
-    const TReferenceTransportSelection extends TAnyModel | undefined = TReferenceSelection,
 >(
-    args: DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor, TReferenceSelection, TReferenceTransportSelection>,
-): DB3TypedTable<TFields, TDelegate, TIdentityAccessor, TReferenceSelection, TReferenceTransportSelection> {
+    args: DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor>,
+): DB3TypedTable<TFields, TDelegate, TIdentityAccessor> {
     const columns = Object.entries(args.fields).map(([member, field]) => {
         if (field.member !== member) {
             throw new Error(
@@ -1914,10 +1873,8 @@ export function defineTable<
         return field;
     });
     const { fields, prismaModel: _prismaModel, ...legacyArgs } = args;
-    const table = new xTable<TFields, TDelegate, TIdentityAccessor, TReferenceSelection, TReferenceTransportSelection>({
+    const table = new xTable<TFields, TDelegate, TIdentityAccessor>({
         ...legacyArgs,
-        referenceTransportSelection: legacyArgs.referenceTransportSelection
-            ?? legacyArgs.referenceSelection,
         columns,
     });
     Object.defineProperty(table, "fields", {
@@ -1933,9 +1890,7 @@ export function defineTable<
     return table as unknown as DB3TypedTable<
         TFields,
         TDelegate,
-        TIdentityAccessor,
-        TReferenceSelection,
-        TReferenceTransportSelection
+        TIdentityAccessor
     >;
 }
 

@@ -426,9 +426,11 @@ describe("DB3 named views", () => {
     });
 
     it("hydrates a finite view graph from an explicit reference provider", () => {
-        const references = new db3.DB3ReferenceStore();
-        references.register(db3.xInstrumentFunctionalGroup, [group]);
-        references.register(db3.xInstrumentTag, [tag]);
+        const references = db3.createDashboardReferenceStore();
+        db3.registerDashboardReferences(references, {
+            instrumentFunctionalGroup: [group],
+            instrumentTag: [tag],
+        });
 
         const dto = db3.instrumentDashboardView.parseDto({
             id: 7,
@@ -458,7 +460,7 @@ describe("DB3 named views", () => {
     });
 
     it("hydrates the Song search view recursively and keeps authorized fields optional", () => {
-        const references = new db3.DB3ReferenceStore();
+        const references = db3.createDashboardReferenceStore();
         const permission = {
             id: 4,
             name: "members",
@@ -471,9 +473,11 @@ describe("DB3 named views", () => {
         };
         const songTag = { id: 20, text: "March", description: "", color: null, sortOrder: 1, significance: null, group: null, indicator: null, indicatorCssClass: null };
         const fileTag = { id: 30, text: "Partition", description: "", color: null, sortOrder: 1, significance: db3.FileTagSignificance.Partition };
-        references.register(db3.xPermission, [permission]);
-        references.register(db3.xSongTag, [songTag]);
-        references.register(db3.xFileTag, [fileTag]);
+        db3.registerDashboardReferences(references, {
+            permission: [permission],
+            songTag: [songTag],
+            fileTag: [fileTag],
+        });
 
         const dto = db3.songSearchView.parseDto({
             id: 7,
@@ -512,7 +516,7 @@ describe("DB3 named views", () => {
     });
 
     it("hydrates the File search view with normalized reference relations", () => {
-        const references = new db3.DB3ReferenceStore();
+        const references = db3.createDashboardReferenceStore();
         const permission = {
             id: 4,
             name: "members",
@@ -541,10 +545,32 @@ describe("DB3 named views", () => {
             functionalGroup: group,
             instrumentTags: [],
         };
-        references.register(db3.xPermission, [permission]);
-        references.register(db3.xFileTag, [fileTag]);
-        references.register(db3.xInstrumentFunctionalGroup, [group]);
-        references.register(db3.xInstrument, [instrument]);
+        db3.registerDashboardReferences(references, {
+            permission: [permission],
+            fileTag: [fileTag],
+            instrumentFunctionalGroup: [group],
+            instrument: [instrument],
+            eventStatus: [{
+                id: 10,
+                label: "Confirmed",
+                description: "",
+                color: null,
+                sortOrder: 1,
+                significance: null,
+                iconName: null,
+                isDeleted: false,
+            }],
+            eventType: [{
+                id: 11,
+                text: "Concert",
+                description: "",
+                color: null,
+                sortOrder: 1,
+                significance: null,
+                iconName: null,
+                isDeleted: false,
+            }],
+        });
 
         const dto = db3.fileSearchView.parseDto({
             id: 8,
@@ -593,7 +619,7 @@ describe("DB3 named views", () => {
     });
 
     it("hydrates the File detail view with its relationship panels", () => {
-        const references = new db3.DB3ReferenceStore();
+        const references = db3.createDashboardReferenceStore();
         const permission = {
             id: 4,
             name: "members",
@@ -621,10 +647,22 @@ describe("DB3 named views", () => {
             functionalGroupId: groupPublicId,
             instrumentTags: [],
         };
-        references.register(db3.xPermission, [permission]);
-        references.register(db3.xFileTag, [fileTag]);
-        references.register(db3.xInstrumentFunctionalGroup, [group]);
-        references.register(db3.xInstrument, [instrument]);
+        db3.registerDashboardReferences(references, {
+            permission: [permission],
+            fileTag: [fileTag],
+            instrumentFunctionalGroup: [group],
+            instrument: [instrument],
+            eventType: [{
+                id: 2,
+                text: "Concert",
+                description: "",
+                color: null,
+                sortOrder: 1,
+                significance: null,
+                iconName: null,
+                isDeleted: false,
+            }],
+        });
 
         const selection = db3.fileDetailView.getSelectionArgs({
             filter: { items: [] },
@@ -718,7 +756,7 @@ describe("DB3 named views", () => {
     });
 
     it("hydrates Event search data into one typed client shape and preserves omitted collections", () => {
-        const references = new db3.DB3ReferenceStore();
+        const references = db3.createDashboardReferenceStore();
         const eventType = {
             id: 2, text: "Concert", description: "", color: null, sortOrder: 1,
             significance: null, iconName: null, isDeleted: false,
@@ -731,9 +769,11 @@ describe("DB3 named views", () => {
             id: 4, text: "Public", description: "", color: null, sortOrder: 1,
             significance: null, visibleOnFrontpage: true,
         };
-        references.register(db3.xEventType, [eventType]);
-        references.register(db3.xEventStatus, [eventStatus]);
-        references.register(db3.xEventTag, [eventTag]);
+        db3.registerDashboardReferences(references, {
+            eventType: [eventType],
+            eventStatus: [eventStatus],
+            eventTag: [eventTag],
+        });
 
         const dto = db3.eventSearchView.parseDto({
             id: 1,
@@ -772,7 +812,7 @@ describe("DB3 named views", () => {
     });
 
     it("hydrates complete Event timing tuples into DateTimeRange value objects", () => {
-        const references = new db3.DB3ReferenceStore();
+        const references = db3.createDashboardReferenceStore();
         const segmentStart = new Date("2026-09-20T19:00:00Z");
         const dto = db3.eventSearchView.parseDto({
             id: 1,
@@ -1006,7 +1046,7 @@ describe("DB3 named views", () => {
     });
 
     it("hydrates the Song detail view, including its reusable File-card shape", () => {
-        const references = new db3.DB3ReferenceStore();
+        const references = db3.createDashboardReferenceStore();
         const permission = {
             id: 4,
             name: "members",
@@ -1029,11 +1069,13 @@ describe("DB3 named views", () => {
             functionalGroup: group,
             instrumentTags: [],
         };
-        references.register(db3.xPermission, [permission]);
-        references.register(db3.xSongTag, [songTag]);
-        references.register(db3.xFileTag, [fileTag]);
-        references.register(db3.xInstrumentFunctionalGroup, [group]);
-        references.register(db3.xInstrument, [instrument]);
+        db3.registerDashboardReferences(references, {
+            permission: [permission],
+            songTag: [songTag],
+            fileTag: [fileTag],
+            instrumentFunctionalGroup: [group],
+            instrument: [instrument],
+        });
 
         const dto = db3.songDetailView.parseDto({
             id: 7,
@@ -1543,8 +1585,10 @@ describe("DB3 named views", () => {
     });
 
     it("reports the exact missing reference path", () => {
-        const references = new db3.DB3ReferenceStore();
-        references.register(db3.xInstrumentFunctionalGroup, [group]);
+        const references = db3.createDashboardReferenceStore();
+        db3.registerDashboardReferences(references, {
+            instrumentFunctionalGroup: [group],
+        });
         const dto = db3.instrumentDashboardView.parseDto({
             id: 7,
             name: "Trumpet",

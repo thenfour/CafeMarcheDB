@@ -21,8 +21,8 @@ export class DB3CreatedRowNotReadableError extends Error {
  */
 export async function fetchCreatedCrudViewRow<TView extends db3.AnyDB3CrudView>(
     view: TView,
-    identity: db3.DB3IdentityOf<db3.TableOf<TView>>,
-    references: db3.DB3ReferenceProvider,
+    identity: db3.DB3IdentityOf<db3.TableOf<NoInfer<TView>>>,
+    references: db3.DB3ReferenceProvider<db3.ReferenceContractOf<NoInfer<TView>>>,
 ): Promise<db3.ClientOf<TView>> {
     const schema = view.entity;
     const filter = schema.publicIdMember

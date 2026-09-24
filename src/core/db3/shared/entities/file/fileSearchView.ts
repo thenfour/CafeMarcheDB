@@ -2,6 +2,7 @@ import { Prisma } from "db";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { xFile } from "../../schema/file";
+import { dashboardReferenceContract } from "../../references/dashboardReferences";
 
 const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
@@ -128,7 +129,10 @@ export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
 const fileSearchViewContract = deriveViewContract(
     xFile,
     fileSearchSelection,
-    { transportSelection: fileSearchTransportSelection },
+    {
+        transportSelection: fileSearchTransportSelection,
+        references: dashboardReferenceContract,
+    },
 );
 
 export const fileSearchView = defineView({
@@ -136,6 +140,7 @@ export const fileSearchView = defineView({
     entity: xFile,
     selection: fileSearchSelection,
     dtoSchema: fileSearchViewContract.dtoSchema,
+    references: fileSearchViewContract.referenceContract,
     hydrate: fileSearchViewContract.hydrate,
 });
 

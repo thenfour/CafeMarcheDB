@@ -179,23 +179,9 @@ export const getEventSegmentMinDate = (event: EventPayload): Date | null => {
     return DateTimeRange.union(event.segments.map(getEventSegmentDateTimeRange)).getStartDateTime();
 };
 
-export const EventTypeReferenceSelection = Prisma.validator<Prisma.EventTypeDefaultArgs>()({
-    select: {
-        id: true,
-        isDeleted: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        iconName: true,
-        text: true,
-        significance: true,
-    },
-});
-
 export const xEventType = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventTypeDelegate>(),
     getIdentity: (eventType: Prisma.EventTypeGetPayload<{}>) => eventType.id,
-    referenceSelection: EventTypeReferenceSelection,
     getSelectionArgs: (): Prisma.EventTypeDefaultArgs => {
         return EventTypeArgs;
     },
@@ -237,23 +223,9 @@ export const xEventType = db3.defineTable({
 ////////////////////////////////////////////////////////////////
 
 
-export const EventStatusReferenceSelection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
-    select: {
-        id: true,
-        isDeleted: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        iconName: true,
-        label: true,
-        significance: true,
-    },
-});
-
 export const xEventStatus = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventStatusDelegate>(),
     getIdentity: (eventStatus: Prisma.EventStatusGetPayload<{}>) => eventStatus.id,
-    referenceSelection: EventStatusReferenceSelection,
     getSelectionArgs: (): Prisma.EventStatusDefaultArgs => {
         return EventStatusArgs;
     },
@@ -296,22 +268,9 @@ export const xEventStatus = db3.defineTable({
 
 ////////////////////////////////////////////////////////////////
 
-export const EventTagReferenceSelection = Prisma.validator<Prisma.EventTagDefaultArgs>()({
-    select: {
-        id: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        text: true,
-        significance: true,
-        visibleOnFrontpage: true,
-    },
-});
-
 export const xEventTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventTagDelegate>(),
     getIdentity: (eventTag: Prisma.EventTagGetPayload<{}>) => eventTag.id,
-    referenceSelection: EventTagReferenceSelection,
     tableName: "EventTag",
     deletePolicy: "hard",
     getSelectionArgs: (): Prisma.EventTagDefaultArgs => {
@@ -779,27 +738,9 @@ export const xEventSegment = db3.defineTable({
 
 ////////////////////////////////////////////////////////////////
 
-export const EventAttendanceReferenceSelection = Prisma.validator<Prisma.EventAttendanceDefaultArgs>()({
-    select: {
-        id: true,
-        text: true,
-        description: true,
-        iconName: true,
-        color: true,
-        sortOrder: true,
-        isDeleted: true,
-        strength: true,
-        personalText: true,
-        pastText: true,
-        pastPersonalText: true,
-        isActive: true,
-    },
-});
-
 export const xEventAttendance = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventAttendanceDelegate>(),
     getIdentity: (attendance: { id: number }) => attendance.id,
-    referenceSelection: EventAttendanceReferenceSelection,
     getSelectionArgs: (): Prisma.EventAttendanceDefaultArgs => {
         return EventAttendanceArgs;
     },
@@ -877,12 +818,10 @@ export const xEventSegmentUserResponse = db3.defineTable({
         updatedByUser: () => MakeUpdatedByField(),
         eventSegment: foreignRef(() => xEventSegment, {
             fkidMember: "eventSegmentId",
-            hydrateFromReference: false,
             authMap: xEventAuthMap_UserResponseRelation,
         }),
         user: foreignRef(() => xUser, {
             fkidMember: "userId",
-            hydrateFromReference: false,
             specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
             authMap: xEventAuthMap_UserResponseRelation,
         }),
@@ -935,7 +874,6 @@ export const xEventUserResponse = db3.defineTable({
         eventId: columnName => MakeIntegerField(columnName, { authMap: xEventAuthMap_UserResponseRelation, }),
         user: foreignRef(() => xUser, {
             fkidMember: "userId",
-            hydrateFromReference: false,
             specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
             authMap: xEventAuthMap_UserResponseRelation,
         }),

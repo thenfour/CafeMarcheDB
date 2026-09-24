@@ -8,7 +8,11 @@ import type { z } from "zod";
 import type { CMDBTableFilterModel } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
 import type { AnyDB3Table, DB3PrismaDelegateOf } from "../db3core";
-import type { DB3ReferenceProvider } from "./db3Hydration";
+import {
+    emptyReferenceContract,
+    type AnyDB3ReferenceContract,
+    type DB3ReferenceProvider,
+} from "./db3Hydration";
 
 type ArrayItem<T> = T extends readonly (infer TItem)[] ? TItem : never;
 
@@ -36,6 +40,7 @@ export interface DB3View<
     TSelection,
     TDtoSchema extends z.ZodTypeAny,
     TClient extends TAnyModel,
+    TReferences extends AnyDB3ReferenceContract = typeof emptyReferenceContract,
 > {
     // viewID is needed similar to tableID - the server does its own lookup and
     // verification
@@ -44,16 +49,20 @@ export interface DB3View<
     readonly tableID: string;
     readonly tableName: string;
     readonly dtoSchema: TDtoSchema;
+    readonly referenceContract: TReferences;
     readonly getSelectionArgs: (context: DB3ViewSelectionContext) => TSelection;
     readonly getWhereClause: (
         context: DB3ViewSelectionContext,
     ) => DB3ViewWhere<TEntity> | undefined;
-    readonly hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
+    readonly hydrate: (
+        dto: z.infer<TDtoSchema>,
+        references: DB3ReferenceProvider<TReferences>,
+    ) => TClient;
 
     parseDto(value: unknown): z.infer<TDtoSchema>;
 }
 
-export type AnyDB3View = DB3View<AnyDB3Table, any, z.ZodTypeAny, TAnyModel>;
+export type AnyDB3View = DB3View<AnyDB3Table, any, z.ZodTypeAny, TAnyModel, any>;
 
 export type TableOf<TView extends AnyDB3View> = TView["entity"];
 
@@ -67,18 +76,25 @@ export type DtoOf<TView extends AnyDB3View> = z.infer<TView["dtoSchema"]>;
 
 export type ClientOf<TView extends AnyDB3View> = ReturnType<TView["hydrate"]>;
 
+export type ReferenceContractOf<TView extends AnyDB3View> = TView["referenceContract"];
+
 const views = new Map<string, AnyDB3View>();
 
 interface DefineViewBaseArgs<
     TEntity extends AnyDB3Table,
     TDtoSchema extends z.AnyZodObject,
     TClient extends TAnyModel,
+    TReferences extends AnyDB3ReferenceContract,
 > {
     viewID: string;
     entity: TEntity;
     dtoSchema: TDtoSchema;
+    references?: TReferences;
     where?: DB3ViewWhereInput<TEntity>;
-    hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
+    hydrate: (
+        dto: z.infer<TDtoSchema>,
+        references: DB3ReferenceProvider<TReferences>,
+    ) => TClient;
 }
 
 type DB3ViewSelectionInput<
@@ -94,13 +110,15 @@ export function defineView<
     TEntity extends AnyDB3Table,
     TDtoSchema extends z.AnyZodObject,
     TClient extends TAnyModel,
->(args: DefineViewBaseArgs<TEntity, TDtoSchema, TClient> & {
+    TReferences extends AnyDB3ReferenceContract = typeof emptyReferenceContract,
+>(args: DefineViewBaseArgs<TEntity, TDtoSchema, TClient, TReferences> & {
     selection?: undefined;
 }): DB3View<
     TEntity,
     DerivedDB3ViewSelection<TEntity, TDtoSchema>,
     TDtoSchema,
-    TClient
+    TClient,
+    TReferences
 >;
 
 // overload with a selection specified explicitly and concretely.
@@ -109,9 +127,10 @@ export function defineView<
     TSelection extends DB3ViewSelectionArgs<TEntity>,
     TDtoSchema extends z.AnyZodObject,
     TClient extends TAnyModel,
->(args: DefineViewBaseArgs<TEntity, TDtoSchema, TClient> & {
+    TReferences extends AnyDB3ReferenceContract = typeof emptyReferenceContract,
+>(args: DefineViewBaseArgs<TEntity, TDtoSchema, TClient, TReferences> & {
     selection: DB3ViewSelectionInput<TSelection>;
-}): DB3View<TEntity, TSelection, TDtoSchema, TClient>;
+}): DB3View<TEntity, TSelection, TDtoSchema, TClient, TReferences>;
 
 // implementation handling both overloads
 export function defineView<
@@ -119,18 +138,21 @@ export function defineView<
     TSelection extends DB3ViewSelectionArgs<TEntity>,
     TDtoSchema extends z.AnyZodObject,
     TClient extends TAnyModel,
->(args: DefineViewBaseArgs<TEntity, TDtoSchema, TClient> & {
+    TReferences extends AnyDB3ReferenceContract = typeof emptyReferenceContract,
+>(args: DefineViewBaseArgs<TEntity, TDtoSchema, TClient, TReferences> & {
     selection?: DB3ViewSelectionInput<TSelection>;
-}): DB3View<TEntity, TSelection, TDtoSchema, TClient> {
+}): DB3View<TEntity, TSelection, TDtoSchema, TClient, TReferences> {
     const derivedSelection = args.selection === undefined
         ? ZodToPrismaSelection(args.dtoSchema)
         : undefined;
-    const view: DB3View<TEntity, TSelection, TDtoSchema, TClient> = {
+    const view: DB3View<TEntity, TSelection, TDtoSchema, TClient, TReferences> = {
         viewID: args.viewID,
         entity: args.entity,
         tableID: args.entity.tableID,
         tableName: args.entity.tableName,
         dtoSchema: args.dtoSchema,
+        referenceContract: args.references
+            ?? (emptyReferenceContract as TReferences),
         getSelectionArgs: args.selection === undefined
             ? () => derivedSelection as TSelection
             : typeof args.selection === "function"
@@ -163,8 +185,8 @@ export function getDB3View(viewID: string): AnyDB3View {
 
 export function hydrateView<TView extends AnyDB3View>(
     view: TView,
-    dto: DtoOf<TView>,
-    references: DB3ReferenceProvider,
+    dto: DtoOf<NoInfer<TView>>,
+    references: DB3ReferenceProvider<ReferenceContractOf<NoInfer<TView>>>,
 ): ClientOf<TView> {
     return view.hydrate(dto, references) as ClientOf<TView>;
 }

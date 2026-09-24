@@ -438,22 +438,24 @@ the DTO and hydration graph. The hydrator validates the complete DTO before
 applying any conversion, skips authorization-absent members, and invokes each
 present scalar field's codec once. Embedded single and collection relations
 recurse through the same compiled member tree, preserving absent and null edges.
-A foreign key selected without its relation declares a reference dependency;
-hydration retains the key and adds the relation from the supplied provider.
-Foreign-single fields explicitly opt into that normalized hydration behavior;
-ID-only support or parent-link fields opt out and remain scalar DTO members.
-Target xTable identity metadata determines the transport and consumer types, so
-public-ID targets do not fall back to Prisma's numeric database-key type.
+A foreign key selected without its relation declares a reference dependency
+only when the view's reference contract contains the target entity. Hydration
+retains the key and grafts the provider-defined value onto the relation member.
+The xTable supplies only relation topology and identity typing; it does not
+choose the provider value or loading strategy.
 
-Each normalized-reference target now owns a canonical `referenceSelection` and,
-when server-side public-ID projection needs extra fetched members, a smaller
-`referenceTransportSelection`. `DB3ReferenceStore.register()` accepts the
-derived transport type, parses and recursively hydrates it through the target
-xTable contract, and stores the consumer value. A target color therefore enters
-the store as a transport string and leaves it as a `ColorPaletteEntry`; consumer
-views never repeat that codec work. Public-ID foreign keys may fetch only the
-target public ID as projection support while keeping that nested object out of
-the DTO.
+`defineReferenceContract()` maps entities to arbitrary provider output types.
+`defineView()` stores that contract, so `ClientOf<View>` remains finite and
+includes exactly the normalized relations promised by the view. The runtime
+provider may obtain those values through Prisma, a cache, procedural code, or a
+client-only representation. Prisma selections used by the dashboard provider
+are consequently private to `dashboardReferences.ts`, not xTable metadata.
+
+`DB3ReferenceStore.register()` accepts values already in their consumer
+representation plus a provider-owned identity extractor. It performs no DTO
+parsing, Prisma projection, or field-codec hydration. The dashboard provider
+does that work before registration; a different provider need not use DB3 or
+Prisma at all.
 
 `EventStatus_Editor` is the first end-to-end migrated view. It now owns an
 explicit Prisma selection and supplies the selection, DTO schema, and hydrator
@@ -564,9 +566,10 @@ the user has access to it.
 
 ### Normalized foreign-key selection
 
-If the view deliberately selects `statusId` without `status`, it is requesting
-a normalized reference representation. The foreign field contract makes that
-expectation visible to the compiler.
+If the view deliberately selects `statusId` without `status`, DB3 consults the
+view's reference contract. When that contract declares `xEventStatus`, the
+selection requests a normalized reference representation. Without that
+capability the result remains the scalar `statusId` only.
 
 For a selected key:
 
@@ -576,8 +579,10 @@ For a selected key:
 -  an expected non-null ID missing from the provider is an error with the entity,
    field, and ID in its message.
 
-The derived contract may report this as a reference dependency. Fetching or
-populating the provider remains the caller's responsibility.
+The derived contract reports this as a reference dependency. Fetching,
+constructing, and populating provider values remains the provider's
+responsibility. A provider instance missing a value promised by its contract is
+an error rather than a source of compile-time optionality.
 
 This behavior is specific to a normalized selection. The auto-hydrator does not
 guess that an object is expected merely because an ID exists somewhere in the
@@ -832,6 +837,19 @@ sound.
         and `File_Editor`, with concrete `inheritRow` relation endpoints and no
         `WithPresentMember`, pruning helper, or File-specific normalizer.
 
+        Superseded by item 30 after migration evidence showed that provider
+        output and provider loading strategy are consumer concerns, not xTable
+        metadata.
+
+30. [x] **Move normalized reference shape to view-bound provider contracts.**
+        Remove `referenceSelection`, `referenceTransportSelection`, and
+        `hydrateFromReference` from xTables and foreign fields. Let typed
+        reference contracts map entities to arbitrary consumer values, bind a
+        contract to each reference-dependent view, and have
+        `deriveViewContract` graft only declared targets. Keep dashboard Prisma
+        projections and codec conversion inside the dashboard provider, and
+        prove opaque non-Prisma values through compile-time and runtime tests.
+
 ## Pilot completion criteria
 
 The pilot is successful when all of the following are true:
@@ -845,7 +863,8 @@ The pilot is successful when all of the following are true:
    hydration.
 -  A foreign field can resolve both its relation member and foreign-key member.
 -  Embedded foreign objects never trigger provider lookup.
--  Normalized foreign IDs declare and use provider dependencies predictably.
+-  Normalized foreign IDs declare and use view-bound provider dependencies
+   predictably.
 -  An event date range can be composed after derived hydration without a general
    compound-field abstraction.
 -  Existing explicit views and the existing mutation path continue to work.

@@ -134,15 +134,15 @@ database model. It binds together:
 - keyed field and policy metadata;
 - type-only Prisma delegate metadata, from which views derive their selected
   database payload type;
-- the canonical normalized reference value type; and
 - an explicit `getIdentity()`, including whether consumer identity is a numeric
   legacy ID or a branded `publicId`.
 
 The former `DB3Entity`/`defineEntity()` wrapper duplicated the table, delegate,
 and identifier and has been removed. A view's `entity` property now references
-its xTable directly. `DB3ReferenceValueOf<TTable>`, `DB3IdentityOf<TTable>`, and
-`DB3PrismaDelegateOf<TTable>` expose the table's reference, identity, and Prisma
-contracts without coupling callers to a particular view.
+its xTable directly. `DB3IdentityOf<TTable>` and
+`DB3PrismaDelegateOf<TTable>` expose identity and Prisma contracts without
+coupling callers to a particular view. Reference value types instead come from
+the view-bound provider contract.
 
 ### View: one named read contract
 
@@ -151,15 +151,18 @@ contracts without coupling callers to a particular view.
 - a globally registered `viewID` tied to exactly one entity/table;
 - a Prisma selection describing exactly what the database should return;
 - a Zod DTO schema for the authorized transport shape;
+- a reference contract describing which entity values may be grafted and their
+  exact consumer types;
 - a pure hydration function from DTO plus references to a client value.
 
 For migrated views, `deriveViewContract(xTable, selection)` preserves the
 literal Prisma selection unchanged and compiles the DTO schema plus default
 hydrator from xTable field read contracts. Scalars use their transport schemas
 and codecs; embedded relations recurse through their target xTables; a selected
-normalized foreign key can resolve its consumer relation through the reference
-provider. This keeps value representation on xTable and query shape on the
-view. A view may then compose domain hydration such as the Event date-range
+normalized foreign key can resolve its consumer relation through the view's
+reference contract and runtime provider. This keeps primitive database meaning
+on xTable, query shape on the view, and normalized consumer shape on the
+provider contract. A view may then compose domain hydration such as the Event date-range
 transform without teaching DB3 core that domain concept.
 
 The xTable relation graph may itself be cyclic, but generated DTO and client
@@ -267,13 +270,15 @@ value. It can:
 
 Hydration is deliberately synchronous and performs no fetching. All fetching,
 authorization, DTO validation, and reference-store population happen first. A
-missing required reference throws `DB3HydrationError` with its precise object
-path; optional references may remain absent.
+missing promised reference throws `DB3HydrationError` with its precise object
+path; a relation remains absent when its authorized foreign-key member is absent.
 
-`DB3ReferenceStore` is a request/session-scoped normalized store keyed by an
-entity's `getIdentity()`. This avoids repeatedly embedding the same lookup row,
-gives hydrated objects stable shared references, and prevents each legacy
-`enrich*` function from inventing its own lookup mechanism.
+`DB3ReferenceStore` is a request/session-scoped normalized store. The provider
+registers already-constructed consumer values with its own identity extractor;
+the value need not be a Prisma row or contain its identity. This avoids
+repeatedly embedding the same lookup value, gives hydrated objects stable shared
+references, and prevents each legacy `enrich*` function from inventing its own
+lookup mechanism.
 
 Hydration must preserve authorization omissions. In particular, it must not turn
 an omitted collection into `[]` or restore an omitted object from a global cache

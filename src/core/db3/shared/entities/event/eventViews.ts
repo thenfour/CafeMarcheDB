@@ -7,6 +7,7 @@ import { deriveViewContract } from "../../core/db3ViewContract";
 import { EventTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { db3s } from "../common/viewCommon";
 import { hydrateEventDateRange } from "./eventDateRange";
+import { dashboardReferenceContract } from "../../references/dashboardReferences";
 import {
     xEventAttendance,
     xEvent,
@@ -14,9 +15,6 @@ import {
     xEventStatus,
     xEventTag,
     xEventType,
-    EventStatusReferenceSelection,
-    EventTagReferenceSelection,
-    EventTypeReferenceSelection,
 } from "../../schema/event";
 
 // event type ------------------------------------------
@@ -30,7 +28,18 @@ const EventTypeDtoSchema = z.object({
     significance: db3s.authNeeded(z.string().nullable()),
 });
 
-export const eventTypeEditorSelection = EventTypeReferenceSelection;
+export const eventTypeEditorSelection = Prisma.validator<Prisma.EventTypeDefaultArgs>()({
+    select: {
+        id: true,
+        isDeleted: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        iconName: true,
+        text: true,
+        significance: true,
+    },
+});
 
 const eventTypeViewContract = deriveViewContract(
     xEventType,
@@ -57,7 +66,18 @@ const EventStatusDtoSchema = z.object({
     significance: z.string().nullable().optional(),
 });
 
-export const eventStatusEditorSelection = EventStatusReferenceSelection;
+export const eventStatusEditorSelection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
+    select: {
+        id: true,
+        isDeleted: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        iconName: true,
+        label: true,
+        significance: true,
+    },
+});
 
 const eventStatusViewContract = deriveViewContract(
     xEventStatus,
@@ -74,7 +94,17 @@ export const eventStatusEditorView = defineCrudView({
 });
 
 // event tag ------------------------------------------
-export const eventTagEditorSelection = EventTagReferenceSelection;
+export const eventTagEditorSelection = Prisma.validator<Prisma.EventTagDefaultArgs>()({
+    select: {
+        id: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        text: true,
+        significance: true,
+        visibleOnFrontpage: true,
+    },
+});
 
 const eventTagViewContract = deriveViewContract(
     xEventTag,
@@ -360,7 +390,10 @@ export const eventSearchSelection = ({ authorization }: DB3ViewSelectionContext)
 const eventSearchViewContract = deriveViewContract(
     xEvent,
     makeEventSearchSelection(-1),
-    { transportSelection: eventSearchTransportSelection },
+    {
+        transportSelection: eventSearchTransportSelection,
+        references: dashboardReferenceContract,
+    },
 );
 
 export const eventFrontpageSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
@@ -453,6 +486,7 @@ export const eventSearchView = defineView({
     entity: xEvent,
     selection: eventSearchSelection,
     dtoSchema: eventSearchViewContract.dtoSchema,
+    references: eventSearchViewContract.referenceContract,
     hydrate: (dto, references) => {
         const { segments, tags, ...eventDto } = eventSearchViewContract.hydrate(dto, references);
         return {

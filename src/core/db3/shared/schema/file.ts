@@ -105,21 +105,9 @@ const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeInput<TA
 //   }
 
 
-export const FileTagReferenceSelection = Prisma.validator<Prisma.FileTagDefaultArgs>()({
-    select: {
-        id: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        significance: true,
-    },
-});
-
 export const xFileTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileTagDelegate>(),
     getIdentity: (tag: Prisma.FileTagGetPayload<{}>) => tag.id,
-    referenceSelection: FileTagReferenceSelection,
     getSelectionArgs: (): Prisma.FileTagDefaultArgs => {
         return FileTagArgs;
     },
@@ -476,14 +464,12 @@ const xFileBaseArgs = {
         previewFile: foreignRefByTableId("File", {
             fkidMember: "previewFileId",
             allowNull: true,
-            hydrateFromReference: false,
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
         parentFile: foreignRefByTableId("File", {
             fkidMember: "parentFileId",
             allowNull: true,
-            hydrateFromReference: false,
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),

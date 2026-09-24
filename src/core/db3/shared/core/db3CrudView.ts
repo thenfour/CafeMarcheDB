@@ -25,7 +25,11 @@ import {
     type DB3ViewWhere,
     type DerivedDB3ViewSelection,
 } from "./db3View";
-import type { DB3ReferenceProvider } from "./db3Hydration";
+import {
+    emptyReferenceContract,
+    type AnyDB3ReferenceContract,
+    type DB3ReferenceProvider,
+} from "./db3Hydration";
 
 export interface DB3CrudView<
     TEntity extends AnyDB3Table,
@@ -33,7 +37,8 @@ export interface DB3CrudView<
     TDtoSchema extends z.ZodTypeAny,
     TClient extends TAnyModel,
     TCrud extends AnyDB3TableEditorCommands,
-> extends DB3View<TEntity, TSelection, TDtoSchema, TClient> {
+    TReferences extends AnyDB3ReferenceContract = typeof emptyReferenceContract,
+> extends DB3View<TEntity, TSelection, TDtoSchema, TClient, TReferences> {
     readonly crud: TCrud;
 }
 
@@ -41,7 +46,8 @@ export type AnyDB3CrudView = DB3View<
     AnyDB3Table,
     any,
     z.ZodTypeAny,
-    TAnyModel
+    TAnyModel,
+    any
 > & { readonly crud: AnyDB3TableEditorCommands };
 
 type CrudViewSelection<
@@ -150,19 +156,25 @@ export function defineCrudView<
     TClient extends TAnyModel,
     TOperations extends DB3CrudOperationFlags,
     TSelection extends DB3ViewSelectionArgs<TEntity> | undefined = undefined,
+    TReferences extends AnyDB3ReferenceContract = typeof emptyReferenceContract,
 >(args: {
     viewID: string;
     entity: TEntity;
     selection?: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
     where?: DB3ViewWhere<TEntity> | ((context: DB3ViewSelectionContext) => DB3ViewWhere<TEntity>);
     dtoSchema: TDtoSchema;
-    hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
+    references?: TReferences;
+    hydrate: (
+        dto: z.infer<TDtoSchema>,
+        references: DB3ReferenceProvider<TReferences>,
+    ) => TClient;
     operations: TOperations;
 }) {
     const viewArgs = {
         viewID: args.viewID,
         entity: args.entity,
         dtoSchema: args.dtoSchema,
+        references: args.references,
         where: args.where,
         hydrate: args.hydrate,
     };
@@ -173,7 +185,7 @@ export function defineCrudView<
     const view = defineView({
         ...viewArgs,
         selection: selection as DB3ViewSelectionArgs<TEntity>,
-    }) as DB3View<TEntity, TResolvedSelection, TDtoSchema, TClient>;
+    }) as DB3View<TEntity, TResolvedSelection, TDtoSchema, TClient, TReferences>;
     const createSchema = createPreparedMutationSchema(args.entity, args.dtoSchema, "new");
     const updateFieldsSchema = createPreparedMutationSchema(args.entity, args.dtoSchema, "update");
     const crud = defineEntityCrudCommands({
@@ -188,7 +200,8 @@ export function defineCrudView<
         TResolvedSelection,
         TDtoSchema,
         TClient,
-        typeof crud
+        typeof crud,
+        TReferences
     >;
     registerCrudView(crudView as unknown as AnyDB3CrudView);
     return crudView;

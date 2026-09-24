@@ -226,10 +226,6 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     const [dashboardData, { refetch }] = useQuery(getDashboardData, { userId: currentUser?.id ?? null });
     valueRef.current.refetchDashboardData = refetch;
     valueRef.current.permission = new TableAccessor(dashboardData.permission);
-    valueRef.current.referenceStore.register(
-        db3.xPermission,
-        valueRef.current.permission.items,
-    );
 
     valueRef.current.effectivePermissions = new PermissionSet(zip(
         dashboardData.effectivePermissionIds,
@@ -243,26 +239,24 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.wikiPageTag = new TableAccessor(dashboardData.wikiPageTag);
     valueRef.current.role = new TableAccessor(dashboardData.role);
     valueRef.current.eventType = new TableAccessor(dashboardData.eventType);
-    valueRef.current.referenceStore.register(db3.xEventType, valueRef.current.eventType.items);
     valueRef.current.eventStatus = new TableAccessor(dashboardData.eventStatus);
-    valueRef.current.referenceStore.register(db3.xEventStatus, valueRef.current.eventStatus.items);
     valueRef.current.eventTag = new TableAccessor(dashboardData.eventTag);
-    valueRef.current.referenceStore.register(db3.xEventTag, valueRef.current.eventTag.items);
     valueRef.current.eventAttendance = new TableAccessor(dashboardData.eventAttendance);
-    valueRef.current.referenceStore.register(
-        db3.xEventAttendance,
-        valueRef.current.eventAttendance.items,
-    );
     valueRef.current.fileTag = new TableAccessor(dashboardData.fileTag);
-    valueRef.current.referenceStore.register(
-        db3.xFileTag,
-        valueRef.current.fileTag.items,
-    );
     valueRef.current.instrumentTag = new TableAccessor(dashboardData.instrumentTag);
-    valueRef.current.referenceStore.register(
-        db3.xInstrumentFunctionalGroup,
-        dashboardData.instrumentFunctionalGroup,
-    );
+    db3.registerDashboardReferences(valueRef.current.referenceStore, {
+        permission: dashboardData.permission,
+        eventType: dashboardData.eventType,
+        eventStatus: dashboardData.eventStatus,
+        eventTag: dashboardData.eventTag,
+        eventAttendance: dashboardData.eventAttendance,
+        fileTag: dashboardData.fileTag,
+        instrumentFunctionalGroup: dashboardData.instrumentFunctionalGroup,
+        instrumentTag: dashboardData.instrumentTag,
+        songTag: dashboardData.songTag,
+        songCreditType: dashboardData.songCreditType,
+        instrument: dashboardData.instrument,
+    });
     valueRef.current.instrumentFunctionalGroup = new TableAccessor(
         dashboardData.instrumentFunctionalGroup.map(dto => db3.hydrateView(
             db3.instrumentFunctionalGroupDashboardView,
@@ -271,20 +265,8 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         )),
         group => group.publicId,
     );
-    valueRef.current.referenceStore.register(
-        db3.xInstrumentTag,
-        valueRef.current.instrumentTag.items,
-    );
     valueRef.current.songTag = new TableAccessor(dashboardData.songTag);
-    valueRef.current.referenceStore.register(
-        db3.xSongTag,
-        valueRef.current.songTag.items,
-    );
     valueRef.current.songCreditType = new TableAccessor(dashboardData.songCreditType);
-    valueRef.current.referenceStore.register(
-        db3.xSongCreditType,
-        valueRef.current.songCreditType.items,
-    );
     valueRef.current.serverBaseUri = dashboardData.serverBaseUri;
     valueRef.current.serverStartupState = dashboardData.serverStartupState;
     valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
@@ -313,7 +295,6 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         }
     }));
 
-    valueRef.current.referenceStore.register(db3.xInstrument, dashboardData.instrument);
     valueRef.current.instrument = new TableAccessor(dashboardData.instrument.map(dto => db3.hydrateView(
         db3.instrumentDashboardView,
         dto,

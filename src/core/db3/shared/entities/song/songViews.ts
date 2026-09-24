@@ -7,7 +7,8 @@ import {
     fileCardSelection,
     fileCardTransportSelection,
 } from "../file/fileViews";
-import { SongCreditTypeReferenceSelection, xSongCredit, xSongCreditType, xSong, xSongTag } from "../../schema/song";
+import { xSongCredit, xSongCreditType, xSong, xSongTag } from "../../schema/song";
+import { dashboardReferenceContract } from "../../references/dashboardReferences";
 
 export const songTagEditorSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()({
     select: {
@@ -25,7 +26,16 @@ export const songTagEditorSelection = Prisma.validator<Prisma.SongTagDefaultArgs
 
 const songTagEditorContract = deriveViewContract(xSongTag, songTagEditorSelection);
 
-export const songCreditTypeEditorSelection = SongCreditTypeReferenceSelection;
+export const songCreditTypeEditorSelection = Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        significance: true,
+    },
+});
 
 const songCreditTypeEditorContract = deriveViewContract(
     xSongCreditType,
@@ -226,7 +236,10 @@ export const songSearchSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
 const songSearchContract = deriveViewContract(
     xSong,
     songSearchSelection,
-    { transportSelection: songSearchTransportSelection },
+    {
+        transportSelection: songSearchTransportSelection,
+        references: dashboardReferenceContract,
+    },
 );
 
 export const songSearchView = defineView({
@@ -234,6 +247,7 @@ export const songSearchView = defineView({
     entity: xSong,
     selection: songSearchSelection,
     dtoSchema: songSearchContract.dtoSchema,
+    references: songSearchContract.referenceContract,
     hydrate: (dto, references) => {
         const hydrated = songSearchContract.hydrate(dto, references);
         return {
@@ -334,7 +348,10 @@ export const songDetailSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
 const songDetailContract = deriveViewContract(
     xSong,
     songDetailSelection,
-    { transportSelection: songDetailTransportSelection },
+    {
+        transportSelection: songDetailTransportSelection,
+        references: dashboardReferenceContract,
+    },
 );
 
 export const songDetailView = defineView({
@@ -342,6 +359,7 @@ export const songDetailView = defineView({
     entity: xSong,
     selection: songDetailSelection,
     dtoSchema: songDetailContract.dtoSchema,
+    references: songDetailContract.referenceContract,
     hydrate: (dto, references) => {
         const hydrated = songDetailContract.hydrate(dto, references);
         return {

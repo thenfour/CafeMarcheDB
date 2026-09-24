@@ -12,13 +12,16 @@ import {
     type DB3ReadPresenceOf,
     type DB3ReadTransportValueOf,
     type DB3RelationTargetTableOf,
-    type DB3ReferenceSelectionOf,
-    type DB3ReferenceTransportSelectionOf,
     type AnyDB3Table,
     type DB3PrismaDelegateOf,
     type xTable,
 } from "../db3core";
-import type { DB3ReferenceProvider } from "./db3Hydration";
+import {
+    emptyReferenceContract,
+    type AnyDB3ReferenceContract,
+    type DB3ReferenceProvider,
+    type DB3ReferenceValueOf,
+} from "./db3Hydration";
 import type { DB3ViewSelectionArgs } from "./db3View";
 
 type ArrayItem<TValue> = TValue extends readonly (infer TItem)[] ? TItem : never;
@@ -82,7 +85,7 @@ type DB3NestedRelationValue<
     TNestedSelect,
     TField,
     TTargetTable extends xTable = Extract<DB3RelationTargetTableOf<TField>, xTable>,
-> = TField extends DB3ForeignSingleReferenceField<any, any, infer TAllowNull, any>
+> = TField extends DB3ForeignSingleReferenceField<any, any, infer TAllowNull>
     ? TAllowNull extends false
     ? DB3NestedDto<NonNullable<TPayloadValue>, TNestedSelect, TTargetTable>
     : TPayloadValue extends null | undefined
@@ -197,22 +200,6 @@ export type DB3DerivedDtoSchema<
     DB3DtoForSelection<TEntity, TSelection>
 >;
 
-export type DB3ReferenceSelectionArgsOf<TEntity extends AnyDB3Table> = Extract<
-    DB3ReferenceSelectionOf<TEntity>,
-    DB3ViewSelectionArgs<TEntity>
->;
-
-export type DB3ReferenceTransportSelectionArgsOf<TEntity extends AnyDB3Table> = Extract<
-    DB3ReferenceTransportSelectionOf<TEntity>,
-    DB3ViewSelectionArgs<TEntity>
->;
-
-/** The canonical transport row accepted when populating an xTable reference provider. */
-export type DB3ReferenceTransportOf<TEntity extends AnyDB3Table> =
-    [DB3ReferenceTransportSelectionArgsOf<TEntity>] extends [never]
-    ? never
-    : DB3DtoForSelection<TEntity, DB3ReferenceTransportSelectionArgsOf<TEntity>>;
-
 type DB3ScalarClientValue<TSourceValue, TField> =
     Exclude<TSourceValue, undefined> extends DB3ReadTransportValueOf<TField>
     ? DB3ReadConsumerValueOf<TField> | Extract<TSourceValue, undefined>
@@ -221,29 +208,41 @@ type DB3ScalarClientValue<TSourceValue, TField> =
 type DB3RelationClientValue<
     TSourceValue,
     TTargetTable extends xTable,
+    TReferences extends AnyDB3ReferenceContract,
 > = TSourceValue extends null | undefined
     ? TSourceValue
     : TSourceValue extends readonly (infer TItem)[]
-    ? DB3ClientModelForTable<TItem, TTargetTable>[]
+    ? DB3ClientModelForTable<TItem, TTargetTable, TReferences>[]
     : TSourceValue extends object
-    ? DB3ClientModelForTable<TSourceValue, TTargetTable>
+    ? DB3ClientModelForTable<TSourceValue, TTargetTable, TReferences>
     : TSourceValue;
 
-type DB3FieldClientValue<TSourceValue, TField> =
+type DB3FieldClientValue<
+    TSourceValue,
+    TField,
+    TReferences extends AnyDB3ReferenceContract,
+> =
     [DB3RelationTargetTableOf<TField>] extends [never]
     ? DB3ScalarClientValue<TSourceValue, TField>
     : DB3RelationClientValue<
         TSourceValue,
-        Extract<DB3RelationTargetTableOf<TField>, xTable>
+        Extract<DB3RelationTargetTableOf<TField>, xTable>,
+        TReferences
     >;
 
 type DB3NormalizedReferenceFieldKeys<
     TDto,
     TFields,
+    TReferences extends AnyDB3ReferenceContract,
 > = Extract<{
     [TFieldMember in keyof TFields]:
-    TFields[TFieldMember] extends DB3ForeignSingleReferenceField<any, infer TForeignKeyMember, any, true>
+    TFields[TFieldMember] extends DB3ForeignSingleReferenceField<any, infer TForeignKeyMember, any>
     ? string extends TForeignKeyMember
+    ? never
+    : [DB3ReferenceValueOf<
+        TReferences,
+        Extract<DB3RelationTargetTableOf<TFields[TFieldMember]>, AnyDB3Table>
+    >] extends [never]
     ? never
     : TForeignKeyMember extends keyof TDto
     ? TFieldMember extends keyof TDto
@@ -253,10 +252,17 @@ type DB3NormalizedReferenceFieldKeys<
     : never;
 }[keyof TFields], keyof TFields>;
 
-type DB3NormalizedReferenceValue<TDto, TField> =
-    TField extends DB3ForeignSingleReferenceField<any, infer TForeignKeyMember, any, true>
+type DB3NormalizedReferenceValue<
+    TDto,
+    TField,
+    TReferences extends AnyDB3ReferenceContract,
+> =
+    TField extends DB3ForeignSingleReferenceField<any, infer TForeignKeyMember, any>
     ? TForeignKeyMember extends keyof TDto
-    ? DB3ReferenceValueOf<Extract<DB3RelationTargetTableOf<TField>, xTable>>
+    ? DB3ReferenceValueOf<
+        TReferences,
+        Extract<DB3RelationTargetTableOf<TField>, AnyDB3Table>
+    >
     | Extract<TDto[TForeignKeyMember], null | undefined>
     : never
     : never;
@@ -264,10 +270,15 @@ type DB3NormalizedReferenceValue<TDto, TField> =
 type DB3RequiredNormalizedReferenceKeys<
     TDto,
     TFields,
-    TReferenceKey extends keyof TFields = DB3NormalizedReferenceFieldKeys<TDto, TFields>,
+    TReferences extends AnyDB3ReferenceContract,
+    TReferenceKey extends keyof TFields = DB3NormalizedReferenceFieldKeys<
+        TDto,
+        TFields,
+        TReferences
+    >,
 > = {
     [TKey in TReferenceKey]:
-    TFields[TKey] extends DB3ForeignSingleReferenceField<any, infer TForeignKeyMember, any, true>
+    TFields[TKey] extends DB3ForeignSingleReferenceField<any, infer TForeignKeyMember, any>
     ? TForeignKeyMember extends keyof TDto
     ? undefined extends TDto[TForeignKeyMember]
     ? never
@@ -279,42 +290,48 @@ type DB3RequiredNormalizedReferenceKeys<
 type DB3NormalizedReferenceProperties<
     TDto,
     TFields,
-    TReferenceKey extends keyof TFields = DB3NormalizedReferenceFieldKeys<TDto, TFields>,
-    TRequiredKey extends keyof TFields = DB3RequiredNormalizedReferenceKeys<TDto, TFields>,
+    TReferences extends AnyDB3ReferenceContract,
+    TReferenceKey extends keyof TFields = DB3NormalizedReferenceFieldKeys<
+        TDto,
+        TFields,
+        TReferences
+    >,
+    TRequiredKey extends keyof TFields = DB3RequiredNormalizedReferenceKeys<
+        TDto,
+        TFields,
+        TReferences
+    >,
 > = {
     [TKey in Extract<TReferenceKey, TRequiredKey>]-?:
-    DB3NormalizedReferenceValue<TDto, TFields[TKey]>;
+    DB3NormalizedReferenceValue<TDto, TFields[TKey], TReferences>;
 } & {
     [TKey in Exclude<TReferenceKey, TRequiredKey>]?:
-    DB3NormalizedReferenceValue<TDto, TFields[TKey]>;
+    DB3NormalizedReferenceValue<TDto, TFields[TKey], TReferences>;
 };
 
 type DB3ClientModelForTable<
     TDto,
     TTable extends xTable,
+    TReferences extends AnyDB3ReferenceContract,
     TFields = DB3FieldsOf<TTable>,
 > = string extends keyof TFields
     ? { [TKey in keyof TDto]: unknown }
     : Simplify<{
         [TKey in keyof TDto]: TKey extends keyof TFields
-        ? DB3FieldClientValue<TDto[TKey], TFields[TKey]>
+        ? DB3FieldClientValue<TDto[TKey], TFields[TKey], TReferences>
         : TDto[TKey];
-    } & DB3NormalizedReferenceProperties<TDto, TFields>>;
+    } & DB3NormalizedReferenceProperties<TDto, TFields, TReferences>>;
 
 /** The default consumer model after recursively applying selected field codecs. */
 export type DB3ClientForSelection<
     TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
+    TReferences extends AnyDB3ReferenceContract = typeof emptyReferenceContract,
 > = DB3ClientModelForTable<
     DB3DtoForSelection<TEntity, TSelection>,
-    TEntity
+    TEntity,
+    TReferences
 >;
-
-/** The canonical codec-hydrated value returned for a normalized xTable reference. */
-export type DB3ReferenceValueOf<TEntity extends AnyDB3Table> =
-    [DB3ReferenceTransportSelectionArgsOf<TEntity>] extends [never]
-    ? never
-    : DB3ClientForSelection<TEntity, DB3ReferenceTransportSelectionArgsOf<TEntity>>;
 
 interface DB3CompiledMemberBase {
     readonly member: string;
@@ -362,15 +379,17 @@ export interface DB3DerivedViewContract<
     TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
     TTransportSelection extends DB3ViewSelectionArgs<TEntity> = TSelection,
+    TReferences extends AnyDB3ReferenceContract = typeof emptyReferenceContract,
 > {
     readonly prismaSelection: TSelection;
     readonly dtoSchema: DB3DerivedDtoSchema<TEntity, TTransportSelection>;
     readonly members: readonly DB3CompiledMember[];
     readonly referenceDependencies: readonly DB3ReferenceDependency[];
+    readonly referenceContract: TReferences;
     readonly hydrate: (
         dto: DB3DtoForSelection<TEntity, TTransportSelection>,
-        references: DB3ReferenceProvider,
-    ) => DB3ClientForSelection<TEntity, TTransportSelection>;
+        references: DB3ReferenceProvider<TReferences>,
+    ) => DB3ClientForSelection<TEntity, TTransportSelection, TReferences>;
 }
 
 function selectionError(
@@ -483,6 +502,7 @@ function compileSelect(
     table: xTable,
     select: TAnyModel,
     selectPath: string,
+    referenceContract: AnyDB3ReferenceContract,
 ): {
     dtoSchema: z.AnyZodObject;
     members: readonly DB3CompiledMember[];
@@ -533,37 +553,23 @@ function compileSelect(
                     ownership.readTransportSchema,
                 );
                 let referenceDependency: DB3ReferenceDependency | undefined;
-                if (ownership.kind === "foreignKey" && ownership.hydrateFromReference) {
+                if (ownership.kind === "foreignKey") {
                     const relationSelection = select[ownership.relationMember];
                     const relationIsSelected = relationSelection !== undefined
                         && relationSelection !== false
                         && relationSelection !== null;
                     if (!relationIsSelected) {
                         const targetTable = ownership.getTargetTable();
-                        if (typeof targetTable.getIdentity !== "function") {
-                            throw selectionError(
-                                entity,
+                        if (referenceContract.has(targetTable as AnyDB3Table)) {
+                            referenceDependency = {
+                                sourceTable: table,
+                                targetTable: targetTable as AnyDB3Table,
+                                foreignKeyMember: member,
+                                relationMember: ownership.relationMember,
                                 selectionPath,
-                                `normalized foreign key '${member}' targets DB3 table `
-                                + `'${targetTable.tableID}', which does not declare getIdentity().`,
-                            );
+                            };
+                            referenceDependencies.push(referenceDependency);
                         }
-                        if (!targetTable.referenceSelection) {
-                            throw selectionError(
-                                entity,
-                                selectionPath,
-                                `normalized foreign key '${member}' targets DB3 table `
-                                + `'${targetTable.tableID}', which does not declare referenceSelection.`,
-                            );
-                        }
-                        referenceDependency = {
-                            sourceTable: table,
-                            targetTable: targetTable as AnyDB3Table,
-                            foreignKeyMember: member,
-                            relationMember: ownership.relationMember,
-                            selectionPath,
-                        };
-                        referenceDependencies.push(referenceDependency);
                     }
                 }
                 shape[member] = presence.schema;
@@ -603,6 +609,7 @@ function compileSelect(
                     targetTable,
                     nestedSelect,
                     `${selectionPath}.select`,
+                    referenceContract,
                 );
                 let relationSchema: z.ZodTypeAny = ownership.kind === "relationCollection"
                     ? z.array(nested.dtoSchema)
@@ -651,6 +658,7 @@ export function compileDB3Selection<
 >(
     entity: TEntity,
     selection: TSelection,
+    referenceContract: AnyDB3ReferenceContract = emptyReferenceContract,
 ): DB3CompiledSelection<TEntity, TSelection> {
     const selectionValue = selection as TAnyModel;
     const select = getExplicitSelect(entity, selectionValue, entity.tableID);
@@ -659,6 +667,7 @@ export function compileDB3Selection<
         entity,
         select,
         `${entity.tableID}.select`,
+        referenceContract,
     );
 
     return {
@@ -701,7 +710,7 @@ function hydrateCompiledMembers(
                 const dependency = member.referenceDependency;
                 if (value === null) {
                     clientModel[dependency.relationMember] = null;
-                } else if (member.required || references.hasTable(dependency.targetTable)) {
+                } else {
                     clientModel[dependency.relationMember] = references.require(
                         dependency.targetTable,
                         value,
@@ -734,12 +743,13 @@ function hydrateCompiledMembers(
 function hydrateCompiledSelection<
     TEntity extends AnyDB3Table,
     TSelection extends DB3ViewSelectionArgs<TEntity>,
+    TReferences extends AnyDB3ReferenceContract,
 >(
     entity: TEntity,
     compiled: DB3CompiledSelection<TEntity, TSelection>,
     dto: DB3DtoForSelection<TEntity, TSelection>,
-    references: DB3ReferenceProvider,
-): DB3ClientForSelection<TEntity, TSelection> {
+    references: DB3ReferenceProvider<TReferences>,
+): DB3ClientForSelection<TEntity, TSelection, TReferences> {
     // Parse the complete DTO before running any codec. A later invalid member
     // therefore cannot leave earlier members partially hydrated.
     const parsedDto = compiled.dtoSchema.parse(dto) as TAnyModel;
@@ -752,7 +762,7 @@ function hydrateCompiledSelection<
         parsedDto,
         references,
         path,
-    ) as DB3ClientForSelection<TEntity, TSelection>;
+    ) as DB3ClientForSelection<TEntity, TSelection, TReferences>;
 }
 
 /**
@@ -765,14 +775,23 @@ export function deriveViewContract<
     TEntity extends AnyDB3Table,
     const TSelection extends DB3ViewSelectionArgs<TEntity>,
     const TTransportSelection extends DB3ViewSelectionArgs<TEntity> = TSelection,
+    const TReferences extends AnyDB3ReferenceContract = typeof emptyReferenceContract,
 >(
     entity: TEntity,
     selection: TSelection,
-    options?: { readonly transportSelection: TTransportSelection },
-): DB3DerivedViewContract<TEntity, TSelection, TTransportSelection> {
+    options?: {
+        readonly transportSelection?: TTransportSelection;
+        readonly references?: TReferences;
+    },
+): DB3DerivedViewContract<
+    TEntity,
+    TSelection,
+    TTransportSelection,
+    TReferences
+> {
     const transportSelection = options?.transportSelection
         ?? (selection as unknown as TTransportSelection);
-    if (options) {
+    if (options?.transportSelection) {
         assertTransportSelectionIsFetched(
             entity,
             selection as TAnyModel,
@@ -780,33 +799,17 @@ export function deriveViewContract<
             entity.tableID,
         );
     }
-    const compiled = compileDB3Selection(entity, transportSelection);
+    const referenceContract = options?.references
+        ?? (emptyReferenceContract as TReferences);
+    const compiled = compileDB3Selection(
+        entity,
+        transportSelection,
+        referenceContract,
+    );
     return {
         ...compiled,
         prismaSelection: selection,
+        referenceContract,
         hydrate: (dto, references) => hydrateCompiledSelection(entity, compiled, dto, references),
     };
-}
-
-/** Compiles the canonical fetch and client-transport projections declared by an xTable. */
-export function deriveReferenceViewContract<TEntity extends AnyDB3Table>(
-    entity: TEntity,
-): DB3DerivedViewContract<
-    TEntity,
-    DB3ReferenceSelectionArgsOf<TEntity>,
-    DB3ReferenceTransportSelectionArgsOf<TEntity>
-> {
-    if (!entity.referenceSelection || !entity.referenceTransportSelection) {
-        throw new Error(
-            `DB3 table '${entity.tableID}' does not declare a complete reference selection contract.`,
-        );
-    }
-    return deriveViewContract(
-        entity,
-        entity.referenceSelection as DB3ReferenceSelectionArgsOf<TEntity>,
-        {
-            transportSelection: entity.referenceTransportSelection as
-                DB3ReferenceTransportSelectionArgsOf<TEntity>,
-        },
-    );
 }

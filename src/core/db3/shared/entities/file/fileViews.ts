@@ -4,14 +4,23 @@ import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { db3s } from "../common/viewCommon";
+import { dashboardReferenceContract } from "../../references/dashboardReferences";
 import {
-    FileTagReferenceSelection,
     xFile,
     xFileTag,
     xFrontpageGalleryItem,
 } from "../../schema/file";
 
-export const fileTagEditorSelection = FileTagReferenceSelection;
+export const fileTagEditorSelection = Prisma.validator<Prisma.FileTagDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        significance: true,
+    },
+});
 
 const fileTagEditorContract = deriveViewContract(xFileTag, fileTagEditorSelection);
 
@@ -274,7 +283,10 @@ export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
 const fileDetailContract = deriveViewContract(
     xFile,
     fileDetailSelection,
-    { transportSelection: fileDetailTransportSelection },
+    {
+        transportSelection: fileDetailTransportSelection,
+        references: dashboardReferenceContract,
+    },
 );
 
 const fileEditorTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
@@ -314,7 +326,10 @@ export const fileEditorSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
 const fileEditorContract = deriveViewContract(
     xFile,
     fileEditorSelection,
-    { transportSelection: fileEditorTransportSelection },
+    {
+        transportSelection: fileEditorTransportSelection,
+        references: dashboardReferenceContract,
+    },
 );
 
 export const fileEditorView = defineCrudView({
@@ -323,6 +338,7 @@ export const fileEditorView = defineCrudView({
     operations: { update: true, delete: true },
     selection: fileEditorContract.prismaSelection,
     dtoSchema: fileEditorContract.dtoSchema,
+    references: fileEditorContract.referenceContract,
     hydrate: fileEditorContract.hydrate,
 });
 
@@ -331,6 +347,7 @@ export const fileDetailView = defineView({
     entity: xFile,
     selection: fileDetailContract.prismaSelection,
     dtoSchema: fileDetailContract.dtoSchema,
+    references: fileDetailContract.referenceContract,
     hydrate: fileDetailContract.hydrate,
 });
 
