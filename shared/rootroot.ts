@@ -95,6 +95,8 @@ export class Stopwatch {
 // and default is the type of `id` in the row, excluding undefined.
 type DefaultTableAccessorId<TRow> = TRow extends { id?: infer TId }
     ? Extract<TId, number | string>
+    : TRow extends { publicId?: infer TPublicId }
+    ? Extract<TPublicId, number | string>
     : never;
 
 export class TableAccessor<TRow, TId extends number | string = DefaultTableAccessorId<TRow>> {
@@ -103,7 +105,16 @@ export class TableAccessor<TRow, TId extends number | string = DefaultTableAcces
 
     constructor(
         rows: TRow[],
-        getId: (row: TRow) => TId = (row => (row as { id: TId }).id),
+        getId: (row: TRow) => TId = (row => {
+            // The accessor's row constraint is intentionally structural; this cast
+            // reads the identity member selected by DefaultTableAccessorId above.
+            const identityRow = row as { id?: TId, publicId?: TId };
+            const identity = identityRow.id ?? identityRow.publicId;
+            if (identity === undefined) {
+                throw new Error("TableAccessor row has neither id nor publicId.");
+            }
+            return identity;
+        }),
     ) {
         this.asArray = rows;
         this.rows = new Map(rows.map(row => [getId(row), row]));

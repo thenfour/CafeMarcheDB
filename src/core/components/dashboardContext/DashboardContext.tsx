@@ -290,7 +290,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     getCmdbWindow().cmdbDashboardContext = valueRef.current;
 
     valueRef.current.dynMenuLinks = new TableAccessor(dashboardData.dynMenuLinks);
-    valueRef.current.instrument = new TableAccessor(dashboardData.instrument);
+    valueRef.current.instrument = new TableAccessor(dashboardData.instrument, value => value.publicId);
 
     return (
         <DashboardContext.Provider value={{ data: valueRef.current }}>

@@ -155,7 +155,7 @@ const AutoAssignInstrumentTester = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.instrumentDashboardView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            publicId: DB3Client.publicIdFieldGen(),
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
             description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
             autoAssignFileLeafRegex: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200, fieldCaption: "Regex" }),
@@ -190,11 +190,14 @@ const AutoAssignInstrumentTester = () => {
         const aaret = AutoAssignInstrumentPartition({
             fileLeafWithoutExtension: localStripExtension(leaf),
             allInstruments,
+            getIdentity: instrument => instrument.publicId,
         });
 
         results.push({
             leaf,
-            instruments: aaret.matchingInstrumentIds.map(iid => allInstruments.find(inst => inst.id === iid)!),
+            instruments: aaret.matchingInstrumentIds.map(publicId => allInstruments.find(
+                instrument => instrument.publicId === publicId,
+            )!),
         });
     };
 
@@ -215,7 +218,7 @@ const AutoAssignInstrumentTester = () => {
                         <tr key={i}>
                             <td>{r.leaf}</td>
                             <td>
-                                {r.instruments.map(inst => (<div key={inst.id}>{inst.id} {inst.name}</div>))}
+                                {r.instruments.map(inst => (<div key={inst.publicId}>{inst.publicId} {inst.name}</div>))}
                             </td>
                         </tr>
                     ))}

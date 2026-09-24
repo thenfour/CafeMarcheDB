@@ -12,6 +12,7 @@ import { GetPublicRole, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpr
 import { UserWithRolesPayload } from "../shared/schema/userPayloads";
 import { loadEffectivePermissions } from "@/src/auth/server/effectivePermissions";
 import { PermissionSet } from "@/src/auth/shared/PermissionSet";
+import { parsePublicId } from "shared/publicId";
 
 // per type; this is not the amount to return to users. after this, relevance prunes to the top N results.
 // this just sets a practical limit.
@@ -30,6 +31,38 @@ interface QuickSearchPlugin {
 
 const IsAuthorized = (permissionSet: Readonly<PermissionSet>, permission: Permission): boolean => {
     return principalHasPermission(permissionSet, permission);
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+const InstrumentQuickSearchPlugin: QuickSearchPlugin = {
+    matchesTypeFilter: (type: string) => type === QuickSearchItemType.instrument || type === "i",
+    getMatches: async ({ query, permissionSet }) => {
+        if (!IsAuthorized(permissionSet, Permission.login)) return [];
+
+        const instrumentFields: SearchableTableFieldSpec[] = [
+            { fieldName: "publicId", fieldType: "string", strengthMultiplier: 1 },
+            { fieldName: "name", fieldType: "string", strengthMultiplier: 1 },
+            { fieldName: "description", fieldType: "string", strengthMultiplier: 0.5 },
+        ];
+        const instruments = await db.instrument.findMany({
+            where: MakeWhereCondition(instrumentFields, query),
+            select: { publicId: true, name: true, description: true },
+            take: kItemsPerType,
+        });
+
+        return instruments.map(instrument => {
+            const bestMatch = CalculateMatchStrength(instrumentFields, instrument, query);
+            return {
+                id: parsePublicId<"Instrument">(instrument.publicId),
+                absoluteUri: ServerApi.getAbsoluteUri(`/backstage/instrument/${instrument.publicId}`),
+                name: instrument.name,
+                matchStrength: bestMatch.matchStrength,
+                matchingField: bestMatch.fieldName,
+                itemType: QuickSearchItemType.instrument,
+            };
+        });
+    },
 };
 
 
@@ -393,6 +426,7 @@ export async function getQuickSearchResults(keyword__: string, user: UserWithRol
     const plugins: Record<QuickSearchItemType, QuickSearchPlugin> = {
         [QuickSearchItemType.song]: SongQuickSearchPlugin,
         [QuickSearchItemType.event]: EventQuickSearchPlugin,
+        [QuickSearchItemType.instrument]: InstrumentQuickSearchPlugin,
         [QuickSearchItemType.user]: UserQuickSearchPlugin,
         [QuickSearchItemType.wikiPage]: WikiPageQuickSearchPlugin,
     };

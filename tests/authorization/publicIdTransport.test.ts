@@ -13,6 +13,7 @@ const tagAssociationPublicId = parsePublicId<"InstrumentTagAssociation">("AbCdEf
 const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn04");
 const otherSongTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn05");
 const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn06");
+const instrumentPublicId = parsePublicId<"Instrument">("AbCdEfGhIjKlMn07");
 const instrumentId = 7;
 const group = {
     id: 54,
@@ -91,6 +92,7 @@ describe("instrument catalog public-ID transport", () => {
     it("projects converted foreign keys through direct, association, and nested relation payloads", () => {
         const instrument = {
             id: instrumentId,
+            publicId: instrumentPublicId,
             name: "Trumpet",
             description: "",
             autoAssignFileLeafRegex: null,
@@ -108,6 +110,8 @@ describe("instrument catalog public-ID transport", () => {
         const publicData = authorization(Permission.login);
 
         const projectedInstrument = projectDB3ModelPublicIds(db3.xInstrument, instrument, publicData);
+        expect(projectedInstrument.publicId).toBe(instrumentPublicId);
+        expect(projectedInstrument).not.toHaveProperty("id");
         expect(projectedInstrument.functionalGroupId).toBe(publicId);
         expect(projectedInstrument.functionalGroup).toMatchObject({ publicId, name: "Brass" });
         expect(projectedInstrument.functionalGroup).not.toHaveProperty("id");
@@ -129,6 +133,9 @@ describe("instrument catalog public-ID transport", () => {
             }],
         }, publicData);
         const nestedInstrument = projectedFile.taggedInstruments[0].instrument;
+        expect(projectedFile.taggedInstruments[0].instrumentId).toBe(instrumentPublicId);
+        expect(nestedInstrument.publicId).toBe(instrumentPublicId);
+        expect(nestedInstrument).not.toHaveProperty("id");
         expect(nestedInstrument.functionalGroupId).toBe(publicId);
         expect(nestedInstrument.functionalGroup).not.toHaveProperty("id");
 
@@ -176,9 +183,9 @@ describe("instrument catalog public-ID transport", () => {
         })).not.toThrow();
         expect(() => validateDB3QueryRequest({
             table: { tableID: "Instrument", tableName: "Instrument" },
-            filter: { items: [], publicIds: [publicId] },
+            filter: { items: [], publicIds: [instrumentPublicId] },
             cmdbQueryContext: "public-id-test",
-        })).toThrow("does not use public IDs");
+        })).not.toThrow();
         expect(() => validateDB3QueryRequest({
             table: { tableID: "Song", tableName: "Song" },
             filter: { items: [], tableParams: { songTagIds: [songTagPublicId] } },
@@ -245,9 +252,16 @@ describe("instrument catalog public-ID transport", () => {
             tableID: "Instrument",
             tableName: "Instrument",
             mutationType: "update",
-            updateId: instrumentId,
+            updatePublicId: instrumentPublicId,
             updateModel: { functionalGroupId: publicId },
         })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "Instrument",
+            tableName: "Instrument",
+            mutationType: "update",
+            updateId: instrumentId,
+            updateModel: { functionalGroupId: publicId },
+        })).toThrow("updates require updatePublicId");
 
         expect(() => validateDB3MutationRequest({
             tableID: "SongTag",

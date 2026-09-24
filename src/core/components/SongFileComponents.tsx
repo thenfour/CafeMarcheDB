@@ -188,7 +188,7 @@ export const FileExternalLink = ({ file, highlight }: { file: DetailFile, highli
 interface FileViewerHiddenTagIds {
     fileTagIds?: number[];
     userTagIds?: number[];
-    instrumentTagIds?: number[];
+    instrumentTagIds?: db3.InstrumentIdentity[];
     songTagIds?: number[];
     eventTagIds?: number[];
     wikiPageTagIds?: number[]; // wikiPage ids
@@ -347,7 +347,10 @@ export const FileValueViewer = (props: FileViewerProps) => {
 
                     {(taggedInstruments.length > 0) && (
                         taggedInstruments
-                            .filter(a => !props.hiddenTagIds.instrumentTagIds || !existsInArray(props.hiddenTagIds.instrumentTagIds, a.instrument.id))
+                            .filter(a => !props.hiddenTagIds.instrumentTagIds || !existsInArray(
+                                props.hiddenTagIds.instrumentTagIds,
+                                db3.getInstrumentIdentity(a.instrument),
+                            ))
                             .map(a => <InstrumentChip key={a.id} value={a.instrument} size="small" variation={variation} />)
                     )}
 
@@ -539,7 +542,7 @@ interface FileFilterAndSortSpec {
     quickFilter: string;
     tagIds: number[];
     taggedUserIds: number[];
-    taggedInstrumentIds: number[];
+    taggedInstrumentIds: db3.InstrumentIdentity[];
     taggedSongIds: number[];
     taggedEventIds: number[];
     taggedWikiPageIds: number[];
@@ -565,7 +568,7 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         const userIds = taggedUsers.map(user => user.user.id);
         if (spec.taggedUserIds.length && !userIds.some(id => spec.taggedUserIds.includes(id))) return false;
 
-        const instrumentIds = taggedInstruments.map(instrument => instrument.instrument.id);
+        const instrumentIds = taggedInstruments.map(instrument => db3.getInstrumentIdentity(instrument.instrument));
         if (spec.taggedInstrumentIds.length && !instrumentIds.some(id => spec.taggedInstrumentIds.includes(id))) return false;
 
         const songIds = taggedSongs.map(song => song.song.id);
@@ -656,7 +659,12 @@ interface CalculateUniqueTagsReturn<TagPayload> {
     tag: TagPayload,
 };
 
-const CalculateUniqueTags = <TagPayload extends { id: number },>(props: { fileTags: FileTagBase[], selector: TagKey, foreignSelector: string }): CalculateUniqueTagsReturn<TagPayload>[] => {
+const CalculateUniqueTags = <TagPayload,>(props: {
+    fileTags: FileTagBase[];
+    selector: TagKey;
+    foreignSelector: string;
+    getIdentity: (tag: TagPayload) => number | string;
+}): CalculateUniqueTagsReturn<TagPayload>[] => {
 
     const uniqueTags: { count: number, tag: TagPayload }[] = [];
 
@@ -666,10 +674,11 @@ const CalculateUniqueTags = <TagPayload extends { id: number },>(props: { fileTa
         if (tagsArray) {
             for (var it = 0; it < tagsArray.length; ++it) {
                 const tag = tagsArray[it]!;
-                const xit = uniqueTags.findIndex(ut => ut.tag.id === tag[props.foreignSelector].id);
+                const candidate: TagPayload = tag[props.foreignSelector];
+                const xit = uniqueTags.findIndex(ut => props.getIdentity(ut.tag) === props.getIdentity(candidate));
                 if (xit === -1) {
                     uniqueTags.push({
-                        tag: tag[props.foreignSelector],
+                        tag: candidate,
                         count: 1,
                     });
                 } else {
@@ -719,12 +728,13 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
         return fg.color;
     };
 
-    const uniqueTags = CalculateUniqueTags<db3.FileTagPayloadMinimum>({ selector: 'tags', foreignSelector: "fileTag", fileTags: props.fileTags });
-    const uniqueInstrumentTags = CalculateUniqueTags<db3.InstrumentClientPayload>({ selector: 'taggedInstruments', foreignSelector: "instrument", fileTags: props.fileTags });
-    const uniqueEventTags = CalculateUniqueTags<db3.InstrumentPayloadMinimum>({ selector: 'taggedEvents', foreignSelector: "event", fileTags: props.fileTags });
-    const uniqueUserTags = CalculateUniqueTags<db3.UserPayloadMinimum>({ selector: 'taggedUsers', foreignSelector: "user", fileTags: props.fileTags });
-    const uniqueSongTags = CalculateUniqueTags<db3.SongPayloadMinimum>({ selector: 'taggedSongs', foreignSelector: "song", fileTags: props.fileTags });
-    const uniqueWikiPageTags = CalculateUniqueTags<db3.WikiPagePayload>({ selector: 'taggedWikiPages', foreignSelector: "wikiPage", fileTags: props.fileTags });
+    // why are we pulling out IDs like this instead of using the getIdentity method on the respective xTables?
+    const uniqueTags = CalculateUniqueTags<db3.FileTagPayloadMinimum>({ selector: 'tags', foreignSelector: "fileTag", fileTags: props.fileTags, getIdentity: tag => tag.id });
+    const uniqueInstrumentTags = CalculateUniqueTags<db3.InstrumentClientPayload>({ selector: 'taggedInstruments', foreignSelector: "instrument", fileTags: props.fileTags, getIdentity: instrument => instrument.publicId });
+    const uniqueEventTags = CalculateUniqueTags<db3.InstrumentPayloadMinimum>({ selector: 'taggedEvents', foreignSelector: "event", fileTags: props.fileTags, getIdentity: event => event.id });
+    const uniqueUserTags = CalculateUniqueTags<db3.UserPayloadMinimum>({ selector: 'taggedUsers', foreignSelector: "user", fileTags: props.fileTags, getIdentity: user => user.id });
+    const uniqueSongTags = CalculateUniqueTags<db3.SongPayloadMinimum>({ selector: 'taggedSongs', foreignSelector: "song", fileTags: props.fileTags, getIdentity: song => song.id });
+    const uniqueWikiPageTags = CalculateUniqueTags<db3.WikiPagePayload>({ selector: 'taggedWikiPages', foreignSelector: "wikiPage", fileTags: props.fileTags, getIdentity: wikiPage => wikiPage.id });
     const uniqueMimeTypes = CalculateUniqueMimeTypes({ fileTags: props.fileTags });
 
     const sortedInstrumentTags = dashboardContext.sortInstruments(uniqueInstrumentTags.map(t => ({ count: t.count, ...t.tag })));
@@ -787,12 +797,12 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                                     {sortedInstrumentTags.length > 1 && <CMChipContainer>
                                         {sortedInstrumentTags.map(t => (
                                             <CMChip
-                                                key={t.id}
+                                                key={t.publicId}
                                                 color={getInstrumentColor(t)}
                                                 //tooltip={t.description}
-                                                size={dashboardContext.currentUser?.instruments.some(yi => yi.instrumentId === t.id) ? 'big' : 'small'}
-                                                variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedInstrumentIds, t.id) }}
-                                                onClick={() => props.onChange({ ...props.value, taggedInstrumentIds: toggleValueInArray(props.value.taggedInstrumentIds, t.id) })}
+                                                size={dashboardContext.currentUser?.instruments.some(yi => yi.instrumentId === t.publicId) ? 'big' : 'small'}
+                                                variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedInstrumentIds, t.publicId) }}
+                                                onClick={() => props.onChange({ ...props.value, taggedInstrumentIds: toggleValueInArray(props.value.taggedInstrumentIds, t.publicId) })}
                                             >
                                                 {t.name} ({t.count})
                                             </CMChip>))}

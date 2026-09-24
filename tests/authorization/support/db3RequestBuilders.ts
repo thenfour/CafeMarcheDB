@@ -29,6 +29,22 @@ export function forgeDb3Update(
   } as MutatorInput
 }
 
+export function forgeDb3PublicUpdate(
+  tableID: string,
+  updatePublicId: string,
+  updateModel: Record<string, unknown>,
+  overrides: Partial<MutatorInput> = {},
+): MutatorInput {
+  return {
+    tableID,
+    tableName: tableID,
+    mutationType: "update",
+    updatePublicId,
+    updateModel,
+    ...overrides,
+  } as MutatorInput // Test builders intentionally construct requests before runtime table validation.
+}
+
 export function forgeDb3Insert(
   tableID: string,
   insertModel: Record<string, unknown>,

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
-import { db3s } from "../common/viewCommon";
+import { db3s, graft } from "../common/viewCommon";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
 import {
     xFile,
@@ -190,65 +190,57 @@ export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArg
 
 // Authorization needs a few additional members which must not cross the DTO
 // boundary. Keep the full Prisma selection distinct from its transport shape.
-export const fileCardSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
-    select: {
-        ...fileCardTransportSelection.select,
-        isDeleted: true,
-        taggedUsers: {
-            ...fileCardTransportSelection.select.taggedUsers,
-            select: {
-                ...fileCardTransportSelection.select.taggedUsers.select,
-                userId: true,
+export const fileCardSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
+    graft(fileCardTransportSelection, {
+        select: {
+            isDeleted: true,
+            taggedUsers: {
+                select: {
+                    userId: true,
+                },
             },
-        },
-        taggedSongs: {
-            ...fileCardTransportSelection.select.taggedSongs,
-            select: {
-                ...fileCardTransportSelection.select.taggedSongs.select,
-                songId: true,
-                song: {
-                    ...fileCardTransportSelection.select.taggedSongs.select.song,
-                    select: {
-                        ...fileCardTransportSelection.select.taggedSongs.select.song.select,
-                        createdByUserId: true,
-                        visiblePermissionId: true,
-                        isDeleted: true,
+            taggedSongs: {
+                select: {
+                    songId: true,
+                    song: {
+                        select: {
+                            createdByUserId: true,
+                            visiblePermissionId: true,
+                            isDeleted: true,
+                        },
+                    },
+                },
+            },
+            taggedEvents: {
+                select: {
+                    eventId: true,
+                    event: {
+                        select: {
+                            createdByUserId: true,
+                            visiblePermissionId: true,
+                            isDeleted: true,
+                        },
+                    },
+                },
+            },
+            taggedInstruments: {
+                select: {
+                    instrument: { select: { publicId: true } },
+                },
+            },
+            taggedWikiPages: {
+                select: {
+                    wikiPageId: true,
+                    wikiPage: {
+                        select: {
+                            visiblePermissionId: true,
+                        },
                     },
                 },
             },
         },
-        taggedEvents: {
-            ...fileCardTransportSelection.select.taggedEvents,
-            select: {
-                ...fileCardTransportSelection.select.taggedEvents.select,
-                eventId: true,
-                event: {
-                    ...fileCardTransportSelection.select.taggedEvents.select.event,
-                    select: {
-                        ...fileCardTransportSelection.select.taggedEvents.select.event.select,
-                        createdByUserId: true,
-                        visiblePermissionId: true,
-                        isDeleted: true,
-                    },
-                },
-            },
-        },
-        taggedWikiPages: {
-            ...fileCardTransportSelection.select.taggedWikiPages,
-            select: {
-                ...fileCardTransportSelection.select.taggedWikiPages.select,
-                wikiPageId: true,
-                wikiPage: {
-                    ...fileCardTransportSelection.select.taggedWikiPages.select.wikiPage,
-                    select: {
-                        ...fileCardTransportSelection.select.taggedWikiPages.select.wikiPage.select,
-                        visiblePermissionId: true,
-                    },
-                },
-            },
-        },
-    },
-});
+    })
+);
 
 
 

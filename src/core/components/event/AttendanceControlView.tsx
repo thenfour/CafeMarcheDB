@@ -1,7 +1,7 @@
 import { formatEventDateRange, EventDatePresentation } from "shared/dateTimePresentation";
 import React from "react";
 import { CircularProgress } from "@mui/material";
-import type * as db3 from "src/core/db3/db3";
+import * as db3 from "src/core/db3/db3";
 import { getEventSegmentDateTimeRange } from "src/core/db3/shared/schema/event";
 import { isAttendanceGoing } from "shared/eventAttendance";
 import { Timing } from "shared/time";
@@ -17,7 +17,7 @@ import type { EventAttendanceResult } from "./attendanceCalculation";
 
 export type AttendanceChange =
     | { type: "segment"; segmentId: number; attendanceId: number | null }
-    | { type: "instrument"; instrumentId: number | null }
+    | { type: "instrument"; instrumentId: db3.InstrumentIdentity | null }
     | { type: "comment"; comment: string };
 
 export interface AttendanceControlEnvironment {
@@ -61,9 +61,13 @@ const InstrumentControl = ({ response, environment }: {
     response: EventAttendanceResult["eventUserResponse"]; environment: AttendanceControlEnvironment;
 }) => {
     const [inProgress, setInProgress] = React.useState(false);
-    const instruments = response.user.instruments.map(ui => environment.instruments.find(i => i.id === ui.instrumentId)!);
-    const selected = environment.instruments.find(i => i.id === response.response.instrumentId);
-    const change = async (instrumentId: number) => {
+    const instruments = response.user.instruments.map(ui => environment.instruments.find(
+        instrument => db3.getInstrumentIdentity(instrument) === ui.instrumentId,
+    )!);
+    const selected = environment.instruments.find(
+        instrument => db3.getInstrumentIdentity(instrument) === response.response.instrumentId,
+    );
+    const change = async (instrumentId: db3.InstrumentIdentity) => {
         setInProgress(true);
         try { await environment.onSave({ type: "instrument", instrumentId }); }
         catch { /* Feedback belongs to the adapter. */ }
@@ -72,7 +76,10 @@ const InstrumentControl = ({ response, environment }: {
     if (instruments.length < 2) return null;
     return <NameValuePair name="Instrument" value={<CMChipContainer className="EventAttendanceResponseControlButtonGroup">
         {inProgress ? <CircularProgress size={16} /> : instruments.map(option => <InstrumentButton
-            key={option.id} value={option} selected={option.id === selected?.id} onSelect={() => { void change(option.id); }} />)}
+            key={db3.getInstrumentIdentity(option)}
+            value={option}
+            selected={db3.getInstrumentIdentity(option) === (selected && db3.getInstrumentIdentity(selected))}
+            onSelect={() => { void change(db3.getInstrumentIdentity(option)); }} />)}
     </CMChipContainer>} />;
 };
 

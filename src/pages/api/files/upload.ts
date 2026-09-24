@@ -176,6 +176,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                                     const aaret = AutoAssignInstrumentPartition({
                                         allInstruments,
                                         fileLeafWithoutExtension: stripExtension(file.originalFilename),
+                                        getIdentity: instrument => instrument.id,
                                     });
                                     fields.taggedInstruments = aaret.matchingInstrumentIds;
                                 }

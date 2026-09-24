@@ -7,7 +7,7 @@ import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
-import { GetFeatureReportDetailResultArgs, TGetFeatureReportDetailResult, ZFeatureReportFilterSpec } from "../activityReportTypes";
+import { GetFeatureReportDetailResultArgs, projectFeatureReportDetailItem, TGetFeatureReportDetailResult, ZFeatureReportFilterSpec } from "../activityReportTypes";
 import { buildFeatureReportFiltersSQL, GetAnonymizedUserHash } from "../server/facetProcessor";
 
 const ZTArgs = z.object({
@@ -48,7 +48,7 @@ async function getFilteredDetails(args: TArgs, ctx: AuthenticatedCtx): Promise<T
     return {
         rows: result.map((row) => {
             return {
-                ...row,
+                ...projectFeatureReportDetailItem(row),
                 userHash: GetAnonymizedUserHash(row.userId, filterSql),
             };
         }),

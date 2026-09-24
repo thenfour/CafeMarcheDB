@@ -1660,7 +1660,12 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                         allowedItemTypes={QuickSearchItemTypeSets.Everything!}
                                         value={!segment.associatedItem ? null : { ...segment.associatedItem, matchStrength: 0, matchingField: undefined }}
                                         onChange={(newAssociation) => {
-                                            props.mutator.setColumnAssociatedItem(segment.columnId, newAssociation);
+                                            props.mutator.setColumnAssociatedItem(
+                                                segment.columnId,
+                                                newAssociation && typeof newAssociation.id === "number"
+                                                    ? { ...newAssociation, id: newAssociation.id }
+                                                    : null,
+                                            );
                                         }}
                                     />
 

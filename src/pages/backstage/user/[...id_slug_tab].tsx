@@ -61,7 +61,9 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
         void router.push(Routes.UserSearchPage());
         return null;
     }
-    const userRaw = tableClient.items[0]! as db3.UserPayload;
+    // The editor view supplies the scalar user fields while enrichUser replaces
+    // its partial role, tag, and instrument relations from dashboard references.
+    const userRaw = tableClient.items[0]! as unknown as db3.UserClientPayload;
     const user = enrichUser(userRaw, dashboardContext.role, dashboardContext.userTag, dashboardContext.instrument);
 
     return <div className="songsDetailComponent">
@@ -96,7 +98,7 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
         ctx,
         permission: Permission.view_users_basic_info,
         table: db3.xUser,
-        id,
+        identity: id,
         includeDeleted: effectivePermissions.includesName(Permission.recover_users),
         load: where => db.user.findFirst({
             select: {

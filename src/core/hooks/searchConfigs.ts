@@ -72,7 +72,7 @@ export const userSearchConfig = defineLegacySearchConfig({
         ],
     }),
 
-    enrichItem: (rawItem: db3.UserPayload, dashboardContext) => enrichUser(
+    enrichItem: (rawItem: db3.UserClientPayload, dashboardContext) => enrichUser(
         rawItem,
         dashboardContext.role,
         dashboardContext.userTag,

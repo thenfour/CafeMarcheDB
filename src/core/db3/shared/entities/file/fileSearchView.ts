@@ -3,6 +3,7 @@ import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { xFile } from "../../schema/file";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
+import { graft } from "../common/viewCommon";
 
 const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
@@ -72,59 +73,53 @@ const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
     },
 });
 
-export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
-    select: {
-        ...fileSearchTransportSelection.select,
-        uploadedByUserId: true,
-        isDeleted: true,
-        taggedSongs: {
-            ...fileSearchTransportSelection.select.taggedSongs,
-            select: {
-                ...fileSearchTransportSelection.select.taggedSongs.select,
-                songId: true,
-                song: {
-                    ...fileSearchTransportSelection.select.taggedSongs.select.song,
-                    select: {
-                        ...fileSearchTransportSelection.select.taggedSongs.select.song.select,
-                        createdByUserId: true,
-                        visiblePermissionId: true,
-                        isDeleted: true,
+export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
+    graft(fileSearchTransportSelection, {
+        select: {
+            uploadedByUserId: true,
+            isDeleted: true,
+            taggedSongs: {
+                select: {
+                    songId: true,
+                    song: {
+                        select: {
+                            createdByUserId: true,
+                            visiblePermissionId: true,
+                            isDeleted: true,
+                        },
+                    },
+                },
+            },
+            taggedEvents: {
+                select: {
+                    eventId: true,
+                    event: {
+                        select: {
+                            createdByUserId: true,
+                            visiblePermissionId: true,
+                            isDeleted: true,
+                        },
+                    },
+                },
+            },
+            taggedInstruments: {
+                select: {
+                    instrument: { select: { publicId: true } },
+                },
+            },
+            taggedWikiPages: {
+                select: {
+                    wikiPageId: true,
+                    wikiPage: {
+                        select: {
+                            visiblePermissionId: true,
+                        },
                     },
                 },
             },
         },
-        taggedEvents: {
-            ...fileSearchTransportSelection.select.taggedEvents,
-            select: {
-                ...fileSearchTransportSelection.select.taggedEvents.select,
-                eventId: true,
-                event: {
-                    ...fileSearchTransportSelection.select.taggedEvents.select.event,
-                    select: {
-                        ...fileSearchTransportSelection.select.taggedEvents.select.event.select,
-                        createdByUserId: true,
-                        visiblePermissionId: true,
-                        isDeleted: true,
-                    },
-                },
-            },
-        },
-        taggedWikiPages: {
-            ...fileSearchTransportSelection.select.taggedWikiPages,
-            select: {
-                ...fileSearchTransportSelection.select.taggedWikiPages.select,
-                wikiPageId: true,
-                wikiPage: {
-                    ...fileSearchTransportSelection.select.taggedWikiPages.select.wikiPage,
-                    select: {
-                        ...fileSearchTransportSelection.select.taggedWikiPages.select.wikiPage.select,
-                        visiblePermissionId: true,
-                    },
-                },
-            },
-        },
-    },
-});
+    })
+);
 
 const fileSearchViewContract = deriveViewContract(
     xFile,

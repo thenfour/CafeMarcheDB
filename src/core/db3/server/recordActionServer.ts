@@ -1,5 +1,5 @@
 import { Ctx } from "blitz";
-import db from "db";
+import db, { Prisma } from "db";
 import { z } from "zod";
 import { ZTRecordActionArgs } from "../../components/featureReports/activityTracking";
 import * as mutationCore from "../server/db3mutationCore";
@@ -82,7 +82,7 @@ export const redactSensitiveActionUri = (uri: string | null | undefined): string
  * Note: Type and enum validation is handled by Zod schemas before this point.
  * This function focuses specifically on database constraint compliance.
  */
-function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null, isClient: boolean }) {
+function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null, isClient: boolean }): Prisma.ActionUncheckedCreateInput {
     const { deviceInfo, ...otherArgs } = args;
 
     return {
@@ -118,7 +118,7 @@ function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null,
         menuLinkId: toSafeId(args.menuLinkId),
         setlistPlanId: toSafeId(args.setlistPlanId),
         songCreditTypeId: toSafeId(args.songCreditTypeId),
-        instrumentId: toSafeId(args.instrumentId),
+        instrumentId: null,
     };
 }
 
@@ -129,6 +129,13 @@ function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null,
 export async function createActionRecord(args: RecordActionArgs & { userId?: number | null, isClient: boolean }) {
     // Sanitize and validate all inputs according to database constraints
     const sanitizedData = sanitizeActionInputs(args);
+    if (args.instrumentId) {
+        const instrument = await db.instrument.findUnique({
+            where: { publicId: args.instrumentId },
+            select: { id: true },
+        });
+        sanitizedData.instrumentId = instrument?.id ?? null;
+    }
 
     await db.action.create({
         data: sanitizedData,

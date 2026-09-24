@@ -3,6 +3,7 @@ import { assert, AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
+import { InstrumentPublicId, parsePublicId } from "shared/publicId";
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
@@ -32,13 +33,10 @@ type UserEventAttendanceQueryResult_Event = Prisma.EventGetPayload<{
         isAllDay: true,
         expectedAttendanceUserTagId: true,
     }
-}> & Prisma.EventUserResponseGetPayload<{
-    select: {
-        instrumentId: true,
-        userComment: true,
-        isInvited: true,
-    }
 }> & {
+    instrumentId: InstrumentPublicId | null;
+    userComment: string | null;
+    isInvited: boolean | null;
     segments: UserEventAttendanceQueryResult_EventSegment[];
 };
 
@@ -107,7 +105,8 @@ export default resolver.pipe(
                         },
                     },
                     responses: {
-                        where: { userId: args.userId }
+                        where: { userId: args.userId },
+                        include: { instrument: { select: { publicId: true } } },
                     },
                 },
                 where: ComposePrismaWhere(eventPolicyWhere, {
@@ -137,7 +136,9 @@ export default resolver.pipe(
                         isAllDay: event.isAllDay,
                         expectedAttendanceUserTagId: event.expectedAttendanceUserTagId,
                         //
-                        instrumentId: er?.instrumentId || null,
+                        instrumentId: er?.instrument
+                            ? parsePublicId<"Instrument">(er.instrument.publicId)
+                            : null,
                         userComment: er?.userComment || null,
                         isInvited: er?.isInvited || null,
                         //

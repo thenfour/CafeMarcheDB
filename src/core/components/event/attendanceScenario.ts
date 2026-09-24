@@ -44,7 +44,9 @@ export const scenarioAttendances: Prisma.EventAttendanceGetPayload<{}>[] = [
 }));
 
 export const scenarioInstruments: db3.InstrumentPayload[] = ["Trumpet", "Saxophone", "Percussion", "Tuba"].map((name, index) => ({
-    id: index + 1, name, sortOrder: index, description: name, autoAssignFileLeafRegex: null,
+    id: index + 1,
+    publicId: `sceninst${String(index + 1).padStart(8, "0")}`,
+    name, sortOrder: index, description: name, autoAssignFileLeafRegex: null,
     functionalGroupId: 1, instrumentTags: [],
     functionalGroup: { id: 1, publicId: "scenario_group01", name: "Band", sortOrder: 0, description: "Scenario instruments", color: "blue" },
 }));
@@ -114,7 +116,7 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
     };
     const eventUserResponse = getEventResponseForUser({
         user, event, userMap: [user], defaultInvitationUserIds: new Set(person.tagInvited ? [user.id] : []),
-        dashboardContext: { instrument: { getById: id => scenarioInstruments.find(i => i.id === id) || null } },
+        dashboardContext: { instrument: { find: predicate => scenarioInstruments.find(predicate) } },
         makeMockEventUserResponse: () => event.responses[0]!,
     })!;
     const segmentUserResponses = segments.map(segment => getEventSegmentResponseForSegmentAndUser({

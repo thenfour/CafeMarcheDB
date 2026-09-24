@@ -245,15 +245,17 @@ const ActivityLogSongTag = ({ songTagId, cacheData }: { songTagId: number | stri
     </ActivityLogChip>;
 };
 
-const ActivityLogInstrument = ({ instrumentId, cacheData }: { instrumentId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
+const ActivityLogInstrument = ({ instrumentId, cacheData }: { instrumentId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
-    const found = dashboardContext.instrument.find(s => s.id === instrumentId);
+    const found = isPublicId(instrumentId)
+        ? dashboardContext.instrument.getById(parsePublicId<"Instrument">(instrumentId))
+        : undefined;
     if (!found) {
-        return <ActivityLogChip><Id value={instrumentId} /></ActivityLogChip>;
+        return <ActivityLogChip>Unknown instrument</ActivityLogChip>;
     }
     return <ActivityLogChip
     >
-        {found.name}#{found.id}
+        {found.name}
     </ActivityLogChip>;
 };
 

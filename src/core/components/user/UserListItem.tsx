@@ -12,7 +12,7 @@ import { UsersFilterSpec } from "./UserClientBaseTypes";
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
 import { Permission } from "@/shared/permissions";
 
-export type EnrichedVerboseUser = EnrichedUser<db3.UserPayload>;
+export type EnrichedVerboseUser = EnrichedUser<db3.UserClientPayload>;
 
 type UserListItemProps = {
     index: number;

@@ -52,7 +52,9 @@ export function enrichFile<
         taggedInstruments: (item.taggedInstruments || []).map((t) => {
             const ret: EnrichedFileInstrumentTag = {
                 ...t,
-                instrument: data.instrument.getById(t.instrumentId)!, // enrich!
+                instrument: data.instrument.find(
+                    instrument => db3.getInstrumentIdentity(instrument) === t.instrumentId,
+                )!, // enrich!
             };
             return ret;
         }),

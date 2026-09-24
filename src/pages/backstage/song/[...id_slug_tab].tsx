@@ -95,7 +95,7 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
         ctx,
         permission: Permission.view_songs,
         table: db3.xSong,
-        id,
+        identity: id,
         load: where => db.song.findFirst({
             select: {
                 id: true,

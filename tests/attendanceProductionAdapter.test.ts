@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 import type { AttendanceControlViewProps } from "src/core/components/event/AttendanceControlView";
 import { DateTimeRange } from "shared/time";
+import { parsePublicId } from "shared/publicId";
 
 vi.mock("src/core/db3/clientAPI", () => ({ API: { events: { updateUserEventAttendance: { useToken: () => ({ invoke }) } } } }));
 vi.mock("src/core/components/event/EventComponentsBase", () => ({ CalcEventAttendance: () => ({ eventUserResponse: { user: { id: 12 } } }) }));
@@ -24,6 +25,7 @@ let view: AttendanceControlViewProps;
 
 describe("production attendance adapter", () => {
     it("maps local changes to the original event/user mutation contract and refetches after each save", async () => {
+        const instrumentId = parsePublicId<"Instrument">("AbCdEfGhIjKlMn42");
         const descriptor = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT");
         Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", { configurable: true, value: true });
         const container = document.createElement("div");
@@ -41,11 +43,11 @@ describe("production attendance adapter", () => {
                 userMap: [], onRefetch: refetch, minimalWhenNotAlert: true,
             }))));
             await view!.environment.onSave({ type: "segment", segmentId: 7, attendanceId: null });
-            await view!.environment.onSave({ type: "instrument", instrumentId: 3 });
+            await view!.environment.onSave({ type: "instrument", instrumentId });
             await view!.environment.onSave({ type: "comment", comment: "Need a lift" });
             expect(invoke.mock.calls).toEqual([
                 [{ eventId: 42, userId: 12, segmentResponses: { 7: { attendanceId: null } } }],
-                [{ eventId: 42, userId: 12, instrumentId: 3 }],
+                [{ eventId: 42, userId: 12, instrumentId }],
                 [{ eventId: 42, userId: 12, comment: "Need a lift" }],
             ]);
             expect(refetch).toHaveBeenCalledTimes(3);

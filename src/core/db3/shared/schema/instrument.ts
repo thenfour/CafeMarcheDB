@@ -9,6 +9,7 @@ import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import type {
     InstrumentFunctionalGroupPublicId,
+    InstrumentPublicId,
     InstrumentTagAssociationPublicId,
     InstrumentTagPublicId,
 } from "shared/publicId";
@@ -194,7 +195,7 @@ export const xInstrumentTagAssociation = db3.defineTable({
 
 export const xInstrument = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.InstrumentDelegate>(),
-    getIdentity: (entity: InstrumentClientPayload) => entity.id,
+    getIdentity: (entity: InstrumentClientPayload) => entity.publicId,
     getSelectionArgs: (): Prisma.InstrumentDefaultArgs => {
         return InstrumentArgs;
     },
@@ -202,7 +203,7 @@ export const xInstrument = db3.defineTable({
     deletePolicy: "hard",
     naturalOrderBy: InstrumentNaturalOrderBy,
     getRowInfo: (row: InstrumentPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.name,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.functionalGroup?.color || ""),
@@ -211,7 +212,8 @@ export const xInstrument = db3.defineTable({
     createInsertModelFromString: undefined, // because you must set things like functional group. don't allow simple create.
     tableAuthMap: xInstrumentTableAuthMap,
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<InstrumentPublicId>(),
         name: columnName => MakeTitleField(columnName, { authMap: xInstrumentAuthMap_R_EAdmins, }),
         // new GenericStringField({
         //     columnName: "slug",

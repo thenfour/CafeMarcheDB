@@ -2,14 +2,16 @@ import { TableAccessor } from "@/shared/rootroot";
 import { Prisma } from "db";
 import * as db3 from "@db3/db3";
 
-export type EnrichUserInput = Partial<Prisma.UserGetPayload<{
+type EnrichUserDbInput = Partial<Prisma.UserGetPayload<{
     include: {
         tags: true,
         instruments: true,
     }
 }>>;
+export type EnrichUserInput = EnrichUserDbInput | db3.UserClientPayload;
 
-type EnrichedUserInstrument = Prisma.UserInstrumentGetPayload<{}> & {
+type EnrichedUserInstrument = Omit<Prisma.UserInstrumentGetPayload<{}>, "instrumentId"> & {
+    instrumentId: db3.InstrumentIdentity;
     instrument: db3.InstrumentDashboardClient;
 };
 
@@ -53,7 +55,9 @@ export function enrichUser<T extends EnrichUserInput>(
         instruments: (item.instruments || []).map((assoc) => {
             const ret: EnrichedUserInstrument = {
                 ...assoc,
-                instrument: instruments.getById(assoc.instrumentId)! // enrich!
+                instrument: instruments.find(
+                    instrument => db3.getInstrumentIdentity(instrument) === assoc.instrumentId,
+                )! // enrich!
             };
             return ret;
         }).sort((a, b) => a.instrument.sortOrder - b.instrument.sortOrder), // respect ordering
@@ -64,4 +68,4 @@ export function enrichUser<T extends EnrichUserInput>(
     return ret as EnrichedUser<T>;
 }
 
-export type EnrichedVerboseUser = EnrichedUser<db3.UserPayload>;
+export type EnrichedVerboseUser = EnrichedUser<db3.UserClientPayload>;

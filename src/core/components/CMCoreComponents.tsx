@@ -11,6 +11,7 @@ import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 import { Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
+import type { InstrumentPublicId } from "shared/publicId";
 import { RenderMuiIcon } from "../db3/components/IconMap";
 import { CMChip, CMChipBorderOption, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
 import { CMLink } from "./CMLink";
@@ -152,7 +153,7 @@ export function TabA11yProps(tabPanelID: string, index: number) {
 
 
 export interface InstrumentChipProps {
-    value: number | db3.InstrumentClientOrDbPayload | db3.InstrumentPayloadMinimum;
+    value: InstrumentPublicId | db3.InstrumentClientOrDbPayload | db3.InstrumentPayloadMinimum;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
@@ -164,7 +165,9 @@ export interface InstrumentChipProps {
 export const InstrumentChip = (props: InstrumentChipProps) => {
     const dashboardContext = useDashboardContext();
 
-    let instrument = typeof (props.value) === "number" ? dashboardContext.instrument.getById(props.value) : props.value;
+    const instrument = typeof props.value === "string"
+        ? dashboardContext.instrument.getById(props.value)
+        : props.value;
 
     // here we use `=== "string"` to check if it's a publicId or id. not really very clean.
     // even though we're using InstrumentClientOrDbPayload, where functionalGroupId can be either number or string,

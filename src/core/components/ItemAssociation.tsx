@@ -251,9 +251,15 @@ export const AssociationAutocomplete = ({
                 await recordFeature({
                     feature: ActivityFeature.link_follow_internal,
                     queryText: queryText,
-                    eventId: newValue?.itemType === QuickSearchItemType.event ? newValue.id : undefined,
-                    songId: newValue?.itemType === QuickSearchItemType.song ? newValue.id : undefined,
-                    wikiPageId: newValue?.itemType === QuickSearchItemType.wikiPage ? newValue.id : undefined,
+                    // TODO: do not make it the responsibility of client calling code to understand this.
+                    // this code should be more like:
+                    // bad:
+                    //   typeof newValue.id === "number" ? newValue.id : undefined,
+                    // better:
+                    //   xEvent.getIdentity(newValue),
+                    eventId: newValue?.itemType === QuickSearchItemType.event && typeof newValue.id === "number" ? newValue.id : undefined,
+                    songId: newValue?.itemType === QuickSearchItemType.song && typeof newValue.id === "number" ? newValue.id : undefined,
+                    wikiPageId: newValue?.itemType === QuickSearchItemType.wikiPage && typeof newValue.id === "number" ? newValue.id : undefined,
                 });
                 props.onSelect(newValue, queryText);
             }}

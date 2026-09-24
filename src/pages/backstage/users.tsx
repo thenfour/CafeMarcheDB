@@ -155,7 +155,7 @@ const UserListOuter = () => {
     });
 
     // Configuration for the generic SearchPageContent component
-    const config: SearchPageContentConfig<UsersFilterSpecStatic, UsersFilterSpec, db3.UserPayload, EnrichedVerboseUser> = {
+    const config: SearchPageContentConfig<UsersFilterSpecStatic, UsersFilterSpec, db3.UserClientPayload, EnrichedVerboseUser> = {
         staticFilters: availableStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: canManageUsers ? UserOrderByColumnOptions : { name: UserOrderByColumnOptions.name },

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => {
     const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client");
@@ -9,7 +9,9 @@ vi.mock("db", async () => {
 import { Permission } from "shared/permissions";
 import { authorizePageRequest as authorizeRequest } from "@/src/auth/server/pageRequestAuthorization";
 import { loadAuthorizedPageEntity } from "src/auth/server/serverPageAuthorization";
-import { xEvent } from "src/core/db3/db3";
+import { xEvent, xInstrument } from "src/core/db3/db3";
+import { getQuickSearchResults } from "src/core/db3/server/quickSearchServerCore";
+import { QuickSearchItemType } from "shared/quickFilter";
 import getUserMassAnalysis from "src/core/db3/queries/getUserMassAnalysis";
 import getImportEventData from "src/core/db3/queries/getImportEventData";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
@@ -36,6 +38,10 @@ const authorizePageRequest = (pathname: string, userId: number | null | undefine
 };
 
 describe("backstage server page guard", () => {
+    afterEach(() => {
+        vi.unstubAllEnvs();
+    });
+
     beforeEach(() => {
         authorizationTestDb.reset({
             user: [eventAdmin, roleCarriedSysadmin, actualSysadmin],
@@ -123,6 +129,64 @@ describe("backstage server page guard", () => {
             load,
         })).resolves.toBeNull();
         expect(load).not.toHaveBeenCalled();
+    });
+
+    it("loads an Instrument page by public ID and rejects numeric route identity", async () => {
+        const instrument = {
+            id: 42,
+            publicId: "AbCdEfGhIjKlMn42",
+            name: "trumpet",
+            description: "",
+            sortOrder: 1,
+            functionalGroupId: 7,
+            autoAssignFileLeafRegex: null,
+        };
+        const instrumentDelegate = authorizationTestDb.getDelegate("instrument");
+        instrumentDelegate.reset([instrument]);
+        const load = vi.fn(where => instrumentDelegate.findFirst({ where }));
+        const ctx = createAuthorizationTestContext(eventAdmin);
+
+        await expect(loadAuthorizedPageEntity({
+            ctx,
+            permission: Permission.login,
+            table: xInstrument,
+            identity: instrument.publicId,
+            load,
+        })).resolves.toEqual(instrument);
+
+        await expect(loadAuthorizedPageEntity({
+            ctx,
+            permission: Permission.login,
+            table: xInstrument,
+            identity: instrument.id,
+            load,
+        })).resolves.toBeNull();
+        expect(load).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns Instrument quick-search identity and links exclusively as public IDs", async () => {
+        vi.stubEnv("CMDB_BASE_URL", "https://example.test");
+        authorizationTestDb.getDelegate("instrument").reset([{
+            id: 42,
+            publicId: "AbCdEfGhIjKlMn42",
+            name: "trumpet",
+            description: "Bright brass",
+        }]);
+
+        const results = await getQuickSearchResults(
+            "instrument:trumpet",
+            // The authorization fixture intentionally omits unused Permission display fields.
+            eventAdmin as Parameters<typeof getQuickSearchResults>[1],
+            [QuickSearchItemType.instrument],
+        );
+
+        expect(results).toEqual([expect.objectContaining({
+            id: "AbCdEfGhIjKlMn42",
+            itemType: QuickSearchItemType.instrument,
+            name: "trumpet",
+        })]);
+        expect(results[0]!.absoluteUri).toContain("/backstage/instrument/AbCdEfGhIjKlMn42");
+        expect(results[0]!.absoluteUri).not.toContain("/backstage/instrument/42");
     });
 
     it("keeps contained routes and unregistered pages closed to anonymous visitors", async () => {

@@ -52,19 +52,23 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
     const onSave = async (change: AttendanceChange) => {
         const eventId = props.eventData.event.id;
         const userId = attendance.eventUserResponse.user.id;
+        const instrumentId = change.type === "instrument" ? change.instrumentId : undefined;
+        if (typeof instrumentId === "number") {
+            throw new Error("Client attendance updates require an Instrument public ID.");
+        }
         void recordFeature({
             feature: change.type === "segment" ? ActivityFeature.attendance_response
                 : change.type === "instrument" ? ActivityFeature.attendance_instrument : ActivityFeature.attendance_comment,
             eventId,
             ...(change.type === "segment" ? { eventSegmentId: change.segmentId, attendanceId: change.attendanceId ?? undefined } : {}),
-            ...(change.type === "instrument" ? { instrumentId: change.instrumentId ?? undefined } : {}),
+            ...(change.type === "instrument" ? { instrumentId: instrumentId ?? undefined } : {}),
             ...(change.type === "comment" ? { context: "EventAttendanceCommentEditorDialog" } : {}),
         });
         try {
             await token.invoke({
                 eventId, userId,
                 ...(change.type === "segment" ? { segmentResponses: { [change.segmentId]: { attendanceId: change.attendanceId } } } : {}),
-                ...(change.type === "instrument" ? { instrumentId: change.instrumentId } : {}),
+                ...(change.type === "instrument" ? { instrumentId: instrumentId ?? null } : {}),
                 ...(change.type === "comment" ? { comment: change.comment } : {}),
             });
             showSnackbar({ children: change.type === "comment" ? "Success" : "Response updated", severity: "success" });

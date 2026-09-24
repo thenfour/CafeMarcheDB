@@ -1,21 +1,25 @@
 import { IsNullOrWhitespace } from "@/shared/utils";
 
 type InstrumentBase = {
-    id: number;
     autoAssignFileLeafRegex: string | null;
 };
 
-interface AutoAssignInstrumentPartitionArgs<TInstrument extends InstrumentBase> {
+interface AutoAssignInstrumentPartitionArgs<TInstrument extends InstrumentBase, TIdentity extends number | string> {
     allInstruments: TInstrument[];
     fileLeafWithoutExtension: string;
+    getIdentity: (instrument: TInstrument) => TIdentity;
 };
 
-interface AutoAssignInstrumentPartitionRet {
-    matchingInstrumentIds: number[];
+interface AutoAssignInstrumentPartitionRet<TIdentity extends number | string> {
+    matchingInstrumentIds: TIdentity[];
 };
 
-export const AutoAssignInstrumentPartition = <TInstrument extends InstrumentBase>({ allInstruments, fileLeafWithoutExtension }: AutoAssignInstrumentPartitionArgs<TInstrument>): AutoAssignInstrumentPartitionRet => {
-    const matchingInstrumentIds: number[] = [];
+export const AutoAssignInstrumentPartition = <TInstrument extends InstrumentBase, TIdentity extends number | string>({
+    allInstruments,
+    fileLeafWithoutExtension,
+    getIdentity,
+}: AutoAssignInstrumentPartitionArgs<TInstrument, TIdentity>): AutoAssignInstrumentPartitionRet<TIdentity> => {
+    const matchingInstrumentIds: TIdentity[] = [];
     if (!fileLeafWithoutExtension) return {
         matchingInstrumentIds,
     };
@@ -27,7 +31,7 @@ export const AutoAssignInstrumentPartition = <TInstrument extends InstrumentBase
         }
         const regex = new RegExp(instrument.autoAssignFileLeafRegex!, 'i'); // case insensitive
         if (regex.test(fileLeafWithoutExtension)) {
-            matchingInstrumentIds.push(instrument.id);
+            matchingInstrumentIds.push(getIdentity(instrument));
         }
     });
 

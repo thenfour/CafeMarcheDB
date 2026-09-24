@@ -100,6 +100,7 @@ const instrumentTagAssociationPublicId = parsePublicId<"InstrumentTagAssociation
 const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn05");
 const otherSongTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn06");
 const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn07");
+const instrumentPublicId = parsePublicId<"Instrument">("AbCdEfGhIjKlMn08");
 const otherFunctionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn02");
 const publicIdentityAssociationCommand = db3.defineAssociationCommand({
     commandID: "InstrumentFunctionalGroup_RelationshipTest",
@@ -612,7 +613,7 @@ describe("DB3 commands", () => {
         expect(db3.roleEditorView.crud.operations.delete).toBeUndefined();
         expect(db3.getDB3CrudViewForCommand("Role_Delete")).toBeUndefined();
         const instrumentDto = db3.instrumentEditorView.parseDto({
-            id: 7,
+            publicId: instrumentPublicId,
             name: "Trumpet",
             description: "",
             autoAssignFileLeafRegex: "trumpet",
@@ -624,7 +625,7 @@ describe("DB3 commands", () => {
             }],
         });
         expect(instrumentDto).toEqual({
-            id: 7,
+            publicId: instrumentPublicId,
             name: "Trumpet",
             description: "",
             autoAssignFileLeafRegex: "trumpet",
@@ -669,24 +670,24 @@ describe("DB3 commands", () => {
         expectTypeOf<NonNullable<InstrumentUpdateInput["patch"]["instrumentTags"]>>()
             .toEqualTypeOf<InstrumentTagPublicId[]>();
         expect(db3.instrumentEditorView.crud.operations.update.command.parseDto({
-            identity: 7,
+            identity: instrumentPublicId,
             patch: {
                 functionalGroupId: functionalGroupPublicId,
                 instrumentTags: [instrumentTagPublicId, otherInstrumentTagPublicId],
             },
         })).toEqual({
-            identity: 7,
+            identity: instrumentPublicId,
             patch: {
                 functionalGroupId: functionalGroupPublicId,
                 instrumentTags: [instrumentTagPublicId, otherInstrumentTagPublicId],
             },
         });
         expect(() => db3.instrumentEditorView.crud.operations.update.command.parseDto({
-            identity: 7,
+            identity: instrumentPublicId,
             patch: { instrumentTags: [20] },
         })).toThrow();
         expect(() => db3.instrumentEditorView.crud.operations.update.command.parseDto({
-            identity: 7,
+            identity: instrumentPublicId,
             patch: { functionalGroup: { publicId: functionalGroupPublicId } },
         })).toThrow();
         expect(db3.instrumentEditorView.crud.operations.delete.deleteType).toBe("hard");
@@ -866,9 +867,9 @@ describe("DB3 commands", () => {
             id: 9,
             userId: 6,
             user: { id: 6, name: "Ada" },
-            instrumentId: 10,
+            instrumentId: instrumentPublicId,
             instrument: {
-                id: 10,
+                publicId: instrumentPublicId,
                 name: "Trumpet",
                 description: "",
                 functionalGroup: { publicId: "abcdefghijklmnop", color: "brass" },
@@ -882,10 +883,10 @@ describe("DB3 commands", () => {
         });
         expect(db3.userInstrumentEditorView.crud.operations.update.command.parseDto({
             identity: 9,
-            patch: { instrumentId: 10, isPrimary: false },
+            patch: { instrumentId: instrumentPublicId, isPrimary: false },
         })).toEqual({
             identity: 9,
-            patch: { instrumentId: 10, isPrimary: false },
+            patch: { instrumentId: instrumentPublicId, isPrimary: false },
         });
         expect(db3.userInstrumentEditorView.crud.operations.delete.deleteType).toBe("hard");
 

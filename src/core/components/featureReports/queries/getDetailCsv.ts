@@ -8,7 +8,7 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { arrayToCSV } from "shared/utils";
 import { z } from "zod";
-import { GetFeatureReportDetailResultArgs, ZFeatureReportFilterSpec } from "../activityReportTypes";
+import { GetFeatureReportDetailResultArgs, projectFeatureReportDetailItem, ZFeatureReportFilterSpec } from "../activityReportTypes";
 import { buildFeatureReportFiltersSQL, GetAnonymizedUserHash, gFeatureReportFacetProcessors } from "../server/facetProcessor";
 
 const ZTArgs = z.object({
@@ -177,7 +177,7 @@ async function getCsvExport(args: TArgs, ctx: AuthenticatedCtx): Promise<CsvExpo
     // Add user hashes and flatten for CSV
     const flattenedRows = result.map((row) => {
         const rowWithHash = {
-            ...row,
+            ...projectFeatureReportDetailItem(row),
             userHash: GetAnonymizedUserHash(row.userId, filterSql),
         };
         return flattenActivityRecord(rowWithHash);

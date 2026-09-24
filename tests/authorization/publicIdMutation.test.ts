@@ -15,6 +15,7 @@ import { invokeResolver } from "./support/resolverHarness";
 
 const originalPublicId = "originalGroup001";
 const tagPublicId = "originalTag00001";
+const instrumentPublicId = "originalInst0001";
 const actor = createAuthorizationTestUser("normal", {
     id: 701,
     permissions: [Permission.login, Permission.admin_instruments],
@@ -45,6 +46,7 @@ describe("instrument catalog public-ID mutations", () => {
             instrumentTag: [tag],
             instrument: [{
                 id: 7,
+                publicId: instrumentPublicId,
                 name: "Trumpet",
                 description: "",
                 autoAssignFileLeafRegex: null,
@@ -116,13 +118,15 @@ describe("instrument catalog public-ID mutations", () => {
             tableID: "Instrument",
             tableName: "Instrument",
             mutationType: "update",
-            updateId: 7,
+            updatePublicId: instrumentPublicId,
             updateModel: { functionalGroupId: originalPublicId },
         }, createAuthorizationTestContext(actor));
         if (!result || typeof result !== "object") throw new Error("Expected updated instrument payload");
 
         expect(authorizationTestDb.snapshot("instrument")[0]!.functionalGroupId).toBe(group.id);
         expect(result.functionalGroupId).toBe(originalPublicId);
+        expect(result.publicId).toBe(instrumentPublicId);
+        expect(result).not.toHaveProperty("id");
         expect(result.functionalGroup).not.toHaveProperty("id");
     });
 });

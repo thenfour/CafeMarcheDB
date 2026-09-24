@@ -2,7 +2,7 @@ import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 
 import { Prisma } from "db";
 import { z } from "zod";
-import type { SongTagAssociationPublicId, SongTagPublicId } from "shared/publicId";
+import { isPublicId, type InstrumentPublicId, type SongTagAssociationPublicId, type SongTagPublicId } from "shared/publicId";
 
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 
@@ -37,7 +37,7 @@ export interface TupdateUserEventAttendanceMutationArgs {
     userId: number;
     eventId: number;
     comment?: string | null; // for event
-    instrumentId?: number | null; // for event
+    instrumentId?: InstrumentPublicId | null; // for event
     isInvited?: boolean | null; // for event
 
     // if undefined, attendance is not set.
@@ -55,7 +55,7 @@ export const ZupdateUserEventAttendanceMutationArgs = z.object({
     userId: ZPositiveRecordId,
     eventId: ZPositiveRecordId,
     comment: z.string().nullable().optional(),
-    instrumentId: ZPositiveRecordId.nullable().optional(),
+    instrumentId: z.custom<InstrumentPublicId>(isPublicId).nullable().optional(),
     isInvited: z.boolean().nullable().optional(),
     segmentResponses: z.record(z.object({
         attendanceId: ZPositiveRecordId.nullable(),
@@ -149,7 +149,7 @@ export interface TupdateSongBasicFieldsArgs {
 
 export interface TupdateUserPrimaryInstrumentMutationArgs {
     userId: number;
-    instrumentId: number;
+    instrumentId: InstrumentPublicId;
 };
 
 export interface TinsertEventCommentArgs {
@@ -795,7 +795,7 @@ export type GetUserAttendanceRet = {
     userId: number;
     eventId: number;
     comment: string | null;
-    instrumentId: number | null;
+    instrumentId: InstrumentPublicId | null;
     segmentResponses: {
         segmentId: number,
         name: string,

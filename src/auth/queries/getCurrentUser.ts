@@ -1,6 +1,7 @@
 import type { Ctx } from "blitz";
 import db from "db";
 import * as db3 from "src/core/db3/db3";
+import { projectDB3ModelPublicIds } from "src/core/db3/server/db3PublicIds";
 
 export default async function getCurrentUser(_ = null, { session }: Ctx) {
 
@@ -13,5 +14,8 @@ export default async function getCurrentUser(_ = null, { session }: Ctx) {
     ...db3.UserArgs
   });
 
-  return user;
+  if (!user) return null;
+  // xUser's relation metadata defines the runtime projection; this annotation
+  // records the corresponding client shape for Blitz's inferred query result.
+  return projectDB3ModelPublicIds(db3.xUser, user) as db3.UserClientPayload;
 }

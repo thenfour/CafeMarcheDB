@@ -1856,6 +1856,15 @@ describe("BA-A004 association authorization", () => {
   const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 })
   const normal = createAuthorizationTestUser("normal", { id: 3 })
   const otherUser = createAuthorizationTestUser("normal", { id: 4 })
+  const instrument = {
+    id: 500,
+    publicId: "AbCdEfGhIjKlMn50",
+    name: "Trumpet",
+    description: "",
+    sortOrder: 1,
+    functionalGroupId: 1,
+    autoAssignFileLeafRegex: null,
+  }
 
   const ordinaryRole = {
     id: 100,
@@ -1904,6 +1913,7 @@ describe("BA-A004 association authorization", () => {
       role: [ordinaryRole, protectedRole],
       permission: [ordinaryPermission, ...protectedPermissions],
       rolePermission: [ordinaryRolePermission, protectedRolePermission],
+      instrument: [instrument],
       userInstrument: [],
       change: [],
     })
@@ -2012,7 +2022,7 @@ describe("BA-A004 association authorization", () => {
         db3Mutation,
         forgeDb3Update("User", otherUser.id, {
           id: otherUser.id,
-          instruments: [500],
+          instruments: [instrument.publicId],
         }),
         ctx,
       ),
@@ -2030,7 +2040,7 @@ describe("BA-A004 association authorization", () => {
       db3Mutation,
       forgeDb3Update("User", normal.id, {
         id: normal.id,
-        instruments: [500],
+        instruments: [instrument.publicId],
       }),
       ctx,
     )
@@ -2058,14 +2068,19 @@ describe("BA-A004 association authorization", () => {
   it("authorizes and awaits associations supplied during an actual-Sysadmin insert", async () => {
     const { ctx } = createAuthorizationPersona("sysadmin", { id: 20 })
     const sysadminUser = createAuthorizationTestUser("sysadmin", { id: 20 })
-    authorizationTestDb.reset({ user: [sysadminUser], userInstrument: [], change: [] })
+    authorizationTestDb.reset({
+      user: [sysadminUser],
+      instrument: [instrument],
+      userInstrument: [],
+      change: [],
+    })
 
     const result = await invokeResolver(
       db3Mutation,
       forgeDb3Insert("User", {
         name: "User with instrument",
         email: "instrument@test.invalid",
-        instruments: [500],
+        instruments: [instrument.publicId],
       }),
       ctx,
     ) as { id: number }

@@ -5,7 +5,7 @@ import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { EventTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
-import { db3s } from "../common/viewCommon";
+import { db3s, graft } from "../common/viewCommon";
 import { hydrateEventDateRange } from "./eventDateRange";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
 import {
@@ -340,45 +340,40 @@ const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
 });
 
 const makeEventSearchSelection = (actorUserId: number) => (
-    Prisma.validator<Prisma.EventDefaultArgs>()({
-        select: {
-            ...eventSearchTransportSelection.select,
-            createdByUserId: true,
-            isDeleted: true,
-            responses: {
-                ...eventSearchTransportSelection.select.responses,
-                where: { userId: actorUserId },
-            },
-            segments: {
-                ...eventSearchTransportSelection.select.segments,
-                select: {
-                    ...eventSearchTransportSelection.select.segments.select,
-                    responses: {
-                        ...eventSearchTransportSelection.select.segments.select.responses,
-                        where: { userId: actorUserId },
+    Prisma.validator<Prisma.EventDefaultArgs>()(
+        graft(eventSearchTransportSelection, {
+            select: {
+                createdByUserId: true,
+                isDeleted: true,
+                responses: {
+                    where: { userId: actorUserId },
+                    select: {
+                        instrument: { select: { publicId: true } },
+                    },
+                },
+                segments: {
+                    select: {
+                        responses: {
+                            where: { userId: actorUserId },
+                        },
+                    },
+                },
+                expectedAttendanceUserTag: {
+                    select: {
+                        userAssignments: {
+                            where: { userId: actorUserId },
+                        },
+                    },
+                },
+                descriptionWikiPage: {
+                    select: {
+                        createdByUserId: true,
+                        visiblePermissionId: true,
                     },
                 },
             },
-            expectedAttendanceUserTag: {
-                ...eventSearchTransportSelection.select.expectedAttendanceUserTag,
-                select: {
-                    ...eventSearchTransportSelection.select.expectedAttendanceUserTag.select,
-                    userAssignments: {
-                        ...eventSearchTransportSelection.select.expectedAttendanceUserTag.select.userAssignments,
-                        where: { userId: actorUserId },
-                    },
-                },
-            },
-            descriptionWikiPage: {
-                ...eventSearchTransportSelection.select.descriptionWikiPage,
-                select: {
-                    ...eventSearchTransportSelection.select.descriptionWikiPage.select,
-                    createdByUserId: true,
-                    visiblePermissionId: true,
-                },
-            },
-        },
-    })
+        })
+    )
 );
 
 export const eventSearchSelection = ({ authorization }: DB3ViewSelectionContext) => (

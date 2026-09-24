@@ -56,22 +56,30 @@ export function createMockEventSegmentUserResponse
 // Response preparation needs only an instrument lookup, not a dashboard or DB.
 export interface EventResponseInstrumentLookup {
     instrument: {
-        getById: (id: number | null | undefined) => db3.InstrumentClientOrDbPayload | null
+        find: (predicate: (instrument: db3.InstrumentClientOrDbPayload) => boolean) => db3.InstrumentClientOrDbPayload | undefined;
     };
 }
+
+const findInstrument = (
+    data: EventResponseInstrumentLookup,
+    identity: db3.InstrumentIdentity | null | undefined,
+): db3.InstrumentClientOrDbPayload | null => {
+    if (identity == null) return null;
+    return data.instrument.find(instrument => db3.getInstrumentIdentity(instrument) === identity) ?? null;
+};
 
 export function getUserPrimaryInstrument(user: db3.UserWithInstrumentsPayload, data: EventResponseInstrumentLookup): (db3.InstrumentClientOrDbPayload | null) {
     if (user.instruments.length < 1) return null;
     const p = user.instruments.find(i => i.isPrimary);
     if (p) {
-        return data.instrument.getById(p.instrumentId);
+        return findInstrument(data, p.instrumentId);
     }
-    return data.instrument.getById(user.instruments[0]!.instrumentId);
+    return findInstrument(data, user.instruments[0]!.instrumentId);
 }
 
 export function getInstrumentForEventUserResponse<TEventResponse extends db3.EventResponses_MinimalEventUserResponse>(response: TEventResponse, userId: number, data: EventResponseInstrumentLookup, users: UserInstrumentList): (db3.InstrumentClientOrDbPayload | null) {
     if (response.instrumentId != null) {
-        return data.instrument.getById(response.instrumentId);
+        return findInstrument(data, response.instrumentId);
     }
     const ret = getUserPrimaryInstrument(users.find(u => u.id === userId)!, data);
     return ret;

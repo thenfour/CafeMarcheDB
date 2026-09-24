@@ -1,4 +1,5 @@
 import React from "react";
+import * as db3 from "src/core/db3/db3";
 import { Alert, Box, Button, Checkbox, FormControl, FormControlLabel, FormLabel, MenuItem, Paper, Radio, RadioGroup, Stack, TextField, Typography } from "@mui/material";
 import { AttendanceControlView } from "./AttendanceControlView";
 import {
@@ -178,7 +179,11 @@ export const AttendanceScenarioPage = () => {
                     {lastActions[index] && <Typography variant="body2" role="status" sx={{ mb: 1, overflowWrap: "anywhere" }}>{lastActions[index]}</Typography>}
                     <details><summary>Calculation and generated dates</summary>
                         <Box component="pre" sx={{ fontSize: 12, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{JSON.stringify({
-                            ...flags, storedInstrumentId: person.instrumentId, effectiveInstrumentId: attendance.eventUserResponse.instrument?.id ?? null,
+                            ...flags,
+                            storedInstrumentId: person.instrumentId,
+                            effectiveInstrumentId: attendance.eventUserResponse.instrument
+                                ? db3.getInstrumentIdentity(attendance.eventUserResponse.instrument)
+                                : null,
                             segments: event.segments.map(s => ({ id: s.id, startsAt: s.startsAt, cancelled: s.statusId !== null, response: person.responses[s.id - 1] })),
                         }, null, 2)}</Box>
                     </details>

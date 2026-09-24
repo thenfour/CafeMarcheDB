@@ -7,6 +7,7 @@ import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
 import { CMAuthorize, CreatePublicData } from "types";
 import { getRequestAuthorization } from "./requestAuthorization";
 import type { TAnyModel } from "@/shared/rootroot";
+import { isPublicId } from "shared/publicId";
 
 export async function isAuthorizedForServerPage(ctx: Ctx, permission: Permission): Promise<boolean> {
     const { user, effectivePermissions } = await getRequestAuthorization(ctx.session);
@@ -25,14 +26,18 @@ export const makeServerSidePermissionGuard = (permission: Permission) => gSSP(as
     return { props: {} };
 });
 
-interface LoadAuthorizedPageEntityArgs<T> {
+interface LoadAuthorizedPageEntityArgsBase<T> {
     ctx: Ctx;
     permission: Permission;
     table: xTable;
-    id: number;
     includeDeleted?: boolean;
     load: (where: TAnyModel) => Promise<T | null>;
 }
+
+type LoadAuthorizedPageEntityArgs<T> = LoadAuthorizedPageEntityArgsBase<T> & (
+    | { identity: number | string; id?: never }
+    | { id: number; identity?: never }
+);
 
 /**
  * Loads the small entity payload used to render a page title without creating
@@ -40,14 +45,16 @@ interface LoadAuthorizedPageEntityArgs<T> {
  * soft deletion, ownership, and row visibility are all applied before the
  * caller's Prisma selector runs.
  */
-export async function loadAuthorizedPageEntity<T>({
-    ctx,
-    permission,
-    table,
-    id,
-    includeDeleted = false,
-    load,
-}: LoadAuthorizedPageEntityArgs<T>): Promise<T | null> {
+export async function loadAuthorizedPageEntity<T>(args: LoadAuthorizedPageEntityArgs<T>): Promise<T | null> {
+    const { ctx,//
+        permission,
+        table,
+        includeDeleted = false,
+        load,
+    } = args;
+
+    const identity = "identity" in args ? args.identity : args.id;
+
     const { user: currentUser, effectivePermissions } = await getRequestAuthorization(ctx.session);
     const publicData = CreatePublicData({ user: currentUser, permissions: effectivePermissions.names });
     if (!CMAuthorize({ reason: "server-rendered entity metadata", permission, publicData })) {
@@ -55,10 +62,18 @@ export async function loadAuthorizedPageEntity<T>({
     }
     if (!table.authorizeTableForView(createDB3Authorization(currentUser, effectivePermissions))) return null;
 
+    // validate the id
+    if (table.publicIdMember && !isPublicId(identity)) {
+        return null;
+    } else if (!table.publicIdMember && typeof identity !== "number") {
+        return null;
+    }
+
+    const identityMember = table.publicIdMember ?? table.pkMember;
     const where = await GetAuthorizedTableReadWhere({
         table,
         currentUser,
-        where: { [table.pkMember]: id },
+        where: { [identityMember]: identity },
         includeDeleted,
     });
     return load(where);

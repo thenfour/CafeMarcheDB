@@ -4,6 +4,7 @@ import { Ctx } from "@blitzjs/next";
 import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
+import { parsePublicId } from "shared/publicId";
 import { BigintToNumber } from "shared/utils";
 import { api } from "src/blitz-server";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
@@ -33,6 +34,14 @@ async function getUserAttendanceCore(
             userId: userId,
             eventId: eventId,
         },
+        select: {
+            userComment: true,
+            instrument: {
+                select: {
+                    publicId: true,
+                },
+            },
+        },
     });
     const segmentResponses = await db.eventSegmentUserResponse.findMany({
         include: {
@@ -55,7 +64,9 @@ async function getUserAttendanceCore(
         eventId: eventId,
         userId: userId,
         comment: eventResponse?.userComment || null,
-        instrumentId: eventResponse?.instrumentId || null,
+        instrumentId: eventResponse?.instrument
+            ? parsePublicId<"Instrument">(eventResponse.instrument.publicId)
+            : null,
         segmentResponses: segmentResponses.map(sr => ({
             segmentId: sr.eventSegmentId,
             name: sr.eventSegment.name,

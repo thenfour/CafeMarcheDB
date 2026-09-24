@@ -102,7 +102,7 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, req, ctx }) =
         ctx,
         permission: Permission.view_events_nonpublic,
         table: db3.xEvent,
-        id,
+        identity: id,
         load: where => db.event.findFirst({
             select: {
                 id: true,

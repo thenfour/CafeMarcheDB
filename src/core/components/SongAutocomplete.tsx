@@ -23,8 +23,15 @@ export interface SongAutocompleteProps {
 export const SongAutocomplete = ({ value, onChange, fadedSongIds = [], autofocus = false, }: SongAutocompleteProps) => {
     const [inputValue, setInputValue] = React.useState(value?.name ?? ""); // value of the input
     const [pendingSelection, setPendingSelection] = React.useState<QuickSearchItemMatch | null>(null);
+    // this should be the responsibility of xSong, not react component code.
+    // preferred:
+    // songId = xSong.getIdentity(pendingSelection)
+    const pendingSongId = pendingSelection?.itemType === QuickSearchItemType.song
+        && typeof pendingSelection.id === "number"
+        ? pendingSelection.id
+        : -1;
 
-    const [fullResult, _] = useQuery(getFilteredSongs, { id: pendingSelection?.id || -1 }, {
+    const [fullResult, _] = useQuery(getFilteredSongs, { id: pendingSongId }, {
         suspense: false,
         useErrorBoundary: false,
     });
@@ -56,7 +63,7 @@ export const SongAutocomplete = ({ value, onChange, fadedSongIds = [], autofocus
         onValueChange={setInputValue}
         getItemInfo={(item) => {
             return {
-                className: fadedSongIds.includes(item.id) ? "faded" : "notfaded",
+                className: typeof item.id === "number" && fadedSongIds.includes(item.id) ? "faded" : "notfaded",
             };
         }}
     />

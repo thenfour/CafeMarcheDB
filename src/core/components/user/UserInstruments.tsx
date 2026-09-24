@@ -2,6 +2,7 @@ import { useDashboardContext, useFeatureRecorder } from "@/src/core/components/d
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { Box, Typography } from "@mui/material";
 import React from "react";
+import { InstrumentPublicId, parsePublicId } from "shared/publicId";
 import { SelectionEditButton } from "src/core/components/select/SelectionField";
 import { SelectionPicker } from "src/core/components/select/SelectionPicker";
 import { SelectionValueList } from "src/core/components/select/SelectionOptions";
@@ -36,7 +37,7 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
     const primaryAssociation = props.value.find(value => value.isPrimary) ?? props.value[0];
     const primaryInstrumentId = primaryAssociation?.instrumentId;
 
-    const handleClickMakePrimary = (instrumentId: number) => {
+    const handleClickMakePrimary = (instrumentId: InstrumentPublicId) => {
         if (!currentUser) {
             return null;
         }
@@ -55,8 +56,8 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
     };
 
     const renderInstrument = (value: UserEditorInstrumentAssociation) => {
-        const instrumentId = value.instrumentId ?? value.instrument?.id;
-        return instrumentId == null ? null : <InstrumentChip value={instrumentId} size="big" />;
+        const instrumentId = value.instrumentId ?? value.instrument?.publicId;
+        return instrumentId == null ? null : <InstrumentChip value={parsePublicId<"Instrument">(instrumentId)} size="big" />;
     };
     const primaryValue = props.value.find(value => value.instrumentId === primaryInstrumentId);
 
@@ -77,7 +78,7 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
     return <Box sx={{ minWidth: 0, py: 0.5 }}>
         <SelectionValueList
             value={props.value}
-            getKey={value => value.instrumentId ?? value.instrument?.id ?? value.id}
+            getKey={value => value.instrumentId ?? value.instrument?.publicId ?? value.id}
             getLabel={props.spec.getSelectionLabel}
             renderValue={value => {
                 const isPrimary = value.instrumentId === primaryInstrumentId;
@@ -105,7 +106,7 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
         {isDefaultOpen && <SelectionPicker
             source={makeLocalSelectionSource({
                 items: props.value,
-                getKey: value => value.instrumentId ?? value.instrument?.id ?? value.id,
+                getKey: value => value.instrumentId ?? value.instrument?.publicId ?? value.id,
                 getLabel: props.spec.getSelectionLabel,
                 renderValue: renderInstrument
             })}
@@ -115,7 +116,7 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
             onAccept={values => {
                 setIsDefaultOpen(false);
                 if (values[0]?.instrumentId != null && values[0].instrumentId !== primaryInstrumentId) {
-                    handleClickMakePrimary(values[0].instrumentId);
+                    handleClickMakePrimary(parsePublicId<"Instrument">(values[0].instrumentId));
                 }
             }}
         />}

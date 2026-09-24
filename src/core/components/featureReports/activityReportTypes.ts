@@ -1,5 +1,6 @@
 import { ActivityReportTimeBucketSize } from "@/shared/mysqlUtils";
 import { Prisma } from "db";
+import { parsePublicId, type InstrumentPublicId } from "shared/publicId";
 import { z } from "zod";
 import { ActivityFeature, Browsers, DeviceClasses, OperatingSystem, PointerTypes } from "./activityTracking";
 //import { gFeatureReportFacetProcessors } from "./server/facetProcessor";
@@ -216,8 +217,6 @@ const GetFeatureReportDetailResultArgsUnvalidated /*: Prisma.ActionDefaultArgs*/
         menuLinkId: true,
         setlistPlanId: true,
         songCreditTypeId: true,
-        instrumentId: true,
-
         user: {
             select: {
                 id: true,
@@ -261,13 +260,31 @@ const GetFeatureReportDetailResultArgsUnvalidated /*: Prisma.ActionDefaultArgs*/
         menuLink: true,
         setlistPlan: true,
         songCreditType: true,
-        instrument: true,
+        instrument: {
+            select: {
+                publicId: true,
+            }
+        },
     }
 };
 
 export const GetFeatureReportDetailResultArgs = Prisma.validator<Prisma.ActionDefaultArgs>()(GetFeatureReportDetailResultArgsUnvalidated);
 
-export type GetFeatureReportDetailItemPayload = Prisma.ActionGetPayload<typeof GetFeatureReportDetailResultArgsUnvalidated>;
+type GetFeatureReportDetailDbPayload = Prisma.ActionGetPayload<typeof GetFeatureReportDetailResultArgsUnvalidated>;
+
+export type GetFeatureReportDetailItemPayload = Omit<GetFeatureReportDetailDbPayload, "instrument"> & {
+    instrumentId: InstrumentPublicId | null;
+};
+
+export function projectFeatureReportDetailItem(
+    row: GetFeatureReportDetailDbPayload,
+): GetFeatureReportDetailItemPayload {
+    const { instrument, ...rest } = row;
+    return {
+        ...rest,
+        instrumentId: instrument ? parsePublicId<"Instrument">(instrument.publicId) : null,
+    };
+}
 
 export type TGetFeatureReportDetailResult = {
     rows: (GetFeatureReportDetailItemPayload & { userHash: string | null; })[];

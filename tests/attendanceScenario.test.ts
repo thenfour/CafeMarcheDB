@@ -3,6 +3,7 @@ import { Timing } from "shared/time";
 import {
     applyAttendanceScenarioChange, attendanceScenarioSchema, buildAttendanceScenario, createAttendanceScenario,
 } from "src/core/components/event/attendanceScenario";
+import { getInstrumentIdentity } from "src/core/db3/db3";
 
 describe("attendance scenario adapter", () => {
     it("replays exported data including cleared answers, dates, comments, and explicit instruments", () => {
@@ -20,9 +21,9 @@ describe("attendance scenario adapter", () => {
         scenario.users[0]!.tagInvited = false;
         expect(buildAttendanceScenario(scenario, 0).attendance.isInvited).toBe(false);
         scenario.users[1]!.primaryInstrumentId = 2;
-        expect(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse.instrument?.id).toBe(2);
+        expect(getInstrumentIdentity(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse.instrument!)).toBe(2);
         scenario.users[1]!.instrumentId = 4;
-        expect(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse.instrument?.id).toBe(4);
+        expect(getInstrumentIdentity(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse.instrument!)).toBe(4);
     });
 
     it.each([["past", Timing.Past], ["ongoing", Timing.Present], ["future", Timing.Future], ["tbd", Timing.Future]] as const)(

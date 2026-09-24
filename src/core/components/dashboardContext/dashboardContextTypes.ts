@@ -1,5 +1,6 @@
 import { DbBrandConfig } from "@/shared/brandConfigBase";
 import { isAbsoluteUri, slugify, TableAccessor } from "@/shared/rootroot";
+import type { InstrumentPublicId } from "shared/publicId";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
@@ -31,13 +32,13 @@ export abstract class DashboardContextDataBase {
     permission: TableAccessor<db3.ClientOf<typeof db3.permissionDashboardView>>;
     role: TableAccessor<db3.CompleteRoleDashboardClient>;
 
-    instrument: TableAccessor<db3.InstrumentDashboardClient>;
+    instrument: TableAccessor<db3.InstrumentDashboardClient, InstrumentPublicId>;
     instrumentFunctionalGroup: TableAccessor<
         db3.ClientOf<typeof db3.instrumentFunctionalGroupDashboardView>,
         InstrumentFunctionalGroupPublicId
     >;
 
-    currentUser: db3.UserPayload | null;
+    currentUser: db3.UserClientPayload | null;
     serverBaseUri: string;
     serverStartupState: ServerStartInfo | null; // null if not available (non-admins)
 

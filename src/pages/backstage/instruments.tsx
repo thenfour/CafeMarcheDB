@@ -16,7 +16,7 @@ const InstrumentListContent = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.instrumentEditorView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            publicId: DB3Client.publicIdFieldGen(),
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
             description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
             autoAssignFileLeafRegex: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200, fieldCaption: "Regex" }),
@@ -43,7 +43,7 @@ const InstrumentListContent = () => {
                     label="View"
                     color="inherit"
                     onClick={() => {
-                        void router.push(`/backstage/instrument/${args.row["id"]}`);
+                        void router.push(`/backstage/instrument/${args.row.publicId}`);
                     }}
                 />
             )}

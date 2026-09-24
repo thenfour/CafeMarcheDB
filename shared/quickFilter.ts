@@ -2,6 +2,7 @@ import { z } from "zod";
 import { calculateMatchStrengthAllKeywordsRequired, calculateMatchStrengthAnyKeyword } from "./rootroot";
 import { IsEntirelyIntegral, IsNullOrWhitespace } from "./utils";
 import { partition } from "./arrayUtils";
+import type { InstrumentPublicId } from "./publicId";
 
 // TODO: remove this in favor of better quick search stuff below.
 export function SplitQuickFilter(quickFilter: string): string[] {
@@ -49,13 +50,14 @@ function parseDateRange(input) {
 
 export enum QuickSearchItemType {
     "event" = "event",
+    "instrument" = "instrument",
     "song" = "song",
     "user" = "user",
     "wikiPage" = "wikiPage",
 };
 
 export interface QuickSearchItemMatch {
-    id: number,
+    id: number | InstrumentPublicId,
     name: string,
     absoluteUri?: string | undefined,
     matchStrength: number;
@@ -71,9 +73,9 @@ export interface QuickSearchItemMatch {
 export const QuickSearchItemTypeSets /*: { [k: string]: QuickSearchItemType[] }*/ = {
     Songs: [QuickSearchItemType.song],
     WikiPages: [QuickSearchItemType.wikiPage],
-    Everything: [
-        QuickSearchItemType.event,
-        QuickSearchItemType.song,
+	Everything: [
+		QuickSearchItemType.event,
+		QuickSearchItemType.song,
         QuickSearchItemType.user,
         QuickSearchItemType.wikiPage
     ],
@@ -85,7 +87,7 @@ export const QuickSearchItemTypeSets /*: { [k: string]: QuickSearchItemType[] }*
 };
 
 export const ZQuickSearchItemTypeArray = z.array(
-    z.enum(["event", "song", "user", "wikiPage"])
+	z.enum(["event", "instrument", "song", "user", "wikiPage"])
 ).transform((value) => value as QuickSearchItemType[]);
 
 export type QuickSearchItemTypeArray = z.infer<typeof ZQuickSearchItemTypeArray>;
@@ -306,4 +308,4 @@ export function CalculateMatchStrengthForTags(tagNameFieldSpec: SearchableTableF
         fieldName: tagNameFieldSpec.fieldName,
         matchStrength: totalMatchStrength,
     };
-};
+}

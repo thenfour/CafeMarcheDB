@@ -19,6 +19,17 @@ import {
 import { forgeDb3Query } from "./support/db3RequestBuilders"
 import { invokeResolver } from "./support/resolverHarness"
 
+const instrumentPublicId = "AbCdEfGhIjKlMn21"
+const targetInstrument = {
+  id: 21,
+  publicId: instrumentPublicId,
+  name: "Trumpet",
+  description: "",
+  sortOrder: 1,
+  functionalGroupId: 1,
+  autoAssignFileLeafRegex: null,
+}
+
 const owner = {
   ...createAuthorizationTestUser("normal", {
     id: 1_201,
@@ -40,7 +51,13 @@ const target = {
     phone: "+32 200",
     cssClass: "target-user",
   }),
-  instruments: [{ id: 11, userId: 1_202, instrumentId: 21, isPrimary: true }],
+  instruments: [{
+    id: 11,
+    userId: 1_202,
+    instrumentId: targetInstrument.id,
+    instrument: targetInstrument,
+    isPrimary: true,
+  }],
   tags: [{ id: 12, userId: 1_202, userTagId: 22 }],
   signInMethods: [{ id: 2, type: "google", identifier: "target-google" }],
   hashedPassword: "secret-password-hash",
@@ -137,7 +154,13 @@ describe("focused user data visibility", () => {
       id: target.id,
       name: target.name,
       cssClass: target.cssClass,
-      instruments: target.instruments,
+      instruments: [{
+        id: 11,
+        userId: target.id,
+        instrumentId: instrumentPublicId,
+        instrument: { publicId: instrumentPublicId },
+        isPrimary: true,
+      }],
       tags: target.tags,
     })
     expect(result).not.toHaveProperty("email")

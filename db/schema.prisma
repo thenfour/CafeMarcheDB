@@ -1,28 +1,6 @@
 // why VarChar(768) ? because it's the largest indexable unicode string type.
 // https://stackoverflow.com/questions/72937232/error-1071-42000-specified-key-was-too-long-max-key-length-is-3072-bytes
 
-// some common patterns:
-// todo: languages / strings
-
-// tags have both significance and classification
-// they look similar, and in a way they are. but more like,
-// significance is for specific app-understood behavior. typically for statistics gathering.
-// classification is a grouping of items, like song tags "reggae" or "ska" would be grouped as genres.
-// classification will be freeform text, maybe or maybe not understood by the app. i guess for future use; not really necessary.
-
-// do not try to change site behavior based on signifacance or classification; then use a dedicated field like eventType rather than tagging as rehearsal / concert.
-
-// journals...
-// i think stuff like events should have a timeline with things like "arnold approved this on 4/8" or whatever. that can be derived i guess. but it means attaching dates to things.
-
-// regarding "published" style visibility.
-// it's not exactly a user role to assign, because we need to support things like "private" to the author.
-// also because users are assigned a SINGLE role.
-// really it's more of a style of PERMISSION. so we should
-// - mark permissions as usable as visibility or not
-// - for visibility of objects, just use a FK to permissions.
-// we need to track which user CREATED objects as well, to understand the null visibility.
-
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -466,6 +444,7 @@ model InstrumentFunctionalGroup {
 
 model Instrument {
   id          Int    @id @default(autoincrement())
+  publicId    String @unique @db.Char(16)
   name        String @unique @db.VarChar(768)
   description String @db.MediumText
   sortOrder   Int

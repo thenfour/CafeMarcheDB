@@ -323,7 +323,7 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
         ctx,
         permission: Permission.access_file_landing_page,
         table: db3.xFile,
-        id,
+        identity: id,
         load: where => db.file.findFirst({
             select: {
                 id: true,

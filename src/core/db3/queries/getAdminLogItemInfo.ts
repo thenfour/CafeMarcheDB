@@ -46,7 +46,9 @@ export default resolver.pipe(
                             where: { id: input.pk },
                             include: {
                                 taggedEvents: true,
-                                taggedInstruments: true,
+                                taggedInstruments: {
+                                    include: { instrument: { select: { publicId: true } } },
+                                },
                                 taggedSongs: true,
                                 taggedUsers: true,
                             }
@@ -55,7 +57,7 @@ export default resolver.pipe(
                         const { taggedEvents, taggedInstruments, taggedSongs, taggedUsers, ...basicFile } = file;
                         return {
                             eventIds: file.taggedEvents.map(e => e.eventId),
-                            instrumentIds: file.taggedInstruments.map(e => e.instrumentId),
+                            instrumentIds: file.taggedInstruments.map(e => e.instrument.publicId),
                             songIds: file.taggedSongs.map(e => e.songId),
                             userIds: file.taggedUsers.map(e => e.userId),
                             file: basicFile,

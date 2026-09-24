@@ -499,6 +499,7 @@ const main = async () => {
 
   await SeedTable("instrument", gState.prisma.instrument,
     functionalGroupSeed.map(g => ({
+      publicId: generatePublicId<"Instrument">(),
       name: g.name,
       //slug: slugify(g.name),
       description: "",

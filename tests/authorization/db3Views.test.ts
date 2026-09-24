@@ -16,6 +16,7 @@ const tagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn02");
 const tagAssociationPublicId = parsePublicId<"InstrumentTagAssociation">("AbCdEfGhIjKlMn03");
 const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn04");
 const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn05");
+const instrumentPublicId = parsePublicId<"Instrument">("AbCdEfGhIjKlMn06");
 const group = {
     publicId: groupPublicId,
     name: "Brass",
@@ -369,6 +370,7 @@ describe("DB3 named views", () => {
     it("returns the normalized Instrument editor DTO for reference-store hydration", async () => {
         const findMany = vi.fn(async () => [{
             id: 7,
+            publicId: instrumentPublicId,
             name: "Trumpet",
             description: "",
             autoAssignFileLeafRegex: null,
@@ -404,7 +406,7 @@ describe("DB3 named views", () => {
         } as any);
 
         expect(result.items).toEqual([{
-            id: 7,
+            publicId: instrumentPublicId,
             name: "Trumpet",
             description: "",
             autoAssignFileLeafRegex: null,
@@ -590,7 +592,7 @@ describe("DB3 named views", () => {
         });
 
         const dto = db3.instrumentDashboardView.parseDto({
-            id: 7,
+            publicId: instrumentPublicId,
             name: "Trumpet",
             description: "",
             autoAssignFileLeafRegex: null,
@@ -598,7 +600,6 @@ describe("DB3 named views", () => {
             functionalGroupId: groupPublicId,
             instrumentTags: [{
                 publicId: tagAssociationPublicId,
-                instrumentId: 7,
                 tagId: tagPublicId,
             }],
         });
@@ -613,12 +614,11 @@ describe("DB3 named views", () => {
         expectTypeOf(hydrated).toEqualTypeOf<db3.InstrumentDashboardClient>();
         expectTypeOf<db3.DbPayloadOf<typeof db3.instrumentDashboardView>>()
             .toMatchTypeOf<{
-                id: number;
+                publicId: string;
                 functionalGroupId: number;
                 functionalGroup: { publicId: string };
                 instrumentTags: {
                     publicId: string;
-                    instrumentId: number;
                     tagId: number;
                     tag: { publicId: string };
                 }[];
@@ -702,7 +702,7 @@ describe("DB3 named views", () => {
             significance: db3.FileTagSignificance.Partition,
         };
         const instrument = {
-            id: 40,
+            publicId: instrumentPublicId,
             name: "Trumpet",
             description: "",
             autoAssignFileLeafRegex: null,
@@ -758,7 +758,7 @@ describe("DB3 named views", () => {
                     },
                 },
             ],
-            taggedInstruments: [{ id: 82, instrumentId: instrument.id }],
+            taggedInstruments: [{ id: 82, instrumentId: instrument.publicId }],
             taggedWikiPages: [{ id: 88, wikiPage: { id: 12, slug: "repertoire" } }],
         });
         const hydrated = db3.hydrateView(db3.fileSearchView, dto, references);
@@ -776,7 +776,7 @@ describe("DB3 named views", () => {
         expect(hydrated.taggedEvents?.[0]?.event.name).toBe("A concert");
         expect(hydrated.taggedInstruments).toHaveLength(1);
         expect(hydrated.taggedInstruments?.[0]?.instrument).toEqual(
-            references.require(db3.xInstrument, instrument.id, "test"),
+            references.require(db3.xInstrument, instrument.publicId, "test"),
         );
         expect(hydrated.taggedWikiPages).toHaveLength(1);
         expect(hydrated.taggedWikiPages?.[0]?.wikiPage.slug).toBe("repertoire");
@@ -805,7 +805,7 @@ describe("DB3 named views", () => {
             significance: db3.FileTagSignificance.Partition,
         };
         const instrument = {
-            id: 40,
+            publicId: instrumentPublicId,
             name: "Trumpet",
             description: "",
             autoAssignFileLeafRegex: null,
@@ -872,7 +872,7 @@ describe("DB3 named views", () => {
                     typeId: 2,
                 },
             }],
-            taggedInstruments: [{ id: 84, instrumentId: instrument.id }],
+            taggedInstruments: [{ id: 84, instrumentId: instrument.publicId }],
             taggedWikiPages: [{ id: 85, wikiPage: { id: 16, slug: "repertoire" } }],
             frontpageGalleryItems: [{ id: 90 }],
             parentFile: { id: 7, fileLeafName: "source.pdf" },
@@ -894,7 +894,7 @@ describe("DB3 named views", () => {
         expect(hydrated.taggedSongs).toEqual([{ id: 82, song: { id: 14, name: "A song" } }]);
         expect(hydrated.taggedEvents?.[0]?.event.name).toBe("A concert");
         expect(hydrated.taggedInstruments?.[0]?.instrument).toEqual(
-            references.require(db3.xInstrument, instrument.id, "test"),
+            references.require(db3.xInstrument, instrument.publicId, "test"),
         );
         expect(hydrated.taggedWikiPages).toEqual([{
             id: 85,
@@ -1237,7 +1237,7 @@ describe("DB3 named views", () => {
         const songTag = { publicId: songTagPublicId, text: "March", description: "", color: null, sortOrder: 1, significance: null, group: null, indicator: null, indicatorCssClass: null };
         const fileTag = { id: 30, text: "Partition", description: "", color: null, sortOrder: 1, significance: db3.FileTagSignificance.Partition };
         const instrument = {
-            id: 40,
+            publicId: instrumentPublicId,
             name: "Trumpet",
             description: "",
             autoAssignFileLeafRegex: null,
@@ -1282,7 +1282,7 @@ describe("DB3 named views", () => {
                     taggedUsers: [],
                     taggedSongs: [],
                     taggedEvents: [],
-                    taggedInstruments: [{ id: 100, instrumentId: instrument.id }],
+                    taggedInstruments: [{ id: 100, instrumentId: instrument.publicId }],
                     taggedWikiPages: [],
                 },
             }],
@@ -1303,7 +1303,7 @@ describe("DB3 named views", () => {
             references.require(db3.xFileTag, fileTag.id, "test"),
         );
         expect(hydrated.taggedFiles?.[0]?.file.taggedInstruments?.[0]?.instrument).toEqual(
-            references.require(db3.xInstrument, instrument.id, "test"),
+            references.require(db3.xInstrument, instrument.publicId, "test"),
         );
         expect(hydrated.taggedFiles?.[0]?.file.taggedEvents).toEqual([]);
         expect(hydrated.credits).toEqual([]);
@@ -1787,7 +1787,7 @@ describe("DB3 named views", () => {
             instrumentFunctionalGroup: [hydratedGroup],
         });
         const dto = db3.instrumentDashboardView.parseDto({
-            id: 7,
+            publicId: instrumentPublicId,
             name: "Trumpet",
             description: "",
             autoAssignFileLeafRegex: null,
@@ -1795,12 +1795,11 @@ describe("DB3 named views", () => {
             functionalGroupId: groupPublicId,
             instrumentTags: [{
                 publicId: tagAssociationPublicId,
-                instrumentId: 7,
                 tagId: tagPublicId,
             }],
         });
 
         expect(() => db3.hydrateView(db3.instrumentDashboardView, dto, references))
-            .toThrow("Instrument(7).instrumentTags[0].tagId");
+            .toThrow(`Instrument(${instrumentPublicId}).instrumentTags[0].tagId`);
     });
 });

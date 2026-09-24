@@ -6,6 +6,7 @@ import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activi
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
+import { resolvePublicId } from "../server/db3PublicIds";
 import {
     TupdateUserEventAttendanceMutationArgs,
     ZupdateUserEventAttendanceMutationArgs,
@@ -49,6 +50,9 @@ export default resolver.pipe(
         const segmentIds = Object.keys(args.segmentResponses || {}).map(Number);
         const changeContext = CreateChangeContext("updateUserEventAttendance");
         await db.$transaction(async transactionalDb => {
+            const instrumentId = args.instrumentId == null
+                ? args.instrumentId
+                : await resolvePublicId(db3.xInstrument, args.instrumentId, publicData, transactionalDb);
             const [event, targetUser, eventSegments] = await Promise.all([
                 transactionalDb.event.findFirst({
                     where: { id: args.eventId, isDeleted: false },
@@ -151,8 +155,8 @@ export default resolver.pipe(
                     isEventResponseDifferent ||= args.comment !== existingEventResponse.userComment;
                 }
                 if (args.instrumentId !== undefined) {
-                    desired.instrumentId = args.instrumentId;
-                    isEventResponseDifferent ||= args.instrumentId !== existingEventResponse.instrumentId;
+                    desired.instrumentId = instrumentId;
+                    isEventResponseDifferent ||= instrumentId !== existingEventResponse.instrumentId;
                 }
                 if (args.isInvited !== undefined) {
                     desired.isInvited = args.isInvited;
@@ -181,7 +185,7 @@ export default resolver.pipe(
                     userId: args.userId,
                     eventId: args.eventId,
                     userComment: args.comment || "",
-                    instrumentId: args.instrumentId,
+                    instrumentId,
                     isInvited: args.isInvited,
                     revision: 1,
                 };

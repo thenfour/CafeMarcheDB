@@ -20,10 +20,10 @@ const UserEditorRoleDtoSchema = z.object({
 const UserEditorInstrumentAssociationDtoSchema = z.object({
     id: z.number().int(),
     userId: z.number().int().optional(),
-    instrumentId: z.number().int().optional(),
+    instrumentId: z.string().optional(),
     isPrimary: z.boolean().optional(),
     instrument: z.object({
-        id: z.number().int(),
+        publicId: z.string(),
         name: z.string().optional(),
         description: z.string().optional(),
         sortOrder: z.number().int().optional(),
@@ -66,12 +66,28 @@ const UserEditorDtoSchema = z.object({
 
 
 
-const userEditorBaseSelection = ZodToPrismaSelection(UserEditorDtoSchema);
+const userEditorBaseSelection = ZodToPrismaSelection(UserEditorDtoSchema.omit({ instruments: true }));
 const userEditorSelection = Prisma.validator<Prisma.UserDefaultArgs>()({
     select: {
         ...userEditorBaseSelection.select,
         instruments: {
-            ...userEditorBaseSelection.select.instruments,
+            select: {
+                id: true,
+                userId: true,
+                instrumentId: true,
+                isPrimary: true,
+                instrument: {
+                    select: {
+                        publicId: true,
+                        name: true,
+                        description: true,
+                        sortOrder: true,
+                        functionalGroup: {
+                            select: { publicId: true, color: true },
+                        },
+                    },
+                },
+            },
             orderBy: UserInstrumentNaturalOrderBy,
         },
         tags: {
@@ -97,9 +113,9 @@ const UserInstrumentEditorDtoSchema = z.object({
         id: z.number().int(),
         name: z.string().optional(),
     }).optional(),
-    instrumentId: z.number().int().optional(),
+    instrumentId: z.string().optional(),
     instrument: z.object({
-        id: z.number().int(),
+        publicId: z.string(),
         name: z.string().optional(),
         description: z.string().optional(),
         functionalGroup: z.object({
@@ -114,6 +130,23 @@ export const userInstrumentEditorView = defineCrudView({
     viewID: "UserInstrument_Editor",
     entity: xUserInstrument,
     operations: { create: true, update: true, delete: true },
+    selection: Prisma.validator<Prisma.UserInstrumentDefaultArgs>()({
+        select: {
+            id: true,
+            userId: true,
+            user: { select: { id: true, name: true } },
+            instrumentId: true,
+            instrument: {
+                select: {
+                    publicId: true,
+                    name: true,
+                    description: true,
+                    functionalGroup: { select: { publicId: true, color: true } },
+                },
+            },
+            isPrimary: true,
+        },
+    }),
     dtoSchema: UserInstrumentEditorDtoSchema,
     hydrate: dto => xUserInstrument.getClientModel(dto, "view"),
 });

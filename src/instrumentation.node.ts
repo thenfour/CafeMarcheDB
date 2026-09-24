@@ -112,6 +112,14 @@ export async function CorrectInstrumentTagAssociationPublicIds() {
     console.log(`Replaced ${replacementCount} InstrumentTagAssociation public-ID placeholders.`);
 }
 
+export async function CorrectInstrumentPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.instrument,
+        modelName: "Instrument",
+    });
+    console.log(`Replaced ${replacementCount} Instrument public-ID placeholders.`);
+}
+
 export async function CorrectSongTagPublicIds() {
     const replacementCount = await repairPublicIdPlaceholders({
         delegate: db.songTag,
@@ -137,6 +145,7 @@ export async function registerNodeInstrumentation() {
 
     // public id corrections
     await CorrectInstrumentFunctionalGroupPublicIds();
+    await CorrectInstrumentPublicIds();
     await CorrectInstrumentTagPublicIds();
     await CorrectInstrumentTagAssociationPublicIds();
     await CorrectSongTagPublicIds();

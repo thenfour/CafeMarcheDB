@@ -784,6 +784,15 @@ a per-row compatibility flag or a second lookup mode.
   Clients submit public IDs, one trusted batch resolver supplies natural IDs to
   Prisma/raw SQL, and SQL diagnostics containing those natural IDs stay
   server-side. `Song` itself deliberately remains on natural identity.
+- `Instrument` is the route/search identity proof. Its detail route, authorized
+  exact lookup, global quick-search result, dashboard reference cache, editor,
+  attendance mutations, telemetry, feature-report details, file associations,
+  user-instrument references, gallery tooling, and React keys now use its public
+  identity at client boundaries. Numeric foreign keys are resolved or retained
+  only inside trusted server/database work. The shared table accessor can infer
+  `publicId` as canonical identity for public-ID-only client models, while
+  explicit identity callbacks preserve internal numeric workflows such as file
+  upload auto-assignment.
 - The entity/view/hydration/command boundaries are established well enough to
   begin broad public-ID migration. Further general DB3 architecture work is not
   a prerequisite unless a concrete entity conversion exposes a missing identity
@@ -1086,11 +1095,12 @@ The current pressure-led sequence is:
    set-valued query contract, and empty arrays require no query. Non-DB3 filter
    and reporting endpoints reuse the same resolver, while active search resolves
    discrete criteria before SQL and emits public facet identities.
-2. Migrate `Instrument` as the route/search identity proof, including its
-   unavoidable client-facing references. Its functional-group and tag graph is
-   already converted, making it the leading bounded candidate for public IDs in
-   routes, exact lookup, search navigation, dashboard caches, and React keys
-   before central Event and User identities are attempted.
+2. **Completed:** migrate `Instrument` as the route/search identity proof,
+   including its unavoidable client-facing references. Its detail route and
+   authorized exact lookup accept only public identity; global quick search
+   returns a branded public identity and public-ID URL; dashboard caches,
+   editors, attendance, telemetry/reporting, file/user references, gallery
+   tooling, and React keys no longer require its natural ID on the client.
 3. Reclassify the remaining tag-like graphs after those capabilities are
    proven. `FileTag` plus `FileTagAssignment` should then be repetition;
    `WikiPageTag` plus `WikiPageTagAssignment` is repetition plus cleanup of its
@@ -1188,7 +1198,7 @@ conversions.
 - [x] Migrate `SongTag` and `SongTagAssociation` as the identity-bearing query
   parameter, generic search/facet, and raw-SQL translation proof. `Song` remains
   unconverted in this slice.
-- [ ] Migrate `Instrument` as the bounded route, exact-lookup, and search identity
+- [x] Migrate `Instrument` as the bounded route, exact-lookup, and search identity
   proof before converting Event or User.
 - [ ] Audit and adapt the shared identity-sensitive infrastructure: exact lookup,
   generic sorting/reordering, association matrices, caches, React keys, raw SQL,
@@ -1202,12 +1212,13 @@ conversions.
   - [x] `InstrumentTagAssociation`
   - [x] `SongTag`
   - [x] `SongTagAssociation`
+  - [x] `Instrument`
   - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
   - [x] Exercise an association/tag command with public identities
     (`Instrument.instrumentTags`).
   - [x] Exercise identity-bearing query parameters, batched translation, and
     public search facets (`Song.songTagIds` and Song `tags` criteria).
-  - [ ] Exercise route and search identity before converting Event and User.
+  - [x] Exercise route and search identity before converting Event and User.
 
 ### Deferred DB3 enhancements
 

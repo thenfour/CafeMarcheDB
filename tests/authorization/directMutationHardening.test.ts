@@ -21,7 +21,7 @@ import {
   createAuthorizationPersona,
   createAuthorizationTestUser,
 } from "./support/authorizationFixtures"
-import { forgeDb3Insert, forgeDb3Update } from "./support/db3RequestBuilders"
+import { forgeDb3Insert, forgeDb3PublicUpdate, forgeDb3Update } from "./support/db3RequestBuilders"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 
@@ -229,6 +229,7 @@ describe("DB3 command boundary", () => {
     }
     const instrument = {
       id: 7,
+      publicId: "instrmnt00000001",
       name: "Trumpet",
       description: "",
       autoAssignFileLeafRegex: null,
@@ -273,14 +274,14 @@ describe("DB3 command boundary", () => {
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.instrumentEditorView.crud.operations.update.command.commandID,
       payload: {
-        identity: instrument.id,
+        identity: instrument.publicId,
         patch: {
           name: "Cornet",
           functionalGroupId: nextGroup.publicId,
           instrumentTags: [electricTag.publicId],
         },
       },
-    }, ctx)).resolves.toEqual({ identity: instrument.id })
+    }, ctx)).resolves.toEqual({ identity: instrument.publicId })
 
     expect(authorizationTestDb.snapshot("instrument")).toEqual([
       expect.objectContaining({
@@ -408,6 +409,7 @@ describe("DB3 command boundary", () => {
     })
     const instrument = {
       id: 41,
+      publicId: "instrmnt00000041",
       name: "Trumpet",
       description: "",
       sortOrder: 1,
@@ -439,7 +441,7 @@ describe("DB3 command boundary", () => {
         patch: {
           name: "Updated user",
           phone: "+32 123",
-          instruments: [instrument.id],
+          instruments: [instrument.publicId],
           tags: [userTag.id],
         },
       },
@@ -1562,6 +1564,7 @@ describe("Band Admin split mutation boundaries", () => {
     const instrumentAdmin = createAuthorizationTestUser("bandAdmin", { id: 66, permissions: instrumentPermissions })
     const instrument = {
       id: 67,
+      publicId: "instrmnt00000067",
       name: "Trumpet",
       description: "",
       autoAssignFileLeafRegex: "tpt",
@@ -1577,7 +1580,7 @@ describe("Band Admin split mutation boundaries", () => {
     })
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3Update("Instrument", instrument.id, { name: "Cornet" }),
+      forgeDb3PublicUpdate("Instrument", instrument.publicId, { name: "Cornet" }),
       ordinaryCtx,
     )).rejects.toThrow("Not authorized to mutate Instrument fields")
 
@@ -1587,7 +1590,7 @@ describe("Band Admin split mutation boundaries", () => {
     })
     await invokeResolver(
       db3Mutation,
-      forgeDb3Update("Instrument", instrument.id, { name: "Cornet" }),
+      forgeDb3PublicUpdate("Instrument", instrument.publicId, { name: "Cornet" }),
       adminCtx,
     )
     expect(authorizationTestDb.snapshot("instrument")).toEqual([

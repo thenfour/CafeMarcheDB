@@ -183,7 +183,7 @@ export async function resolvePublicForeignIds(
 export function projectDB3ModelPublicIds(
     table: db3.xTable,
     model: TAnyModel,
-    publicData: db3.DB3Authorization,
+    publicData?: db3.DB3Authorization,
 ): TAnyModel {
     const ret = { ...model };
 

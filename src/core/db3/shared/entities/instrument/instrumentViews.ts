@@ -75,7 +75,7 @@ export const instrumentTagEditorView = defineCrudView({
 // instrument -------------------------------------
 const instrumentEditorTransportSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         name: true,
         description: true,
         autoAssignFileLeafRegex: true,

@@ -45,7 +45,7 @@ export default resolver.pipe(
 
         let promotedUser: UserWithRolesPayload;
         try {
-            promotedUser = await db.$transaction(async (tx: typeof db) => {
+            promotedUser = await db.$transaction(async (tx: Prisma.TransactionClient) => {
                 const user = await tx.user.findFirst({
                     ...UserWithRolesArgs,
                     where: { id: ctx.session.userId },

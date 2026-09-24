@@ -2,6 +2,7 @@ import { Prisma } from "db";
 import type { ColorPaletteEntry } from "@/src/core/components/color/palette";
 import type {
     InstrumentFunctionalGroupPublicId,
+    InstrumentPublicId,
     InstrumentTagAssociationPublicId,
     InstrumentTagPublicId,
     SongTagAssociationPublicId,
@@ -391,6 +392,14 @@ export const UserInstrumentArgs = Prisma.validator<Prisma.UserInstrumentArgs>()(
 
 export type UserInstrumentPayload = Prisma.UserInstrumentGetPayload<typeof UserInstrumentArgs>;
 
+export type UserInstrumentClientPayload = Omit<
+    UserInstrumentPayload,
+    "instrumentId" | "instrument"
+> & {
+    instrumentId: InstrumentPublicId;
+    instrument: InstrumentClientPayload;
+};
+
 export const UserInstrumentNaturalOrderBy: Prisma.UserInstrumentOrderByWithRelationInput[] = [
     { instrument: { sortOrder: 'asc' } },
     { instrument: { name: 'asc' } },
@@ -443,6 +452,9 @@ export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
 });
 
 export type UserPayload = Prisma.UserGetPayload<typeof UserArgs>;
+export type UserClientPayload = Omit<UserPayload, "instruments"> & {
+    instruments: UserInstrumentClientPayload[];
+};
 
 // Generic user queries must not expose role grants. Server authorization code
 // uses UserArgs/UserWithRolesArgs when it needs the permission composition.
@@ -532,7 +544,13 @@ export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserDefaultArgs>(
     }
 });
 
-export type UserWithInstrumentsPayload = Prisma.UserGetPayload<typeof UserWithInstrumentsArgs>;
+export type UserWithInstrumentsDbPayload = Prisma.UserGetPayload<typeof UserWithInstrumentsArgs>;
+export type UserWithInstrumentsClientPayload = Omit<UserWithInstrumentsDbPayload, "instruments"> & {
+    instruments: Array<Omit<UserWithInstrumentsDbPayload["instruments"][number], "instrumentId"> & {
+        instrumentId: InstrumentPublicId;
+    }>;
+};
+export type UserWithInstrumentsPayload = UserWithInstrumentsDbPayload | UserWithInstrumentsClientPayload;
 
 
 export const UserNaturalOrderBy: Prisma.UserOrderByWithRelationInput[] = [
@@ -623,20 +641,18 @@ export type InstrumentTagClientPayload = Omit<
 
 export type InstrumentTagAssociationClientPayload = Omit<
     Prisma.InstrumentTagAssociationGetPayload<{ include: { tag: true } }>,
-    "id" | "publicId" | "tagId" | "tag"
+    "id" | "publicId" | "instrumentId" | "tagId" | "tag"
 > & {
     publicId: InstrumentTagAssociationPublicId;
     tagId: InstrumentTagPublicId;
     tag: InstrumentTagClientPayload;
 };
 
-// Canonical client representation of an instrument. Instrument itself has not
-// yet been converted to public IDs, so its own id remains numeric; the foreign
-// key to the converted functional-group table does not.
 export type InstrumentClientPayload = Omit<
     InstrumentPayload,
-    "functionalGroupId" | "functionalGroup" | "instrumentTags"
+    "id" | "publicId" | "functionalGroupId" | "functionalGroup" | "instrumentTags"
 > & {
+    publicId: InstrumentPublicId;
     functionalGroupId: InstrumentFunctionalGroupPublicId;
     functionalGroup: InstrumentFunctionalGroupClientPayload;
     instrumentTags: InstrumentTagAssociationClientPayload[];
@@ -646,8 +662,18 @@ export type InstrumentClientPayload = Omit<
 // still carries Prisma's numeric foreign key.
 export type InstrumentClientOrDbPayload = InstrumentClientPayload | InstrumentPayload;
 
+export type InstrumentIdentity = InstrumentPublicId | number;
+
+export function getInstrumentIdentity(instrument: InstrumentClientOrDbPayload): InstrumentIdentity {
+    return "id" in instrument ? instrument.id : instrument.publicId;
+}
+
 // replaces natural-id-variants from prisma with publicid variants.
-export type InstrumentWithFunctionalGroupClientPayload = Omit<InstrumentWithFunctionalGroupPayload, "functionalGroupId" | "functionalGroup"> & {
+export type InstrumentWithFunctionalGroupClientPayload = Omit<
+    InstrumentWithFunctionalGroupPayload,
+    "id" | "publicId" | "functionalGroupId" | "functionalGroup"
+> & {
+    publicId: InstrumentPublicId;
     functionalGroupId: InstrumentFunctionalGroupPublicId;
     functionalGroup: InstrumentFunctionalGroupClientPayload;
 };
@@ -659,7 +685,8 @@ type DashboardInstrumentDbPayload = Prisma.InstrumentGetPayload<{
     };
 }>;
 
-export type DashboardInstrumentPayload = Omit<DashboardInstrumentDbPayload, "functionalGroupId" | "functionalGroup"> & {
+export type DashboardInstrumentPayload = Omit<DashboardInstrumentDbPayload, "id" | "publicId" | "functionalGroupId" | "functionalGroup"> & {
+    publicId: InstrumentPublicId;
     functionalGroupId: InstrumentFunctionalGroupPublicId;
     functionalGroup: InstrumentFunctionalGroupClientPayload;
 };
@@ -1229,7 +1256,8 @@ export const FileInstrumentTagArgs = Prisma.validator<Prisma.FileInstrumentTagAr
     }
 });
 export type FileInstrumentTagPayload = Prisma.FileInstrumentTagGetPayload<typeof FileInstrumentTagArgs>;
-export type FileInstrumentTagClientPayload = Omit<FileInstrumentTagPayload, "instrument"> & {
+export type FileInstrumentTagClientPayload = Omit<FileInstrumentTagPayload, "instrumentId" | "instrument"> & {
+    instrumentId: InstrumentPublicId;
     instrument: InstrumentWithFunctionalGroupClientPayload;
 };
 export type FileInstrumentTagPayloadWithInstrument = Prisma.FileInstrumentTagGetPayload<{
