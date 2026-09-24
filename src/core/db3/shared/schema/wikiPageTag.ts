@@ -11,9 +11,6 @@ import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 ////////////////////////////////////////////////////////////////
 export enum WikiPageTagSignificance {
-    Tutorial = "Tutorial",
-    Policy = "Policy",
-    Project = "Project",
 };
 
 const wikiPageTagAuthMap = defineAuthMap({

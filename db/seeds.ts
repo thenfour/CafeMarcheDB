@@ -905,42 +905,42 @@ const main = async () => {
       "description": "Technical documentation and how-to guides",
       "sortOrder": 0,
       "color": "blue",
-      "significance": "Documentation"
+      "significance": null,
     },
     {
       "text": "Tutorial",
       "description": "Step-by-step tutorials and learning materials",
       "sortOrder": 10,
       "color": "green",
-      "significance": "Tutorial"
+      "significance": null,
     },
     {
       "text": "Policy",
       "description": "Organizational policies and procedures",
       "sortOrder": 20,
       "color": "orange",
-      "significance": "Policy"
+      "significance": null,
     },
     {
       "text": "Meeting",
       "description": "Meeting notes and minutes",
       "sortOrder": 30,
       "color": "purple",
-      "significance": "Meeting"
+      "significance": null,
     },
     {
       "text": "Project",
       "description": "Project-related pages and documentation",
       "sortOrder": 40,
       "color": "red",
-      "significance": "Project"
+      "significance": null,
     },
     {
       "text": "Archive",
       "description": "Archived or deprecated content",
       "sortOrder": 50,
       "color": "gray",
-      "significance": "Archive"
+      "significance": null,
     }
   ]);
 

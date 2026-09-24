@@ -47,10 +47,19 @@ export class ConstEnumStringField<
     allowNull: boolean;
 
     constructor(args: ConstEnumStringFieldArgs<TAllowNull, TAuthSpec>) {
-        const enumSchema = z.string().refine(
-            value => Object.values(args.options).includes(value),
-            value => ({ message: `unrecognized option '${value}'` }),
-        );
+        const enumSchema = z
+            .string()
+            // refine is necessary. You might think "hey make enum-like fields freeform text,
+            // in case options change over time etc" but then you should
+            // keep historical enums in the type, or migrate them to new/null
+            // this field type is strictly typesafe over its enum parameter,
+            // so reject invalid values.
+            // if you do want a freeform string field that happens to correspond to
+            // enum values sometimes, either use a string field, or make a half-string-half-enum field if necessary.
+            .refine(
+                value => Object.values(args.options).includes(value),
+                value => ({ message: `unrecognized option '${value}'` }),
+            );
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
