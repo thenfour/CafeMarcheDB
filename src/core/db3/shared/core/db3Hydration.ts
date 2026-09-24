@@ -135,6 +135,8 @@ export function getReference<
     entity: TEntity,
     id: DB3IdentityOf<TEntity> | null | undefined,
 ): DB3ReferenceValueOf<TContract, TEntity> | undefined | null {
+    // The helper's entity constraint selects the matching contract value;
+    // DB3ReferenceProvider stays runtime-oriented and therefore returns unknown.
     return provider.get(entity, id) as
         | DB3ReferenceValueOf<TContract, TEntity>
         | undefined
@@ -150,6 +152,8 @@ export function requireReference<
     id: DB3IdentityOf<TEntity> | null | undefined,
     path: string,
 ): DB3ReferenceValueOf<TContract, TEntity> {
+    // The helper's entity constraint selects the matching contract value;
+    // DB3ReferenceProvider stays runtime-oriented and therefore returns unknown.
     return provider.require(entity, id, path) as DB3ReferenceValueOf<TContract, TEntity>;
 }
 
@@ -165,6 +169,8 @@ export class DB3ReferenceStore<
     readonly contract: TContract;
 
     constructor(...args: DB3ReferenceStoreConstructorArgs<TContract>) {
+        // The constructor tuple permits omission only for the default empty
+        // contract; TypeScript cannot narrow that conditional generic here.
         this.contract = (args[0] ?? emptyReferenceContract) as TContract;
     }
 
@@ -191,6 +197,8 @@ export class DB3ReferenceStore<
     ): DB3ReferenceValueOf<TContract, TEntity> | undefined | null {
         if (id === null) return null;
         if (id === undefined) return undefined;
+        // register() admits only values selected by the contract/entity pair;
+        // the runtime map is intentionally erased because it stores all pairs.
         return this.entities.get(entity.tableID)?.get(id) as
             | DB3ReferenceValueOf<TContract, TEntity>
             | undefined;

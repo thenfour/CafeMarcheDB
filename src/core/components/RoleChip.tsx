@@ -1,11 +1,9 @@
-import { Prisma } from "@prisma/client";
+import * as db3 from "src/core/db3/db3";
 import { CMChipContainer, CMStandardDBChip } from "./CMChip";
 import { StandardVariationSpec } from "./color/palette";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
 
-type _Role = Prisma.RoleGetPayload<{ select: { id: true, description: true, name: true, color: true, sortOrder: true, } }>;
-
-export const RoleChip = (props: { role: number | _Role | null }) => {
+export const RoleChip = (props: { role: number | db3.RoleDisplay | null }) => {
     const dashboardContext = useDashboardContext();
     const role = typeof props.role === "number" ? dashboardContext.role.getById(props.role) : props.role;
     return (

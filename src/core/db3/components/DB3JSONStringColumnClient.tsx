@@ -20,7 +20,7 @@ import { gIconMap } from "./IconMap";
 import { Notes } from "@mui/icons-material";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { ColorSwatch } from "../../components/color/ColorSwatch";
-import { gGeneralPaletteList, gStrong } from "../../components/color/palette";
+import { type ColorPaletteEntry, gGeneralPaletteList, gStrong } from "../../components/color/palette";
 import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
 import { GenericStringField } from "../shared/columnTypes/genericString";
 
@@ -54,7 +54,7 @@ interface ActivityLogValueViewerProps<T> {
 
 interface ActivityLogChipProps {
     maxWidthPx?: number;
-    color?: string | null;
+    color?: string | ColorPaletteEntry | null;
     uri?: string | undefined;
 };
 

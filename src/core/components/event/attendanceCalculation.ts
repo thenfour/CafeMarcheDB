@@ -30,8 +30,8 @@ export interface EventAttendanceResult {
     isInvited: boolean;
     isSingleSegment: boolean;
 
-    allAttendances: (Prisma.EventAttendanceGetPayload<{}> | null)[];
-    allUncancelledSegmentAttendances: (Prisma.EventAttendanceGetPayload<{}> | null)[];
+    allAttendances: (db3.EventAttendanceDisplay | null)[];
+    allUncancelledSegmentAttendances: (db3.EventAttendanceDisplay | null)[];
 
     anyAnswered: boolean;
     allUncancelledSegmentsAnswered: boolean;
@@ -56,7 +56,7 @@ export interface EventAttendanceCalculationInput {
     eventTiming: Timing;
     eventIsCancelled: boolean;
     cancelledStatusIds: number[];
-    attendances: Prisma.EventAttendanceGetPayload<{}>[];
+    attendances: db3.EventAttendanceDisplay[];
 }
 
 // Shared by production and the scenario page. Keep behavioral changes separate

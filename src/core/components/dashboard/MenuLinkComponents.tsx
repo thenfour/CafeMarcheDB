@@ -246,11 +246,18 @@ export const MenuLinkList = () => {
 
     const canEdit = dashboardContext.isAuthorized(Permission.customize_menu);
 
+    // xTable.createNew still exposes its legacy generic model; this editor is
+    // explicitly bound to the MenuLink table payload.
     const newObj = db3.xMenuLink.createNew(dashboardContext.currentUser) as db3.MenuLinkPayload;
+    // iconName is persisted from the registered icon-key vocabulary.
     newObj.iconName = "Link" as keyof typeof gIconMap;
     newObj.linkType = DynamicMenuLinkType.Wiki;
-    newObj.visiblePermission = dashboardContext.getDefaultVisibilityPermission();
-    newObj.visiblePermissionId = newObj.visiblePermission?.id;
+    const defaultVisibilityPermission = dashboardContext.getDefaultVisibilityPermission();
+    newObj.visiblePermission = {
+        ...defaultVisibilityPermission,
+        color: defaultVisibilityPermission.color?.id ?? null,
+    };
+    newObj.visiblePermissionId = defaultVisibilityPermission.id;
 
     const handleSaveNew = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
         void recordFeature({

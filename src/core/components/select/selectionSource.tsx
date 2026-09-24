@@ -1,5 +1,5 @@
 import React from "react";
-import { CMChip, CMChipShapeOptions, CMChipSizeOptions } from "../CMChip";
+import { CMChip, CMChipProps, CMChipShapeOptions, CMChipSizeOptions } from "../CMChip";
 import { StandardVariationSpec } from "../color/palette";
 
 export enum CMSelectNullBehavior {
@@ -45,7 +45,7 @@ export function makeLocalSelectionSource<T>({ items, ...source }: Omit<Selection
 export interface SelectionItemInfo {
     id: string | number;
     name?: string;
-    color?: string | null;
+    color?: CMChipProps["color"];
     tooltip?: string | null;
 }
 

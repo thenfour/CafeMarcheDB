@@ -9,7 +9,7 @@ import type { ColorVariationSpec } from "../color/palette";
 import { DateValue } from "../DateTime/DateTimeComponents";
 
 export interface AttendanceChipTooltipProps {
-    value: db3.EventAttendanceBasePayload | null;
+    value: db3.EventAttendanceDisplay | null;
     eventResponse?: Prisma.EventUserResponseGetPayload<{ select: { instrumentId: true, userComment: true } }> | undefined;
     segmentResponse?: Prisma.EventSegmentUserResponseGetPayload<{ select: { attendanceId: true, createdByUserId: true, createdAt: true, updatedAt: true, updatedByUserId: true } }> | undefined;
     event?: Prisma.EventGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
@@ -52,7 +52,7 @@ export interface AttendanceChipProps {
 
     showLabel?: boolean | undefined;
     fadeNoResponse?: boolean | undefined;
-    value: number | db3.EventAttendanceBasePayload | null;
+    value: number | db3.EventAttendanceDisplay | null;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
@@ -60,7 +60,7 @@ export interface AttendanceChipProps {
 };
 
 export interface AttendanceChipViewProps extends Omit<AttendanceChipProps, "value"> {
-    value: db3.EventAttendanceBasePayload | null;
+    value: db3.EventAttendanceDisplay | null;
     tooltip: React.ReactNode;
 }
 

@@ -1,30 +1,30 @@
 import { Prisma } from "db";
 import { TableAccessor } from "@/shared/rootroot";
 import { assert } from "blitz";
+import * as db3 from "@db3/db3";
 
 ////////////////////////////////////////////////////////////////
 export type EnrichEventInput = Partial<Prisma.EventGetPayload<{ include: { tags: true } }>>;
-export type EnrichedEvent<T extends EnrichEventInput> = Omit<T, 'tags'> & Prisma.EventGetPayload<{
-    select: {
-        status: true,// add the fields we are treating
-        type: true,
-        visiblePermission: true,
-        tags: {
-            include: {
-                eventTag: true,
-            }
-        }
-    },
-}>;
+export type EnrichedEvent<T extends EnrichEventInput> = Omit<
+    T,
+    "status" | "type" | "visiblePermission" | "tags"
+> & {
+    status: db3.EventStatusDashboardClient | null;
+    type: db3.EventTypeDashboardClient | null;
+    visiblePermission: db3.PermissionDashboardClient | null;
+    tags: (Prisma.EventTagAssignmentGetPayload<{}> & {
+        eventTag: db3.EventTagDashboardClient;
+    })[];
+};
 
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
 export function enrichSearchResultEvent<T extends EnrichEventInput>(
     event: T,
     data: {
-        eventStatus: TableAccessor<Prisma.EventStatusGetPayload<{}>>;
-        eventType: TableAccessor<Prisma.EventTypeGetPayload<{}>>;
-        permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
-        eventTag: TableAccessor<Prisma.EventTagGetPayload<{}>>;
+        eventStatus: TableAccessor<db3.EventStatusDashboardClient>;
+        eventType: TableAccessor<db3.EventTypeDashboardClient>;
+        permission: TableAccessor<db3.PermissionDashboardClient>;
+        eventTag: TableAccessor<db3.EventTagDashboardClient>;
     },
 ): EnrichedEvent<T> {
     // original payload type,
@@ -35,9 +35,9 @@ export function enrichSearchResultEvent<T extends EnrichEventInput>(
     }
     return {
         ...event,
-        status: data.eventStatus.getById(event.statusId),
-        type: data.eventType.getById(event.typeId),
-        visiblePermission: data.permission.getById(event.visiblePermissionId),
+        status: data.eventStatus.getById(event.statusId) ?? null,
+        type: data.eventType.getById(event.typeId) ?? null,
+        visiblePermission: data.permission.getById(event.visiblePermissionId) ?? null,
         tags: (event.tags || []).map((t) => {
             const tag = data.eventTag.getById(t.eventTagId);
             if (!tag) {

@@ -2,19 +2,14 @@
 // but db3 has basically 2 layers: the core ORM-like layer, and an application-specific
 // layer that understands the CMDB schema.
 
-import type { TAnyModel } from "@/shared/rootroot";
 import { Prisma } from "db";
 import {
     DB3ReferenceStore,
     defineReferenceContract,
     reference,
-    type DB3ReferenceProvider,
 } from "../core/db3Hydration";
-import {
-    deriveViewContract,
-    type DB3DerivedViewContract,
-} from "../core/db3ViewContract";
-import type { AnyDB3Table } from "../db3core";
+import { type ClientOf, defineView } from "../core/db3View";
+import { deriveViewContract } from "../core/db3ViewContract";
 import {
     xEventAttendance,
     xEventStatus,
@@ -34,7 +29,8 @@ import {
     xSongCreditType,
     xSongTag,
 } from "../schema/song";
-import { xPermission } from "../schema/user";
+import { xPermission, xRole, xUserTag } from "../schema/user";
+import { xWikiPageTag } from "../schema/wikiPageTag";
 
 // dashboard provider provides "hydrated" objects, not raw db rows
 // (e.g. ColorPaletteEntry rather than `string`).
@@ -51,6 +47,43 @@ const dashboardEventTypeSelection = Prisma.validator<Prisma.EventTypeDefaultArgs
         iconName: true,
         text: true,
         significance: true,
+    },
+});
+
+const dashboardUserTagSelection = Prisma.validator<Prisma.UserTagDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        significance: true,
+        sortOrder: true,
+        cssClass: true,
+    },
+});
+
+const dashboardRoleSelection = Prisma.validator<Prisma.RoleDefaultArgs>()({
+    select: {
+        id: true,
+        name: true,
+        isRoleForNewUsers: true,
+        isPublicRole: true,
+        isSysAdminRole: true,
+        description: true,
+        sortOrder: true,
+        color: true,
+        significance: true,
+    },
+});
+
+const dashboardWikiPageTagSelection = Prisma.validator<Prisma.WikiPageTagDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        significance: true,
+        sortOrder: true,
     },
 });
 
@@ -189,6 +222,18 @@ export const dashboardPermissionResource = deriveViewContract(
     xPermission,
     PermissionForVisibilityArgs,
 );
+export const dashboardUserTagResource = deriveViewContract(
+    xUserTag,
+    dashboardUserTagSelection,
+);
+export const dashboardRoleResource = deriveViewContract(
+    xRole,
+    dashboardRoleSelection,
+);
+export const dashboardWikiPageTagResource = deriveViewContract(
+    xWikiPageTag,
+    dashboardWikiPageTagSelection,
+);
 export const dashboardEventTypeResource = deriveViewContract(
     xEventType,
     dashboardEventTypeSelection,
@@ -255,75 +300,278 @@ export const dashboardReferenceContract = defineReferenceContract({
     instrument: reference(xInstrument)<ReturnType<typeof dashboardInstrumentResource.hydrate>>(),
 });
 
+export const permissionDashboardView = defineView({
+    viewID: "Permission_Dashboard",
+    entity: xPermission,
+    selection: dashboardPermissionResource.prismaSelection,
+    dtoSchema: dashboardPermissionResource.dtoSchema,
+    references: dashboardPermissionResource.referenceContract,
+    hydrate: dashboardPermissionResource.hydrate,
+});
+
+export const userTagDashboardView = defineView({
+    viewID: "UserTag_Dashboard",
+    entity: xUserTag,
+    selection: dashboardUserTagResource.prismaSelection,
+    dtoSchema: dashboardUserTagResource.dtoSchema,
+    references: dashboardUserTagResource.referenceContract,
+    hydrate: dashboardUserTagResource.hydrate,
+});
+
+export const roleDashboardView = defineView({
+    viewID: "Role_Dashboard",
+    entity: xRole,
+    selection: dashboardRoleResource.prismaSelection,
+    dtoSchema: dashboardRoleResource.dtoSchema,
+    references: dashboardRoleResource.referenceContract,
+    hydrate: dashboardRoleResource.hydrate,
+});
+
+export const wikiPageTagDashboardView = defineView({
+    viewID: "WikiPageTag_Dashboard",
+    entity: xWikiPageTag,
+    selection: dashboardWikiPageTagResource.prismaSelection,
+    dtoSchema: dashboardWikiPageTagResource.dtoSchema,
+    references: dashboardWikiPageTagResource.referenceContract,
+    hydrate: dashboardWikiPageTagResource.hydrate,
+});
+
+export const eventTypeDashboardView = defineView({
+    viewID: "EventType_Dashboard",
+    entity: xEventType,
+    selection: dashboardEventTypeResource.prismaSelection,
+    dtoSchema: dashboardEventTypeResource.dtoSchema,
+    references: dashboardEventTypeResource.referenceContract,
+    hydrate: dashboardEventTypeResource.hydrate,
+});
+
+export const eventStatusDashboardView = defineView({
+    viewID: "EventStatus_Dashboard",
+    entity: xEventStatus,
+    selection: dashboardEventStatusResource.prismaSelection,
+    dtoSchema: dashboardEventStatusResource.dtoSchema,
+    references: dashboardEventStatusResource.referenceContract,
+    hydrate: dashboardEventStatusResource.hydrate,
+});
+
+export const eventTagDashboardView = defineView({
+    viewID: "EventTag_Dashboard",
+    entity: xEventTag,
+    selection: dashboardEventTagResource.prismaSelection,
+    dtoSchema: dashboardEventTagResource.dtoSchema,
+    references: dashboardEventTagResource.referenceContract,
+    hydrate: dashboardEventTagResource.hydrate,
+});
+
+export const eventAttendanceDashboardView = defineView({
+    viewID: "EventAttendance_Dashboard",
+    entity: xEventAttendance,
+    selection: dashboardEventAttendanceResource.prismaSelection,
+    dtoSchema: dashboardEventAttendanceResource.dtoSchema,
+    references: dashboardEventAttendanceResource.referenceContract,
+    hydrate: dashboardEventAttendanceResource.hydrate,
+});
+
+export const fileTagDashboardView = defineView({
+    viewID: "FileTag_Dashboard",
+    entity: xFileTag,
+    selection: dashboardFileTagResource.prismaSelection,
+    dtoSchema: dashboardFileTagResource.dtoSchema,
+    references: dashboardFileTagResource.referenceContract,
+    hydrate: dashboardFileTagResource.hydrate,
+});
+
+export const instrumentFunctionalGroupDashboardView = defineView({
+    viewID: "InstrumentFunctionalGroup_Dashboard",
+    entity: xInstrumentFunctionalGroup,
+    selection: dashboardInstrumentFunctionalGroupResource.prismaSelection,
+    dtoSchema: dashboardInstrumentFunctionalGroupResource.dtoSchema,
+    references: dashboardInstrumentFunctionalGroupResource.referenceContract,
+    hydrate: dashboardInstrumentFunctionalGroupResource.hydrate,
+});
+
+export const instrumentTagDashboardView = defineView({
+    viewID: "InstrumentTag_Dashboard",
+    entity: xInstrumentTag,
+    selection: dashboardInstrumentTagResource.prismaSelection,
+    dtoSchema: dashboardInstrumentTagResource.dtoSchema,
+    references: dashboardInstrumentTagResource.referenceContract,
+    hydrate: dashboardInstrumentTagResource.hydrate,
+});
+
+export const songTagDashboardView = defineView({
+    viewID: "SongTag_Dashboard",
+    entity: xSongTag,
+    selection: dashboardSongTagResource.prismaSelection,
+    dtoSchema: dashboardSongTagResource.dtoSchema,
+    references: dashboardSongTagResource.referenceContract,
+    hydrate: dashboardSongTagResource.hydrate,
+});
+
+export const songCreditTypeDashboardView = defineView({
+    viewID: "SongCreditType_Dashboard",
+    entity: xSongCreditType,
+    selection: dashboardSongCreditTypeResource.prismaSelection,
+    dtoSchema: dashboardSongCreditTypeResource.dtoSchema,
+    references: dashboardSongCreditTypeResource.referenceContract,
+    hydrate: dashboardSongCreditTypeResource.hydrate,
+});
+
+export const instrumentDashboardView = defineView({
+    viewID: "Instrument_Dashboard",
+    entity: xInstrument,
+    selection: dashboardInstrumentResource.prismaSelection,
+    dtoSchema: dashboardInstrumentResource.dtoSchema,
+    references: dashboardInstrumentResource.referenceContract,
+    hydrate: (dto, references) => {
+        const hydrated = dashboardInstrumentResource.hydrate(dto, references);
+        return {
+            ...hydrated,
+            instrumentTags: [...hydrated.instrumentTags]
+                .sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
+        };
+    },
+});
+
+export type PermissionDashboardClient = ClientOf<typeof permissionDashboardView>;
+export type UserTagDashboardClient = ClientOf<typeof userTagDashboardView>;
+export type UserTagDisplay = Prisma.UserTagGetPayload<{}> | UserTagDashboardClient;
+export type RoleDashboardClient = ClientOf<typeof roleDashboardView>;
+export type CompleteRoleDashboardClient = {
+    [TKey in keyof RoleDashboardClient]-?: Exclude<RoleDashboardClient[TKey], undefined>;
+};
+export type RoleDisplay = Prisma.RoleGetPayload<{}> | CompleteRoleDashboardClient;
+export type WikiPageTagDashboardClient = ClientOf<typeof wikiPageTagDashboardView>;
+export type CompleteWikiPageTagDashboardClient = {
+    [TKey in keyof WikiPageTagDashboardClient]-?: Exclude<
+        WikiPageTagDashboardClient[TKey],
+        undefined
+    >;
+};
+export type WikiPageTagDisplay =
+    | Prisma.WikiPageTagGetPayload<{}>
+    | CompleteWikiPageTagDashboardClient;
+export type EventTypeDashboardClient = ClientOf<typeof eventTypeDashboardView>;
+export type EventStatusDashboardClient = ClientOf<typeof eventStatusDashboardView>;
+export type EventTagDashboardClient = ClientOf<typeof eventTagDashboardView>;
+export type EventAttendanceDashboardClient = ClientOf<typeof eventAttendanceDashboardView>;
+export type CompleteEventAttendanceDashboardClient = {
+    [TKey in keyof EventAttendanceDashboardClient]-?: Exclude<
+        EventAttendanceDashboardClient[TKey],
+        undefined
+    >;
+};
+export type EventAttendanceDisplay =
+    | Prisma.EventAttendanceGetPayload<{}>
+    | CompleteEventAttendanceDashboardClient;
+export type FileTagDashboardClient = ClientOf<typeof fileTagDashboardView>;
+export type InstrumentFunctionalGroupDashboardClient = ClientOf<
+    typeof instrumentFunctionalGroupDashboardView
+>;
+export type InstrumentTagDashboardClient = ClientOf<typeof instrumentTagDashboardView>;
+export type SongTagDashboardClient = ClientOf<typeof songTagDashboardView>;
+export type SongCreditTypeDashboardClient = ClientOf<typeof songCreditTypeDashboardView>;
+
+export function isCompleteEventAttendanceDashboardClient(
+    value: EventAttendanceDashboardClient,
+): value is CompleteEventAttendanceDashboardClient {
+    return value.text !== undefined
+        && value.description !== undefined
+        && value.iconName !== undefined
+        && value.color !== undefined
+        && value.sortOrder !== undefined
+        && value.isDeleted !== undefined
+        && value.strength !== undefined
+        && value.personalText !== undefined
+        && value.pastText !== undefined
+        && value.pastPersonalText !== undefined
+        && value.isActive !== undefined;
+}
+
+export function isCompleteRoleDashboardClient(
+    value: RoleDashboardClient,
+): value is CompleteRoleDashboardClient {
+    return value.name !== undefined
+        && value.isRoleForNewUsers !== undefined
+        && value.isPublicRole !== undefined
+        && value.isSysAdminRole !== undefined
+        && value.description !== undefined
+        && value.sortOrder !== undefined
+        && value.color !== undefined
+        && value.significance !== undefined;
+}
+
+export function isCompleteWikiPageTagDashboardClient(
+    value: WikiPageTagDashboardClient,
+): value is CompleteWikiPageTagDashboardClient {
+    return value.text !== undefined
+        && value.description !== undefined
+        && value.color !== undefined
+        && value.significance !== undefined
+        && value.sortOrder !== undefined;
+}
+
 export type DashboardReferenceContract = typeof dashboardReferenceContract;
 export type DashboardReferenceStore = DB3ReferenceStore<DashboardReferenceContract>;
 
-type ResourceDto<TResource> = TResource extends DB3DerivedViewContract<
-    any,
-    any,
-    any,
-    any
-> ? Parameters<TResource["hydrate"]>[0] : never;
-
 export interface DashboardReferenceInput {
-    permission?: readonly ResourceDto<typeof dashboardPermissionResource>[];
-    eventType?: readonly ResourceDto<typeof dashboardEventTypeResource>[];
-    eventStatus?: readonly ResourceDto<typeof dashboardEventStatusResource>[];
-    eventTag?: readonly ResourceDto<typeof dashboardEventTagResource>[];
-    eventAttendance?: readonly ResourceDto<typeof dashboardEventAttendanceResource>[];
-    fileTag?: readonly ResourceDto<typeof dashboardFileTagResource>[];
-    instrumentFunctionalGroup?: readonly ResourceDto<
-        typeof dashboardInstrumentFunctionalGroupResource
-    >[];
-    instrumentTag?: readonly ResourceDto<typeof dashboardInstrumentTagResource>[];
-    songTag?: readonly ResourceDto<typeof dashboardSongTagResource>[];
-    songCreditType?: readonly ResourceDto<typeof dashboardSongCreditTypeResource>[];
-    instrument?: readonly ResourceDto<typeof dashboardInstrumentResource>[];
+    permission?: readonly ClientOf<typeof permissionDashboardView>[];
+    eventType?: readonly ClientOf<typeof eventTypeDashboardView>[];
+    eventStatus?: readonly ClientOf<typeof eventStatusDashboardView>[];
+    eventTag?: readonly ClientOf<typeof eventTagDashboardView>[];
+    eventAttendance?: readonly ClientOf<typeof eventAttendanceDashboardView>[];
+    fileTag?: readonly ClientOf<typeof fileTagDashboardView>[];
+    instrumentFunctionalGroup?: readonly ClientOf<typeof instrumentFunctionalGroupDashboardView>[];
+    instrumentTag?: readonly ClientOf<typeof instrumentTagDashboardView>[];
+    songTag?: readonly ClientOf<typeof songTagDashboardView>[];
+    songCreditType?: readonly ClientOf<typeof songCreditTypeDashboardView>[];
+    instrument?: readonly ClientOf<typeof instrumentDashboardView>[];
 }
 
 export function createDashboardReferenceStore(): DashboardReferenceStore {
     return new DB3ReferenceStore(dashboardReferenceContract);
 }
 
-function registerResource(
-    store: DashboardReferenceStore,
-    entity: AnyDB3Table,
-    resource: DB3DerivedViewContract<any, any, any, any>,
-    rows: readonly TAnyModel[] | undefined,
-): void {
-    if (!rows) return;
-    const provider = store as DB3ReferenceProvider<any>;
-    const values = rows.map(row => resource.hydrate(
-        resource.dtoSchema.parse(row),
-        provider,
-    ));
-    const writableStore = store as DB3ReferenceStore<any>;
-    writableStore.register(
-        entity,
-        values,
-        (value: TAnyModel) => entity.getIdentity(value),
-    );
-}
-
-/** Populates leaf resources first so provider-defined compound values can use them. */
+/** Registers values that have already been validated and hydrated by their view query. */
 export function registerDashboardReferences(
     store: DashboardReferenceStore,
     input: DashboardReferenceInput,
 ): void {
-    registerResource(store, xPermission, dashboardPermissionResource, input.permission);
-    registerResource(store, xEventType, dashboardEventTypeResource, input.eventType);
-    registerResource(store, xEventStatus, dashboardEventStatusResource, input.eventStatus);
-    registerResource(store, xEventTag, dashboardEventTagResource, input.eventTag);
-    registerResource(store, xEventAttendance, dashboardEventAttendanceResource, input.eventAttendance);
-    registerResource(store, xFileTag, dashboardFileTagResource, input.fileTag);
-    registerResource(
-        store,
-        xInstrumentFunctionalGroup,
-        dashboardInstrumentFunctionalGroupResource,
-        input.instrumentFunctionalGroup,
-    );
-    registerResource(store, xInstrumentTag, dashboardInstrumentTagResource, input.instrumentTag);
-    registerResource(store, xSongTag, dashboardSongTagResource, input.songTag);
-    registerResource(store, xSongCreditType, dashboardSongCreditTypeResource, input.songCreditType);
-    registerResource(store, xInstrument, dashboardInstrumentResource, input.instrument);
+    if (input.permission) {
+        store.register(xPermission, input.permission, value => value.id);
+    }
+    if (input.eventType) {
+        store.register(xEventType, input.eventType, value => value.id);
+    }
+    if (input.eventStatus) {
+        store.register(xEventStatus, input.eventStatus, value => value.id);
+    }
+    if (input.eventTag) {
+        store.register(xEventTag, input.eventTag, value => value.id);
+    }
+    if (input.eventAttendance) {
+        store.register(xEventAttendance, input.eventAttendance, value => value.id);
+    }
+    if (input.fileTag) {
+        store.register(xFileTag, input.fileTag, value => value.id);
+    }
+    if (input.instrumentFunctionalGroup) {
+        store.register(
+            xInstrumentFunctionalGroup,
+            input.instrumentFunctionalGroup,
+            value => value.publicId,
+        );
+    }
+    if (input.instrumentTag) {
+        store.register(xInstrumentTag, input.instrumentTag, value => value.id);
+    }
+    if (input.songTag) {
+        store.register(xSongTag, input.songTag, value => value.id);
+    }
+    if (input.songCreditType) {
+        store.register(xSongCreditType, input.songCreditType, value => value.id);
+    }
+    if (input.instrument) {
+        store.register(xInstrument, input.instrument, value => value.id);
+    }
 }

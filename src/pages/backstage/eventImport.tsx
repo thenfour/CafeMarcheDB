@@ -36,23 +36,40 @@ interface NewEventDialogProps {
     onSave: (x: InsertResult) => void;
 };
 
+type NewEventValue = Omit<
+    db3.EventPayload,
+    "type" | "status" | "visiblePermission" | "expectedAttendanceUserTag"
+> & {
+    type: db3.EventTypeDashboardClient | null | undefined;
+    status: db3.EventStatusDashboardClient | null | undefined;
+    visiblePermission: VisibilityControlValue;
+    expectedAttendanceUserTag: db3.UserTagDashboardClient | null | undefined;
+};
+
 const NewEventForm = (props: NewEventDialogProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const mut = API.events.newEventMutation.useToken();
     const currentUser = useCurrentUser()[0]!;
 
     const dashboardContext = useDashboardContext();
-    const [eventValue, setEventValue] = React.useState<Omit<db3.EventPayload, "visiblePermission"> & { visiblePermission: VisibilityControlValue }>(() => {
+    const [eventValue, setEventValue] = React.useState<NewEventValue>(() => {
+        // xTable.createNew returns the legacy generic row shape; this form
+        // immediately supplies the typed Event fields before persistence.
         const ret = db3.xEvent.createNew(currentUser) as Partial<db3.EventPayload>;
-        return ret as any;
+        // createNew supplies schema defaults, while the hydrated relation fields
+        // are populated from dashboard stores before the draft is submitted.
+        return ret as NewEventValue;
     });
     const [segmentValue, setSegmentValue] = React.useState<db3.EventSegmentPayload>(() => {
+        // xTable.createNew returns the legacy generic row shape; the segment
+        // defaults below complete the fields this form needs before persistence.
         const ret = db3.xEventSegment.createNew(currentUser) as Partial<db3.EventSegmentPayload>;
         ret.isAllDay = true;
         ret.startsAt = CalendarDate.fromInstant({ value: new Date(), timeZone: dashboardContext.bandTimeZone }).toStartInstant();
         const date = CalendarDate.fromInstant({ value: new Date(), timeZone: dashboardContext.bandTimeZone });
         ret.durationMillis = BigInt(createAllDayRange({ startDate: date.date, endDateExclusive: date.addDays(1).date }, date.timeZone).getDurationMillis());
-        return ret as any;
+        // createNew supplies the remaining schema defaults at runtime.
+        return ret as db3.EventSegmentPayload;
     });
 
     React.useEffect(() => {
@@ -71,7 +88,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
             statusId: props.serverData?.event.statusId || null,
             expectedAttendanceUserTag: dashboardContext.userTag.getById(props.serverData?.event.expectedAttendanceUserTagId),
             expectedAttendanceUserTagId: props.serverData?.event.expectedAttendanceUserTagId || null,
-            visiblePermission: dashboardContext.permission.getById(props.serverData?.event.visiblePermissionId) as any,
+            visiblePermission: dashboardContext.permission.getById(props.serverData?.event.visiblePermissionId),
             visiblePermissionId: props.serverData?.event.visiblePermissionId || null,
         });
     }, [props.serverData]);

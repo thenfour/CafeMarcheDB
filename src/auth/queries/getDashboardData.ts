@@ -8,25 +8,72 @@ import { Permission } from "shared/permissions";
 import { Stopwatch } from "shared/rootroot";
 import { getClientServerState } from "shared/serverStateBase";
 import {
-    createDB3Authorization,
+    type AnyDB3View,
+    type ClientOf,
+    createDashboardReferenceStore,
+    type DB3ReferenceProvider,
+    eventAttendanceDashboardView,
     EventStatusSignificance,
+    eventStatusDashboardView,
+    eventTagDashboardView,
+    eventTypeDashboardView,
+    fileTagDashboardView,
     instrumentDashboardView,
     instrumentFunctionalGroupDashboardView,
+    instrumentTagDashboardView,
+    isCompleteEventAttendanceDashboardClient,
+    isCompleteRoleDashboardClient,
+    isCompleteWikiPageTagDashboardClient,
+    menuLinkListView,
+    permissionDashboardView,
+    type ReferenceContractOf,
+    registerDashboardReferences,
+    roleDashboardView,
+    songCreditTypeDashboardView,
+    songTagDashboardView,
+    userTagDashboardView,
+    wikiPageTagDashboardView,
     xEvent,
-    xInstrument,
-    xInstrumentFunctionalGroup,
-    xMenuLink,
 } from "src/core/db3/db3";
-import { queryTable } from "src/core/db3/server/db3QueryCore";
-import { projectDB3ModelPublicIds } from "src/core/db3/server/db3PublicIds";
+import {
+    DB3QueryAuthorizationError,
+    queryView,
+} from "src/core/db3/server/db3QueryCore";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { getRequestAuthorization } from "../server/requestAuthorization";
+import {
+    getRequestAuthorization,
+    type RequestAuthorization,
+} from "../server/requestAuthorization";
 import { loadUserSettings } from "../server/userSettings";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 
+// does not choke when auth doesn't allow it; returns empty.
+async function queryOptionalDashboardView<TView extends AnyDB3View>(
+    view: TView,
+    authorization: RequestAuthorization,
+    references: DB3ReferenceProvider<ReferenceContractOf<TView>>,
+): Promise<ClientOf<TView>[]> {
+    try {
+        const result = await queryView({
+            view,
+            filter: { items: [] },
+            cmdbQueryContext: `getDashboardData/${view.viewID}`,
+            orderBy: undefined,
+        }, authorization, references);
+        return result.items;
+    } catch (error) {
+        if (error instanceof DB3QueryAuthorizationError) return [];
+        throw error;
+    }
+}
+
 
 // returns a list of eventIds to show in the dashboard for the current user.
-async function getTopRelevantEvents(currentUser: UserWithRolesPayload | null, eventStatuses: Prisma.EventStatusGetPayload<{}>[], db: TransactionalPrismaClient): Promise<number[]> {
+async function getTopRelevantEvents(
+    currentUser: UserWithRolesPayload | null,
+    eventStatuses: readonly { id: number; significance: string | null }[],
+    db: TransactionalPrismaClient,
+): Promise<number[]> {
     if (!currentUser) {
         // no user, no events.
         return [];
@@ -96,14 +143,16 @@ async function getTopRelevantEvents(currentUser: UserWithRolesPayload | null, ev
     `;
 
     // debugger;
-    const dbResults = (await db.$queryRaw(Prisma.raw(query))) as {
+    // TransactionalPrismaClient deliberately erases raw-query generics; keep
+    // the declared result shape next to the SELECT that establishes it.
+    const dbResults: {
         id: number,
         startsAt: Date | null,
         durationMillis: bigint | null,
         isAllDay: boolean | null,
         endDateTime: Date | null,
         relevanceClassOverride: number | null,
-    }[];
+    }[] = await db.$queryRaw(Prisma.raw(query));
 
     const saneResults = dbResults.map(r => {
         return {
@@ -112,6 +161,8 @@ async function getTopRelevantEvents(currentUser: UserWithRolesPayload | null, ev
             durationMillis: BigintToNumberNullable(r.durationMillis),
             isAllDay: r.isAllDay,
             endDateTime: r.endDateTime,
+            // The database column is constrained to the numeric values declared
+            // by gEventRelevanceClass; Prisma exposes the underlying number.
             relevanceClassOverride: r.relevanceClassOverride as null | EventRelevanceClassValue,
         };
     });
@@ -134,49 +185,98 @@ export default resolver.pipe(
             const authorization = await getRequestAuthorization(ctx.session);
             const currentUser = authorization.user;
             const effectivePermissions = authorization.effectivePermissions;
-            const publicData = createDB3Authorization(currentUser, effectivePermissions);
-
-            const menuItemsCall = queryTable({
-                filter: { items: [] },
-                cmdbQueryContext: "getDashboardData/menulinks",
-                table: xMenuLink,
-                orderBy: undefined,
-            }, authorization);
+            const referenceStore = createDashboardReferenceStore();
 
             // Existing events retain the meaning of a status after that status
             // is retired, so relevance calculations use every referenced row.
             // Only active statuses are exposed as the client-side option list.
-            const eventStatus = await db.eventStatus.findMany();
+            const allEventStatusesCall = db.eventStatus.findMany({
+                select: { id: true, significance: true },
+            });
+            const relevantEventsCall = allEventStatusesCall.then(eventStatuses => (
+                getTopRelevantEvents(
+                    currentUser,
+                    eventStatuses,
+                    db,
+                )
+            ));
 
-            const relevantEventsCall = getTopRelevantEvents(currentUser, eventStatus, db as any /* Excessive stack depth comparing types 'PrismaClient<PrismaClientOptions, unknown, InternalArgs> & EnhancedPrismaClientAddedMethods' and 'TransactionalPrismaClient' */);
-
-            const results = await Promise.all([
-                db.userTag.findMany(),
-                db.permission.findMany(),
-                db.role.findMany(),
-                db.eventType.findMany({ where: { isDeleted: false } }),
-                //db.eventStatus.findMany(),
-                db.eventTag.findMany(),
-                db.eventAttendance.findMany({ where: { isDeleted: false } }),
-                db.fileTag.findMany(),
-                db.instrument.findMany({ include: { instrumentTags: true, functionalGroup: true } }),
-                db.instrumentTag.findMany(),
-                db.instrumentFunctionalGroup.findMany(),
-                db.songTag.findMany(),
-                db.songCreditType.findMany(),
-                menuItemsCall,
-                db.wikiPageTag.findMany(),
-                relevantEventsCall,
-                loadBandTimeZone(db),
-                loadUserSettings(currentUser?.id ?? null),
-            ]);
+            const userTagCall = queryOptionalDashboardView(userTagDashboardView, authorization, referenceStore);
+            const roleCall = queryOptionalDashboardView(roleDashboardView, authorization, referenceStore);
+            const wikiPageTagCall = queryOptionalDashboardView(wikiPageTagDashboardView, authorization, referenceStore);
+            const bandTimeZoneCall = loadBandTimeZone(db);
+            const userSettingsCall = loadUserSettings(currentUser?.id ?? null);
 
             const [
+                permission,
+                eventType,
+                eventStatus,
+                eventTag,
+                authorizedEventAttendance,
+                fileTag,
+                instrumentFunctionalGroup,
+                instrumentTag,
+                songTag,
+                songCreditType,
+            ] = await Promise.all([
+                queryOptionalDashboardView(permissionDashboardView, authorization, referenceStore),
+                queryOptionalDashboardView(eventTypeDashboardView, authorization, referenceStore),
+                queryOptionalDashboardView(eventStatusDashboardView, authorization, referenceStore),
+                queryOptionalDashboardView(eventTagDashboardView, authorization, referenceStore),
+                queryOptionalDashboardView(eventAttendanceDashboardView, authorization, referenceStore),
+                queryOptionalDashboardView(fileTagDashboardView, authorization, referenceStore),
+                queryOptionalDashboardView(instrumentFunctionalGroupDashboardView, authorization, referenceStore),
+                queryOptionalDashboardView(instrumentTagDashboardView, authorization, referenceStore),
+                queryOptionalDashboardView(songTagDashboardView, authorization, referenceStore),
+                queryOptionalDashboardView(songCreditTypeDashboardView, authorization, referenceStore),
+            ]);
+
+            const eventAttendance = authorizedEventAttendance.filter(
+                isCompleteEventAttendanceDashboardClient,
+            );
+
+            registerDashboardReferences(referenceStore, {
+                permission,
+                eventType,
+                eventStatus,
+                eventTag,
+                eventAttendance,
+                fileTag,
+                instrumentFunctionalGroup,
+                instrumentTag,
+                songTag,
+                songCreditType,
+            });
+
+            const instrumentCall = queryOptionalDashboardView(
+                instrumentDashboardView,
+                authorization,
+                referenceStore,
+            );
+            const menuItemsCall = queryOptionalDashboardView(
+                menuLinkListView,
+                authorization,
+                referenceStore,
+            );
+
+            const instrument = await instrumentCall;
+            const dynMenuLinks = await menuItemsCall;
+            const userTag = await userTagCall;
+            const role = (await roleCall).filter(isCompleteRoleDashboardClient);
+            const wikiPageTag = (await wikiPageTagCall).filter(
+                isCompleteWikiPageTagDashboardClient,
+            );
+            const relevantEventIds = await relevantEventsCall;
+            const bandTimeZone = await bandTimeZoneCall;
+            const userSettings = await userSettingsCall;
+
+            const clientServerState = getClientServerState(effectivePermissions.includesName(Permission.sysadmin));
+            const ret = {
                 userTag,
                 permission,
                 role,
                 eventType,
-                //eventStatus,
+                eventStatus,
                 eventTag,
                 eventAttendance,
                 fileTag,
@@ -186,40 +286,6 @@ export default resolver.pipe(
                 songTag,
                 songCreditType,
                 dynMenuLinks,
-                wikiPageTag,
-                relevantEventIds,
-                bandTimeZone,
-                userSettings,
-            ] = results;
-
-            const clientServerState = getClientServerState(effectivePermissions.includesName(Permission.sysadmin));
-            const clientInstrumentFunctionalGroups = instrumentFunctionalGroup
-                .map(group => (
-                    instrumentFunctionalGroupDashboardView.parseDto(
-                        projectDB3ModelPublicIds(xInstrumentFunctionalGroup, group, publicData),
-                    )
-                ));
-            const clientInstruments = instrument.map(item => (
-                instrumentDashboardView.parseDto(
-                    projectDB3ModelPublicIds(xInstrument, item, publicData),
-                )
-            ));
-
-            const ret = {
-                userTag,
-                permission,
-                role,
-                eventType,
-                eventStatus: eventStatus.filter(status => !status.isDeleted),
-                eventTag,
-                eventAttendance,
-                fileTag,
-                instrument: clientInstruments,
-                instrumentTag,
-                instrumentFunctionalGroup: clientInstrumentFunctionalGroups,
-                songTag,
-                songCreditType,
-                dynMenuLinks: dynMenuLinks.items as Prisma.MenuLinkGetPayload<{ include: { createdByUser } }>[],
                 wikiPageTag,
                 serverBaseUri: clientServerState.baseUri,
                 serverStartupState: clientServerState.diagnostics,

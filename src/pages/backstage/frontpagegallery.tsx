@@ -539,7 +539,16 @@ const GalleryItem = (props: GalleryItemProps) => {
     };
 
     const handleVisibilityChange = (visiblePermission: VisibilityControlValue) => {
-        const newrow = { ...props.value, visiblePermission, visiblePermissionId: visiblePermission?.id || null };
+        const newrow: FrontpageGalleryItemClient = {
+            ...props.value,
+            visiblePermission: visiblePermission ? {
+                ...visiblePermission,
+                color: typeof visiblePermission.color === "string"
+                    ? visiblePermission.color
+                    : visiblePermission.color?.id ?? null,
+            } : null,
+            visiblePermissionId: visiblePermission?.id || null,
+        };
         void recordFeature({
             feature: ActivityFeature.frontpagegallery_item_change_visibility,
             frontpageGalleryItemId: newrow.id,

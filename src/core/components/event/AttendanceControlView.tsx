@@ -1,7 +1,6 @@
 import { formatEventDateRange, EventDatePresentation } from "shared/dateTimePresentation";
 import React from "react";
 import { CircularProgress } from "@mui/material";
-import type { Prisma } from "@prisma/client";
 import type * as db3 from "src/core/db3/db3";
 import { getEventSegmentDateTimeRange } from "src/core/db3/shared/schema/event";
 import { isAttendanceGoing } from "shared/eventAttendance";
@@ -22,7 +21,7 @@ export type AttendanceChange =
     | { type: "comment"; comment: string };
 
 export interface AttendanceControlEnvironment {
-    attendances: Prisma.EventAttendanceGetPayload<{}>[];
+    attendances: db3.EventAttendanceDisplay[];
     instruments: db3.InstrumentClientOrDbPayload[];
     // Reject on failure. The adapter owns persistence, refetching, telemetry,
     // and feedback; the view owns only the in-progress and editing states.
@@ -115,7 +114,7 @@ const CommentControl = ({ response, environment }: {
 };
 
 const AnswerButton = ({ value, selected, noItemSelected, onSelect, tooltip }: {
-    value: db3.EventAttendanceBasePayload | null; selected: boolean; noItemSelected: boolean;
+    value: db3.EventAttendanceDisplay | null; selected: boolean; noItemSelected: boolean;
     onSelect: () => void; tooltip: string;
 }) => <CMChip onClick={onSelect} shape="rectangle" size="big" color={value?.color} tooltip={tooltip}
     className={`attendanceAnswer ${isAttendanceGoing(value) ? "yes" : "no"} CMChipNoMargin`}

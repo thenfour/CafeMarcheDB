@@ -2,7 +2,6 @@ import { Permission } from "@/shared/permissions";
 import getUserManagementCapabilities from "@/src/auth/queries/getUserManagementCapabilities";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert } from "@mui/material";
-import { Prisma } from "@prisma/client";
 import React, { Suspense } from "react";
 import { StringToEnumValue } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -25,10 +24,8 @@ import { UserIdentityIndicator } from "./UserIdentityIndicator";
 import { EnrichedVerboseUser } from "./UserListItem";
 import { UserSignInMethodsButton } from "./UserSignInMethodsButton";
 
-type _Role = Prisma.RoleGetPayload<{ select: { id: true, description: true, name: true, color: true, sortOrder: true, } }>;
-
 type RoleControlProps = {
-    value: _Role | null;
+    value: db3.RoleDisplay | null | undefined;
     userId: number;
     tableClient: DB3Client.xTableRenderClient<typeof db3.userEditorView>;
     readonly: boolean;
@@ -43,8 +40,8 @@ export const RoleControl = ({ value, userId, tableClient, readonly, onChange }: 
         tableClient,
     });
     return (
-        <CMSingleSelect<_Role>
-            value={value}
+        <CMSingleSelect<db3.RoleDisplay>
+            value={value ?? null}
             readonly={readonly}
             nullBehavior={CMSelectNullBehavior.AllowNull}
             onChange={async (option) => {

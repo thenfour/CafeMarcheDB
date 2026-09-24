@@ -103,7 +103,7 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
     if (!wikiPageRecord) return null;
     const tagsCollection = wikiPageRecord.tags.map(t => t.tag);
 
-    return <CMMultiSelect
+    return <CMMultiSelect<db3.WikiPageTagDisplay>
         className="noSelectedOutline"
         value={tagsCollection}
         readonly={props.readonly}
@@ -127,7 +127,10 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
                     tags: newTags.map(t => ({
                         id: -1,
                         tagId: t.id,
-                        tag: t,
+                        tag: {
+                            ...t,
+                            color: typeof t.color === "string" ? t.color : t.color?.id ?? null,
+                        },
                         wikiPageId: wikiPageId,
                     })) satisfies db3.WikiPageTagAssignmentPayload[],
                 }, wikiPageRecord);

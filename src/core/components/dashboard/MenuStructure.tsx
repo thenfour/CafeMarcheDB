@@ -52,10 +52,10 @@ export interface FlatMenuSection {
 export type FlatMenuItemAndSection = { sectionInfo: FlatMenuSection, item: FlatMenuItemSpec };
 
 // Helper function to convert dynamic menu items to static menu items
-export const DynMenuToMenuItem = (item: db3.MenuLinkPayload, dashboardContext: DashboardContextData): MenuLink | null => {
+export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext: DashboardContextData): MenuLink | null => {
     let path = "";
     let openInNewTab = false;
-    switch (item.linkType as keyof typeof DynMenu.DynamicMenuLinkType) {
+    switch (item.linkType) {
         case "ExternalURL":
             openInNewTab = true;
             path = item.externalURI || "";
@@ -69,9 +69,11 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkPayload, dashboardContext: D
 
     return {
         type: "link",
+        // Permission rows are sourced from the same closed permission registry
+        // that defines the Permission enum used by static menu items.
         permission: (pobj?.name || Permission.never_grant) as Permission,
         className: item.itemCssClass,
-        linkCaption: item.caption,
+        linkCaption: item.caption ?? "",
         renderIcon: item.iconName ? gIconMap[item.iconName] : undefined,
         path,
         openInNewTab,
@@ -311,7 +313,7 @@ const nv = (s: string | null | undefined) =>
 
 export const AddDynMenuItemsToStatic = (
     staticSections: MenuSection[],
-    dynSections: Map<string, Map<string, db3.DashboardDynMenuLink[]>>,
+    dynSections: Map<string, Map<string, db3.MenuLinkListClient[]>>,
     ctx: DashboardContextData
 ): MenuSection[] => {
     // 1️⃣ deep‑clone static definition (so we never mutate props)
@@ -455,12 +457,12 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
     // TODO: fill in in dynamic menu items to the right places in the menu.
     // MenuLink.groupName specifies a section name that will house these.
     //type DbMenuRow = typeof dashboardContext.dynMenuLinks.items[number];
-    const dynamicSections: Map<string, db3.DashboardDynMenuLink[]> = groupByMap(dashboardContext.dynMenuLinks.items,
+    const dynamicSections: Map<string, db3.MenuLinkListClient[]> = groupByMap(dashboardContext.dynMenuLinks.items,
         item => item.applicationPage || gNullValue, // these are section names.
     );
 
     // convert sections into grouped array of menu items
-    const dynamicSectionsAndGroups: Map<string, Map<string, db3.DashboardDynMenuLink[]>> = new Map();
+    const dynamicSectionsAndGroups: Map<string, Map<string, db3.MenuLinkListClient[]>> = new Map();
     for (const [sectionName, items] of dynamicSections.entries()) {
         const groupMap = groupByMap(items, item => item.groupName || gNullValue);
         dynamicSectionsAndGroups.set(sectionName, groupMap);

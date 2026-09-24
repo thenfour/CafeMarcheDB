@@ -10,22 +10,18 @@ export type EnrichUserInput = Partial<Prisma.UserGetPayload<{
 }>>;
 
 type EnrichedUserInstrument = Prisma.UserInstrumentGetPayload<{}> & {
-    instrument: db3.InstrumentClientPayload;
+    instrument: db3.InstrumentDashboardClient;
 };
 
 export type EnrichedUser<T extends EnrichUserInput> = Omit<T,
-    'tags'
+    'role'
+    | 'tags'
     | 'instruments'
-> & Prisma.UserGetPayload<{
-    select: {
-        role: true,
-        tags: {
-            include: {
-                userTag: true,
-            }
-        },
-    },
-}> & {
+> & {
+    role: db3.CompleteRoleDashboardClient | null | undefined;
+    tags: (Prisma.UserTagAssignmentGetPayload<{}> & {
+        userTag: db3.UserTagDashboardClient;
+    })[];
     instruments: EnrichedUserInstrument[];
 };
 
@@ -33,19 +29,21 @@ export type EnrichedUser<T extends EnrichUserInput> = Omit<T,
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
 export function enrichUser<T extends EnrichUserInput>(
     item: T,
-    roles: TableAccessor<Prisma.RoleGetPayload<{}>>,
-    userTags: TableAccessor<Prisma.UserTagGetPayload<{}>>,
-    instruments: TableAccessor<db3.InstrumentClientPayload>
+    roles: TableAccessor<db3.CompleteRoleDashboardClient>,
+    userTags: TableAccessor<db3.UserTagDashboardClient>,
+    instruments: TableAccessor<db3.InstrumentDashboardClient>
 ): EnrichedUser<T> {
     // original payload type,
     // removing items we're replacing,
     // + stuff we're adding/changing.
     const ret = {
         ...item,
-        role: roles.getById(item.roleId),
+        role: item.roleId == null ? null : roles.getById(item.roleId),
 
         tags: (item.tags || []).map((assoc) => {
-            const ret: Prisma.UserTagAssignmentGetPayload<{ include: { userTag: true } }> = {
+            const ret: Prisma.UserTagAssignmentGetPayload<{}> & {
+                userTag: db3.UserTagDashboardClient;
+            } = {
                 ...assoc,
                 userTag: userTags.getById(assoc.userTagId)! // enrich!
             };
@@ -61,6 +59,8 @@ export function enrichUser<T extends EnrichUserInput>(
         }).sort((a, b) => a.instrument.sortOrder - b.instrument.sortOrder), // respect ordering
     };
 
+    // TypeScript cannot reduce this generic Omit/intersection after object spread,
+    // but each replaced property is constructed with the exact EnrichedUser type above.
     return ret as EnrichedUser<T>;
 }
 

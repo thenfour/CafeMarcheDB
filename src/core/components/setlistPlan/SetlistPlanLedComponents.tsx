@@ -23,6 +23,7 @@ import { ColorPick } from "../color/ColorPick";
 import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
 import { AttendanceChip } from "../event/AttendanceChips";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import type { ColorPaletteEntry } from "../color/palette";
 //import getUserEventAttendance from "src/core/db3/queries/getUserEventAttendance";
 
 
@@ -35,7 +36,7 @@ interface SetlistPlannerLedProps {
 }
 export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
     const [open, setOpen] = React.useState<boolean>(false);
-    const [actualColor, setActualColor] = React.useState<string | null>(props.value?.color || null);
+    const [actualColor, setActualColor] = React.useState<string | ColorPaletteEntry | null>(props.value?.color || null);
     const [userAttendance, setUserAttendance] = React.useState<GetUserAttendanceRet | null>(null);
     const dashboardContext = useDashboardContext();
 

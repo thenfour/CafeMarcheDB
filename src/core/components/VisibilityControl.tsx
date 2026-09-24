@@ -6,15 +6,18 @@ import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { CMSelectDisplayStyle, SelectionField } from "./select/SelectionField";
 import { CMSelectNullBehavior, makeLocalSelectionSource, withNullSelection } from "./select/selectionSource";
 import { SettingMarkdown } from "./SettingMarkdown";
-import { StandardVariationSpec } from "./color/palette";
+import { type ColorPaletteEntry, StandardVariationSpec } from "./color/palette";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export type VisibilityControlValue = (db3.PermissionPayloadMinimum | null);
+export type VisibilityPermission = Omit<db3.PermissionPayloadMinimum, "color"> & {
+    color: string | ColorPaletteEntry | null;
+};
+export type VisibilityControlValue = VisibilityPermission | null;
 
 export interface VisibilityValueProps {
-    permission?: db3.PermissionPayloadMinimum | null;
+    permission?: VisibilityPermission | null;
     permissionId?: number | null;
     variant: "minimal" | "verbose";
     onClick?: () => void;
@@ -68,7 +71,7 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
     const dashboardContext = useDashboardContext();
 
     const variant = props.variant || "verbose";
-    const visibilityChoices = dashboardContext.permission.items.filter(p => {
+    const visibilityChoices: VisibilityPermission[] = dashboardContext.permission.items.filter(p => {
         return p.isVisibility && dashboardContext.isAuthorized(p.name);
     });
 

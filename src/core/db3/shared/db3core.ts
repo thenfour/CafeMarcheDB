@@ -617,8 +617,9 @@ export abstract class FieldBase<
         if (value === undefined) {
             throw new Error(`DB3 field '${this.member}' cannot hydrate an absent read transport value.`);
         }
-        const codec = this.codec as AnyDB3FieldCodec | undefined;
-        return (codec ? codec.decode(value) : value) as TReadConsumerValue;
+        // TReadConsumerValue is derived from TCodec (or is the pass-through
+        // transport type), but TypeScript cannot reduce that conditional here.
+        return (this.codec ? this.codec.decode(value) : value) as TReadConsumerValue;
     };
 
     parseAndHydrateReadTransportValue = (value: unknown): TReadConsumerValue => {

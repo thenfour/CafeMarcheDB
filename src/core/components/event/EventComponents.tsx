@@ -89,7 +89,7 @@ type VerboseEventWithMetadata = EventWithMetadata<
 
 ////////////////////////////////////////////////////////////////
 export interface EventBreadcrumbProps {
-    event: db3.EventVerbose_Event,
+    event: Pick<EventEnrichedVerbose_Event, "id" | "name">,
 };
 export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
     const dashboardContext = useDashboardContext();
@@ -132,7 +132,7 @@ export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
 ////////////////////////////////////////////////////////////////
 export interface EventAttendanceEditDialogProps {
     responseInfo: VerboseEventResponseInfo;
-    event: db3.EventClientPayload_Verbose;
+    event: EventEnrichedVerbose_Event;
     user: db3.UserWithInstrumentsPayload;
     userMap: UserInstrumentList;
     refetch: () => void;
@@ -312,7 +312,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
 ////////////////////////////////////////////////////////////////
 export interface EventAttendanceEditButtonProps {
     responseInfo: VerboseEventResponseInfo;
-    event: db3.EventClientPayload_Verbose;
+    event: EventEnrichedVerbose_Event;
     user: db3.UserWithInstrumentsPayload;
     userMap: UserInstrumentList;
     refetch: () => void;
@@ -336,7 +336,7 @@ export const EventAttendanceEditButton = (props: EventAttendanceEditButtonProps)
 ////////////////////////////////////////////////////////////////
 export interface EventAttendanceDetailRowProps {
     responseInfo: VerboseEventResponseInfo;
-    event: db3.EventClientPayload_Verbose;
+    event: EventEnrichedVerbose_Event;
     user: db3.UserWithInstrumentsPayload;
     userMap: UserInstrumentList;
     showCancelledSegments: boolean;
@@ -933,7 +933,7 @@ export const EventDetailContainer = ({ eventData, tableClient, editCommands, ref
                     tableRenderClient={tableClient}
                     dialogDescription={<SettingMarkdown setting='EditEventDialogDescription' />}
                     onCancel={() => { }}
-                    onOK={(obj: db3.EventClientPayload_Verbose, _tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                    onOK={(obj: EventEnrichedVerbose_Event, _tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
                         void recordFeature({
                             feature: ActivityFeature.event_edit,
                             context: "EditFieldsDialogButton",

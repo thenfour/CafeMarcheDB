@@ -20,7 +20,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
         publicData, model: event, columnName: "expectedAttendanceUserTag", fallbackOwnerId: event.createdByUserId,
     });
 
-    const handleChange = (value: db3.EventWithAttendanceUserTagPayload["expectedAttendanceUserTag"]) => {
+    const handleChange = (value: db3.UserTagDisplay | null | undefined) => {
         void recordFeature({ feature: ActivityFeature.event_change_invite_tag });
         mutationToken.invoke({ eventId: event.id, expectedAttendanceUserTagId: value?.id ?? null }).then(() => {
             showMessage({ severity: "success", children: "Successfully updated event attendance tag" });
@@ -30,7 +30,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
         }).finally(refetch);
     };
 
-    const source = withNullSelection(makeLocalSelectionSource({
+    const source = withNullSelection(makeLocalSelectionSource<db3.UserTagDisplay>({
         items: dashboard.userTag.items,
         getKey: tag => tag.id,
         getLabel: tag => tag.text,

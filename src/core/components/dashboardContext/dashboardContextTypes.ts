@@ -12,21 +12,21 @@ export abstract class DashboardContextDataBase {
     readonly referenceStore = db3.createDashboardReferenceStore();
     userSettings: UserSettings = resolveUserSettings();
     bandTimeZone: string = DEFAULT_BAND_TIME_ZONE;
-    userTag: TableAccessor<Prisma.UserTagGetPayload<{}>>;
-    eventType: TableAccessor<Prisma.EventTypeGetPayload<{}>>;
-    eventStatus: TableAccessor<Prisma.EventStatusGetPayload<{}>>;
-    eventTag: TableAccessor<Prisma.EventTagGetPayload<{}>>;
-    eventAttendance: TableAccessor<Prisma.EventAttendanceGetPayload<{}>>;
-    fileTag: TableAccessor<Prisma.FileTagGetPayload<{}>>;
-    songTag: TableAccessor<Prisma.SongTagGetPayload<{}>>;
-    songCreditType: TableAccessor<Prisma.SongCreditTypeGetPayload<{}>>;
-    instrumentTag: TableAccessor<Prisma.InstrumentTagGetPayload<{}>>;
+    userTag: TableAccessor<db3.UserTagDashboardClient>;
+    eventType: TableAccessor<db3.ClientOf<typeof db3.eventTypeDashboardView>>;
+    eventStatus: TableAccessor<db3.ClientOf<typeof db3.eventStatusDashboardView>>;
+    eventTag: TableAccessor<db3.ClientOf<typeof db3.eventTagDashboardView>>;
+    eventAttendance: TableAccessor<db3.CompleteEventAttendanceDashboardClient>;
+    fileTag: TableAccessor<db3.ClientOf<typeof db3.fileTagDashboardView>>;
+    songTag: TableAccessor<db3.ClientOf<typeof db3.songTagDashboardView>>;
+    songCreditType: TableAccessor<db3.ClientOf<typeof db3.songCreditTypeDashboardView>>;
+    instrumentTag: TableAccessor<db3.ClientOf<typeof db3.instrumentTagDashboardView>>;
 
-    wikiPageTag: TableAccessor<Prisma.WikiPageTagGetPayload<{}>>;
+    wikiPageTag: TableAccessor<db3.CompleteWikiPageTagDashboardClient>;
 
-    dynMenuLinks: TableAccessor<db3.DashboardDynMenuLink>;
-    permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
-    role: TableAccessor<Prisma.RoleGetPayload<{}>>;
+    dynMenuLinks: TableAccessor<db3.MenuLinkListClient>;
+    permission: TableAccessor<db3.ClientOf<typeof db3.permissionDashboardView>>;
+    role: TableAccessor<db3.CompleteRoleDashboardClient>;
 
     instrument: TableAccessor<db3.InstrumentDashboardClient>;
     instrumentFunctionalGroup: TableAccessor<
@@ -126,6 +126,6 @@ export abstract class DashboardContextDataBase {
     abstract partitionEventSegmentsByCancellation<Tseg extends Prisma.EventSegmentGetPayload<{ select: { statusId: true } }>>(segments: Tseg[]): [Tseg[], Tseg[]];
     abstract sortInstruments<Tinst extends { sortOrder: number, functionalGroupId: InstrumentFunctionalGroupPublicId }>(instruments: Tinst[]): Tinst[];
     abstract isAttendanceIdGoing(attendanceId: number | null): boolean;
-    abstract getVisibilityPermissions(): Prisma.PermissionGetPayload<{}>[];
+    abstract getVisibilityPermissions(): db3.ClientOf<typeof db3.permissionDashboardView>[];
 }
 

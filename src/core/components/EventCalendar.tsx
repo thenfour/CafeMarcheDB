@@ -84,7 +84,7 @@ const CustomEvent = (props: CustomEventProps) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface SegmentAttendanceIndicatorProps {
-    attendance: db3.EventAttendanceBasePayload;
+    attendance: db3.EventAttendanceDisplay;
 };
 
 const SegmentAttendanceIndicator = (props: SegmentAttendanceIndicatorProps) => {

@@ -11,7 +11,7 @@ export type EnrichFileInput = Partial<Prisma.FileGetPayload<{
 }>>;
 
 type EnrichedFileInstrumentTag = Prisma.FileInstrumentTagGetPayload<{}> & {
-    instrument: db3.InstrumentClientPayload;
+    instrument: db3.InstrumentDashboardClient;
 };
 
 export type EnrichedFile<T extends EnrichFileInput> = Omit<T,
@@ -19,16 +19,11 @@ export type EnrichedFile<T extends EnrichFileInput> = Omit<T,
     "visiblePermission"
     | "tags"
     | "taggedInstruments"
-> & Prisma.FileGetPayload<{ // add the stuff we're enriching with.
-    select: { // must be select so we don't accidentally require all fields.
-        visiblePermission: true,
-        tags: {
-            include: {
-                fileTag: true,
-            }
-        },
-    }
-}> & {
+> & {
+    visiblePermission: db3.PermissionDashboardClient | null | undefined;
+    tags: (Prisma.FileTagAssignmentGetPayload<{}> & {
+        fileTag: db3.FileTagDashboardClient;
+    })[];
     taggedInstruments: EnrichedFileInstrumentTag[];
 };
 
@@ -41,9 +36,9 @@ export type EnrichedVerboseFile = EnrichedFile<db3.FilePayload>;
 export function enrichFile<
     T extends EnrichFileInput,
     TData extends {
-        instrument: TableAccessor<db3.InstrumentClientPayload>;
-        fileTag: TableAccessor<Prisma.FileTagGetPayload<{}>>;
-        permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
+        instrument: TableAccessor<db3.InstrumentDashboardClient>;
+        fileTag: TableAccessor<db3.FileTagDashboardClient>;
+        permission: TableAccessor<db3.PermissionDashboardClient>;
     }>(
         item: T,
         data: TData,
@@ -62,7 +57,9 @@ export function enrichFile<
             return ret;
         }),
         tags: (item.tags || []).map((t) => {
-            const ret: Prisma.FileTagAssignmentGetPayload<{ include: { fileTag: true } }> = {
+            const ret: Prisma.FileTagAssignmentGetPayload<{}> & {
+                fileTag: db3.FileTagDashboardClient;
+            } = {
                 ...t,
                 fileTag: data.fileTag.getById(t.fileTagId)!, // enrich!
             };

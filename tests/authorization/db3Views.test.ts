@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { authorizeAndProjectDB3ViewModel } from "@db3/server/db3PublicIds";
-import { queryTable } from "@db3/server/db3QueryCore";
+import { queryTable, queryView } from "@db3/server/db3QueryCore";
 import { validateDB3QueryRequest } from "@db3/server/db3RequestValidation";
 import { PermissionSet } from "src/auth/shared/PermissionSet";
 import { Permission } from "shared/permissions";
@@ -9,6 +9,7 @@ import { parsePublicId } from "shared/publicId";
 import { DateTimeRange } from "shared/time";
 import { Prisma } from "db";
 import { z } from "zod";
+import { gGeneralPaletteList } from "src/core/components/color/palette";
 
 const groupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
 const group = {
@@ -17,6 +18,10 @@ const group = {
     description: "Brass instruments",
     color: "orange",
     sortOrder: 1,
+};
+const hydratedGroup = {
+    ...group,
+    color: gGeneralPaletteList.findEntry("orange"),
 };
 const tag = {
     id: 12,
@@ -28,6 +33,93 @@ const tag = {
 };
 
 describe("DB3 named views", () => {
+    it("queries a dashboard view through authorization, DTO parsing, and hydration", async () => {
+        const row = {
+            id: 7,
+            text: "Going",
+            description: "Attending",
+            iconName: null,
+            color: "green",
+            sortOrder: 1,
+            isDeleted: false,
+            strength: 100,
+            personalText: "I am going",
+            pastText: "Attended",
+            pastPersonalText: "I attended",
+            isActive: true,
+        };
+        const findMany = vi.fn(async () => [row]);
+        // queryView accepts the full Prisma client contract; this focused test double
+        // deliberately implements only the delegate exercised by this view.
+        const database = { EventAttendance: { findMany } } as unknown as Parameters<typeof queryView>[3];
+        const references = db3.createDashboardReferenceStore();
+        const effectivePermissions = new PermissionSet([
+            { id: 1, name: Permission.always_grant },
+            { id: 2, name: Permission.public },
+            { id: 3, name: Permission.view_events_nonpublic },
+        ]);
+
+        const result = await queryView({
+            view: db3.eventAttendanceDashboardView,
+            filter: { items: [] },
+            cmdbQueryContext: "dashboard-view-query-test",
+            orderBy: undefined,
+        }, {
+            user: null,
+            effectivePermissions,
+        }, references, database);
+
+        expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+            select: expect.objectContaining({
+                id: true,
+                text: true,
+                color: true,
+                personalText: true,
+            }),
+        }));
+        expect(result.items).toEqual([{
+            ...row,
+            color: gGeneralPaletteList.findEntry("green"),
+        }]);
+        expectTypeOf(result.items).toEqualTypeOf<db3.EventAttendanceDashboardClient[]>();
+    });
+
+    it("removes unauthorized dashboard-view fields before hydration", async () => {
+        const findMany = vi.fn(async () => [{
+            id: 7,
+            text: "Going",
+            description: "Attending",
+            iconName: null,
+            color: "green",
+            sortOrder: 1,
+            isDeleted: false,
+            strength: 100,
+            personalText: "I am going",
+            pastText: "Attended",
+            pastPersonalText: "I attended",
+            isActive: true,
+        }]);
+        // queryView accepts the full Prisma client contract; this focused test double
+        // deliberately implements only the delegate exercised by this view.
+        const database = { EventAttendance: { findMany } } as unknown as Parameters<typeof queryView>[3];
+
+        const result = await queryView({
+            view: db3.eventAttendanceDashboardView,
+            filter: { items: [] },
+            cmdbQueryContext: "dashboard-view-authorization-test",
+            orderBy: undefined,
+        }, {
+            user: null,
+            effectivePermissions: new PermissionSet([
+                { id: 1, name: Permission.always_grant },
+                { id: 2, name: Permission.public },
+            ]),
+        }, db3.createDashboardReferenceStore(), database);
+
+        expect(result.items).toEqual([{ id: 7 }]);
+        expect(db3.isCompleteEventAttendanceDashboardClient(result.items[0]!)).toBe(false);
+    });
+
     it("derives ordinary selections from DTO schemas and preserves explicit query additions", () => {
         const context = {
             filter: { items: [] },
@@ -428,7 +520,7 @@ describe("DB3 named views", () => {
     it("hydrates a finite view graph from an explicit reference provider", () => {
         const references = db3.createDashboardReferenceStore();
         db3.registerDashboardReferences(references, {
-            instrumentFunctionalGroup: [group],
+            instrumentFunctionalGroup: [hydratedGroup],
             instrumentTag: [tag],
         });
 
@@ -542,13 +634,13 @@ describe("DB3 named views", () => {
             autoAssignFileLeafRegex: null,
             sortOrder: 1,
             functionalGroupId: groupPublicId,
-            functionalGroup: group,
+            functionalGroup: hydratedGroup,
             instrumentTags: [],
         };
         db3.registerDashboardReferences(references, {
             permission: [permission],
             fileTag: [fileTag],
-            instrumentFunctionalGroup: [group],
+            instrumentFunctionalGroup: [hydratedGroup],
             instrument: [instrument],
             eventStatus: [{
                 id: 10,
@@ -645,12 +737,13 @@ describe("DB3 named views", () => {
             autoAssignFileLeafRegex: null,
             sortOrder: 1,
             functionalGroupId: groupPublicId,
+            functionalGroup: hydratedGroup,
             instrumentTags: [],
         };
         db3.registerDashboardReferences(references, {
             permission: [permission],
             fileTag: [fileTag],
-            instrumentFunctionalGroup: [group],
+            instrumentFunctionalGroup: [hydratedGroup],
             instrument: [instrument],
             eventType: [{
                 id: 2,
@@ -1066,14 +1159,14 @@ describe("DB3 named views", () => {
             autoAssignFileLeafRegex: null,
             sortOrder: 1,
             functionalGroupId: groupPublicId,
-            functionalGroup: group,
+            functionalGroup: hydratedGroup,
             instrumentTags: [],
         };
         db3.registerDashboardReferences(references, {
             permission: [permission],
             songTag: [songTag],
             fileTag: [fileTag],
-            instrumentFunctionalGroup: [group],
+            instrumentFunctionalGroup: [hydratedGroup],
             instrument: [instrument],
         });
 
@@ -1587,7 +1680,7 @@ describe("DB3 named views", () => {
     it("reports the exact missing reference path", () => {
         const references = db3.createDashboardReferenceStore();
         db3.registerDashboardReferences(references, {
-            instrumentFunctionalGroup: [group],
+            instrumentFunctionalGroup: [hydratedGroup],
         });
         const dto = db3.instrumentDashboardView.parseDto({
             id: 7,

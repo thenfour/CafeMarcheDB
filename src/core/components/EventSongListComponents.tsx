@@ -43,6 +43,7 @@ import { MetronomeButton } from './Metronome';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 import { SongTagIndicatorContainer } from './SongTagIndicatorContainer';
+import type { EventEnrichedVerbose_Event } from './event/EventComponentsBase';
 
 const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, TSongPinnedRecording>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, songListId: number }): MediaPlayerTrack => {
     if (args.rowItem.type === 'song') {
@@ -1595,7 +1596,7 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // for new song lists. different from the other editor because this doesn't save automatically, it only saves after you click "save"
 interface EventSongListNewEditorProps {
-    event: db3.EventClientPayload_Verbose;
+    event: EventEnrichedVerbose_Event;
     onCancel: () => void;
     onSuccess: () => void;
 };
@@ -1635,7 +1636,7 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const EventSongListList = ({ values, event, readonly, refetch }: {
     values: readonly db3.EventSongListDetailClient[],
-    event: db3.EventClientPayload_Verbose,
+    event: EventEnrichedVerbose_Event,
     readonly: boolean,
     refetch: () => void,
 }) => {
@@ -1705,7 +1706,7 @@ export const EventSongListList = ({ values, event, readonly, refetch }: {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const EventSongListTabContent = ({ event, readonly, refetch }: { event: db3.EventClientPayload_Verbose, readonly: boolean, refetch: () => void }) => {
+export const EventSongListTabContent = ({ event, readonly, refetch }: { event: EventEnrichedVerbose_Event, readonly: boolean, refetch: () => void }) => {
     const [newOpen, setNewOpen] = React.useState<boolean>(false);
     const publicData = useDB3Authorization();
     const songListsClient = DB3Client.useDb3Query({

@@ -5,8 +5,8 @@ import { isPublicId, type InstrumentFunctionalGroupPublicId } from "shared/publi
 import { defineCrudView } from "../../core/db3CrudView";
 import { type ClientOf, type DtoOf, defineView } from "../../core/db3View";
 import {
-    dashboardInstrumentFunctionalGroupResource,
-    dashboardInstrumentResource,
+    instrumentDashboardView,
+    instrumentFunctionalGroupDashboardView,
 } from "../../references/dashboardReferences";
 import {
     xInstrument,
@@ -70,10 +70,6 @@ const instrumentEditorSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>
     },
 });
 
-const instrumentFunctionalGroupDashboardContract = dashboardInstrumentFunctionalGroupResource;
-
-const instrumentDashboardContract = dashboardInstrumentResource;
-
 export const instrumentFunctionalGroupListView = defineView({
     viewID: "InstrumentFunctionalGroup_List",
     entity: xInstrumentFunctionalGroup,
@@ -87,15 +83,6 @@ export const instrumentFunctionalGroupEditorView = defineCrudView({
     operations: { create: true, update: true, delete: true },
     dtoSchema: InstrumentFunctionalGroupListDtoSchema,
     hydrate: dto => xInstrumentFunctionalGroup.getClientModel(dto, "view"),
-});
-
-export const instrumentFunctionalGroupDashboardView = defineView({
-    viewID: "InstrumentFunctionalGroup_Dashboard",
-    entity: xInstrumentFunctionalGroup,
-    selection: instrumentFunctionalGroupDashboardContract.prismaSelection,
-    dtoSchema: instrumentFunctionalGroupDashboardContract.dtoSchema,
-    references: instrumentFunctionalGroupDashboardContract.referenceContract,
-    hydrate: instrumentFunctionalGroupDashboardContract.hydrate,
 });
 
 export const instrumentTagEditorView = defineCrudView({
@@ -113,22 +100,6 @@ export const instrumentEditorView = defineCrudView({
     selection: instrumentEditorSelection,
     dtoSchema: InstrumentEditorDtoSchema,
     hydrate: dto => xInstrument.getClientModel(dto, "view"),
-});
-
-export const instrumentDashboardView = defineView({
-    viewID: "Instrument_Dashboard",
-    entity: xInstrument,
-    selection: instrumentDashboardContract.prismaSelection,
-    dtoSchema: instrumentDashboardContract.dtoSchema,
-    references: instrumentDashboardContract.referenceContract,
-    hydrate: (dto, references) => {
-        const hydrated = instrumentDashboardContract.hydrate(dto, references);
-        return {
-            ...hydrated,
-            instrumentTags: [...hydrated.instrumentTags]
-                .sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
-        };
-    },
 });
 
 export type InstrumentFunctionalGroupListItem = ClientOf<typeof instrumentFunctionalGroupListView>;

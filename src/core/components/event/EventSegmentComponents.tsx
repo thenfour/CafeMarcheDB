@@ -18,7 +18,7 @@ import { DB3EditObjectDialog } from '../../db3/components/db3NewObjectDialog';
 import clearEventSegmentResponses from "../../db3/mutations/clearEventSegmentResponses";
 import copyEventSegmentResponses from "../../db3/mutations/copyEventSegmentResponses";
 import { useConfirm } from "../ConfirmationDialog";
-import { EventTableClientColumns } from "./EventComponentsBase";
+import { type EventEnrichedVerbose_Event, EventTableClientColumns } from "./EventComponentsBase";
 import { Markdown } from "../markdown/Markdown";
 import { SettingMarkdown } from "../SettingMarkdown";
 import { toSorted } from "shared/arrayUtils";
@@ -91,11 +91,15 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
         view: db3.eventSegmentEditorView,
         tableClient: tableRenderClient,
     });
+    const dashboardStatus = dashboardContext.eventStatus.getById(props.initialValue.statusId);
     const initialValue: EventSegmentEditorClient = {
         ...props.initialValue,
         // The verbose event payload carries statusId, while the editor column
         // uses the semantic status object.
-        status: dashboardContext.eventStatus.getById(props.initialValue.statusId),
+        status: dashboardStatus ? {
+            ...dashboardStatus,
+            color: dashboardStatus.color?.id ?? null,
+        } : dashboardStatus,
     };
 
     return <DB3EditObjectDialog
@@ -162,7 +166,7 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
 
 ////////////////////////////////////////////////////////////////
 export interface EventSegmentPanelProps {
-    event: db3.EventVerbose_Event,
+    event: EventEnrichedVerbose_Event,
     segment: db3.EventVerbose_EventSegment,
     readonly: boolean;
     refetch: () => void;
@@ -243,7 +247,7 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
 
 ////////////////////////////////////////////////////////////////
 interface SegmentListProps {
-    event: db3.EventVerbose_Event;
+    event: EventEnrichedVerbose_Event;
     tableClient: DB3Client.xTableRenderClient;
     readonly: boolean;
 };
@@ -279,7 +283,7 @@ export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) 
 
 
 export interface EditSingleSegmentDateButtonProps {
-    event: db3.EventVerbose_Event,
+    event: EventEnrichedVerbose_Event,
     segment: db3.EventVerbose_EventSegment,
     readonly: boolean;
     refetch: () => void;
@@ -330,7 +334,7 @@ export const EditSingleSegmentDateButton = (props: EditSingleSegmentDateButtonPr
 
 
 interface EventSegmentDotMenuCopyUserResponsesFromMenuItemProps {
-    event: db3.EventVerbose_Event,
+    event: EventEnrichedVerbose_Event,
     fromSegment: db3.EventVerbose_EventSegment,
     toSegment: db3.EventVerbose_EventSegment,
     readonly: boolean;
@@ -366,7 +370,7 @@ export const EventSegmentDotMenuCopyUserResponsesFromMenuItem = (props: EventSeg
 };
 
 interface EventSegmentDotMenuProps {
-    event: db3.EventVerbose_Event,
+    event: EventEnrichedVerbose_Event,
     segment: db3.EventVerbose_EventSegment,
     readonly: boolean;
     refetch: () => void;

@@ -14,7 +14,7 @@ import * as db3 from "src/core/db3/db3";
 import { z } from 'zod';
 import { useAppContext } from '../AppContext';
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
-import { ColorVariationSpec, gAppColors } from '../color/palette';
+import { ColorVariationSpec, gAppColors, gGeneralPaletteList } from '../color/palette';
 import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams, ZTRecordActionArgs } from '../featureReports/activityTracking';
 import { DbBrandConfig, DefaultDbBrandConfig } from '@/shared/brandConfigBase';
 import { useBrand } from '@/shared/brandConfig';
@@ -105,7 +105,7 @@ export class DashboardContextData extends DashboardContextDataBase {
 
         let colorId = visPerm?.color;
         if (colorId == null) {
-            colorId = gAppColors.private_visibility;
+            colorId = gGeneralPaletteList.findEntry(gAppColors.private_visibility);
         }
 
         return {
@@ -161,7 +161,7 @@ export class DashboardContextData extends DashboardContextDataBase {
         return isAttendanceGoing(attendance);
     }
 
-    getVisibilityPermissions(): Prisma.PermissionGetPayload<{}>[] {
+    getVisibilityPermissions(): db3.ClientOf<typeof db3.permissionDashboardView>[] {
         return this.permission.filter(p => p.isVisibility);
     }
 
@@ -258,11 +258,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         instrument: dashboardData.instrument,
     });
     valueRef.current.instrumentFunctionalGroup = new TableAccessor(
-        dashboardData.instrumentFunctionalGroup.map(dto => db3.hydrateView(
-            db3.instrumentFunctionalGroupDashboardView,
-            dto,
-            valueRef.current.referenceStore,
-        )),
+        dashboardData.instrumentFunctionalGroup,
         group => group.publicId,
     );
     valueRef.current.songTag = new TableAccessor(dashboardData.songTag);
@@ -287,19 +283,8 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     // establish singleton for use by non-react code
     getCmdbWindow().cmdbDashboardContext = valueRef.current;
 
-    // do enrichment after fundamentals are set up.
-    valueRef.current.dynMenuLinks = new TableAccessor(dashboardData.dynMenuLinks.map(link => {
-        return {
-            ...link,
-            visiblePermission: valueRef.current.permission.getById(link.visiblePermissionId),
-        }
-    }));
-
-    valueRef.current.instrument = new TableAccessor(dashboardData.instrument.map(dto => db3.hydrateView(
-        db3.instrumentDashboardView,
-        dto,
-        valueRef.current.referenceStore,
-    )));
+    valueRef.current.dynMenuLinks = new TableAccessor(dashboardData.dynMenuLinks);
+    valueRef.current.instrument = new TableAccessor(dashboardData.instrument);
 
     return (
         <DashboardContext.Provider value={{ data: valueRef.current }}>

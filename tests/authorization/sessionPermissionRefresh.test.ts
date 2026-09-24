@@ -159,12 +159,50 @@ describe("authorization refresh on every request", () => {
     });
 
     it("loads anonymous dashboard data through the same request snapshot", async () => {
+        authorizationTestDb.reset({
+            user: [user],
+            permission: [{
+                id: 30,
+                name: Permission.visibility_public,
+                description: "Public",
+                sortOrder: 1,
+                isVisibility: true,
+                significance: null,
+                color: "green",
+                iconName: null,
+            }],
+            userTag: [{
+                id: 40,
+                text: "Members",
+                description: "Members only",
+                color: "blue",
+                significance: null,
+                sortOrder: 1,
+                cssClass: null,
+            }],
+            wikiPageTag: [{
+                id: 50,
+                text: "Policy",
+                description: "Policy page",
+                color: "orange",
+                significance: null,
+                sortOrder: 1,
+            }],
+        });
         const ctx = createAuthorizationTestContext(null);
         const lookup = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst");
         await getRequestAuthorization(ctx.session);
         await expect(invokeResolver(getDashboardData, {}, ctx)).resolves.toMatchObject({
             relevantEventIds: [],
             effectivePermissionNames: expect.not.arrayContaining([Permission.login]),
+            permission: [{
+                id: 30,
+                name: Permission.visibility_public,
+                color: expect.objectContaining({ id: "green" }),
+            }],
+            userTag: [],
+            role: [],
+            wikiPageTag: [],
         });
         expect(lookup).not.toHaveBeenCalled();
     });

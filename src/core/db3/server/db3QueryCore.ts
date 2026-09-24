@@ -144,6 +144,54 @@ export async function queryTable(
     };
 }
 
+export type QueryViewInput<TView extends db3.AnyDB3View> = Omit<
+    db3.QueryRequestInput,
+    "table"
+> & {
+    readonly view: TView;
+};
+
+export type QueryViewResult<TView extends db3.AnyDB3View> = Omit<
+    Awaited<ReturnType<typeof queryTable>>,
+    "items"
+> & {
+    readonly items: db3.ClientOf<TView>[];
+};
+
+/**
+ * Server-side named-view query. The view owns selection, authorization-safe DTO
+ * validation, and hydration, so callers receive its consumer type directly.
+ */
+export async function queryView<TView extends db3.AnyDB3View>(
+    input: QueryViewInput<TView>,
+    authorization: RequestAuthorization,
+    references: db3.DB3ReferenceProvider<db3.ReferenceContractOf<TView>>,
+    database: TransactionalPrismaClient = db,
+    executionOptions: QueryTableExecutionOptions = {},
+): Promise<QueryViewResult<TView>> {
+    const { view, ...queryInput } = input;
+    if (db3.getDB3View(view.viewID) !== view) {
+        throw new Error(`DB3 view '${view.viewID}' is not the registered view instance.`);
+    }
+
+    const result = await queryTable({
+        ...queryInput,
+        table: {
+            tableID: view.tableID,
+            tableName: view.tableName,
+            viewID: view.viewID,
+        },
+    }, authorization, database, executionOptions);
+
+    // queryTable resolved the exact view instance above and parseDto validated
+    // every returned item, so its untyped transport array has this view's DTO type.
+    const dtos = result.items as db3.DtoOf<TView>[];
+    return {
+        ...result,
+        items: dtos.map(dto => db3.hydrateView(view, dto, references)),
+    };
+}
+
 export const DB3QueryCore = async (request: db3.QueryRequestInput, ctx: AuthenticatedCtx) => (
     queryTable(request, await getRequestAuthorization(ctx.session))
 );
