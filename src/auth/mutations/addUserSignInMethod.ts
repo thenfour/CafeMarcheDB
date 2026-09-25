@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Permission } from "shared/permissions";
 import { SignInMethodSchema } from "../signInMethodSchemas";
 import { addSignInMethod, recordSignInMethodChange, requireSignInMethodAdmin, requireSignInMethodTarget } from "../server/signInMethods";
+import { xUserSignInMethod } from "src/core/db3/shared/schema/userSignInMethod";
 
 export default resolver.pipe(
     resolver.zod(z.object({ userId: z.number().int().positive(), method: SignInMethodSchema }).strict()),
@@ -13,6 +14,6 @@ export default resolver.pipe(
         await requireSignInMethodTarget(tx, userId);
         const added = await addSignInMethod(tx, userId, method);
         await recordSignInMethodChange(tx, ctx, userId, added, "added");
-        return { id: added.id };
+        return { publicId: xUserSignInMethod.parseIdentity(added.publicId) };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }),
 );

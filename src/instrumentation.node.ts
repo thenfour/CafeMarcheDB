@@ -304,6 +304,14 @@ export async function CorrectRolePermissionPublicIds() {
     console.log(`Replaced ${replacementCount} RolePermission public-ID placeholders.`);
 }
 
+export async function CorrectUserSignInMethodPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.userSignInMethod,
+        modelName: "UserSignInMethod",
+    });
+    console.log(`Replaced ${replacementCount} UserSignInMethod public-ID placeholders.`);
+}
+
 export async function registerNodeInstrumentation() {
     console.log(`INSTRUMENTATION RUNNING`);
     await instrumentationSetup();
@@ -339,6 +347,7 @@ export async function registerNodeInstrumentation() {
     await CorrectPermissionPublicIds();
     await CorrectRolePublicIds();
     await CorrectRolePermissionPublicIds();
+    await CorrectUserSignInMethodPublicIds();
 
     //const startupState = getServerStartStateRef();
     process.env.CMDB_START_TIME = `${new Date().valueOf()}`;

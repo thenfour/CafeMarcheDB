@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { isPublicId, PUBLIC_ID_PLACEHOLDER_PREFIX, type InstrumentPublicId } from "shared/publicId";
 import { db3Server } from "src/core/db3/server/db3Server";
 import { xInstrument } from "src/core/db3/shared/schema/instrument";
@@ -70,5 +70,26 @@ describe("public IDs", () => {
         expect(delegate.rows.find(row => row.id === 3)?.publicId).toBe("alreadyPublic001");
         expect(delegate.rows.every(row => isPublicId(row.publicId))).toBe(true);
         expect(new Set(delegate.rows.map(row => row.publicId)).size).toBe(delegate.rows.length);
+    });
+
+    it("retries only public-ID collisions and preserves typed creation results", async () => {
+        const table = db3Server.table(xInstrument);
+        const collision = { code: "P2002", meta: { target: "Instrument_publicId_key" } };
+        const create = vi.fn(async (publicId: InstrumentPublicId) => ({ publicId, name: "Instrument" }))
+            .mockRejectedValueOnce(collision);
+        const result = await table.createWithPublicId(create);
+        expectTypeOf(result).toEqualTypeOf<{ publicId: InstrumentPublicId; name: string }>();
+        expect(create).toHaveBeenCalledTimes(2);
+        expect(create.mock.calls[0]![0]).not.toBe(create.mock.calls[1]![0]);
+        expect(result.publicId).toBe(create.mock.calls[1]![0]);
+
+        const domainConflict = { code: "P2002", meta: { target: ["name"] } };
+        create.mockClear().mockRejectedValue(domainConflict);
+        await expect(table.createWithPublicId(create)).rejects.toBe(domainConflict);
+        expect(create).toHaveBeenCalledTimes(1);
+
+        create.mockClear().mockRejectedValue(collision);
+        await expect(table.createWithPublicId(create)).rejects.toThrow("Unable to generate a unique public ID");
+        expect(create).toHaveBeenCalledTimes(8);
     });
 });

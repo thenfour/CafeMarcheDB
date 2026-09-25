@@ -11,6 +11,7 @@ import { CMDialog } from "../CMDialog";
 import { useConfirm } from "../ConfirmationDialog";
 import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
 import type { EnrichedVerboseUser } from "./UserListItem";
+import { xUserSignInMethod } from "src/core/db3/shared/schema/userSignInMethod";
 
 type Props = { user: EnrichedVerboseUser; onChanged?: () => void };
 
@@ -45,7 +46,7 @@ const SignInMethodsEditor = ({ user, onChanged }: Props) => {
         {error && <Alert severity="error">{error}</Alert>}
         <Table size="small">
             <TableHead><TableRow><TableCell>Type</TableCell><TableCell>Identifier</TableCell><TableCell /></TableRow></TableHead>
-            <TableBody>{data.methods.map(method => <TableRow key={method.id}>
+            <TableBody>{data.methods.map(method => <TableRow key={xUserSignInMethod.getIdentity(method)}>
                 <TableCell>{method.type === "email" ? "Email" : "Google subject"}</TableCell>
                 <TableCell sx={{ overflowWrap: "anywhere" }}>{method.identifier}</TableCell>
                 <TableCell><Button disabled={pending} onClick={async () => {
@@ -53,7 +54,7 @@ const SignInMethodsEditor = ({ user, onChanged }: Props) => {
                         title: "Release sign-in method?",
                         description: `Remove ${method.identifier} from ${user.name}?`,
                     })) return;
-                    await apply(() => removeMethod({ userId: user.id, methodId: method.id }));
+                    await apply(() => removeMethod({ userId: user.id, methodPublicId: xUserSignInMethod.getIdentity(method) }));
                 }}>Remove</Button></TableCell>
             </TableRow>)}</TableBody>
         </Table>
@@ -61,7 +62,11 @@ const SignInMethodsEditor = ({ user, onChanged }: Props) => {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "16px", backgroundColor: "#f5f5f5", padding: "16px", borderRadius: "8px" }}>
             <Typography variant="h6">Add Sign-In Method</Typography>
-            <TextField select label="Method type" value={type} disabled={pending} onChange={event => { setType(event.target.value as "email" | "google"); setIdentifier(""); }}>
+            <TextField select label="Method type" value={type} disabled={pending} onChange={event => {
+                const value = event.target.value;
+                if (value === "email" || value === "google") setType(value);
+                setIdentifier("");
+            }}>
                 <MenuItem value="email">Email</MenuItem><MenuItem value="google">Google subject</MenuItem>
             </TextField>
             <TextField label={type === "email" ? "Email address" : "Google subject ID (sub)"} value={identifier} disabled={pending}

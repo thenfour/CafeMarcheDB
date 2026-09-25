@@ -64,9 +64,9 @@ async function seedAccounts() {
     });
     await db.userSignInMethod.createMany({
         data: [
-            { id: 1, userId: 10, type: "email", identifier: "main-login@test.invalid" },
-            { id: 2, userId: 20, type: "email", identifier: "retiring-login@test.invalid" },
-            { id: 3, userId: 20, type: "google", identifier: "private-google-subject" },
+            { id: 1, publicId: "MergeSignIn00001", userId: 10, type: "email", identifier: "main-login@test.invalid" },
+            { id: 2, publicId: "MergeSignIn00002", userId: 20, type: "email", identifier: "retiring-login@test.invalid" },
+            { id: 3, publicId: "MergeSignIn00003", userId: 20, type: "google", identifier: "private-google-subject" },
         ]
     });
     await db.session.createMany({ data: [{ userId: 10, handle: "main-session" }, { userId: 20, handle: "retiring-session" }] });

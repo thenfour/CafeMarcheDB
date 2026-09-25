@@ -27,7 +27,6 @@ import { UserWithRolesArgs } from "../shared/schema/userPayloads";
 import { SharedAPI } from "../shared/sharedAPI";
 import { queryTable } from "./db3QueryCore";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
-import { isPublicIdUniqueCollision } from "@/src/server/publicId";
 import { db3Server } from "./db3Server";
 //import { requireUnmergedMutationUsers } from "./mergedUserMutationGuard";
 //import { requireUnmergedUserReferences } from "src/auth/server/mergedUserReferences";
@@ -46,8 +45,6 @@ export class DB3MutationAuthorizationError extends AuthorizationError {
     }
 }
 
-const PUBLIC_ID_INSERT_RETRIES = 8;
-
 const createDB3Row = async (
     table: db3.xTable,
     dbTableClient: TAnyModel, // prisma client
@@ -58,17 +55,11 @@ const createDB3Row = async (
         return await dbTableClient.create({ data });
     }
 
-    const serverTable = db3Server.table(table);
-    // theoretically possible to collide, hence the retry loop.
-    for (let attempt = 0; attempt < PUBLIC_ID_INSERT_RETRIES; ++attempt) {
-        data[table.publicIdMember] = serverTable.generatePublicId();
-        try {
-            return await dbTableClient.create({ data });
-        } catch (error) {
-            if (!isPublicIdUniqueCollision(error)) throw error;
-        }
-    }
-    throw new Error(`Unable to generate a unique public ID for ${table.tableID}.`);
+    const publicIdMember = table.publicIdMember;
+    return db3Server.table(table).createWithPublicId(async publicId => {
+        data[publicIdMember] = publicId;
+        return dbTableClient.create({ data });
+    });
 };
 
 const getMutationPublicData = async (ctx: Ctx): Promise<db3.DB3Authorization> => {

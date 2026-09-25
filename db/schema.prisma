@@ -226,6 +226,7 @@ enum SignInMethodType {
 // Password email aliases share User.hashedPassword. Google identifiers are sub.
 model UserSignInMethod {
   id         Int              @id @default(autoincrement())
+  publicId   String           @unique @db.Char(16)
   userId     Int
   type       SignInMethodType
   identifier String           @db.VarChar(320)

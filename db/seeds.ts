@@ -792,6 +792,7 @@ const main = async () => {
     if (specialUser) {
       await gState.prisma.userSignInMethod.create({
         data: {
+          publicId: generatePublicId<"UserSignInMethod">(),
           userId: user.id,
           type: "google",
           // special value lets the system recognize the sysadmin user in dev environment.
@@ -818,7 +819,7 @@ const main = async () => {
         methods.push({ userId: user.id, type, identifier });
       }
       await gState.prisma.userSignInMethod.createMany({
-        data: methods,
+        data: methods.map(method => ({ ...method, publicId: generatePublicId<"UserSignInMethod">() })),
       });
     }
 

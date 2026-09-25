@@ -7,6 +7,10 @@ import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { UserWithRolesArgs, type UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
 import type { SignInMethodInput } from "../signInMethodSchemas";
 import { requireFreshPermission } from "./permissionAuthorization";
+import { db3Server } from "src/core/db3/server/db3Server";
+import { xUserSignInMethod } from "src/core/db3/shared/schema/userSignInMethod";
+
+const signInMethodServer = db3Server.table(xUserSignInMethod);
 
 export class SignInMethodConflictError extends Error {
     constructor() {
@@ -103,7 +107,9 @@ export const addSignInMethod = async (db: TransactionalPrismaClient, userId: num
         throw new SignInMethodConflictError();
     }
     try {
-        return await db.userSignInMethod.create({ data: { userId, ...method } });
+        return await signInMethodServer.createWithPublicId(async publicId => (
+            db.userSignInMethod.create({ data: { userId, ...method, publicId } })
+        ));
     } catch (error) {
         // P2002 = "Unique constraint failed on the {constraint}"
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -120,7 +126,7 @@ export const revokeUserSignInState = async (db: TransactionalPrismaClient, userI
 
 export const recordSignInMethodChange = async (
     db: TransactionalPrismaClient, ctx: Ctx, userId: number,
-    method: { id: number; type: string }, action: "added" | "removed",
+    method: { publicId: string; type: string }, action: "added" | "removed",
 ) => {
     await revokeUserSignInState(db, userId);
     await RegisterChange({
@@ -129,7 +135,7 @@ export const recordSignInMethodChange = async (
         table: "User", pkid: userId,
         oldValues: {},
         // Keep identifiers and credentials out of the general activity log.
-        newValues: { signInMethodId: method.id, signInMethodType: method.type, signInMethodAction: action },
+        newValues: { signInMethodPublicId: xUserSignInMethod.parseIdentity(method.publicId), signInMethodType: method.type, signInMethodAction: action },
         options: { dontCalculateChanges: true },
         ctx, db,
     });

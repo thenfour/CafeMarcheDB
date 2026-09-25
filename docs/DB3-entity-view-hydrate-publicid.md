@@ -155,7 +155,11 @@ unrelated free functions. Public-ID generation is the first capability on that
 slice: the server supplies randomness while the bound xTable supplies the exact
 identity type and parser. Shared code continues to use `parseIdentity()`; code
 that intentionally works with natural database identity uses the separate
-`parseDatabaseIdentity()` boundary. Persistence-only query and mutation helpers
+`parseDatabaseIdentity()` boundary. `createWithPublicId()` binds generation and
+bounded collision retry to a typed creation callback. Only a public-ID unique
+constraint retries; business uniqueness violations remain the caller's domain
+errors. Generic DB3 inserts and sign-in-method creation share this policy.
+Persistence-only query and mutation helpers
 should move onto the server slice when a concrete migration touches them rather
 than expanding the shared table surface further.
 
@@ -1266,10 +1270,28 @@ The current pressure-led sequence is:
     matrix query endpoints were removed after the named views replaced them.
     Startup repair registers all three models so deployment placeholders are
     replaced before any public-ID contract begins serving requests.
-11. **Next pressure audit:** migrate `UserSignInMethod`, whose sysadmin-only RPC
-    is a bounded test of an identity-bearing operational child while credential
-    lookup remains server-internal.
-12. Keep the central Song, File, WikiPage, Event, User, and setlist identities in
+11. **Completed:** migrate `UserSignInMethod` as a protected operational child.
+    Its sysadmin read RPC now uses the derived `UserSignInMethod_Admin` view
+    through `queryView()`. The dedicated strict add/remove operations and React
+    keys use branded public identity; the User owner remains in its existing
+    natural-ID domain. Credential lookup, ownership checks, and deletion resolve
+    database rows only on the server. Current maintenance audits record the
+    method's public ID and omit credential identifiers.
+
+    The entity permits generic reads only to Sysadmins and disables generic
+    writes, preserving the dedicated operations' fresh authorization, session
+    revocation, transaction, and last-usable-method protections. New methods
+    created during signup and admin maintenance use the server table's
+    `createWithPublicId()` capability. This slice distinguishes retryable opaque
+    ID collisions from meaningful credential ownership conflicts; the same
+    server capability now also owns generic DB3 insert retries. Startup repair
+    covers existing rows, and seeds generate real public IDs.
+12. **Next pressure audit:** inspect `Action` and `Change` together for opaque
+    ledger row identity and historical polymorphic references. Establish which
+    references are live identities and which are inert historical text before
+    choosing the bounded implementation. Do not mark these models complete
+    while current client-visible references still expose natural IDs.
+13. Keep the central Song, File, WikiPage, Event, User, and setlist identities in
    the later application-pressure phase unless a bounded audit reveals a
    genuinely uncovered identity capability.
 
@@ -1377,7 +1399,7 @@ conversions.
   each numeric client-identity compatibility path before marking that model
   complete below.
 
-#### Client-facing model progress: 27 / 49 complete (55%)
+#### Client-facing model progress: 28 / 49 complete (57%)
 
 The denominator is the 49 Prisma models whose own row identity currently crosses
 a client boundary. A model counts as complete only when it satisfies the full
@@ -1414,6 +1436,7 @@ Completed models:
 - [x] `Permission`
 - [x] `Role`
 - [x] `RolePermission`
+- [x] `UserSignInMethod`
 
 Remaining models are grouped into coherent intended slices. The pressure label
 describes why the slice is ordered there; it does not relax the per-model
@@ -1425,10 +1448,10 @@ completion definition.
   - [x] `Permission`
   - [x] `Role`
   - [x] `RolePermission`
-- **Sign-in identity child: design pressure.** Its sysadmin-only RPC currently
-  exposes and mutates raw row IDs even though credential lookup remains a
-  trusted server concern.
-  - [ ] `UserSignInMethod`
+- **Sign-in identity child: design pressure.** Its sysadmin-only view and strict
+  maintenance operations use public row identity while credential lookup and
+  ownership remain trusted server concerns.
+  - [x] `UserSignInMethod`
 - **Operational ledgers: design pressure with late completion dependencies.**
   Establish an opaque row identity and a policy for historical polymorphic
   references. Keep these unchecked until their own IDs and every current
@@ -1481,7 +1504,7 @@ consumer.
 #### Capability coverage proven by completed slices
 
 These checks track reusable scenarios and do not contribute additional models
-to the 27 / 49 progress count.
+to the 28 / 49 progress count.
 
 - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
 - [x] Exercise an association/tag command with public identities
@@ -1509,6 +1532,10 @@ to the 27 / 49 progress count.
   identity domains, reverse relations, reusable nested view graphs, and
   relation-owned draft keys (`FileUserTag`, `FileSongTag`, `FileEventTag`,
   `FileInstrumentTag`, and `FileWikiPageTag`).
+- [x] Exercise a protected operational child with a derived admin read view,
+  dedicated maintenance writes, public audit references, and creation that
+  distinguishes ID collisions from credential ownership conflicts
+  (`UserSignInMethod`).
 
 ### Deferred DB3 enhancements
 

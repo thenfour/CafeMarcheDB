@@ -1,5 +1,5 @@
 import type { DB3IdentityOf, xTable } from "../shared/db3core";
-import { generatePublicId as generatePublicIdValue } from "@/src/server/publicId";
+import { generatePublicId as generatePublicIdValue, isPublicIdUniqueCollision } from "@/src/server/publicId";
 
 /**
  * Server-only operations bound to one DB3 table. The shared xTable remains the
@@ -24,6 +24,24 @@ export class DB3ServerTable<TEntity extends xTable> {
         // publicIdMember and parseIdentity jointly establish that this string is
         // the exact branded identity declared by TEntity.
         return identity as Extract<DB3IdentityOf<TEntity>, string>;
+    }
+
+    async createWithPublicId<TResult>(
+        this: Extract<DB3IdentityOf<TEntity>, string> extends never
+            ? never
+            : DB3ServerTable<TEntity>,
+        create: (publicId: Extract<DB3IdentityOf<TEntity>, string>) => Promise<TResult>,
+    ): Promise<TResult> {
+        for (let attempt = 0; attempt < 8; ++attempt) {
+            const publicId = this.generatePublicId();
+            try {
+                return await create(publicId);
+            } catch (error) {
+                // Other unique constraints carry domain meaning and must not retry.
+                if (!isPublicIdUniqueCollision(error)) throw error;
+            }
+        }
+        throw new Error(`Unable to generate a unique public ID for ${this.entity.tableID}.`);
     }
 }
 
