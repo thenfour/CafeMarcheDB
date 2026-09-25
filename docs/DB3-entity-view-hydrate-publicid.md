@@ -1281,10 +1281,12 @@ conversions.
 
 ### Public-ID migration
 
-- [ ] Maintain the client-facing entity and capability inventory. Respect
-  identity dependencies, but order work by the pressure model above: uncovered
-  shared identity scenarios first, established patterns second, and central
-  application-heavy migrations last.
+- [x] Establish an explicit client-facing model inventory and document the
+  models excluded from its denominator.
+- [ ] Keep the inventory current when a Prisma model or client transport is
+  added. Respect identity dependencies, but order work by the pressure model
+  above: uncovered shared identity scenarios first, established patterns
+  second, and central application-heavy migrations last.
 - [x] Generalize public-ID translation for association/tag command inputs before
   converting an entity used through those mutation shapes.
 - [x] Migrate `SongTag` and `SongTagAssociation` as the identity-bearing query
@@ -1295,47 +1297,137 @@ conversions.
 - [ ] Audit and adapt the shared identity-sensitive infrastructure: exact lookup,
   generic sorting/reordering, association matrices, caches, React keys, raw SQL,
   search results, imports/exports, routes, and non-DB3 Prisma endpoints.
-- [ ] Convert every client-facing entity to `publicId`, one bounded model slice
-  at a time. Each slice must satisfy the definition of a migrated entity above
-  and delete its numeric client-identity compatibility path before the next
-  dependent slice begins.
-  - [x] `InstrumentFunctionalGroup`
-  - [x] `InstrumentTag`
-  - [x] `InstrumentTagAssociation`
-  - [x] `SongTag`
-  - [x] `SongTagAssociation`
-  - [x] `Instrument`
-  - [x] `FileTag`
-  - [x] `FileTagAssignment`
-  - [x] `WikiPageTag`
-  - [x] `WikiPageTagAssignment`
-  - [x] `EventType`
-  - [x] `EventStatus`
-  - [x] `EventTag`
-  - [x] `EventTagAssignment`
-  - [x] `UserTag`
-  - [x] `UserTagAssignment`
-  - [x] `SongCreditType`
-  - [x] `SongCredit`
-  - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
-  - [x] Exercise an association/tag command with public identities
-    (`Instrument.instrumentTags`).
-  - [x] Exercise identity-bearing query parameters, batched translation, and
-    public search facets (`Song.songTagIds` and Song `tags` criteria).
-  - [x] Exercise route and search identity before converting Event and User.
-  - [x] Exercise a raw multipart upload boundary and public-keyed legacy file
-    enrichment (`FileTag` upload context and Event detail files).
-  - [x] Replace a hand-authored association DTO and component-owned mock-row
-    shape with derived views, normalized references, and `TagsField` draft
-    construction (`WikiPageTag` and Wiki page editing).
-  - [x] Exercise one classification family across dashboard caches, embedded
-    summaries, raw-SQL facets/reports, import/insert workflows, and shared
-    server/client algorithms (`EventType`, `EventStatus`, and `EventTag`).
-  - [x] Exercise a partially migrated association whose owner remains natural
-    while its target and association row are public (`UserTagAssignment`).
-  - [x] Exercise a rich association with public row identity, a public lookup
-    target, natural central-domain endpoints, and authorization inherited from
-    a visible target relationship (`SongCredit`).
+- [ ] Convert all 49 client-facing models one bounded slice at a time, deleting
+  each numeric client-identity compatibility path before marking that model
+  complete below.
+
+#### Client-facing model progress: 18 / 49 complete (37%)
+
+The denominator is the 49 Prisma models whose own row identity currently crosses
+a client boundary. A model counts as complete only when it satisfies the full
+definition of a migrated entity above; merely adding a `publicId` schema column
+does not advance the count. Multiple xTable variants over the same Prisma model,
+such as `xEvent` and `xEventVerbose`, count once.
+
+Completed models:
+
+- [x] `InstrumentFunctionalGroup`
+- [x] `InstrumentTag`
+- [x] `InstrumentTagAssociation`
+- [x] `SongTag`
+- [x] `SongTagAssociation`
+- [x] `Instrument`
+- [x] `FileTag`
+- [x] `FileTagAssignment`
+- [x] `WikiPageTag`
+- [x] `WikiPageTagAssignment`
+- [x] `EventType`
+- [x] `EventStatus`
+- [x] `EventTag`
+- [x] `EventTagAssignment`
+- [x] `UserTag`
+- [x] `UserTagAssignment`
+- [x] `SongCreditType`
+- [x] `SongCredit`
+
+Remaining models are grouped into coherent intended slices. The pressure label
+describes why the slice is ordered there; it does not relax the per-model
+completion definition.
+
+- **User/instrument rich association: next design-pressure slice**
+  - [ ] `UserInstrument`
+- **File cross-entity association family: design pressure.** These associations
+  mix a natural File endpoint with User, Song, Event, WikiPage, and already-public
+  Instrument endpoints. Migrate their own row identities together without
+  prematurely converting those central targets.
+  - [ ] `FileUserTag`
+  - [ ] `FileSongTag`
+  - [ ] `FileEventTag`
+  - [ ] `FileInstrumentTag`
+  - [ ] `FileWikiPageTag`
+- **Authorization family: design pressure.** Preserve natural permission keys
+  inside trusted authorization evaluation while projecting public identity for
+  role editors, visibility selectors, dashboard references, and associations.
+  - [ ] `Permission`
+  - [ ] `Role`
+  - [ ] `RolePermission`
+- **Sign-in identity child: design pressure.** Its sysadmin-only RPC currently
+  exposes and mutates raw row IDs even though credential lookup remains a
+  trusted server concern.
+  - [ ] `UserSignInMethod`
+- **Operational ledgers: design pressure with late completion dependencies.**
+  Establish an opaque row identity and a policy for historical polymorphic
+  references. Keep these unchecked until their own IDs and every current
+  client-visible relation ID are public or deliberately rendered as inert
+  historical text.
+  - [ ] `Action`
+  - [ ] `Change`
+- **Small independent repetition slices**
+  - [ ] `Setting`
+  - [ ] `CustomLink`
+  - [ ] `MenuLink`
+- **User domain: application pressure**
+  - [ ] `User`
+- **Song domain: application pressure**
+  - [ ] `Song`
+- **File and gallery domain: application pressure**
+  - [ ] `File`
+  - [ ] `FrontpageGalleryItem`
+- **Wiki domain: application pressure**
+  - [ ] `WikiPage`
+  - [ ] `WikiPageRevision`
+- **Event and attendance domain: application pressure**
+  - [ ] `Event`
+  - [ ] `EventSegment`
+  - [ ] `EventAttendance`
+  - [ ] `EventUserResponse`
+  - [ ] `EventSegmentUserResponse`
+- **Event setlist aggregate: application pressure**
+  - [ ] `EventSongList`
+  - [ ] `EventSongListSong`
+  - [ ] `EventSongListDivider`
+- **Setlist planning aggregate: application pressure**
+  - [ ] `SetlistPlanGroup`
+  - [ ] `SetlistPlan`
+
+The following five Prisma models are outside the progress denominator because
+their row identity is currently server-only. If a future transport exposes one
+of these row identities, move that model into the checklist before shipping the
+consumer.
+
+- `AdminBootstrapClaim`: server-only replay-prevention state addressed by token
+  hash, never returned as a row.
+- `UserSetting`: loaded and returned as a typed settings object keyed by declared
+  setting names; its storage-row ID is not transported.
+- `Session` and `Token`: authentication persistence whose rows are created,
+  resolved, and revoked only at trusted server boundaries.
+- `CustomLinkVisit`: append-only server telemetry with no client row query or
+  mutation surface.
+
+#### Capability coverage proven by completed slices
+
+These checks track reusable scenarios and do not contribute additional models
+to the 18 / 49 progress count.
+
+- [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
+- [x] Exercise an association/tag command with public identities
+  (`Instrument.instrumentTags`).
+- [x] Exercise identity-bearing query parameters, batched translation, and
+  public search facets (`Song.songTagIds` and Song `tags` criteria).
+- [x] Exercise route and search identity before converting Event and User.
+- [x] Exercise a raw multipart upload boundary and public-keyed legacy file
+  enrichment (`FileTag` upload context and Event detail files).
+- [x] Replace a hand-authored association DTO and component-owned mock-row
+  shape with derived views, normalized references, and `TagsField` draft
+  construction (`WikiPageTag` and Wiki page editing).
+- [x] Exercise one classification family across dashboard caches, embedded
+  summaries, raw-SQL facets/reports, import/insert workflows, and shared
+  server/client algorithms (`EventType`, `EventStatus`, and `EventTag`).
+- [x] Exercise a partially migrated association whose owner remains natural
+  while its target and association row are public (`UserTagAssignment`).
+- [x] Exercise a rich association with public row identity, a public lookup
+  target, natural central-domain endpoints, and authorization inherited from
+  a visible target relationship (`SongCredit`).
 
 ### Deferred DB3 enhancements
 
