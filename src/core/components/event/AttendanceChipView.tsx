@@ -1,7 +1,6 @@
-import type { EventAttendancePublicId } from "shared/publicId";
+import type { EventAttendancePublicId, EventPublicId } from "shared/publicId";
 import { Icon } from "@mui/material";
 import React from "react";
-import type { Prisma } from "@prisma/client";
 import type * as db3 from "src/core/db3/db3";
 import { EventAPI } from "src/core/db3/shared/schema/event";
 import { RenderMuiIcon } from "../../db3/components/IconMap";
@@ -13,8 +12,8 @@ export interface AttendanceChipTooltipProps {
     value: db3.EventAttendanceDisplay | null;
     eventResponse?: Pick<db3.EventUserResponseClientPayload, "instrumentId" | "userComment"> | undefined;
     segmentResponse?: Pick<db3.EventSegmentUserResponseClientPayload, "attendanceId" | "createdByUserId" | "createdAt" | "updatedAt" | "updatedByUserId"> | undefined;
-    event?: Prisma.EventGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
-    eventSegment?: Pick<db3.EventVerbose_EventSegmentClient, "publicId" | "name" | "startsAt"> | undefined;
+    event?: { publicId: EventPublicId; name: string; startsAt: Date | null } | undefined;
+    eventSegment?: Pick<db3.EventDetailSegmentClient, "publicId" | "name" | "startsAt"> | undefined;
 };
 export const AttendanceChipTooltipContent = (props: AttendanceChipTooltipProps & { updatedByUserName?: string }) => {
     return <div>
@@ -46,8 +45,8 @@ export const AttendanceChipTooltipContent = (props: AttendanceChipTooltipProps &
     </div>;
 };
 export interface AttendanceChipProps {
-    event?: Prisma.EventGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
-    eventSegment?: Pick<db3.EventVerbose_EventSegmentClient, "publicId" | "name" | "startsAt"> | undefined;
+    event?: { publicId: EventPublicId; name: string; startsAt: Date | null } | undefined;
+    eventSegment?: Pick<db3.EventDetailSegmentClient, "publicId" | "name" | "startsAt"> | undefined;
     eventResponse?: Pick<db3.EventUserResponseClientPayload, "instrumentId" | "userComment"> | undefined;
     segmentResponse?: Pick<db3.EventSegmentUserResponseClientPayload, "attendanceId" | "createdByUserId" | "createdAt" | "updatedAt" | "updatedByUserId"> | undefined;
 

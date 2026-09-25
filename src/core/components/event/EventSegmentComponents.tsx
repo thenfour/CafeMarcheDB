@@ -8,6 +8,7 @@ import { useMutation } from "@blitzjs/rpc";
 import { Divider, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
+import type { EventPublicId } from "shared/publicId";
 import { IsNullOrWhitespace } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
@@ -18,7 +19,7 @@ import { DB3EditObjectDialog } from '../../db3/components/db3NewObjectDialog';
 import clearEventSegmentResponses from "../../db3/mutations/clearEventSegmentResponses";
 import copyEventSegmentResponses from "../../db3/mutations/copyEventSegmentResponses";
 import { useConfirm } from "../ConfirmationDialog";
-import { type EventEnrichedVerbose_Event, EventTableClientColumns } from "./EventComponentsBase";
+import { type EventDetailEvent, type EventDetailTableClient, EventTableClientColumns } from "./EventComponentsBase";
 import { Markdown } from "../markdown/Markdown";
 import { SettingMarkdown } from "../SettingMarkdown";
 import { toSorted } from "shared/arrayUtils";
@@ -112,7 +113,7 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
 
 ////////////////////////////////////////////////////////////////
 interface NewEventSegmentButtonProps {
-    event: { id: number };
+    event: { publicId: EventPublicId };
     initialName: string;
     refetch: () => void;
 };
@@ -125,7 +126,7 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
     const publicData = useDB3Authorization();
     const blankObject: EventSegmentEditorClient = db3.xEventSegment.createNew(currentUser);
     blankObject.name = props.initialName;
-    blankObject.eventId = event.id;
+    blankObject.eventId = event.publicId;
 
     const authorized = db3.xEventSegment.authorizeRowBeforeInsert({
         publicData,
@@ -159,8 +160,8 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
 
 ////////////////////////////////////////////////////////////////
 export interface EventSegmentPanelProps {
-    event: EventEnrichedVerbose_Event,
-    segment: db3.EventVerbose_EventSegmentClient,
+    event: EventDetailEvent,
+    segment: db3.EventDetailSegmentClient,
     readonly: boolean;
     refetch: () => void;
 };
@@ -240,8 +241,8 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
 
 ////////////////////////////////////////////////////////////////
 interface SegmentListProps {
-    event: EventEnrichedVerbose_Event;
-    tableClient: DB3Client.xTableRenderClient;
+    event: EventDetailEvent;
+    tableClient: EventDetailTableClient;
     readonly: boolean;
 };
 
@@ -280,8 +281,8 @@ export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) 
 
 
 export interface EditSingleSegmentDateButtonProps {
-    event: EventEnrichedVerbose_Event,
-    segment: db3.EventVerbose_EventSegmentClient,
+    event: EventDetailEvent,
+    segment: db3.EventDetailSegmentClient,
     readonly: boolean;
     refetch: () => void;
 };
@@ -331,9 +332,9 @@ export const EditSingleSegmentDateButton = (props: EditSingleSegmentDateButtonPr
 
 
 interface EventSegmentDotMenuCopyUserResponsesFromMenuItemProps {
-    event: EventEnrichedVerbose_Event,
-    fromSegment: db3.EventVerbose_EventSegmentClient,
-    toSegment: db3.EventVerbose_EventSegmentClient,
+    event: EventDetailEvent,
+    fromSegment: db3.EventDetailSegmentClient,
+    toSegment: db3.EventDetailSegmentClient,
     readonly: boolean;
     refetch: () => void;
     onClose: () => void;
@@ -367,8 +368,8 @@ export const EventSegmentDotMenuCopyUserResponsesFromMenuItem = (props: EventSeg
 };
 
 interface EventSegmentDotMenuProps {
-    event: EventEnrichedVerbose_Event,
-    segment: db3.EventVerbose_EventSegmentClient,
+    event: EventDetailEvent,
+    segment: db3.EventDetailSegmentClient,
     readonly: boolean;
     refetch: () => void;
     getAttendeeNames: (copyInstrumentNames: boolean) => string[];

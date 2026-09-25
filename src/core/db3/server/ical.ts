@@ -1,9 +1,9 @@
-import type { EventAttendancePublicId, EventSegmentPublicId } from "shared/publicId";
+import type { EventAttendancePublicId, EventPublicId, EventSegmentPublicId } from "shared/publicId";
 import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import db, { Prisma } from "db";
 import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent } from "ical-generator";
 import { floorLocalToLocalDay } from "shared/time";
-import { queryTable } from "src/core/db3/server/db3QueryCore";
+import { queryView } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
 import { MakeICalEventUid } from "../shared/apiTypes";
 import { EventCalendarInput, GetEventCalendarInput } from "./icalUtils";
@@ -67,8 +67,8 @@ export const createCalendar = async (args: CreateCalendarArgs): Promise<ICalCale
 export const addEventToCalendar2 = (
     calendar: ICalCalendar,
     user: null | db3.UserForCalBackendPayload,
-    event: EventCalendarInput<number | EventSegmentPublicId> | null,
-    eventVerbose: db3.EventClientPayload_Verbose,
+    event: EventCalendarInput<number | EventSegmentPublicId, number | EventPublicId> | null,
+    calendarEvent: db3.EventCalendarClient,
     eventAttendanceIdsRepresentingGoing: EventAttendancePublicId[],
     icalSettings: ICalSettings
 ): ICalEvent | null => {
@@ -86,14 +86,14 @@ export const addEventToCalendar2 = (
     // CalculateEventMetadata
     // et al,
     // so wing it.
-    const getEventUserResponse = (): null | db3.EventUserResponseClientPayload => {
+    const getEventUserResponse = (): null | { revision: number } => {
         if (!user) return null;
-        const found = eventVerbose.responses.find(u => u.userId === user.id);
+        const found = calendarEvent.responses.find(u => u.userId === user.id);
         return found || null;
     };
 
     const isUserAttending = (userId: number): boolean => {
-        return eventVerbose.segments.some(segment =>
+        return calendarEvent.segments.some(segment =>
             segment.responses.some(response =>
                 response.userId === userId && response.attendanceId && eventAttendanceIdsRepresentingGoing.includes(response.attendanceId)
             )
@@ -148,8 +148,7 @@ export const addEventToCalendar2 = (
 export const addEventToCalendar = async (
     calendar: ICalCalendar,
     user: null | db3.UserForCalBackendPayload,
-    event: db3.EventClientPayload_Verbose,
-    eventVerbose: db3.EventClientPayload_Verbose,
+    event: db3.EventCalendarClient,
     eventAttendanceIdsRepresentingGoing: EventAttendancePublicId[],
     cancelledStatusIds: EventStatusPublicId[],
     icalSettings: ICalSettings,
@@ -159,6 +158,29 @@ export const addEventToCalendar = async (
     // still hash natural DB identities, and calendar UIDs keep their existing values.
     const inputs = GetEventCalendarInput({
         ...event,
+        id: event.publicId,
+        songLists: event.songLists.map(songList => ({
+            songs: songList.songs.map(row => ({
+                subtitle: row.subtitle,
+                sortOrder: row.sortOrder,
+                song: {
+                    name: row.song.name,
+                    lengthSeconds: row.song.lengthSeconds,
+                    startBPM: row.song.startBPM,
+                    endBPM: row.song.endBPM,
+                },
+            })),
+            dividers: songList.dividers.map(row => ({
+                subtitle: row.subtitle,
+                sortOrder: row.sortOrder,
+                color: row.color?.id ?? null,
+                isInterruption: row.isInterruption,
+                isSong: row.isSong,
+                subtitleIfSong: row.subtitleIfSong,
+                lengthSeconds: row.lengthSeconds,
+                textStyle: row.textStyle,
+            })),
+        })),
         segments: event.segments.map(segment => ({
             ...segment,
             id: segment.publicId
@@ -167,7 +189,7 @@ export const addEventToCalendar = async (
 
     return inputs
         .segments
-        .map(input => addEventToCalendar2(calendar, user, input, eventVerbose, eventAttendanceIdsRepresentingGoing, icalSettings))
+        .map(input => addEventToCalendar2(calendar, user, input, event, eventAttendanceIdsRepresentingGoing, icalSettings))
         .filter(x => !!x);
 };
 
@@ -189,7 +211,6 @@ type CalExportCoreArgs = CalExportCoreArgsUpcoming | CalExportCoreArgsSingleEven
 export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCoreArgs): Promise<ICalCalendar> => {
 
 
-    const table = db3.xEventVerbose;
     const minDate = floorLocalToLocalDay(new Date()); // avoid tight loop where date changes every render, by flooring to day.
     minDate.setMonth(minDate.getMonth() - 12); // #226 this is a default calendar export and it should not make events disappear immediately.
 
@@ -201,20 +222,20 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
     const authorization = await loadUserAuthorization(currentUser);
     const { eventsRaw, bandTimeZone } = await db.$transaction(async tx => {
         const bandTimeZone = await loadBandTimeZone(tx);
-        const eventsRaw = await queryTable({
-            table,
+        const eventsRaw = await queryView({
+            view: db3.eventCalendarView,
             filter: {
                 tableParams: eventsTableParams,
             },
             cmdbQueryContext: `CalExportCore`,
             orderBy: undefined,
-        }, authorization, tx);
+        }, authorization, new db3.DB3ReferenceStore(), tx);
         return { eventsRaw, bandTimeZone };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 30_000 });
 
     // don't error if 0 events. this is a calendar-of-events and 0 events is valid.
 
-    const events = eventsRaw.items as db3.EventClientPayload_Verbose[];
+    const events = eventsRaw.items;
 
     const settings = await GetICalSettings();
 
@@ -257,7 +278,7 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
             cancelledStatusIds: cancelledStatuses,
             attendanceById,
         })) continue;
-        await addEventToCalendar(cal, currentUser, event, event, goingAttendanceIds, cancelledStatusIds, settings, bandTimeZone);
+        await addEventToCalendar(cal, currentUser, event, goingAttendanceIds, cancelledStatusIds, settings, bandTimeZone);
     }
 
     return cal;

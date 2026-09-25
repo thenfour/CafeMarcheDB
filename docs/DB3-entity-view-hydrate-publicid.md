@@ -261,9 +261,9 @@ are registered, finite collection edges rather than untyped ghost fields. A
 single typed File client normalizer removes association rows whose protected
 target was elided and guarantees that every retained association has a concrete
 target; Song's embedded File cards reuse the same boundary. The unused
-`xFileVerbose` duplicate has been removed. The remaining `enrichFile` call is
-confined to the legacy Event payload path and can disappear with that view's
-migration.
+`xFileVerbose` duplicate has been removed. The central Event migration later
+replaced its legacy detail payload with `Event_Detail`, removing the final
+`enrichFile` caller from that boundary.
 
 ### DTO: the authorized transport boundary
 
@@ -1146,8 +1146,8 @@ looks easiest. Classify the scenarios exercised by a proposed slice:
 - **Application pressure** covers broad workflows and policy reconciliation that
   may require substantial consumer work but is unlikely to change the public-ID
   architecture. Start these domains once the narrower slices have established
-  their shared identity contracts. Event is the next application phase; migrate
-  its child aggregates before the central Event identity.
+  their shared identity contracts. The Event phase followed this order: its
+  child aggregates migrated before the central Event identity.
 
 These categories apply to scenarios, not permanently to whole entities. A model
 can contain one design-pressure boundary surrounded by application-heavy work.
@@ -1184,9 +1184,10 @@ The current pressure-led sequence is:
    first repetition slice. File views, dashboard references, search criteria,
    filters, upload context, association commands, and React keys now use typed
    public identities. The raw multipart upload route validates and resolves a
-   file-tag public ID once at its trusted boundary. The remaining legacy Event
-   detail adapter explicitly selects target public identity for projection and
-   enriches from public-keyed caches; it no longer depends on a numeric tag FK.
+   file-tag public ID once at its trusted boundary. The Event detail adapter at
+   that stage selected target public identity for projection and enriched from
+   public-keyed caches; the later central Event slice replaced it with the
+   finite `Event_Detail` view.
    This slice also made discrete-criterion option types generic so branded
    identities remain visible through file-search UI state.
 4. **Completed:** migrate `WikiPageTag` and `WikiPageTagAssignment` together.
@@ -1276,15 +1277,15 @@ The current pressure-led sequence is:
 9. **Completed:** migrate the five File cross-entity association rows as one
    family. `FileUserTag`, `FileSongTag`, `FileEventTag`,
    `FileInstrumentTag`, and `FileWikiPageTag` now have branded public row
-   identities while File, User, Song, Event, and WikiPage remain natural and
-   Instrument remains public.
+   identities. At that stage File, User, Song, Event, and WikiPage remained
+   natural while Instrument was already public.
 
    This slice exercised the same association family in both directions and
    through reusable nested File-card graphs. Named File and Song views select
    each association public ID explicitly; recursive projection removes the raw
-   row ID even when a File card is embedded inside another association. The
-   legacy verbose Event/File payload aliases now describe the same client
-   boundary instead of exposing server payload types for some relations.
+   row ID even when a File card is embedded inside another association. This
+   aligned the former verbose Event/File payload aliases with the same client
+   boundary; the later File and Event view migrations removed those aliases.
 
    The mixed endpoint domains require no caller-side type inspection. Each
    target xTable continues to own its own identity domain, while each
@@ -1340,26 +1341,24 @@ The current pressure-led sequence is:
     diagnostic data; live references follow each target entity's migration.
     Remove the two ledger models from the denominator, not by counting them as
     completed conversions.
-13. **In progress:** migrate the Event constellation from its outer aggregates
-    inward. Setlists, EventAttendance, and segments/responses are complete;
-    central Event is next. The bounded slices
-    below preserve the existing identity domains of Event, Song, and User until
-    their own turns.
+13. **Completed:** migrate the Event constellation from its outer aggregates
+    inward. Setlists, EventAttendance, segments/responses, and central Event now
+    use public identity across their client boundaries.
 14. Keep central Song, File, WikiPage, User, and the separate SetlistPlan
     aggregate for later application slices. EventSongList migration does not
     require converting SetlistPlan or SetlistPlanGroup.
 
-### Current application phase: Event constellation
+### Completed application phase: Event constellation
 
 The Event classification family and FileEventTag are already converted. The
-eight Event-related models form four coherent slices; the first three are complete:
+eight Event-related models formed four coherent slices, all now complete:
 
 | Order | Models | Boundary exercised |
 | --- | --- | --- |
 | 1 (complete) | `EventSongList`, `EventSongListSong`, `EventSongListDivider` | An editable aggregate with persisted child identities, local draft keys, and mixed song/divider ordering. |
 | 2 (complete) | `EventAttendance` | The shared response-choice reference across dashboard caches, controls, reports, imports, and telemetry. |
 | 3 (complete) | `EventSegment`, `EventSegmentUserResponse`, `EventUserResponse` | Segment-keyed attendance operations and response creation/copying while Event and User remain natural. |
-| 4 | `Event` | Central routes, search, calendar links, visibility, creation/import, files, reports, and the complete embedded graph. |
+| 4 (complete) | `Event` | Central routes, search, calendar links, visibility, creation/import, files, reports, and the complete embedded graph. |
 
 Each slice includes all references to its converted models, even when those
 references occur in an unconverted parent. Keeping Event numeric during the
@@ -1488,15 +1487,48 @@ rechecked. Existing Blitz export warnings in `src/blitz-server.ts` remain.
 Deployment requires the SQL migration and startup placeholder repair; neither
 live migration nor browser interaction against migrated data was performed.
 
-#### Next slice: central Event
+#### Completed slice: central Event
 
-Finally migrate Event across routes and exact lookup, search/facets, list/detail
-and frontpage views, calendar URLs and feeds, creation/import, file associations,
-telemetry/reports, and references from the already converted children. Remove
-the remaining verbose Event/enrichment compatibility path as its consumers move
-to named views. Preserve server-owned calendar IDs and audit keys where their
-contracts explicitly require them; client Event navigation and writes use only
-the new public identity.
+`Event` now uses branded public identity across its complete client boundary.
+
+- The schema and checked-in SQL migration add a unique ASCII/binary public-ID
+  column with deployment placeholders. Startup repair and seeds assign real
+  IDs. Event creation returns the finite editor DTO after re-reading the new
+  row through its named selection.
+- `xEvent` owns public identity; its natural key is visible only to trusted
+  sysadmin surfaces. Routes, exact lookup, links, search results, filters,
+  calendar links, attendance requests, setlist commands, file associations,
+  telemetry, reports, and React keys now carry `EventPublicId`. Entity query
+  parameters resolve public IDs once at the server boundary. Search keeps its
+  raw-SQL natural keys in a server-only execution option while DB3 reapplies row
+  authorization and projects the returned Events.
+- `Event_Editor`, `Event_Search`, `Event_Frontpage`, `Event_WikiPageContext`,
+  `Event_Detail`, and `Event_Calendar` provide finite contracts for their
+  distinct consumers. Detail and calendar hydration validate that every member
+  required by their complete consumer types was selected. The detail page now
+  uses the named view and dashboard reference store directly.
+- The duplicate `xEventVerbose`, its Prisma/client payload aliases, the Event
+  enrichment module, and the final Event-side `enrichFile` call are removed.
+  Calendar export queries `Event_Calendar` and maps its hydrated setlist content
+  into the existing calendar formatter without casts or a second verbose row.
+- Calendar UIDs, persisted revision hashes, database foreign keys, and
+  Action/Change audit keys retain their server-owned natural-key contracts.
+  Current Action transport references are public and resolve only inside the
+  server operation.
+- Startup repair also rewrites `EventDescription` wiki slugs and persisted
+  SetlistPlan Event links to public paths. These rewrites cover stored strings
+  that cannot be expressed as Prisma foreign-key projection.
+
+Validation: the full repository runner passed 104 test files with 1,609 tests
+passing and 23 tests skipped across the three MySQL integration suites.
+TypeScript, ESLint, Prisma client generation and schema validation, the
+production build, and `git diff --check` pass. The build retains the existing
+Blitz export warnings in `src/blitz-server.ts`, along with its existing
+static-optimization and color-environment warnings.
+
+Deployment still requires applying the checked-in SQL migration and starting
+with placeholder repair enabled. The migration was not applied to a database,
+and browser interaction against migrated data remains unverified.
 
 ## Active roadmap
 
@@ -1605,15 +1637,15 @@ conversions.
   deleting each numeric client-identity compatibility path before marking that
   model complete below.
 
-#### Client-facing model progress: 35 / 47 complete (74%)
+#### Client-facing model progress: 36 / 47 complete (77%)
 
 The denominator is the 47 in-scope Prisma models whose own row identity currently
 crosses a client boundary. It excludes the five server-only models and the two
 operational ledger exceptions listed below. Excluding Action and Change changes
 the scope, not the completed count. A model counts as complete only when it
 satisfies the full definition of a migrated entity above; merely adding a
-`publicId` schema column does not advance the count. Multiple xTable variants
-over the same Prisma model, such as `xEvent` and `xEventVerbose`, count once.
+`publicId` schema column does not advance the count. Multiple views or xTable
+declarations over one Prisma model count once.
 
 Completed models:
 
@@ -1652,6 +1684,7 @@ Completed models:
 - [x] `EventSegment`
 - [x] `EventSegmentUserResponse`
 - [x] `EventUserResponse`
+- [x] `Event`
 
 Remaining models are grouped into coherent intended slices. The pressure label
 describes why the slice is ordered there; it does not relax the per-model
@@ -1677,8 +1710,8 @@ completion definition.
   - [x] `EventSegment`
   - [x] `EventSegmentUserResponse`
   - [x] `EventUserResponse`
-- **Next: central Event**
-  - [ ] `Event`
+- **Completed: central Event**
+  - [x] `Event`
 - **Small independent repetition slices**
   - [ ] `Setting`
   - [ ] `CustomLink`

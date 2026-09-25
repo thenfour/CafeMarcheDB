@@ -62,7 +62,7 @@ export const useEventsForDateRange = (dateRange: CalendarRange) => {
                             locale: dashboardContext.userLocale,
                         }))!;
                         return [{
-                            id: event.id.toString(), // Preserve the picker cell's data-event-id.
+                            id: event.publicId, // Preserve the picker cell's data-event-id.
                             title: event.name || 'Untitled Event',
                             color: typeof event.type?.color === "string"
                                 ? event.type.color

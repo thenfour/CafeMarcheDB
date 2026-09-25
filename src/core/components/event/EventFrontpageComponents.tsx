@@ -21,7 +21,7 @@ import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/Das
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { AgendaItem } from '../frontpage/homepageComponents';
 import { SettingMarkdown } from "../SettingMarkdown";
-import type { EventEnrichedVerbose_Event } from "./EventComponentsBase";
+import type { EventDetailEvent } from "./EventComponentsBase";
 
 
 
@@ -216,7 +216,7 @@ interface FrontpageControlSpec {
 //     }>;
 // };
 
-type EventFrontpageEditorEvent = db3.EventFrontpageClient | EventEnrichedVerbose_Event;
+type EventFrontpageEditorEvent = db3.EventFrontpageClient | EventDetailEvent;
 
 interface EventFrontpageControlProps {
     event: EventFrontpageEditorEvent;
@@ -264,7 +264,7 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
             feature: ActivityFeature.event_frontpage_edit,
         });
         mutationToken.invoke({
-            eventId: props.event.id,
+            eventId: props.event.publicId,
             [props.fieldSpec.fieldNameEn]: valueEn,
             [props.fieldSpec.fieldNameNl]: valueNl,
             [props.fieldSpec.fieldNameFr]: valueFr,
@@ -367,7 +367,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             feature: ActivityFeature.event_frontpage_edit,
         });
         mutationToken.invoke({
-            eventId: props.event.id,
+            eventId: props.event.publicId,
             frontpageVisible: e.target.checked,
         }).then(() => {
             showSnackbar({ severity: "success", children: `Successfully updated frontpage visibility` });
@@ -444,7 +444,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
                     feature: ActivityFeature.event_frontpage_edit,
                 });
                 await mutationToken.invoke({
-                    eventId: props.event.id,
+                    eventId: props.event.publicId,
 
                     frontpageDate: dateValues.en,
                     frontpageDate_fr: dateValues.fr,

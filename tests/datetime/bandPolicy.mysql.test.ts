@@ -33,7 +33,7 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
       startsAt: new Date(allDay ? "2026-07-09T22:00:00Z" : "2026-07-10T22:30:12.345Z"),
       durationMillis: BigInt(allDay ? day : 1_200_789) })
     for (const [id, segments] of [[5001, [segment(true)]], [5002, [segment(false)]], [5003, [segment(true), segment(false)]]] as const) {
-      await db.event.create({ data: { id, name: "Policy fixture", locationDescription: "", revision: 1, segments: { create: [...segments] } } })
+      await db.event.create({ data: { id, publicId: generatePublicId<"Event">(), name: "Policy fixture", locationDescription: "", revision: 1, segments: { create: [...segments] } } })
     }
     await db.$transaction(tx => recalculateEventDateBounds(tx), transactionOptions)
   })

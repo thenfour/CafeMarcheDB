@@ -44,7 +44,7 @@ const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
                 publicId: true,
                 event: {
                     select: {
-                        id: true,
+                        publicId: true,
                         name: true,
                         startsAt: true,
                         statusId: true,

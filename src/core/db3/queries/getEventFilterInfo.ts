@@ -12,7 +12,7 @@ import { getCurrentUserCore } from "../server/db3mutationCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter } from "../shared/apiTypes";
 import { SplitQuickFilter } from "shared/quickFilter";
 import { MysqlEscape } from "shared/mysqlUtils";
-import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, UserTagPublicId } from "shared/publicId";
+import type { EventPublicId, EventStatusPublicId, EventTagPublicId, EventTypePublicId, UserTagPublicId } from "shared/publicId";
 import { resolvePublicIds } from "../server/db3PublicIds";
 
 interface TArgs {
@@ -209,9 +209,10 @@ export default resolver.pipe(
             const paginatedEventQuery = `
         ${filteredEventsCTE}
     select
-        FE.EventId
+        E.publicId AS EventId
     from
         FilteredEvents as FE
+    join Event as E on E.id = FE.EventId
     order by
         isnull(FE.startsAt) ${sortOrder},
         FE.startsAt ${sortOrder},
@@ -266,7 +267,8 @@ export default resolver.pipe(
                 description: string;
                 event_count: bigint;
             }>;
-            const eventIds: { EventId: number }[] = pq[3] as any;
+            // Raw SQL selects the public identity explicitly.
+            const eventIds = pq[3] as { EventId: EventPublicId }[];
             const rowCountResult: { rowCount: bigint }[] = pq[4] as any;
 
             // FULL EVENT DETAILS USING DB3.

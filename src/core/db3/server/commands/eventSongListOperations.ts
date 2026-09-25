@@ -18,7 +18,14 @@ export const eventSongListDeleteCommandHandler = defineCommandHandler(
             throw new DB3MutationAuthorizationError(xEventSongList.tableName, ["publicId"]);
         }
         const row = await context.rowServices.requireVisible(xEventSongList, dto.publicId);
-        await context.rowServices.requireVisible(xEvent, xEvent.parseIdentity(row.eventId));
+        const parent = await context.transaction.event.findUnique({
+            where: { id: row.eventId },
+            select: { publicId: true },
+        });
+        if (!parent) {
+            throw new DB3CommandError("The setlist's event was not found.");
+        }
+        await context.rowServices.requireVisible(xEvent, xEvent.parseIdentity(parent.publicId));
         // The parent selection includes both collections for one aggregate audit.
         // Database cascades delete the children inside the command transaction.
         await context.rowServices.delete(xEventSongList, dto.publicId, "hard");
@@ -32,7 +39,7 @@ export const eventSongListReorderCommandHandler = defineCommandHandler(
         if (!xEventSongList.authorizeTableForEdit(context.authorization)) {
             throw new DB3MutationAuthorizationError(xEventSongList.tableName, ["sortOrder"]);
         }
-        await context.rowServices.requireVisible(xEvent, dto.eventId);
+        const event = await context.rowServices.requireVisible(xEvent, dto.eventId);
         const ids = await resolvePublicIds(xEventSongList, dto.scopeRowIds, context.authorization, context.transaction);
 
         const items = await context.transaction.eventSongList.findMany({
@@ -40,7 +47,7 @@ export const eventSongListReorderCommandHandler = defineCommandHandler(
                 id: {
                     in: ids
                 },
-                eventId: dto.eventId,
+                eventId: event.id,
             },
             orderBy:
             {

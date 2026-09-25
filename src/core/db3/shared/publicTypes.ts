@@ -1,4 +1,5 @@
 import { ImageEditParams } from "./fileTypes";
+import type { EventPublicId } from "shared/publicId";
 
 export interface PublicAgendaItemSpec {
     date?: string | null;
@@ -9,7 +10,7 @@ export interface PublicAgendaItemSpec {
     locationURI?: string | null;
     tags?: string | null;
 
-    id: number;
+    id: EventPublicId;
     startsAt: Date | null;
 };
 export interface PublicGalleryItemSpec {

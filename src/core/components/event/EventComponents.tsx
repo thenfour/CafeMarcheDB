@@ -1,4 +1,4 @@
-import type { EventSegmentPublicId } from "shared/publicId";
+import type { EventPublicId, EventSegmentPublicId } from "shared/publicId";
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
@@ -8,7 +8,6 @@ import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
 import { Breadcrumbs, Divider, FormControlLabel, Link, ListItemIcon, MenuItem, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
-import { Prisma } from "db";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { toSorted } from 'shared/arrayUtils';
@@ -23,7 +22,6 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../../db3/clientAPI';
 import { gCharMap, gIconMap } from '../../db3/components/IconMap';
-import { enrichFile } from '../../db3/shared/schema/enrichedFileTypes';
 import { EventResponseInfo, UserInstrumentList } from '../../db3/shared/schema/eventAPI';
 import { wikiMakeWikiPathFromEventDescription } from '../../wiki/shared/wikiUtils';
 import { AppContextMarker } from '../AppContext';
@@ -52,7 +50,7 @@ import { WikiStandaloneControl } from '../wiki/WikiStandaloneComponents';
 import { AttendanceChip } from './AttendanceChips';
 import { EventAttendanceUserTagControl } from './EventAttendanceUserTagControl';
 import { EventsFilterSpec } from './EventClientBaseTypes';
-import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventWithMetadata } from './EventComponentsBase';
+import { CalculateEventDetailMetadata, CalculateEventSearchResultsMetadata, EventDetailEvent, EventDetailTableClient, EventWithMetadata } from './EventComponentsBase';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { RelevanceClassOverrideIndicator, RelevanceClassOverrideMenuItemGroup } from './EventRelevanceOverrideComponents';
 import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from './EventSegmentComponents';
@@ -70,18 +68,18 @@ import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from '.
 
 
 
-type VerboseEventResponseInfo = EventResponseInfo<
-    EventEnrichedVerbose_Event,
-    db3.EventVerbose_EventSegmentClient,
-    db3.EventVerbose_EventUserResponse,
-    db3.EventVerbose_EventSegmentUserResponse
+type DetailEventResponseInfo = EventResponseInfo<
+    EventDetailEvent,
+    db3.EventDetailSegmentClient,
+    db3.EventDetailEventResponse,
+    db3.EventDetailSegmentResponse
 >;
 
-type VerboseEventWithMetadata = EventWithMetadata<
-    EventEnrichedVerbose_Event,
-    db3.EventVerbose_EventUserResponse,
-    db3.EventVerbose_EventSegmentClient,
-    db3.EventVerbose_EventSegmentUserResponse
+type DetailEventWithMetadata = EventWithMetadata<
+    EventDetailEvent,
+    db3.EventDetailEventResponse,
+    db3.EventDetailSegmentClient,
+    db3.EventDetailSegmentResponse
 >;
 
 
@@ -91,7 +89,7 @@ type VerboseEventWithMetadata = EventWithMetadata<
 
 ////////////////////////////////////////////////////////////////
 export interface EventBreadcrumbProps {
-    event: Pick<EventEnrichedVerbose_Event, "id" | "name">,
+    event: Pick<EventDetailEvent, "publicId" | "name">,
 };
 export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
     const dashboardContext = useDashboardContext();
@@ -133,8 +131,8 @@ export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
 
 ////////////////////////////////////////////////////////////////
 export interface EventAttendanceEditDialogProps {
-    responseInfo: VerboseEventResponseInfo;
-    event: EventEnrichedVerbose_Event;
+    responseInfo: DetailEventResponseInfo;
+    event: EventDetailEvent;
     user: db3.UserWithInstrumentsPayload;
     userMap: UserInstrumentList;
     refetch: () => void;
@@ -156,10 +154,10 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     const recordFeature = useFeatureRecorder();
     const [showCancelledSegments, setShowCancelledSegments] = React.useState<boolean>(false);
 
-    const [eventResponseValue, setEventResponseValue] = React.useState<db3.EventVerbose_EventUserResponse | null>(() => {
+    const [eventResponseValue, setEventResponseValue] = React.useState<db3.EventDetailEventResponse | null>(() => {
         return (props.responseInfo.getEventResponseForUser(props.user, dashboardContext, props.userMap)?.response) || null;
     });
-    const [eventSegmentResponseValues, setEventSegmentResponseValues] = React.useState<Record<EventSegmentPublicId, db3.EventVerbose_EventSegmentUserResponse>>(() => {
+    const [eventSegmentResponseValues, setEventSegmentResponseValues] = React.useState<Record<EventSegmentPublicId, db3.EventDetailSegmentResponse>>(() => {
         return Object.fromEntries(Object.entries(props.responseInfo.getResponsesBySegmentForUser(props.user)).map(x => [x[0], x[1].response]));
     });
 
@@ -220,11 +218,11 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         void recordFeature({
             feature: ActivityFeature.attendance_response,
             context: `EventAttendanceEditDialog`,
-            eventId: props.event.id,
+            eventId: props.event.publicId,
         });
         mutationToken.invoke({
             userId: props.user.id,
-            eventId: props.event.id,
+            eventId: props.event.publicId,
             comment: eventResponseValue.userComment,
             instrumentId: eventResponseValue.instrumentId,
             segmentResponses: Object.fromEntries(Object.entries(eventSegmentResponseValues).map(x => {
@@ -246,11 +244,11 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         }).finally(props.refetch);
     };
 
-    const handleChangedEventResponse = (n: db3.EventVerbose_EventUserResponse) => {
+    const handleChangedEventResponse = (n: db3.EventDetailEventResponse) => {
         setEventResponseValue(n);
     };
 
-    const handleChangedEventSegmentResponse = (segment: { publicId: EventSegmentPublicId }, n: db3.EventVerbose_EventSegmentUserResponse) => {
+    const handleChangedEventSegmentResponse = (segment: { publicId: EventSegmentPublicId }, n: db3.EventDetailSegmentResponse) => {
         const newval = {
             ...eventSegmentResponseValues,
             [segment.publicId]: n
@@ -316,8 +314,8 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
 
 ////////////////////////////////////////////////////////////////
 export interface EventAttendanceEditButtonProps {
-    responseInfo: VerboseEventResponseInfo;
-    event: EventEnrichedVerbose_Event;
+    responseInfo: DetailEventResponseInfo;
+    event: EventDetailEvent;
     user: db3.UserWithInstrumentsPayload;
     userMap: UserInstrumentList;
     refetch: () => void;
@@ -340,8 +338,8 @@ export const EventAttendanceEditButton = (props: EventAttendanceEditButtonProps)
 
 ////////////////////////////////////////////////////////////////
 export interface EventAttendanceDetailRowProps {
-    responseInfo: VerboseEventResponseInfo;
-    event: EventEnrichedVerbose_Event;
+    responseInfo: DetailEventResponseInfo;
+    event: EventDetailEvent;
     user: db3.UserWithInstrumentsPayload;
     userMap: UserInstrumentList;
     showCancelledSegments: boolean;
@@ -421,10 +419,9 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
 
 ////////////////////////////////////////////////////////////////
 export interface EventAttendanceDetailProps {
-    //event: db3.EventClientPayload_Verbose;
     //responseInfo: db3.EventResponseInfo;
-    eventData: VerboseEventWithMetadata;
-    tableClient: DB3Client.xTableRenderClient;
+    eventData: DetailEventWithMetadata;
+    tableClient: EventDetailTableClient;
     //expectedAttendanceTag: db3.UserTagPayload | null;
     //functionalGroups: db3.InstrumentFunctionalGroupPayload[];
     refetch: () => void;
@@ -443,7 +440,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [sortField, setSortField] = React.useState<EventAttendanceDetailSortField>("instrument");
     const [sortSegmentId, setSortSegmentId] = React.useState<EventSegmentPublicId | null>(null);
-    const [sortSegment, setSortSegment] = React.useState<db3.EventVerbose_EventSegmentClient | null>(null);
+    const [sortSegment, setSortSegment] = React.useState<db3.EventDetailSegmentClient | null>(null);
     const recordFeature = useFeatureRecorder();
 
     const [showCancelledSegments, setShowCancelledSegments] = React.useState<boolean>(false);
@@ -464,7 +461,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
             feature: ActivityFeature.attendance_explicit_invite,
         });
         token.invoke({
-            eventId: event.id,
+            eventId: event.publicId,
             userId: u.id,
             isInvited: true,
         }).then(e => {
@@ -611,7 +608,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
 
 
 
-export const EventDescriptionControl = ({ event, refetch, readonly }: { event: Prisma.EventGetPayload<{ select: { name: true, id: true } }>, refetch: () => void, readonly: boolean }) => {
+export const EventDescriptionControl = ({ event, refetch, readonly }: { event: { publicId: EventPublicId; name: string }, refetch: () => void, readonly: boolean }) => {
     const wikiPath = wikiMakeWikiPathFromEventDescription(event);
     return <WikiStandaloneControl
         canonicalWikiPath={wikiPath.canonicalWikiPath}
@@ -626,12 +623,12 @@ export const EventDescriptionControl = ({ event, refetch, readonly }: { event: P
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type SegmentResponseStat = {
-    segment: db3.EventVerbose_EventSegmentClient;
+    segment: db3.EventDetailSegmentClient;
     notGoingCount: number;
     goingCount: number;
 };
 
-const GetSegmentResponseStats = (segments: db3.EventVerbose_EventSegmentClient[], dashboardContext: DashboardContextData): SegmentResponseStat[] => {
+const GetSegmentResponseStats = (segments: db3.EventDetailSegmentClient[], dashboardContext: DashboardContextData): SegmentResponseStat[] => {
     return segments.map(seg => ({
         segment: seg,
         notGoingCount: seg.responses.filter(resp => {
@@ -652,7 +649,7 @@ const EventSegmentAttendeeStat = (props: { stat: SegmentResponseStat }) => {
     </div>;
 };
 
-const GetSegmentAttendeeNames = (copyInstrumentNames: boolean, segmentId: EventSegmentPublicId, eventData: VerboseEventWithMetadata, userMap: UserInstrumentList, dashboardContext: DashboardContextData): string[] => {
+const GetSegmentAttendeeNames = (copyInstrumentNames: boolean, segmentId: EventSegmentPublicId, eventData: DetailEventWithMetadata, userMap: UserInstrumentList, dashboardContext: DashboardContextData): string[] => {
     const responseInfo = eventData.responseInfo!;
     const segmentResponses = responseInfo.getResponsesForSegment(segmentId)
         .filter(r => dashboardContext.isAttendanceIdGoing(r.response.attendanceId));
@@ -666,7 +663,7 @@ const GetSegmentAttendeeNames = (copyInstrumentNames: boolean, segmentId: EventS
 };
 
 export interface EventCompletenessTabContentProps {
-    eventData: VerboseEventWithMetadata;
+    eventData: DetailEventWithMetadata;
     userMap: UserInstrumentList;
     readonly: boolean;
     refetch: () => void;
@@ -804,7 +801,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
 
 const EventDotMenu = ({ event, showVisibility, refetch }: {
     event: {
-        id: number;
+        publicId: EventPublicId;
         name: string;
         relevanceClassOverride: number | null;
         visiblePermissionId: PermissionPublicId | null;
@@ -862,8 +859,8 @@ export const gEventDetailTabSlugIndices = {
 } as const;
 
 export interface EventDetailContainerProps {
-    eventData: VerboseEventWithMetadata;
-    tableClient: DB3Client.xTableRenderClient | null;
+    eventData: DetailEventWithMetadata;
+    tableClient: EventDetailTableClient | null;
     editCommands?: DB3Client.CrudViewCommandClient;
     refetch: () => void;
     readonly: boolean;
@@ -947,7 +944,7 @@ export const EventDetailContainer = ({ eventData, tableClient, editCommands, ref
                     tableRenderClient={tableClient}
                     dialogDescription={<SettingMarkdown setting='EditEventDialogDescription' />}
                     onCancel={() => { }}
-                    onOK={(obj: EventEnrichedVerbose_Event, _tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                    onOK={(obj: EventDetailEvent, _tableClient: EventDetailTableClient, api: EditFieldsDialogButtonApi) => {
                         void recordFeature({
                             feature: ActivityFeature.event_edit,
                             context: "EditFieldsDialogButton",
@@ -968,7 +965,7 @@ export const EventDetailContainer = ({ eventData, tableClient, editCommands, ref
                         void recordFeature({
                             feature: ActivityFeature.event_delete,
                         });
-                        editCommands.delete(eventData.event.id).then(() => {
+                        editCommands.delete(eventData.event.publicId).then(() => {
                             showSnackbar({ children: "delete successful", severity: 'success' });
                             api.close();
                         }).catch(err => {
@@ -1030,8 +1027,8 @@ export const EventDetailContainer = ({ eventData, tableClient, editCommands, ref
 
 
 export interface EventDetailFullProps {
-    event: EventEnrichedVerbose_Event,
-    tableClient: DB3Client.xTableRenderClient;
+    event: EventDetailEvent,
+    tableClient: EventDetailTableClient;
     initialTabIndex?: string;
     readonly: boolean;
     refetch: () => void;
@@ -1040,7 +1037,7 @@ export interface EventDetailFullProps {
 type EventDetailFullTabAreaProps = EventDetailFullProps & {
     selectedTab: string;
     setSelectedTab: (v: string) => void;
-    eventData: VerboseEventWithMetadata;
+    eventData: DetailEventWithMetadata;
     userMap: UserInstrumentList;
 };
 
@@ -1061,12 +1058,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
     });
     const segmentResponseCountStr = segmentResponseCounts.length > 0 ? `(${segmentResponseCounts.join(" - ")})` : "";
 
-    const enrichedFiles = eventData.event.fileTags.map(ft => {
-        return {
-            ...ft,
-            file: enrichFile(ft.file, dashboardContext),
-        };
-    });
+    const enrichedFiles = eventData.event.fileTags;
     //const elevation = 1;
 
     return <CMTabPanel
@@ -1150,10 +1142,10 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
                 <FilesTabContent
                     fileTags={enrichedFiles}
                     uploadTags={{
-                        taggedEventId: event.id,
+                        taggedEventId: event.publicId,
                     }}
                     hiddenTagIds={{
-                        eventTagIds: [event.id],
+                        eventTagIds: [event.publicId],
                     }
                     }
                     refetch={refetch}
@@ -1180,7 +1172,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
     const router = useRouter();
     const dashboardContext = useDashboardContext();
 
-    const { eventData, userMap } = CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContext });
+    const { eventData, userMap } = CalculateEventDetailMetadata({ event, tabSlug, dashboardContext });
 
 
     React.useEffect(() => {
@@ -1198,7 +1190,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
         showVisibility={true}
         refetch={props.refetch}
     >
-        <AppContextMarker name="event detail full" eventId={event.id} >
+        <AppContextMarker name="event detail full" eventId={event.publicId} >
             <EventAttendanceControl
                 eventData={eventData}
                 onRefetch={tableClient.refetch}
@@ -1221,7 +1213,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
 
 
 type EventSearchItemEvent = Pick<db3.EventSearchClient,
-    | "id"
+    | "publicId"
     | "name"
     | "dateRange"
     | "visiblePermissionId"
@@ -1266,7 +1258,7 @@ export const EventSearchItemContainer = ({
     const highlightStatusIds = props.highlightStatusIds || [];
     const highlightTypeIds = props.highlightTypeIds || [];
 
-    const eventURI = dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" });
+    const eventURI = dashboardContext.routingApi.getURIForEvent({ publicId: event.publicId, name: event.name || "" });
     const dateRange = event.dateRange;
     const eventTiming = dateRange?.hitTestDateTime(new Date());
 
@@ -1292,7 +1284,7 @@ export const EventSearchItemContainer = ({
     const isCancelled = event.status?.significance === db3.EventStatusSignificance.Cancelled;
 
     return <div style={typeStyle.style} className={classes.join(" ")}>
-        <AppContextMarker name="event search item" eventId={event.id} >
+        <AppContextMarker name="event search item" eventId={event.publicId} >
             <div className='header applyColor'>
                 {!reducedInfo &&
                     <CMChipContainer>
@@ -1335,7 +1327,7 @@ export const EventSearchItemContainer = ({
                     && event.visiblePermissionId !== undefined
                     && event.relevanceClassOverride !== undefined &&
                     <EventDotMenu event={{
-                        id: event.id,
+                        publicId: event.publicId,
                         name: event.name,
                         visiblePermissionId: event.visiblePermissionId,
                         relevanceClassOverride: event.relevanceClassOverride,
@@ -1417,15 +1409,15 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
                 {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <SearchItemBigCardLink
                     icon={<EditNote />}
                     title="View info"
-                    uri={dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" }, gEventDetailTabSlugIndices.info)}
-                    eventId={event.id}
+                    uri={dashboardContext.routingApi.getURIForEvent({ publicId: event.publicId, name: event.name || "" }, gEventDetailTabSlugIndices.info)}
+                    eventId={event.publicId}
                 />
                 }
                 {(event.songLists?.length || 0) > 0 && <SearchItemBigCardLink
                     icon={<LibraryMusic />}
                     title="View setlist"
-                    uri={dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" }, gEventDetailTabSlugIndices.setlists)}
-                    eventId={event.id}
+                    uri={dashboardContext.routingApi.getURIForEvent({ publicId: event.publicId, name: event.name || "" }, gEventDetailTabSlugIndices.setlists)}
+                    eventId={event.publicId}
                 />
                 }
             </div>

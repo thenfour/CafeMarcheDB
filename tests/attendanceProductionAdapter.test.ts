@@ -5,7 +5,7 @@ import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 import type { AttendanceControlViewProps } from "src/core/components/event/AttendanceControlView";
 import { DateTimeRange } from "shared/time";
-import { segmentPublicId } from "./support/eventResponseFixtures";
+import { eventPublicId, segmentPublicId } from "./support/eventResponseFixtures";
 import { parsePublicId } from "shared/publicId";
 
 vi.mock("src/core/db3/clientAPI", () => ({ API: { events: { updateUserEventAttendance: { useToken: () => ({ invoke }) } } } }));
@@ -37,19 +37,20 @@ describe("production attendance adapter", () => {
             await act(async () => root.render(React.createElement(SnackbarContext.Provider, {
                 value: { showMessage, showSuccess: vi.fn(), showError: vi.fn(), invokeAsync: vi.fn() },
             }, React.createElement(EventAttendanceControl, {
+                // This adapter test mocks the metadata calculation, so only the fields read by the adapter are needed.
                 eventData: {
-                    event: { id: 42, name: "Concert" },
+                    event: { publicId: eventPublicId(42), name: "Concert" },
                     dateRange: new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: false }),
-                } as EventAttendanceControlProps["eventData"],
+                } as unknown as EventAttendanceControlProps["eventData"],
                 userMap: [], onRefetch: refetch, minimalWhenNotAlert: true,
             }))));
             await view!.environment.onSave({ type: "segment", segmentId: segmentPublicId(7), attendanceId: null });
             await view!.environment.onSave({ type: "instrument", instrumentId });
             await view!.environment.onSave({ type: "comment", comment: "Need a lift" });
             expect(invoke.mock.calls).toEqual([
-                [{ eventId: 42, userId: 12, segmentResponses: { [segmentPublicId(7)]: { attendanceId: null } } }],
-                [{ eventId: 42, userId: 12, instrumentId }],
-                [{ eventId: 42, userId: 12, comment: "Need a lift" }],
+                [{ eventId: eventPublicId(42), userId: 12, segmentResponses: { [segmentPublicId(7)]: { attendanceId: null } } }],
+                [{ eventId: eventPublicId(42), userId: 12, instrumentId }],
+                [{ eventId: eventPublicId(42), userId: 12, comment: "Need a lift" }],
             ]);
             expect(refetch).toHaveBeenCalledTimes(3);
             expect(showMessage).toHaveBeenCalledTimes(3);

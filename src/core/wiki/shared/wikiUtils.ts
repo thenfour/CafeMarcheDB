@@ -1,10 +1,11 @@
 import { Prisma } from "db";
 import { diffChars, diffLines } from 'diff';
 import { z } from "zod";
-import { isPublicId, type PermissionPublicId } from "shared/publicId";
+import { isPublicId, type EventPublicId, type PermissionPublicId } from "shared/publicId";
 import { slugify } from "../../../../shared/rootroot";
 import type { EventWikiPageContextClient } from "../../db3/shared/entities/event/eventViews";
 import type { WikiPageApiClient } from "../../db3/shared/entities/wiki/wikiViews";
+import * as db3 from "../../db3/db3";
 
 
 export const enum SpecialWikiNamespace {
@@ -13,16 +14,15 @@ export const enum SpecialWikiNamespace {
 
 // Returns file tag context for uploads based on wiki namespace/slug
 export function getFileUploadContext(wikiPageId: number | undefined, wikiPath: WikiPath): {
-    taggedEventId: number | undefined;
+    taggedEventId: EventPublicId | undefined;
     taggedWikiPageId: number | undefined;
     // Add more tags as needed for other namespaces
 } {
     if (wikiPath.namespace === SpecialWikiNamespace.EventDescription) {
-        const eventId = Number(wikiPath.slugWithoutNamespace);
-        if (!isNaN(eventId)) {
+        if (isPublicId(wikiPath.slugWithoutNamespace)) {
             return {
                 taggedWikiPageId: wikiPageId,
-                taggedEventId: eventId,
+                taggedEventId: db3.xEvent.parseIdentity(wikiPath.slugWithoutNamespace),
             };
         }
     }
@@ -64,7 +64,18 @@ export type WikiPageApiUpdatePayload = Prisma.WikiPageRevisionGetPayload<{
 
 
 ////////////////////////////////////////////////////////////////
-const ZWikiSlug = z.string().min(1).transform((str) => str.toLowerCase().trim());
+const normalizeCanonicalWikiPath = (value: string): string => {
+    const trimmed = value.trim();
+    const [namespace, slug] = trimmed.split('/');
+    if (namespace?.toLowerCase() === SpecialWikiNamespace.EventDescription.toLowerCase()
+        && isPublicId(slug)) {
+        // Event public IDs are case-sensitive, so the canonical wiki path must preserve them.
+        return `${SpecialWikiNamespace.EventDescription}/${slug}`;
+    }
+    return trimmed.toLowerCase();
+};
+
+const ZWikiSlug = z.string().min(1).transform(normalizeCanonicalWikiPath);
 const ZWikiTitle = z.string().min(1);
 
 ////////////////////////////////////////////////////////////////
@@ -136,9 +147,9 @@ export const ZTAdminClearPageLockArgs = z.object({
 export type TAdminClearPageLockArgs = z.infer<typeof ZTAdminClearPageLockArgs>;
 
 // Wiki URIs look like:
-// http://localhost:10455/backstage/wiki/EventDescription/542/the-big-festival
+// http://localhost:10455/backstage/wiki/EventDescription/AbCdEf0123456789/the-big-festival
 // * All wiki pages are under /backstage/wiki/ (the wiki root)
-// * The "canonical wiki path" is the path recognized relative to the wiki root to fetch the right page. In this case, "EventDescription/542"
+// * The "canonical wiki path" is the path recognized relative to the wiki root to fetch the right page.
 // wiki paths are not case-sensitive.
 
 export type WikiPath = {
@@ -185,11 +196,15 @@ export const wikiParsePathComponents = (components: string[]): WikiPath => {
         slug = components[0]!;
     }
 
-    const canonicalWikiPath = slugify(`${namespace ? `${namespace}/` : ''}${slug}`); // like "event/123" or "top-level-thing"
+    const isEventDescription = namespace?.toLowerCase() === SpecialWikiNamespace.EventDescription.toLowerCase()
+        && isPublicId(slug);
+    const canonicalWikiPath = isEventDescription
+        ? `${SpecialWikiNamespace.EventDescription}/${slug}`
+        : slugify(`${namespace ? `${namespace}/` : ''}${slug}`);
     const aestheticSlug = components.length > 2 ? components.slice(2).join('/') : null;
 
     return {
-        namespace,
+        namespace: isEventDescription ? SpecialWikiNamespace.EventDescription : namespace,
         slugWithoutNamespace: slug,
         canonicalWikiPath,
         uriRelativeToHost: `/backstage/wiki/${canonicalWikiPath}`,
@@ -202,12 +217,12 @@ export const wikiMakeRelativeURI = (canonicalWikiPath: string, aestheticSlug?: s
 };
 
 // returns a canonical wiki path from event.
-export const wikiMakeWikiPathFromEventDescription = (event: Prisma.EventGetPayload<{ select: { name: true, id: true } }>): WikiPath => {
-    const canonicalWikiPath = `EventDescription/${event.id}`;
+export const wikiMakeWikiPathFromEventDescription = (event: { publicId: EventPublicId; name: string }): WikiPath => {
+    const canonicalWikiPath = `${SpecialWikiNamespace.EventDescription}/${event.publicId}`;
     const aestheticSlug = slugify(event.name);
     return {
-        namespace: "EventDescription",
-        slugWithoutNamespace: `${event.id}`,
+        namespace: SpecialWikiNamespace.EventDescription,
+        slugWithoutNamespace: event.publicId,
         canonicalWikiPath,
         aestheticSlug,
         uriRelativeToHost: wikiMakeRelativeURI(canonicalWikiPath),

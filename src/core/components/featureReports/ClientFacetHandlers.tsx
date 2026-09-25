@@ -13,6 +13,7 @@ import React, { Key } from "react";
 import { gGeneralPaletteList } from "../color/palette";
 import { SongChip } from "../song/SongChip";
 import { WikiPageChip } from "../wiki/WikiPageChip";
+import type { EventPublicId } from "shared/publicId";
 
 
 interface ScreenSizeIndicatorProps {
@@ -454,7 +455,7 @@ export const gClientFacetHandlers = {
     }),
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    events: MakeHandler<FacetedBreakdownResult['facets']['events'][0], number>({
+    events: MakeHandler<FacetedBreakdownResult['facets']['events'][0], EventPublicId>({
         getItemKey: (item) => item.eventId,
         getFacetName: () => "Event",
         supportsDrilldown: true,
@@ -479,7 +480,7 @@ export const gClientFacetHandlers = {
         }),
         renderItem: (props) => {
             return <FacetItemRenderHelper {...props}>
-                <EventChip value={{ ...props.item, id: props.item.eventId }} startAdornment={gIconMap.CalendarMonth()} useHashedColor={true} />
+                <EventChip value={{ ...props.item, publicId: props.item.eventId }} startAdornment={gIconMap.CalendarMonth()} useHashedColor={true} />
             </FacetItemRenderHelper>;
         },
         renderFilter: (props) => {

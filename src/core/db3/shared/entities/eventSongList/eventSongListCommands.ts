@@ -2,6 +2,7 @@ import { z } from "zod";
 import { defineCommand } from "../../core/db3Command";
 import type { EventSongListDraft } from "./eventSongListDraft";
 import {
+    xEvent,
     xEventSongListDivider,
     xEventSongList,
     xEventSongListSong,
@@ -35,7 +36,7 @@ export const EventSongListMutationCommandSchema = z.object({
     description: z.string(),
     isActuallyPlayed: z.boolean(),
     isOrdered: z.boolean(),
-    eventId: PersistedIdSchema,
+    eventId: xEvent.identitySchema,
     sortOrder: SortOrderSchema,
     songs: z.array(EventSongListSongCommandSchema),
     dividers: z.array(EventSongListDividerCommandSchema),
@@ -109,7 +110,7 @@ export const deleteEventSongListCommand = defineCommand({
 });
 
 const ReorderEventSongListsSchema = z.object({
-    eventId: PersistedIdSchema,
+    eventId: xEvent.identitySchema,
     movingItemId: xEventSongList.identitySchema,
     newPositionItemId: xEventSongList.identitySchema,
     scopeRowIds: z.array(xEventSongList.identitySchema).min(1),

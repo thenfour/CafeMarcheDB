@@ -189,6 +189,37 @@ describe("backstage server page guard", () => {
         expect(results[0]!.absoluteUri).not.toContain("/backstage/instrument/42");
     });
 
+    it("returns Event quick-search identity and links exclusively as public IDs", async () => {
+        vi.stubEnv("CMDB_BASE_URL", "https://example.test");
+        authorizationTestDb.getDelegate("event").reset([{
+            id: 42,
+            publicId: "EventPublic00042",
+            name: "Autumn gala",
+            startsAt: new Date("2026-10-10T18:00:00Z"),
+            locationDescription: "Town hall",
+            createdByUserId: actualSysadmin.id,
+            visiblePermissionId: null,
+            isDeleted: false,
+            descriptionWikiPage: null,
+            tags: [],
+        }]);
+
+        const results = await getQuickSearchResults(
+            "event:gala",
+            // The authorization fixture intentionally omits unused generated user fields.
+            actualSysadmin as Parameters<typeof getQuickSearchResults>[1],
+            [QuickSearchItemType.event],
+        );
+
+        expect(results).toEqual([expect.objectContaining({
+            id: "EventPublic00042",
+            itemType: QuickSearchItemType.event,
+            name: expect.stringContaining("Autumn gala"),
+        })]);
+        expect(results[0]!.absoluteUri).toContain("/backstage/event/EventPublic00042/autumn-gala");
+        expect(results[0]!.absoluteUri).not.toContain("/backstage/event/42");
+    });
+
     it("keeps contained routes and unregistered pages closed to anonymous visitors", async () => {
         await expect(authorizePageRequest("/backstage/notRegistered", null))
             .rejects.toThrow("missing route authorization metadata");

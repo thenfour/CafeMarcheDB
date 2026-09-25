@@ -39,6 +39,7 @@ import { queryTable } from "@db3/server/db3QueryCore"
 import type { UserWithRolesPayload } from "@db3/shared/schema/userPayloads"
 import { Permission } from "shared/permissions"
 import { parsePublicId } from "shared/publicId"
+import { eventPublicId } from "../support/eventResponseFixtures"
 import { PermissionSet } from "src/auth/shared/PermissionSet"
 import {
   asUserManagementActor,
@@ -480,6 +481,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
       event: [
         {
           id: 20,
+          publicId: eventPublicId(20),
           name: "Public event",
           isDeleted: false,
           createdByUserId: null,
@@ -489,6 +491,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
         },
         {
           id: 21,
+          publicId: eventPublicId(21),
           name: "Members event",
           isDeleted: false,
           createdByUserId: null,
@@ -498,6 +501,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
         },
         {
           id: 22,
+          publicId: eventPublicId(22),
           name: "Deleted public event",
           isDeleted: true,
           createdByUserId: null,
@@ -512,7 +516,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
     const result = await invokeResolver(db3Query, forgeDb3Query("Event"), ctx)
 
     expect(result.items).toEqual([
-      expect.objectContaining({ id: 20, name: "Public event" }),
+      expect.objectContaining({ publicId: eventPublicId(20), name: "Public event" }),
     ])
     expect(JSON.stringify(result)).not.toContain("Members event")
     expect(JSON.stringify(result)).not.toContain("Deleted public event")
@@ -593,6 +597,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
       event: [
         {
           id: 30,
+          publicId: eventPublicId(30),
           name: "Visible event",
           isDeleted: false,
           createdByUserId: null,
@@ -601,6 +606,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
         },
         {
           id: 31,
+          publicId: eventPublicId(31),
           name: "Hidden event",
           isDeleted: false,
           createdByUserId: null,
@@ -609,6 +615,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
         },
         {
           id: 32,
+          publicId: eventPublicId(32),
           name: "Deleted event",
           isDeleted: true,
           createdByUserId: null,
@@ -630,7 +637,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
 
     expect(result.count).toBe(1)
     expect(result.items).toEqual([
-      expect.objectContaining({ id: 30, name: "Visible event" }),
+      expect.objectContaining({ publicId: eventPublicId(30), name: "Visible event" }),
     ])
   })
 
@@ -651,6 +658,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
       event: [
         {
           id: 41,
+          publicId: eventPublicId(41),
           name: "Deleted band event",
           isDeleted: true,
           createdByUserId: 999,
@@ -659,6 +667,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
         },
         {
           id: 42,
+          publicId: eventPublicId(42),
           name: "Someone else's private event",
           isDeleted: true,
           createdByUserId: 999,
@@ -667,6 +676,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
         },
         {
           id: 43,
+          publicId: eventPublicId(43),
           name: "Own private event",
           isDeleted: true,
           createdByUserId: recoveryAdmin.id,
@@ -689,8 +699,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
 
     expect(result.count).toBe(2)
     expect(result.items).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: 41 }),
-      expect.objectContaining({ id: 43 }),
+      expect.objectContaining({ publicId: eventPublicId(41) }),
+      expect.objectContaining({ publicId: eventPublicId(43) }),
     ]))
     expect(JSON.stringify(result)).not.toContain("Someone else's private event")
   })

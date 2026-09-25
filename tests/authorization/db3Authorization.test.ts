@@ -171,15 +171,14 @@ describe("explicit DB3 authorization", () => {
     expect(authorizationTestDb.snapshot("song")[0]!.description).toBe("dedicated")
   })
 
-  it.each([db3.xEventVerbose, db3.xEventSongList, db3.xEventSongListSong, db3.xSongCredit])(
+  it.each([db3.xEventSongList, db3.xEventSongListSong, db3.xSongCredit])(
     "enforces song visibility through $tableID at the query boundary", async table => {
       const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
       const authorization = await loadUserAuthorization(actor as any)
       const findMany = vi.fn(async (_args: any) => [])
       await queryTable(forgeDb3Query(table.tableID), authorization, { [table.tableName]: { findMany } } as any)
       const args = findMany.mock.calls[0]![0]
-      const entryWhere = table === db3.xEventVerbose ? args.include.songLists.include.songs.where
-        : table === db3.xEventSongList ? args.include.songs.where : args.where
+      const entryWhere = table === db3.xEventSongList ? args.include.songs.where : args.where
       const songs = [
         makeSong(1),
         makeSong(2, { createdByUserId: 502 }),
@@ -192,6 +191,31 @@ describe("explicit DB3 authorization", () => {
     },
   )
 
+  it("enforces song visibility through the Event calendar view", async () => {
+    const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
+    // The authorization fixture omits generated user fields that this path never reads.
+    const authorization = await loadUserAuthorization(actor as any)
+    const findMany = vi.fn(async (_args: any) => [])
+    // This focused Prisma double implements only the Event delegate queried here.
+    await queryTable(forgeDb3Query(db3.xEvent.tableID, {
+      table: {
+        tableID: db3.xEvent.tableID,
+        tableName: db3.xEvent.tableName,
+        viewID: db3.eventCalendarView.viewID,
+      },
+    }), authorization, { [db3.xEvent.tableName]: { findMany } } as any)
+    const entryWhere = findMany.mock.calls[0]![0].select.songLists.select.songs.where
+    const songs = [
+      makeSong(1),
+      makeSong(2, { createdByUserId: 502 }),
+      makeSong(3, { visiblePermissionId: 920_002, createdByUserId: 502 }),
+      makeSong(4, { visiblePermissionId: 999_999 }),
+      makeSong(5, { isDeleted: true }),
+      makeSong(6, { createdByUserId: null }),
+    ]
+    expect(songs.filter(song => matchesWhere({ id: song.id, song, eventSongList: visibleListParent }, entryWhere)).map(song => song.id)).toEqual([1, 3])
+  })
+
   it("keeps nested event song filters specific to each viewer and recovery request", async () => {
     const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
     const resolved = await loadUserAuthorization(actor as any)
@@ -201,23 +225,28 @@ describe("explicit DB3 authorization", () => {
     const publicViewer = db3.createDB3Authorization(null, resolved.effectivePermissions)
     const entry = { id: 1, eventSongList: visibleListParent, song: makeSong(1) }
     for (const [viewer, expected] of [[owner, true], [other, false], [publicViewer, false]] as const) {
-      const selection = await db3.xEventVerbose.CalculateSelectionArgs(viewer, { items: [] })
-      expect(matchesWhere(entry, selection!.include.songLists.include.songs.where)).toBe(expected)
+      const selection = await db3.xEvent.CalculateSelectionArgs(
+        viewer, { items: [] }, false, db3.eventCalendarView.getSelectionArgs,
+      )
+      expect(matchesWhere(entry, selection!.select.songLists.select.songs.where)).toBe(expected)
     }
-    const recovery = await db3.xEventVerbose.CalculateSelectionArgs(owner, { items: [] }, true)
-    const where = recovery!.include.songLists.include.songs.where
+    const recovery = await db3.xEvent.CalculateSelectionArgs(
+      owner, { items: [] }, true, db3.eventCalendarView.getSelectionArgs,
+    )
+    const where = recovery!.select.songLists.select.songs.where
     expect(matchesWhere({ id: 1, eventSongList: visibleListParent, song: makeSong(1, { isDeleted: true }) }, where)).toBe(true)
     expect(matchesWhere({ id: 2, eventSongList: visibleListParent, song: makeSong(2, { isDeleted: true, createdByUserId: 502 }) }, where)).toBe(false)
-    expect(db3.EventArgs_Verbose.include.songLists.include.songs).not.toHaveProperty("where")
+    expect(db3.eventSongListTransportSelection.select.songs).not.toHaveProperty("where")
   })
 
   it("requires song read permission even when the parent event is readable", async () => {
     const resolved = await loadUserAuthorization(null)
-    const selection = await db3.xEventVerbose.CalculateSelectionArgs(
-      db3.createDB3Authorization(null, resolved.effectivePermissions), { items: [] },
+    const selection = await db3.xEvent.CalculateSelectionArgs(
+      db3.createDB3Authorization(null, resolved.effectivePermissions), { items: [] }, false,
+      db3.eventCalendarView.getSelectionArgs,
     )
     const entry = { id: 1, eventSongList: visibleListParent, song: makeSong(1, { visiblePermissionId: 920_002 }) }
-    expect(matchesWhere(entry, selection!.include.songLists.include.songs.where)).toBe(false)
+    expect(matchesWhere(entry, selection!.select.songLists.select.songs.where)).toBe(false)
   })
 
   it.each(["include", "select"])("traverses association targets with %s and preserves authored filters", async selectionKind => {

@@ -26,6 +26,7 @@ export type FileInstrumentTagPublicId = PublicId<"FileInstrumentTag">;
 export type FileWikiPageTagPublicId = PublicId<"FileWikiPageTag">;
 export type WikiPageTagPublicId = PublicId<"WikiPageTag">;
 export type WikiPageTagAssignmentPublicId = PublicId<"WikiPageTagAssignment">;
+export type EventPublicId = PublicId<"Event">;
 export type EventSegmentPublicId = PublicId<"EventSegment">;
 export type EventUserResponsePublicId = PublicId<"EventUserResponse">;
 export type EventSegmentUserResponsePublicId = PublicId<"EventSegmentUserResponse">;

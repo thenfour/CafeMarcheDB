@@ -20,6 +20,7 @@ import { useSearchableList } from "src/core/hooks/useSearchableList"
 import { eventSearchConfig } from "src/core/hooks/searchConfigs"
 import { DateTimeRange } from "shared/time"
 import type { EventsFilterSpec } from "src/core/components/event/EventClientBaseTypes"
+import { eventPublicId } from "../support/eventResponseFixtures"
 
 const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT")
 let unmount: (() => void) | undefined
@@ -38,7 +39,7 @@ function mount(range: DateTimeRange, timeZone?: string) {
   })
   vi.mocked(useSearchableList).mockClear()
   vi.mocked(useSearchableList).mockReturnValue({
-    enrichedItems: [{ id: 1, name: "Rehearsal", segments: [
+    enrichedItems: [{ publicId: eventPublicId(1), name: "Rehearsal", segments: [
       segment(1, new Date(2026, 5, 1), 3_600_000),
       segment(2, timeZone ? new Date("2026-07-10T15:30:00Z") : new Date(2026, 6, 11), 0),
       segment(3, null, 3_600_000),
@@ -75,7 +76,7 @@ describe("picker calendar-window consumer", () => {
 
   it("highlights segment calendar days, including zero-duration points, instead of aggregate gaps", () => {
     const { output } = mount(new DateTimeRange({ startsAtDateTime: new Date(2026, 6, 11), durationMillis: 0, isAllDay: false }))
-    expect(output.events.map(event => event.id)).toEqual(["1", "1"])
+    expect(output.events.map(event => event.id)).toEqual([eventPublicId(1), eventPublicId(1)])
     // Highlight ranges represent calendar days after projection into the explicit zone.
     expect(output.events[1]!.dateRange.dayCount).toBe(1)
     const source = vi.mocked(useSearchableList).mock.results[0]!.value.enrichedItems[0].segments[1]

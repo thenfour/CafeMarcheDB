@@ -50,7 +50,7 @@ const EventSongListContentDtoSchema = z.object({
     dividers: z.array(CompleteSetlistDividerDtoSchema),
 });
 
-const eventSongListTransportSelection = Prisma.validator<Prisma.EventSongListDefaultArgs>()({
+export const eventSongListTransportSelection = Prisma.validator<Prisma.EventSongListDefaultArgs>()({
     select: {
         publicId: true,
         sortOrder: true,

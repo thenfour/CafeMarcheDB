@@ -1,6 +1,6 @@
 import { DbBrandConfig } from "@/shared/brandConfigBase";
 import { isAbsoluteUri, slugify, TableAccessor } from "@/shared/rootroot";
-import type { EventAttendancePublicId, InstrumentPublicId, PermissionPublicId, RolePublicId } from "shared/publicId";
+import type { EventAttendancePublicId, EventPublicId, InstrumentPublicId, PermissionPublicId, RolePublicId } from "shared/publicId";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
@@ -60,9 +60,9 @@ export abstract class DashboardContextDataBase {
     };
 
     routingApi = {
-        getURIForEvent: (event: Prisma.EventGetPayload<{ select: { id: true, name: true } }>, tabSlug?: string) => {
-            const parts: string[] = [event.id.toString()];
-            parts.push(slugify(event.name));
+        getURIForEvent: (event: { publicId: EventPublicId; name?: string }, tabSlug?: string) => {
+            const parts: string[] = [event.publicId];
+            if (event.name) parts.push(slugify(event.name));
             if (!IsNullOrWhitespace(tabSlug)) parts.push(tabSlug || "");
 
             return this.getAbsoluteUri(`/backstage/event/${parts.join("/")}`);

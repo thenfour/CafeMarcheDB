@@ -32,7 +32,7 @@ import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/feature
 import { projectFeatureReportDetailItem, projectGeneralActivityReportDetailItem } from "src/core/components/featureReports/activityReportTypes";
 import { isPublicId } from "shared/publicId";
 import { Permission } from "shared/permissions";
-import { segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
+import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
 import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
@@ -44,7 +44,7 @@ const permissions = [Permission.login, Permission.manage_events, Permission.admi
     Permission.respond_to_events, Permission.change_others_event_responses];
 const actor = createAuthorizationTestUser("normal", { id: 93, permissions });
 let { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions });
-const event = { id: 100, name: "Concert", locationDescription: "", locationURL: "", isDeleted: false,
+const event = { id: 100, publicId: eventPublicId(100), name: "Concert", locationDescription: "", locationURL: "", isDeleted: false,
     createdByUserId: null, visiblePermissionId: 920_002, revision: 1, calendarInputHash: "old", startsAt: null };
 const segment = (id: number, eventId = event.id) => ({ id, publicId: segmentPublicId(id), eventId, name: `Set ${id}`,
     description: "", startsAt: null, durationMillis: BigInt(0), isAllDay: false, statusId: null,
@@ -74,7 +74,7 @@ describe("Event segment and response public identities", () => {
 
     it("generates segment identities for CRUD while audit keys stay numeric", async () => {
         const created = operations.create.command.parseResult(await command(operations.create.command.commandID, {
-            eventId: event.id, name: "Third set", description: "", startsAt: null, durationMillis: BigInt(0), isAllDay: false,
+            eventId: event.publicId, name: "Third set", description: "", startsAt: null, durationMillis: BigInt(0), isAllDay: false,
         }));
         expect(isPublicId(created.identity)).toBe(true);
         expect(await command(operations.update.command.commandID, { identity: created.identity, patch: { name: "Encore" } }))
@@ -130,7 +130,7 @@ describe("Event segment and response public identities", () => {
         const badKey = kind === "numeric" ? "2" : kind === "malformed" ? "bad" : segmentPublicId(kind === "unknown" ? 999 : 2);
         const before = snapshots();
         const create = vi.spyOn(authorizationTestDb.getDelegate("eventSegmentUserResponse"), "create");
-        await expect(invokeResolver(updateAttendance, { eventId: event.id, userId: actor.id, comment: "Must not save",
+        await expect(invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.id, comment: "Must not save",
             segmentResponses: { [segmentPublicId(1)]: { attendanceId: null }, [badKey]: { attendanceId: null } },
         }, ctx)).rejects.toThrow();
         expect(create).not.toHaveBeenCalled();
@@ -139,7 +139,7 @@ describe("Event segment and response public identities", () => {
 
     it("assigns public IDs when creating both response kinds", async () => {
         reset({ eventUserResponse: [], eventSegmentUserResponse: [] });
-        await invokeResolver(updateAttendance, { eventId: event.id, userId: actor.id, comment: "New response",
+        await invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.id, comment: "New response",
             segmentResponses: { [segmentPublicId(1)]: { attendanceId: attendancePublicId(2) } } }, ctx);
         for (const table of ["eventUserResponse", "eventSegmentUserResponse"]) {
             expect(isPublicId(authorizationTestDb.snapshot(table)[0]!.publicId)).toBe(true);
@@ -170,7 +170,9 @@ describe("Event segment and response public identities", () => {
         reset({ eventSegment: [segment(1)] });
         await expect(copy()).rejects.toThrow("not found");
         await expect(clear()).rejects.toThrow("not found");
-        reset({ user: [createAuthorizationTestUser("normal", { id: actor.id, permissions: [Permission.login] })] });
+        const revokedActor = createAuthorizationTestUser("normal", { id: actor.id, permissions: [Permission.login] });
+        reset({ user: [revokedActor] });
+        ctx = createAuthorizationPersona("normal", { id: actor.id, permissions: [Permission.login] }).ctx;
         await expect(copy()).rejects.toThrow();
         await expect(clear()).rejects.toThrow();
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
@@ -201,13 +203,13 @@ describe("Event segment and response public identities", () => {
             deviceClass: null, browserName: null, operatingSystem: null, language: null, locale: null, timezone: null,
             user: null, userId: null, instrument: null, instrumentId: null, event: null, eventId: null,
             song: null, songId: null, file: null, fileId: null, wikiPage: null, wikiPageId: null,
-            eventSegment: segment(1), eventSegmentId: 1, attendance: null, attendanceId: null,
+            eventSegment: { ...segment(1), event: { publicId: event.publicId } }, eventSegmentId: 1, attendance: null, attendanceId: null,
             customLink: null, customLinkId: null, frontpageGalleryItem: null, frontpageGalleryItemId: null,
             menuLink: null, menuLinkId: null, setlistPlan: null, setlistPlanId: null, songCreditType: null,
             songCreditTypeId: null, eventSongList: null, eventSongListId: null };
         for (const report of [projectFeatureReportDetailItem(evidence), projectGeneralActivityReportDetailItem(evidence, null)]) {
             expect(report.eventSegmentId).toBe(segmentPublicId(1));
-            expect(report.eventSegment).toMatchObject({ publicId: segmentPublicId(1), eventId: event.id });
+            expect(report.eventSegment).toMatchObject({ publicId: segmentPublicId(1), eventId: event.publicId });
             expect(report.eventSegment).not.toHaveProperty("id");
         }
     });

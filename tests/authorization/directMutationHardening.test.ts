@@ -1,4 +1,4 @@
-import { segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
+import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -75,20 +75,24 @@ const membersVisibility = {
   roles: [],
 }
 
-const makeEvent = (overrides: Record<string, unknown> = {}) => ({
-  id: 100,
-  name: "Authorized event",
-  locationDescription: "",
-  startsAt: new Date("2026-09-20T18:00:00.000Z"),
-  isDeleted: false,
-  createdByUserId: null,
-  visiblePermissionId: publicVisibility.id,
-  visiblePermission: publicVisibility,
-  revision: 1,
-  calendarInputHash: "unchanged",
-  segments: [],
-  ...overrides,
-})
+const makeEvent = (overrides: Record<string, unknown> = {}) => {
+  const id = typeof overrides.id === "number" ? overrides.id : 100
+  return {
+    id,
+    publicId: eventPublicId(id),
+    name: "Authorized event",
+    locationDescription: "",
+    startsAt: new Date("2026-09-20T18:00:00.000Z"),
+    isDeleted: false,
+    createdByUserId: null,
+    visiblePermissionId: publicVisibility.id,
+    visiblePermission: publicVisibility,
+    revision: 1,
+    calendarInputHash: "unchanged",
+    segments: [],
+    ...overrides,
+  }
+}
 
 describe("DB3 command boundary", () => {
   beforeEach(() => {
@@ -558,14 +562,14 @@ describe("DB3 command boundary", () => {
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.eventEditorView.crud.operations.update.command.commandID,
       payload: {
-        identity: event.id,
+        identity: event.publicId,
         patch: {
           locationDescription: "Main hall",
           segmentBehavior: "Sets",
           tags: [eventTag.publicId],
         },
       },
-    }, ctx)).resolves.toEqual({ identity: event.id })
+    }, ctx)).resolves.toEqual({ identity: event.publicId })
 
     expect(authorizationTestDb.snapshot("event")).toEqual([
       expect.objectContaining({
@@ -750,7 +754,7 @@ describe("DB3 command boundary", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
     const payload = {
-      eventId: 100,
+      eventId: eventPublicId(100),
       name: "Setlist",
       description: "",
       isActuallyPlayed: false,
@@ -804,7 +808,7 @@ describe("DB3 command boundary", () => {
     const result = await invokeResolver(executeDB3CommandMutation, {
       commandID: db3.saveEventSongListCommand.commandID,
       payload: {
-        eventId: 100,
+        eventId: eventPublicId(100),
         name: "Setlist",
         description: "",
         isActuallyPlayed: false,
@@ -840,7 +844,7 @@ describe("DB3 command boundary", () => {
       commandID: db3.saveEventSongListCommand.commandID,
       payload: {
         publicId: db3.saveEventSongListCommand.parseResult(result).publicId,
-        eventId: 100,
+        eventId: eventPublicId(100),
         name: "Updated setlist",
         description: "Second pass",
         isActuallyPlayed: true,
@@ -1084,7 +1088,7 @@ describe("BA-S003 generic sort-order authorization", () => {
       movingItemId: listPublicId(1),
       newPositionItemId: listPublicId(2),
       scopeRowIds: [listPublicId(1), listPublicId(2)],
-      eventId: 100,
+      eventId: eventPublicId(100),
       },
     }, ctx)).rejects.toThrow("Setlist reorder scope was not found in this event")
 
@@ -1116,7 +1120,7 @@ describe("BA-S003 generic sort-order authorization", () => {
       movingItemId: listPublicId(1),
       newPositionItemId: listPublicId(2),
       scopeRowIds: [listPublicId(1), listPublicId(2)],
-      eventId: 100,
+      eventId: eventPublicId(100),
       },
     }, ctx)
 
@@ -1155,7 +1159,7 @@ describe("BA-S003 generic sort-order authorization", () => {
       movingItemId: listPublicId(650),
       newPositionItemId: listPublicId(651),
       scopeRowIds: [listPublicId(650), listPublicId(651)],
-      eventId: 647,
+      eventId: eventPublicId(647),
       },
     }, ctx)
 
@@ -1264,7 +1268,7 @@ describe("BA-S003 event attendance ownership", () => {
 
     await invokeResolver(updateUserEventAttendance, {
       userId: actor.id,
-      eventId: 100,
+      eventId: eventPublicId(100),
       comment: "I will be there",
       segmentResponses: { [segmentPublicId(101)]: { attendanceId: attendancePublicId(2) } },
     }, ctx)
@@ -1296,7 +1300,7 @@ describe("BA-S003 event attendance ownership", () => {
 
     await expect(invokeResolver(updateUserEventAttendance, {
       userId: target.id,
-      eventId: 100,
+      eventId: eventPublicId(100),
       comment: "Forged",
     }, ctx)).rejects.toThrow(`required: ${Permission.change_others_event_responses}`)
 
@@ -1319,7 +1323,7 @@ describe("BA-S003 event attendance ownership", () => {
 
     await expect(invokeResolver(updateUserEventAttendance, {
       userId: target.id,
-      eventId: 100,
+      eventId: eventPublicId(100),
       comment: "Stale grant",
     }, ctx)).rejects.toThrow(`required: ${Permission.change_others_event_responses}`)
 
@@ -1358,7 +1362,7 @@ describe("BA-S003 event attendance ownership", () => {
 
     await invokeResolver(updateUserEventAttendance, {
       userId: target.id,
-      eventId: 100,
+      eventId: eventPublicId(100),
       comment: "Updated by delegate",
       segmentResponses: { [segmentPublicId(101)]: { attendanceId: attendancePublicId(2) } },
     }, ctx)
@@ -1383,7 +1387,7 @@ describe("BA-S003 event attendance ownership", () => {
 
     await expect(invokeResolver(updateUserEventAttendance, {
       userId: actor.id,
-      eventId: 100,
+      eventId: eventPublicId(100),
       isInvited: true,
     }, ctx)).rejects.toThrow(`required: ${Permission.manage_events}`)
 
@@ -1405,7 +1409,7 @@ describe("BA-S003 event attendance ownership", () => {
 
     await invokeResolver(updateUserEventAttendance, {
       userId: target.id,
-      eventId: 100,
+      eventId: eventPublicId(100),
       isInvited: true,
     }, ctx)
 
@@ -1434,7 +1438,7 @@ describe("BA-S003 event attendance ownership", () => {
 
     await expect(invokeResolver(updateUserEventAttendance, {
       userId: actor.id,
-      eventId: 100,
+      eventId: eventPublicId(100),
       segmentResponses: { [segmentPublicId(102)]: { attendanceId: attendancePublicId(2) } },
     }, ctx)).rejects.toThrow()
 
@@ -1451,7 +1455,7 @@ describe("BA-S003 event attendance ownership", () => {
 
     await expect(invokeResolver(updateUserEventAttendance, {
       userId: actor.id,
-      eventId: 100,
+      eventId: eventPublicId(100),
       segmentResponses: { "101suffix": { attendanceId: attendancePublicId(2) } },
     } as never, ctx)).rejects.toThrow("Invalid event segment ID")
 

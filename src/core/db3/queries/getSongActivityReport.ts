@@ -93,7 +93,7 @@ export default resolver.pipe(
                 ${havingClause}
             )
             select
-                e.id,
+                e.publicId,
                 e.name,
                 e.startsAt,
                 e.durationMillis,
@@ -111,7 +111,12 @@ export default resolver.pipe(
                 e.id                
         `;
 
-            const events: GetSongActivityReportRetEvent[] = await db.$queryRaw(Prisma.raw(query)) as any;
+            // This raw query selects the branded identity's string representation.
+            const rawEvents = await db.$queryRaw(Prisma.raw(query)) as Array<Omit<GetSongActivityReportRetEvent, "publicId"> & { publicId: string }>;
+            const events: GetSongActivityReportRetEvent[] = rawEvents.map(event => ({
+                ...event,
+                publicId: db3.xEvent.parseIdentity(event.publicId),
+            }));
 
             return {
                 events,

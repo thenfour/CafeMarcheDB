@@ -262,14 +262,14 @@ const EventListOuter = () => {
                 refetch={refetch}
             />
         ),
-        getItemKey: (event) => event.id,
+        getItemKey: (event) => event.publicId,
         contextMarkerName: "EventList", csvExporter: {
             itemToCSVRow: (event, index) => {
                 const dateRange = event.dateRange;
                 const dateRangeSpec = dateRange?.getSpec();
                 return {
                     Order: index.toString(),
-                    ID: event.id.toString(),
+                    ID: event.publicId,
                     Name: event.name || "",
                     Type: event.type?.text || "",
                     Status: event.status?.label || "",
@@ -282,7 +282,7 @@ const EventListOuter = () => {
                         : "",
                     Location: event.locationDescription || "",
                     LocationURL: event.locationURL || "",
-                    URL: dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" }),
+                    URL: dashboardContext.routingApi.getURIForEvent({ publicId: event.publicId, name: event.name || "" }),
                 };
             },
             filename: "events"

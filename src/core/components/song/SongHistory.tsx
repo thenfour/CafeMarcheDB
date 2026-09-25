@@ -167,7 +167,7 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
             getBucketInfo={(bucket) => {
                 if (bucket.items.length === 0) return { tooltip: "" };
                 return {
-                    tooltip: <ul>{bucket.items.map(x => <li key={x.item.id}>{db3.EventAPI.getLabel(x.item)}</li>)}</ul>
+                    tooltip: <ul>{bucket.items.map(x => <li key={x.item.publicId}>{db3.EventAPI.getLabel(x.item)}</li>)}</ul>
                 }
             }}
             selectedMonthBucketId={selectedBucket?.yearMonthBucketId || null}
@@ -182,7 +182,7 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
         />
         <ul>
             {selectedBucket && selectedBucket.items.map(i => {
-                return <li key={i.item.id}>
+                return <li key={i.item.publicId}>
                     <a rel="noreferrer" target="_blank" href={dashboardContext.routingApi.getURIForEvent(i.item)}>
                         {db3.EventAPI.getLabel(i.item)}
                     </a></li>;

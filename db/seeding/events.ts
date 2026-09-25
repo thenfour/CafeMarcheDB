@@ -84,6 +84,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
     const visibilityPermissionId = gState.randomVisibilityPermissionId();
     const event = await gState.prisma.event.create({
         data: {
+            publicId: generatePublicId<"Event">(),
             name: eventName,
             revision: 0,
             expectedAttendanceUserTagId: faker.datatype.boolean(0.8) ? faker.helpers.arrayElement(gState.gAllUserTags).id : null,
@@ -108,7 +109,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
     if (faker.datatype.boolean(0.5)) {
         const wp = await gState.prisma.wikiPage.create({
             data: {
-                slug: `EventDescription/${event.id}`,
+                slug: `EventDescription/${event.publicId}`,
                 namespace: 'eventdescription',
                 visiblePermissionId: visibilityPermissionId,
                 revisions: {

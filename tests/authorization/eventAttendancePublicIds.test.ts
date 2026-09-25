@@ -1,4 +1,4 @@
-import { segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
+import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => ({
@@ -38,9 +38,16 @@ const attendanceFields = {
 };
 const attendance = { id: 2, publicId: attendancePublicId(2), ...attendanceFields };
 const event = {
-    id: 100, name: "Concert", locationDescription: "", locationURL: "", isDeleted: false, createdByUserId: null,
+    id: 100, publicId: eventPublicId(100), name: "Concert", locationDescription: "", locationURL: "", isDeleted: false, createdByUserId: null,
     visiblePermissionId: 920_002, revision: 1, calendarInputHash: "unchanged",
     startsAt: new Date("2099-01-01T12:00:00Z"), durationMillis: BigInt(3600000), isAllDay: false,
+    frontpageVisible: false,
+    frontpageDate: "", frontpageTime: "", frontpageDetails: "",
+    frontpageTitle: null, frontpageLocation: null, frontpageLocationURI: null, frontpageTags: null,
+    frontpageDate_nl: null, frontpageTime_nl: null, frontpageDetails_nl: null,
+    frontpageTitle_nl: null, frontpageLocation_nl: null, frontpageLocationURI_nl: null, frontpageTags_nl: null,
+    frontpageDate_fr: null, frontpageTime_fr: null, frontpageDetails_fr: null,
+    frontpageTitle_fr: null, frontpageLocation_fr: null, frontpageLocationURI_fr: null, frontpageTags_fr: null,
     responses: [], tags: [], songLists: [],
 };
 const segment = {
@@ -63,7 +70,7 @@ function reset(overrides: Parameters<typeof authorizationTestDb.reset>[0] = {}) 
 const operations = db3.eventAttendanceEditorView.crud.operations;
 const command = (commandID: string, payload: unknown) => invokeResolver(executeCommand, { commandID, payload }, ctx);
 const changeResponse = (attendanceId: EventAttendancePublicId | null) =>
-    invokeResolver(updateAttendance, { eventId: event.id, userId: actor.id, segmentResponses: { [segment.publicId]: { attendanceId } } }, ctx);
+    invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.id, segmentResponses: { [segment.publicId]: { attendanceId } } }, ctx);
 
 describe("EventAttendance public identities", () => {
     beforeEach(() => { vi.restoreAllMocks(); vi.stubEnv("CMDB_BASE_URL", "https://band.test"); reset(); });
@@ -101,9 +108,9 @@ describe("EventAttendance public identities", () => {
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
-    it("projects attendance references in legacy and named Event graphs", async () => {
+    it("projects attendance references in named Event graphs", async () => {
         for (const table of [
-            { tableID: db3.xEventVerbose.tableID, tableName: "Event" },
+            { tableID: db3.xEvent.tableID, tableName: "Event", viewID: db3.eventDetailView.viewID },
             { tableID: db3.xEvent.tableID, tableName: "Event", viewID: db3.eventSearchView.viewID },
         ]) {
             const result = await invokeResolver(query, forgeDb3Query(table.tableID, { table }), ctx);
@@ -130,7 +137,7 @@ describe("EventAttendance public identities", () => {
     it("resolves a shared choice once for several segments", async () => {
         reset({ eventSegment: [segment, { ...segment, id: 102, publicId: segmentPublicId(102) }], eventSegmentUserResponse: [] });
         const lookup = vi.spyOn(authorizationTestDb.getDelegate("eventAttendance"), "findMany");
-        await invokeResolver(updateAttendance, { eventId: event.id, userId: actor.id,
+        await invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.id,
             segmentResponses: { [segment.publicId]: { attendanceId: attendance.publicId }, [segmentPublicId(102)]: { attendanceId: attendance.publicId } },
         }, ctx);
         expect(lookup).toHaveBeenCalledTimes(1);
@@ -147,7 +154,7 @@ describe("EventAttendance public identities", () => {
         const badChoice = kind === "numeric" ? 2 : attendancePublicId(kind === "deleted" ? 3 : 999);
         // Forged transport data deliberately bypasses the branded client type.
         await expect(invokeResolver(updateAttendance, {
-            eventId: event.id, userId: actor.id, comment: "Must not be saved",
+            eventId: event.publicId, userId: actor.id, comment: "Must not be saved",
             segmentResponses: { [segment.publicId]: { attendanceId: attendance.publicId }, [segmentPublicId(102)]: { attendanceId: badChoice } },
         } as unknown as TupdateUserEventAttendanceMutationArgs, ctx)).rejects.toThrow();
         expect(create).not.toHaveBeenCalled();
@@ -166,7 +173,7 @@ describe("EventAttendance public identities", () => {
         const handler = attendanceApi as unknown as (req: { query: { userId: string; eventId: string } },
             res: { status: (code: number) => { json: typeof json } }, context: typeof ctx) => Promise<void>;
         const status = vi.fn(() => ({ json }));
-        await handler({ query: { userId: String(actor.id), eventId: String(event.id) } }, { status }, ctx);
+        await handler({ query: { userId: String(actor.id), eventId: event.publicId } }, { status }, ctx);
         expect(status).toHaveBeenCalledWith(200);
         expect(json).toHaveBeenCalledWith(expect.objectContaining({
             segmentResponses: [expect.objectContaining({ attendanceId: attendance.publicId, statusId })],

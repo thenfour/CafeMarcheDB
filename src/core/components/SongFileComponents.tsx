@@ -6,7 +6,7 @@ import { Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { Permission } from 'shared/permissions';
-import type { EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FileSongTagPublicId, FileTagPublicId } from 'shared/publicId';
+import type { EventPublicId, EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FileSongTagPublicId, FileTagPublicId } from 'shared/publicId';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { formatFileSize, SortDirection } from 'shared/rootroot';
 import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
@@ -27,7 +27,7 @@ import { SearchInput } from './CMTextField';
 import { VisibilityValue } from './VisibilityControl';
 import { gGeneralPaletteList, StandardVariationSpec } from './color/palette';
 import { useDashboardContext, useFeatureRecorder } from './dashboardContext/DashboardContext';
-import { EventChip } from './event/EventChips';
+import { EventChip, EventChipProps } from './event/EventChips';
 import { ActivityFeature } from './featureReports/activityTracking';
 import { CMDBUploadFile } from './file/CMDBUploadFile';
 import { FileDropWrapper, UploadFileComponent } from './file/FileDrop';
@@ -47,22 +47,28 @@ type DetailFile = db3.FileDetailClient
     | SongDetailFile
     | EnrichedFile<db3.FileWithTagsClientPayload>;
 
-const hasEventChipFields = (event: {
-    id: number;
+const getEventChipValue = (event: {
+    publicId: string;
     name?: string;
     startsAt?: Date | null;
     statusId?: EventStatusPublicId | null;
     typeId?: EventTypePublicId | null;
-}): event is {
-    id: number;
-    name: string;
-    startsAt: Date | null;
-    statusId: EventStatusPublicId | null;
-    typeId: EventTypePublicId | null;
-} => event.name !== undefined
-&& event.startsAt !== undefined
-&& event.statusId !== undefined
-    && event.typeId !== undefined;
+}): EventChipProps["value"] | null => {
+    if (event.name === undefined
+        || event.startsAt === undefined
+        || event.statusId === undefined
+        || event.typeId === undefined) {
+        return null;
+    }
+    return {
+        ...event,
+        publicId: db3.xEvent.parseIdentity(event.publicId),
+        name: event.name,
+        startsAt: event.startsAt,
+        statusId: event.statusId,
+        typeId: event.typeId,
+    };
+};
 
 // don't take maximum because it can hide your own instruments. so either handle that specifically or just don't bother hiding tags.
 //const gMaximumFilterTagsPerType = 10 as const;
@@ -190,7 +196,7 @@ interface FileViewerHiddenTagIds {
     userTagIds?: number[];
     instrumentTagIds?: db3.InstrumentIdentity[];
     songTagIds?: number[];
-    eventTagIds?: number[];
+    eventTagIds?: EventPublicId[];
     wikiPageTagIds?: number[]; // wikiPage ids
 };
 
@@ -333,10 +339,13 @@ export const FileValueViewer = (props: FileViewerProps) => {
 
                     {(taggedEvents.length > 0) && (
                         taggedEvents
-                            .filter(a => !props.hiddenTagIds.eventTagIds || !existsInArray(props.hiddenTagIds.eventTagIds, a.event.id))
-                            .map(a => hasEventChipFields(a.event)
-                                ? <EventChip key={db3.xFile.fields.taggedEvents.getForeignIdentity(a)} value={a.event} size="small" variation={variation} />
-                                : null)
+                            .filter(a => !props.hiddenTagIds.eventTagIds || !existsInArray(props.hiddenTagIds.eventTagIds, a.event.publicId))
+                            .map(a => {
+                                const event = getEventChipValue(a.event);
+                                return event
+                                    ? <EventChip key={db3.xFile.fields.taggedEvents.getForeignIdentity(a)} value={event} size="small" variation={variation} />
+                                    : null;
+                            })
                     )}
 
                     {(taggedUsers.length > 0) && (
@@ -456,10 +465,12 @@ export const FileEditor = (props: FileEditorProps) => {
                     if (!args.value) {
                         return <CMChip>--</CMChip>
                     }
-                    return <EventChip renderAsLink={false} value={args.value.event} />;
+                    const event = getEventChipValue(args.value.event);
+                    return event ? <EventChip renderAsLink={false} value={event} /> : null;
                 },
                 renderAsListItem: (props, value, selected) => {
-                    return <EventChip renderAsLink={false} value={value.event} />;
+                    const event = getEventChipValue(value.event);
+                    return event ? <EventChip renderAsLink={false} value={event} /> : null;
                 }
             }),
             taggedWikiPages: DB3Client.tagsFieldClientGen<db3.FileWikiPageTagClientPayload>({ allowDeleteFromCell: false }),
@@ -560,7 +571,7 @@ interface FileFilterAndSortSpec {
     taggedUserIds: number[];
     taggedInstrumentIds: db3.InstrumentIdentity[];
     taggedSongIds: number[];
-    taggedEventIds: number[];
+    taggedEventIds: EventPublicId[];
     taggedWikiPageIds: number[];
     mimeTypes: string[];
 
@@ -590,7 +601,7 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         const songIds = taggedSongs.map(song => song.song.id);
         if (spec.taggedSongIds.length && !songIds.some(id => spec.taggedSongIds.includes(id))) return false;
 
-        const eventIds = taggedEvents.map(event => event.event.id);
+        const eventIds = taggedEvents.map(event => event.event.publicId);
         if (spec.taggedEventIds.length && !eventIds.some(id => spec.taggedEventIds.includes(id))) return false;
 
         const wikiPageIds = taggedWikiPages.map(wikiPage => wikiPage.wikiPage.id);
@@ -742,7 +753,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
 
     const uniqueTags = CalculateUniqueTags<db3.FileTagDashboardClient>({ field: db3.xFile.fields.tags, fileTags: props.fileTags });
     const uniqueInstrumentTags = CalculateUniqueTags<db3.InstrumentClientPayload>({ field: db3.xFile.fields.taggedInstruments, fileTags: props.fileTags });
-    const uniqueEventTags = CalculateUniqueTags<db3.InstrumentPayloadMinimum>({ field: db3.xFile.fields.taggedEvents, fileTags: props.fileTags });
+    const uniqueEventTags = CalculateUniqueTags<{ publicId: EventPublicId; name: string }>({ field: db3.xFile.fields.taggedEvents, fileTags: props.fileTags });
     const uniqueUserTags = CalculateUniqueTags<db3.UserPayloadMinimum>({ field: db3.xFile.fields.taggedUsers, fileTags: props.fileTags });
     const uniqueSongTags = CalculateUniqueTags<db3.SongPayloadMinimum>({ field: db3.xFile.fields.taggedSongs, fileTags: props.fileTags });
     const uniqueWikiPageTags = CalculateUniqueTags<db3.WikiPagePayload>({ field: db3.xFile.fields.taggedWikiPages, fileTags: props.fileTags });
@@ -875,13 +886,13 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                                     {uniqueEventTags.length > 1 && <CMChipContainer>
                                         {uniqueEventTags.map(t => (
                                             <CMChip
-                                                key={t.tag.id}
+                                                key={t.tag.publicId}
                                                 //color={t.tag.color}
                                                 //tooltip={t.tag.description}
                                                 tooltip={"Event"}
                                                 size='small'
-                                                variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedEventIds, t.tag.id) }}
-                                                onClick={() => props.onChange({ ...props.value, taggedEventIds: toggleValueInArray(props.value.taggedEventIds, t.tag.id) })}
+                                                variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedEventIds, t.tag.publicId) }}
+                                                onClick={() => props.onChange({ ...props.value, taggedEventIds: toggleValueInArray(props.value.taggedEventIds, t.tag.publicId) })}
                                             >
                                                 {t.tag.name} ({t.count})
                                             </CMChip>))}

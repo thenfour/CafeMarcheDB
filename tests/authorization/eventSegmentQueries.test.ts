@@ -1,4 +1,4 @@
-import { segmentPublicId } from "../support/eventResponseFixtures";
+import { eventPublicId, segmentPublicId } from "../support/eventResponseFixtures";
 import { Prisma } from "@prisma/client"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -25,7 +25,7 @@ const makeSegment = (id: number, eventId: number) => ({
   durationMillis: BigInt(60_000), isAllDay: false, dateTimeVersion: 2,
 } satisfies Prisma.EventSegmentGetPayload<{}>)
 
-const events = [10, 20].map(id => ({ id, name: `Event ${id}`, isDeleted: false, visiblePermissionId: 920_002, createdByUserId: null }));
+const events = [10, 20].map(id => ({ id, publicId: eventPublicId(id), name: `Event ${id}`, isDeleted: false, visiblePermissionId: 920_002, createdByUserId: null }));
 const segments = [makeSegment(1, 10), makeSegment(2, 20)]
 
 beforeEach(() => authorizationTestDb.reset())
@@ -39,8 +39,7 @@ describe.each([
     { params: {}, ids: [1, 2] },
     { params: { eventId: undefined }, ids: [1, 2] },
     { params: { eventId: null }, ids: [1, 2] },
-    { params: { eventId: 10 }, ids: [1] },
-    { params: { eventId: 999 }, ids: [] },
+    { params: { eventId: eventPublicId(10) }, ids: [1] },
   ])("loads sysadmin grid rows with tableParams=$params", async ({ params, ids }) => {
     const { user, ctx } = createAuthorizationPersona("sysadmin")
     authorizationTestDb.reset({ user: [user!], event: events, eventSegment: segments })
@@ -51,8 +50,33 @@ describe.each([
 
     // The test database now loads the relations requested by EventSegmentArgs too.
     expect(result.items).toEqual(segments.filter(segment => ids.includes(segment.id))
-      .map(({ id, ...segment }) => ({ ...segment, event: events.map(({ visiblePermissionId, ...event }) => event).find(event => event.id === segment.eventId), status: null, responses: [] })))
+      .map(({ id, ...segment }) => ({
+        ...segment,
+        eventId: eventPublicId(segment.eventId),
+        event: events.map(event => ({
+          publicId: event.publicId,
+          name: event.name,
+          isDeleted: event.isDeleted,
+          createdByUserId: event.createdByUserId,
+        }))
+          .find(event => event.publicId === eventPublicId(segment.eventId)),
+        status: null,
+        responses: [],
+      })))
     if ("count" in result) expect(result.count).toBe(ids.length)
+  })
+
+  it("rejects an unknown Event public ID before querying segments", async () => {
+    const { user, ctx } = createAuthorizationPersona("sysadmin")
+    authorizationTestDb.reset({ user: [user!], event: events, eventSegment: segments })
+    const lookup = vi.spyOn(authorizationTestDb.getDelegate("eventSegment"), "findMany")
+    const request = forgeDb3Query("EventSegment", {
+      filter: { items: [], tableParams: { eventId: eventPublicId(999) } },
+    })
+    await expect(invokeResolver(resolver, resolver === db3PaginatedQuery
+      ? { ...request, skip: 0, take: 20 }
+      : request, ctx)).rejects.toThrow("Event was not found")
+    expect(lookup).not.toHaveBeenCalled()
   })
 
   it.each(["10", 1.5, NaN, Number.MAX_SAFE_INTEGER + 1, false, {}, []])(

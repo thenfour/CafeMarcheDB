@@ -55,12 +55,13 @@ export default resolver.pipe(
             }));
         const changeContext = CreateChangeContext("updateUserEventAttendance");
         await db.$transaction(async transactionalDb => {
+            const eventId = await resolvePublicId(db3.xEvent, args.eventId, publicData, transactionalDb);
             const instrumentId = args.instrumentId == null
                 ? args.instrumentId
                 : await resolvePublicId(db3.xInstrument, args.instrumentId, publicData, transactionalDb);
             const [event, targetUser, eventSegments] = await Promise.all([
                 transactionalDb.event.findFirst({
-                    where: { id: args.eventId, isDeleted: false },
+                    where: { id: eventId, isDeleted: false },
                     include: { visiblePermission: { include: { roles: true } } },
                 }),
                 transactionalDb.user.findFirst({
@@ -74,7 +75,7 @@ export default resolver.pipe(
                             publicId: {
                                 in: segmentResponses.map(response => response.publicId)
                             },
-                            eventId: args.eventId,
+                            eventId,
                         },
                         select: {
                             id: true,
@@ -169,7 +170,7 @@ export default resolver.pipe(
             }
 
             const existingEventResponse = await transactionalDb.eventUserResponse.findFirst({
-                where: { userId: args.userId, eventId: args.eventId },
+                where: { userId: args.userId, eventId },
             });
 
             if (existingEventResponse) {
@@ -208,7 +209,7 @@ export default resolver.pipe(
             } else {
                 const fields: Omit<Prisma.EventUserResponseUncheckedCreateInput, "publicId"> = {
                     userId: args.userId,
-                    eventId: args.eventId,
+                    eventId,
                     userComment: args.comment || "",
                     instrumentId,
                     isInvited: args.isInvited,

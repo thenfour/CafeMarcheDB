@@ -1,7 +1,7 @@
-import type { EventSongListCompleteDto } from "../entities/eventSongList/eventSongListViews";
 import { Prisma } from "db";
 import type { ColorPaletteEntry } from "@/src/core/components/color/palette";
 import type {
+    EventPublicId,
     EventSegmentPublicId,
     EventUserResponsePublicId,
     EventSegmentUserResponsePublicId,
@@ -899,8 +899,9 @@ export type FileWithTagsPayload = Prisma.FileGetPayload<typeof FileWithTagsArgs>
 
 type FileWithTagsEventClientPayload = Omit<
     FileWithTagsPayload["taggedEvents"][number]["event"],
-    "typeId" | "statusId" | "type" | "status"
+    "id" | "publicId" | "typeId" | "statusId" | "type" | "status"
 > & {
+    publicId: EventPublicId;
     typeId: EventTypePublicId | null;
     statusId: EventStatusPublicId | null;
     type: { publicId: EventTypePublicId } | null;
@@ -1063,6 +1064,15 @@ export const EventWithTagsArgs = Prisma.validator<Prisma.EventArgs>()({
 
 export type EventWithTagsPayload = Prisma.EventGetPayload<typeof EventWithTagsArgs>;
 
+export type EventTagAssignmentClientPayload = Omit<
+    Prisma.EventTagAssignmentGetPayload<{}>,
+    "id" | "publicId" | "eventId" | "eventTagId"
+> & {
+    publicId: EventTagAssignmentPublicId;
+    eventId: EventPublicId;
+    eventTagId: EventTagPublicId;
+};
+
 
 ////////////////////////////////////////////////////////////////
 export const EventUserResponseArgs = Prisma.validator<Prisma.EventUserResponseArgs>()({
@@ -1105,9 +1115,10 @@ export type EventSegmentUserResponseClientPayload = Omit<
     attendanceId: EventAttendancePublicId | null;
 };
 export type EventUserResponseClientPayload = Omit<
-    Prisma.EventUserResponseGetPayload<{}>, "id" | "publicId" | "instrumentId"
+    Prisma.EventUserResponseGetPayload<{}>, "id" | "publicId" | "eventId" | "instrumentId"
 > & {
     publicId: EventUserResponsePublicId;
+    eventId: EventPublicId;
     instrumentId: InstrumentPublicId | null;
 };
 
@@ -1193,155 +1204,6 @@ export const compareEventSegments = <TStatusIdentity extends number | string>(
 
 
 
-// all info that will appear on an event detail page
-export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
-    include: {
-        visiblePermission: { select: { publicId: true } },
-        status: true,
-        createdByUser: AuxUserArgs,
-        songLists: { ...EventSongListArgs, orderBy: EventSongListNaturalOrderBy },
-        expectedAttendanceUserTag: {
-            include: {
-                userAssignments: true
-            }
-        },
-        tags: {
-            include: {
-                // Selected only so public-ID projection can replace eventTagId.
-                eventTag: { select: { publicId: true } },
-            },
-        },
-        fileTags: {
-            include: {
-                file: FileWithTagsArgs,
-            },
-            orderBy: { file: { uploadedAt: 'desc' } }
-        },
-        segments: {
-            orderBy: EventSegmentNaturalOrderBy,
-            include: {
-                responses: {
-                    include: {
-                        attendance:
-                        {
-                            select: {
-                                publicId: true
-
-                            }
-                        },
-                        eventSegment: {
-                            select: {
-                                publicId: true
-
-                            }
-                        }
-                    }
-                },
-            }
-        },
-        responses: {
-            include: {
-                instrument: {
-                    select: {
-                        publicId: true
-
-                    }
-                }
-            }
-        },
-        descriptionWikiPage: {
-            include: {
-                currentRevision: true,
-            }
-        }
-    }
-});
-
-export type EventVerbose_EventSegmentPayload = Prisma.EventSegmentGetPayload<typeof EventSegmentArgs>;
-
-type EventDbPayload_Verbose = Prisma.EventGetPayload<typeof EventArgs_Verbose>;
-export type EventStatusClientPayload = Omit<Prisma.EventStatusGetPayload<{}>, "id" | "publicId"> & {
-    publicId: EventStatusPublicId;
-};
-export type EventTypeClientPayload = Omit<Prisma.EventTypeGetPayload<{}>, "id" | "publicId"> & {
-    publicId: EventTypePublicId;
-};
-export type EventTagClientPayload = Omit<Prisma.EventTagGetPayload<{}>, "id" | "publicId"> & {
-    publicId: EventTagPublicId;
-};
-export type EventTagAssignmentClientPayload = Omit<
-    EventDbPayload_Verbose["tags"][number],
-    "id" | "publicId" | "eventTagId" | "eventTag"
-> & {
-    publicId: EventTagAssignmentPublicId;
-    eventTagId: EventTagPublicId;
-};
-type EventVerboseDbSegment = Prisma.EventSegmentGetPayload<typeof EventArgs_Verbose.include.segments>;
-export type EventVerbose_EventSegmentClient = Omit<EventVerboseDbSegment, "id" | "publicId" | "statusId" | "responses"> & {
-    publicId: EventSegmentPublicId;
-    responses: EventSegmentUserResponseClientPayload[];
-    statusId: EventStatusPublicId | null;
-};
-type EventVerboseDbExpectedUserTag = NonNullable<EventDbPayload_Verbose["expectedAttendanceUserTag"]>;
-export type EventExpectedAttendanceUserTagClientPayload = Omit<
-    EventVerboseDbExpectedUserTag,
-    "id" | "publicId" | "userAssignments"
-> & {
-    publicId: UserTagPublicId;
-    userAssignments: Array<Omit<
-        EventVerboseDbExpectedUserTag["userAssignments"][number],
-        "id" | "publicId" | "userTagId"
-    > & {
-        publicId: UserTagAssignmentPublicId;
-    }>;
-};
-
-export type EventClientPayload_Verbose = Omit<
-    EventDbPayload_Verbose,
-    "fileTags" | "statusId" | "typeId" | "status" | "tags" | "segments"
-    | "expectedAttendanceUserTagId" | "expectedAttendanceUserTag"
-    | "visiblePermissionId" | "visiblePermission" | "songLists" | "responses"
-> & {
-    responses: EventUserResponseClientPayload[];
-    songLists: EventSongListCompleteDto[];
-    visiblePermissionId: PermissionPublicId | null;
-    statusId: EventStatusPublicId | null;
-    typeId: EventTypePublicId | null;
-    status: EventStatusClientPayload | null;
-    tags: EventTagAssignmentClientPayload[];
-    segments: EventVerbose_EventSegmentClient[];
-    expectedAttendanceUserTagId: UserTagPublicId | null;
-    expectedAttendanceUserTag: EventExpectedAttendanceUserTagClientPayload | null;
-    fileTags: Array<Omit<
-        EventDbPayload_Verbose["fileTags"][number],
-        "id" | "publicId" | "file"
-    > & {
-        publicId: FileEventTagPublicId;
-        file: FileWithTagsClientPayload;
-    }>;
-};
-
-export type EventVerbose_Event = Prisma.EventGetPayload<typeof EventArgs_Verbose>;
-// Attendance presentation also includes unanswered rows, which have no persisted identity.
-export type EventVerbose_EventUserResponse = Omit<EventUserResponseClientPayload, "publicId"> & {
-    publicId: EventUserResponsePublicId | null;
-};
-export type EventVerbose_EventSegment = Prisma.EventSegmentGetPayload<typeof EventArgs_Verbose.include.segments>;
-export type EventVerbose_EventSegmentUserResponse = Omit<EventSegmentUserResponseClientPayload, "publicId"> & {
-    publicId: EventSegmentUserResponsePublicId | null;
-};
-
-
-
-export type EventTaggedFilesPayload = Prisma.FileEventTagGetPayload<{
-    include: {
-        file: typeof FileWithTagsArgs,
-    }
-}>;
-
-
-
-
 ////////////////////////////////////////////////////////////////
 export type EventWithStatusPayload = Prisma.EventGetPayload<{
     include: {
@@ -1408,7 +1270,8 @@ export const EventTypeNaturalOrderBy: Prisma.EventTypeOrderByWithRelationInput[]
 
 
 
-export type EventPayloadClient = Omit<EventPayload, "statusId" | "typeId"> & {
+export type EventPayloadClient = Omit<EventPayload, "id" | "publicId" | "statusId" | "typeId"> & {
+    publicId: EventPublicId;
     statusId: EventStatusPublicId | null;
     typeId: EventTypePublicId | null;
 }; // used to include calculated fields

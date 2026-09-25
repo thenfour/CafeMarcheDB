@@ -44,7 +44,7 @@ import { SongAutocomplete } from './SongAutocomplete';
 import { SongTagIndicatorContainer } from './SongTagIndicatorContainer';
 import type { PortableSongList } from "../db3/shared/entities/eventSongList/eventSongListClipboard";
 import type { SongTagPublicId } from 'shared/publicId';
-import type { EventEnrichedVerbose_Event } from './event/EventComponentsBase';
+import type { EventDetailEvent } from './event/EventComponentsBase';
 
 const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, TSongPinnedRecording>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, setlistClientId: db3.SetlistClientId }): MediaPlayerTrack => {
     if (args.rowItem.type === 'song') {
@@ -1526,7 +1526,7 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // for new song lists. different from the other editor because this doesn't save automatically, it only saves after you click "save"
 interface EventSongListNewEditorProps {
-    event: EventEnrichedVerbose_Event;
+    event: EventDetailEvent;
     onCancel: () => void;
     onSuccess: () => void;
 };
@@ -1537,16 +1537,16 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
     const snackbar = React.useContext(SnackbarContext);
     const initialValue = React.useMemo(() => db3.createEventSongListDraft({
         clientId: db3.createDraftSetlistId(),
-        eventId: props.event.id,
+        eventId: props.event.publicId,
         name: props.event.songLists.length > 0
             ? `Set ${props.event.songLists.length + 1}`
             : "Setlist",
-    }), [props.event.id, props.event.songLists.length]);
+    }), [props.event.publicId, props.event.songLists.length]);
 
     const handleSave = async (value: db3.EventSongListDraft) => {
         void recordFeature({
             feature: ActivityFeature.setlist_create,
-            eventId: props.event.id,
+            eventId: props.event.publicId,
         });
 
         await snackbar.invokeAsync(async () => {
@@ -1566,7 +1566,7 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const EventSongListList = ({ values, event, readonly, refetch }: {
     values: readonly db3.EventSongListDetailClient[],
-    event: EventEnrichedVerbose_Event,
+    event: EventDetailEvent,
     readonly: boolean,
     refetch: () => void,
 }) => {
@@ -1595,7 +1595,7 @@ export const EventSongListList = ({ values, event, readonly, refetch }: {
             movingItemId,
             newPositionItemId,
             scopeRowIds: values.map(item => item.publicId),
-            eventId: event.id,
+            eventId: event.publicId,
         }).then(() => {
             showSnackbar({ severity: "success", children: "song list reorder successful" });
             refetch();
@@ -1633,14 +1633,14 @@ export const EventSongListList = ({ values, event, readonly, refetch }: {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const EventSongListTabContent = ({ event, readonly, refetch }: { event: EventEnrichedVerbose_Event, readonly: boolean, refetch: () => void }) => {
+export const EventSongListTabContent = ({ event, readonly, refetch }: { event: EventDetailEvent, readonly: boolean, refetch: () => void }) => {
     const [newOpen, setNewOpen] = React.useState<boolean>(false);
     const publicData = useDB3Authorization();
     const songListsClient = DB3Client.useDb3Query({
         view: db3.eventSongListDetailView,
         filterSpec: {
             items: [],
-            tableParams: { eventId: event.id },
+            tableParams: { eventId: event.publicId },
         },
     });
 

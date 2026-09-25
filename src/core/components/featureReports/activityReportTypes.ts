@@ -2,6 +2,7 @@ import { ActivityReportTimeBucketSize } from "@/shared/mysqlUtils";
 import { Prisma } from "db";
 import {
     type EventAttendancePublicId,
+    type EventPublicId,
     type EventSegmentPublicId,
     type EventSongListPublicId,
     type EventStatusPublicId,
@@ -9,43 +10,44 @@ import {
     type InstrumentPublicId,
     type SongCreditTypePublicId,
 } from "shared/publicId";
+import { isPublicId } from "shared/publicId";
 import { z } from "zod";
 import { ActivityFeature, Browsers, DeviceClasses, OperatingSystem, PointerTypes } from "./activityTracking";
 import * as db3 from "../../db3/db3";
 //import { gFeatureReportFacetProcessors } from "./server/facetProcessor";
 
-function projectActivitySetlist(value: { publicId: string; name: string; eventId: number } | null) {
+function projectActivitySetlist(value: { publicId: string; name: string; event: { publicId: string } } | null) {
     return value ? {
         publicId: db3.xEventSongList.parseIdentity(value.publicId),
         name: value.name,
-        eventId: value.eventId,
+        eventId: db3.xEvent.parseIdentity(value.event.publicId),
     } : null;
 }
 
-function projectActivitySegment(value: { publicId: string; name: string; eventId: number; startsAt: Date | null } | null) {
+function projectActivitySegment(value: { publicId: string; name: string; event: { publicId: string }; startsAt: Date | null } | null) {
     return value ? {
         publicId: db3.xEventSegment.parseIdentity(value.publicId),
-        name: value.name, eventId: value.eventId, startsAt: value.startsAt,
+        name: value.name, eventId: db3.xEvent.parseIdentity(value.event.publicId), startsAt: value.startsAt,
     } : null;
 }
 
 export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDefaultArgs>()({
     include: {
-        event: true,
+        event: { select: { publicId: true, name: true, startsAt: true } },
         attendance: { select: { publicId: true } },
         user: true,
         file: true,
         song: true,
         wikiPage: true,
         customLink: true,
-        eventSegment: { select: { publicId: true, name: true, eventId: true, startsAt: true } },
+        eventSegment: { select: { publicId: true, name: true, event: { select: { publicId: true } }, startsAt: true } },
         eventSongList:
         {
             select:
             {
                 publicId: true,
                 name: true,
-                eventId: true,
+                event: { select: { publicId: true } },
             },
         },
         frontpageGalleryItem: true,
@@ -63,7 +65,7 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
 type GeneralActivityReportDetailDbPayload = Prisma.ActionGetPayload<typeof GeneralActivityReportDetailArgs>;
 export type GeneralActivityReportDetailPayload = Omit<
     GeneralActivityReportDetailDbPayload,
-    "user" | "userId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment"
+    "user" | "userId" | "event" | "eventId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment"
 > & {
     userHash: string | null;
     songCreditTypeId: SongCreditTypePublicId | null;
@@ -73,13 +75,15 @@ export type GeneralActivityReportDetailPayload = Omit<
     attendance: { publicId: EventAttendancePublicId } | null;
     eventSongListId: EventSongListPublicId | null;
     eventSongList: ReturnType<typeof projectActivitySetlist>;
+    eventId: EventPublicId | null;
+    event: { publicId: EventPublicId; name: string; startsAt: Date | null } | null;
 };
 
 export function projectGeneralActivityReportDetailItem(
     row: GeneralActivityReportDetailDbPayload,
     userHash: string | null,
 ): GeneralActivityReportDetailPayload {
-    const { user: _user, userId: _userId, songCreditType, songCreditTypeId: _songCreditTypeId, ...rest } = row;
+    const { user: _user, userId: _userId, event, eventId: _eventId, songCreditType, songCreditTypeId: _songCreditTypeId, ...rest } = row;
     return {
         ...rest,
         eventSegment: projectActivitySegment(row.eventSegment),
@@ -88,6 +92,8 @@ export function projectGeneralActivityReportDetailItem(
         attendance: row.attendance ? { publicId: db3.xEventAttendance.parseIdentity(row.attendance.publicId) } : null,
         eventSongList: projectActivitySetlist(row.eventSongList),
         eventSongListId: row.eventSongList ? db3.xEventSongList.parseIdentity(row.eventSongList.publicId) : null,
+        eventId: event ? db3.xEvent.parseIdentity(event.publicId) : null,
+        event: event ? { ...event, publicId: db3.xEvent.parseIdentity(event.publicId) } : null,
         userHash,
         songCreditTypeId: songCreditType
             ? db3.xSongCreditType.parseIdentity(songCreditType.publicId)
@@ -181,7 +187,7 @@ export interface FacetedBreakdownResult {
             count: number;
         }[],
         events: {
-            eventId: number;
+            eventId: EventPublicId;
             // other fields?
             //id: true,
             name: string,
@@ -224,7 +230,7 @@ export const ZFeatureReportFilterSpec = z.object({
     includeLanguages: z.string().array(),
     includeLocales: z.string().array(),
     includeCustomLinkIds: z.number().array(),
-    includeEventIds: z.number().array(),
+    includeEventIds: z.custom<EventPublicId>(isPublicId).array(),
     includeMenuLinkIds: z.number().array(),
     includeSongIds: z.number().array(),
     includeWikiPageIds: z.number().array(),
@@ -238,7 +244,7 @@ export const ZFeatureReportFilterSpec = z.object({
     excludeLanguages: z.string().array(),
     excludeLocales: z.string().array(),
     excludeCustomLinkIds: z.number().array(),
-    excludeEventIds: z.number().array(),
+    excludeEventIds: z.custom<EventPublicId>(isPublicId).array(),
     excludeMenuLinkIds: z.number().array(),
     excludeSongIds: z.number().array(),
     excludeWikiPageIds: z.number().array(),
@@ -302,7 +308,7 @@ const GetFeatureReportDetailResultArgsUnvalidated /*: Prisma.ActionDefaultArgs*/
         },
         event: {
             select: {
-                id: true,
+                publicId: true,
                 name: true,
                 startsAt: true,
                 type: { select: { publicId: true } },
@@ -321,10 +327,10 @@ const GetFeatureReportDetailResultArgsUnvalidated /*: Prisma.ActionDefaultArgs*/
                 slug: true,
             }
         },
-        eventSegment: { select: { publicId: true, name: true, eventId: true, startsAt: true } },
+        eventSegment: { select: { publicId: true, name: true, event: { select: { publicId: true } }, startsAt: true } },
         attendance: { select: { publicId: true } },
         customLink: true,
-        eventSongList: { select: { publicId: true, name: true, eventId: true } },
+        eventSongList: { select: { publicId: true, name: true, event: { select: { publicId: true } } } },
         frontpageGalleryItem: true,
         menuLink: true,
         setlistPlan: true,
@@ -353,7 +359,7 @@ type GetFeatureReportDetailDbPayload = Prisma.ActionGetPayload<typeof GetFeature
 type FeatureReportSongCreditType = NonNullable<GetFeatureReportDetailDbPayload["songCreditType"]>;
 export type GetFeatureReportDetailItemPayload = Omit<
     GetFeatureReportDetailDbPayload,
-    "instrument" | "event" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment"
+    "instrument" | "event" | "eventId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment"
 > & {
     instrumentId: InstrumentPublicId | null;
     songCreditTypeId: SongCreditTypePublicId | null;
@@ -366,7 +372,9 @@ export type GetFeatureReportDetailItemPayload = Omit<
     songCreditType: null | (Omit<FeatureReportSongCreditType, "publicId"> & {
         publicId: SongCreditTypePublicId;
     });
-    event: null | (Omit<NonNullable<GetFeatureReportDetailDbPayload["event"]>, "type" | "status"> & {
+    eventId: EventPublicId | null;
+    event: null | (Omit<NonNullable<GetFeatureReportDetailDbPayload["event"]>, "publicId" | "type" | "status"> & {
+        publicId: EventPublicId;
         typeId: EventTypePublicId | null;
         statusId: EventStatusPublicId | null;
     });
@@ -378,6 +386,7 @@ export function projectFeatureReportDetailItem(
     const {
         instrument,
         event,
+        eventId: _eventId,
         songCreditType,
         songCreditTypeId: _songCreditTypeId,
         ...rest
@@ -399,12 +408,13 @@ export function projectFeatureReportDetailItem(
             publicId: db3.xSongCreditType.parseIdentity(songCreditType.publicId),
         } : null,
         event: event ? {
-            id: event.id,
+            publicId: db3.xEvent.parseIdentity(event.publicId),
             name: event.name,
             startsAt: event.startsAt,
             typeId: event.type ? db3.xEventType.parseIdentity(event.type.publicId) : null,
             statusId: event.status ? db3.xEventStatus.parseIdentity(event.status.publicId) : null,
         } : null,
+        eventId: event ? db3.xEvent.parseIdentity(event.publicId) : null,
     };
 }
 

@@ -10,7 +10,7 @@ import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 import { Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
-import type { EventStatusPublicId, EventTypePublicId, InstrumentPublicId } from "shared/publicId";
+import type { EventPublicId, EventStatusPublicId, EventTypePublicId, InstrumentPublicId } from "shared/publicId";
 import { RenderMuiIcon } from "../db3/components/IconMap";
 import { CMChip, CMChipBorderOption, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
 import { CMLink } from "./CMLink";
@@ -353,7 +353,7 @@ export const PermissionBoundary = (props: React.PropsWithChildren<PermissionBoun
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const EventTextLink = (props: {
     event: {
-        id: number;
+        publicId: EventPublicId;
         name: string;
         startsAt: Date | null;
         statusId?: EventStatusPublicId | null;

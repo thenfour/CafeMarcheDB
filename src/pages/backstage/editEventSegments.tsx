@@ -1,6 +1,5 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
-import { parseIntOrNull } from "shared/utils";
 import { EventTableClientColumns } from "src/core/components/event/EventComponentsBase";
 import { EventSegmentClientColumns } from "src/core/components/event/EventSegmentComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -22,7 +21,10 @@ import * as DB3Client from "src/core/db3/DB3Client";
 
 const MainContent = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const eventId: number | null = parseIntOrNull(urlParams.get('eventId'));
+    const eventIdParam = urlParams.get('eventId');
+    const eventId = eventIdParam && db3.xEvent.isIdentity(eventIdParam)
+        ? db3.xEvent.parseIdentity(eventIdParam)
+        : null;
 
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.eventSegmentEditorView,

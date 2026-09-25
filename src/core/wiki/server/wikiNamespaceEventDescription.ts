@@ -1,10 +1,11 @@
-import { IsEntirelyIntegral } from "shared/utils";
+import { isPublicId } from "shared/publicId";
 import type { RequestAuthorization } from "src/auth/server/requestAuthorization";
 import { DB3ReferenceStore } from "../../db3/shared/core/db3Hydration";
 import { eventWikiPageContextView } from "../../db3/shared/entities/event/eventViews";
 import { queryView } from "../../db3/server/db3QueryCore";
 import type { TransactionalPrismaClient } from "../../db3/shared/apiTypes";
 import { SpecialWikiNamespace, WikiPageData } from "../../wiki/shared/wikiUtils";
+import * as db3 from "../../db3/db3";
 
 
 
@@ -20,10 +21,10 @@ export const ProcessEventDescriptionForWikiPage = async (
     if (namespace.toLowerCase() !== SpecialWikiNamespace.EventDescription.toLowerCase()) {
         return inp;
     }
-    if (!IsEntirelyIntegral(slugWithoutNamespace)) {
+    if (!isPublicId(slugWithoutNamespace)) {
         return inp;
     }
-    const eventId = parseInt(slugWithoutNamespace);
+    const eventId = db3.xEvent.parseIdentity(slugWithoutNamespace);
 
     const result = await queryView({
         view: eventWikiPageContextView,

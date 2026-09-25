@@ -9,17 +9,32 @@ import * as db3 from "../db3";
 ///////////// setlist planning /////////////////////////////////////////////////////////////////
 
 // matches MatchingSlugItem on purpose.
-export const ZSetlistPlanAssociatedItem = z.object({
-    itemType: z.union([
-        z.literal(QuickSearchItemType.song),
-        z.literal(QuickSearchItemType.event),
-        z.literal(QuickSearchItemType.user),
-        z.literal(QuickSearchItemType.wikiPage),
-    ]),
+const SetlistPlanAssociatedItemBase = {
     name: z.string(),
     absoluteUri: z.string().optional(),
-    id: z.number(),
-});
+};
+export const ZSetlistPlanAssociatedItem = z.discriminatedUnion("itemType", [
+    z.object({
+        ...SetlistPlanAssociatedItemBase,
+        itemType: z.literal(QuickSearchItemType.event),
+        id: db3.xEvent.identitySchema
+    }),
+    z.object({
+        ...SetlistPlanAssociatedItemBase,
+        itemType: z.literal(QuickSearchItemType.song),
+        id: z.number()
+    }),
+    z.object({
+        ...SetlistPlanAssociatedItemBase,
+        itemType: z.literal(QuickSearchItemType.user),
+        id: z.number()
+    }),
+    z.object({
+        ...SetlistPlanAssociatedItemBase,
+        itemType: z.literal(QuickSearchItemType.wikiPage),
+        id: z.number()
+    }),
+]);
 
 export type SetlistPlanAssociatedItem = z.infer<typeof ZSetlistPlanAssociatedItem>;
 

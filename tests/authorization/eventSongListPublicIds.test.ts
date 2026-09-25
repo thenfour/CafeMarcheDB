@@ -17,6 +17,7 @@ import { projectFeatureReportDetailItem, projectGeneralActivityReportDetailItem 
 import { Permission } from "shared/permissions";
 import { isPublicId } from "shared/publicId";
 import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
+import { eventPublicId } from "../support/eventResponseFixtures";
 import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { forgeDb3Query } from "./support/db3RequestBuilders";
@@ -26,12 +27,12 @@ const permissions = [Permission.login, Permission.manage_events, Permission.admi
 const actor = createAuthorizationTestUser("normal", { id: 93, permissions });
 const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions });
 const event = {
-    id: 100, name: "Concert", locationDescription: "", isDeleted: false, createdByUserId: null,
+    id: 100, publicId: eventPublicId(100), name: "Concert", locationDescription: "", isDeleted: false, createdByUserId: null,
     visiblePermissionId: 920_002, revision: 1, calendarInputHash: "unchanged",
     startsAt: null, segments: [],
 };
 const parentFields = {
-    eventId: event.id, name: "First set", description: "", sortOrder: 0,
+    eventId: event.publicId, name: "First set", description: "", sortOrder: 0,
     isActuallyPlayed: false, isOrdered: true,
 };
 const dividerFields = {
@@ -47,7 +48,7 @@ const song = {
 function reset(overrides: Parameters<typeof authorizationTestDb.reset>[0] = {}) {
     authorizationTestDb.reset({
         user: [actor], event: [event], song: [song],
-        eventSongList: [{ id: 50, publicId: listPublicId(50), ...parentFields }],
+        eventSongList: [{ id: 50, publicId: listPublicId(50), ...parentFields, eventId: event.id }],
         eventSongListSong: [{ id: 501, publicId: listSongPublicId(501), eventSongListId: 50, songId: 300, sortOrder: 0, subtitle: "Intro" }],
         eventSongListDivider: [{ id: 601, publicId: listDividerPublicId(601), eventSongListId: 50, ...dividerFields }],
         change: [], action: [], setting: [], eventSegment: [], eventStatus: [],
@@ -118,22 +119,6 @@ describe("Event setlist public identities", () => {
         expect(isPublicId(item.publicId)).toBe(true);
     });
 
-    it("projects setlists embedded in a legacy Event graph with public child foreign keys", async () => {
-        const songLists = await authorizationTestDb.getDelegate("eventSongList").findMany(db3.EventSongListArgs);
-        await authorizationTestDb.getDelegate("event").update({ where: { id: 100 }, data: { songLists } });
-        const result = await invokeResolver(query, forgeDb3Query(db3.xEventVerbose.tableID, {
-            table: { tableID: db3.xEventVerbose.tableID, tableName: db3.xEventVerbose.tableName },
-        }), ctx);
-        expect(result.items).toHaveLength(1);
-        const list = result.items[0]!.songLists[0];
-        expect(list.publicId).toBe(listPublicId(50));
-        expect(list).not.toHaveProperty("id");
-        expect(list.songs[0]).toMatchObject({ publicId: listSongPublicId(501), eventSongListId: listPublicId(50) });
-        expect(list.dividers[0]).toMatchObject({ publicId: listDividerPublicId(601), eventSongListId: listPublicId(50) });
-        expect(list.songs[0]).not.toHaveProperty("id");
-        expect(list.dividers[0]).not.toHaveProperty("id");
-    });
-
     it.each(["duplicate", "foreign", "unknown"])("rejects %s child IDs and rolls back parent and audit changes", async kind => {
         const before = authorizationTestDb.snapshot("eventSongList");
         const foreign = { id: 502, publicId: listSongPublicId(502), eventSongListId: 51, songId: 300, sortOrder: 0, subtitle: "Other" };
@@ -166,7 +151,7 @@ describe("Event setlist public identities", () => {
             { ...updatePayload, dividers: [{ ...dividerFields, id: 601 }] },
         ]) await expect(save(payload)).rejects.toThrow();
         expect(() => db3.deleteEventSongListCommand.parseDto({ publicId: 50 })).toThrow();
-        expect(() => db3.reorderEventSongListsCommand.parseDto({ eventId: 100, movingItemId: 50, newPositionItemId: 50, scopeRowIds: [50] })).toThrow();
+        expect(() => db3.reorderEventSongListsCommand.parseDto({ eventId: event.publicId, movingItemId: 50, newPositionItemId: 50, scopeRowIds: [50] })).toThrow();
         await expect(invokeResolver(updateGenericSortOrder, {
             tableID: "EventSongList", tableName: "EventSongList", movingItemId: 50,
             newPositionItemId: 50, scopeRowIds: [50], groupByColumn: "eventId", groupValue: 100,
@@ -186,7 +171,7 @@ describe("Event setlist public identities", () => {
         }, ctx)).rejects.toThrow();
         await expect(invokeResolver(executeCommand, {
             commandID: db3.reorderEventSongListsCommand.commandID,
-            payload: { eventId: 100, movingItemId: listPublicId(50), newPositionItemId: listPublicId(50), scopeRowIds: [listPublicId(50)] },
+            payload: { eventId: event.publicId, movingItemId: listPublicId(50), newPositionItemId: listPublicId(50), scopeRowIds: [listPublicId(50)] },
         }, ctx)).rejects.toThrow();
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
@@ -199,13 +184,13 @@ describe("Event setlist public identities", () => {
 
     it("preserves gaps and leaves out-of-scope lists untouched during reorder", async () => {
         reset({ eventSongList: [
-            { ...parentFields, id: 50, publicId: listPublicId(50), sortOrder: 2 },
-            { ...parentFields, id: 51, publicId: listPublicId(51), sortOrder: 8 },
-            { ...parentFields, id: 52, publicId: listPublicId(52), sortOrder: 5 },
+            { ...parentFields, eventId: event.id, id: 50, publicId: listPublicId(50), sortOrder: 2 },
+            { ...parentFields, eventId: event.id, id: 51, publicId: listPublicId(51), sortOrder: 8 },
+            { ...parentFields, eventId: event.id, id: 52, publicId: listPublicId(52), sortOrder: 5 },
         ] });
         await invokeResolver(executeCommand, {
             commandID: db3.reorderEventSongListsCommand.commandID,
-            payload: { eventId: 100, movingItemId: listPublicId(50), newPositionItemId: listPublicId(51), scopeRowIds: [listPublicId(50), listPublicId(51)] },
+            payload: { eventId: event.publicId, movingItemId: listPublicId(50), newPositionItemId: listPublicId(51), scopeRowIds: [listPublicId(50), listPublicId(51)] },
         }, ctx);
         expect(authorizationTestDb.snapshot("eventSongList").map(row => row.sortOrder)).toEqual([8, 2, 5]);
     });
@@ -229,13 +214,13 @@ describe("Event setlist public identities", () => {
             frontpageGalleryItem: null, frontpageGalleryItemId: null,
             menuLink: null, menuLinkId: null, setlistPlan: null, setlistPlanId: null,
             songCreditType: null, songCreditTypeId: null, eventSongListId: 50,
-            eventSongList: { id: 50, publicId: listPublicId(50), name: "First set", eventId: 100 },
+            eventSongList: { id: 50, publicId: listPublicId(50), name: "First set", eventId: 100, event: { publicId: event.publicId } },
         };
         const detail = projectFeatureReportDetailItem(evidence);
         const general = projectGeneralActivityReportDetailItem(evidence, null);
         for (const result of [detail, general]) {
             expect(result.eventSongListId).toBe(listPublicId(50));
-            expect(result.eventSongList).toEqual({ publicId: listPublicId(50), name: "First set", eventId: 100 });
+            expect(result.eventSongList).toEqual({ publicId: listPublicId(50), name: "First set", eventId: event.publicId });
             expect(result.id).toBe(900); // Action keeps its ledger identity.
         }
     });

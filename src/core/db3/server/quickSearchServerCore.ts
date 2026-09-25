@@ -13,6 +13,7 @@ import { UserWithRolesPayload } from "../shared/schema/userPayloads";
 import { loadEffectivePermissions } from "@/src/auth/server/effectivePermissions";
 import { PermissionSet } from "@/src/auth/shared/PermissionSet";
 import { xInstrument } from "../shared/schema/instrument";
+import { xEvent } from "../shared/schema/event";
 
 // per type; this is not the amount to return to users. after this, relevance prunes to the top N results.
 // this just sets a practical limit.
@@ -173,7 +174,7 @@ const EventQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.event> = {
         }
 
         const eventFields: SearchableTableFieldSpec[] = [
-            { fieldName: "id", fieldType: "pk", strengthMultiplier: 1 },
+            { fieldName: "publicId", fieldType: "string", strengthMultiplier: 1 },
             { fieldName: "name", fieldType: "string", strengthMultiplier: 1 },
             { fieldName: "locationDescription", fieldType: "string", strengthMultiplier: 0.5 },
             { fieldName: "startsAt", fieldType: "date", strengthMultiplier: 1 },
@@ -215,7 +216,7 @@ const EventQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.event> = {
                 ],
             },
             select: {
-                id: true,
+                publicId: true,
                 name: true,
                 startsAt: true,
                 locationDescription: true,
@@ -254,7 +255,7 @@ const EventQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.event> = {
             });
         }
         const makeEventInfo = (x: typeof events[0]): QuickSearchItemMatch<QuickSearchItemType.event> => {
-            const absoluteUri = ServerApi.getAbsoluteUri(`/backstage/event/${x.id}/${slugify(x.name || "")}`);
+            const absoluteUri = ServerApi.getAbsoluteUri(`/backstage/event/${x.publicId}/${slugify(x.name || "")}`);
 
             let bestMatch = CalculateMatchStrength(eventFields, x, query);
 
@@ -273,7 +274,7 @@ const EventQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.event> = {
             return {
                 absoluteUri,
                 name: `${x.name}${x.startsAt ? ` (${x.startsAt.toLocaleDateString()})` : ""}`,
-                id: x.id,
+                id: xEvent.parseIdentity(x.publicId),
                 matchStrength: bestMatch.matchStrength,
                 matchingField: bestMatch.fieldName,
                 itemType: QuickSearchItemType.event,

@@ -11,6 +11,7 @@ vi.mock("db", async () => {
 
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
+import { eventPublicId } from "../support/eventResponseFixtures";
 import { ActivityFeature } from "src/core/components/featureReports/activityTracking";
 import * as db3 from "src/core/db3/db3";
 import { recordAuthenticatedClientAction } from "src/core/db3/server/recordActionServer";
@@ -142,7 +143,7 @@ describe("BA-S005 server-rendered entity metadata", () => {
             delegate: "event",
             permission: Permission.view_events_nonpublic,
             table: db3.xEvent,
-            row: { id: 1, name: "Private event", isDeleted: false, createdByUserId: null, visiblePermissionId: membersVisibilityId },
+            row: { id: 1, publicId: eventPublicId(1), name: "Private event", isDeleted: false, createdByUserId: null, visiblePermissionId: membersVisibilityId },
         },
         {
             delegate: "file",
@@ -179,7 +180,7 @@ describe("BA-S005 server-rendered entity metadata", () => {
             ctx,
             permission: testCase.permission,
             table: testCase.table,
-            id: testCase.row.id,
+            identity: testCase.delegate === "event" ? eventPublicId(testCase.row.id) : testCase.row.id,
             load: where => authorizationTestDb.getDelegate(testCase.delegate).findFirst({ where }),
         });
 

@@ -50,7 +50,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
     const recordFeature = useFeatureRecorder();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const onSave = async (change: AttendanceChange) => {
-        const eventId = props.eventData.event.id;
+        const eventId = props.eventData.event.publicId;
         const userId = attendance.eventUserResponse.user.id;
         const instrumentId = change.type === "instrument" ? change.instrumentId : undefined;
         if (typeof instrumentId === "number") {
@@ -81,7 +81,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
         }
     };
     const attendanceEvent = {
-        id: props.eventData.event.id,
+        publicId: props.eventData.event.publicId,
         name: props.eventData.event.name,
         startsAt: props.eventData.dateRange.getStartDateTime(),
     };

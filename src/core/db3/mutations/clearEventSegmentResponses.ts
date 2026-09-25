@@ -1,5 +1,5 @@
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx, AuthorizationError } from "blitz";
+import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { z } from "zod";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";

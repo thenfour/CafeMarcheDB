@@ -7,7 +7,6 @@ import type { DateTimeRange } from "shared/time";
 import { gQueryOptions } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { EventSearchItemContainer } from "src/core/components/event/EventComponents";
-import { EventTableClientColumns } from "src/core/components/event/EventComponentsBase";
 import { EventFrontpageTabContent } from "src/core/components/event/EventFrontpageComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "src/core/db3/db3";
@@ -61,7 +60,7 @@ const EventsList = () => {
     const eventsClient = DB3Client.useTableRenderContext({
         tableSpec: DB3Client.defineTableClientSpec({
             view: db3.eventFrontpageView,
-            columns: DB3Client.makeClientColumnSelection(EventTableClientColumns.id),
+            columns: {},
         }),
         filterModel: {
             tableParams,
@@ -86,7 +85,7 @@ const EventsList = () => {
     return <>{events.length < 1 ? "Nothing here!" : <>
         {events.map(event => {
             return <EventSearchItemContainer
-                key={event.id}
+                key={event.publicId}
                 event={event}
                 fadePastEvents={false}
                 hideTagsWhenCancelled={false}

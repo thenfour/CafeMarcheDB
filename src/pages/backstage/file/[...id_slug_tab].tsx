@@ -190,7 +190,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                                     && event.statusId !== undefined
                                     && event.typeId !== undefined
                                     ? <EventChip key={index} value={{
-                                        id: event.id,
+                                        publicId: event.publicId,
                                         name: event.name,
                                         startsAt: event.startsAt,
                                         statusId: event.statusId,

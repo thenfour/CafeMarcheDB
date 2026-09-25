@@ -37,9 +37,9 @@ export const SubtleEventCard = ({ event, dateRange, now }: { event: db3.EventSea
         (eventTiming === Timing.Past) ? "past" : "notPast",
     ];
 
-    return <AppContextMarker eventId={event.id}>
+    return <AppContextMarker eventId={event.publicId}>
         <div className={classes.join(" ")} style={typeStyle.style} >
-            <CMLink trackingFeature={ActivityFeature.link_follow_internal} href={dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" })} className="SubtleEventCardLink">
+            <CMLink trackingFeature={ActivityFeature.link_follow_internal} href={dashboardContext.routingApi.getURIForEvent({ publicId: event.publicId, name: event.name || "" })} className="SubtleEventCardLink">
                 <div className="SubtleEventCardTitle">
                     {event.relevanceClassOverride !== undefined && <RelevanceClassOverrideIndicator
                         event={{ relevanceClassOverride: event.relevanceClassOverride }}
@@ -57,16 +57,16 @@ export const SubtleEventCard = ({ event, dateRange, now }: { event: db3.EventSea
                 {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <AppContextMarker name="info inner card"><SearchItemBigCardLink
                     icon={<InfoOutlined />}
                     title="Info"
-                    uri={dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" }, gEventDetailTabSlugIndices.info)}
-                    eventId={event.id}
+                    uri={dashboardContext.routingApi.getURIForEvent({ publicId: event.publicId, name: event.name || "" }, gEventDetailTabSlugIndices.info)}
+                    eventId={event.publicId}
                 />
                 </AppContextMarker>
                 }
                 {(event.songLists?.length || 0) > 0 && <AppContextMarker name="setlist inner card"><SearchItemBigCardLink
                     icon={<LibraryMusic />}
                     title="Setlist"
-                    uri={dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" }, gEventDetailTabSlugIndices.setlists)}
-                    eventId={event.id}
+                    uri={dashboardContext.routingApi.getURIForEvent({ publicId: event.publicId, name: event.name || "" }, gEventDetailTabSlugIndices.setlists)}
+                    eventId={event.publicId}
                 />
                 </AppContextMarker>
                 }

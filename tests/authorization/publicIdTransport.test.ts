@@ -28,6 +28,7 @@ const fileSongTagPublicId = parsePublicId<"FileSongTag">("AbCdEfGhIjKlMn18");
 const fileEventTagPublicId = parsePublicId<"FileEventTag">("AbCdEfGhIjKlMn19");
 const fileInstrumentTagPublicId = parsePublicId<"FileInstrumentTag">("AbCdEfGhIjKlMn20");
 const fileWikiPageTagPublicId = parsePublicId<"FileWikiPageTag">("AbCdEfGhIjKlMn21");
+const eventPublicId = parsePublicId<"Event">("AbCdEfGhIjKlMn22");
 const instrumentId = 7;
 const group = {
     id: 54,
@@ -169,7 +170,7 @@ describe("instrument catalog public-ID transport", () => {
                 publicId: fileEventTagPublicId,
                 fileId: 90,
                 eventId: 102,
-                event: { id: 102, name: "A concert" },
+                event: { id: 102, publicId: eventPublicId, name: "A concert" },
             }],
             taggedInstruments: [{
                 id: 91,
@@ -213,9 +214,10 @@ describe("instrument catalog public-ID transport", () => {
         });
         expect(projectedFile.taggedEvents[0]).toMatchObject({
             publicId: fileEventTagPublicId,
-            eventId: 102,
-            event: { id: 102, name: "A concert" },
+            eventId: eventPublicId,
+            event: { publicId: eventPublicId, name: "A concert" },
         });
+        expect(projectedFile.taggedEvents[0].event).not.toHaveProperty("id");
         expect(projectedFile.taggedWikiPages[0]).toMatchObject({
             publicId: fileWikiPageTagPublicId,
             wikiPageId: 103,
@@ -563,7 +565,7 @@ describe("instrument catalog public-ID transport", () => {
             tableName: "FileEventTag",
             mutationType: "update",
             updatePublicId: fileEventTagPublicId,
-            updateModel: { eventId: 102 },
+            updateModel: { eventId: eventPublicId },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
             tableID: "FileInstrumentTag",

@@ -8,18 +8,20 @@ import * as db3 from "@db3/db3";
 import * as DB3Client from "@db3/DB3Client";
 import { useRouter } from "next/router";
 
-const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) => {
+type EventEditorClient = db3.ClientOf<typeof db3.eventEditorView>;
+
+const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs<EventEditorClient> }) => {
     const router = useRouter(); return <>
         <CMButton onClick={() => {
             void router.push({
                 pathname: '/backstage/editEventSegments',
-                query: { eventId: gridArgs.row.id },
+                query: { eventId: gridArgs.row.publicId },
             });
         }}>Segments</CMButton>
         <CMButton onClick={() => {
             void router.push({
                 pathname: '/backstage/editEventSongLists',
-                query: { eventId: gridArgs.row.id },
+                query: { eventId: gridArgs.row.publicId },
             });
         }}>Song lists</CMButton>
     </>;
@@ -29,7 +31,6 @@ const MainContent = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.eventEditorView,
         columns: DB3Client.makeClientColumnSelection(
-            EventTableClientColumns.id,
             EventTableClientColumns.name,
             EventTableClientColumns.startsAt,
             //EventTableClientColumns.description,

@@ -58,7 +58,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                     // fields comes across with keys corresponding to TClientUploadFileArgs
                     // except the values are arrays of string (length 1), rather than number.
                     const args: TClientUploadFileArgs = {};
-                    args.taggedEventId = fields.taggedEventId && (CoerceToNumberOrNull(fields.taggedEventId[0]));
+                    args.taggedEventId = fields.taggedEventId && db3.xEvent.parseIdentity(fields.taggedEventId[0]);
                     args.taggedInstrumentId = fields.taggedInstrumentId && (CoerceToNumberOrNull(fields.taggedInstrumentId[0]));
                     args.taggedSongId = fields.taggedSongId && (CoerceToNumberOrNull(fields.taggedSongId[0]));
                     args.taggedUserId = fields.taggedUserId && (CoerceToNumberOrNull(fields.taggedUserId[0]));
@@ -79,6 +79,9 @@ export default api(async (req, res, origCtx: Ctx) => {
                             publicData,
                             db,
                         );
+                    const resolvedEventId = args.taggedEventId === undefined
+                        ? undefined
+                        : await resolvePublicId(db3.xEvent, args.taggedEventId, publicData, db);
 
                     const visiblePermission = fields.visiblePermission && (CoerceToString(fields.visiblePermission[0]));
 
@@ -126,7 +129,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                                 visiblePermissionId: visiblePermissionId ?? null,
                             }) as Record<string, any>; // because we're adding custom fields and i'm too lazy to create more types                           
 
-                            if (args.taggedEventId) fields.taggedEvents = [args.taggedEventId];
+                            if (resolvedEventId) fields.taggedEvents = [resolvedEventId];
                             if (args.taggedInstrumentId) fields.taggedInstruments = [args.taggedInstrumentId];
                             if (resolvedFileTagId) fields.tags = [resolvedFileTagId];
                             if (args.taggedSongId) fields.taggedSongs = [args.taggedSongId];
@@ -214,7 +217,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                                 if (args.taggedInstrumentId) fields.taggedInstruments = [args.taggedInstrumentId];
                             }
 
-                            if (args.taggedEventId) fields.taggedEvents = [args.taggedEventId];
+                            if (resolvedEventId) fields.taggedEvents = [resolvedEventId];
                             if (args.taggedSongId) fields.taggedSongs = [args.taggedSongId];
                             if (args.taggedUserId) fields.taggedUsers = [args.taggedUserId];
                             if (args.taggedWikiPageId) fields.taggedWikiPages = [args.taggedWikiPageId];

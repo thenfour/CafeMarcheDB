@@ -3,6 +3,7 @@ import { execSync } from "child_process";
 import { nanoid } from "nanoid";
 import { instrumentationSetup } from "./setup/instrumentation-setup";
 import { repairPublicIdPlaceholders } from "./server/publicId";
+import { QuickSearchItemType } from "shared/quickFilter";
 
 type GitVersionInfo = {
     versionTag: string;
@@ -304,6 +305,109 @@ export async function CorrectRolePermissionPublicIds() {
     console.log(`Replaced ${replacementCount} RolePermission public-ID placeholders.`);
 }
 
+export async function CorrectEventPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.event, modelName: "Event",
+    });
+    console.log(`Replaced ${replacementCount} Event public-ID placeholders.`);
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+    typeof value === "object" && value !== null && !Array.isArray(value)
+);
+
+const getSetlistPlanAssociatedItems = (payload: unknown): Record<string, unknown>[] => {
+    if (!isRecord(payload)) return [];
+    const associatedItems: Record<string, unknown>[] = [];
+    for (const collectionName of ["columns", "columnLeds", "rowLeds"] as const) {
+        const collection = payload[collectionName];
+        if (!Array.isArray(collection)) continue;
+        for (const entry of collection) {
+            if (!isRecord(entry) || !isRecord(entry.associatedItem)) continue;
+            associatedItems.push(entry.associatedItem);
+        }
+    }
+    return associatedItems;
+};
+
+export async function MigrateEventPublicIdReferences() {
+    const describedEvents = await db.event.findMany({
+        where: { descriptionWikiPageId: { not: null } },
+        select: {
+            publicId: true,
+            descriptionWikiPage: { select: { id: true, slug: true, namespace: true } },
+        },
+    });
+
+    // update wiki slugs to match the new ID
+    // used to be EventDescription/1234
+    // now it needs to be EventDescription/<publicId>
+    let migratedWikiPages = 0;
+    for (const event of describedEvents) {
+        if (!event.descriptionWikiPage) continue;
+        const slug = `EventDescription/${event.publicId}`;
+        if (event.descriptionWikiPage.slug === slug
+            && event.descriptionWikiPage.namespace === "EventDescription") continue;
+        await db.wikiPage.update({
+            where: { id: event.descriptionWikiPage.id },
+            data: { slug, namespace: "EventDescription" },
+        });
+        migratedWikiPages++;
+    }
+
+    // setlist plans
+    const plans = await db.setlistPlan.findMany({ select: { id: true, payloadJson: true } });
+    const parsedPlans: { id: number; payload: unknown; associatedItems: Record<string, unknown>[] }[] = [];
+    const numericEventIds = new Set<number>();
+    for (const plan of plans) {
+        try {
+            const payload: unknown = JSON.parse(plan.payloadJson);
+            const associatedItems = getSetlistPlanAssociatedItems(payload);
+            for (const item of associatedItems) {
+                if (item.itemType === QuickSearchItemType.event && typeof item.id === "number") {
+                    numericEventIds.add(item.id);
+                }
+            }
+            parsedPlans.push({ id: plan.id, payload, associatedItems });
+        } catch {
+            console.warn(`SetlistPlan #${plan.id} has invalid JSON; its Event references were not migrated.`);
+        }
+    }
+
+    const events = numericEventIds.size === 0
+        ? []
+        : await db.event.findMany({
+            where: { id: { in: [...numericEventIds] } },
+            select: { id: true, publicId: true },
+        });
+    const publicIdByNumericId = new Map(events.map(event => [event.id, event.publicId]));
+    let migratedSetlistPlans = 0;
+    for (const plan of parsedPlans) {
+        let changed = false;
+        for (const item of plan.associatedItems) {
+            if (item.itemType !== QuickSearchItemType.event || typeof item.id !== "number") continue;
+            const publicId = publicIdByNumericId.get(item.id);
+            if (!publicId) continue;
+            item.id = publicId;
+            if (typeof item.absoluteUri === "string") {
+                item.absoluteUri = item.absoluteUri.replace(
+                    /\/backstage\/event\/\d+(?=\/|$)/,
+                    `/backstage/event/${publicId}`,
+                );
+            }
+            changed = true;
+        }
+        if (!changed) continue;
+        await db.setlistPlan.update({
+            where: { id: plan.id },
+            data: { payloadJson: JSON.stringify(plan.payload) },
+        });
+        migratedSetlistPlans++;
+    }
+
+    console.log(`Migrated ${migratedWikiPages} Event-description wiki paths and ${migratedSetlistPlans} SetlistPlan Event references.`);
+}
+
 export async function CorrectEventSegmentPublicIds() {
     const replacementCount = await repairPublicIdPlaceholders({
         delegate: db.eventSegment, modelName: "EventSegment",
@@ -398,6 +502,8 @@ export async function registerNodeInstrumentation() {
     await CorrectRolePublicIds();
     await CorrectRolePermissionPublicIds();
     await CorrectUserSignInMethodPublicIds();
+    await CorrectEventPublicIds();
+    await MigrateEventPublicIdReferences();
     await CorrectEventSegmentPublicIds();
     await CorrectEventUserResponsePublicIds();
     await CorrectEventSegmentUserResponsePublicIds();

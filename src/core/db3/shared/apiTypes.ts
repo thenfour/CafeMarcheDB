@@ -2,7 +2,7 @@ import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 
 import { Prisma } from "db";
 import { z } from "zod";
-import { isPublicId, type EventSegmentPublicId, type EventAttendancePublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type InstrumentPublicId, type PermissionPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId } from "shared/publicId";
+import { isPublicId, type EventPublicId, type EventSegmentPublicId, type EventAttendancePublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type InstrumentPublicId, type PermissionPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId } from "shared/publicId";
 
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 import { ColorPaletteEntry } from "../../components/color/palette";
@@ -36,7 +36,7 @@ export interface CMDBTableFilterModel {
 
 export interface TupdateUserEventAttendanceMutationArgs {
     userId: number;
-    eventId: number;
+    eventId: EventPublicId;
     comment?: string | null; // for event
     instrumentId?: InstrumentPublicId | null; // for event
     isInvited?: boolean | null; // for event
@@ -54,11 +54,11 @@ const ZPositiveRecordId = z.number().int().positive();
 
 export const ZupdateUserEventAttendanceMutationArgs = z.object({
     userId: ZPositiveRecordId,
-    eventId: ZPositiveRecordId,
+    eventId: z.custom<EventPublicId>(isPublicId),
     comment: z.string().nullable().optional(),
     instrumentId: z.custom<InstrumentPublicId>(isPublicId).nullable().optional(),
     isInvited: z.boolean().nullable().optional(),
-    segmentResponses: z.record(z.custom<EventSegmentPublicId>(isPublicId), z.object({
+    segmentResponses: z.record(z.custom<EventSegmentPublicId>(isPublicId, "Invalid event segment ID"), z.object({
         attendanceId: z.custom<EventAttendancePublicId>(isPublicId).nullable(),
     }).strict()).superRefine((responses, ctx) => {
         const segmentIds = Object.keys(responses);
@@ -90,7 +90,7 @@ export const ZupdateUserEventAttendanceMutationArgs = z.object({
 // };
 
 export interface TupdateEventBasicFieldsArgs {
-    eventId: number;
+    eventId: EventPublicId;
     name?: string;
     //slug?: string;
     //description?: string;
@@ -145,7 +145,7 @@ export interface TupdateUserPrimaryInstrumentMutationArgs {
 };
 
 export interface TinsertEventCommentArgs {
-    eventId: number;
+    eventId: EventPublicId;
     text: string;
     visiblePermissionId: PermissionPublicId | null;
     // created by user id = current user always
@@ -280,7 +280,7 @@ export const gEventFilterTimingIDConstants = {
 };
 export interface GetEventFilterInfoRet {
     rowCount: number;
-    eventIds: number[];
+    eventIds: EventPublicId[];
 
     types: GetEventFilterInfoChipInfo<EventTypePublicId>[];
     statuses: GetEventFilterInfoChipInfo<EventStatusPublicId>[];
@@ -422,7 +422,7 @@ export interface GetSongActivityReportArgs {
 };
 
 export interface GetSongActivityReportRetEvent {
-    id: number,
+    publicId: EventPublicId,
     name: string,
     startsAt: null | Date,
     durationMillis: bigint,
@@ -448,7 +448,7 @@ export interface GetGlobalStatsArgs {
 };
 
 export interface GetGlobalStatsRetEvent {
-    id: number,
+    publicId: EventPublicId,
     name: string,
     startsAt: null | Date,
     durationMillis: bigint,
@@ -461,7 +461,7 @@ export interface GetGlobalStatsRetEvent {
 export interface GetGlobalStatsRetPopularSongOccurrance {
     songId: number,
     songName: string,
-    eventId: number,
+    eventId: EventPublicId,
     eventName: string,
     typeId: EventTypePublicId | null,
     statusId: EventStatusPublicId | null,
@@ -782,12 +782,12 @@ export interface ICalCalendarJSON {
 
 export type GetUserAttendanceArgs = {
     userId: number;
-    eventId: number;
+    eventId: EventPublicId;
 }
 
 export type GetUserAttendanceRet = {
     userId: number;
-    eventId: number;
+    eventId: EventPublicId;
     comment: string | null;
     instrumentId: InstrumentPublicId | null;
     segmentResponses: {

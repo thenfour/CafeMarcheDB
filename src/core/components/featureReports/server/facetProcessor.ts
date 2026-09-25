@@ -448,7 +448,7 @@ const eventsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['eve
               GROUP BY eventId
             )
             SELECT
-              e.id AS eventId,
+              e.publicId AS eventId,
               e.name,
               e.startsAt,
               eventStatus.publicId AS statusId,
@@ -461,8 +461,8 @@ const eventsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['eve
             WHERE ${xEvent.SqlGetVisFilterExpression(currentUser, "e")}
           `;
     },
-    postProcessRow: (row: { eventId: number, name: string, statusId: string | null, typeId: string | null, startsAt: Date | null, count: bigint }) => ({
-        eventId: row.eventId,
+    postProcessRow: (row: { eventId: string, name: string, statusId: string | null, typeId: string | null, startsAt: Date | null, count: bigint }) => ({
+        eventId: xEvent.parseIdentity(row.eventId),
         count: Number(row.count),
         name: row.name,
         startsAt: row.startsAt,
@@ -471,10 +471,10 @@ const eventsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['eve
     }),
     getFilterSqlConditions: (filterSpec, conditions) => {
         if (filterSpec.includeEventIds.length > 0) {
-            conditions.push(`${MySqlSymbol("eventId")} IN (${filterSpec.includeEventIds.map((f) => f.toString()).join(",")})`);
+            conditions.push(`${MySqlSymbol("eventId")} IN (SELECT id FROM Event WHERE publicId IN (${filterSpec.includeEventIds.map(MySqlStringLiteral).join(",")}))`);
         }
         if (filterSpec.excludeEventIds.length > 0) {
-            conditions.push(`NOT ${MySqlSymbol("eventId")} IN (${filterSpec.excludeEventIds.map((f) => f.toString()).join(",")})`);
+            conditions.push(`NOT ${MySqlSymbol("eventId")} IN (SELECT id FROM Event WHERE publicId IN (${filterSpec.excludeEventIds.map(MySqlStringLiteral).join(",")}))`);
         }
     },
     toCsvColumns: (item) => ({

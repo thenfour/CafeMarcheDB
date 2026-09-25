@@ -1,11 +1,11 @@
 import { Coord2D, Size } from "@/shared/rootroot";
 import { Prisma } from "db";
-import type { FileTagPublicId, PermissionPublicId } from "shared/publicId";
+import type { EventPublicId, FileTagPublicId, PermissionPublicId } from "shared/publicId";
 
 export interface TClientFileUploadTags {
     taggedUserId?: number;
     taggedSongId?: number;
-    taggedEventId?: number;
+    taggedEventId?: EventPublicId;
     taggedInstrumentId?: number;
     taggedWikiPageId?: number;
     fileTagId?: FileTagPublicId;
@@ -28,7 +28,7 @@ export interface TClientUpdateFile {
     tagsIds?: FileTagPublicId[];
     taggedUserIds?: number[];
     taggedSongIds?: number[];
-    taggedEventIds?: number[];
+    taggedEventIds?: EventPublicId[];
     taggedInstrumentIds?: number[];
     taggedWikiPageIds?: number[];
 };

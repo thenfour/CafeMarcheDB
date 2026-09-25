@@ -1,5 +1,5 @@
 import { getUniqueNegativeID } from "shared/utils";
-import type { EventSongListPublicId, EventSongListSongPublicId, EventSongListDividerPublicId } from "shared/publicId";
+import type { EventPublicId, EventSongListPublicId, EventSongListSongPublicId, EventSongListDividerPublicId } from "shared/publicId";
 import type {
     EventSongListDividerItem,
     EventSongListItem,
@@ -53,7 +53,7 @@ export interface EventSongListDraft {
     readonly publicId?: EventSongListPublicId;
     /** Stable local identity for editor and media-player state. */
     readonly clientId: SetlistClientId;
-    readonly eventId: number;
+    readonly eventId: EventPublicId;
     name: string;
     description: string;
     isActuallyPlayed: boolean;
@@ -118,7 +118,7 @@ export function eventSongListClientToDraft(
 
 export function createEventSongListDraft(args: {
     clientId: DraftSetlistId;
-    eventId: number;
+    eventId: EventPublicId;
     name: string;
     sortOrder?: number;
 }): EventSongListDraft {

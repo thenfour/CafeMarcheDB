@@ -2,6 +2,7 @@ import { useMutation } from "@blitzjs/rpc";
 import { Check, PushPin } from "@mui/icons-material";
 import { ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import { Prisma } from "@prisma/client";
+import type { EventPublicId } from "shared/publicId";
 import setEventRelevanceClassOverride from "../../db3/mutations/setEventRelevanceClassOverride";
 import { EventRelevanceClassName, gEventRelevanceClass } from "../../db3/shared/eventRelevance";
 import { useClientTelemetryEvent } from "../dashboardContext/DashboardContext";
@@ -77,7 +78,7 @@ const RelevanceClassOverrideMenuItem = (props: RelevanceClassOverrideMenuItemPro
 }
 
 interface RelevanceClassOverrideMenuItemGroupProps {
-    event: Prisma.EventGetPayload<{ select: { id, relevanceClassOverride } }>;
+    event: { publicId: EventPublicId; relevanceClassOverride: number | null };
     refetch: () => void;
     closeMenu: () => void;
 };
@@ -135,7 +136,7 @@ export const RelevanceClassOverrideMenuItemGroup = (props: RelevanceClassOverrid
                 });
                 await snackbar.invokeAsync(async () => {
                     await mut({
-                        eventId: props.event.id,
+                        eventId: props.event.publicId,
                         relevanceClassOverrideName: item.value,
                     });
                     void props.refetch();

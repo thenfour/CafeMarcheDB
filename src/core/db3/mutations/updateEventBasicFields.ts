@@ -6,7 +6,7 @@ import { Permission } from "shared/permissions";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { resolvePublicForeignIds } from "../server/db3PublicIds";
+import { resolvePublicForeignIds, resolvePublicId } from "../server/db3PublicIds";
 import { TupdateEventBasicFieldsArgs } from "../shared/apiTypes";
 
 // entry point ////////////////////////////////////////////////
@@ -18,6 +18,7 @@ export default resolver.pipe(
             authorization.user,
             authorization.effectivePermissions,
         );
+        const eventId = await resolvePublicId(db3.xEvent, args.eventId, publicData, db, true);
         const resolvedForeignIds = await resolvePublicForeignIds(
             db3.xEvent,
             {
@@ -72,7 +73,7 @@ export default resolver.pipe(
         };
 
 
-        await mutationCore.updateImpl(db3.xEvent, args.eventId, fields, ctx);
+        await mutationCore.updateImpl(db3.xEvent, eventId, fields, ctx);
 
         return args;
     }

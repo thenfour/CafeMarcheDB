@@ -6,7 +6,6 @@ import { Prisma, PrismaClient } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
-import { IsEntirelyIntegral } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { authorizeAndHydrateViewModel } from "src/core/db3/server/db3QueryCore";
 import * as mutationCore from "src/core/db3/server/db3mutationCore";
@@ -153,10 +152,10 @@ const UpdateExistingWikiPage = async (
     if (wikiPath.namespace?.toLowerCase() === SpecialWikiNamespace.EventDescription.toLowerCase()) {
         // for safety, now make sure the event is linked to this page. yes it's redundant, but safe.
         assert(currentPage.id === updatedPage.id, "Wiki page ID mismatch after update.");
-        if (IsEntirelyIntegral(wikiPath.slugWithoutNamespace)) {
-            const eventId = parseInt(wikiPath.slugWithoutNamespace);
+        if (db3.xEvent.isIdentity(wikiPath.slugWithoutNamespace)) {
+            const eventId = db3.xEvent.parseIdentity(wikiPath.slugWithoutNamespace);
             await dbt.event.update({
-                where: { id: eventId },
+                where: { publicId: eventId },
                 data: {
                     descriptionWikiPageId: currentPage.id,
                 },

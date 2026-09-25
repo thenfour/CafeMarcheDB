@@ -1,4 +1,4 @@
-import { segmentPublicId } from "./support/eventResponseFixtures";
+import { eventPublicId, segmentPublicId } from "./support/eventResponseFixtures";
 import { attendancePublicId } from "./support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId } from "./support/eventSongListFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
@@ -47,7 +47,11 @@ function createContext(seed?: {
     }));
     const deleteRow = vi.fn(async () => undefined);
     const requireVisible = vi.fn(async (entity: db3.AnyDB3Table, identity: db3.DB3Identity) => ({
-        ...(entity === db3.xEventSongList ? seed?.songList : { id: identity }),
+        ...(entity === db3.xEventSongList
+            ? seed?.songList
+            : entity === db3.xEvent
+                ? { id: 5, publicId: eventPublicId(5) }
+                : { id: identity }),
         tableID: entity.tableID,
     }));
     const afterMutation = vi.fn(async () => undefined);
@@ -76,7 +80,7 @@ function createContext(seed?: {
 }
 
 const parentFields = {
-    eventId: 5,
+    eventId: eventPublicId(5),
     name: "Concert set",
     description: "Main set",
     isActuallyPlayed: false,
@@ -389,9 +393,9 @@ describe("DB3 commands", () => {
             isAllDay: false,
             statusId: eventStatusPublicId,
             status: { publicId: eventStatusPublicId, label: "Confirmed", description: "", color: null, iconName: null, sortOrder: 0, significance: null, isDeleted: false },
-            eventId: 4,
+            eventId: eventPublicId(4),
             event: {
-                id: 4,
+                publicId: eventPublicId(4),
                 name: "Autumn concert",
                 startsAt: new Date("2026-10-10T18:00:00.000Z"),
             },
@@ -402,10 +406,10 @@ describe("DB3 commands", () => {
         });
         expect(db3.eventSegmentEditorView.crud.operations.update.command.parseDto({
             identity: segmentPublicId(2),
-            patch: { name: "Opening set", eventId: 4, statusId: null },
+            patch: { name: "Opening set", eventId: eventPublicId(4), statusId: null },
         })).toEqual({
             identity: segmentPublicId(2),
-            patch: { name: "Opening set", eventId: 4, statusId: null },
+            patch: { name: "Opening set", eventId: eventPublicId(4), statusId: null },
         });
         expect(() => db3.eventSegmentEditorView.crud.operations.update.command.parseDto({
             identity: segmentPublicId(2),
@@ -632,7 +636,7 @@ describe("DB3 commands", () => {
         }, context);
 
         expect(result).toEqual({ publicId: listPublicId(50) });
-        expect(requireVisible).toHaveBeenNthCalledWith(1, db3.xEvent, 5);
+        expect(requireVisible).toHaveBeenNthCalledWith(1, db3.xEvent, eventPublicId(5));
         expect(requireVisible).toHaveBeenNthCalledWith(2, db3.xSong, 7);
         expect(insert).toHaveBeenNthCalledWith(1, db3.xEventSongList, parentFields);
         expect(insert).toHaveBeenNthCalledWith(2, db3.xEventSongListSong, {

@@ -822,9 +822,8 @@ sound.
         their Prisma selections. Describe File reverse relations as typed
         collection fields so self-relations remain finite and compiler-checked.
         Keep authorization-only selection members outside the transport shape,
-        and remove the unused duplicate `xFileVerbose`. Retain the remaining
-        `enrichFile` call only at the legacy Event payload boundary until that
-        view is migrated.
+        and remove the unused duplicate `xFileVerbose`. The later Event detail
+        migration removed the final legacy `enrichFile` caller.
 
 29. [x] **Make normalized reference values xTable-owned and remove File
         normalization plumbing.** Give each provider target a canonical finite

@@ -8,7 +8,7 @@ import { SharedAPI } from "./sharedAPI";
 // null-or-whitespace values in EN will not show the field
 // null-or-whitespace values in NL and FR fallback to english
 type AgendaItemSource = Pick<db3.EventFrontpageClient,
-    | "id"
+    | "publicId"
     | "dateRange"
     | "frontpageDate"
     | "frontpageDate_nl"
@@ -35,7 +35,7 @@ type AgendaItemSource = Pick<db3.EventFrontpageClient,
 
 export function getAgendaItem(event: AgendaItemSource, lang: EnNlFr): PublicAgendaItemSpec {
     const ret: PublicAgendaItemSpec = {
-        id: event.id,
+        id: event.publicId,
         startsAt: event.dateRange?.getStartDateTime() || null,
         date: LangSelectString(lang, event.frontpageDate, event.frontpageDate_nl, event.frontpageDate_fr) || "",
         time: LangSelectString(lang, event.frontpageTime, event.frontpageTime_nl, event.frontpageTime_fr) || "",

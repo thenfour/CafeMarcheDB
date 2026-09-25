@@ -1,4 +1,4 @@
-import type { EventAttendancePublicId, EventSegmentPublicId } from "shared/publicId";
+import type { EventAttendancePublicId, EventPublicId, EventSegmentPublicId } from "shared/publicId";
 import { formatEventDateRange, EventDatePresentation } from "shared/dateTimePresentation";
 import React from "react";
 import { CircularProgress } from "@mui/material";
@@ -36,7 +36,7 @@ export interface AttendanceControlEnvironment {
 export interface AttendanceControlViewProps {
     attendance: EventAttendanceResult;
     environment: AttendanceControlEnvironment;
-    event: { id: number; name: string; startsAt: Date | null };
+    event: { publicId: EventPublicId; name: string; startsAt: Date | null };
     minimalWhenNotAlert: boolean;
     debugView?: React.ReactNode;
 }
@@ -106,7 +106,7 @@ const CommentEditor = ({ response, environment, onClose }: {
         {environment.commentDialogDescription}
         <Markdown3Editor value={value} onChange={setValue} nominalHeight={200}
             handleSave={() => { void save(); }} allowUploads={environment.allowUploads}
-            uploadFileContext={environment.allowUploads ? { taggedEventId: response.event.id } : undefined} />
+            uploadFileContext={environment.allowUploads ? { taggedEventId: response.event.publicId } : undefined} />
     </CMDialog></AppContextMarker>;
 };
 

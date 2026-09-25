@@ -59,10 +59,6 @@ const compatibilitySites: Record<string, InventoryEntry[]> = {
     "src/pages/backstage/adminLogs.tsx": [
         { api: "defineLegacyTableClientSpec", category: "table-only-query", count: 1 },
     ],
-    "src/pages/backstage/event/[...id_slug_tab].tsx": [
-        { api: "defineLegacyTableClientSpec", category: "named-view-candidate", count: 1 },
-        { api: "useLegacyTableRenderContext", category: "named-view-candidate", count: 1 },
-    ],
     "src/pages/backstage/eventImport.tsx": [
         { api: "defineLegacyTableClientSpec", category: "render-only-editor", count: 2 },
         { api: "useLegacyTableRenderContext", category: "render-only-editor", count: 2 },

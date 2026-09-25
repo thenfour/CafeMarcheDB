@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { QuickSearchItemType, type QuickSearchItemMatch } from "shared/quickFilter";
-import { parsePublicId, type InstrumentPublicId } from "shared/publicId";
+import { parsePublicId, type EventPublicId, type InstrumentPublicId } from "shared/publicId";
 import * as db3 from "src/core/db3/db3";
 
 describe("DB3 table identity authority", () => {
@@ -99,6 +99,8 @@ describe("DB3 table identity authority", () => {
     });
 
     it("keeps polymorphic search identity correlated with the item discriminator", () => {
+        expectTypeOf<QuickSearchItemMatch<QuickSearchItemType.event>["id"]>()
+            .toEqualTypeOf<EventPublicId>();
         expectTypeOf<QuickSearchItemMatch<QuickSearchItemType.instrument>["id"]>()
             .toEqualTypeOf<InstrumentPublicId>();
         expectTypeOf<QuickSearchItemMatch<QuickSearchItemType.song>["id"]>()

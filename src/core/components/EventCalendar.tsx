@@ -20,7 +20,7 @@ import { StandardVariationSpec } from "./color/palette";
 import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
 import { DateTimeRange, localTimeZone } from "@/shared/time";
-import type { EventStatusPublicId } from "shared/publicId";
+import type { EventPublicId, EventStatusPublicId } from "shared/publicId";
 
 
 // attach useful data to the event for passing around the calendar.
@@ -308,9 +308,9 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
     </div>;
 };
 
-export const BigEventCalendarInner = (props: { selectedEventId?: undefined | number }) => {
+export const BigEventCalendarInner = (props: { selectedEventId?: EventPublicId }) => {
     //const [selectedEvent, setSelectedEvent] = React.useState<EventWithSearchResult | null>(null);
-    const [selectedEventId, setSelectedEventId] = React.useState<number | null>(props.selectedEventId || null);
+    const [selectedEventId, setSelectedEventId] = React.useState<EventPublicId | null>(props.selectedEventId || null);
     const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
     //const [results, setResults] = React.useState<SearchResultsRet>(MakeEmptySearchResultsRet());
     //const [enrichedEvents, setEnrichedEvents] = React.useState<EventWithSearchResult[]>([]);
@@ -358,7 +358,7 @@ export const BigEventCalendarInner = (props: { selectedEventId?: undefined | num
 
     const { enrichedItems: enrichedEvents, results } = useSearchableList(filterSpec, eventSearchConfig, 100);
     const eventsWithSearch = enrichedEvents.map(event => ({ event, result: results }));
-    const selectedEvent = eventsWithSearch.find(e => e.event.id === selectedEventId) || null;
+    const selectedEvent = eventsWithSearch.find(e => e.event.publicId === selectedEventId) || null;
 
     // nossr to prevent using server's locale settings.
     return <>
@@ -368,11 +368,11 @@ export const BigEventCalendarInner = (props: { selectedEventId?: undefined | num
                     <BigEventCalendarMonth
                         selectedEvent={selectedEvent}
                         setSelectedEvent={(e) => {
-                            if (e?.event.id === selectedEventId) { // deselect behavior
+                            if (e?.event.publicId === selectedEventId) { // deselect behavior
                                 setSelectedEventId(null);
                                 return;
                             }
-                            setSelectedEventId(e?.event.id || null);
+                            setSelectedEventId(e?.event.publicId || null);
                         }}
                         date={date}
                         enrichedEvents={eventsWithSearch}
@@ -397,7 +397,7 @@ export const BigEventCalendarInner = (props: { selectedEventId?: undefined | num
 
 
 
-export const BigEventCalendar = (props: { selectedEventId?: undefined | number }) => {
+export const BigEventCalendar = (props: { selectedEventId?: EventPublicId }) => {
     // nossr to prevent using server's locale settings.
     return <NoSsr>
         <BigEventCalendarInner {...props} />

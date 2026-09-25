@@ -383,7 +383,7 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
                 },
                 includeDeleted: args.includeDeleted === true,
                 filter: {
-                    pks: resultIds,
+                    items: [],
                 },
                 orderBy: undefined,
             },
@@ -391,6 +391,7 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
                 database,
                 {
                     orderedPrimaryKeys: resultIds,
+                    trustedNaturalPrimaryKeys: resultIds,
                 });
             ret.queryMetrics.push({
                 title: view ? `db3 view items [${view.viewID}]` : "db3 legacy items",

@@ -93,7 +93,7 @@ export const FileListItem = (props: FileListItemProps) => {
                         && event.statusId !== undefined
                         && event.typeId !== undefined
                         ? <EventChip key={db3.xFile.fields.taggedEvents.getForeignIdentity(taggedEvent)} value={{
-                            id: event.id,
+                            publicId: event.publicId,
                             name: event.name,
                             startsAt: event.startsAt,
                             statusId: event.statusId,

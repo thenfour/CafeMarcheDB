@@ -36,6 +36,7 @@ export type AttendanceScenarioSegment = z.infer<typeof segmentSchema>;
 // Stable synthetic IDs never leave the local adapter. Options are deliberately
 // self-contained: changing the site's DB options cannot change a saved scenario.
 export const scenarioSegmentPublicId = (index: number) => db3.xEventSegment.parseIdentity(`ScnSegment${String(index + 1).padStart(6, "0")}`);
+export const scenarioEventPublicId = db3.xEvent.parseIdentity("ScenarioEvent001");
 
 export const scenarioAttendances: db3.EventAttendanceDisplay[] = [
     { id: 1, text: "No", strength: 0, color: "attendance_no", iconName: "Cancel", description: "I cannot attend." },
@@ -141,7 +142,7 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
     // classifier as production. Individual segment overrides can span now.
     const dateRange = getEventDateTimeRangeFromSegments(segments, [cancelledStatusId]);
     const event = {
-        id: eventId, name: scenario.eventName, startsAt: dateRange.getStartDateTime(), segments,
+        publicId: scenarioEventPublicId, name: scenario.eventName, startsAt: dateRange.getStartDateTime(), segments,
         responses: [{
             id: -1,
             userId: user.id,

@@ -33,7 +33,7 @@ export default resolver.pipe(
 
             // Verbose on purpose in order to validate the resolved model against
             // Prisma's natural-key input at the trusted server boundary.
-            const eventFields: Prisma.EventUncheckedCreateInput & { tags: number[] } = {
+            const eventFields: Omit<Prisma.EventUncheckedCreateInput, "publicId"> & { tags: number[] } = {
                 //createdAt: new Date(), // this is automatic though right?
                 //createdByUserId: currentUser.id, // done in impl
                 //updatedAt: new Date(), // this is automatic though right?
@@ -104,10 +104,34 @@ export default resolver.pipe(
                 };
             }
 
+            const eventSelection = await db3.xEvent.CalculateSelectionArgs(
+                publicData,
+                { items: [] },
+                false,
+                db3.eventEditorView.getSelectionArgs,
+            );
+            const segmentSelection = await db3.xEventSegment.CalculateSelectionArgs(
+                publicData,
+                { items: [] },
+                false,
+                db3.eventSegmentEditorView.getSelectionArgs,
+            );
+            assert(eventSelection && segmentSelection, "inserted Event views require readable selections");
+            const selectedEvent = await tx.event.findUnique({
+                where: { id: newEvent.id },
+                ...eventSelection,
+            });
+            const selectedSegment = await tx.eventSegment.findUnique({
+                where: { id: segment.id },
+                ...segmentSelection,
+            });
+            assert(selectedEvent && selectedSegment, "inserted Event rows must remain readable");
+
             return {
-                event: newEvent,
+                event: db3.eventEditorView.parseDto(authorizeAndProjectDB3ViewModel(
+                    db3.xEvent, selectedEvent, publicData, "insertEvent:event")),
                 segment: db3.eventSegmentEditorView.parseDto(authorizeAndProjectDB3ViewModel(
-                    db3.xEventSegment, segment, publicData, "insertEvent:segment")),
+                    db3.xEventSegment, selectedSegment, publicData, "insertEvent:segment")),
             };
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120_000 });
     }

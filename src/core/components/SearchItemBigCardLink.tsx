@@ -1,5 +1,6 @@
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { CMLink } from "./CMLink";
+import type { EventPublicId } from "shared/publicId";
 
 
 // for the "relevant event happening today" card on the dashboard, we show direct links to setlist and descriptions.
@@ -7,7 +8,7 @@ interface SearchItemBigCardLinkProps {
     icon: React.ReactNode;
     title: string;
     uri: string;
-    eventId: number;
+    eventId: EventPublicId;
 };
 
 export const SearchItemBigCardLink = (props: SearchItemBigCardLinkProps) => {

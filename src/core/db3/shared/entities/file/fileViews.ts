@@ -241,7 +241,7 @@ export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArg
                 publicId: true,
                 event: {
                     select: {
-                        id: true,
+                        publicId: true,
                         name: true,
                         startsAt: true,
                         statusId: true,

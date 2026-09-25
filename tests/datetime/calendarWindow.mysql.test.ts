@@ -43,7 +43,7 @@ describe.skipIf(!url)("calendar overlap SQL with real MySQL", () => {
     ] as const
     for (const [name, segments] of fixtures) {
       // Deliberately stale aggregate starts must not control segment selection.
-      await db.event.create({ data: { name, revision: 1, startsAt: new Date("2026-06-01T00:00:00Z"), segments: { create: [...segments] } } })
+      await db.event.create({ data: { publicId: generatePublicId<"Event">(), name, revision: 1, startsAt: new Date("2026-06-01T00:00:00Z"), segments: { create: [...segments] } } })
     }
   })
   afterAll(async () => db.$disconnect())

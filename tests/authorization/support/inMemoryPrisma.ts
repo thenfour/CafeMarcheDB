@@ -27,6 +27,13 @@ const defaultAuthorizationRoles: TestRow[] = [
 
 const clone = <T>(value: T): T => structuredClone(value)
 
+const hasNumericId = (row: Record<string, unknown>): row is TestRow => typeof row.id === "number"
+
+const requireTestRow = (row: Record<string, unknown>): TestRow => {
+  if (!hasNumericId(row)) throw new Error("In-memory rows require a numeric id")
+  return row
+}
+
 function matchesScalar(actual: unknown, expected: unknown): boolean {
   if (expected && typeof expected === "object" && !Array.isArray(expected)) {
     const expression = expected as Record<string, unknown>
@@ -89,6 +96,8 @@ type Relation = { table: string; local: string; foreign: string; many?: boolean 
 // Dynamic table names mirror Prisma; only relations exercised by these integration tests are listed.
 const testRelations: Record<string, Record<string, Relation>> = {
   event: {
+    createdByUser: { table: "user", local: "createdByUserId", foreign: "id" },
+    visiblePermission: { table: "permission", local: "visiblePermissionId", foreign: "id" },
     responses: { table: "eventUserResponse", local: "id", foreign: "eventId", many: true },
     segments: { table: "eventSegment", local: "id", foreign: "eventId", many: true },
     songLists: { table: "eventSongList", local: "id", foreign: "eventId", many: true },
@@ -127,6 +136,7 @@ export class InMemoryDelegate {
     private readonly createDefaults: Record<string, unknown> = {},
     private readonly readRelations: (row: TestRow, args: QueryArgs) => TestRow = row => row,
     private readonly onDelete: (rows: TestRow[]) => Promise<void> = async () => {},
+    private readonly normalizeWrite: (row: TestRow) => TestRow = row => row,
   ) {}
 
   reset(rows: TestRow[]) {
@@ -175,7 +185,11 @@ export class InMemoryDelegate {
 
   async create(args: { data: Omit<TestRow, "id"> & Partial<Pick<TestRow, "id">> }) {
     const nextId = this.rows.reduce((highest, row) => Math.max(highest, row.id), 0) + 1
-    const row = { id: args.data.id ?? nextId, ...clone(this.createDefaults), ...clone(args.data) } as TestRow
+    const row = this.normalizeWrite(requireTestRow({
+      ...clone(this.createDefaults),
+      ...clone(args.data),
+      id: args.data.id ?? nextId,
+    }))
     this.rows.push(row)
     return clone(row)
   }
@@ -183,7 +197,7 @@ export class InMemoryDelegate {
   async update(args: { where: { id: number }; data: Record<string, unknown> }) {
     const index = this.rows.findIndex((row) => row.id === args.where.id)
     if (index < 0) throw new Error(`In-memory row ${args.where.id} was not found`)
-    this.rows[index] = { ...this.rows[index], ...clone(args.data) } as TestRow
+    this.rows[index] = this.normalizeWrite(requireTestRow({ ...this.rows[index], ...clone(args.data) }))
     return clone(this.rows[index])
   }
 
@@ -192,7 +206,7 @@ export class InMemoryDelegate {
     this.rows = this.rows.map((row) => {
       if (!matchesWhere(row, args.where)) return row
       count += 1
-      return { ...row, ...clone(args.data) }
+      return this.normalizeWrite(requireTestRow({ ...row, ...clone(args.data) }))
     })
     return { count }
   }
@@ -285,7 +299,11 @@ class AuthorizationTestDatabase {
     if (!delegate) {
       // Signup relies on User.isDeleted's database default to create active users.
       delegate = new InMemoryDelegate(
-        prismaDelegateName === "user" ? { isDeleted: false } : {},
+        prismaDelegateName === "user"
+          ? { isDeleted: false }
+          : prismaDelegateName === "event"
+            ? { isDeleted: false, startsAt: null, durationMillis: BigInt(0), isAllDay: true }
+            : {},
         (row, args) => this.readRelations(prismaDelegateName, row, args),
         async rows => {
           if (prismaDelegateName !== "eventSongList") return
@@ -293,6 +311,9 @@ class AuthorizationTestDatabase {
             await this.getDelegate(child).deleteMany({ where: { eventSongListId: { in: rows.map(row => row.id) } } })
           }
         },
+        row => prismaDelegateName === "event" && typeof row.durationMillis === "number"
+          ? { ...row, durationMillis: BigInt(row.durationMillis) }
+          : row,
       )
       this.delegates.set(prismaDelegateName, delegate)
     }

@@ -116,6 +116,11 @@ export interface QueryTableExecutionOptions {
     // 2. load full objects, using Prisma.
     // so this is the bridge between 1 and 2
     orderedPrimaryKeys?: readonly (number | string)[];
+
+    // Search SQL returns trusted natural keys after applying its authorized
+    // filter. Keep those keys out of the client query contract while the DB3
+    // read still reapplies row policy and projection to the loaded rows.
+    trustedNaturalPrimaryKeys?: readonly number[];
 }
 
 // takes an ordered list of pks, and an unordered list of items;
@@ -145,8 +150,14 @@ export async function queryTable(
 ) {
     const startTimestamp = Date.now();
     const query = await prepareTableQuery(input, authorization, database);
+    const trustedPrimaryKeyWhere = executionOptions.trustedNaturalPrimaryKeys
+        ? { [query.table.pkMember]: { in: executionOptions.trustedNaturalPrimaryKeys } }
+        : undefined;
+    const where = query.where && trustedPrimaryKeyWhere
+        ? { AND: [query.where, trustedPrimaryKeyWhere] }
+        : query.where || trustedPrimaryKeyWhere;
     const items = await database[query.table.tableName].findMany({
-        where: query.where,
+        where,
         orderBy: input.orderBy || query.table.naturalOrderBy,
         take: input.take,
         ...query.selectionArgs,
@@ -159,7 +170,7 @@ export async function queryTable(
     if (input.delayMS) await sleep(input.delayMS);
     return {
         items: sanitizeQueryRows(orderedItems, query, `query:${query.table.tableName}`),
-        where: query.where,
+        where,
         selectionArgs: query.selectionArgs,
         executionTimeMillis: Date.now() - startTimestamp,
         resultId: randomUUID(),

@@ -5,7 +5,6 @@ import { getUniqueNegativeID } from 'shared/utils';
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { defineLegacyTableClientSpec, useLegacyTableRenderContext, xTableClientCaps } from '../../db3/components/DB3ClientCore';
-import { EnrichedEvent } from '../../db3/shared/schema/enrichedEventTypes';
 import { EventResponseInfo, fn_makeMockEventSegmentResponse, fn_makeMockEventUserResponse, GetEventResponseInfo, UserInstrumentList } from '../../db3/shared/schema/eventAPI';
 import { DashboardContextData, useDashboardContext } from '../dashboardContext/DashboardContext';
 import { DashboardContextDataBase } from '../dashboardContext/dashboardContextTypes';
@@ -76,15 +75,16 @@ export function CalculateEventMetadata<
 
 
 
-export type EventEnrichedVerbose_Event = EnrichedEvent<db3.EventClientPayload_Verbose>;
+export type EventDetailEvent = db3.EventDetailClient;
+export type EventDetailTableClient = DB3Client.xTableRenderClient<typeof db3.eventDetailView>;
 
-interface CalculateEventMetadata_VerboseArgs {
-    event: EventEnrichedVerbose_Event,
+interface CalculateEventDetailMetadataArgs {
+    event: EventDetailEvent,
     tabSlug: string | undefined;
     dashboardContext: DashboardContextData;
 };
 
-export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContext }: CalculateEventMetadata_VerboseArgs) {
+export function CalculateEventDetailMetadata({ event, tabSlug, dashboardContext }: CalculateEventDetailMetadataArgs) {
 
     // - current user
     // - users that appear in event responses
@@ -108,7 +108,7 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
     };
 
     // fetch users with instruments.
-    const dynMenuClient = useLegacyTableRenderContext({
+    const dynMenuClient = useLegacyTableRenderContext<db3.UserWithInstrumentsPayload>({
         requestedCaps: xTableClientCaps.Query,
         tableSpec: defineLegacyTableClientSpec({
             table: db3.xUserWithInstrument,
@@ -119,13 +119,13 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
         }
     });
 
-    const userMap = dynMenuClient.items as UserInstrumentList;
+    const userMap = dynMenuClient.items;
 
     const eventData = CalculateEventMetadata<
-        EventEnrichedVerbose_Event,
-        db3.EventVerbose_EventUserResponse,
-        db3.EventVerbose_EventSegmentClient,
-        db3.EventVerbose_EventSegmentUserResponse
+        EventDetailEvent,
+        db3.EventDetailEventResponse,
+        db3.EventDetailSegmentClient,
+        db3.EventDetailSegmentResponse
     >(event, new DateTimeRange({
         startsAtDateTime: event.startsAt,
         durationMillis: Number(event.durationMillis),
@@ -139,8 +139,6 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
                 eventSegmentId: segment.publicId,
                 publicId: null,
                 userId: user.id,
-                user: user,
-                eventSegment: null as any,
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 createdByUserId: null,
@@ -151,19 +149,13 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
             if (!user?.id) return null;
             return {
                 userComment: "",
-                user: user,
                 revision: 0,
-                uid: getUniqueNegativeID().toString(),
-                eventId: event.id,
+                eventId: event.publicId,
                 publicId: null,
                 userId: user.id,
                 instrumentId: null,
-                isInvited,
                 instrument: null,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                createdByUserId: null,
-                updatedByUserId: null,
+                isInvited,
             }
         },
     );
@@ -354,7 +346,7 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
                 userComment: "",
                 revision: 0,
                 uid: getUniqueNegativeID().toString(),
-                eventId: event.id,
+                eventId: event.publicId,
                 publicId: null,
                 userId: user.id,
                 instrumentId: null,
@@ -375,7 +367,6 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
 
 
 export const EventTableClientColumns = DB3Client.makeClientColumnSet({
-    id: columnName => new DB3Client.PKColumnClient({ columnName }),
     name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
     startsAt: columnName => new DB3Client.EventDateRangeColumn({ startsAtColumnName: columnName, headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
     //description: new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),

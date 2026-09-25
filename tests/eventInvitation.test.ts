@@ -4,6 +4,7 @@ import { getEventResponseForUser } from "src/core/db3/shared/schema/eventAPI";
 import type { EventResponses_MinimalEvent, EventResponses_MinimalEventUserResponse } from "src/core/db3/shared/schema/event";
 import type { UserWithInstrumentsPayload } from "src/core/db3/shared/schema/prismArgs";
 import type { DashboardContextDataBase } from "src/core/components/dashboardContext/dashboardContextTypes";
+import { eventPublicId } from "./support/eventResponseFixtures";
 
 describe("event invitation", () => {
     it.each([
@@ -38,7 +39,7 @@ describe("website invitation resolution", () => {
     const resolve = (responses: EventResponses_MinimalEventUserResponse[], invitedUserIds: number[]) =>
         getEventResponseForUser({
             user,
-            event: { id: 1, responses, segments: [] } satisfies EventResponses_MinimalEvent,
+            event: { publicId: eventPublicId(1), responses, segments: [] } satisfies EventResponses_MinimalEvent,
             defaultInvitationUserIds: new Set(invitedUserIds),
             dashboardContext: {} as DashboardContextDataBase,
             userMap: [user],
@@ -59,6 +60,6 @@ describe("website invitation resolution", () => {
         const result = resolve([], tagMember ? [user.id] : []);
         expect(result?.isInvited).toBe(tagMember);
         expect(result?.isRelevantForDisplay).toBe(tagMember);
-        expect(result?.response.id).toBe(-1);
+        expect(result?.response).toMatchObject({ userId: user.id, isInvited: tagMember });
     });
 });

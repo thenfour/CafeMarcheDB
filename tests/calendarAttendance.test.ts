@@ -1,4 +1,4 @@
-import { segmentPublicId } from "./support/eventResponseFixtures";
+import { eventPublicId, segmentPublicId } from "./support/eventResponseFixtures";
 import { MakeICalEventUid } from "src/core/db3/shared/apiTypes";
 import { GetEventCalendarInput } from "src/core/db3/server/icalUtils";
 import { attendancePublicId } from "./support/eventAttendanceFixtures";
@@ -8,10 +8,10 @@ vi.mock("db", async () => ({
     ...await vi.importActual<typeof import("@prisma/client")>("@prisma/client"),
     default: (await import("./authorization/support/inMemoryPrisma")).authorizationTestDb,
 }));
-vi.mock("src/core/db3/server/db3QueryCore", () => ({ queryTable: vi.fn() }));
+vi.mock("src/core/db3/server/db3QueryCore", () => ({ queryView: vi.fn() }));
 
 import { CalExportCore } from "src/core/db3/server/ical";
-import { queryTable } from "src/core/db3/server/db3QueryCore";
+import { queryView } from "src/core/db3/server/db3QueryCore";
 import { shouldIncludeEventInCalendarFeed } from "src/core/db3/shared/calendarAttendance";
 import { createAuthorizationTestUser } from "./authorization/support/authorizationFixtures";
 import { authorizationTestDb } from "./authorization/support/inMemoryPrisma";
@@ -30,11 +30,16 @@ const segment = (id: number, strength?: number | null, statusId: EventStatusPubl
     responses: strength === undefined ? [] : [{ userId: owner.id, attendanceId: strength === null ? null : attendancePublicId(strength + 1) }],
 });
 const makeEvent = (segments: ReturnType<typeof segment>[]) => ({
-    id: 1, name: "Concert", revision: 1, locationDescription: "Hall", segments,
+    publicId: eventPublicId(1), name: "Concert", revision: 1, locationDescription: "Hall", segments,
     songLists: [], responses: [] as { userId: number; isInvited: boolean | null }[],
     expectedAttendanceUserTag: null as { userAssignments: { userId: number }[] } | null,
     status: { significance: null as string | null },
 });
+
+const mockCalendarEvents = (events: ReturnType<typeof makeEvent>[]) => {
+    // Vitest cannot infer one result type from queryView's generic view parameter.
+    vi.mocked(queryView).mockResolvedValue({ items: events } as never);
+};
 
 const include = (segments: ReturnType<typeof segment>[], showDeclinedEvents = false, userId = owner.id, showUninvitedEvents = true) =>
     shouldIncludeEventInCalendarFeed({
@@ -98,9 +103,9 @@ describe("calendar export integration", () => {
     });
 
     it("retains all dated active segments of a qualifying event, including declined ones", async () => {
-        vi.mocked(queryTable).mockResolvedValue({ items: [makeEvent([
+        mockCalendarEvents([makeEvent([
             segment(1, 0), segment(2, 100), segment(3, 100, cancelledId),
-        ])] } as never);
+        ])]);
         const calendar = await exportFeed();
         expect(calendar.events()).toHaveLength(2);
         expect(calendar.events().map(event => event.summary())).toEqual([
@@ -110,7 +115,7 @@ describe("calendar export integration", () => {
 
     it("removes and restores the same entries as settings and responses change", async () => {
         const event = makeEvent([segment(1, 0), segment(2, 50)]);
-        vi.mocked(queryTable).mockResolvedValue({ items: [event] } as never);
+        mockCalendarEvents([event]);
         expect((await exportFeed()).events()).toHaveLength(0);
         await authorizationTestDb.userSetting!.update({ where: { id: 1 }, data: { value: true } });
         const original = await exportFeed();
@@ -124,7 +129,7 @@ describe("calendar export integration", () => {
 
     it("omits cancelled events and undated segments without changing attendance eligibility", async () => {
         const event = makeEvent([segment(1, 0), { ...segment(2), startsAt: null }]);
-        vi.mocked(queryTable).mockResolvedValue({ items: [event] } as never);
+        mockCalendarEvents([event]);
         expect((await exportFeed()).events()).toHaveLength(1);
         event.status.significance = "Cancelled";
         expect((await exportFeed()).events()).toHaveLength(0);
@@ -146,8 +151,8 @@ describe("calendar export integration", () => {
             // Going keeps this event in the feed despite the lack of an invitation.
             { ...makeEvent([segment(3, 100)]), responses: [{ userId: 20, isInvited: true }] },
             makeEvent([segment(4, 0)]),
-        ].map((event, index) => ({ ...event, id: index + 1, name: `Event ${index + 1}` }));
-        vi.mocked(queryTable).mockResolvedValue({ items: events } as never);
+        ].map((event, index) => ({ ...event, publicId: eventPublicId(index + 1), name: `Event ${index + 1}` }));
+        mockCalendarEvents(events);
         const calendar = await exportFeed();
         expect(calendar.events().map(event => event.summary())).toEqual(
             retained.map(id => expect.stringContaining(`Event ${id}`)),
@@ -159,7 +164,7 @@ describe("calendar export integration", () => {
             userId: owner.id, name: "calendar.showUninvitedEvents", value: false,
         } });
         const event = makeEvent([segment(1, 0), segment(2, 51), segment(3, 100, cancelledId)]);
-        vi.mocked(queryTable).mockResolvedValue({ items: [event] } as never);
+        mockCalendarEvents([event]);
         const original = await exportFeed();
         expect(original.events().map(event => event.summary())).toEqual([
             expect.stringContaining("Segment 1"), expect.stringContaining("Segment 2"),
@@ -179,7 +184,7 @@ describe("calendar export integration", () => {
         const tag = { userAssignments: [{ userId: owner.id }] };
         event.expectedAttendanceUserTag = tag;
         event.responses = [{ userId: owner.id, isInvited: false }];
-        vi.mocked(queryTable).mockResolvedValue({ items: [event] } as never);
+        mockCalendarEvents([event]);
 
         // The tag overrides the stored false, and one unanswered segment retains the whole event.
         const original = await exportFeed();
@@ -203,15 +208,16 @@ describe("calendar export integration", () => {
         const event = { ...makeEvent([segment(1, 100)]), revision: 7,
             responses: [{ userId: owner.id, isInvited: true, revision: 3 }] };
         // The feed consumes an authorized Event projection; unrelated fields are omitted in this fixture.
-        vi.mocked(queryTable).mockResolvedValue({ items: [event] } as never);
+        mockCalendarEvents([event]);
         const original = await exportFeed();
         expect(original.events()[0]!.uid()).toBe(MakeICalEventUid("segment-1", owner.uid));
         expect(original.events()[0]!.sequence()).toBe(10);
         const { publicId, ...naturalSegment } = event.segments[0]!;
-        const naturalEvent = { ...event, segments: [{ ...naturalSegment, id: 1 }] };
+        const naturalEvent = { ...event, id: 1, segments: [{ ...naturalSegment, id: 1 }] };
         const before = GetEventCalendarInput(naturalEvent, [], "Europe/Brussels")!.inputHash;
+        const segmentWithPublicMetadata = { ...naturalSegment, id: 1, publicId };
         const after = GetEventCalendarInput({ ...naturalEvent,
-            segments: [{ ...naturalSegment, id: 1, publicId }] }, [], "Europe/Brussels")!.inputHash;
+            segments: [segmentWithPublicMetadata] }, [], "Europe/Brussels")!.inputHash;
         expect(after).toBe(before);
         event.segments[0]!.publicId = segmentPublicId(999);
         const updated = await exportFeed();

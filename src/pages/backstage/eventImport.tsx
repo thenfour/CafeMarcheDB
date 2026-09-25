@@ -7,7 +7,7 @@ import { useQuery } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
 import React, { Suspense } from "react";
 import { CalendarDate } from "shared/dateTimePolicy";
-import type { EventStatusPublicId, EventTypePublicId, PermissionPublicId, UserTagPublicId } from "shared/publicId";
+import type { EventPublicId, EventStatusPublicId, EventTypePublicId, PermissionPublicId, UserTagPublicId } from "shared/publicId";
 import { createAllDayRange, DateTimeRange, gMillisecondsPerDay } from "shared/time";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMStandardDBChip } from "src/core/components/CMChip";
@@ -24,8 +24,8 @@ import { TGetImportEventDataRet, TinsertEventArgs } from "src/core/db3/shared/ap
 
 interface InsertResult {
     event: {
-        id: number;
-        name: string;
+        publicId: EventPublicId;
+        name?: string;
     },
     segment: {
         startsAt?: Date | null,
@@ -39,7 +39,7 @@ interface NewEventDialogProps {
 
 type NewEventValue = Omit<
     db3.EventPayload,
-    "type" | "typeId" | "status" | "statusId" | "tags" | "visiblePermission" | "visiblePermissionId"
+    "id" | "publicId" | "type" | "typeId" | "status" | "statusId" | "tags" | "visiblePermission" | "visiblePermissionId"
     | "expectedAttendanceUserTagId" | "expectedAttendanceUserTag"
 > & {
     typeId: EventTypePublicId | null;
@@ -60,7 +60,8 @@ const NewEventForm = (props: NewEventDialogProps) => {
 
     const dashboardContext = useDashboardContext();
     const [eventValue, setEventValue] = React.useState<NewEventValue>(() => {
-        return db3.xEvent.createNew(currentUser);
+        const { id: _internalId, publicId: _publicId, ...draft } = db3.xEvent.createNew(currentUser);
+        return draft;
     });
     const [segmentValue, setSegmentValue] = React.useState<Pick<db3.EventSegmentPayload, "startsAt" | "durationMillis" | "isAllDay">>(() => {
         // xTable.createNew returns the legacy generic row shape; the segment
@@ -100,7 +101,6 @@ const NewEventForm = (props: NewEventDialogProps) => {
     const eventTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEvent,
         columns: DB3Client.makeClientColumnSelection(
-            EventTableClientColumns.id,
             EventTableClientColumns.name,
             //EventTableClientColumns.description,
             //EventTableClientColumns.slug,
@@ -295,7 +295,7 @@ const ImportEventsPageContent = () => {
                     {eventSaveLog.map((e, i) =>
                         <li key={i}>
                             <a href={dashboardContext.routingApi.getURIForEvent(e.event)} target="_blank" rel="noreferrer">
-                                {e.event.id} / {e.segment.startsAt?.toDateString()} / {e.event.name}
+                                {e.event.publicId} / {e.segment.startsAt?.toDateString()} / {e.event.name}
                             </a>
                         </li>)}
                 </ul>

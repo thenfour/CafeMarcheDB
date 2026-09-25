@@ -1,4 +1,4 @@
-import { segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
+import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
@@ -556,6 +556,7 @@ describe("DB3 named views", () => {
         ]));
         const authorized = authorizeAndProjectDB3ViewModel(db3.xEvent, {
             id: 8,
+            publicId: eventPublicId(8),
             name: "Public concert",
             startsAt: null,
             type: null,
@@ -564,7 +565,8 @@ describe("DB3 named views", () => {
             isDeleted: false,
         }, publicData, "db3-view-field-authorization");
 
-        expect(authorized).toMatchObject({ id: 8, name: "Public concert" });
+        expect(authorized).toMatchObject({ publicId: eventPublicId(8), name: "Public concert" });
+        expect(authorized).not.toHaveProperty("id");
         expect(authorized).not.toHaveProperty("isDeleted");
     });
 
@@ -790,7 +792,7 @@ describe("DB3 named views", () => {
                 {
                     publicId: fileEventTagPublicId,
                     event: {
-                        id: 9,
+                        publicId: eventPublicId(9),
                         name: "A concert",
                         startsAt: new Date("2026-06-01T19:00:00Z"),
                         statusId: eventStatusPublicId,
@@ -906,7 +908,7 @@ describe("DB3 named views", () => {
             taggedEvents: [{
                 publicId: fileEventTagPublicId,
                 event: {
-                    id: 15,
+                    publicId: eventPublicId(15),
                     name: "A concert",
                     startsAt: null,
                     statusId: null,
@@ -984,7 +986,7 @@ describe("DB3 named views", () => {
         });
 
         const dto = db3.eventSearchView.parseDto({
-            id: 1,
+            publicId: eventPublicId(1),
             name: "Actor-scoped event",
             locationDescription: "",
             locationURL: "",
@@ -1023,7 +1025,7 @@ describe("DB3 named views", () => {
         const references = db3.createDashboardReferenceStore();
         const segmentStart = new Date("2026-09-20T19:00:00Z");
         const dto = db3.eventSearchView.parseDto({
-            id: 1,
+            publicId: eventPublicId(1),
             name: "Timed event",
             locationDescription: "",
             locationURL: "",
@@ -1080,6 +1082,7 @@ describe("DB3 named views", () => {
         const startsAt = new Date("2026-09-20T18:00:00Z");
         const findMany = vi.fn(async (_args: unknown) => [{
             id: 1,
+            publicId: eventPublicId(1),
             revision: 1,
             name: "Actor-scoped event",
             typeId: null,
@@ -1160,7 +1163,7 @@ describe("DB3 named views", () => {
         } as any);
 
         expect(result.items).toEqual([expect.objectContaining({
-            id: 1,
+            publicId: eventPublicId(1),
             responses: [expect.objectContaining({ userId: 42 })],
             segments: [expect.objectContaining({
                 responses: [expect.objectContaining({ userId: 42 })],
@@ -1189,6 +1192,7 @@ describe("DB3 named views", () => {
         const startsAt = new Date("2026-09-20T18:00:00Z");
         const findMany = vi.fn(async () => [{
             id: 17,
+            publicId: eventPublicId(17),
             name: "Wiki-linked event",
             createdByUserId: 42,
             visiblePermissionId: null,
@@ -1226,7 +1230,7 @@ describe("DB3 named views", () => {
 
         const result = await queryView({
             view: db3.eventWikiPageContextView,
-            filter: { items: [], tableParams: { eventId: 17 } },
+            filter: { items: [], tableParams: { eventId: eventPublicId(17) } },
             orderBy: undefined,
             take: 1,
             cmdbQueryContext: "wiki-event-context-view-test",
@@ -1239,7 +1243,7 @@ describe("DB3 named views", () => {
         } as any); // The focused database double deliberately implements only the queried Event delegate.
 
         expect(result.items).toEqual([{
-            id: 17,
+            publicId: eventPublicId(17),
             name: "Wiki-linked event",
             typeId: eventTypePublicId,
             statusId: eventStatusPublicId,
@@ -1598,7 +1602,7 @@ describe("DB3 named views", () => {
             publicId: listPublicId(50),
             name: "Concert set",
             description: "Main set",
-            eventId: 5,
+            eventId: eventPublicId(5),
             sortOrder: 10,
             isOrdered: true,
             isActuallyPlayed: false,
@@ -1690,7 +1694,7 @@ describe("DB3 named views", () => {
                 publicId: listPublicId(50),
                 name: "Concert set",
                 description: "Main set",
-                eventId: 5,
+                eventId: eventPublicId(5),
                 sortOrder: 10,
                 isOrdered: true,
                 isActuallyPlayed: false,
@@ -1736,7 +1740,7 @@ describe("DB3 named views", () => {
         expect(db3.EventSongListMutationCommandSchema.safeParse(mutation).success).toBe(true);
         expect(mutation).toMatchObject({
             publicId: listPublicId(50),
-            eventId: 5,
+            eventId: eventPublicId(5),
             songs: [{ publicId: listSongPublicId(501), songId: 7, sortOrder: 0, subtitle: "Open quietly" }],
             dividers: [{ publicId: listDividerPublicId(601), sortOrder: 1, subtitle: "Break" }],
         });
@@ -1752,7 +1756,7 @@ describe("DB3 named views", () => {
         const secondPaste = db3.portableSongListToDraftItems(portable);
         expect(new Set([...firstPaste, ...secondPaste].map(item => item.clientId)).size).toBe(4);
         expect(firstPaste.every(item => item.publicId === undefined)).toBe(true);
-        const copiedDraft = db3.createEventSongListDraft({ eventId: 5, name: "Copy", clientId: db3.createDraftSetlistId() });
+        const copiedDraft = db3.createEventSongListDraft({ eventId: eventPublicId(5), name: "Copy", clientId: db3.createDraftSetlistId() });
         copiedDraft.items = firstPaste;
         const copyCommand = db3.saveEventSongListCommand.serialize(copiedDraft);
         expect(copyCommand).not.toHaveProperty("publicId");
@@ -1773,7 +1777,7 @@ describe("DB3 named views", () => {
     it("replaces an edited setlist row without moving it", () => {
         const draft = db3.createEventSongListDraft({
             clientId: db3.createDraftSetlistId(),
-            eventId: 5,
+            eventId: eventPublicId(5),
             name: "New set",
         });
         draft.items = [{
@@ -1819,13 +1823,13 @@ describe("DB3 named views", () => {
         );
         const newDraft = db3.createEventSongListDraft({
             clientId: db3.createDraftSetlistId(),
-            eventId: 5,
+            eventId: eventPublicId(5),
             name: "New set",
         });
 
         expect(db3.eventSongListClientToDraft(incomplete)).toBeUndefined();
         expect(db3.saveEventSongListCommand.serialize(newDraft)).toEqual({
-            eventId: 5,
+            eventId: eventPublicId(5),
             name: "New set",
             description: "",
             isActuallyPlayed: false,
@@ -1864,6 +1868,7 @@ describe("DB3 named views", () => {
             name: "Concert set",
             description: "Main set",
             eventId: 5,
+            event: { publicId: eventPublicId(5) },
             sortOrder: 10,
             isOrdered: true,
             isActuallyPlayed: false,
@@ -1914,13 +1919,14 @@ describe("DB3 named views", () => {
                 viewID: db3.eventSongListDetailView.viewID,
             },
             orderBy: undefined,
-            filter: { items: [], tableParams: { eventId: 5 } },
+            filter: { items: [], tableParams: { eventId: eventPublicId(5) } },
             cmdbQueryContext: "event-song-list-detail-view-test",
         }, {
             user: { id: 42 } as any,
             effectivePermissions,
         }, {
             EventSongList: { findMany },
+            Event: { findMany: vi.fn(async () => [{ id: 5, publicId: eventPublicId(5) }]) },
         } as any);
 
         expect(result.items[0]).toMatchObject({
@@ -1942,6 +1948,7 @@ describe("DB3 named views", () => {
             name: "Restricted set",
             description: "Restricted",
             eventId: 5,
+            event: { publicId: eventPublicId(5) },
             sortOrder: 10,
             isOrdered: true,
             isActuallyPlayed: false,

@@ -40,7 +40,6 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const eventTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEvent,
         columns: DB3Client.makeClientColumnSelection(
-            EventTableClientColumns.id,
             EventTableClientColumns.name,
             //EventTableClientColumns.slug,
             EventTableClientColumns.locationDescription,
@@ -60,14 +59,12 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     });
 
     const [eventValue, setEventValue] = React.useState<
-        Omit<db3.EventPayload, "visiblePermission" | "visiblePermissionId"> & {
+        Omit<db3.EventPayload, "id" | "publicId" | "visiblePermission" | "visiblePermissionId"> & {
             visiblePermission: VisibilityControlValue;
             visiblePermissionId: PermissionPublicId | null;
         }
     >(() => {
-        // createNew exposes the legacy generic model; this dialog still uses
-        // the Event payload for all non-Permission fields.
-        const ret = db3.xEvent.createNew(currentUser) as db3.EventPayload;
+        const { id: _internalId, publicId: _publicId, ...ret } = db3.xEvent.createNew(currentUser);
         // default to members visibility.
         // note: you cannot use API....defaultVisibility because that uses a hook and this is a callback.
         //ret.visiblePermission = API.users.getDefaultVisibilityPermission();//

@@ -1,7 +1,7 @@
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { Prisma } from "db";
 import { z } from "zod";
-import { isPublicId, type EventStatusPublicId, type EventTagAssignmentPublicId, type EventTagPublicId, type EventTypePublicId, type UserTagPublicId } from "shared/publicId";
+import { isPublicId, type EventPublicId, type EventStatusPublicId, type EventTagAssignmentPublicId, type EventTagPublicId, type EventTypePublicId, type UserTagPublicId } from "shared/publicId";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
@@ -9,6 +9,8 @@ import { EventTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { db3s, graft } from "../common/viewCommon";
 import { hydrateEventDateRange } from "./eventDateRange";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
+import { fileCardSelection, fileCardTransportSelection } from "../file/fileViews";
+import { eventSongListTransportSelection } from "../eventSongList/eventSongListViews";
 import {
     xEventAttendance,
     xEvent,
@@ -19,6 +21,8 @@ import {
     xEventTag,
     xEventType,
 } from "../../schema/event";
+
+// TODO: stop using Zod in this file; use the better deriveViewContract pattern.
 
 // event type ------------------------------------------
 const EventTypeDtoSchema = z.object({
@@ -173,7 +177,7 @@ export const eventSegmentEditorSelection = Prisma.validator<Prisma.EventSegmentD
         eventId: true,
         event: {
             select: {
-                id: true,
+                publicId: true,
                 name: true,
                 startsAt: true,
                 createdByUserId: true,
@@ -235,7 +239,7 @@ const EventEditorTagDtoSchema = z.object({
 });
 
 const EventEditorDtoSchema = z.object({
-    ...db3s.id(),
+    publicId: z.custom<EventPublicId>(isPublicId),
     ...db3s.isDeleted(),
     revision: z.number().int().optional(),
 
@@ -254,7 +258,7 @@ const EventEditorDtoSchema = z.object({
 
     tags: z.array(z.object({
         publicId: z.custom<EventTagAssignmentPublicId>(isPublicId),
-        eventId: z.number().int().optional(),
+        eventId: z.custom<EventPublicId>(isPublicId).optional(),
         eventTagId: z.custom<EventTagPublicId>(isPublicId).optional(),
         eventTag: EventEditorTagDtoSchema.optional(),
     })).optional(),
@@ -306,6 +310,363 @@ export const eventEditorView = defineCrudView({
     hydrate: dto => xEvent.getClientModel(dto, "view"),
 });
 
+// event detail ------------------------------------------
+
+const eventDetailTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
+    select: {
+        publicId: true,
+        name: true,
+        revision: true,
+        locationDescription: true,
+        locationURL: true,
+        typeId: true,
+        statusId: true,
+        relevanceClassOverride: true,
+        startsAt: true,
+        durationMillis: true,
+        isAllDay: true,
+        visiblePermissionId: true,
+        createdAt: true,
+        createdByUserId: true,
+        segmentBehavior: true,
+        expectedAttendanceUserTagId: true,
+        frontpageVisible: true,
+        frontpageDate: true,
+        frontpageTime: true,
+        frontpageDetails: true,
+        frontpageTitle: true,
+        frontpageLocation: true,
+        frontpageLocationURI: true,
+        frontpageTags: true,
+        frontpageDate_nl: true,
+        frontpageTime_nl: true,
+        frontpageDetails_nl: true,
+        frontpageTitle_nl: true,
+        frontpageLocation_nl: true,
+        frontpageLocationURI_nl: true,
+        frontpageTags_nl: true,
+        frontpageDate_fr: true,
+        frontpageTime_fr: true,
+        frontpageDetails_fr: true,
+        frontpageTitle_fr: true,
+        frontpageLocation_fr: true,
+        frontpageLocationURI_fr: true,
+        frontpageTags_fr: true,
+        tags: {
+            orderBy: EventTagAssignmentNaturalOrderBy,
+            select: {
+                publicId: true,
+                eventTagId: true,
+            },
+        },
+        fileTags: {
+            orderBy: { file: { uploadedAt: "desc" } },
+            select: {
+                publicId: true,
+                eventId: true,
+                fileId: true,
+                file: fileCardTransportSelection,
+            },
+        },
+        segments: {
+            orderBy: [
+                { startsAt: "asc" },
+                { id: "asc" },
+            ],
+            select: {
+                publicId: true,
+                eventId: true,
+                name: true,
+                description: true,
+                startsAt: true,
+                durationMillis: true,
+                isAllDay: true,
+                statusId: true,
+                uid: true,
+                responses: {
+                    select: {
+                        publicId: true,
+                        eventSegmentId: true,
+                        userId: true,
+                        attendanceId: true,
+                        createdAt: true,
+                        createdByUserId: true,
+                        updatedAt: true,
+                        updatedByUserId: true,
+                    },
+                },
+            },
+        },
+        responses: {
+            select: {
+                publicId: true,
+                eventId: true,
+                userId: true,
+                instrumentId: true,
+                userComment: true,
+                isInvited: true,
+                revision: true,
+            },
+        },
+        songLists: {
+            orderBy: { sortOrder: "asc" },
+            select: { publicId: true },
+        },
+        expectedAttendanceUserTag: {
+            select: {
+                publicId: true,
+                text: true,
+                description: true,
+                color: true,
+                sortOrder: true,
+                cssClass: true,
+                significance: true,
+                userAssignments: {
+                    select: {
+                        publicId: true,
+                        userId: true,
+                    },
+                },
+            },
+        },
+        descriptionWikiPage: {
+            select: {
+                id: true,
+                currentRevision: {
+                    select: {
+                        id: true,
+                        content: true,
+                    },
+                },
+            },
+        },
+    },
+});
+
+const eventDetailRequestedSelection = Prisma.validator<Prisma.EventDefaultArgs>()(
+    graft(eventDetailTransportSelection, {
+        select: {
+            isDeleted: true,
+            fileTags: {
+                select: {
+                    file: fileCardSelection,
+                },
+            },
+            descriptionWikiPage: {
+                select: {
+                    createdByUserId: true,
+                    visiblePermissionId: true,
+                },
+            },
+        },
+    }),
+);
+
+const eventDetailViewContract = deriveViewContract(
+    xEvent,
+    eventDetailRequestedSelection,
+    {
+        transportSelection: eventDetailTransportSelection,
+        references: dashboardReferenceContract,
+    },
+);
+
+type DeepDefined<T> =
+    T extends string | number | bigint | boolean | symbol | null ? T
+    : T extends Date ? T
+    : T extends (...args: never[]) => unknown ? T
+    : T extends readonly (infer TItem)[] ? DeepDefined<TItem>[]
+    : T extends object ? { [TKey in keyof T]-?: DeepDefined<Exclude<T[TKey], undefined>> }
+    : Exclude<T, undefined>;
+
+const assertSelectedShape = (
+    value: unknown,
+    selection: Record<string, unknown>,
+    path: string,
+): void => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error(`${path} is not an object.`);
+    }
+    const row = value as Record<string, unknown>; // Runtime object shape was checked above.
+    for (const [key, fieldSelection] of Object.entries(selection)) {
+        if (!(key in row) || row[key] === undefined) {
+            throw new Error(`${path}.${key} was omitted by authorization.`);
+        }
+        if (!fieldSelection || typeof fieldSelection !== "object" || Array.isArray(fieldSelection)) continue;
+        const fieldSelectionRecord = fieldSelection as Record<string, unknown>; // Prisma relation selections are plain objects.
+        const nestedSelection = fieldSelectionRecord.select;
+        if (!nestedSelection || typeof nestedSelection !== "object" || Array.isArray(nestedSelection)) continue;
+        const nestedValue = row[key];
+        if (nestedValue === null) continue;
+        const nestedSelectionRecord = nestedSelection as Record<string, unknown>; // Checked as a plain selection object above.
+        if (Array.isArray(nestedValue)) {
+            nestedValue.forEach((item, index) => assertSelectedShape(item, nestedSelectionRecord, `${path}.${key}[${index}]`));
+        } else {
+            assertSelectedShape(nestedValue, nestedSelectionRecord, `${path}.${key}`);
+        }
+    }
+};
+
+const hydrateEventDetailDto = (
+    dto: Parameters<typeof eventDetailViewContract.hydrate>[0],
+    references: Parameters<typeof eventDetailViewContract.hydrate>[1],
+) => {
+    const event = eventDetailViewContract.hydrate(dto, references);
+    assertSelectedShape(event, eventDetailTransportSelection.select, "Event_Detail");
+    assertSelectedShape(event, {
+        type: true,
+        status: true,
+        visiblePermission: true,
+    }, "Event_Detail");
+    event.tags.forEach((tag, index) => assertSelectedShape(
+        tag,
+        { eventTag: true },
+        `Event_Detail.tags[${index}]`,
+    ));
+    // The transport selection and hydrated references above cover every
+    // optional branch in this finite detail contract.
+    return event as DeepDefined<typeof event>;
+};
+
+export const eventDetailSelection = eventDetailViewContract.prismaSelection;
+
+export const eventDetailView = defineView({
+    viewID: "Event_Detail",
+    entity: xEvent,
+    selection: eventDetailSelection,
+    dtoSchema: eventDetailViewContract.dtoSchema,
+    references: eventDetailViewContract.referenceContract,
+    hydrate: hydrateEventDetailDto,
+});
+
+// event calendar ------------------------------------------
+
+const eventCalendarTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
+    select: {
+        publicId: true,
+        name: true,
+        revision: true,
+        locationDescription: true,
+        locationURL: true,
+        statusId: true,
+        status: {
+            select: {
+                publicId: true,
+                significance: true,
+            },
+        },
+        segments: {
+            select: {
+                publicId: true,
+                name: true,
+                description: true,
+                startsAt: true,
+                isAllDay: true,
+                durationMillis: true,
+                uid: true,
+                statusId: true,
+                responses: {
+                    select: {
+                        publicId: true,
+                        userId: true,
+                        attendanceId: true,
+                    },
+                },
+            },
+        },
+        responses: {
+            select: {
+                publicId: true,
+                userId: true,
+                revision: true,
+                isInvited: true,
+            },
+        },
+        songLists: {
+            ...eventSongListTransportSelection,
+            orderBy: { sortOrder: "asc" },
+        },
+        expectedAttendanceUserTag: {
+            select: {
+                publicId: true,
+                userAssignments: {
+                    select: {
+                        publicId: true,
+                        userId: true,
+                    },
+                },
+            },
+        },
+        descriptionWikiPage: {
+            select: {
+                id: true,
+                currentRevision: {
+                    select: {
+                        id: true,
+                        content: true,
+                    },
+                },
+            },
+        },
+    },
+});
+
+const eventCalendarRequestedSelection = Prisma.validator<Prisma.EventDefaultArgs>()(
+    graft(eventCalendarTransportSelection, {
+        select: {
+            createdByUserId: true,
+            visiblePermissionId: true,
+            isDeleted: true,
+            songLists: {
+                select: {
+                    songs: {
+                        select: {
+                            song: {
+                                select: {
+                                    createdByUserId: true,
+                                    visiblePermissionId: true,
+                                    isDeleted: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            descriptionWikiPage: {
+                select: {
+                    createdByUserId: true,
+                    visiblePermissionId: true,
+                },
+            },
+        },
+    }),
+);
+
+const eventCalendarViewContract = deriveViewContract(
+    xEvent,
+    eventCalendarRequestedSelection,
+    { transportSelection: eventCalendarTransportSelection },
+);
+
+const hydrateEventCalendarDto = (
+    dto: Parameters<typeof eventCalendarViewContract.hydrate>[0],
+    references: Parameters<typeof eventCalendarViewContract.hydrate>[1],
+) => {
+    const event = eventCalendarViewContract.hydrate(dto, references);
+    assertSelectedShape(event, eventCalendarTransportSelection.select, "Event_Calendar");
+    // Every optional field in this server-only view is part of its finite
+    // transport selection and was checked immediately above.
+    return event as DeepDefined<typeof event>;
+};
+
+export const eventCalendarView = defineView({
+    viewID: "Event_Calendar",
+    entity: xEvent,
+    selection: eventCalendarViewContract.prismaSelection,
+    dtoSchema: eventCalendarViewContract.dtoSchema,
+    hydrate: hydrateEventCalendarDto,
+});
+
 // const EventTagAssignmentDtoSchema = z.object({
 //     id: z.number().int(),
 //     eventTagId: z.number().int().optional(),
@@ -313,7 +674,7 @@ export const eventEditorView = defineCrudView({
 
 const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         name: true,
         typeId: true,
         locationDescription: true,
@@ -455,7 +816,7 @@ export const eventSearchSelection = ({ authorization }: DB3ViewSelectionContext)
 
 const eventFrontpageRequestedSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         name: true,
         typeId: true,
         locationDescription: true,
@@ -571,7 +932,7 @@ export const eventFrontpageView = defineView({
 
 const eventWikiPageContextTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         name: true,
         typeId: true,
         statusId: true,
@@ -621,6 +982,21 @@ export const eventWikiPageContextView = defineView({
 
 export type EventSearchDto = DtoOf<typeof eventSearchView>;
 export type EventSearchClient = ClientOf<typeof eventSearchView>;
+export type EventDetailDto = DtoOf<typeof eventDetailView>;
+export type EventDetailClient = ClientOf<typeof eventDetailView>;
+export type EventDetailSegmentClient = NonNullable<EventDetailClient["segments"]>[number];
+export type EventDetailEventResponseClient = NonNullable<EventDetailClient["responses"]>[number];
+export type EventDetailSegmentResponseClient = NonNullable<EventDetailSegmentClient["responses"]>[number];
+
+// Attendance presentation creates unsaved response rows for users who have not
+// answered yet, so those local rows deliberately have no persisted identity.
+export type EventDetailEventResponse = Omit<EventDetailEventResponseClient, "publicId"> & {
+    publicId: EventDetailEventResponseClient["publicId"] | null;
+};
+export type EventDetailSegmentResponse = Omit<EventDetailSegmentResponseClient, "publicId"> & {
+    publicId: EventDetailSegmentResponseClient["publicId"] | null;
+};
+export type EventCalendarClient = ClientOf<typeof eventCalendarView>;
 
 //type aoeu = EventSearchClient["status"];
 

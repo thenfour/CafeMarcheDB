@@ -23,6 +23,7 @@ import { GetSearchResultsCore } from "src/core/db3/server/searchServerCore";
 import { GetSearchResultsInput, DiscreteCriterionFilterType, ZGetSearchResultsInput } from "src/core/db3/shared/apiTypes";
 import { createAuthorizationPersona, createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
+import { eventPublicId } from "../support/eventResponseFixtures";
 const rawQuery = vi.mocked(db.$queryRaw as (sql: any) => Promise<any[]>);
 
 const permissions = [Permission.login, Permission.view_users_basic_info, Permission.view_user_contact_info,
@@ -141,7 +142,7 @@ describe("search recovery capability", () => {
 
     it("keeps ordinary event searches working without a domain-specific side channel", async () => {
         const event = {
-            id: 904, name: "Member event", isDeleted: false,
+            id: 904, publicId: eventPublicId(904), name: "Member event", isDeleted: false,
             visiblePermissionId: null, createdByUserId: actor.id, expectedAttendanceUserTagId: 905,
         };
         authorizationTestDb.reset({ user: [actor], event: [event], userTag: [] });
@@ -153,7 +154,8 @@ describe("search recovery capability", () => {
         });
         const result = await GetSearchResultsCore(query({ tableID: "Event", discreteCriteria: [] }),
             createAuthorizationTestContext(actor) as AuthenticatedCtx);
-        expect(result.results).toEqual([expect.objectContaining({ id: event.id })]);
+        expect(result.results).toEqual([expect.objectContaining({ publicId: event.publicId })]);
+        expect(result.results[0]).not.toHaveProperty("id");
         expect(result).not.toHaveProperty("customData");
     });
 });

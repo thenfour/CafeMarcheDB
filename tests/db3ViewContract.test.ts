@@ -31,6 +31,7 @@ import {
 import type { DateTimeRange } from "shared/time"
 import { compileDB3Selection } from "src/core/db3/shared/core/db3ViewContract"
 import { PermissionSet } from "src/auth/shared/PermissionSet"
+import { eventPublicId } from "./support/eventResponseFixtures"
 
 const eventTypePublicId = parsePublicId<"EventType">("AbCdEfGhIjKlMn11")
 const eventStatusPublicId = parsePublicId<"EventStatus">("AbCdEfGhIjKlMn12")
@@ -182,16 +183,16 @@ describe("DB3 scalar selection compiler", () => {
   })
 
   it("derives transport DTOs from a fetched selection subset", () => {
-    const prismaSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
+    const prismaSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
       select: {
         id: true,
         isDeleted: true,
       },
     })
-    const transportSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
+    const transportSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
       select: { id: true },
     })
-    const derived = db3.deriveViewContract(db3.xEvent, prismaSelection, {
+    const derived = db3.deriveViewContract(db3.xSong, prismaSelection, {
       transportSelection,
     })
 
@@ -201,17 +202,17 @@ describe("DB3 scalar selection compiler", () => {
   })
 
   it("rejects transport members absent from the Prisma selection", () => {
-    const prismaSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
+    const prismaSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
       select: { id: true },
     })
-    const transportSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
+    const transportSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
       select: { id: true, name: true },
     })
 
-    expect(() => db3.deriveViewContract(db3.xEvent, prismaSelection, {
+    expect(() => db3.deriveViewContract(db3.xSong, prismaSelection, {
       transportSelection,
     })).toThrow(
-      "'Event.select.name': transport selection member is not fetched by the Prisma selection",
+      "'Song.select.name': transport selection member is not fetched by the Prisma selection",
     )
   })
 
@@ -1176,7 +1177,7 @@ describe("Song derived-view migration", () => {
 
 describe("Event frontpage derived-view migration", () => {
   const makeDto = (): db3.EventFrontpageDto => ({
-    id: 41,
+    publicId: eventPublicId(41),
     name: "Autumn concert",
     typeId: eventTypePublicId,
     locationDescription: "Town hall",
@@ -1256,7 +1257,7 @@ describe("Event frontpage derived-view migration", () => {
       .toBe(db3.EventTagAssignmentNaturalOrderBy)
 
     expectTypeOf<Pick<Dto,
-      | "id"
+      | "publicId"
       | "name"
       | "locationDescription"
       | "locationURL"
@@ -1266,7 +1267,7 @@ describe("Event frontpage derived-view migration", () => {
       | "frontpageVisible"
       | "frontpageTitle"
     >>().toEqualTypeOf<{
-      id: number
+      publicId: ReturnType<typeof eventPublicId>
       name: string
       locationDescription: string
       locationURL: string

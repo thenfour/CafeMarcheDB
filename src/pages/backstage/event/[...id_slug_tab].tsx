@@ -5,37 +5,35 @@ import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
 import { useDashboardContext, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
 import { NewEventButton } from "@/src/core/components/event/NewEventComponents";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import { enrichSearchResultEvent } from "@/src/core/db3/shared/schema/enrichedEventTypes";
 import { BlitzPage, useParams } from "@blitzjs/next";
 import db from "db";
 import React, { Suspense } from 'react';
 import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
-import { CoerceToNumberOrNull } from "shared/utils";
+import type { EventPublicId } from "shared/publicId";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { EventBreadcrumbs, EventDetailFull, gEventDetailTabSlugIndices } from "src/core/components/event/EventComponents";
 import { EventTableClientColumns } from "src/core/components/event/EventComponentsBase";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 
-const MyComponent = ({ eventId }: { eventId: null | number }) => {
+const MyComponent = ({ eventId }: { eventId: null | EventPublicId }) => {
     const params = useParams();
     const [id__, slug, tab] = params.id_slug_tab as string[];
     const dashboardContext = useDashboardContext();
 
     //if (!idOrSlug) return <div>no event specified</div>;
-    if (!eventId) throw new Error(`song not found`);
+    if (!eventId) throw new Error(`event not found`);
 
     useRecordFeatureUse({ feature: ActivityFeature.event_view, eventId });
 
 
 
-    const queryArgs: DB3Client.xTableClientArgs = {
+    const tableClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
-        tableSpec: DB3Client.defineLegacyTableClientSpec({
-            table: db3.xEventVerbose,
+        tableSpec: DB3Client.defineTableClientSpec({
+            view: db3.eventDetailView,
             columns: DB3Client.makeClientColumnSelection(
-                EventTableClientColumns.id,
                 EventTableClientColumns.name,
                 EventTableClientColumns.locationDescription,
                 EventTableClientColumns.type,
@@ -46,20 +44,17 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
             ),
         }),
         filterModel: {
-            tableParams: {}
-        }
-    };
-
-    queryArgs.filterModel!.tableParams!.eventId = eventId;
+            tableParams: { eventId },
+        },
+        referenceProvider: dashboardContext.referenceStore,
+    });
 
     let initialTabIndex: string = "";
     if (!!tab && gEventDetailTabSlugIndices[tab]) {
         initialTabIndex = gEventDetailTabSlugIndices[tab];
     }
 
-    const tableClient = DB3Client.useLegacyTableRenderContext(queryArgs);
-    const eventRaw = tableClient.items[0]! as db3.EventClientPayload_Verbose;
-    const event = eventRaw ? enrichSearchResultEvent(eventRaw, dashboardContext) : null;
+    const event = tableClient.items[0] ?? null;
 
     const refetch = () => {
         tableClient.refetch();
@@ -90,22 +85,22 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
 
 interface PageProps {
     title: string,
-    eventId: number | null,
+    eventId: EventPublicId | null,
 };
 
 export const getServerSideProps = gSSP<PageProps>(async ({ params, req, ctx }) => {
     const [id__] = params!.id_slug_tab as string[];
-    const id = CoerceToNumberOrNull(id__);
-    if (!id) return { notFound: true };
+    if (!db3.xEvent.isIdentity(id__)) return { notFound: true };
+    const publicId = db3.xEvent.parseIdentity(id__);
 
     const event = await loadAuthorizedPageEntity({
         ctx,
         permission: Permission.view_events_nonpublic,
         table: db3.xEvent,
-        identity: id,
+        identity: publicId,
         load: where => db.event.findFirst({
             select: {
-                id: true,
+                publicId: true,
                 name: true,
                 startsAt: true,
                 segments: {
@@ -145,7 +140,7 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, req, ctx }) =
         title = `${event.name} | ${formattedDate}`;
     }
 
-    return { props: { title, eventId: event.id } };
+    return { props: { title, eventId: db3.xEvent.parseIdentity(event.publicId) } };
 });
 
 

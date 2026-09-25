@@ -70,7 +70,7 @@ export const FacetItemDetailTableRow = ({ value, index, ...props }: FacetItemDet
                 <SongChip value={value.song} startAdornment={gIconMap.MusicNote()} useHashedColor={true} />
             </FilterableChip>}
             {value.event && <FilterableChip
-                item={{ eventId: value.event.id, name: value.event.name, startsAt: value.event.startsAt, statusId: value.event.statusId, typeId: value.event.typeId, count: 0 }}
+                item={{ eventId: value.event.publicId, name: value.event.name, startsAt: value.event.startsAt, statusId: value.event.statusId, typeId: value.event.typeId, count: 0 }}
                 handler={gClientFacetHandlers.events}
                 filterSpec={props.filterSpec}
                 setFilterSpec={props.setFilterSpec}

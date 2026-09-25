@@ -33,6 +33,7 @@ export default resolver.pipe(
             const events = await db.event.findMany({
                 select: {
                     id: true,
+                    publicId: true,
                     name: true,
                     startsAt: true,
                 }

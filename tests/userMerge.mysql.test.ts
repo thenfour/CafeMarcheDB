@@ -1,4 +1,4 @@
-import { segmentPublicId, eventResponsePublicId, segmentResponsePublicId } from "./support/eventResponseFixtures";
+import { eventPublicId, segmentPublicId, eventResponsePublicId, segmentResponsePublicId } from "./support/eventResponseFixtures";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { SecurePassword } from "@blitzjs/auth/secure-password";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -75,7 +75,7 @@ async function seedAccounts() {
 }
 
 async function seedContent() {
-    await db.event.createMany({ data: [1, 2].map(id => ({ id, name: `Private event ${id}`, createdByUserId: 20, revision: 1 })) });
+    await db.event.createMany({ data: [1, 2].map(id => ({ id, publicId: eventPublicId(id), name: `Private event ${id}`, createdByUserId: 20, revision: 1 })) });
     await db.eventSegment.createMany({ data: [1, 2].map(id => ({ id, publicId: segmentPublicId(id), eventId: id, name: "Private segment", description: "", durationMillis: 0 })) });
     await db.eventUserResponse.createMany({
         data: [

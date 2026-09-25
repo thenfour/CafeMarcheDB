@@ -4,7 +4,7 @@
 
 //import dynamic from 'next/dynamic';
 import React from "react";
-import type { EventStatusPublicId, EventTypePublicId } from "shared/publicId";
+import type { EventPublicId, EventStatusPublicId, EventTypePublicId } from "shared/publicId";
 import { CoalesceBool, getHashedColor, IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { CMChip, CMChipSizeOptions, CMStandardDBChip } from "../CMChip";
@@ -45,7 +45,7 @@ export const EventStatusChip = ({ statusId, highlightStatusIds = [], displayStyl
 
 export interface EventChipProps {
     value: {
-        id: number;
+        publicId: EventPublicId;
         name: string;
         startsAt: Date | null;
         statusId: EventStatusPublicId | null;
@@ -82,7 +82,7 @@ export const EventChip = ({ renderAsLink = true, ...props }: EventChipProps) => 
         }
     >
         {props.startAdornment}
-        <span style={{ color: props.useHashedColor ? getHashedColor(props.value.id.toString()) : undefined }}>
+        <span style={{ color: props.useHashedColor ? getHashedColor(props.value.publicId) : undefined }}>
             {db3.EventAPI.getLabel(props.value, { showDate: CoalesceBool(props.showDate, true) })}
             {status?.significance === db3.EventStatusSignificance.Cancelled && " (Cancelled)"}
         </span>

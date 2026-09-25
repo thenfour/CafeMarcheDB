@@ -26,13 +26,13 @@ async function getUserAttendanceCore(
     });
     if (!user) throw new Error("User not found");
     const event = await db.event.findFirst({
-        where: ComposePrismaWhere(eventPolicyWhere, { id: eventId }),
+        where: ComposePrismaWhere(eventPolicyWhere, { publicId: eventId }),
     });
     if (!event) throw new Error("Event not found");
     const eventResponse = await db.eventUserResponse.findFirst({
         where: {
             userId: userId,
-            eventId: eventId,
+            eventId: event.id,
         },
         select: {
             userComment: true,
@@ -67,7 +67,7 @@ async function getUserAttendanceCore(
         where: {
             userId: userId,
             eventSegment: {
-                eventId: eventId,
+                eventId: event.id,
             },
         },
         orderBy: {
@@ -78,7 +78,7 @@ async function getUserAttendanceCore(
     });
 
     return {
-        eventId: eventId,
+        eventId,
         userId: userId,
         comment: eventResponse?.userComment || null,
         instrumentId: eventResponse?.instrument
@@ -99,7 +99,7 @@ async function getUserAttendanceCore(
 function ParseQueryInput(query: any): GetUserAttendanceArgs {
     return {
         userId: parseInt(query.userId),
-        eventId: parseInt(query.eventId),
+        eventId: xEvent.parseIdentity(query.eventId),
     };
 }
 

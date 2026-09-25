@@ -156,7 +156,7 @@ const StatsPagePopularSong = ({ occurrances, expanded }: { occurrances: GetGloba
                 <ul>
                     {selectedBucket?.items.map(i => {
                         return <li key={i.item.eventId}>
-                            <EventTextLink event={{ id: i.item.eventId, name: i.item.eventName, startsAt: i.item.startsAt, statusId: i.item.statusId, typeId: i.item.typeId }} />
+                            <EventTextLink event={{ publicId: i.item.eventId, name: i.item.eventName, startsAt: i.item.startsAt, statusId: i.item.statusId, typeId: i.item.typeId }} />
                         </li>;
 
                     })}
@@ -259,7 +259,7 @@ const StatsPageInner = () => {
                 }}
                 getBucketInfo={(b) => {
                     return {
-                        tooltip: <ul>{b.items.map(x => <li key={x.item.id}>{EventAPI.getLabel(x.item)}</li>)}</ul>
+                        tooltip: <ul>{b.items.map(x => <li key={x.item.publicId}>{EventAPI.getLabel(x.item)}</li>)}</ul>
                     };
                 }}
                 selectedMonthBucketId={selectedEventBucket?.yearMonthBucketId || null}
@@ -269,7 +269,7 @@ const StatsPageInner = () => {
         <div>
             <ul>
                 {selectedEventBucket?.items.map(i => {
-                    return <li key={i.item.id}>
+                    return <li key={i.item.publicId}>
                         <EventTextLink event={i.item} />
                         {/* <a rel="noreferrer" target="_blank" href={getURIForEvent(i.item)}>
                             {EventAPI.getLabel(i.item)}

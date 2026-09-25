@@ -5,6 +5,7 @@ import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import {
     type EventAttendancePublicId,
+    type EventPublicId,
     type EventSegmentPublicId,
     type EventStatusPublicId,
     type EventTypePublicId,
@@ -35,7 +36,7 @@ type UserEventAttendanceQueryResult_EventSegment = Omit<Prisma.EventSegmentGetPa
 
 type UserEventAttendanceQueryResult_Event = Omit<Prisma.EventGetPayload<{
     select: {
-        id: true,
+        publicId: true,
         name: true,
         statusId: true,
         typeId: true,
@@ -44,7 +45,8 @@ type UserEventAttendanceQueryResult_Event = Omit<Prisma.EventGetPayload<{
         isAllDay: true,
         expectedAttendanceUserTagId: true,
     }
-}>, "statusId" | "typeId" | "expectedAttendanceUserTagId"> & {
+}>, "publicId" | "statusId" | "typeId" | "expectedAttendanceUserTagId"> & {
+    publicId: EventPublicId;
     statusId: EventStatusPublicId | null;
     typeId: EventTypePublicId | null;
     expectedAttendanceUserTagId: UserTagPublicId | null;
@@ -146,7 +148,7 @@ export default resolver.pipe(
                     assert(event.responses.length < 2, "designed for 1 user at a time");
                     const er = event.responses[0];
                     const eventRet: UserEventAttendanceQueryResult_Event = {
-                        id: event.id,
+                        publicId: xEvent.parseIdentity(event.publicId),
                         name: event.name,
                         statusId: event.status ? xEventStatus.parseIdentity(event.status.publicId) : null,
                         typeId: event.type ? xEventType.parseIdentity(event.type.publicId) : null,

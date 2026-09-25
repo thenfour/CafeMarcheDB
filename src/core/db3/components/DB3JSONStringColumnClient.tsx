@@ -104,7 +104,8 @@ const ActivityLogEventSegment = ({ eventSegmentId, cacheData }: { eventSegmentId
     if (!foundEvent) {
         return <ActivityLogChip><Id value={foundSegment.eventId} />, seg:{foundSegment.id}</ActivityLogChip>;
     }
-    return <ActivityLogChip uri={dashboardContext.routingApi.getURIForEvent(foundEvent)}>{db3.EventAPI.getLabel(foundEvent)}#{foundEvent.id} seg:{foundSegment.name}#{foundSegment.id}</ActivityLogChip>;
+    const eventLink = { ...foundEvent, publicId: db3.xEvent.parseIdentity(foundEvent.publicId) };
+    return <ActivityLogChip uri={dashboardContext.routingApi.getURIForEvent(eventLink)}>{db3.EventAPI.getLabel(foundEvent)}#{foundEvent.id} seg:{foundSegment.name}#{foundSegment.id}</ActivityLogChip>;
 };
 
 const ActivityLogEvent = ({ eventId, cacheData }: { eventId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
@@ -114,7 +115,8 @@ const ActivityLogEvent = ({ eventId, cacheData }: { eventId: number | null | und
         return <ActivityLogChip><Id value={eventId} /></ActivityLogChip>;
     }
 
-    return <ActivityLogChip uri={dashboardContext.routingApi.getURIForEvent(foundEvent)}>{db3.EventAPI.getLabel(foundEvent)}#{foundEvent.id}</ActivityLogChip>;
+    const eventLink = { ...foundEvent, publicId: db3.xEvent.parseIdentity(foundEvent.publicId) };
+    return <ActivityLogChip uri={dashboardContext.routingApi.getURIForEvent(eventLink)}>{db3.EventAPI.getLabel(foundEvent)}#{foundEvent.id}</ActivityLogChip>;
 };
 
 const ActivityLogEventTag = ({ eventTagId }: { eventTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {

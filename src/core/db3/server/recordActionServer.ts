@@ -106,7 +106,7 @@ function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null,
         timezone: toLowerCaseString(deviceInfo?.timezone, 48),
 
         // Association IDs - all must be positive integers
-        eventId: toSafeId(args.eventId),
+        eventId: null,
         fileId: toSafeId(args.fileId),
         songId: toSafeId(args.songId),
         wikiPageId: toSafeId(args.wikiPageId),
@@ -129,6 +129,13 @@ function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null,
 export async function createActionRecord(args: RecordActionArgs & { userId?: number | null, isClient: boolean }) {
     // Sanitize and validate all inputs according to database constraints
     const sanitizedData = sanitizeActionInputs(args);
+    if (args.eventId) {
+        const event = await db.event.findUnique({
+            where: { publicId: args.eventId },
+            select: { id: true },
+        });
+        sanitizedData.eventId = event?.id ?? null;
+    }
     if (args.instrumentId) {
         const instrument = await db.instrument.findUnique({
             where: { publicId: args.instrumentId },

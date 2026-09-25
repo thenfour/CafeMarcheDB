@@ -11,6 +11,7 @@ import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
 import { CoalesceBool, gIconOptions, smartTruncate } from "shared/utils";
 import type {
+    EventPublicId,
     EventSegmentPublicId,
     EventUserResponsePublicId,
     EventSegmentUserResponsePublicId,
@@ -28,7 +29,7 @@ import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNu
 import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import {
-    EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, type EventAttendancePayload,
+    EventArgs, EventAttendanceArgs, EventAttendanceNaturalOrderBy, type EventAttendancePayload,
     EventNaturalOrderBy, type EventPayload, type EventPayloadClient,
     EventSegmentArgs, EventSegmentBehavior, EventSegmentNaturalOrderBy, type EventSegmentPayload,
     EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
@@ -364,8 +365,8 @@ export const xEventTagAssignment = db3.defineTable({
 ////////////////////////////////////////////////////////////////
 
 export interface EventTableParams {
-    eventId?: number;
-    eventIds?: number[];
+    eventId?: EventPublicId;
+    eventIds?: EventPublicId[];
     eventUids?: string[];
     eventTypeIds?: EventTypePublicId[];
     eventStatusIds?: EventStatusPublicId[];
@@ -376,15 +377,17 @@ export interface EventTableParams {
 
 interface ResolvedEventTableParams extends Omit<
     EventTableParams,
-    "eventTypeIds" | "eventStatusIds"
+    "eventId" | "eventIds" | "eventTypeIds" | "eventStatusIds"
 > {
+    eventId?: number;
+    eventIds?: number[];
     eventTypeIds?: number[];
     eventStatusIds?: number[];
 }
 
 const EventQueryParameters = {
-    eventId: { kind: "integer", authorizeAs: "id" },
-    eventIds: { kind: "integerArray", authorizeAs: "id" },
+    eventId: { kind: "entityIdentity", targetTableID: "Event", authorizeAs: "publicId" },
+    eventIds: { kind: "entityIdentityArray", targetTableID: "Event", authorizeAs: "publicId" },
     eventUids: { kind: "stringArray", authorizeAs: "uid" },
     eventTypeIds: {
         kind: "entityIdentityArray",
@@ -419,7 +422,7 @@ export const EventAPI = {
 
 export const xEventArgs_Base = db3.defineTableDesc({
     prismaModel: db3.prismaModel<Prisma.EventDelegate>(),
-    getIdentity: (event: { id: number }) => event.id,
+    getIdentity: (event: { publicId: EventPublicId }) => event.publicId,
     // modifying an event means multiple related changes; see the mutation event hooks.
     tableName: "Event", // case matters :(
     deletePolicy: "softOnly",
@@ -432,7 +435,7 @@ export const xEventArgs_Base = db3.defineTableDesc({
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     naturalOrderBy: EventNaturalOrderBy,
     getRowInfo: (row: EventPayloadClient) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: EventAPI.getLabel(row),
         color: gGeneralPaletteList.findEntry(row.type?.color || null),
         ownerUserId: row.createdByUserId,
@@ -529,7 +532,8 @@ export const xEventArgs_Base = db3.defineTableDesc({
         return ret;
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<EventPublicId>(),
         name: columnName => MakeTitleField(columnName, { authMap: xEventAuthMap_Homepage, }),
         isDeleted: () => MakeIsDeletedField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         locationDescription: columnName => MakePlainTextField(columnName, { authMap: xEventAuthMap_Homepage, }),
@@ -679,23 +683,18 @@ export const xEventArgs_Base = db3.defineTableDesc({
 
 export const xEvent = db3.defineTable(xEventArgs_Base);
 
-const xEventArgs_Verbose = db3.defineTableDesc({
-    ...xEventArgs_Base,
-    tableUniqueName: "xEventArgs_Verbose",
-    getSelectionArgs: (): Prisma.EventDefaultArgs => {
-        return EventArgs_Verbose;
-    },
-});
-
-export const xEventVerbose = db3.defineTable(xEventArgs_Verbose);
-
 export const xEventSegment = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventSegmentDelegate>(),
     getIdentity: (row: { publicId: EventSegmentPublicId }) => row.publicId,
     tableName: "EventSegment",
     deletePolicy: "hard",
     queryParameters: {
-        eventId: { kind: "integer", authorizeAs: "eventId", nullable: true },
+        eventId: {
+            kind: "entityIdentity",
+            targetTableID: "Event",
+            authorizeAs: "eventId",
+            nullable: true
+        },
     },
     getSelectionArgs: (): Prisma.EventSegmentDefaultArgs => {
         return EventSegmentArgs;
@@ -895,7 +894,11 @@ export const xEventUserResponse = db3.defineTable({
     tableName: "EventUserResponse",
     deletePolicy: "hard",
     queryParameters: {
-        eventId: { kind: "integer", authorizeAs: "eventId" },
+        eventId: {
+            kind: "entityIdentity",
+            targetTableID: "Event",
+            authorizeAs: "eventId"
+        },
     },
     naturalOrderBy: EventUserResponseNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_UserResponse,
@@ -962,7 +965,11 @@ export const xEventSongList = db3.defineTable({
     deletePolicy: "hard",
     sortOrderPolicy: { groupingColumn: "eventId", scope: "explicitRowIds" },
     queryParameters: {
-        eventId: { kind: "integer", authorizeAs: "eventId" },
+        eventId: {
+            kind: "entityIdentity",
+            targetTableID: "Event",
+            authorizeAs: "eventId"
+        },
     },
     naturalOrderBy: EventSongListNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
@@ -1179,23 +1186,24 @@ export type EventResponses_MinimalEventSegment = Omit<EventResponses_MinimalEven
 
 type EventResponses_MinimalEventDb = Prisma.EventGetPayload<{
     select: {
-        id: true,
+        publicId: true,
         responses: typeof EventResponses_MinimalEventUserResponseArgs,
         segments: {
             select: {
-                id: true,
+                publicId: true,
                 responses: typeof EventResponses_MinimalEventSegmentUserResponseArgs,
             }
         }
     }
 }>;
-export type EventResponses_MinimalEvent = Omit<EventResponses_MinimalEventDb, "responses" | "segments"> & {
+export type EventResponses_MinimalEvent = Omit<EventResponses_MinimalEventDb, "publicId" | "responses" | "segments"> & {
+    publicId: EventPublicId;
     segments: { publicId: EventSegmentPublicId; responses: EventResponses_MinimalEventSegmentUserResponse[] }[];
     responses: EventResponses_MinimalEventUserResponse[];
 };
 
 export interface EventUserResponse<TEvent extends EventResponses_MinimalEvent, TResponse extends EventResponses_MinimalEventUserResponse> {
-    event: TEvent;//EventClientPayload_Verbose;
+    event: TEvent;
     user: UserWithInstrumentsPayload;
     response: TResponse;
 

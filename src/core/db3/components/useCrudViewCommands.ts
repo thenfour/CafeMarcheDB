@@ -31,9 +31,8 @@ export function useCrudViewCommands<
     TView,
     TTableClient extends xTableRenderClient<TView, any> ? ClientOf<TView> : TAnyModel
 > {
-    // Legacy read schemas can select a richer shape under a distinct tableID
-    // (for example xEventArgs_Verbose) while still describing the same
-    // persistence table and editor-value conversion contract.
+    // A query view may select a richer shape than its CRUD view while both
+    // still describe the same persistence table and editor-value contract.
     if (args.tableClient.schema.tableName !== args.view.entity.tableName) {
         throw new Error(
             `DB3 CRUD view '${args.view.viewID}' does not belong to table '${args.tableClient.schema.tableName}'.`,

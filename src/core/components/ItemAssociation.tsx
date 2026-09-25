@@ -188,7 +188,7 @@ export interface AssociationAutocompleteProps<TItemType extends QuickSearchItemT
 
 const getActivityIdentities = (value: QuickSearchItemMatch | null) => ({
     eventId: value?.itemType === QuickSearchItemType.event
-        ? db3.xEvent.getIdentity(value)
+        ? db3.xEvent.parseIdentity(value.id)
         : undefined,
     songId: value?.itemType === QuickSearchItemType.song
         ? db3.xSong.getIdentity(value)

@@ -9,9 +9,10 @@ import { CMSelectDisplayStyle, SelectionField } from "../select/SelectionField";
 import { CMSelectNullBehavior, makeLocalSelectionSource, withNullSelection } from "../select/selectionSource";
 import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from "../SettingMarkdown";
 import { SnackbarContext } from "../SnackbarContext";
+import type { EventPublicId } from "shared/publicId";
 
 interface EventAttendanceUserTagControlEvent {
-    id: number;
+    publicId: EventPublicId;
     createdByUserId: number | null;
     expectedAttendanceUserTag: db3.UserTagDisplay | null;
 }
@@ -29,7 +30,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
     const handleChange = (value: db3.UserTagDisplay | null | undefined) => {
         void recordFeature({ feature: ActivityFeature.event_change_invite_tag });
         mutationToken.invoke({
-            eventId: event.id,
+            eventId: event.publicId,
             expectedAttendanceUserTagId: value ? db3.xUserTag.getIdentity(value) : null,
         }).then(() => {
             showMessage({ severity: "success", children: "Successfully updated event attendance tag" });

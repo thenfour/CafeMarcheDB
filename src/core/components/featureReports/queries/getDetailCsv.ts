@@ -84,7 +84,7 @@ function flattenActivityRecord(row: any): Record<string, string> {
                     case 'events':
                         if (row.event) {
                             mockItem = {
-                                eventId: row.event.id,
+                                eventId: row.event.publicId,
                                 name: row.event.name,
                                 startsAt: row.event.startsAt,
                                 statusId: row.event.statusId,

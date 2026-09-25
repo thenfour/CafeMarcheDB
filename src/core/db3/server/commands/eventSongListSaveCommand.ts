@@ -137,7 +137,7 @@ async function saveEventSongList(
     context: DB3CommandExecutionContext,
 ): Promise<{ publicId: EventSongListPublicId }> {
     const { publicId, eventId, songs, dividers, ...parentValues } = dto;
-    await context.rowServices.requireVisible(xEvent, eventId);
+    const event = await context.rowServices.requireVisible(xEvent, eventId);
     for (const songId of new Set(songs.map(item => item.songId))) {
         await context.rowServices.requireVisible(xSong, songId);
     }
@@ -147,7 +147,7 @@ async function saveEventSongList(
         songList = await context.rowServices.insert(xEventSongList, { ...parentValues, eventId });
     } else {
         songList = await context.rowServices.requireVisible(xEventSongList, publicId);
-        if (songList.eventId !== eventId) {
+        if (songList.eventId !== event.id) {
             throw new DB3CommandError("EventSongList was not found in this event.");
         }
         await context.rowServices.update(xEventSongList, publicId, parentValues);

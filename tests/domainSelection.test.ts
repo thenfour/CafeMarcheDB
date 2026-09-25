@@ -47,12 +47,17 @@ const permissions = [
     { publicId: parsePublicId<"Permission">("PermissionHid001"), name: "Hidden", isVisibility: true },
     { publicId: parsePublicId<"Permission">("PermissionMng001"), name: "Manage events", isVisibility: false },
 ];
-const tags = [
-    { publicId: "UserTagPublic001", text: "Performers", color: "blue" },
-    { publicId: "UserTagPublic002", text: "Volunteers", color: "green" },
+const tags: db3.UserTagDisplay[] = [
+    { publicId: parsePublicId<"UserTag">("UserTagPublic001"), text: "Performers", description: "", color: null, significance: null, sortOrder: 1, cssClass: null },
+    { publicId: parsePublicId<"UserTag">("UserTagPublic002"), text: "Volunteers", description: "", color: null, significance: null, sortOrder: 2, cssClass: null },
 ];
 const users = [{ id: 1, name: "Alex Martin" }, { id: 2, name: "Sam Dupont" }, { id: 3, name: "Already invited" }];
-const event = { id: 10, createdByUserId: 4, expectedAttendanceUserTag: tags[0] } as any;
+const eventPublicId = parsePublicId<"Event">("EventPublic00010");
+const event: React.ComponentProps<typeof EventAttendanceUserTagControl>["event"] = {
+    publicId: eventPublicId,
+    createdByUserId: 4,
+    expectedAttendanceUserTag: tags[0]!,
+};
 const onChange = vi.fn();
 const mutate = vi.fn();
 const refetch = vi.fn();
@@ -163,12 +168,12 @@ describe("migrated domain pickers", () => {
         await click(button("Edit Expected attendance group"));
         await search("volun");
         await click(button("Volunteers"));
-        expect(mutate).toHaveBeenCalledWith({ eventId: 10, expectedAttendanceUserTagId: "UserTagPublic002" });
+        expect(mutate).toHaveBeenCalledWith({ eventId: eventPublicId, expectedAttendanceUserTagId: "UserTagPublic002" });
         expect(recordFeature).toHaveBeenCalledTimes(1);
         expect(refetch).toHaveBeenCalledTimes(1);
         await click(button("Edit Expected attendance group"));
         await click(button("No tags are invited"));
-        expect(mutate).toHaveBeenLastCalledWith({ eventId: 10, expectedAttendanceUserTagId: null });
+        expect(mutate).toHaveBeenLastCalledWith({ eventId: eventPublicId, expectedAttendanceUserTagId: null });
     });
 
     it("blocks attendance editing for read-only callers and denied column authorization", async () => {

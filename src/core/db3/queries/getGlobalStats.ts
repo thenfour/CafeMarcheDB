@@ -130,7 +130,7 @@ export default resolver.pipe(
             select
                 ps.id songId,
                 ps.name songName,
-                e.id eventId,
+                e.publicId eventId,
                 e.name eventName,
                 e.startsAt,
                 e.durationMillis,
@@ -150,7 +150,20 @@ export default resolver.pipe(
                 ps.id       
         `;
 
-            const popularSongsOccurrances: GetGlobalStatsRetPopularSongOccurrance[] = await db.$queryRaw(Prisma.raw(popularSongsQuery)) as any;
+            // Raw SQL exposes public-ID strings; parse each branded value at the boundary.
+            const rawPopularSongs = await db.$queryRaw(Prisma.raw(popularSongsQuery)) as Array<
+                Omit<GetGlobalStatsRetPopularSongOccurrance, "eventId" | "statusId" | "typeId"> & {
+                    eventId: string;
+                    statusId: string | null;
+                    typeId: string | null;
+                }
+            >;
+            const popularSongsOccurrances: GetGlobalStatsRetPopularSongOccurrance[] = rawPopularSongs.map(item => ({
+                ...item,
+                eventId: db3.xEvent.parseIdentity(item.eventId),
+                statusId: item.statusId ? db3.xEventStatus.parseIdentity(item.statusId) : null,
+                typeId: item.typeId ? db3.xEventType.parseIdentity(item.typeId) : null,
+            }));
 
             const eventsQuery = `
             -- list of events
@@ -169,7 +182,7 @@ export default resolver.pipe(
                 ${eventHavingClause}
             )
             select
-                e.id,
+                e.publicId,
                 e.name,
                 e.startsAt,
                 e.durationMillis,
@@ -184,7 +197,20 @@ export default resolver.pipe(
                 
         `;
 
-            const allEvents: GetGlobalStatsRetEvent[] = await db.$queryRaw(Prisma.raw(eventsQuery)) as any;
+            // Raw SQL exposes public-ID strings; parse each branded value at the boundary.
+            const rawEvents = await db.$queryRaw(Prisma.raw(eventsQuery)) as Array<
+                Omit<GetGlobalStatsRetEvent, "publicId" | "statusId" | "typeId"> & {
+                    publicId: string;
+                    statusId: string | null;
+                    typeId: string | null;
+                }
+            >;
+            const allEvents: GetGlobalStatsRetEvent[] = rawEvents.map(event => ({
+                ...event,
+                publicId: db3.xEvent.parseIdentity(event.publicId),
+                statusId: event.statusId ? db3.xEventStatus.parseIdentity(event.statusId) : null,
+                typeId: event.typeId ? db3.xEventType.parseIdentity(event.typeId) : null,
+            }));
             const isSysadmin = authorization.effectivePermissions.includesName(Permission.sysadmin);
 
             return {
