@@ -161,13 +161,6 @@ export const songCreditUserView = defineView({
     viewID: "SongCredit_UserCredits",
     entity: xSongCredit,
     selection: songCreditUserContract.prismaSelection,
-    where: async ({ authorization }) => ({
-        song: await xSong.CalculateWhereClause({
-            publicData: authorization,
-            includeDeleted: false,
-            filterModel: {},
-        }),
-    }),
     dtoSchema: songCreditUserContract.dtoSchema,
     hydrate: songCreditUserContract.hydrate,
 });

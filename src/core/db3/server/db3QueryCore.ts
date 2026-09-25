@@ -58,12 +58,12 @@ async function prepareTableQuery(
         ...input.filter,
         tableParams: resolvedTableParams,
     };
-    const tableWhere = await table.CalculateWhereClause({
+    const tableWhere = table.CalculateWhereClause({
         publicData,
         includeDeleted,
         filterModel: resolvedFilter,
     });
-    const viewWhere = await view?.getWhereClause({
+    const viewWhere = view?.getWhereClause({
         filter: resolvedFilter,
         authorization: publicData,
     });

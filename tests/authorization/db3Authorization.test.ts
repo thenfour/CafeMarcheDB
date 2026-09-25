@@ -74,7 +74,7 @@ describe("explicit DB3 authorization", () => {
     })
     const resolved = await loadUserAuthorization(actor as any)
     const authorization = db3.createDB3Authorization(resolved.user, resolved.effectivePermissions)
-    const where = await db3.permissionVisibilityView.getWhereClause({
+    const where = db3.permissionVisibilityView.getWhereClause({
       authorization,
       filter: { items: [] },
     })
@@ -166,7 +166,7 @@ describe("explicit DB3 authorization", () => {
     expect(authorizationTestDb.snapshot("song")[0]!.description).toBe("dedicated")
   })
 
-  it.each([db3.xEventVerbose, db3.xEventSongList, db3.xEventSongListSong])(
+  it.each([db3.xEventVerbose, db3.xEventSongList, db3.xEventSongListSong, db3.xSongCredit])(
     "enforces song visibility through $tableID at the query boundary", async table => {
       const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
       const authorization = await loadUserAuthorization(actor as any)

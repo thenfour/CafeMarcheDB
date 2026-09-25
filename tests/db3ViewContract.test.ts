@@ -1271,11 +1271,12 @@ describe("Event frontpage derived-view migration", () => {
 })
 
 describe("DB3 normalized foreign-single hydration", () => {
-  const statusReferences = db3.defineReferenceContract({
-    eventStatus: db3.reference(db3.xEventStatus)<{
-      caption: string
-      render: () => string
-    }>(),
+    const statusReferences = db3.defineReferenceContract({
+      eventStatus: db3.reference(db3.xEventStatus)<{
+        publicId: EventStatusPublicId
+        caption: string
+        render: () => string
+      }>(),
   })
 
   it("declares and resolves a selected foreign key while retaining its transport member", () => {
@@ -1286,11 +1287,12 @@ describe("DB3 normalized foreign-single hydration", () => {
       references: statusReferences,
     })
     const statusReference = {
+      publicId: eventStatusPublicId,
       caption: "Confirmed",
       render: () => "rendered status",
     }
     const references = new db3.DB3ReferenceStore(statusReferences)
-    references.register(db3.xEventStatus, [statusReference], () => eventStatusPublicId)
+    references.register(db3.xEventStatus, [statusReference])
     const view = db3.defineView({
       viewID: "Test_OpaqueEventStatusReference",
       entity: db3.xEvent,
@@ -1358,7 +1360,7 @@ describe("DB3 normalized foreign-single hydration", () => {
       references: statusReferences,
     })
     const references = new db3.DB3ReferenceStore(statusReferences)
-    references.register(db3.xEventStatus, [], () => eventStatusPublicId)
+    references.register(db3.xEventStatus, [])
 
     expect(() => derived.hydrate({
       statusId: eventStatusPublicId,
@@ -1386,6 +1388,7 @@ describe("DB3 normalized foreign-single hydration", () => {
     })
     const groupReferences = db3.defineReferenceContract({
       functionalGroup: db3.reference(db3.xInstrumentFunctionalGroup)<{
+        publicId: InstrumentFunctionalGroupPublicId
         displayName: string
       }>(),
     })
@@ -1393,9 +1396,9 @@ describe("DB3 normalized foreign-single hydration", () => {
       references: groupReferences,
     })
     const publicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01")
-    const group = { displayName: "Brass" }
+    const group = { publicId, displayName: "Brass" }
     const references = new db3.DB3ReferenceStore(groupReferences)
-    references.register(db3.xInstrumentFunctionalGroup, [group], () => publicId)
+    references.register(db3.xInstrumentFunctionalGroup, [group])
 
     expectTypeOf<Parameters<typeof derived.hydrate>[0]>().toEqualTypeOf<{
       functionalGroupId: InstrumentFunctionalGroupPublicId
@@ -1424,14 +1427,17 @@ describe("DB3 normalized foreign-single hydration", () => {
       },
     })
     const tagReferences = db3.defineReferenceContract({
-      eventTag: db3.reference(db3.xEventTag)<{ caption: string }>(),
+      eventTag: db3.reference(db3.xEventTag)<{
+        publicId: EventTagPublicId
+        caption: string
+      }>(),
     })
     const derived = db3.deriveViewContract(db3.xEvent, selection, {
       references: tagReferences,
     })
-    const tag = { caption: "Festival" }
+    const tag = { publicId: eventTagPublicId, caption: "Festival" }
     const references = new db3.DB3ReferenceStore(tagReferences)
-    references.register(db3.xEventTag, [tag], () => eventTagPublicId)
+    references.register(db3.xEventTag, [tag])
 
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
       tags: Array<{
@@ -1529,13 +1535,19 @@ describe("DB3 derived embedded-relation hydration", () => {
       },
     })
     const contract = db3.defineReferenceContract({
-      eventStatus: db3.reference(db3.xEventStatus)<{ caption: string }>(),
+      eventStatus: db3.reference(db3.xEventStatus)<{
+        publicId: EventStatusPublicId
+        caption: string
+      }>(),
     })
     const derived = db3.deriveViewContract(db3.xEvent, selection, {
       references: contract,
     })
     const references = new db3.DB3ReferenceStore(contract)
-    references.register(db3.xEventStatus, [{ caption: "Confirmed" }], () => eventStatusPublicId)
+    references.register(db3.xEventStatus, [{
+      publicId: eventStatusPublicId,
+      caption: "Confirmed",
+    }])
     const getReference = vi.spyOn(references, "get")
     const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
 

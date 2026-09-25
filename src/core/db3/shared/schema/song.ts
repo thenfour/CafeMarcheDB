@@ -432,6 +432,7 @@ export const xSongCredit = db3.defineTable({
 
         song: foreignRef(() => xSong, {
             fkidMember: "songId",
+            requireVisibleTarget: true,
             authMap: xSongAuthMap_R_EManagers,
         }),
         type: foreignRef(() => xSongCreditType, {

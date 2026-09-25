@@ -30,7 +30,7 @@ export async function resolvePublicIds(
     const uniquePublicIds = [...new Set(publicIds.filter(isPublicId))];
     if (uniquePublicIds.length === 0) return [];
 
-    const where = await table.CalculateWhereClause({
+    const where = table.CalculateWhereClause({
         filterModel: { publicIds: uniquePublicIds },
         publicData,
         includeDeleted,

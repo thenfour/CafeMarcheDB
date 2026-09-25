@@ -191,8 +191,9 @@ describe("DB3 named views", () => {
                 { tag: { sortOrder: "asc" } },
                 { tag: { text: "asc" } },
             ]);
-        await expect(db3.eventTypeEditorView.getWhereClause(context)).resolves.toBeUndefined();
-        await expect(db3.permissionVisibilityView.getWhereClause(context)).resolves.toEqual({
+        expect(db3.eventTypeEditorView.getWhereClause(context)).toBeUndefined();
+        expect(db3.songCreditUserView.getWhereClause(context)).toBeUndefined();
+        expect(db3.permissionVisibilityView.getWhereClause(context)).toEqual({
             isVisibility: { equals: true },
             id: { in: [] },
         });
@@ -229,7 +230,7 @@ describe("DB3 named views", () => {
             viewID: "Test_EventNestedWhere",
             entity: db3.xEvent,
             selection,
-            where: async ({ authorization }) => ({
+            where: ({ authorization }) => ({
                 createdByUserId: authorization.userId,
             }),
             dtoSchema: z.object({
@@ -272,7 +273,7 @@ describe("DB3 named views", () => {
         expectTypeOf(view.getWhereClause({
             filter: { items: [] },
             authorization: db3.createDB3Authorization({ id: 42 }, effectivePermissions),
-        })).toEqualTypeOf<Promise<Prisma.EventWhereInput | undefined>>();
+        })).toEqualTypeOf<Prisma.EventWhereInput | undefined>();
     });
 
     it("validates view ownership as part of the query contract", () => {

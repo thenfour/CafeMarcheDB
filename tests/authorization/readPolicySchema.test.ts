@@ -85,8 +85,8 @@ describe("schema-wide DB3 read-policy contracts", () => {
 
   it.each(softDeleteTables.map(table => [table.tableID, table] as const))(
     "%s excludes deleted rows for an ordinary query",
-    async (_tableId, table) => {
-      const where = await table.CalculateWhereClause({
+    (_tableId, table) => {
+      const where = table.CalculateWhereClause({
         filterModel: emptyFilter,
         publicData: actorPublicData,
       })
@@ -99,8 +99,8 @@ describe("schema-wide DB3 read-policy contracts", () => {
 
   it.each(visibilityTables.map(table => [table.tableID, table] as const))(
     "%s enforces granted, denied, private-owner, and private-non-owner visibility",
-    async (_tableId, table) => {
-      const where = await table.CalculateWhereClause({
+    (_tableId, table) => {
+      const where = table.CalculateWhereClause({
         filterModel: emptyFilter,
         publicData: actorPublicData,
       })
@@ -125,8 +125,8 @@ describe("schema-wide DB3 read-policy contracts", () => {
 
   it.each(visibilityTables.map(table => [table.tableID, table] as const))(
     "%s keeps private ownership inside an independent primary-key scope",
-    async (_tableId, table) => {
-      const where = await table.CalculateWhereClause({
+    (_tableId, table) => {
+      const where = table.CalculateWhereClause({
         filterModel: { ...emptyFilter, pks: [1] },
         publicData: actorPublicData,
       })
@@ -142,7 +142,7 @@ describe("schema-wide DB3 read-policy contracts", () => {
     },
   )
 
-  it("uses only the public role's visibility permissions for anonymous queries", async () => {
+  it("uses only the public role's visibility permissions for anonymous queries", () => {
     const publicVisibilityId = 7_001
     authorizationTestDb.reset({
       role: [{
@@ -159,7 +159,7 @@ describe("schema-wide DB3 read-policy contracts", () => {
     ) }
 
     for (const table of visibilityTables) {
-      const where = await table.CalculateWhereClause({
+      const where = table.CalculateWhereClause({
         filterModel: emptyFilter,
         publicData,
       })
@@ -179,14 +179,14 @@ describe("schema-wide DB3 read-policy contracts", () => {
 
   it.each(policyTables.map(table => [table.tableID, table] as const))(
     "%s applies row policies to Sysadmins and requires explicit deleted-row access",
-    async (_tableId, table) => {
+    (_tableId, table) => {
       const sysadmin = createAuthorizationTestUser("sysadmin", { id: 601 })
       const publicData = createAuthorizationSchemaData(sysadmin)
-      const restrictedWhere = await table.CalculateWhereClause({
+      const restrictedWhere = table.CalculateWhereClause({
         filterModel: emptyFilter,
         publicData,
       })
-      const recoveryWhere = await table.CalculateWhereClause({
+      const recoveryWhere = table.CalculateWhereClause({
         filterModel: emptyFilter,
         publicData,
         includeDeleted: true,

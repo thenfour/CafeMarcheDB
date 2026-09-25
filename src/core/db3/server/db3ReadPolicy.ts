@@ -38,7 +38,7 @@ export async function GetAuthorizedTableReadWhere({
 
     if (!table.authorizeTableForView(publicData) || !table.authorizeIncludeDeleted(publicData, includeDeleted)) throw new AuthorizationError();
 
-    const policyWhere = await table.CalculateWhereClause({
+    const policyWhere = table.CalculateWhereClause({
         publicData,
         includeDeleted,
         filterModel: emptyFilter,

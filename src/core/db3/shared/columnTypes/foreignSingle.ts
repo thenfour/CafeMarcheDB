@@ -194,9 +194,9 @@ export class ForeignSingleField<
 
     getOverallWhereClause = (): TAnyModel | boolean => false;
 
-    getRowVisibilityWhereClause = async (publicData: DB3Authorization, includeDeleted: boolean): Promise<TAnyModel | undefined> => {
+    getRowVisibilityWhereClause = (publicData: DB3Authorization, includeDeleted: boolean): TAnyModel | undefined => {
         if (!this.requireVisibleTarget) return undefined;
-        const where = await this.getForeignTableSchema().CalculateWhereClause({
+        const where = this.getForeignTableSchema().CalculateWhereClause({
             publicData, includeDeleted, filterModel: { items: [] },
         });
         return { [this.member]: { is: where || {} } };

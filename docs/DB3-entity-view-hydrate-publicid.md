@@ -1185,15 +1185,15 @@ The current pressure-led sequence is:
    identity and a public `typeId`, while its Song and User endpoints remain in
    their deliberate natural-ID domains until those central entities migrate.
 
-   This slice exposed authorization as a view-composition concern. The named
-   user-credit view needs Song visibility policy even though its root entity is
-   `SongCredit`; view predicates can therefore be asynchronous and compose the
-   related xTable policy, while `queryView()` remains the only caller-facing
-   query path. The generic xTable where-clause contract was also corrected to
-   stop leaking an Event-specific Prisma type. Song views select and project
-   credit identity recursively, normalize credit types through the dashboard
-   reference contract, and leave identity extraction to xTable rather than to
-   React components.
+   This slice confirmed that related-row visibility is an entity relationship
+   invariant rather than a view-specific query concern. `SongCredit.song` uses
+   xTable's visible-target contract, so every SongCredit query inherits Song
+   policy without duplicating it in the named user-credit view. Where-clause
+   construction remains synchronous and side-effect-free; asynchronous
+   authorization loading stays at the server query boundary. Song views select
+   and project credit identity recursively, normalize credit types through the
+   dashboard reference contract, and leave identity extraction to xTable
+   rather than to React components.
 8. **Next pressure audit:** migrate `UserInstrument` without converting `User`.
    `Instrument` is already public, but the association is mutable through its
    `isPrimary` state, participates in a bespoke transactional primary-selection
@@ -1334,8 +1334,8 @@ conversions.
   - [x] Exercise a partially migrated association whose owner remains natural
     while its target and association row are public (`UserTagAssignment`).
   - [x] Exercise a rich association with public row identity, a public lookup
-    target, natural central-domain endpoints, and authorization composed from a
-    related entity through an asynchronous named-view predicate (`SongCredit`).
+    target, natural central-domain endpoints, and authorization inherited from
+    a visible target relationship (`SongCredit`).
 
 ### Deferred DB3 enhancements
 

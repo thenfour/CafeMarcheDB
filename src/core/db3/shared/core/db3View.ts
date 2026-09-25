@@ -53,7 +53,7 @@ export interface DB3View<
     readonly getSelectionArgs: (context: DB3ViewSelectionContext) => TSelection;
     readonly getWhereClause: (
         context: DB3ViewSelectionContext,
-    ) => Promise<DB3ViewWhere<TEntity> | undefined>;
+    ) => DB3ViewWhere<TEntity> | undefined;
     readonly hydrate: (
         dto: z.infer<TDtoSchema>,
         references: DB3ReferenceProvider<TReferences>,
@@ -107,7 +107,7 @@ type DB3ViewSelectionInput<
 
 type DB3ViewWhereFactory<TEntity extends AnyDB3Table> = (
     context: DB3ViewSelectionContext,
-) => DB3ViewWhere<TEntity> | Promise<DB3ViewWhere<TEntity>>;
+) => DB3ViewWhere<TEntity>;
 
 type DB3ViewWhereInput<TEntity extends AnyDB3Table> =
     | DB3ViewWhere<TEntity>
@@ -172,10 +172,10 @@ export function defineView<
             : typeof args.selection === "function"
                 ? args.selection as (context: DB3ViewSelectionContext) => TSelection
                 : () => args.selection as TSelection,
-        getWhereClause: async context => {
+        getWhereClause: context => {
             if (args.where === undefined) return undefined;
             return isDB3ViewWhereFactory(args.where)
-                ? await args.where(context)
+                ? args.where(context)
                 : args.where;
         },
         hydrate: args.hydrate,

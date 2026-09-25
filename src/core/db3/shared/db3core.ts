@@ -677,7 +677,7 @@ export abstract class FieldBase<
     abstract ApplyIncludeFiltering: (include: TAnyModel, publicData: DB3Authorization, includeDeleted: boolean) => void | Promise<void>;
 
     // Relations may require their target to be readable for this row to appear.
-    getRowVisibilityWhereClause = async (publicData: DB3Authorization, includeDeleted: boolean): Promise<TAnyModel | undefined> => undefined;
+    getRowVisibilityWhereClause = (_publicData: DB3Authorization, _includeDeleted: boolean): TAnyModel | undefined => undefined;
 };
 
 export interface SortModel {
@@ -1685,7 +1685,7 @@ export class xTable<
         await Promise.all(this.columns.map(col => col.ApplyIncludeFiltering(include, publicData, includeDeleted)));
     };
 
-    CalculateWhereClause = async ({ filterModel, publicData, includeDeleted = false }: CalculateWhereClauseArgs) => {
+    CalculateWhereClause = ({ filterModel, publicData, includeDeleted = false }: CalculateWhereClauseArgs) => {
         const and: Prisma.EventWhereInput[] = []; // using EventWhereInput because it's a good example shape for autocomplete. true type is really a generic "*WhereInput"
 
         const rowAuthorizationWhere = this.getRowAuthorizationWhereClause(publicData);
@@ -1765,7 +1765,7 @@ export class xTable<
         const overallWhere = this.GetOverallWhereClauseExpression();
         and.push(...overallWhere);
         for (const field of this.columns) {
-            const relationWhere = await field.getRowVisibilityWhereClause(publicData, includeDeleted);
+            const relationWhere = field.getRowVisibilityWhereClause(publicData, includeDeleted);
             if (relationWhere) and.push(relationWhere);
         }
 
@@ -2016,7 +2016,7 @@ export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, member
         member = {};
     }
 
-    const where = await foreignTable.CalculateWhereClause({
+    const where = foreignTable.CalculateWhereClause({
         publicData,
         includeDeleted,
         filterModel: { // clobber the filter; we don't propagate any filter values through relations for this.
