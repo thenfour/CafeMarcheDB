@@ -205,20 +205,26 @@ export type QueryViewResult<TView extends db3.AnyDB3View> = Omit<
     Awaited<ReturnType<typeof queryTable>>,
     "items"
 > & {
+    readonly items: db3.DtoOf<TView>[];
+};
+
+export type QueryHydratedViewResult<TView extends db3.AnyDB3View> = Omit<
+    QueryViewResult<TView>,
+    "items"
+> & {
     readonly items: db3.ClientOf<TView>[];
 };
 
-// wrapper that does authorization + hydration
-export function authorizeAndHydrateViewModel<
+/** Authorizes a single selected row and produces its transport DTO. */
+export function authorizeAndProjectViewDto<
     TView extends db3.AnyDB3View,
     TModel extends db3.DbPayloadOf<TView>,
 >(
     view: TView,
     model: TModel,
     publicData: db3.DB3Authorization,
-    references: db3.DB3ReferenceProvider<db3.ReferenceContractOf<TView>>,
     contextDesc: string,
-): db3.ClientOf<TView> | null {
+): db3.DtoOf<TView> | null {
     const projected = authorizeAndProjectDB3ViewModel(
         view.entity,
         model,
@@ -226,17 +232,28 @@ export function authorizeAndHydrateViewModel<
         contextDesc,
     );
     if (!projected) return null;
-    return db3.hydrateView(view, view.parseDto(projected), references);
+    return view.parseDto(projected);
 }
 
-/**
- * Server-side named-view query. The view owns selection, authorization-safe DTO
- * validation, and hydration, so callers receive its consumer type directly.
- */
+/** Explicit hydration for server consumers, not RPC return values. */
+export function authorizeAndHydrateViewModel<
+    TView extends db3.AnyDB3View,
+    TModel extends db3.DbPayloadOf<TView>,
+>(
+    view: TView,
+    model: TModel,
+    publicData: db3.DB3Authorization,
+    references: db3.DB3ReferenceProvider<db3.ReferenceContractOf<NoInfer<TView>>>,
+    contextDesc: string,
+): db3.ClientOf<TView> | null {
+    const dto = authorizeAndProjectViewDto(view, model, publicData, contextDesc);
+    return dto === null ? null : db3.hydrateView(view, dto, references);
+}
+
+/** Named-view query returning authorized, validated transport DTOs. */
 export async function queryView<TView extends db3.AnyDB3View>(
     input: QueryViewInput<TView>,
     authorization: RequestAuthorization,
-    references: db3.DB3ReferenceProvider<db3.ReferenceContractOf<TView>>,
     database: TransactionalPrismaClient = db,
     executionOptions: QueryTableExecutionOptions = {},
 ): Promise<QueryViewResult<TView>> {
@@ -259,7 +276,22 @@ export async function queryView<TView extends db3.AnyDB3View>(
     const dtos = result.items as db3.DtoOf<TView>[];
     return {
         ...result,
-        items: dtos.map(dto => db3.hydrateView(view, dto, references)),
+        items: dtos,
+    };
+}
+
+/** Query and hydrate when a server consumer needs the view's client shape. */
+export async function queryHydratedView<TView extends db3.AnyDB3View>(
+    input: QueryViewInput<TView>,
+    authorization: RequestAuthorization,
+    references: db3.DB3ReferenceProvider<db3.ReferenceContractOf<NoInfer<TView>>>,
+    database: TransactionalPrismaClient = db,
+    executionOptions: QueryTableExecutionOptions = {},
+): Promise<QueryHydratedViewResult<TView>> {
+    const result = await queryView(input, authorization, database, executionOptions);
+    return {
+        ...result,
+        items: result.items.map(dto => db3.hydrateView(input.view, dto, references)),
     };
 }
 

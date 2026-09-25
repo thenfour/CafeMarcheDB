@@ -6,8 +6,10 @@ import * as db3 from "@db3/db3";
 import { authorizeAndProjectDB3ViewModel } from "@db3/server/db3PublicIds";
 import {
     authorizeAndHydrateViewModel,
+    authorizeAndProjectViewDto,
     queryTable,
     queryView,
+    queryHydratedView,
 } from "@db3/server/db3QueryCore";
 import { validateDB3QueryRequest } from "@db3/server/db3RequestValidation";
 import { PermissionSet } from "src/auth/shared/PermissionSet";
@@ -65,7 +67,7 @@ const tag = {
 };
 
 describe("DB3 named views", () => {
-    it("queries a dashboard view through authorization, DTO parsing, and hydration", async () => {
+    it("returns DTOs by default and hydrates only when explicitly requested", async () => {
         const row = {
             id: 7,
             publicId: attendancePublicId(7),
@@ -82,9 +84,9 @@ describe("DB3 named views", () => {
             isActive: true,
         };
         const findMany = vi.fn(async () => [row]);
-        // queryView accepts the full Prisma client contract; this focused test double
+        // queryHydratedView accepts the full Prisma client contract; this focused test double
         // deliberately implements only the delegate exercised by this view.
-        const database = { EventAttendance: { findMany } } as unknown as Parameters<typeof queryView>[3];
+        const database = { EventAttendance: { findMany } } as unknown as Parameters<typeof queryHydratedView>[3];
         const references = db3.createDashboardReferenceStore();
         const effectivePermissions = new PermissionSet([
             { id: 1, name: Permission.always_grant },
@@ -92,15 +94,26 @@ describe("DB3 named views", () => {
             { id: 3, name: Permission.view_events_nonpublic },
         ]);
 
-        const result = await queryView({
+        const input = {
             view: db3.eventAttendanceDashboardView,
             filter: { items: [] },
             cmdbQueryContext: "dashboard-view-query-test",
             orderBy: undefined,
-        }, {
+        };
+        const authorization = {
             user: null,
             effectivePermissions,
-        }, references, database);
+        };
+        const hydrate = vi.spyOn(input.view, "hydrate");
+        const dtoResult = await queryView(input, authorization, database);
+        expect(dtoResult.items).toEqual([{ ...row, id: undefined }]);
+        expect(dtoResult.items[0]).not.toHaveProperty("id");
+        expectTypeOf(dtoResult.items).toEqualTypeOf<db3.DtoOf<typeof input.view>[]>();
+        expect(hydrate).not.toHaveBeenCalled();
+
+        const result = await queryHydratedView(input, authorization, references, database);
+        expect(hydrate).toHaveBeenCalledOnce();
+        hydrate.mockRestore();
 
         expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
             select: expect.objectContaining({
@@ -135,11 +148,11 @@ describe("DB3 named views", () => {
             pastPersonalText: "I attended",
             isActive: true,
         }]);
-        // queryView accepts the full Prisma client contract; this focused test double
+        // queryHydratedView accepts the full Prisma client contract; this focused test double
         // deliberately implements only the delegate exercised by this view.
-        const database = { EventAttendance: { findMany } } as unknown as Parameters<typeof queryView>[3];
+        const database = { EventAttendance: { findMany } } as unknown as Parameters<typeof queryHydratedView>[3];
 
-        const result = await queryView({
+        const result = await queryHydratedView({
             view: db3.eventAttendanceDashboardView,
             filter: { items: [] },
             cmdbQueryContext: "dashboard-view-authorization-test",
@@ -367,6 +380,16 @@ describe("DB3 named views", () => {
             { id: 2, name: Permission.login },
             { id: 3, name: Permission.sysadmin },
         ]);
+        const dto = authorizeAndProjectViewDto(
+            db3.instrumentFunctionalGroupListView,
+            { id: 54, ...group },
+            db3.createDB3Authorization({ id: 100 }, effectivePermissions),
+            "db3-single-view-dto-test",
+        );
+        expect(dto).toEqual(group);
+        expect(dto).not.toHaveProperty("id");
+        expectTypeOf(dto).toEqualTypeOf<db3.DtoOf<typeof db3.instrumentFunctionalGroupListView> | null>();
+
         const result = authorizeAndHydrateViewModel(
             db3.instrumentFunctionalGroupListView,
             { id: 54, ...group },
@@ -1241,7 +1264,7 @@ describe("DB3 named views", () => {
             // This focused authorization fixture only needs the actor identity.
             user: { id: 42 } as any,
             effectivePermissions,
-        }, new db3.DB3ReferenceStore(), {
+        }, {
             Event: { findMany },
         } as any); // The focused database double deliberately implements only the queried Event delegate.
 
@@ -1276,7 +1299,7 @@ describe("DB3 named views", () => {
                 status: { select: { publicId: true, isDeleted: true } },
             }),
         }));
-        expectTypeOf(result.items).toEqualTypeOf<db3.EventWikiPageContextClient[]>();
+        expectTypeOf(result.items).toEqualTypeOf<db3.EventWikiPageContextDto[]>();
     });
 
     it("projects the Song search DTO through nested field authorization", async () => {

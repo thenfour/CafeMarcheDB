@@ -258,9 +258,24 @@ The view is also the source of result-type inference:
 Consumers should not need assertions such as
 `songsClient.items as SomePrismaPayload[]`. A cast at that boundary is a sign
 that the view, DTO schema, hydration type, or query API is not expressing its
-contract completely. Named-view query execution validates and hydrates results
-automatically; ordinary consumers should not remember to call `enrich*` or a
-hydrator manually.
+contract completely. The client hook hydrates automatically; ordinary consumers
+should not remember to call `enrich*` or a hydrator manually.
+
+On the server, `queryView({ view, ... }, authorization)` returns validated
+`DtoOf<typeof view>[]` items and needs no reference provider. RPCs and serialized
+SSR props use this DTO boundary. A server consumer that needs rich values (for
+example iCalendar generation) explicitly opts into
+`queryHydratedView(..., references)`, which wraps the same query and returns
+`ClientOf<typeof view>[]`. Do not return those hydrated objects through a DB3
+transport. Single-row mutation results use `authorizeAndProjectViewDto()`;
+`authorizeAndHydrateViewModel()` is the explicit server-consumer wrapper.
+
+`getDashboardData` returns `DashboardDataDto`: color names remain strings and
+normalized foreign references remain IDs. After receipt, `hydrateDashboardData`
+hydrates and registers leaf collections, then instruments and menu links. It
+owns the dependency order and complete-option filtering outside React, and
+creates a fresh reference store for every snapshot so removed entries cannot
+survive a refresh. The reference store always holds hydrated values, never DTOs.
 
 The former Song filter path's `xSong_Verbose` table variant and
 `SongPayload_Verbose` alias have been removed. It now queries canonical `xSong`
@@ -985,9 +1000,8 @@ a per-row compatibility flag or a second lookup mode.
   serializer.
 - Legacy queries without a named view still use `xTable.getClientModel()` and the
   generic public-ID projector.
-- Some server-owned dashboard loaders query Prisma directly, then explicitly
-  project and validate named DTOs. The desired endpoint is for view execution to
-  own this consistently.
+- Dashboard reference loaders now use `queryView` consistently and return DTOs.
+  Their hydration and reference registration run at the consumer boundary.
 - Legacy `enrich*` helpers and asserted Prisma payload aliases remain and should
   disappear as their consumers move to named views.
 - Association-matrix assumptions, generic sorting/reordering, and raw-SQL/search
@@ -1236,7 +1250,7 @@ The current pressure-led sequence is:
    resolved through public-keyed caches, while old numeric audit values are
    rendered only as opaque fallback text. The Wiki EventDescription context is
    now a dedicated named Event view queried through `queryView()`; it uses the
-   standard authorization, recursive projection, DTO validation, and hydration
+   standard authorization, recursive projection, and DTO validation
    path instead of a raw Prisma query and a caller-owned projection helper.
 6. **Completed:** migrate `UserTag` and `UserTagAssignment` together. User-tag
    administration, user associations, dashboard references, user-search facets,
@@ -1323,8 +1337,8 @@ The current pressure-led sequence is:
     must execute that compiled selection; dynamic Event search layers its
     actor-specific predicates over the compiled selection instead of bypassing
     projection support. Mutation-specific RPCs can use
-    `authorizeAndHydrateViewModel()` to apply the same authorization,
-    projection, DTO validation, and hydration path to a single returned row.
+    `authorizeAndProjectViewDto()` to apply the same authorization,
+    projection, and DTO validation path to a single returned row.
     Wiki page locking is the first consumer, eliminating another handwritten
     public-ID projection path.
 

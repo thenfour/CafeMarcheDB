@@ -18,7 +18,7 @@ vi.mock("src/core/db3/shared/db3Authorization", () => ({
     createDB3Authorization: () => ({}),
 }));
 vi.mock("src/core/db3/server/db3QueryCore", () => ({
-    authorizeAndHydrateViewModel: (_view: unknown, row: unknown) => row,
+    authorizeAndProjectViewDto: (_view: unknown, row: unknown) => row,
 }));
 vi.mock("src/core/db3/shared/db3Helpers", () => ({ GetDefaultVisibilityPermission: async () => ({ id: 1 }) }));
 vi.mock("shared/activityLog", () => ({ ChangeAction: { insert: "insert" }, CreateChangeContext: vi.fn(), RegisterChange: vi.fn() }));

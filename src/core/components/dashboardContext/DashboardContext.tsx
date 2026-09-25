@@ -226,7 +226,8 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         };
     }, [sess.permissionNames, setShowingAdminControlsMutation]);
 
-    const [dashboardData, { refetch }] = useQuery(getDashboardData, { userId: currentUser?.id ?? null });
+    const [dashboardDto, { refetch }] = useQuery(getDashboardData, { userId: currentUser?.id ?? null });
+    const dashboardData = React.useMemo(() => db3.hydrateDashboardData(dashboardDto), [dashboardDto]);
     valueRef.current.refetchDashboardData = refetch;
     valueRef.current.permission = new TableAccessor(dashboardData.permission);
 
@@ -268,20 +269,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         dashboardData.instrumentTag,
         tag => tag.publicId,
     );
-    db3.registerDashboardReferences(valueRef.current.referenceStore, {
-        permission: dashboardData.permission,
-        wikiPageTag: dashboardData.wikiPageTag,
-        eventType: dashboardData.eventType,
-        eventStatus: dashboardData.eventStatus,
-        eventTag: dashboardData.eventTag,
-        eventAttendance: dashboardData.eventAttendance,
-        fileTag: dashboardData.fileTag,
-        instrumentFunctionalGroup: dashboardData.instrumentFunctionalGroup,
-        instrumentTag: dashboardData.instrumentTag,
-        songTag: dashboardData.songTag,
-        songCreditType: dashboardData.songCreditType,
-        instrument: dashboardData.instrument,
-    });
+    valueRef.current.referenceStore = dashboardData.referenceStore;
     valueRef.current.instrumentFunctionalGroup = new TableAccessor(
         dashboardData.instrumentFunctionalGroup,
         group => group.publicId,

@@ -1,6 +1,5 @@
 import { isPublicId } from "shared/publicId";
 import type { RequestAuthorization } from "src/auth/server/requestAuthorization";
-import { DB3ReferenceStore } from "../../db3/shared/core/db3Hydration";
 import { eventWikiPageContextView } from "../../db3/shared/entities/event/eventViews";
 import { queryView } from "../../db3/server/db3QueryCore";
 import type { TransactionalPrismaClient } from "../../db3/shared/apiTypes";
@@ -32,7 +31,7 @@ export const ProcessEventDescriptionForWikiPage = async (
         orderBy: undefined,
         take: 1,
         cmdbQueryContext: "wiki/EventDescription",
-    }, authorization, new DB3ReferenceStore(), database);
+    }, authorization, database);
     const eventContext = result.items[0];
     if (!eventContext) throw new Error(`Event ${eventId} was not found.`);
 

@@ -7,7 +7,7 @@ import { Permission } from "shared/permissions";
 import { DateSortPredicateAsc, DateSortPredicateDesc } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
-import { queryTable, queryView } from "../server/db3QueryCore";
+import { queryView } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter } from "../shared/apiTypes";
 import { SplitQuickFilter } from "shared/quickFilter";
@@ -278,22 +278,16 @@ export default resolver.pipe(
                     eventIds: eventIds.map(e => e.EventId), // prevent fetching the entire table!
                 };
 
-                const queryResult = await queryTable({
+                const queryResult = await queryView({
                     cmdbQueryContext: "getEventFilterInfo",
-                    table: {
-                        tableID: db3.xEvent.tableID,
-                        tableName: db3.xEvent.tableName,
-                        viewID: db3.eventSearchView.viewID,
-                    },
+                    view: db3.eventSearchView,
                     filter: {
                         tableParams,
                     },
                     orderBy: undefined,
                 }, authorization);
 
-                // queryTable's legacy return type is intentionally untyped; the
-                // named view validates every item against this DTO contract.
-                fullEvents = queryResult.items as db3.EventSearchDto[];
+                fullEvents = queryResult.items;
 
                 switch (args.filterSpec.orderBy) {
                     default:
@@ -312,7 +306,7 @@ export default resolver.pipe(
                 expectedAttendanceUserTagIds.add(e.expectedAttendanceUserTagId);
             });
 
-            let userTags: db3.ClientOf<typeof db3.userTagEventSearchView>[] = [];
+            let userTags: db3.DtoOf<typeof db3.userTagEventSearchView>[] = [];
 
             if (expectedAttendanceUserTagIds.size) {
                 const tableParams: db3.UserTagTableParams = {
@@ -326,7 +320,7 @@ export default resolver.pipe(
                         tableParams,
                     },
                     orderBy: undefined,
-                }, authorization, new db3.DB3ReferenceStore());
+                }, authorization);
 
                 userTags = queryResult.items;
             }

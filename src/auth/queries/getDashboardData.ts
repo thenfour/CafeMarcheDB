@@ -9,9 +9,8 @@ import { Stopwatch } from "shared/rootroot";
 import { getClientServerState } from "shared/serverStateBase";
 import {
     type AnyDB3View,
-    type ClientOf,
-    createDashboardReferenceStore,
-    type DB3ReferenceProvider,
+    type DashboardDataDto,
+    type DtoOf,
     eventAttendanceDashboardView,
     EventStatusSignificance,
     eventStatusDashboardView,
@@ -21,13 +20,8 @@ import {
     instrumentDashboardView,
     instrumentFunctionalGroupDashboardView,
     instrumentTagDashboardView,
-    isCompleteEventAttendanceDashboardClient,
-    isCompleteRoleDashboardClient,
-    isCompleteWikiPageTagDashboardClient,
     menuLinkListView,
     permissionDashboardView,
-    type ReferenceContractOf,
-    registerDashboardReferences,
     roleDashboardView,
     songCreditTypeDashboardView,
     songTagDashboardView,
@@ -51,15 +45,14 @@ import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 async function queryOptionalDashboardView<TView extends AnyDB3View>(
     view: TView,
     authorization: RequestAuthorization,
-    references: DB3ReferenceProvider<ReferenceContractOf<TView>>,
-): Promise<ClientOf<TView>[]> {
+): Promise<DtoOf<TView>[]> {
     try {
         const result = await queryView({
             view,
             filter: { items: [] },
             cmdbQueryContext: `getDashboardData/${view.viewID}`,
             orderBy: undefined,
-        }, authorization, references);
+        }, authorization);
         return result.items;
     } catch (error) {
         if (error instanceof DB3QueryAuthorizationError) return [];
@@ -178,14 +171,13 @@ async function getTopRelevantEvents(
 
 
 export default resolver.pipe(
-    async (args, ctx: Ctx) => {
+    async (args, ctx: Ctx): Promise<DashboardDataDto> => {
         try {
             const sw = new Stopwatch();
 
             const authorization = await getRequestAuthorization(ctx.session);
             const currentUser = authorization.user;
             const effectivePermissions = authorization.effectivePermissions;
-            const referenceStore = createDashboardReferenceStore();
 
             // Existing events retain the meaning of a status after that status
             // is retired, so relevance calculations use every referenced row.
@@ -201,41 +193,10 @@ export default resolver.pipe(
                 )
             ));
 
-            const userTagCall = queryOptionalDashboardView(userTagDashboardView, authorization, referenceStore);
-            const roleCall = queryOptionalDashboardView(roleDashboardView, authorization, referenceStore);
-            const wikiPageTagCall = queryOptionalDashboardView(wikiPageTagDashboardView, authorization, referenceStore);
             const bandTimeZoneCall = loadBandTimeZone(db);
             const userSettingsCall = loadUserSettings(currentUser?.id ?? null);
 
             const [
-                permission,
-                eventType,
-                eventStatus,
-                eventTag,
-                authorizedEventAttendance,
-                fileTag,
-                instrumentFunctionalGroup,
-                instrumentTag,
-                songTag,
-                songCreditType,
-            ] = await Promise.all([
-                queryOptionalDashboardView(permissionDashboardView, authorization, referenceStore),
-                queryOptionalDashboardView(eventTypeDashboardView, authorization, referenceStore),
-                queryOptionalDashboardView(eventStatusDashboardView, authorization, referenceStore),
-                queryOptionalDashboardView(eventTagDashboardView, authorization, referenceStore),
-                queryOptionalDashboardView(eventAttendanceDashboardView, authorization, referenceStore),
-                queryOptionalDashboardView(fileTagDashboardView, authorization, referenceStore),
-                queryOptionalDashboardView(instrumentFunctionalGroupDashboardView, authorization, referenceStore),
-                queryOptionalDashboardView(instrumentTagDashboardView, authorization, referenceStore),
-                queryOptionalDashboardView(songTagDashboardView, authorization, referenceStore),
-                queryOptionalDashboardView(songCreditTypeDashboardView, authorization, referenceStore),
-            ]);
-
-            const eventAttendance = authorizedEventAttendance.filter(
-                isCompleteEventAttendanceDashboardClient,
-            );
-
-            registerDashboardReferences(referenceStore, {
                 permission,
                 eventType,
                 eventStatus,
@@ -246,26 +207,29 @@ export default resolver.pipe(
                 instrumentTag,
                 songTag,
                 songCreditType,
-            });
+                userTag,
+                role,
+                wikiPageTag,
+                instrument,
+                dynMenuLinks,
+            ] = await Promise.all([
+                queryOptionalDashboardView(permissionDashboardView, authorization),
+                queryOptionalDashboardView(eventTypeDashboardView, authorization),
+                queryOptionalDashboardView(eventStatusDashboardView, authorization),
+                queryOptionalDashboardView(eventTagDashboardView, authorization),
+                queryOptionalDashboardView(eventAttendanceDashboardView, authorization),
+                queryOptionalDashboardView(fileTagDashboardView, authorization),
+                queryOptionalDashboardView(instrumentFunctionalGroupDashboardView, authorization),
+                queryOptionalDashboardView(instrumentTagDashboardView, authorization),
+                queryOptionalDashboardView(songTagDashboardView, authorization),
+                queryOptionalDashboardView(songCreditTypeDashboardView, authorization),
+                queryOptionalDashboardView(userTagDashboardView, authorization),
+                queryOptionalDashboardView(roleDashboardView, authorization),
+                queryOptionalDashboardView(wikiPageTagDashboardView, authorization),
+                queryOptionalDashboardView(instrumentDashboardView, authorization),
+                queryOptionalDashboardView(menuLinkListView, authorization),
+            ]);
 
-            const instrumentCall = queryOptionalDashboardView(
-                instrumentDashboardView,
-                authorization,
-                referenceStore,
-            );
-            const menuItemsCall = queryOptionalDashboardView(
-                menuLinkListView,
-                authorization,
-                referenceStore,
-            );
-
-            const instrument = await instrumentCall;
-            const dynMenuLinks = await menuItemsCall;
-            const userTag = await userTagCall;
-            const role = (await roleCall).filter(isCompleteRoleDashboardClient);
-            const wikiPageTag = (await wikiPageTagCall).filter(
-                isCompleteWikiPageTagDashboardClient,
-            );
             const relevantEventIds = await relevantEventsCall;
             const bandTimeZone = await bandTimeZoneCall;
             const userSettings = await userSettingsCall;
@@ -305,5 +269,4 @@ export default resolver.pipe(
         }
     }
 );
-
 

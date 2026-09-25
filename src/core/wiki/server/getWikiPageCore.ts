@@ -4,7 +4,6 @@ import { ProcessEventDescriptionForWikiPage } from "./wikiNamespaceEventDescript
 import { AuthenticatedCtx } from "blitz";
 import { getRequestAuthorization } from "src/auth/server/requestAuthorization";
 import { queryView } from "src/core/db3/server/db3QueryCore";
-import { DB3ReferenceStore } from "src/core/db3/shared/core/db3Hydration";
 import { wikiPageApiView } from "src/core/db3/shared/entities/wiki/wikiViews";
 
 interface GetWikiPageCoreArgs {
@@ -31,7 +30,7 @@ export async function GetWikiPageCore({ canonicalWikiSlug, dbt, ctx, ...args }: 
         orderBy: undefined,
         take: 1,
         cmdbQueryContext: "wiki/page",
-    }, authorization, new DB3ReferenceStore(), dbt);
+    }, authorization, dbt);
     const page = result.items[0] ?? null;
 
     const path = wikiParseCanonicalWikiPath(canonicalWikiSlug);

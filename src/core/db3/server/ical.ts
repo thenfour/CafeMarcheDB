@@ -3,7 +3,7 @@ import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import db, { Prisma } from "db";
 import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent } from "ical-generator";
 import { floorLocalToLocalDay } from "shared/time";
-import { queryView } from "src/core/db3/server/db3QueryCore";
+import { queryHydratedView } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
 import { MakeICalEventUid } from "../shared/apiTypes";
 import { EventCalendarInput, GetEventCalendarInput } from "./icalUtils";
@@ -222,7 +222,7 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
     const authorization = await loadUserAuthorization(currentUser);
     const { eventsRaw, bandTimeZone } = await db.$transaction(async tx => {
         const bandTimeZone = await loadBandTimeZone(tx);
-        const eventsRaw = await queryView({
+        const eventsRaw = await queryHydratedView({
             view: db3.eventCalendarView,
             filter: {
                 tableParams: eventsTableParams,

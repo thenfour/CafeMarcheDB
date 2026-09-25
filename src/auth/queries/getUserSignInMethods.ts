@@ -4,7 +4,7 @@ import { z } from "zod";
 import { Permission } from "shared/permissions";
 import { requireSignInMethodTarget } from "../server/signInMethods";
 import { getRequestAuthorization } from "../server/requestAuthorization";
-import { DB3ReferenceStore, userSignInMethodAdminView } from "src/core/db3/db3";
+import { userSignInMethodAdminView } from "src/core/db3/db3";
 import { queryView } from "src/core/db3/server/db3QueryCore";
 
 export default resolver.pipe(
@@ -16,7 +16,7 @@ export default resolver.pipe(
             view: userSignInMethodAdminView,
             filter: { tableParams: { userId } },
             orderBy: undefined,
-        }, await getRequestAuthorization(ctx.session), new DB3ReferenceStore());
+        }, await getRequestAuthorization(ctx.session));
         // The view checks fresh admin authorization before any target lookup.
         const user = await requireSignInMethodTarget(db, userId);
         return {

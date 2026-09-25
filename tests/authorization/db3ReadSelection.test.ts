@@ -8,7 +8,7 @@ vi.mock("db", async () => {
 
 import * as db3 from "src/core/db3/db3";
 import { db3Server } from "src/core/db3/server/db3Server";
-import { queryTable, queryView } from "src/core/db3/server/db3QueryCore";
+import { queryTable, queryHydratedView } from "src/core/db3/server/db3QueryCore";
 import { authorizeAndProjectDB3ViewModel } from "src/core/db3/server/db3PublicIds";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import type { DB3ReadSelectionArgs } from "src/core/db3/shared/core/db3ReadSelection";
@@ -63,7 +63,7 @@ describe("DB3 read execution dependencies", () => {
         });
         authorizationTestDb.reset({ user: [actor.user!], event: [event], eventSegment: [segment] });
         const { database, findMany } = strictEventDatabase();
-        const result = await queryView({
+        const result = await queryHydratedView({
             view: db3.eventDetailView, filter: { items: [], publicIds: [event.publicId] },
             orderBy: undefined, cmdbQueryContext: "event-detail-dependency-test",
         }, await getRequestAuthorization(actor.ctx.session), db3.createDashboardReferenceStore(), database);

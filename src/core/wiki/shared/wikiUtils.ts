@@ -3,8 +3,8 @@ import { diffChars, diffLines } from 'diff';
 import { z } from "zod";
 import { isPublicId, type EventPublicId, type PermissionPublicId } from "shared/publicId";
 import { slugify } from "../../../../shared/rootroot";
-import type { EventWikiPageContextClient } from "../../db3/shared/entities/event/eventViews";
-import type { WikiPageApiClient } from "../../db3/shared/entities/wiki/wikiViews";
+import type { EventWikiPageContextDto } from "../../db3/shared/entities/event/eventViews";
+import type { WikiPageApiDto } from "../../db3/shared/entities/wiki/wikiViews";
 import * as db3 from "../../db3/db3";
 
 
@@ -52,7 +52,7 @@ export const WikiPageApiRevisionPayloadArgs = Prisma.validator<Prisma.WikiPageRe
 });
 export type WikiPageApiRevisionPayload = Prisma.WikiPageRevisionGetPayload<typeof WikiPageApiRevisionPayloadArgs>;
 
-export type WikiPageApiPayload = WikiPageApiClient;
+export type WikiPageApiPayload = WikiPageApiDto;
 
 ////////////////////////////////////////////////////////////////
 export type WikiPageApiUpdatePayload = Prisma.WikiPageRevisionGetPayload<{
@@ -162,7 +162,7 @@ export type WikiPath = {
 
 
 export type WikiPageData = {
-    eventContext: EventWikiPageContextClient | null,
+    eventContext: EventWikiPageContextDto | null,
     wikiPage: WikiPageApiPayload | null; // new pages = null
     titleIsEditable: boolean;
     specialWikiNamespace: SpecialWikiNamespace | null;

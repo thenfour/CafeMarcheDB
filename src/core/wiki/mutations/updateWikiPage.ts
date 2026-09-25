@@ -7,7 +7,7 @@ import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activi
 import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
 import * as db3 from "src/core/db3/db3";
-import { authorizeAndHydrateViewModel } from "src/core/db3/server/db3QueryCore";
+import { authorizeAndProjectViewDto } from "src/core/db3/server/db3QueryCore";
 import * as mutationCore from "src/core/db3/server/db3mutationCore";
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { calculateDiff, GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, SpecialWikiNamespace, TUpdateWikiPageArgs, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiRevisionPayload, WikiPageApiRevisionPayloadArgs, wikiParseCanonicalWikiPath, ZTUpdateWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
@@ -139,11 +139,10 @@ const UpdateExistingWikiPage = async (
         },
         ...wikiPageApiSelection,
     });
-    const projectedUpdatedPage = authorizeAndHydrateViewModel(
+    const projectedUpdatedPage = authorizeAndProjectViewDto(
         db3.wikiPageApiView,
         updatedPage,
         publicData,
-        new db3.DB3ReferenceStore(),
         "mutation:WikiPage.update",
     );
     if (!projectedUpdatedPage) throw new Error("Updated wiki page was not authorized for reading.");
@@ -189,11 +188,10 @@ export default resolver.pipe(
                 ...wikiPageApiSelection,
             });
             const wikiPage = wikiPageRow
-                ? authorizeAndHydrateViewModel(
+                ? authorizeAndProjectViewDto(
                     db3.wikiPageApiView,
                     wikiPageRow,
                     publicData,
-                    new db3.DB3ReferenceStore(),
                     "mutation:WikiPage.update.load",
                 )
                 : null;

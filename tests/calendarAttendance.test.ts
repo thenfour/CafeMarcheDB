@@ -8,10 +8,10 @@ vi.mock("db", async () => ({
     ...await vi.importActual<typeof import("@prisma/client")>("@prisma/client"),
     default: (await import("./authorization/support/inMemoryPrisma")).authorizationTestDb,
 }));
-vi.mock("src/core/db3/server/db3QueryCore", () => ({ queryView: vi.fn() }));
+vi.mock("src/core/db3/server/db3QueryCore", () => ({ queryHydratedView: vi.fn() }));
 
 import { CalExportCore } from "src/core/db3/server/ical";
-import { queryView } from "src/core/db3/server/db3QueryCore";
+import { queryHydratedView } from "src/core/db3/server/db3QueryCore";
 import { shouldIncludeEventInCalendarFeed } from "src/core/db3/shared/calendarAttendance";
 import { createAuthorizationTestUser } from "./authorization/support/authorizationFixtures";
 import { authorizationTestDb } from "./authorization/support/inMemoryPrisma";
@@ -37,8 +37,8 @@ const makeEvent = (segments: ReturnType<typeof segment>[]) => ({
 });
 
 const mockCalendarEvents = (events: ReturnType<typeof makeEvent>[]) => {
-    // Vitest cannot infer one result type from queryView's generic view parameter.
-    vi.mocked(queryView).mockResolvedValue({ items: events } as never);
+    // Vitest cannot infer one result type from queryHydratedView's generic view parameter.
+    vi.mocked(queryHydratedView).mockResolvedValue({ items: events } as never);
 };
 
 const include = (segments: ReturnType<typeof segment>[], showDeclinedEvents = false, userId = owner.id, showUninvitedEvents = true) =>

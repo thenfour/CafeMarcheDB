@@ -10,7 +10,7 @@ import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
 import { resolveUserSettings, UserSettings } from "shared/userSettings";
 
 export abstract class DashboardContextDataBase {
-    readonly referenceStore = db3.createDashboardReferenceStore();
+    referenceStore = db3.createDashboardReferenceStore();
     userSettings: UserSettings = resolveUserSettings();
     bandTimeZone: string = DEFAULT_BAND_TIME_ZONE;
     userTag: TableAccessor<db3.UserTagDashboardClient, UserTagPublicId>;

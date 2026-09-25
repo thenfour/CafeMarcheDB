@@ -202,7 +202,7 @@ describe("authorization refresh on every request", () => {
             permission: [{
                 publicId: parsePublicId<"Permission">("DashboardPerm001"),
                 name: Permission.visibility_public,
-                color: expect.objectContaining({ id: "green" }),
+                color: "green",
             }],
             userTag: [],
             role: [],

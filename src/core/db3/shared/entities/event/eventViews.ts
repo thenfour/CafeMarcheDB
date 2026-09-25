@@ -1003,4 +1003,5 @@ export type EventCalendarClient = ClientOf<typeof eventCalendarView>;
 export type EventFrontpageDto = DtoOf<typeof eventFrontpageView>;
 export type EventFrontpageClient = ClientOf<typeof eventFrontpageView>;
 export type EventWikiPageContextClient = ClientOf<typeof eventWikiPageContextView>;
+export type EventWikiPageContextDto = DtoOf<typeof eventWikiPageContextView>;
 //type aoeus = EventFrontpageClient;

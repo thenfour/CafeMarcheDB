@@ -462,10 +462,12 @@ client-only representation. Prisma selections used by the dashboard provider
 are consequently private to `dashboardReferences.ts`, not xTable metadata.
 
 `DB3ReferenceStore.register()` accepts values already in their consumer
-representation plus a provider-owned identity extractor. It performs no DTO
-parsing, Prisma projection, or field-codec hydration. The dashboard provider
-does that work before registration; a different provider need not use DB3 or
-Prisma at all.
+representation and uses the entity's identity API. It performs no DTO parsing,
+Prisma projection, or field-codec hydration. Server `queryView()` returns DTOs
+without hydration; `queryHydratedView()` explicitly opts into server-side rich
+values. The dashboard RPC returns those DTOs, and `hydrateDashboardData()`
+hydrates them at the consumer boundary before registration, leaves before
+dependent collections. A different provider need not use DB3 or Prisma at all.
 
 `EventStatus_Editor` is the first end-to-end migrated view. It now owns an
 explicit Prisma selection and supplies the selection, DTO schema, and hydrator

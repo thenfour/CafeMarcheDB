@@ -2,7 +2,6 @@ import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { Permission } from "shared/permissions";
 import {
-    createDashboardReferenceStore,
     roleDashboardView,
 } from "src/core/db3/db3";
 import { queryView } from "src/core/db3/server/db3QueryCore";
@@ -18,7 +17,7 @@ export default resolver.pipe(
             filter: { items: [] },
             cmdbQueryContext: "getAllRoles",
             orderBy: undefined,
-        }, await getRequestAuthorization(ctx.session), createDashboardReferenceStore());
+        }, await getRequestAuthorization(ctx.session));
         return result.items;
     },
 );

@@ -23,7 +23,7 @@ export default resolver.pipe(
                 tableParams: { ids: args.userTagIds },
             },
             orderBy: undefined,
-        }, authorization, new db3.DB3ReferenceStore());
+        }, authorization);
         return result.items;
     }
 );

@@ -6,7 +6,7 @@ import { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
 import * as db3 from "src/core/db3/db3";
-import { authorizeAndHydrateViewModel } from "src/core/db3/server/db3QueryCore";
+import { authorizeAndProjectViewDto } from "src/core/db3/server/db3QueryCore";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
 import { GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, TAcquireLockOnWikiPageArgs, WikiPageApiPayload, wikiParseCanonicalWikiPath, ZTAcquireLockOnWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
 import { GetDefaultVisibilityPermission } from "../../db3/shared/db3Helpers";
@@ -22,7 +22,6 @@ export default resolver.pipe(
 
         const currentUser = (await getCurrentUserCore(ctx))!;
         const publicData = await db3.createDb3RequestAuthorization(ctx);
-        const references = new db3.DB3ReferenceStore();
 
         return await wikiTransaction(async (dbt) => {
 
@@ -36,11 +35,10 @@ export default resolver.pipe(
                 ...wikiPageApiSelection,
             });
             let currentPage: WikiPageApiPayload | null = currentPageRow
-                ? authorizeAndHydrateViewModel(
+                ? authorizeAndProjectViewDto(
                     db3.wikiPageApiView,
                     currentPageRow,
                     publicData,
-                    references,
                     "mutation:WikiPage.acquireLock",
                 )
                 : null;
@@ -74,11 +72,10 @@ export default resolver.pipe(
                     },
                     ...wikiPageApiSelection,
                 });
-                currentPage = authorizeAndHydrateViewModel(
+                currentPage = authorizeAndProjectViewDto(
                     db3.wikiPageApiView,
                     createdPage,
                     publicData,
-                    references,
                     "mutation:WikiPage.acquireLock.create",
                 );
                 if (!currentPage) throw new Error("Created wiki page was not authorized for reading.");
@@ -96,11 +93,10 @@ export default resolver.pipe(
                 },
                 ...wikiPageApiSelection,
             });
-            currentPage = authorizeAndHydrateViewModel(
+            currentPage = authorizeAndProjectViewDto(
                 db3.wikiPageApiView,
                 updatedPage,
                 publicData,
-                references,
                 "mutation:WikiPage.acquireLock.update",
             );
             if (!currentPage) throw new Error("Updated wiki page was not authorized for reading.");

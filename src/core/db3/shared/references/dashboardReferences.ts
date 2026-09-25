@@ -520,7 +520,7 @@ export function createDashboardReferenceStore(): DashboardReferenceStore {
     return new DB3ReferenceStore(dashboardReferenceContract);
 }
 
-/** Registers values that have already been validated and hydrated by their view query. */
+/** Registers values that have already been validated and hydrated by their views. */
 export function registerDashboardReferences(
     store: DashboardReferenceStore,
     input: DashboardReferenceInput,

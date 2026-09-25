@@ -192,3 +192,4 @@ export type WikiPageSearchDto = DtoOf<typeof wikiPageSearchView>;
 export type WikiPageSearchClient = ClientOf<typeof wikiPageSearchView>;
 export type WikiPageApiDbPayload = DbPayloadOf<typeof wikiPageApiView>;
 export type WikiPageApiClient = ClientOf<typeof wikiPageApiView>;
+export type WikiPageApiDto = DtoOf<typeof wikiPageApiView>;

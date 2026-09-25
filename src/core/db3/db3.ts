@@ -47,5 +47,6 @@ export * from "./shared/entities/eventSongList/eventSongListViews"
 export * from "./shared/entities/setlistPlan/setlistPlanViews"
 export * from "./shared/entities/customLink/customLinkViews"
 export * from "./shared/entities/menuLink/menuLinkViews"
+export * from "./shared/references/dashboardData"
 
 

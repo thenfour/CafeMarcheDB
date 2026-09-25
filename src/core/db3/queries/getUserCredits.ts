@@ -28,7 +28,7 @@ export default resolver.pipe(
             },
             orderBy: undefined,
             take: args.take,
-        }, authorization, new db3.DB3ReferenceStore());
+        }, authorization);
 
         return {
             songCredits: result.items,
