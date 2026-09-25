@@ -27,7 +27,7 @@ vi.mock("src/core/components/markdown/MarkdownControl3", () => ({
     }),
 }));
 import { AttendanceControlView, AttendanceChange } from "src/core/components/event/AttendanceControlView";
-import { AttendanceScenario, applyAttendanceScenarioChange, buildAttendanceScenario, createAttendanceScenario, scenarioAttendances, scenarioInstruments } from "src/core/components/event/attendanceScenario";
+import { AttendanceScenario, applyAttendanceScenarioChange, buildAttendanceScenario, createAttendanceScenario, scenarioAttendances, scenarioClientInstruments } from "src/core/components/event/attendanceScenario";
 
 let root: Root;
 let changeScenario: React.Dispatch<React.SetStateAction<AttendanceScenario>>;
@@ -40,7 +40,7 @@ const Harness = ({ initial, userIndex = 1, minimal = false }: { initial: Attenda
     currentScenario = scenario;
     const { attendance, event } = buildAttendanceScenario(scenario, userIndex);
     return React.createElement(AttendanceControlView, { attendance, event, minimalWhenNotAlert: minimal, environment: {
-        attendances: scenarioAttendances, instruments: scenarioInstruments, allowUploads: false, datePresentation: { bandTimeZone: "UTC", viewerTimeZone: "UTC", locale: "en" },
+        attendances: scenarioAttendances, instruments: scenarioClientInstruments, allowUploads: false, datePresentation: { bandTimeZone: "UTC", viewerTimeZone: "UTC", locale: "en" },
         commentDialogTitle: "Comment", commentDialogDescription: "Local comment",
         onSave: async (change: AttendanceChange) => {
             saves(change);

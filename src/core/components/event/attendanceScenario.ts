@@ -1,5 +1,7 @@
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
+import { gGeneralPaletteList } from "@/src/core/components/color/palette";
+import { parsePublicId } from "shared/publicId";
 import type * as db3 from "src/core/db3/db3";
 import { getEventResponseForUser, getEventSegmentResponseForSegmentAndUser } from "src/core/db3/shared/schema/eventAPI";
 import { getEventDateTimeRangeFromSegments } from "src/core/db3/shared/schema/event";
@@ -51,6 +53,27 @@ export const scenarioInstruments: db3.InstrumentPayload[] = ["Trumpet", "Saxopho
     functionalGroup: { id: 1, publicId: "scenario_group01", name: "Band", sortOrder: 0, description: "Scenario instruments", color: "blue" },
 }));
 
+export const scenarioClientInstruments: db3.InstrumentClientPayload[] = scenarioInstruments.map(instrument => ({
+    publicId: parsePublicId<"Instrument">(instrument.publicId),
+    name: instrument.name,
+    description: instrument.description,
+    sortOrder: instrument.sortOrder,
+    autoAssignFileLeafRegex: instrument.autoAssignFileLeafRegex,
+    functionalGroupId: parsePublicId<"InstrumentFunctionalGroup">(
+        instrument.functionalGroup.publicId,
+    ),
+    functionalGroup: {
+        publicId: parsePublicId<"InstrumentFunctionalGroup">(
+            instrument.functionalGroup.publicId,
+        ),
+        name: instrument.functionalGroup.name,
+        description: instrument.functionalGroup.description,
+        sortOrder: instrument.functionalGroup.sortOrder,
+        color: gGeneralPaletteList.findEntry(instrument.functionalGroup.color),
+    },
+    instrumentTags: [],
+}));
+
 export const createAttendanceScenario = (): AttendanceScenario => ({
     version: 1,
     now: "2026-10-15T12:00:00.000Z",
@@ -84,7 +107,13 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
         cssClass: null,
         tags: [],
         instruments: scenarioInstruments.slice(0, person.instrumentCount).map(instrument => ({
-            id: instrument.id, instrumentId: instrument.id, userId: -(userIndex + 1), isPrimary: instrument.id === person.primaryInstrumentId,
+            publicId: parsePublicId<"UserInstrument">(
+                `ScnUsrInst${String((userIndex + 1) * 10 + instrument.id).padStart(6, "0")}`,
+            ),
+            instrumentId: parsePublicId<"Instrument">(instrument.publicId),
+            instrument: { publicId: parsePublicId<"Instrument">(instrument.publicId) },
+            userId: -(userIndex + 1),
+            isPrimary: instrument.id === person.primaryInstrumentId,
         })),
     };
     const segments = scenario.segments.map((config, index) => {
@@ -110,13 +139,17 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
     const event = {
         id: eventId, name: scenario.eventName, startsAt: dateRange.getStartDateTime(), segments,
         responses: [{
-            id: -1, userId: user.id, instrumentId: person.instrumentId,
+            id: -1,
+            userId: user.id,
+            instrumentId: person.instrumentId == null
+                ? null
+                : scenarioClientInstruments[person.instrumentId - 1]!.publicId,
             isInvited: person.individualInvitation, userComment: person.comment
         }],
     };
     const eventUserResponse = getEventResponseForUser({
         user, event, userMap: [user], defaultInvitationUserIds: new Set(person.tagInvited ? [user.id] : []),
-        dashboardContext: { instrument: { find: predicate => scenarioInstruments.find(predicate) } },
+        dashboardContext: { instrument: { find: predicate => scenarioClientInstruments.find(predicate) } },
         makeMockEventUserResponse: () => event.responses[0]!,
     })!;
     const segmentUserResponses = segments.map(segment => getEventSegmentResponseForSegmentAndUser({
@@ -137,7 +170,16 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
 
 export function applyAttendanceScenarioChange(person: AttendanceScenarioUser, change: AttendanceChange): AttendanceScenarioUser {
     if (change.type === "comment") return { ...person, comment: change.comment };
-    if (change.type === "instrument") return { ...person, instrumentId: instrumentId.parse(change.instrumentId) };
+    if (change.type === "instrument") {
+        const scenarioInstrumentId = change.instrumentId == null
+            ? null
+            : typeof change.instrumentId === "number"
+                ? change.instrumentId
+                : scenarioInstruments.find(
+                    instrument => instrument.publicId === change.instrumentId,
+                )?.id;
+        return { ...person, instrumentId: instrumentId.parse(scenarioInstrumentId) };
+    }
     return {
         ...person, responses: person.responses.map((value, index) =>
             index + 1 === change.segmentId ? response.parse(change.attendanceId) : value)

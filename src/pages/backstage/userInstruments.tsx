@@ -10,7 +10,7 @@ const MainContent = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.userInstrumentEditorView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            publicId: DB3Client.publicIdFieldGen(),
             user: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 180, }),
             instrument: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 180, }),
             isPrimary: columnName => new DB3Client.BoolColumnClient({ columnName }),

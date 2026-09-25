@@ -107,7 +107,11 @@ async function seedContent() {
         sortOrder: id,
         functionalGroupId: 1,
     })) });
-    await db.userInstrument.createMany({ data: [{ userId: 10, instrumentId: 1, isPrimary: true }, { userId: 20, instrumentId: 1 }, { userId: 20, instrumentId: 2, isPrimary: true }] });
+    await db.userInstrument.createMany({ data: [
+        { publicId: "MergeUsrInst0001", userId: 10, instrumentId: 1, isPrimary: true },
+        { publicId: "MergeUsrInst0002", userId: 20, instrumentId: 1 },
+        { publicId: "MergeUsrInst0003", userId: 20, instrumentId: 2, isPrimary: true },
+    ] });
     await db.change.create({ data: { action: "update", context: "historical", operationId: "original", table: "Song", recordId: 1, userId: 20 } });
 }
 

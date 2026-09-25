@@ -1194,15 +1194,26 @@ The current pressure-led sequence is:
    and project credit identity recursively, normalize credit types through the
    dashboard reference contract, and leave identity extraction to xTable
    rather than to React components.
-8. **Next pressure audit:** migrate `UserInstrument` without converting `User`.
-   `Instrument` is already public, but the association is mutable through its
-   `isPrimary` state, participates in a bespoke transactional primary-selection
-   mutation, appears in several User and Event view shapes, and still makes UI
-   code fall back among `instrumentId`, nested instrument identity, and the raw
-   association `id`. Migrating the association as one bounded slice should test
-   whether rich association identity and multi-row mutation targeting remain
-   clean outside the tag and credit patterns.
-9. Keep the central Song, File, WikiPage, Event, User, and setlist identities in
+8. **Completed:** migrate `UserInstrument` without converting `User`.
+   The association now has its own public identity while its User endpoint
+   remains natural and its Instrument endpoint remains public. The standalone
+   editor derives its DTO, hydration, and command identity from xTable; embedded
+   User and Event user-map shapes project the association public ID and a lean
+   nested Instrument reference so `instrumentId` can be translated without
+   shipping a full duplicate Instrument row.
+
+   This slice confirmed that persisted association identity and draft selection
+   identity are distinct concerns. A new selection draft has no server-generated
+   association public ID yet, so `TagsField.getForeignIdentity()` owns stable
+   draft and persisted comparison through the Instrument target. Profile React
+   code no longer falls back among scalar, nested, and raw association IDs.
+   The primary-selection RPC continues to address rows by natural IDs only after
+   its trusted server-side lookup; no association database identity enters its
+   request or result contract.
+9. **Next pressure audit:** migrate the five File cross-entity association rows
+   as one family, keeping their central User, Song, Event, File, and WikiPage
+   endpoints natural where they have not yet migrated.
+10. Keep the central Song, File, WikiPage, Event, User, and setlist identities in
    the later application-pressure phase unless a bounded audit reveals a
    genuinely uncovered identity capability.
 
@@ -1301,7 +1312,7 @@ conversions.
   each numeric client-identity compatibility path before marking that model
   complete below.
 
-#### Client-facing model progress: 18 / 49 complete (37%)
+#### Client-facing model progress: 19 / 49 complete (39%)
 
 The denominator is the 49 Prisma models whose own row identity currently crosses
 a client boundary. A model counts as complete only when it satisfies the full
@@ -1329,13 +1340,12 @@ Completed models:
 - [x] `UserTagAssignment`
 - [x] `SongCreditType`
 - [x] `SongCredit`
+- [x] `UserInstrument`
 
 Remaining models are grouped into coherent intended slices. The pressure label
 describes why the slice is ordered there; it does not relax the per-model
 completion definition.
 
-- **User/instrument rich association: next design-pressure slice**
-  - [ ] `UserInstrument`
 - **File cross-entity association family: design pressure.** These associations
   mix a natural File endpoint with User, Song, Event, WikiPage, and already-public
   Instrument endpoints. Migrate their own row identities together without
@@ -1407,7 +1417,7 @@ consumer.
 #### Capability coverage proven by completed slices
 
 These checks track reusable scenarios and do not contribute additional models
-to the 18 / 49 progress count.
+to the 19 / 49 progress count.
 
 - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
 - [x] Exercise an association/tag command with public identities
@@ -1428,6 +1438,9 @@ to the 18 / 49 progress count.
 - [x] Exercise a rich association with public row identity, a public lookup
   target, natural central-domain endpoints, and authorization inherited from
   a visible target relationship (`SongCredit`).
+- [x] Exercise a mutable rich association embedded in User and Event payloads,
+  including relation-owned draft identity and a server-only multi-row workflow
+  (`UserInstrument`).
 
 ### Deferred DB3 enhancements
 

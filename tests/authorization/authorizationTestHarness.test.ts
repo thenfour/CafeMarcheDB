@@ -2295,8 +2295,8 @@ describe("BA-A005 delete authorization", () => {
   it("authorizes a hard delete against the persisted target row", async () => {
     const normal = createAuthorizationTestUser("normal", { id: 20 })
     const otherUser = createAuthorizationTestUser("normal", { id: 21 })
-    const ownInstrument = { id: 300, userId: normal.id, instrumentId: 500 }
-    const otherInstrument = { id: 301, userId: otherUser.id, instrumentId: 500 }
+    const ownInstrument = { id: 300, publicId: "AuthUsrInstr0001", userId: normal.id, instrumentId: 500 }
+    const otherInstrument = { id: 301, publicId: "AuthUsrInstr0002", userId: otherUser.id, instrumentId: 500 }
     authorizationTestDb.reset({
       user: [normal, otherUser],
       userInstrument: [ownInstrument, otherInstrument],
@@ -2307,7 +2307,7 @@ describe("BA-A005 delete authorization", () => {
     await expect(
       invokeResolver(
         db3Mutation,
-        forgeDb3Delete("UserInstrument", otherInstrument.id, "hard"),
+        forgeDb3PublicDelete("UserInstrument", otherInstrument.publicId, "hard"),
         ctx,
       ),
     ).rejects.toThrow("Not authorized to mutate UserInstrument fields")
@@ -2318,7 +2318,7 @@ describe("BA-A005 delete authorization", () => {
 
     await invokeResolver(
       db3Mutation,
-      forgeDb3Delete("UserInstrument", ownInstrument.id, "hard"),
+      forgeDb3PublicDelete("UserInstrument", ownInstrument.publicId, "hard"),
       ctx,
     )
     expect(authorizationTestDb.snapshot("userInstrument")).toEqual([otherInstrument])

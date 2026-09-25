@@ -172,7 +172,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
             {canViewBasicInfo &&
                 <CMChipContainer>
                     {user.instruments.map(tag => <CMStandardDBChip
-                        key={tag.id}
+                        key={db3.xUserInstrument.getIdentity(tag)}
                         size='small'
                         model={{ ...tag.instrument, color: tag.instrument.functionalGroup.color }}
                         variation={StandardVariationSpec.Weak}

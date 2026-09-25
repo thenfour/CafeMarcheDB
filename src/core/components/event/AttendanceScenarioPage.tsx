@@ -4,7 +4,8 @@ import { Alert, Box, Button, Checkbox, FormControl, FormControlLabel, FormLabel,
 import { AttendanceControlView } from "./AttendanceControlView";
 import {
     AttendanceScenario, AttendanceScenarioUser, attendanceScenarioSchema, applyAttendanceScenarioChange,
-    buildAttendanceScenario, createAttendanceScenario, describeAttendanceVisibility, scenarioAttendances, scenarioInstruments,
+    buildAttendanceScenario, createAttendanceScenario, describeAttendanceVisibility, scenarioAttendances,
+    scenarioClientInstruments, scenarioInstruments,
 } from "./attendanceScenario";
 
 const Choices = ({ label, value, choices, onChange }: {
@@ -165,7 +166,7 @@ export const AttendanceScenarioPage = () => {
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{describeAttendanceVisibility(attendance)}</Typography>
                             <AttendanceControlView attendance={attendance} event={event} minimalWhenNotAlert={mode === "list"} environment={{
                                 attendances: scenarioAttendances,
-                                instruments: scenarioInstruments,
+                                instruments: scenarioClientInstruments,
                                 allowUploads: false,
                                 datePresentation: { bandTimeZone: "UTC", viewerTimeZone: "UTC", locale: "en" },
                                 commentDialogTitle: "Attendance comment", commentDialogDescription: <Typography paragraph>Leave a comment for this event. This preview saves locally.</Typography>,

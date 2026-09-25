@@ -19,6 +19,7 @@ const eventStatusPublicId: EventStatusPublicId = parsePublicId<"EventStatus">("C
 const userTagPublicId = parsePublicId<"UserTag">("CommandUserTag01");
 const songCreditTypePublicId = parsePublicId<"SongCreditType">("CommandCreditTyp");
 const songCreditPublicId = parsePublicId<"SongCredit">("CommandCreditRow");
+const userInstrumentPublicId = parsePublicId<"UserInstrument">("CommandUsrInstr1");
 
 function createContext(seed?: {
     songList?: Record<string, unknown> | null;
@@ -889,7 +890,7 @@ describe("DB3 commands", () => {
         expect(db3.songCreditEditorView.crud.operations.delete.deleteType).toBe("hard");
 
         expect(db3.userInstrumentEditorView.parseDto({
-            id: 9,
+            publicId: userInstrumentPublicId,
             userId: 6,
             user: { id: 6, name: "Ada" },
             instrumentId: instrumentPublicId,
@@ -901,16 +902,16 @@ describe("DB3 commands", () => {
             },
             isPrimary: true,
         })).toMatchObject({
-            id: 9,
+            publicId: userInstrumentPublicId,
             user: { name: "Ada" },
             instrument: { name: "Trumpet" },
             isPrimary: true,
         });
         expect(db3.userInstrumentEditorView.crud.operations.update.command.parseDto({
-            identity: 9,
+            identity: userInstrumentPublicId,
             patch: { instrumentId: instrumentPublicId, isPrimary: false },
         })).toEqual({
-            identity: 9,
+            identity: userInstrumentPublicId,
             patch: { instrumentId: instrumentPublicId, isPrimary: false },
         });
         expect(db3.userInstrumentEditorView.crud.operations.delete.deleteType).toBe("hard");

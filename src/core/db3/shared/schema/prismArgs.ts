@@ -17,6 +17,7 @@ import type {
     WikiPageTagPublicId,
     UserTagAssignmentPublicId,
     UserTagPublicId,
+    UserInstrumentPublicId,
 } from "shared/publicId";
 //import * as db3 from "../db3core"; // circular
 import { TAnyModel } from "shared/rootroot";
@@ -404,8 +405,9 @@ export type UserInstrumentPayload = Prisma.UserInstrumentGetPayload<typeof UserI
 
 export type UserInstrumentClientPayload = Omit<
     UserInstrumentPayload,
-    "instrumentId" | "instrument"
+    "id" | "publicId" | "instrumentId" | "instrument"
 > & {
+    publicId: UserInstrumentPublicId;
     instrumentId: InstrumentPublicId;
     instrument: InstrumentClientPayload;
 };
@@ -415,6 +417,48 @@ export const UserInstrumentNaturalOrderBy: Prisma.UserInstrumentOrderByWithRelat
     { instrument: { name: 'asc' } },
     { instrument: { id: 'asc' } },
 ];
+
+const UserInstrumentReferenceArgs = Prisma.validator<Prisma.UserInstrumentArgs>()({
+    include: {
+        // Projection needs the target's public ID to translate instrumentId,
+        // but event/user-map payloads do not need the full instrument record.
+        instrument: { select: { id: true, publicId: true } },
+    },
+});
+
+type UserInstrumentReferenceDbPayload = Prisma.UserInstrumentGetPayload<
+    typeof UserInstrumentReferenceArgs
+>;
+
+type UserInstrumentReferenceClientPayload = Omit<
+    UserInstrumentReferenceDbPayload,
+    "id" | "publicId" | "instrumentId" | "instrument"
+> & {
+    publicId: UserInstrumentPublicId;
+    instrumentId: InstrumentPublicId;
+    instrument: { publicId: InstrumentPublicId };
+};
+
+const UserTagAssignmentReferenceArgs = Prisma.validator<Prisma.UserTagAssignmentArgs>()({
+    include: {
+        // As with instruments above, projection needs the public target even
+        // though event user maps consume only userTagId.
+        userTag: { select: { id: true, publicId: true } },
+    },
+});
+
+type UserTagAssignmentReferenceDbPayload = Prisma.UserTagAssignmentGetPayload<
+    typeof UserTagAssignmentReferenceArgs
+>;
+
+type UserTagAssignmentReferenceClientPayload = Omit<
+    UserTagAssignmentReferenceDbPayload,
+    "id" | "publicId" | "userTagId" | "userTag"
+> & {
+    publicId: UserTagAssignmentPublicId;
+    userTagId: UserTagPublicId;
+    userTag: { publicId: UserTagPublicId };
+};
 
 export type UserPayload_Name = Prisma.UserGetPayload<{
     select: {
@@ -564,8 +608,8 @@ export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserDefaultArgs>(
         roleId: true,
         cssClass: true,
 
-        instruments: true,
-        tags: true,
+        instruments: UserInstrumentReferenceArgs,
+        tags: UserTagAssignmentReferenceArgs,
     }
 });
 
@@ -574,16 +618,8 @@ export type UserWithInstrumentsClientPayload = Omit<
     UserWithInstrumentsDbPayload,
     "instruments" | "tags"
 > & {
-    instruments: Array<Omit<UserWithInstrumentsDbPayload["instruments"][number], "instrumentId"> & {
-        instrumentId: InstrumentIdentity;
-    }>;
-    tags: Array<Omit<
-        UserWithInstrumentsDbPayload["tags"][number],
-        "id" | "publicId" | "userTagId"
-    > & {
-        publicId: UserTagAssignmentPublicId;
-        userTagId: UserTagPublicId;
-    }>;
+    instruments: UserInstrumentReferenceClientPayload[];
+    tags: UserTagAssignmentReferenceClientPayload[];
 };
 export type UserWithInstrumentsPayload = UserWithInstrumentsClientPayload;
 

@@ -31,6 +31,7 @@ import {
     EventTypeArgs, EventTypeNaturalOrderBy, type EventTypePayload, EventTypeSignificance, EventUserResponseArgs, EventUserResponseNaturalOrderBy,
     type EventUserResponsePayload,
     type InstrumentClientOrDbPayload,
+    type InstrumentIdentity,
     type UserWithInstrumentsPayload
 } from "./prismArgs";
 import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField, xUser, xUserTag } from "./user";
@@ -1115,7 +1116,17 @@ export const EventResponses_MinimalEventUserResponseArgs = Prisma.validator<Pris
         userId: true,
     }
 });
-export type EventResponses_MinimalEventUserResponse = Prisma.EventUserResponseGetPayload<typeof EventResponses_MinimalEventUserResponseArgs>;
+type EventResponses_MinimalEventUserResponseDb = Prisma.EventUserResponseGetPayload<
+    typeof EventResponses_MinimalEventUserResponseArgs
+>;
+export type EventResponses_MinimalEventUserResponse = Omit<
+    EventResponses_MinimalEventUserResponseDb,
+    "instrumentId"
+> & {
+    // Shared attendance algorithms consume both trusted Prisma rows and
+    // projected client responses after Instrument migrated to public identity.
+    instrumentId: InstrumentIdentity | null;
+};
 
 export const EventResponses_MinimalEventSegmentUserResponseArgs = Prisma.validator<Prisma.EventSegmentUserResponseFindManyArgs>()({
     select: {
@@ -1147,7 +1158,7 @@ export type EventResponses_MinimalEventSegment = Omit<EventResponses_MinimalEven
 };
 
 
-export type EventResponses_MinimalEvent = Prisma.EventGetPayload<{
+type EventResponses_MinimalEventDb = Prisma.EventGetPayload<{
     select: {
         id: true,
         responses: typeof EventResponses_MinimalEventUserResponseArgs,
@@ -1159,6 +1170,9 @@ export type EventResponses_MinimalEvent = Prisma.EventGetPayload<{
         }
     }
 }>;
+export type EventResponses_MinimalEvent = Omit<EventResponses_MinimalEventDb, "responses"> & {
+    responses: EventResponses_MinimalEventUserResponse[];
+};
 
 export interface EventUserResponse<TEvent extends EventResponses_MinimalEvent, TResponse extends EventResponses_MinimalEventUserResponse> {
     event: TEvent;//EventClientPayload_Verbose;

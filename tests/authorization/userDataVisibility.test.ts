@@ -22,6 +22,7 @@ import { invokeResolver } from "./support/resolverHarness"
 const instrumentPublicId = "AbCdEfGhIjKlMn21"
 const userTagPublicId = "UserTagPublic022"
 const userTagAssignmentPublicId = "UserTagAsgn00012"
+const userInstrumentPublicId = "UserInstrumnt011"
 const targetInstrument = {
   id: 21,
   publicId: instrumentPublicId,
@@ -66,6 +67,7 @@ const target = {
   }),
   instruments: [{
     id: 11,
+    publicId: userInstrumentPublicId,
     userId: 1_202,
     instrumentId: targetInstrument.id,
     instrument: targetInstrument,
@@ -174,7 +176,7 @@ describe("focused user data visibility", () => {
       name: target.name,
       cssClass: target.cssClass,
       instruments: [{
-        id: 11,
+        publicId: userInstrumentPublicId,
         userId: target.id,
         instrumentId: instrumentPublicId,
         instrument: { publicId: instrumentPublicId },

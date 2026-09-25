@@ -5,7 +5,7 @@ import { Prisma } from "db";
 import { assertIsNumberArray } from "shared/arrayUtils";
 import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
-import type { UserTagAssignmentPublicId, UserTagPublicId } from "shared/publicId";
+import type { UserInstrumentPublicId, UserTagAssignmentPublicId, UserTagPublicId } from "shared/publicId";
 import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
 import { z } from "zod";
@@ -428,7 +428,7 @@ export const xRole = db3.defineTable({
 
 export const xUserInstrument = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.UserInstrumentDelegate>(),
-    getIdentity: (association: { id: number }) => association.id,
+    getIdentity: (association: { publicId: UserInstrumentPublicId }) => association.publicId,
     tableName: "UserInstrument",
     deletePolicy: "hard",
     tableAuthMap: xUserTableAuthMap,
@@ -438,7 +438,7 @@ export const xUserInstrument = db3.defineTable({
     naturalOrderBy: UserInstrumentNaturalOrderBy,
     getRowInfo: (row: UserInstrumentPayload) => {
         return {
-            pk: row.id,
+            pk: row.publicId,
             name: row.instrument?.name || "",
             description: row.instrument?.description || "",
             color: gGeneralPaletteList.findEntry(row.instrument?.functionalGroup?.color || null),
@@ -446,7 +446,8 @@ export const xUserInstrument = db3.defineTable({
         };
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<UserInstrumentPublicId>(),
         isPrimary: columnName => new BoolField({ columnName, defaultValue: false, authMap: xUserBasicProfileAuthMap, allowNull: false }),
         instrument: foreignRef(() => xInstrument, {
             fkidMember: "instrumentId",

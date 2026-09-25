@@ -825,6 +825,7 @@ const main = async () => {
     await instruments.forEach(async (instrument, index) => {
       await gState.prisma.userInstrument.create({
         data: {
+          publicId: generatePublicId<"UserInstrument">(),
           instrumentId: instrument.id,
           userId: user.id,
           isPrimary: primaryIndex === index,

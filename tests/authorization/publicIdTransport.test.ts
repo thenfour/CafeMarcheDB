@@ -22,6 +22,7 @@ const userTagPublicId = parsePublicId<"UserTag">("AbCdEfGhIjKlMn12");
 const userTagAssignmentPublicId = parsePublicId<"UserTagAssignment">("AbCdEfGhIjKlMn13");
 const songCreditTypePublicId = parsePublicId<"SongCreditType">("AbCdEfGhIjKlMn14");
 const songCreditPublicId = parsePublicId<"SongCredit">("AbCdEfGhIjKlMn15");
+const userInstrumentPublicId = parsePublicId<"UserInstrument">("AbCdEfGhIjKlMn16");
 const instrumentId = 7;
 const group = {
     id: 54,
@@ -232,6 +233,14 @@ describe("instrument catalog public-ID transport", () => {
 
         const projectedUser = projectDB3ModelPublicIds(db3.xUser, {
             id: 99,
+            instruments: [{
+                id: 102,
+                publicId: userInstrumentPublicId,
+                userId: 99,
+                instrumentId: instrument.id,
+                instrument,
+                isPrimary: true,
+            }],
             tags: [{
                 id: 100,
                 publicId: userTagAssignmentPublicId,
@@ -252,6 +261,15 @@ describe("instrument catalog public-ID transport", () => {
         });
         expect(projectedUser.tags[0]).not.toHaveProperty("id");
         expect(projectedUser.tags[0].userTag).not.toHaveProperty("id");
+        expect(projectedUser.instruments[0]).toMatchObject({
+            publicId: userInstrumentPublicId,
+            userId: 99,
+            instrumentId: instrumentPublicId,
+            instrument: { publicId: instrumentPublicId, name: "Trumpet" },
+            isPrimary: true,
+        });
+        expect(projectedUser.instruments[0]).not.toHaveProperty("id");
+        expect(projectedUser.instruments[0].instrument).not.toHaveProperty("id");
     });
 
     it("accepts only public targets for converted-table queries and mutations", () => {
@@ -451,6 +469,20 @@ describe("instrument catalog public-ID transport", () => {
             mutationType: "update",
             updateId: 95,
             updateModel: { typeId: songCreditTypePublicId },
+        })).toThrow("updates require updatePublicId");
+        expect(() => validateDB3MutationRequest({
+            tableID: "UserInstrument",
+            tableName: "UserInstrument",
+            mutationType: "update",
+            updatePublicId: userInstrumentPublicId,
+            updateModel: { instrumentId: instrumentPublicId, isPrimary: true },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "UserInstrument",
+            tableName: "UserInstrument",
+            mutationType: "update",
+            updateId: 102,
+            updateModel: { isPrimary: true },
         })).toThrow("updates require updatePublicId");
     });
 

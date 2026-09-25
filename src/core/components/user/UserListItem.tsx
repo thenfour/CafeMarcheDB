@@ -65,7 +65,7 @@ export const UserListItem = (props: UserListItemProps) => {
 
                 <CMChipContainer className="instruments">
                     {props.user.instruments.map(tag => <CMStandardDBChip
-                        key={tag.id}
+                        key={db3.xUserInstrument.getIdentity(tag)}
                         size='small'
                         model={tag.instrument}
                         variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.instrumentFilter.options.includes(tag.instrumentId) }}

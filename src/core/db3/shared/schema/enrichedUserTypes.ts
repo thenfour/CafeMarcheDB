@@ -1,12 +1,10 @@
 import { TableAccessor } from "@/shared/rootroot";
-import { Prisma } from "db";
 import * as db3 from "@db3/db3";
 import type { UserTagPublicId } from "shared/publicId";
 
 export type EnrichUserInput = Partial<db3.UserClientPayload>;
 
-type EnrichedUserInstrument = Omit<Prisma.UserInstrumentGetPayload<{}>, "instrumentId"> & {
-    instrumentId: db3.InstrumentIdentity;
+type EnrichedUserInstrument = Omit<db3.UserInstrumentClientPayload, "instrument"> & {
     instrument: db3.InstrumentDashboardClient;
 };
 

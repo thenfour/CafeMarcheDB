@@ -11,6 +11,7 @@ describe("DB3 table identity authority", () => {
         const fileTagAssignmentPublicId = parsePublicId<"FileTagAssignment">("FileTagAssign001");
         const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("WikiTagPublic001");
         const wikiPageTagAssignmentPublicId = parsePublicId<"WikiPageTagAssignment">("WikiTagAssign001");
+        const userInstrumentPublicId = parsePublicId<"UserInstrument">("UserInstrumnt001");
         expect(db3.xInstrument.getIdentity({ publicId: instrumentPublicId }))
             .toBe(instrumentPublicId);
         expect(db3.xInstrument.isIdentity(instrumentPublicId)).toBe(true);
@@ -27,6 +28,8 @@ describe("DB3 table identity authority", () => {
             .toBe(wikiPageTagPublicId);
         expect(db3.xWikiPageTagAssignment.getIdentity({ publicId: wikiPageTagAssignmentPublicId }))
             .toBe(wikiPageTagAssignmentPublicId);
+        expect(db3.xUserInstrument.getIdentity({ publicId: userInstrumentPublicId }))
+            .toBe(userInstrumentPublicId);
         expect(db3.xSong.isIdentity(-1)).toBe(false);
         expect(db3.xSong.isIdentity(1.5)).toBe(false);
     });
@@ -55,6 +58,17 @@ describe("DB3 table identity authority", () => {
         expect(db3.xUserWithInstrument.fields.instruments.getForeignTableShema().tableID)
             .toBe("Instrument");
         expect(db3.xUserWithInstrument.fields.instruments.getForeignIdentity(instrumentPublicId))
+            .toBe(instrumentPublicId);
+        const user = { id: 12, instruments: [] };
+        const instrument = { publicId: instrumentPublicId, name: "Trumpet" };
+        const editedUser = db3.xUser.fields.instruments.withForeignObjects(user, [instrument]);
+        expect(editedUser.instruments).toEqual([{
+            user,
+            userId: user.id,
+            instrument,
+            instrumentId: instrumentPublicId,
+        }]);
+        expect(db3.xUser.fields.instruments.getForeignIdentity(editedUser.instruments[0]))
             .toBe(instrumentPublicId);
 
         const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("WikiTagPublic001");

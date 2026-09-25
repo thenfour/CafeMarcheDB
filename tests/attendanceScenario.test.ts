@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Timing } from "shared/time";
 import {
     applyAttendanceScenarioChange, attendanceScenarioSchema, buildAttendanceScenario, createAttendanceScenario,
+    scenarioInstruments,
 } from "src/core/components/event/attendanceScenario";
 import { getInstrumentIdentity } from "src/core/db3/db3";
 
@@ -21,9 +22,11 @@ describe("attendance scenario adapter", () => {
         scenario.users[0]!.tagInvited = false;
         expect(buildAttendanceScenario(scenario, 0).attendance.isInvited).toBe(false);
         scenario.users[1]!.primaryInstrumentId = 2;
-        expect(getInstrumentIdentity(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse.instrument!)).toBe(2);
+        expect(getInstrumentIdentity(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse.instrument!))
+            .toBe(scenarioInstruments[1]!.publicId);
         scenario.users[1]!.instrumentId = 4;
-        expect(getInstrumentIdentity(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse.instrument!)).toBe(4);
+        expect(getInstrumentIdentity(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse.instrument!))
+            .toBe(scenarioInstruments[3]!.publicId);
     });
 
     it.each([["past", Timing.Past], ["ongoing", Timing.Present], ["future", Timing.Future], ["tbd", Timing.Future]] as const)(

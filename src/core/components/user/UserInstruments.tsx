@@ -2,7 +2,7 @@ import { useDashboardContext, useFeatureRecorder } from "@/src/core/components/d
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { Box, Typography } from "@mui/material";
 import React from "react";
-import { InstrumentPublicId, parsePublicId } from "shared/publicId";
+import { InstrumentPublicId } from "shared/publicId";
 import { SelectionEditButton } from "src/core/components/select/SelectionField";
 import { SelectionPicker } from "src/core/components/select/SelectionPicker";
 import { SelectionValueList } from "src/core/components/select/SelectionOptions";
@@ -34,8 +34,16 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const [isDefaultOpen, setIsDefaultOpen] = React.useState(false);
 
+    // this calls for something like,
+    // db3.xUserInstrument.instrument.getForeignIdentity(value)
+    const getInstrumentId = (value: UserEditorInstrumentAssociation): InstrumentPublicId => (
+        db3.xInstrument.parseIdentity(props.spec.typedSchemaColumn.getForeignIdentity(value))
+    );
     const primaryAssociation = props.value.find(value => value.isPrimary) ?? props.value[0];
-    const primaryInstrumentId = primaryAssociation?.instrumentId;
+
+    const primaryInstrumentId = primaryAssociation == null
+        ? undefined
+        : getInstrumentId(primaryAssociation);
 
     const handleClickMakePrimary = (instrumentId: InstrumentPublicId) => {
         if (!currentUser) {
@@ -55,11 +63,10 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
         });
     };
 
-    const renderInstrument = (value: UserEditorInstrumentAssociation) => {
-        const instrumentId = value.instrumentId ?? value.instrument?.publicId;
-        return instrumentId == null ? null : <InstrumentChip value={parsePublicId<"Instrument">(instrumentId)} size="big" />;
-    };
-    const primaryValue = props.value.find(value => value.instrumentId === primaryInstrumentId);
+    const renderInstrument = (value: UserEditorInstrumentAssociation) => (
+        <InstrumentChip value={getInstrumentId(value)} size="big" />
+    );
+    const primaryValue = props.value.find(value => getInstrumentId(value) === primaryInstrumentId);
 
     const defaultChip = (<Typography
         component="span"
@@ -78,10 +85,10 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
     return <Box sx={{ minWidth: 0, py: 0.5 }}>
         <SelectionValueList
             value={props.value}
-            getKey={value => value.instrumentId ?? value.instrument?.publicId ?? value.id}
+            getKey={getInstrumentId}
             getLabel={props.spec.getSelectionLabel}
             renderValue={value => {
-                const isPrimary = value.instrumentId === primaryInstrumentId;
+                const isPrimary = getInstrumentId(value) === primaryInstrumentId;
                 return <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, minWidth: 0, maxWidth: "100%" }}>
                     {renderInstrument(value)}
                     {props.value.length > 1 && isPrimary && defaultChip}
@@ -106,7 +113,7 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
         {isDefaultOpen && <SelectionPicker
             source={makeLocalSelectionSource({
                 items: props.value,
-                getKey: value => value.instrumentId ?? value.instrument?.publicId ?? value.id,
+                getKey: getInstrumentId,
                 getLabel: props.spec.getSelectionLabel,
                 renderValue: renderInstrument
             })}
@@ -115,8 +122,12 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
             onCancel={() => setIsDefaultOpen(false)}
             onAccept={values => {
                 setIsDefaultOpen(false);
-                if (values[0]?.instrumentId != null && values[0].instrumentId !== primaryInstrumentId) {
-                    handleClickMakePrimary(parsePublicId<"Instrument">(values[0].instrumentId));
+                const selectedValue = values[0];
+                if (selectedValue != null) {
+                    const selectedInstrumentId = getInstrumentId(selectedValue);
+                    if (selectedInstrumentId !== primaryInstrumentId) {
+                        handleClickMakePrimary(selectedInstrumentId);
+                    }
                 }
             }}
         />}
@@ -155,7 +166,7 @@ export const OwnInstrumentsControl = () => {
             view: db3.userEditorView,
             columns: {
                 id: columnName => new DB3Client.PKColumnClient({ columnName }),
-                instruments: columnName => new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+                instruments: columnName => new DB3Client.TagsFieldClient<UserEditorInstrumentAssociation>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
             },
         }),
         filterModel: {
@@ -173,9 +184,13 @@ export const OwnInstrumentsControl = () => {
     if (!row?.instruments) {
         return null;
     }
+    const instrumentsColumn = tableClient.getColumn("instruments");
+    if (!(instrumentsColumn instanceof DB3Client.TagsFieldClient)) {
+        throw new Error("Expected User.instruments to use a tags-field client.");
+    }
 
     return <UserInstrumentsFieldInput
-        spec={tableClient.getColumn("instruments") as any}
+        spec={instrumentsColumn}
         selectStyle="dialog"
         //validationError={validationResult.getErrorForField("instruments")}
         row={row}
