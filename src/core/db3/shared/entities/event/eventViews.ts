@@ -313,7 +313,7 @@ const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
             },
         },
         songLists: {
-            select: { id: true },
+            select: { publicId: true },
         },
         expectedAttendanceUserTag: {
             select: {

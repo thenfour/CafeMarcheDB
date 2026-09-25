@@ -1,3 +1,4 @@
+import type { EventSongListCompleteDto } from "../entities/eventSongList/eventSongListViews";
 import { Prisma } from "db";
 import type { ColorPaletteEntry } from "@/src/core/components/color/palette";
 import type {
@@ -1121,11 +1122,12 @@ export const EventSongListArgs = Prisma.validator<Prisma.EventSongListArgs>()({
     include: {
         event: true,
         dividers: {
-            include: {}
+            include: { eventSongList: { select: { publicId: true } } }
         },
         songs: {
             include: {
                 song: SongArgs,
+                eventSongList: { select: { publicId: true } },
             }
         }
     },
@@ -1253,8 +1255,9 @@ export type EventClientPayload_Verbose = Omit<
     EventDbPayload_Verbose,
     "fileTags" | "statusId" | "typeId" | "status" | "tags" | "segments"
     | "expectedAttendanceUserTagId" | "expectedAttendanceUserTag"
-    | "visiblePermissionId" | "visiblePermission"
+    | "visiblePermissionId" | "visiblePermission" | "songLists"
 > & {
+    songLists: EventSongListCompleteDto[];
     visiblePermissionId: PermissionPublicId | null;
     statusId: EventStatusPublicId | null;
     typeId: EventTypePublicId | null;
@@ -1310,6 +1313,7 @@ export const EventSongListSongNaturalOrderBy: Prisma.EventSongListSongOrderByWit
 export const EventSongListSongArgs = Prisma.validator<Prisma.EventSongListSongArgs>()({
     include: {
         song: SongArgs,
+        eventSongList: { select: { publicId: true } },
     }
 });
 
@@ -1319,6 +1323,7 @@ export type EventSongListSongPayload = Prisma.EventSongListSongGetPayload<typeof
 ////////////////////////////////////////////////////////////////
 export const EventSongListDividerArgs = Prisma.validator<Prisma.EventSongListDividerDefaultArgs>()({
     include: {
+        eventSongList: { select: { publicId: true } },
     }
 });
 

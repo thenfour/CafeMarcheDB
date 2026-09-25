@@ -26,6 +26,9 @@ const makeSong = (id: number, overrides: Record<string, unknown> = {}) => ({
   createdByUserId: 501, visiblePermissionId: null, ...overrides,
 })
 
+// Song visibility fixtures also have a readable setlist/event parent.
+const visibleListParent = { id: 100, event: { id: 100, isDeleted: false, visiblePermissionId: 920_002, createdByUserId: null } }
+
 beforeEach(() => authorizationTestDb.reset())
 
 describe("explicit DB3 authorization", () => {
@@ -185,7 +188,7 @@ describe("explicit DB3 authorization", () => {
         makeSong(5, { isDeleted: true }),
         makeSong(6, { createdByUserId: null }),
       ]
-      expect(songs.filter(song => matchesWhere({ id: song.id, song }, entryWhere)).map(song => song.id)).toEqual([1, 3])
+      expect(songs.filter(song => matchesWhere({ id: song.id, song, eventSongList: visibleListParent }, entryWhere)).map(song => song.id)).toEqual([1, 3])
     },
   )
 
@@ -196,15 +199,15 @@ describe("explicit DB3 authorization", () => {
     const otherResolved = await loadUserAuthorization(createAuthorizationTestUser("sysadmin", { id: 502 }) as any)
     const other = db3.createDB3Authorization(otherResolved.user, otherResolved.effectivePermissions)
     const publicViewer = db3.createDB3Authorization(null, resolved.effectivePermissions)
-    const entry = { id: 1, song: makeSong(1) }
+    const entry = { id: 1, eventSongList: visibleListParent, song: makeSong(1) }
     for (const [viewer, expected] of [[owner, true], [other, false], [publicViewer, false]] as const) {
       const selection = await db3.xEventVerbose.CalculateSelectionArgs(viewer, { items: [] })
       expect(matchesWhere(entry, selection!.include.songLists.include.songs.where)).toBe(expected)
     }
     const recovery = await db3.xEventVerbose.CalculateSelectionArgs(owner, { items: [] }, true)
     const where = recovery!.include.songLists.include.songs.where
-    expect(matchesWhere({ id: 1, song: makeSong(1, { isDeleted: true }) }, where)).toBe(true)
-    expect(matchesWhere({ id: 2, song: makeSong(2, { isDeleted: true, createdByUserId: 502 }) }, where)).toBe(false)
+    expect(matchesWhere({ id: 1, eventSongList: visibleListParent, song: makeSong(1, { isDeleted: true }) }, where)).toBe(true)
+    expect(matchesWhere({ id: 2, eventSongList: visibleListParent, song: makeSong(2, { isDeleted: true, createdByUserId: 502 }) }, where)).toBe(false)
     expect(db3.EventArgs_Verbose.include.songLists.include.songs).not.toHaveProperty("where")
   })
 
@@ -213,7 +216,7 @@ describe("explicit DB3 authorization", () => {
     const selection = await db3.xEventVerbose.CalculateSelectionArgs(
       db3.createDB3Authorization(null, resolved.effectivePermissions), { items: [] },
     )
-    const entry = { id: 1, song: makeSong(1, { visiblePermissionId: 920_002 }) }
+    const entry = { id: 1, eventSongList: visibleListParent, song: makeSong(1, { visiblePermissionId: 920_002 }) }
     expect(matchesWhere(entry, selection!.include.songLists.include.songs.where)).toBe(false)
   })
 
@@ -229,8 +232,8 @@ describe("explicit DB3 authorization", () => {
       },
     }
     await db3.xEventSongList.ApplyIncludeFiltering(selection, authorization)
-    expect(matchesWhere({ id: 1, sortOrder: 5, song: makeSong(1) }, selection.songs.where)).toBe(false)
-    expect(matchesWhere({ id: 1, sortOrder: 10, song: makeSong(1) }, selection.songs.where)).toBe(true)
+    expect(matchesWhere({ id: 1, eventSongList: visibleListParent, sortOrder: 5, song: makeSong(1) }, selection.songs.where)).toBe(false)
+    expect(matchesWhere({ id: 1, eventSongList: visibleListParent, sortOrder: 10, song: makeSong(1) }, selection.songs.where)).toBe(true)
     const fileWhere = selection.songs[selectionKind].song[selectionKind].taggedFiles.where
     expect(matchesWhere({ id: 1, file: { id: 1, uploadedByUserId: 501, visiblePermissionId: null, isDeleted: false } }, fileWhere)).toBe(true)
     expect(matchesWhere({ id: 2, file: { id: 2, uploadedByUserId: 502, visiblePermissionId: null, isDeleted: false } }, fileWhere)).toBe(false)

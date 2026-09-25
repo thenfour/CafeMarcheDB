@@ -12,7 +12,7 @@ vi.mock("db", async () => {
 import db3Mutation from "tests/authorization/db3MutationTestResolver"
 import executeDB3CommandMutation from "@db3/mutations/executeDB3Command"
 import * as db3 from "@db3/db3"
-import deleteEventSongList from "src/core/db3/mutations/deleteEventSongList"
+import { listPublicId, listSongPublicId } from "../support/eventSongListFixtures"
 import updateGenericSortOrder from "src/core/db3/mutations/updateGenericSortOrder"
 import updateUserEventAttendance from "src/core/db3/mutations/updateUserEventAttendanceMutation"
 import { Permission } from "shared/permissions"
@@ -822,7 +822,8 @@ describe("DB3 command boundary", () => {
       },
     }, ctx)
 
-    expect(result).toEqual({ id: 1 })
+    expect(result).toEqual({ publicId: expect.any(String) })
+    expect(isPublicId(db3.saveEventSongListCommand.parseResult(result).publicId)).toBe(true)
     expect(authorizationTestDb.snapshot("eventSongList")).toEqual([
       expect.objectContaining({ id: 1, eventId: 100, name: "Setlist" }),
     ])
@@ -836,7 +837,7 @@ describe("DB3 command boundary", () => {
     const updateResult = await invokeResolver(executeDB3CommandMutation, {
       commandID: db3.saveEventSongListCommand.commandID,
       payload: {
-        id: 1,
+        publicId: db3.saveEventSongListCommand.parseResult(result).publicId,
         eventId: 100,
         name: "Updated setlist",
         description: "Second pass",
@@ -845,7 +846,7 @@ describe("DB3 command boundary", () => {
         sortOrder: 2,
         songs: [],
         dividers: [{
-          id: 1,
+          publicId: authorizationTestDb.snapshot("eventSongListDivider")[0]!.publicId,
           sortOrder: 0,
           color: null,
           isInterruption: false,
@@ -858,7 +859,7 @@ describe("DB3 command boundary", () => {
       },
     }, ctx)
 
-    expect(updateResult).toEqual({ id: 1 })
+    expect(updateResult).toEqual(result)
     expect(authorizationTestDb.snapshot("eventSongList")).toEqual([
       expect.objectContaining({
         id: 1,
@@ -1065,24 +1066,25 @@ describe("BA-S003 generic sort-order authorization", () => {
     const actor = createAuthorizationTestUser("normal", { id: 7, permissions })
     authorizationTestDb.reset({
       user: [actor],
+      event: [makeEvent({ id: 100 }), makeEvent({ id: 200 }), makeEvent({ id: 647 })],
       eventSongList: [
-        { id: 1, eventId: 100, name: "A", description: "", sortOrder: 0 },
-        { id: 2, eventId: 200, name: "Other group", description: "", sortOrder: 1 },
+        { id: 1, publicId: listPublicId(1), eventId: 100, name: "A", description: "", sortOrder: 0 },
+        { id: 2, publicId: listPublicId(2), eventId: 200, name: "Other group", description: "", sortOrder: 1 },
       ],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
     const update = vi.spyOn(authorizationTestDb.getDelegate("eventSongList"), "update")
 
-    await expect(invokeResolver(updateGenericSortOrder, {
-      tableID: db3.xEventSongList.tableID,
-      tableName: db3.xEventSongList.tableName,
-      movingItemId: 1,
-      newPositionItemId: 2,
-      scopeRowIds: [1, 2],
-      groupByColumn: "eventId",
-      groupValue: 100,
-    }, ctx)).rejects.toThrow("Not authorized to mutate EventSongList fields: sortOrder")
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.reorderEventSongListsCommand.commandID,
+      payload: {
+      movingItemId: listPublicId(1),
+      newPositionItemId: listPublicId(2),
+      scopeRowIds: [listPublicId(1), listPublicId(2)],
+      eventId: 100,
+      },
+    }, ctx)).rejects.toThrow("Setlist reorder scope was not found in this event")
 
     expect(update).not.toHaveBeenCalled()
   })
@@ -1096,23 +1098,24 @@ describe("BA-S003 generic sort-order authorization", () => {
     const actor = createAuthorizationTestUser("normal", { id: 5, permissions })
     authorizationTestDb.reset({
       user: [actor],
+      event: [makeEvent({ id: 100 }), makeEvent({ id: 200 }), makeEvent({ id: 647 })],
       eventSongList: [
-        { id: 1, eventId: 100, name: "A", description: "", sortOrder: 0 },
-        { id: 2, eventId: 100, name: "B", description: "", sortOrder: 1 },
-        { id: 3, eventId: 200, name: "Other", description: "", sortOrder: 7 },
+        { id: 1, publicId: listPublicId(1), eventId: 100, name: "A", description: "", sortOrder: 0 },
+        { id: 2, publicId: listPublicId(2), eventId: 100, name: "B", description: "", sortOrder: 1 },
+        { id: 3, publicId: listPublicId(3), eventId: 200, name: "Other", description: "", sortOrder: 7 },
       ],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(updateGenericSortOrder, {
-      tableID: db3.xEventSongList.tableID,
-      tableName: db3.xEventSongList.tableName,
-      movingItemId: 1,
-      newPositionItemId: 2,
-      scopeRowIds: [1, 2],
-      groupByColumn: "eventId",
-      groupValue: 100,
+    await invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.reorderEventSongListsCommand.commandID,
+      payload: {
+      movingItemId: listPublicId(1),
+      newPositionItemId: listPublicId(2),
+      scopeRowIds: [listPublicId(1), listPublicId(2)],
+      eventId: 100,
+      },
     }, ctx)
 
     expect(authorizationTestDb.snapshot("eventSongList")).toEqual([
@@ -1121,6 +1124,7 @@ describe("BA-S003 generic sort-order authorization", () => {
       expect.objectContaining({ id: 3, sortOrder: 7 }),
     ])
     expect(authorizationTestDb.snapshot("change")).toEqual([
+      expect.objectContaining({ table: "EventSongList", action: "update" }),
       expect.objectContaining({ table: "EventSongList", action: "update" }),
     ])
   })
@@ -1134,22 +1138,23 @@ describe("BA-S003 generic sort-order authorization", () => {
     const actor = createAuthorizationTestUser("normal", { id: 5, permissions })
     authorizationTestDb.reset({
       user: [actor],
+      event: [makeEvent({ id: 100 }), makeEvent({ id: 200 }), makeEvent({ id: 647 })],
       eventSongList: [
-        { id: 650, eventId: 647, name: "Setlist", description: "", sortOrder: 0 },
-        { id: 651, eventId: 647, name: "Set 2", description: "", sortOrder: 0 },
+        { id: 650, publicId: listPublicId(650), eventId: 647, name: "Setlist", description: "", sortOrder: 0 },
+        { id: 651, publicId: listPublicId(651), eventId: 647, name: "Set 2", description: "", sortOrder: 0 },
       ],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(updateGenericSortOrder, {
-      tableID: db3.xEventSongList.tableID,
-      tableName: db3.xEventSongList.tableName,
-      movingItemId: 650,
-      newPositionItemId: 651,
-      scopeRowIds: [650, 651],
-      groupByColumn: "eventId",
-      groupValue: 647,
+    await invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.reorderEventSongListsCommand.commandID,
+      payload: {
+      movingItemId: listPublicId(650),
+      newPositionItemId: listPublicId(651),
+      scopeRowIds: [listPublicId(650), listPublicId(651)],
+      eventId: 647,
+      },
     }, ctx)
 
     expect(authorizationTestDb.snapshot("eventSongList")).toEqual([
@@ -1183,8 +1188,8 @@ describe("BA-S003 event song-list deletion", () => {
       "findFirst",
     )
 
-    await expect(invokeResolver(deleteEventSongList, { id: 20 }, ctx)).rejects.toThrow(
-      "Not authorized to mutate EventSongList fields: id",
+    await expect(invokeResolver(executeDB3CommandMutation, { commandID: db3.deleteEventSongListCommand.commandID, payload: { publicId: listPublicId(20) } }, ctx)).rejects.toThrow(
+      "Not authorized to mutate EventSongList fields: publicId",
     )
     expect(targetLookup).not.toHaveBeenCalled()
   })
@@ -1194,9 +1199,10 @@ describe("BA-S003 event song-list deletion", () => {
     const actor = createAuthorizationTestUser("normal", { id: 11, permissions })
     authorizationTestDb.reset({
       user: [actor],
-      event: [makeEvent()],
+      event: [makeEvent({ id: 100 }), makeEvent({ id: 200 }), makeEvent({ id: 647 })],
       eventSongList: [{
         id: 20,
+        publicId: listPublicId(20),
         eventId: 100,
         name: "Setlist",
         description: "",
@@ -1206,6 +1212,7 @@ describe("BA-S003 event song-list deletion", () => {
       }],
       eventSongListSong: [{
         id: 21,
+        publicId: listSongPublicId(21),
         eventSongListId: 20,
         songId: 300,
         sortOrder: 0,
@@ -1218,7 +1225,7 @@ describe("BA-S003 event song-list deletion", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(deleteEventSongList, { id: 20 }, ctx)
+    await invokeResolver(executeDB3CommandMutation, { commandID: db3.deleteEventSongListCommand.commandID, payload: { publicId: listPublicId(20) } }, ctx)
 
     expect(authorizationTestDb.snapshot("eventSongList")).toEqual([])
     expect(authorizationTestDb.snapshot("eventSongListSong")).toEqual([])

@@ -45,10 +45,6 @@ const compatibilitySites: Record<string, InventoryEntry[]> = {
         { api: "defineLegacyTableClientSpec", category: "render-only-editor", count: 2 },
         { api: "useLegacyTableRenderContext", category: "render-only-editor", count: 2 },
     ],
-    "src/core/components/EventSongListComponents.tsx": [
-        { api: "defineLegacyTableClientSpec", category: "render-only-editor", count: 1 },
-        { api: "useLegacyTableRenderContext", category: "render-only-editor", count: 1 },
-    ],
     "src/core/components/SearchableNameColumnClient.tsx": [
         { api: "defineLegacyDynamicTableClientSpec", category: "runtime-dynamic-query", count: 1 },
         { api: "useLegacyTableRenderContext", category: "runtime-dynamic-query", count: 1 },

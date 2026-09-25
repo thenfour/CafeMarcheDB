@@ -304,6 +304,30 @@ export async function CorrectRolePermissionPublicIds() {
     console.log(`Replaced ${replacementCount} RolePermission public-ID placeholders.`);
 }
 
+export async function CorrectEventSongListPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.eventSongList,
+        modelName: "EventSongList",
+    });
+    console.log(`Replaced ${replacementCount} EventSongList public-ID placeholders.`);
+}
+
+export async function CorrectEventSongListSongPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.eventSongListSong,
+        modelName: "EventSongListSong",
+    });
+    console.log(`Replaced ${replacementCount} EventSongListSong public-ID placeholders.`);
+}
+
+export async function CorrectEventSongListDividerPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.eventSongListDivider,
+        modelName: "EventSongListDivider",
+    });
+    console.log(`Replaced ${replacementCount} EventSongListDivider public-ID placeholders.`);
+}
+
 export async function CorrectUserSignInMethodPublicIds() {
     const replacementCount = await repairPublicIdPlaceholders({
         delegate: db.userSignInMethod,
@@ -348,6 +372,9 @@ export async function registerNodeInstrumentation() {
     await CorrectRolePublicIds();
     await CorrectRolePermissionPublicIds();
     await CorrectUserSignInMethodPublicIds();
+    await CorrectEventSongListPublicIds();
+    await CorrectEventSongListSongPublicIds();
+    await CorrectEventSongListDividerPublicIds();
 
     //const startupState = getServerStartStateRef();
     process.env.CMDB_START_TIME = `${new Date().valueOf()}`;

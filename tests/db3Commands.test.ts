@@ -1,3 +1,4 @@
+import { listPublicId, listSongPublicId } from "./support/eventSongListFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { eventSongListSaveCommandHandler } from "@db3/server/commands/eventSongListSaveCommand";
@@ -11,7 +12,6 @@ import {
     parsePublicId,
     type EventStatusPublicId,
     type InstrumentFunctionalGroupPublicId,
-    type InstrumentTagPublicId,
 } from "shared/publicId";
 import { z } from "zod";
 
@@ -36,6 +36,7 @@ function createContext(seed?: {
         values: Record<string, unknown>,
     ): Promise<Record<string, unknown>> => ({
         id: entity.tableID === db3.xEventSongList.tableID ? 50 : 900,
+        publicId: listPublicId(50),
         ...values,
     }));
     const update = vi.fn(async (_entity: db3.AnyDB3Table, id: db3.DB3Identity, values: Record<string, unknown>) => ({
@@ -44,7 +45,7 @@ function createContext(seed?: {
     }));
     const deleteRow = vi.fn(async () => undefined);
     const requireVisible = vi.fn(async (entity: db3.AnyDB3Table, identity: db3.DB3Identity) => ({
-        id: identity,
+        ...(entity === db3.xEventSongList ? seed?.songList : { id: identity }),
         tableID: entity.tableID,
     }));
     const afterMutation = vi.fn(async () => undefined);
@@ -132,7 +133,7 @@ describe("DB3 commands", () => {
             dividers: [],
             unexpected: true,
         })).toThrow();
-        expect(db3.saveEventSongListCommand.parseResult({ id: 50 })).toEqual({ id: 50 });
+        expect(db3.saveEventSongListCommand.parseResult({ publicId: listPublicId(50) })).toEqual({ publicId: listPublicId(50) });
         expect(() => db3.saveEventSongListCommand.parseResult({ id: -1 })).toThrow();
         expect(db3.saveEventSongListCommand.invalidation).toEqual({
             mode: "caller",
@@ -628,18 +629,18 @@ describe("DB3 commands", () => {
             }],
         }, context);
 
-        expect(result).toEqual({ id: 50 });
+        expect(result).toEqual({ publicId: listPublicId(50) });
         expect(requireVisible).toHaveBeenNthCalledWith(1, db3.xEvent, 5);
         expect(requireVisible).toHaveBeenNthCalledWith(2, db3.xSong, 7);
         expect(insert).toHaveBeenNthCalledWith(1, db3.xEventSongList, parentFields);
         expect(insert).toHaveBeenNthCalledWith(2, db3.xEventSongListSong, {
-            eventSongListId: 50,
+            eventSongListId: listPublicId(50),
             songId: 7,
             sortOrder: 0,
             subtitle: "Open quietly",
         });
         expect(insert).toHaveBeenNthCalledWith(3, db3.xEventSongListDivider, {
-            eventSongListId: 50,
+            eventSongListId: listPublicId(50),
             sortOrder: 1,
             color: null,
             isInterruption: true,
@@ -654,49 +655,49 @@ describe("DB3 commands", () => {
 
     it("synchronizes persisted children and rejects IDs owned by another setlist", async () => {
         const existingSong = {
-            id: 501,
-            eventSongListId: 50,
+            id: 501, publicId: listSongPublicId(501),
+            eventSongListId: listPublicId(50),
             songId: 7,
             sortOrder: 0,
             subtitle: "Old",
         };
         const removedSong = {
-            id: 502,
-            eventSongListId: 50,
+            id: 502, publicId: listSongPublicId(502),
+            eventSongListId: listPublicId(50),
             songId: 8,
             sortOrder: 1,
             subtitle: "Remove",
         };
         const { context, update, deleteRow } = createContext({
-            songList: { id: 50, eventId: 5 },
+            songList: { id: 50, publicId: listPublicId(50), eventId: 5 },
             songs: [existingSong, removedSong],
         });
 
         await eventSongListSaveCommandHandler.execute({
-            id: 50,
+            publicId: listPublicId(50),
             ...parentFields,
-            songs: [{ id: 501, songId: 7, sortOrder: 0, subtitle: "Changed" }],
+            songs: [{ publicId: listSongPublicId(501), songId: 7, sortOrder: 0, subtitle: "Changed" }],
             dividers: [],
         }, context);
 
-        expect(update).toHaveBeenCalledWith(db3.xEventSongList, 50, {
+        expect(update).toHaveBeenCalledWith(db3.xEventSongList, listPublicId(50), {
             name: parentFields.name,
             description: parentFields.description,
             isActuallyPlayed: parentFields.isActuallyPlayed,
             isOrdered: parentFields.isOrdered,
             sortOrder: parentFields.sortOrder,
         });
-        expect(update).toHaveBeenCalledWith(db3.xEventSongListSong, 501, {
+        expect(update).toHaveBeenCalledWith(db3.xEventSongListSong, listSongPublicId(501), {
             songId: 7,
             sortOrder: 0,
             subtitle: "Changed",
         });
-        expect(deleteRow).toHaveBeenCalledWith(db3.xEventSongListSong, 502, "hard");
+        expect(deleteRow).toHaveBeenCalledWith(db3.xEventSongListSong, listSongPublicId(502), "hard");
 
         await expect(eventSongListSaveCommandHandler.execute({
-            id: 50,
+            publicId: listPublicId(50),
             ...parentFields,
-            songs: [{ id: 999, songId: 7, sortOrder: 0, subtitle: "Forged" }],
+            songs: [{ publicId: listSongPublicId(999), songId: 7, sortOrder: 0, subtitle: "Forged" }],
             dividers: [],
         }, context)).rejects.toThrow("does not belong to this setlist");
     });

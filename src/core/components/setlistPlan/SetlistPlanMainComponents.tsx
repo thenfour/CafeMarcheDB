@@ -11,7 +11,8 @@ import { CMDialog } from "src/core/components/CMDialog";
 import { AdminInspectObject, CMSmallButton, DotMenu, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
-import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
+import { getClipboardSongList } from "src/core/components/EventSongListComponents";
+import type { PortableSongList } from "@db3/db3";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { useSnackbar } from "src/core/components/SnackbarContext";
@@ -691,15 +692,14 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
     // Convert setlist plan data to LocalSongListPayload format so we can use SetlistAPI.GetRowItems
     const convertToLocalSongListPayload = React.useMemo(() => {
         try {
-            const songList = {
+            const songList: SetlistAPI.LocalSongListPayload = {
                 songs: docOrTempDoc.payload.rows
                     .filter(row => row.type === 'song' && row.songId)
                     .map((row) => {
                         const song = allSongs.find(s => s.id === row.songId);
                         if (!song) return null;
                         return {
-                            eventSongListId: 0, // not used for running time calculation
-                            id: docOrTempDoc.payload.rows.indexOf(row), // cannot use index; that's only divider index.
+                            clientId: row.rowId,
                             sortOrder: docOrTempDoc.payload.rows.indexOf(row), // cannot use index; that's only divider index.
                             subtitle: row.commentMarkdown || "",
                             songId: song.id,
@@ -714,12 +714,11 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                             }
                         };
                     })
-                    .filter(Boolean) as any[],
+                    .filter((row): row is NonNullable<typeof row> => row !== null),
                 dividers: docOrTempDoc.payload.rows
                     .filter(row => row.type === 'divider')
                     .map((row, index) => ({
-                        id: docOrTempDoc.payload.rows.indexOf(row), // cannot use index; that's only divider index.
-                        eventSongListId: 0, // not used for running time calculation
+                        clientId: row.rowId,
                         isInterruption: row.isInterruption ?? true, // defaults to true for dividers
                         subtitleIfSong: null,
                         isSong: false,
@@ -770,8 +769,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 playlistIndex: rowIndex,
                 setListItemContext: {
                     type: "divider",
-                    id: -1,
-                    eventSongListId: -1, // unused
+                    clientId: row.rowId,
                     subtitle: "",
                     isInterruption: true,
                     isSong: false,

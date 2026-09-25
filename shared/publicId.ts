@@ -37,6 +37,9 @@ export type PermissionPublicId = PublicId<"Permission">;
 export type RolePublicId = PublicId<"Role">;
 export type RolePermissionPublicId = PublicId<"RolePermission">;
 export type UserSignInMethodPublicId = PublicId<"UserSignInMethod">;
+export type EventSongListPublicId = PublicId<"EventSongList">;
+export type EventSongListSongPublicId = PublicId<"EventSongListSong">;
+export type EventSongListDividerPublicId = PublicId<"EventSongListDivider">;
 // todo: define other table-specific public ID types as needed here.
 
 export function isPublicId(value: unknown): value is PublicId {

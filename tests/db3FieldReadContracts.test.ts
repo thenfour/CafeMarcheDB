@@ -132,11 +132,9 @@ describe("DB3 xTable model metadata", () => {
     expect(eventTags.getForeignTableShema()).toBe(db3.xEventTag)
 
     const songs = db3.xEventSongList.fields.songs
-    expect(songs.associationTableID).toBe("EventSongListSong")
-    expect(songs.associationLocalIDMember).toBe("eventSongListId")
-    expect(songs.associationForeignIDMember).toBe("songId")
-    expect(songs.getAssociationTableShema()).toBe(db3.xEventSongListSong)
-    expect(songs.getForeignTableShema()).toBe(db3.xSong)
+    expect(songs.foreignTableID).toBe("EventSongListSong")
+    expect(songs.getPrismaMemberDescriptors()[0]?.kind).toBe("relationCollection")
+
   })
 })
 

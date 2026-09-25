@@ -1,9 +1,11 @@
+import type { EventSongListPublicId } from "shared/publicId";
 import { z } from "zod";
 import {
     isPublicId,
     type InstrumentPublicId,
     type SongCreditTypePublicId,
 } from "shared/publicId";
+import * as db3 from "../../db3/db3";
 
 export enum ActivityFeature {
     global_ical_digest = "global_ical_digest",
@@ -347,11 +349,11 @@ export const ZTRecordActionArgs = z.object({
     attendanceId: z.number().optional(),
     eventSegmentId: z.number().optional(),
     customLinkId: z.number().optional(),
-    eventSongListId: z.number().optional(),
+    eventSongListId: db3.xEventSongList.identitySchema.optional(),
     frontpageGalleryItemId: z.number().optional(),
     menuLinkId: z.number().optional(),
     setlistPlanId: z.number().optional(),
-    songCreditTypeId: z.custom<SongCreditTypePublicId>(isPublicId).optional(),
+    songCreditTypeId: db3.xSongCreditType.identitySchema.optional(),
     instrumentId: z.string().optional(),
 });
 
@@ -366,7 +368,7 @@ export type ActivityFeatureAssociations = {
     eventSegmentId?: number;
 
     customLinkId?: number;
-    eventSongListId?: number;
+    eventSongListId?: EventSongListPublicId;
     frontpageGalleryItemId?: number;
     menuLinkId?: number;
     setlistPlanId?: number;

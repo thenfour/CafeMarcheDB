@@ -193,7 +193,7 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
     }, []);
 
-    const isPlayingSetlistItem = (args: { fileId: number, setlistItemIndex: number, setlistId?: number | undefined, setlistPlanId?: number | undefined }) => {
+    const isPlayingSetlistItem = (args: { fileId: number, setlistItemIndex: number, setlistId?: string | undefined, setlistPlanId?: number | undefined }) => {
         if (currentIndex === undefined || currentIndex < 0 || currentIndex >= playlist.length) return false;
         const track = playlist[currentIndex]!;
         if (currentIndex !== args.setlistItemIndex) return false; // Check if the current index matches the setlist item index

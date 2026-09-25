@@ -13,7 +13,6 @@ import { CoerceToNumberOr, gQueryOptions } from "shared/utils";
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
-import deleteEventSongList from "./mutations/deleteEventSongList";
 import insertEvent from "./mutations/insertEvent";
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
 import updateGalleryItemImage from "./mutations/updateGalleryItemImage";
@@ -141,7 +140,6 @@ class EventsAPI {
     updateUserEventAttendance = CreateAPIMutationFunction(updateUserEventAttendanceMutation);
     updateEventBasicFields = CreateAPIMutationFunction(updateEventBasicFields);
 
-    deleteEventSongListx = CreateAPIMutationFunction(deleteEventSongList);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

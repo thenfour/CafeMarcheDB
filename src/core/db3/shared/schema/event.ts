@@ -11,6 +11,9 @@ import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
 import { CoalesceBool, gIconOptions, smartTruncate } from "shared/utils";
 import type {
+    EventSongListPublicId,
+    EventSongListSongPublicId,
+    EventSongListDividerPublicId,
     EventStatusPublicId,
     EventTagAssignmentPublicId,
     EventTagPublicId,
@@ -936,7 +939,7 @@ export const xEventUserResponse = db3.defineTable({
 
 export const xEventSongList = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventSongListDelegate>(),
-    getIdentity: (songList: { id: number }) => songList.id,
+    getIdentity: (songList: { publicId: EventSongListPublicId }) => songList.publicId,
     getSelectionArgs: (): Prisma.EventSongListDefaultArgs => {
         return EventSongListArgs;
     },
@@ -949,7 +952,7 @@ export const xEventSongList = db3.defineTable({
     naturalOrderBy: EventSongListNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSongListPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.name,
         description: row.description,
         ownerUserId: null,
@@ -964,7 +967,8 @@ export const xEventSongList = db3.defineTable({
         return ret;
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<EventSongListPublicId>(),
         name: columnName => MakeTitleField(columnName, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         description: () => MakeDescriptionField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         sortOrder: () => MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
@@ -974,17 +978,11 @@ export const xEventSongList = db3.defineTable({
 
         event: foreignRef(() => xEvent, {
             fkidMember: "eventId",
+            requireVisibleTarget: true,
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
-        songs: tagsRef("EventSongListSong", "Song", {
-            associationForeignObjectMember: "song",
-            associationLocalObjectMember: "eventSongList",
-            authMap: xEventAuthMap_R_EOwn_EManagers,
-            getQuickFilterWhereClause: (query: string): Prisma.EventSongListWhereInput | boolean => false,
-            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.EventSongListWhereInput | boolean => false,
-        }),
+        songs: memberName => new ForeignCollectionField({ memberName, foreignTableID: "EventSongListSong", authMap: xEventAuthMap_R_EOwn_EManagers }),
         dividers: memberName => new ForeignCollectionField({ memberName, foreignTableID: "EventSongListDivider", authMap: xEventAuthMap_R_EOwn_EManagers }),
-        userId: memberName => new GhostField({ memberName, authMap: xEventAuthMap_R_EOwn_EManagers }), // what is this??
     })
 });
 
@@ -992,19 +990,19 @@ export const xEventSongList = db3.defineTable({
 
 export const xEventSongListSong = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventSongListSongDelegate>(),
-    getIdentity: (song: { id: number }) => song.id,
+    getIdentity: (song: { publicId: EventSongListSongPublicId }) => song.publicId,
     getSelectionArgs: (): Prisma.EventSongListSongDefaultArgs => {
         return EventSongListSongArgs;
     },
     tableName: "EventSongListSong",
     deletePolicy: "hard",
     queryParameters: {
-        eventSongListId: { kind: "integer", authorizeAs: "eventSongListId" },
+        eventSongListId: { kind: "entityIdentity", targetTableID: "EventSongList", authorizeAs: "eventSongListId" },
     },
     naturalOrderBy: EventSongListSongNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSongListSongPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.song?.name || "?",
         description: row.subtitle || "",
         ownerUserId: null,
@@ -1019,8 +1017,9 @@ export const xEventSongListSong = db3.defineTable({
         return ret;
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
-        subtitle: columnName => MakePlainTextField(columnName, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<EventSongListSongPublicId>(),
+        subtitle: columnName => MakeNullableRawTextField(columnName, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         sortOrder: () => MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         song: foreignRef(() => xSong, {
             fkidMember: "songId",
@@ -1029,6 +1028,7 @@ export const xEventSongListSong = db3.defineTable({
         }),
         eventSongList: foreignRef(() => xEventSongList, {
             fkidMember: "eventSongListId",
+            requireVisibleTarget: true,
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
     })
@@ -1038,19 +1038,19 @@ export const xEventSongListSong = db3.defineTable({
 
 export const xEventSongListDivider = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventSongListDividerDelegate>(),
-    getIdentity: (divider: { id: number }) => divider.id,
+    getIdentity: (divider: { publicId: EventSongListDividerPublicId }) => divider.publicId,
     getSelectionArgs: (): Prisma.EventSongListDividerDefaultArgs => {
         return EventSongListDividerArgs;
     },
     tableName: "EventSongListDivider",
     deletePolicy: "hard",
     queryParameters: {
-        eventSongListId: { kind: "integer", authorizeAs: "eventSongListId" },
+        eventSongListId: { kind: "entityIdentity", targetTableID: "EventSongList", authorizeAs: "eventSongListId" },
     },
     naturalOrderBy: EventSongListSongNaturalOrderBy, // yea i can borrow this.
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSongListDividerPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: "divider",
         color: gGeneralPaletteList.findEntry(row.color),
         description: row.subtitle || "",
@@ -1066,8 +1066,9 @@ export const xEventSongListDivider = db3.defineTable({
         return ret;
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
-        subtitle: columnName => MakePlainTextField(columnName, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<EventSongListDividerPublicId>(),
+        subtitle: columnName => MakeNullableRawTextField(columnName, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         sortOrder: () => MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         color: () => MakeColorField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         isSong: columnName => new BoolField({ columnName, defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
@@ -1078,6 +1079,7 @@ export const xEventSongListDivider = db3.defineTable({
         textStyle: columnName => new ConstEnumStringField({ allowNull: true, authMap: xEventAuthMap_R_EOwn_EManagers, columnName, defaultValue: EventSongListDividerTextStyle.Default, options: EventSongListDividerTextStyle }),
         eventSongList: foreignRef(() => xEventSongList, {
             fkidMember: "eventSongListId",
+            requireVisibleTarget: true,
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
     })

@@ -14,11 +14,10 @@ import React, { useCallback, useRef } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { moveItemInArray } from 'shared/arrayUtils';
 import { formatSongLength } from 'shared/time';
-import { CoalesceBool, getHashedColor, getUniqueNegativeID } from "shared/utils";
+import { CoalesceBool, getHashedColor } from "shared/utils";
 import { SnackbarContext, SnackbarContextType, useSnackbar } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import getSongPinnedRecording from '../db3/queries/getSongPinnedRecording';
 import { GetFilteredSongsItemSongPayload, TSongPinnedRecording } from '../db3/shared/apiTypes';
@@ -43,10 +42,11 @@ import { MetronomeButton } from './Metronome';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 import { SongTagIndicatorContainer } from './SongTagIndicatorContainer';
+import type { PortableSongList } from "../db3/shared/entities/eventSongList/eventSongListClipboard";
 import type { SongTagPublicId } from 'shared/publicId';
 import type { EventEnrichedVerbose_Event } from './event/EventComponentsBase';
 
-const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, TSongPinnedRecording>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, songListId: number }): MediaPlayerTrack => {
+const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, TSongPinnedRecording>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, songListId: string }): MediaPlayerTrack => {
     if (args.rowItem.type === 'song') {
         const pinnedRecording = args.allPinnedRecordings[args.rowItem.song.id];
         return {
@@ -83,16 +83,16 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
         // Only reset the controlled value if we're editing a different divider (different ID)
         // This prevents the form from resetting when the user makes changes
         setControlledValue({ ...value });
-    }, [value.id]);
+    }, [value.clientId]);
 
-    const makePreview = (testFormat: db3.EventSongListDividerTextStyle): db3.EventSongListDetailClient => {
+    const makePreview = (testFormat: db3.EventSongListDividerTextStyle): db3.EventSongListPreview => {
         const ret = db3.cloneEventSongListDraft(songList);
         ret.items = ret.items.slice(Math.max(0, sortOrder - 2), sortOrder + 3);
-        const divider = ret.items.find(item => item.clientId === value.id);
+        const divider = ret.items.find(item => item.clientId === value.clientId);
         if (!divider || divider.type !== "divider") throw new Error("Divider is missing from preview.");
         Object.assign(divider, db3.eventSongListDividerRowToDraftItem(controlledValue));
         divider.textStyle = testFormat;
-        return db3.eventSongListDraftToClient(ret);
+        return db3.eventSongListDraftToPreview(ret);
     };
 
     return <CMDialog
@@ -223,7 +223,7 @@ interface EventSongListValueViewerRowProps {
     value: SetlistAPI.EventSongListItem;
     rowIndex: number; // The index of this row in the setlistRowItems array
     setlistRowItems: readonly SetlistAPI.EventSongListItem[];
-    songList: db3.EventSongListDetailClient;
+    songList: db3.EventSongListPreview;
     pinnedRecordings: Record<number, TSongPinnedRecording>; // songId -> pinnedRecording
     lengthColumnMode: LengthColumnMode;
     toggleLengthColumnMode: () => void;
@@ -267,7 +267,7 @@ export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValu
     const textStyle = SetlistAPI.StringToEventSongListDividerTextStyle(props.value.textStyle);
     const styleClasses = SetlistAPI.GetCssClassForEventSongListDividerTextStyle(textStyle);
 
-    return <div className={`SongListValueViewerRow tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_divider ${colorInfo.cssClass} ${styleClasses}`} style={colorInfo.style}>
+    return <div className={`SongListValueViewerRow tr ${!props.value.publicId ? 'newItem' : 'existingItem'} item validItem type_divider ${colorInfo.cssClass} ${styleClasses}`} style={colorInfo.style}>
         <div className='divBreak'></div>
         <div className="td songIndex">
             {/* {props.value.index != null && props.value.index + 1} */}
@@ -335,7 +335,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
     const pinnedRecording = props.value.type === "song" && props.pinnedRecordings?.[props.value.songId];
     const isCurrentMediaPlayerTrack = !!pinnedRecording && mediaPlayer.isPlayingSetlistItem({
         fileId: pinnedRecording.id,
-        setlistId: props.songList.id,
+        setlistId: props.songList.clientId,
         setlistItemIndex: props.rowIndex,
     });
 
@@ -348,7 +348,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
         return Array.from(tagIds);
     }, [props.songList.content]);
 
-    return <div className={`SongListValueViewerRow tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === 'new' ? 'invalidItem' : 'validItem'} type_${props.value.type} ${isCurrentMediaPlayerTrack ? 'currentMediaPlayerTrack' : ''}`}>
+    return <div className={`SongListValueViewerRow tr ${!props.value.publicId ? 'newItem' : 'existingItem'} item ${props.value.type === 'new' ? 'invalidItem' : 'validItem'} type_${props.value.type} ${isCurrentMediaPlayerTrack ? 'currentMediaPlayerTrack' : ''}`}>
         <AppContextMarker songId={song?.id || undefined}>
             <div className="td songIndex">
                 {props.songList.isOrdered === true && props.value.type === 'song' && (props.value.index + 1)}
@@ -405,52 +405,8 @@ async function CopySongListIndexAndNames(snackbarContext: SnackbarContextType, c
     snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
 }
 
-export type PortableSongListSong = {
-    sortOrder: number;
-    comment: string;
-    song: SetlistAPI.EventSongListSongItem["song"];
-    type: 'song';
-};
-
-export type PortableSongListDivider = {
-    sortOrder: number;
-    comment: string;
-    color: string | null;
-    isInterruption: boolean;
-    isSong: boolean;
-    subtitleIfSong: string | null;
-    lengthSeconds: number | null;
-    textStyle: string | null;
-    type: 'divider';
-};
-
-export type PortableSongList = (PortableSongListSong | PortableSongListDivider)[];
-
 async function CopySongListJSON(snackbarContext: SnackbarContextType, content: db3.EventSongListContent) {
-    const obj: PortableSongList = content.items.flatMap<PortableSongListSong | PortableSongListDivider>((item, sortOrder) => {
-        if (item.type === "song") {
-            return [{
-                sortOrder,
-                song: item.song,
-                comment: item.subtitle ?? "",
-                type: "song" as const,
-            }];
-        }
-        if (item.type === "divider") {
-            return [{
-                type: "divider" as const,
-                color: item.color,
-                isInterruption: item.isInterruption,
-                isSong: item.isSong,
-                subtitleIfSong: item.subtitleIfSong,
-                lengthSeconds: item.lengthSeconds,
-                textStyle: item.textStyle,
-                sortOrder,
-                comment: item.subtitle ?? "",
-            }];
-        }
-        return [];
-    });
+    const obj = db3.eventSongListContentToPortable(content);
 
     const txt = JSON.stringify(obj, null, 2);
     await navigator.clipboard.writeText(txt);
@@ -594,8 +550,8 @@ export const EventSongListDotMenu = (props: EventSongListDotMenuProps) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueViewerProps {
-    value: db3.EventSongListDetailClient;
-    allSongLists?: readonly db3.EventSongListDetailClient[];
+    value: db3.EventSongListPreview;
+    allSongLists?: readonly db3.EventSongListPreview[];
     readonly: boolean;
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
 };
@@ -664,7 +620,8 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
         const songs = [...songsById.values()]
             .sort((a, b) => a.song.name.localeCompare(b.song.name))
             .map((item, sortOrder) => ({
-                id: item.id,
+                clientId: item.clientId,
+                publicId: item.publicId,
                 eventSongListId: item.eventSongListId,
                 subtitle: item.subtitle,
                 sortOrder,
@@ -675,8 +632,8 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
     };
 
     // Store current dependencies in a ref so the playlist function always returns current data
-    const playlistDataRef = useRef({ rowItems, pinnedRecordings, songListId: props.value.id });
-    playlistDataRef.current = { rowItems, pinnedRecordings, songListId: props.value.id };
+    const playlistDataRef = useRef({ rowItems, pinnedRecordings, songListId: props.value.clientId });
+    playlistDataRef.current = { rowItems, pinnedRecordings, songListId: props.value.clientId };
 
     // Use a stable function reference that always reads current data
     const getPlaylist = useCallback(() => {
@@ -737,7 +694,7 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
                         allPinnedRecordings: pinnedRecordings || {},
                         rowItem: s,
                         rowIndex: index,
-                        songListId: props.value.id,
+                        songListId: props.value.clientId,
                     })}
                     maxBpm={stats.maxBpm}
                 />)
@@ -866,7 +823,7 @@ export const EventSongListValueEditorDividerSongRow = (
     const tempoCellStyle = getBpmBarStyle(bpmValue, props.maxBpm);
 
     return <EventSongListValueEditorRowShell
-        className={`${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_divider ${styleClasses} ${colorInfo.cssClass}`}
+        className={`${!props.value.publicId ? 'newItem' : 'existingItem'} item validItem type_divider ${styleClasses} ${colorInfo.cssClass}`}
         style={style as any}
         onDelete={props.onDelete}
         songIndex={props.value.index != null && (props.value.index + 1)}
@@ -946,7 +903,7 @@ const EventSongListValueEditorSongRow = (
     };
 
     return <EventSongListValueEditorRowShell
-        className={`${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_song ${isCurrentMediaPlayerTrack ? 'currentMediaPlayerTrack' : ''}`}
+        className={`${!props.value.publicId ? 'newItem' : 'existingItem'} item validItem type_song ${isCurrentMediaPlayerTrack ? 'currentMediaPlayerTrack' : ''}`}
         style={style as any}
         onDelete={props.onDelete}
         songIndex={props.value.index + 1}
@@ -1010,7 +967,7 @@ const EventSongListValueEditorDividerRow = (
     }, [props.value, props.onChange]);
 
     return <EventSongListValueEditorRowShell
-        className={`${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_divider ${styleClasses} ${colorInfo.cssClass}`}
+        className={`${!props.value.publicId ? 'newItem' : 'existingItem'} item validItem type_divider ${styleClasses} ${colorInfo.cssClass}`}
         style={style as any}
         onDelete={props.onDelete}
         showDragHandle={props.showDragHandle}
@@ -1047,7 +1004,7 @@ const EventSongListValueEditorNewRow = (
         props.onChange({
             type: "song",
             eventSongListId: props.value.eventSongListId,
-            id: props.value.id,
+            clientId: props.value.clientId,
             sortOrder: props.value.sortOrder,
             subtitle: "",
             songId: song.id,
@@ -1063,7 +1020,7 @@ const EventSongListValueEditorNewRow = (
             type: 'divider',
             color: null,
             eventSongListId: props.value.eventSongListId,
-            id: getUniqueNegativeID(),
+            clientId: db3.createEventSongListLocalKey(),
             textStyle: db3.EventSongListDividerTextStyle.Default,
             isInterruption: type === "break",
             runningTimeSeconds: null,
@@ -1155,7 +1112,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
 }) => {
     const snackbarContext = React.useContext(SnackbarContext);
 
-    const newRowId = React.useMemo(() => getUniqueNegativeID(), []);
+    const newRowId = React.useMemo(() => db3.createEventSongListLocalKey(), []);
     const [lengthColumnMode, setLengthColumnMode] = React.useState<LengthColumnMode>("length");
 
     // Fetch all pinned recordings for songs in this list at once
@@ -1171,17 +1128,16 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     const hydratedContent = db3.getEventSongListDraftContent(value);
     const rowItems = [...hydratedContent.items];
 
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xEventSongList,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.eventSongListDetailView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
             description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
         },
     });
 
     // necessary to connect columns.
-    const ctx__ = DB3Client.useLegacyTableRenderContext({
+    const ctx__ = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.None, // i don't think it's necessary to do this when i'm just connecting columns.
         tableSpec: tableSpec,
     });
@@ -1208,13 +1164,13 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
             items: rows.flatMap(row => row.type === "new" ? [] : [
                 db3.eventSongListRowToDraftItem(
                     row,
-                    row.id === newRowId ? getUniqueNegativeID() : row.id,
+                    row.clientId === newRowId ? db3.createEventSongListLocalKey() : row.clientId,
                 ),
             ]),
         });
     };
 
-    const handleRowChange = (sourceRowId: number, newValue: SetlistAPI.EventSongListItem) => {
+    const handleRowChange = (sourceRowId: string, newValue: SetlistAPI.EventSongListItem) => {
         const updatedRows = sourceRowId === newRowId
             ? [...rowItems, newValue]
             : db3.replaceEventSongListEditorRow(rowItems, sourceRowId, newValue);
@@ -1222,7 +1178,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     };
 
     const handleRowDelete = (row: SetlistAPI.EventSongListItem) => {
-        handleRowsUpdated(rowItems.filter(existing => existing.id !== row.id));
+        handleRowsUpdated(rowItems.filter(existing => existing.clientId !== row.clientId));
     };
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
@@ -1244,34 +1200,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
 
     const appendPortableSongList = (obj: PortableSongList, replace: boolean) => {
         const newItems: db3.EventSongListDraftItem[] = replace ? [] : [...value.items];
-        const orderedPortableItems = [...obj].sort((a, b) => a.sortOrder - b.sortOrder);
-        newItems.push(...orderedPortableItems.map(p => {
-            switch (p.type) {
-                case 'divider':
-                    const div: db3.EventSongListDraftDivider = {
-                        type: 'divider',
-                        clientId: getUniqueNegativeID(),
-                        color: p.color,
-                        isInterruption: p.isInterruption,
-                        isSong: p.isSong,
-                        subtitleIfSong: p.subtitleIfSong,
-                        lengthSeconds: p.lengthSeconds,
-                        textStyle: p.textStyle,
-                        subtitle: p.comment,
-                    };
-                    return div;
-                case 'song':
-                    const song: db3.EventSongListDraftSong = {
-                        type: 'song',
-                        clientId: getUniqueNegativeID(),
-                        subtitle: p.comment,
-                        songId: p.song.id,
-                        song: p.song,
-                    }
-                    return song;
-            }
-            throw new Error(`unknown type?`);
-        }));
+        newItems.push(...db3.portableSongListToDraftItems(obj));
 
         setValue({ ...value, items: newItems });
     };
@@ -1385,13 +1314,13 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                 onDrop={onDrop}
             >
                 {
-                    rowItems.map((s, index) => <ReactSmoothDndDraggable key={s.id}>
+                    rowItems.map((s, index) => <ReactSmoothDndDraggable key={s.clientId}>
                         <EventSongListValueEditorRow
-                            key={s.id}
+                            key={s.clientId}
                             rowIndex={index}
                             value={s}
                             pinnedRecordings={pinnedRecordings || {}}
-                            onChange={(newValue) => handleRowChange(s.id, newValue)}
+                            onChange={(newValue) => handleRowChange(s.clientId, newValue)}
                             songList={value}
                             onDelete={() => handleRowDelete(s)}
                             lengthColumnMode={lengthColumnMode}
@@ -1414,8 +1343,8 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                     showDragHandle={false}
                     value={{
                         type: 'new',
-                        id: newRowId,
-                        eventSongListId: value.clientId,
+                        clientId: newRowId,
+                        eventSongListId: value.publicId,
                         sortOrder: rowItems.length,
                         songsWithUnknownLength: 0,
                         runningTimeSeconds: null,
@@ -1509,7 +1438,7 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
                 <div style={{ pointerEvents: "none" }}>
                     <EventSongListValueViewer
                         readonly={true}
-                        value={db3.eventSongListDraftToClient(value)}
+                        value={db3.eventSongListDraftToPreview(value)}
                     />
                 </div>
             ) : (
@@ -1548,13 +1477,13 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
     });
 
     const recordFeature = useFeatureRecorder();
-    const deleteMutation = API.events.deleteEventSongListx.useToken();
+    const deleteCommand = DB3Client.useDB3Command(db3.deleteEventSongListCommand);
     const saveCommand = DB3Client.useDB3Command(db3.saveEventSongListCommand);
 
     const handleSave = async (newValue: db3.EventSongListDraft) => {
         void recordFeature({
             feature: ActivityFeature.setlist_edit,
-            eventSongListId: props.value.id,
+            eventSongListId: props.value.publicId,
         });
         await snackbar.invokeAsync(async () => {
             await saveCommand.invoke(newValue);
@@ -1566,11 +1495,11 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
     const handleDelete = async () => {
         void recordFeature({
             feature: ActivityFeature.setlist_delete,
-            eventSongListId: props.value.id,
+            eventSongListId: props.value.publicId,
         });
         await snackbar.invokeAsync(async () => {
-            await deleteMutation.invoke({
-                id: props.value.id,
+            await deleteCommand.invoke({
+                publicId: props.value.publicId,
             });
             props.refetch();
             setEditMode(false);
@@ -1607,7 +1536,7 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
     const saveCommand = DB3Client.useDB3Command(db3.saveEventSongListCommand);
     const snackbar = React.useContext(SnackbarContext);
     const initialValue = React.useMemo(() => db3.createEventSongListDraft({
-        clientId: getUniqueNegativeID(),
+        clientId: db3.createEventSongListLocalKey(),
         eventId: props.event.id,
         name: props.event.songLists.length > 0
             ? `Set ${props.event.songLists.length + 1}`
@@ -1644,7 +1573,7 @@ export const EventSongListList = ({ values, event, readonly, refetch }: {
     const [saving, setSaving] = React.useState<boolean>(false);
     const recordFeature = useFeatureRecorder();
 
-    const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
+    const reorderCommand = DB3Client.useDB3Command(db3.reorderEventSongListsCommand);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
@@ -1653,8 +1582,8 @@ export const EventSongListList = ({ values, event, readonly, refetch }: {
         // removedIndex is the previous index; the original item to be moved
         // addedIndex is the new index where it should be moved to.
         if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
-        const movingItemId = values[args.removedIndex]!.id;
-        const newPositionItemId = values[args.addedIndex]!.id;
+        const movingItemId = values[args.removedIndex]!.publicId;
+        const newPositionItemId = values[args.addedIndex]!.publicId;
         assert(!!movingItemId && !!newPositionItemId, "moving item not found?");
 
         void recordFeature({
@@ -1662,14 +1591,11 @@ export const EventSongListList = ({ values, event, readonly, refetch }: {
             eventSongListId: movingItemId,
         });
 
-        updateSortOrderMutation.invoke({
-            tableID: db3.xEventSongList.tableID,
-            tableName: db3.xEventSongList.tableName,
+        reorderCommand.invoke({
             movingItemId,
             newPositionItemId,
-            scopeRowIds: values.map(item => item.id),
-            groupByColumn: "eventId",
-            groupValue: event.id,
+            scopeRowIds: values.map(item => item.publicId),
+            eventId: event.id,
         }).then(() => {
             showSnackbar({ severity: "success", children: "song list reorder successful" });
             refetch();
@@ -1689,10 +1615,10 @@ export const EventSongListList = ({ values, event, readonly, refetch }: {
             onDrop={onDrop}
         >
             {values.map(c => (
-                <ReactSmoothDndDraggable key={c.id}>
+                <ReactSmoothDndDraggable key={c.publicId}>
                     <AppContextMarker name="EventSongListControl">
                         <EventSongListControl
-                            key={c.id}
+                            key={c.publicId}
                             value={c}
                             allSongLists={values}
                             readonly={readonly}

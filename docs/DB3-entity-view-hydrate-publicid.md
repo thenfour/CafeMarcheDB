@@ -1340,22 +1340,23 @@ The current pressure-led sequence is:
     diagnostic data; live references follow each target entity's migration.
     Remove the two ledger models from the denominator, not by counting them as
     completed conversions.
-13. **Next application phase:** migrate the Event constellation from its outer
-    aggregates inward: the three Event setlist models, EventAttendance, the
-    segment/response family, then Event. The bounded slices below preserve the
-    existing identity domains of Event, Song, and User until their own turns.
+13. **In progress:** migrate the Event constellation from its outer aggregates
+    inward. The three Event setlist models are complete; continue with
+    EventAttendance, the segment/response family, then Event. The bounded slices
+    below preserve the existing identity domains of Event, Song, and User until
+    their own turns.
 14. Keep central Song, File, WikiPage, User, and the separate SetlistPlan
     aggregate for later application slices. EventSongList migration does not
     require converting SetlistPlan or SetlistPlanGroup.
 
-### Next application phase: Event constellation
+### Current application phase: Event constellation
 
 The Event classification family and FileEventTag are already converted. The
-remaining eight Event-related models can be handled in four coherent slices:
+eight Event-related models form four coherent slices; the first is complete:
 
 | Order | Models | Boundary exercised |
 | --- | --- | --- |
-| 1 | `EventSongList`, `EventSongListSong`, `EventSongListDivider` | An editable aggregate with persisted child identities, local draft keys, and mixed song/divider ordering. |
+| 1 (complete) | `EventSongList`, `EventSongListSong`, `EventSongListDivider` | An editable aggregate with persisted child identities, local draft keys, and mixed song/divider ordering. |
 | 2 | `EventAttendance` | The shared response-choice reference across dashboard caches, controls, reports, imports, and telemetry. |
 | 3 | `EventSegment`, `EventSegmentUserResponse`, `EventUserResponse` | Segment-keyed attendance operations and response creation/copying while Event and User remain natural. |
 | 4 | `Event` | Central routes, search, calendar links, visibility, creation/import, files, reports, and the complete embedded graph. |
@@ -1366,60 +1367,52 @@ first three slices does not permit numeric segment or setlist identities in an
 Event DTO. The three setlist models ship together because their existing save
 operation and hydrated content form one aggregate.
 
-#### First slice: Event setlist aggregate
+#### Completed slice: Event setlist aggregate
 
-The current code already provides `EventSongList_Detail`,
-`EventSongListContent`, `EventSongListDraft`, and `EventSongList_Save`. The save
-handler composes row services inside the command transaction and checks child
-ownership. Reuse that boundary. Event and Song retain natural identities in
-this slice; SetlistPlan remains a separate domain.
+`EventSongList`, `EventSongListSong`, and `EventSongListDivider` now use branded
+public identities across their client boundaries. Event and Song retain natural
+identities; SetlistPlan remains a separate domain.
 
-Implementation scope and completion gates:
+- The migration adds unique public-ID columns with deployment placeholders.
+  Startup repair replaces placeholders before serving requests. DB3 inserts,
+  including the initial setlist in `insertEvent`, generate public IDs; seeds
+  generate real public IDs for all three models.
+- `EventSongList_Detail` derives its read contract from xTable and finite
+  selections. Nested Song authorization support stays outside transport;
+  public tag and parent references use the shared projection. Embedded Event
+  graphs also project public setlist and child identities. Content hydration
+  retains compact color keys and refuses to produce an editable draft from
+  incomplete authorized content.
+- Drafts distinguish stable string `clientId` keys from optional persisted
+  `publicId` values. Save serialization emits only persisted public IDs.
+  Clipboard export drops setlist/item identity, and each paste allocates fresh
+  local keys. Previews and media-player state support unsaved local identity.
+  `setlistApi` separates client rows from identity-free server formatting data.
+- Save, delete, and reorder use strict commands and shared transactional row
+  services. Child ownership, duplicate identities, Event/Song visibility,
+  field authorization, and reorder scope are checked on the server. Reorder
+  preserves healthy sort-order gaps; deletion retains one aggregate audit and
+  cascading child deletion. The old numeric delete RPC is removed, and the
+  generic numeric reorder RPC rejects converted tables.
+- Action recording accepts public setlist references and resolves numeric FKs
+  only on the server. Feature/general reports and CSV output project public
+  references. The sysadmin Change lookup cache keeps numeric IDs solely to
+  label historical ledger evidence under the explicit ledger exception.
+- Command, view, and authorization tests cover initial creation, mixed updates,
+  delete/reorder, fresh copy identities, preview behavior, incomplete hydration,
+  embedded Event projection, hidden parents/songs, duplicate/foreign/unknown
+  child IDs, rollback after a later write failure, explicit reorder scope, and
+  rejected numeric targets. The test database now models setlist relations,
+  cascading deletion, and transaction rollback for these checks.
 
-- Add branded public IDs, database columns, startup repair registration, and
-  creation coverage for all three models. Include the initial setlist created
-  through `insertEvent`, seeds, and other direct persistence writers.
-- Derive the setlist read contract from xTable and finite selections, including
-  the nested Song authorization fields and public tag references. Compose the
-  existing content hydration over it and retain the rule that incomplete
-  authorized content cannot become an editable draft. Remove the handwritten
-  tag projection support from this view.
-- Update both named setlist reads and embedded Event graphs. Replace the
-  numeric Prisma-shaped client item types in `setlistApi` with the actual
-  client contract; keep server persistence payloads distinct. Audit editor
-  grids, previews, combined lists, clipboard imports/exports, React keys, and
-  media-player setlist identity.
-- Separate stable local draft keys from optional persisted public IDs. The
-  current `clientId > 0` test identifies persisted rows and negative numbers
-  identify new rows; that convention cannot define the new write contract.
-  Serialize only persisted public IDs, preserve them on updates/reorders, and
-  omit them for newly added or copied rows. Keep this change within the
-  existing setlist draft API rather than adding a general edit-model system.
-- Make save inputs/results, child `eventSongListId` references, delete, and
-  list reordering use canonical public identities. Validate duplicate and
-  foreign-parent child IDs in the transaction. Command row services themselves
-  accept canonical identities, so do not feed resolved numeric IDs back into
-  their public-ID contracts. Keep numeric join keys inside persistence work.
-- Bring the remaining setlist delete/reorder client writes through strict
-  commands using the existing policy/services. The generic reorder RPC still
-  queries numeric `scopeRowIds`, so this is a remaining shared identity boundary
-  to address. Preserve aggregate delete auditing, mutation hooks, event grouping,
-  and the caller's explicit row scope; remove the superseded setlist RPC usage
-  without redesigning unrelated sorting consumers.
-- Convert telemetry inputs and feature-report projections for live setlist
-  references. Audit the historical admin lookup/cache separately under the
-  ledger exception. Raw-SQL joins may remain numeric internally, but any
-  transported setlist or item identity must be public.
-- Extend the existing command, view, and direct-mutation authorization tests.
-  Cover create/update/delete/reorder, mixed new and persisted items, copies,
-  duplicate IDs, children from another setlist, hidden parents/songs, rollback,
-  reorder scope and field authorization, incomplete hydration, nested Event
-  projection, and rejected numeric inputs.
+Deployment still requires applying the checked-in SQL migration and starting
+with placeholder repair enabled. The migration was not applied to a database
+as part of this implementation.
 
-This is an identity migration, not a setlist concurrency or ordering redesign.
-Keep the existing content semantics and combined-position behavior, fixing
-correctness problems only where the slice requires them. Mark all three models
-complete only after their numeric client identity paths have been removed.
+Validation passed: all 101 unit-test files, TypeScript, lint, Prisma generation
+and schema validation, and the production build. The build reports Blitz export
+warnings in the unchanged `src/blitz-server.ts`. Browser interaction against a
+migrated database remains unverified.
 
 #### Following slices: attendance, segments/responses, then Event
 
@@ -1524,8 +1517,8 @@ conversions.
   behind it. DB3-aware production code now derives parsing and generation from
   its xTable rather than asserting a free-string public-ID brand.
 - [x] Let derived view contracts add their own hidden relation public IDs and
-  remove the redundant manual projection selections. The remaining manual
-  EventSongList tag projection belongs to a legacy non-derived view.
+  remove the redundant manual projection selections. EventSongList now uses
+  a derived contract as well, so its manual tag projection is removed.
 - [ ] Collapse the RolePermission command's association and role lookup into one
   relational Prisma query, and teach the in-memory Prisma test double that
   nested selection shape instead of preserving production complexity for it.
@@ -1562,7 +1555,7 @@ conversions.
   deleting each numeric client-identity compatibility path before marking that
   model complete below.
 
-#### Client-facing model progress: 28 / 47 complete (60%)
+#### Client-facing model progress: 31 / 47 complete (66%)
 
 The denominator is the 47 in-scope Prisma models whose own row identity currently
 crosses a client boundary. It excludes the five server-only models and the two
@@ -1602,6 +1595,9 @@ Completed models:
 - [x] `Role`
 - [x] `RolePermission`
 - [x] `UserSignInMethod`
+- [x] `EventSongList`
+- [x] `EventSongListSong`
+- [x] `EventSongListDivider`
 
 Remaining models are grouped into coherent intended slices. The pressure label
 describes why the slice is ordered there; it does not relax the per-model
@@ -1617,11 +1613,11 @@ completion definition.
   maintenance operations use public row identity while credential lookup and
   ownership remain trusted server concerns.
   - [x] `UserSignInMethod`
-- **Next: Event setlist aggregate**
-  - [ ] `EventSongList`
-  - [ ] `EventSongListSong`
-  - [ ] `EventSongListDivider`
-- **Then: Event attendance reference**
+- **Completed: Event setlist aggregate**
+  - [x] `EventSongList`
+  - [x] `EventSongListSong`
+  - [x] `EventSongListDivider`
+- **Next: Event attendance reference**
   - [ ] `EventAttendance`
 - **Then: Event segments and responses**
   - [ ] `EventSegment`
@@ -1676,7 +1672,7 @@ client contract.
 #### Capability coverage proven by completed slices
 
 These checks track reusable scenarios and do not contribute additional models
-to the 28 / 47 progress count.
+to the 31 / 47 progress count.
 
 - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
 - [x] Exercise an association/tag command with public identities

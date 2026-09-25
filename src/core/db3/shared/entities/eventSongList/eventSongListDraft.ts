@@ -1,3 +1,5 @@
+import { getUniqueNegativeID } from "shared/utils";
+import type { EventSongListPublicId, EventSongListSongPublicId, EventSongListDividerPublicId } from "shared/publicId";
 import type {
     EventSongListDividerItem,
     EventSongListItem,
@@ -5,11 +7,12 @@ import type {
     LocalSongListPayload,
 } from "../../setlistApi";
 import { EventSongListContent } from "./eventSongListContent";
-import type { EventSongListDetailClient } from "./eventSongListViews";
+import type { EventSongListDetailClient, EventSongListPreview } from "./eventSongListViews";
 
 export interface EventSongListDraftSong {
     readonly type: "song";
-    readonly clientId: number;
+    readonly publicId?: EventSongListSongPublicId;
+    readonly clientId: string;
     readonly songId: number;
     readonly song: EventSongListSongItem["song"];
     subtitle: string;
@@ -17,7 +20,8 @@ export interface EventSongListDraftSong {
 
 export interface EventSongListDraftDivider {
     readonly type: "divider";
-    readonly clientId: number;
+    readonly publicId?: EventSongListDividerPublicId;
+    readonly clientId: string;
     color: string | null;
     isInterruption: boolean;
     isSong: boolean;
@@ -37,9 +41,9 @@ export type EventSongListDraftItem = EventSongListDraftSong | EventSongListDraft
  */
 export interface EventSongListDraft {
     /** The persisted identity. Undefined for a new setlist. */
-    readonly id?: number;
+    readonly publicId?: EventSongListPublicId;
     /** Stable local identity for editor and media-player state. */
-    readonly clientId: number;
+    readonly clientId: string;
     readonly eventId: number;
     name: string;
     description: string;
@@ -53,7 +57,8 @@ const itemToDraft = (item: EventSongListItem): EventSongListDraftItem => {
     if (item.type === "song") {
         return {
             type: "song",
-            clientId: item.id,
+            clientId: item.clientId,
+            publicId: item.publicId,
             songId: item.songId,
             song: item.song,
             subtitle: item.subtitle ?? "",
@@ -62,7 +67,8 @@ const itemToDraft = (item: EventSongListItem): EventSongListDraftItem => {
     if (item.type === "divider") {
         return {
             type: "divider",
-            clientId: item.id,
+            clientId: item.clientId,
+            publicId: item.publicId,
             color: item.color,
             isInterruption: item.isInterruption,
             isSong: item.isSong,
@@ -89,8 +95,8 @@ export function eventSongListClientToDraft(
     }
 
     return {
-        id: value.id,
-        clientId: value.id,
+        publicId: value.publicId,
+        clientId: value.publicId,
         eventId: value.eventId,
         name: value.name,
         description: value.description,
@@ -102,7 +108,7 @@ export function eventSongListClientToDraft(
 }
 
 export function createEventSongListDraft(args: {
-    clientId: number;
+    clientId: string;
     eventId: number;
     name: string;
     sortOrder?: number;
@@ -136,9 +142,9 @@ export function cloneEventSongListDraft(value: EventSongListDraft): EventSongLis
 
 export function eventSongListRowToDraftItem(
     item: Exclude<EventSongListItem, { type: "new" }>,
-    clientId = item.id,
+    clientId = item.clientId,
 ): EventSongListDraftItem {
-    return itemToDraft({ ...item, id: clientId });
+    return itemToDraft({ ...item, clientId });
 }
 
 /**
@@ -149,10 +155,10 @@ export function eventSongListRowToDraftItem(
  */
 export function replaceEventSongListEditorRow(
     rows: readonly EventSongListItem[],
-    sourceRowId: number,
+    sourceRowId: string,
     newValue: EventSongListItem,
 ): EventSongListItem[] {
-    const rowIndex = rows.findIndex(row => row.id === sourceRowId);
+    const rowIndex = rows.findIndex(row => row.clientId === sourceRowId);
     if (rowIndex < 0) {
         throw new Error(`Cannot replace missing setlist row ${sourceRowId}.`);
     }
@@ -164,16 +170,18 @@ export function replaceEventSongListEditorRow(
 
 const draftToLocalPayload = (value: EventSongListDraft): LocalSongListPayload => ({
     songs: value.items.flatMap((item, sortOrder) => item.type === "song" ? [{
-        id: item.clientId,
-        eventSongListId: value.clientId,
+        clientId: item.clientId,
+        publicId: item.publicId,
+        eventSongListId: value.publicId,
         sortOrder,
         subtitle: item.subtitle,
         songId: item.songId,
         song: item.song,
     }] : []),
     dividers: value.items.flatMap((item, sortOrder) => item.type === "divider" ? [{
-        id: item.clientId,
-        eventSongListId: value.clientId,
+        clientId: item.clientId,
+        publicId: item.publicId,
+        eventSongListId: value.publicId,
         sortOrder,
         subtitle: item.subtitle,
         color: item.color,
@@ -189,9 +197,10 @@ export function getEventSongListDraftContent(value: EventSongListDraft): EventSo
     return new EventSongListContent(draftToLocalPayload(value));
 }
 
-export function eventSongListDraftToClient(value: EventSongListDraft): EventSongListDetailClient {
+export function eventSongListDraftToPreview(value: EventSongListDraft): EventSongListPreview {
     return {
-        id: value.id ?? value.clientId,
+        publicId: value.publicId,
+        clientId: value.clientId,
         eventId: value.eventId,
         name: value.name,
         description: value.description,
@@ -205,5 +214,11 @@ export function eventSongListDraftToClient(value: EventSongListDraft): EventSong
 export function eventSongListDividerRowToDraftItem(
     item: EventSongListDividerItem,
 ): EventSongListDraftDivider {
-    return itemToDraft(item) as EventSongListDraftDivider;
+    const draft = itemToDraft(item);
+    if (draft.type !== "divider") throw new Error("Expected a divider.");
+    return draft;
+}
+
+export function createEventSongListLocalKey(): string {
+    return `draft:${getUniqueNegativeID()}`;
 }

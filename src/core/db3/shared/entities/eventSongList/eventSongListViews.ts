@@ -1,9 +1,12 @@
+import { DB3ReferenceStore, type DB3ReferenceProvider, emptyReferenceContract } from "../../core/db3Hydration";
 import { Prisma } from "db";
 import { z } from "zod";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { EventSongListContent } from "./eventSongListContent";
-import { xEventSongList } from "../../schema/event";
+import { deriveViewContract } from "../../core/db3ViewContract";
+import { xEventSongList, xEventSongListSong, xEventSongListDivider } from "../../schema/event";
 import { isPublicId, type SongTagAssociationPublicId, type SongTagPublicId } from "shared/publicId";
+import { graft } from "../common/viewCommon";
 
 const CompleteSongTagAssociationDtoSchema = z.object({
     publicId: z.custom<SongTagAssociationPublicId>(isPublicId, "invalid SongTagAssociation public ID"),
@@ -12,8 +15,8 @@ const CompleteSongTagAssociationDtoSchema = z.object({
 });
 
 const CompleteSetlistSongDtoSchema = z.object({
-    id: z.number().int(),
-    eventSongListId: z.number().int(),
+    publicId: xEventSongListSong.identitySchema,
+    eventSongListId: xEventSongList.identitySchema,
     subtitle: z.string().nullable(),
     sortOrder: z.number().int(),
     songId: z.number().int(),
@@ -29,8 +32,8 @@ const CompleteSetlistSongDtoSchema = z.object({
 });
 
 const CompleteSetlistDividerDtoSchema = z.object({
-    id: z.number().int(),
-    eventSongListId: z.number().int(),
+    publicId: xEventSongListDivider.identitySchema,
+    eventSongListId: xEventSongList.identitySchema,
     subtitle: z.string().nullable(),
     sortOrder: z.number().int(),
     color: z.string().nullable(),
@@ -41,37 +44,14 @@ const CompleteSetlistDividerDtoSchema = z.object({
     textStyle: z.string().nullable(),
 });
 
-const SetlistSongDtoSchema = CompleteSetlistSongDtoSchema
-    .partial()
-    .extend({
-        id: z.number().int(),
-        song: CompleteSetlistSongDtoSchema.shape.song.partial().optional(),
-    });
-
-const SetlistDividerDtoSchema = CompleteSetlistDividerDtoSchema
-    .partial()
-    .extend({ id: z.number().int() });
-
-const EventSongListDetailDtoSchema = z.object({
-    id: z.number().int(),
-    sortOrder: z.number().int().optional(),
-    name: z.string().optional(),
-    description: z.string().optional(),
-    eventId: z.number().int().optional(),
-    isOrdered: z.boolean().optional(),
-    isActuallyPlayed: z.boolean().optional(),
-    songs: z.array(SetlistSongDtoSchema).optional(),
-    dividers: z.array(SetlistDividerDtoSchema).optional(),
-});
-
 const EventSongListContentDtoSchema = z.object({
     songs: z.array(CompleteSetlistSongDtoSchema),
     dividers: z.array(CompleteSetlistDividerDtoSchema),
 });
 
-export const eventSongListDetailSelection = Prisma.validator<Prisma.EventSongListDefaultArgs>()({
+const eventSongListTransportSelection = Prisma.validator<Prisma.EventSongListDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         sortOrder: true,
         name: true,
         description: true,
@@ -81,7 +61,7 @@ export const eventSongListDetailSelection = Prisma.validator<Prisma.EventSongLis
         songs: {
             orderBy: { sortOrder: "asc" },
             select: {
-                id: true,
+                publicId: true,
                 eventSongListId: true,
                 subtitle: true,
                 sortOrder: true,
@@ -94,18 +74,11 @@ export const eventSongListDetailSelection = Prisma.validator<Prisma.EventSongLis
                         startBPM: true,
                         endBPM: true,
                         pinnedRecordingId: true,
-                        createdByUserId: true,
-                        visiblePermissionId: true,
-                        isDeleted: true,
                         tags: {
                             select: {
                                 publicId: true,
                                 songId: true,
                                 tagId: true,
-                                tag: {
-                                    // Projection support for the public tag FK.
-                                    select: { publicId: true },
-                                },
                             },
                         },
                     },
@@ -115,7 +88,7 @@ export const eventSongListDetailSelection = Prisma.validator<Prisma.EventSongLis
         dividers: {
             orderBy: { sortOrder: "asc" },
             select: {
-                id: true,
+                publicId: true,
                 eventSongListId: true,
                 subtitle: true,
                 sortOrder: true,
@@ -130,15 +103,46 @@ export const eventSongListDetailSelection = Prisma.validator<Prisma.EventSongLis
     },
 });
 
-export type EventSongListDetailDto = z.infer<typeof EventSongListDetailDtoSchema>;
+// Authorization support stays outside the transported Song card.
+const eventSongListSelection = graft(eventSongListTransportSelection, {
+    select: {
+        s
+        songs: {
+            select: {
+                song: {
+                    select: {
+                        createdByUserId: true,
+                        visiblePermissionId: true,
+                        isDeleted: true,
+                    }
+                },
+            },
+        },
+    },
+}) satisfies Prisma.EventSongListDefaultArgs;
+const eventSongListContract = deriveViewContract(xEventSongList, eventSongListSelection, {
+    transportSelection: eventSongListTransportSelection,
+});
+export const eventSongListDetailSelection = eventSongListContract.prismaSelection;
+export type EventSongListDetailDto = z.infer<typeof eventSongListContract.dtoSchema>;
 
-export function hydrateEventSongListDetailDto(dto: EventSongListDetailDto) {
-    const { songs, dividers, ...songList } = dto;
-    const completeContent = EventSongListContentDtoSchema.safeParse({ songs, dividers });
+export type EventSongListCompleteDto = Required<Omit<EventSongListDetailDto, "songs" | "dividers">> & z.infer<typeof EventSongListContentDtoSchema>;
+
+export function hydrateEventSongListDetailDto(
+    dto: EventSongListDetailDto,
+    references: DB3ReferenceProvider<typeof emptyReferenceContract> = new DB3ReferenceStore(),
+) {
+    const { songs, dividers, ...songList } = eventSongListContract.hydrate(dto, references);
+    // Content owns ordered rows and compact color keys. Incomplete reads stay read-only.
+    const completeContent = EventSongListContentDtoSchema.safeParse(dto);
     return {
         ...songList,
+        clientId: songList.publicId,
         content: completeContent.success
-            ? new EventSongListContent(completeContent.data)
+            ? new EventSongListContent({
+                songs: completeContent.data.songs.map(row => ({ ...row, clientId: row.publicId })),
+                dividers: completeContent.data.dividers.map(row => ({ ...row, clientId: row.publicId })),
+            })
             : undefined,
     };
 }
@@ -147,8 +151,13 @@ export const eventSongListDetailView = defineView({
     viewID: "EventSongList_Detail",
     entity: xEventSongList,
     selection: eventSongListDetailSelection,
-    dtoSchema: EventSongListDetailDtoSchema,
+    dtoSchema: eventSongListContract.dtoSchema,
     hydrate: hydrateEventSongListDetailDto,
 });
-
 export type EventSongListDetailClient = ClientOf<typeof eventSongListDetailView>;
+
+// A preview may represent an unsaved draft, which has no persisted identity.
+export type EventSongListPreview = Omit<EventSongListDetailClient, "publicId" | "clientId"> & {
+    publicId?: EventSongListDetailClient["publicId"];
+    clientId: string;
+};

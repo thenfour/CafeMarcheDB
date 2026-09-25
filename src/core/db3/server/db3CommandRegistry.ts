@@ -1,3 +1,4 @@
+import { eventSongListDeleteCommandHandler, eventSongListReorderCommandHandler } from "./commands/eventSongListOperations";
 import { getDB3CrudViewForCommand } from "../db3";
 import type { AnyDB3CommandHandler } from "./db3CommandCore";
 import { DB3CommandError } from "./db3CommandCore";
@@ -22,7 +23,9 @@ export function registerDB3CommandHandlers(handlers: AnyDB3CommandHandler[]): vo
 // A: because unit tests rely on these being created in ways that the above fails to do;
 // simplest is to just make those registrations here.
 registerDB3CommandHandlers([
-    eventSongListSaveCommandHandler, //
+    eventSongListSaveCommandHandler,
+    eventSongListDeleteCommandHandler,
+    eventSongListReorderCommandHandler,
     rolePermissionSetCommandHandler,
 ]);
 

@@ -166,6 +166,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
 
         const songList = await gState.prisma.eventSongList.create({
             data: {
+                publicId: generatePublicId<"EventSongList">(),
                 name: `Setlist ${faker.lorem.word()}`,
                 description: faker.datatype.boolean(0.15) ? faker.lorem.paragraph() : "",
                 eventId: event.id,
@@ -228,11 +229,11 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
         for (const item of items) {
             if (item.type === 'song') {
                 await gState.prisma.eventSongListSong.create({
-                    data: item.data
+                    data: { ...item.data, publicId: generatePublicId<"EventSongListSong">() }
                 });
             } else if (item.type === 'divider') {
                 await gState.prisma.eventSongListDivider.create({
-                    data: item.data
+                    data: { ...item.data, publicId: generatePublicId<"EventSongListDivider">() }
                 });
             }
         }

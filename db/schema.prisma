@@ -738,6 +738,7 @@ model EventTagAssignment {
 }
 
 model EventSongList {
+  publicId String @unique @db.Char(16)
   id          Int    @id @default(autoincrement())
   sortOrder   Int    @default(0)
   name        String @db.VarChar(768)
@@ -760,6 +761,7 @@ model EventSongList {
 }
 
 model EventSongListSong {
+  publicId String @unique @db.Char(16)
   id        Int     @id @default(autoincrement())
   subtitle  String? @db.MediumText // could be a small comment like "short version"
   sortOrder Int     @default(0)
@@ -776,6 +778,7 @@ model EventSongListSong {
 }
 
 model EventSongListDivider {
+  publicId String @unique @db.Char(16)
   id             Int     @id @default(autoincrement())
   subtitle       String? @db.MediumText // could be a small comment like "15 min break"
   sortOrder      Int     @default(0)

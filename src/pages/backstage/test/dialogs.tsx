@@ -12,12 +12,12 @@ import { Permission } from "shared/permissions";
 
 type DialogExample = "compact" | "long" | "keyboard" | "setlist" | null;
 
-const kDialogTestMediaSetlistId = -8675309;
+const kDialogTestMediaSetlistId = "dialog-media-fixture";
 const dialogTestMediaTrack: MediaPlayerTrack = {
     playlistIndex: 0,
     setlistId: kDialogTestMediaSetlistId,
     songContext: {
-        id: kDialogTestMediaSetlistId,
+        id: -8675309,
         name: "Dialog UX media-bar fixture",
         pinnedRecordingId: null,
         lengthSeconds: 245,

@@ -11,14 +11,14 @@ const PersistedIdSchema = z.number().int().positive();
 const SortOrderSchema = z.number().int();
 
 export const EventSongListSongCommandSchema = z.object({
-    id: PersistedIdSchema.optional(),
+    publicId: xEventSongListSong.identitySchema.optional(),
     sortOrder: SortOrderSchema,
     songId: PersistedIdSchema,
     subtitle: z.string(),
 }).strict();
 
 export const EventSongListDividerCommandSchema = z.object({
-    id: PersistedIdSchema.optional(),
+    publicId: xEventSongListDivider.identitySchema.optional(),
     sortOrder: SortOrderSchema,
     color: z.string().nullable(),
     isInterruption: z.boolean(),
@@ -30,7 +30,7 @@ export const EventSongListDividerCommandSchema = z.object({
 }).strict();
 
 export const EventSongListMutationCommandSchema = z.object({
-    id: PersistedIdSchema.optional(),
+    publicId: xEventSongList.identitySchema.optional(),
     name: z.string(),
     description: z.string(),
     isActuallyPlayed: z.boolean(),
@@ -48,7 +48,7 @@ export type EventSongListMutationCommand = z.infer<typeof EventSongListMutationC
 // saving song lists doesn't return an updated object, just the id - mostly for the case
 // where you inserted a new item.
 export const EventSongListSaveResultSchema = z.object({
-    id: PersistedIdSchema,
+    publicId: xEventSongList.identitySchema,
 }).strict();
 
 export type EventSongListSaveResult = z.infer<typeof EventSongListSaveResultSchema>;
@@ -69,7 +69,7 @@ export const saveEventSongListCommand = defineCommand({
     // converts a mutable client react code facing draft object
     // to a serializable format over the wire.
     serialize: (value: EventSongListDraft): EventSongListMutationCommand => ({
-        ...(value.id === undefined ? {} : { id: value.id }),
+        ...(value.publicId === undefined ? {} : { publicId: value.publicId }),
         eventId: value.eventId,
         name: value.name,
         description: value.description,
@@ -77,13 +77,13 @@ export const saveEventSongListCommand = defineCommand({
         isOrdered: value.isOrdered,
         sortOrder: value.sortOrder,
         songs: value.items.flatMap((item, sortOrder) => item.type === "song" ? [{
-            ...(item.clientId > 0 ? { id: item.clientId } : {}),
+            ...(item.publicId === undefined ? {} : { publicId: item.publicId }),
             songId: item.songId,
             sortOrder,
             subtitle: item.subtitle,
         }] : []),
         dividers: value.items.flatMap((item, sortOrder) => item.type === "divider" ? [{
-            ...(item.clientId > 0 ? { id: item.clientId } : {}),
+            ...(item.publicId === undefined ? {} : { publicId: item.publicId }),
             sortOrder,
             color: item.color,
             isInterruption: item.isInterruption,
@@ -94,4 +94,36 @@ export const saveEventSongListCommand = defineCommand({
             subtitle: item.subtitle,
         }] : []),
     }),
+});
+
+const DeleteEventSongListSchema = z.object({
+    publicId: xEventSongList.identitySchema,
+}).strict();
+export const deleteEventSongListCommand = defineCommand({
+    commandID: "EventSongList_Delete",
+    entity: xEventSongList,
+    dtoSchema: DeleteEventSongListSchema,
+    resultSchema: DeleteEventSongListSchema,
+    invalidation: saveEventSongListCommand.invalidation,
+    serialize: (value: z.infer<typeof DeleteEventSongListSchema>) => value,
+});
+
+const ReorderEventSongListsSchema = z.object({
+    eventId: PersistedIdSchema,
+    movingItemId: xEventSongList.identitySchema,
+    newPositionItemId: xEventSongList.identitySchema,
+    scopeRowIds: z.array(xEventSongList.identitySchema).min(1),
+}).strict().superRefine((value, ctx) => {
+    if (new Set(value.scopeRowIds).size !== value.scopeRowIds.length
+        || !value.scopeRowIds.includes(value.movingItemId)
+        || !value.scopeRowIds.includes(value.newPositionItemId)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Reorder requires unique scoped IDs containing both endpoints." });
+    }
+});
+export const reorderEventSongListsCommand = defineCommand({
+    commandID: "EventSongList_Reorder",
+    entity: xEventSongList,
+    dtoSchema: ReorderEventSongListsSchema,
+    resultSchema: z.object({}).strict(),
+    serialize: (value: z.infer<typeof ReorderEventSongListsSchema>) => value,
 });

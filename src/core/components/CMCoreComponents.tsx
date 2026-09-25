@@ -3,7 +3,6 @@
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 //import dynamic from 'next/dynamic';
-import { Prisma } from "db";
 import React, { Suspense } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { Coalesce } from "shared/utils";

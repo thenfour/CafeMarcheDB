@@ -4,131 +4,91 @@
 // clipboard custom formats
 // https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
 
-import { Prisma } from "db";
 import { markdownToPlainText } from "shared/markdownUtils";
 import { formatSongLength } from "shared/time";
 import { arrayToTSV, IsNullOrWhitespace, StringToEnumValue } from "shared/utils";
 import { getFormattedBPM } from "../clientAPILL";
 import { EventSongListDividerTextStyle } from "./schema/prismArgs";
 import type { SongTagAssociationReferenceClientPayload } from "./schema/prismArgs";
+import type { EventSongListPublicId, EventSongListSongPublicId, EventSongListDividerPublicId } from "shared/publicId";
 
-// make song nullable for "add new item" support
-export type EventSongListSongItemDb = Prisma.EventSongListSongGetPayload<{
-    select: {
-        eventSongListId: true,
-        subtitle: true,
-        id: true,
-        sortOrder: true,
-        songId: true,
-    }
-}>;
-
-type EventSongListSongItemWithSongDb = Prisma.EventSongListSongGetPayload<{
-    select: {
-        eventSongListId: true,
-        subtitle: true,
-        id: true,
-        sortOrder: true,
-        songId: true,
-        song: {
-            select: {
-                id: true,
-                name: true,
-                lengthSeconds: true,
-                startBPM: true,
-                endBPM: true,
-                pinnedRecordingId: true,
-            },
-        }
-    }
-}>;
-
-export type EventSongListSongItemWithSong = Omit<EventSongListSongItemWithSongDb, "song"> & {
-    song: EventSongListSongItemWithSongDb["song"] & {
-        tags: SongTagAssociationReferenceClientPayload[];
-    };
-};
-
-type EventSongListCommonFields = {
-    runningTimeSeconds: number | null; // the setlist time AFTER this song is played (no point in the 1st entry always having a 0)
-    songsWithUnknownLength: number;
-};
-
-export type EventSongListSongItem = EventSongListSongItemWithSong & {
-    type: "song";
-    index: number; // the display index.
-    //songArrayIndex: number; // index into the songs array (for play button)
-} & EventSongListCommonFields;
-
-export type EventSongListDividerItem = Prisma.EventSongListDividerGetPayload<{
-    select: {
-        id: true,
-        eventSongListId: true,
-        subtitle: true,
-        isInterruption: true,
-        isSong: true,
-        subtitleIfSong: true,
-        lengthSeconds: true,
-        textStyle: true,
-        color: true,
-        sortOrder: true,
-    }
-}> & {
-    type: "divider"
-    index?: number | null;
-} & EventSongListCommonFields;
-
-export type EventSongListNewItem = {
-    eventSongListId: number,
-    id: number,
-    sortOrder: number,
-    type: "new";
-} & EventSongListCommonFields;
-
-export type EventSongListItem = EventSongListSongItem | EventSongListDividerItem | EventSongListNewItem;
-
-export type LocalSongListPayload = {
-    songs: EventSongListSongItemWithSong[];
-    dividers: Array<Prisma.EventSongListDividerGetPayload<{
-        select: {
-            id: true,
-            eventSongListId: true,
-            isInterruption: true,
-            subtitleIfSong: true,
-            isSong: true,
-            lengthSeconds: true,
-            textStyle: true,
-            subtitle: true,
-            color: true,
-            sortOrder: true,
-        }
-    }>>;
-};
-
-type BasicSongListSongItem = EventSongListSongItemDb & {
+// Text/calendar formatting needs only semantic fields, never persistence identity.
+interface BasicSongListSongItem {
+    subtitle: string | null;
+    sortOrder: number;
     song: {
-        id: number;
         name: string;
         lengthSeconds: number | null;
         startBPM: number | null;
         endBPM: number | null;
     };
-};
+}
+interface BasicSongListDivider {
+    subtitle: string | null;
+    sortOrder: number;
+    color: string | null;
+    isInterruption: boolean;
+    isSong: boolean;
+    subtitleIfSong: string | null;
+    lengthSeconds: number | null;
+    textStyle: string | null;
+}
 
+export interface EventSongListSongItemWithSong extends BasicSongListSongItem {
+    /** Local editor key. It is never a database ID or a command target. */
+    clientId: string;
+    publicId?: EventSongListSongPublicId;
+    eventSongListId?: EventSongListPublicId;
+    songId: number;
+    song: BasicSongListSongItem["song"] & {
+        id: number;
+        pinnedRecordingId: number | null;
+        tags: SongTagAssociationReferenceClientPayload[];
+    };
+}
+export interface EventSongListDividerValue extends BasicSongListDivider {
+    clientId: string;
+    publicId?: EventSongListDividerPublicId;
+    eventSongListId?: EventSongListPublicId;
+}
+
+type EventSongListCommonFields = {
+    runningTimeSeconds: number | null;
+    songsWithUnknownLength: number;
+};
+export type EventSongListSongItem = EventSongListSongItemWithSong & {
+    type: "song";
+    index: number;
+} & EventSongListCommonFields;
+export type EventSongListDividerItem = EventSongListDividerValue & {
+    type: "divider";
+    index?: number | null;
+} & EventSongListCommonFields;
+export type EventSongListNewItem = {
+    eventSongListId?: EventSongListPublicId;
+    clientId: string;
+    publicId?: undefined;
+    sortOrder: number;
+    type: "new";
+} & EventSongListCommonFields;
+export type EventSongListItem = EventSongListSongItem | EventSongListDividerItem | EventSongListNewItem;
+export type LocalSongListPayload = {
+    songs: EventSongListSongItemWithSong[];
+    dividers: EventSongListDividerValue[];
+};
 export type BasicLocalSongListPayload = {
     songs: BasicSongListSongItem[];
-    dividers: LocalSongListPayload["dividers"];
+    dividers: BasicSongListDivider[];
 };
-
 type BasicEventSongListSongItem = BasicSongListSongItem & {
     type: "song";
     index: number;
 } & EventSongListCommonFields;
-
-type BasicEventSongListItem =
-    | BasicEventSongListSongItem
-    | EventSongListDividerItem
-    | EventSongListNewItem;
+type BasicEventSongListDividerItem = BasicSongListDivider & {
+    type: "divider";
+    index?: number | null;
+} & EventSongListCommonFields;
+type BasicEventSongListItem = BasicEventSongListSongItem | BasicEventSongListDividerItem | EventSongListNewItem;
 
 export function GetRowItems(songList: LocalSongListPayload): EventSongListItem[];
 export function GetRowItems(songList: BasicLocalSongListPayload): BasicEventSongListItem[];
@@ -144,7 +104,7 @@ export function GetRowItems(songList: BasicLocalSongListPayload): BasicEventSong
         songsWithUnknownLength: 0, // populated later
     }));
     rowItems.push(...songList.dividers.map(s => {
-        const x: EventSongListDividerItem = {
+        const x: BasicEventSongListDividerItem = {
             ...s,
             type: 'divider',
             index: -1, // populated later

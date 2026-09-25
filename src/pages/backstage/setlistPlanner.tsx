@@ -30,7 +30,7 @@ import { getUniqueNegativeID } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
-import { PortableSongList } from "src/core/components/EventSongListComponents";
+import type { PortableSongList } from "@db3/db3";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { gSetlistPlannerDefaultColorScheme, SetlistPlannerColorScheme, SetlistPlannerColorSchemeEditor } from "src/core/components/setlistPlan/SetlistPlanColorComponents";
 import { SetlistPlannerDocumentEditor } from "src/core/components/setlistPlan/SetlistPlanMainComponents";

@@ -1,7 +1,6 @@
 import type { Ctx } from "@blitzjs/next";
 import { AuthorizationError, NotFoundError } from "blitz";
 import { Permission } from "shared/permissions";
-import { parsePublicId } from "shared/publicId";
 import type { MergeIdentity, UserMergeParticipants } from "../../userMergeSchemas";
 import { requireFreshPermission } from "../permissionAuthorization";
 import { canManageUser } from "../userManagementPolicy";

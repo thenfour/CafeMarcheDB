@@ -17,7 +17,9 @@ See `docs/testing.md` for the rationale and full conventions.
 
 ## Coding guidelines
 
-- Use strict typescript typing
+- Use strict typescript typing. Types are used to help understand code's intent, meaning, disambiguation.
+  Using general types such as `TAnyModel`, `Record<string,unknown>` should be accompanied
+  with a brief comment justifying the decision.
 - Type casts (`x as T`, especially `as any`) must be given a brief comment
   justifying why stronger typing was either chosen, or impossible.
 - Comments should use brief, simple English, sometimes with illustrative examples.

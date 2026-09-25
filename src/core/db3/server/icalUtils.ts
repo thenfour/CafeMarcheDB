@@ -1,3 +1,4 @@
+import type { BasicLocalSongListPayload } from "../shared/setlistApi";
 import { getRangeCalendarDates } from "shared/dateTimePresentation";
 import { ServerApi } from "@/src/server/serverApi";
 import { hash256 } from "@blitzjs/auth";
@@ -109,8 +110,9 @@ export type EventSegmentForCalInput<TStatusIdentity extends number | string> = O
 
 export type EventForCalInput<TStatusIdentity extends number | string> = Omit<
     EventForCal,
-    "segments"
+    "segments" | "songLists"
 > & {
+    songLists: BasicLocalSongListPayload[];
     segments: EventSegmentForCalInput<TStatusIdentity>[];
 };
 

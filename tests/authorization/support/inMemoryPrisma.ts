@@ -75,10 +75,45 @@ export function matchesWhere(row: TestRow, where: Record<string, unknown> | unde
   })
 }
 
+interface QueryArgs {
+  where?: Record<string, unknown>;
+  select?: Record<string, unknown>;
+  include?: Record<string, unknown>;
+  take?: number;
+  orderBy?: Record<string, unknown> | Record<string, unknown>[];
+}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value)
+
+type Relation = { table: string; local: string; foreign: string; many?: boolean }
+// Relationships exercised by the setlist aggregate's authorized queries and audit selection.
+const setlistRelations: Record<string, Record<string, Relation>> = {
+  event: {
+    segments: { table: "eventSegment", local: "id", foreign: "eventId", many: true },
+    songLists: { table: "eventSongList", local: "id", foreign: "eventId", many: true },
+  },
+  eventSongList: {
+    event: { table: "event", local: "eventId", foreign: "id" },
+    songs: { table: "eventSongListSong", local: "id", foreign: "eventSongListId", many: true },
+    dividers: { table: "eventSongListDivider", local: "id", foreign: "eventSongListId", many: true },
+  },
+  eventSongListSong: {
+    eventSongList: { table: "eventSongList", local: "eventSongListId", foreign: "id" },
+    song: { table: "song", local: "songId", foreign: "id" },
+  },
+  eventSongListDivider: {
+    eventSongList: { table: "eventSongList", local: "eventSongListId", foreign: "id" },
+  },
+}
+
 export class InMemoryDelegate {
   private rows: TestRow[] = []
 
-  constructor(private readonly createDefaults: Record<string, unknown> = {}) {}
+  constructor(
+    private readonly createDefaults: Record<string, unknown> = {},
+    private readonly readRelations: (row: TestRow, args: QueryArgs) => TestRow = row => row,
+    private readonly onDelete: (rows: TestRow[]) => Promise<void> = async () => {},
+  ) {}
 
   reset(rows: TestRow[]) {
     this.rows = clone(rows)
@@ -88,17 +123,29 @@ export class InMemoryDelegate {
     return clone(this.rows)
   }
 
-  async findFirst(args: { where?: Record<string, unknown> } = {}) {
-    const row = this.rows.find((candidate) => matchesWhere(candidate, args.where))
-    return row ? clone(row) : null
+  async findFirst(args: QueryArgs = {}) {
+    return (await this.findMany({ ...args, take: 1 }))[0] ?? null
   }
 
-  async findUnique(args: { where?: Record<string, unknown> } = {}) {
+  async findUnique(args: QueryArgs = {}) {
     return this.findFirst(args)
   }
 
-  async findMany(args: { where?: Record<string, unknown>; take?: number } = {}) {
-    const matches = this.rows.filter((candidate) => matchesWhere(candidate, args.where))
+  async findMany(args: QueryArgs = {}) {
+    const matches = this.rows.map(row => this.readRelations(clone(row), args))
+      .filter(candidate => matchesWhere(candidate, args.where))
+    const orders = Array.isArray(args.orderBy) ? args.orderBy : args.orderBy ? [args.orderBy] : []
+    matches.sort((a, b) => {
+      for (const order of orders) {
+        for (const [key, direction] of Object.entries(order)) {
+          const left = a[key], right = b[key]
+          if (typeof left === "number" && typeof right === "number" && left !== right) {
+            return (left - right) * (direction === "desc" ? -1 : 1)
+          }
+        }
+      }
+      return 0
+    })
     return clone(args.take === undefined ? matches : matches.slice(0, args.take))
   }
 
@@ -133,7 +180,9 @@ export class InMemoryDelegate {
   async deleteMany(args: { where?: Record<string, unknown> } = {}) {
     const retained = this.rows.filter((row) => !matchesWhere(row, args.where))
     const count = this.rows.length - retained.length
+    const removed = this.rows.filter(row => matchesWhere(row, args.where))
     this.rows = retained
+    await this.onDelete(removed)
     return { count }
   }
 
@@ -169,12 +218,61 @@ class AuthorizationTestDatabase {
       : rows
   }
 
+  async transaction(callback: () => Promise<unknown>) {
+    const before = new Map([...this.delegates].map(([name, delegate]) => [name, delegate.snapshot()]))
+    try { return await callback() } catch (error) {
+      for (const [name, delegate] of this.delegates) delegate.reset(before.get(name) ?? [])
+      throw error
+    }
+  }
+
+  private readRelations(table: string, row: TestRow, args: QueryArgs): TestRow {
+    const whereRelations: Record<string, unknown> = {}
+    const collectWhere = (where: unknown) => {
+      if (!isRecord(where)) return
+      for (const [key, value] of Object.entries(where)) {
+        if (["AND", "OR", "NOT"].includes(key)) {
+          for (const clause of Array.isArray(value) ? value : [value]) collectWhere(clause)
+        } else if (setlistRelations[table]?.[key]) whereRelations[key] = value
+      }
+    }
+    collectWhere(args.where)
+    for (const [member, relation] of Object.entries(setlistRelations[table] ?? {})) {
+      const selection = args.select?.[member] ?? args.include?.[member]
+      const where = whereRelations[member]
+      if (!selection && !where) continue
+      const targetArgs: QueryArgs = isRecord(selection) ? selection : {}
+      const relationWhere = isRecord(where) && isRecord(where.is) ? where.is : where
+      const existing = row[member]
+      // Existing embedded fixtures remain authoritative for their own tests.
+      const rows = existing !== undefined
+        ? (Array.isArray(existing) ? existing : existing ? [existing] : [])
+        : this.getDelegate(relation.table).snapshot().filter(target => target[relation.foreign] === row[relation.local])
+      const related = rows.filter((value): value is TestRow => isRecord(value) && typeof value.id === "number")
+        .map(value => this.readRelations(relation.table, value, {
+          ...targetArgs,
+          where: isRecord(relationWhere) ? relationWhere : targetArgs.where,
+        }))
+      row[member] = relation.many ? related : related[0] ?? null
+    }
+    return row
+  }
+
   getDelegate(tableName: string) {
     const prismaDelegateName = `${tableName.charAt(0).toLowerCase()}${tableName.slice(1)}`
     let delegate = this.delegates.get(prismaDelegateName)
     if (!delegate) {
       // Signup relies on User.isDeleted's database default to create active users.
-      delegate = new InMemoryDelegate(prismaDelegateName === "user" ? { isDeleted: false } : {})
+      delegate = new InMemoryDelegate(
+        prismaDelegateName === "user" ? { isDeleted: false } : {},
+        (row, args) => this.readRelations(prismaDelegateName, row, args),
+        async rows => {
+          if (prismaDelegateName !== "eventSongList") return
+          for (const child of ["eventSongListSong", "eventSongListDivider"]) {
+            await this.getDelegate(child).deleteMany({ where: { eventSongListId: { in: rows.map(row => row.id) } } })
+          }
+        },
+      )
       this.delegates.set(prismaDelegateName, delegate)
     }
     return delegate
@@ -190,7 +288,7 @@ export const authorizationTestDb = new Proxy(database, {
   get(target, property, receiver) {
     if (typeof property !== "string") return Reflect.get(target, property, target)
     if (property === "$transaction") {
-      return async (callback: (transaction: typeof receiver) => Promise<unknown>) => callback(receiver)
+      return async (callback: (transaction: typeof receiver) => Promise<unknown>) => target.transaction(() => callback(receiver))
     }
     if (property === "$queryRaw") {
       return async (query: { strings?: readonly string[]; values?: unknown[] }) => {

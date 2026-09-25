@@ -1,3 +1,4 @@
+import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { authorizeAndProjectDB3ViewModel } from "@db3/server/db3PublicIds";
@@ -1588,7 +1589,7 @@ describe("DB3 named views", () => {
 
     it("hydrates EventSongList persistence collections into one client value object", () => {
         const dto = db3.eventSongListDetailView.parseDto({
-            id: 50,
+            publicId: listPublicId(50),
             name: "Concert set",
             description: "Main set",
             eventId: 5,
@@ -1596,8 +1597,8 @@ describe("DB3 named views", () => {
             isOrdered: true,
             isActuallyPlayed: false,
             songs: [{
-                id: 501,
-                eventSongListId: 50,
+                publicId: listSongPublicId(501),
+                eventSongListId: listPublicId(50),
                 subtitle: "Open quietly",
                 sortOrder: 20,
                 songId: 7,
@@ -1615,8 +1616,8 @@ describe("DB3 named views", () => {
                     }],
                 },
             }, {
-                id: 502,
-                eventSongListId: 50,
+                publicId: listSongPublicId(502),
+                eventSongListId: listPublicId(50),
                 subtitle: null,
                 sortOrder: 40,
                 songId: 8,
@@ -1631,8 +1632,8 @@ describe("DB3 named views", () => {
                 },
             }],
             dividers: [{
-                id: 601,
-                eventSongListId: 50,
+                publicId: listDividerPublicId(601),
+                eventSongListId: listPublicId(50),
                 subtitle: "Break",
                 sortOrder: 10,
                 color: null,
@@ -1642,8 +1643,8 @@ describe("DB3 named views", () => {
                 lengthSeconds: null,
                 textStyle: null,
             }, {
-                id: 602,
-                eventSongListId: 50,
+                publicId: listDividerPublicId(602),
+                eventSongListId: listPublicId(50),
                 subtitle: "Encore",
                 sortOrder: 30,
                 color: "blue",
@@ -1677,10 +1678,10 @@ describe("DB3 named views", () => {
         expectTypeOf(hydrated.content).toEqualTypeOf<db3.EventSongListContent | undefined>();
     });
 
-    it("adapts a hydrated EventSongList to ordered editor state and one legacy mutation boundary", () => {
+    it("adapts a hydrated EventSongList to ordered editor state and a strict public-ID command", () => {
         const client = db3.hydrateEventSongListDetailDto(
             db3.eventSongListDetailView.parseDto({
-                id: 50,
+                publicId: listPublicId(50),
                 name: "Concert set",
                 description: "Main set",
                 eventId: 5,
@@ -1688,8 +1689,8 @@ describe("DB3 named views", () => {
                 isOrdered: true,
                 isActuallyPlayed: false,
                 songs: [{
-                    id: 501,
-                    eventSongListId: 50,
+                    publicId: listSongPublicId(501),
+                    eventSongListId: listPublicId(50),
                     subtitle: "Open quietly",
                     sortOrder: 20,
                     songId: 7,
@@ -1704,8 +1705,8 @@ describe("DB3 named views", () => {
                     },
                 }],
                 dividers: [{
-                    id: 601,
-                    eventSongListId: 50,
+                    publicId: listDividerPublicId(601),
+                    eventSongListId: listPublicId(50),
                     subtitle: "Break",
                     sortOrder: 10,
                     color: null,
@@ -1728,25 +1729,45 @@ describe("DB3 named views", () => {
 
         expect(db3.EventSongListMutationCommandSchema.safeParse(mutation).success).toBe(true);
         expect(mutation).toMatchObject({
-            id: 50,
+            publicId: listPublicId(50),
             eventId: 5,
-            songs: [{ id: 501, songId: 7, sortOrder: 0, subtitle: "Open quietly" }],
-            dividers: [{ id: 601, sortOrder: 1, subtitle: "Break" }],
+            songs: [{ publicId: listSongPublicId(501), songId: 7, sortOrder: 0, subtitle: "Open quietly" }],
+            dividers: [{ publicId: listDividerPublicId(601), sortOrder: 1, subtitle: "Break" }],
         });
-        expect(db3.eventSongListDraftToClient(draft!).content?.items.map(item => item.type))
+        expect(db3.eventSongListDraftToPreview(draft!).content?.items.map(item => item.type))
             .toEqual(["song", "divider"]);
+        const portable = db3.eventSongListContentToPortable(client.content!);
+        for (const item of portable) {
+            expect(item).not.toHaveProperty("publicId");
+            expect(item).not.toHaveProperty("clientId");
+            expect(item).not.toHaveProperty("eventSongListId");
+        }
+        const firstPaste = db3.portableSongListToDraftItems(portable);
+        const secondPaste = db3.portableSongListToDraftItems(portable);
+        expect(new Set([...firstPaste, ...secondPaste].map(item => item.clientId)).size).toBe(4);
+        expect(firstPaste.every(item => item.publicId === undefined)).toBe(true);
+        const copiedDraft = db3.createEventSongListDraft({ eventId: 5, name: "Copy", clientId: db3.createEventSongListLocalKey() });
+        copiedDraft.items = firstPaste;
+        const copyCommand = db3.saveEventSongListCommand.serialize(copiedDraft);
+        expect(copyCommand).not.toHaveProperty("publicId");
+        expect(copyCommand.songs[0]).not.toHaveProperty("publicId");
+        expect(copyCommand.dividers[0]).not.toHaveProperty("publicId");
+        const preview = db3.eventSongListDraftToPreview(copiedDraft);
+        expect(preview.clientId).toBe(copiedDraft.clientId);
+        expect(preview.content?.items.map(item => item.type)).toEqual(["divider", "song"]);
+        expect(preview.publicId).toBeUndefined();
         expectTypeOf(draft).toEqualTypeOf<db3.EventSongListDraft | undefined>();
     });
 
     it("replaces an edited setlist row without moving it", () => {
         const draft = db3.createEventSongListDraft({
-            clientId: -1,
+            clientId: "draft:1",
             eventId: 5,
             name: "New set",
         });
         draft.items = [{
             type: "divider",
-            clientId: -10,
+            clientId: "draft:10",
             color: null,
             isInterruption: false,
             isSong: false,
@@ -1756,7 +1777,7 @@ describe("DB3 named views", () => {
             subtitle: "First",
         }, {
             type: "divider",
-            clientId: -11,
+            clientId: "draft:11",
             color: null,
             isInterruption: false,
             isSong: false,
@@ -1770,12 +1791,12 @@ describe("DB3 named views", () => {
         const firstRow = rows[0]!;
         expect(firstRow.type).toBe("divider");
         if (firstRow.type !== "divider") throw new Error("Expected the first row to be a divider.");
-        const editedRows = db3.replaceEventSongListEditorRow(rows, firstRow.id, {
+        const editedRows = db3.replaceEventSongListEditorRow(rows, firstRow.clientId, {
             ...firstRow,
             subtitle: "Edited first",
         });
 
-        expect(editedRows.map(row => row.id)).toEqual([-10, -11]);
+        expect(editedRows.map(row => row.clientId)).toEqual(["draft:10", "draft:11"]);
         expect(editedRows.map(row => row.type === "divider" ? row.subtitle : null))
             .toEqual(["Edited first", "Second"]);
         expect(rows[0]).toBe(firstRow);
@@ -1783,10 +1804,10 @@ describe("DB3 named views", () => {
 
     it("does not create an editable EventSongList draft from an authorization-incomplete client", () => {
         const incomplete = db3.hydrateEventSongListDetailDto(
-            db3.eventSongListDetailView.parseDto({ id: 50, songs: [], dividers: [] }),
+            db3.eventSongListDetailView.parseDto({ publicId: listPublicId(50), songs: [], dividers: [] }),
         );
         const newDraft = db3.createEventSongListDraft({
-            clientId: -1,
+            clientId: "draft:1",
             eventId: 5,
             name: "New set",
         });
@@ -1806,18 +1827,17 @@ describe("DB3 named views", () => {
 
     it("keeps EventSongList content unavailable when field authorization leaves an incomplete shape", () => {
         const missingCollection = db3.hydrateEventSongListDetailDto(
-            db3.eventSongListDetailView.parseDto({ id: 50, songs: [] }),
+            db3.eventSongListDetailView.parseDto({ publicId: listPublicId(50), songs: [] }),
         );
         const incompleteSong = db3.hydrateEventSongListDetailDto(
             db3.eventSongListDetailView.parseDto({
-                id: 50,
+                publicId: listPublicId(50),
                 songs: [{
-                    id: 501,
-                    eventSongListId: 50,
+                    publicId: listSongPublicId(501),
+                    eventSongListId: listPublicId(50),
                     subtitle: null,
                     sortOrder: 10,
                     songId: 7,
-                    song: { id: 7 },
                 }],
                 dividers: [],
             }),
@@ -1829,7 +1849,7 @@ describe("DB3 named views", () => {
 
     it("queries the EventSongList detail view with recursive authorization and no ID ordering", async () => {
         const findMany = vi.fn(async (_query: any) => [{
-            id: 50,
+            publicId: listPublicId(50),
             name: "Concert set",
             description: "Main set",
             eventId: 5,
@@ -1837,8 +1857,9 @@ describe("DB3 named views", () => {
             isOrdered: true,
             isActuallyPlayed: false,
             songs: [{
-                id: 501,
+                publicId: listSongPublicId(501),
                 eventSongListId: 50,
+                eventSongList: { publicId: listPublicId(50) },
                 subtitle: null,
                 sortOrder: 10,
                 songId: 7,
@@ -1892,7 +1913,7 @@ describe("DB3 named views", () => {
         } as any);
 
         expect(result.items[0]).toMatchObject({
-            id: 50,
+            publicId: listPublicId(50),
             songs: [{ song: { id: 7, name: "Visible song" } }],
             dividers: [],
         });
@@ -1906,7 +1927,7 @@ describe("DB3 named views", () => {
 
     it("returns an explicitly incomplete EventSongList DTO when fields are unauthorized", async () => {
         const findMany = vi.fn(async () => [{
-            id: 50,
+            publicId: listPublicId(50),
             name: "Restricted set",
             description: "Restricted",
             eventId: 5,
@@ -1937,7 +1958,7 @@ describe("DB3 named views", () => {
             EventSongList: { findMany },
         } as any);
 
-        expect(result.items).toEqual([{ id: 50 }]);
+        expect(result.items).toEqual([{ publicId: listPublicId(50) }]);
         const dto = db3.eventSongListDetailView.parseDto(result.items[0]);
         expect(db3.hydrateEventSongListDetailDto(dto).content).toBeUndefined();
     });

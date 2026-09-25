@@ -43,7 +43,7 @@ export type MediaPlayerSetlistItemContextPayload = EventSongListItem;// & {
 // A minimal audio file type for playlist items
 export interface MediaPlayerTrack {
     playlistIndex: number; // index in the playlist, used for playback
-    setlistId?: number; // ID of the setlist this track belongs to, for disambiguation
+    setlistId?: string; // ID of the setlist this track belongs to, for disambiguation
     setlistPlanId?: number;
 
     songContext?: MediaPlayerSongContextPayload;
@@ -73,7 +73,7 @@ export interface MediaPlayerContextType {
     previousEnabled: () => boolean;
     nextEnabled: () => boolean;
     isPlayingFile: (fileId: number) => boolean;
-    isPlayingSetlistItem: (args: { setlistId?: number | undefined, setlistPlanId?: number | undefined, setlistItemIndex: number, fileId: number }) => boolean;
+    isPlayingSetlistItem: (args: { setlistId?: string | undefined, setlistPlanId?: number | undefined, setlistItemIndex: number, fileId: number }) => boolean;
     isPlayingTrack: (track: MediaPlayerTrack) => boolean;
     isPlayable: (track: MediaPlayerTrack) => boolean; // unplayable tracks don't have any file/uri to play (dividers or missing song/file info etc.) unplayable tracks cannot be seeked to; they are skipped over.
 

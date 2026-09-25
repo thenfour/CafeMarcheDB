@@ -1,3 +1,4 @@
+import type { EventSongListPublicId } from "shared/publicId";
 import type { TAnyModel } from "@/shared/rootroot";
 import type { Prisma } from "db";
 import {
@@ -22,9 +23,9 @@ type PersistedDivider = Prisma.EventSongListDividerGetPayload<{}>;
 
 function requireUniquePersistedIds(
     collectionName: string,
-    values: readonly { id?: number }[],
+    values: readonly { publicId?: string }[],
 ): void {
-    const ids = values.flatMap(value => value.id === undefined ? [] : [value.id]);
+    const ids = values.flatMap(value => value.publicId === undefined ? [] : [value.publicId]);
     if (new Set(ids).size !== ids.length) {
         throw new DB3CommandError(`Duplicate persisted IDs in ${collectionName}.`);
     }
@@ -32,13 +33,13 @@ function requireUniquePersistedIds(
 
 function requireOwnedIds(
     collectionName: string,
-    currentIds: ReadonlySet<number>,
-    values: readonly { id?: number }[],
+    currentIds: ReadonlySet<string>,
+    values: readonly { publicId?: string }[],
 ): void {
     for (const value of values) {
-        if (value.id !== undefined && !currentIds.has(value.id)) {
+        if (value.publicId !== undefined && !currentIds.has(value.publicId)) {
             throw new DB3CommandError(
-                `${collectionName} item '${value.id}' does not belong to this setlist.`,
+                `${collectionName} item '${value.publicId}' does not belong to this setlist.`,
             );
         }
     }
@@ -53,6 +54,7 @@ function fieldsDiffer(
 
 async function synchronizeSongs(
     songListId: number,
+    songListPublicId: EventSongListPublicId,
     desired: readonly EventSongListSongCommand[],
     context: DB3CommandExecutionContext,
 ): Promise<void> {
@@ -60,36 +62,39 @@ async function synchronizeSongs(
 
     const current = await context.transaction.eventSongListSong.findMany({
         where: { eventSongListId: songListId },
-    }) as PersistedSong[];
-    const currentById = new Map(current.map(item => [item.id, item]));
+    });
+    // The transaction delegate is dynamic; this query returns complete Prisma rows.
+    const rows = current as PersistedSong[];
+    const currentById = new Map(rows.map(item => [item.publicId, item]));
     requireOwnedIds("Setlist song", new Set(currentById.keys()), desired);
 
-    const desiredIds = new Set(desired.flatMap(item => item.id === undefined ? [] : [item.id]));
-    for (const existing of current) {
-        if (!desiredIds.has(existing.id)) {
-            await context.rowServices.delete(xEventSongListSong, existing.id, "hard");
+    const desiredIds = new Set<string>(desired.flatMap(item => item.publicId === undefined ? [] : [item.publicId]));
+    for (const existing of rows) {
+        if (!desiredIds.has(existing.publicId)) {
+            await context.rowServices.delete(xEventSongListSong, xEventSongListSong.parseIdentity(existing.publicId), "hard");
         }
     }
 
     for (const item of desired) {
-        const { id, ...values } = item;
-        if (id === undefined) {
+        const { publicId, ...values } = item;
+        if (publicId === undefined) {
             await context.rowServices.insert(xEventSongListSong, {
                 ...values,
-                eventSongListId: songListId,
+                eventSongListId: songListPublicId,
             });
             continue;
         }
 
-        const existing = currentById.get(id)!;
+        const existing = currentById.get(publicId)!;
         if (fieldsDiffer(existing, values)) {
-            await context.rowServices.update(xEventSongListSong, id, values);
+            await context.rowServices.update(xEventSongListSong, publicId, values);
         }
     }
 }
 
 async function synchronizeDividers(
     songListId: number,
+    songListPublicId: EventSongListPublicId,
     desired: readonly EventSongListDividerCommand[],
     context: DB3CommandExecutionContext,
 ): Promise<void> {
@@ -97,30 +102,32 @@ async function synchronizeDividers(
 
     const current = await context.transaction.eventSongListDivider.findMany({
         where: { eventSongListId: songListId },
-    }) as PersistedDivider[];
-    const currentById = new Map(current.map(item => [item.id, item]));
+    });
+    // The transaction delegate is dynamic; this query returns complete Prisma rows.
+    const rows = current as PersistedDivider[];
+    const currentById = new Map(rows.map(item => [item.publicId, item]));
     requireOwnedIds("Setlist divider", new Set(currentById.keys()), desired);
 
-    const desiredIds = new Set(desired.flatMap(item => item.id === undefined ? [] : [item.id]));
-    for (const existing of current) {
-        if (!desiredIds.has(existing.id)) {
-            await context.rowServices.delete(xEventSongListDivider, existing.id, "hard");
+    const desiredIds = new Set<string>(desired.flatMap(item => item.publicId === undefined ? [] : [item.publicId]));
+    for (const existing of rows) {
+        if (!desiredIds.has(existing.publicId)) {
+            await context.rowServices.delete(xEventSongListDivider, xEventSongListDivider.parseIdentity(existing.publicId), "hard");
         }
     }
 
     for (const item of desired) {
-        const { id, ...values } = item;
-        if (id === undefined) {
+        const { publicId, ...values } = item;
+        if (publicId === undefined) {
             await context.rowServices.insert(xEventSongListDivider, {
                 ...values,
-                eventSongListId: songListId,
+                eventSongListId: songListPublicId,
             });
             continue;
         }
 
-        const existing = currentById.get(id)!;
+        const existing = currentById.get(publicId)!;
         if (fieldsDiffer(existing, values)) {
-            await context.rowServices.update(xEventSongListDivider, id, values);
+            await context.rowServices.update(xEventSongListDivider, publicId, values);
         }
     }
 }
@@ -128,47 +135,29 @@ async function synchronizeDividers(
 async function saveEventSongList(
     dto: EventSongListMutationCommand,
     context: DB3CommandExecutionContext,
-): Promise<{ id: number }> {
-    const { id, eventId, songs, dividers, ...parentValues } = dto;
-
+): Promise<{ publicId: EventSongListPublicId }> {
+    const { publicId, eventId, songs, dividers, ...parentValues } = dto;
     await context.rowServices.requireVisible(xEvent, eventId);
     for (const songId of new Set(songs.map(item => item.songId))) {
         await context.rowServices.requireVisible(xSong, songId);
     }
 
-    let songListId: number;
-    if (id === undefined) {
-        const inserted = await context.rowServices.insert(xEventSongList, {
-            ...parentValues,
-            eventId,
-        });
-        songListId = inserted.id as number;
+    let songList: TAnyModel;
+    if (publicId === undefined) {
+        songList = await context.rowServices.insert(xEventSongList, { ...parentValues, eventId });
     } else {
-        const existing = await context.transaction.eventSongList.findFirst({
-            where: { id },
-        });
-        if (!existing) {
-            throw new DB3CommandError(`EventSongList '${id}' was not found.`);
+        songList = await context.rowServices.requireVisible(xEventSongList, publicId);
+        if (songList.eventId !== eventId) {
+            throw new DB3CommandError("EventSongList was not found in this event.");
         }
-        if (existing.eventId !== eventId) {
-            throw new DB3CommandError(
-                `EventSongList '${id}' does not belong to event '${eventId}'.`,
-            );
-        }
-        await context.rowServices.update(xEventSongList, id, parentValues);
-        songListId = id;
+        await context.rowServices.update(xEventSongList, publicId, parentValues);
     }
-
-    await synchronizeSongs(songListId, songs, context);
-    await synchronizeDividers(songListId, dividers, context);
+    const songListId = xEventSongList.parseDatabaseIdentity(songList.id);
+    const songListPublicId = xEventSongList.parseIdentity(songList.publicId);
+    await synchronizeSongs(songListId, songListPublicId, songs, context);
+    await synchronizeDividers(songListId, songListPublicId, dividers, context);
     await context.rowServices.afterMutation(xEventSongList, { id: songListId });
-    return { id: songListId };
+    return { publicId: songListPublicId };
 }
 
-// NB:
-// registrations like these need also to be added to the command handler registry; see:
-// const commandHandlers = new Map<string, AnyDB3CommandHandler>([
-export const eventSongListSaveCommandHandler = defineCommandHandler(
-    saveEventSongListCommand,
-    saveEventSongList,
-);
+export const eventSongListSaveCommandHandler = defineCommandHandler(saveEventSongListCommand, saveEventSongList);

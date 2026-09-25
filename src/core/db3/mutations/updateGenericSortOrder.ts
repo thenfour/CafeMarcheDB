@@ -10,22 +10,7 @@ import { DB3RequestValidationError } from "../server/db3RequestValidation";
 import * as mutationCore from "../server/db3mutationCore";
 import { TupdateGenericSortOrderArgs, ZupdateGenericSortOrderArgs } from "../shared/apiTypes";
 
-export const createUsableSortOrderSlots = (items: Array<Record<string, any>>, sortOrderMember: string): number[] => {
-    const slots = items
-        .map(item => item[sortOrderMember] as number)
-        .sort((a, b) => a - b);
-
-    // Legacy/default data can contain duplicate sort orders. Merely permuting
-    // duplicate values makes a drag operation a successful no-op. Preserve
-    // healthy existing slots (including gaps), but make the sequence strictly
-    // increasing when a duplicate or descending value is encountered.
-    for (let i = 1; i < slots.length; ++i) {
-        if (slots[i]! <= slots[i - 1]!) {
-            slots[i] = slots[i - 1]! + 1;
-        }
-    }
-    return slots;
-};
+import { createUsableSortOrderSlots } from "../server/db3SortOrder";
 
 // Tables must opt in and declare their grouping boundary. The caller also
 // supplies the complete row-ID scope represented by its reorderable UI. Only
@@ -52,6 +37,10 @@ export default resolver.pipe(
         const sortOrderColumn = table.SqlSpecialColumns.sortOrder;
         if (!policy || policy.scope !== "explicitRowIds" || !sortOrderColumn) {
             throw new mutationCore.DB3MutationAuthorizationError(table.tableName, ["sortOrder"]);
+        }
+
+        if (table.publicIdMember) {
+            throw new DB3RequestValidationError("Public-ID entities must use their reorder command.");
         }
 
         const requestGroupingColumn = args.groupByColumn ?? null;
