@@ -1386,7 +1386,9 @@ identities; SetlistPlan remains a separate domain.
 - Drafts distinguish stable string `clientId` keys from optional persisted
   `publicId` values. Save serialization emits only persisted public IDs.
   Clipboard export drops setlist/item identity, and each paste allocates fresh
-  local keys. Previews and media-player state support unsaved local identity.
+  local keys. Setlist drafts, previews, and media-player `setlistClientId` use
+  `SetlistClientId` (`EventSongListPublicId | DraftSetlistId`); only the draft-ID
+  factory creates branded temporary setlist identities.
   `setlistApi` separates client rows from identity-free server formatting data.
 - Save, delete, and reorder use strict commands and shared transactional row
   services. Child ownership, duplicate identities, Event/Song visibility,
@@ -1409,7 +1411,7 @@ Deployment still requires applying the checked-in SQL migration and starting
 with placeholder repair enabled. The migration was not applied to a database
 as part of this implementation.
 
-Validation passed: all 101 unit-test files, TypeScript, lint, Prisma generation
+Initial slice validation passed: all 101 unit-test files, TypeScript, lint, Prisma generation
 and schema validation, and the production build. The build reports Blitz export
 warnings in the unchanged `src/blitz-server.ts`. Browser interaction against a
 migrated database remains unverified.

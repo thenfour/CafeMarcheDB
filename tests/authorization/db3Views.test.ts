@@ -1746,7 +1746,7 @@ describe("DB3 named views", () => {
         const secondPaste = db3.portableSongListToDraftItems(portable);
         expect(new Set([...firstPaste, ...secondPaste].map(item => item.clientId)).size).toBe(4);
         expect(firstPaste.every(item => item.publicId === undefined)).toBe(true);
-        const copiedDraft = db3.createEventSongListDraft({ eventId: 5, name: "Copy", clientId: db3.createEventSongListLocalKey() });
+        const copiedDraft = db3.createEventSongListDraft({ eventId: 5, name: "Copy", clientId: db3.createDraftSetlistId() });
         copiedDraft.items = firstPaste;
         const copyCommand = db3.saveEventSongListCommand.serialize(copiedDraft);
         expect(copyCommand).not.toHaveProperty("publicId");
@@ -1756,12 +1756,17 @@ describe("DB3 named views", () => {
         expect(preview.clientId).toBe(copiedDraft.clientId);
         expect(preview.content?.items.map(item => item.type)).toEqual(["divider", "song"]);
         expect(preview.publicId).toBeUndefined();
+        expectTypeOf(preview.clientId).toEqualTypeOf<db3.SetlistClientId>();
+        expectTypeOf<string>().not.toMatchTypeOf<db3.SetlistClientId>();
+        expectTypeOf<db3.DraftSetlistId>().not.toMatchTypeOf<typeof client.publicId>();
+        expectTypeOf<typeof client.publicId>().toMatchTypeOf<db3.SetlistClientId>();
+        expectTypeOf<db3.DraftSetlistId>().toMatchTypeOf<db3.SetlistClientId>();
         expectTypeOf(draft).toEqualTypeOf<db3.EventSongListDraft | undefined>();
     });
 
     it("replaces an edited setlist row without moving it", () => {
         const draft = db3.createEventSongListDraft({
-            clientId: "draft:1",
+            clientId: db3.createDraftSetlistId(),
             eventId: 5,
             name: "New set",
         });
@@ -1807,7 +1812,7 @@ describe("DB3 named views", () => {
             db3.eventSongListDetailView.parseDto({ publicId: listPublicId(50), songs: [], dividers: [] }),
         );
         const newDraft = db3.createEventSongListDraft({
-            clientId: "draft:1",
+            clientId: db3.createDraftSetlistId(),
             eventId: 5,
             name: "New set",
         });

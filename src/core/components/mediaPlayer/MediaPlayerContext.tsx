@@ -114,7 +114,7 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const playUri = (uri: string) => {
         const track: MediaPlayerTrack = {
             playlistIndex: -1, // filled in later
-            setlistId: undefined, // ad-hoc tracks don't belong to a setlist
+            setlistClientId: undefined, // ad-hoc tracks don't belong to a setlist
             url: uri,
         };
         const newPlaylist = [...playlist, track]; // append to playlist
@@ -193,12 +193,12 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
     }, []);
 
-    const isPlayingSetlistItem = (args: { fileId: number, setlistItemIndex: number, setlistId?: string | undefined, setlistPlanId?: number | undefined }) => {
+    const isPlayingSetlistItem: MediaPlayerContextType["isPlayingSetlistItem"] = (args) => {
         if (currentIndex === undefined || currentIndex < 0 || currentIndex >= playlist.length) return false;
         const track = playlist[currentIndex]!;
         if (currentIndex !== args.setlistItemIndex) return false; // Check if the current index matches the setlist item index
         if (!isPlayingFile(args.fileId)) return false; // Check if the current track is playing the specified file
-        if (args.setlistId !== undefined && track.setlistId !== args.setlistId) return false; // If setlistId is provided, check if it matches the track's setlistId
+        if (args.setlistClientId !== undefined && track.setlistClientId !== args.setlistClientId) return false; // If setlistClientId is provided, check if it matches the track's setlistClientId
         if (args.setlistPlanId !== undefined && track.setlistPlanId !== args.setlistPlanId) return false; // If setlistPlanId is provided, check if it matches the track's setlistPlanId
         return true; // All checks passed, the track is playing the specified setlist item
     };
@@ -206,7 +206,9 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const isPlayingTrack = useCallback((track: MediaPlayerTrack): boolean => {
         if (currentIndex === undefined || currentIndex < 0 || currentIndex >= playlist.length) return false;
         const currentTrack = playlist[currentIndex]!;
-        return currentTrack.playlistIndex === track.playlistIndex && currentTrack.setlistId === track.setlistId && currentTrack.setlistPlanId === track.setlistPlanId;
+        return currentTrack.playlistIndex === track.playlistIndex
+            && currentTrack.setlistClientId === track.setlistClientId
+            && currentTrack.setlistPlanId === track.setlistPlanId;
     }, [currentIndex, playlist]);
 
     const pullPlaylist = useCallback(() => {

@@ -46,12 +46,12 @@ import type { PortableSongList } from "../db3/shared/entities/eventSongList/even
 import type { SongTagPublicId } from 'shared/publicId';
 import type { EventEnrichedVerbose_Event } from './event/EventComponentsBase';
 
-const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, TSongPinnedRecording>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, songListId: string }): MediaPlayerTrack => {
+const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, TSongPinnedRecording>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, setlistClientId: db3.SetlistClientId }): MediaPlayerTrack => {
     if (args.rowItem.type === 'song') {
         const pinnedRecording = args.allPinnedRecordings[args.rowItem.song.id];
         return {
             playlistIndex: args.rowIndex,
-            setlistId: args.songListId,
+            setlistClientId: args.setlistClientId,
             setListItemContext: args.rowItem,
             songContext: args.rowItem.song,
             file: pinnedRecording,
@@ -60,7 +60,7 @@ const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, T
     else if (args.rowItem.type === 'divider') {
         return {
             playlistIndex: args.rowIndex,
-            setlistId: args.songListId,
+            setlistClientId: args.setlistClientId,
             setListItemContext: args.rowItem,
         };
     }
@@ -335,7 +335,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
     const pinnedRecording = props.value.type === "song" && props.pinnedRecordings?.[props.value.songId];
     const isCurrentMediaPlayerTrack = !!pinnedRecording && mediaPlayer.isPlayingSetlistItem({
         fileId: pinnedRecording.id,
-        setlistId: props.songList.clientId,
+        setlistClientId: props.songList.clientId,
         setlistItemIndex: props.rowIndex,
     });
 
@@ -632,17 +632,17 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
     };
 
     // Store current dependencies in a ref so the playlist function always returns current data
-    const playlistDataRef = useRef({ rowItems, pinnedRecordings, songListId: props.value.clientId });
-    playlistDataRef.current = { rowItems, pinnedRecordings, songListId: props.value.clientId };
+    const playlistDataRef = useRef({ rowItems, pinnedRecordings, setlistClientId: props.value.clientId });
+    playlistDataRef.current = { rowItems, pinnedRecordings, setlistClientId: props.value.clientId };
 
     // Use a stable function reference that always reads current data
     const getPlaylist = useCallback(() => {
-        //console.log(`getting playlist for song list ${playlistDataRef.current.songListId}`, props.value.songs);
+        //console.log(`getting playlist for song list ${playlistDataRef.current.setlistClientId}`, props.value.songs);
         return playlistDataRef.current.rowItems.map((item, index) => RowItemToMediaPlayerTrack({
             allPinnedRecordings: playlistDataRef.current.pinnedRecordings || {},
             rowItem: item,
             rowIndex: index,
-            songListId: playlistDataRef.current.songListId,
+            setlistClientId: playlistDataRef.current.setlistClientId,
         }));
     }, []); // Empty dependency array - this function never changes
 
@@ -694,7 +694,7 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
                         allPinnedRecordings: pinnedRecordings || {},
                         rowItem: s,
                         rowIndex: index,
-                        songListId: props.value.clientId,
+                        setlistClientId: props.value.clientId,
                     })}
                     maxBpm={stats.maxBpm}
                 />)
@@ -883,7 +883,7 @@ const EventSongListValueEditorSongRow = (
     const pinnedRecording = props.pinnedRecordings?.[props.value.songId];
     const isCurrentMediaPlayerTrack = !!pinnedRecording && mediaPlayer.isPlayingSetlistItem({
         fileId: pinnedRecording.id,
-        setlistId: props.songList.clientId,
+        setlistClientId: props.songList.clientId,
         setlistItemIndex: props.rowIndex,
     });
 
@@ -1221,17 +1221,17 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     const nameField = nameColumn.renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name, autoFocus: true });
 
     // Store current dependencies in a ref so the playlist function always returns current data
-    const playlistDataRef = useRef({ rowItems, pinnedRecordings, songListId: value.clientId });
-    playlistDataRef.current = { rowItems, pinnedRecordings, songListId: value.clientId };
+    const playlistDataRef = useRef({ rowItems, pinnedRecordings, setlistClientId: value.clientId });
+    playlistDataRef.current = { rowItems, pinnedRecordings, setlistClientId: value.clientId };
 
     // Use a stable function reference that always reads current data
     const getPlaylist = useCallback(() => {
-        //console.log(`getting playlist for song list ${playlistDataRef.current.songListId}`, value);
+        //console.log(`getting playlist for song list ${playlistDataRef.current.setlistClientId}`, value);
         return playlistDataRef.current.rowItems.map((item, index) => RowItemToMediaPlayerTrack({
             allPinnedRecordings: playlistDataRef.current.pinnedRecordings || {},
             rowItem: item,
             rowIndex: index,
-            songListId: playlistDataRef.current.songListId,
+            setlistClientId: playlistDataRef.current.setlistClientId,
         }))
     }, []); // Empty dependency array - this function never changes
 
@@ -1330,7 +1330,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                                 allPinnedRecordings: pinnedRecordings || {},
                                 rowItem: s,
                                 rowIndex: index,
-                                songListId: value.clientId,
+                                setlistClientId: value.clientId,
                             })}
                             maxBpm={stats.maxBpm}
                         />
@@ -1536,7 +1536,7 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
     const saveCommand = DB3Client.useDB3Command(db3.saveEventSongListCommand);
     const snackbar = React.useContext(SnackbarContext);
     const initialValue = React.useMemo(() => db3.createEventSongListDraft({
-        clientId: db3.createEventSongListLocalKey(),
+        clientId: db3.createDraftSetlistId(),
         eventId: props.event.id,
         name: props.event.songLists.length > 0
             ? `Set ${props.event.songLists.length + 1}`

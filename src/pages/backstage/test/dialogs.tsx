@@ -10,12 +10,14 @@ import { Box, Menu, MenuItem, Paper, Stack, TextField, Typography } from "@mui/m
 import React from "react";
 import { Permission } from "shared/permissions";
 
+import { createDraftSetlistId } from "@db3/shared/entities/eventSongList/eventSongListDraft";
+
 type DialogExample = "compact" | "long" | "keyboard" | "setlist" | null;
 
-const kDialogTestMediaSetlistId = "dialog-media-fixture";
+const kDialogTestMediaSetlistId = createDraftSetlistId();
 const dialogTestMediaTrack: MediaPlayerTrack = {
     playlistIndex: 0,
-    setlistId: kDialogTestMediaSetlistId,
+    setlistClientId: kDialogTestMediaSetlistId,
     songContext: {
         id: -8675309,
         name: "Dialog UX media-bar fixture",
@@ -36,12 +38,12 @@ const DialogUxExamples = () => {
     const playlistRef = React.useRef(mediaPlayer.playlist);
     playlistRef.current = mediaPlayer.playlist;
 
-    const testMediaBarActive = mediaPlayer.currentTrack?.setlistId === kDialogTestMediaSetlistId;
+    const testMediaBarActive = mediaPlayer.currentTrack?.setlistClientId === kDialogTestMediaSetlistId;
     const otherMediaActive = mediaPlayer.playlist.length > 0 && !testMediaBarActive;
 
     React.useEffect(() => {
         return () => {
-            if (playlistRef.current.some(track => track.setlistId === kDialogTestMediaSetlistId)) {
+            if (playlistRef.current.some(track => track.setlistClientId === kDialogTestMediaSetlistId)) {
                 mediaPlayer.setPlaylist([], undefined);
             }
         };

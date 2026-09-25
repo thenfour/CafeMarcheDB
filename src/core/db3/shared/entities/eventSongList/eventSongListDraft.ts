@@ -9,6 +9,15 @@ import type {
 import { EventSongListContent } from "./eventSongListContent";
 import type { EventSongListDetailClient, EventSongListPreview } from "./eventSongListViews";
 
+declare const draftSetlistIdBrand: unique symbol;
+export type DraftSetlistId = string & { readonly [draftSetlistIdBrand]: true };
+export type SetlistClientId = EventSongListPublicId | DraftSetlistId;
+
+export function createDraftSetlistId(): DraftSetlistId {
+    // Only this factory brands local setlist IDs; the prefix cannot be a public ID.
+    return createEventSongListLocalKey() as DraftSetlistId;
+}
+
 export interface EventSongListDraftSong {
     readonly type: "song";
     readonly publicId?: EventSongListSongPublicId;
@@ -43,7 +52,7 @@ export interface EventSongListDraft {
     /** The persisted identity. Undefined for a new setlist. */
     readonly publicId?: EventSongListPublicId;
     /** Stable local identity for editor and media-player state. */
-    readonly clientId: string;
+    readonly clientId: SetlistClientId;
     readonly eventId: number;
     name: string;
     description: string;
@@ -108,7 +117,7 @@ export function eventSongListClientToDraft(
 }
 
 export function createEventSongListDraft(args: {
-    clientId: string;
+    clientId: DraftSetlistId;
     eventId: number;
     name: string;
     sortOrder?: number;

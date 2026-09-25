@@ -3,6 +3,7 @@ import { Prisma } from "db";
 import { z } from "zod";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { EventSongListContent } from "./eventSongListContent";
+import type { SetlistClientId } from "./eventSongListDraft";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { xEventSongList, xEventSongListSong, xEventSongListDivider } from "../../schema/event";
 import { isPublicId, type SongTagAssociationPublicId, type SongTagPublicId } from "shared/publicId";
@@ -106,7 +107,6 @@ const eventSongListTransportSelection = Prisma.validator<Prisma.EventSongListDef
 // Authorization support stays outside the transported Song card.
 const eventSongListSelection = graft(eventSongListTransportSelection, {
     select: {
-        s
         songs: {
             select: {
                 song: {
@@ -159,5 +159,5 @@ export type EventSongListDetailClient = ClientOf<typeof eventSongListDetailView>
 // A preview may represent an unsaved draft, which has no persisted identity.
 export type EventSongListPreview = Omit<EventSongListDetailClient, "publicId" | "clientId"> & {
     publicId?: EventSongListDetailClient["publicId"];
-    clientId: string;
+    clientId: SetlistClientId;
 };

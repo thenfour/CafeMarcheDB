@@ -64,6 +64,7 @@ export default resolver.pipe(
         }
 
         await db.$transaction(async transactionalDb => {
+            // Legacy tables are selected at runtime rather than through a typed Prisma delegate.
             const dbTableClient = transactionalDb[table.tableName] as any;
             const whereClause: Record<string, unknown> = {};
             if (policy.groupingColumn !== null) {
@@ -78,7 +79,7 @@ export default resolver.pipe(
                 ...table.getSelectionArgs({ items: [] }, publicData),
                 where: whereClause,
                 orderBy: { [sortOrderColumn.member]: "asc" },
-            }) as unknown as Array<Record<string, any>>;
+            }) as Array<Record<string, unknown>>; // This runtime-selected table has no static row shape.
 
             // A missing row can mean a stale ID, another group, or a deleted
             // record. Keep those cases indistinguishable and never broaden the
@@ -114,17 +115,22 @@ export default resolver.pipe(
                 assert(items.length > 1, "can't move items when there's only 1");
             }
 
-            const reorderedItems = moveItemInArray(items, indexToMove, destinationIndex);
+            const sortableItems = items.map(item => ({
+                item,
+                // The opted-in xTable declares this member as its numeric sort-order column.
+                sortOrder: item[sortOrderColumn.member] as number,
+            }));
+            const reorderedItems = moveItemInArray(sortableItems, indexToMove, destinationIndex);
             // Reuse this scope's existing numeric slots. This preserves gaps
             // occupied by out-of-scope rows instead of renumbering through
             // hidden or paginated data.
-            const sortOrderSlots = createUsableSortOrderSlots(items, sortOrderColumn.member);
-            const changes = reorderedItems.flatMap((item, index) => (
-                item[sortOrderColumn.member] === sortOrderSlots[index]
+            const sortOrderSlots = createUsableSortOrderSlots(sortableItems, "sortOrder");
+            const changes = reorderedItems.flatMap(({ item, sortOrder }, index) => (
+                sortOrder === sortOrderSlots[index]
                     ? []
                     : [{
                         item,
-                        oldSortOrder: item[sortOrderColumn.member] as number,
+                        oldSortOrder: sortOrder,
                         newSortOrder: sortOrderSlots[index]!,
                     }]
             ));

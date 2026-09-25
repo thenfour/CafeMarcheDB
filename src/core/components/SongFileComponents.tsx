@@ -1162,7 +1162,7 @@ export function AudioPlayerFileControls({ file, song, event }: AudioPlayerFileCo
                 {
                     file: playableFile,
                     playlistIndex: -1,
-                    setlistId: undefined, // individual file playback, not from a setlist
+                    setlistClientId: undefined, // individual file playback, not from a setlist
                     //url: file.externalURI || undefined,
                     songContext: song,
                     eventContext: event,
