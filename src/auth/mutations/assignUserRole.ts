@@ -8,6 +8,7 @@ import {
 } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
+import { isPublicId, type RolePublicId } from "shared/publicId";
 import {
     requireCanManageUser,
     requireContinuityAcknowledgement,
@@ -23,7 +24,7 @@ import { PermissionSet } from "../shared/PermissionSet";
 
 export const AssignUserRoleInput = z.object({
     userId: z.number().int().positive(),
-    roleId: z.number().int().positive().nullable(),
+    roleId: z.custom<RolePublicId>(isPublicId).nullable(),
     acknowledgeContinuityRisk: z.boolean().default(false),
 });
 
@@ -35,10 +36,18 @@ export default resolver.pipe(
             // desiredRole perm set is NOT "effective" perms, on purpose.
             // we only care about perms under the assigning role.
 
+            // resolve public id just resolves an ID, it doesn't return the full row; this is intentional.
+            const desiredRoleIdentity = roleId == null
+                ? null
+                : await tx.role.findUnique({
+                    where: { publicId: roleId },
+                    select: { id: true },
+                });
+            const desiredRoleDatabaseId = desiredRoleIdentity?.id ?? null;
             const [actor, target, desiredRole] = await Promise.all([
                 findUserManagementActor(tx, ctx.session.userId),
                 findUserManagementTarget(tx, userId),
-                findUserManagementRole(tx, roleId),
+                findUserManagementRole(tx, desiredRoleDatabaseId),
             ]);
 
             if (!target) throw new NotFoundError();
@@ -53,7 +62,7 @@ export default resolver.pipe(
                 desiredRole: desiredRolePerms,
             });
 
-            if (target.principal.roleId === roleId) {
+            if (target.principal.roleId === desiredRoleDatabaseId) {
                 return { userId, roleId, continuityWarnings: [] };
             }
 
@@ -69,7 +78,7 @@ export default resolver.pipe(
 
             await tx.user.update({
                 where: { id: userId },
-                data: { roleId },
+                data: { roleId: desiredRoleDatabaseId },
             });
             await RegisterChange({
                 action: ChangeAction.update,
@@ -77,7 +86,7 @@ export default resolver.pipe(
                 table: "User",
                 pkid: userId,
                 oldValues: { roleId: target.principal.roleId },
-                newValues: { roleId },
+                newValues: { roleId: desiredRoleDatabaseId },
                 ctx,
                 db: tx,
             });

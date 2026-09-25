@@ -5,7 +5,14 @@ import { Prisma } from "db";
 import { assertIsNumberArray } from "shared/arrayUtils";
 import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
-import type { UserInstrumentPublicId, UserTagAssignmentPublicId, UserTagPublicId } from "shared/publicId";
+import type {
+    PermissionPublicId,
+    RolePermissionPublicId,
+    RolePublicId,
+    UserInstrumentPublicId,
+    UserTagAssignmentPublicId,
+    UserTagPublicId,
+} from "shared/publicId";
 import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
 import { z } from "zod";
@@ -259,7 +266,7 @@ export const xUserMinimum = db3.defineTable({
 
 export const xPermissionBaseArgs = db3.defineTableDesc({
     prismaModel: db3.prismaModel<Prisma.PermissionDelegate>(),
-    getIdentity: (permission: Prisma.PermissionGetPayload<{}>) => permission.id,
+    getIdentity: (permission: { publicId: PermissionPublicId }) => permission.publicId,
     getSelectionArgs: (): Prisma.PermissionDefaultArgs => {
         return PermissionArgs;
     },
@@ -268,14 +275,15 @@ export const xPermissionBaseArgs = db3.defineTableDesc({
     naturalOrderBy: PermissionNaturalOrderBy,
     tableAuthMap: xPermissionTableAuthMap,
     getRowInfo: (row: PermissionPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.name,
         description: row.description || "",
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<PermissionPublicId>(),
         name: columnName => new GenericStringField({
             columnName,
             allowNull: false,
@@ -320,7 +328,7 @@ export const xPermission = db3.defineTable(xPermissionBaseArgs);
 // this schema is required for tags selection dlg.
 export const xRolePermissionAssociation = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.RolePermissionDelegate>(),
-    getIdentity: (rolePermission: Prisma.RolePermissionGetPayload<{}>) => rolePermission.id,
+    getIdentity: (rolePermission: { publicId: RolePermissionPublicId }) => rolePermission.publicId,
     tableName: "RolePermission",
     deletePolicy: "disabled",
     getSelectionArgs: (): Prisma.RolePermissionDefaultArgs => {
@@ -329,13 +337,14 @@ export const xRolePermissionAssociation = db3.defineTable({
     tableAuthMap: xRoleAdministrationTableAuthMap,
     naturalOrderBy: RolePermissionNaturalOrderBy,
     getRowInfo: (row: RolePermissionAssociationPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.permission?.name || "",
         description: row.permission?.description || "",
         ownerUserId: null,
     }),
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<RolePermissionPublicId>(),
         permission: foreignRef(() => xPermission, {
             fkidMember: "permissionId",
             authMap: xRoleAdministrationFieldAuthMap,
@@ -351,7 +360,7 @@ export const xRolePermissionAssociation = db3.defineTable({
 
 export const xRole = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.RoleDelegate>(),
-    getIdentity: (role: Prisma.RoleGetPayload<{}>) => role.id,
+    getIdentity: (role: { publicId: RolePublicId }) => role.publicId,
     getSelectionArgs: (): Prisma.RoleDefaultArgs => {
         return RoleArgs;
     },
@@ -359,7 +368,7 @@ export const xRole = db3.defineTable({
     deletePolicy: "disabled",
     tableAuthMap: xRoleAdministrationTableAuthMap,
     naturalOrderBy: RoleNaturalOrderBy,
-    createInsertModelFromString: (input: string): Prisma.RoleCreateInput => {
+    createInsertModelFromString: (input: string): Partial<RolePayload> => {
         return {
             name: input,
             description: "auto-created",
@@ -367,14 +376,15 @@ export const xRole = db3.defineTable({
         };
     },
     getRowInfo: (row: RolePayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.name,
         description: row.description || "",
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<RolePublicId>(),
         name: columnName => new GenericStringField({
             columnName,
             allowNull: false,
@@ -849,7 +859,7 @@ export class CreatedByUserField<
             _customAuth: (args as any)._customAuth || null,
         });
     }
-    ApplyToNewRow = (args: TAnyModel, currentUser: UserWithRolesPayload | null) => {
+    ApplyToNewRow = (args: TAnyModel, currentUser: Pick<UserWithRolesPayload, "id"> | null) => {
         args[this.member] = currentUser;
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: db3.DB3RowMode, currentUser?: UserWithRolesPayload | null) => {

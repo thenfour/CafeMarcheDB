@@ -1,6 +1,6 @@
 import { DbBrandConfig } from "@/shared/brandConfigBase";
 import { isAbsoluteUri, slugify, TableAccessor } from "@/shared/rootroot";
-import type { InstrumentPublicId } from "shared/publicId";
+import type { InstrumentPublicId, PermissionPublicId, RolePublicId } from "shared/publicId";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
@@ -29,8 +29,8 @@ export abstract class DashboardContextDataBase {
     wikiPageTag: TableAccessor<db3.CompleteWikiPageTagDashboardClient, WikiPageTagPublicId>;
 
     dynMenuLinks: TableAccessor<db3.MenuLinkListClient>;
-    permission: TableAccessor<db3.ClientOf<typeof db3.permissionDashboardView>>;
-    role: TableAccessor<db3.CompleteRoleDashboardClient>;
+    permission: TableAccessor<db3.ClientOf<typeof db3.permissionDashboardView>, PermissionPublicId>;
+    role: TableAccessor<db3.CompleteRoleDashboardClient, RolePublicId>;
 
     instrument: TableAccessor<db3.InstrumentDashboardClient, InstrumentPublicId>;
     instrumentFunctionalGroup: TableAccessor<

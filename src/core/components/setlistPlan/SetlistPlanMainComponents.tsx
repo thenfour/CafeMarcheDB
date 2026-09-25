@@ -1576,7 +1576,9 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                 <VisibilityControl
                     value={docOrTempDoc.visiblePermissionId}
                     onChange={(newValue) => {
-                        props.mutator.setVisiblePermissionId(newValue?.id || null);
+                        props.mutator.setVisiblePermissionId(
+                            newValue ? db3.xPermission.getIdentity(newValue) : null,
+                        );
                     }}
                 />
             </ButtonGroup>

@@ -20,30 +20,38 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import type { CMDBTableFilterItem, CMDBTableFilterModel } from '../shared/apiTypes';
 import type { AnyDB3AssociationCommand } from '../shared/core/db3AssociationCommand';
+import * as db3 from "../db3";
+import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 
 // we don't really get page support here so choose a bigger number.
 const gPageSizeDefault = 100 as number;
 
-export interface DB3AssMatrxiExtraActionsArgs {
-    row: TAnyModel,
+export interface DB3AssMatrxiExtraActionsArgs<TLocal extends TAnyModel> {
+    row: TLocal,
 };
 
 export type DB3BooleanMatrixProps<
-    TLocal extends TAnyModel,
+    TLocalView extends db3.AnyDB3View,
+    TForeignView extends db3.AnyDB3View,
     TAssociation extends TAnyModel,
 > = {
-    localTableSpec: DB3Client.xTableClientSpec,
-    foreignTableSpec: DB3Client.xTableClientSpec,
+    localTableSpec: DB3Client.xTableClientSpec<TLocalView>,
+    foreignTableSpec: DB3Client.xTableClientSpec<TForeignView>,
     tagsField: DB3Client.TagsFieldClient<TAssociation>,
     associationCommand: AnyDB3AssociationCommand,
-    renderExtraActions?: (args: DB3AssMatrxiExtraActionsArgs) => React.ReactNode,
-    filterRow?: (row: TLocal) => boolean;
+    renderExtraActions?: (args: DB3AssMatrxiExtraActionsArgs<db3.ClientOf<TLocalView>>) => React.ReactNode,
+    filterRow?: (row: db3.ClientOf<TLocalView>) => boolean;
 };
 
-export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation extends TAnyModel>(props: DB3BooleanMatrixProps<TLocal, TAssociation>) {
+export function DB3AssociationMatrix<
+    TLocalView extends db3.AnyDB3View,
+    TForeignView extends db3.AnyDB3View,
+    TAssociation extends TAnyModel,
+>(props: DB3BooleanMatrixProps<TLocalView, TForeignView, TAssociation>) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const dashboardContext = useDashboardContext();
     const associationCommand = DB3Client.useDB3Command(props.associationCommand);
 
     // set initial pagination values + get pagination state.
@@ -68,22 +76,27 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
         quickFilterValues: filterModel.quickFilterValues,
     };
 
-    // legacy because this isn't (yet) working with views; only xTable
-    const dbRows = DB3Client.useLegacyTableRenderContext({
+    const dbRows = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
         tableSpec: props.localTableSpec,
         filterModel: convertedFilter,// quick filter will apply to both rows & columns
         sortModel,
         paginationModel,
+        referenceProvider: dashboardContext.referenceStore,
     });
 
-    const filteredRows: TLocal[] = !!props.filterRow ? (dbRows.items as TLocal[]).filter(row => props.filterRow!(row)) : (dbRows.items as TLocal[]);
+    // Both table specs are view-bound, so their render clients hydrate exactly
+    // the ClientOf rows represented by these generic view parameters.
+    const localRows = dbRows.items as db3.ClientOf<TLocalView>[];
+    const filteredRows = props.filterRow
+        ? localRows.filter(row => props.filterRow!(row))
+        : localRows;
 
-    // legacy because this isn't (yet) working with views; only xTable
-    const dbColumns = DB3Client.useLegacyTableRenderContext({
+    const dbColumns = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
         tableSpec: props.foreignTableSpec,
         filterModel: convertedFilter,// quick filter will apply to both rows & columns
+        referenceProvider: dashboardContext.referenceStore,
         // use the table's natural sort
     });
 
@@ -96,13 +109,9 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
         throw new Error("Association command foreign entity does not match the matrix column table.");
     }
 
-    const getAssociationForeignIdentity = (association: TAssociation) => {
-        const foreignObject = association[
-            props.tagsField.typedSchemaColumn.associationForeignObjectMember
-        ] as TAnyModel | undefined;
-        return foreignObject?.[props.foreignTableSpec.args.table.clientIdMember]
-            ?? association[props.tagsField.associationForeignIDMember];
-    };
+    const getAssociationForeignIdentity = (association: TAssociation) => (
+        props.tagsField.typedSchemaColumn.getForeignIdentity(association)
+    );
 
     const columns: GridColDef[] = [{
         field: "id",
@@ -128,8 +137,8 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
         disableColumnMenu: true,
         renderCell: (params) => {
             const tagIdentity = tag[props.foreignTableSpec.args.table.clientIdMember];
-            const fieldVal = params.row[props.tagsField.columnName] as TAssociation[];
-            if (!fieldVal) {
+            const fieldVal = params.row[props.tagsField.columnName];
+            if (!Array.isArray(fieldVal)) {
                 throw new Error(`property '${props.tagsField.columnName}' was not found on the row; maybe your query didn't include it?`);
             }
             const association = fieldVal.find(
@@ -194,7 +203,10 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
 
             for (let iy = 0; iy < orderedRows.length; ++iy) {
                 const permission = orderedRows[iy]!;// as db3.PermissionPayload;
-                const associations = permission[props.tagsField.columnName] as TAssociation[];
+                const associations = permission[props.tagsField.columnName];
+                if (!Array.isArray(associations)) {
+                    throw new Error(`Expected association array '${props.tagsField.columnName}'.`);
+                }
                 const permissionInfo = props.localTableSpec.args.table.getRowInfo(permission);
 
 

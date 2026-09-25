@@ -383,12 +383,6 @@ const makeEventSearchSelection = (actorUserId: number) => (
     )
 );
 
-export const eventSearchSelection = ({ authorization }: DB3ViewSelectionContext) => (
-    // A named Event_Search view always carries responses for the actor making
-    // the request. Client input never chooses whose responses are returned.
-    makeEventSearchSelection(authorization.userId ?? -1)
-);
-
 const eventSearchViewContract = deriveViewContract(
     xEvent,
     makeEventSearchSelection(-1),
@@ -398,7 +392,29 @@ const eventSearchViewContract = deriveViewContract(
     },
 );
 
-export const eventFrontpageSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
+export const eventSearchSelection = ({ authorization }: DB3ViewSelectionContext) => {
+    const actorUserId = authorization.userId ?? -1;
+    // Start from the compiled selection so projection-only relations added by
+    // the contract remain present while the request supplies actor-scoped
+    // predicates.
+    return graft(eventSearchViewContract.prismaSelection, {
+        select: {
+            responses: { where: { userId: actorUserId } },
+            segments: {
+                select: {
+                    responses: { where: { userId: actorUserId } },
+                },
+            },
+            expectedAttendanceUserTag: {
+                select: {
+                    userAssignments: { where: { userId: actorUserId } },
+                },
+            },
+        },
+    });
+};
+
+const eventFrontpageRequestedSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
     select: {
         id: true,
         name: true,
@@ -480,8 +496,10 @@ export const eventFrontpageSelection = Prisma.validator<Prisma.EventDefaultArgs>
 
 const eventFrontpageViewContract = deriveViewContract(
     xEvent,
-    eventFrontpageSelection,
+    eventFrontpageRequestedSelection,
 );
+
+export const eventFrontpageSelection = eventFrontpageViewContract.prismaSelection;
 
 export const eventSearchView = defineView({
     viewID: "Event_Search",
@@ -502,7 +520,7 @@ export const eventSearchView = defineView({
 export const eventFrontpageView = defineView({
     viewID: "Event_Frontpage",
     entity: xEvent,
-    selection: eventFrontpageViewContract.prismaSelection,
+    selection: eventFrontpageSelection,
     dtoSchema: eventFrontpageViewContract.dtoSchema,
     // The public API deliberately supplies an empty reference provider. All
     // consumer relations are embedded; the optional visiblePermissionId stays

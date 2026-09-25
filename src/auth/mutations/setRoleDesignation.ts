@@ -34,6 +34,7 @@ export default resolver.pipe(
             const roles = await tx.role.findMany({
                 select: {
                     id: true,
+                    publicId: true,
                     isRoleForNewUsers: true,
                     isPublicRole: true,
                     isSysAdminRole: true,
@@ -43,7 +44,7 @@ export default resolver.pipe(
                 },
                 orderBy: { id: "asc" },
             });
-            const selectedRole = roles.find(role => role.id === roleId);
+            const selectedRole = roles.find(role => role.publicId === roleId);
             if (!selectedRole) throw new NotFoundError();
             if (designation === RoleDesignation.sysadmin
                 && !selectedRole.permissions.some(entry => entry.permission.name === Permission.sysadmin)) {
@@ -52,7 +53,7 @@ export default resolver.pipe(
 
             const field = designationFields[designation];
             const changeContext = CreateChangeContext("setRoleDesignation");
-            const rolesToClear = roles.filter(role => role.id !== roleId && role[field]);
+            const rolesToClear = roles.filter(role => role.id !== selectedRole.id && role[field]);
 
             for (const role of rolesToClear) {
                 await tx.role.update({
@@ -73,14 +74,14 @@ export default resolver.pipe(
 
             if (!selectedRole[field]) {
                 await tx.role.update({
-                    where: { id: roleId },
+                    where: { id: selectedRole.id },
                     data: { [field]: true },
                 });
                 await RegisterChange({
                     action: ChangeAction.update,
                     changeContext,
                     table: "Role",
-                    pkid: roleId,
+                    pkid: selectedRole.id,
                     oldValues: { [field]: false },
                     newValues: { [field]: true },
                     ctx,

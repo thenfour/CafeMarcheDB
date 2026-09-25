@@ -14,7 +14,7 @@ import { toSorted } from 'shared/arrayUtils';
 import { isAttendanceGoing, isAttendanceNotGoing } from 'shared/eventAttendance';
 import { Permission } from 'shared/permissions';
 import { Timing } from 'shared/time';
-import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId } from 'shared/publicId';
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, PermissionPublicId } from 'shared/publicId';
 import { IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
@@ -798,7 +798,16 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
     </div>;
 };
 
-const EventDotMenu = ({ event, showVisibility, refetch }: { event: Prisma.EventGetPayload<{ select: { visiblePermissionId, id, name, relevanceClassOverride } }>, showVisibility: boolean, refetch: () => void }) => {
+const EventDotMenu = ({ event, showVisibility, refetch }: {
+    event: {
+        id: number;
+        name: string;
+        relevanceClassOverride: number | null;
+        visiblePermissionId: PermissionPublicId | null;
+    };
+    showVisibility: boolean;
+    refetch: () => void;
+}) => {
     const endMenuItemRef = React.useRef<() => void>(() => { });
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();

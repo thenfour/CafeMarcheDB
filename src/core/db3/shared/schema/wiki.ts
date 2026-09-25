@@ -8,6 +8,8 @@ import * as db3 from "../db3core";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
+import { xUser } from "./user";
+import { z } from "zod";
 
 const wikiPageAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_wiki_pages,
@@ -134,29 +136,35 @@ export const xWikiPage = db3.defineTable({
             allowNull: true,
             authMap: wikiPageCurrentRevisionAuthMap,
         }),
-        lockedByUserId: memberName => new GhostField({
+        lockedByUser: foreignRef(() => xUser, {
+            fkidMember: "lockedByUserId",
+            allowNull: true,
             authMap: wikiPageAdministrationAuthMap,
-            memberName,
         }),
         lockAcquiredAt: memberName => new GhostField({
             authMap: wikiPageAdministrationAuthMap,
             memberName,
+            readTransportSchema: z.date().nullable(),
         }),
         lockExpiresAt: memberName => new GhostField({
             authMap: wikiPageAdministrationAuthMap,
             memberName,
+            readTransportSchema: z.date().nullable(),
         }),
         lastEditPingAt: memberName => new GhostField({
             authMap: wikiPageAdministrationAuthMap,
             memberName,
+            readTransportSchema: z.date().nullable(),
         }),
         lockId: memberName => new GhostField({
             authMap: wikiPageAdministrationAuthMap,
             memberName,
+            readTransportSchema: z.string().nullable(),
         }),
         contentVersion: memberName => new GhostField({
             authMap: wikiPageAdministrationAuthMap,
             memberName,
+            readTransportSchema: z.number().int(),
         }),
 
         // Virtual field for searching wiki page content; hackhack

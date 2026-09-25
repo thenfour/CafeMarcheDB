@@ -1,12 +1,14 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import db, { Prisma } from "db";
+import db from "db";
 import { Permission } from "shared/permissions";
 //import { requireUnmergedUserReferences } from "src/auth/server/mergedUserReferences";
+import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
+import { resolvePublicForeignIds } from "../server/db3PublicIds";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 import { xSetlistPlan } from "../shared/schema/setlistPlan";
-import { DeserializeSetlistPlan, SetlistPlan, ZSetlistPlan } from "../shared/setlistPlanTypes";
+import { DeserializeSetlistPlan, SetlistPlan, SetlistPlanWithVisibilityArgs, SetlistPlanWithVisibilityPayload, ZSetlistPlan } from "../shared/setlistPlanTypes";
 
 export default resolver.pipe(
     resolver.authorize(Permission.setlist_planner_access),
@@ -17,6 +19,14 @@ export default resolver.pipe(
         if (!currentUser) {
             throw new Error("No current user");
         }
+
+        const publicData = await db3.createDb3RequestAuthorization(ctx);
+        const resolvedForeignIds = await resolvePublicForeignIds(
+            xSetlistPlan,
+            { visiblePermissionId: args.visiblePermissionId },
+            publicData,
+            db,
+        );
 
         // const associatedUsers = [...args.payload.columns, ...(args.payload.columnLeds || []), ...(args.payload.rowLeds || [])]
         //     .map(item => item.associatedItem).filter(item => item?.itemType === "user").map(item => item!.id);
@@ -32,7 +42,7 @@ export default resolver.pipe(
 
         if (args.id > 0 && !existing) throw new Error("Setlist plan was not found.");
 
-        let newObj: Prisma.SetlistPlanGetPayload<{}>;
+        let newObj: SetlistPlanWithVisibilityPayload;
 
         if (existing) {
             // if group changes, set sortorder to 0.
@@ -41,6 +51,7 @@ export default resolver.pipe(
                 sortOrderUpdate['sortOrder'] = 0;
             }
             newObj = await db.setlistPlan.update({
+                ...SetlistPlanWithVisibilityArgs,
                 where: {
                     id: args.id,
                 },
@@ -50,12 +61,13 @@ export default resolver.pipe(
                     description: args.description,
                     payloadJson: JSON.stringify(args.payload),
                     isDeleted: false,
-                    visiblePermissionId: args.visiblePermissionId,
+                    visiblePermissionId: resolvedForeignIds.visiblePermissionId,
                     ...sortOrderUpdate,
                 },
             });
         } else {
             newObj = await db.setlistPlan.create({
+                ...SetlistPlanWithVisibilityArgs,
                 data: {
                     name: args.name,
                     groupId: args.groupId || null,
@@ -63,7 +75,7 @@ export default resolver.pipe(
                     description: args.description,
                     payloadJson: JSON.stringify(args.payload),
                     isDeleted: false,
-                    visiblePermissionId: args.visiblePermissionId,
+                    visiblePermissionId: resolvedForeignIds.visiblePermissionId,
                 },
             });
         }

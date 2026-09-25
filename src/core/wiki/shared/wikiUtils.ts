@@ -1,8 +1,10 @@
 import { Prisma } from "db";
 import { diffChars, diffLines } from 'diff';
 import { z } from "zod";
+import { isPublicId, type PermissionPublicId } from "shared/publicId";
 import { slugify } from "../../../../shared/rootroot";
 import type { EventWikiPageContextClient } from "../../db3/shared/entities/event/eventViews";
+import type { WikiPageApiClient } from "../../db3/shared/entities/wiki/wikiViews";
 
 
 export const enum SpecialWikiNamespace {
@@ -50,29 +52,7 @@ export const WikiPageApiRevisionPayloadArgs = Prisma.validator<Prisma.WikiPageRe
 });
 export type WikiPageApiRevisionPayload = Prisma.WikiPageRevisionGetPayload<typeof WikiPageApiRevisionPayloadArgs>;
 
-export const WikiPageApiPayloadArgs = Prisma.validator<Prisma.WikiPageDefaultArgs>()({
-    select: {
-        contentVersion: true,
-        slug: true,
-        namespace: true,
-        visiblePermissionId: true,
-        id: true,
-        lockId: true,
-        lockAcquiredAt: true,
-        lockExpiresAt: true,
-        lastEditPingAt: true,
-        lockedByUser: {
-            select: {
-                id: true,
-                name: true,
-            }
-        },
-        currentRevision: {
-            ...WikiPageApiRevisionPayloadArgs,
-        }
-    }
-});
-export type WikiPageApiPayload = Prisma.WikiPageGetPayload<typeof WikiPageApiPayloadArgs>;
+export type WikiPageApiPayload = WikiPageApiClient;
 
 ////////////////////////////////////////////////////////////////
 export type WikiPageApiUpdatePayload = Prisma.WikiPageRevisionGetPayload<{
@@ -114,7 +94,7 @@ export type TGetWikiPageRevisionArgs = z.infer<typeof ZTGetWikiPageRevisionArgs>
 ////////////////////////////////////////////////////////////////
 export const ZTSetWikiPageVisibilityArgs = z.object({
     canonicalWikiPath: ZWikiSlug,
-    visiblePermissionId: z.number().nullable(),
+    visiblePermissionId: z.custom<PermissionPublicId>(isPublicId).nullable(),
 });
 
 export type TSetWikiPageVisibilityArgs = z.infer<typeof ZTSetWikiPageVisibilityArgs>;
@@ -303,7 +283,7 @@ export const GetWikiPageUpdatability = ({ currentPage, currentUserId, userClient
         isRevisionConflict: !isRevisionCompatible,
         outcome: isLockConflict ? UpdateWikiPageResultOutcome.lockConflict : (isRevisionCompatible ? UpdateWikiPageResultOutcome.success : UpdateWikiPageResultOutcome.revisionConflict),
         lockId: userClientLockId,
-        lockExpiresAt: currentPage.lockExpiresAt,
+        lockExpiresAt: currentPage.lockExpiresAt ?? null,
         currentPage,
     };
 };

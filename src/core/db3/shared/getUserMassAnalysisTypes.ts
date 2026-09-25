@@ -1,4 +1,6 @@
 
+import type { RolePublicId } from "shared/publicId";
+
 export type UserMassAnalysisContentCounts = {
     createdSongs: number;
     createdEvents: number;
@@ -34,7 +36,7 @@ export type UserMassAnalysisUserInfo = {
     createdAt: Date;
     isSysAdmin: boolean;
     isDeleted: boolean;
-    roleId: number | null;
+    roleId: RolePublicId | null;
     roleName: string | null;
     hasGoogleIdentity: boolean;
 };

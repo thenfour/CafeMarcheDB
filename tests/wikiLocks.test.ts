@@ -1,4 +1,5 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
+import { parsePublicId } from "shared/publicId";
 vi.mock("db", async () => {
     const actual = await vi.importActual<any>("@prisma/client");
     return { ...actual, default: {
@@ -12,7 +13,13 @@ vi.mock("@blitzjs/rpc", () => ({ resolver: {
 }}));
 vi.mock("src/core/db3/server/db3mutationCore", () => ({ getCurrentUserCore: async (ctx: any) => ({ id: ctx.session.userId }) }));
 vi.mock("src/core/db3/server/db3ReadPolicy", () => ({ GetAuthorizedTableReadWhere: async (args: any) => args.where ?? {} }));
-vi.mock("src/core/db3/shared/schema/wiki", () => ({ xWikiPage: {} }));
+vi.mock("src/core/db3/shared/db3Authorization", () => ({
+    createDb3RequestAuthorization: async () => ({}),
+    createDB3Authorization: () => ({}),
+}));
+vi.mock("src/core/db3/server/db3QueryCore", () => ({
+    authorizeAndHydrateViewModel: (_view: unknown, row: unknown) => row,
+}));
 vi.mock("src/core/db3/shared/db3Helpers", () => ({ GetDefaultVisibilityPermission: async () => ({ id: 1 }) }));
 vi.mock("shared/activityLog", () => ({ ChangeAction: { insert: "insert" }, CreateChangeContext: vi.fn(), RegisterChange: vi.fn() }));
 import db, { Prisma } from "db";
@@ -24,8 +31,9 @@ import { GetWikiPageUpdatability, WikiPageApiPayload } from "src/core/wiki/share
 const mockDb = db as any;
 const ctx = { session: { userId: 1 } } as any;
 const now = new Date("2026-09-15T12:00:00Z");
+const permissionPublicId = parsePublicId<"Permission">("WikiPermission01");
 const page = (overrides = {}): WikiPageApiPayload => ({
-    id: 1, slug: "test", namespace: null, visiblePermissionId: 1, contentVersion: 5,
+    id: 1, slug: "test", namespace: null, visiblePermissionId: permissionPublicId, contentVersion: 5,
     lockId: "editor-a", lockedByUser: { id: 1, name: "Editor" },
     lockAcquiredAt: now, lockExpiresAt: new Date(now.valueOf() + 900000),
     lastEditPingAt: new Date(now.valueOf() - 600000),

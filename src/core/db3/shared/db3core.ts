@@ -665,7 +665,7 @@ export abstract class FieldBase<
         return isAuthorized;
     }
 
-    abstract ApplyToNewRow: (args: TAnyModel, currentUser: UserWithRolesPayload | null) => void;
+    abstract ApplyToNewRow: (args: TAnyModel, currentUser: Pick<UserWithRolesPayload, "id"> | null) => void;
 
     // SANITIZED values are passed in. That means no nulls, and ValidateAndParse has already been called.
     abstract isEqual: (a: FieldDataType, b: FieldDataType) => boolean;
@@ -1891,7 +1891,7 @@ export class xTable<
 
     // create a new row object (no primary key etc)
     // to later be used by insertion.
-    createNew = (currentUser: UserWithRolesPayload | null): any => {
+    createNew = (currentUser: Pick<UserWithRolesPayload, "id"> | null): any => {
         const ret = {};
         this.columns.forEach(field => {
             field.ApplyToNewRow(ret, currentUser);

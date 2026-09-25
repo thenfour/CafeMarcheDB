@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { RolePublicId } from "shared/publicId";
 
 export const UserMergeInput = z.object({
     mainUserId: z.number().int().positive(),
@@ -18,7 +19,7 @@ export interface MergeIdentity {
     name: string;
     email: string;
     createdAt: Date;
-    roleId: number | null;
+    roleId: RolePublicId | null;
     isDeleted: boolean;
     isSysAdmin: boolean;
 }

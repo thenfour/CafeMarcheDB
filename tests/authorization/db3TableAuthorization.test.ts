@@ -11,10 +11,15 @@ import db3Mutation from "tests/authorization/db3MutationTestResolver"
 import { UpdateAssociations } from "@db3/server/db3mutationCore"
 import { PermissionSet } from "src/auth/shared/PermissionSet"
 import { Permission } from "shared/permissions"
+import { parsePublicId } from "shared/publicId"
 import { CreateChangeContext } from "shared/activityLog"
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
-import { forgeDb3Delete, forgeDb3Insert, forgeDb3Update } from "./support/db3RequestBuilders"
+import {
+  forgeDb3Insert,
+  forgeDb3PublicDelete,
+  forgeDb3PublicUpdate,
+} from "./support/db3RequestBuilders"
 import { invokeResolver } from "./support/resolverHarness"
 
 const authorization = (...names: Permission[]): db3.DB3Authorization => ({
@@ -43,15 +48,17 @@ void invalidInheritedWriteMap
 describe("metadata and association mutation entry points", () => {
   const actor = createAuthorizationTestUser("normal", {
     id: 501, isSysAdmin: false,
-    permissions: [Permission.login, Permission.sysadmin],
+    permissions: [Permission.login, Permission.public, Permission.sysadmin],
   })
   const role = {
-    id: 200, name: "Ordinary role", description: "", color: null, sortOrder: 0,
+    id: 200, publicId: parsePublicId<"Role">("AuthRole00000200"),
+    name: "Ordinary role", description: "", color: null, sortOrder: 0,
     isPublicRole: false, isSysAdminRole: false, isRoleForNewUsers: false,
     permissions: [],
   }
   const permission = {
-    id: 300, name: Permission.visibility_members, description: "Before",
+    id: 300, publicId: parsePublicId<"Permission">("AuthPerm00000300"),
+    name: Permission.visibility_members, description: "Before",
     color: null, sortOrder: 0, isVisibility: true, roles: [],
   }
 
@@ -62,22 +69,22 @@ describe("metadata and association mutation entry points", () => {
 
   it("edits permission metadata and role colors without manage_users", async () => {
     const ctx = createAuthorizationTestContext(actor)
-    await invokeResolver(db3Mutation, forgeDb3Update("Permission", 300, { description: "After" }), ctx)
-    await invokeResolver(db3Mutation, forgeDb3Update("Role", 200, { color: "x1" }), ctx)
+    await invokeResolver(db3Mutation, forgeDb3PublicUpdate("Permission", permission.publicId, { description: "After" }), ctx)
+    await invokeResolver(db3Mutation, forgeDb3PublicUpdate("Role", role.publicId, { color: "x1" }), ctx)
     expect(authorizationTestDb.snapshot("permission")[0]!.description).toBe("After")
     expect(authorizationTestDb.snapshot("role")[0]!.color).toBe("x1")
   })
 
   it.each([
-    ["Role", 200, "permissions", 300],
-    ["Permission", 300, "roles", 200],
-  ] as const)("adds and removes grants through %s's authorized association field", async (table, id, field, targetId) => {
+    ["Role", role.publicId, "permissions", permission.publicId],
+    ["Permission", permission.publicId, "roles", role.publicId],
+  ] as const)("adds and removes grants through %s's authorized association field", async (table, publicId, field, targetPublicId) => {
     const ctx = createAuthorizationTestContext(actor)
-    await invokeResolver(db3Mutation, forgeDb3Update(table, id, { [field]: [targetId] }), ctx)
+    await invokeResolver(db3Mutation, forgeDb3PublicUpdate(table, publicId, { [field]: [targetPublicId] }), ctx)
     expect(authorizationTestDb.snapshot("rolePermission")).toEqual([
       expect.objectContaining({ roleId: 200, permissionId: 300 }),
     ])
-    await invokeResolver(db3Mutation, forgeDb3Update(table, id, { [field]: [] }), ctx)
+    await invokeResolver(db3Mutation, forgeDb3PublicUpdate(table, publicId, { [field]: [] }), ctx)
     expect(authorizationTestDb.snapshot("rolePermission")).toEqual([])
   })
 
@@ -101,10 +108,20 @@ describe("metadata and association mutation entry points", () => {
 
   it("uses the join table's map for direct inserts while retaining its deletion policy", async () => {
     const ctx = createAuthorizationTestContext(actor)
-    await invokeResolver(db3Mutation, forgeDb3Insert("RolePermission", { roleId: 200, permissionId: 300 }), ctx)
+    await invokeResolver(db3Mutation, forgeDb3Insert("RolePermission", {
+      roleId: role.publicId,
+      permissionId: permission.publicId,
+    }), ctx)
     const association = authorizationTestDb.snapshot("rolePermission")[0]!
     expect(association).toMatchObject({ roleId: 200, permissionId: 300 })
-    await expect(invokeResolver(db3Mutation, forgeDb3Delete("RolePermission", association.id), ctx)).rejects.toThrow("Not authorized")
+    await expect(invokeResolver(
+      db3Mutation,
+      forgeDb3PublicDelete(
+        "RolePermission",
+        db3.xRolePermissionAssociation.parseIdentity(association.publicId),
+      ),
+      ctx,
+    )).rejects.toThrow("Not authorized")
     expect(authorizationTestDb.snapshot("rolePermission")).toEqual([association])
   })
 })

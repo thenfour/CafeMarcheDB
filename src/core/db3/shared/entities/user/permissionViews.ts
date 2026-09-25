@@ -1,3 +1,4 @@
+import { Prisma } from "db";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView } from "../../core/db3View";
@@ -29,4 +30,45 @@ export const permissionVisibilityView = defineView({
     }),
     dtoSchema: permissionMetadataViewContract.dtoSchema,
     hydrate: permissionMetadataViewContract.hydrate,
+});
+
+const permissionRoleMatrixSelection = Prisma.validator<Prisma.PermissionDefaultArgs>()({
+    select: {
+        publicId: true,
+        name: true,
+        description: true,
+        sortOrder: true,
+        isVisibility: true,
+        color: true,
+        iconName: true,
+        roles: {
+            select: {
+                publicId: true,
+                roleId: true,
+                role: {
+                    select: {
+                        publicId: true,
+                        name: true,
+                        description: true,
+                        sortOrder: true,
+                        color: true,
+                        significance: true,
+                    },
+                },
+            },
+        },
+    },
+});
+
+const permissionRoleMatrixContract = deriveViewContract(
+    xPermission,
+    permissionRoleMatrixSelection,
+);
+
+export const permissionRoleMatrixView = defineView({
+    viewID: "Permission_RoleMatrix",
+    entity: xPermission,
+    selection: permissionRoleMatrixContract.prismaSelection,
+    dtoSchema: permissionRoleMatrixContract.dtoSchema,
+    hydrate: permissionRoleMatrixContract.hydrate,
 });

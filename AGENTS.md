@@ -20,3 +20,12 @@ See `docs/testing.md` for the rationale and full conventions.
 - Use strict typescript typing
 - Type casts (`x as T`, especially `as any`) must be given a brief comment
   justifying why stronger typing was either chosen, or impossible.
+- Comments should use brief, simple English, sometimes with illustrative examples.
+
+## Task scope
+
+- If you encounter obvious trivial errors during your main task, fix them and report
+  them.
+- If you happen to encounter errors which are not trivial, report it
+- If you encounter unit tests which are redundant or obsolete, you may remove them;
+  report this.

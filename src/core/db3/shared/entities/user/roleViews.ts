@@ -5,7 +5,7 @@ import { xRole } from "../../schema/user";
 
 const roleEditorArgs = Prisma.validator<Prisma.RoleDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         name: true,
         description: true,
         sortOrder: true,
@@ -13,12 +13,12 @@ const roleEditorArgs = Prisma.validator<Prisma.RoleDefaultArgs>()({
         significance: true,
         permissions: {
             select: {
-                id: true,
+                publicId: true,
                 roleId: true,
                 permissionId: true,
                 permission: {
                     select: {
-                        id: true,
+                        publicId: true,
                         name: true,
                         description: true,
                         sortOrder: true,

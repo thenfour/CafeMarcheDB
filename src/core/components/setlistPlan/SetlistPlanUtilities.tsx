@@ -1,6 +1,7 @@
 
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { toSorted } from "shared/arrayUtils";
+import type { PermissionPublicId } from "shared/publicId";
 import { generateFibonacci } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanColumn, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
@@ -81,7 +82,7 @@ export interface SetlistPlanMutator {
     undo: () => void;
     redo: () => void;
 
-    setVisiblePermissionId: (permissionId: number | null) => void;
+    setVisiblePermissionId: (permissionId: PermissionPublicId | null) => void;
 
     setName: (name: string) => void;
     setGroupId: (groupId: number | null) => void;

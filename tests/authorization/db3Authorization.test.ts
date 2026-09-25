@@ -15,6 +15,7 @@ import { queryTable } from "@db3/server/db3QueryCore"
 import { loadUserAuthorization } from "src/auth/server/requestAuthorization"
 import { PermissionSet } from "src/auth/shared/PermissionSet"
 import { Permission } from "shared/permissions"
+import { parsePublicId } from "shared/publicId"
 import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures"
 import { forgeDb3Insert, forgeDb3Query, forgeDb3Update } from "./support/db3RequestBuilders"
 import { authorizationTestDb, matchesWhere } from "./support/inMemoryPrisma"
@@ -83,6 +84,7 @@ describe("explicit DB3 authorization", () => {
 
     const permission = (id: number, name: Permission, isVisibility: boolean) => ({
       id,
+      publicId: parsePublicId<"Permission">(`TestPerm${id.toString().padStart(8, "0").slice(-8)}`),
       name,
       isVisibility,
       description: name,
@@ -112,8 +114,8 @@ describe("explicit DB3 authorization", () => {
       skip: 0,
       take: 20,
     }, ctx)
-    expect(result.items.map(item => item.id)).toEqual([920_002])
-    expect(paginated.items.map(item => item.id)).toEqual([920_002])
+    expect(result.items.map(item => item.publicId)).toEqual([permission(920_002, Permission.visibility_public, true).publicId])
+    expect(paginated.items.map(item => item.publicId)).toEqual([permission(920_002, Permission.visibility_public, true).publicId])
     expect(paginated.count).toBe(1)
   })
 

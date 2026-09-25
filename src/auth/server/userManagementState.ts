@@ -2,6 +2,7 @@
 
 import { Prisma } from "db";
 import type { Permission } from "shared/permissions";
+import { parsePublicId, type RolePublicId } from "shared/publicId";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { RoleArgs, RoleNaturalOrderBy } from "src/core/db3/shared/schema/prismArgs";
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
@@ -20,8 +21,9 @@ export type UserManagementRoleWithPermissions = Prisma.RoleGetPayload<typeof Rol
 
 export type AssignableRole = Pick<
     UserManagementRoleWithPermissions,
-    "id" | "name" | "description" | "sortOrder" | "color"
+    "name" | "description" | "sortOrder" | "color"
 > & {
+    publicId: RolePublicId;
     continuityWarnings: Permission[];
 };
 
@@ -136,7 +138,7 @@ export const getAssignableRoles = async (
             desiredRole: makePermissionSetFromRole(role),
         }))
         .map(role => ({
-            id: role.id,
+            publicId: parsePublicId<"Role">(role.publicId),
             name: role.name,
             description: role.description,
             sortOrder: role.sortOrder,

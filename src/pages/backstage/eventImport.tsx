@@ -7,7 +7,7 @@ import { useQuery } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
 import React, { Suspense } from "react";
 import { CalendarDate } from "shared/dateTimePolicy";
-import type { EventStatusPublicId, EventTypePublicId, UserTagPublicId } from "shared/publicId";
+import type { EventStatusPublicId, EventTypePublicId, PermissionPublicId, UserTagPublicId } from "shared/publicId";
 import { createAllDayRange, DateTimeRange, gMillisecondsPerDay } from "shared/time";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMStandardDBChip } from "src/core/components/CMChip";
@@ -39,7 +39,7 @@ interface NewEventDialogProps {
 
 type NewEventValue = Omit<
     db3.EventPayload,
-    "type" | "typeId" | "status" | "statusId" | "tags" | "visiblePermission"
+    "type" | "typeId" | "status" | "statusId" | "tags" | "visiblePermission" | "visiblePermissionId"
     | "expectedAttendanceUserTagId" | "expectedAttendanceUserTag"
 > & {
     typeId: EventTypePublicId | null;
@@ -48,6 +48,7 @@ type NewEventValue = Omit<
     status: db3.EventStatusDashboardClient | null | undefined;
     tags: Array<db3.EventTagAssignmentClientPayload & { eventTag: db3.EventTagDashboardClient }>;
     visiblePermission: VisibilityControlValue;
+    visiblePermissionId: PermissionPublicId | null;
     expectedAttendanceUserTagId: UserTagPublicId | null;
     expectedAttendanceUserTag: db3.UserTagDashboardClient | null | undefined;
 };
@@ -179,7 +180,13 @@ const NewEventForm = (props: NewEventDialogProps) => {
 
     return <div className="NameValuePairList">
         <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {
-            const newValue = { ...eventValue, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
+            const newValue = {
+                ...eventValue,
+                visiblePermission: newVisiblePermission,
+                visiblePermissionId: newVisiblePermission
+                    ? db3.xPermission.getIdentity(newVisiblePermission)
+                    : null,
+            };
             setEventValue(newValue);
         }} />
 

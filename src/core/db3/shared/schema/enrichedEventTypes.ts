@@ -1,7 +1,7 @@
 import { TableAccessor } from "@/shared/rootroot";
 import { assert } from "blitz";
 import * as db3 from "@db3/db3";
-import type { UserTagPublicId } from "shared/publicId";
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, PermissionPublicId, UserTagPublicId } from "shared/publicId";
 
 type EnrichedExpectedAttendanceUserTag = db3.UserTagDashboardClient & Pick<
     db3.EventExpectedAttendanceUserTagClientPayload,
@@ -27,10 +27,10 @@ export type EnrichedEvent<T extends EnrichEventInput> = Omit<
 export function enrichSearchResultEvent<T extends EnrichEventInput>(
     event: T,
     data: {
-        eventStatus: TableAccessor<db3.EventStatusDashboardClient>;
-        eventType: TableAccessor<db3.EventTypeDashboardClient>;
-        permission: TableAccessor<db3.PermissionDashboardClient>;
-        eventTag: TableAccessor<db3.EventTagDashboardClient>;
+        eventStatus: TableAccessor<db3.EventStatusDashboardClient, EventStatusPublicId>;
+        eventType: TableAccessor<db3.EventTypeDashboardClient, EventTypePublicId>;
+        permission: TableAccessor<db3.PermissionDashboardClient, PermissionPublicId>;
+        eventTag: TableAccessor<db3.EventTagDashboardClient, EventTagPublicId>;
         userTag: TableAccessor<db3.UserTagDashboardClient, UserTagPublicId>;
     },
 ): EnrichedEvent<T> {

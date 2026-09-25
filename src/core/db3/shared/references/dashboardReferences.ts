@@ -65,7 +65,7 @@ const dashboardUserTagSelection = Prisma.validator<Prisma.UserTagDefaultArgs>()(
 
 const dashboardRoleSelection = Prisma.validator<Prisma.RoleDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         name: true,
         isRoleForNewUsers: true,
         isPublicRole: true,
@@ -447,7 +447,7 @@ export type RoleDashboardClient = ClientOf<typeof roleDashboardView>;
 export type CompleteRoleDashboardClient = {
     [TKey in keyof RoleDashboardClient]-?: Exclude<RoleDashboardClient[TKey], undefined>;
 };
-export type RoleDisplay = Prisma.RoleGetPayload<{}> | CompleteRoleDashboardClient;
+export type RoleDisplay = CompleteRoleDashboardClient;
 export type WikiPageTagDashboardClient = ClientOf<typeof wikiPageTagDashboardView>;
 export type CompleteWikiPageTagDashboardClient = {
     [TKey in keyof WikiPageTagDashboardClient]-?: Exclude<

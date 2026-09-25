@@ -46,7 +46,7 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
                 tags: DB3Client.tagsFieldClientGen<db3.UserTagPayload>({ allowDeleteFromCell: false, selectionView: db3.userTagEditorView }),
 
                 // required to be able to edit.
-                role: DB3Client.foreignRefFieldGen<db3.RolePayload>({ selectionView: db3.roleEditorView }),
+                role: DB3Client.foreignRefFieldGen<db3.RoleDisplay>({ selectionView: db3.roleEditorView }),
             },
         }),
         filterModel: {

@@ -3,11 +3,16 @@ import React from "react";
 import { act, Simulate } from "react-dom/test-utils";
 import { createRoot, Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { parsePublicId } from "shared/publicId";
 
 vi.mock("src/core/db3/db3", () => ({
     xUser: { getRowInfo: (user: any) => ({ pk: user.id, name: user.name }) },
     xEvent: { authorizeColumnForEdit: vi.fn() },
     xUserTag: { getIdentity: (tag: any) => tag.publicId },
+    xPermission: {
+        getIdentity: (permission: any) => permission.publicId,
+        isIdentity: (value: unknown) => typeof value === "string",
+    },
 }));
 vi.mock("src/core/db3/clientAPI", () => ({ API: { events: { updateEventBasicFields: { useToken: vi.fn() } } } }));
 vi.mock("src/core/db3/components/DB3ClientCore", () => ({ fetchUnsuspended: vi.fn() }));
@@ -30,10 +35,10 @@ import { VisibilityControl } from "src/core/components/VisibilityControl";
 import { AddUserButton } from "src/core/components/user/UserComponents";
 
 const permissions = [
-    { id: 1, name: "Members", isVisibility: true, description: "Band members", iconName: "Group" },
-    { id: 2, name: "Public", isVisibility: true, description: "Everyone", iconName: "Public" },
-    { id: 3, name: "Hidden", isVisibility: true },
-    { id: 4, name: "Manage events", isVisibility: false },
+    { publicId: parsePublicId<"Permission">("PermissionMem001"), name: "Members", isVisibility: true, description: "Band members", iconName: "Group" },
+    { publicId: parsePublicId<"Permission">("PermissionPub001"), name: "Public", isVisibility: true, description: "Everyone", iconName: "Public" },
+    { publicId: parsePublicId<"Permission">("PermissionHid001"), name: "Hidden", isVisibility: true },
+    { publicId: parsePublicId<"Permission">("PermissionMng001"), name: "Manage events", isVisibility: false },
 ];
 const tags = [
     { publicId: "UserTagPublic001", text: "Performers", color: "blue" },
@@ -54,7 +59,7 @@ beforeEach(() => {
     root = createRoot(document.getElementById("root")!);
     queryError = false;
     vi.mocked(useDashboardContext).mockReturnValue({
-        permission: { items: permissions, getById: (id: number) => permissions.find(p => p.id === id) },
+        permission: { items: permissions, getById: (id: string) => permissions.find(p => p.publicId === id) },
         userTag: { items: tags }, isAuthorized: (name: string) => name !== "Hidden",
         routingApi: { getURIForUser: () => "/user" },
         getVisibilityInfo: () => ({ className: "visibility", getStyleVariablesForColor: () => ({ cssClass: "", style: {} }) }),
@@ -121,7 +126,7 @@ describe("migrated domain pickers", () => {
     });
 
     it("keeps visibility choices permission-filtered with verbose options and explicit Private", async () => {
-        await render(React.createElement(VisibilityControl, { value: 1, variant: "minimal", onChange }));
+        await render(React.createElement(VisibilityControl, { value: permissions[0]!.publicId, variant: "minimal", onChange }));
         expect(document.querySelector('.VisibilityControl .visibilityValue.minimal')).not.toBeNull();
         await click(button("Edit Who can see this"));
         expect(button("Members").querySelector('.visibilityValue.verbose')).not.toBeNull();

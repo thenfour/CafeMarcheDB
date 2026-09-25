@@ -1229,10 +1229,37 @@ The current pressure-led sequence is:
    because a newly selected relation has no server-generated association public
    ID yet. The association xTables own persisted row identity; components do
    not fall back to database IDs.
-10. **Next pressure audit:** migrate the authorization family (`Permission`,
-    `Role`, and `RolePermission`) while preserving natural permission keys in
-    trusted authorization evaluation.
-11. Keep the central Song, File, WikiPage, Event, User, and setlist identities in
+10. **Completed:** migrate the authorization family (`Permission`, `Role`, and
+    `RolePermission`) while preserving natural permission keys in trusted
+    authorization evaluation. Role assignment, designation, visibility, and
+    role-permission commands now accept public identities and resolve them only
+    at their server boundaries; `PermissionSet` and policy evaluation continue
+    to use the database identities they need for efficient authorization.
+
+    This slice exposed two missing view facilities. Selection derivation now
+    automatically fetches a converted foreign target's public identity when a
+    DTO selects its foreign key, without widening the DTO itself. Named views
+    must execute that compiled selection; dynamic Event search layers its
+    actor-specific predicates over the compiled selection instead of bypassing
+    projection support. Mutation-specific RPCs can use
+    `authorizeAndHydrateViewModel()` to apply the same authorization,
+    projection, DTO validation, and hydration path to a single returned row.
+    Wiki page locking is the first consumer, eliminating another handwritten
+    public-ID projection path.
+
+    The slice also strengthened the WikiPage entity: `lockedByUser` is now a
+    real foreign relation, and its lock/version ghost fields declare their
+    read schemas. Visibility IDs in File upload, Setlist Plan, and Wiki custom
+    APIs now stay public on the client and resolve through the Permission
+    entity at the trusted boundary. User-management capabilities expose
+    assignable Role public IDs, and the superseded raw-ID role/permission
+    matrix query endpoints were removed after the named views replaced them.
+    Startup repair registers all three models so deployment placeholders are
+    replaced before any public-ID contract begins serving requests.
+11. **Next pressure audit:** migrate `UserSignInMethod`, whose sysadmin-only RPC
+    is a bounded test of an identity-bearing operational child while credential
+    lookup remains server-internal.
+12. Keep the central Song, File, WikiPage, Event, User, and setlist identities in
    the later application-pressure phase unless a bounded audit reveals a
    genuinely uncovered identity capability.
 
@@ -1331,7 +1358,7 @@ conversions.
   each numeric client-identity compatibility path before marking that model
   complete below.
 
-#### Client-facing model progress: 24 / 49 complete (49%)
+#### Client-facing model progress: 27 / 49 complete (55%)
 
 The denominator is the 49 Prisma models whose own row identity currently crosses
 a client boundary. A model counts as complete only when it satisfies the full
@@ -1365,6 +1392,9 @@ Completed models:
 - [x] `FileEventTag`
 - [x] `FileInstrumentTag`
 - [x] `FileWikiPageTag`
+- [x] `Permission`
+- [x] `Role`
+- [x] `RolePermission`
 
 Remaining models are grouped into coherent intended slices. The pressure label
 describes why the slice is ordered there; it does not relax the per-model
@@ -1373,9 +1403,9 @@ completion definition.
 - **Authorization family: design pressure.** Preserve natural permission keys
   inside trusted authorization evaluation while projecting public identity for
   role editors, visibility selectors, dashboard references, and associations.
-  - [ ] `Permission`
-  - [ ] `Role`
-  - [ ] `RolePermission`
+  - [x] `Permission`
+  - [x] `Role`
+  - [x] `RolePermission`
 - **Sign-in identity child: design pressure.** Its sysadmin-only RPC currently
   exposes and mutates raw row IDs even though credential lookup remains a
   trusted server concern.
@@ -1432,7 +1462,7 @@ consumer.
 #### Capability coverage proven by completed slices
 
 These checks track reusable scenarios and do not contribute additional models
-to the 24 / 49 progress count.
+to the 27 / 49 progress count.
 
 - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
 - [x] Exercise an association/tag command with public identities

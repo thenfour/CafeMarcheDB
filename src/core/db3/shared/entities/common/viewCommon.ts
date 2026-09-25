@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isPublicId, type PermissionPublicId } from "shared/publicId";
 
 
 // common view schemas for db3 entities
@@ -26,10 +27,12 @@ export const db3s = {
             name: z.string(),
         }).nullable()
     }),
-    visiblePermissionId: () => ({ visiblePermissionId: z.number().int().nullable() }),
+    visiblePermissionId: () => ({
+        visiblePermissionId: z.custom<PermissionPublicId>(isPublicId).nullable(),
+    }),
     visiblePermission: () => ({
         visiblePermission: z.object({
-            id: z.number().int(),
+            publicId: z.custom<PermissionPublicId>(isPublicId),
             name: z.string(),
             isVisibility: z.boolean(),
             description: z.string().nullable(),

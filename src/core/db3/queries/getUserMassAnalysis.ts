@@ -5,6 +5,7 @@ import { z } from "zod";
 import { UserMassAnalysisResult } from "../shared/getUserMassAnalysisTypes";
 import { requireFreshPermission } from "@/src/auth/server/permissionAuthorization";
 import { Permission } from "shared/permissions";
+import { parsePublicId } from "shared/publicId";
 
 export default resolver.pipe(
     resolver.zod(z.object({ userId: z.number() })),
@@ -19,7 +20,7 @@ export default resolver.pipe(
             where: { id: userId },
             include: {
                 role: {
-                    select: { name: true }
+                    select: { publicId: true, name: true }
                 }
             }
         });
@@ -141,7 +142,7 @@ export default resolver.pipe(
                 createdAt: user.createdAt,
                 isSysAdmin: user.isSysAdmin,
                 isDeleted: user.isDeleted,
-                roleId: user.roleId,
+                roleId: user.role ? parsePublicId<"Role">(user.role.publicId) : null,
                 roleName: user.role?.name || null,
                 hasGoogleIdentity: (await db.userSignInMethod.count({ where: { userId: user.id, type: "google" } })) > 0,
             },

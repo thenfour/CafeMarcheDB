@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
     type InstrumentPublicId,
     isPublicId,
+    type RolePublicId,
     type UserInstrumentPublicId,
     type UserTagAssignmentPublicId,
     type UserTagPublicId,
@@ -17,7 +18,7 @@ import {
 import { xUser, xUserInstrument } from "../../schema/user";
 
 const UserEditorRoleDtoSchema = z.object({
-    id: z.number().int(),
+    publicId: z.custom<RolePublicId>(isPublicId),
     name: z.string().optional(),
     description: z.string().optional(),
     color: z.string().nullable().optional(),
@@ -66,7 +67,7 @@ const UserEditorDtoSchema = z.object({
     cssClass: z.string().nullable().optional(),
     createdAt: z.date().optional(),
     isSysAdmin: z.boolean().optional(),
-    roleId: z.number().int().nullable().optional(),
+    roleId: z.custom<RolePublicId>(isPublicId).nullable().optional(),
     role: UserEditorRoleDtoSchema.nullable().optional(),
     instruments: z.array(UserEditorInstrumentAssociationDtoSchema).optional(),
     tags: z.array(UserEditorTagAssociationDtoSchema).optional(),

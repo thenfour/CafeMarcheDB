@@ -1,7 +1,11 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { authorizeAndProjectDB3ViewModel } from "@db3/server/db3PublicIds";
-import { queryTable, queryView } from "@db3/server/db3QueryCore";
+import {
+    authorizeAndHydrateViewModel,
+    queryTable,
+    queryView,
+} from "@db3/server/db3QueryCore";
 import { validateDB3QueryRequest } from "@db3/server/db3RequestValidation";
 import { PermissionSet } from "src/auth/shared/PermissionSet";
 import { Permission } from "shared/permissions";
@@ -28,6 +32,7 @@ const eventTagAssignmentPublicId = parsePublicId<"EventTagAssignment">("AbCdEfGh
 const userTagPublicId = parsePublicId<"UserTag">("AbCdEfGhIjKlMn15");
 const songCreditTypePublicId = parsePublicId<"SongCreditType">("AbCdEfGhIjKlMn16");
 const songCreditPublicId = parsePublicId<"SongCredit">("AbCdEfGhIjKlMn17");
+const permissionPublicId = parsePublicId<"Permission">("AbCdEfGhIjKlMn18");
 const fileUserTagPublicId = parsePublicId<"FileUserTag">("AbCdEfGhIjKlMn18");
 const fileSongTagPublicId = parsePublicId<"FileSongTag">("AbCdEfGhIjKlMn19");
 const fileEventTagPublicId = parsePublicId<"FileEventTag">("AbCdEfGhIjKlMn20");
@@ -177,10 +182,7 @@ describe("DB3 named views", () => {
                     createdByUser: { select: { id: true, name: true } },
                     visiblePermission: {
                         select: {
-                            id: true,
-                            name: true,
-                            isVisibility: true,
-                            iconName: true,
+                            publicId: true,
                         },
                     },
                 },
@@ -204,7 +206,7 @@ describe("DB3 named views", () => {
         });
 
         const permissionDto = db3.permissionVisibilityView.parseDto({
-            id: 1,
+            publicId: permissionPublicId,
             name: Permission.visibility_public,
             description: "Public",
             sortOrder: 1,
@@ -348,6 +350,24 @@ describe("DB3 named views", () => {
         })).toThrow();
         expectTypeOf<db3.DtoOf<typeof db3.instrumentFunctionalGroupListView>["name"]>()
             .toEqualTypeOf<string>();
+    });
+
+    it("applies the same view boundary to a single row returned by a mutation", () => {
+        const effectivePermissions = new PermissionSet([
+            { id: 1, name: Permission.always_grant },
+            { id: 2, name: Permission.login },
+            { id: 3, name: Permission.sysadmin },
+        ]);
+        const result = authorizeAndHydrateViewModel(
+            db3.instrumentFunctionalGroupListView,
+            { id: 54, ...group },
+            db3.createDB3Authorization({ id: 100 }, effectivePermissions),
+            db3.createDashboardReferenceStore(),
+            "db3-single-view-model-test",
+        );
+
+        expect(result).toEqual(hydratedGroup);
+        expect(result).not.toHaveProperty("id");
     });
 
     it("preserves a server-computed page order before a view removes database IDs", async () => {
@@ -642,6 +662,7 @@ describe("DB3 named views", () => {
         const references = db3.createDashboardReferenceStore();
         const permission = {
             id: 4,
+            publicId: permissionPublicId,
             name: "members",
             description: "",
             isVisibility: true,
@@ -666,7 +687,7 @@ describe("DB3 named views", () => {
             endBPM: null,
             introducedYear: null,
             lengthSeconds: null,
-            visiblePermissionId: permission.id,
+            visiblePermissionId: permission.publicId,
             tags: [{ publicId: songTagAssociationPublicId, tagId: songTag.publicId }],
             taggedFiles: [{
                 publicId: fileSongTagPublicId,
@@ -682,7 +703,7 @@ describe("DB3 named views", () => {
         const hydrated = db3.hydrateView(db3.songSearchView, dto, references);
 
         expect(hydrated.visiblePermission).toEqual(
-            references.require(db3.xPermission, permission.id, "test"),
+            references.require(db3.xPermission, permission.publicId, "test"),
         );
         expect(hydrated.tags?.[0]?.tag).toEqual(
             references.require(db3.xSongTag, songTag.publicId, "test"),
@@ -698,6 +719,7 @@ describe("DB3 named views", () => {
         const references = db3.createDashboardReferenceStore();
         const permission = {
             id: 4,
+            publicId: permissionPublicId,
             name: "members",
             description: "",
             isVisibility: true,
@@ -756,7 +778,7 @@ describe("DB3 named views", () => {
             fileLeafName: "score.pdf",
             description: "",
             externalURI: null,
-            visiblePermissionId: permission.id,
+            visiblePermissionId: permission.publicId,
             tags: [{ publicId: fileTagAssignmentPublicId, fileTagId: fileTag.publicId }],
             taggedSongs: [{ publicId: fileSongTagPublicId, song: { id: 7, name: "A song" } }],
             taggedEvents: [
@@ -777,7 +799,7 @@ describe("DB3 named views", () => {
         const hydrated = db3.hydrateView(db3.fileSearchView, dto, references);
 
         expect(hydrated.visiblePermission).toEqual(
-            references.require(db3.xPermission, permission.id, "test"),
+            references.require(db3.xPermission, permission.publicId, "test"),
         );
         expect(hydrated.tags).toHaveLength(1);
         expect(hydrated.tags?.[0]?.fileTag).toEqual(
@@ -801,6 +823,7 @@ describe("DB3 named views", () => {
         const references = db3.createDashboardReferenceStore();
         const permission = {
             id: 4,
+            publicId: permissionPublicId,
             name: "members",
             description: "",
             isVisibility: true,
@@ -871,7 +894,7 @@ describe("DB3 named views", () => {
             parentFileId: null,
             previewFileId: null,
             isDeleted: true,
-            visiblePermissionId: permission.id,
+            visiblePermissionId: permission.publicId,
             tags: [{ publicId: fileTagAssignmentPublicId, fileTagId: fileTag.publicId }],
             taggedUsers: [{ publicId: fileUserTagPublicId, user: { id: 13, name: "Ada" } }],
             taggedSongs: [{ publicId: fileSongTagPublicId, song: { id: 14, name: "A song" } }],
@@ -897,7 +920,7 @@ describe("DB3 named views", () => {
         const hydrated = db3.hydrateView(db3.fileDetailView, dto, references);
 
         expect(hydrated.visiblePermission).toEqual(
-            references.require(db3.xPermission, permission.id, "test"),
+            references.require(db3.xPermission, permission.publicId, "test"),
         );
         expect(dto).not.toHaveProperty("isDeleted");
         expect(hydrated.tags?.[0]?.fileTag).toEqual(
@@ -1295,10 +1318,11 @@ describe("DB3 named views", () => {
         }]);
         const effectivePermissions = new PermissionSet([
             { id: 1, name: Permission.always_grant },
-            { id: 2, name: Permission.login },
-            { id: 3, name: Permission.visibility_members },
-            { id: 4, name: Permission.view_songs },
-            { id: 5, name: Permission.view_files },
+            { id: 2, name: Permission.public },
+            { id: 3, name: Permission.login },
+            { id: 4, name: Permission.visibility_members },
+            { id: 5, name: Permission.view_songs },
+            { id: 6, name: Permission.view_files },
         ]);
 
         const result = await queryTable({
@@ -1351,6 +1375,7 @@ describe("DB3 named views", () => {
         const references = db3.createDashboardReferenceStore();
         const permission = {
             id: 4,
+            publicId: permissionPublicId,
             name: "members",
             description: "",
             isVisibility: true,
@@ -1388,7 +1413,7 @@ describe("DB3 named views", () => {
             endBPM: null,
             introducedYear: null,
             lengthSeconds: null,
-            visiblePermissionId: permission.id,
+            visiblePermissionId: permission.publicId,
             pinnedRecordingId: null,
             tags: [{ publicId: songTagAssociationPublicId, tagId: songTag.publicId }],
             taggedFiles: [{
@@ -1402,7 +1427,7 @@ describe("DB3 named views", () => {
                     fileCreatedAt: null,
                     parentFileId: null,
                     previewFileId: null,
-                    visiblePermissionId: permission.id,
+                    visiblePermissionId: permission.publicId,
                     tags: [{ publicId: fileTagAssignmentPublicId, fileTagId: fileTag.publicId }],
                     taggedUsers: [],
                     taggedSongs: [],
@@ -1416,13 +1441,13 @@ describe("DB3 named views", () => {
         const hydrated = db3.hydrateView(db3.songDetailView, dto, references);
 
         expect(hydrated.visiblePermission).toEqual(
-            references.require(db3.xPermission, permission.id, "test"),
+            references.require(db3.xPermission, permission.publicId, "test"),
         );
         expect(hydrated.tags?.[0]?.tag).toEqual(
             references.require(db3.xSongTag, songTag.publicId, "test"),
         );
         expect(hydrated.taggedFiles?.[0]?.file.visiblePermission).toEqual(
-            references.require(db3.xPermission, permission.id, "test"),
+            references.require(db3.xPermission, permission.publicId, "test"),
         );
         expect(hydrated.taggedFiles?.[0]?.file.tags?.[0]?.fileTag).toEqual(
             references.require(db3.xFileTag, fileTag.publicId, "test"),
@@ -1449,6 +1474,7 @@ describe("DB3 named views", () => {
             lengthSeconds: null,
             createdByUserId: 100,
             visiblePermissionId: 3,
+            visiblePermission: { publicId: permissionPublicId },
             pinnedRecordingId: null,
             isDeleted: false,
             tags: [{
@@ -1470,6 +1496,7 @@ describe("DB3 named views", () => {
                     uploadedAt,
                     uploadedByUserId: 100,
                     visiblePermissionId: 3,
+                    visiblePermission: { publicId: permissionPublicId },
                     isDeleted: false,
                     sizeBytes: 123,
                     storedLeafName: "stored.pdf",
@@ -1510,6 +1537,7 @@ describe("DB3 named views", () => {
             { id: 3, name: Permission.visibility_members },
             { id: 4, name: Permission.view_songs },
             { id: 5, name: Permission.view_files },
+            { id: 6, name: Permission.public },
         ]);
 
         const result = await queryTable({

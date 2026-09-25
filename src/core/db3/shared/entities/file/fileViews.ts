@@ -1,9 +1,8 @@
 import { Prisma } from "db";
-import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
-import { db3s, graft } from "../common/viewCommon";
+import { graft } from "../common/viewCommon";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
 import {
     xFile,
@@ -33,40 +32,123 @@ export const fileTagEditorView = defineCrudView({
     hydrate: fileTagEditorContract.hydrate,
 });
 
-const FrontpageGalleryItemEditorDtoSchema = z.object({
-    id: z.number().int(),
-    isDeleted: z.boolean(),
-    caption: z.string(),
-    caption_nl: z.string().nullable(),
-    caption_fr: z.string().nullable(),
-    sortOrder: z.number().int(),
-    fileId: z.number().int(),
-    file: z.object({
-        id: z.number().int(),
-        fileLeafName: z.string(),
-        storedLeafName: z.string(),
-        externalURI: z.string().nullable(),
-        description: z.string(),
-        sizeBytes: z.number().int().nullable(),
-        mimeType: z.string().nullable(),
-        customData: z.string().nullable(),
-        uploadedByUserId: z.number().int().nullable(),
-    }),
-    displayParams: z.string(),
-
-    ...db3s.createdByUserId(),
-    ...db3s.createdByUser(),
-
-    ...db3s.visiblePermissionId(),
-    ...db3s.visiblePermission(),
+const frontpageGalleryItemEditorSelection = Prisma.validator<Prisma.FrontpageGalleryItemDefaultArgs>()({
+    select: {
+        id: true,
+        isDeleted: true,
+        caption: true,
+        caption_nl: true,
+        caption_fr: true,
+        sortOrder: true,
+        fileId: true,
+        file: {
+            select: {
+                id: true,
+                fileLeafName: true,
+                storedLeafName: true,
+                externalURI: true,
+                description: true,
+                sizeBytes: true,
+                mimeType: true,
+                customData: true,
+                uploadedByUserId: true,
+            },
+        },
+        displayParams: true,
+        createdByUserId: true,
+        createdByUser: {
+            select: {
+                id: true,
+                name: true,
+            },
+        },
+        visiblePermissionId: true,
+    },
 });
+
+const frontpageGalleryItemEditorContract = deriveViewContract(
+    xFrontpageGalleryItem,
+    frontpageGalleryItemEditorSelection,
+    { references: dashboardReferenceContract },
+);
+
+const requireFrontpageGalleryItemEditorFields = <TItem extends {
+    isDeleted?: boolean;
+    caption?: string;
+    caption_nl?: string | null;
+    caption_fr?: string | null;
+    sortOrder?: number;
+    fileId?: number;
+    file?: {
+        fileLeafName?: string;
+        storedLeafName?: string;
+        externalURI?: string | null;
+        description?: string;
+        sizeBytes?: number | null;
+        mimeType?: string | null;
+        customData?: string | null;
+        uploadedByUserId?: number | null;
+    };
+    displayParams?: string;
+    visiblePermissionId?: unknown;
+    visiblePermission?: unknown;
+}>(item: TItem) => {
+    const file = item.file;
+    if (item.isDeleted === undefined
+        || item.caption === undefined
+        || item.caption_nl === undefined
+        || item.caption_fr === undefined
+        || item.sortOrder === undefined
+        || item.fileId === undefined
+        || item.displayParams === undefined
+        || item.visiblePermissionId === undefined
+        || item.visiblePermission === undefined
+        || !file
+        || file.fileLeafName === undefined
+        || file.storedLeafName === undefined
+        || file.externalURI === undefined
+        || file.description === undefined
+        || file.sizeBytes === undefined
+        || file.mimeType === undefined
+        || file.customData === undefined
+        || file.uploadedByUserId === undefined) {
+        throw new Error("FrontpageGalleryItem_Editor returned an incomplete authorized row.");
+    }
+    return {
+        ...item,
+        isDeleted: item.isDeleted,
+        caption: item.caption,
+        caption_nl: item.caption_nl,
+        caption_fr: item.caption_fr,
+        sortOrder: item.sortOrder,
+        fileId: item.fileId,
+        displayParams: item.displayParams,
+        visiblePermissionId: item.visiblePermissionId,
+        visiblePermission: item.visiblePermission,
+        file: {
+            ...file,
+            fileLeafName: file.fileLeafName,
+            storedLeafName: file.storedLeafName,
+            externalURI: file.externalURI,
+            description: file.description,
+            sizeBytes: file.sizeBytes,
+            mimeType: file.mimeType,
+            customData: file.customData,
+            uploadedByUserId: file.uploadedByUserId,
+        },
+    };
+};
 
 export const frontpageGalleryItemEditorView = defineCrudView({
     viewID: "FrontpageGalleryItem_Editor",
     entity: xFrontpageGalleryItem,
     operations: { create: true, update: true, delete: true },
-    dtoSchema: FrontpageGalleryItemEditorDtoSchema,
-    hydrate: dto => xFrontpageGalleryItem.getClientModel(dto, "view"),
+    selection: frontpageGalleryItemEditorContract.prismaSelection,
+    dtoSchema: frontpageGalleryItemEditorContract.dtoSchema,
+    references: frontpageGalleryItemEditorContract.referenceContract,
+    hydrate: (dto, references) => requireFrontpageGalleryItemEditorFields(
+        frontpageGalleryItemEditorContract.hydrate(dto, references),
+    ),
 });
 
 const fileDetailRelatedFileTransportSelection = {
@@ -266,7 +348,7 @@ const fileDetailTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
     },
 });
 
-export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
+const fileDetailRequestedSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
         ...fileCardSelection.select,
         frontpageGalleryItems: {
@@ -282,7 +364,7 @@ export const fileDetailSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
 
 const fileDetailContract = deriveViewContract(
     xFile,
-    fileDetailSelection,
+    fileDetailRequestedSelection,
     {
         transportSelection: fileDetailTransportSelection,
         references: dashboardReferenceContract,
@@ -312,7 +394,7 @@ const fileEditorTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
     },
 });
 
-export const fileEditorSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
+const fileEditorRequestedSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
         ...fileEditorTransportSelection.select,
         taggedUsers: fileCardSelection.select.taggedUsers,
@@ -325,18 +407,21 @@ export const fileEditorSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
 
 const fileEditorContract = deriveViewContract(
     xFile,
-    fileEditorSelection,
+    fileEditorRequestedSelection,
     {
         transportSelection: fileEditorTransportSelection,
         references: dashboardReferenceContract,
     },
 );
 
+export const fileDetailSelection = fileDetailContract.prismaSelection;
+export const fileEditorSelection = fileEditorContract.prismaSelection;
+
 export const fileEditorView = defineCrudView({
     viewID: "File_Editor",
     entity: xFile,
     operations: { update: true, delete: true },
-    selection: fileEditorContract.prismaSelection,
+    selection: fileEditorSelection,
     dtoSchema: fileEditorContract.dtoSchema,
     references: fileEditorContract.referenceContract,
     hydrate: fileEditorContract.hydrate,
@@ -345,7 +430,7 @@ export const fileEditorView = defineCrudView({
 export const fileDetailView = defineView({
     viewID: "File_Detail",
     entity: xFile,
-    selection: fileDetailContract.prismaSelection,
+    selection: fileDetailSelection,
     dtoSchema: fileDetailContract.dtoSchema,
     references: fileDetailContract.referenceContract,
     hydrate: fileDetailContract.hydrate,

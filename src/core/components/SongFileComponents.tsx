@@ -999,7 +999,9 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
-    const permissionId = dashboardContext.getDefaultVisibilityPermission().id;
+    const permissionId = db3.xPermission.getIdentity(
+        dashboardContext.getDefaultVisibilityPermission(),
+    );
 
     //const user = useCurrentUser()[0]!;
 

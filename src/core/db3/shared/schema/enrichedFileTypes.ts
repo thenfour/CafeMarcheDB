@@ -1,13 +1,14 @@
 import { Prisma } from "db";
 import * as db3 from "@db3/db3";
 import { TableAccessor } from "@/shared/rootroot";
-import type { FileTagPublicId, InstrumentPublicId } from "shared/publicId";
+import type { FileTagPublicId, InstrumentPublicId, PermissionPublicId } from "shared/publicId";
 
 
 export type EnrichFileInput = Omit<
     Partial<Prisma.FileGetPayload<{}>>,
-    "tags" | "taggedInstruments"
+    "tags" | "taggedInstruments" | "visiblePermissionId"
 > & {
+    visiblePermissionId?: PermissionPublicId | null;
     tags?: db3.FileTagAssignmentReferenceClientPayload[];
     taggedInstruments?: db3.FileInstrumentTagReferenceClientPayload[];
 };
@@ -38,7 +39,7 @@ export function enrichFile<
     TData extends {
         instrument: TableAccessor<db3.InstrumentDashboardClient, InstrumentPublicId>;
         fileTag: TableAccessor<db3.FileTagDashboardClient, FileTagPublicId>;
-        permission: TableAccessor<db3.PermissionDashboardClient>;
+        permission: TableAccessor<db3.PermissionDashboardClient, PermissionPublicId>;
     }>(
         item: T,
         data: TData,

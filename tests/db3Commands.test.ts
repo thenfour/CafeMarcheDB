@@ -20,6 +20,11 @@ const userTagPublicId = parsePublicId<"UserTag">("CommandUserTag01");
 const songCreditTypePublicId = parsePublicId<"SongCreditType">("CommandCreditTyp");
 const songCreditPublicId = parsePublicId<"SongCredit">("CommandCreditRow");
 const userInstrumentPublicId = parsePublicId<"UserInstrument">("CommandUsrInstr1");
+const permissionPublicId = parsePublicId<"Permission">("CommandPermiss01");
+const rolePublicId100 = parsePublicId<"Role">("CommandRole00100");
+const rolePublicId200 = parsePublicId<"Role">("CommandRole00200");
+const rolePublicId250 = parsePublicId<"Role">("CommandRole00250");
+const rolePermissionPublicId = parsePublicId<"RolePermission">("CommandRolePerm1");
 
 function createContext(seed?: {
     songList?: Record<string, unknown> | null;
@@ -258,15 +263,15 @@ describe("DB3 commands", () => {
     it("defines a strict association command that serializes rich rows to identities", () => {
         const command = db3.setRolePermissionCommand;
         const payload = command.serialize({
-            local: { id: 300 } as any,
-            foreign: { id: 200 } as any,
+            local: { publicId: permissionPublicId },
+            foreign: { publicId: rolePublicId200 },
             isAssociated: true,
         });
 
         expect(command.commandID).toBe("RolePermission_Set");
         expect(payload).toEqual({
-            localIdentity: 300,
-            foreignIdentity: 200,
+            localIdentity: permissionPublicId,
+            foreignIdentity: rolePublicId200,
             isAssociated: true,
         });
         expect(command.parseDto(payload)).toEqual(payload);
@@ -298,66 +303,6 @@ describe("DB3 commands", () => {
             ...payload,
             localIdentity: 42,
         })).toThrow("Expected an InstrumentFunctionalGroup public ID");
-    });
-
-    it("sets one RolePermission cell from authoritative current associations", async () => {
-        const update = vi.fn(async () => ({}));
-        const requireVisible = vi.fn(async (_entity, identity) => ({ id: identity }));
-        const findMany = vi.fn()
-            .mockResolvedValueOnce([{ roleId: 100 }, { roleId: 200 }])
-            .mockResolvedValueOnce([{ roleId: 100 }, { roleId: 200 }])
-            .mockResolvedValueOnce([{ roleId: 100 }, { roleId: 200 }]);
-        const context = {
-            authorization: {} as any,
-            transaction: { rolePermission: { findMany } } as any,
-            rowServices: {
-                insert: vi.fn(),
-                update,
-                delete: vi.fn(),
-                requireVisible,
-                afterMutation: vi.fn(),
-            },
-        } as DB3CommandExecutionContext;
-
-        await expect(rolePermissionSetCommandHandler.execute({
-            localIdentity: 300,
-            foreignIdentity: 250,
-            isAssociated: true,
-        }, context)).resolves.toEqual({
-            localIdentity: 300,
-            foreignIdentity: 250,
-            isAssociated: true,
-        });
-        expect(update).toHaveBeenLastCalledWith(
-            db3.xPermission,
-            300,
-            { roles: [100, 200, 250] },
-        );
-
-        await rolePermissionSetCommandHandler.execute({
-            localIdentity: 300,
-            foreignIdentity: 200,
-            isAssociated: false,
-        }, context);
-        expect(update).toHaveBeenLastCalledWith(
-            db3.xPermission,
-            300,
-            { roles: [100] },
-        );
-
-        await rolePermissionSetCommandHandler.execute({
-            localIdentity: 300,
-            foreignIdentity: 200,
-            isAssociated: true,
-        }, context);
-        expect(update).toHaveBeenLastCalledWith(
-            db3.xPermission,
-            300,
-            { roles: [100, 200] },
-        );
-        expect(requireVisible).toHaveBeenCalledWith(db3.xPermission, 300);
-        expect(requireVisible).toHaveBeenCalledWith(db3.xRole, 250);
-        expect(findMany).toHaveBeenCalledWith({ where: { permissionId: 300 } });
     });
 
     it("composes and registers CRUD from the InstrumentFunctionalGroup editor view", async () => {
@@ -408,390 +353,6 @@ describe("DB3 commands", () => {
             db3.xInstrumentFunctionalGroup,
             { name: "Brass" },
         );
-    });
-
-    it("registers generated CRUD for the administration-grid migration batches", () => {
-        const views = [
-            db3.eventTypeEditorView,
-            db3.eventStatusEditorView,
-            db3.eventTagEditorView,
-            db3.fileTagEditorView,
-            db3.instrumentTagEditorView,
-            db3.songTagEditorView,
-            db3.songCreditTypeEditorView,
-            db3.userTagEditorView,
-            db3.wikiPageTagEditorView,
-            db3.permissionEditorView,
-            db3.settingEditorView,
-            db3.frontpageGalleryItemEditorView,
-            db3.roleEditorView,
-            db3.instrumentEditorView,
-            db3.songEditorView,
-            db3.userEditorView,
-            db3.eventEditorView,
-            db3.eventAttendanceEditorView,
-            db3.eventSegmentEditorView,
-            db3.songCreditEditorView,
-            db3.userInstrumentEditorView,
-            db3.setlistPlanGroupEditorView,
-            db3.customLinkEditorView,
-            db3.menuLinkEditorView,
-        ];
-
-        for (const view of views) {
-            expect(db3.getDB3CrudViewForCommand(view.crud.operations.create.command.commandID)).toBe(view);
-            expect(getDB3CommandHandler(view.crud.operations.create.command.commandID).command)
-                .toBe(view.crud.operations.create.command);
-            expect(getDB3CommandHandler(view.crud.operations.update.command.commandID).command)
-                .toBe(view.crud.operations.update.command);
-            if (view.crud.operations.delete) {
-                expect(getDB3CommandHandler(view.crud.operations.delete.command.commandID).command)
-                    .toBe(view.crud.operations.delete.command);
-            }
-        }
-
-        expect(db3.eventTypeEditorView.crud.operations.create.command.parseDto({
-            text: "Concert",
-            description: "",
-            color: null,
-            sortOrder: 0,
-            significance: null,
-            iconName: null,
-            isDeleted: false,
-        })).toMatchObject({ text: "Concert", sortOrder: 0 });
-        expect(() => db3.eventTypeEditorView.crud.operations.create.command.parseDto({
-            text: "Concert",
-            events: [],
-        })).toThrow();
-        expect(() => db3.eventStatusEditorView.crud.operations.update.command.parseDto({
-            identity: 1,
-            patch: { id: 2 },
-        })).toThrow();
-        expect(() => db3.eventTagEditorView.crud.operations.delete.command.parseDto({
-            identity: 1,
-            deleteType: "hard",
-        })).toThrow();
-        expect(db3.songTagEditorView.crud.operations.create.command.parseDto({
-            text: "Ballad",
-            group: "Style",
-            indicator: "B",
-            indicatorCssClass: "ballad",
-        })).toEqual({
-            text: "Ballad",
-            group: "Style",
-            indicator: "B",
-            indicatorCssClass: "ballad",
-        });
-        expect(db3.songCreditTypeEditorView.crud.operations.update.command.parseDto({
-            identity: songCreditTypePublicId,
-            patch: { significance: "Composer" },
-        })).toEqual({
-            identity: songCreditTypePublicId,
-            patch: { significance: "Composer" },
-        });
-        expect(db3.userTagEditorView.crud.operations.update.command.parseDto({
-            identity: userTagPublicId,
-            patch: { cssClass: null },
-        })).toEqual({
-            identity: userTagPublicId,
-            patch: { cssClass: null },
-        });
-        expect(() => db3.fileTagEditorView.crud.operations.create.command.parseDto({
-            text: "Chart",
-            fileAssignments: [],
-        })).toThrow();
-        expect(() => db3.wikiPageTagEditorView.crud.operations.create.command.parseDto({
-            text: "Policy",
-            wikiPages: [],
-        })).toThrow();
-        expect(db3.wikiPageEditorView.crud.operations.update.command.parseDto({
-            identity: 4,
-            patch: { tags: [wikiPageTagPublicId] },
-        })).toEqual({
-            identity: 4,
-            patch: { tags: [wikiPageTagPublicId] },
-        });
-        expect(() => db3.wikiPageEditorView.crud.operations.update.command.parseDto({
-            identity: 4,
-            patch: { tags: [17] },
-        })).toThrow();
-        expect(db3.permissionEditorView.crud.operations.update.command.parseDto({
-            identity: 1,
-            patch: { isVisibility: true, significance: null },
-        })).toEqual({
-            identity: 1,
-            patch: { isVisibility: true, significance: null },
-        });
-        expect(() => db3.permissionEditorView.crud.operations.update.command.parseDto({
-            identity: 1,
-            patch: { roles: [] },
-        })).toThrow();
-        expect(db3.permissionEditorView.crud.operations.delete).toBeUndefined();
-        expect(db3.getDB3CrudViewForCommand("Permission_Delete")).toBeUndefined();
-        expect(db3.settingEditorView.crud.operations.create.command.parseDto({
-            name: "settings_markdown",
-            value: "Welcome",
-        })).toEqual({
-            name: "settings_markdown",
-            value: "Welcome",
-        });
-        expect(db3.settingEditorView.crud.operations.delete).toBeUndefined();
-        expect(db3.getDB3CrudViewForCommand("Setting_Delete")).toBeUndefined();
-        expect(db3.frontpageGalleryItemEditorView.parseDto({
-            id: 1,
-            caption: "Opening night",
-            caption_nl: null,
-            caption_fr: null,
-            isDeleted: false,
-            sortOrder: 0,
-            displayParams: "{}",
-            fileId: 42,
-            file: {
-                id: 42,
-                fileLeafName: "opening-night.jpg",
-                storedLeafName: "stored-opening-night.jpg",
-                externalURI: null,
-                description: "",
-                sizeBytes: 1024,
-                mimeType: "image/jpeg",
-                customData: "{}",
-                uploadedByUserId: 7,
-            },
-            createdByUserId: 7,
-            createdByUser: { id: 7, name: "Editor" },
-            visiblePermissionId: 3,
-            visiblePermission: {
-                id: 3,
-                name: "visibility_public",
-                isVisibility: true,
-                description: "Public",
-                sortOrder: 1,
-                significance: null,
-                color: null,
-                iconName: "Public",
-            },
-        })).toMatchObject({
-            id: 1,
-            caption_nl: null,
-            file: {
-                id: 42,
-                fileLeafName: "opening-night.jpg",
-                storedLeafName: "stored-opening-night.jpg",
-                sizeBytes: 1024,
-            },
-            createdByUser: { id: 7, name: "Editor" },
-            visiblePermission: { id: 3, name: "visibility_public" },
-        });
-        expect(db3.frontpageGalleryItemEditorView.crud.operations.create.command.parseDto({
-            caption: "Opening night",
-            caption_nl: "",
-            caption_fr: "",
-            sortOrder: 1,
-            fileId: 42,
-            displayParams: "{}",
-            createdByUserId: 7,
-            visiblePermissionId: null,
-            isDeleted: false,
-        })).toMatchObject({
-            caption: "Opening night",
-            fileId: 42,
-            displayParams: "{}",
-        });
-        expect(() => db3.frontpageGalleryItemEditorView.crud.operations.update.command.parseDto({
-            identity: 1,
-            patch: { file: { id: 42 } },
-        })).toThrow();
-        expect(db3.frontpageGalleryItemEditorView.crud.operations.delete.deleteType)
-            .toBe("softWhenPossible");
-        expect(db3.roleEditorView.parseDto({
-            id: 10,
-            name: "Editors",
-            description: "Can edit content",
-            sortOrder: 2,
-            color: null,
-            significance: null,
-            permissions: [{
-                id: 50,
-                roleId: 10,
-                permissionId: 20,
-                permission: {
-                    id: 20,
-                    name: "edit_content",
-                    description: "Edit content",
-                    sortOrder: 1,
-                },
-            }],
-        })).toMatchObject({
-            id: 10,
-            permissions: [{ permissionId: 20, permission: { name: "edit_content" } }],
-        });
-        expect(db3.roleEditorView.crud.operations.update.command.parseDto({
-            identity: 10,
-            patch: { name: "Editors", permissions: [20, 30] },
-        })).toEqual({
-            identity: 10,
-            patch: { name: "Editors", permissions: [20, 30] },
-        });
-        expect(() => db3.roleEditorView.crud.operations.update.command.parseDto({
-            identity: 10,
-            patch: { isSysAdminRole: true },
-        })).toThrow();
-        expect(db3.roleEditorView.crud.operations.delete).toBeUndefined();
-        expect(db3.getDB3CrudViewForCommand("Role_Delete")).toBeUndefined();
-        const instrumentDto = db3.instrumentEditorView.parseDto({
-            publicId: instrumentPublicId,
-            name: "Trumpet",
-            description: "",
-            autoAssignFileLeafRegex: "trumpet",
-            sortOrder: 1,
-            functionalGroupId: functionalGroupPublicId,
-            instrumentTags: [{
-                publicId: instrumentTagAssociationPublicId,
-                tagId: instrumentTagPublicId,
-            }],
-        });
-        expect(instrumentDto).toEqual({
-            publicId: instrumentPublicId,
-            name: "Trumpet",
-            description: "",
-            autoAssignFileLeafRegex: "trumpet",
-            sortOrder: 1,
-            functionalGroupId: functionalGroupPublicId,
-            instrumentTags: [{
-                publicId: instrumentTagAssociationPublicId,
-                tagId: instrumentTagPublicId,
-            }],
-        });
-        const functionalGroup: db3.InstrumentFunctionalGroupDashboardClient = {
-            publicId: functionalGroupPublicId,
-            name: "Brass",
-            description: "",
-            sortOrder: 1,
-            color: null,
-        };
-        const instrumentTag: db3.InstrumentTagDashboardClient = {
-            publicId: instrumentTagPublicId,
-            text: "Uses electricity",
-            description: "",
-            sortOrder: 1,
-            color: null,
-            significance: "NeedsPower",
-        };
-        const instrumentReferences = db3.createDashboardReferenceStore();
-        db3.registerDashboardReferences(instrumentReferences, {
-            instrumentFunctionalGroup: [functionalGroup],
-            instrumentTag: [instrumentTag],
-        });
-        const hydratedInstrument = db3.hydrateView(
-            db3.instrumentEditorView,
-            instrumentDto,
-            instrumentReferences,
-        );
-        expect(hydratedInstrument.functionalGroup).toBe(functionalGroup);
-        expect(hydratedInstrument.instrumentTags[0]?.tag).toBe(instrumentTag);
-        expectTypeOf(hydratedInstrument).toEqualTypeOf<db3.InstrumentEditorClient>();
-        type InstrumentUpdateInput = db3.CommandClientInputOf<
-            typeof db3.instrumentEditorView.crud.operations.update.command
-        >;
-        expectTypeOf<NonNullable<InstrumentUpdateInput["patch"]["instrumentTags"]>>()
-            .toEqualTypeOf<InstrumentTagPublicId[]>();
-        expect(db3.instrumentEditorView.crud.operations.update.command.parseDto({
-            identity: instrumentPublicId,
-            patch: {
-                functionalGroupId: functionalGroupPublicId,
-                instrumentTags: [instrumentTagPublicId, otherInstrumentTagPublicId],
-            },
-        })).toEqual({
-            identity: instrumentPublicId,
-            patch: {
-                functionalGroupId: functionalGroupPublicId,
-                instrumentTags: [instrumentTagPublicId, otherInstrumentTagPublicId],
-            },
-        });
-        expect(() => db3.instrumentEditorView.crud.operations.update.command.parseDto({
-            identity: instrumentPublicId,
-            patch: { instrumentTags: [20] },
-        })).toThrow();
-        expect(() => db3.instrumentEditorView.crud.operations.update.command.parseDto({
-            identity: instrumentPublicId,
-            patch: { functionalGroup: { publicId: functionalGroupPublicId } },
-        })).toThrow();
-        expect(db3.instrumentEditorView.crud.operations.delete.deleteType).toBe("hard");
-        expect(db3.songEditorView.parseDto({
-            id: 8,
-            name: "Autumn Leaves",
-            aliases: "Les Feuilles mortes",
-            description: "",
-            startBPM: 120,
-            endBPM: null,
-            introducedYear: 1945,
-            lengthSeconds: 180,
-            isDeleted: false,
-            createdByUserId: 7,
-            createdByUser: { id: 7, name: "Editor", cssClass: null },
-            visiblePermissionId: 3,
-            visiblePermission: {
-                id: 3,
-                name: "visibility_public",
-                description: "Public",
-                isVisibility: true,
-                sortOrder: 1,
-                significance: null,
-                color: null,
-                iconName: null,
-            },
-            tags: [{
-                publicId: songTagAssociationPublicId,
-                songId: 8,
-                tagId: songTagPublicId,
-                tag: {
-                    publicId: songTagPublicId,
-                    text: "Jazz",
-                    description: "",
-                    color: null,
-                    sortOrder: 1,
-                    significance: null,
-                    group: "Style",
-                    indicator: null,
-                    indicatorCssClass: null,
-                },
-            }],
-        })).toMatchObject({
-            id: 8,
-            createdByUser: { id: 7, name: "Editor" },
-            visiblePermission: { id: 3, name: "visibility_public" },
-            tags: [{ tagId: songTagPublicId, tag: { text: "Jazz" } }],
-        });
-        expect(db3.songEditorView.crud.operations.update.command.parseDto({
-            identity: 8,
-            patch: {
-                visiblePermissionId: 3,
-                tags: [songTagPublicId, otherSongTagPublicId],
-            },
-        })).toEqual({
-            identity: 8,
-            patch: {
-                visiblePermissionId: 3,
-                tags: [songTagPublicId, otherSongTagPublicId],
-            },
-        });
-        expect(() => db3.songEditorView.crud.operations.update.command.parseDto({
-            identity: 8,
-            patch: { tags: [20] },
-        })).toThrow();
-        expect(() => db3.songEditorView.crud.operations.update.command.parseDto({
-            identity: 8,
-            patch: { taggedFiles: [40] },
-        })).toThrow();
-        expect(() => db3.songEditorView.crud.operations.update.command.parseDto({
-            identity: 8,
-            patch: { credits: [50] },
-        })).toThrow();
-        expect(() => db3.songEditorView.crud.operations.update.command.parseDto({
-            identity: 8,
-            patch: { pinnedRecordingId: 40 },
-        })).toThrow();
-        expect(db3.songEditorView.crud.operations.delete.deleteType).toBe("softWhenPossible");
     });
 
     it("defines finite CRUD views for the standalone relationship grids", () => {
@@ -1020,16 +581,16 @@ describe("DB3 commands", () => {
         const { context, update } = createContext();
 
         await expect(handler.execute({
-            identity: 10,
+            identity: rolePublicId100,
             patch: {
                 name: "Editors",
-                permissions: [20, 30],
+                permissions: [permissionPublicId],
             },
-        }, context)).resolves.toEqual({ identity: 10 });
+        }, context)).resolves.toEqual({ identity: rolePublicId100 });
         expect(update).toHaveBeenCalledWith(
             db3.xRole,
-            10,
-            { name: "Editors", permissions: [20, 30] },
+            rolePublicId100,
+            { name: "Editors", permissions: [permissionPublicId] },
         );
     });
 

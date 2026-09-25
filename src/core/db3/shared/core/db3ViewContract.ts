@@ -305,9 +305,9 @@ type DB3NormalizedReferenceProperties<
     [TKey in Extract<TReferenceKey, TRequiredKey>]-?:
     DB3NormalizedReferenceValue<TDto, TFields[TKey], TReferences>;
 } & {
-    [TKey in Exclude<TReferenceKey, TRequiredKey>]?:
-    DB3NormalizedReferenceValue<TDto, TFields[TKey], TReferences>;
-};
+        [TKey in Exclude<TReferenceKey, TRequiredKey>]?:
+        DB3NormalizedReferenceValue<TDto, TFields[TKey], TReferences>;
+    };
 
 type DB3ClientModelForTable<
     TDto,
@@ -480,6 +480,124 @@ function assertTransportSelectionIsFetched(
             selectionPath,
         );
     }
+}
+
+
+// private selection enrichment which adds foreign ref public ID selections automatically.
+// for example if a view wants:
+// {
+//   select: {
+//     caption: true,
+//     visiblePermissionId: true,
+//   },
+// }
+// visiblePermissionId is the numeric fk used internally by the database.
+// but cilent-facing DTO needs to convert that to the string publicId.
+// this adds the necessary server-only selections to ensure the public ID is included.
+// the above becomes:
+// {
+//   select: {
+//     caption: true,
+//     visiblePermissionId: true,
+//     visiblePermission: {
+//       select: {
+//         publicId: true,
+//       },
+//     },
+//   },
+// }
+// the pipeline is:
+// Prisma result
+//   { visiblePermissionId: 42,
+//     visiblePermission: { publicId: "AbCd..." } }
+//
+// projectDB3ModelPublicIds ->
+//   { visiblePermissionId: "AbCd...",
+//     visiblePermission: { publicId: "AbCd..." } }
+//
+// view's parse DTO:
+//   { visiblePermissionId: "AbCd..." }
+function addPublicIdentityProjectionSelections(
+    entity: AnyDB3Table,
+    table: xTable,
+    prismaArgs: TAnyModel,
+    transportArgs: TAnyModel,
+    argsPath: string,
+): TAnyModel {
+    const prismaSelect = getExplicitSelect(entity, prismaArgs, argsPath);
+    const transportSelect = getExplicitSelect(entity, transportArgs, `${argsPath}.transport`);
+    let enrichedSelect = prismaSelect;
+
+    const setSelectionMember = (member: string, selection: unknown) => {
+        if (enrichedSelect === prismaSelect) enrichedSelect = { ...prismaSelect };
+        enrichedSelect[member] = selection;
+    };
+
+    for (const [member, transportMemberSelection] of Object.entries(transportSelect)) {
+        if (transportMemberSelection === false || transportMemberSelection === undefined) continue;
+
+        const selectionPath = `${argsPath}.select.${member}`;
+        const ownership = table.resolvePrismaMember(member, selectionPath);
+        if (ownership.kind === "foreignKey") {
+            const targetTable = ownership.getTargetTable();
+            if (!targetTable.publicIdMember) continue;
+
+            const relationMember = ownership.relationMember;
+            const currentRelationSelection = enrichedSelect[relationMember];
+            if (currentRelationSelection === true) continue;
+
+            if (!currentRelationSelection
+                || typeof currentRelationSelection !== "object"
+                || Array.isArray(currentRelationSelection)) {
+                setSelectionMember(relationMember, {
+                    select: { [targetTable.publicIdMember]: true },
+                });
+                continue;
+            }
+
+            const currentRelationSelect = getExplicitSelect(
+                entity,
+                currentRelationSelection,
+                `${argsPath}.select.${relationMember}`,
+            );
+            if (currentRelationSelect[targetTable.publicIdMember] !== true) {
+                setSelectionMember(relationMember, {
+                    ...currentRelationSelection,
+                    select: {
+                        ...currentRelationSelect,
+                        [targetTable.publicIdMember]: true,
+                    },
+                });
+            }
+            continue;
+        }
+
+        if ((ownership.kind === "foreignObject" || ownership.kind === "relationCollection")
+            && transportMemberSelection
+            && typeof transportMemberSelection === "object"
+            && !Array.isArray(transportMemberSelection)) {
+            const prismaMemberSelection = enrichedSelect[member];
+            if (!prismaMemberSelection
+                || typeof prismaMemberSelection !== "object"
+                || Array.isArray(prismaMemberSelection)) {
+                continue;
+            }
+            const enrichedMemberSelection = addPublicIdentityProjectionSelections(
+                entity,
+                ownership.getTargetTable(),
+                prismaMemberSelection,
+                transportMemberSelection,
+                selectionPath,
+            );
+            if (enrichedMemberSelection !== prismaMemberSelection) {
+                setSelectionMember(member, enrichedMemberSelection);
+            }
+        }
+    }
+
+    return enrichedSelect === prismaSelect
+        ? prismaArgs
+        : { ...prismaArgs, select: enrichedSelect };
 }
 
 function applyReadPresence(
@@ -806,9 +924,20 @@ export function deriveViewContract<
         transportSelection,
         referenceContract,
     );
+    // The recursive projection compiler mutates an otherwise Prisma-generic
+    // selection shape, so its internal boundary deliberately uses TAnyModel.
+    const prismaSelection = addPublicIdentityProjectionSelections(
+        entity,
+        entity,
+        selection as TAnyModel,
+        transportSelection as TAnyModel,
+        entity.tableID,
+    );
     return {
         ...compiled,
-        prismaSelection: selection,
+        // Projection support only adds hidden Prisma fields; TSelection remains
+        // the caller-authored transport-compatible selection authority.
+        prismaSelection: prismaSelection as TSelection,
         referenceContract,
         hydrate: (dto, references) => hydrateCompiledSelection(entity, compiled, dto, references),
     };

@@ -61,12 +61,14 @@ const rowScopedSortTable = new db3.xTable({
 
 const publicVisibility = {
   id: 920_002, // Matches the inherited public-role grant in the database fixture.
+  publicId: parsePublicId<"Permission">("PublicVisPerm002"),
   name: Permission.visibility_public,
   roles: [],
 }
 
 const membersVisibility = {
   id: 701,
+  publicId: parsePublicId<"Permission">("MemberVisPerm701"),
   name: Permission.visibility_members,
   roles: [],
 }
@@ -108,6 +110,7 @@ describe("DB3 command boundary", () => {
     const actor = createAuthorizationTestUser("sysadmin", { id: 94 })
     const role = {
       id: 200,
+      publicId: parsePublicId<"Role">("DirectRole000200"),
       name: "Members",
       description: "",
       color: null,
@@ -120,6 +123,7 @@ describe("DB3 command boundary", () => {
     }
     const permission = {
       id: 300,
+      publicId: parsePublicId<"Permission">("DirectPerm000300"),
       name: Permission.manage_events,
       description: "",
       color: null,
@@ -140,8 +144,8 @@ describe("DB3 command boundary", () => {
     const makeRequest = (isAssociated: boolean) => ({
       commandID: db3.setRolePermissionCommand.commandID,
       payload: {
-        localIdentity: permission.id,
-        foreignIdentity: role.id,
+        localIdentity: permission.publicId,
+        foreignIdentity: role.publicId,
         isAssociated,
       },
     })
@@ -167,6 +171,7 @@ describe("DB3 command boundary", () => {
     const actor = createAuthorizationTestUser("limited", { id: 95 })
     const role = {
       id: 201,
+      publicId: parsePublicId<"Role">("DirectRole000201"),
       name: "Members",
       description: "",
       color: null,
@@ -179,6 +184,7 @@ describe("DB3 command boundary", () => {
     }
     const permission = {
       id: 301,
+      publicId: parsePublicId<"Permission">("DirectPerm000301"),
       name: Permission.manage_events,
       description: "",
       color: null,
@@ -200,8 +206,8 @@ describe("DB3 command boundary", () => {
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.setRolePermissionCommand.commandID,
       payload: {
-        localIdentity: permission.id,
-        foreignIdentity: role.id,
+        localIdentity: permission.publicId,
+        foreignIdentity: role.publicId,
         isAssociated: true,
       },
     }, ctx)).rejects.toThrow("Not authorized to mutate Permission")
@@ -303,6 +309,7 @@ describe("DB3 command boundary", () => {
     const actor = createAuthorizationTestUser("normal", { id: 97, permissions })
     const visibility = {
       id: 3,
+      publicId: parsePublicId<"Permission">("SongVisPerm00003"),
       name: Permission.visibility_public,
       description: "Public",
       isVisibility: true,
@@ -373,7 +380,7 @@ describe("DB3 command boundary", () => {
         identity: song.id,
         patch: {
           aliases: "Les Feuilles mortes",
-          visiblePermissionId: visibility.id,
+          visiblePermissionId: visibility.publicId,
           tags: [jazzTag.publicId],
         },
       },

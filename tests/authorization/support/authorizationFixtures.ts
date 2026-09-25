@@ -6,6 +6,12 @@ import {
 import { createDB3Authorization } from "src/core/db3/shared/db3Authorization";
 import type { AuthenticatedCtx, Ctx } from "blitz"
 import { Permission } from "shared/permissions"
+import {
+  parsePublicId,
+  type PermissionPublicId,
+  type RolePermissionPublicId,
+  type RolePublicId,
+} from "shared/publicId"
 import type { PublicDataType } from "types"
 
 export type AuthorizationPersona =
@@ -25,13 +31,16 @@ export type AuthorizationTargetKind =
 
 type TestRole = {
   id: number
+  publicId: RolePublicId
   name: string
   permissions: Array<{
     id: number
+    publicId: RolePermissionPublicId
     roleId: number
     permissionId: number
     permission: {
       id: number
+      publicId: PermissionPublicId
       name: Permission
     }
   }>
@@ -119,13 +128,16 @@ export function createAuthorizationTestUser(
     calendarFeedToken: overrides.calendarFeedToken ?? null,
     role: {
       id: roleId,
+      publicId: parsePublicId<"Role">(`TestRole${roleId.toString().padStart(8, "0").slice(-8)}`),
       name: persona,
       permissions: permissions.map((permission, index) => ({
         id: roleId * 100 + index,
+        publicId: parsePublicId<"RolePermission">(`RolePerm${(roleId * 100 + index).toString().padStart(8, "0").slice(-8)}`),
         roleId,
         permissionId: index + 1,
         permission: {
           id: index + 1,
+          publicId: parsePublicId<"Permission">(`TestPerm${(index + 1).toString().padStart(8, "0")}`),
           name: permission,
         },
       })),

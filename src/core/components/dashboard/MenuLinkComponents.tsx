@@ -72,7 +72,9 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
         "linkType": props.item.linkType,
         "externalURI": (props.item.linkType as keyof typeof DynamicMenuLinkType) === "ExternalURL" ? props.item.externalURI : undefined,
         "wikiSlug": (props.item.linkType as keyof typeof DynamicMenuLinkType) === "Wiki" ? props.item.wikiSlug : undefined,
-        "Created by": `${props.item.createdByUser?.name} on ${props.item.createdAt.toDateString()} at ${props.item.createdAt.toTimeString()}`,
+        "Created by": props.item.createdAt
+            ? `${props.item.createdByUser?.name} on ${props.item.createdAt.toDateString()} at ${props.item.createdAt.toTimeString()}`
+            : undefined,
     };
 
     return <div className='MenuLink EventDetail contentSection event'>
@@ -247,17 +249,14 @@ export const MenuLinkList = () => {
     const canEdit = dashboardContext.isAuthorized(Permission.customize_menu);
 
     // xTable.createNew still exposes its legacy generic model; this editor is
-    // explicitly bound to the MenuLink table payload.
-    const newObj = db3.xMenuLink.createNew(dashboardContext.currentUser) as db3.MenuLinkPayload;
+    // explicitly bound to the named MenuLink view's client contract.
+    const newObj = db3.xMenuLink.createNew(dashboardContext.currentUser) as db3.ClientOf<typeof db3.menuLinkEditorView>;
     // iconName is persisted from the registered icon-key vocabulary.
     newObj.iconName = "Link" as keyof typeof gIconMap;
     newObj.linkType = DynamicMenuLinkType.Wiki;
     const defaultVisibilityPermission = dashboardContext.getDefaultVisibilityPermission();
-    newObj.visiblePermission = {
-        ...defaultVisibilityPermission,
-        color: defaultVisibilityPermission.color?.id ?? null,
-    };
-    newObj.visiblePermissionId = defaultVisibilityPermission.id;
+    newObj.visiblePermission = defaultVisibilityPermission;
+    newObj.visiblePermissionId = db3.xPermission.getIdentity(defaultVisibilityPermission);
 
     const handleSaveNew = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
         void recordFeature({

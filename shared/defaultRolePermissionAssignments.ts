@@ -1,4 +1,15 @@
-export const DefaultRoles: ReadonlyArray<Record<string, any>> =
+export interface DefaultRoleDefinition {
+    name: string;
+    description: string | null;
+    isRoleForNewUsers: boolean;
+    isPublicRole: boolean;
+    isSysAdminRole: boolean;
+    sortOrder: number;
+    color: string | null;
+    significance: string | null;
+}
+
+export const DefaultRoles: ReadonlyArray<DefaultRoleDefinition> =
     [
         {
             "name": "Public",

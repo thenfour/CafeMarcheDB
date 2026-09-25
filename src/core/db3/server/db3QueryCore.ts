@@ -180,6 +180,27 @@ export type QueryViewResult<TView extends db3.AnyDB3View> = Omit<
     readonly items: db3.ClientOf<TView>[];
 };
 
+// wrapper that does authorization + hydration
+export function authorizeAndHydrateViewModel<
+    TView extends db3.AnyDB3View,
+    TModel extends db3.DbPayloadOf<TView>,
+>(
+    view: TView,
+    model: TModel,
+    publicData: db3.DB3Authorization,
+    references: db3.DB3ReferenceProvider<db3.ReferenceContractOf<TView>>,
+    contextDesc: string,
+): db3.ClientOf<TView> | null {
+    const projected = authorizeAndProjectDB3ViewModel(
+        view.entity,
+        model,
+        publicData,
+        contextDesc,
+    );
+    if (!projected) return null;
+    return db3.hydrateView(view, view.parseDto(projected), references);
+}
+
 /**
  * Server-side named-view query. The view owns selection, authorization-safe DTO
  * validation, and hydration, so callers receive its consumer type directly.

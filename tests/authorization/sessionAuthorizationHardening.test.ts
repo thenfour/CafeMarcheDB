@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
+import { isPublicId, parsePublicId } from "shared/publicId";
 
 vi.mock("db", async () => {
     const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client");
@@ -11,7 +12,7 @@ import { assertValidSysadminRole } from "src/auth/server/sessionInvalidation";
 import db3Mutation from "tests/authorization/db3MutationTestResolver";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
-import { forgeDb3Update } from "./support/db3RequestBuilders";
+import { forgeDb3PublicUpdate } from "./support/db3RequestBuilders";
 import { invokeResolver } from "./support/resolverHarness";
 
 describe("role permission changes preserve authenticated sessions", () => {
@@ -23,22 +24,36 @@ describe("role permission changes preserve authenticated sessions", () => {
             isPublicRole: kind === "public",
             isSysAdminRole: kind === "sysadmin",
         };
+        const permissionPublicId = parsePublicId<"Permission">("SessionPerm00080");
         const sessions = [
             { id: 1, userId: actor.id, user: actor, handle: "actor-session" },
             { id: 2, userId: 2, user: { roleId, isSysAdmin: false }, handle: "other-session" },
         ];
         authorizationTestDb.reset({
             user: [actor], role: [role], session: sessions,
-            permission: [{ id: 80, name: Permission.manage_site_branding, roles: [] }],
+            permission: [{
+                id: 80,
+                publicId: permissionPublicId,
+                name: Permission.manage_site_branding,
+                roles: [],
+            }],
             rolePermission: [], change: [],
         });
-        await invokeResolver(db3Mutation, forgeDb3Update("Permission", 80, { roles: [roleId] }), createAuthorizationTestContext(actor));
+        await invokeResolver(db3Mutation, forgeDb3PublicUpdate(
+            "Permission",
+            permissionPublicId,
+            { roles: [role.publicId] },
+        ), createAuthorizationTestContext(actor));
         expect(authorizationTestDb.snapshot("rolePermission")).toEqual([
             expect.objectContaining({ roleId, permissionId: 80 }),
         ]);
         expect(authorizationTestDb.snapshot("session")).toEqual(sessions);
 
-        await invokeResolver(db3Mutation, forgeDb3Update("Permission", 80, { roles: [] }), createAuthorizationTestContext(actor));
+        await invokeResolver(db3Mutation, forgeDb3PublicUpdate(
+            "Permission",
+            permissionPublicId,
+            { roles: [] },
+        ), createAuthorizationTestContext(actor));
         expect(authorizationTestDb.snapshot("rolePermission")).toEqual([]);
         expect(authorizationTestDb.snapshot("session")).toEqual(sessions);
         expect(authorizationTestDb.snapshot("change")).toHaveLength(2);
@@ -58,10 +73,12 @@ describe("BA-R001 startup Sysadmin-role assertion", () => {
             permission: { findMany: async () => [{ id: 1, name: Permission.sysadmin }, { id: 2, name: Permission.login }] },
             rolePermission: { createMany },
         });
-        expect(createMany).toHaveBeenCalledWith({ data: [
-            { roleId: 30, permissionId: 1 },
-            { roleId: 30, permissionId: 2 },
-        ] });
+        const created = createMany.mock.calls[0]![0].data;
+        expect(created).toEqual([
+            expect.objectContaining({ roleId: 30, permissionId: 1 }),
+            expect.objectContaining({ roleId: 30, permissionId: 2 }),
+        ]);
+        expect(created.every(entry => isPublicId(entry.publicId))).toBe(true);
     });
 
     it("accepts one designated role already carrying the required permissions", async () => {

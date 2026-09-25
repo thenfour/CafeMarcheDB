@@ -73,7 +73,7 @@ const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
     },
 });
 
-export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
+const fileSearchRequestedSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
     graft(fileSearchTransportSelection, {
         select: {
             uploadedByUserId: true,
@@ -131,12 +131,14 @@ export const fileSearchSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
 
 const fileSearchViewContract = deriveViewContract(
     xFile,
-    fileSearchSelection,
+    fileSearchRequestedSelection,
     {
         transportSelection: fileSearchTransportSelection,
         references: dashboardReferenceContract,
     },
 );
+
+export const fileSearchSelection = fileSearchViewContract.prismaSelection;
 
 export const fileSearchView = defineView({
     viewID: "File_Search",

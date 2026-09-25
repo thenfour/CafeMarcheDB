@@ -280,6 +280,30 @@ export async function CorrectFileWikiPageTagPublicIds() {
     console.log(`Replaced ${replacementCount} FileWikiPageTag public-ID placeholders.`);
 }
 
+export async function CorrectPermissionPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.permission,
+        modelName: "Permission",
+    });
+    console.log(`Replaced ${replacementCount} Permission public-ID placeholders.`);
+}
+
+export async function CorrectRolePublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.role,
+        modelName: "Role",
+    });
+    console.log(`Replaced ${replacementCount} Role public-ID placeholders.`);
+}
+
+export async function CorrectRolePermissionPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.rolePermission,
+        modelName: "RolePermission",
+    });
+    console.log(`Replaced ${replacementCount} RolePermission public-ID placeholders.`);
+}
+
 export async function registerNodeInstrumentation() {
     console.log(`INSTRUMENTATION RUNNING`);
     await instrumentationSetup();
@@ -312,6 +336,9 @@ export async function registerNodeInstrumentation() {
     await CorrectFileEventTagPublicIds();
     await CorrectFileInstrumentTagPublicIds();
     await CorrectFileWikiPageTagPublicIds();
+    await CorrectPermissionPublicIds();
+    await CorrectRolePublicIds();
+    await CorrectRolePermissionPublicIds();
 
     //const startupState = getServerStartStateRef();
     process.env.CMDB_START_TIME = `${new Date().valueOf()}`;

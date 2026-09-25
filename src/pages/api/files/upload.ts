@@ -13,7 +13,7 @@ import { CoerceToNumberOrNull, CoerceToString, IsNullOrWhitespace, isValidURL } 
 import { api } from "src/blitz-server";
 import * as db3 from 'src/core/db3/db3';
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
-import { resolvePublicId } from "src/core/db3/server/db3PublicIds";
+import { resolvePublicForeignIds, resolvePublicId } from "src/core/db3/server/db3PublicIds";
 
 var path = require('path');
 var fs = require('fs');
@@ -64,25 +64,42 @@ export default api(async (req, res, origCtx: Ctx) => {
                     args.taggedSongId = fields.taggedSongId && (CoerceToNumberOrNull(fields.taggedSongId[0]));
                     args.taggedUserId = fields.taggedUserId && (CoerceToNumberOrNull(fields.taggedUserId[0]));
                     args.taggedWikiPageId = fields.taggedWikiPageId && (CoerceToNumberOrNull(fields.taggedWikiPageId[0]));
-                    args.visiblePermissionId = fields.visiblePermissionId && (CoerceToNumberOrNull(fields.visiblePermissionId[0]));
+                    args.visiblePermissionId = fields.visiblePermissionId && parsePublicId<"Permission">(
+                        fields.visiblePermissionId[0],
+                    );
                     args.fileTagId = fields.fileTagId && parsePublicId<"FileTag">(
                         fields.fileTagId[0],
                     );
 
+                    const publicData = await db3.createDb3RequestAuthorization(ctx);
                     const resolvedFileTagId = args.fileTagId === undefined
                         ? undefined
                         : await resolvePublicId(
                             db3.xFileTag,
                             args.fileTagId,
-                            await db3.createDb3RequestAuthorization(ctx),
+                            publicData,
                             db,
                         );
 
                     const visiblePermission = fields.visiblePermission && (CoerceToString(fields.visiblePermission[0]));
 
+                    // may need to perform lookup by name
                     if (!args.visiblePermissionId && !IsNullOrWhitespace(visiblePermission)) {
-                        args.visiblePermissionId = (await db.permission.findFirst({ where: { name: visiblePermission } }))!.id;
+                        const permission = await db.permission.findFirst({
+                            where: { name: visiblePermission },
+                            select: { publicId: true },
+                        });
+                        if (!permission) throw new Error(`Unknown visibility permission '${visiblePermission}'.`);
+                        args.visiblePermissionId = parsePublicId<"Permission">(permission.publicId);
                     }
+
+                    const resolvedVisibility = await resolvePublicForeignIds(
+                        db3.xFile,
+                        { visiblePermissionId: args.visiblePermissionId },
+                        publicData,
+                        db,
+                    );
+                    const visiblePermissionId = resolvedVisibility.visiblePermissionId;
 
                     if (fields.externalURI) {
                         const sanitizedURI = CoerceToString(fields.externalURI[0]);
@@ -107,7 +124,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                                 sizeBytes: null,
                                 lastModifiedDate: new Date(), // no modified date possible here; it will be safer to just set it to today instead of unknown, so at least some temporal data is saved
                                 uploadedByUserId: currentUser.id,
-                                visiblePermissionId: args.visiblePermissionId || null,
+                                visiblePermissionId: visiblePermissionId ?? null,
                             }) as Record<string, any>; // because we're adding custom fields and i'm too lazy to create more types                           
 
                             if (args.taggedEventId) fields.taggedEvents = [args.taggedEventId];
@@ -135,7 +152,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                                 lastModifiedDate: file.lastModifiedDate,
                                 sizeBytes: file.size,
                                 uploadedByUserId: currentUser.id,
-                                visiblePermissionId: args.visiblePermissionId || null,
+                                visiblePermissionId: visiblePermissionId ?? null,
                             }) as Record<string, any>; // because we're adding custom fields and i'm too lazy to create more types
 
                             // generate a new unique filename given to the file. like a GUID. "2e3b4218f38f5aedcf765f801"

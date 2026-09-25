@@ -2,7 +2,7 @@ import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 
 import { Prisma } from "db";
 import { z } from "zod";
-import { isPublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type InstrumentPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId } from "shared/publicId";
+import { isPublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type InstrumentPublicId, type PermissionPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId } from "shared/publicId";
 
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 import { ColorPaletteEntry } from "../../components/color/palette";
@@ -109,7 +109,7 @@ export interface TupdateEventBasicFieldsArgs {
     isDeleted?: boolean;
     statusId?: EventStatusPublicId;
     expectedAttendanceUserTagId?: UserTagPublicId | null;
-    visiblePermissionId?: number | null;
+    visiblePermissionId?: PermissionPublicId | null;
     createdByUserId?: number;
 
     frontpageVisible?: boolean;
@@ -156,7 +156,7 @@ export interface TupdateUserPrimaryInstrumentMutationArgs {
 export interface TinsertEventCommentArgs {
     eventId: number;
     text: string;
-    visiblePermissionId: number | null;
+    visiblePermissionId: PermissionPublicId | null;
     // created by user id = current user always
     // created at, updated at = automatic
 };
@@ -183,7 +183,7 @@ export interface TinsertEventArgs {
         statusId: EventStatusPublicId | null,
         tags: EventTagPublicId[],
         expectedAttendanceUserTagId: UserTagPublicId | null,
-        visiblePermissionId: number | null;
+        visiblePermissionId: PermissionPublicId | null;
     },
     segment: {
         startsAt: Date | null,
@@ -199,7 +199,7 @@ export interface TinsertEventArgs {
 export interface TupdateEventCommentArgs {
     id: number;
     text?: string;
-    visiblePermissionId?: number | null;
+    visiblePermissionId?: PermissionPublicId | null;
     // cannot change:
     // - event id
     // - user id
@@ -501,7 +501,7 @@ export interface TGetImportEventDataRet {
         statusId: EventStatusPublicId | null,
         tags: EventTagPublicId[],
         expectedAttendanceUserTagId: UserTagPublicId | null,
-        visiblePermissionId: number | null;
+        visiblePermissionId: PermissionPublicId | null;
     },
     segment: {
         startsAt: Date | null,

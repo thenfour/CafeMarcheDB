@@ -23,6 +23,9 @@ import type {
     UserTagAssignmentPublicId,
     UserTagPublicId,
     UserInstrumentPublicId,
+    PermissionPublicId,
+    RolePermissionPublicId,
+    RolePublicId,
 } from "shared/publicId";
 //import * as db3 from "../db3core"; // circular
 import { AuxUserArgs } from "types";
@@ -187,7 +190,7 @@ export type PermissionPayload = Prisma.PermissionGetPayload<typeof PermissionArg
 
 export const PermissionForVisibilityArgs = Prisma.validator<Prisma.PermissionArgs>()({
     select: {
-        id: true,
+        publicId: true,
         name: true,
         isVisibility: true,
         description: true,
@@ -429,6 +432,44 @@ const UserInstrumentReferenceArgs = Prisma.validator<Prisma.UserInstrumentArgs>(
     },
 });
 
+type PermissionForVisibilityDbPayload = Prisma.PermissionGetPayload<typeof PermissionForVisibilityArgs>;
+export type PermissionForVisibilityPayload = Omit<PermissionForVisibilityDbPayload, "publicId"> & {
+    publicId: PermissionPublicId;
+};
+
+export type PermissionClientPayload = Omit<Prisma.PermissionGetPayload<{}>, "id" | "publicId"> & {
+    publicId: PermissionPublicId;
+};
+
+export type RoleClientPayload = Omit<Prisma.RoleGetPayload<{}>, "id" | "publicId"> & {
+    publicId: RolePublicId;
+};
+
+export type RolePermissionClientPayload = Omit<
+    Prisma.RolePermissionGetPayload<{}>,
+    "id" | "publicId" | "roleId" | "permissionId"
+> & {
+    publicId: RolePermissionPublicId;
+    roleId: RolePublicId;
+    permissionId: PermissionPublicId;
+};
+
+export type RoleWithPermissionsClientPayload = Omit<
+    RolePayload,
+    "id" | "publicId" | "permissions"
+> & {
+    publicId: RolePublicId;
+    permissions: Array<Omit<
+        RolePayload["permissions"][number],
+        "id" | "publicId" | "roleId" | "permissionId" | "permission"
+    > & {
+        publicId: RolePermissionPublicId;
+        roleId?: RolePublicId;
+        permissionId: PermissionPublicId;
+        permission: PermissionClientPayload;
+    }>;
+};
+
 type UserInstrumentReferenceDbPayload = Prisma.UserInstrumentGetPayload<
     typeof UserInstrumentReferenceArgs
 >;
@@ -523,7 +564,12 @@ export type UserTagAssignmentClientPayload = Omit<
     userTagId: UserTagPublicId;
     userTag: UserTagClientPayload;
 };
-export type UserClientPayload = Omit<UserPayload, "instruments" | "tags"> & {
+export type UserClientPayload = Omit<
+    UserPayload,
+    "instruments" | "tags" | "roleId" | "role"
+> & {
+    roleId: RolePublicId | null;
+    role: RoleWithPermissionsClientPayload | null;
     instruments: UserInstrumentClientPayload[];
     tags: UserTagAssignmentClientPayload[];
 };
@@ -570,7 +616,10 @@ export const UserMinimumArgs = Prisma.validator<Prisma.UserArgs>()({
         // Explicitly exclude: hashedPassword, signInMethods, calendarFeedToken, uid
     }
 });
-export type UserPayloadMinimum = Prisma.UserGetPayload<typeof UserMinimumArgs>;
+type UserPayloadMinimumDb = Prisma.UserGetPayload<typeof UserMinimumArgs>;
+export type UserPayloadMinimum = Omit<UserPayloadMinimumDb, "roleId"> & {
+    roleId: RolePublicId | null;
+};
 
 
 export const UserForCalBackendArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
@@ -619,8 +668,9 @@ export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserDefaultArgs>(
 export type UserWithInstrumentsDbPayload = Prisma.UserGetPayload<typeof UserWithInstrumentsArgs>;
 export type UserWithInstrumentsClientPayload = Omit<
     UserWithInstrumentsDbPayload,
-    "instruments" | "tags"
+    "instruments" | "tags" | "roleId"
 > & {
+    roleId: RolePublicId | null;
     instruments: UserInstrumentReferenceClientPayload[];
     tags: UserTagAssignmentReferenceClientPayload[];
 };
@@ -785,7 +835,7 @@ export const UserMinimalSelect = Prisma.validator<Prisma.UserSelect>()({
 export const FileWithTagsArgs = Prisma.validator<Prisma.FileArgs>()({
     //export const FileWithTagsArgs: Prisma.FileArgs = {
     include: {
-        //visiblePermission: VisiblePermissionInclude,
+        visiblePermission: { select: { publicId: true } },
         uploadedByUser: { select: UserMinimalSelect },
         tags: {
             include: {
@@ -862,8 +912,10 @@ type FileWithTagsAssociationClientPayload<
 export type FileWithTagsClientPayload = Omit<
     FileWithTagsPayload,
     "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents"
-    | "taggedInstruments" | "taggedWikiPages"
+    | "taggedInstruments" | "taggedWikiPages" | "visiblePermissionId"
+    | "visiblePermission"
 > & {
+    visiblePermissionId: PermissionPublicId | null;
     tags: FileTagAssignmentReferenceClientPayload[];
     taggedUsers: Array<FileWithTagsAssociationClientPayload<
         FileWithTagsPayload["taggedUsers"][number],
@@ -1124,6 +1176,7 @@ export const compareEventSegments = <TStatusIdentity extends number | string>(
 // all info that will appear on an event detail page
 export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
     include: {
+        visiblePermission: { select: { publicId: true } },
         status: true,
         createdByUser: AuxUserArgs,
         songLists: { ...EventSongListArgs, orderBy: EventSongListNaturalOrderBy },
@@ -1200,7 +1253,9 @@ export type EventClientPayload_Verbose = Omit<
     EventDbPayload_Verbose,
     "fileTags" | "statusId" | "typeId" | "status" | "tags" | "segments"
     | "expectedAttendanceUserTagId" | "expectedAttendanceUserTag"
+    | "visiblePermissionId" | "visiblePermission"
 > & {
+    visiblePermissionId: PermissionPublicId | null;
     statusId: EventStatusPublicId | null;
     typeId: EventTypePublicId | null;
     status: EventStatusClientPayload | null;
@@ -1808,7 +1863,7 @@ export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
 export type DashboardDynMenuLink = Prisma.MenuLinkGetPayload<{ include: { createdByUser, visiblePermission } }>;
 
 export interface ObjectWithVisiblePermission {
-    visiblePermissionId: number | null;
+    visiblePermissionId: PermissionPublicId | null;
 };
 
 

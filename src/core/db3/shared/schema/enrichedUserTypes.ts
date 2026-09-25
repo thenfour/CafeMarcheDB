@@ -1,6 +1,6 @@
 import { TableAccessor } from "@/shared/rootroot";
 import * as db3 from "@db3/db3";
-import type { UserTagPublicId } from "shared/publicId";
+import type { InstrumentPublicId, RolePublicId, UserTagPublicId } from "shared/publicId";
 
 export type EnrichUserInput = Partial<db3.UserClientPayload>;
 
@@ -24,9 +24,9 @@ export type EnrichedUser<T extends EnrichUserInput> = Omit<T,
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
 export function enrichUser<T extends EnrichUserInput>(
     item: T,
-    roles: TableAccessor<db3.CompleteRoleDashboardClient>,
+    roles: TableAccessor<db3.CompleteRoleDashboardClient, RolePublicId>,
     userTags: TableAccessor<db3.UserTagDashboardClient, UserTagPublicId>,
-    instruments: TableAccessor<db3.InstrumentDashboardClient>
+    instruments: TableAccessor<db3.InstrumentDashboardClient, InstrumentPublicId>
 ): EnrichedUser<T> {
     // original payload type,
     // removing items we're replacing,

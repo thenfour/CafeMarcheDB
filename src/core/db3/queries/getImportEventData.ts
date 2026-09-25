@@ -213,7 +213,10 @@ export default resolver.pipe(
         try {
 
             // visibility
-            ret.event.visiblePermissionId = (await GetDefaultVisibilityPermission(db))?.id || null;
+            const defaultVisibilityPermission = await GetDefaultVisibilityPermission(db);
+            ret.event.visiblePermissionId = defaultVisibilityPermission
+                ? parsePublicId<"Permission">(defaultVisibilityPermission.publicId)
+                : null;
 
             const edr = ExtractDescription(args.text);
             const eventTxt = edr.beforeSeparator;

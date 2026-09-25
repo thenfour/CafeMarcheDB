@@ -10,7 +10,7 @@ import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { CMSmallButton, NameValuePair, SetlistBreakIcon } from "src/core/components/CMCoreComponents2";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { useSnackbar } from "src/core/components/SnackbarContext";
-import { EventAPI, xUserTag } from "../db3";
+import { EventAPI, xPermission, xRole, xUserTag } from "../db3";
 import getAdminLogItemInfo from "../queries/getAdminLogItemInfo";
 import getDistinctChangeFilterValues from "../queries/getDistinctChangeFilterValues";
 import type { EventSongListMutationCommand } from "../shared/entities/eventSongList/eventSongListCommands";
@@ -175,29 +175,33 @@ const ActivityLogAttendance = ({ attendanceId, cacheData }: { attendanceId: numb
     </ActivityLogChip>;
 };
 
-const ActivityLogPermission = ({ permissionId, cacheData }: { permissionId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
+const ActivityLogPermission = ({ permissionId, cacheData }: { permissionId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
-    const found = dashboardContext.permission.getById(permissionId);
+    const found = xPermission.isIdentity(permissionId)
+        ? dashboardContext.permission.getById(permissionId)
+        : undefined;
     if (!found) {
         return <ActivityLogChip><Id value={permissionId} /></ActivityLogChip>;
     }
     return <ActivityLogChip
         color={found.color}
     >
-        {found.name}#{found.id}
+        {found.name}
     </ActivityLogChip>;
 };
 
-const ActivityLogRole = ({ roleId, cacheData }: { roleId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
+const ActivityLogRole = ({ roleId, cacheData }: { roleId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
-    const found = dashboardContext.role.getById(roleId);
+    const found = xRole.isIdentity(roleId)
+        ? dashboardContext.role.getById(roleId)
+        : undefined;
     if (!found) {
         return <ActivityLogChip><Id value={roleId} /></ActivityLogChip>;
     }
     return <ActivityLogChip
         color={found.color}
     >
-        {found.name}#{found.id}
+        {found.name}
     </ActivityLogChip>;
 };
 

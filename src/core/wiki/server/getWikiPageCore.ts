@@ -1,10 +1,11 @@
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { GetWikiPageUpdatability, WikiPageApiPayloadArgs, WikiPageData, wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
+import { GetWikiPageUpdatability, WikiPageData, wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
 import { ProcessEventDescriptionForWikiPage } from "./wikiNamespaceEventDescription";
 import { AuthenticatedCtx } from "blitz";
-import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
-import { xWikiPage } from "src/core/db3/shared/schema/wiki";
 import { getRequestAuthorization } from "src/auth/server/requestAuthorization";
+import { queryView } from "src/core/db3/server/db3QueryCore";
+import { DB3ReferenceStore } from "src/core/db3/shared/core/db3Hydration";
+import { wikiPageApiView } from "src/core/db3/shared/entities/wiki/wikiViews";
 
 interface GetWikiPageCoreArgs {
     canonicalWikiSlug: string;
@@ -22,14 +23,16 @@ export async function GetWikiPageCore({ canonicalWikiSlug, dbt, ctx, ...args }: 
     const currentUser = authorization.user;
     if (!currentUser) throw new Error("Current user was not found.");
 
-    const page = await dbt.wikiPage.findFirst({
-        where: await GetAuthorizedTableReadWhere({
-            table: xWikiPage,
-            currentUser,
-            where: { slug: canonicalWikiSlug },
-        }),
-        ...WikiPageApiPayloadArgs,
-    });
+    const result = await queryView({
+        view: wikiPageApiView,
+        filter: {
+            items: [{ field: "slug", operator: "equals", value: canonicalWikiSlug }],
+        },
+        orderBy: undefined,
+        take: 1,
+        cmdbQueryContext: "wiki/page",
+    }, authorization, new DB3ReferenceStore(), dbt);
+    const page = result.items[0] ?? null;
 
     const path = wikiParseCanonicalWikiPath(canonicalWikiSlug);
     const lockStatus = GetWikiPageUpdatability({

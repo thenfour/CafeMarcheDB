@@ -56,7 +56,9 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
-    const permissionId = dashboardContext.getPermission(Permission.visibility_public)!.id;// API.users.getDefaultVisibilityPermission().id;
+    const permissionId = db3.xPermission.getIdentity(
+        dashboardContext.getPermission(Permission.visibility_public)!,
+    );
     const currentUser = useCurrentUser()[0]!;
 
 
@@ -541,13 +543,10 @@ const GalleryItem = (props: GalleryItemProps) => {
     const handleVisibilityChange = (visiblePermission: VisibilityControlValue) => {
         const newrow: FrontpageGalleryItemClient = {
             ...props.value,
-            visiblePermission: visiblePermission ? {
-                ...visiblePermission,
-                color: typeof visiblePermission.color === "string"
-                    ? visiblePermission.color
-                    : visiblePermission.color?.id ?? null,
-            } : null,
-            visiblePermissionId: visiblePermission?.id || null,
+            visiblePermission,
+            visiblePermissionId: visiblePermission
+                ? db3.xPermission.getIdentity(visiblePermission)
+                : null,
         };
         void recordFeature({
             feature: ActivityFeature.frontpagegallery_item_change_visibility,

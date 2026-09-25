@@ -3,7 +3,7 @@ import { DefaultRolePermissionAssignments, DefaultRoles } from "@/shared/default
 import { getPermissionDatabaseMetadata, gPermissionRegistry } from "@/shared/permissions";
 import { Setting } from "@/shared/settingKeys";
 import { assertValidSysadminRole } from "@/src/auth/server/sessionInvalidation";
-import db from "db";
+import db, { Prisma } from "db";
 import { SeedTable } from "./setupUtils";
 import { ValidateRouteRegistry } from "../auth/shared/backstageRoutes";
 import { generatePublicId } from "../server/publicId";
@@ -39,6 +39,7 @@ async function SyncPermissionsTable() {
         } else {
             await db.permission.create({
                 data: {
+                    publicId: generatePublicId<"Permission">(),
                     name: definition.key,
                     ...canonicalData,
                 },
@@ -67,7 +68,11 @@ async function EnsureDefaultRoles() {
         console.log(`Roles already exist. Skipping seeding default roles.`);
         return;
     }
-    await SeedTable("role", db.role, DefaultRoles);
+    const defaultRoles: Prisma.RoleUncheckedCreateInput[] = DefaultRoles.map(role => ({
+        ...role,
+        publicId: generatePublicId<"Role">(),
+    }));
+    await SeedTable("role", db.role, defaultRoles);
 };
 
 async function EnsureRolePermissionMatrix() {
@@ -101,6 +106,7 @@ async function EnsureRolePermissionMatrix() {
         }
         const ass = await db.rolePermission.create({
             data: {
+                publicId: generatePublicId<"RolePermission">(),
                 permissionId: permission.id,
                 roleId: role.id,
             }

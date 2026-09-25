@@ -26,6 +26,7 @@ import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "../select/C
 import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import UnsavedChangesHandler from "../UnsavedChangesHandler";
 import { VisibilityValue } from "../VisibilityControl";
+import type { PermissionPublicId } from "shared/publicId";
 
 
 //////////////////////////////////////////////////
@@ -296,7 +297,7 @@ const WikiPageVisibilityControl = (props: WikiPageVisibilityControlProps) => {
     const [wikiPageSetVisibilityMutation] = useMutation(wikiPageSetVisibility);
     const recordFeature = useFeatureRecorder();
 
-    return <CMSingleSelect<number | null>
+    return <CMSingleSelect<PermissionPublicId | null>
         displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
         renderOption={(v) => {
             return <VisibilityValue permissionId={v} variant="verbose" />;
@@ -317,8 +318,10 @@ const WikiPageVisibilityControl = (props: WikiPageVisibilityControlProps) => {
             }, "Visibility updated");
             props.onUpdateComplete();
         }}
-        getOptions={() => dashboardContext.getVisibilityPermissions().map(p => p.id)}
-        getOptionInfo={(permissionId: number) => {
+        getOptions={() => dashboardContext.getVisibilityPermissions().map(
+            permission => db3.xPermission.getIdentity(permission),
+        )}
+        getOptionInfo={(permissionId: PermissionPublicId) => {
             return {
                 id: permissionId,
                 name: dashboardContext.permission.getById(permissionId)?.name || String(permissionId),
@@ -449,7 +452,7 @@ export const WikiPageViewMode = (props: WikiPageViewModeProps) => {
                 {IsNullOrWhitespace(props.wikiPageApi.coalescedCurrentPageData.content) ? <div className="unknownPage">This page dosen't exist (yet!)</div> : <Markdown markdown={props.wikiPageApi.coalescedCurrentPageData.content} />}
             </div>
 
-            {page?.currentRevision && <div className="wikiPageFooterStats">
+            {page?.currentRevision?.createdAt && <div className="wikiPageFooterStats">
                 Last edited by {page.currentRevision.createdByUser?.name || "(unknown)"} on {page.currentRevision.createdAt.toLocaleDateString()} at {page.currentRevision.createdAt.toLocaleTimeString()}
             </div>}
         </div>

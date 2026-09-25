@@ -2,6 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { SecurePassword } from "@blitzjs/auth/secure-password";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
+import { parsePublicId } from "shared/publicId";
 import * as activityLog from "shared/activityLog";
 import { prepareUserMerge } from "src/auth/server/userMerge/prepareUserMerge";
 import { commitUserMerge, MERGE_REVIEW_CHANGED } from "src/auth/server/userMerge/commitUserMerge";
@@ -27,20 +28,30 @@ async function clearDisposableDatabase() {
 }
 
 async function seedAccounts() {
-    await db.permission.createMany({ data: Object.values(Permission).map((name, index) => ({ id: index + 1, name })) });
+    await db.permission.createMany({ data: Object.values(Permission).map((name, index) => ({
+        id: index + 1,
+        publicId: parsePublicId<"Permission">(`MergePerm${(index + 1).toString().padStart(7, "0")}`),
+        name,
+    })) });
     const permissions = await db.permission.findMany();
     await db.role.create({
         data: {
-            id: 1, name: "Sysadmin", isSysAdminRole: true,
-            permissions: { create: permissions.filter(permission => permission.name !== Permission.never_grant).map(permission => ({ permissionId: permission.id })) },
+            id: 1, publicId: parsePublicId<"Role">("MergeRole0000001"), name: "Sysadmin", isSysAdminRole: true,
+            permissions: { create: permissions.filter(permission => permission.name !== Permission.never_grant).map((permission, index) => ({
+                publicId: parsePublicId<"RolePermission">(`MergeRP${(index + 1).toString().padStart(9, "0")}`),
+                permissionId: permission.id,
+            })) },
         }
     });
     await db.role.create({
         data: {
-            id: 2, name: "Member", permissions: {
+            id: 2, publicId: parsePublicId<"Role">("MergeRole0000002"), name: "Member", permissions: {
                 create: permissions
                     .filter(permission => permission.name === Permission.login)
-                    .map(permission => ({ permissionId: permission.id }))
+                    .map(permission => ({
+                        publicId: parsePublicId<"RolePermission">("MergeRP900000001"),
+                        permissionId: permission.id,
+                    }))
             }
         }
     });

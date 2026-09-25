@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
+import { parsePublicId } from "shared/publicId";
 
 vi.mock("db", async () => {
     const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client");
@@ -163,6 +164,7 @@ describe("authorization refresh on every request", () => {
             user: [user],
             permission: [{
                 id: 30,
+                publicId: parsePublicId<"Permission">("DashboardPerm001"),
                 name: Permission.visibility_public,
                 description: "Public",
                 sortOrder: 1,
@@ -173,6 +175,7 @@ describe("authorization refresh on every request", () => {
             }],
             userTag: [{
                 id: 40,
+                publicId: parsePublicId<"UserTag">("DashboardUsrTag1"),
                 text: "Members",
                 description: "Members only",
                 color: "blue",
@@ -182,6 +185,7 @@ describe("authorization refresh on every request", () => {
             }],
             wikiPageTag: [{
                 id: 50,
+                publicId: parsePublicId<"WikiPageTag">("DashboardWikiTag"),
                 text: "Policy",
                 description: "Policy page",
                 color: "orange",
@@ -196,7 +200,7 @@ describe("authorization refresh on every request", () => {
             relevantEventIds: [],
             effectivePermissionNames: expect.not.arrayContaining([Permission.login]),
             permission: [{
-                id: 30,
+                publicId: parsePublicId<"Permission">("DashboardPerm001"),
                 name: Permission.visibility_public,
                 color: expect.objectContaining({ id: "green" }),
             }],

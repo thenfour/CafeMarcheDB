@@ -1,6 +1,7 @@
 import { PrismaClient } from "@/db";
 import { Permission } from "shared/permissions";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
+import { generatePublicId } from "@/src/server/publicId";
 
 export const assertIsPrismaClient = (db: unknown): asserts db is PrismaClient => {
     // no check necessary; the type assertion is sufficient.
@@ -43,6 +44,7 @@ export const assertValidSysadminRole = async (
     if (permsToAdd.length > 0) {
         await db2.rolePermission.createMany({
             data: permsToAdd.map(perm => ({
+                publicId: generatePublicId<"RolePermission">(),
                 roleId: role.id,
                 permissionId: perm.id,
             })),

@@ -1,10 +1,9 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
-import { useMutation, useQuery } from "@blitzjs/rpc";
+import { useMutation } from "@blitzjs/rpc";
 import { FormControl, FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
 import React from "react";
 import setRoleDesignation from "src/auth/mutations/setRoleDesignation";
-import getAllRoles from "src/auth/queries/getAllRoles";
 import {
     RoleDesignation,
     type RoleDesignationValue,
@@ -13,11 +12,13 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
+import type { RolePublicId } from "shared/publicId";
 
 const BuiltInRoleAssignments = () => {
-    const [roles, { refetch }] = useQuery(getAllRoles, {
-        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    const rolesClient = DB3Client.useDb3Query({
+        view: db3.roleDashboardView,
     });
+    const roles = rolesClient.items;
     const [setDesignation, mutationState] = useMutation(setRoleDesignation);
     const [error, setError] = React.useState<string | null>(null);
 
@@ -43,11 +44,11 @@ const BuiltInRoleAssignments = () => {
             },
         ];
 
-    const handleAssignment = async (designation: RoleDesignationValue, roleId: number) => {
+    const handleAssignment = async (designation: RoleDesignationValue, roleId: RolePublicId) => {
         setError(null);
         try {
             await setDesignation({ designation, roleId });
-            await refetch();
+            await rolesClient.refetch();
         } catch {
             setError("Role assignment failed.");
         }
@@ -58,7 +59,9 @@ const BuiltInRoleAssignments = () => {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
             {assignments.map(assignment => {
                 const matchingRoles = roles.filter(role => role[assignment.flag]);
-                const selectedRoleId = matchingRoles.length === 1 ? matchingRoles[0]!.id : "";
+                const selectedRoleId = matchingRoles.length === 1
+                    ? db3.xRole.getIdentity(matchingRoles[0]!)
+                    : "";
                 const labelId = `role-designation-${assignment.designation}-label`;
                 const helperText = matchingRoles.length === 1
                     ? ""
@@ -78,10 +81,13 @@ const BuiltInRoleAssignments = () => {
                         value={selectedRoleId}
                         onChange={event => void handleAssignment(
                             assignment.designation,
-                            Number(event.target.value),
+                            db3.xRole.parseIdentity(event.target.value),
                         )}
                     >
-                        {roles.map(role => <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>)}
+                        {roles.map(role => {
+                            const identity = db3.xRole.getIdentity(role);
+                            return <MenuItem key={identity} value={identity}>{role.name}</MenuItem>;
+                        })}
                     </Select>
                     {helperText && <FormHelperText>{helperText}</FormHelperText>}
                 </FormControl>;
@@ -95,7 +101,7 @@ const MainContent = () => {
     const RoleClientSchema = DB3Client.defineTableClientSpec({
         view: db3.roleEditorView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            publicId: DB3Client.publicIdFieldGen(),
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
             description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
             sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),

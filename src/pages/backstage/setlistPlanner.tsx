@@ -819,7 +819,7 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                     }
                 }
             },
-            setVisiblePermissionId: (permissionId: number) => {
+            setVisiblePermissionId: (permissionId) => {
                 if (doc) {
                     setDocWrapper({
                         ...doc,

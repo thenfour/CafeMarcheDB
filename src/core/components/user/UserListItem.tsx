@@ -53,7 +53,7 @@ export const UserListItem = (props: UserListItemProps) => {
                             color={props.user.role.color}
                             shape={"rectangle"}
                             size="small"
-                            variation={{ ...StandardVariationSpec.Strong, selected: props.filterSpec.roleFilter.options.includes(props.user.role.id) }}
+                            variation={{ ...StandardVariationSpec.Strong, selected: props.filterSpec.roleFilter.options.includes(db3.xRole.getIdentity(props.user.role)) }}
                         >
                             {props.user.role.name}
                         </CMChip>}

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isPublicId, type RolePublicId } from "shared/publicId";
 
 export const RoleDesignation = {
     newUsers: "newUsers",
@@ -10,5 +11,5 @@ export type RoleDesignationValue = typeof RoleDesignation[keyof typeof RoleDesig
 
 export const SetRoleDesignationInput = z.object({
     designation: z.enum([RoleDesignation.newUsers, RoleDesignation.public, RoleDesignation.sysadmin]),
-    roleId: z.number().int().positive(),
+    roleId: z.custom<RolePublicId>(isPublicId),
 });

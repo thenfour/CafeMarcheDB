@@ -1,73 +1,72 @@
 import { Prisma } from "db";
-import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
-import {
-    getReference,
-    type DB3ReferenceProvider,
-} from "../../core/db3Hydration";
 import { defineView, type ClientOf } from "../../core/db3View";
-import { xPermission } from "../../schema/user";
-import { xMenuLink } from "../../schema/menuLink";
-import { ZodToPrismaSelection } from "@/shared/prismaUtils";
+import { deriveViewContract } from "../../core/db3ViewContract";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
+import { xMenuLink } from "../../schema/menuLink";
 
-const MenuLinkEditorDtoSchema = z.object({
-    id: z.number().int(),
-    applicationPage: z.string().nullable().optional(),
-    groupName: z.string().optional(),
-    caption: z.string().optional(),
-    iconName: z.string().nullable().optional(),
-    linkType: z.string().optional(),
-    externalURI: z.string().nullable().optional(),
-    wikiSlug: z.string().nullable().optional(),
-    visiblePermissionId: z.number().int().nullable().optional(),
-    groupCssClass: z.string().optional(),
-    itemCssClass: z.string().optional(),
+const menuLinkEditorSelection = Prisma.validator<Prisma.MenuLinkDefaultArgs>()({
+    select: {
+        id: true,
+        applicationPage: true,
+        groupName: true,
+        caption: true,
+        iconName: true,
+        linkType: true,
+        externalURI: true,
+        wikiSlug: true,
+        visiblePermissionId: true,
+        groupCssClass: true,
+        itemCssClass: true,
+    },
 });
+
+const menuLinkEditorContract = deriveViewContract(
+    xMenuLink,
+    menuLinkEditorSelection,
+    { references: dashboardReferenceContract },
+);
 
 export const menuLinkEditorView = defineCrudView({
     viewID: "MenuLink_Editor",
     entity: xMenuLink,
     operations: { create: true, update: true, delete: true },
-    dtoSchema: MenuLinkEditorDtoSchema,
-    hydrate: dto => xMenuLink.getClientModel(dto, "view"),
+    selection: menuLinkEditorContract.prismaSelection,
+    dtoSchema: menuLinkEditorContract.dtoSchema,
+    references: menuLinkEditorContract.referenceContract,
+    hydrate: menuLinkEditorContract.hydrate,
 });
 
-const MenuLinkListDtoSchema = z.object({
-    ...MenuLinkEditorDtoSchema.shape,
-    sortOrder: z.number().int(),
-    realm: z.string().nullable(),
-    createdAt: z.date(),
-    createdByUserId: z.number().int().nullable(),
-    createdByUser: z.object({
-        id: z.number().int(),
-        name: z.string(),
-        cssClass: z.string().nullable(),
-    }).nullable(),
+const menuLinkListSelection = Prisma.validator<Prisma.MenuLinkDefaultArgs>()({
+    select: {
+        ...menuLinkEditorSelection.select,
+        sortOrder: true,
+        realm: true,
+        createdAt: true,
+        createdByUserId: true,
+        createdByUser: {
+            select: {
+                id: true,
+                name: true,
+                cssClass: true,
+            },
+        },
+    },
 });
 
-const menuLinkAutoSelection = ZodToPrismaSelection(MenuLinkListDtoSchema);
-const menuLinkListSelection = Prisma.validator<Prisma.MenuLinkDefaultArgs>()(menuLinkAutoSelection);
-
-type MenuLinkListDto = z.infer<typeof MenuLinkListDtoSchema>;
-
-export function hydrateMenuLinkListDto(
-    dto: MenuLinkListDto,
-    references: DB3ReferenceProvider<typeof dashboardReferenceContract>,
-) {
-    return {
-        ...dto,
-        visiblePermission: getReference(references, xPermission, dto.visiblePermissionId),
-    };
-}
+const menuLinkListContract = deriveViewContract(
+    xMenuLink,
+    menuLinkListSelection,
+    { references: dashboardReferenceContract },
+);
 
 export const menuLinkListView = defineView({
     viewID: "MenuLink_List",
     entity: xMenuLink,
-    selection: menuLinkListSelection,
-    dtoSchema: MenuLinkListDtoSchema,
-    references: dashboardReferenceContract,
-    hydrate: hydrateMenuLinkListDto,
+    selection: menuLinkListContract.prismaSelection,
+    dtoSchema: menuLinkListContract.dtoSchema,
+    references: menuLinkListContract.referenceContract,
+    hydrate: menuLinkListContract.hydrate,
 });
 
 export type MenuLinkListClient = ClientOf<typeof menuLinkListView>;

@@ -53,6 +53,7 @@ import {
   forgeDb3Delete,
   forgeDb3Insert,
   forgeDb3PublicDelete,
+  forgeDb3PublicUpdate,
   forgeDb3Query,
   forgeDb3Update,
 } from "./support/db3RequestBuilders"
@@ -983,6 +984,7 @@ describe("BA-U001 user management boundaries", () => {
 
   const ordinaryRole = {
     id: 100,
+    publicId: parsePublicId<"Role">("AuthRoleOrd00100"),
     name: "Ordinary role",
     description: "",
     isRoleForNewUsers: false,
@@ -995,6 +997,7 @@ describe("BA-U001 user management boundaries", () => {
   const protectedRole = {
     ...ordinaryRole,
     id: 101,
+    publicId: parsePublicId<"Role">("AuthRolePro00101"),
     name: "Protected role",
     permissions: [{
       id: 1000,
@@ -1045,7 +1048,7 @@ describe("BA-U001 user management boundaries", () => {
     )
     await invokeResolver(assignUserRole, {
       userId: ordinaryUser.id,
-      roleId: ordinaryRole.id,
+      roleId: ordinaryRole.publicId,
       acknowledgeContinuityRisk: false,
     }, ctx)
 
@@ -1078,13 +1081,13 @@ describe("BA-U001 user management boundaries", () => {
       assignUserRole,
       {
         userId: target.id,
-        roleId: ordinaryRole.id,
+        roleId: ordinaryRole.publicId,
         acknowledgeContinuityRisk: false,
       },
       ctx,
     )
     if (canAssignRole) {
-      await expect(assignment).resolves.toEqual(expect.objectContaining({ roleId: ordinaryRole.id }))
+      await expect(assignment).resolves.toEqual(expect.objectContaining({ roleId: ordinaryRole.publicId }))
     } else {
       await expect(assignment).rejects.toThrow("Not authorized to assignRole this user")
     }
@@ -1104,7 +1107,7 @@ describe("BA-U001 user management boundaries", () => {
         assignUserRole,
         {
           userId: target.id,
-          roleId: protectedRole.id,
+          roleId: protectedRole.publicId,
           acknowledgeContinuityRisk: false,
         },
         ctx,
@@ -1124,11 +1127,11 @@ describe("BA-U001 user management boundaries", () => {
         forgeDb3Insert("User", {
           name: "Forbidden protected user",
           email: "protected@test.invalid",
-          roleId: protectedRole.id,
+          roleId: protectedRole.publicId,
         }),
         ctx,
       ),
-    ).rejects.toThrow("Not authorized to mutate User fields")
+    ).rejects.toThrow("Role was not found")
 
     expect(create).not.toHaveBeenCalled()
   })
@@ -1197,7 +1200,7 @@ describe("BA-U001 user management boundaries", () => {
     }))
     expect(bandAdminOrdinaryCapabilities.assignableRoles).toEqual([
       {
-        id: ordinaryRole.id,
+        publicId: ordinaryRole.publicId,
         name: ordinaryRole.name,
         description: ordinaryRole.description,
         sortOrder: ordinaryRole.sortOrder,
@@ -1236,9 +1239,9 @@ describe("BA-U001 user management boundaries", () => {
       canResetPassword: true,
       canSetSysAdmin: true,
     }))
-    expect(sysadminCapabilities.assignableRoles.map(role => role.id)).toEqual([
-      ordinaryRole.id,
-      protectedRole.id,
+    expect(sysadminCapabilities.assignableRoles.map(role => role.publicId)).toEqual([
+      ordinaryRole.publicId,
+      protectedRole.publicId,
     ])
   })
 
@@ -1257,11 +1260,11 @@ describe("BA-U001 user management boundaries", () => {
         db3Mutation,
         forgeDb3Update("User", ordinaryUser.id, {
           id: ordinaryUser.id,
-          roleId: ordinaryRole.id,
+          roleId: ordinaryRole.publicId,
         }),
         ctx,
       ),
-    ).rejects.toThrow("Not authorized to mutate User fields: roleId")
+    ).rejects.toThrow("Role was not found")
     await expect(
       invokeResolver(
         db3Mutation,
@@ -1284,6 +1287,7 @@ describe("BA-U002 delegated user administration", () => {
 
   const makeRole = (id: number, name: string, permissions: string[]) => ({
     id,
+    publicId: parsePublicId<"Role">(`AuthRole${id.toString().padStart(8, "0")}`),
     name,
     description: `${name} description`,
     isRoleForNewUsers: false,
@@ -1368,7 +1372,7 @@ describe("BA-U002 delegated user administration", () => {
 
     await invokeResolver(assignUserRole, {
       userId: peer.id,
-      roleId: ordinaryRole.id,
+      roleId: ordinaryRole.publicId,
       acknowledgeContinuityRisk: false,
     }, ctx)
 
@@ -1395,7 +1399,7 @@ describe("BA-U002 delegated user administration", () => {
 
     await expect(invokeResolver(assignUserRole, {
       userId: ordinaryUser.id,
-      roleId: role.id,
+      roleId: role.publicId,
       acknowledgeContinuityRisk: false,
     }, ctx)).rejects.toThrow("Not authorized to assignRole this user")
 
@@ -1420,7 +1424,7 @@ describe("BA-U002 delegated user administration", () => {
 
     await expect(invokeResolver(assignUserRole, {
       userId: selfInPeerRole.id,
-      roleId: ordinaryRole.id,
+      roleId: ordinaryRole.publicId,
       acknowledgeContinuityRisk: false,
     }, ctx)).rejects.toThrow(
       "CONTINUITY_ACKNOWLEDGEMENT_REQUIRED:deactivate_users,assign_user_roles",
@@ -1429,7 +1433,7 @@ describe("BA-U002 delegated user administration", () => {
 
     await invokeResolver(assignUserRole, {
       userId: selfInPeerRole.id,
-      roleId: ordinaryRole.id,
+      roleId: ordinaryRole.publicId,
       acknowledgeContinuityRisk: true,
     }, ctx)
     expect(authorizationTestDb.snapshot("user")).toEqual(expect.arrayContaining([
@@ -1546,6 +1550,7 @@ describe("BA-U002 delegated user administration", () => {
     })
     const visibilityPermission = {
       id: 300,
+      publicId: parsePublicId<"Permission">("AuthPerm00000300"),
       name: Permission.visibility_members,
       description: "Members",
       isVisibility: true,
@@ -1566,8 +1571,7 @@ describe("BA-U002 delegated user administration", () => {
 
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3Update("Permission", visibilityPermission.id, {
-        id: visibilityPermission.id,
+      forgeDb3PublicUpdate("Permission", visibilityPermission.publicId, {
         description: "Forged",
       }, { tableName: "Permission" }),
       ctx,
@@ -1880,6 +1884,7 @@ describe("BA-A004 association authorization", () => {
 
   const ordinaryRole = {
     id: 100,
+    publicId: parsePublicId<"Role">("AuthAssocRole100"),
     name: "Ordinary role",
     description: "",
     isRoleForNewUsers: false,
@@ -1891,10 +1896,12 @@ describe("BA-A004 association authorization", () => {
   const protectedRole = {
     ...ordinaryRole,
     id: 101,
+    publicId: parsePublicId<"Role">("AuthAssocRole101"),
     name: "Protected role",
   }
   const ordinaryPermission = {
     id: 200,
+    publicId: parsePublicId<"Permission">("AuthAssocPerm200"),
     name: Permission.manage_events,
     description: "",
     isVisibility: false,
@@ -1904,17 +1911,19 @@ describe("BA-A004 association authorization", () => {
     iconName: null,
   }
   const protectedPermissions = [
-    { ...ordinaryPermission, id: 201, name: Permission.sysadmin },
-    { ...ordinaryPermission, id: 202, name: Permission.impersonate_user },
-    { ...ordinaryPermission, id: 203, name: Permission.never_grant },
+    { ...ordinaryPermission, id: 201, publicId: parsePublicId<"Permission">("AuthAssocPerm201"), name: Permission.sysadmin },
+    { ...ordinaryPermission, id: 202, publicId: parsePublicId<"Permission">("AuthAssocPerm202"), name: Permission.impersonate_user },
+    { ...ordinaryPermission, id: 203, publicId: parsePublicId<"Permission">("AuthAssocPerm203"), name: Permission.never_grant },
   ]
   const ordinaryRolePermission = {
     id: 300,
+    publicId: parsePublicId<"RolePermission">("AuthAssocRP00300"),
     roleId: ordinaryRole.id,
     permissionId: ordinaryPermission.id,
   }
   const protectedRolePermission = {
     id: 301,
+    publicId: parsePublicId<"RolePermission">("AuthAssocRP00301"),
     roleId: protectedRole.id,
     permissionId: protectedPermissions[0]!.id,
   }
@@ -1945,10 +1954,9 @@ describe("BA-A004 association authorization", () => {
       await expect(
         invokeResolver(
           db3Mutation,
-          forgeDb3Update("Role", ordinaryRole.id, {
-            id: ordinaryRole.id,
+          forgeDb3PublicUpdate("Role", ordinaryRole.publicId, {
             name: "Must remain unchanged",
-            permissions: [ordinaryPermission.id, protectedPermission.id],
+            permissions: [ordinaryPermission.publicId, protectedPermission.publicId],
           }),
           ctx,
         ),
@@ -1977,8 +1985,7 @@ describe("BA-A004 association authorization", () => {
     await expect(
       invokeResolver(
         db3Mutation,
-        forgeDb3Update("Role", protectedRole.id, {
-          id: protectedRole.id,
+        forgeDb3PublicUpdate("Role", protectedRole.publicId, {
           permissions: [],
         }),
         ctx,
@@ -2001,17 +2008,17 @@ describe("BA-A004 association authorization", () => {
       invokeResolver(
         db3Mutation,
         forgeDb3Insert("RolePermission", {
-          roleId: ordinaryRole.id,
-          permissionId: protectedPermissions[0]!.id,
+          roleId: ordinaryRole.publicId,
+          permissionId: protectedPermissions[0]!.publicId,
         }),
         ctx,
       ),
-    ).rejects.toThrow("Not authorized to mutate RolePermission fields")
+    ).rejects.toThrow("Permission was not found")
 
     await expect(
       invokeResolver(
         db3Mutation,
-        forgeDb3Delete("RolePermission", protectedRolePermission.id),
+        forgeDb3PublicDelete("RolePermission", protectedRolePermission.publicId),
         ctx,
       ),
     ).rejects.toThrow("Not authorized to mutate RolePermission fields")
@@ -2109,9 +2116,8 @@ describe("BA-A004 association authorization", () => {
 
     await invokeResolver(
       db3Mutation,
-      forgeDb3Update("Role", ordinaryRole.id, {
-        id: ordinaryRole.id,
-        permissions: [ordinaryPermission.id, sysadminPermission.id],
+      forgeDb3PublicUpdate("Role", ordinaryRole.publicId, {
+        permissions: [ordinaryPermission.publicId, sysadminPermission.publicId],
       }),
       ctx,
     )
@@ -2127,8 +2133,7 @@ describe("BA-A004 association authorization", () => {
 
     await invokeResolver(
       db3Mutation,
-      forgeDb3Update("Role", ordinaryRole.id, {
-        id: ordinaryRole.id,
+      forgeDb3PublicUpdate("Role", ordinaryRole.publicId, {
         permissions: [],
       }),
       ctx,
@@ -2376,6 +2381,7 @@ describe("BA-A005 delete authorization", () => {
   it("cannot trigger Role or Permission cascade and SetNull effects through generic delete", async () => {
     const role = {
       id: 200,
+      publicId: parsePublicId<"Role">("AuthDeleteRole20"),
       name: "Protected role",
       description: "",
       isRoleForNewUsers: false,
@@ -2386,6 +2392,7 @@ describe("BA-A005 delete authorization", () => {
     }
     const permission = {
       id: 201,
+      publicId: parsePublicId<"Permission">("AuthDeletePerm20"),
       name: Permission.sysadmin,
       description: "",
       isVisibility: false,
@@ -2396,6 +2403,7 @@ describe("BA-A005 delete authorization", () => {
     }
     const rolePermission = {
       id: 202,
+      publicId: parsePublicId<"RolePermission">("AuthDeleteRP0202"),
       roleId: role.id,
       permissionId: permission.id,
     }
@@ -2412,10 +2420,10 @@ describe("BA-A005 delete authorization", () => {
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
 
     await expect(
-      invokeResolver(db3Mutation, forgeDb3Delete("Role", role.id, "hard"), ctx),
+      invokeResolver(db3Mutation, forgeDb3PublicDelete("Role", role.publicId, "hard"), ctx),
     ).rejects.toThrow("Not authorized to mutate Role fields")
     await expect(
-      invokeResolver(db3Mutation, forgeDb3Delete("Permission", permission.id, "hard"), ctx),
+      invokeResolver(db3Mutation, forgeDb3PublicDelete("Permission", permission.publicId, "hard"), ctx),
     ).rejects.toThrow("Not authorized to mutate Permission fields")
 
     expect(authorizationTestDb.snapshot("role")).toEqual([role])

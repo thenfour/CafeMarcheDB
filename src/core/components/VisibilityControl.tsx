@@ -1,24 +1,23 @@
 
 import { Box, Tooltip } from "@mui/material";
 import React from 'react';
+import type { PermissionPublicId } from "shared/publicId";
 import * as db3 from "src/core/db3/db3";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { CMSelectDisplayStyle, SelectionField } from "./select/SelectionField";
 import { CMSelectNullBehavior, makeLocalSelectionSource, withNullSelection } from "./select/selectionSource";
 import { SettingMarkdown } from "./SettingMarkdown";
-import { type ColorPaletteEntry, StandardVariationSpec } from "./color/palette";
+import { StandardVariationSpec } from "./color/palette";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export type VisibilityPermission = Omit<db3.PermissionPayloadMinimum, "color"> & {
-    color: string | ColorPaletteEntry | null;
-};
+export type VisibilityPermission = db3.PermissionDashboardClient;
 export type VisibilityControlValue = VisibilityPermission | null;
 
 export interface VisibilityValueProps {
     permission?: VisibilityPermission | null;
-    permissionId?: number | null;
+    permissionId?: PermissionPublicId | null;
     variant: "minimal" | "verbose";
     onClick?: () => void;
 };
@@ -31,7 +30,9 @@ export const VisibilityValue = ({ variant, onClick, ...props }: VisibilityValueP
         permission = dashboardContext.permission.getById(props.permissionId);
     }
 
-    const visInfo = dashboardContext.getVisibilityInfo({ visiblePermission: permission, visiblePermissionId: permission?.id || null });
+    const visInfo = dashboardContext.getVisibilityInfo({
+        visiblePermissionId: permission ? db3.xPermission.getIdentity(permission) : null,
+    });
     const style = visInfo.getStyleVariablesForColor(StandardVariationSpec.Strong);
     const classes: string[] = [
         "visibilityValue applyColor",
@@ -61,7 +62,7 @@ export const VisibilityValue = ({ variant, onClick, ...props }: VisibilityValueP
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface VisibilityControlProps {
-    value: VisibilityControlValue | number | null;
+    value: VisibilityControlValue | PermissionPublicId | null;
     variant?: "minimal" | "verbose";
     readonly?: boolean;
     onChange: (value: VisibilityControlValue) => void;
@@ -75,11 +76,13 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
         return p.isVisibility && dashboardContext.isAuthorized(p.name);
     });
 
-    const heavyValue = typeof props.value === "number" ? dashboardContext.permission.getById(props.value) : props.value;
+    const heavyValue = db3.xPermission.isIdentity(props.value)
+        ? dashboardContext.permission.getById(props.value)
+        : props.value;
 
     const source = withNullSelection(makeLocalSelectionSource({
         items: visibilityChoices,
-        getKey: permission => permission.id,
+        getKey: permission => db3.xPermission.getIdentity(permission),
         getLabel: permission => permission.name,
         renderValue: permission => <VisibilityValue permission={permission} variant={variant} />,
     }), CMSelectNullBehavior.AllowNull, () => <VisibilityValue permission={null} variant={variant} />, "Private");

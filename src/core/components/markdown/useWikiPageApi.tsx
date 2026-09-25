@@ -14,6 +14,8 @@ import { v4 as uuidv4 } from "uuid";
 import { useMessageBox } from "../MessageBoxContext";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
+import type { PermissionPublicId } from "shared/publicId";
+import * as db3 from "src/core/db3/db3";
 
 interface WikiApiUpdateArgs {
   revisionData: WikiPageApiUpdatePayload;
@@ -28,7 +30,7 @@ export interface WikiPageApi {
   coalescedCurrentPageData: {
     title: string;
     content: string;
-    visiblePermissionId: number | null;
+    visiblePermissionId: PermissionPublicId | null;
   };
 
   lockStatus: GetWikiPageUpdatabilityResult,
@@ -185,7 +187,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   // catches up, while still accepting polling's ownership and visibility updates.
   const polledPage = currentRevisionData.wikiPage;
   const currentPage = polledPage && basePage && polledPage.id === basePage.id &&
-    polledPage.contentVersion < basePage.contentVersion
+    (polledPage.contentVersion ?? 0) < (basePage.contentVersion ?? 0)
     ? { ...polledPage, contentVersion: basePage.contentVersion, currentRevision: basePage.currentRevision }
     : polledPage;
 
@@ -223,7 +225,9 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
     coalescedCurrentPageData: {
       title: currentPage?.currentRevision?.name ?? wikiPath.slugWithoutNamespace,
       content: currentPage?.currentRevision?.content ?? "",
-      visiblePermissionId: currentRevisionData.wikiPage ? currentRevisionData.wikiPage.visiblePermissionId : dashboardContext.getDefaultVisibilityPermission().id,
+      visiblePermissionId: currentRevisionData.wikiPage
+        ? currentRevisionData.wikiPage.visiblePermissionId ?? null
+        : db3.xPermission.getIdentity(dashboardContext.getDefaultVisibilityPermission()),
     },
   });
 

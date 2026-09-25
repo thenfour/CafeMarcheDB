@@ -4,6 +4,8 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
+import * as db3 from "src/core/db3/db3";
+import { resolvePublicForeignIds } from "src/core/db3/server/db3PublicIds";
 import { TSetWikiPageVisibilityArgs, ZTSetWikiPageVisibilityArgs } from "src/core/wiki/shared/wikiUtils";
 
 // entry point ////////////////////////////////////////////////
@@ -11,12 +13,19 @@ export default resolver.pipe(
     resolver.authorize(Permission.edit_wiki_pages),
     resolver.zod(ZTSetWikiPageVisibilityArgs),
     async (args: TSetWikiPageVisibilityArgs, ctx: AuthenticatedCtx): Promise<void> => {
+        const publicData = await db3.createDb3RequestAuthorization(ctx);
+        const resolvedForeignIds = await resolvePublicForeignIds(
+            db3.xWikiPage,
+            { visiblePermissionId: args.visiblePermissionId },
+            publicData,
+            db,
+        );
         await db.wikiPage.update({
             where: {
                 slug: args.canonicalWikiPath,
             },
             data: {
-                visiblePermissionId: args.visiblePermissionId,
+                visiblePermissionId: resolvedForeignIds.visiblePermissionId,
             },
         });
 

@@ -46,7 +46,7 @@ export const RoleControl = ({ value, userId, tableClient, readonly, onChange }: 
             nullBehavior={CMSelectNullBehavior.AllowNull}
             onChange={async (option) => {
                 await snackbar.invokeAsync(async () => {
-                    const newid = option?.id ?? null;
+                    const newid = option ? db3.xRole.getIdentity(option) : null;
                     console.log("Updating role for userId:", userId, "to roleId:", newid, " - ", dashboardContext.role.getById(newid));
                     await editCommands.update({
                         id: userId,
@@ -54,7 +54,7 @@ export const RoleControl = ({ value, userId, tableClient, readonly, onChange }: 
                         //role: dashboardContext.role.getById(newid) ?? null,
                     }, {
                         id: userId,
-                        roleId: value?.id ?? null,
+                        roleId: value ? db3.xRole.getIdentity(value) : null,
                     });
                 });
                 onChange();
@@ -68,7 +68,7 @@ export const RoleControl = ({ value, userId, tableClient, readonly, onChange }: 
             }}
             getOptionInfo={(item) => {
                 return {
-                    id: item.id,
+                    id: db3.xRole.getIdentity(item),
                     color: item.color,
                     tooltip: item.description ?? undefined,
                 };

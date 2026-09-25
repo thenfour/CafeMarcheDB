@@ -230,8 +230,19 @@ describe("focused user data visibility", () => {
       createdAt: target.createdAt,
       isDeleted: target.isDeleted,
       isSysAdmin: target.isSysAdmin,
-      roleId: target.roleId,
-      role: target.role,
+      roleId: target.role!.publicId,
+      role: {
+        publicId: target.role!.publicId,
+        name: target.role!.name,
+        permissions: target.role!.permissions.map(entry => ({
+          publicId: entry.publicId,
+          permissionId: entry.permission.publicId,
+          permission: {
+            publicId: entry.permission.publicId,
+            name: entry.permission.name,
+          },
+        })),
+      },
     })
     expect(result).not.toHaveProperty("signInMethods")
     expect(result).not.toHaveProperty("hashedPassword")

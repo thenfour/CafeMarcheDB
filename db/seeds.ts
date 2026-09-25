@@ -535,14 +535,17 @@ const main = async () => {
   // Percussion	percus
 
 
-  await SeedTable("role", gState.prisma.role,
-    DefaultRoles
-  );
+  const defaultRoles: Prisma.RoleUncheckedCreateInput[] = DefaultRoles.map(role => ({
+      ...role,
+      publicId: generatePublicId<"Role">(),
+    }));
+  await SeedTable("role", gState.prisma.role, defaultRoles);
 
   for (const definition of gPermissionRegistry) {
     console.log(`Seeding permission: ${definition.key}, sortOrder=${definition.sortOrder}`);
     await gState.prisma.permission.create({
       data: {
+        publicId: generatePublicId<"Permission">(),
         name: definition.key,
         ...getPermissionDatabaseMetadata(definition),
       },
@@ -577,6 +580,7 @@ const main = async () => {
     }
     const ass = await gState.prisma.rolePermission.create({
       data: {
+        publicId: generatePublicId<"RolePermission">(),
         permissionId: permission.id,
         roleId: role.id,
       }

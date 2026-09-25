@@ -6,7 +6,7 @@ import { z } from "zod";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 import { xSetlistPlan } from "../shared/schema/setlistPlan";
-import { DeserializeSetlistPlan } from "../shared/setlistPlanTypes";
+import { DeserializeSetlistPlan, SetlistPlanWithVisibilityArgs } from "../shared/setlistPlanTypes";
 
 const ZArgs = z.object({
     userId: z.number(),
@@ -21,6 +21,7 @@ export default resolver.pipe(
             if (!user) throw new Error("Current user was not found.");
 
             const results = await db.setlistPlan.findMany({
+                ...SetlistPlanWithVisibilityArgs,
                 where: await GetAuthorizedTableReadWhere({
                     table: xSetlistPlan,
                     currentUser: user,

@@ -1,6 +1,7 @@
 import type { Nullish } from "@/shared/rootroot";
 import { Prisma } from "db";
 import { QuickSearchItemType } from "shared/quickFilter";
+import { isPublicId, parsePublicId, type PermissionPublicId } from "shared/publicId";
 import { z } from "zod";
 
 
@@ -107,7 +108,7 @@ export const ZSetlistPlan = z.object({
     createdAt: z.date(),
     createdByUserId: z.number(),
     payload: ZSetlistPlanPayload,
-    visiblePermissionId: z.number().nullable(),
+    visiblePermissionId: z.custom<PermissionPublicId>(isPublicId).nullable(),
     // NOTE: Adding non-primitives (e.g. Date) here will cause issues with serialization to/from JSON.
     // make sure deserialization and paste from clipboard gets updated if you do that.
 });
@@ -168,7 +169,17 @@ export const CreateNewSetlistPlan = (id: number, name: string, groupId: number |
     };
 };
 
-export const DeserializeSetlistPlan = (obj: Prisma.SetlistPlanGetPayload<{}>): SetlistPlan => {
+export const SetlistPlanWithVisibilityArgs = Prisma.validator<Prisma.SetlistPlanDefaultArgs>()({
+    include: {
+        visiblePermission: {
+            select: { publicId: true },
+        },
+    },
+});
+
+export type SetlistPlanWithVisibilityPayload = Prisma.SetlistPlanGetPayload<typeof SetlistPlanWithVisibilityArgs>;
+
+export const DeserializeSetlistPlan = (obj: SetlistPlanWithVisibilityPayload): SetlistPlan => {
     let payload: SetlistPlanPayload = {
         version: 1,
         rows: [],
@@ -190,7 +201,9 @@ export const DeserializeSetlistPlan = (obj: Prisma.SetlistPlanGetPayload<{}>): S
         id: obj.id,
         name: obj.name,
         sortOrder: obj.sortOrder,
-        visiblePermissionId: obj.visiblePermissionId,
+        visiblePermissionId: obj.visiblePermission
+            ? parsePublicId<"Permission">(obj.visiblePermission.publicId)
+            : null,
         groupId: obj.groupId || null,
         payload,
     };

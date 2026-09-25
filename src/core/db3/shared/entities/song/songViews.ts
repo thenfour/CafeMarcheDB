@@ -223,7 +223,7 @@ const songSearchTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
     },
 });
 
-export const songSearchSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
+const songSearchRequestedSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
     graft(songSearchTransportSelection, {
         select: {
             createdByUserId: true,
@@ -272,12 +272,14 @@ export const songSearchSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
 
 const songSearchContract = deriveViewContract(
     xSong,
-    songSearchSelection,
+    songSearchRequestedSelection,
     {
         transportSelection: songSearchTransportSelection,
         references: dashboardReferenceContract,
     },
 );
+
+export const songSearchSelection = songSearchContract.prismaSelection;
 
 export const songSearchView = defineView({
     viewID: "Song_Search",
@@ -357,7 +359,7 @@ const songDetailTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
     },
 });
 
-export const songDetailSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
+const songDetailRequestedSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
     graft(songDetailTransportSelection, {
         select: {
             isDeleted: true,
@@ -390,12 +392,14 @@ export const songDetailSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
 
 const songDetailContract = deriveViewContract(
     xSong,
-    songDetailSelection,
+    songDetailRequestedSelection,
     {
         transportSelection: songDetailTransportSelection,
         references: dashboardReferenceContract,
     },
 );
+
+export const songDetailSelection = songDetailContract.prismaSelection;
 
 export const songDetailView = defineView({
     viewID: "Song_Detail",

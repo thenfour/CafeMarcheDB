@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { Permission } from "shared/permissions"
+import { parsePublicId } from "shared/publicId"
 
 vi.mock("db", async () => {
   const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client")
@@ -20,7 +21,7 @@ import {
   createAuthorizationPersona,
   createAuthorizationTestUser,
 } from "./support/authorizationFixtures"
-import { forgeDb3Insert, forgeDb3Update } from "./support/db3RequestBuilders"
+import { forgeDb3Insert, forgeDb3PublicUpdate } from "./support/db3RequestBuilders"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 
@@ -28,6 +29,7 @@ type RoleFlag = "isRoleForNewUsers" | "isPublicRole" | "isSysAdminRole"
 
 const makeRole = (id: number, overrides: Partial<Record<RoleFlag, boolean>> = {}) => ({
   id,
+  publicId: parsePublicId<"Role">(`RolePublic${id.toString().padStart(6, "0")}`),
   name: `Role ${id}`,
   description: "",
   isRoleForNewUsers: false,
@@ -76,8 +78,8 @@ describe("BA-U005 built-in role designations", () => {
 
     await expect(invokeResolver(setRoleDesignation, {
       designation,
-      roleId: 12,
-    }, ctx)).resolves.toEqual({ designation, roleId: 12 })
+      roleId: roles[2]!.publicId,
+    }, ctx)).resolves.toEqual({ designation, roleId: roles[2]!.publicId })
 
     const resultingRoles = authorizationTestDb.snapshot("role")
     expect(authorizationTestDb.snapshot("session")).toEqual(sessions)
@@ -114,19 +116,20 @@ describe("BA-U005 built-in role designations", () => {
   })
 
   it.each(assignments)("repairs a missing $designation assignment", async ({ designation, flag }) => {
+    const selectedRole = {
+      ...makeRole(11),
+      permissions: designation === RoleDesignation.sysadmin
+        ? [{ permissionId: 500, permission: { id: 500, name: Permission.sysadmin } }]
+        : [],
+    }
     authorizationTestDb.reset({
       user: [sysadmin],
-      role: [makeRole(10), {
-        ...makeRole(11),
-        permissions: designation === RoleDesignation.sysadmin
-          ? [{ permissionId: 500, permission: { id: 500, name: Permission.sysadmin } }]
-          : [],
-      }],
+      role: [makeRole(10), selectedRole],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
 
-    await invokeResolver(setRoleDesignation, { designation, roleId: 11 }, ctx)
+    await invokeResolver(setRoleDesignation, { designation, roleId: selectedRole.publicId }, ctx)
 
     expect(authorizationTestDb.snapshot("role").filter(role => role[flag])).toEqual([
       expect.objectContaining({ id: 11 }),
@@ -146,7 +149,7 @@ describe("BA-U005 built-in role designations", () => {
 
     await invokeResolver(setRoleDesignation, {
       designation: RoleDesignation.public,
-      roleId: selectedRole.id,
+      roleId: selectedRole.publicId,
     }, ctx)
 
     expect(update).not.toHaveBeenCalled()
@@ -158,9 +161,10 @@ describe("BA-U005 built-in role designations", () => {
       id: 2,
       isSysAdmin: false,
     })
+    const selectedRole = makeRole(10, { isPublicRole: true })
     authorizationTestDb.reset({
       user: [roleCarriedSysadmin],
-      role: [makeRole(10, { isPublicRole: true })],
+      role: [selectedRole],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("sysadmin", {
@@ -171,8 +175,8 @@ describe("BA-U005 built-in role designations", () => {
 
     await expect(invokeResolver(setRoleDesignation, {
       designation: RoleDesignation.public,
-      roleId: 10,
-    }, ctx)).resolves.toEqual({ designation: RoleDesignation.public, roleId: 10 })
+      roleId: selectedRole.publicId,
+    }, ctx)).resolves.toEqual({ designation: RoleDesignation.public, roleId: selectedRole.publicId })
 
     expect(findRoles).toHaveBeenCalled()
     expect(authorizationTestDb.snapshot("change")).toEqual([])
@@ -185,7 +189,7 @@ describe("BA-U005 built-in role designations", () => {
 
     await expect(invokeResolver(setRoleDesignation, {
       designation: RoleDesignation.newUsers,
-      roleId: 999,
+      roleId: parsePublicId<"Role">("UnknownRolePub01"),
     }, ctx)).rejects.toThrow()
 
     expect(authorizationTestDb.snapshot("role")).toEqual(roles)
@@ -202,7 +206,7 @@ describe("BA-U005 built-in role designations", () => {
 
     await expect(invokeResolver(setRoleDesignation, {
       designation: RoleDesignation.sysadmin,
-      roleId: 11,
+      roleId: roles[1]!.publicId,
     }, ctx)).rejects.toThrow(`must grant ${Permission.sysadmin}`)
 
     expect(authorizationTestDb.snapshot("role").filter(role => role.isSysAdminRole)).toEqual([
@@ -222,7 +226,7 @@ describe("BA-U005 built-in role designations", () => {
 
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3Update("Role", selectedRole.id, { [flag]: false }),
+      forgeDb3PublicUpdate("Role", selectedRole.publicId, { [flag]: false }),
       ctx,
     )).rejects.toThrow(`Not authorized to mutate Role fields: ${flag}`)
 

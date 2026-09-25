@@ -19,6 +19,7 @@ import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/Das
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { EventTableClientColumns } from "./EventComponentsBase";
 import { EventSegmentClientColumns } from "./EventSegmentComponents";
+import type { PermissionPublicId } from "shared/publicId";
 
 interface NewEventDialogProps {
     onCancel: () => void;
@@ -58,13 +59,24 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         tableSpec: eventTableSpec,
     });
 
-    const [eventValue, setEventValue] = React.useState<Omit<db3.EventPayload, "visiblePermission"> & { visiblePermission: VisibilityControlValue }>(() => {
+    const [eventValue, setEventValue] = React.useState<
+        Omit<db3.EventPayload, "visiblePermission" | "visiblePermissionId"> & {
+            visiblePermission: VisibilityControlValue;
+            visiblePermissionId: PermissionPublicId | null;
+        }
+    >(() => {
+        // createNew exposes the legacy generic model; this dialog still uses
+        // the Event payload for all non-Permission fields.
         const ret = db3.xEvent.createNew(currentUser) as db3.EventPayload;
         // default to members visibility.
         // note: you cannot use API....defaultVisibility because that uses a hook and this is a callback.
         //ret.visiblePermission = API.users.getDefaultVisibilityPermission();//
-        ret.visiblePermission = dashboardContext.getDefaultVisibilityPermission() as any;
-        return ret;
+        const visiblePermission = dashboardContext.getDefaultVisibilityPermission();
+        return {
+            ...ret,
+            visiblePermission,
+            visiblePermissionId: db3.xPermission.getIdentity(visiblePermission),
+        };
     });
 
     const eventAPI: DB3Client.NewDialogAPI = {
@@ -141,7 +153,13 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
 
             <div className="NameValuePairList">
                 <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {
-                    const newValue = { ...eventValue, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
+                    const newValue = {
+                        ...eventValue,
+                        visiblePermission: newVisiblePermission,
+                        visiblePermissionId: newVisiblePermission
+                            ? db3.xPermission.getIdentity(newVisiblePermission)
+                            : null,
+                    };
                     setEventValue(newValue);
                 }} />
 

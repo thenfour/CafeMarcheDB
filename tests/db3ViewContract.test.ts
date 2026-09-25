@@ -33,6 +33,7 @@ import { PermissionSet } from "src/auth/shared/PermissionSet"
 
 const eventTypePublicId = parsePublicId<"EventType">("AbCdEfGhIjKlMn11")
 const eventStatusPublicId = parsePublicId<"EventStatus">("AbCdEfGhIjKlMn12")
+const permissionPublicId = parsePublicId<"Permission">("AbCdEfGhIjKlMn10")
 const eventTagPublicId = parsePublicId<"EventTag">("AbCdEfGhIjKlMn13")
 const eventTagAssignmentPublicId = parsePublicId<"EventTagAssignment">("AbCdEfGhIjKlMn14")
 const userTagPublicId = parsePublicId<"UserTag">("AbCdEfGhIjKlMn15")
@@ -360,6 +361,29 @@ describe("DB3 scalar selection compiler", () => {
     expect(compiled.dtoSchema.parse({ statusId: null })).toEqual({ statusId: null })
     expect(compiled.dtoSchema.parse({ statusId: eventStatusPublicId })).toEqual({ statusId: eventStatusPublicId })
     expect(compiled.dtoSchema.safeParse({ statusId: 12 }).success).toBe(false)
+  })
+
+  it("fetches projection-only public identities without widening the transport DTO", () => {
+    const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: { statusId: true },
+    })
+
+    const derived = db3.deriveViewContract(db3.xEvent, selection)
+    type Dto = z.infer<typeof derived.dtoSchema>
+
+    expectTypeOf<Dto>().toEqualTypeOf<{
+      statusId?: EventStatusPublicId | null
+    }>()
+    expect(derived.prismaSelection).toEqual({
+      select: {
+        statusId: true,
+        status: { select: { publicId: true } },
+      },
+    })
+    expect(derived.dtoSchema.parse({
+      statusId: eventStatusPublicId,
+      status: { publicId: eventStatusPublicId },
+    })).toEqual({ statusId: eventStatusPublicId })
   })
 
   it("recursively compiles nested foreign-single selections", () => {
@@ -1045,7 +1069,7 @@ describe("Song derived-view migration", () => {
     expectTypeOf<Dto["id"]>().toEqualTypeOf<number>()
     expectTypeOf<Dto["name"]>().toEqualTypeOf<string>()
     expectTypeOf<Dto["visiblePermissionId"]>()
-      .toEqualTypeOf<number | null>()
+      .toEqualTypeOf<typeof permissionPublicId | null>()
     expectTypeOf<PermissionDto["name"]>().toEqualTypeOf<string>()
     expectTypeOf<PermissionDto["color"]>().toEqualTypeOf<string | null>()
     expectTypeOf<PermissionClient["color"]>()
@@ -1161,7 +1185,7 @@ describe("Event frontpage derived-view migration", () => {
     startsAt: new Date("2026-10-03T18:00:00.000Z"),
     durationMillis: BigInt(7_200_000),
     isAllDay: false,
-    visiblePermissionId: 9,
+    visiblePermissionId: permissionPublicId,
     frontpageVisible: true,
     frontpageDate: "3 October",
     frontpageTime: "20:00",

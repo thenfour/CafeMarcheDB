@@ -17,6 +17,7 @@ generator client {
 // --------------------------------------
 model Role {
   id                Int              @id @default(autoincrement())
+  publicId          String           @unique @db.Char(16)
   name              String           @unique @db.VarChar(768)
   isRoleForNewUsers Boolean          @default(false)
   isPublicRole      Boolean          @default(false)
@@ -34,6 +35,7 @@ model Role {
 
 model Permission {
   id           Int     @id @default(autoincrement())
+  publicId     String  @unique @db.Char(16)
   name         String  @unique @db.VarChar(768)
   isVisibility Boolean @default(false)
   description  String? @db.MediumText
@@ -58,6 +60,7 @@ model Permission {
 
 model RolePermission {
   id           Int        @id @default(autoincrement())
+  publicId     String     @unique @db.Char(16)
   roleId       Int
   permissionId Int
   role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade) // cascade delete association

@@ -1,11 +1,14 @@
 import * as db3 from "src/core/db3/db3";
+import type { RolePublicId } from "shared/publicId";
 import { CMChipContainer, CMStandardDBChip } from "./CMChip";
 import { StandardVariationSpec } from "./color/palette";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
 
-export const RoleChip = (props: { role: number | db3.RoleDisplay | null }) => {
+export const RoleChip = (props: { role: RolePublicId | db3.RoleDisplay | null }) => {
     const dashboardContext = useDashboardContext();
-    const role = typeof props.role === "number" ? dashboardContext.role.getById(props.role) : props.role;
+    const role = db3.xRole.isIdentity(props.role)
+        ? dashboardContext.role.getById(props.role)
+        : props.role;
     return (
         <CMChipContainer>
             <CMStandardDBChip

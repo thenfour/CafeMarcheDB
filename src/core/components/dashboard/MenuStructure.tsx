@@ -351,7 +351,7 @@ export const AddDynMenuItemsToStatic = (
             // LINKS (sorted, converted, permission‑checked)
             rows
                 .slice()                                     // don’t mutate DB array
-                .sort((a, b) => a.sortOrder - b.sortOrder)
+                .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
                 .forEach(row => {
                     const link = DynMenuToMenuItem(row, ctx);
                     if (link) group.links.push(link);

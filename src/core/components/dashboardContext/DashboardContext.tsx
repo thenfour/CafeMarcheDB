@@ -2,7 +2,6 @@ import { localTimeZone } from "@/shared/time";
 import { shouldShowAdminControls } from '@/shared/adminControls';
 import { ClientSession, getAntiCSRFToken, useSession } from '@blitzjs/auth';
 import { useMutation, useQuery } from '@blitzjs/rpc';
-import { Prisma } from "db";
 import React from 'react';
 import { Permission } from 'shared/permissions';
 import { TableAccessor } from 'shared/rootroot';
@@ -22,7 +21,7 @@ import { DashboardContextDataBase } from './dashboardContextTypes';
 import { PermissionSet } from '@/src/auth/shared/PermissionSet';
 import { isAttendanceGoing } from 'shared/eventAttendance';
 import { partition, zip } from "@/shared/arrayUtils";
-import { EventStatusPublicId } from "@/shared/publicId";
+import { EventStatusPublicId, PermissionPublicId } from "@/shared/publicId";
 
 type CmdbWindow = Window & {
     cmdbDashboardContext?: DashboardContextData;
@@ -33,7 +32,7 @@ export const getCmdbWindow = (): CmdbWindow => {
 }
 
 interface ObjectWithVisiblePermission {
-    visiblePermissionId: number | null;
+    visiblePermissionId: PermissionPublicId | null;
 };
 
 export class DashboardContextData extends DashboardContextDataBase {
@@ -62,7 +61,7 @@ export class DashboardContextData extends DashboardContextDataBase {
     //     return this.isAuthorized(pobj.name);
     // }
 
-    isAuthorizedForVisibility(visibilityPermissionId: number | null, ownerUserId: number | null) {
+    isAuthorizedForVisibility(visibilityPermissionId: PermissionPublicId | null, ownerUserId: number | null) {
         if (visibilityPermissionId == null) {
             return ownerUserId === null || ownerUserId === this.currentUser?.id;
         }
@@ -243,7 +242,10 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         dashboardData.wikiPageTag,
         tag => db3.xWikiPageTag.getIdentity(tag),
     );
-    valueRef.current.role = new TableAccessor(dashboardData.role);
+    valueRef.current.role = new TableAccessor(
+        dashboardData.role,
+        role => db3.xRole.getIdentity(role),
+    );
     valueRef.current.eventType = new TableAccessor(
         dashboardData.eventType,
         value => db3.xEventType.getIdentity(value),
