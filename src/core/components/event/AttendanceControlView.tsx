@@ -1,4 +1,4 @@
-import type { EventAttendancePublicId } from "shared/publicId";
+import type { EventAttendancePublicId, EventSegmentPublicId } from "shared/publicId";
 import { formatEventDateRange, EventDatePresentation } from "shared/dateTimePresentation";
 import React from "react";
 import { CircularProgress } from "@mui/material";
@@ -17,7 +17,7 @@ import { AttendanceChipView, AttendanceChipTooltipContent } from "./AttendanceCh
 import type { EventAttendanceResult } from "./attendanceCalculation";
 
 export type AttendanceChange =
-    | { type: "segment"; segmentId: number; attendanceId: EventAttendancePublicId | null }
+    | { type: "segment"; segmentId: EventSegmentPublicId; attendanceId: EventAttendancePublicId | null }
     | { type: "instrument"; instrumentId: db3.InstrumentIdentity | null }
     | { type: "comment"; comment: string };
 
@@ -141,7 +141,7 @@ const AnswerControl = ({ segment, environment, forceEditMode, onReadonlyClick }:
     const change = async (attendanceId: EventAttendancePublicId | null) => {
         setInProgress(true);
         try {
-            await environment.onSave({ type: "segment", segmentId: segment.segment.id, attendanceId });
+            await environment.onSave({ type: "segment", segmentId: segment.segment.publicId, attendanceId });
             setExplicitEdit(false);
         } catch { /* Feedback belongs to the adapter. */ }
         finally { setInProgress(false); }
@@ -169,10 +169,17 @@ export const AttendanceControlView = ({ attendance: y, environment, ...props }: 
     if (!userSelectedEdit && !y.alertFlag && y.anyAnswered && props.minimalWhenNotAlert) {
         return <div className="eventAttendanceControl minimalView"><CMChipContainer>
             <div className="caption">You responded</div>
-            {y.uncancelledSegmentUserResponses.map(r => <AttendanceChipView key={r.segment.id}
-                value={findAttendance(r.response.attendanceId)} onClick={() => setUserSelectedEdit(true)}
+            {y.uncancelledSegmentUserResponses.map(r => <AttendanceChipView
+                key={r.segment.publicId}
+                value={findAttendance(r.response.attendanceId)}
+                onClick={() => setUserSelectedEdit(true)}
                 event={props.event} eventSegment={r.segment}
-                tooltip={<AttendanceChipTooltipContent value={findAttendance(r.response.attendanceId)} event={props.event} eventSegment={r.segment} />} />)}
+                tooltip={<AttendanceChipTooltipContent
+                    value={findAttendance(r.response.attendanceId)}
+                    event={props.event}
+                    eventSegment={r.segment}
+                />}
+            />)}
             {props.debugView}
         </CMChipContainer></div>;
     }
@@ -186,17 +193,39 @@ export const AttendanceControlView = ({ attendance: y, environment, ...props }: 
             <div className="comment"><CommentControl response={y.eventUserResponse} environment={environment} /></div>
             {editMode ? <>
                 {y.allowInstrumentSelect && <div className="instrument"><InstrumentControl response={y.eventUserResponse} environment={environment} /></div>}
-                <div className="segmentList">{y.uncancelledSegmentUserResponses.map(segment => <NameValuePair
-                    key={segment.segment.id} className={y.isSingleSegment ? "bare" : ""} isReadOnly={false}
-                    name={y.isSingleSegment ? null : <>{segment.segment.name} ({formatEventDateRange(getEventSegmentDateTimeRange(segment.segment), environment.datePresentation)})</>}
-                    value={<>
-                        <AnswerControl segment={segment} environment={environment} forceEditMode onReadonlyClick={() => setUserSelectedEdit(true)} />
-                        <div className="helpText">{findAttendance(segment.response.attendanceId)?.description}</div>
-                    </>} />)}</div>
+                <div className="segmentList">{y.uncancelledSegmentUserResponses.map(segment => (
+                    <NameValuePair
+                        key={segment.segment.publicId}
+                        className={y.isSingleSegment ? "bare" : ""}
+                        isReadOnly={false}
+                        name={y.isSingleSegment ? null : <>
+                            {segment.segment.name} ({formatEventDateRange(getEventSegmentDateTimeRange(segment.segment), environment.datePresentation)})
+                        </>}
+                        value={<>
+                            <AnswerControl
+                                segment={segment}
+                                environment={environment}
+                                forceEditMode
+                                onReadonlyClick={() => setUserSelectedEdit(true)}
+                            />
+                            <div className="helpText">{findAttendance(segment.response.attendanceId)?.description}</div>
+                        </>}
+                    />))}</div>
             </> : <CMChipContainer>
-                {y.allowInstrumentSelect && <InstrumentButton value={y.eventUserResponse.instrument} selected={false} onSelect={() => setUserSelectedEdit(true)} />}
-                {y.uncancelledSegmentUserResponses.map(segment => <AnswerControl key={segment.segment.id}
-                    segment={segment} environment={environment} forceEditMode={false} onReadonlyClick={() => setUserSelectedEdit(true)} />)}
+                {y.allowInstrumentSelect && (
+                    <InstrumentButton
+                        value={y.eventUserResponse.instrument}
+                        selected={false}
+                        onSelect={() => setUserSelectedEdit(true)}
+                    />)}
+                {y.uncancelledSegmentUserResponses.map(segment => (
+                    <AnswerControl
+                        key={segment.segment.publicId}
+                        segment={segment}
+                        environment={environment}
+                        forceEditMode={false}
+                        onReadonlyClick={() => setUserSelectedEdit(true)}
+                    />))}
             </CMChipContainer>}
         </div>
     </div>;

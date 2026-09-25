@@ -93,7 +93,6 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const segmentTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEventSegment,
         columns: DB3Client.makeClientColumnSelection(
-            EventSegmentClientColumns.id,
             EventSegmentClientColumns.startsAt,
         ),
     });
@@ -104,7 +103,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         tableSpec: segmentTableSpec,
     });
 
-    const [segmentValue, setSegmentValue] = React.useState<db3.EventSegmentPayload>(db3.xEventSegment.createNew(currentUser));
+    const [segmentValue, setSegmentValue] = React.useState<Pick<db3.EventSegmentPayload, "startsAt" | "durationMillis" | "isAllDay">>(db3.xEventSegment.createNew(currentUser));
 
     const segmentAPI: DB3Client.NewDialogAPI = {
         setFieldValues: (fieldValues: TAnyModel) => {

@@ -28,7 +28,7 @@ interface InsertResult {
         name: string;
     },
     segment: {
-        startsAt: Date | null,
+        startsAt?: Date | null,
     }
 };
 
@@ -62,16 +62,16 @@ const NewEventForm = (props: NewEventDialogProps) => {
     const [eventValue, setEventValue] = React.useState<NewEventValue>(() => {
         return db3.xEvent.createNew(currentUser);
     });
-    const [segmentValue, setSegmentValue] = React.useState<db3.EventSegmentPayload>(() => {
+    const [segmentValue, setSegmentValue] = React.useState<Pick<db3.EventSegmentPayload, "startsAt" | "durationMillis" | "isAllDay">>(() => {
         // xTable.createNew returns the legacy generic row shape; the segment
         // defaults below complete the fields this form needs before persistence.
-        const ret = db3.xEventSegment.createNew(currentUser) as Partial<db3.EventSegmentPayload>;
+        const ret = db3.xEventSegment.createNew(currentUser);
         ret.isAllDay = true;
         ret.startsAt = CalendarDate.fromInstant({ value: new Date(), timeZone: dashboardContext.bandTimeZone }).toStartInstant();
         const date = CalendarDate.fromInstant({ value: new Date(), timeZone: dashboardContext.bandTimeZone });
         ret.durationMillis = BigInt(createAllDayRange({ startDate: date.date, endDateExclusive: date.addDays(1).date }, date.timeZone).getDurationMillis());
         // createNew supplies the remaining schema defaults at runtime.
-        return ret as db3.EventSegmentPayload;
+        return ret;
     });
 
     React.useEffect(() => {
@@ -132,7 +132,6 @@ const NewEventForm = (props: NewEventDialogProps) => {
     const segmentTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEventSegment,
         columns: DB3Client.makeClientColumnSelection(
-            EventSegmentClientColumns.id,
             EventSegmentClientColumns.startsAt,
         ),
     });

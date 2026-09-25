@@ -89,6 +89,7 @@ type Relation = { table: string; local: string; foreign: string; many?: boolean 
 // Dynamic table names mirror Prisma; only relations exercised by these integration tests are listed.
 const testRelations: Record<string, Record<string, Relation>> = {
   event: {
+    responses: { table: "eventUserResponse", local: "id", foreign: "eventId", many: true },
     segments: { table: "eventSegment", local: "id", foreign: "eventId", many: true },
     songLists: { table: "eventSongList", local: "id", foreign: "eventId", many: true },
   },
@@ -108,6 +109,10 @@ const testRelations: Record<string, Record<string, Relation>> = {
     event: { table: "event", local: "eventId", foreign: "id" },
     status: { table: "eventStatus", local: "statusId", foreign: "id" },
     responses: { table: "eventSegmentUserResponse", local: "id", foreign: "eventSegmentId", many: true },
+  },
+  eventUserResponse: {
+    event: { table: "event", local: "eventId", foreign: "id" },
+    instrument: { table: "instrument", local: "instrumentId", foreign: "id" },
   },
   eventSegmentUserResponse: {
     eventSegment: { table: "eventSegment", local: "eventSegmentId", foreign: "id" },
@@ -140,6 +145,12 @@ export class InMemoryDelegate {
     return this.findFirst(args)
   }
 
+  async findUniqueOrThrow(args: QueryArgs = {}) {
+    const row = await this.findUnique(args)
+    if (!row) throw new Error("In-memory row was not found")
+    return row
+  }
+
   async findMany(args: QueryArgs = {}) {
     const matches = this.rows.map(row => this.readRelations(clone(row), args))
       .filter(candidate => matchesWhere(candidate, args.where))
@@ -159,7 +170,7 @@ export class InMemoryDelegate {
   }
 
   async count(args: { where?: Record<string, unknown> } = {}) {
-    return this.rows.filter((candidate) => matchesWhere(candidate, args.where)).length
+    return (await this.findMany(args)).length
   }
 
   async create(args: { data: Omit<TestRow, "id"> & Partial<Pick<TestRow, "id">> }) {
@@ -262,7 +273,8 @@ class AuthorizationTestDatabase {
           ...targetArgs,
           where: isRecord(relationWhere) ? relationWhere : targetArgs.where,
         }))
-      row[member] = relation.many ? related : related[0] ?? null
+      const selected = relation.many ? related.filter(value => matchesWhere(value, targetArgs.where)) : related
+      row[member] = relation.many ? selected : selected[0] ?? null
     }
     return row
   }

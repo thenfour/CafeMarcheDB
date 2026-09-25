@@ -1,4 +1,4 @@
-import type { EventAttendancePublicId } from "shared/publicId";
+import type { EventAttendancePublicId, EventSegmentPublicId } from "shared/publicId";
 import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import db, { Prisma } from "db";
 import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent } from "ical-generator";
@@ -67,7 +67,7 @@ export const createCalendar = async (args: CreateCalendarArgs): Promise<ICalCale
 export const addEventToCalendar2 = (
     calendar: ICalCalendar,
     user: null | db3.UserForCalBackendPayload,
-    event: EventCalendarInput | null,
+    event: EventCalendarInput<number | EventSegmentPublicId> | null,
     eventVerbose: db3.EventClientPayload_Verbose,
     eventAttendanceIdsRepresentingGoing: EventAttendancePublicId[],
     icalSettings: ICalSettings
@@ -86,7 +86,7 @@ export const addEventToCalendar2 = (
     // CalculateEventMetadata
     // et al,
     // so wing it.
-    const getEventUserResponse = (): null | Prisma.EventUserResponseGetPayload<{}> => {
+    const getEventUserResponse = (): null | db3.EventUserResponseClientPayload => {
         if (!user) return null;
         const found = eventVerbose.responses.find(u => u.userId === user.id);
         return found || null;
@@ -155,7 +155,15 @@ export const addEventToCalendar = async (
     icalSettings: ICalSettings,
     bandTimeZone: string,
 ): Promise<ICalEvent[]> => {
-    const inputs = GetEventCalendarInput(event, cancelledStatusIds, bandTimeZone)!;
+    // Export consumes projected rows. The hash here is not persisted; revision hooks
+    // still hash natural DB identities, and calendar UIDs keep their existing values.
+    const inputs = GetEventCalendarInput({
+        ...event,
+        segments: event.segments.map(segment => ({
+            ...segment,
+            id: segment.publicId
+        })),
+    }, cancelledStatusIds, bandTimeZone)!;
 
     return inputs
         .segments

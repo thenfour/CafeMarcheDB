@@ -11,10 +11,10 @@ import { DateValue } from "../DateTime/DateTimeComponents";
 
 export interface AttendanceChipTooltipProps {
     value: db3.EventAttendanceDisplay | null;
-    eventResponse?: Prisma.EventUserResponseGetPayload<{ select: { instrumentId: true, userComment: true } }> | undefined;
+    eventResponse?: Pick<db3.EventUserResponseClientPayload, "instrumentId" | "userComment"> | undefined;
     segmentResponse?: Pick<db3.EventSegmentUserResponseClientPayload, "attendanceId" | "createdByUserId" | "createdAt" | "updatedAt" | "updatedByUserId"> | undefined;
     event?: Prisma.EventGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
-    eventSegment?: Prisma.EventSegmentGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
+    eventSegment?: Pick<db3.EventVerbose_EventSegmentClient, "publicId" | "name" | "startsAt"> | undefined;
 };
 export const AttendanceChipTooltipContent = (props: AttendanceChipTooltipProps & { updatedByUserName?: string }) => {
     return <div>
@@ -47,8 +47,8 @@ export const AttendanceChipTooltipContent = (props: AttendanceChipTooltipProps &
 };
 export interface AttendanceChipProps {
     event?: Prisma.EventGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
-    eventSegment?: Prisma.EventSegmentGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
-    eventResponse?: Prisma.EventUserResponseGetPayload<{ select: { instrumentId: true, userComment: true } }> | undefined;
+    eventSegment?: Pick<db3.EventVerbose_EventSegmentClient, "publicId" | "name" | "startsAt"> | undefined;
+    eventResponse?: Pick<db3.EventUserResponseClientPayload, "instrumentId" | "userComment"> | undefined;
     segmentResponse?: Pick<db3.EventSegmentUserResponseClientPayload, "attendanceId" | "createdByUserId" | "createdAt" | "updatedAt" | "updatedByUserId"> | undefined;
 
     showLabel?: boolean | undefined;

@@ -29,7 +29,6 @@ import { CMButton } from "../CMCoreComponents2";
 
 
 export const EventSegmentClientColumns = DB3Client.makeClientColumnSet({
-    id: columnName => new DB3Client.PKColumnClient({ columnName }),
     name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
     description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200, fieldCaption: "Description" }),
     startsAt: columnName => new DB3Client.EventDateRangeColumn({ startsAtColumnName: columnName, headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay", fieldCaption: "Date/time range" }),
@@ -73,7 +72,6 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.eventSegmentEditorView,
         columns: DB3Client.makeClientColumnSelection(
-            EventSegmentClientColumns.id,
             EventSegmentClientColumns.name,
             EventTableClientColumns.status,
             EventSegmentClientColumns.startsAt,
@@ -95,10 +93,7 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
         ...props.initialValue,
         // The verbose event payload carries statusId, while the editor column
         // uses the semantic status object.
-        status: dashboardStatus ? {
-            ...dashboardStatus,
-            color: dashboardStatus.color?.id ?? null,
-        } : dashboardStatus,
+        status: dashboardStatus,
     };
 
     return <DB3EditObjectDialog
@@ -178,7 +173,7 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
     const publicData = useDB3Authorization();
 
     const handleDelete = (commands: EventSegmentEditorCommands) => {
-        commands.delete(props.segment.id).then(() => {
+        commands.delete(props.segment.publicId).then(() => {
             showSnackbar({ severity: "success", children: "segment deleted" });
             setEditOpen(false);
             refetch();
@@ -272,7 +267,7 @@ export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) 
         {enableList && <div className="segmentList">
             {segments.map(segment => {
                 return <EventSegmentPanel
-                    key={segment.id}
+                    key={segment.publicId}
                     segment={segment}
                     readonly={props.readonly}
                     event={event}
@@ -351,8 +346,8 @@ export const EventSegmentDotMenuCopyUserResponsesFromMenuItem = (props: EventSeg
 
     const handleCopyEventSegmentResponses = async () => {
         await copyEventSegmentResponsesMutation({
-            fromEventSegmentId: props.fromSegment.id,
-            toEventSegmentId: props.toSegment.id,
+            fromEventSegmentId: props.fromSegment.publicId,
+            toEventSegmentId: props.toSegment.publicId,
         });
     };
 
@@ -392,7 +387,7 @@ export const EventSegmentDotMenu = (props: EventSegmentDotMenuProps) => {
 
     const handleClear = async () => {
         await clearEventSegmentResponsesMutation({
-            eventSegmentId: props.segment.id,
+            eventSegmentId: props.segment.publicId,
         });
     };
 
@@ -438,9 +433,9 @@ export const EventSegmentDotMenu = (props: EventSegmentDotMenuProps) => {
             </MenuItem>
             <Divider />
             {props.event.segments
-                .filter(seg => seg.id !== props.segment.id)
+                .filter(seg => seg.publicId !== props.segment.publicId)
                 .map(fromSegment => <EventSegmentDotMenuCopyUserResponsesFromMenuItem
-                    key={fromSegment.id}
+                    key={fromSegment.publicId}
                     {...props}
                     fromSegment={fromSegment}
                     toSegment={props.segment}

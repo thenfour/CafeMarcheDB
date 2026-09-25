@@ -1,3 +1,4 @@
+import { segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
@@ -993,7 +994,7 @@ describe("DB3 named views", () => {
             typeId: eventType.publicId,
             statusId: eventStatus.publicId,
             tags: [{ publicId: eventTagAssignmentPublicId, eventTagId: eventTag.publicId }],
-            responses: [{ id: 11, userId: 42, instrumentId: null, isInvited: true, userComment: null }],
+            responses: [{ id: 11, publicId: eventResponsePublicId(11), userId: 42, instrumentId: null, isInvited: true, userComment: null }],
             expectedAttendanceUserTag: {
                 publicId: userTagPublicId,
                 userAssignments: [{ userId: 42 }],
@@ -1032,13 +1033,13 @@ describe("DB3 named views", () => {
             tags: [],
             segments: [
                 {
-                    id: 2,
+                    publicId: segmentPublicId(2),
                     startsAt: segmentStart,
                     durationMillis: BigInt(3_600_000),
                     isAllDay: false,
                 },
                 {
-                    id: 3,
+                    publicId: segmentPublicId(3),
                     startsAt: segmentStart,
                     durationMillis: BigInt(3_600_000),
                 },
@@ -1101,15 +1102,15 @@ describe("DB3 named views", () => {
                 eventTagId: 4,
                 eventTag: { publicId: eventTagPublicId },
             }],
-            responses: [{ id: 11, userId: 42, instrumentId: null, isInvited: true, userComment: null }],
+            responses: [{ id: 11, publicId: eventResponsePublicId(11), userId: 42, instrumentId: null, isInvited: true, userComment: null }],
             segments: [{
-                id: 20,
+                id: 20, publicId: segmentPublicId(20),
                 name: "Main",
                 startsAt,
                 durationMillis: BigInt(3_600_000),
                 isAllDay: false,
                 statusId: null,
-                responses: [{ id: 21, userId: 42, attendanceId: null }],
+                responses: [{ id: 21, publicId: segmentResponsePublicId(21), userId: 42, attendanceId: null }],
             }],
             songLists: [],
             expectedAttendanceUserTag: {
@@ -1203,7 +1204,7 @@ describe("DB3 named views", () => {
             durationMillis: BigInt(3_600_000),
             segmentBehavior: "Sets",
             segments: [{
-                id: 18,
+                publicId: segmentPublicId(18),
                 name: "Main set",
                 statusId: 103,
                 status: { publicId: eventStatusPublicId },
@@ -1249,7 +1250,7 @@ describe("DB3 named views", () => {
             durationMillis: BigInt(3_600_000),
             segmentBehavior: "Sets",
             segments: [{
-                id: 18,
+                publicId: segmentPublicId(18),
                 name: "Main set",
                 statusId: eventStatusPublicId,
                 uid: "segment-uid",

@@ -1,3 +1,4 @@
+import { generatePublicId } from "src/server/publicId";
 import { createAllDayRange } from "shared/time";
 import { addCalendarDays } from "shared/dateTimePolicy";
 import { PrismaClient } from "@prisma/client"
@@ -13,7 +14,7 @@ describe.skipIf(!url)("calendar overlap SQL with real MySQL", () => {
     await db.eventStatus.create({ data: { id: 9, publicId: "DateStatusTest01", label: "Cancelled", description: "", significance: "Cancelled" } })
     const segment = (start: string | null, duration: number, allDay = false, statusId: number | null = null) => {
       const authored = allDay && start ? createAllDayRange({ startDate: start.slice(0, 10), endDateExclusive: addCalendarDays(start.slice(0, 10), Math.max(1, Math.round(duration / 86400000))) }, "Europe/Brussels") : null
-      return { name: "Segment", description: "", startsAt: authored ? authored.getStartDateTime() : start ? new Date(start) : null, durationMillis: BigInt(authored ? authored.getDurationMillis() : duration), isAllDay: allDay, statusId,
+      return { publicId: generatePublicId(), name: "Segment", description: "", startsAt: authored ? authored.getStartDateTime() : start ? new Date(start) : null, durationMillis: BigInt(authored ? authored.getDurationMillis() : duration), isAllDay: allDay, statusId,
     } }
     const hour = 3_600_000
     const day = 86_400_000

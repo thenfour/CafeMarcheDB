@@ -1,3 +1,6 @@
+import { segmentPublicId } from "./support/eventResponseFixtures";
+import { MakeICalEventUid } from "src/core/db3/shared/apiTypes";
+import { GetEventCalendarInput } from "src/core/db3/server/icalUtils";
 import { attendancePublicId } from "./support/eventAttendanceFixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -22,7 +25,7 @@ const attendanceRows = [0, 33, 50, 51, 66, 100].map(strength => ({
     id: strength + 1, publicId: attendancePublicId(strength + 1), strength, isDeleted: true, isActive: false,
 }));
 const segment = (id: number, strength?: number | null, statusId: EventStatusPublicId | null = null) => ({
-    id, name: `Segment ${id}`, uid: `segment-${id}`, description: "", statusId,
+    publicId: segmentPublicId(id), name: `Segment ${id}`, uid: `segment-${id}`, description: "", statusId,
     startsAt: new Date("2026-10-01T10:00:00Z") as Date | null, isAllDay: false, durationMillis: BigInt(3_600_000),
     responses: strength === undefined ? [] : [{ userId: owner.id, attendanceId: strength === null ? null : attendancePublicId(strength + 1) }],
 });
@@ -195,4 +198,25 @@ describe("calendar export integration", () => {
         expect((await exportFeed()).events().map(event => event.uid()))
             .toEqual(original.events().map(event => event.uid()));
     });
+
+    it("keeps calendar UIDs, sequences, and stored hashes independent of new public identities", async () => {
+        const event = { ...makeEvent([segment(1, 100)]), revision: 7,
+            responses: [{ userId: owner.id, isInvited: true, revision: 3 }] };
+        // The feed consumes an authorized Event projection; unrelated fields are omitted in this fixture.
+        vi.mocked(queryTable).mockResolvedValue({ items: [event] } as never);
+        const original = await exportFeed();
+        expect(original.events()[0]!.uid()).toBe(MakeICalEventUid("segment-1", owner.uid));
+        expect(original.events()[0]!.sequence()).toBe(10);
+        const { publicId, ...naturalSegment } = event.segments[0]!;
+        const naturalEvent = { ...event, segments: [{ ...naturalSegment, id: 1 }] };
+        const before = GetEventCalendarInput(naturalEvent, [], "Europe/Brussels")!.inputHash;
+        const after = GetEventCalendarInput({ ...naturalEvent,
+            segments: [{ ...naturalSegment, id: 1, publicId }] }, [], "Europe/Brussels")!.inputHash;
+        expect(after).toBe(before);
+        event.segments[0]!.publicId = segmentPublicId(999);
+        const updated = await exportFeed();
+        expect(updated.events()[0]!.uid()).toBe(original.events()[0]!.uid());
+        expect(updated.events()[0]!.sequence()).toBe(10);
+    });
+
 });

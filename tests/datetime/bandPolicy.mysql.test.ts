@@ -1,3 +1,4 @@
+import { generatePublicId } from "src/server/publicId";
 import { Prisma, PrismaClient } from "@prisma/client"
 import { readFileSync } from "node:fs"
 import type { Ctx } from "@blitzjs/next"
@@ -28,7 +29,7 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     await db.setting.deleteMany()
     await db.change.deleteMany()
     await db.setting.create({ data: { name: Setting.BandTimeZone, value: "Europe/Brussels" } })
-    const segment = (allDay: boolean) => ({ name: "Segment", description: "", isAllDay: allDay,
+    const segment = (allDay: boolean) => ({ publicId: generatePublicId(), name: "Segment", description: "", isAllDay: allDay,
       startsAt: new Date(allDay ? "2026-07-09T22:00:00Z" : "2026-07-10T22:30:12.345Z"),
       durationMillis: BigInt(allDay ? day : 1_200_789) })
     for (const [id, segments] of [[5001, [segment(true)]], [5002, [segment(false)]], [5003, [segment(true), segment(false)]]] as const) {

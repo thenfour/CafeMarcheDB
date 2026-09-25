@@ -27,7 +27,6 @@ const MainContent = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.eventSegmentEditorView,
         columns: DB3Client.makeClientColumnSelection(
-            EventSegmentClientColumns.id,
             EventSegmentClientColumns.name,
             EventTableClientColumns.status, // ya
             EventSegmentClientColumns.startsAt,

@@ -2,7 +2,7 @@ import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 
 import { Prisma } from "db";
 import { z } from "zod";
-import { isPublicId, type EventAttendancePublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type InstrumentPublicId, type PermissionPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId } from "shared/publicId";
+import { isPublicId, type EventSegmentPublicId, type EventAttendancePublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type InstrumentPublicId, type PermissionPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId } from "shared/publicId";
 
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 import { ColorPaletteEntry } from "../../components/color/palette";
@@ -43,10 +43,10 @@ export interface TupdateUserEventAttendanceMutationArgs {
 
     // if undefined, attendance is not set.
     // any segment responses listed here are updated. if not listed, its existing record will be ignored.
-    // key is segment ID.
-    segmentResponses?: Record<number, {
+    // Each key is a segment public ID.
+    segmentResponses?: Partial<Record<EventSegmentPublicId, {
         attendanceId: EventAttendancePublicId | null; // for segments
-    }>;
+    }>>;
 
 };
 
@@ -58,7 +58,7 @@ export const ZupdateUserEventAttendanceMutationArgs = z.object({
     comment: z.string().nullable().optional(),
     instrumentId: z.custom<InstrumentPublicId>(isPublicId).nullable().optional(),
     isInvited: z.boolean().nullable().optional(),
-    segmentResponses: z.record(z.object({
+    segmentResponses: z.record(z.custom<EventSegmentPublicId>(isPublicId), z.object({
         attendanceId: z.custom<EventAttendancePublicId>(isPublicId).nullable(),
     }).strict()).superRefine((responses, ctx) => {
         const segmentIds = Object.keys(responses);
@@ -68,15 +68,6 @@ export const ZupdateUserEventAttendanceMutationArgs = z.object({
                 message: "At most 1000 segment responses may be updated at once",
             });
         }
-        segmentIds.forEach(segmentId => {
-            const parsed = Number(segmentId);
-            if (!/^\d+$/.test(segmentId) || !Number.isSafeInteger(parsed) || parsed <= 0) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message: `Invalid event segment ID '${segmentId}'`,
-                });
-            }
-        });
     }).optional(),
 }).strict().superRefine((args, ctx) => {
     const hasSegmentResponse = Object.keys(args.segmentResponses || {}).length > 0;
@@ -89,7 +80,7 @@ export const ZupdateUserEventAttendanceMutationArgs = z.object({
             message: "At least one attendance or invitation field is required",
         });
     }
-}) as z.ZodType<TupdateUserEventAttendanceMutationArgs>;
+});
 
 // export interface TupdateUserEventInvitationMutationArgs {
 //     userId: number;
@@ -800,7 +791,7 @@ export type GetUserAttendanceRet = {
     comment: string | null;
     instrumentId: InstrumentPublicId | null;
     segmentResponses: {
-        segmentId: number,
+        segmentId: EventSegmentPublicId,
         name: string,
         attendanceId: EventAttendancePublicId | null,
         statusId: EventStatusPublicId | null,

@@ -3,7 +3,7 @@ import { Timing } from "shared/time";
 import {
     applyAttendanceScenarioChange,
     scenarioAttendances, attendanceScenarioSchema, buildAttendanceScenario, createAttendanceScenario,
-    scenarioInstruments,
+    scenarioInstruments, scenarioSegmentPublicId,
 } from "src/core/components/event/attendanceScenario";
 import { getInstrumentIdentity } from "src/core/db3/db3";
 
@@ -44,7 +44,7 @@ describe("attendance scenario adapter", () => {
         scenario.segments[1]!.cancelled = true;
         const { attendance } = buildAttendanceScenario(scenario, 0);
         expect(attendance.eventTiming).toBe(Timing.Past);
-        expect(attendance.uncancelledSegmentUserResponses.map(r => r.segment.id)).toEqual([1]);
+        expect(attendance.uncancelledSegmentUserResponses.map(r => r.segment.publicId)).toEqual([scenarioSegmentPublicId(0)]);
     });
 
     it("handles zero and all-cancelled segments without inventing controls", () => {
@@ -58,7 +58,7 @@ describe("attendance scenario adapter", () => {
 
     it("updates only the chosen field and segment, preserving the fixture being reset to", () => {
         const person = createAttendanceScenario().users[1]!;
-        const answered = applyAttendanceScenarioChange(person, { type: "segment", segmentId: 2, attendanceId: scenarioAttendances[0]!.publicId });
+        const answered = applyAttendanceScenarioChange(person, { type: "segment", segmentId: scenarioSegmentPublicId(1), attendanceId: scenarioAttendances[0]!.publicId });
         const commented = applyAttendanceScenarioChange(answered, { type: "comment", comment: "Local comment" });
         const instrument = applyAttendanceScenarioChange(commented, { type: "instrument", instrumentId: 2 });
         expect(person.responses).toEqual([3, "missing", "missing"]);

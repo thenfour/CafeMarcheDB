@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 import type { AttendanceControlViewProps } from "src/core/components/event/AttendanceControlView";
 import { DateTimeRange } from "shared/time";
+import { segmentPublicId } from "./support/eventResponseFixtures";
 import { parsePublicId } from "shared/publicId";
 
 vi.mock("src/core/db3/clientAPI", () => ({ API: { events: { updateUserEventAttendance: { useToken: () => ({ invoke }) } } } }));
@@ -42,11 +43,11 @@ describe("production attendance adapter", () => {
                 } as EventAttendanceControlProps["eventData"],
                 userMap: [], onRefetch: refetch, minimalWhenNotAlert: true,
             }))));
-            await view!.environment.onSave({ type: "segment", segmentId: 7, attendanceId: null });
+            await view!.environment.onSave({ type: "segment", segmentId: segmentPublicId(7), attendanceId: null });
             await view!.environment.onSave({ type: "instrument", instrumentId });
             await view!.environment.onSave({ type: "comment", comment: "Need a lift" });
             expect(invoke.mock.calls).toEqual([
-                [{ eventId: 42, userId: 12, segmentResponses: { 7: { attendanceId: null } } }],
+                [{ eventId: 42, userId: 12, segmentResponses: { [segmentPublicId(7)]: { attendanceId: null } } }],
                 [{ eventId: 42, userId: 12, instrumentId }],
                 [{ eventId: 42, userId: 12, comment: "Need a lift" }],
             ]);

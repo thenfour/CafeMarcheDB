@@ -13,6 +13,8 @@ import {
     xEventAttendance,
     xEvent,
     xEventSegment,
+    xEventSegmentUserResponse,
+    xEventUserResponse,
     xEventStatus,
     xEventTag,
     xEventType,
@@ -150,35 +152,79 @@ export const eventAttendanceEditorView = defineCrudView({
 
 // event editor ------------------------------------------
 
-// over model EventSegment
-const EventSegmentEditorDtoSchema = z.object({
-    id: z.number().int(),
-    name: z.string().optional(),
-    description: z.string().optional(),
+export const eventSegmentEditorSelection = Prisma.validator<Prisma.EventSegmentDefaultArgs>()({
+    select: {
+        publicId: true, name: true, description: true,
+        startsAt: true, durationMillis: true, isAllDay: true,
+        statusId: true,
+        status: {
+            select: {
+                publicId: true,
+                label: true,
+                description: true,
+                color: true,
+                iconName: true,
+                sortOrder: true,
+                significance: true,
+                isDeleted: true
 
-    ...db3s.dateRange(),
+            }
+        },
+        eventId: true,
+        event: {
+            select: {
+                id: true,
+                name: true,
+                startsAt: true,
+                createdByUserId: true,
+                type: {
+                    select: {
+                        publicId: true,
+                        text: true,
+                        color: true,
+                        iconName: true
 
-    statusId: z.custom<EventStatusPublicId>(isPublicId).nullable().optional(),
-    status: EventStatusDtoSchema.nullable().optional(),
-
-    eventId: z.number().int().optional(),
-    event: z.object({
-        id: z.number().int(),
-        name: z.string().optional(),
-        startsAt: z.date().nullable().optional(),
-        createdByUserId: z.number().int().nullable().optional(),
-        type: EventTypeDtoSchema.nullable().optional(),
-    }).optional(),
+                    }
+                }
+            }
+        },
+    },
 });
-
+const eventSegmentEditorContract = deriveViewContract(xEventSegment, eventSegmentEditorSelection);
 export const eventSegmentEditorView = defineCrudView({
-    viewID: "EventSegment_Editor",
-    entity: xEventSegment,
+    viewID: "EventSegment_Editor", entity: xEventSegment,
     operations: { create: true, update: true, delete: true },
-    dtoSchema: EventSegmentEditorDtoSchema,
-    hydrate: dto => xEventSegment.getClientModel(dto, "view"),
+    selection: eventSegmentEditorContract.prismaSelection,
+    dtoSchema: eventSegmentEditorContract.dtoSchema,
+    hydrate: eventSegmentEditorContract.hydrate,
 });
 
+const eventSegmentUserResponseContract = deriveViewContract(xEventSegmentUserResponse,
+    Prisma.validator<Prisma.EventSegmentUserResponseDefaultArgs>()({
+        select: {
+            publicId: true, eventSegmentId: true, userId: true, attendanceId: true,
+            createdAt: true, updatedAt: true, createdByUserId: true, updatedByUserId: true,
+        }
+    }));
+export const eventSegmentUserResponseView = defineView({
+    viewID: "EventSegmentUserResponse_Detail", entity: xEventSegmentUserResponse,
+    selection: eventSegmentUserResponseContract.prismaSelection,
+    dtoSchema: eventSegmentUserResponseContract.dtoSchema,
+    hydrate: eventSegmentUserResponseContract.hydrate,
+});
+const eventUserResponseContract = deriveViewContract(xEventUserResponse,
+    Prisma.validator<Prisma.EventUserResponseDefaultArgs>()({
+        select: {
+            publicId: true, eventId: true, userId: true, instrumentId: true,
+            userComment: true, isInvited: true, revision: true,
+        }
+    }));
+export const eventUserResponseView = defineView({
+    viewID: "EventUserResponse_Detail", entity: xEventUserResponse,
+    selection: eventUserResponseContract.prismaSelection,
+    dtoSchema: eventUserResponseContract.dtoSchema,
+    hydrate: eventUserResponseContract.hydrate,
+});
 
 const EventEditorTagDtoSchema = z.object({
     publicId: z.custom<EventTagPublicId>(isPublicId),
@@ -290,7 +336,7 @@ const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
         expectedAttendanceUserTagId: true,
         responses: {
             select: {
-                id: true,
+                publicId: true,
                 userId: true,
                 instrumentId: true,
                 isInvited: true,
@@ -300,7 +346,7 @@ const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
         segments: {
             orderBy: { startsAt: "desc" },
             select: {
-                id: true,
+                publicId: true,
                 name: true,
                 startsAt: true,
                 durationMillis: true,
@@ -308,7 +354,7 @@ const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
                 statusId: true,
                 responses: {
                     select: {
-                        id: true,
+                        publicId: true,
                         userId: true,
                         attendanceId: true,
                     },
@@ -537,7 +583,7 @@ const eventWikiPageContextTransportSelection = Prisma.validator<Prisma.EventDefa
         segmentBehavior: true,
         segments: {
             select: {
-                id: true,
+                publicId: true,
                 name: true,
                 statusId: true,
                 uid: true,

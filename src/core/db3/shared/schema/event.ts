@@ -11,6 +11,9 @@ import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
 import { CoalesceBool, gIconOptions, smartTruncate } from "shared/utils";
 import type {
+    EventSegmentPublicId,
+    EventUserResponsePublicId,
+    EventSegmentUserResponsePublicId,
     EventAttendancePublicId,
     EventSongListPublicId,
     EventSongListSongPublicId,
@@ -688,7 +691,7 @@ export const xEventVerbose = db3.defineTable(xEventArgs_Verbose);
 
 export const xEventSegment = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventSegmentDelegate>(),
-    getIdentity: (segment: { id: number }) => segment.id,
+    getIdentity: (row: { publicId: EventSegmentPublicId }) => row.publicId,
     tableName: "EventSegment",
     deletePolicy: "hard",
     queryParameters: {
@@ -700,7 +703,7 @@ export const xEventSegment = db3.defineTable({
     naturalOrderBy: EventSegmentNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSegmentPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.name,
         description: row.description,
         ownerUserId: null,
@@ -714,7 +717,8 @@ export const xEventSegment = db3.defineTable({
         return false;
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<EventSegmentPublicId>(),
         description: () => MakeDescriptionField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
 
         name: columnName => new GenericStringField({ // allow 0-length names in segments. sometimes it's not easy to know what to name them and it's not that important
@@ -749,6 +753,7 @@ export const xEventSegment = db3.defineTable({
 
         event: foreignRef(() => xEvent, {
             fkidMember: "eventId",
+            requireVisibleTarget: true,
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
 
@@ -832,15 +837,16 @@ export const xEventSegmentUserResponse = db3.defineTable({
     getSelectionArgs: (): Prisma.EventSegmentUserResponseDefaultArgs => {
         return EventSegmentUserResponseArgs;
     },
+    getIdentity: (row: { publicId: EventSegmentUserResponsePublicId }) => row.publicId,
     tableName: "EventSegmentUserResponse",
     deletePolicy: "hard",
     queryParameters: {
-        eventSegmentId: { kind: "integer", authorizeAs: "eventSegmentId" },
+        eventSegmentId: { kind: "entityIdentity", targetTableID: "EventSegment", authorizeAs: "eventSegmentId" },
     },
     tableAuthMap: xEventTableAuthMap_UserResponse,
     naturalOrderBy: EventSegmentUserResponseNaturalOrderBy,
     getRowInfo: (row: EventSegmentUserResponsePayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.user?.name || "",
         ownerUserId: row.userId,
     }),
@@ -854,13 +860,15 @@ export const xEventSegmentUserResponse = db3.defineTable({
         return ret;
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<EventSegmentUserResponsePublicId>(),
         createdAt: () => MakeCreatedAtField(),
         createdByUser: () => MakeCreatedByField(),
         updatedAt: () => MakeUpdatedAtField(),
         updatedByUser: () => MakeUpdatedByField(),
         eventSegment: foreignRef(() => xEventSegment, {
             fkidMember: "eventSegmentId",
+            requireVisibleTarget: true,
             authMap: xEventAuthMap_UserResponseRelation,
         }),
         user: foreignRef(() => xUser, {
@@ -883,6 +891,7 @@ export const xEventUserResponse = db3.defineTable({
     getSelectionArgs: (): Prisma.EventUserResponseDefaultArgs => {
         return EventUserResponseArgs;
     },
+    getIdentity: (row: { publicId: EventUserResponsePublicId }) => row.publicId,
     tableName: "EventUserResponse",
     deletePolicy: "hard",
     queryParameters: {
@@ -891,7 +900,7 @@ export const xEventUserResponse = db3.defineTable({
     naturalOrderBy: EventUserResponseNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_UserResponse,
     getRowInfo: (row: EventUserResponsePayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.user?.name || "",
         ownerUserId: row.userId || row.user?.id,
     }),
@@ -905,7 +914,8 @@ export const xEventUserResponse = db3.defineTable({
         return ret;
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<EventUserResponsePublicId>(),
         userComment: columnName => new GenericStringField({
             columnName,
             allowNull: true,
@@ -914,7 +924,10 @@ export const xEventUserResponse = db3.defineTable({
             authMap: xEventAuthMap_UserResponse,
         }),
         isInvited: columnName => new BoolField({ columnName, defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: true }),
-        eventId: columnName => MakeIntegerField(columnName, { authMap: xEventAuthMap_UserResponseRelation, }),
+        event: foreignRef(() => xEvent, {
+            fkidMember: "eventId", requireVisibleTarget: true,
+            authMap: xEventAuthMap_UserResponseRelation,
+        }),
         user: foreignRef(() => xUser, {
             fkidMember: "userId",
             specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
@@ -1113,7 +1126,6 @@ declare module "../db3core" {
 
 export const EventResponses_MinimalEventUserResponseArgs = Prisma.validator<Prisma.EventUserResponseFindManyArgs>()({
     select: {
-        id: true,
         instrumentId: true,
         isInvited: true,
         userComment: true,
@@ -1134,7 +1146,6 @@ export type EventResponses_MinimalEventUserResponse = Omit<
 
 export const EventResponses_MinimalEventSegmentUserResponseArgs = Prisma.validator<Prisma.EventSegmentUserResponseFindManyArgs>()({
     select: {
-        id: true,
         attendanceId: true,
         userId: true,
     }
@@ -1147,7 +1158,7 @@ export type EventResponses_MinimalEventSegmentUserResponse = Omit<
 
 export const EventResponses_MinimalEventSegmentArgs = Prisma.validator<Prisma.EventSegmentFindManyArgs>()({
     select: {
-        id: true,
+        publicId: true,
         responses: EventResponses_MinimalEventSegmentUserResponseArgs,
         name: true, // for attendance control
         startsAt: true, // for attendance control
@@ -1157,7 +1168,8 @@ export const EventResponses_MinimalEventSegmentArgs = Prisma.validator<Prisma.Ev
     }
 });
 type EventResponses_MinimalEventSegmentDb = Prisma.EventSegmentGetPayload<typeof EventResponses_MinimalEventSegmentArgs>;
-export type EventResponses_MinimalEventSegment = Omit<EventResponses_MinimalEventSegmentDb, "statusId" | "responses"> & {
+export type EventResponses_MinimalEventSegment = Omit<EventResponses_MinimalEventSegmentDb, "publicId" | "statusId" | "responses"> & {
+    publicId: EventSegmentPublicId;
     responses: EventResponses_MinimalEventSegmentUserResponse[];
     // Shared attendance algorithms also run against trusted server/test rows.
     // Concrete client views narrow this union to EventStatusPublicId.
@@ -1178,7 +1190,7 @@ type EventResponses_MinimalEventDb = Prisma.EventGetPayload<{
     }
 }>;
 export type EventResponses_MinimalEvent = Omit<EventResponses_MinimalEventDb, "responses" | "segments"> & {
-    segments: { id: number; responses: EventResponses_MinimalEventSegmentUserResponse[] }[];
+    segments: { publicId: EventSegmentPublicId; responses: EventResponses_MinimalEventSegmentUserResponse[] }[];
     responses: EventResponses_MinimalEventUserResponse[];
 };
 

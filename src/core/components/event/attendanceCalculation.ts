@@ -7,7 +7,6 @@ import type { EventStatusPublicId } from "shared/publicId";
 
 type SegmentDb = Prisma.EventSegmentGetPayload<{
     select: {
-        id: true,
         name: true,
         statusId: true,
         startsAt: true,

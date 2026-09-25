@@ -1,3 +1,4 @@
+import { segmentPublicId } from "./support/eventResponseFixtures";
 import { attendancePublicId } from "./support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId } from "./support/eventSongListFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
@@ -380,14 +381,14 @@ describe("DB3 commands", () => {
             .toBe("softWhenPossible");
 
         expect(db3.eventSegmentEditorView.parseDto({
-            id: 2,
+            publicId: segmentPublicId(2),
             name: "First set",
             description: "",
             startsAt: new Date("2026-10-10T18:00:00.000Z"),
             durationMillis: BigInt(3_600_000),
             isAllDay: false,
             statusId: eventStatusPublicId,
-            status: { publicId: eventStatusPublicId, label: "Confirmed" },
+            status: { publicId: eventStatusPublicId, label: "Confirmed", description: "", color: null, iconName: null, sortOrder: 0, significance: null, isDeleted: false },
             eventId: 4,
             event: {
                 id: 4,
@@ -395,19 +396,19 @@ describe("DB3 commands", () => {
                 startsAt: new Date("2026-10-10T18:00:00.000Z"),
             },
         })).toMatchObject({
-            id: 2,
+            publicId: segmentPublicId(2),
             status: { label: "Confirmed" },
             event: { name: "Autumn concert" },
         });
         expect(db3.eventSegmentEditorView.crud.operations.update.command.parseDto({
-            identity: 2,
+            identity: segmentPublicId(2),
             patch: { name: "Opening set", eventId: 4, statusId: null },
         })).toEqual({
-            identity: 2,
+            identity: segmentPublicId(2),
             patch: { name: "Opening set", eventId: 4, statusId: null },
         });
         expect(() => db3.eventSegmentEditorView.crud.operations.update.command.parseDto({
-            identity: 2,
+            identity: segmentPublicId(2),
             patch: { responses: [] },
         })).toThrow();
         expect(db3.eventSegmentEditorView.crud.operations.delete.deleteType).toBe("hard");

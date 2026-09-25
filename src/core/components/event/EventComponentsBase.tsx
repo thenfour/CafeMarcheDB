@@ -136,8 +136,8 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
             return {
                 attendanceId: null,
                 attendance: null,
-                eventSegmentId: segment.id,
-                id: -1,
+                eventSegmentId: segment.publicId,
+                publicId: null,
                 userId: user.id,
                 user: user,
                 eventSegment: null as any,
@@ -155,7 +155,7 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
                 revision: 0,
                 uid: getUniqueNegativeID().toString(),
                 eventId: event.id,
-                id: -1,
+                publicId: null,
                 userId: user.id,
                 instrumentId: null,
                 isInvited,
@@ -312,7 +312,7 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
         const dateRangeSpec = segment.dateRange.getSpec();
         return {
             ...segment,
-            responses: segment.responses as db3.EventResponses_MinimalEventSegmentUserResponse[],
+            responses: segment.responses,
             startsAt: dateRangeSpec.startsAtDateTime,
             durationMillis: BigInt(dateRangeSpec.durationMillis),
             isAllDay: dateRangeSpec.isAllDay,
@@ -339,8 +339,8 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
             if (!user?.id) return null;
             return {
                 attendanceId: null,
-                eventSegmentId: segment.id,
-                id: -1,
+                eventSegmentId: segment.publicId,
+                publicId: null,
                 userId: user.id,
                 createdAt: new Date(),
                 updatedAt: new Date(),
@@ -355,7 +355,7 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
                 revision: 0,
                 uid: getUniqueNegativeID().toString(),
                 eventId: event.id,
-                id: -1,
+                publicId: null,
                 userId: user.id,
                 instrumentId: null,
                 isInvited,

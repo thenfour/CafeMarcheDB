@@ -1,3 +1,4 @@
+import { segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => ({
@@ -43,11 +44,11 @@ const event = {
     responses: [], tags: [], songLists: [],
 };
 const segment = {
-    id: 101, eventId: event.id, name: "First set", startsAt: event.startsAt,
+    id: 101, publicId: segmentPublicId(101), eventId: event.id, name: "First set", startsAt: event.startsAt,
     durationMillis: event.durationMillis, isAllDay: false, dateTimeVersion: 1, statusId: 8,
 };
 const response = {
-    id: 201, eventSegmentId: segment.id, userId: actor.id, attendanceId: attendance.id,
+    id: 201, publicId: segmentResponsePublicId(201), eventSegmentId: segment.id, userId: actor.id, attendanceId: attendance.id,
     createdByUserId: actor.id, updatedByUserId: actor.id, createdAt: new Date(), updatedAt: new Date(),
 };
 function reset(overrides: Parameters<typeof authorizationTestDb.reset>[0] = {}) {
@@ -62,7 +63,7 @@ function reset(overrides: Parameters<typeof authorizationTestDb.reset>[0] = {}) 
 const operations = db3.eventAttendanceEditorView.crud.operations;
 const command = (commandID: string, payload: unknown) => invokeResolver(executeCommand, { commandID, payload }, ctx);
 const changeResponse = (attendanceId: EventAttendancePublicId | null) =>
-    invokeResolver(updateAttendance, { eventId: event.id, userId: actor.id, segmentResponses: { 101: { attendanceId } } }, ctx);
+    invokeResolver(updateAttendance, { eventId: event.id, userId: actor.id, segmentResponses: { [segment.publicId]: { attendanceId } } }, ctx);
 
 describe("EventAttendance public identities", () => {
     beforeEach(() => { vi.restoreAllMocks(); vi.stubEnv("CMDB_BASE_URL", "https://band.test"); reset(); });
@@ -107,15 +108,18 @@ describe("EventAttendance public identities", () => {
         ]) {
             const result = await invokeResolver(query, forgeDb3Query(table.tableID, { table }), ctx);
             expect(result.items[0]!.segments[0].responses[0]).toMatchObject({
-                id: response.id, attendanceId: attendance.publicId,
+                publicId: response.publicId, attendanceId: attendance.publicId,
             });
+            expect(result.items[0]!.segments[0].responses[0]).not.toHaveProperty("id");
+            expect(result.items[0]!.segments[0]).toMatchObject({ publicId: segment.publicId });
+            expect(result.items[0]!.segments[0]).not.toHaveProperty("id");
             expect(result.items[0]!.segments[0].responses[0].attendance?.id).toBeUndefined();
         }
     });
 
     it("treats the current public choice idempotently and allows clearing it", async () => {
-        reset({ eventUserResponse: [{ id: 202, eventId: event.id, userId: actor.id, revision: 1, userComment: "" }] });
-        expect(await changeResponse(attendance.publicId)).toMatchObject({ segmentResponses: { 101: { attendanceId: attendance.publicId } } });
+        reset({ eventUserResponse: [{ id: 202, publicId: eventResponsePublicId(202), eventId: event.id, userId: actor.id, revision: 1, userComment: "" }] });
+        expect(await changeResponse(attendance.publicId)).toMatchObject({ segmentResponses: { [segment.publicId]: { attendanceId: attendance.publicId } } });
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
         await changeResponse(null);
         expect(authorizationTestDb.snapshot("eventSegmentUserResponse")[0]?.attendanceId).toBeNull();
@@ -124,10 +128,10 @@ describe("EventAttendance public identities", () => {
     });
 
     it("resolves a shared choice once for several segments", async () => {
-        reset({ eventSegment: [segment, { ...segment, id: 102 }], eventSegmentUserResponse: [] });
+        reset({ eventSegment: [segment, { ...segment, id: 102, publicId: segmentPublicId(102) }], eventSegmentUserResponse: [] });
         const lookup = vi.spyOn(authorizationTestDb.getDelegate("eventAttendance"), "findMany");
         await invokeResolver(updateAttendance, { eventId: event.id, userId: actor.id,
-            segmentResponses: { 101: { attendanceId: attendance.publicId }, 102: { attendanceId: attendance.publicId } },
+            segmentResponses: { [segment.publicId]: { attendanceId: attendance.publicId }, [segmentPublicId(102)]: { attendanceId: attendance.publicId } },
         }, ctx);
         expect(lookup).toHaveBeenCalledTimes(1);
         expect(authorizationTestDb.snapshot("eventSegmentUserResponse").map(row => row.attendanceId)).toEqual([2, 2]);
@@ -135,7 +139,7 @@ describe("EventAttendance public identities", () => {
 
     it.each(["numeric", "unknown", "deleted"])("rejects a %s choice before any response write", async kind => {
         reset({
-            eventSegment: [segment, { ...segment, id: 102 }],
+            eventSegment: [segment, { ...segment, id: 102, publicId: segmentPublicId(102) }],
             eventAttendance: [attendance, { ...attendance, id: 3, publicId: attendancePublicId(3), isDeleted: true }],
             eventSegmentUserResponse: [],
         });
@@ -144,7 +148,7 @@ describe("EventAttendance public identities", () => {
         // Forged transport data deliberately bypasses the branded client type.
         await expect(invokeResolver(updateAttendance, {
             eventId: event.id, userId: actor.id, comment: "Must not be saved",
-            segmentResponses: { 101: { attendanceId: attendance.publicId }, 102: { attendanceId: badChoice } },
+            segmentResponses: { [segment.publicId]: { attendanceId: attendance.publicId }, [segmentPublicId(102)]: { attendanceId: badChoice } },
         } as unknown as TupdateUserEventAttendanceMutationArgs, ctx)).rejects.toThrow();
         expect(create).not.toHaveBeenCalled();
         expect(authorizationTestDb.snapshot("eventUserResponse")).toEqual([]);
@@ -176,7 +180,10 @@ describe("EventAttendance public identities", () => {
             segment: { name: "First set", description: "", startsAt: null, durationMillis: 0, isAllDay: true },
             responses: [{ userId: actor.id, attendanceId: attendance.publicId }],
         };
-        await invokeResolver(insertEvent, input, ctx);
+        const created = await invokeResolver(insertEvent, input, ctx);
+        expect(isPublicId(created.segment.publicId)).toBe(true);
+        expect(created.segment).not.toHaveProperty("id");
+        expect(authorizationTestDb.snapshot("eventSegmentUserResponse").every(row => isPublicId(row.publicId))).toBe(true);
         expect(authorizationTestDb.snapshot("eventSegmentUserResponse")[1]?.attendanceId).toBe(2);
         const before = ["event", "eventSegment", "eventSegmentUserResponse", "change"].map(table => ({ table, rows: authorizationTestDb.snapshot(table) }));
         for (const invalid of [2, attendancePublicId(999)]) {

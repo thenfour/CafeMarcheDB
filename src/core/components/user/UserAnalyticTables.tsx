@@ -146,7 +146,7 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                             {segs.map(seg => {
                                 const att = dashboardContext.eventAttendance.getById(seg.attendanceId);
                                 return <AttendanceChip
-                                    key={seg.id}
+                                    key={seg.publicId}
                                     size={"small"}
                                     fadeNoResponse={true}
                                     showLabel={false}

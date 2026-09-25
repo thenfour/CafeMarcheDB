@@ -304,6 +304,27 @@ export async function CorrectRolePermissionPublicIds() {
     console.log(`Replaced ${replacementCount} RolePermission public-ID placeholders.`);
 }
 
+export async function CorrectEventSegmentPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.eventSegment, modelName: "EventSegment",
+    });
+    console.log(`Replaced ${replacementCount} EventSegment public-ID placeholders.`);
+}
+
+export async function CorrectEventUserResponsePublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.eventUserResponse, modelName: "EventUserResponse",
+    });
+    console.log(`Replaced ${replacementCount} EventUserResponse public-ID placeholders.`);
+}
+
+export async function CorrectEventSegmentUserResponsePublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.eventSegmentUserResponse, modelName: "EventSegmentUserResponse",
+    });
+    console.log(`Replaced ${replacementCount} EventSegmentUserResponse public-ID placeholders.`);
+}
+
 export async function CorrectEventAttendancePublicIds() {
     const replacementCount = await repairPublicIdPlaceholders({ delegate: db.eventAttendance, modelName: "EventAttendance" });
     console.log(`Replaced ${replacementCount} EventAttendance public-ID placeholders.`);
@@ -377,6 +398,9 @@ export async function registerNodeInstrumentation() {
     await CorrectRolePublicIds();
     await CorrectRolePermissionPublicIds();
     await CorrectUserSignInMethodPublicIds();
+    await CorrectEventSegmentPublicIds();
+    await CorrectEventUserResponsePublicIds();
+    await CorrectEventSegmentUserResponsePublicIds();
     await CorrectEventAttendancePublicIds();
     await CorrectEventSongListPublicIds();
     await CorrectEventSongListSongPublicIds();

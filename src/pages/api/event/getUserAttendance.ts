@@ -8,7 +8,7 @@ import { BigintToNumber } from "shared/utils";
 import { api } from "src/blitz-server";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { GetUserAttendanceArgs, GetUserAttendanceRet } from "src/core/db3/shared/apiTypes";
-import { xEvent, xEventAttendance, xEventStatus } from "src/core/db3/shared/schema/event";
+import { xEvent, xEventSegment, xEventAttendance, xEventStatus } from "src/core/db3/shared/schema/event";
 import { xInstrument } from "src/core/db3/shared/schema/instrument";
 import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
 
@@ -85,13 +85,12 @@ async function getUserAttendanceCore(
             ? xInstrument.parseIdentity(eventResponse.instrument.publicId)
             : null,
         segmentResponses: segmentResponses.map(sr => ({
-            segmentId: sr.eventSegmentId,
+            segmentId: xEventSegment.parseIdentity(sr.eventSegment.publicId),
             name: sr.eventSegment.name,
             statusId: sr.eventSegment.status ? xEventStatus.parseIdentity(sr.eventSegment.status.publicId) : null,
             startsAt: sr.eventSegment.startsAt,
             durationMillis: BigintToNumber(sr.eventSegment.durationMillis),
             isAllDay: sr.eventSegment.isAllDay,
-            eventSegmentId: sr.eventSegmentId,
             attendanceId: sr.attendance ? xEventAttendance.parseIdentity(sr.attendance.publicId) : null,
         })),
     };

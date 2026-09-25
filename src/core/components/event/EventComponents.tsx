@@ -1,3 +1,4 @@
+import type { EventSegmentPublicId } from "shared/publicId";
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
@@ -158,7 +159,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     const [eventResponseValue, setEventResponseValue] = React.useState<db3.EventVerbose_EventUserResponse | null>(() => {
         return (props.responseInfo.getEventResponseForUser(props.user, dashboardContext, props.userMap)?.response) || null;
     });
-    const [eventSegmentResponseValues, setEventSegmentResponseValues] = React.useState<Record<number, db3.EventVerbose_EventSegmentUserResponse>>(() => {
+    const [eventSegmentResponseValues, setEventSegmentResponseValues] = React.useState<Record<EventSegmentPublicId, db3.EventVerbose_EventSegmentUserResponse>>(() => {
         return Object.fromEntries(Object.entries(props.responseInfo.getResponsesBySegmentForUser(props.user)).map(x => [x[0], x[1].response]));
     });
 
@@ -166,7 +167,6 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     const eventResponseTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEventUserResponse,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
             userComment: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
             isInvited: columnName => new DB3Client.BoolColumnClient({ columnName, fieldCaption: "Is invited?" }),
             instrument: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
@@ -176,7 +176,6 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     const eventSegmentResponseTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEventSegmentUserResponse,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
             attendance: columnName => new DB3Client.ForeignSingleFieldClient({
                 columnName,
                 cellWidth: 120,
@@ -201,13 +200,18 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     // if this is null it 
     if (!eventResponseValue) throw new Error("eventResponseValue is null; i'm guessing usermap did not include a relevant user.");
 
-    const eventValidationResult = eventResponseTableSpec.args.table.ValidateAndComputeDiff(eventResponseValue, eventResponseValue, "update");
-    const eventSegmentValidationResults: Record<number, db3.ValidateAndComputeDiffResult> = Object.fromEntries(
+    // Unanswered display rows have no persisted identity to validate.
+    const eventValidationValue = {
+        ...eventResponseValue,
+        publicId: eventResponseValue.publicId ?? undefined
+    };
+    const eventValidationResult = eventResponseTableSpec.args.table.ValidateAndComputeDiff(eventValidationValue, eventValidationValue, "update");
+    const eventSegmentValidationResults: Record<EventSegmentPublicId, db3.ValidateAndComputeDiffResult> = Object.fromEntries(
         props.event.segments.map(segment => [
-            segment.id,
+            segment.publicId,
             eventSegmentResponseTableSpec.args.table.ValidateAndComputeDiff(
-                eventSegmentResponseValues[segment.id]!,
-                eventSegmentResponseValues[segment.id]!,
+                { ...eventSegmentResponseValues[segment.publicId]!, publicId: eventSegmentResponseValues[segment.publicId]!.publicId ?? undefined },
+                { ...eventSegmentResponseValues[segment.publicId]!, publicId: eventSegmentResponseValues[segment.publicId]!.publicId ?? undefined },
                 "update"),
         ])
     );
@@ -242,14 +246,14 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         }).finally(props.refetch);
     };
 
-    const handleChangedEventResponse = (n: db3.EventUserResponsePayload) => {
+    const handleChangedEventResponse = (n: db3.EventVerbose_EventUserResponse) => {
         setEventResponseValue(n);
     };
 
-    const handleChangedEventSegmentResponse = (segment: { id: number }, n: db3.EventVerbose_EventSegmentUserResponse) => {
+    const handleChangedEventSegmentResponse = (segment: { publicId: EventSegmentPublicId }, n: db3.EventVerbose_EventSegmentUserResponse) => {
         const newval = {
             ...eventSegmentResponseValues,
-            [segment.id]: n
+            [segment.publicId]: n
         };
         setEventSegmentResponseValues(newval);
     };
@@ -291,10 +295,10 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
 
             {
                 segmentsToShow.map(segment => {
-                    const validationResult = eventSegmentValidationResults[segment.id]!;
-                    const response = eventSegmentResponseValues[segment.id]!;
+                    const validationResult = eventSegmentValidationResults[segment.publicId]!;
+                    const response = eventSegmentResponseValues[segment.publicId]!;
                     const augmentedResponse = { ...response, attendance: dashboardContext.eventAttendance.getById(response.attendanceId) };
-                    return <div key={segment.id} className='editSegmentResponse segment'>
+                    return <div key={segment.publicId} className='editSegmentResponse segment'>
                         <div>
                             <div className='segmentName'>{segment.name}</div>
                             {eventSegmentResponseTableSpec.renderEditor("attendance", augmentedResponse, validationResult, (n) => handleChangedEventSegmentResponse(segment, n), false)}
@@ -393,7 +397,7 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
             assert(!!segmentResponse, "segmentResponse shouldn't be null.");
             const attendance = dashboardContext.eventAttendance.getById(segmentResponse.response.attendanceId);
             const status = dashboardContext.eventStatus.getById(segment.statusId);
-            return <React.Fragment key={segment.id}>
+            return <React.Fragment key={segment.publicId}>
                 <td className={`responseCell segmentSignificance_${status?.significance || "none"}`}>
                     <div className='responseCellContents'>
                         {iseg === 0 && <div className='editButton'>{!readonly && authorizedForEdit && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch, userMap }} />}</div>}
@@ -438,7 +442,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
     const token = API.events.updateUserEventAttendance.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [sortField, setSortField] = React.useState<EventAttendanceDetailSortField>("instrument");
-    const [sortSegmentId, setSortSegmentId] = React.useState<number>(0); // support invalid IDs
+    const [sortSegmentId, setSortSegmentId] = React.useState<EventSegmentPublicId | null>(null);
     const [sortSegment, setSortSegment] = React.useState<db3.EventVerbose_EventSegmentClient | null>(null);
     const recordFeature = useFeatureRecorder();
 
@@ -451,7 +455,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
     const shownSegments: (typeof event.segments[0])[] = showCancelledSegments ? event.segments : uncancelledSegments;
 
     React.useEffect(() => {
-        setSortSegment(shownSegments.find(s => s.id === sortSegmentId) || null);
+        setSortSegment(shownSegments.find(s => s.publicId === sortSegmentId) || null);
     }, [sortSegmentId, event]);
 
     const onAddUser = (u: db3.UserPayload | null) => {
@@ -537,18 +541,18 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                     </th>
                     {shownSegments.map(seg => {
                         const status = dashboardContext.eventStatus.getById(seg.statusId);
-                        return <React.Fragment key={seg.id}>
+                        return <React.Fragment key={seg.publicId}>
                             <th className={`responseCell segmentSignificance_${status?.significance || "none"}`}>
                                 <div style={{ display: "flex", alignItems: "center" }}>
-                                    <div className='interactable' onClick={() => { setSortField('response'); setSortSegmentId(seg.id); }}>
-                                        {isSingleSegment ? "Response" : seg.name} {sortField === 'response' && seg.id === sortSegmentId && gCharMap.DownArrow()}
+                                    <div className='interactable' onClick={() => { setSortField('response'); setSortSegmentId(seg.publicId); }}>
+                                        {isSingleSegment ? "Response" : seg.name} {sortField === 'response' && seg.publicId === sortSegmentId && gCharMap.DownArrow()}
                                     </div>
                                     <EventSegmentDotMenu
                                         event={event}
                                         refetch={refetch}
                                         readonly={props.readonly}
                                         segment={seg}
-                                        getAttendeeNames={(copyInstrumentNames) => GetSegmentAttendeeNames(copyInstrumentNames, seg.id, eventData, props.userMap, dashboardContext)}
+                                        getAttendeeNames={(copyInstrumentNames) => GetSegmentAttendeeNames(copyInstrumentNames, seg.publicId, eventData, props.userMap, dashboardContext)}
                                     />
                                 </div>
                             </th>
@@ -591,7 +595,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                     </td>
                     {segStats.map(seg => {
                         const status = dashboardContext.eventStatus.getById(seg.segment.statusId);
-                        return <React.Fragment key={seg.segment.id}>
+                        return <React.Fragment key={seg.segment.publicId}>
                             <td className={`responseCell segmentSignificance_${status?.significance || "none"}`}>
                                 <EventSegmentAttendeeStat stat={seg} />
                             </td>
@@ -648,7 +652,7 @@ const EventSegmentAttendeeStat = (props: { stat: SegmentResponseStat }) => {
     </div>;
 };
 
-const GetSegmentAttendeeNames = (copyInstrumentNames: boolean, segmentId: number, eventData: VerboseEventWithMetadata, userMap: UserInstrumentList, dashboardContext: DashboardContextData): string[] => {
+const GetSegmentAttendeeNames = (copyInstrumentNames: boolean, segmentId: EventSegmentPublicId, eventData: VerboseEventWithMetadata, userMap: UserInstrumentList, dashboardContext: DashboardContextData): string[] => {
     const responseInfo = eventData.responseInfo!;
     const segmentResponses = responseInfo.getResponsesForSegment(segmentId)
         .filter(r => dashboardContext.isAttendanceIdGoing(r.response.attendanceId));
@@ -705,7 +709,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                     <th>Instrument group</th>
                     {isSingleSegment ? <th key="__">Response</th> : shownSegments.map((seg) => {
                         const status = dashboardContext.eventStatus.getById(seg.statusId);
-                        return <th className={`segmentStatusSignificance_${status?.significance || "none"}`} key={seg.id}>
+                        return <th className={`segmentStatusSignificance_${status?.significance || "none"}`} key={seg.publicId}>
                             <div style={{ display: "flex", justifyContent: "center" }}>
                                 <div>{seg.name}</div>
                                 <EventSegmentDotMenu
@@ -713,7 +717,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                                     readonly={props.readonly}
                                     refetch={props.refetch}
                                     segment={seg}
-                                    getAttendeeNames={(copyInstrumentNames) => GetSegmentAttendeeNames(copyInstrumentNames, seg.id, eventData, userMap, dashboardContext)}
+                                    getAttendeeNames={(copyInstrumentNames) => GetSegmentAttendeeNames(copyInstrumentNames, seg.publicId, eventData, userMap, dashboardContext)}
                                 />
                             </div>
                         </th>;
@@ -728,7 +732,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                             // come up with the icons per user responses
                             // either just sort segment responses by answer strength,
                             // or group by answer. not sure which is more useful probably the 1st.
-                            const sortedResponses = responseInfo.getResponsesForSegment(seg.id).filter(resp => {
+                            const sortedResponses = responseInfo.getResponsesForSegment(seg.publicId).filter(resp => {
                                 // only take responses where we 1. expect the user, OR they have responded.
                                 // AND it matches the current instrument function.
                                 if (!resp.response.attendanceId) return false; // no answer = don't show.
@@ -754,7 +758,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                                 return (aatt.strength < batt.strength) ? 1 : -1;
                             });
                             const status = dashboardContext.eventStatus.getById(seg.statusId);
-                            return <td key={seg.id} className={`segmentStatusSignificance_${status?.significance || "none"}`}>
+                            return <td key={seg.publicId} className={`segmentStatusSignificance_${status?.significance || "none"}`}>
                                 <div className='attendanceResponseColorBarCell'>
                                     <div className='attendanceResponseColorBarSegmentContainer'>
                                         {sortedResponses.map(resp => {
@@ -762,7 +766,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                                             const going = isAttendanceGoing(att);
                                             const color = going ? att?.color : null;
                                             const style = GetStyleVariablesForColor({ color, ...StandardVariationSpec.Strong });
-                                            return <Tooltip disableInteractive key={resp.response.id} title={`${resp.user.name}: ${att?.text || "no response"}`}>
+                                            return <Tooltip disableInteractive key={resp.user.id} title={`${resp.user.name}: ${att?.text || "no response"}`}>
                                                 <div className={`attendanceResponseColorBarSegment applyColor ${style.cssClass} ${going ? "going" : "notgoing"}`} style={style.style}>
                                                     {/* {resp.user.name.substring(0, 1).toLocaleUpperCase()} */}
                                                     {resp.user.name}
@@ -786,7 +790,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                     </td>
                     {segStats.map(seg => {
                         //const status = dashboardContext.eventStatus.getById(seg.segment.statusId);
-                        return <React.Fragment key={seg.segment.id}>
+                        return <React.Fragment key={seg.segment.publicId}>
                             <td className={`responseCell`}>
                                 <EventSegmentAttendeeStat stat={seg} />
                             </td>
@@ -1050,7 +1054,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
     const [_, uncancelledSegments] = dashboardContext.partitionEventSegmentsByCancellation(event.segments);
 
     const segmentResponseCounts = !eventData.responseInfo ? [] : uncancelledSegments.map(seg => {
-        return eventData.responseInfo!.getResponsesForSegment(seg.id).reduce((acc, resp) => {
+        return eventData.responseInfo!.getResponsesForSegment(seg.publicId).reduce((acc, resp) => {
             const att = dashboardContext.eventAttendance.getById(resp.response.attendanceId);
             return acc + (isAttendanceGoing(att) ? 1 : 0)
         }, 0);

@@ -1,3 +1,4 @@
+import type { EventSegmentPublicId } from "shared/publicId";
 import type { BasicLocalSongListPayload } from "../shared/setlistApi";
 import { getRangeCalendarDates } from "shared/dateTimePresentation";
 import { ServerApi } from "@/src/server/serverApi";
@@ -101,19 +102,20 @@ export type EventSongListForCal = Prisma.EventSongListGetPayload<typeof EventSon
 export type EventForCal = Prisma.EventGetPayload<typeof EventForCalArgs>;
 export type EventSegmentForCal = Prisma.EventSegmentGetPayload<typeof EventSegmentForCalArgs>;
 
-export type EventSegmentForCalInput<TStatusIdentity extends number | string> = Omit<
+export type EventSegmentForCalInput<TStatusIdentity extends number | string, TSegmentIdentity extends number | EventSegmentPublicId = number> = Omit<
     EventSegmentForCal,
-    "statusId"
+    "id" | "statusId"
 > & {
+    id: TSegmentIdentity;
     statusId: TStatusIdentity | null;
 };
 
-export type EventForCalInput<TStatusIdentity extends number | string> = Omit<
+export type EventForCalInput<TStatusIdentity extends number | string, TSegmentIdentity extends number | EventSegmentPublicId = number> = Omit<
     EventForCal,
     "segments" | "songLists"
 > & {
     songLists: BasicLocalSongListPayload[];
-    segments: EventSegmentForCalInput<TStatusIdentity>[];
+    segments: EventSegmentForCalInput<TStatusIdentity, TSegmentIdentity>[];
 };
 
 
@@ -145,7 +147,7 @@ set 1
 // };
 
 
-export type EventCalendarInput = Pick<EventForCal,
+export type EventCalendarInput<TSegmentIdentity extends number | EventSegmentPublicId = number> = Pick<EventForCal,
     "revision"
     | "locationDescription"
 > &
@@ -161,20 +163,20 @@ export type EventCalendarInput = Pick<EventForCal,
 
     calStatus: ICalEventStatus,
     eventId: number,
-    segmentId: number,
+    segmentId: TSegmentIdentity,
 };
 
 
 // does some processing on an Event db model in order to prepare it for calendar export. the idea is to
 // grab just the info needed to know if a revision # is necessary.
 // returns null if no event can be generated
-type GetEventSegmentCalendarInputArgs<TStatusIdentity extends number | string> = {
-    event: Partial<EventForCalInput<TStatusIdentity>>;
-    segment: EventSegmentForCalInput<TStatusIdentity>;
+type GetEventSegmentCalendarInputArgs<TStatusIdentity extends number | string, TSegmentIdentity extends number | EventSegmentPublicId> = {
+    event: Partial<EventForCalInput<TStatusIdentity, TSegmentIdentity>>;
+    segment: EventSegmentForCalInput<TStatusIdentity, TSegmentIdentity>;
     descriptionText: string;
     bandTimeZone: string;
 };
-export const GetEventSegmentCalendarInput = <TStatusIdentity extends number | string>({ segment, event, descriptionText, bandTimeZone, ...args }: GetEventSegmentCalendarInputArgs<TStatusIdentity>): EventCalendarInput | null => {
+export const GetEventSegmentCalendarInput = <TStatusIdentity extends number | string, TSegmentIdentity extends number | EventSegmentPublicId>({ segment, event, descriptionText, bandTimeZone, ...args }: GetEventSegmentCalendarInputArgs<TStatusIdentity, TSegmentIdentity>): EventCalendarInput<TSegmentIdentity> | null => {
     if (!segment.startsAt) return null;
     const isAllDay = CoalesceBool(segment.isAllDay, true);
 
@@ -217,7 +219,7 @@ export const GetEventSegmentCalendarInput = <TStatusIdentity extends number | st
         name = `${event.name || ""} ${segment.name || ""}`;
     }
 
-    const ret: EventCalendarInput = {
+    const ret: EventCalendarInput<TSegmentIdentity> = {
         // note: when calculating changes, we must ignore revision
         revision: 0,
         eventUri,
@@ -248,15 +250,18 @@ export const GetEventSegmentCalendarInput = <TStatusIdentity extends number | st
 // does some processing on an Event db model in order to prepare it for calendar export. the idea is to
 // grab just the info needed to know if a revision # is necessary.
 // returns null if no event can be generated
-type GetEventCalendarInputResult = {
+type GetEventCalendarInputResult<TSegmentIdentity extends number | EventSegmentPublicId> = {
     inputHash: string;
-    segments: EventCalendarInput[];
+    segments: EventCalendarInput<TSegmentIdentity>[];
 };
-export const GetEventCalendarInput = <TStatusIdentity extends number | string>(
-    event: Partial<EventForCalInput<TStatusIdentity>>,
-    cancelledStatusIds: TStatusIdentity[],
-    bandTimeZone: string,
-): GetEventCalendarInputResult | null => {
+export const GetEventCalendarInput = <
+    TStatusIdentity extends number | string,
+    TSegmentIdentity extends number | EventSegmentPublicId> //
+    (
+        event: Partial<EventForCalInput<TStatusIdentity, TSegmentIdentity>>,
+        cancelledStatusIds: TStatusIdentity[],
+        bandTimeZone: string,
+    ): GetEventCalendarInputResult<TSegmentIdentity> | null => {
     // if you pass in something that is insufficient for using as an event.
     // it's theoretical because it's always going to be an event object.
     if (event.revision === undefined) return null;

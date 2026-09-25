@@ -1,7 +1,7 @@
 import type { Nullish } from "@/shared/rootroot";
 import { Prisma } from "db";
 import { QuickSearchItemType } from "shared/quickFilter";
-import { isPublicId, parsePublicId, type PermissionPublicId } from "shared/publicId";
+import { isPublicId, type PermissionPublicId } from "shared/publicId";
 import { z } from "zod";
 import * as db3 from "../db3";
 

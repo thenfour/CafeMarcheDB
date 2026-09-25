@@ -5,6 +5,7 @@ import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import {
     type EventAttendancePublicId,
+    type EventSegmentPublicId,
     type EventStatusPublicId,
     type EventTypePublicId,
     type InstrumentPublicId,
@@ -13,20 +14,21 @@ import {
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
-import { xEvent, xEventAttendance, xEventStatus, xEventType } from "../shared/schema/event";
+import { xEvent, xEventSegment, xEventAttendance, xEventStatus, xEventType } from "../shared/schema/event";
 import { xInstrument } from "../shared/schema/instrument";
 import { xUserTag } from "../shared/schema/user";
 
 type UserEventAttendanceQueryResult_EventSegment = Omit<Prisma.EventSegmentGetPayload<{
     select: {
-        id: true,
+        publicId: true,
         name: true,
         statusId: true,
         startsAt: true,
         durationMillis: true,
         isAllDay: true,
     }
-}>, "statusId"> & {
+}>, "statusId" | "publicId"> & {
+    publicId: EventSegmentPublicId;
     statusId: EventStatusPublicId | null;
     attendanceId: EventAttendancePublicId | null;
 };
@@ -164,7 +166,7 @@ export default resolver.pipe(
                         segments: event.segments.map(seg => {
                             assert(seg.responses.length < 2, "designed for 1 user at a time");
                             const segRet: UserEventAttendanceQueryResult_EventSegment = {
-                                id: seg.id,
+                                publicId: xEventSegment.parseIdentity(seg.publicId),
                                 name: seg.name,
                                 statusId: seg.status ? xEventStatus.parseIdentity(seg.status.publicId) : null,
                                 startsAt: seg.startsAt,

@@ -1,82 +1,84 @@
-// copyEventSegmentResponses
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
+import { AuthenticatedCtx, AuthorizationError } from "blitz";
 import db, { Prisma } from "db";
-import { Permission } from "shared/permissions";
-import * as db3 from "../db3";
-import * as mutationCore from "../server/db3mutationCore";
 import { z } from "zod";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { Permission } from "shared/permissions";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import * as db3 from "../db3";
+import { db3Server } from "../server/db3Server";
+import { resolvePublicIds } from "../server/db3PublicIds";
+import { CallMutateEventHooks } from "../server/db3mutationCore";
 
 const ZArgs = z.object({
-    fromEventSegmentId: z.number(),
-    toEventSegmentId: z.number(),
-});
+    fromEventSegmentId: db3.xEventSegment.identitySchema,
+    toEventSegmentId: db3.xEventSegment.identitySchema,
+}).strict().refine(args => args.fromEventSegmentId !== args.toEventSegmentId, "Choose two different segments.");
 
-type TArgs = z.infer<typeof ZArgs>;
-
-type CompactResponses = {
-    userId: number,
-    attendanceId: number,
-}[];
-
-const getTransformedValues = (oldValues: Prisma.EventSegmentUserResponseGetPayload<{}>[]): CompactResponses => oldValues
-    .filter(r => !!r.attendanceId)
-    .map(r => ({
-        attendanceId: r.attendanceId!,
-        userId: r.userId,
+// Historical Change values deliberately retain natural foreign keys.
+const auditResponses = (rows: Prisma.EventSegmentUserResponseGetPayload<{}>[]) => rows
+    .filter(row => row.attendanceId !== null)
+    .map(row => ({
+        attendanceId: row.attendanceId,
+        userId: row.userId,
     }));
 
-
-// entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.zod(ZArgs),
     resolver.authorize(Permission.admin_events),
-    async (args: TArgs, ctx: AuthenticatedCtx) => {
-
-        await db.$transaction(async (transactionalDb) => {
-
-            const table = db3.xEventSegmentUserResponse;
-            const contextDesc = `copyEventSegmentResponses`;
-            const changeContext = CreateChangeContext(contextDesc);
-
-            const eventId = (await transactionalDb.eventSegment.findFirstOrThrow({ select: { eventId: true }, where: { id: args.toEventSegmentId } })).eventId;
-
-            const sourceValues = await transactionalDb.eventSegmentUserResponse.findMany({ where: { eventSegmentId: args.fromEventSegmentId } });
-
-            const oldToValues = await transactionalDb.eventSegmentUserResponse.findMany({ where: { eventSegmentId: args.toEventSegmentId } });
-
-            await transactionalDb.eventSegmentUserResponse.deleteMany({
-                where: { eventSegmentId: args.toEventSegmentId }
+    resolver.zod(ZArgs),
+    async (args, ctx: AuthenticatedCtx) => {
+        const authorization = await getRequestAuthorization(ctx.session);
+        const publicData = db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
+        await db.$transaction(async tx => {
+            const [fromId, toId] = await resolvePublicIds(db3.xEventSegment,
+                [args.fromEventSegmentId, args.toEventSegmentId],
+                publicData,
+                tx);
+            const segments = await tx.eventSegment.findMany({
+                where: { id: { in: [fromId!, toId!] } },
+                select: { id: true, eventId: true }
             });
-
-            // now copy.
-            const prismaInputs: Prisma.EventSegmentUserResponseCreateManyInput[] = sourceValues.map(s => ({
-                eventSegmentId: args.toEventSegmentId,
-                userId: s.userId,
-                attendanceId: s.attendanceId,
-            }));
-            await db.eventSegmentUserResponse.createMany({ data: prismaInputs });
-
-            await mutationCore.CallMutateEventHooks({
+            const source = segments.find(segment => segment.id === fromId)!;
+            const target = segments.find(segment => segment.id === toId)!;
+            if (source.eventId !== target.eventId) {
+                throw new Error("Segments must belong to the same event.");
+            }
+            const sourceValues = await tx.eventSegmentUserResponse.findMany({
+                where: { eventSegmentId: fromId }
+            });
+            const oldValues = await tx.eventSegmentUserResponse.findMany({
+                where: { eventSegmentId: toId }
+            });
+            await tx.eventSegmentUserResponse.deleteMany({
+                where: { eventSegmentId: toId }
+            });
+            for (const row of sourceValues) {
+                await db3Server.table(db3.xEventSegmentUserResponse).createWithPublicId(publicId =>
+                    tx.eventSegmentUserResponse.create({
+                        data: {
+                            publicId,
+                            eventSegmentId: toId!,
+                            userId: row.userId,
+                            attendanceId: row.attendanceId,
+                        }
+                    }));
+            }
+            await CallMutateEventHooks({
                 tableNameOrSpecialMutationKey: "mutation:copyEventSegmentResponses",
-                model: { id: eventId },
-                db: transactionalDb,
+                model: { id: target.eventId },
+                db: tx
             });
-
             await RegisterChange({
                 action: ChangeAction.update,
-                changeContext,
-                table: table.tableName,
-                pkid: args.toEventSegmentId,
-                oldValues: getTransformedValues(oldToValues),
-                newValues: getTransformedValues(sourceValues), // assumes doesn't refer to the segment!
+                changeContext: CreateChangeContext("copyEventSegmentResponses"),
+                table: db3.xEventSegmentUserResponse.tableName,
+                pkid: toId!,
+                oldValues: auditResponses(oldValues),
+                newValues: auditResponses(sourceValues),
                 ctx,
-                db: transactionalDb,
+                db: tx,
             });
-        });
-
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
         return null;
-    }
+    },
 );
-

@@ -149,6 +149,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
 
         const seg = await gState.prisma.eventSegment.create({
             data: {
+                publicId: generatePublicId<"EventSegment">(),
                 description: faker.datatype.boolean(0.15) ? faker.lorem.paragraph() : "",
                 startsAt: range.getSpec().startsAtDateTime,
                 durationMillis: range.getSpec().durationMillis,
@@ -263,6 +264,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
     users.forEach(async (u, ui) => {
         await gState.prisma.eventUserResponse.create({
             data: {
+                publicId: generatePublicId<"EventUserResponse">(),
                 eventId: event.id,
                 userId: u.id,
                 instrumentId: faker.datatype.boolean(0.15) ? faker.helpers.arrayElement(gState.gAllInstruments).id : null,
@@ -290,6 +292,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
         segmentsToRespondTo.forEach(async (seg, si) => {
             await gState.prisma.eventSegmentUserResponse.create({
                 data: {
+                publicId: generatePublicId<"EventSegmentUserResponse">(),
                     userId: u.id,
                     eventSegmentId: seg.id,
                     attendanceId: faker.helpers.arrayElement([...gState.gAllAttendanceOptions, null])?.id || null,

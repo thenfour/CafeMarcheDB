@@ -2,6 +2,9 @@ import type { EventSongListCompleteDto } from "../entities/eventSongList/eventSo
 import { Prisma } from "db";
 import type { ColorPaletteEntry } from "@/src/core/components/color/palette";
 import type {
+    EventSegmentPublicId,
+    EventUserResponsePublicId,
+    EventSegmentUserResponsePublicId,
     EventAttendancePublicId,
     FileTagAssignmentPublicId,
     FileTagPublicId,
@@ -1094,10 +1097,19 @@ export type EventSegmentUserResponsePayload = Prisma.EventSegmentUserResponseGet
     include: typeof EventSegmentUserResponseArgs.include
 }>;
 
-// Client response identity stays numeric until the response-family slice.
 export type EventSegmentUserResponseClientPayload = Omit<
-    Prisma.EventSegmentUserResponseGetPayload<{}>, "attendanceId"
-> & { attendanceId: EventAttendancePublicId | null };
+    Prisma.EventSegmentUserResponseGetPayload<{}>, "id" | "publicId" | "eventSegmentId" | "attendanceId"
+> & {
+    publicId: EventSegmentUserResponsePublicId;
+    eventSegmentId: EventSegmentPublicId;
+    attendanceId: EventAttendancePublicId | null;
+};
+export type EventUserResponseClientPayload = Omit<
+    Prisma.EventUserResponseGetPayload<{}>, "id" | "publicId" | "instrumentId"
+> & {
+    publicId: EventUserResponsePublicId;
+    instrumentId: InstrumentPublicId | null;
+};
 
 export const EventSegmentUserResponseNaturalOrderBy: Prisma.EventSegmentUserResponseOrderByWithRelationInput[] = [
     // todo: sort by something else?
@@ -1208,10 +1220,35 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
         segments: {
             orderBy: EventSegmentNaturalOrderBy,
             include: {
-                responses: { include: { attendance: { select: { publicId: true } } } },
+                responses: {
+                    include: {
+                        attendance:
+                        {
+                            select: {
+                                publicId: true
+
+                            }
+                        },
+                        eventSegment: {
+                            select: {
+                                publicId: true
+
+                            }
+                        }
+                    }
+                },
             }
         },
-        responses: true,
+        responses: {
+            include: {
+                instrument: {
+                    select: {
+                        publicId: true
+
+                    }
+                }
+            }
+        },
         descriptionWikiPage: {
             include: {
                 currentRevision: true,
@@ -1240,7 +1277,8 @@ export type EventTagAssignmentClientPayload = Omit<
     eventTagId: EventTagPublicId;
 };
 type EventVerboseDbSegment = Prisma.EventSegmentGetPayload<typeof EventArgs_Verbose.include.segments>;
-export type EventVerbose_EventSegmentClient = Omit<EventVerboseDbSegment, "statusId" | "responses"> & {
+export type EventVerbose_EventSegmentClient = Omit<EventVerboseDbSegment, "id" | "publicId" | "statusId" | "responses"> & {
+    publicId: EventSegmentPublicId;
     responses: EventSegmentUserResponseClientPayload[];
     statusId: EventStatusPublicId | null;
 };
@@ -1262,8 +1300,9 @@ export type EventClientPayload_Verbose = Omit<
     EventDbPayload_Verbose,
     "fileTags" | "statusId" | "typeId" | "status" | "tags" | "segments"
     | "expectedAttendanceUserTagId" | "expectedAttendanceUserTag"
-    | "visiblePermissionId" | "visiblePermission" | "songLists"
+    | "visiblePermissionId" | "visiblePermission" | "songLists" | "responses"
 > & {
+    responses: EventUserResponseClientPayload[];
     songLists: EventSongListCompleteDto[];
     visiblePermissionId: PermissionPublicId | null;
     statusId: EventStatusPublicId | null;
@@ -1283,9 +1322,14 @@ export type EventClientPayload_Verbose = Omit<
 };
 
 export type EventVerbose_Event = Prisma.EventGetPayload<typeof EventArgs_Verbose>;
-export type EventVerbose_EventUserResponse = Prisma.EventUserResponseGetPayload<typeof EventArgs_Verbose.include.responses>;
+// Attendance presentation also includes unanswered rows, which have no persisted identity.
+export type EventVerbose_EventUserResponse = Omit<EventUserResponseClientPayload, "publicId"> & {
+    publicId: EventUserResponsePublicId | null;
+};
 export type EventVerbose_EventSegment = Prisma.EventSegmentGetPayload<typeof EventArgs_Verbose.include.segments>;
-export type EventVerbose_EventSegmentUserResponse = EventSegmentUserResponseClientPayload;
+export type EventVerbose_EventSegmentUserResponse = Omit<EventSegmentUserResponseClientPayload, "publicId"> & {
+    publicId: EventSegmentUserResponsePublicId | null;
+};
 
 
 

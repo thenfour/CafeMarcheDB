@@ -1,3 +1,4 @@
+import type { EventSegmentPublicId } from "shared/publicId";
 import { DashboardContextDataBase } from "@/src/core/components/dashboardContext/dashboardContextTypes";
 import * as db3 from "@db3/db3";
 import { isUserInvitedToEvent } from "shared/eventInvitation";
@@ -35,7 +36,7 @@ export function createMockEventSegmentUserResponse
     // // mock response when none exists
     // const mockResponse = args.createMockResponse(args.segment, args.user) : EventResponses_MinimalEventSegmentUserResponse = {
     //     attendanceId: null,
-    //     //eventSegmentId: args.segment.id,
+    //     //eventSegmentId: args.segment.publicId,
     //     //eventSegment: args.segment,
     //     id: -1,
     //     //user: args.user,
@@ -234,25 +235,25 @@ export class EventResponseInfo<
     // ALWAYS returns a response. if doesn't exist in the list then a mock one is created.
     getResponseForUserAndSegment({ user, segment }: { user: db3.UserWithInstrumentsPayload, segment: TEventSegment }):
         db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse> | null {
-        const f = this.allSegmentResponses.find(resp => resp.user.id === user.id && resp.segment.id === segment.id);
+        const f = this.allSegmentResponses.find(resp => resp.user.id === user.id && resp.segment.publicId === segment.publicId);
         if (f) return f;
         return createMockEventSegmentUserResponse({ expectedAttendanceTag: this.expectedAttendanceTag, user, segment, makeMockEventSegmentResponse: this.makeMockEventSegmentResponse });
     };
 
     // returns responses for all event segments
-    getResponsesBySegmentForUser = (user: db3.UserWithInstrumentsPayload): Record<number, db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse>> => {
-        const ret: Record<number, db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse>> = {};
+    getResponsesBySegmentForUser = (user: db3.UserWithInstrumentsPayload): Record<EventSegmentPublicId, db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse>> => {
+        const ret: Record<EventSegmentPublicId, db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse>> = {};
         this.event.segments.forEach(segment1 => {
             const segment = segment1 as unknown as TEventSegment; // assumes TEventSegment is type of TEvent.segment[n]
             const resp = this.getResponseForUserAndSegment({ user, segment });
             if (resp) {
-                ret[segment.id] = resp;
+                ret[segment.publicId] = resp;
             }
         });
         return ret;
     };
 
-    getResponsesForSegment = (segmentId: number) => this.allSegmentResponses.filter(r => r.segment.id === segmentId);
+    getResponsesForSegment = (segmentId: EventSegmentPublicId) => this.allSegmentResponses.filter(r => r.segment.publicId === segmentId);
 
     getEventResponseForUser = (user: db3.UserWithInstrumentsPayload, dashboardContext: DashboardContextDataBase, userMap: UserInstrumentList) => {
         const ret = this.allEventResponses.find(r => r.user.id === user.id);

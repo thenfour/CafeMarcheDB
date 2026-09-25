@@ -35,6 +35,8 @@ export type AttendanceScenarioSegment = z.infer<typeof segmentSchema>;
 
 // Stable synthetic IDs never leave the local adapter. Options are deliberately
 // self-contained: changing the site's DB options cannot change a saved scenario.
+export const scenarioSegmentPublicId = (index: number) => db3.xEventSegment.parseIdentity(`ScnSegment${String(index + 1).padStart(6, "0")}`);
+
 export const scenarioAttendances: db3.EventAttendanceDisplay[] = [
     { id: 1, text: "No", strength: 0, color: "attendance_no", iconName: "Cancel", description: "I cannot attend." },
     { id: 2, text: "Probably", strength: 66, color: "attendance_yes_maybe", iconName: "HelpOutline", description: "I will probably attend." },
@@ -123,13 +125,13 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
         const attendanceId = person.responses[index]!;
         const id = index + 1;
         return {
-            id, eventId, name: `Segment ${id}`, description: "", uid: `scenario-segment-${id}`,
+            publicId: scenarioSegmentPublicId(index), eventId, name: `Segment ${id}`, description: "", uid: `scenario-segment-${id}`,
             startsAt: when === "tbd" ? null : new Date(now.valueOf() + offset + index * 15 * 60_000),
             isAllDay: false,
             durationMillis: BigInt(2 * hour),
             statusId: config.cancelled ? cancelledStatusId : null,
             responses: attendanceId === "missing" ? [] : [{
-                id, eventSegmentId: id, userId: user.id,
+                eventSegmentId: scenarioSegmentPublicId(index), userId: user.id,
                 attendanceId: attendanceId === null ? null : scenarioAttendances[attendanceId - 1]!.publicId,
                 createdAt: now, updatedAt: now, createdByUserId: null, updatedByUserId: null,
             }],
@@ -156,7 +158,7 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
     })!;
     const segmentUserResponses = segments.map(segment => getEventSegmentResponseForSegmentAndUser({
         user, segment, expectedAttendanceTag: null,
-        makeMockEventSegmentResponse: () => ({ id: -1, userId: user.id, attendanceId: null }),
+        makeMockEventSegmentResponse: () => ({ userId: user.id, attendanceId: null }),
     })!);
     const attendance = calculateEventAttendance({
         eventUserResponse,
@@ -187,7 +189,7 @@ export function applyAttendanceScenarioChange(person: AttendanceScenarioUser, ch
         : scenarioAttendances.findIndex(option => option.publicId === change.attendanceId) + 1;
     return {
         ...person, responses: person.responses.map((value, index) =>
-            index + 1 === change.segmentId ? response.parse(localChoice) : value)
+            scenarioSegmentPublicId(index) === change.segmentId ? response.parse(localChoice) : value)
     };
 }
 

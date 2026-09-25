@@ -1,3 +1,4 @@
+import { db3Server } from "../server/db3Server";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx, AuthorizationError, NotFoundError } from "blitz";
@@ -47,7 +48,11 @@ export default resolver.pipe(
         }
 
 
-        const segmentIds = Object.keys(args.segmentResponses || {}).map(Number);
+        const segmentResponses = Object.entries(args.segmentResponses ?? {})
+            .map(([publicId, response]) => ({
+                publicId: db3.xEventSegment.parseIdentity(publicId),
+                attendanceId: response!.attendanceId,
+            }));
         const changeContext = CreateChangeContext("updateUserEventAttendance");
         await db.$transaction(async transactionalDb => {
             const instrumentId = args.instrumentId == null
@@ -62,14 +67,21 @@ export default resolver.pipe(
                     where: { id: args.userId, isDeleted: false },
                     select: { id: true },
                 }),
-                segmentIds.length === 0
-                    ? Promise.resolve([])
+                segmentResponses.length === 0
+                    ? Promise.resolve<Pick<Prisma.EventSegmentGetPayload<{}>, "id" | "publicId" | "eventId">[]>([])
                     : transactionalDb.eventSegment.findMany({
                         where: {
-                            id: { in: segmentIds },
+                            publicId: {
+                                in: segmentResponses.map(response => response.publicId)
+                            },
                             eventId: args.eventId,
                         },
-                        select: { id: true, eventId: true },
+                        select: {
+                            id: true,
+                            publicId: true,
+                            eventId: true
+
+                        },
                     }),
             ]);
 
@@ -77,19 +89,20 @@ export default resolver.pipe(
                 || !db3.xEvent.authorizeRowForView({ model: event, publicData })) {
                 throw new NotFoundError();
             }
-            if (!targetUser || eventSegments.length !== segmentIds.length) {
+            if (!targetUser || eventSegments.length !== segmentResponses.length) {
                 throw new NotFoundError();
             }
 
-            const attendancePublicIds = [...new Set(Object.values(args.segmentResponses ?? {})
+            const attendancePublicIds = [...new Set(segmentResponses
                 .flatMap(response => response.attendanceId === null ? [] : [response.attendanceId]))];
             const attendanceIds = await resolvePublicIds(db3.xEventAttendance, attendancePublicIds, publicData, transactionalDb);
             const attendanceIdByPublicId = new Map(attendancePublicIds.map((publicId, index) => [publicId, attendanceIds[index]!]));
 
             let didSegmentChangesOccur = false;
 
-            for (const eventSegmentId of segmentIds) {
-                const attendancePublicId = args.segmentResponses![eventSegmentId]!.attendanceId;
+            for (const response of segmentResponses) {
+                const eventSegmentId = eventSegments.find(segment => segment.publicId === response.publicId)!.id;
+                const attendancePublicId = response.attendanceId;
                 const attendanceId = attendancePublicId === null ? null : attendanceIdByPublicId.get(attendancePublicId)!;
                 const existing = await transactionalDb.eventSegmentUserResponse.findFirst({
                     where: { userId: args.userId, eventSegmentId },
@@ -121,16 +134,22 @@ export default resolver.pipe(
                         db: transactionalDb,
                     });
                 } else {
-                    const fields: Prisma.EventSegmentUserResponseUncheckedCreateInput = {
+                    const fields: Omit<Prisma.EventSegmentUserResponseUncheckedCreateInput, "publicId"> = {
                         userId: args.userId,
                         eventSegmentId,
                         attendanceId,
                         createdByUserId: currentUser.id,
                         updatedByUserId: currentUser.id,
                     };
-                    const inserted = await transactionalDb.eventSegmentUserResponse.create({
-                        data: fields,
-                    });
+                    const inserted = await db3Server.table(db3.xEventSegmentUserResponse)
+                        .createWithPublicId(publicId =>
+                            transactionalDb.eventSegmentUserResponse.create({
+                                data: {
+                                    ...fields,
+                                    publicId
+
+                                }
+                            }));
                     await RegisterChange({
                         action: ChangeAction.insert,
                         changeContext,
@@ -187,7 +206,7 @@ export default resolver.pipe(
                     });
                 }
             } else {
-                const fields: Prisma.EventUserResponseUncheckedCreateInput = {
+                const fields: Omit<Prisma.EventUserResponseUncheckedCreateInput, "publicId"> = {
                     userId: args.userId,
                     eventId: args.eventId,
                     userComment: args.comment || "",
@@ -195,7 +214,14 @@ export default resolver.pipe(
                     isInvited: args.isInvited,
                     revision: 1,
                 };
-                const inserted = await transactionalDb.eventUserResponse.create({ data: fields });
+                const inserted = await db3Server.table(db3.xEventUserResponse)
+                    .createWithPublicId(publicId =>
+                        transactionalDb.eventUserResponse.create({
+                            data: {
+                                ...fields,
+                                publicId
+                            }
+                        }));
                 await RegisterChange({
                     action: ChangeAction.insert,
                     changeContext,

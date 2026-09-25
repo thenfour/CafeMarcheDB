@@ -1,70 +1,51 @@
-// clearEventSegmentResponses
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
+import { AuthenticatedCtx, AuthorizationError } from "blitz";
 import db, { Prisma } from "db";
+import { z } from "zod";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
-import * as mutationCore from "../server/db3mutationCore";
-import { z } from "zod";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { resolvePublicId } from "../server/db3PublicIds";
+import { CallMutateEventHooks } from "../server/db3mutationCore";
 
-const ZArgs = z.object({
-    eventSegmentId: z.number(),
-});
+const ZArgs = z.object({ eventSegmentId: db3.xEventSegment.identitySchema }).strict();
 
-type TArgs = z.infer<typeof ZArgs>;
-
-type CompactResponses = {
-    userId: number,
-    attendanceId: number,
-}[];
-
-const getTransformedValues = (oldValues: Prisma.EventSegmentUserResponseGetPayload<{}>[]): CompactResponses => oldValues
-    .filter(r => !!r.attendanceId)
-    .map(r => ({
-        attendanceId: r.attendanceId!,
-        userId: r.userId,
-    }));
-
-// entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.zod(ZArgs),
     resolver.authorize(Permission.admin_events),
-    async (args: TArgs, ctx: AuthenticatedCtx) => {
+    resolver.zod(ZArgs),
+    async (args, ctx: AuthenticatedCtx) => {
+        const authorization = await getRequestAuthorization(ctx.session);
+        const publicData = db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
 
-        await db.$transaction(async () => {
-            const table = db3.xEventSegmentUserResponse;
-            const contextDesc = `clearEventSegmentResponses`;
-            const changeContext = CreateChangeContext(contextDesc);
+        await db.$transaction(async tx => {
+            const eventSegmentId = await resolvePublicId(db3.xEventSegment, args.eventSegmentId, publicData, tx);
+            const segment = await tx.eventSegment.findUniqueOrThrow({
+                where: { id: eventSegmentId },
+                select: { eventId: true }
+            });
 
-            const eventId = (await db.eventSegment.findFirstOrThrow({ select: { eventId: true }, where: { id: args.eventSegmentId } })).eventId;
-
-            const oldValues = await db.eventSegmentUserResponse.findMany({ where: { eventSegmentId: args.eventSegmentId } });
-            if (!oldValues.length) {
-                return null;
+            const oldValues = await tx.eventSegmentUserResponse.findMany({ where: { eventSegmentId } });
+            if (oldValues.length === 0) {
+                return;
             }
-
-            await db.eventSegmentUserResponse.deleteMany({
-                where: { eventSegmentId: args.eventSegmentId }
+            await tx.eventSegmentUserResponse.deleteMany({
+                where: { eventSegmentId }
             });
-
-            await mutationCore.CallMutateEventHooks({
-                tableNameOrSpecialMutationKey: "mutation:cleareventsegmentresponses",
-                model: { id: eventId },
-            });
-
+            await CallMutateEventHooks({ tableNameOrSpecialMutationKey: "mutation:cleareventsegmentresponses", model: { id: segment.eventId }, db: tx });
             await RegisterChange({
                 action: ChangeAction.delete,
-                changeContext,
-                table: table.tableName,
-                pkid: args.eventSegmentId,
-                oldValues: getTransformedValues(oldValues),
+                changeContext: CreateChangeContext("clearEventSegmentResponses"),
+                table: db3.xEventSegmentUserResponse.tableName,
+                pkid: eventSegmentId,
+                // Historical Change values retain natural foreign keys.
+                oldValues: oldValues.filter(row => row.attendanceId !== null)
+                    .map(row => ({ userId: row.userId, attendanceId: row.attendanceId })),
                 newValues: undefined,
                 ctx,
+                db: tx,
             });
-        });
-
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
         return null;
-    }
+    },
 );
-

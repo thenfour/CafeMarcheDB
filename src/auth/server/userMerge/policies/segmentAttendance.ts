@@ -1,3 +1,5 @@
+import { db3Server } from "@db3/server/db3Server";
+import { xEventUserResponse } from "@db3/shared/schema/event";
 import { classifyRecords, recordIds } from "../classifyRecords";
 import { countEffect, participantWhere, type MergePolicy } from "../types";
 
@@ -30,11 +32,29 @@ export const segmentAttendancePolicy: MergePolicy = {
                 await db.eventSegmentUserResponse.updateMany({ where: { id: { in: recordIds(decisions.transfer) } }, data: { userId: context.mainUserId } });
                 // Calendar sequence numbers include the event response revision.
                 for (const eventId of changedEventIds) {
-                    await db.eventUserResponse.upsert({
-                        where: { userId_eventId: { userId: context.mainUserId, eventId } },
-                        create: { userId: context.mainUserId, eventId, revision: 1 },
-                        update: { revision: { increment: 1 } },
-                    });
+                    await db3Server.table(xEventUserResponse)
+                        .createWithPublicId(publicId => db.eventUserResponse.upsert({
+                            where: {
+                                userId_eventId: {
+                                    userId: context.mainUserId,
+                                    eventId
+
+                                }
+                            },
+                            create: {
+                                publicId,
+                                userId: context.mainUserId,
+                                eventId,
+                                revision: 1
+
+                            },
+                            update: {
+                                revision:
+                                {
+                                    increment: 1
+                                }
+                            },
+                        }));
                 }
             },
         };

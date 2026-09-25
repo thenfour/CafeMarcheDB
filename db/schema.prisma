@@ -632,6 +632,7 @@ model Event {
 // events have multiple segments, for example the CM weekend can be broken into saturday, sunday, monday
 // concerts may have one or more multiple sets
 model EventSegment {
+  publicId String @unique @db.Char(16)
   id      Int   @id @default(autoincrement())
   eventId Int
   event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade) // events are soft-delete.
@@ -824,6 +825,7 @@ model EventAttendance {
 }
 
 model EventUserResponse {
+  publicId String @unique @db.Char(16)
   id      Int @id @default(autoincrement())
   userId  Int
   eventId Int
@@ -844,6 +846,7 @@ model EventUserResponse {
 }
 
 model EventSegmentUserResponse {
+  publicId String @unique @db.Char(16)
   id     Int  @id @default(autoincrement())
   userId Int
   user   User @relation("EventSegmentUserResponseUser", fields: [userId], references: [id], onDelete: Cascade)

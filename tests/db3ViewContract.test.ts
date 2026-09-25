@@ -1,4 +1,4 @@
-import type { EventAttendancePublicId } from "shared/publicId";
+import type { EventAttendancePublicId, EventSegmentPublicId, EventSegmentUserResponsePublicId, EventUserResponsePublicId } from "shared/publicId";
 import { Prisma } from "db"
 import { z } from "zod"
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest"
@@ -109,20 +109,20 @@ describe("DB3 scalar selection compiler", () => {
     expectTypeOf<typeof db3.xEvent.fields.tags.associationForeignIDMember>()
       .toEqualTypeOf<"eventTagId">()
     expectTypeOf<Segment>().toEqualTypeOf<{
-      id: number
+      publicId: EventSegmentPublicId
       name?: string
       startsAt?: Date | null
       durationMillis?: bigint
       isAllDay?: boolean
       statusId?: EventStatusPublicId | null
       responses?: Array<{
-        id: number
+        publicId: EventSegmentUserResponsePublicId
         userId?: number
         attendanceId?: EventAttendancePublicId | null
       }>
     }>()
-    expectTypeOf<SegmentResponse["id"]>().toEqualTypeOf<number>()
-    expectTypeOf<EventResponse["id"]>().toEqualTypeOf<number>()
+    expectTypeOf<SegmentResponse["publicId"]>().toEqualTypeOf<EventSegmentUserResponsePublicId>()
+    expectTypeOf<EventResponse["publicId"]>().toEqualTypeOf<EventUserResponsePublicId>()
     expectTypeOf<TransportDto["name"]>().toEqualTypeOf<string>()
     expectTypeOf<TransportDto["tags"]>().toBeArray()
     expectTypeOf<ContentIsAny>().toEqualTypeOf<false>()

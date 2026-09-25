@@ -8,7 +8,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import { Breadcrumbs, Typography } from "@mui/material";
 import db from "db";
 import { Permission } from "shared/permissions";
-import { InstrumentPublicId, parsePublicId } from "shared/publicId";
+import { InstrumentPublicId } from "shared/publicId";
 import * as db3 from "src/core/db3/db3";
 
 interface PageProps {

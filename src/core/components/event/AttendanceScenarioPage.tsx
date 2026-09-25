@@ -185,7 +185,7 @@ export const AttendanceScenarioPage = () => {
                             effectiveInstrumentId: attendance.eventUserResponse.instrument
                                 ? db3.getInstrumentIdentity(attendance.eventUserResponse.instrument)
                                 : null,
-                            segments: event.segments.map(s => ({ id: s.id, startsAt: s.startsAt, cancelled: s.statusId !== null, response: person.responses[s.id - 1] })),
+                            segments: event.segments.map((s, index) => ({ publicId: s.publicId, startsAt: s.startsAt, cancelled: s.statusId !== null, response: person.responses[index] })),
                         }, null, 2)}</Box>
                     </details>
                 </Paper>;

@@ -2,6 +2,7 @@ import { ActivityReportTimeBucketSize } from "@/shared/mysqlUtils";
 import { Prisma } from "db";
 import {
     type EventAttendancePublicId,
+    type EventSegmentPublicId,
     type EventSongListPublicId,
     type EventStatusPublicId,
     type EventTypePublicId,
@@ -21,6 +22,13 @@ function projectActivitySetlist(value: { publicId: string; name: string; eventId
     } : null;
 }
 
+function projectActivitySegment(value: { publicId: string; name: string; eventId: number; startsAt: Date | null } | null) {
+    return value ? {
+        publicId: db3.xEventSegment.parseIdentity(value.publicId),
+        name: value.name, eventId: value.eventId, startsAt: value.startsAt,
+    } : null;
+}
+
 export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDefaultArgs>()({
     include: {
         event: true,
@@ -30,7 +38,7 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
         song: true,
         wikiPage: true,
         customLink: true,
-        eventSegment: true,
+        eventSegment: { select: { publicId: true, name: true, eventId: true, startsAt: true } },
         eventSongList:
         {
             select:
@@ -55,10 +63,12 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
 type GeneralActivityReportDetailDbPayload = Prisma.ActionGetPayload<typeof GeneralActivityReportDetailArgs>;
 export type GeneralActivityReportDetailPayload = Omit<
     GeneralActivityReportDetailDbPayload,
-    "user" | "userId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance"
+    "user" | "userId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment"
 > & {
     userHash: string | null;
     songCreditTypeId: SongCreditTypePublicId | null;
+    eventSegmentId: EventSegmentPublicId | null;
+    eventSegment: ReturnType<typeof projectActivitySegment>;
     attendanceId: EventAttendancePublicId | null;
     attendance: { publicId: EventAttendancePublicId } | null;
     eventSongListId: EventSongListPublicId | null;
@@ -72,6 +82,8 @@ export function projectGeneralActivityReportDetailItem(
     const { user: _user, userId: _userId, songCreditType, songCreditTypeId: _songCreditTypeId, ...rest } = row;
     return {
         ...rest,
+        eventSegment: projectActivitySegment(row.eventSegment),
+        eventSegmentId: row.eventSegment ? db3.xEventSegment.parseIdentity(row.eventSegment.publicId) : null,
         attendanceId: row.attendance ? db3.xEventAttendance.parseIdentity(row.attendance.publicId) : null,
         attendance: row.attendance ? { publicId: db3.xEventAttendance.parseIdentity(row.attendance.publicId) } : null,
         eventSongList: projectActivitySetlist(row.eventSongList),
@@ -309,7 +321,7 @@ const GetFeatureReportDetailResultArgsUnvalidated /*: Prisma.ActionDefaultArgs*/
                 slug: true,
             }
         },
-        eventSegment: true,
+        eventSegment: { select: { publicId: true, name: true, eventId: true, startsAt: true } },
         attendance: { select: { publicId: true } },
         customLink: true,
         eventSongList: { select: { publicId: true, name: true, eventId: true } },
@@ -341,10 +353,12 @@ type GetFeatureReportDetailDbPayload = Prisma.ActionGetPayload<typeof GetFeature
 type FeatureReportSongCreditType = NonNullable<GetFeatureReportDetailDbPayload["songCreditType"]>;
 export type GetFeatureReportDetailItemPayload = Omit<
     GetFeatureReportDetailDbPayload,
-    "instrument" | "event" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance"
+    "instrument" | "event" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment"
 > & {
     instrumentId: InstrumentPublicId | null;
     songCreditTypeId: SongCreditTypePublicId | null;
+    eventSegmentId: EventSegmentPublicId | null;
+    eventSegment: ReturnType<typeof projectActivitySegment>;
     attendanceId: EventAttendancePublicId | null;
     attendance: { publicId: EventAttendancePublicId } | null;
     eventSongListId: EventSongListPublicId | null;
@@ -370,6 +384,8 @@ export function projectFeatureReportDetailItem(
     } = row;
     return {
         ...rest,
+        eventSegment: projectActivitySegment(row.eventSegment),
+        eventSegmentId: row.eventSegment ? db3.xEventSegment.parseIdentity(row.eventSegment.publicId) : null,
         attendanceId: row.attendance ? db3.xEventAttendance.parseIdentity(row.attendance.publicId) : null,
         attendance: row.attendance ? { publicId: db3.xEventAttendance.parseIdentity(row.attendance.publicId) } : null,
         eventSongList: projectActivitySetlist(row.eventSongList),

@@ -1,3 +1,4 @@
+import { segmentPublicId, eventResponsePublicId, segmentResponsePublicId } from "./support/eventResponseFixtures";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { SecurePassword } from "@blitzjs/auth/secure-password";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -75,19 +76,19 @@ async function seedAccounts() {
 
 async function seedContent() {
     await db.event.createMany({ data: [1, 2].map(id => ({ id, name: `Private event ${id}`, createdByUserId: 20, revision: 1 })) });
-    await db.eventSegment.createMany({ data: [1, 2].map(id => ({ id, eventId: id, name: "Private segment", description: "", durationMillis: 0 })) });
+    await db.eventSegment.createMany({ data: [1, 2].map(id => ({ id, publicId: segmentPublicId(id), eventId: id, name: "Private segment", description: "", durationMillis: 0 })) });
     await db.eventUserResponse.createMany({
         data: [
-            { id: 1, userId: 10, eventId: 1, userComment: "", revision: 5 },
-            { id: 2, userId: 20, eventId: 1, userComment: "discarded-private-comment", revision: 8 },
-            { id: 3, userId: 20, eventId: 2, userComment: "transferred-private-comment", revision: 2 },
+            { id: 1, publicId: eventResponsePublicId(1), userId: 10, eventId: 1, userComment: "", revision: 5 },
+            { id: 2, publicId: eventResponsePublicId(2), userId: 20, eventId: 1, userComment: "discarded-private-comment", revision: 8 },
+            { id: 3, publicId: eventResponsePublicId(3), userId: 20, eventId: 2, userComment: "transferred-private-comment", revision: 2 },
         ]
     });
     await db.eventSegmentUserResponse.createMany({
         data: [
-            { id: 1, userId: 10, eventSegmentId: 1, attendanceId: null },
-            { id: 2, userId: 20, eventSegmentId: 1, attendanceId: null, createdByUserId: 20 },
-            { id: 3, userId: 20, eventSegmentId: 2, attendanceId: null, createdByUserId: 20 },
+            { id: 1, publicId: segmentResponsePublicId(1), userId: 10, eventSegmentId: 1, attendanceId: null },
+            { id: 2, publicId: segmentResponsePublicId(2), userId: 20, eventSegmentId: 1, attendanceId: null, createdByUserId: 20 },
+            { id: 3, publicId: segmentResponsePublicId(3), userId: 20, eventSegmentId: 2, attendanceId: null, createdByUserId: 20 },
         ]
     });
     await db.song.create({ data: { id: 1, name: "Private song", description: "", createdByUserId: 20 } });

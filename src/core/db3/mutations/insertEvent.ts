@@ -7,7 +7,7 @@ import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TinsertEventArgs } from "../shared/apiTypes";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
-import { resolvePublicForeignIds, resolvePublicId } from "../server/db3PublicIds";
+import { authorizeAndProjectDB3ViewModel, resolvePublicForeignIds, resolvePublicId } from "../server/db3PublicIds";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
@@ -52,12 +52,12 @@ export default resolver.pipe(
             // create the root event,
             const newEvent = await mutationCore.insertImpl(db3.xEvent, eventFields, ctx, tx) as Prisma.EventGetPayload<{}>;
 
-            const segmentFields: Prisma.EventSegmentUncheckedCreateInput = {
+            const segmentFields: Omit<Prisma.EventSegmentUncheckedCreateInput, "publicId"> = {
                 name: args.segment.name || "Set 1",
                 description: args.segment.description || "",
                 eventId: newEvent.id,
                 startsAt: args.segment.startsAt,
-                durationMillis: args.segment.durationMillis,
+                durationMillis: BigInt(args.segment.durationMillis),
                 isAllDay: args.segment.isAllDay,
             };
 
@@ -106,7 +106,8 @@ export default resolver.pipe(
 
             return {
                 event: newEvent,
-                segment,
+                segment: db3.eventSegmentEditorView.parseDto(authorizeAndProjectDB3ViewModel(
+                    db3.xEventSegment, segment, publicData, "insertEvent:segment")),
             };
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120_000 });
     }
