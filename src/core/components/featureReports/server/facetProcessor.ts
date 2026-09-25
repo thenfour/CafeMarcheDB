@@ -1,9 +1,8 @@
 import { MySqlDateTimeLiteral, MySqlStringLiteral, MySqlStringLiteralAllowingPercent, MySqlSymbol, parseBucketToDateRange } from "@/shared/mysqlUtils";
-import { xCustomLink, xEvent, xMenuLink, xSong, xWikiPage } from "@/src/core/db3/db3";
+import { xCustomLink, xEvent, xEventStatus, xEventType, xMenuLink, xSong, xWikiPage } from "@/src/core/db3/db3";
 import { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
 import { hash256 } from "@blitzjs/auth";
 import { z } from "zod";
-import { parsePublicId } from "shared/publicId";
 import { FacetedBreakdownResult, ZFeatureReportFilterSpec } from "../activityReportTypes";
 import { DeviceClasses, PointerTypes } from "../activityTracking";
 
@@ -467,8 +466,8 @@ const eventsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['eve
         count: Number(row.count),
         name: row.name,
         startsAt: row.startsAt,
-        statusId: row.statusId ? parsePublicId<"EventStatus">(row.statusId) : null,
-        typeId: row.typeId ? parsePublicId<"EventType">(row.typeId) : null,
+        statusId: row.statusId ? xEventStatus.parseIdentity(row.statusId) : null,
+        typeId: row.typeId ? xEventType.parseIdentity(row.typeId) : null,
     }),
     getFilterSqlConditions: (filterSpec, conditions) => {
         if (filterSpec.includeEventIds.length > 0) {

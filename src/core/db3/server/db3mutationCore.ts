@@ -27,7 +27,8 @@ import { UserWithRolesArgs } from "../shared/schema/userPayloads";
 import { SharedAPI } from "../shared/sharedAPI";
 import { queryTable } from "./db3QueryCore";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
-import { generatePublicId, isPublicIdUniqueCollision } from "@/src/server/publicId";
+import { isPublicIdUniqueCollision } from "@/src/server/publicId";
+import { db3Server } from "./db3Server";
 //import { requireUnmergedMutationUsers } from "./mergedUserMutationGuard";
 //import { requireUnmergedUserReferences } from "src/auth/server/mergedUserReferences";
 
@@ -57,9 +58,10 @@ const createDB3Row = async (
         return await dbTableClient.create({ data });
     }
 
+    const serverTable = db3Server.table(table);
     // theoretically possible to collide, hence the retry loop.
     for (let attempt = 0; attempt < PUBLIC_ID_INSERT_RETRIES; ++attempt) {
-        data[table.publicIdMember] = generatePublicId();
+        data[table.publicIdMember] = serverTable.generatePublicId();
         try {
             return await dbTableClient.create({ data });
         } catch (error) {

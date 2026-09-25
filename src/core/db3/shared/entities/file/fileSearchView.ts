@@ -81,7 +81,6 @@ const fileSearchRequestedSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
             tags: {
                 select: {
                     fileId: true,
-                    fileTag: { select: { publicId: true } },
                 },
             },
             taggedSongs: {
@@ -104,15 +103,8 @@ const fileSearchRequestedSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
                             createdByUserId: true,
                             visiblePermissionId: true,
                             isDeleted: true,
-                            type: { select: { publicId: true } },
-                            status: { select: { publicId: true } },
                         },
                     },
-                },
-            },
-            taggedInstruments: {
-                select: {
-                    instrument: { select: { publicId: true } },
                 },
             },
             taggedWikiPages: {

@@ -8,7 +8,6 @@ import db, { Prisma } from "db";
 import formidable, { PersistentFile } from 'formidable';
 import * as mime from 'mime';
 import { Permission } from "shared/permissions";
-import { parsePublicId } from "shared/publicId";
 import { CoerceToNumberOrNull, CoerceToString, IsNullOrWhitespace, isValidURL } from 'shared/utils';
 import { api } from "src/blitz-server";
 import * as db3 from 'src/core/db3/db3';
@@ -64,10 +63,10 @@ export default api(async (req, res, origCtx: Ctx) => {
                     args.taggedSongId = fields.taggedSongId && (CoerceToNumberOrNull(fields.taggedSongId[0]));
                     args.taggedUserId = fields.taggedUserId && (CoerceToNumberOrNull(fields.taggedUserId[0]));
                     args.taggedWikiPageId = fields.taggedWikiPageId && (CoerceToNumberOrNull(fields.taggedWikiPageId[0]));
-                    args.visiblePermissionId = fields.visiblePermissionId && parsePublicId<"Permission">(
+                    args.visiblePermissionId = fields.visiblePermissionId && db3.xPermission.parseIdentity(
                         fields.visiblePermissionId[0],
                     );
-                    args.fileTagId = fields.fileTagId && parsePublicId<"FileTag">(
+                    args.fileTagId = fields.fileTagId && db3.xFileTag.parseIdentity(
                         fields.fileTagId[0],
                     );
 
@@ -90,7 +89,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                             select: { publicId: true },
                         });
                         if (!permission) throw new Error(`Unknown visibility permission '${visiblePermission}'.`);
-                        args.visiblePermissionId = parsePublicId<"Permission">(permission.publicId);
+                        args.visiblePermissionId = db3.xPermission.parseIdentity(permission.publicId);
                     }
 
                     const resolvedVisibility = await resolvePublicForeignIds(

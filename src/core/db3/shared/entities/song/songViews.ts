@@ -231,10 +231,6 @@ const songSearchRequestedSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
             tags: {
                 select: {
                     songId: true,
-                    tag: {
-                        // Projection support; hydration uses the dashboard reference.
-                        select: { publicId: true },
-                    },
                 },
             },
             taggedFiles: {
@@ -249,7 +245,6 @@ const songSearchRequestedSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
                             tags: {
                                 select: {
                                     fileId: true,
-                                    fileTag: { select: { publicId: true } },
                                 },
                             },
                         },
@@ -261,9 +256,6 @@ const songSearchRequestedSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
                 select: {
                     userId: true,
                     songId: true,
-                    type: {
-                        select: { publicId: true },
-                    },
                 },
             },
         }
@@ -366,10 +358,6 @@ const songDetailRequestedSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
             tags: {
                 select: {
                     songId: true,
-                    tag: {
-                        // Projection support; hydration uses the dashboard reference.
-                        select: { publicId: true },
-                    },
                 },
             },
             taggedFiles: {
@@ -379,13 +367,6 @@ const songDetailRequestedSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
                     file: fileCardSelection,
                 },
                 orderBy: { file: { uploadedAt: "desc" } },
-            },
-            credits: {
-                select: {
-                    type: {
-                        select: { publicId: true },
-                    },
-                },
             },
         },
     }));

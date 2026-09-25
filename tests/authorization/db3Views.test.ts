@@ -649,11 +649,9 @@ describe("DB3 named views", () => {
             .toMatchTypeOf<{
                 publicId: string;
                 functionalGroupId: number;
-                functionalGroup: { publicId: string };
                 instrumentTags: {
                     publicId: string;
                     tagId: number;
-                    tag: { publicId: string };
                 }[];
             }>();
     });

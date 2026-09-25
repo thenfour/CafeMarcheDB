@@ -1,7 +1,10 @@
 import { PrismaClient } from "@/db";
+import { db3Server } from "@db3/server/db3Server";
+import { xRolePermissionAssociation } from "@db3/shared/schema/user";
 import { Permission } from "shared/permissions";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { generatePublicId } from "@/src/server/publicId";
+
+const rolePermissionServer = db3Server.table(xRolePermissionAssociation);
 
 export const assertIsPrismaClient = (db: unknown): asserts db is PrismaClient => {
     // no check necessary; the type assertion is sufficient.
@@ -44,7 +47,7 @@ export const assertValidSysadminRole = async (
     if (permsToAdd.length > 0) {
         await db2.rolePermission.createMany({
             data: permsToAdd.map(perm => ({
-                publicId: generatePublicId<"RolePermission">(),
+                publicId: rolePermissionServer.generatePublicId(),
                 roleId: role.id,
                 permissionId: perm.id,
             })),

@@ -12,7 +12,7 @@ import { isUserInvitedToEvent } from "shared/eventInvitation";
 import { loadUserSettings } from "src/auth/server/userSettings";
 import { shouldIncludeEventInCalendarFeed } from "../shared/calendarAttendance";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
-import { parsePublicId, type EventStatusPublicId } from "shared/publicId";
+import type { EventStatusPublicId } from "shared/publicId";
 
 interface ICalSettings {
     calendarName: string;
@@ -220,7 +220,7 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
     const cancelledStatusIds = (await db.eventStatus.findMany({
         select: { publicId: true },
         where: { significance: db3.EventStatusSignificance.Cancelled },
-    })).map(status => parsePublicId<"EventStatus">(status.publicId));
+    })).map(status => db3.xEventStatus.parseIdentity(status.publicId));
     const userSettings = await loadUserSettings(currentUser.id);
     const attendanceById = new Map(eventAttendances.map(attendance => [attendance.id, attendance]));
     const cancelledStatuses = new Set(cancelledStatusIds);

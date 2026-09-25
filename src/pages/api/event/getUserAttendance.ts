@@ -4,12 +4,12 @@ import { Ctx } from "@blitzjs/next";
 import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
-import { parsePublicId } from "shared/publicId";
 import { BigintToNumber } from "shared/utils";
 import { api } from "src/blitz-server";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { GetUserAttendanceArgs, GetUserAttendanceRet } from "src/core/db3/shared/apiTypes";
 import { xEvent } from "src/core/db3/shared/schema/event";
+import { xInstrument } from "src/core/db3/shared/schema/instrument";
 import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
 
 
@@ -65,7 +65,7 @@ async function getUserAttendanceCore(
         userId: userId,
         comment: eventResponse?.userComment || null,
         instrumentId: eventResponse?.instrument
-            ? parsePublicId<"Instrument">(eventResponse.instrument.publicId)
+            ? xInstrument.parseIdentity(eventResponse.instrument.publicId)
             : null,
         segmentResponses: segmentResponses.map(sr => ({
             segmentId: sr.eventSegmentId,

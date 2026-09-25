@@ -15,7 +15,6 @@ import {
 import {
     InstrumentTagAssociationNaturalOrderBy,
 } from "../../schema/prismArgs";
-import { graft } from "../common/viewCommon";
 
 // functional group -------------------------------------
 const instrumentFunctionalGroupSelection = Prisma.validator<Prisma.InstrumentFunctionalGroupDefaultArgs>()({
@@ -92,31 +91,10 @@ const instrumentEditorTransportSelection = Prisma.validator<Prisma.InstrumentDef
     },
 });
 
-const instrumentEditorSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()(
-    graft(instrumentEditorTransportSelection, {
-        select: {
-            // The server uses this relation to project functionalGroupId to its
-            // public identity. The normalized client relation comes from the
-            // dashboard reference provider instead of crossing the view DTO.
-            functionalGroup: {
-                select: { publicId: true },
-            },
-            instrumentTags: {
-                select: {
-                    // The relation is projection support. The client receives the
-                    // normalized tag from the reference provider.
-                    tag: { select: { publicId: true } },
-                },
-            },
-        },
-    })
-);
-
 const instrumentViewContract = deriveViewContract(
     xInstrument,
-    instrumentEditorSelection,
+    instrumentEditorTransportSelection,
     {
-        transportSelection: instrumentEditorTransportSelection,
         references: dashboardReferenceContract,
     },
 );

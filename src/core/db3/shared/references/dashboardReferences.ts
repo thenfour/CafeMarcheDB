@@ -10,7 +10,6 @@ import {
 } from "../core/db3Hydration";
 import { type ClientOf, defineView } from "../core/db3View";
 import { deriveViewContract } from "../core/db3ViewContract";
-import { graft } from "../entities/common/viewCommon";
 import {
     xEventAttendance,
     xEventStatus,
@@ -206,21 +205,6 @@ const dashboardInstrumentTransportSelection = Prisma.validator<Prisma.Instrument
     },
 });
 
-const dashboardInstrumentSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()(
-    graft(dashboardInstrumentTransportSelection, {
-        select: {
-            functionalGroup: {
-                select: { publicId: true },
-            },
-            instrumentTags: {
-                select: {
-                    tag: { select: { publicId: true } },
-                },
-            },
-        },
-    })
-);
-
 // These projections and conversions are private details of the dashboard
 // provider. DB3 views see only dashboardReferenceContract's per-entity output
 // types; another provider may construct completely different values.
@@ -295,9 +279,8 @@ export const dashboardLeafReferenceContract = defineReferenceContract({
 
 export const dashboardInstrumentResource = deriveViewContract(
     xInstrument,
-    dashboardInstrumentSelection,
+    dashboardInstrumentTransportSelection,
     {
-        transportSelection: dashboardInstrumentTransportSelection,
         references: dashboardLeafReferenceContract,
     },
 );

@@ -149,6 +149,16 @@ callbacks. Persistence-side natural identity is an explicit, separate
 `databaseIdentity` contract; resolving a public ID at the trusted command
 boundary does not weaken the canonical client identity accepted by the table.
 
+Server-only entity capabilities are exposed through
+`db3Server.table(xTable)`, not added to the shared xTable or scattered across
+unrelated free functions. Public-ID generation is the first capability on that
+slice: the server supplies randomness while the bound xTable supplies the exact
+identity type and parser. Shared code continues to use `parseIdentity()`; code
+that intentionally works with natural database identity uses the separate
+`parseDatabaseIdentity()` boundary. Persistence-only query and mutation helpers
+should move onto the server slice when a concrete migration touches them rather
+than expanding the shared table surface further.
+
 The former `DB3Entity`/`defineEntity()` wrapper duplicated the table, delegate,
 and identifier and has been removed. A view's `entity` property now references
 its xTable directly. `DB3IdentityOf<TTable>` and
@@ -1328,6 +1338,15 @@ conversions.
   live in the table's `tableParams` contract, but `entityIdentity` and
   `entityIdentityArray` now derive validation from their target table and are
   resolved centrally before selection or where-clause construction.
+- [x] Add the discoverable server-only table slice and put public-ID generation
+  behind it. DB3-aware production code now derives parsing and generation from
+  its xTable rather than asserting a free-string public-ID brand.
+- [x] Let derived view contracts add their own hidden relation public IDs and
+  remove the redundant manual projection selections. The remaining manual
+  EventSongList tag projection belongs to a legacy non-derived view.
+- [ ] Collapse the RolePermission command's association and role lookup into one
+  relational Prisma query, and teach the in-memory Prisma test double that
+  nested selection shape instead of preserving production complexity for it.
 - [ ] Normalize the remaining non-identity query parameter boundary so a view
   can declare its parameter type instead of callers depending on an untyped
   `tableParams` bag. This broader cleanup is no longer a public-ID prerequisite.

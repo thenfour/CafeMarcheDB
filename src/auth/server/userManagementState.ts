@@ -2,9 +2,10 @@
 
 import { Prisma } from "db";
 import type { Permission } from "shared/permissions";
-import { parsePublicId, type RolePublicId } from "shared/publicId";
+import type { RolePublicId } from "shared/publicId";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { RoleArgs, RoleNaturalOrderBy } from "src/core/db3/shared/schema/prismArgs";
+import { xRole } from "src/core/db3/shared/schema/user";
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { PermissionSet } from "../shared/PermissionSet";
 import { loadEffectivePermissions } from "./effectivePermissions";
@@ -138,7 +139,7 @@ export const getAssignableRoles = async (
             desiredRole: makePermissionSetFromRole(role),
         }))
         .map(role => ({
-            publicId: parsePublicId<"Role">(role.publicId),
+            publicId: xRole.parseIdentity(role.publicId),
             name: role.name,
             description: role.description,
             sortOrder: role.sortOrder,

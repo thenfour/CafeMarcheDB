@@ -345,18 +345,8 @@ const makeEventSearchSelection = (actorUserId: number) => (
             select: {
                 createdByUserId: true,
                 isDeleted: true,
-                type: { select: { publicId: true } },
-                status: { select: { publicId: true } },
-                tags: {
-                    select: {
-                        eventTag: { select: { publicId: true } },
-                    },
-                },
                 responses: {
                     where: { userId: actorUserId },
-                    select: {
-                        instrument: { select: { publicId: true } },
-                    },
                 },
                 segments: {
                     select: {
@@ -562,13 +552,6 @@ const eventWikiPageContextSelection = Prisma.validator<Prisma.EventDefaultArgs>(
             createdByUserId: true,
             visiblePermissionId: true,
             isDeleted: true,
-            type: { select: { publicId: true } },
-            status: { select: { publicId: true } },
-            segments: {
-                select: {
-                    status: { select: { publicId: true } },
-                },
-            },
         },
     }),
 );

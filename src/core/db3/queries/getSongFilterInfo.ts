@@ -13,7 +13,7 @@ import { getCurrentUserCore } from "../server/db3mutationCore";
 import { queryTable } from "../server/db3QueryCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "../shared/apiTypes";
 import { resolvePublicIds } from "../server/db3PublicIds";
-import { parsePublicId, type SongTagPublicId } from "shared/publicId";
+import type { SongTagPublicId } from "shared/publicId";
 
 interface TArgs {
     filterSpec: {
@@ -139,7 +139,7 @@ export default resolver.pipe(
             const tags: GetEventFilterInfoChipInfo<SongTagPublicId>[] = tagsResult.map(r => ({
                 color: r.color,
                 iconName: null,
-                id: parsePublicId<"SongTag">(r.publicId),
+                id: db3.xSongTag.parseIdentity(r.publicId),
                 label: r.text,
                 tooltip: r.description,
                 rowCount: new Number(r.song_count).valueOf(),

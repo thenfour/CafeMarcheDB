@@ -4,7 +4,6 @@ import db, { Prisma } from "db";
 import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import {
-    parsePublicId,
     type EventStatusPublicId,
     type EventTypePublicId,
     type InstrumentPublicId,
@@ -13,7 +12,9 @@ import {
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
-import { xEvent } from "../shared/schema/event";
+import { xEvent, xEventStatus, xEventType } from "../shared/schema/event";
+import { xInstrument } from "../shared/schema/instrument";
+import { xUserTag } from "../shared/schema/user";
 
 type UserEventAttendanceQueryResult_EventSegment = Omit<Prisma.EventSegmentGetPayload<{
     select: {
@@ -143,17 +144,17 @@ export default resolver.pipe(
                     const eventRet: UserEventAttendanceQueryResult_Event = {
                         id: event.id,
                         name: event.name,
-                        statusId: event.status ? parsePublicId<"EventStatus">(event.status.publicId) : null,
-                        typeId: event.type ? parsePublicId<"EventType">(event.type.publicId) : null,
+                        statusId: event.status ? xEventStatus.parseIdentity(event.status.publicId) : null,
+                        typeId: event.type ? xEventType.parseIdentity(event.type.publicId) : null,
                         startsAt: event.startsAt,
                         durationMillis: event.durationMillis,
                         isAllDay: event.isAllDay,
                         expectedAttendanceUserTagId: event.expectedAttendanceUserTag
-                            ? parsePublicId<"UserTag">(event.expectedAttendanceUserTag.publicId)
+                            ? xUserTag.parseIdentity(event.expectedAttendanceUserTag.publicId)
                             : null,
                         //
                         instrumentId: er?.instrument
-                            ? parsePublicId<"Instrument">(er.instrument.publicId)
+                            ? xInstrument.parseIdentity(er.instrument.publicId)
                             : null,
                         userComment: er?.userComment || null,
                         isInvited: er?.isInvited || null,
@@ -163,7 +164,7 @@ export default resolver.pipe(
                             const segRet: UserEventAttendanceQueryResult_EventSegment = {
                                 id: seg.id,
                                 name: seg.name,
-                                statusId: seg.status ? parsePublicId<"EventStatus">(seg.status.publicId) : null,
+                                statusId: seg.status ? xEventStatus.parseIdentity(seg.status.publicId) : null,
                                 startsAt: seg.startsAt,
                                 durationMillis: seg.durationMillis,
                                 isAllDay: seg.isAllDay,

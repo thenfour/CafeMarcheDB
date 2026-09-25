@@ -5,8 +5,7 @@ import { Permission } from "shared/permissions";
 import { GetFilteredSongsItemSongSelect, GetFilteredSongsRet } from "../shared/apiTypes";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
-import { xSong } from "../shared/schema/song";
-import { parsePublicId } from "shared/publicId";
+import { xSong, xSongTag, xSongTagAssociation } from "../shared/schema/song";
 
 interface TArgs {
     id: number | null;
@@ -34,9 +33,9 @@ export default resolver.pipe(
                 matchingItem: {
                     ...qr,
                     tags: qr.tags.map(association => ({
-                        publicId: parsePublicId<"SongTagAssociation">(association.publicId),
+                        publicId: xSongTagAssociation.parseIdentity(association.publicId),
                         songId: association.songId,
-                        tagId: parsePublicId<"SongTag">(association.tag.publicId),
+                        tagId: xSongTag.parseIdentity(association.tag.publicId),
                     })),
                 },
             };

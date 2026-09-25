@@ -16,13 +16,6 @@ const wikiPageTagAssociationTransportSelection = {
     orderBy: WikiPageTagAssignmentNaturalOrderBy,
 } as const;
 
-const wikiPageTagAssociationProjectionSelection = {
-    select: {
-        // Projection support; hydration uses the dashboard reference.
-        tag: { select: { publicId: true } },
-    },
-} as const;
-
 const retainHydratedWikiPageTags = <
     TAssociation extends { tag?: unknown },
 >(associations: readonly TAssociation[] | undefined) => (
@@ -59,7 +52,6 @@ const wikiPageEditorRequestedSelection = Prisma.validator<Prisma.WikiPageDefault
             // Row authorization needs these values, but they stay outside the DTO.
             createdByUserId: true,
             visiblePermissionId: true,
-            tags: wikiPageTagAssociationProjectionSelection,
         },
     }),
 );
@@ -112,7 +104,6 @@ const wikiPageSearchRequestedSelection = Prisma.validator<Prisma.WikiPageDefault
     graft(wikiPageSearchTransportSelection, {
         select: {
             createdByUserId: true,
-            tags: wikiPageTagAssociationProjectionSelection,
         },
     }),
 );

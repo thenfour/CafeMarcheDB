@@ -1,5 +1,4 @@
 import { CalendarDate } from "shared/dateTimePolicy";
-import { parsePublicId } from "shared/publicId";
 
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
@@ -215,7 +214,7 @@ export default resolver.pipe(
             // visibility
             const defaultVisibilityPermission = await GetDefaultVisibilityPermission(db);
             ret.event.visiblePermissionId = defaultVisibilityPermission
-                ? parsePublicId<"Permission">(defaultVisibilityPermission.publicId)
+                ? db3.xPermission.parseIdentity(defaultVisibilityPermission.publicId)
                 : null;
 
             const edr = ExtractDescription(args.text);
@@ -223,7 +222,7 @@ export default resolver.pipe(
 
             //ret.event.description = edr.afterSeparator || "";
 
-            ret.event.statusId = parsePublicId<"EventStatus">((await db.eventStatus.findFirst({
+            ret.event.statusId = db3.xEventStatus.parseIdentity((await db.eventStatus.findFirst({
                 where: {
                     significance: db3.EventStatusSignificance.FinalConfirmation,
                     isDeleted: false,
@@ -244,13 +243,13 @@ export default resolver.pipe(
             }
 
             ret.event.expectedAttendanceUserTagId = defaultInvitationUserTag
-                ? parsePublicId<"UserTag">(defaultInvitationUserTag.publicId)
+                ? db3.xUserTag.parseIdentity(defaultInvitationUserTag.publicId)
                 : null;
 
             // extract event type. either concert or rehearsal
             const concertPattern = /\bconcert|performance\b/i;
             if (concertPattern.test(eventTxt)) {
-                ret.event.typeId = parsePublicId<"EventType">((await db.eventType.findFirst({
+                ret.event.typeId = db3.xEventType.parseIdentity((await db.eventType.findFirst({
                     where: {
                         significance: db3.EventTypeSignificance.Concert,
                         isDeleted: false,
@@ -260,7 +259,7 @@ export default resolver.pipe(
             }
             const rehearsalPattern = /\brehearsal|repetitie\b/i;
             if (rehearsalPattern.test(eventTxt)) {
-                ret.event.typeId = parsePublicId<"EventType">((await db.eventType.findFirst({
+                ret.event.typeId = db3.xEventType.parseIdentity((await db.eventType.findFirst({
                     where: {
                         significance: db3.EventTypeSignificance.Rehearsal,
                         isDeleted: false,

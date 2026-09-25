@@ -12,7 +12,7 @@ import { GetPublicRole, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpr
 import { UserWithRolesPayload } from "../shared/schema/userPayloads";
 import { loadEffectivePermissions } from "@/src/auth/server/effectivePermissions";
 import { PermissionSet } from "@/src/auth/shared/PermissionSet";
-import { parsePublicId } from "shared/publicId";
+import { xInstrument } from "../shared/schema/instrument";
 
 // per type; this is not the amount to return to users. after this, relevance prunes to the top N results.
 // this just sets a practical limit.
@@ -54,7 +54,7 @@ const InstrumentQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.instrum
         return instruments.map(instrument => {
             const bestMatch = CalculateMatchStrength(instrumentFields, instrument, query);
             return {
-                id: parsePublicId<"Instrument">(instrument.publicId),
+                id: xInstrument.parseIdentity(instrument.publicId),
                 absoluteUri: ServerApi.getAbsoluteUri(`/backstage/instrument/${instrument.publicId}`),
                 name: instrument.name,
                 matchStrength: bestMatch.matchStrength,

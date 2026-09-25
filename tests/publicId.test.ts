@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { isPublicId, PUBLIC_ID_PLACEHOLDER_PREFIX } from "shared/publicId";
+import { describe, expect, expectTypeOf, it } from "vitest";
+import { isPublicId, PUBLIC_ID_PLACEHOLDER_PREFIX, type InstrumentPublicId } from "shared/publicId";
+import { db3Server } from "src/core/db3/server/db3Server";
+import { xInstrument } from "src/core/db3/shared/schema/instrument";
+import { xSetting } from "src/core/db3/shared/db3schema";
+import type { xTable } from "src/core/db3/shared/db3core";
 import { generatePublicId, repairPublicIdPlaceholders, type PublicIdRepairDelegate } from "src/server/publicId";
 
 class InMemoryPublicIdDelegate implements PublicIdRepairDelegate {
@@ -37,6 +41,16 @@ describe("public IDs", () => {
         expect(new Set(values).size).toBe(values.length);
         expect(values.every(value => value.length === 16 && isPublicId(value))).toBe(true);
         expect(isPublicId(`${PUBLIC_ID_PLACEHOLDER_PREFIX}000000000000001`)).toBe(false);
+    });
+
+    it("binds server generation to the table's identity contract", () => {
+        const value = db3Server.table(xInstrument).generatePublicId();
+        const runtimeOnlyLegacyTable: xTable = xSetting;
+
+        expectTypeOf(value).toEqualTypeOf<InstrumentPublicId>();
+        expect(xInstrument.isIdentity(value)).toBe(true);
+        expect(() => db3Server.table(runtimeOnlyLegacyTable).generatePublicId())
+            .toThrow("Table Setting does not use public IDs.");
     });
 
     it("repairs migration placeholders safely across concurrent startup attempts and retries collisions", async () => {
