@@ -1,3 +1,4 @@
+import { attendancePublicId } from "./support/eventAttendanceFixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => ({
@@ -18,12 +19,12 @@ const owner = { ...createAuthorizationTestUser("normal", { id: 10 }), uid: "owne
 const cancelledDbId = 99;
 const cancelledId = parsePublicId<"EventStatus">("CalendarStatus01");
 const attendanceRows = [0, 33, 50, 51, 66, 100].map(strength => ({
-    id: strength + 1, strength, isDeleted: true, isActive: false,
+    id: strength + 1, publicId: attendancePublicId(strength + 1), strength, isDeleted: true, isActive: false,
 }));
 const segment = (id: number, strength?: number | null, statusId: EventStatusPublicId | null = null) => ({
     id, name: `Segment ${id}`, uid: `segment-${id}`, description: "", statusId,
     startsAt: new Date("2026-10-01T10:00:00Z") as Date | null, isAllDay: false, durationMillis: BigInt(3_600_000),
-    responses: strength === undefined ? [] : [{ userId: owner.id, attendanceId: strength === null ? null : strength + 1 }],
+    responses: strength === undefined ? [] : [{ userId: owner.id, attendanceId: strength === null ? null : attendancePublicId(strength + 1) }],
 });
 const makeEvent = (segments: ReturnType<typeof segment>[]) => ({
     id: 1, name: "Concert", revision: 1, locationDescription: "Hall", segments,
@@ -37,7 +38,7 @@ const include = (segments: ReturnType<typeof segment>[], showDeclinedEvents = fa
         segments, showDeclinedEvents, userId,
         showUninvitedEvents, isInvited: false,
         cancelledStatusIds: new Set([cancelledId]),
-        attendanceById: new Map(attendanceRows.map(row => [row.id, row])),
+        attendanceById: new Map(attendanceRows.map(row => [row.publicId, row])),
     });
 
 describe("event-level calendar attendance", () => {

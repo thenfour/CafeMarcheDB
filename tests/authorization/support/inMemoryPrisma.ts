@@ -86,8 +86,8 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value)
 
 type Relation = { table: string; local: string; foreign: string; many?: boolean }
-// Relationships exercised by the setlist aggregate's authorized queries and audit selection.
-const setlistRelations: Record<string, Record<string, Relation>> = {
+// Dynamic table names mirror Prisma; only relations exercised by these integration tests are listed.
+const testRelations: Record<string, Record<string, Relation>> = {
   event: {
     segments: { table: "eventSegment", local: "id", foreign: "eventId", many: true },
     songLists: { table: "eventSongList", local: "id", foreign: "eventId", many: true },
@@ -103,6 +103,15 @@ const setlistRelations: Record<string, Record<string, Relation>> = {
   },
   eventSongListDivider: {
     eventSongList: { table: "eventSongList", local: "eventSongListId", foreign: "id" },
+  },
+  eventSegment: {
+    event: { table: "event", local: "eventId", foreign: "id" },
+    status: { table: "eventStatus", local: "statusId", foreign: "id" },
+    responses: { table: "eventSegmentUserResponse", local: "id", foreign: "eventSegmentId", many: true },
+  },
+  eventSegmentUserResponse: {
+    eventSegment: { table: "eventSegment", local: "eventSegmentId", foreign: "id" },
+    attendance: { table: "eventAttendance", local: "attendanceId", foreign: "id" },
   },
 }
 
@@ -233,11 +242,11 @@ class AuthorizationTestDatabase {
       for (const [key, value] of Object.entries(where)) {
         if (["AND", "OR", "NOT"].includes(key)) {
           for (const clause of Array.isArray(value) ? value : [value]) collectWhere(clause)
-        } else if (setlistRelations[table]?.[key]) whereRelations[key] = value
+        } else if (testRelations[table]?.[key]) whereRelations[key] = value
       }
     }
     collectWhere(args.where)
-    for (const [member, relation] of Object.entries(setlistRelations[table] ?? {})) {
+    for (const [member, relation] of Object.entries(testRelations[table] ?? {})) {
       const selection = args.select?.[member] ?? args.include?.[member]
       const where = whereRelations[member]
       if (!selection && !where) continue

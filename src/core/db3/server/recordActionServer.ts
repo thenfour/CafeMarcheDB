@@ -110,7 +110,7 @@ function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null,
         fileId: toSafeId(args.fileId),
         songId: toSafeId(args.songId),
         wikiPageId: toSafeId(args.wikiPageId),
-        attendanceId: toSafeId(args.attendanceId),
+        attendanceId: null,
         eventSegmentId: toSafeId(args.eventSegmentId),
         customLinkId: toSafeId(args.customLinkId),
         eventSongListId: null,
@@ -142,6 +142,11 @@ export async function createActionRecord(args: RecordActionArgs & { userId?: num
             select: { id: true },
         });
         sanitizedData.songCreditTypeId = songCreditType?.id ?? null;
+    }
+
+    if (args.attendanceId) {
+        const attendance = await db.eventAttendance.findUnique({ where: { publicId: args.attendanceId }, select: { id: true } });
+        sanitizedData.attendanceId = attendance?.id ?? null;
     }
 
     if (args.eventSongListId) {

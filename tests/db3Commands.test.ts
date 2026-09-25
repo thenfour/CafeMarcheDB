@@ -1,3 +1,4 @@
+import { attendancePublicId } from "./support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId } from "./support/eventSongListFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
@@ -358,7 +359,7 @@ describe("DB3 commands", () => {
 
     it("defines finite CRUD views for the standalone relationship grids", () => {
         expect(db3.eventAttendanceEditorView.parseDto({
-            id: 1,
+            publicId: attendancePublicId(1),
             text: "Going",
             personalText: "You are going",
             pastText: "Went",
@@ -370,11 +371,11 @@ describe("DB3 commands", () => {
             iconName: "Check",
             color: "green",
             strength: 100,
-        })).toMatchObject({ id: 1, text: "Going", strength: 100 });
+        })).toMatchObject({ publicId: attendancePublicId(1), text: "Going", strength: 100 });
         expect(db3.eventAttendanceEditorView.parseDto({
-            id: 1,
+            publicId: attendancePublicId(1),
             responses: [],
-        })).toEqual({ id: 1 });
+        })).toEqual({ publicId: attendancePublicId(1) });
         expect(db3.eventAttendanceEditorView.crud.operations.delete.deleteType)
             .toBe("softWhenPossible");
 

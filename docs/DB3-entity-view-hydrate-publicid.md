@@ -1341,8 +1341,8 @@ The current pressure-led sequence is:
     Remove the two ledger models from the denominator, not by counting them as
     completed conversions.
 13. **In progress:** migrate the Event constellation from its outer aggregates
-    inward. The three Event setlist models are complete; continue with
-    EventAttendance, the segment/response family, then Event. The bounded slices
+    inward. The three Event setlist models and EventAttendance are complete;
+    continue with the segment/response family, then Event. The bounded slices
     below preserve the existing identity domains of Event, Song, and User until
     their own turns.
 14. Keep central Song, File, WikiPage, User, and the separate SetlistPlan
@@ -1352,12 +1352,12 @@ The current pressure-led sequence is:
 ### Current application phase: Event constellation
 
 The Event classification family and FileEventTag are already converted. The
-eight Event-related models form four coherent slices; the first is complete:
+eight Event-related models form four coherent slices; the first two are complete:
 
 | Order | Models | Boundary exercised |
 | --- | --- | --- |
 | 1 (complete) | `EventSongList`, `EventSongListSong`, `EventSongListDivider` | An editable aggregate with persisted child identities, local draft keys, and mixed song/divider ordering. |
-| 2 | `EventAttendance` | The shared response-choice reference across dashboard caches, controls, reports, imports, and telemetry. |
+| 2 (complete) | `EventAttendance` | The shared response-choice reference across dashboard caches, controls, reports, imports, and telemetry. |
 | 3 | `EventSegment`, `EventSegmentUserResponse`, `EventUserResponse` | Segment-keyed attendance operations and response creation/copying while Event and User remain natural. |
 | 4 | `Event` | Central routes, search, calendar links, visibility, creation/import, files, reports, and the complete embedded graph. |
 
@@ -1416,14 +1416,43 @@ and schema validation, and the production build. The build reports Blitz export
 warnings in the unchanged `src/blitz-server.ts`. Browser interaction against a
 migrated database remains unverified.
 
-#### Following slices: attendance, segments/responses, then Event
+#### Completed slice: EventAttendance
 
-`EventAttendance` should precede the response family because it is the shared
-lookup target. Its slice includes the dashboard reference provider, attendance
-controls and shared algorithms, embedded response DTOs, response mutation
-arguments/results, import data, reporting, and Action references. Classification
-continues to use the existing strength semantics; it must not depend on either
-numeric or public identifier values.
+`EventAttendance` now uses branded public identity across the generated editor
+CRUD, derived dashboard reference view, controls, React keys, embedded legacy
+and named Event response DTOs, response submission, initial Event responses,
+import preview, user attendance RPC/HTTP reports, calendar feeds, and telemetry
+and report/CSV references. Event, EventSegment, response rows, and User retain
+their current numeric identities until their own slices.
+
+The migration adds a unique ASCII/binary public-ID column. Startup replaces its
+deployment placeholders, and both seed paths generate IDs for new options.
+Response mutations resolve all distinct attendance choices inside the transaction
+before writing; numeric, unknown, and deleted choices fail. Null still clears a
+response, and unchanged public choices retain the existing idempotent behavior.
+Classification still uses strength, including the existing >50 going threshold.
+Admin, ownership, recovery, active-option, calendar UID, and revision policies
+remain unchanged. Local scenario JSON keeps its standalone 1/2/3 choice enum;
+the adapter supplies synthetic public IDs to the real control.
+
+Action/Change row identities and historical Change foreign keys remain numeric.
+The sysadmin ledger gets its numeric attendance labels from the historical lookup
+cache, including retired choices. New Action transport references are public,
+and the server resolves them to numeric database foreign keys.
+
+Two small existing HTTP attendance API errors were fixed in the same path: its
+EventStatus reference is now projected to public identity, and the async handler
+completes without wrapping its body in a never-settled promise.
+
+Validation: Prisma client generation and schema validation, TypeScript,
+production build, and `git diff --check` pass. The full unit run plus focused
+reruns passed 100 test files; three database integration files remain skipped.
+The selector reruns repaired stale DB3 mocks missing the earlier setlist and
+credit-type telemetry identity schemas. The build retains the existing Blitz
+export warnings in `src/blitz-server.ts`. The SQL migration has not been applied
+to a database, and browser interaction against migrated data remains unverified.
+
+#### Following slices: segments/responses, then Event
 
 The segment/response family then covers standalone and embedded segment CRUD,
 both response row identities, segment-keyed maps, attendance updates, copy/clear
@@ -1436,11 +1465,12 @@ Keep existing calendar UIDs, revisions, and date-range semantics distinct from
 the new canonical public identities; audit calendar output rather than changing
 its stable UID merely because a segment acquires a public ID.
 
-One pre-existing correctness issue found during this assessment belongs with
-that slice: `copyEventSegmentResponses` deletes through `transactionalDb` but
-inserts through the outer `db.eventSegmentUserResponse.createMany`. The copy
-must use one transaction, with a rollback test, when this operation is migrated.
-This assessment does not change runtime code.
+Two pre-existing transaction issues belong with that slice:
+`copyEventSegmentResponses` deletes through `transactionalDb` but inserts through
+the outer `db.eventSegmentUserResponse.createMany`; `clearEventSegmentResponses`
+uses the outer client for its entire transaction callback. Each operation must
+use one transaction, including hooks and audit writes, with rollback tests when
+migrated. Neither operation returns attendance identities to clients.
 
 Finally migrate Event across routes and exact lookup, search/facets, list/detail
 and frontpage views, calendar URLs and feeds, creation/import, file associations,
@@ -1557,7 +1587,7 @@ conversions.
   deleting each numeric client-identity compatibility path before marking that
   model complete below.
 
-#### Client-facing model progress: 31 / 47 complete (66%)
+#### Client-facing model progress: 32 / 47 complete (68%)
 
 The denominator is the 47 in-scope Prisma models whose own row identity currently
 crosses a client boundary. It excludes the five server-only models and the two
@@ -1600,6 +1630,7 @@ Completed models:
 - [x] `EventSongList`
 - [x] `EventSongListSong`
 - [x] `EventSongListDivider`
+- [x] `EventAttendance`
 
 Remaining models are grouped into coherent intended slices. The pressure label
 describes why the slice is ordered there; it does not relax the per-model
@@ -1619,9 +1650,9 @@ completion definition.
   - [x] `EventSongList`
   - [x] `EventSongListSong`
   - [x] `EventSongListDivider`
-- **Next: Event attendance reference**
-  - [ ] `EventAttendance`
-- **Then: Event segments and responses**
+- **Completed: Event attendance reference**
+  - [x] `EventAttendance`
+- **Next: Event segments and responses**
   - [ ] `EventSegment`
   - [ ] `EventSegmentUserResponse`
   - [ ] `EventUserResponse`

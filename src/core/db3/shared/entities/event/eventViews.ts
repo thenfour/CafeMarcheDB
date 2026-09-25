@@ -122,27 +122,30 @@ export const eventTagEditorView = defineCrudView({
 });
 
 // event attendance ------------------------------------------
-const EventAttendanceEditorDtoSchema = z.object({
-    ...db3s.id(),
-    ...db3s.isDeleted(),
-
-    ...db3s.descriptionColorSortOrder(),
-    ...db3s.iconName(),
-
-    text: z.string().optional(),
-    personalText: z.string().optional(),
-    pastText: z.string().optional(),
-    pastPersonalText: z.string().optional(),
-    isActive: z.boolean().optional(),
-    strength: z.number().int().optional(),
+export const eventAttendanceEditorSelection = Prisma.validator<Prisma.EventAttendanceDefaultArgs>()({
+    select: {
+        publicId: true,
+        text: true,
+        description: true,
+        iconName: true,
+        color: true,
+        sortOrder: true,
+        isDeleted: true,
+        strength: true,
+        personalText: true,
+        pastText: true,
+        pastPersonalText: true,
+        isActive: true,
+    },
 });
-
+const eventAttendanceContract = deriveViewContract(xEventAttendance, eventAttendanceEditorSelection);
 export const eventAttendanceEditorView = defineCrudView({
     viewID: "EventAttendance_Editor",
     entity: xEventAttendance,
     operations: { create: true, update: true, delete: true },
-    dtoSchema: EventAttendanceEditorDtoSchema,
-    hydrate: dto => xEventAttendance.getClientModel(dto, "view"),
+    selection: eventAttendanceContract.prismaSelection,
+    dtoSchema: eventAttendanceContract.dtoSchema,
+    hydrate: eventAttendanceContract.hydrate,
 });
 
 // event editor ------------------------------------------

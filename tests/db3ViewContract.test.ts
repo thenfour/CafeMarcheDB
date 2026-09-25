@@ -1,3 +1,4 @@
+import type { EventAttendancePublicId } from "shared/publicId";
 import { Prisma } from "db"
 import { z } from "zod"
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest"
@@ -117,7 +118,7 @@ describe("DB3 scalar selection compiler", () => {
       responses?: Array<{
         id: number
         userId?: number
-        attendanceId?: number | null
+        attendanceId?: EventAttendancePublicId | null
       }>
     }>()
     expectTypeOf<SegmentResponse["id"]>().toEqualTypeOf<number>()

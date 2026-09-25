@@ -29,7 +29,7 @@ export const AttendanceChipTooltip = (props: AttendanceChipTooltipProps) => {
 
 export const AttendanceChip = (props: AttendanceChipProps) => {
     const dashboardContext = useDashboardContext();
-    const value = typeof props.value === "number" ? dashboardContext.eventAttendance.getById(props.value) : props.value;
+    const value = typeof props.value === "string" ? dashboardContext.eventAttendance.getById(props.value) : props.value;
     return <AttendanceChipView {...props} value={value} tooltip={<Suspense>
         <AttendanceChipTooltip
             value={value}

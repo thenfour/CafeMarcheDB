@@ -47,7 +47,9 @@ describe.each([
       ? { ...request, skip: 0, take: 20 }
       : request, ctx)
 
-    expect(result.items).toEqual(segments.filter(segment => ids.includes(segment.id)))
+    // The test database now loads the relations requested by EventSegmentArgs too.
+    expect(result.items).toEqual(segments.filter(segment => ids.includes(segment.id))
+      .map(segment => ({ ...segment, event: null, status: null, responses: [] })))
     if ("count" in result) expect(result.count).toBe(ids.length)
   })
 

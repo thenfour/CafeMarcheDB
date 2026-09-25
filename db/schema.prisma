@@ -799,6 +799,7 @@ model EventSongListDivider {
 
 // things like yes, no, not-sure-yes, not-sure-no, partially
 model EventAttendance {
+  publicId String @unique @db.Char(16)
   id        Int @id @default(autoincrement())
   sortOrder Int @default(0)
 

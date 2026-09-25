@@ -4,6 +4,7 @@ import { SongOrderByColumnNames, SongOrderByColumnOption, SongOrderByColumnOptio
 import { SongListItem } from "@/src/core/components/song/SongListItem";
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
+import { isPublicId, type SongTagPublicId } from "shared/publicId";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
@@ -13,7 +14,6 @@ import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { songSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
-import { isPublicId, parsePublicId, type SongTagPublicId } from "shared/publicId";
 
 
 // for serializing in compact querystring
@@ -137,7 +137,7 @@ const SongListOuter = () => {
             column: "tags",
             chipTransformer: (x) => {
                 if (!isPublicId(x.id)) return x;
-                const tag = dashboardContext.songTag.getById(parsePublicId<"SongTag">(x.id))!;
+                const tag = dashboardContext.songTag.getById(db3.xSongTag.parseIdentity(x.id))!;
                 return {
                     ...x,
                     color: tag.color,

@@ -53,7 +53,7 @@ const UserSettings = ({ person, segmentCount, update }: {
                         ? e.target.value === "missing" ? "missing" : e.target.value === "null" ? null : Number(e.target.value) as 1 | 2 | 3 : previous)
                 })}>
                 <MenuItem value="missing">Unanswered (no row)</MenuItem><MenuItem value="null">Unanswered (cleared)</MenuItem>
-                {scenarioAttendances.map(a => <MenuItem key={a.id} value={a.id}>{a.text}</MenuItem>)}
+                {scenarioAttendances.map((a, index) => <MenuItem key={a.publicId} value={index + 1}>{a.text}</MenuItem>)}
             </TextField>)}
             <Button size="small" onClick={() => update({ responses: ["missing", "missing", "missing"] })}>Unanswered</Button>
             <Button size="small" onClick={() => update({ responses: [3, 3, 3] })}>All yes</Button>

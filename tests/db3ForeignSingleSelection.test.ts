@@ -5,9 +5,16 @@ import { createRoot, Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@blitzjs/rpc", () => ({ useQuery: vi.fn(), useMutation: vi.fn() }));
-vi.mock("src/core/db3/db3", () => ({
-    hydrateView: (view: any, dto: any, references: any) => view.hydrate(dto, references),
-}));
+vi.mock("src/core/db3/db3", async () => {
+    const { z } = await import("zod");
+    const { isPublicId } = await import("shared/publicId");
+    return {
+        // Selection tests load telemetry's schemas but do not exercise telemetry.
+        xEventSongList: { identitySchema: z.string().refine(isPublicId) },
+        xSongCreditType: { identitySchema: z.string().refine(isPublicId) },
+        hydrateView: (view: any, dto: any, references: any) => view.hydrate(dto, references),
+    };
+});
 vi.mock("src/core/db3/components/DB3ClientCore", () => ({
     IColumnClient: class { constructor(args: object) { Object.assign(this, args); } },
 }));

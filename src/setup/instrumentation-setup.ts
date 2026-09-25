@@ -289,7 +289,7 @@ async function EnsureEventAttendanceOptions() {
         return;
     }
 
-    await SeedTable("eventAttendance", db.eventAttendance, attendanceOptions);
+    await SeedTable("eventAttendance", db.eventAttendance, attendanceOptions.map(option => ({ ...option, publicId: generatePublicId<"EventAttendance">() })));
 }
 
 async function EnsureSongCreditTypes() {

@@ -129,13 +129,17 @@ const AttendanceIndicator = (props: AttendanceIndicatorProps) => {
 
     // due to limited space, and the fact that most of the time people are going to respond the same for all segments, and we don't even show specific seg info,
     // aggregate them into just the distinct attendance options.
-    const uniqueAttendanceIds = [...new Set(props.attendanceInfo.segmentUserResponses.map(s => s.response.attendanceId).filter(aid => (aid !== null)))] as number[];
+    const uniqueAttendanceIds = [
+        ...new Set(props.attendanceInfo.segmentUserResponses
+            .map(s => s.response.attendanceId)
+            .filter(aid => aid !== null && aid !== undefined))
+    ];
     const uniqueAttendances = uniqueAttendanceIds.map(id => dashboardContext.eventAttendance.getById(id)!);
 
     return <>
         <AdminInspectObject src={props.attendanceInfo} />
         {/* {props.attendanceInfo.segmentUserResponses.map(s => <SegmentAttendanceIndicator key={s.segment.id} segmentUserResponse={s} attendanceInfo={props.attendanceInfo} />)} */}
-        {uniqueAttendances.map(s => <SegmentAttendanceIndicator key={s.id} attendance={s} />)}
+        {uniqueAttendances.map(s => <SegmentAttendanceIndicator key={s.publicId} attendance={s} />)}
     </>;
 }
 

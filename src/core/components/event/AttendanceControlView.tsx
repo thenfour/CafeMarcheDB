@@ -1,3 +1,4 @@
+import type { EventAttendancePublicId } from "shared/publicId";
 import { formatEventDateRange, EventDatePresentation } from "shared/dateTimePresentation";
 import React from "react";
 import { CircularProgress } from "@mui/material";
@@ -16,7 +17,7 @@ import { AttendanceChipView, AttendanceChipTooltipContent } from "./AttendanceCh
 import type { EventAttendanceResult } from "./attendanceCalculation";
 
 export type AttendanceChange =
-    | { type: "segment"; segmentId: number; attendanceId: number | null }
+    | { type: "segment"; segmentId: number; attendanceId: EventAttendancePublicId | null }
     | { type: "instrument"; instrumentId: db3.InstrumentIdentity | null }
     | { type: "comment"; comment: string };
 
@@ -136,8 +137,8 @@ const AnswerControl = ({ segment, environment, forceEditMode, onReadonlyClick }:
     const [explicitEdit, setExplicitEdit] = React.useState(false);
     const [inProgress, setInProgress] = React.useState(false);
     const selectedId = segment.response.attendanceId;
-    const selected = environment.attendances.find(a => a.id === selectedId) || null;
-    const change = async (attendanceId: number | null) => {
+    const selected = environment.attendances.find(a => a.publicId === selectedId) || null;
+    const change = async (attendanceId: EventAttendancePublicId | null) => {
         setInProgress(true);
         try {
             await environment.onSave({ type: "segment", segmentId: segment.segment.id, attendanceId });
@@ -148,9 +149,9 @@ const AnswerControl = ({ segment, environment, forceEditMode, onReadonlyClick }:
     if (inProgress) return <CircularProgress size={16} />;
     return <CMChipContainer className="EventAttendanceResponseControlButtonGroup">
         {explicitEdit || forceEditMode ? <>
-            {environment.attendances.filter(a => a.isActive).map(option => <AnswerButton key={option.id}
-                value={option} selected={selectedId === option.id} noItemSelected={selectedId === null}
-                onSelect={() => { void change(option.id); }} tooltip={option.description} />)}
+            {environment.attendances.filter(a => a.isActive).map(option => <AnswerButton key={option.publicId}
+                value={option} selected={selectedId === option.publicId} noItemSelected={selectedId === null}
+                onSelect={() => { void change(option.publicId); }} tooltip={option.description} />)}
             <AnswerButton value={null} selected={selectedId === null} noItemSelected={selectedId === null}
                 onSelect={() => { void change(null); }} tooltip="Don't leave an answer now" />
         </> : <AnswerButton value={selected} selected noItemSelected={false}
@@ -164,7 +165,7 @@ export const AttendanceControlView = ({ attendance: y, environment, ...props }: 
     const editMode = userSelectedEdit || !y.allowViewMode;
     if (!y.visible) return <>{props.debugView}</>;
     const captionIndex = !y.allUncancelledSegmentsAnswered ? 0 : y.allUncancelledSegmentsAffirmative ? 1 : y.allUncancelledSegmentResponsesNegative ? 2 : 3;
-    const findAttendance = (id: number | null) => environment.attendances.find(a => a.id === id) || null;
+    const findAttendance = (id: EventAttendancePublicId | null) => environment.attendances.find(a => a.publicId === id) || null;
     if (!userSelectedEdit && !y.alertFlag && y.anyAnswered && props.minimalWhenNotAlert) {
         return <div className="eventAttendanceControl minimalView"><CMChipContainer>
             <div className="caption">You responded</div>

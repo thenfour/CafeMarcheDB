@@ -1,3 +1,4 @@
+import { attendancePublicId } from "../support/eventAttendanceFixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("db", async () => {
@@ -1255,6 +1256,7 @@ describe("BA-S003 event attendance ownership", () => {
       eventSegmentUserResponse: [],
       eventUserResponse: [],
       eventStatus: [],
+      eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
@@ -1263,7 +1265,7 @@ describe("BA-S003 event attendance ownership", () => {
       userId: actor.id,
       eventId: 100,
       comment: "I will be there",
-      segmentResponses: { 101: { attendanceId: 2 } },
+      segmentResponses: { 101: { attendanceId: attendancePublicId(2) } },
     }, ctx)
 
     expect(authorizationTestDb.snapshot("eventSegmentUserResponse")).toEqual([
@@ -1348,6 +1350,7 @@ describe("BA-S003 event attendance ownership", () => {
         isInvited: false,
       }],
       eventStatus: [],
+      eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
@@ -1356,7 +1359,7 @@ describe("BA-S003 event attendance ownership", () => {
       userId: target.id,
       eventId: 100,
       comment: "Updated by delegate",
-      segmentResponses: { 101: { attendanceId: 2 } },
+      segmentResponses: { 101: { attendanceId: attendancePublicId(2) } },
     }, ctx)
 
     expect(authorizationTestDb.snapshot("eventSegmentUserResponse")).toEqual([
@@ -1394,6 +1397,7 @@ describe("BA-S003 event attendance ownership", () => {
       user: [actor, target],
       event: [makeEvent()],
       eventUserResponse: [],
+      eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
@@ -1422,6 +1426,7 @@ describe("BA-S003 event attendance ownership", () => {
       eventSegment: [{ id: 102, eventId: 999 }],
       eventSegmentUserResponse: [],
       eventUserResponse: [],
+      eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
@@ -1429,7 +1434,7 @@ describe("BA-S003 event attendance ownership", () => {
     await expect(invokeResolver(updateUserEventAttendance, {
       userId: actor.id,
       eventId: 100,
-      segmentResponses: { 102: { attendanceId: 2 } },
+      segmentResponses: { 102: { attendanceId: attendancePublicId(2) } },
     }, ctx)).rejects.toThrow()
 
     expect(authorizationTestDb.snapshot("eventSegmentUserResponse")).toEqual([])
@@ -1446,7 +1451,7 @@ describe("BA-S003 event attendance ownership", () => {
     await expect(invokeResolver(updateUserEventAttendance, {
       userId: actor.id,
       eventId: 100,
-      segmentResponses: { "101suffix": { attendanceId: 2 } },
+      segmentResponses: { "101suffix": { attendanceId: attendancePublicId(2) } },
     } as never, ctx)).rejects.toThrow("Invalid event segment ID")
 
     expect(eventLookup).not.toHaveBeenCalled()
@@ -1459,13 +1464,14 @@ describe("BA-S003 event attendance ownership", () => {
     authorizationTestDb.reset({
       user: [actor, target],
       eventSegmentUserResponse: [],
+      eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
     await expect(invokeResolver(db3Mutation, forgeDb3Insert(
       db3.xEventSegmentUserResponse.tableID,
-      { userId: target.id, eventSegmentId: 101, attendanceId: 2 },
+      { userId: target.id, eventSegmentId: 101, attendanceId: attendancePublicId(2) },
     ), ctx)).rejects.toThrow("Not authorized to mutate EventSegmentUserResponse")
 
     expect(authorizationTestDb.snapshot("eventSegmentUserResponse")).toEqual([])
@@ -1483,6 +1489,7 @@ describe("BA-S003 event attendance ownership", () => {
         eventSegmentId: 101,
         attendanceId: null,
       }],
+      eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
@@ -1490,7 +1497,7 @@ describe("BA-S003 event attendance ownership", () => {
     await expect(invokeResolver(db3Mutation, forgeDb3Update(
       db3.xEventSegmentUserResponse.tableID,
       203,
-      { id: 203, attendanceId: 2 },
+      { id: 203, attendanceId: attendancePublicId(2) },
     ), ctx)).rejects.toThrow("Not authorized to mutate EventSegmentUserResponse")
 
     expect(authorizationTestDb.snapshot("eventSegmentUserResponse")).toEqual([

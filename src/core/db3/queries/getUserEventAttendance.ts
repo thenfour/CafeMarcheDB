@@ -4,6 +4,7 @@ import db, { Prisma } from "db";
 import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import {
+    type EventAttendancePublicId,
     type EventStatusPublicId,
     type EventTypePublicId,
     type InstrumentPublicId,
@@ -12,7 +13,7 @@ import {
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
-import { xEvent, xEventStatus, xEventType } from "../shared/schema/event";
+import { xEvent, xEventAttendance, xEventStatus, xEventType } from "../shared/schema/event";
 import { xInstrument } from "../shared/schema/instrument";
 import { xUserTag } from "../shared/schema/user";
 
@@ -27,7 +28,7 @@ type UserEventAttendanceQueryResult_EventSegment = Omit<Prisma.EventSegmentGetPa
     }
 }>, "statusId"> & {
     statusId: EventStatusPublicId | null;
-    attendanceId: number | null;
+    attendanceId: EventAttendancePublicId | null;
 };
 
 type UserEventAttendanceQueryResult_Event = Omit<Prisma.EventGetPayload<{
@@ -115,7 +116,8 @@ export default resolver.pipe(
                         include: {
                             status: { select: { publicId: true } },
                             responses: {
-                                where: { userId: args.userId }
+                                where: { userId: args.userId },
+                                include: { attendance: { select: { publicId: true } } },
                             },
                         },
                     },
@@ -168,7 +170,8 @@ export default resolver.pipe(
                                 startsAt: seg.startsAt,
                                 durationMillis: seg.durationMillis,
                                 isAllDay: seg.isAllDay,
-                                attendanceId: seg.responses[0]?.attendanceId || null,
+                                attendanceId: seg.responses[0]?.attendance
+                                    ? xEventAttendance.parseIdentity(seg.responses[0].attendance.publicId) : null,
                             };
                             return segRet;
                         }),

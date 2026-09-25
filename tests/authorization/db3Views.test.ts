@@ -1,3 +1,4 @@
+import { attendancePublicId } from "../support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
@@ -64,6 +65,7 @@ describe("DB3 named views", () => {
     it("queries a dashboard view through authorization, DTO parsing, and hydration", async () => {
         const row = {
             id: 7,
+            publicId: attendancePublicId(7),
             text: "Going",
             description: "Attending",
             iconName: null,
@@ -99,7 +101,7 @@ describe("DB3 named views", () => {
 
         expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
             select: expect.objectContaining({
-                id: true,
+                publicId: true,
                 text: true,
                 color: true,
                 personalText: true,
@@ -107,14 +109,17 @@ describe("DB3 named views", () => {
         }));
         expect(result.items).toEqual([{
             ...row,
+            id: undefined,
             color: gGeneralPaletteList.findEntry("green"),
         }]);
+        expect(result.items[0]).not.toHaveProperty("id");
         expectTypeOf(result.items).toEqualTypeOf<db3.EventAttendanceDashboardClient[]>();
     });
 
     it("removes unauthorized dashboard-view fields before hydration", async () => {
         const findMany = vi.fn(async () => [{
             id: 7,
+            publicId: attendancePublicId(7),
             text: "Going",
             description: "Attending",
             iconName: null,
@@ -144,7 +149,7 @@ describe("DB3 named views", () => {
             ]),
         }, db3.createDashboardReferenceStore(), database);
 
-        expect(result.items).toEqual([{ id: 7 }]);
+        expect(result.items).toEqual([{ publicId: attendancePublicId(7) }]);
         expect(db3.isCompleteEventAttendanceDashboardClient(result.items[0]!)).toBe(false);
     });
 

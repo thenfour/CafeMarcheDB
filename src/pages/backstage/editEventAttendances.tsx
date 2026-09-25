@@ -13,7 +13,6 @@ const MainContent = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.eventAttendanceEditorView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
             isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
             text: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
             personalText: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),

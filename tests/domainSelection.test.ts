@@ -5,15 +5,22 @@ import { createRoot, Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parsePublicId } from "shared/publicId";
 
-vi.mock("src/core/db3/db3", () => ({
-    xUser: { getRowInfo: (user: any) => ({ pk: user.id, name: user.name }) },
-    xEvent: { authorizeColumnForEdit: vi.fn() },
-    xUserTag: { getIdentity: (tag: any) => tag.publicId },
-    xPermission: {
-        getIdentity: (permission: any) => permission.publicId,
-        isIdentity: (value: unknown) => typeof value === "string",
-    },
-}));
+vi.mock("src/core/db3/db3", async () => {
+    const { z } = await import("zod");
+    const { isPublicId } = await import("shared/publicId");
+    return {
+        // Selection tests load telemetry's schemas but do not exercise telemetry.
+        xEventSongList: { identitySchema: z.string().refine(isPublicId) },
+        xSongCreditType: { identitySchema: z.string().refine(isPublicId) },
+        xUser: { getRowInfo: (user: any) => ({ pk: user.id, name: user.name }) },
+        xEvent: { authorizeColumnForEdit: vi.fn() },
+        xUserTag: { getIdentity: (tag: any) => tag.publicId },
+        xPermission: {
+            getIdentity: (permission: any) => permission.publicId,
+            isIdentity: (value: unknown) => typeof value === "string",
+        },
+    };
+});
 vi.mock("src/core/db3/clientAPI", () => ({ API: { events: { updateEventBasicFields: { useToken: vi.fn() } } } }));
 vi.mock("src/core/db3/components/DB3ClientCore", () => ({ fetchUnsuspended: vi.fn() }));
 vi.mock("src/core/db3/components/useCrudViewCreate", () => ({ useCrudViewCreate: vi.fn() }));

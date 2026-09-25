@@ -1,3 +1,4 @@
+import type { EventAttendancePublicId } from "shared/publicId";
 import { Icon } from "@mui/material";
 import React from "react";
 import type { Prisma } from "@prisma/client";
@@ -11,7 +12,7 @@ import { DateValue } from "../DateTime/DateTimeComponents";
 export interface AttendanceChipTooltipProps {
     value: db3.EventAttendanceDisplay | null;
     eventResponse?: Prisma.EventUserResponseGetPayload<{ select: { instrumentId: true, userComment: true } }> | undefined;
-    segmentResponse?: Prisma.EventSegmentUserResponseGetPayload<{ select: { attendanceId: true, createdByUserId: true, createdAt: true, updatedAt: true, updatedByUserId: true } }> | undefined;
+    segmentResponse?: Pick<db3.EventSegmentUserResponseClientPayload, "attendanceId" | "createdByUserId" | "createdAt" | "updatedAt" | "updatedByUserId"> | undefined;
     event?: Prisma.EventGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
     eventSegment?: Prisma.EventSegmentGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
 };
@@ -48,11 +49,11 @@ export interface AttendanceChipProps {
     event?: Prisma.EventGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
     eventSegment?: Prisma.EventSegmentGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
     eventResponse?: Prisma.EventUserResponseGetPayload<{ select: { instrumentId: true, userComment: true } }> | undefined;
-    segmentResponse?: Prisma.EventSegmentUserResponseGetPayload<{ select: { attendanceId: true, createdByUserId: true, createdAt: true, updatedAt: true, updatedByUserId: true } }> | undefined;
+    segmentResponse?: Pick<db3.EventSegmentUserResponseClientPayload, "attendanceId" | "createdByUserId" | "createdAt" | "updatedAt" | "updatedByUserId"> | undefined;
 
     showLabel?: boolean | undefined;
     fadeNoResponse?: boolean | undefined;
-    value: number | db3.EventAttendanceDisplay | null;
+    value: EventAttendancePublicId | db3.EventAttendanceDisplay | null;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;

@@ -1,8 +1,7 @@
 import { z } from "zod";
-import type { Prisma } from "@prisma/client";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { parsePublicId } from "shared/publicId";
-import type * as db3 from "src/core/db3/db3";
+import * as db3 from "src/core/db3/db3";
 import { getEventResponseForUser, getEventSegmentResponseForSegmentAndUser } from "src/core/db3/shared/schema/eventAPI";
 import { getEventDateTimeRangeFromSegments } from "src/core/db3/shared/schema/event";
 import { calculateEventAttendance } from "./attendanceCalculation";
@@ -36,12 +35,14 @@ export type AttendanceScenarioSegment = z.infer<typeof segmentSchema>;
 
 // Stable synthetic IDs never leave the local adapter. Options are deliberately
 // self-contained: changing the site's DB options cannot change a saved scenario.
-export const scenarioAttendances: Prisma.EventAttendanceGetPayload<{}>[] = [
+export const scenarioAttendances: db3.EventAttendanceDisplay[] = [
     { id: 1, text: "No", strength: 0, color: "attendance_no", iconName: "Cancel", description: "I cannot attend." },
     { id: 2, text: "Probably", strength: 66, color: "attendance_yes_maybe", iconName: "HelpOutline", description: "I will probably attend." },
     { id: 3, text: "Yes", strength: 100, color: "attendance_yes", iconName: "CheckCircleOutline", description: "I will attend." },
 ].map((option, sortOrder) => ({
-    ...option, sortOrder, isActive: true, isDeleted: false,
+    publicId: db3.xEventAttendance.parseIdentity(`scenarioAttend0${option.id}`),
+    text: option.text, strength: option.strength, iconName: option.iconName, description: option.description,
+    color: gGeneralPaletteList.findEntry(option.color), sortOrder, isActive: true, isDeleted: false,
     personalText: "", pastText: "", pastPersonalText: ""
 }));
 
@@ -54,7 +55,7 @@ export const scenarioInstruments: db3.InstrumentPayload[] = ["Trumpet", "Saxopho
 }));
 
 export const scenarioClientInstruments: db3.InstrumentClientPayload[] = scenarioInstruments.map(instrument => ({
-    publicId: parsePublicId<"Instrument">(instrument.publicId),
+    publicId: parsePublicId<"Instrument">(instrument.publicId),  // fictional, don't need to use xInstrument
     name: instrument.name,
     description: instrument.description,
     sortOrder: instrument.sortOrder,
@@ -128,7 +129,8 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
             durationMillis: BigInt(2 * hour),
             statusId: config.cancelled ? cancelledStatusId : null,
             responses: attendanceId === "missing" ? [] : [{
-                id, eventSegmentId: id, userId: user.id, attendanceId,
+                id, eventSegmentId: id, userId: user.id,
+                attendanceId: attendanceId === null ? null : scenarioAttendances[attendanceId - 1]!.publicId,
                 createdAt: now, updatedAt: now, createdByUserId: null, updatedByUserId: null,
             }],
         };
@@ -180,9 +182,12 @@ export function applyAttendanceScenarioChange(person: AttendanceScenarioUser, ch
                 )?.id;
         return { ...person, instrumentId: instrumentId.parse(scenarioInstrumentId) };
     }
+    // Saved scenarios use local choices 1/2/3, while the rendered control uses public IDs.
+    const localChoice = change.attendanceId === null ? null
+        : scenarioAttendances.findIndex(option => option.publicId === change.attendanceId) + 1;
     return {
         ...person, responses: person.responses.map((value, index) =>
-            index + 1 === change.segmentId ? response.parse(change.attendanceId) : value)
+            index + 1 === change.segmentId ? response.parse(localChoice) : value)
     };
 }
 

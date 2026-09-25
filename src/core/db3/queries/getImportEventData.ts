@@ -305,20 +305,20 @@ export default resolver.pipe(
             ret.log.push(`peter: ${peter?.id}`);
             ret.log.push(`guido: ${guido?.id}`);
 
-            const yesId = (await db.eventAttendance.findFirst({
+            const yesId = db3.xEventAttendance.parseIdentity((await db.eventAttendance.findFirst({
                 where: {
                     strength: 100,
                     isDeleted: false,
                 }
-            }))!.id;
+            }))!.publicId);
             ret.log.push(`yesId: ${yesId}`);
 
-            const noId = (await db.eventAttendance.findFirst({
+            const noId = db3.xEventAttendance.parseIdentity((await db.eventAttendance.findFirst({
                 where: {
                     strength: 0,
                     isDeleted: false,
                 }
-            }))!.id;
+            }))!.publicId);
 
             ret.log.push(`noId: ${noId}`);
 

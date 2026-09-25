@@ -3,6 +3,7 @@ import { Prisma } from "db";
 import { QuickSearchItemType } from "shared/quickFilter";
 import { isPublicId, parsePublicId, type PermissionPublicId } from "shared/publicId";
 import { z } from "zod";
+import * as db3 from "../db3";
 
 
 ///////////// setlist planning /////////////////////////////////////////////////////////////////
@@ -202,7 +203,7 @@ export const DeserializeSetlistPlan = (obj: SetlistPlanWithVisibilityPayload): S
         name: obj.name,
         sortOrder: obj.sortOrder,
         visiblePermissionId: obj.visiblePermission
-            ? parsePublicId<"Permission">(obj.visiblePermission.publicId)
+            ? db3.xPermission.parseIdentity(obj.visiblePermission.publicId)
             : null,
         groupId: obj.groupId || null,
         payload,

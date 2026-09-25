@@ -11,6 +11,7 @@ import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
 import { CoalesceBool, gIconOptions, smartTruncate } from "shared/utils";
 import type {
+    EventAttendancePublicId,
     EventSongListPublicId,
     EventSongListSongPublicId,
     EventSongListDividerPublicId,
@@ -781,7 +782,7 @@ export const xEventSegment = db3.defineTable({
 
 export const xEventAttendance = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventAttendanceDelegate>(),
-    getIdentity: (attendance: { id: number }) => attendance.id,
+    getIdentity: (attendance: { publicId: EventAttendancePublicId }) => attendance.publicId,
     getSelectionArgs: (): Prisma.EventAttendanceDefaultArgs => {
         return EventAttendanceArgs;
     },
@@ -794,7 +795,7 @@ export const xEventAttendance = db3.defineTable({
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventAttendanceNaturalOrderBy,
     getRowInfo: (row: EventAttendancePayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.text,
         description: `${row.isActive ? "" : "(inactive) "}${row.description}`,
         color: gGeneralPaletteList.findEntry(row.color),
@@ -805,7 +806,8 @@ export const xEventAttendance = db3.defineTable({
         return row.isActive;
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<EventAttendancePublicId>(),
         text: columnName => MakeTitleField(columnName, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         description: () => MakeDescriptionField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
@@ -1137,7 +1139,9 @@ export const EventResponses_MinimalEventSegmentUserResponseArgs = Prisma.validat
         userId: true,
     }
 });
-export type EventResponses_MinimalEventSegmentUserResponse = Prisma.EventSegmentUserResponseGetPayload<typeof EventResponses_MinimalEventSegmentUserResponseArgs>;
+export type EventResponses_MinimalEventSegmentUserResponse = Omit<
+    Prisma.EventSegmentUserResponseGetPayload<typeof EventResponses_MinimalEventSegmentUserResponseArgs>, "attendanceId"
+> & { attendanceId: EventAttendancePublicId | null };
 
 
 
@@ -1153,7 +1157,8 @@ export const EventResponses_MinimalEventSegmentArgs = Prisma.validator<Prisma.Ev
     }
 });
 type EventResponses_MinimalEventSegmentDb = Prisma.EventSegmentGetPayload<typeof EventResponses_MinimalEventSegmentArgs>;
-export type EventResponses_MinimalEventSegment = Omit<EventResponses_MinimalEventSegmentDb, "statusId"> & {
+export type EventResponses_MinimalEventSegment = Omit<EventResponses_MinimalEventSegmentDb, "statusId" | "responses"> & {
+    responses: EventResponses_MinimalEventSegmentUserResponse[];
     // Shared attendance algorithms also run against trusted server/test rows.
     // Concrete client views narrow this union to EventStatusPublicId.
     statusId: number | EventStatusPublicId | null;
@@ -1172,7 +1177,8 @@ type EventResponses_MinimalEventDb = Prisma.EventGetPayload<{
         }
     }
 }>;
-export type EventResponses_MinimalEvent = Omit<EventResponses_MinimalEventDb, "responses"> & {
+export type EventResponses_MinimalEvent = Omit<EventResponses_MinimalEventDb, "responses" | "segments"> & {
+    segments: { id: number; responses: EventResponses_MinimalEventSegmentUserResponse[] }[];
     responses: EventResponses_MinimalEventUserResponse[];
 };
 

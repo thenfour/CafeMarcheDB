@@ -114,7 +114,7 @@ const dashboardEventTagSelection = Prisma.validator<Prisma.EventTagDefaultArgs>(
 
 const dashboardEventAttendanceSelection = Prisma.validator<Prisma.EventAttendanceDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         text: true,
         description: true,
         iconName: true,
@@ -450,9 +450,7 @@ export type CompleteEventAttendanceDashboardClient = {
         undefined
     >;
 };
-export type EventAttendanceDisplay =
-    | Prisma.EventAttendanceGetPayload<{}>
-    | CompleteEventAttendanceDashboardClient;
+export type EventAttendanceDisplay = CompleteEventAttendanceDashboardClient;
 export type FileTagDashboardClient = ClientOf<typeof fileTagDashboardView>;
 export type InstrumentFunctionalGroupDashboardClient = ClientOf<
     typeof instrumentFunctionalGroupDashboardView

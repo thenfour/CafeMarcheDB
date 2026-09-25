@@ -319,7 +319,7 @@ const main = async () => {
         "strength": 100,
         "sortOrder": 100
       }
-    ]
+    ].map(option => ({ ...option, publicId: generatePublicId<"EventAttendance">() }))
   );
 
 

@@ -1,3 +1,4 @@
+import type { EventAttendancePublicId } from "shared/publicId";
 import { localTimeZone } from "@/shared/time";
 import { shouldShowAdminControls } from '@/shared/adminControls';
 import { ClientSession, getAntiCSRFToken, useSession } from '@blitzjs/auth';
@@ -158,7 +159,7 @@ export class DashboardContextData extends DashboardContextDataBase {
         return ret;
     }
 
-    isAttendanceIdGoing(attendanceId: number | null) {
+    isAttendanceIdGoing(attendanceId: EventAttendancePublicId | null) {
         const attendance = this.eventAttendance.getById(attendanceId);
         return isAttendanceGoing(attendance);
     }
@@ -258,7 +259,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         dashboardData.eventTag,
         value => db3.xEventTag.getIdentity(value),
     );
-    valueRef.current.eventAttendance = new TableAccessor(dashboardData.eventAttendance);
+    valueRef.current.eventAttendance = new TableAccessor(dashboardData.eventAttendance, value => db3.xEventAttendance.getIdentity(value));
     valueRef.current.fileTag = new TableAccessor(
         dashboardData.fileTag,
         tag => db3.xFileTag.getIdentity(tag),

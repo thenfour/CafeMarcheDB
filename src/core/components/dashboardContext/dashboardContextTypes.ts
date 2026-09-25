@@ -1,6 +1,6 @@
 import { DbBrandConfig } from "@/shared/brandConfigBase";
 import { isAbsoluteUri, slugify, TableAccessor } from "@/shared/rootroot";
-import type { InstrumentPublicId, PermissionPublicId, RolePublicId } from "shared/publicId";
+import type { EventAttendancePublicId, InstrumentPublicId, PermissionPublicId, RolePublicId } from "shared/publicId";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
@@ -17,7 +17,7 @@ export abstract class DashboardContextDataBase {
     eventType: TableAccessor<db3.ClientOf<typeof db3.eventTypeDashboardView>, EventTypePublicId>;
     eventStatus: TableAccessor<db3.ClientOf<typeof db3.eventStatusDashboardView>, EventStatusPublicId>;
     eventTag: TableAccessor<db3.ClientOf<typeof db3.eventTagDashboardView>, EventTagPublicId>;
-    eventAttendance: TableAccessor<db3.CompleteEventAttendanceDashboardClient>;
+    eventAttendance: TableAccessor<db3.CompleteEventAttendanceDashboardClient, EventAttendancePublicId>;
     fileTag: TableAccessor<db3.ClientOf<typeof db3.fileTagDashboardView>, FileTagPublicId>;
     songTag: TableAccessor<db3.ClientOf<typeof db3.songTagDashboardView>, SongTagPublicId>;
     songCreditType: TableAccessor<db3.ClientOf<typeof db3.songCreditTypeDashboardView>, SongCreditTypePublicId>;
@@ -131,7 +131,7 @@ export abstract class DashboardContextDataBase {
         Tseg extends { statusId: EventStatusPublicId | null },
     >(segments: Tseg[]): [Tseg[], Tseg[]];
     abstract sortInstruments<Tinst extends { sortOrder: number, functionalGroupId: InstrumentFunctionalGroupPublicId }>(instruments: Tinst[]): Tinst[];
-    abstract isAttendanceIdGoing(attendanceId: number | null): boolean;
+    abstract isAttendanceIdGoing(attendanceId: EventAttendancePublicId | null): boolean;
     abstract getVisibilityPermissions(): db3.ClientOf<typeof db3.permissionDashboardView>[];
 }
 

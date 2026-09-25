@@ -10,7 +10,7 @@ import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { CMSmallButton, NameValuePair, SetlistBreakIcon } from "src/core/components/CMCoreComponents2";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { useSnackbar } from "src/core/components/SnackbarContext";
-import { EventAPI, xPermission, xRole, xUserTag } from "../db3";
+import * as db3 from "../db3";
 import getAdminLogItemInfo from "../queries/getAdminLogItemInfo";
 import getDistinctChangeFilterValues from "../queries/getDistinctChangeFilterValues";
 import type { EventSongListMutationCommand } from "../shared/entities/eventSongList/eventSongListCommands";
@@ -18,12 +18,12 @@ import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
 
 import { Notes } from "@mui/icons-material";
+import { isPublicId } from "shared/publicId";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { ColorSwatch } from "../../components/color/ColorSwatch";
 import { type ColorPaletteEntry, gGeneralPaletteList, gStrong } from "../../components/color/palette";
 import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
 import { GenericStringField } from "../shared/columnTypes/genericString";
-import { isPublicId, parsePublicId } from "shared/publicId";
 
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;
@@ -104,7 +104,7 @@ const ActivityLogEventSegment = ({ eventSegmentId, cacheData }: { eventSegmentId
     if (!foundEvent) {
         return <ActivityLogChip><Id value={foundSegment.eventId} />, seg:{foundSegment.id}</ActivityLogChip>;
     }
-    return <ActivityLogChip uri={dashboardContext.routingApi.getURIForEvent(foundEvent)}>{EventAPI.getLabel(foundEvent)}#{foundEvent.id} seg:{foundSegment.name}#{foundSegment.id}</ActivityLogChip>;
+    return <ActivityLogChip uri={dashboardContext.routingApi.getURIForEvent(foundEvent)}>{db3.EventAPI.getLabel(foundEvent)}#{foundEvent.id} seg:{foundSegment.name}#{foundSegment.id}</ActivityLogChip>;
 };
 
 const ActivityLogEvent = ({ eventId, cacheData }: { eventId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
@@ -114,13 +114,13 @@ const ActivityLogEvent = ({ eventId, cacheData }: { eventId: number | null | und
         return <ActivityLogChip><Id value={eventId} /></ActivityLogChip>;
     }
 
-    return <ActivityLogChip uri={dashboardContext.routingApi.getURIForEvent(foundEvent)}>{EventAPI.getLabel(foundEvent)}#{foundEvent.id}</ActivityLogChip>;
+    return <ActivityLogChip uri={dashboardContext.routingApi.getURIForEvent(foundEvent)}>{db3.EventAPI.getLabel(foundEvent)}#{foundEvent.id}</ActivityLogChip>;
 };
 
 const ActivityLogEventTag = ({ eventTagId }: { eventTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
     const foundEventTag = isPublicId(eventTagId)
-        ? dashboardContext.eventTag.getById(parsePublicId<"EventTag">(eventTagId))
+        ? dashboardContext.eventTag.getById(db3.xEventTag.parseIdentity(eventTagId))
         : undefined;
     if (!foundEventTag) {
         return <ActivityLogChip><Id value={eventTagId} /></ActivityLogChip>;
@@ -135,7 +135,7 @@ const ActivityLogEventTag = ({ eventTagId }: { eventTagId: number | string | nul
 const ActivityLogEventStatus = ({ eventStatusId }: { eventStatusId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
     const foundEventStatus = isPublicId(eventStatusId)
-        ? dashboardContext.eventStatus.getById(parsePublicId<"EventStatus">(eventStatusId))
+        ? dashboardContext.eventStatus.getById(db3.xEventStatus.parseIdentity(eventStatusId))
         : undefined;
     if (!foundEventStatus) {
         return <ActivityLogChip><Id value={eventStatusId} /></ActivityLogChip>;
@@ -150,7 +150,7 @@ const ActivityLogEventStatus = ({ eventStatusId }: { eventStatusId: number | str
 const ActivityLogEventType = ({ eventTypeId }: { eventTypeId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
     const found = isPublicId(eventTypeId)
-        ? dashboardContext.eventType.getById(parsePublicId<"EventType">(eventTypeId))
+        ? dashboardContext.eventType.getById(db3.xEventType.parseIdentity(eventTypeId))
         : undefined;
     if (!found) {
         return <ActivityLogChip><Id value={eventTypeId} /></ActivityLogChip>;
@@ -163,8 +163,7 @@ const ActivityLogEventType = ({ eventTypeId }: { eventTypeId: number | string | 
 };
 
 const ActivityLogAttendance = ({ attendanceId, cacheData }: { attendanceId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
-    const dashboardContext = useDashboardContext();
-    const found = dashboardContext.eventAttendance.getById(attendanceId);
+    const found = cacheData.attendances.find(option => option.id === attendanceId);
     if (!found) {
         return <ActivityLogChip><Id value={attendanceId} /></ActivityLogChip>;
     }
@@ -177,8 +176,8 @@ const ActivityLogAttendance = ({ attendanceId, cacheData }: { attendanceId: numb
 
 const ActivityLogPermission = ({ permissionId, cacheData }: { permissionId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
-    const found = xPermission.isIdentity(permissionId)
-        ? dashboardContext.permission.getById(permissionId)
+    const found = db3.xPermission.isIdentity(permissionId)
+        ? dashboardContext.permission.getById(db3.xPermission.parseIdentity(permissionId))
         : undefined;
     if (!found) {
         return <ActivityLogChip><Id value={permissionId} /></ActivityLogChip>;
@@ -192,8 +191,8 @@ const ActivityLogPermission = ({ permissionId, cacheData }: { permissionId: numb
 
 const ActivityLogRole = ({ roleId, cacheData }: { roleId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
-    const found = xRole.isIdentity(roleId)
-        ? dashboardContext.role.getById(roleId)
+    const found = db3.xRole.isIdentity(roleId)
+        ? dashboardContext.role.getById(db3.xRole.parseIdentity(roleId))
         : undefined;
     if (!found) {
         return <ActivityLogChip><Id value={roleId} /></ActivityLogChip>;
@@ -207,7 +206,7 @@ const ActivityLogRole = ({ roleId, cacheData }: { roleId: number | string | null
 
 const ActivityLogUserTag = ({ userTagId, cacheData }: { userTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
-    const found = xUserTag.isIdentity(userTagId)
+    const found = db3.xUserTag.isIdentity(userTagId)
         ? dashboardContext.userTag.getById(userTagId)
         : undefined;
     if (!found) {
@@ -244,7 +243,7 @@ const ActivityLogSongListEventChip = ({ songListId, cacheData }: { songListId: n
 const ActivityLogSongTag = ({ songTagId, cacheData }: { songTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
     const found = isPublicId(songTagId)
-        ? dashboardContext.songTag.getById(parsePublicId<"SongTag">(songTagId))
+        ? dashboardContext.songTag.getById(db3.xSongTag.parseIdentity(songTagId))
         : undefined;
     if (!found) {
         // Historical log entries may contain a natural ID. Do not render it
@@ -260,7 +259,7 @@ const ActivityLogSongTag = ({ songTagId, cacheData }: { songTagId: number | stri
 const ActivityLogInstrument = ({ instrumentId, cacheData }: { instrumentId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
     const found = isPublicId(instrumentId)
-        ? dashboardContext.instrument.getById(parsePublicId<"Instrument">(instrumentId))
+        ? dashboardContext.instrument.getById(db3.xInstrument.parseIdentity(instrumentId))
         : undefined;
     if (!found) {
         return <ActivityLogChip>Unknown instrument</ActivityLogChip>;

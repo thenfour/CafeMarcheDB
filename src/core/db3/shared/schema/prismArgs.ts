@@ -2,6 +2,7 @@ import type { EventSongListCompleteDto } from "../entities/eventSongList/eventSo
 import { Prisma } from "db";
 import type { ColorPaletteEntry } from "@/src/core/components/color/palette";
 import type {
+    EventAttendancePublicId,
     FileTagAssignmentPublicId,
     FileTagPublicId,
     FileEventTagPublicId,
@@ -1093,6 +1094,11 @@ export type EventSegmentUserResponsePayload = Prisma.EventSegmentUserResponseGet
     include: typeof EventSegmentUserResponseArgs.include
 }>;
 
+// Client response identity stays numeric until the response-family slice.
+export type EventSegmentUserResponseClientPayload = Omit<
+    Prisma.EventSegmentUserResponseGetPayload<{}>, "attendanceId"
+> & { attendanceId: EventAttendancePublicId | null };
+
 export const EventSegmentUserResponseNaturalOrderBy: Prisma.EventSegmentUserResponseOrderByWithRelationInput[] = [
     // todo: sort by something else?
     { id: 'asc' },
@@ -1202,7 +1208,7 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
         segments: {
             orderBy: EventSegmentNaturalOrderBy,
             include: {
-                responses: true,
+                responses: { include: { attendance: { select: { publicId: true } } } },
             }
         },
         responses: true,
@@ -1234,7 +1240,8 @@ export type EventTagAssignmentClientPayload = Omit<
     eventTagId: EventTagPublicId;
 };
 type EventVerboseDbSegment = Prisma.EventSegmentGetPayload<typeof EventArgs_Verbose.include.segments>;
-export type EventVerbose_EventSegmentClient = Omit<EventVerboseDbSegment, "statusId"> & {
+export type EventVerbose_EventSegmentClient = Omit<EventVerboseDbSegment, "statusId" | "responses"> & {
+    responses: EventSegmentUserResponseClientPayload[];
     statusId: EventStatusPublicId | null;
 };
 type EventVerboseDbExpectedUserTag = NonNullable<EventDbPayload_Verbose["expectedAttendanceUserTag"]>;
@@ -1278,7 +1285,7 @@ export type EventClientPayload_Verbose = Omit<
 export type EventVerbose_Event = Prisma.EventGetPayload<typeof EventArgs_Verbose>;
 export type EventVerbose_EventUserResponse = Prisma.EventUserResponseGetPayload<typeof EventArgs_Verbose.include.responses>;
 export type EventVerbose_EventSegment = Prisma.EventSegmentGetPayload<typeof EventArgs_Verbose.include.segments>;
-export type EventVerbose_EventSegmentUserResponse = Prisma.EventSegmentUserResponseGetPayload<typeof EventArgs_Verbose.include.segments.include.responses>;
+export type EventVerbose_EventSegmentUserResponse = EventSegmentUserResponseClientPayload;
 
 
 

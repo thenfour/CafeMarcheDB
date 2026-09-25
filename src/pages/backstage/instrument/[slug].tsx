@@ -22,7 +22,7 @@ interface PageProps {
 export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
     let publicId: InstrumentPublicId;
     try {
-        publicId = parsePublicId<"Instrument">(params?.slug);
+        publicId = db3.xInstrument.parseIdentity(params?.slug);
     } catch {
         return { notFound: true };
     }
@@ -43,7 +43,7 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
         props: {
             instrument: {
                 ...instrument,
-                publicId: parsePublicId<"Instrument">(instrument.publicId),
+                publicId: db3.xInstrument.parseIdentity(instrument.publicId),
             },
         },
     };

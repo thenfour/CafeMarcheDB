@@ -111,8 +111,12 @@ export const calculateEventAttendance = (props: EventAttendanceCalculationInput)
     ret.isInvited = ret.eventUserResponse.isInvited;
     ret.isSingleSegment = uncancelledSegments.length === 1;// ret.segmentUserResponses.length === 1;
 
-    ret.allAttendances = ret.segmentUserResponses.map(sr => props.attendances.find(a => a.id === sr.response.attendanceId) || null);
-    ret.allUncancelledSegmentAttendances = ret.uncancelledSegmentUserResponses.map(sr => props.attendances.find(a => a.id === sr.response.attendanceId) || null);
+    ret.allAttendances = ret.segmentUserResponses
+        .map(sr => props.attendances
+            .find(a => a.publicId === sr.response.attendanceId) || null);
+    ret.allUncancelledSegmentAttendances = ret.uncancelledSegmentUserResponses
+        .map(sr => props.attendances
+            .find(a => a.publicId === sr.response.attendanceId) || null);
 
     ret.anyAnswered = ret.allAttendances.some(r => !!r);
 

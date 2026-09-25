@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Timing } from "shared/time";
 import {
-    applyAttendanceScenarioChange, attendanceScenarioSchema, buildAttendanceScenario, createAttendanceScenario,
+    applyAttendanceScenarioChange,
+    scenarioAttendances, attendanceScenarioSchema, buildAttendanceScenario, createAttendanceScenario,
     scenarioInstruments,
 } from "src/core/components/event/attendanceScenario";
 import { getInstrumentIdentity } from "src/core/db3/db3";
@@ -57,7 +58,7 @@ describe("attendance scenario adapter", () => {
 
     it("updates only the chosen field and segment, preserving the fixture being reset to", () => {
         const person = createAttendanceScenario().users[1]!;
-        const answered = applyAttendanceScenarioChange(person, { type: "segment", segmentId: 2, attendanceId: 1 });
+        const answered = applyAttendanceScenarioChange(person, { type: "segment", segmentId: 2, attendanceId: scenarioAttendances[0]!.publicId });
         const commented = applyAttendanceScenarioChange(answered, { type: "comment", comment: "Local comment" });
         const instrument = applyAttendanceScenarioChange(commented, { type: "instrument", instrumentId: 2 });
         expect(person.responses).toEqual([3, "missing", "missing"]);

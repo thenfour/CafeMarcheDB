@@ -226,7 +226,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             segmentResponses: Object.fromEntries(Object.entries(eventSegmentResponseValues).map(x => {
                 const att = dashboardContext.eventAttendance.getById(x[1].attendanceId);
                 return [x[0], {
-                    attendanceId: att?.id || null
+                    attendanceId: att?.publicId || null
                 }];
             })),
             // inviting another user requires manage-events permission

@@ -7,7 +7,7 @@ import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TinsertEventArgs } from "../shared/apiTypes";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
-import { resolvePublicForeignIds } from "../server/db3PublicIds";
+import { resolvePublicForeignIds, resolvePublicId } from "../server/db3PublicIds";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
@@ -97,7 +97,7 @@ export default resolver.pipe(
                     //args.responses.forEach(async (r) => {
                     const responseFields: Partial<db3.EventSegmentUserResponsePayload> = {
                         eventSegmentId: segment.id,
-                        attendanceId: r.attendanceId,
+                        attendanceId: await resolvePublicId(db3.xEventAttendance, r.attendanceId, publicData, tx),
                         userId: r.userId,
                     };
                     await mutationCore.insertImpl(db3.xEventSegmentUserResponse, responseFields, ctx, tx);

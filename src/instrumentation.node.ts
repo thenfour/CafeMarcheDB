@@ -304,6 +304,11 @@ export async function CorrectRolePermissionPublicIds() {
     console.log(`Replaced ${replacementCount} RolePermission public-ID placeholders.`);
 }
 
+export async function CorrectEventAttendancePublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({ delegate: db.eventAttendance, modelName: "EventAttendance" });
+    console.log(`Replaced ${replacementCount} EventAttendance public-ID placeholders.`);
+}
+
 export async function CorrectEventSongListPublicIds() {
     const replacementCount = await repairPublicIdPlaceholders({
         delegate: db.eventSongList,
@@ -372,6 +377,7 @@ export async function registerNodeInstrumentation() {
     await CorrectRolePublicIds();
     await CorrectRolePermissionPublicIds();
     await CorrectUserSignInMethodPublicIds();
+    await CorrectEventAttendancePublicIds();
     await CorrectEventSongListPublicIds();
     await CorrectEventSongListSongPublicIds();
     await CorrectEventSongListDividerPublicIds();

@@ -6,7 +6,7 @@ import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activi
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { resolvePublicId } from "../server/db3PublicIds";
+import { resolvePublicId, resolvePublicIds } from "../server/db3PublicIds";
 import {
     TupdateUserEventAttendanceMutationArgs,
     ZupdateUserEventAttendanceMutationArgs,
@@ -81,10 +81,16 @@ export default resolver.pipe(
                 throw new NotFoundError();
             }
 
+            const attendancePublicIds = [...new Set(Object.values(args.segmentResponses ?? {})
+                .flatMap(response => response.attendanceId === null ? [] : [response.attendanceId]))];
+            const attendanceIds = await resolvePublicIds(db3.xEventAttendance, attendancePublicIds, publicData, transactionalDb);
+            const attendanceIdByPublicId = new Map(attendancePublicIds.map((publicId, index) => [publicId, attendanceIds[index]!]));
+
             let didSegmentChangesOccur = false;
 
             for (const eventSegmentId of segmentIds) {
-                const attendanceId = args.segmentResponses![eventSegmentId]!.attendanceId;
+                const attendancePublicId = args.segmentResponses![eventSegmentId]!.attendanceId;
+                const attendanceId = attendancePublicId === null ? null : attendanceIdByPublicId.get(attendancePublicId)!;
                 const existing = await transactionalDb.eventSegmentUserResponse.findFirst({
                     where: { userId: args.userId, eventSegmentId },
                 });

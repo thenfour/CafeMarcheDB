@@ -1,3 +1,4 @@
+import type { EventAttendancePublicId } from "shared/publicId";
 import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import db, { Prisma } from "db";
 import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent } from "ical-generator";
@@ -68,7 +69,7 @@ export const addEventToCalendar2 = (
     user: null | db3.UserForCalBackendPayload,
     event: EventCalendarInput | null,
     eventVerbose: db3.EventClientPayload_Verbose,
-    eventAttendanceIdsRepresentingGoing: number[],
+    eventAttendanceIdsRepresentingGoing: EventAttendancePublicId[],
     icalSettings: ICalSettings
 ): ICalEvent | null => {
 
@@ -149,7 +150,7 @@ export const addEventToCalendar = async (
     user: null | db3.UserForCalBackendPayload,
     event: db3.EventClientPayload_Verbose,
     eventVerbose: db3.EventClientPayload_Verbose,
-    eventAttendanceIdsRepresentingGoing: number[],
+    eventAttendanceIdsRepresentingGoing: EventAttendancePublicId[],
     cancelledStatusIds: EventStatusPublicId[],
     icalSettings: ICalSettings,
     bandTimeZone: string,
@@ -222,9 +223,15 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
         where: { significance: db3.EventStatusSignificance.Cancelled },
     })).map(status => db3.xEventStatus.parseIdentity(status.publicId));
     const userSettings = await loadUserSettings(currentUser.id);
-    const attendanceById = new Map(eventAttendances.map(attendance => [attendance.id, attendance]));
+    const attendanceById = new Map(eventAttendances.map(
+        attendance => [
+            db3.xEventAttendance.parseIdentity(attendance.publicId),
+            attendance
+        ]));
     const cancelledStatuses = new Set(cancelledStatusIds);
-    const goingAttendanceIds = eventAttendances.filter(isAttendanceGoing).map(attendance => attendance.id);
+    const goingAttendanceIds = eventAttendances
+        .filter(isAttendanceGoing)
+        .map(attendance => db3.xEventAttendance.parseIdentity(attendance.publicId));
 
     for (let i = 0; i < events.length; ++i) {
         const event = events[i]!;
