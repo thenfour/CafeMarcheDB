@@ -16,7 +16,8 @@ bounded entity slice at a time.
 
 - Client-facing information should be opaque to database implementation details.
   Client-visible entity identity therefore uses a UUID-like `publicId`, rather
-  than the raw monotonic numeric database `id`.
+  than the raw monotonic numeric database `id`, with the explicit operational
+  ledger exception described below.
 - Translating identity at the transport boundary puts pressure on the old DB3
   assumption that a Prisma row, RPC payload, and useful client object all have
   roughly the same shape. They do not.
@@ -693,10 +694,12 @@ I/O or authorization decisions.
 
 ### Purpose and non-goals
 
-`publicId` is the canonical identity for an entity wherever that entity crosses
-the client boundary. It prevents URLs and payloads from exposing monotonic table
-keys, reduces accidental coupling to database layout, and makes casual entity
-enumeration impractical.
+`publicId` is the canonical identity for an in-scope entity wherever that entity
+crosses the client boundary. It prevents URLs and payloads from exposing
+monotonic table keys, reduces accidental coupling to database layout, and makes
+casual entity enumeration impractical. `Action` and `Change` have an explicit
+operational ledger exception; restricted access alone does not exempt other
+entities.
 
 It is **not** a credential or authorization mechanism. Knowledge of a valid
 `publicId` grants nothing. Every query and mutation must still enforce route,
@@ -750,6 +753,51 @@ canonical public DTO dual-shaped according to the viewer's role.
 components: it resolves to `publicIdMember` for converted tables and `pkMember`
 otherwise. New entity/view code should prefer the typed entity or view
 `getIdentity()` contract instead of inspecting either member directly.
+
+### Operational ledger exception: Action and Change
+
+Keep `Action.id` and `Change.id` numeric. Their row identities belong to
+operational reports and audit history, rather than ordinary entity navigation
+or editing. Converting those keys adds little value to the current workflows
+and is not a prerequisite for migrating the entities they describe.
+
+The current access paths support this narrower exception:
+
+- `Change` reads use the sysadmin-only `xChange` policy, and the admin log grid
+  is read-only. The generic DB3 query path still permits authorized primary-key
+  filtering; the rationale is not that an ID-based query is impossible.
+- `Action` detail and CSV queries require `view_feature_reports`. This is a
+  dedicated permission, not necessarily Sysadmin status. Client telemetry
+  appends observations without accepting or returning an Action row identity.
+- Neither ledger has a dedicated entity-detail route or an ordinary client
+  workflow that edits a ledger row by its identity. Authorization remains the
+  protection for every report and diagnostic lookup.
+
+The exception distinguishes ledger evidence from live entity identity:
+
+- Historical `Change.recordId`, `oldValues`, and `newValues` may retain natural
+  IDs as protected audit data. Do not rewrite historical JSON merely to make
+  the public-ID inventory uniform. The sysadmin audit lookup may accept these
+  historical keys and resolve hidden or deleted records for diagnostics.
+- Canonical client references to migrated entities still use public IDs. This
+  includes telemetry association inputs, live feature-report relations and
+  filters, and navigation targets produced by audit lookups. A protected
+  historical lookup key is not a numeric fallback for a normal entity route,
+  selector, or mutation.
+- Existing admin audit caches may retain numeric keys for matching historical
+  evidence. When they construct a live link, they must supply the target's
+  canonical public identity after that target migrates. Unresolvable historical
+  references remain display-only evidence.
+
+`getDistinctChangeFilterValues`, `getAdminLogItemInfo`,
+`DB3JSONStringColumnClient`, and the feature-report projection functions are
+therefore consumers to revisit with each affected entity migration, rather
+than reasons to migrate the ledger rows themselves. Existing Instrument and
+SongCreditType telemetry translation already demonstrates this separation.
+
+Exclude these two models from the migration denominator without marking them
+converted. Reconsider the exception if a new workflow makes a ledger row a
+normal addressable application resource or broadens access to its diagnostics.
 
 ### Translation boundary
 
@@ -1097,8 +1145,9 @@ looks easiest. Classify the scenarios exercised by a proposed slice:
   a long series of tiny schema-only changes.
 - **Application pressure** covers broad workflows and policy reconciliation that
   may require substantial consumer work but is unlikely to change the public-ID
-  architecture. Leave central domains such as Event, User, and setlists until
-  the narrower design-pressure work has made their migration mechanical.
+  architecture. Start these domains once the narrower slices have established
+  their shared identity contracts. Event is the next application phase; migrate
+  its child aggregates before the central Event identity.
 
 These categories apply to scenarios, not permanently to whole entities. A model
 can contain one design-pressure boundary surrounded by application-heavy work.
@@ -1286,14 +1335,125 @@ The current pressure-led sequence is:
     ID collisions from meaningful credential ownership conflicts; the same
     server capability now also owns generic DB3 insert retries. Startup repair
     covers existing rows, and seeds generate real public IDs.
-12. **Next pressure audit:** inspect `Action` and `Change` together for opaque
-    ledger row identity and historical polymorphic references. Establish which
-    references are live identities and which are inert historical text before
-    choosing the bounded implementation. Do not mark these models complete
-    while current client-visible references still expose natural IDs.
-13. Keep the central Song, File, WikiPage, Event, User, and setlist identities in
-   the later application-pressure phase unless a bounded audit reveals a
-   genuinely uncovered identity capability.
+12. **Scope decision:** retain natural row identities for `Action` and `Change`
+    under the operational ledger exception above. Historical evidence remains
+    diagnostic data; live references follow each target entity's migration.
+    Remove the two ledger models from the denominator, not by counting them as
+    completed conversions.
+13. **Next application phase:** migrate the Event constellation from its outer
+    aggregates inward: the three Event setlist models, EventAttendance, the
+    segment/response family, then Event. The bounded slices below preserve the
+    existing identity domains of Event, Song, and User until their own turns.
+14. Keep central Song, File, WikiPage, User, and the separate SetlistPlan
+    aggregate for later application slices. EventSongList migration does not
+    require converting SetlistPlan or SetlistPlanGroup.
+
+### Next application phase: Event constellation
+
+The Event classification family and FileEventTag are already converted. The
+remaining eight Event-related models can be handled in four coherent slices:
+
+| Order | Models | Boundary exercised |
+| --- | --- | --- |
+| 1 | `EventSongList`, `EventSongListSong`, `EventSongListDivider` | An editable aggregate with persisted child identities, local draft keys, and mixed song/divider ordering. |
+| 2 | `EventAttendance` | The shared response-choice reference across dashboard caches, controls, reports, imports, and telemetry. |
+| 3 | `EventSegment`, `EventSegmentUserResponse`, `EventUserResponse` | Segment-keyed attendance operations and response creation/copying while Event and User remain natural. |
+| 4 | `Event` | Central routes, search, calendar links, visibility, creation/import, files, reports, and the complete embedded graph. |
+
+Each slice includes all references to its converted models, even when those
+references occur in an unconverted parent. Keeping Event numeric during the
+first three slices does not permit numeric segment or setlist identities in an
+Event DTO. The three setlist models ship together because their existing save
+operation and hydrated content form one aggregate.
+
+#### First slice: Event setlist aggregate
+
+The current code already provides `EventSongList_Detail`,
+`EventSongListContent`, `EventSongListDraft`, and `EventSongList_Save`. The save
+handler composes row services inside the command transaction and checks child
+ownership. Reuse that boundary. Event and Song retain natural identities in
+this slice; SetlistPlan remains a separate domain.
+
+Implementation scope and completion gates:
+
+- Add branded public IDs, database columns, startup repair registration, and
+  creation coverage for all three models. Include the initial setlist created
+  through `insertEvent`, seeds, and other direct persistence writers.
+- Derive the setlist read contract from xTable and finite selections, including
+  the nested Song authorization fields and public tag references. Compose the
+  existing content hydration over it and retain the rule that incomplete
+  authorized content cannot become an editable draft. Remove the handwritten
+  tag projection support from this view.
+- Update both named setlist reads and embedded Event graphs. Replace the
+  numeric Prisma-shaped client item types in `setlistApi` with the actual
+  client contract; keep server persistence payloads distinct. Audit editor
+  grids, previews, combined lists, clipboard imports/exports, React keys, and
+  media-player setlist identity.
+- Separate stable local draft keys from optional persisted public IDs. The
+  current `clientId > 0` test identifies persisted rows and negative numbers
+  identify new rows; that convention cannot define the new write contract.
+  Serialize only persisted public IDs, preserve them on updates/reorders, and
+  omit them for newly added or copied rows. Keep this change within the
+  existing setlist draft API rather than adding a general edit-model system.
+- Make save inputs/results, child `eventSongListId` references, delete, and
+  list reordering use canonical public identities. Validate duplicate and
+  foreign-parent child IDs in the transaction. Command row services themselves
+  accept canonical identities, so do not feed resolved numeric IDs back into
+  their public-ID contracts. Keep numeric join keys inside persistence work.
+- Bring the remaining setlist delete/reorder client writes through strict
+  commands using the existing policy/services. The generic reorder RPC still
+  queries numeric `scopeRowIds`, so this is a remaining shared identity boundary
+  to address. Preserve aggregate delete auditing, mutation hooks, event grouping,
+  and the caller's explicit row scope; remove the superseded setlist RPC usage
+  without redesigning unrelated sorting consumers.
+- Convert telemetry inputs and feature-report projections for live setlist
+  references. Audit the historical admin lookup/cache separately under the
+  ledger exception. Raw-SQL joins may remain numeric internally, but any
+  transported setlist or item identity must be public.
+- Extend the existing command, view, and direct-mutation authorization tests.
+  Cover create/update/delete/reorder, mixed new and persisted items, copies,
+  duplicate IDs, children from another setlist, hidden parents/songs, rollback,
+  reorder scope and field authorization, incomplete hydration, nested Event
+  projection, and rejected numeric inputs.
+
+This is an identity migration, not a setlist concurrency or ordering redesign.
+Keep the existing content semantics and combined-position behavior, fixing
+correctness problems only where the slice requires them. Mark all three models
+complete only after their numeric client identity paths have been removed.
+
+#### Following slices: attendance, segments/responses, then Event
+
+`EventAttendance` should precede the response family because it is the shared
+lookup target. Its slice includes the dashboard reference provider, attendance
+controls and shared algorithms, embedded response DTOs, response mutation
+arguments/results, import data, reporting, and Action references. Classification
+continues to use the existing strength semantics; it must not depend on either
+numeric or public identifier values.
+
+The segment/response family then covers standalone and embedded segment CRUD,
+both response row identities, segment-keyed maps, attendance updates, copy/clear
+operations, event creation/import, and response reports. In particular,
+`updateUserEventAttendanceMutation` currently converts map keys with
+`Object.keys(...).map(Number)`; replace that numeric client boundary with
+validated, authorized public-ID resolution and preserve same-event checks.
+Direct response creation and `createMany` paths need generated public IDs too.
+Keep existing calendar UIDs, revisions, and date-range semantics distinct from
+the new canonical public identities; audit calendar output rather than changing
+its stable UID merely because a segment acquires a public ID.
+
+One pre-existing correctness issue found during this assessment belongs with
+that slice: `copyEventSegmentResponses` deletes through `transactionalDb` but
+inserts through the outer `db.eventSegmentUserResponse.createMany`. The copy
+must use one transaction, with a rollback test, when this operation is migrated.
+This assessment does not change runtime code.
+
+Finally migrate Event across routes and exact lookup, search/facets, list/detail
+and frontpage views, calendar URLs and feeds, creation/import, file associations,
+telemetry/reports, and references from the already converted children. Remove
+the remaining verbose Event/enrichment compatibility path as its consumers move
+to named views. Preserve server-owned calendar IDs and audit keys where their
+contracts explicitly require them; client Event navigation and writes use only
+the new public identity.
 
 ## Active roadmap
 
@@ -1381,6 +1541,9 @@ conversions.
 
 - [x] Establish an explicit client-facing model inventory and document the
   models excluded from its denominator.
+- [x] Exclude `Action` and `Change` row identities under the explicit operational
+  ledger exception; retain target-entity migration obligations for live
+  references.
 - [ ] Keep the inventory current when a Prisma model or client transport is
   added. Respect identity dependencies, but order work by the pressure model
   above: uncovered shared identity scenarios first, established patterns
@@ -1395,17 +1558,19 @@ conversions.
 - [ ] Audit and adapt the shared identity-sensitive infrastructure: exact lookup,
   generic sorting/reordering, association matrices, caches, React keys, raw SQL,
   search results, imports/exports, routes, and non-DB3 Prisma endpoints.
-- [ ] Convert all 49 client-facing models one bounded slice at a time, deleting
-  each numeric client-identity compatibility path before marking that model
-  complete below.
+- [ ] Convert all 47 in-scope client-facing models one bounded slice at a time,
+  deleting each numeric client-identity compatibility path before marking that
+  model complete below.
 
-#### Client-facing model progress: 28 / 49 complete (57%)
+#### Client-facing model progress: 28 / 47 complete (60%)
 
-The denominator is the 49 Prisma models whose own row identity currently crosses
-a client boundary. A model counts as complete only when it satisfies the full
-definition of a migrated entity above; merely adding a `publicId` schema column
-does not advance the count. Multiple xTable variants over the same Prisma model,
-such as `xEvent` and `xEventVerbose`, count once.
+The denominator is the 47 in-scope Prisma models whose own row identity currently
+crosses a client boundary. It excludes the five server-only models and the two
+operational ledger exceptions listed below. Excluding Action and Change changes
+the scope, not the completed count. A model counts as complete only when it
+satisfies the full definition of a migrated entity above; merely adding a
+`publicId` schema column does not advance the count. Multiple xTable variants
+over the same Prisma model, such as `xEvent` and `xEventVerbose`, count once.
 
 Completed models:
 
@@ -1452,13 +1617,18 @@ completion definition.
   maintenance operations use public row identity while credential lookup and
   ownership remain trusted server concerns.
   - [x] `UserSignInMethod`
-- **Operational ledgers: design pressure with late completion dependencies.**
-  Establish an opaque row identity and a policy for historical polymorphic
-  references. Keep these unchecked until their own IDs and every current
-  client-visible relation ID are public or deliberately rendered as inert
-  historical text.
-  - [ ] `Action`
-  - [ ] `Change`
+- **Next: Event setlist aggregate**
+  - [ ] `EventSongList`
+  - [ ] `EventSongListSong`
+  - [ ] `EventSongListDivider`
+- **Then: Event attendance reference**
+  - [ ] `EventAttendance`
+- **Then: Event segments and responses**
+  - [ ] `EventSegment`
+  - [ ] `EventSegmentUserResponse`
+  - [ ] `EventUserResponse`
+- **Then: central Event**
+  - [ ] `Event`
 - **Small independent repetition slices**
   - [ ] `Setting`
   - [ ] `CustomLink`
@@ -1473,16 +1643,6 @@ completion definition.
 - **Wiki domain: application pressure**
   - [ ] `WikiPage`
   - [ ] `WikiPageRevision`
-- **Event and attendance domain: application pressure**
-  - [ ] `Event`
-  - [ ] `EventSegment`
-  - [ ] `EventAttendance`
-  - [ ] `EventUserResponse`
-  - [ ] `EventSegmentUserResponse`
-- **Event setlist aggregate: application pressure**
-  - [ ] `EventSongList`
-  - [ ] `EventSongListSong`
-  - [ ] `EventSongListDivider`
 - **Setlist planning aggregate: application pressure**
   - [ ] `SetlistPlanGroup`
   - [ ] `SetlistPlan`
@@ -1501,10 +1661,22 @@ consumer.
 - `CustomLinkVisit`: append-only server telemetry with no client row query or
   mutation surface.
 
+Two additional models are excluded even though their row identity is visible in
+protected reports. These are deliberate scope exceptions, not server-only
+models or completed migrations:
+
+- `Action`: numeric ledger row identity for feature-usage reporting.
+- `Change`: numeric ledger row identity and historical record keys for sysadmin
+  audit diagnostics.
+
+The operational ledger policy above governs their live references. Do not use
+these exceptions to preserve numeric identity in another entity's ordinary
+client contract.
+
 #### Capability coverage proven by completed slices
 
 These checks track reusable scenarios and do not contribute additional models
-to the 28 / 49 progress count.
+to the 28 / 47 progress count.
 
 - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
 - [x] Exercise an association/tag command with public identities
