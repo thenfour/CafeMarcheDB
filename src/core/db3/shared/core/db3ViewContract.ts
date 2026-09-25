@@ -23,6 +23,7 @@ import {
     type DB3ReferenceValueOf,
 } from "./db3Hydration";
 import type { DB3ViewSelectionArgs } from "./db3View";
+import { prepareDB3ReadSelection } from "./db3ReadSelection";
 
 type ArrayItem<TValue> = TValue extends readonly (infer TItem)[] ? TItem : never;
 
@@ -935,9 +936,9 @@ export function deriveViewContract<
     );
     return {
         ...compiled,
-        // Projection support only adds hidden Prisma fields; TSelection remains
-        // the caller-authored transport-compatible selection authority.
-        prismaSelection: prismaSelection as TSelection,
+        // Projection and authorization support only add hidden Prisma fields;
+        // TSelection remains the caller-authored selection authority.
+        prismaSelection: prepareDB3ReadSelection(entity, prismaSelection).selection as TSelection,
         referenceContract,
         hydrate: (dto, references) => hydrateCompiledSelection(entity, compiled, dto, references),
     };

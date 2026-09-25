@@ -1,5 +1,6 @@
 import type { DB3IdentityOf, xTable } from "../shared/db3core";
 import { generatePublicId as generatePublicIdValue, isPublicIdUniqueCollision } from "@/src/server/publicId";
+import { prepareDB3ReadSelection, type DB3ReadSelectionArgs } from "../shared/core/db3ReadSelection";
 
 /**
  * Server-only operations bound to one DB3 table. The shared xTable remains the
@@ -8,6 +9,21 @@ import { generatePublicId as generatePublicIdValue, isPublicIdUniqueCollision } 
  */
 export class DB3ServerTable<TEntity extends xTable> {
     constructor(readonly entity: TEntity) { }
+
+    prepareReadSelection(selection: DB3ReadSelectionArgs, requiredRootMembers: readonly string[] = []) {
+        return prepareDB3ReadSelection(this.entity, selection, requiredRootMembers);
+    }
+
+    // makes sure all authorization columns are present in the model.
+    // this is used to make sure the database returned everything we need to perform
+    // auth.
+    assertReadAuthorizationInput(model: Readonly<Record<string, unknown>>, path: string): void {
+        for (const member of this.entity.getReadAuthorizationMembers()) {
+            if (!Object.prototype.hasOwnProperty.call(model, member) || model[member] === undefined) {
+                throw new Error(`DB3 read '${path}.${member}' is missing required authorization data for ${this.entity.tableID}.`);
+            }
+        }
+    }
 
     generatePublicId(
         this: Extract<DB3IdentityOf<TEntity>, string> extends never

@@ -51,8 +51,9 @@ const eventStatusView = defineView({
 })
 ```
 
-The helper returns the supplied selection unchanged in the first iteration.
-It validates and interprets that selection; it does not silently add columns.
+The first iteration returned the supplied selection unchanged. The current
+implementation keeps the requested DTO shape unchanged while adding internal
+public-ID projection and authorization dependencies to its Prisma selection.
 
 ## Why this change exists
 
@@ -430,7 +431,7 @@ does not change current views implicitly, and it does not require codecs to be
 Zod transforms.
 
 Implementation status: `deriveViewContract(entity, selection)` returns the
-original selection, its derived DTO schema, the shared compiled member
+dependency-complete Prisma selection, its derived DTO schema, the shared compiled member
 description, and a default hydrator. It also accepts a `transportSelection`
 subset when the full Prisma selection contains authorization-only members. The
 subset is checked recursively at construction time, and only that subset defines
@@ -443,6 +444,15 @@ only when the view's reference contract contains the target entity. Hydration
 retains the key and grafts the provider-defined value onto the relation member.
 The xTable supplies only relation topology and identity typing; it does not
 choose the provider value or loading strategy.
+
+The internal selection includes each selected table's owner, visibility, and
+soft-delete inputs, declared by `xTable.getReadAuthorizationMembers()`. This
+also applies to relations added only to project a public foreign identity.
+These support fields do not widen the DTO. Server query preparation uses the
+same finite selection walker and can additionally fetch the natural primary
+key needed to restore search order. It preserves `include` and implicit scalar
+selection semantics; execution-only additions are removed after authorization
+and public-ID projection. Missing policy inputs or ordering keys fail explicitly.
 
 `defineReferenceContract()` maps entities to arbitrary provider output types.
 `defineView()` stores that contract, so `ClientOf<View>` remains finite and

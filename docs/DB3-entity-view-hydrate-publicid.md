@@ -183,8 +183,9 @@ the view-bound provider contract.
 - a pure hydration function from DTO plus references to a client value.
 
 For migrated views, `deriveViewContract(xTable, selection)` preserves the
-literal Prisma selection unchanged and compiles the DTO schema plus default
-hydrator from xTable field read contracts. Scalars use their transport schemas
+requested transport shape and compiles the DTO schema plus default
+hydrator from xTable field read contracts. Its returned Prisma selection also
+fetches hidden public-ID projection and authorization dependencies. Scalars use their transport schemas
 and codecs; embedded relations recurse through their target xTables; a selected
 normalized foreign key can resolve its consumer relation through the view's
 reference contract and runtime provider. This keeps primitive database meaning
@@ -201,6 +202,22 @@ fallback. If a Prisma query also needs fields solely for authorization,
 `deriveViewContract` accepts a recursively validated `transportSelection`
 subset; the full selection is executed while only the subset defines the DTO and
 hydration graph.
+
+Read dependencies are entity-owned: `xTable.getReadAuthorizationMembers()`
+declares the scalar owner, visibility, and soft-delete inputs used by its built-in
+policy. Derived selections fetch these recursively, including projection-only
+relations such as `segments.event`. This prevents a public-ID-only Event stub
+from being mistaken for an inaccessible private Event.
+
+`db3Server.table(entity).prepareReadSelection()` also prepares runtime selections,
+preserving Prisma `select`, `include`, predicates, and ordering. Ordered search
+reads request the natural primary key as an execution-only dependency. The plan
+removes only its added support fields after authorization and projection; named
+DTOs additionally strip all fields outside their transport contract. Neither
+view callers nor React components need to select the ordering key. Missing
+ordering keys or authorization inputs are explicit programming errors, not empty
+results or ordinary access denials. Authorization assertions apply to raw server
+read rows, not already projected client models.
 
 Association collections follow the same rule through `tagsRef`. The helper uses
 Prisma's flat model metadata to validate the registered association and foreign
@@ -1601,6 +1618,18 @@ conversions.
 - [x] Let derived view contracts add their own hidden relation public IDs and
   remove the redundant manual projection selections. EventSongList now uses
   a derived contract as well, so its manual tag projection is removed.
+- [x] Supply execution-only ordering keys and recursive authorization inputs
+  centrally. Regression tests honor actual Prisma selections and cover Event
+  search ordering, complete Event detail hydration, private/deleted targets,
+  missing-input diagnostics, and support-field removal.
+- [ ] Reconcile retired-choice display policy: EventStatus/EventAttendance
+  comments allow historical references, but generic row authorization restricts
+  soft-deleted rows to authorized recovery reads. Fetching complete policy data
+  now applies that existing restriction consistently to nested projections;
+  this read-dependency fix does not introduce a historical-reference exception.
+- [ ] Update markdown mention parsing/editing for public IDs. Existing numeric
+  mentions are few enough to repair manually: no compatibility aliases,
+  per-object legacy-PK flags, or content-rewriting migration are planned.
 - [ ] Collapse the RolePermission command's association and role lookup into one
   relational Prisma query, and teach the in-memory Prisma test double that
   nested selection shape instead of preserving production complexity for it.

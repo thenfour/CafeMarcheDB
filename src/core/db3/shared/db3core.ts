@@ -1437,6 +1437,17 @@ export class xTable<
         });
     };
 
+    // when querying, we need to know which columns are required in order to
+    // execute the authorization checks. authorization typically
+    // includes isDeleted, owner, and visiblePermission columns. if a query  doesn't
+    // include these, then we can't actually perform authorization so we throw an error.
+    getReadAuthorizationMembers = (): readonly string[] => {
+        const { ownerUser, visiblePermission, isDeleted } = this.SqlSpecialColumns;
+        return [ownerUser, visiblePermission, isDeleted]
+            .filter((column): column is AnyDB3Field => column !== undefined)
+            .map(column => column.fkidMember || column.member);
+    };
+
     private isRowVisibleToActor = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>): boolean => {
         const rowInfo = args.model ? this.getRowInfo(args.model) : null;
         const ownerUserId = this.getOwnerUserId(args.model, rowInfo?.ownerUserId, null);

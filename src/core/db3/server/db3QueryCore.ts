@@ -6,6 +6,7 @@ import { getRequestAuthorization, type RequestAuthorization } from "@/src/auth/s
 import * as db3 from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import type { TAnyModel } from "@/shared/rootroot";
+import { db3Server } from "./db3Server";
 import {
     authorizeAndProjectDB3ViewModel,
     projectDB3ModelPublicIds,
@@ -24,6 +25,7 @@ async function prepareTableQuery(
     input: db3.QueryInputBase,
     authorization: RequestAuthorization,
     database: TransactionalPrismaClient,
+    executionOptions: QueryTableExecutionOptions = {},
 ) {
     const table = db3.GetTableById(input.table.tableID);
     const view = input.table.viewID ? db3.getDB3View(input.table.viewID) : undefined;
@@ -76,7 +78,11 @@ async function prepareTableQuery(
         includeDeleted,
         view?.getSelectionArgs,
     );
-    return { table, view, publicData, includeDeleted, where, selectionArgs };
+    const readSelection = db3Server.table(table).prepareReadSelection(
+        selectionArgs ?? {},
+        executionOptions.orderedPrimaryKeys ? [table.pkMember] : [],
+    );
+    return { table, view, publicData, includeDeleted, where, selectionArgs: readSelection.selection, readSelection };
 }
 
 function sanitizeQueryRows(items: TAnyModel[], query: Awaited<ReturnType<typeof prepareTableQuery>>, contextDesc: string): TAnyModel[] {
@@ -90,20 +96,25 @@ function sanitizeQueryRows(items: TAnyModel[], query: Awaited<ReturnType<typeof 
                 query.includeDeleted,
             ))
             .filter((model): model is TAnyModel => model !== null)
-            .map(model => query.view!.parseDto(model));
+            .map(model => query.view!.parseDto(query.readSelection.stripSupportFields(model)));
     }
 
-    return items.map(model => query.table.authorizeAndSanitize({
-        contextDesc,
-        publicData: query.publicData,
-        includeDeleted: query.includeDeleted,
-        rowMode: "view",
-        model,
-        fallbackOwnerId: null,
-    }))
+    return items.map(model => {
+        db3Server.table(query.table).assertReadAuthorizationInput(model, contextDesc);
+        return query.table.authorizeAndSanitize({
+            contextDesc,
+            publicData: query.publicData,
+            includeDeleted: query.includeDeleted,
+            rowMode: "view",
+            model,
+            fallbackOwnerId: null,
+        });
+    })
         .filter(result => result.rowIsAuthorized)
         .map(result => (
-            projectDB3ModelPublicIds(query.table, result.authorizedModel, query.publicData)
+            query.readSelection.stripSupportFields(
+                projectDB3ModelPublicIds(query.table, result.authorizedModel, query.publicData),
+            )
         ));
 }
 
@@ -134,7 +145,13 @@ function orderRawRowsByPrimaryKey<T extends TAnyModel>(
         return items;
     }
     // map of pk -> item
-    const byPrimaryKey = new Map(items.map(item => [item[primaryKeyMember], item]));
+    const byPrimaryKey = new Map(items.map(item => {
+        const key = item[primaryKeyMember];
+        if (key === undefined || key === null) {
+            throw new Error(`DB3 ordered read is missing required primary key '${primaryKeyMember}'.`);
+        }
+        return [key, item];
+    }));
 
     return orderedPrimaryKeys.flatMap(primaryKey => {
         const item = byPrimaryKey.get(primaryKey);
@@ -149,7 +166,7 @@ export async function queryTable(
     executionOptions: QueryTableExecutionOptions = {},
 ) {
     const startTimestamp = Date.now();
-    const query = await prepareTableQuery(input, authorization, database);
+    const query = await prepareTableQuery(input, authorization, database, executionOptions);
     const trustedPrimaryKeyWhere = executionOptions.trustedNaturalPrimaryKeys
         ? { [query.table.pkMember]: { in: executionOptions.trustedNaturalPrimaryKeys } }
         : undefined;

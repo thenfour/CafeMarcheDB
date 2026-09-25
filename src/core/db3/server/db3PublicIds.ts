@@ -3,6 +3,7 @@ import type { TAnyModel } from "@/shared/rootroot";
 import { isPublicId } from "shared/publicId";
 import * as db3 from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
+import { db3Server } from "./db3Server";
 
 export class DB3PublicIdError extends Error {
     constructor(message: string) {
@@ -256,6 +257,7 @@ export function authorizeAndProjectDB3ViewModel(
         currentModel: TAnyModel,
         path: string,
     ): TAnyModel | null => {
+        db3Server.table(currentTable).assertReadAuthorizationInput(currentModel, `${contextDesc}:${path}`);
         const result = currentTable.authorizeAndSanitize({
             contextDesc: `${contextDesc}:${path}`,
             publicData,

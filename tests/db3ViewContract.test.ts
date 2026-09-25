@@ -379,7 +379,10 @@ describe("DB3 scalar selection compiler", () => {
     expect(derived.prismaSelection).toEqual({
       select: {
         statusId: true,
-        status: { select: { publicId: true } },
+        status: { select: { publicId: true, isDeleted: true } },
+        createdByUserId: true,
+        visiblePermissionId: true,
+        isDeleted: true,
       },
     })
     expect(derived.dtoSchema.parse({
@@ -1057,7 +1060,7 @@ describe("Song derived-view migration", () => {
     )).toBe(db3.songCreditTypeEditorSelection)
     expect(db3.songCreditEditorView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
-    )).toBe(db3.songCreditEditorSelection)
+    )).toMatchObject(db3.songCreditEditorSelection)
   })
 
   it("derives Song Editor nested transport and consumer codecs", () => {
@@ -1082,7 +1085,7 @@ describe("Song derived-view migration", () => {
       .toEqualTypeOf<ColorPaletteEntry | null>()
     expect(db3.songEditorView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
-    )).toBe(db3.songEditorSelection)
+    )).toMatchObject(db3.songEditorSelection)
   })
 
   it("derives Song Search without leaking authorization support fields", () => {

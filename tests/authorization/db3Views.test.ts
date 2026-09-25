@@ -17,6 +17,8 @@ import { DateTimeRange } from "shared/time";
 import { Prisma } from "db";
 import { z } from "zod";
 import { gGeneralPaletteList } from "src/core/components/color/palette";
+import { selectPrismaTestRow } from "../support/prismaSelection";
+import type { DB3ReadSelectionArgs } from "@db3/shared/core/db3ReadSelection";
 
 const groupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
 const tagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn02");
@@ -379,10 +381,10 @@ describe("DB3 named views", () => {
 
     it("preserves a server-computed page order before a view removes database IDs", async () => {
         const secondPublicId = parsePublicId<"InstrumentFunctionalGroup">("BcDeFgHiJkLmNo12");
-        const findMany = vi.fn(async () => [
+        const findMany = vi.fn(async (args: DB3ReadSelectionArgs) => [
             { id: 1, ...group },
             { id: 2, ...group, publicId: secondPublicId, name: "Woodwind" },
-        ]);
+        ].map(row => selectPrismaTestRow(row, args)));
         const effectivePermissions = new PermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
@@ -475,7 +477,7 @@ describe("DB3 named views", () => {
 
     it("queries the finite Custom Link and Menu Link collection views", async () => {
         const createdAt = new Date("2026-09-21T12:00:00.000Z");
-        const createdByUser = { id: 100, name: "Ada", cssClass: null };
+        const createdByUser = { id: 100, name: "Ada", cssClass: null, isDeleted: false };
         const customLink = {
             id: 20,
             name: "Scores",
@@ -545,8 +547,9 @@ describe("DB3 named views", () => {
             MenuLink: { findMany: vi.fn(async () => [menuLink]) },
         } as any);
 
-        expect(customResult.items).toEqual([customLink]);
-        expect(menuResult.items).toEqual([menuLink]);
+        const createdByUserDto = { id: createdByUser.id, name: createdByUser.name, cssClass: createdByUser.cssClass };
+        expect(customResult.items).toEqual([{ ...customLink, createdByUser: createdByUserDto }]);
+        expect(menuResult.items).toEqual([{ ...menuLink, createdByUser: createdByUserDto }]);
     });
 
     it("represents authorization-stripped fields as absent optional DTO members", () => {
@@ -1198,9 +1201,9 @@ describe("DB3 named views", () => {
             visiblePermissionId: null,
             isDeleted: false,
             typeId: 101,
-            type: { publicId: eventTypePublicId },
+            type: { publicId: eventTypePublicId, isDeleted: false },
             statusId: 102,
-            status: { publicId: eventStatusPublicId },
+            status: { publicId: eventStatusPublicId, isDeleted: false },
             uid: "event-uid",
             startsAt,
             endDateTime: new Date("2026-09-20T19:00:00Z"),
@@ -1211,7 +1214,7 @@ describe("DB3 named views", () => {
                 publicId: segmentPublicId(18),
                 name: "Main set",
                 statusId: 103,
-                status: { publicId: eventStatusPublicId },
+                status: { publicId: eventStatusPublicId, isDeleted: false },
                 uid: "segment-uid",
                 startsAt,
                 isAllDay: false,
@@ -1269,8 +1272,8 @@ describe("DB3 named views", () => {
         expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
             take: 1,
             select: expect.objectContaining({
-                type: { select: { publicId: true } },
-                status: { select: { publicId: true } },
+                type: { select: { publicId: true, isDeleted: true } },
+                status: { select: { publicId: true, isDeleted: true } },
             }),
         }));
         expectTypeOf(result.items).toEqualTypeOf<db3.EventWikiPageContextClient[]>();
@@ -1322,7 +1325,7 @@ describe("DB3 named views", () => {
                 type: { publicId: songCreditTypePublicId },
                 year: "2026",
                 comment: "",
-                user: { id: 100, name: "Composer" },
+                user: { id: 100, name: "Composer", isDeleted: false },
             }],
         }]);
         const effectivePermissions = new PermissionSet([
@@ -1868,7 +1871,7 @@ describe("DB3 named views", () => {
             name: "Concert set",
             description: "Main set",
             eventId: 5,
-            event: { publicId: eventPublicId(5) },
+            event: { publicId: eventPublicId(5), createdByUserId: 42, visiblePermissionId: null, isDeleted: false },
             sortOrder: 10,
             isOrdered: true,
             isActuallyPlayed: false,
