@@ -900,6 +900,7 @@ const main = async () => {
       const file = await gState.FakeFile(gState.randomVisibilityPermissionId());
       await gState.prisma.fileSongTag.create({
         data: {
+          publicId: generatePublicId<"FileSongTag">(),
           fileId: file.id,
           songId: song.id,
         }

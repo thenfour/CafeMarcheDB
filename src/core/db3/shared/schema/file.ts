@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import type { FileTagAssignmentPublicId, FileTagPublicId } from "shared/publicId";
+import type { FileEventTagPublicId, FileInstrumentTagPublicId, FileSongTagPublicId, FileTagAssignmentPublicId, FileTagPublicId, FileUserTagPublicId, FileWikiPageTagPublicId } from "shared/publicId";
 import { TAnyModel } from "shared/rootroot";
 import { CMDBTableFilterModel } from "../apiTypes";
 import { DateTimeField, foreignRef, ForeignCollectionField, foreignRefByTableId, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
@@ -186,7 +186,8 @@ export const xFileTagAssignment = db3.defineTable({
 
 
 //   model FileUserTag {
-//     id     Int     @id @default(autoincrement())
+//     id       Int     @id @default(autoincrement())
+//     publicId String  @unique @db.Char(16)
 //     fileId Int
 //     file   File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
 //     user   User?   @relation(fields: [userId], references: [id], onDelete: Restrict)
@@ -201,6 +202,7 @@ export const xFileTagAssignment = db3.defineTable({
 
 export const xFileUserTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileUserTagDelegate>(),
+    getIdentity: (association: { publicId: FileUserTagPublicId }) => association.publicId,
     tableName: "FileUserTag",
     deletePolicy: "hard",
     naturalOrderBy: FileUserTagNaturalOrderBy,
@@ -210,13 +212,14 @@ export const xFileUserTag = db3.defineTable({
     },
     getRowInfo: (row: FileUserTagPayload) => {
         return {
-            pk: row.id,
+            pk: row.publicId,
             name: row.user?.name || "",
             ownerUserId: null,
         };
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<FileUserTagPublicId>(),
         user: foreignRef(() => xUser, {
             fkidMember: "userId",
             authMap: xFileAuthMap_FileObjects,
@@ -231,7 +234,8 @@ export const xFileUserTag = db3.defineTable({
 
 
 //   model FileSongTag {
-//     id     Int     @id @default(autoincrement())
+//     id       Int     @id @default(autoincrement())
+//     publicId String  @unique @db.Char(16)
 //     fileId Int
 //     file   File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
 //     song   Song?   @relation(fields: [songId], references: [id], onDelete: Restrict)
@@ -245,6 +249,7 @@ export const xFileUserTag = db3.defineTable({
 
 export const xFileSongTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileSongTagDelegate>(),
+    getIdentity: (association: { publicId: FileSongTagPublicId }) => association.publicId,
     tableName: "FileSongTag",
     deletePolicy: "hard",
     naturalOrderBy: FileSongTagNaturalOrderBy,
@@ -254,13 +259,14 @@ export const xFileSongTag = db3.defineTable({
     },
     getRowInfo: (row: FileSongTagPayload) => {
         return {
-            pk: row.id,
+            pk: row.publicId,
             name: row.song?.name || "",
             ownerUserId: null,
         };
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<FileSongTagPublicId>(),
         file: foreignRef(() => xFile, {
             fkidMember: "fileId",
             authMap: xFileAuthMap_FileObjects,
@@ -277,7 +283,8 @@ export const xFileSongTag = db3.defineTable({
 
 
 //   model FileEventTag {
-//     id      Int     @id @default(autoincrement())
+//     id       Int     @id @default(autoincrement())
+//     publicId String  @unique @db.Char(16)
 //     fileId  Int
 //     file    File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
 //     event   Event?  @relation(fields: [eventId], references: [id], onDelete: Restrict)
@@ -288,6 +295,7 @@ export const xFileSongTag = db3.defineTable({
 
 export const xFileEventTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileEventTagDelegate>(),
+    getIdentity: (association: { publicId: FileEventTagPublicId }) => association.publicId,
     tableName: "FileEventTag",
     deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
@@ -297,13 +305,14 @@ export const xFileEventTag = db3.defineTable({
     },
     getRowInfo: (row: FileEventTagPayload) => {
         return {
-            pk: row.id,
+            pk: row.publicId,
             name: row.event?.name || "",
             ownerUserId: null,
         };
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<FileEventTagPublicId>(),
         event: foreignRef(() => xEvent, {
             fkidMember: "eventId",
             authMap: xFileAuthMap_FileObjects,
@@ -320,6 +329,7 @@ export const xFileEventTag = db3.defineTable({
 //   // this is hm. i suppose this is correct, but tagging instrument groups may be more accurate in some scenarios?
 //   model FileInstrumentTag {
 //     id           Int         @id @default(autoincrement())
+//     publicId     String      @unique @db.Char(16)
 //     fileId       Int
 //     file         File        @relation(fields: [fileId], references: [id], onDelete: Cascade)
 //     instrument   Instrument? @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
@@ -333,6 +343,7 @@ export const xFileEventTag = db3.defineTable({
 ////////////////////////////////////////////////////////////////
 export const xFileInstrumentTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileInstrumentTagDelegate>(),
+    getIdentity: (association: { publicId: FileInstrumentTagPublicId }) => association.publicId,
     tableName: "FileInstrumentTag",
     deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
@@ -342,13 +353,14 @@ export const xFileInstrumentTag = db3.defineTable({
     },
     getRowInfo: (row: FileInstrumentTagPayload) => {
         return {
-            pk: row.id,
+            pk: row.publicId,
             name: row.instrument?.name || "",
             ownerUserId: null,
         };
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<FileInstrumentTagPublicId>(),
         instrument: foreignRef(() => xInstrument, {
             fkidMember: "instrumentId",
             authMap: xFileAuthMap_FileObjects,
@@ -727,6 +739,7 @@ export const xFrontpageGalleryItem = db3.defineTable({
 ////////////////////////////////////////////////////////////////
 export const xFileWikiPageTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileWikiPageTagDelegate>(),
+    getIdentity: (association: { publicId: FileWikiPageTagPublicId }) => association.publicId,
     tableName: "FileWikiPageTag",
     deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
@@ -736,13 +749,14 @@ export const xFileWikiPageTag = db3.defineTable({
     },
     getRowInfo: (row: FileWikiPageTagPayload) => {
         return {
-            pk: row.id,
+            pk: row.publicId,
             name: row.wikiPage?.slug || "",
             ownerUserId: null,
         };
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<FileWikiPageTagPublicId>(),
         wikiPage: foreignRef(() => xWikiPage, {
             fkidMember: "wikiPageId",
             authMap: xFileAuthMap_FileObjects,

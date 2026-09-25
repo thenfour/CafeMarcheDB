@@ -92,7 +92,7 @@ export const FileListItem = (props: FileListItemProps) => {
                         && event.startsAt !== undefined
                         && event.statusId !== undefined
                         && event.typeId !== undefined
-                        ? <EventChip key={taggedEvent.id} value={{
+                        ? <EventChip key={db3.xFile.fields.taggedEvents.getForeignIdentity(taggedEvent)} value={{
                             id: event.id,
                             name: event.name,
                             startsAt: event.startsAt,
@@ -103,23 +103,23 @@ export const FileListItem = (props: FileListItemProps) => {
                 })}
 
                 {/* {(props.file.taggedUsers || []).map(taggedUser => (
-                    <UserChip key={taggedUser.id} value={taggedUser.user} size="small" variation={StandardVariationSpec.Weak} />
+                    <UserChip key={db3.xFile.fields.taggedUsers.getForeignIdentity(taggedUser)} value={taggedUser.user} size="small" variation={StandardVariationSpec.Weak} />
                 ))} */}
 
                 {(props.file.taggedSongs || []).map(taggedSong => taggedSong.song.name === undefined
                     ? null
-                    : <SongChip key={taggedSong.id} value={{
+                    : <SongChip key={db3.xFile.fields.taggedSongs.getForeignIdentity(taggedSong)} value={{
                         id: taggedSong.song.id,
                         name: taggedSong.song.name,
                     }} size="small" variation={StandardVariationSpec.Weak} />)}
 
                 {(props.file.taggedInstruments || []).map(taggedInstrument => (
-                    <InstrumentChip key={taggedInstrument.id} value={taggedInstrument.instrument} size="small" variation={StandardVariationSpec.Weak} />
+                    <InstrumentChip key={db3.xFile.fields.taggedInstruments.getForeignIdentity(taggedInstrument)} value={taggedInstrument.instrument} size="small" variation={StandardVariationSpec.Weak} />
                 ))}
 
                 {(props.file.taggedWikiPages || []).map(taggedWikiPage => taggedWikiPage.wikiPage.slug === undefined
                     ? null
-                    : <WikiPageChip key={taggedWikiPage.id} slug={taggedWikiPage.wikiPage.slug} size="small" variation={StandardVariationSpec.Weak} />)}
+                    : <WikiPageChip key={db3.xFile.fields.taggedWikiPages.getForeignIdentity(taggedWikiPage)} slug={taggedWikiPage.wikiPage.slug} size="small" variation={StandardVariationSpec.Weak} />)}
             </div>
         }
 

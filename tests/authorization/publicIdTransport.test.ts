@@ -23,6 +23,11 @@ const userTagAssignmentPublicId = parsePublicId<"UserTagAssignment">("AbCdEfGhIj
 const songCreditTypePublicId = parsePublicId<"SongCreditType">("AbCdEfGhIjKlMn14");
 const songCreditPublicId = parsePublicId<"SongCredit">("AbCdEfGhIjKlMn15");
 const userInstrumentPublicId = parsePublicId<"UserInstrument">("AbCdEfGhIjKlMn16");
+const fileUserTagPublicId = parsePublicId<"FileUserTag">("AbCdEfGhIjKlMn17");
+const fileSongTagPublicId = parsePublicId<"FileSongTag">("AbCdEfGhIjKlMn18");
+const fileEventTagPublicId = parsePublicId<"FileEventTag">("AbCdEfGhIjKlMn19");
+const fileInstrumentTagPublicId = parsePublicId<"FileInstrumentTag">("AbCdEfGhIjKlMn20");
+const fileWikiPageTagPublicId = parsePublicId<"FileWikiPageTag">("AbCdEfGhIjKlMn21");
 const instrumentId = 7;
 const group = {
     id: 54,
@@ -145,15 +150,46 @@ describe("instrument catalog public-ID transport", () => {
                     text: "Partition",
                 },
             }],
+            taggedUsers: [{
+                id: 93,
+                publicId: fileUserTagPublicId,
+                fileId: 90,
+                userId: 100,
+                user: { id: 100, name: "Ada" },
+            }],
+            taggedSongs: [{
+                id: 94,
+                publicId: fileSongTagPublicId,
+                fileId: 90,
+                songId: 101,
+                song: { id: 101, name: "A song" },
+            }],
+            taggedEvents: [{
+                id: 95,
+                publicId: fileEventTagPublicId,
+                fileId: 90,
+                eventId: 102,
+                event: { id: 102, name: "A concert" },
+            }],
             taggedInstruments: [{
                 id: 91,
+                publicId: fileInstrumentTagPublicId,
                 fileId: 90,
                 instrumentId: instrument.id,
                 instrument,
             }],
+            taggedWikiPages: [{
+                id: 96,
+                publicId: fileWikiPageTagPublicId,
+                fileId: 90,
+                wikiPageId: 103,
+                wikiPage: { id: 103, slug: "repertoire" },
+            }],
         }, publicData);
         const nestedInstrument = projectedFile.taggedInstruments[0].instrument;
         expect(projectedFile.taggedInstruments[0].instrumentId).toBe(instrumentPublicId);
+        expect(projectedFile.taggedInstruments[0].publicId).toBe(fileInstrumentTagPublicId);
+        expect(projectedFile.taggedInstruments[0]).not.toHaveProperty("id");
         expect(nestedInstrument.publicId).toBe(instrumentPublicId);
         expect(nestedInstrument).not.toHaveProperty("id");
         expect(nestedInstrument.functionalGroupId).toBe(publicId);
@@ -165,6 +201,30 @@ describe("instrument catalog public-ID transport", () => {
         });
         expect(projectedFile.tags[0]).not.toHaveProperty("id");
         expect(projectedFile.tags[0].fileTag).not.toHaveProperty("id");
+        expect(projectedFile.taggedUsers[0]).toMatchObject({
+            publicId: fileUserTagPublicId,
+            userId: 100,
+            user: { id: 100, name: "Ada" },
+        });
+        expect(projectedFile.taggedSongs[0]).toMatchObject({
+            publicId: fileSongTagPublicId,
+            songId: 101,
+            song: { id: 101, name: "A song" },
+        });
+        expect(projectedFile.taggedEvents[0]).toMatchObject({
+            publicId: fileEventTagPublicId,
+            eventId: 102,
+            event: { id: 102, name: "A concert" },
+        });
+        expect(projectedFile.taggedWikiPages[0]).toMatchObject({
+            publicId: fileWikiPageTagPublicId,
+            wikiPageId: 103,
+            wikiPage: { id: 103, slug: "repertoire" },
+        });
+        expect(projectedFile.taggedUsers[0]).not.toHaveProperty("id");
+        expect(projectedFile.taggedSongs[0]).not.toHaveProperty("id");
+        expect(projectedFile.taggedEvents[0]).not.toHaveProperty("id");
+        expect(projectedFile.taggedWikiPages[0]).not.toHaveProperty("id");
 
         const projectedSong = projectDB3ModelPublicIds(db3.xSong, {
             id: 92,
@@ -483,6 +543,48 @@ describe("instrument catalog public-ID transport", () => {
             mutationType: "update",
             updateId: 102,
             updateModel: { isPrimary: true },
+        })).toThrow("updates require updatePublicId");
+        expect(() => validateDB3MutationRequest({
+            tableID: "FileUserTag",
+            tableName: "FileUserTag",
+            mutationType: "update",
+            updatePublicId: fileUserTagPublicId,
+            updateModel: { userId: 100 },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "FileSongTag",
+            tableName: "FileSongTag",
+            mutationType: "update",
+            updatePublicId: fileSongTagPublicId,
+            updateModel: { songId: 101 },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "FileEventTag",
+            tableName: "FileEventTag",
+            mutationType: "update",
+            updatePublicId: fileEventTagPublicId,
+            updateModel: { eventId: 102 },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "FileInstrumentTag",
+            tableName: "FileInstrumentTag",
+            mutationType: "update",
+            updatePublicId: fileInstrumentTagPublicId,
+            updateModel: { instrumentId: instrumentPublicId },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "FileWikiPageTag",
+            tableName: "FileWikiPageTag",
+            mutationType: "update",
+            updatePublicId: fileWikiPageTagPublicId,
+            updateModel: { wikiPageId: 103 },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "FileSongTag",
+            tableName: "FileSongTag",
+            mutationType: "update",
+            updateId: 94,
+            updateModel: { songId: 101 },
         })).toThrow("updates require updatePublicId");
     });
 

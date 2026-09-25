@@ -192,7 +192,7 @@ const songSearchTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
         },
         taggedFiles: {
             select: {
-                id: true,
+                publicId: true,
                 file: {
                     select: {
                         id: true,
@@ -334,7 +334,7 @@ const songDetailTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
         },
         taggedFiles: {
             select: {
-                id: true,
+                publicId: true,
                 file: fileCardTransportSelection,
             },
         },

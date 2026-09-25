@@ -240,6 +240,46 @@ export async function CorrectUserInstrumentPublicIds() {
     console.log(`Replaced ${replacementCount} UserInstrument public-ID placeholders.`);
 }
 
+export async function CorrectFileUserTagPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.fileUserTag,
+        modelName: "FileUserTag",
+    });
+    console.log(`Replaced ${replacementCount} FileUserTag public-ID placeholders.`);
+}
+
+export async function CorrectFileSongTagPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.fileSongTag,
+        modelName: "FileSongTag",
+    });
+    console.log(`Replaced ${replacementCount} FileSongTag public-ID placeholders.`);
+}
+
+export async function CorrectFileEventTagPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.fileEventTag,
+        modelName: "FileEventTag",
+    });
+    console.log(`Replaced ${replacementCount} FileEventTag public-ID placeholders.`);
+}
+
+export async function CorrectFileInstrumentTagPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.fileInstrumentTag,
+        modelName: "FileInstrumentTag",
+    });
+    console.log(`Replaced ${replacementCount} FileInstrumentTag public-ID placeholders.`);
+}
+
+export async function CorrectFileWikiPageTagPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.fileWikiPageTag,
+        modelName: "FileWikiPageTag",
+    });
+    console.log(`Replaced ${replacementCount} FileWikiPageTag public-ID placeholders.`);
+}
+
 export async function registerNodeInstrumentation() {
     console.log(`INSTRUMENTATION RUNNING`);
     await instrumentationSetup();
@@ -267,6 +307,11 @@ export async function registerNodeInstrumentation() {
     await CorrectUserTagPublicIds();
     await CorrectUserTagAssignmentPublicIds();
     await CorrectUserInstrumentPublicIds();
+    await CorrectFileUserTagPublicIds();
+    await CorrectFileSongTagPublicIds();
+    await CorrectFileEventTagPublicIds();
+    await CorrectFileInstrumentTagPublicIds();
+    await CorrectFileWikiPageTagPublicIds();
 
     //const startupState = getServerStartStateRef();
     process.env.CMDB_START_TIME = `${new Date().valueOf()}`;

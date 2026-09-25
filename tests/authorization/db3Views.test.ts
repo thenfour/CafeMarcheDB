@@ -28,6 +28,11 @@ const eventTagAssignmentPublicId = parsePublicId<"EventTagAssignment">("AbCdEfGh
 const userTagPublicId = parsePublicId<"UserTag">("AbCdEfGhIjKlMn15");
 const songCreditTypePublicId = parsePublicId<"SongCreditType">("AbCdEfGhIjKlMn16");
 const songCreditPublicId = parsePublicId<"SongCredit">("AbCdEfGhIjKlMn17");
+const fileUserTagPublicId = parsePublicId<"FileUserTag">("AbCdEfGhIjKlMn18");
+const fileSongTagPublicId = parsePublicId<"FileSongTag">("AbCdEfGhIjKlMn19");
+const fileEventTagPublicId = parsePublicId<"FileEventTag">("AbCdEfGhIjKlMn20");
+const fileInstrumentTagPublicId = parsePublicId<"FileInstrumentTag">("AbCdEfGhIjKlMn21");
+const fileWikiPageTagPublicId = parsePublicId<"FileWikiPageTag">("AbCdEfGhIjKlMn22");
 const group = {
     publicId: groupPublicId,
     name: "Brass",
@@ -664,7 +669,7 @@ describe("DB3 named views", () => {
             visiblePermissionId: permission.id,
             tags: [{ publicId: songTagAssociationPublicId, tagId: songTag.publicId }],
             taggedFiles: [{
-                id: 80,
+                publicId: fileSongTagPublicId,
                 fileId: 8,
                 songId: 7,
                 file: {
@@ -753,10 +758,10 @@ describe("DB3 named views", () => {
             externalURI: null,
             visiblePermissionId: permission.id,
             tags: [{ publicId: fileTagAssignmentPublicId, fileTagId: fileTag.publicId }],
-            taggedSongs: [{ id: 81, song: { id: 7, name: "A song" } }],
+            taggedSongs: [{ publicId: fileSongTagPublicId, song: { id: 7, name: "A song" } }],
             taggedEvents: [
                 {
-                    id: 85,
+                    publicId: fileEventTagPublicId,
                     event: {
                         id: 9,
                         name: "A concert",
@@ -766,8 +771,8 @@ describe("DB3 named views", () => {
                     },
                 },
             ],
-            taggedInstruments: [{ id: 82, instrumentId: instrument.publicId }],
-            taggedWikiPages: [{ id: 88, wikiPage: { id: 12, slug: "repertoire" } }],
+            taggedInstruments: [{ publicId: fileInstrumentTagPublicId, instrumentId: instrument.publicId }],
+            taggedWikiPages: [{ publicId: fileWikiPageTagPublicId, wikiPage: { id: 12, slug: "repertoire" } }],
         });
         const hydrated = db3.hydrateView(db3.fileSearchView, dto, references);
 
@@ -868,10 +873,10 @@ describe("DB3 named views", () => {
             isDeleted: true,
             visiblePermissionId: permission.id,
             tags: [{ publicId: fileTagAssignmentPublicId, fileTagId: fileTag.publicId }],
-            taggedUsers: [{ id: 81, user: { id: 13, name: "Ada" } }],
-            taggedSongs: [{ id: 82, song: { id: 14, name: "A song" } }],
+            taggedUsers: [{ publicId: fileUserTagPublicId, user: { id: 13, name: "Ada" } }],
+            taggedSongs: [{ publicId: fileSongTagPublicId, song: { id: 14, name: "A song" } }],
             taggedEvents: [{
-                id: 83,
+                publicId: fileEventTagPublicId,
                 event: {
                     id: 15,
                     name: "A concert",
@@ -880,8 +885,8 @@ describe("DB3 named views", () => {
                     typeId: eventTypePublicId,
                 },
             }],
-            taggedInstruments: [{ id: 84, instrumentId: instrument.publicId }],
-            taggedWikiPages: [{ id: 85, wikiPage: { id: 16, slug: "repertoire" } }],
+            taggedInstruments: [{ publicId: fileInstrumentTagPublicId, instrumentId: instrument.publicId }],
+            taggedWikiPages: [{ publicId: fileWikiPageTagPublicId, wikiPage: { id: 16, slug: "repertoire" } }],
             frontpageGalleryItems: [{ id: 90 }],
             parentFile: { id: 7, fileLeafName: "source.pdf" },
             childFiles: [{ id: 9, fileLeafName: "part.pdf" }],
@@ -898,14 +903,14 @@ describe("DB3 named views", () => {
         expect(hydrated.tags?.[0]?.fileTag).toEqual(
             references.require(db3.xFileTag, fileTag.publicId, "test"),
         );
-        expect(hydrated.taggedUsers).toEqual([{ id: 81, user: { id: 13, name: "Ada" } }]);
-        expect(hydrated.taggedSongs).toEqual([{ id: 82, song: { id: 14, name: "A song" } }]);
+        expect(hydrated.taggedUsers).toEqual([{ publicId: fileUserTagPublicId, user: { id: 13, name: "Ada" } }]);
+        expect(hydrated.taggedSongs).toEqual([{ publicId: fileSongTagPublicId, song: { id: 14, name: "A song" } }]);
         expect(hydrated.taggedEvents?.[0]?.event.name).toBe("A concert");
         expect(hydrated.taggedInstruments?.[0]?.instrument).toEqual(
             references.require(db3.xInstrument, instrument.publicId, "test"),
         );
         expect(hydrated.taggedWikiPages).toEqual([{
-            id: 85,
+            publicId: fileWikiPageTagPublicId,
             wikiPage: { id: 16, slug: "repertoire" },
         }]);
         expect(hydrated.frontpageGalleryItems).toEqual([{ id: 90 }]);
@@ -1260,6 +1265,7 @@ describe("DB3 named views", () => {
             }],
             taggedFiles: [{
                 id: 80,
+                publicId: fileSongTagPublicId,
                 fileId: 8,
                 songId: 7,
                 file: {
@@ -1319,7 +1325,7 @@ describe("DB3 named views", () => {
                 tagId: songTagPublicId,
             }],
             taggedFiles: [{
-                id: 80,
+                publicId: fileSongTagPublicId,
                 file: {
                     id: 8,
                     tags: [{
@@ -1386,7 +1392,7 @@ describe("DB3 named views", () => {
             pinnedRecordingId: null,
             tags: [{ publicId: songTagAssociationPublicId, tagId: songTag.publicId }],
             taggedFiles: [{
-                id: 80,
+                publicId: fileSongTagPublicId,
                 fileId: 8,
                 file: {
                     id: 8,
@@ -1401,7 +1407,7 @@ describe("DB3 named views", () => {
                     taggedUsers: [],
                     taggedSongs: [],
                     taggedEvents: [],
-                    taggedInstruments: [{ id: 100, instrumentId: instrument.publicId }],
+                    taggedInstruments: [{ publicId: fileInstrumentTagPublicId, instrumentId: instrument.publicId }],
                     taggedWikiPages: [],
                 },
             }],
@@ -1454,6 +1460,7 @@ describe("DB3 named views", () => {
             }],
             taggedFiles: [{
                 id: 80,
+                publicId: fileSongTagPublicId,
                 fileId: 8,
                 songId: 7,
                 file: {
@@ -1480,6 +1487,7 @@ describe("DB3 named views", () => {
                     taggedUsers: [],
                     taggedSongs: [{
                         id: 91,
+                        publicId: fileSongTagPublicId,
                         songId: 9,
                         song: {
                             id: 9,
@@ -1529,7 +1537,7 @@ describe("DB3 named views", () => {
                 tagId: songTagPublicId,
             }],
             taggedFiles: [{
-                id: 80,
+                publicId: fileSongTagPublicId,
                 file: {
                     id: 8,
                     fileLeafName: "score.pdf",
@@ -1538,7 +1546,7 @@ describe("DB3 named views", () => {
                         fileTagId: fileTagPublicId,
                     }],
                     taggedSongs: [{
-                        id: 91,
+                        publicId: fileSongTagPublicId,
                         song: { id: 9, name: "Private related song" },
                     }],
                 },

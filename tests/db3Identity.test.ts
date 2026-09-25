@@ -12,6 +12,11 @@ describe("DB3 table identity authority", () => {
         const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("WikiTagPublic001");
         const wikiPageTagAssignmentPublicId = parsePublicId<"WikiPageTagAssignment">("WikiTagAssign001");
         const userInstrumentPublicId = parsePublicId<"UserInstrument">("UserInstrumnt001");
+        const fileUserTagPublicId = parsePublicId<"FileUserTag">("FileUserTagPub01");
+        const fileSongTagPublicId = parsePublicId<"FileSongTag">("FileSongTagPub01");
+        const fileEventTagPublicId = parsePublicId<"FileEventTag">("FileEventTagPub1");
+        const fileInstrumentTagPublicId = parsePublicId<"FileInstrumentTag">("FileInstrTagPP01");
+        const fileWikiPageTagPublicId = parsePublicId<"FileWikiPageTag">("FileWikiTagPub01");
         expect(db3.xInstrument.getIdentity({ publicId: instrumentPublicId }))
             .toBe(instrumentPublicId);
         expect(db3.xInstrument.isIdentity(instrumentPublicId)).toBe(true);
@@ -30,6 +35,16 @@ describe("DB3 table identity authority", () => {
             .toBe(wikiPageTagAssignmentPublicId);
         expect(db3.xUserInstrument.getIdentity({ publicId: userInstrumentPublicId }))
             .toBe(userInstrumentPublicId);
+        expect(db3.xFileUserTag.getIdentity({ publicId: fileUserTagPublicId }))
+            .toBe(fileUserTagPublicId);
+        expect(db3.xFileSongTag.getIdentity({ publicId: fileSongTagPublicId }))
+            .toBe(fileSongTagPublicId);
+        expect(db3.xFileEventTag.getIdentity({ publicId: fileEventTagPublicId }))
+            .toBe(fileEventTagPublicId);
+        expect(db3.xFileInstrumentTag.getIdentity({ publicId: fileInstrumentTagPublicId }))
+            .toBe(fileInstrumentTagPublicId);
+        expect(db3.xFileWikiPageTag.getIdentity({ publicId: fileWikiPageTagPublicId }))
+            .toBe(fileWikiPageTagPublicId);
         expect(db3.xSong.isIdentity(-1)).toBe(false);
         expect(db3.xSong.isIdentity(1.5)).toBe(false);
     });

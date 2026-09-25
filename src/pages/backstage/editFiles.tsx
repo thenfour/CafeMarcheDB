@@ -31,11 +31,11 @@ const MainContent = () => {
             }),
 
             tags: columnName => new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false, selectionView: db3.fileTagEditorView }),
-            taggedUsers: columnName => new DB3Client.TagsFieldClient<db3.FileUserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
-            taggedSongs: columnName => new DB3Client.TagsFieldClient<db3.FileSongTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            taggedUsers: columnName => new DB3Client.TagsFieldClient<db3.FileUserTagClientPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            taggedSongs: columnName => new DB3Client.TagsFieldClient<db3.FileSongTagClientPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
             taggedEvents: columnName => new DB3Client.TagsFieldClient<db3.FileEventTagClientPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
-            taggedInstruments: columnName => new DB3Client.TagsFieldClient<db3.FileInstrumentTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
-            taggedWikiPages: columnName => new DB3Client.TagsFieldClient<db3.FileWikiPageTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            taggedInstruments: columnName => new DB3Client.TagsFieldClient<db3.FileInstrumentTagClientPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            taggedWikiPages: columnName => new DB3Client.TagsFieldClient<db3.FileWikiPageTagClientPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
         },
     });
 

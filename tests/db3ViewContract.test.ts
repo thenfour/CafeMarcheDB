@@ -13,6 +13,11 @@ import {
   type EventTypePublicId,
   type FileTagAssignmentPublicId,
   type FileTagPublicId,
+  type FileEventTagPublicId,
+  type FileInstrumentTagPublicId,
+  type FileSongTagPublicId,
+  type FileUserTagPublicId,
+  type FileWikiPageTagPublicId,
   type InstrumentFunctionalGroupPublicId,
   type SongCreditPublicId,
   type SongCreditTypePublicId,
@@ -128,6 +133,10 @@ describe("DB3 scalar selection compiler", () => {
     type TransportDto = db3.FileSearchDto
     type Client = db3.FileSearchClient
     type DtoTag = NonNullable<TransportDto["tags"]>[number]
+    type DtoSongTag = NonNullable<TransportDto["taggedSongs"]>[number]
+    type DtoEventTag = NonNullable<TransportDto["taggedEvents"]>[number]
+    type DtoInstrumentTag = NonNullable<TransportDto["taggedInstruments"]>[number]
+    type DtoWikiPageTag = NonNullable<TransportDto["taggedWikiPages"]>[number]
     type ClientTag = NonNullable<Client["tags"]>[number]
     type ClientSongTag = NonNullable<Client["taggedSongs"]>[number]
     type ClientEventTag = NonNullable<Client["taggedEvents"]>[number]
@@ -147,6 +156,14 @@ describe("DB3 scalar selection compiler", () => {
     expectTypeOf<DtoTag["publicId"]>().toEqualTypeOf<FileTagAssignmentPublicId>()
     expectTypeOf<DtoTag["fileTagId"]>().toEqualTypeOf<FileTagPublicId>()
     expectTypeOf<Extract<keyof DtoTag, "id">>().toEqualTypeOf<never>()
+    expectTypeOf<DtoSongTag["publicId"]>().toEqualTypeOf<FileSongTagPublicId>()
+    expectTypeOf<DtoEventTag["publicId"]>().toEqualTypeOf<FileEventTagPublicId>()
+    expectTypeOf<DtoInstrumentTag["publicId"]>().toEqualTypeOf<FileInstrumentTagPublicId>()
+    expectTypeOf<DtoWikiPageTag["publicId"]>().toEqualTypeOf<FileWikiPageTagPublicId>()
+    expectTypeOf<Extract<keyof DtoSongTag, "id">>().toEqualTypeOf<never>()
+    expectTypeOf<Extract<keyof DtoEventTag, "id">>().toEqualTypeOf<never>()
+    expectTypeOf<Extract<keyof DtoInstrumentTag, "id">>().toEqualTypeOf<never>()
+    expectTypeOf<Extract<keyof DtoWikiPageTag, "id">>().toEqualTypeOf<never>()
     expectTypeOf<ClientTag["fileTag"]>()
       .toEqualTypeOf<NonNullable<ClientTag["fileTag"]>>()
     expectTypeOf<ClientSongTag["song"]>()
@@ -868,6 +885,11 @@ describe("File derived-view migration", () => {
     type ClientEventTag = NonNullable<Client["taggedEvents"]>[number]
     type ClientInstrumentTag = NonNullable<Client["taggedInstruments"]>[number]
     type ClientWikiPageTag = NonNullable<Client["taggedWikiPages"]>[number]
+    type DtoUserTag = NonNullable<Dto["taggedUsers"]>[number]
+    type DtoSongTag = NonNullable<Dto["taggedSongs"]>[number]
+    type DtoEventTag = NonNullable<Dto["taggedEvents"]>[number]
+    type DtoInstrumentTag = NonNullable<Dto["taggedInstruments"]>[number]
+    type DtoWikiPageTag = NonNullable<Dto["taggedWikiPages"]>[number]
     type RootAuthorizationOnlyKeys = Extract<keyof Dto, "isDeleted">
     type RelatedAuthorizationOnlyKeys = Extract<
       keyof RelatedFileDto,
@@ -891,6 +913,16 @@ describe("File derived-view migration", () => {
     expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<RelatedAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<PinnedAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<DtoUserTag["publicId"]>().toEqualTypeOf<FileUserTagPublicId>()
+    expectTypeOf<DtoSongTag["publicId"]>().toEqualTypeOf<FileSongTagPublicId>()
+    expectTypeOf<DtoEventTag["publicId"]>().toEqualTypeOf<FileEventTagPublicId>()
+    expectTypeOf<DtoInstrumentTag["publicId"]>().toEqualTypeOf<FileInstrumentTagPublicId>()
+    expectTypeOf<DtoWikiPageTag["publicId"]>().toEqualTypeOf<FileWikiPageTagPublicId>()
+    expectTypeOf<Extract<keyof DtoUserTag, "id">>().toEqualTypeOf<never>()
+    expectTypeOf<Extract<keyof DtoSongTag, "id">>().toEqualTypeOf<never>()
+    expectTypeOf<Extract<keyof DtoEventTag, "id">>().toEqualTypeOf<never>()
+    expectTypeOf<Extract<keyof DtoInstrumentTag, "id">>().toEqualTypeOf<never>()
+    expectTypeOf<Extract<keyof DtoWikiPageTag, "id">>().toEqualTypeOf<never>()
     expectTypeOf<ClientFileTag["fileTag"]>()
       .toEqualTypeOf<NonNullable<ClientFileTag["fileTag"]>>()
     expectTypeOf<ClientUserTag["user"]>()
@@ -1097,6 +1129,10 @@ describe("Song derived-view migration", () => {
     expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<TagAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<FileAssociationAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<DtoFileAssociation["publicId"]>().toEqualTypeOf<FileSongTagPublicId>()
+    expectTypeOf<Extract<keyof DtoFileAssociation, "id">>().toEqualTypeOf<never>()
+    expectTypeOf<DtoFileSongAssociation["publicId"]>().toEqualTypeOf<FileSongTagPublicId>()
+    expectTypeOf<Extract<keyof DtoFileSongAssociation, "id">>().toEqualTypeOf<never>()
     expectTypeOf<FileAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<FileSongAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<ClientFileTag["fileTag"]>()

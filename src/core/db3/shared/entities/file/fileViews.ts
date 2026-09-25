@@ -134,7 +134,7 @@ export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArg
         },
         taggedUsers: {
             select: {
-                id: true,
+                publicId: true,
                 user: {
                     select: {
                         id: true,
@@ -145,7 +145,7 @@ export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArg
         },
         taggedSongs: {
             select: {
-                id: true,
+                publicId: true,
                 song: {
                     select: {
                         id: true,
@@ -156,7 +156,7 @@ export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArg
         },
         taggedEvents: {
             select: {
-                id: true,
+                publicId: true,
                 event: {
                     select: {
                         id: true,
@@ -170,13 +170,13 @@ export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArg
         },
         taggedInstruments: {
             select: {
-                id: true,
+                publicId: true,
                 instrumentId: true,
             },
         },
         taggedWikiPages: {
             select: {
-                id: true,
+                publicId: true,
                 wikiPage: {
                     select: {
                         id: true,

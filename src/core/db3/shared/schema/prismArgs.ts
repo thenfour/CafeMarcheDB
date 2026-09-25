@@ -3,6 +3,11 @@ import type { ColorPaletteEntry } from "@/src/core/components/color/palette";
 import type {
     FileTagAssignmentPublicId,
     FileTagPublicId,
+    FileEventTagPublicId,
+    FileInstrumentTagPublicId,
+    FileSongTagPublicId,
+    FileUserTagPublicId,
+    FileWikiPageTagPublicId,
     EventStatusPublicId,
     EventTagAssignmentPublicId,
     EventTagPublicId,
@@ -20,9 +25,7 @@ import type {
     UserInstrumentPublicId,
 } from "shared/publicId";
 //import * as db3 from "../db3core"; // circular
-import { TAnyModel } from "shared/rootroot";
 import { AuxUserArgs } from "types";
-import { CMDBTableFilterModel } from "../apiTypes";
 //import { DateRangeInfo } from "shared/time";
 
 /*
@@ -849,15 +852,38 @@ type FileWithTagsEventClientPayload = Omit<
     status: { publicId: EventStatusPublicId } | null;
 };
 
+type FileWithTagsAssociationClientPayload<
+    TAssociation,
+    TPublicId,
+> = Omit<TAssociation, "id" | "publicId"> & {
+    publicId: TPublicId;
+};
+
 export type FileWithTagsClientPayload = Omit<
     FileWithTagsPayload,
-    "tags" | "taggedInstruments" | "taggedEvents"
+    "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents"
+    | "taggedInstruments" | "taggedWikiPages"
 > & {
     tags: FileTagAssignmentReferenceClientPayload[];
+    taggedUsers: Array<FileWithTagsAssociationClientPayload<
+        FileWithTagsPayload["taggedUsers"][number],
+        FileUserTagPublicId
+    >>;
+    taggedSongs: Array<FileWithTagsAssociationClientPayload<
+        FileWithTagsPayload["taggedSongs"][number],
+        FileSongTagPublicId
+    >>;
     taggedInstruments: FileInstrumentTagReferenceClientPayload[];
-    taggedEvents: Array<Omit<FileWithTagsPayload["taggedEvents"][number], "event"> & {
+    taggedEvents: Array<FileWithTagsAssociationClientPayload<
+        Omit<FileWithTagsPayload["taggedEvents"][number], "event">,
+        FileEventTagPublicId
+    > & {
         event: FileWithTagsEventClientPayload;
     }>;
+    taggedWikiPages: Array<FileWithTagsAssociationClientPayload<
+        FileWithTagsPayload["taggedWikiPages"][number],
+        FileWikiPageTagPublicId
+    >>;
 };
 
 
@@ -1182,7 +1208,11 @@ export type EventClientPayload_Verbose = Omit<
     segments: EventVerbose_EventSegmentClient[];
     expectedAttendanceUserTagId: UserTagPublicId | null;
     expectedAttendanceUserTag: EventExpectedAttendanceUserTagClientPayload | null;
-    fileTags: Array<Omit<EventDbPayload_Verbose["fileTags"][number], "file"> & {
+    fileTags: Array<Omit<
+        EventDbPayload_Verbose["fileTags"][number],
+        "id" | "publicId" | "file"
+    > & {
+        publicId: FileEventTagPublicId;
         file: FileWithTagsClientPayload;
     }>;
 };
@@ -1389,6 +1419,12 @@ export const FileUserTagArgs = Prisma.validator<Prisma.FileUserTagArgs>()({
     }
 });
 export type FileUserTagPayload = Prisma.FileUserTagGetPayload<typeof FileUserTagArgs>;
+export type FileUserTagClientPayload = Omit<
+    FileUserTagPayload,
+    "id" | "publicId"
+> & {
+    publicId: FileUserTagPublicId;
+};
 
 export const FileUserTagNaturalOrderBy: Prisma.FileUserTagOrderByWithRelationInput[] = [
     { user: { name: 'asc' } },
@@ -1402,6 +1438,12 @@ export const FileSongTagArgs = Prisma.validator<Prisma.FileSongTagArgs>()({
     }
 });
 export type FileSongTagPayload = Prisma.FileSongTagGetPayload<typeof FileSongTagArgs>;
+export type FileSongTagClientPayload = Omit<
+    FileSongTagPayload,
+    "id" | "publicId"
+> & {
+    publicId: FileSongTagPublicId;
+};
 
 export const FileSongTagNaturalOrderBy: Prisma.FileSongTagOrderByWithRelationInput[] = [
     { song: { name: 'asc' } },
@@ -1424,7 +1466,11 @@ export const FileEventTagArgs = Prisma.validator<Prisma.FileEventTagArgs>()({
     }
 });
 export type FileEventTagPayload = Prisma.FileEventTagGetPayload<typeof FileEventTagArgs>;
-export type FileEventTagClientPayload = Omit<FileEventTagPayload, "event"> & {
+export type FileEventTagClientPayload = Omit<
+    FileEventTagPayload,
+    "id" | "publicId" | "event"
+> & {
+    publicId: FileEventTagPublicId;
     event: Omit<FileEventTagPayload["event"], "typeId" | "statusId" | "type" | "status"> & {
         typeId: EventTypePublicId | null;
         statusId: EventStatusPublicId | null;
@@ -1462,11 +1508,16 @@ export const FileInstrumentTagArgs = Prisma.validator<Prisma.FileInstrumentTagAr
 export type FileInstrumentTagPayload = Prisma.FileInstrumentTagGetPayload<typeof FileInstrumentTagArgs>;
 export type FileInstrumentTagReferenceClientPayload = Omit<
     Prisma.FileInstrumentTagGetPayload<{}>,
-    "instrumentId"
+    "id" | "publicId" | "instrumentId"
 > & {
+    publicId: FileInstrumentTagPublicId;
     instrumentId: InstrumentPublicId;
 };
-export type FileInstrumentTagClientPayload = Omit<FileInstrumentTagPayload, "instrumentId" | "instrument"> & {
+export type FileInstrumentTagClientPayload = Omit<
+    FileInstrumentTagPayload,
+    "id" | "publicId" | "instrumentId" | "instrument"
+> & {
+    publicId: FileInstrumentTagPublicId;
     instrumentId: InstrumentPublicId;
     instrument: InstrumentWithFunctionalGroupClientPayload;
 };
@@ -1489,6 +1540,12 @@ export const FileWikiPageTagArgs = Prisma.validator<Prisma.FileWikiPageTagArgs>(
     }
 });
 export type FileWikiPageTagPayload = Prisma.FileWikiPageTagGetPayload<typeof FileWikiPageTagArgs>;
+export type FileWikiPageTagClientPayload = Omit<
+    FileWikiPageTagPayload,
+    "id" | "publicId"
+> & {
+    publicId: FileWikiPageTagPublicId;
+};
 
 export const FileWikiPageTagNaturalOrderBy: Prisma.FileWikiPageTagOrderByWithRelationInput[] = [
     { wikiPage: { slug: 'asc' } },

@@ -943,7 +943,8 @@ model File {
 }
 
 model FileUserTag {
-  id     Int  @id @default(autoincrement())
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
   fileId Int
   file   File @relation(fields: [fileId], references: [id], onDelete: Cascade)
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -955,7 +956,8 @@ model FileUserTag {
 }
 
 model FileSongTag {
-  id     Int  @id @default(autoincrement())
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
   fileId Int
   file   File @relation(fields: [fileId], references: [id], onDelete: Cascade)
   song   Song @relation(fields: [songId], references: [id], onDelete: Cascade)
@@ -967,7 +969,8 @@ model FileSongTag {
 }
 
 model FileEventTag {
-  id      Int   @id @default(autoincrement())
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
   fileId  Int
   file    File  @relation(fields: [fileId], references: [id], onDelete: Cascade)
   event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -981,6 +984,7 @@ model FileEventTag {
 // this is hm. i suppose this is correct, but tagging instrument groups may be more accurate in some scenarios?
 model FileInstrumentTag {
   id           Int        @id @default(autoincrement())
+  publicId     String     @unique @db.Char(16)
   fileId       Int
   file         File       @relation(fields: [fileId], references: [id], onDelete: Cascade)
   instrument   Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
@@ -993,6 +997,7 @@ model FileInstrumentTag {
 
 model FileWikiPageTag {
   id         Int      @id @default(autoincrement())
+  publicId   String   @unique @db.Char(16)
   fileId     Int
   file       File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
   wikiPage   WikiPage @relation(fields: [wikiPageId], references: [id], onDelete: Cascade)

@@ -303,6 +303,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
         const file = await gState.FakeFile(gState.randomVisibilityPermissionId());
         await gState.prisma.fileEventTag.create({
             data: {
+                publicId: generatePublicId<"FileEventTag">(),
                 fileId: file.id,
                 eventId: event.id,
             }

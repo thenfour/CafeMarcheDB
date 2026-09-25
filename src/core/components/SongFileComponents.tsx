@@ -6,7 +6,7 @@ import { Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { Permission } from 'shared/permissions';
-import type { EventStatusPublicId, EventTypePublicId, FileTagPublicId } from 'shared/publicId';
+import type { EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FileSongTagPublicId, FileTagPublicId } from 'shared/publicId';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { formatFileSize, SortDirection } from 'shared/rootroot';
 import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
@@ -72,7 +72,7 @@ type SortByKey = "uploadedAt" | "uploadedByUserName" | "mimeType" | "sizeBytes" 
 //////////////////////////////////////////////////////////////////
 
 export interface FileTagBase {
-    id: number;
+    publicId: FileEventTagPublicId | FileSongTagPublicId;
     file: DetailFile;
     fileId?: number;
     // plus a songId, eventId, whatever...
@@ -335,14 +335,14 @@ export const FileValueViewer = (props: FileViewerProps) => {
                         taggedEvents
                             .filter(a => !props.hiddenTagIds.eventTagIds || !existsInArray(props.hiddenTagIds.eventTagIds, a.event.id))
                             .map(a => hasEventChipFields(a.event)
-                                ? <EventChip key={a.id} value={a.event} size="small" variation={variation} />
+                                ? <EventChip key={db3.xFile.fields.taggedEvents.getForeignIdentity(a)} value={a.event} size="small" variation={variation} />
                                 : null)
                     )}
 
                     {(taggedUsers.length > 0) && (
                         taggedUsers
                             .filter(a => !props.hiddenTagIds.userTagIds || !existsInArray(props.hiddenTagIds.userTagIds, a.user.id))
-                            .map(a => <UserChip key={a.id} value={a.user} size="small" variation={variation} />)
+                            .map(a => <UserChip key={db3.xFile.fields.taggedUsers.getForeignIdentity(a)} value={a.user} size="small" variation={variation} />)
                     )}
 
                     {(taggedSongs.length > 0) && (
@@ -350,7 +350,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
                             .filter(a => !props.hiddenTagIds.songTagIds || !existsInArray(props.hiddenTagIds.songTagIds, a.song.id))
                             .map(a => a.song.name === undefined
                                 ? null
-                                : <SongChip key={a.id} value={{ id: a.song.id, name: a.song.name }} size="small" variation={variation} />)
+                                : <SongChip key={db3.xFile.fields.taggedSongs.getForeignIdentity(a)} value={{ id: a.song.id, name: a.song.name }} size="small" variation={variation} />)
                     )}
 
                     {(taggedInstruments.length > 0) && (
@@ -359,7 +359,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
                                 props.hiddenTagIds.instrumentTagIds,
                                 db3.getInstrumentIdentity(a.instrument),
                             ))
-                            .map(a => <InstrumentChip key={a.id} value={a.instrument} size="small" variation={variation} />)
+                            .map(a => <InstrumentChip key={db3.xFile.fields.taggedInstruments.getForeignIdentity(a)} value={a.instrument} size="small" variation={variation} />)
                     )}
 
                     {(taggedWikiPages.length > 0) && (
@@ -367,7 +367,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
                             .filter(a => !props.hiddenTagIds.wikiPageTagIds || !existsInArray(props.hiddenTagIds.wikiPageTagIds, a.wikiPage.id))
                             .map(a => a.wikiPage.slug === undefined
                                 ? null
-                                : <WikiPageChip key={a.id} slug={a.wikiPage.slug} size="small" variation={variation} />)
+                                : <WikiPageChip key={db3.xFile.fields.taggedWikiPages.getForeignIdentity(a)} slug={a.wikiPage.slug} size="small" variation={variation} />)
                     )}
                 </CMChipContainer>
 
@@ -447,8 +447,8 @@ export const FileEditor = (props: FileEditorProps) => {
                     return { ...rowInfo, color: gGeneralPaletteList.findEntry(fg.color) };
                 }
             }),
-            taggedUsers: DB3Client.tagsFieldClientGen<db3.FileUserTagPayload>({ allowDeleteFromCell: false }),
-            taggedSongs: DB3Client.tagsFieldClientGen<db3.FileSongTagPayload>({ allowDeleteFromCell: false }),
+            taggedUsers: DB3Client.tagsFieldClientGen<db3.FileUserTagClientPayload>({ allowDeleteFromCell: false }),
+            taggedSongs: DB3Client.tagsFieldClientGen<db3.FileSongTagClientPayload>({ allowDeleteFromCell: false }),
             taggedEvents: DB3Client.tagsFieldClientGen<db3.FileEventTagClientPayload>({
                 cellWidth: 150,
                 allowDeleteFromCell: false,
@@ -462,7 +462,7 @@ export const FileEditor = (props: FileEditorProps) => {
                     return <EventChip renderAsLink={false} value={value.event} />;
                 }
             }),
-            taggedWikiPages: DB3Client.tagsFieldClientGen<db3.FileWikiPageTagPayload>({ allowDeleteFromCell: false }),
+            taggedWikiPages: DB3Client.tagsFieldClientGen<db3.FileWikiPageTagClientPayload>({ allowDeleteFromCell: false }),
         },
     });
     const tableRenderClient = DB3Client.useTableRenderContext({
@@ -1098,7 +1098,7 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
 
         <div className="EventFilesList">
             {filteredItems.map((fileTag, index) => <FileControl
-                key={fileTag.id}
+                key={fileTag.publicId}
                 readonly={props.readonly}
                 refetch={props.refetch}
                 value={fileTag.file}

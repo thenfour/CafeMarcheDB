@@ -1210,10 +1210,29 @@ The current pressure-led sequence is:
    The primary-selection RPC continues to address rows by natural IDs only after
    its trusted server-side lookup; no association database identity enters its
    request or result contract.
-9. **Next pressure audit:** migrate the five File cross-entity association rows
-   as one family, keeping their central User, Song, Event, File, and WikiPage
-   endpoints natural where they have not yet migrated.
-10. Keep the central Song, File, WikiPage, Event, User, and setlist identities in
+9. **Completed:** migrate the five File cross-entity association rows as one
+   family. `FileUserTag`, `FileSongTag`, `FileEventTag`,
+   `FileInstrumentTag`, and `FileWikiPageTag` now have branded public row
+   identities while File, User, Song, Event, and WikiPage remain natural and
+   Instrument remains public.
+
+   This slice exercised the same association family in both directions and
+   through reusable nested File-card graphs. Named File and Song views select
+   each association public ID explicitly; recursive projection removes the raw
+   row ID even when a File card is embedded inside another association. The
+   legacy verbose Event/File payload aliases now describe the same client
+   boundary instead of exposing server payload types for some relations.
+
+   The mixed endpoint domains require no caller-side type inspection. Each
+   target xTable continues to own its own identity domain, while each
+   `TagsField` owns target comparison and React draft keys. This is important
+   because a newly selected relation has no server-generated association public
+   ID yet. The association xTables own persisted row identity; components do
+   not fall back to database IDs.
+10. **Next pressure audit:** migrate the authorization family (`Permission`,
+    `Role`, and `RolePermission`) while preserving natural permission keys in
+    trusted authorization evaluation.
+11. Keep the central Song, File, WikiPage, Event, User, and setlist identities in
    the later application-pressure phase unless a bounded audit reveals a
    genuinely uncovered identity capability.
 
@@ -1312,7 +1331,7 @@ conversions.
   each numeric client-identity compatibility path before marking that model
   complete below.
 
-#### Client-facing model progress: 19 / 49 complete (39%)
+#### Client-facing model progress: 24 / 49 complete (49%)
 
 The denominator is the 49 Prisma models whose own row identity currently crosses
 a client boundary. A model counts as complete only when it satisfies the full
@@ -1341,20 +1360,16 @@ Completed models:
 - [x] `SongCreditType`
 - [x] `SongCredit`
 - [x] `UserInstrument`
+- [x] `FileUserTag`
+- [x] `FileSongTag`
+- [x] `FileEventTag`
+- [x] `FileInstrumentTag`
+- [x] `FileWikiPageTag`
 
 Remaining models are grouped into coherent intended slices. The pressure label
 describes why the slice is ordered there; it does not relax the per-model
 completion definition.
 
-- **File cross-entity association family: design pressure.** These associations
-  mix a natural File endpoint with User, Song, Event, WikiPage, and already-public
-  Instrument endpoints. Migrate their own row identities together without
-  prematurely converting those central targets.
-  - [ ] `FileUserTag`
-  - [ ] `FileSongTag`
-  - [ ] `FileEventTag`
-  - [ ] `FileInstrumentTag`
-  - [ ] `FileWikiPageTag`
 - **Authorization family: design pressure.** Preserve natural permission keys
   inside trusted authorization evaluation while projecting public identity for
   role editors, visibility selectors, dashboard references, and associations.
@@ -1417,7 +1432,7 @@ consumer.
 #### Capability coverage proven by completed slices
 
 These checks track reusable scenarios and do not contribute additional models
-to the 19 / 49 progress count.
+to the 24 / 49 progress count.
 
 - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
 - [x] Exercise an association/tag command with public identities
@@ -1441,6 +1456,10 @@ to the 19 / 49 progress count.
 - [x] Exercise a mutable rich association embedded in User and Event payloads,
   including relation-owned draft identity and a server-only multi-row workflow
   (`UserInstrument`).
+- [x] Exercise one cross-entity association family across heterogeneous target
+  identity domains, reverse relations, reusable nested view graphs, and
+  relation-owned draft keys (`FileUserTag`, `FileSongTag`, `FileEventTag`,
+  `FileInstrumentTag`, and `FileWikiPageTag`).
 
 ### Deferred DB3 enhancements
 

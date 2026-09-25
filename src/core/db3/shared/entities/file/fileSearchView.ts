@@ -30,7 +30,7 @@ const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
         },
         taggedSongs: {
             select: {
-                id: true,
+                publicId: true,
                 song: {
                     select: {
                         id: true,
@@ -41,7 +41,7 @@ const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
         },
         taggedEvents: {
             select: {
-                id: true,
+                publicId: true,
                 event: {
                     select: {
                         id: true,
@@ -55,13 +55,13 @@ const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
         },
         taggedInstruments: {
             select: {
-                id: true,
+                publicId: true,
                 instrumentId: true,
             },
         },
         taggedWikiPages: {
             select: {
-                id: true,
+                publicId: true,
                 wikiPage: {
                     select: {
                         id: true,
