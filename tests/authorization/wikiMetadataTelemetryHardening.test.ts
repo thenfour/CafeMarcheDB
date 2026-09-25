@@ -10,6 +10,7 @@ vi.mock("db", async () => {
 });
 
 import { Permission } from "shared/permissions";
+import { parsePublicId } from "shared/publicId";
 import { ActivityFeature } from "src/core/components/featureReports/activityTracking";
 import * as db3 from "src/core/db3/db3";
 import { recordAuthenticatedClientAction } from "src/core/db3/server/recordActionServer";
@@ -229,6 +230,8 @@ describe("BA-S005 server-rendered entity metadata", () => {
 });
 
 describe("BA-S005 telemetry identity and diagnostic route grants", () => {
+    const songCreditTypePublicId = parsePublicId<"SongCreditType">("TelemetryCredit1");
+
     beforeEach(() => {
         vi.restoreAllMocks();
         authorizationTestDb.reset({ action: [] });
@@ -260,6 +263,33 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
 
         expect(authorizationTestDb.snapshot("action")).toEqual([
             expect.objectContaining({ userId: null, feature: ActivityFeature.song_view }),
+        ]);
+    });
+
+    it("resolves a public SongCreditType telemetry identity before persistence", async () => {
+        const actor = createAuthorizationTestUser("normal", { id: 301 });
+        authorizationTestDb.reset({
+            user: [actor],
+            songCreditType: [{
+                id: 41,
+                publicId: songCreditTypePublicId,
+                text: "Composer",
+                description: "",
+            }],
+            action: [],
+        });
+        const { ctx } = createAuthorizationPersona("normal", { id: actor.id });
+
+        await recordAuthenticatedClientAction({
+            feature: ActivityFeature.song_credit_edit,
+            songCreditTypeId: songCreditTypePublicId,
+        }, ctx);
+
+        expect(authorizationTestDb.snapshot("action")).toEqual([
+            expect.objectContaining({
+                userId: actor.id,
+                songCreditTypeId: 41,
+            }),
         ]);
     });
 

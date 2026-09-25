@@ -5,6 +5,8 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import type {
+    SongCreditPublicId,
+    SongCreditTypePublicId,
     SongTagAssociationPublicId,
     SongTagPublicId,
 } from "shared/publicId";
@@ -15,7 +17,6 @@ import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../col
 import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
-import { TAnyModel } from "@/shared/rootroot";
 import { z } from "zod";
 
 
@@ -314,7 +315,7 @@ export const xSong = db3.defineTable(xSongArgs_Base);
 ////////////////////////////////////////////////////////////////
 export const xSongCreditType = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.SongCreditTypeDelegate>(),
-    getIdentity: (creditType: Prisma.SongCreditTypeGetPayload<{}>) => creditType.id,
+    getIdentity: (creditType: { publicId: SongCreditTypePublicId }) => creditType.publicId,
     getSelectionArgs: (): Prisma.SongCreditTypeDefaultArgs => {
         return SongCreditTypeArgs;
     },
@@ -322,7 +323,7 @@ export const xSongCreditType = db3.defineTable({
     tableName: "SongCreditType",
     deletePolicy: "hard",
     naturalOrderBy: SongCreditTypeNaturalOrderBy,
-    createInsertModelFromString: (input: string): Prisma.SongCreditTypeCreateInput => {
+    createInsertModelFromString: (input: string): Partial<SongCreditTypePayload> => {
         return {
             text: input,
             description: "auto-created",
@@ -331,14 +332,15 @@ export const xSongCreditType = db3.defineTable({
         };
     },
     getRowInfo: (row: SongCreditTypePayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<SongCreditTypePublicId>(),
         text: columnName => MakeTitleField(columnName, { authMap: xSongAuthMap_R_EManagers }),
         significance: columnName => MakeSignificanceField(columnName, SongCreditTypeSignificance, { authMap: xSongAuthMap_R_EManagers, }),
         description: columnName => new GenericStringField({
@@ -369,9 +371,14 @@ export const xSongCreditType = db3.defineTable({
 
 
 ////////////////////////////////////////////////////////////////
+export interface SongCreditTableParams {
+    songId?: number | null;
+    userId?: number | null;
+}
+
 export const xSongCredit = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.SongCreditDelegate>(),
-    getIdentity: (credit: { id: number }) => credit.id,
+    getIdentity: (credit: { publicId: SongCreditPublicId }) => credit.publicId,
     getSelectionArgs: (): Prisma.SongCreditDefaultArgs => {
         return SongCreditArgs;
     },
@@ -379,24 +386,32 @@ export const xSongCredit = db3.defineTable({
     deletePolicy: "hard",
     queryParameters: {
         songId: { kind: "integer", authorizeAs: "songId", nullable: true },
-    },
+        userId: { kind: "integer", authorizeAs: "userId", nullable: true },
+    } satisfies db3.DB3QueryParameterMap,
     tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongCreditNaturalOrderBy,
     getRowInfo: (row: SongCreditPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: "<a song credit>",
         ownerUserId: row.userId, // questionable.
     }),
-    getParameterizedWhereClause: (params: TAnyModel): (Prisma.SongCreditWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: SongCreditTableParams): (Prisma.SongCreditWhereInput[] | false) => {
+        const ret: Prisma.SongCreditWhereInput[] = [];
         if (params.songId != null) {
-            return [{
+            ret.push({
                 songId: { equals: params.songId }
-            }];
+            });
         }
-        return false;
+        if (params.userId != null) {
+            ret.push({
+                userId: { equals: params.userId },
+            });
+        }
+        return ret.length > 0 ? ret : false;
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<SongCreditPublicId>(),
         user: foreignRef(() => xUser, {
             fkidMember: "userId",
             allowNull: true,
@@ -434,6 +449,7 @@ declare module "../db3core" {
         Song: typeof xSong;
         SongTag: typeof xSongTag;
         SongTagAssociation: typeof xSongTagAssociation;
+        SongCreditType: typeof xSongCreditType;
         SongCredit: typeof xSongCredit;
     }
 }

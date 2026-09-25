@@ -80,12 +80,12 @@ async function seedContent() {
         ]
     });
     await db.song.create({ data: { id: 1, name: "Private song", description: "", createdByUserId: 20 } });
-    await db.songCreditType.create({ data: { id: 1, text: "Composer", description: "" } });
+    await db.songCreditType.create({ data: { id: 1, publicId: "CreditType000001", text: "Composer", description: "" } });
     await db.songCredit.createMany({
         data: [
-            { id: 1, songId: 1, typeId: 1, userId: 10, comment: "same", year: "2025" },
-            { id: 2, songId: 1, typeId: 1, userId: 20, comment: "same", year: "2025" },
-            { id: 3, songId: 1, typeId: 1, userId: 20, comment: "private credit", year: "2026" },
+            { id: 1, publicId: "SongCredit000001", songId: 1, typeId: 1, userId: 10, comment: "same", year: "2025" },
+            { id: 2, publicId: "SongCredit000002", songId: 1, typeId: 1, userId: 20, comment: "same", year: "2025" },
+            { id: 3, publicId: "SongCredit000003", songId: 1, typeId: 1, userId: 20, comment: "private credit", year: "2026" },
         ]
     });
     await db.userSetting.createMany({ data: [{ userId: 10, name: "calendar.showDeclinedEvents", value: false }, { userId: 20, name: "calendar.showDeclinedEvents", value: true }] });

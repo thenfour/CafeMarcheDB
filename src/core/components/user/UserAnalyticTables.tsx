@@ -220,7 +220,7 @@ export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
                 header: "Credit type",
                 memberName: "typeId",
                 render: (row) => {
-                    return <span>{dashboardContext.songCreditType.getById(row.row.typeId)?.text}</span>;
+                    return <span>{row.row.type?.text}</span>;
                 },
             },
             {

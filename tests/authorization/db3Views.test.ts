@@ -26,6 +26,8 @@ const eventStatusPublicId = parsePublicId<"EventStatus">("AbCdEfGhIjKlMn12");
 const eventTagPublicId = parsePublicId<"EventTag">("AbCdEfGhIjKlMn13");
 const eventTagAssignmentPublicId = parsePublicId<"EventTagAssignment">("AbCdEfGhIjKlMn14");
 const userTagPublicId = parsePublicId<"UserTag">("AbCdEfGhIjKlMn15");
+const songCreditTypePublicId = parsePublicId<"SongCreditType">("AbCdEfGhIjKlMn16");
+const songCreditPublicId = parsePublicId<"SongCredit">("AbCdEfGhIjKlMn17");
 const group = {
     publicId: groupPublicId,
     name: "Brass",
@@ -135,7 +137,7 @@ describe("DB3 named views", () => {
         expect(db3.isCompleteEventAttendanceDashboardClient(result.items[0]!)).toBe(false);
     });
 
-    it("derives ordinary selections from DTO schemas and preserves explicit query additions", () => {
+    it("derives ordinary selections from DTO schemas and preserves explicit query additions", async () => {
         const context = {
             filter: { items: [] },
             authorization: db3.createDB3Authorization(null, new PermissionSet([])),
@@ -189,8 +191,8 @@ describe("DB3 named views", () => {
                 { tag: { sortOrder: "asc" } },
                 { tag: { text: "asc" } },
             ]);
-        expect(db3.eventTypeEditorView.getWhereClause(context)).toBeUndefined();
-        expect(db3.permissionVisibilityView.getWhereClause(context)).toEqual({
+        await expect(db3.eventTypeEditorView.getWhereClause(context)).resolves.toBeUndefined();
+        await expect(db3.permissionVisibilityView.getWhereClause(context)).resolves.toEqual({
             isVisibility: { equals: true },
             id: { in: [] },
         });
@@ -227,7 +229,7 @@ describe("DB3 named views", () => {
             viewID: "Test_EventNestedWhere",
             entity: db3.xEvent,
             selection,
-            where: ({ authorization }) => ({
+            where: async ({ authorization }) => ({
                 createdByUserId: authorization.userId,
             }),
             dtoSchema: z.object({
@@ -270,7 +272,7 @@ describe("DB3 named views", () => {
         expectTypeOf(view.getWhereClause({
             filter: { items: [] },
             authorization: db3.createDB3Authorization({ id: 42 }, effectivePermissions),
-        })).toEqualTypeOf<Prisma.EventWhereInput | undefined>();
+        })).toEqualTypeOf<Promise<Prisma.EventWhereInput | undefined>>();
     });
 
     it("validates view ownership as part of the query contract", () => {
@@ -1274,9 +1276,11 @@ describe("DB3 named views", () => {
             }],
             credits: [{
                 id: 100,
+                publicId: songCreditPublicId,
                 userId: 100,
                 songId: 7,
                 typeId: 2,
+                type: { publicId: songCreditTypePublicId },
                 year: "2026",
                 comment: "",
                 user: { id: 100, name: "Composer" },
@@ -1323,12 +1327,17 @@ describe("DB3 named views", () => {
                     }],
                 },
             }],
-            credits: [{ id: 100, user: { id: 100, name: "Composer" } }],
+            credits: [{
+                publicId: songCreditPublicId,
+                typeId: songCreditTypePublicId,
+                user: { id: 100, name: "Composer" },
+            }],
         });
         expect(result.items[0]).not.toHaveProperty("createdByUserId");
         expect(result.items[0]?.tags?.[0]).not.toHaveProperty("id");
         expect(result.items[0]?.taggedFiles?.[0]).not.toHaveProperty("fileId");
         expect(result.items[0]?.credits?.[0]).not.toHaveProperty("songId");
+        expect(result.items[0]?.credits?.[0]).not.toHaveProperty("id");
     });
 
     it("hydrates the Song detail view, including its reusable File-card shape", () => {

@@ -20,6 +20,8 @@ const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("AbCdEfGhIjKlMn10");
 const wikiPageTagAssignmentPublicId = parsePublicId<"WikiPageTagAssignment">("AbCdEfGhIjKlMn11");
 const userTagPublicId = parsePublicId<"UserTag">("AbCdEfGhIjKlMn12");
 const userTagAssignmentPublicId = parsePublicId<"UserTagAssignment">("AbCdEfGhIjKlMn13");
+const songCreditTypePublicId = parsePublicId<"SongCreditType">("AbCdEfGhIjKlMn14");
+const songCreditPublicId = parsePublicId<"SongCredit">("AbCdEfGhIjKlMn15");
 const instrumentId = 7;
 const group = {
     id: 54,
@@ -176,6 +178,18 @@ describe("instrument catalog public-ID transport", () => {
                     text: "March",
                 },
             }],
+            credits: [{
+                id: 95,
+                publicId: songCreditPublicId,
+                songId: 92,
+                userId: 100,
+                typeId: 96,
+                type: {
+                    id: 96,
+                    publicId: songCreditTypePublicId,
+                    text: "Composer",
+                },
+            }],
         }, authorization(Permission.view_songs));
         expect(projectedSong.tags[0]).toMatchObject({
             publicId: songTagAssociationPublicId,
@@ -184,6 +198,15 @@ describe("instrument catalog public-ID transport", () => {
         });
         expect(projectedSong.tags[0]).not.toHaveProperty("id");
         expect(projectedSong.tags[0].tag).not.toHaveProperty("id");
+        expect(projectedSong.credits[0]).toMatchObject({
+            publicId: songCreditPublicId,
+            songId: 92,
+            userId: 100,
+            typeId: songCreditTypePublicId,
+            type: { publicId: songCreditTypePublicId, text: "Composer" },
+        });
+        expect(projectedSong.credits[0]).not.toHaveProperty("id");
+        expect(projectedSong.credits[0].type).not.toHaveProperty("id");
 
         const projectedWikiPage = projectDB3ModelPublicIds(db3.xWikiPage, {
             id: 96,
@@ -408,6 +431,27 @@ describe("instrument catalog public-ID transport", () => {
             updatePublicId: userTagAssignmentPublicId,
             updateModel: { userTagId: userTagPublicId },
         })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "SongCreditType",
+            tableName: "SongCreditType",
+            mutationType: "update",
+            updatePublicId: songCreditTypePublicId,
+            updateModel: { text: "Composer" },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "SongCredit",
+            tableName: "SongCredit",
+            mutationType: "update",
+            updatePublicId: songCreditPublicId,
+            updateModel: { typeId: songCreditTypePublicId },
+        })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "SongCredit",
+            tableName: "SongCredit",
+            mutationType: "update",
+            updateId: 95,
+            updateModel: { typeId: songCreditTypePublicId },
+        })).toThrow("updates require updatePublicId");
     });
 
     it("resolves an Event invitation tag public ID before persistence", async () => {
@@ -420,6 +464,19 @@ describe("instrument catalog public-ID transport", () => {
         );
 
         expect(resolved.expectedAttendanceUserTagId).toBe(101);
+        expect(findMany).toHaveBeenCalledOnce();
+    });
+
+    it("resolves a SongCredit type public ID before persistence", async () => {
+        const findMany = vi.fn(async () => [{ id: 96, publicId: songCreditTypePublicId }]);
+        const resolved = await resolvePublicForeignIds(
+            db3.xSongCredit,
+            { typeId: songCreditTypePublicId },
+            authorization(Permission.view_songs),
+            { SongCreditType: { findMany } } as any,
+        );
+
+        expect(resolved.typeId).toBe(96);
         expect(findMany).toHaveBeenCalledOnce();
     });
 

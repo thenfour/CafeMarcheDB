@@ -1178,12 +1178,31 @@ The current pressure-led sequence is:
    the membership data selected by the Event view. The apparent File user-tag
    surface was also confirmed to be a separate user-association taxonomy, not
    a hidden `UserTag` identity boundary.
-7. **Next pressure audit:** take the narrower `SongCreditType` lookup slice.
-   Audit Song editor/detail/search credit relations, dashboard/reference
-   lookups, mutation preparation, and React keys together. Its purpose is to
-   test another target-plus-dependent-reference shape without pulling the Song
-   entity itself into the application-pressure phase.
-8. Keep the central Song, File, WikiPage, Event, User, and setlist identities in
+7. **Completed:** migrate `SongCreditType` and `SongCredit` together. Credit
+   administration, Song editor/detail/search relations, dashboard references,
+   user-credit analytics, telemetry/reporting, mutation preparation, and React
+   keys now use branded public identities. `SongCredit` has its own public
+   identity and a public `typeId`, while its Song and User endpoints remain in
+   their deliberate natural-ID domains until those central entities migrate.
+
+   This slice exposed authorization as a view-composition concern. The named
+   user-credit view needs Song visibility policy even though its root entity is
+   `SongCredit`; view predicates can therefore be asynchronous and compose the
+   related xTable policy, while `queryView()` remains the only caller-facing
+   query path. The generic xTable where-clause contract was also corrected to
+   stop leaking an Event-specific Prisma type. Song views select and project
+   credit identity recursively, normalize credit types through the dashboard
+   reference contract, and leave identity extraction to xTable rather than to
+   React components.
+8. **Next pressure audit:** migrate `UserInstrument` without converting `User`.
+   `Instrument` is already public, but the association is mutable through its
+   `isPrimary` state, participates in a bespoke transactional primary-selection
+   mutation, appears in several User and Event view shapes, and still makes UI
+   code fall back among `instrumentId`, nested instrument identity, and the raw
+   association `id`. Migrating the association as one bounded slice should test
+   whether rich association identity and multi-row mutation targeting remain
+   clean outside the tag and credit patterns.
+9. Keep the central Song, File, WikiPage, Event, User, and setlist identities in
    the later application-pressure phase unless a bounded audit reveals a
    genuinely uncovered identity capability.
 
@@ -1294,6 +1313,10 @@ conversions.
   - [x] `EventStatus`
   - [x] `EventTag`
   - [x] `EventTagAssignment`
+  - [x] `UserTag`
+  - [x] `UserTagAssignment`
+  - [x] `SongCreditType`
+  - [x] `SongCredit`
   - [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
   - [x] Exercise an association/tag command with public identities
     (`Instrument.instrumentTags`).
@@ -1308,6 +1331,11 @@ conversions.
   - [x] Exercise one classification family across dashboard caches, embedded
     summaries, raw-SQL facets/reports, import/insert workflows, and shared
     server/client algorithms (`EventType`, `EventStatus`, and `EventTag`).
+  - [x] Exercise a partially migrated association whose owner remains natural
+    while its target and association row are public (`UserTagAssignment`).
+  - [x] Exercise a rich association with public row identity, a public lookup
+    target, natural central-domain endpoints, and authorization composed from a
+    related entity through an asynchronous named-view predicate (`SongCredit`).
 
 ### Deferred DB3 enhancements
 

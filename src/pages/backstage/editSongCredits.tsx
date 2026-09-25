@@ -14,7 +14,7 @@ const MainContent = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.songCreditEditorView,
         columns: {
-            id: DB3Client.pkFieldGen(),
+            publicId: DB3Client.publicIdFieldGen(),
             user: DB3Client.foreignRefFieldGen({}),
             song: DB3Client.foreignRefFieldGen({}),
             type: DB3Client.foreignRefFieldGen({ selectionView: db3.songCreditTypeEditorView }),

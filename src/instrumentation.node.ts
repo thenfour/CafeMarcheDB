@@ -136,6 +136,22 @@ export async function CorrectSongTagAssociationPublicIds() {
     console.log(`Replaced ${replacementCount} SongTagAssociation public-ID placeholders.`);
 }
 
+export async function CorrectSongCreditTypePublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.songCreditType,
+        modelName: "SongCreditType",
+    });
+    console.log(`Replaced ${replacementCount} SongCreditType public-ID placeholders.`);
+}
+
+export async function CorrectSongCreditPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.songCredit,
+        modelName: "SongCredit",
+    });
+    console.log(`Replaced ${replacementCount} SongCredit public-ID placeholders.`);
+}
+
 export async function CorrectFileTagPublicIds() {
     const replacementCount = await repairPublicIdPlaceholders({
         delegate: db.fileTag,
@@ -230,6 +246,8 @@ export async function registerNodeInstrumentation() {
     await CorrectInstrumentTagAssociationPublicIds();
     await CorrectSongTagPublicIds();
     await CorrectSongTagAssociationPublicIds();
+    await CorrectSongCreditTypePublicIds();
+    await CorrectSongCreditPublicIds();
     await CorrectFileTagPublicIds();
     await CorrectFileTagAssignmentPublicIds();
     await CorrectWikiPageTagPublicIds();

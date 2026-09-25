@@ -53,7 +53,7 @@ export interface DB3View<
     readonly getSelectionArgs: (context: DB3ViewSelectionContext) => TSelection;
     readonly getWhereClause: (
         context: DB3ViewSelectionContext,
-    ) => DB3ViewWhere<TEntity> | undefined;
+    ) => Promise<DB3ViewWhere<TEntity> | undefined>;
     readonly hydrate: (
         dto: z.infer<TDtoSchema>,
         references: DB3ReferenceProvider<TReferences>,
@@ -105,9 +105,19 @@ type DB3ViewSelectionInput<
     TSelection,
 > = TSelection | ((context: DB3ViewSelectionContext) => TSelection);
 
+type DB3ViewWhereFactory<TEntity extends AnyDB3Table> = (
+    context: DB3ViewSelectionContext,
+) => DB3ViewWhere<TEntity> | Promise<DB3ViewWhere<TEntity>>;
+
 type DB3ViewWhereInput<TEntity extends AnyDB3Table> =
     | DB3ViewWhere<TEntity>
-    | ((context: DB3ViewSelectionContext) => DB3ViewWhere<TEntity>);
+    | DB3ViewWhereFactory<TEntity>;
+
+function isDB3ViewWhereFactory<TEntity extends AnyDB3Table>(
+    value: DB3ViewWhereInput<TEntity>,
+): value is DB3ViewWhereFactory<TEntity> {
+    return typeof value === "function";
+}
 
 // overload with no selection specified (will be deduced from the DTO schema)
 export function defineView<
@@ -162,11 +172,12 @@ export function defineView<
             : typeof args.selection === "function"
                 ? args.selection as (context: DB3ViewSelectionContext) => TSelection
                 : () => args.selection as TSelection,
-        getWhereClause: args.where === undefined
-            ? () => undefined
-            : typeof args.where === "function"
-                ? args.where
-                : () => args.where,
+        getWhereClause: async context => {
+            if (args.where === undefined) return undefined;
+            return isDB3ViewWhereFactory(args.where)
+                ? await args.where(context)
+                : args.where;
+        },
         hydrate: args.hydrate,
         parseDto: value => args.dtoSchema.parse(value),
     };

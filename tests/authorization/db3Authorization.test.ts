@@ -74,7 +74,7 @@ describe("explicit DB3 authorization", () => {
     })
     const resolved = await loadUserAuthorization(actor as any)
     const authorization = db3.createDB3Authorization(resolved.user, resolved.effectivePermissions)
-    const where = db3.permissionVisibilityView.getWhereClause({
+    const where = await db3.permissionVisibilityView.getWhereClause({
       authorization,
       filter: { items: [] },
     })

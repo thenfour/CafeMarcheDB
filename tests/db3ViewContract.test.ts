@@ -14,6 +14,8 @@ import {
   type FileTagAssignmentPublicId,
   type FileTagPublicId,
   type InstrumentFunctionalGroupPublicId,
+  type SongCreditPublicId,
+  type SongCreditTypePublicId,
   type SongTagPublicId,
   type UserTagPublicId,
   type UserTagAssignmentPublicId,
@@ -29,6 +31,8 @@ const eventStatusPublicId = parsePublicId<"EventStatus">("AbCdEfGhIjKlMn12")
 const eventTagPublicId = parsePublicId<"EventTag">("AbCdEfGhIjKlMn13")
 const eventTagAssignmentPublicId = parsePublicId<"EventTagAssignment">("AbCdEfGhIjKlMn14")
 const userTagPublicId = parsePublicId<"UserTag">("AbCdEfGhIjKlMn15")
+const songCreditTypePublicId = parsePublicId<"SongCreditType">("AbCdEfGhIjKlMn16")
+const songCreditPublicId = parsePublicId<"SongCredit">("AbCdEfGhIjKlMn17")
 const userTagAssignmentPublicId = parsePublicId<"UserTagAssignment">("AbCdEfGhIjKlMn16")
 
 afterEach(() => {
@@ -963,15 +967,29 @@ describe("Song derived-view migration", () => {
       .toEqualTypeOf<ColorPaletteEntry | null>()
     expectTypeOf<CreditTypeDto["color"]>()
       .toEqualTypeOf<string | null>()
+    expectTypeOf<CreditTypeDto["publicId"]>()
+      .toEqualTypeOf<SongCreditTypePublicId>()
     expectTypeOf<CreditTypeClient["color"]>()
       .toEqualTypeOf<ColorPaletteEntry | null>()
+    expectTypeOf<CreditDto["publicId"]>()
+      .toEqualTypeOf<SongCreditPublicId>()
+    expectTypeOf<CreditDto["typeId"]>()
+      .toEqualTypeOf<SongCreditTypePublicId>()
     expectTypeOf<CreditDto["userId"]>()
       .toEqualTypeOf<number | null>()
     expectTypeOf<CreditDto["songId"]>().toEqualTypeOf<number>()
     expectTypeOf<NestedCreditTypeDto["color"]>()
       .toEqualTypeOf<string | null>()
+    expectTypeOf<NestedCreditTypeDto["publicId"]>()
+      .toEqualTypeOf<SongCreditTypePublicId>()
     expectTypeOf<NestedCreditTypeClient["color"]>()
       .toEqualTypeOf<ColorPaletteEntry | null>()
+    expectTypeOf<Extract<keyof CreditTypeDto, "id">>().toEqualTypeOf<never>()
+    expectTypeOf<Extract<keyof CreditDto, "id">>().toEqualTypeOf<never>()
+    expect(db3.xSongCreditType.getIdentity({ publicId: songCreditTypePublicId }))
+      .toBe(songCreditTypePublicId)
+    expect(db3.xSongCredit.getIdentity({ publicId: songCreditPublicId }))
+      .toBe(songCreditPublicId)
 
     expect(db3.songTagEditorView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
@@ -1020,6 +1038,7 @@ describe("Song derived-view migration", () => {
     >
     type ClientFileTag = NonNullable<ClientFile["tags"]>[number]
     type DtoCredit = NonNullable<Dto["credits"]>[number]
+    type ClientCredit = NonNullable<Client["credits"]>[number]
     type RootAuthorizationOnlyKeys = Extract<keyof Dto, "createdByUserId" | "isDeleted">
     type TagAuthorizationOnlyKeys = Extract<keyof DtoTag, "songId">
     type FileAuthorizationOnlyKeys = Extract<keyof DtoFileAssociation, "fileId" | "songId">
@@ -1030,6 +1049,10 @@ describe("Song derived-view migration", () => {
     expectTypeOf<TagAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<FileAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<CreditAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+    expectTypeOf<DtoCredit["publicId"]>().toEqualTypeOf<SongCreditPublicId>()
+    expectTypeOf<DtoCredit["typeId"]>().toEqualTypeOf<SongCreditTypePublicId>()
+    expectTypeOf<NonNullable<ClientCredit["type"]>["publicId"]>()
+      .toEqualTypeOf<SongCreditTypePublicId>()
     expectTypeOf<ClientTag["tag"]>()
       .toEqualTypeOf<NonNullable<ClientTag["tag"]>>()
     expectTypeOf<ClientFileTag["fileTag"]>()
@@ -1080,6 +1103,10 @@ describe("Song derived-view migration", () => {
       .toEqualTypeOf<NonNullable<ClientFileTag["fileTag"]>>()
     expectTypeOf<ClientCreditType["color"]>()
       .toEqualTypeOf<ColorPaletteEntry | null>()
+    expectTypeOf<ClientCredit["publicId"]>().toEqualTypeOf<SongCreditPublicId>()
+    expectTypeOf<ClientCredit["typeId"]>().toEqualTypeOf<SongCreditTypePublicId>()
+    expectTypeOf<ClientCreditType["publicId"]>()
+      .toEqualTypeOf<SongCreditTypePublicId>()
     expect(db3.songDetailView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
     )).toBe(db3.songDetailSelection)

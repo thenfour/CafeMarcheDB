@@ -1,5 +1,9 @@
 import { z } from "zod";
-import type { InstrumentPublicId } from "shared/publicId";
+import {
+    isPublicId,
+    type InstrumentPublicId,
+    type SongCreditTypePublicId,
+} from "shared/publicId";
 
 export enum ActivityFeature {
     global_ical_digest = "global_ical_digest",
@@ -347,7 +351,7 @@ export const ZTRecordActionArgs = z.object({
     frontpageGalleryItemId: z.number().optional(),
     menuLinkId: z.number().optional(),
     setlistPlanId: z.number().optional(),
-    songCreditTypeId: z.number().optional(),
+    songCreditTypeId: z.custom<SongCreditTypePublicId>(isPublicId).optional(),
     instrumentId: z.string().optional(),
 });
 
@@ -366,7 +370,7 @@ export type ActivityFeatureAssociations = {
     frontpageGalleryItemId?: number;
     menuLinkId?: number;
     setlistPlanId?: number;
-    songCreditTypeId?: number;
+    songCreditTypeId?: SongCreditTypePublicId;
     instrumentId?: InstrumentPublicId;
 };
 

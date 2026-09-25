@@ -326,7 +326,10 @@ async function EnsureSongCreditTypes() {
         return;
     }
 
-    await SeedTable("songCreditType", db.songCreditType, songCreditTypes);
+    await SeedTable("songCreditType", db.songCreditType, songCreditTypes.map(creditType => ({
+        ...creditType,
+        publicId: generatePublicId<"SongCreditType">(),
+    })));
 };
 
 async function EnsureUserTags() {

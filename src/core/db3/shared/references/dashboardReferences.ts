@@ -180,7 +180,7 @@ const dashboardSongTagSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()(
 
 const dashboardSongCreditTypeSelection = Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         text: true,
         description: true,
         color: true,
@@ -545,43 +545,42 @@ export function registerDashboardReferences(
     input: DashboardReferenceInput,
 ): void {
     if (input.permission) {
-        store.register(xPermission, input.permission, value => value.id);
+        store.register(xPermission, input.permission);
     }
     if (input.wikiPageTag) {
-        store.register(xWikiPageTag, input.wikiPageTag, value => xWikiPageTag.getIdentity(value));
+        store.register(xWikiPageTag, input.wikiPageTag);
     }
     if (input.eventType) {
-        store.register(xEventType, input.eventType, value => xEventType.getIdentity(value));
+        store.register(xEventType, input.eventType);
     }
     if (input.eventStatus) {
-        store.register(xEventStatus, input.eventStatus, value => xEventStatus.getIdentity(value));
+        store.register(xEventStatus, input.eventStatus);
     }
     if (input.eventTag) {
-        store.register(xEventTag, input.eventTag, value => xEventTag.getIdentity(value));
+        store.register(xEventTag, input.eventTag);
     }
     if (input.eventAttendance) {
-        store.register(xEventAttendance, input.eventAttendance, value => value.id);
+        store.register(xEventAttendance, input.eventAttendance);
     }
     if (input.fileTag) {
-        store.register(xFileTag, input.fileTag, value => xFileTag.getIdentity(value));
+        store.register(xFileTag, input.fileTag);
     }
     if (input.instrumentFunctionalGroup) {
         store.register(
             xInstrumentFunctionalGroup,
             input.instrumentFunctionalGroup,
-            value => value.publicId,
         );
     }
     if (input.instrumentTag) {
-        store.register(xInstrumentTag, input.instrumentTag, value => value.publicId);
+        store.register(xInstrumentTag, input.instrumentTag);
     }
     if (input.songTag) {
-        store.register(xSongTag, input.songTag, value => value.publicId);
+        store.register(xSongTag, input.songTag);
     }
     if (input.songCreditType) {
-        store.register(xSongCreditType, input.songCreditType, value => value.id);
+        store.register(xSongCreditType, input.songCreditType);
     }
     if (input.instrument) {
-        store.register(xInstrument, input.instrument, value => value.publicId);
+        store.register(xInstrument, input.instrument);
     }
 }

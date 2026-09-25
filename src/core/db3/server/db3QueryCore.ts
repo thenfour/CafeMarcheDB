@@ -63,7 +63,7 @@ async function prepareTableQuery(
         includeDeleted,
         filterModel: resolvedFilter,
     });
-    const viewWhere = view?.getWhereClause({
+    const viewWhere = await view?.getWhereClause({
         filter: resolvedFilter,
         authorization: publicData,
     });

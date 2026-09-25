@@ -214,7 +214,7 @@ export const SongCreditEditButton = ({ creditsTableClient, creditsCommands, ...p
             feature: ActivityFeature.song_credit_delete,
             songCreditTypeId: props.value.typeId,
         });
-        creditsCommands.delete(props.value.id).then(() => {
+        creditsCommands.delete(db3.xSongCredit.getIdentity(props.value)).then(() => {
             showSnackbar({ severity: "success", children: "deleted" });
             api.closeDialog();
         }).catch(e => {
@@ -274,7 +274,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.songCreditEditorView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            publicId: DB3Client.publicIdFieldGen(),
             user: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
             type: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, selectionView: db3.songCreditTypeEditorView }),
             year: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 120 }),
@@ -347,7 +347,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
 
     if (props.showCredits) {
         (songData.song.credits ?? []).forEach(credit => {
-            const type = dashboardContext.songCreditType.getById(credit.typeId);
+            const type = credit.type;
             if (!type) return;
             rows.push({
                 rowClassName: `credit `,

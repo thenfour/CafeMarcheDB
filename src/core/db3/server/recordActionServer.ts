@@ -117,7 +117,7 @@ function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null,
         frontpageGalleryItemId: toSafeId(args.frontpageGalleryItemId),
         menuLinkId: toSafeId(args.menuLinkId),
         setlistPlanId: toSafeId(args.setlistPlanId),
-        songCreditTypeId: toSafeId(args.songCreditTypeId),
+        songCreditTypeId: null,
         instrumentId: null,
     };
 }
@@ -135,6 +135,13 @@ export async function createActionRecord(args: RecordActionArgs & { userId?: num
             select: { id: true },
         });
         sanitizedData.instrumentId = instrument?.id ?? null;
+    }
+    if (args.songCreditTypeId) {
+        const songCreditType = await db.songCreditType.findUnique({
+            where: { publicId: args.songCreditTypeId },
+            select: { id: true },
+        });
+        sanitizedData.songCreditTypeId = songCreditType?.id ?? null;
     }
 
     await db.action.create({

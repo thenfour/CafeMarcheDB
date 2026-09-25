@@ -17,6 +17,8 @@ import { z } from "zod";
 
 const eventStatusPublicId: EventStatusPublicId = parsePublicId<"EventStatus">("CommandStatus001");
 const userTagPublicId = parsePublicId<"UserTag">("CommandUserTag01");
+const songCreditTypePublicId = parsePublicId<"SongCreditType">("CommandCreditTyp");
+const songCreditPublicId = parsePublicId<"SongCredit">("CommandCreditRow");
 
 function createContext(seed?: {
     songList?: Record<string, unknown> | null;
@@ -479,6 +481,13 @@ describe("DB3 commands", () => {
             indicator: "B",
             indicatorCssClass: "ballad",
         });
+        expect(db3.songCreditTypeEditorView.crud.operations.update.command.parseDto({
+            identity: songCreditTypePublicId,
+            patch: { significance: "Composer" },
+        })).toEqual({
+            identity: songCreditTypePublicId,
+            patch: { significance: "Composer" },
+        });
         expect(db3.userTagEditorView.crud.operations.update.command.parseDto({
             identity: userTagPublicId,
             patch: { cssClass: null },
@@ -840,16 +849,16 @@ describe("DB3 commands", () => {
         expect(db3.eventSegmentEditorView.crud.operations.delete.deleteType).toBe("hard");
 
         expect(db3.songCreditEditorView.parseDto({
-            id: 5,
+            publicId: songCreditPublicId,
             year: "2026",
             comment: "Original arrangement",
             userId: 6,
             user: { id: 6, name: "Ada" },
             songId: 7,
             song: { id: 7, name: "Autumn Leaves", description: "" },
-            typeId: 8,
+            typeId: songCreditTypePublicId,
             type: {
-                id: 8,
+                publicId: songCreditTypePublicId,
                 text: "Composer",
                 description: "",
                 color: null,
@@ -857,7 +866,7 @@ describe("DB3 commands", () => {
                 significance: null,
             },
         })).toMatchObject({
-            id: 5,
+            publicId: songCreditPublicId,
             year: "2026",
             comment: "Original arrangement",
             user: { name: "Ada" },
@@ -867,13 +876,13 @@ describe("DB3 commands", () => {
         expect(db3.songCreditEditorView.crud.operations.create.command.parseDto({
             userId: 6,
             songId: 7,
-            typeId: 8,
+            typeId: songCreditTypePublicId,
             year: "2026",
             comment: "Original arrangement",
         })).toEqual({
             userId: 6,
             songId: 7,
-            typeId: 8,
+            typeId: songCreditTypePublicId,
             year: "2026",
             comment: "Original arrangement",
         });

@@ -5,6 +5,7 @@ import {
     type EventStatusPublicId,
     type EventTypePublicId,
     type InstrumentPublicId,
+    type SongCreditTypePublicId,
 } from "shared/publicId";
 import { z } from "zod";
 import { ActivityFeature, Browsers, DeviceClasses, OperatingSystem, PointerTypes } from "./activityTracking";
@@ -23,13 +24,37 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
         frontpageGalleryItem: true,
         menuLink: true,
         setlistPlan: true,
+        songCreditType: {
+            select: {
+                publicId: true,
+            },
+        },
     }
 });
 
 // remove actual user & replace with anonymized hash
-export type GeneralActivityReportDetailPayload = Omit<Prisma.ActionGetPayload<typeof GeneralActivityReportDetailArgs>, "user" | "userId"> & {
+type GeneralActivityReportDetailDbPayload = Prisma.ActionGetPayload<typeof GeneralActivityReportDetailArgs>;
+export type GeneralActivityReportDetailPayload = Omit<
+    GeneralActivityReportDetailDbPayload,
+    "user" | "userId" | "songCreditType" | "songCreditTypeId"
+> & {
     userHash: string | null;
+    songCreditTypeId: SongCreditTypePublicId | null;
 };
+
+export function projectGeneralActivityReportDetailItem(
+    row: GeneralActivityReportDetailDbPayload,
+    userHash: string | null,
+): GeneralActivityReportDetailPayload {
+    const { user: _user, userId: _userId, songCreditType, songCreditTypeId: _songCreditTypeId, ...rest } = row;
+    return {
+        ...rest,
+        userHash,
+        songCreditTypeId: songCreditType
+            ? parsePublicId<"SongCreditType">(songCreditType.publicId)
+            : null,
+    };
+}
 
 export enum ActivityDetailTabId {
     // string id
@@ -264,7 +289,16 @@ const GetFeatureReportDetailResultArgsUnvalidated /*: Prisma.ActionDefaultArgs*/
         frontpageGalleryItem: true,
         menuLink: true,
         setlistPlan: true,
-        songCreditType: true,
+        songCreditType: {
+            select: {
+                publicId: true,
+                text: true,
+                description: true,
+                color: true,
+                sortOrder: true,
+                significance: true,
+            },
+        },
         instrument: {
             select: {
                 publicId: true,
@@ -277,8 +311,16 @@ export const GetFeatureReportDetailResultArgs = Prisma.validator<Prisma.ActionDe
 
 type GetFeatureReportDetailDbPayload = Prisma.ActionGetPayload<typeof GetFeatureReportDetailResultArgsUnvalidated>;
 
-export type GetFeatureReportDetailItemPayload = Omit<GetFeatureReportDetailDbPayload, "instrument" | "event"> & {
+type FeatureReportSongCreditType = NonNullable<GetFeatureReportDetailDbPayload["songCreditType"]>;
+export type GetFeatureReportDetailItemPayload = Omit<
+    GetFeatureReportDetailDbPayload,
+    "instrument" | "event" | "songCreditType" | "songCreditTypeId"
+> & {
     instrumentId: InstrumentPublicId | null;
+    songCreditTypeId: SongCreditTypePublicId | null;
+    songCreditType: null | (Omit<FeatureReportSongCreditType, "publicId"> & {
+        publicId: SongCreditTypePublicId;
+    });
     event: null | (Omit<NonNullable<GetFeatureReportDetailDbPayload["event"]>, "type" | "status"> & {
         typeId: EventTypePublicId | null;
         statusId: EventStatusPublicId | null;
@@ -288,10 +330,23 @@ export type GetFeatureReportDetailItemPayload = Omit<GetFeatureReportDetailDbPay
 export function projectFeatureReportDetailItem(
     row: GetFeatureReportDetailDbPayload,
 ): GetFeatureReportDetailItemPayload {
-    const { instrument, event, ...rest } = row;
+    const {
+        instrument,
+        event,
+        songCreditType,
+        songCreditTypeId: _songCreditTypeId,
+        ...rest
+    } = row;
     return {
         ...rest,
         instrumentId: instrument ? parsePublicId<"Instrument">(instrument.publicId) : null,
+        songCreditTypeId: songCreditType
+            ? parsePublicId<"SongCreditType">(songCreditType.publicId)
+            : null,
+        songCreditType: songCreditType ? {
+            ...songCreditType,
+            publicId: parsePublicId<"SongCreditType">(songCreditType.publicId),
+        } : null,
         event: event ? {
             id: event.id,
             name: event.name,

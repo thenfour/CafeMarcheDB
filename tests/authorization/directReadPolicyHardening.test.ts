@@ -201,7 +201,13 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       songCredit: [
         {
           id: 501,
+          publicId: "SongCredit000501",
           userId: 900,
+          songId: 51,
+          typeId: 71,
+          year: "2025",
+          comment: "Visible credit",
+          type: { id: 71, publicId: "CreditType000071", text: "Composer" },
           song: {
             id: 51,
             isDeleted: false,
@@ -211,7 +217,13 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
         },
         {
           id: 502,
+          publicId: "SongCredit000502",
           userId: 900,
+          songId: 52,
+          typeId: 71,
+          year: "2025",
+          comment: "Hidden credit",
+          type: { id: 71, publicId: "CreditType000071", text: "Composer" },
           song: {
             id: 52,
             isDeleted: false,
@@ -221,7 +233,13 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
         },
         {
           id: 503,
+          publicId: "SongCredit000503",
           userId: 900,
+          songId: 53,
+          typeId: 71,
+          year: "2025",
+          comment: "Deleted-song credit",
+          type: { id: 71, publicId: "CreditType000071", text: "Composer" },
           song: {
             id: 53,
             isDeleted: true,
@@ -238,7 +256,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
 
     const result = await invokeResolver(getUserCredits, { userId: 900, take: 10 }, ctx)
 
-    expect(result.songCredits.map(credit => credit.id)).toEqual([501])
+    expect(result.songCredits.map(credit => credit.publicId)).toEqual(["SongCredit000501"])
   })
 
   it("scopes public user-tag assignments to active users", async () => {

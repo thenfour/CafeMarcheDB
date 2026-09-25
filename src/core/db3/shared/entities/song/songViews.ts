@@ -29,7 +29,7 @@ const songTagEditorContract = deriveViewContract(xSongTag, songTagEditorSelectio
 
 export const songCreditTypeEditorSelection = Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         text: true,
         description: true,
         color: true,
@@ -45,7 +45,7 @@ const songCreditTypeEditorContract = deriveViewContract(
 
 export const songCreditEditorSelection = Prisma.validator<Prisma.SongCreditDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         comment: true,
         year: true,
         userId: true,
@@ -71,6 +71,28 @@ export const songCreditEditorSelection = Prisma.validator<Prisma.SongCreditDefau
 const songCreditEditorContract = deriveViewContract(
     xSongCredit,
     songCreditEditorSelection,
+);
+
+export const songCreditUserSelection = Prisma.validator<Prisma.SongCreditDefaultArgs>()({
+    select: {
+        publicId: true,
+        userId: true,
+        songId: true,
+        typeId: true,
+        year: true,
+        comment: true,
+        type: {
+            select: {
+                publicId: true,
+                text: true,
+            },
+        },
+    },
+});
+
+const songCreditUserContract = deriveViewContract(
+    xSongCredit,
+    songCreditUserSelection,
 );
 
 export const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
@@ -135,6 +157,21 @@ export const songCreditEditorView = defineCrudView({
     hydrate: songCreditEditorContract.hydrate,
 });
 
+export const songCreditUserView = defineView({
+    viewID: "SongCredit_UserCredits",
+    entity: xSongCredit,
+    selection: songCreditUserContract.prismaSelection,
+    where: async ({ authorization }) => ({
+        song: await xSong.CalculateWhereClause({
+            publicData: authorization,
+            includeDeleted: false,
+            filterModel: {},
+        }),
+    }),
+    dtoSchema: songCreditUserContract.dtoSchema,
+    hydrate: songCreditUserContract.hydrate,
+});
+
 export const songEditorView = defineCrudView({
     viewID: "Song_Editor",
     entity: xSong,
@@ -178,7 +215,7 @@ const songSearchTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
         },
         credits: {
             select: {
-                id: true,
+                publicId: true,
                 typeId: true,
                 year: true,
                 comment: true,
@@ -231,6 +268,9 @@ export const songSearchSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
                 select: {
                     userId: true,
                     songId: true,
+                    type: {
+                        select: { publicId: true },
+                    },
                 },
             },
         }
@@ -307,7 +347,7 @@ const songDetailTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
         },
         credits: {
             select: {
-                id: true,
+                publicId: true,
                 userId: true,
                 songId: true,
                 typeId: true,
@@ -319,7 +359,6 @@ const songDetailTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
                         name: true,
                     },
                 },
-                type: songCreditTypeEditorSelection,
             },
         },
     },
@@ -345,6 +384,13 @@ export const songDetailSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
                     file: fileCardSelection,
                 },
                 orderBy: { file: { uploadedAt: "desc" } },
+            },
+            credits: {
+                select: {
+                    type: {
+                        select: { publicId: true },
+                    },
+                },
             },
         },
     }));

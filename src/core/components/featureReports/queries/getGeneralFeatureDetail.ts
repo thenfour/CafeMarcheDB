@@ -6,7 +6,11 @@ import { ActivityReportTimeBucketSize, parseBucketToDateRange } from "shared/mys
 import { Permission } from "shared/permissions";
 import { hashString } from "shared/utils";
 import { z } from "zod";
-import { GeneralActivityReportDetailArgs, GeneralActivityReportDetailPayload } from "../activityReportTypes";
+import {
+    GeneralActivityReportDetailArgs,
+    GeneralActivityReportDetailPayload,
+    projectGeneralActivityReportDetailItem,
+} from "../activityReportTypes";
 import { ActivityFeature } from "../activityTracking";
 
 const ZTGeneralFeatureDetailArgs = z.object({
@@ -77,11 +81,10 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
 
     const anonymizedResults = results.map((result) => {
         const anonymizedUserId = result.userId ? `${salt}${result.userId}` : null;
-        const { userId, user, ...rest } = result;
-        return {
-            ...rest,
-            userHash: anonymizedUserId ? hash256(anonymizedUserId) : null,
-        };
+        return projectGeneralActivityReportDetailItem(
+            result,
+            anonymizedUserId ? hash256(anonymizedUserId) : null,
+        );
     });
 
     return {

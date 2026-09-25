@@ -348,7 +348,10 @@ const main = async () => {
       "sortOrder": 0,
       "color": null
     }
-  ]);
+  ].map(creditType => ({
+    ...creditType,
+    publicId: generatePublicId<"SongCreditType">(),
+  })));
 
   let instrumentOrder: number = 0;
 
@@ -881,6 +884,7 @@ const main = async () => {
     for (let ic = 0; ic < creditCount; ++ic) {
       await gState.prisma.songCredit.create({
         data: {
+          publicId: generatePublicId<"SongCredit">(),
           comment: probabool(0.2) ? faker.lorem.sentence({ min: 1, max: 10 }) : "",
           songId: song.id,
           typeId: faker.helpers.arrayElement(gState.gAllSongCreditTypes).id,

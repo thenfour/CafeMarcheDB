@@ -177,9 +177,6 @@ export class DB3ReferenceStore<
     register<TEntity extends DB3ReferenceEntityOf<TContract>>(
         entity: TEntity,
         values: readonly DB3ReferenceValueOf<TContract, TEntity>[],
-        getIdentity: (
-            value: DB3ReferenceValueOf<TContract, TEntity>,
-        ) => DB3IdentityOf<TEntity>,
     ): void {
         if (!this.contract.has(entity)) {
             throw new DB3HydrationError(
@@ -187,7 +184,7 @@ export class DB3ReferenceStore<
             );
         }
         this.entities.set(entity.tableID, new Map(
-            values.map(value => [getIdentity(value), value]),
+            values.map(value => [entity.getIdentity(value), value]),
         ));
     }
 

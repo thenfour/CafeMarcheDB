@@ -68,10 +68,8 @@ export const SongListItem = (props: SongListItemProps) => {
                 {!!props.song.credits?.length && (
                     <div className="credits">
                         {props.song.credits.map(credit => {
-                            const creditType = credit.typeId === undefined
-                                ? undefined
-                                : dashboardContext.songCreditType.getById(credit.typeId);
-                            return <div className="credit row" key={credit.id}>
+                            const creditType = credit.type;
+                            return <div className="credit row" key={db3.xSongCredit.getIdentity(credit)}>
                                 {!!credit.user && <><div className="userName fieldItem">{credit.user?.name}</div></>}
                                 {!!creditType && <div className="creditType fieldItem">{creditType.text}</div>}
                                 {!IsNullOrWhitespace(credit.year) && <div className="year fieldItem">({credit.year})</div>}

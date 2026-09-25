@@ -359,6 +359,7 @@ model Song {
 // composer / arranger / whatever
 model SongCreditType {
   id           Int     @id @default(autoincrement())
+  publicId     String  @unique @db.Char(16)
   text         String
   description  String  @db.MediumText
   color        String?
@@ -374,10 +375,11 @@ model SongCreditType {
 }
 
 model SongCredit {
-  id     Int   @id @default(autoincrement())
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
   // some authors may not be users; can specify in comments
-  userId Int?
-  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   Int?
+  user     User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   songId Int
   song   Song @relation(fields: [songId], references: [id], onDelete: Cascade)

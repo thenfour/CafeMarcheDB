@@ -1686,7 +1686,7 @@ export class xTable<
     };
 
     CalculateWhereClause = async ({ filterModel, publicData, includeDeleted = false }: CalculateWhereClauseArgs) => {
-        const and: Prisma.EventWhereInput[] = [];
+        const and: Prisma.EventWhereInput[] = []; // using EventWhereInput because it's a good example shape for autocomplete. true type is really a generic "*WhereInput"
 
         const rowAuthorizationWhere = this.getRowAuthorizationWhereClause(publicData);
         if (rowAuthorizationWhere === null) {
@@ -1744,7 +1744,7 @@ export class xTable<
                 publicData,
                 columnName: this.pkMember,
             }), `Unauthorized DB3 primary-key filter on table ${this.tableID}.`);
-            const expr: Prisma.EventWhereInput = {
+            const expr: Prisma.EventWhereInput = { // using EventWhereInput because it's a good example shape for autocomplete. true type is really a generic "*WhereInput"
                 [this.pkMember]: {
                     in: filterModel.pks
                 }
@@ -1754,7 +1754,7 @@ export class xTable<
 
         if (filterModel && filterModel.publicIds) {
             assert(!!this.publicIdMember, `Table ${this.tableID} does not use public IDs.`);
-            const expr: Prisma.EventWhereInput = {
+            const expr: Prisma.EventWhereInput = { // using EventWhereInput because it's a good example shape for autocomplete. true type is really a generic "*WhereInput"
                 [this.publicIdMember]: {
                     in: filterModel.publicIds,
                 },

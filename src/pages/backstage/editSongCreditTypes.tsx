@@ -12,7 +12,7 @@ const MainContent = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.songCreditTypeEditorView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            publicId: DB3Client.publicIdFieldGen(),
             text: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
             description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
             color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 300 }),

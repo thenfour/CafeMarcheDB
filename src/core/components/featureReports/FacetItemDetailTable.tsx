@@ -107,7 +107,9 @@ export const FacetItemDetailTableRow = ({ value, index, ...props }: FacetItemDet
                 <CMChip>Menu link #{value.menuLinkId}</CMChip>
             </FilterableChip>}
             {value.setlistPlanId && <CMChip>Setlist plan #{value.setlistPlanId}</CMChip>}
-            {value.songCreditTypeId && <CMChip>Song credit #{value.songCreditTypeId}</CMChip>}
+            {value.songCreditTypeId && <CMChip>
+                Song credit {value.songCreditType?.text ?? value.songCreditTypeId}
+            </CMChip>}
 
             {value.attendanceId && <AttendanceChip
                 value={value.attendanceId}
