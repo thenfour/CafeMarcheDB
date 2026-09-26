@@ -9,11 +9,12 @@ vi.mock("db", async () => {
 });
 
 import getDashboardData from "src/auth/queries/getDashboardData";
-import { resolver, type CMAuthenticatedCtx, type CMCtx } from "src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthenticatedCtx, type CMCtx } from "src/auth/server/cmResolver";
 import { loadAuthorization } from "src/auth/server/requestAuthorization";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { createAuthorizationPublicData, createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { invokeResolver } from "./support/resolverHarness";
+import { resolver } from "@blitzjs/rpc";
 
 describe("authorization refresh on every request", () => {
     const user = createAuthorizationTestUser("normal", { id: 42 });
@@ -215,7 +216,7 @@ describe("authorization refresh on every request", () => {
     it("passes the loaded authorization to resolver steps", async () => {
         const ctx = createAuthorizationTestContext(user);
         const guarded = resolver.pipe(
-            resolver.cmauthorize(Permission.login),
+            cmauthorize(Permission.login),
             async (_input: {}, resolverCtx: CMAuthenticatedCtx) => ({
                 userId: resolverCtx.auth.user.id,
                 canViewUsers: resolverCtx.auth.hasPermission(Permission.view_users_basic_info),
@@ -230,7 +231,7 @@ describe("authorization refresh on every request", () => {
         await expect(invokeResolver(guarded, {}, anonymous)).rejects.toThrow();
 
         const publicResolver = resolver.pipe(
-            resolver.cmauthorize(Permission.public),
+            cmauthorize(Permission.public),
             async (_input: {}, resolverCtx: CMCtx) => resolverCtx.auth.userId,
         );
         await expect(invokeResolver(publicResolver, {}, anonymous)).resolves.toBeNull();
@@ -243,10 +244,12 @@ describe("authorization refresh on every request", () => {
         });
         authorizationTestDb.reset({ user: [actor] });
         const original = await loadAuthorization(createAuthorizationTestContext(actor).session);
-        authorizationTestDb.reset({ user: [createAuthorizationTestUser("normal", {
-            id: user.id,
-            permissions: [Permission.login],
-        })] });
+        authorizationTestDb.reset({
+            user: [createAuthorizationTestUser("normal", {
+                id: user.id,
+                permissions: [Permission.login],
+            })]
+        });
 
         const refreshed = await original.refresh(authorizationTestDb);
         expect(refreshed).not.toBe(original);

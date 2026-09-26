@@ -1,12 +1,13 @@
-import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
-import { GetGlobalStatsArgs, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance } from "../shared/apiTypes";
 import { resolvePublicIds } from "../server/db3PublicIds";
+import { GetGlobalStatsArgs, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance } from "../shared/apiTypes";
 
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.view_events_reports),
+    cmauthorize(Permission.view_events_reports),
     async (args: GetGlobalStatsArgs, ctx: CMCtx): Promise<GetGlobalStatsRet> => {
         try {
             const u = ctx.auth.user;

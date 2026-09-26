@@ -1,16 +1,17 @@
 // based off the structure/logic of getEventFilterInfo
 
-import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
+import type { SongTagPublicId } from "shared/publicId";
 import { SplitQuickFilter } from "shared/quickFilter";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
+import { resolvePublicIds } from "../server/db3PublicIds";
 import { queryView } from "../server/db3QueryCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "../shared/apiTypes";
-import { resolvePublicIds } from "../server/db3PublicIds";
-import type { SongTagPublicId } from "shared/publicId";
 
 interface TArgs {
     filterSpec: {
@@ -24,7 +25,7 @@ interface TArgs {
 };
 
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.view_songs),
+    cmauthorize(Permission.view_songs),
     async (args: TArgs, ctx: CMCtx): Promise<GetSongFilterInfoRet> => {
         try {
             const authorization = ctx.auth;

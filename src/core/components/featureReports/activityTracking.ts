@@ -1,4 +1,4 @@
-import type { EventAttendancePublicId, EventPublicId, EventSegmentPublicId, EventSongListPublicId, FilePublicId, FrontpageGalleryItemPublicId, SongPublicId } from "shared/publicId";
+import type { EventAttendancePublicId, EventPublicId, EventSegmentPublicId, EventSongListPublicId, FilePublicId, FrontpageGalleryItemPublicId, SetlistPlanPublicId, SongPublicId } from "shared/publicId";
 import { z } from "zod";
 import {
     isPublicId,
@@ -351,7 +351,7 @@ export const ZTRecordActionArgs = z.object({
     eventSongListId: db3.xEventSongList.identitySchema.optional(),
     frontpageGalleryItemId: z.custom<FrontpageGalleryItemPublicId>(isPublicId).optional(),
     menuLinkId: z.number().optional(),
-    setlistPlanId: z.number().optional(),
+    setlistPlanId: db3.xSetlistPlan.identitySchema.optional(),
     songCreditTypeId: db3.xSongCreditType.identitySchema.optional(),
     instrumentId: z.string().optional(),
 });
@@ -370,7 +370,7 @@ export type ActivityFeatureAssociations = {
     eventSongListId?: EventSongListPublicId;
     frontpageGalleryItemId?: FrontpageGalleryItemPublicId;
     menuLinkId?: number;
-    setlistPlanId?: number;
+    setlistPlanId?: SetlistPlanPublicId;
     songCreditTypeId?: SongCreditTypePublicId;
     instrumentId?: InstrumentPublicId;
 };

@@ -12,6 +12,7 @@ vi.mock("src/core/db3/db3", async () => {
     return {
         // Selection tests load telemetry's schemas but do not exercise telemetry.
         xEventSongList: { identitySchema: z.string().refine(isPublicId) },
+        xSetlistPlan: { identitySchema: z.string().refine(isPublicId) },
         xSongCreditType: { identitySchema: z.string().refine(isPublicId) },
         xUser: { getRowInfo: (user: any) => ({ pk: user.publicId, name: user.name }) },
         xEvent: { authorizeColumnForEdit: vi.fn() },

@@ -1,4 +1,5 @@
-import { resolver } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
+import { cmauthorize } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
@@ -7,7 +8,7 @@ import { loadUserSettings } from "../server/userSettings";
 
 export default resolver.pipe(
     resolver.zod(UserSettingsPatchSchema),
-    resolver.cmauthorize(Permission.login),
+    cmauthorize(Permission.login),
     async (patch, ctx) => db.$transaction(async tx => {
         const auth = await ctx.auth.refresh(tx);
         auth.requirePermission(Permission.login);

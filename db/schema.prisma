@@ -1217,6 +1217,7 @@ model MenuLink {
 
 model SetlistPlanGroup {
   id          Int     @id @default(autoincrement())
+  publicId    String  @unique @db.Char(16)
   name        String  @db.VarChar(768)
   description String  @db.MediumText
   color       String? @db.VarChar(768)
@@ -1233,6 +1234,7 @@ model SetlistPlanGroup {
 
 model SetlistPlan {
   id          Int    @id @default(autoincrement())
+  publicId    String @unique @db.Char(16)
   name        String @db.VarChar(768)
   description String @db.MediumText
   sortOrder   Int    @default(0)

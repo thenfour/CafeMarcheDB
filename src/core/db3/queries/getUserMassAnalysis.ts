@@ -1,15 +1,15 @@
-import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import db from "db";
+import { Permission } from "shared/permissions";
+import { UserPublicIdSchema } from "src/auth/schemas";
 import { z } from "zod";
 import { UserMassAnalysisResult } from "../shared/getUserMassAnalysisTypes";
-import { Permission } from "shared/permissions";
-import { xRole } from "../shared/schema/user";
-import { xUser } from "../shared/schema/user";
-import { UserPublicIdSchema } from "src/auth/schemas";
+import { xRole, xUser } from "../shared/schema/user";
 
 export default resolver.pipe(
     resolver.zod(z.object({ userId: UserPublicIdSchema })),
-    resolver.cmauthorize(Permission.sysadmin),
+    cmauthorize(Permission.sysadmin),
     async (args, ctx: CMCtx): Promise<UserMassAnalysisResult> => {
         (await ctx.auth.refresh(db)).requirePermission(Permission.sysadmin);
 

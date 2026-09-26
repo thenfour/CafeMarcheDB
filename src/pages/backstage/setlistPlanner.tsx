@@ -14,7 +14,6 @@ import { ActivityFeature } from "@/src/core/components/featureReports/activityTr
 import { CMSelectNullBehavior, CMSingleSelectDialog } from "@/src/core/components/select/CMSingleSelectDialog";
 import { SetlistPlanGroupClientColumns, SetlistPlanGroupList } from "@/src/core/components/setlistPlan/SetlistPlanGroupComponents";
 import { CMTab, CMTabPanel } from "@/src/core/components/TabPanel";
-import { API } from "@/src/core/db3/clientAPI";
 import * as db3 from "@/src/core/db3/db3";
 import * as DB3Client from "@/src/core/db3/DB3Client";
 import { BlitzPage } from "@blitzjs/next";
@@ -42,9 +41,10 @@ import { useLocalStorageState } from "src/core/components/useLocalStorageState";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
+import reorderSetlistPlans from "src/core/db3/mutations/reorderSetlistPlans";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
 import { CopySetlistPlanPayloadWithoutDerivedStats, CreateNewSetlistPlan, SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanCell, SetlistPlanLedDef, SetlistPlanLedValue, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
-import { SongPublicId } from "shared/publicId";
+import { SongPublicId, SetlistPlanGroupPublicId } from "shared/publicId";
 
 function getId(prefix: string) {
     //return `${prefix}${nanoid(3)}`;
@@ -391,7 +391,8 @@ const createDuplicatedPlan = (plan: SetlistPlan, currentUserId?: SetlistPlan["cr
 
     const duplicatedPlan: SetlistPlan = {
         ...plan,
-        id: getUniqueNegativeID(),
+        publicId: null,
+        draftId: getUniqueNegativeID(),
         name: getDuplicatedPlanName(plan.name),
         createdAt: new Date(),
         createdByUserId: currentUserId ?? plan.createdByUserId,
@@ -427,7 +428,7 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
 
     return <div>
         <div
-            key={dbPlan.id}
+            key={dbPlan.publicId ?? dbPlan.draftId}
             className={`SetlistPlannerDocumentOverviewItem ${className} ${coloring.cssClass}`}
             //style={{ borderLeft: "8px solid var(--color-background)", backgroundColor: "#f0f0f0", ...coloring.style }}
             style={{ backgroundColor: "#f0f0f0", ...coloring.style }}
@@ -480,7 +481,7 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
                             return;
                         }
                         await snackbar.invokeAsync(async () => {
-                            await deleteSetlistPlanToken({ id: dbPlan.id });
+                            if (dbPlan.publicId) await deleteSetlistPlanToken(dbPlan.publicId);
                             refetch();
                         });
                     }}
@@ -497,10 +498,10 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
                 {showingGroupSelectDialog && <CMSingleSelectDialog
                     description="Select a group to move this plan into"
                     title="Select Group"
-                    value={groupTableClient.items.find(g => g.id === dbPlan.groupId) || null}
+                    value={groupTableClient.items.find(g => g.publicId === dbPlan.groupId) || null}
                     getOptions={() => groupTableClient.items}
                     getOptionInfo={(group) => ({
-                        id: group!.id,
+                        id: group!.publicId,
                         color: group!.color?.id ?? null,
                     })}
                     onCancel={() => setShowingGroupSelectDialog(false)}
@@ -508,7 +509,7 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
                     renderOption={(group) => group?.name || "Ungrouped"}
                     onOK={async (group) => {
                         // move to new group.
-                        dbPlan.groupId = group?.id || null;
+                        dbPlan.groupId = group?.publicId || null;
                         await snackbar.invokeAsync(async () => {
                             await upsertSetlistPlanToken(dbPlan);
                             refetch();
@@ -536,7 +537,7 @@ const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, re
     const dashboardContext = useDashboardContext();
     plansInGroup = toSorted(plansInGroup, (a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
-    const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
+    const [reorder] = useMutation(reorderSetlistPlans);
 
     const onDrop = async (args: ReactSmoothDnd.DropResult) => {
         // removedIndex is the previous index; the original item to be moved
@@ -548,14 +549,12 @@ const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, re
         assert(!!movingItem && !!newPositionItem, "moving item not found?");
 
         await snackbar.invokeAsync(async () => {
-            await updateSortOrderMutation.invoke({
-                tableID: db3.xSetlistPlan.tableID,
-                tableName: db3.xSetlistPlan.tableName,
-                movingItemId: movingItem.id,
-                newPositionItemId: newPositionItem.id,
-                scopeRowIds: plansInGroup.map(item => item.id),
-                groupByColumn: "groupId",
-                groupValue: group?.id ?? null,
+            await reorder({
+                kind: "plan",
+                movingPublicId: movingItem.publicId!,
+                newPositionPublicId: newPositionItem.publicId!,
+                scopePublicIds: plansInGroup.map(item => item.publicId!),
+                groupId: group?.publicId ?? null,
             });
             refetch();
         });
@@ -566,7 +565,7 @@ const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, re
         <div className="actionButtons">
             <CMSmallButton
                 onClick={() => {
-                    const newDoc = CreateNewSetlistPlan(getUniqueNegativeID(), "New Setlist Plan", group?.id || null,
+                    const newDoc = CreateNewSetlistPlan(getUniqueNegativeID(), "New Setlist Plan", group?.publicId || null,
                         dashboardContext.currentUser!.publicId);
                     onSelect(newDoc);
                 }}
@@ -580,9 +579,9 @@ const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, re
                 onDrop={onDrop}
             >
                 {plansInGroup.map((dbPlan) => (
-                    <ReactSmoothDndDraggable key={dbPlan.id}>
+                    <ReactSmoothDndDraggable key={dbPlan.publicId ?? dbPlan.draftId}>
                         <SetlistPlannerOverviewItem
-                            key={dbPlan.id}
+                            key={dbPlan.publicId ?? dbPlan.draftId}
                             dbPlan={dbPlan}
                             group={group}
                             onSelect={onSelect}
@@ -602,8 +601,8 @@ type SetlistPlannerDocumentOverviewProps = {
     groupTableClient: DB3Client.xTableRenderClient<typeof db3.setlistPlanGroupEditorView>;
     plans: SetlistPlan[];
     onSelect: (doc: SetlistPlan) => void;
-    expandedGroups: number[];
-    setExpandedGroups: (groups: number[]) => void;
+    expandedGroups: SetlistPlanGroupPublicId[];
+    setExpandedGroups: (groups: SetlistPlanGroupPublicId[]) => void;
     refetch: () => void;
 };
 
@@ -617,7 +616,7 @@ const SetlistPlannerDocumentOverview = ({ expandedGroups, setExpandedGroups, pla
     //const plansWithgroup = plans.filter(plan => !!plan.groupId);
     const groupedPlans = groupByMap(plansWithgroup, (x) => x.groupId!);
 
-    const isExpanded = (groupId: number) => expandedGroups.includes(groupId);
+    const isExpanded = (groupId: SetlistPlanGroupPublicId) => expandedGroups.includes(groupId);
 
     return <div className="SetlistPlannerDocumentOverviewList">
         {/* Display ungrouped plans at top level without accordion */}
@@ -635,13 +634,13 @@ const SetlistPlannerDocumentOverview = ({ expandedGroups, setExpandedGroups, pla
             props.groupTableClient.items.map((group) => {
                 const coloring = GetStyleVariablesForColor({ color: group.color, ...StandardVariationSpec.Strong });
 
-                const plansInGroup = groupedPlans.get(group.id) || [];
+                const plansInGroup = groupedPlans.get(group.publicId) || [];
                 //if (plansInGroup.length === 0) return null; // Skip empty groups
-                const expandedGroupsWithoutThisGroup = expandedGroups.filter(id => id !== group.id);
+                const expandedGroupsWithoutThisGroup = expandedGroups.filter(id => id !== group.publicId);
                 return <Accordion
-                    key={group.id}
-                    expanded={isExpanded(group.id)}
-                    onChange={() => setExpandedGroups(isExpanded(group.id) ? expandedGroupsWithoutThisGroup : [...expandedGroupsWithoutThisGroup, group.id])}
+                    key={group.publicId}
+                    expanded={isExpanded(group.publicId)}
+                    onChange={() => setExpandedGroups(isExpanded(group.publicId) ? expandedGroupsWithoutThisGroup : [...expandedGroupsWithoutThisGroup, group.publicId])}
                     className={`SetlistPlannerDocumentOverviewGroupAccordion ${coloring.cssClass}`}
                     style={{ border: "2px solid var(--color-background)", ...coloring.style }}
                 >
@@ -679,8 +678,8 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
     const [deleteSetlistPlanToken] = useMutation(deleteSetlistPlan);
     const [selectedTab, setSelectedTab] = React.useState<string>("overview");
     const [expandedGroups, setExpandedGroups] = useLocalStorageState({
-        key: 'setlist-planner-expanded-groups',
-        initialValue: [] as number[]
+        key: 'setlist-planner-expanded-groups-public-id',
+        initialValue: [] as SetlistPlanGroupPublicId[]
     });
     //const [showColorSchemeEditor, setShowColorSchemeEditor] = React.useState(false);
     //const [showAutocompleteConfig, setShowAutocompleteConfig] = React.useState(false);
@@ -717,7 +716,7 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
         tableSpec: DB3Client.defineTableClientSpec({
             view: db3.setlistPlanGroupEditorView,
             columns: DB3Client.makeClientColumnSelection(
-                SetlistPlanGroupClientColumns.id,
+                SetlistPlanGroupClientColumns.publicId,
                 SetlistPlanGroupClientColumns.name,
                 SetlistPlanGroupClientColumns.description,
                 SetlistPlanGroupClientColumns.color,
@@ -875,8 +874,12 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                 }
             },
             setDoc: (newDoc: SetlistPlan) => {
-                // do not clobber the existing document's id.
-                setDocWrapper({ ...newDoc, id: doc?.id || getUniqueNegativeID() });
+                // Keep the current document identity when applying generated content.
+                setDocWrapper({
+                    ...newDoc,
+                    publicId: doc?.publicId ?? null,
+                    draftId: doc?.publicId ? undefined : doc?.draftId ?? getUniqueNegativeID(),
+                });
             },
             setName: (name: string) => {
                 if (doc) {
@@ -1505,12 +1508,12 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                     isModified={modified}
                     onSave={async (doc) => {
                         void recordFeature({
-                            feature: doc.id <= 0 ? ActivityFeature.setlist_plan_create : ActivityFeature.setlist_plan_save,
-                            setlistPlanId: doc.id <= 0 ? undefined : doc.id,
+                            feature: doc.publicId ? ActivityFeature.setlist_plan_save : ActivityFeature.setlist_plan_create,
+                            setlistPlanId: doc.publicId ?? undefined,
                         });
                         void snackbar.invokeAsync(async () => {
                             const newDoc = await upsertSetlistPlanToken(doc);
-                            // because PKs change
+                            // Replace the local draft key with the persisted public ID.
                             setDoc(newDoc);
                             setModified(false);
                             void refetch();
@@ -1528,10 +1531,10 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                         if (await confirm({ title: "Are you sure you want to delete this setlist plan?" })) {
                             void recordFeature({
                                 feature: ActivityFeature.setlist_plan_delete,
-                                setlistPlanId: doc.id <= 0 ? undefined : doc.id,
+                                setlistPlanId: doc.publicId ?? undefined,
                             });
                             void snackbar.invokeAsync(async () => {
-                                await deleteSetlistPlanToken({ id: doc.id });
+                                if (doc.publicId) await deleteSetlistPlanToken(doc.publicId);
                                 setModified(false);
                                 setDoc(null);
                                 setSelectedTab("overview");

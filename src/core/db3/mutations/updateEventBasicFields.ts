@@ -1,5 +1,6 @@
 // updateEventBasicFields
-import { resolver, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
@@ -9,7 +10,7 @@ import { TupdateEventBasicFieldsArgs } from "../shared/apiTypes";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.login),
+    cmauthorize(Permission.login),
     async (args: TupdateEventBasicFieldsArgs, ctx: CMAuthenticatedCtx) => {
         const auth = ctx.auth;
         const eventId = await resolvePublicId(db3.xEvent, args.eventId, auth, db, true);

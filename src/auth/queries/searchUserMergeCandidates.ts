@@ -7,8 +7,6 @@ import { canManageUser } from "../server/userManagementPolicy";
 import { publicMergeResponse } from "../server/userMerge/publicResponse";
 import { makeUserManagementTarget } from "../server/userManagementState";
 import { UserPublicIdSchema } from "../schemas";
-import { resolvePublicId } from "@/src/core/db3/server/db3PublicIds";
-import { xUser } from "@/src/core/db3/db3";
 import { PUBLIC_ID_LENGTH } from "@/shared/publicId";
 
 const schema = z.object({

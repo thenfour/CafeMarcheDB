@@ -1,4 +1,5 @@
-import { resolver } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc"
+import { cmauthorize } from "@/src/auth/server/cmResolver";
 import type { CMCtx } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
 import { CreateChangeContext } from "shared/activityLog";
@@ -13,7 +14,7 @@ import { writeSettingValue } from "../server/settingWrite";
 
 export default resolver.pipe(
     resolver.zod(SiteBrandingSettingsSchema),
-    resolver.cmauthorize(Permission.manage_site_branding),
+    cmauthorize(Permission.manage_site_branding),
     async (settings: SiteBrandingSettings, ctx: CMCtx) => {
         const result = await db.$transaction(async tx => {
             (await ctx.auth.refresh(tx)).requirePermission(Permission.manage_site_branding);

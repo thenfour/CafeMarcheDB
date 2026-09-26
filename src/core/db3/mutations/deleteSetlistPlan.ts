@@ -1,27 +1,30 @@
+import { cmauthorize } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
-import { z } from "zod";
-import * as mutationCore from "../server/db3mutationCore";
+import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
+import { xSetlistPlan } from "../shared/schema/setlistPlan";
 
 export default resolver.pipe(
-    resolver.authorize(Permission.setlist_planner_access),
-    resolver.zod(z.object({ id: z.number() })),
-    async (args, ctx: AuthenticatedCtx): Promise<void> => {
+    cmauthorize(Permission.setlist_planner_access),
+    resolver.zod(xSetlistPlan.identitySchema),
+    async (args, ctx): Promise<void> => {
 
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        if (!currentUser) {
-            throw new Error("No current user");
-        }
+        // TODO: use queryView for correct auth & sanitization
 
-        if (args.id < 0) {
-            return; // quiet success
-        }
+        const existing = await db.setlistPlan.findFirst({
+            where: await GetAuthorizedTableReadWhere({
+                table: xSetlistPlan,
+                currentUser: ctx.auth.user,
+                where: { publicId: args },
+            }),
+            select: { id: true },
+        });
+        if (!existing) throw new Error("Setlist plan was not found.");
 
         await db.setlistPlan.update({
             where: {
-                id: args.id,
+                id: existing.id,
             },
             data: {
                 isDeleted: true,

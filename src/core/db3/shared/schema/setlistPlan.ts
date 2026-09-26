@@ -1,7 +1,8 @@
 
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
+import type { SetlistPlanGroupPublicId, SetlistPlanPublicId } from "shared/publicId";
+import { foreignRef, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
@@ -26,6 +27,7 @@ const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
 
 const SetlistPlanGroupArgs = Prisma.validator<Prisma.SetlistPlanGroupDefaultArgs>()({
     include: {
+        createdByUser: { select: { publicId: true } },
     }
 });
 
@@ -56,7 +58,7 @@ export const SetlistPlanGroupNaturalOrderBy: Prisma.SetlistPlanGroupOrderByWithR
 ////////////////////////////////////////////////////////////////
 export const xSetlistPlanGroup = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.SetlistPlanGroupDelegate>(),
-    getIdentity: (group: { id: number }) => group.id,
+    getIdentity: (group: { publicId: SetlistPlanGroupPublicId }) => group.publicId,
     getSelectionArgs: (): Prisma.SetlistPlanGroupDefaultArgs => {
         return SetlistPlanGroupArgs;
     },
@@ -65,7 +67,7 @@ export const xSetlistPlanGroup = db3.defineTable({
     sortOrderPolicy: { groupingColumn: null, scope: "explicitRowIds" },
     naturalOrderBy: SetlistPlanGroupNaturalOrderBy,
     getRowInfo: (row: SetlistPlanGroupPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.name,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
@@ -74,7 +76,8 @@ export const xSetlistPlanGroup = db3.defineTable({
     }),
     tableAuthMap: xTableAuthMap,
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "never" }),
+        publicId: () => MakePublicIdField<SetlistPlanGroupPublicId>(),
         name: columnName => MakeTitleField(columnName, { authMap: xAuthMap, }),
         description: () => MakeDescriptionField({ authMap: xAuthMap, }),
         color: () => MakeColorField({ authMap: xAuthMap, }),
@@ -103,6 +106,7 @@ export const SetlistPlanNaturalOrderBy: Prisma.SetlistPlanOrderByWithRelationInp
 ////////////////////////////////////////////////////////////////
 export const xSetlistPlan = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.SetlistPlanDelegate>(),
+    getIdentity: (plan: { publicId: SetlistPlanPublicId }) => plan.publicId,
     getSelectionArgs: (): Prisma.SetlistPlanDefaultArgs => {
         return {};
     },
@@ -113,14 +117,15 @@ export const xSetlistPlan = db3.defineTable({
     sortOrderPolicy: { groupingColumn: "groupId", scope: "explicitRowIds" },
     naturalOrderBy: SetlistPlanNaturalOrderBy,
     getRowInfo: (row: SetlistPlanPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.name,
         description: row.description,
         ownerUserId: row.createdByUserId,
     }),
     tableAuthMap: xTableAuthMap,
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "never" }),
+        publicId: () => MakePublicIdField<SetlistPlanPublicId>(),
         name: columnName => MakeTitleField(columnName, { authMap: xAuthMap, }),
         description: () => MakeDescriptionField({ authMap: xAuthMap, }),
         sortOrder: () => MakeSortOrderField({ authMap: xAuthMap, }),
@@ -129,7 +134,11 @@ export const xSetlistPlan = db3.defineTable({
         createdByUser: () => MakeCreatedByField(),
         visiblePermission: () => MakeVisiblePermissionField({ authMap: xAuthMap }),
 
-        groupId: memberName => new GhostField({ memberName, authMap: xAuthMap }),
+        group: foreignRef(() => xSetlistPlanGroup, {
+            fkidMember: "groupId",
+            allowNull: true,
+            authMap: xAuthMap,
+        }),
         payloadJson: memberName => new GhostField({ memberName, authMap: xAuthMap }),
     })
 });

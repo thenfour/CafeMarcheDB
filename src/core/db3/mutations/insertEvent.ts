@@ -1,16 +1,16 @@
-// insertEvent
-import { resolver, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import { assert } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { TinsertEventArgs } from "../shared/apiTypes";
 import { authorizeAndProjectDB3ViewModel, resolvePublicForeignIds, resolvePublicId } from "../server/db3PublicIds";
+import { TinsertEventArgs } from "../shared/apiTypes";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.login),
+    cmauthorize(Permission.login),
     async (args: TinsertEventArgs, ctx: CMAuthenticatedCtx) => {
 
         return db.$transaction(async tx => {

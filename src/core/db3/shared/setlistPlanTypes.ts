@@ -1,7 +1,7 @@
 import type { Nullish } from "@/shared/rootroot";
 import { Prisma } from "db";
 import { QuickSearchItemType } from "shared/quickFilter";
-import { isPublicId, type PermissionPublicId, type UserPublicId } from "shared/publicId";
+import { isPublicId, type PermissionPublicId, type SetlistPlanGroupPublicId, type UserPublicId } from "shared/publicId";
 import { z } from "zod";
 import * as db3 from "../db3";
 
@@ -116,9 +116,10 @@ export const ZSetlistPlanPayload = z.object({
 export type SetlistPlanPayload = z.infer<typeof ZSetlistPlanPayload>;
 
 export const ZSetlistPlan = z.object({
-    id: z.number(), // negative = new
+    publicId: db3.xSetlistPlan.identitySchema.nullable(),
+    draftId: z.number().int().negative().optional(), // Local key for an unsaved plan.
     name: z.string(),
-    groupId: z.number().nullable().optional(),
+    groupId: db3.xSetlistPlanGroup.identitySchema.nullable().optional(),
     sortOrder: z.number().optional(),
     description: z.string(),
     createdAt: z.date(),
@@ -127,7 +128,7 @@ export const ZSetlistPlan = z.object({
     visiblePermissionId: z.custom<PermissionPublicId>(isPublicId).nullable(),
     // NOTE: Adding non-primitives (e.g. Date) here will cause issues with serialization to/from JSON.
     // make sure deserialization and paste from clipboard gets updated if you do that.
-});
+}).strict();
 
 export type SetlistPlan = z.infer<typeof ZSetlistPlan>;
 
@@ -152,7 +153,8 @@ export const CreatePastedSetlistPlanPreservingMetadata = ({
 }): SetlistPlan => {
     return {
         ...pastedPlan,
-        id: existingPlan.id,
+        publicId: existingPlan.publicId,
+        draftId: existingPlan.draftId,
         name: existingPlan.name,
         groupId: existingPlan.groupId,
         sortOrder: existingPlan.sortOrder,
@@ -166,10 +168,11 @@ export const CreatePastedSetlistPlanPreservingMetadata = ({
 };
 
 // doesn't serialize to db.
-export const CreateNewSetlistPlan = (id: number, name: string, groupId: number | Nullish, createdByUserId: UserPublicId): SetlistPlan => {
+export const CreateNewSetlistPlan = (draftId: number, name: string, groupId: SetlistPlanGroupPublicId | Nullish, createdByUserId: UserPublicId): SetlistPlan => {
     //if (!dashboardContext.currentUser) throw new Error("must be logged in to create a new setlist plan");
     return {
-        id,
+        publicId: null,
+        draftId,
         createdByUserId,
         createdAt: new Date(),
         name,
@@ -191,6 +194,7 @@ export const SetlistPlanWithVisibilityArgs = Prisma.validator<Prisma.SetlistPlan
             select: { publicId: true },
         },
         createdByUser: { select: { publicId: true } },
+        group: { select: { publicId: true } },
     },
 });
 
@@ -215,13 +219,13 @@ export const DeserializeSetlistPlan = (obj: SetlistPlanWithVisibilityPayload): S
         createdByUserId: db3.xUser.parseIdentity(obj.createdByUser.publicId),
         createdAt: obj.createdAt,
         description: obj.description,
-        id: obj.id,
+        publicId: db3.xSetlistPlan.parseIdentity(obj.publicId),
         name: obj.name,
         sortOrder: obj.sortOrder,
         visiblePermissionId: obj.visiblePermission
             ? db3.xPermission.parseIdentity(obj.visiblePermission.publicId)
             : null,
-        groupId: obj.groupId || null,
+        groupId: obj.group ? db3.xSetlistPlanGroup.parseIdentity(obj.group.publicId) : null,
         payload,
     };
 }

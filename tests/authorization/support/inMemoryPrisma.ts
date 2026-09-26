@@ -137,6 +137,14 @@ const testRelations: Record<string, Record<string, Relation>> = {
   change: {
     user: { table: "user", local: "userId", foreign: "id" },
   },
+  setlistPlan: {
+    createdByUser: { table: "user", local: "createdByUserId", foreign: "id" },
+    visiblePermission: { table: "permission", local: "visiblePermissionId", foreign: "id" },
+    group: { table: "setlistPlanGroup", local: "groupId", foreign: "id" },
+  },
+  setlistPlanGroup: {
+    createdByUser: { table: "user", local: "createdByUserId", foreign: "id" },
+  },
 }
 
 export class InMemoryDelegate {
@@ -193,7 +201,7 @@ export class InMemoryDelegate {
     return (await this.findMany(args)).length
   }
 
-  async create(args: { data: Omit<TestRow, "id"> & Partial<Pick<TestRow, "id">> }) {
+  async create(args: { data: Omit<TestRow, "id"> & Partial<Pick<TestRow, "id">>; select?: Record<string, unknown>; include?: Record<string, unknown> }) {
     const nextId = this.rows.reduce((highest, row) => Math.max(highest, row.id), 0) + 1
     const row = this.normalizeWrite(requireTestRow({
       ...clone(this.createDefaults),
@@ -201,14 +209,14 @@ export class InMemoryDelegate {
       id: args.data.id ?? nextId,
     }))
     this.rows.push(row)
-    return clone(row)
+    return clone(this.readRelations(clone(row), args))
   }
 
-  async update(args: { where: { id: number }; data: Record<string, unknown> }) {
+  async update(args: { where: { id: number }; data: Record<string, unknown>; select?: Record<string, unknown>; include?: Record<string, unknown> }) {
     const index = this.rows.findIndex((row) => row.id === args.where.id)
     if (index < 0) throw new Error(`In-memory row ${args.where.id} was not found`)
     this.rows[index] = this.normalizeWrite(requireTestRow({ ...this.rows[index], ...clone(args.data) }))
-    return clone(this.rows[index])
+    return clone(this.readRelations(clone(this.rows[index]), args))
   }
 
   async updateMany(args: { where?: Record<string, unknown>; data: Record<string, unknown> }) {
@@ -313,6 +321,10 @@ class AuthorizationTestDatabase {
           ? { isDeleted: false }
           : prismaDelegateName === "event"
             ? { isDeleted: false, startsAt: null, durationMillis: BigInt(0), isAllDay: true }
+            : prismaDelegateName === "setlistPlan"
+              ? { createdAt: new Date(), sortOrder: 0, isDeleted: false }
+            : prismaDelegateName === "setlistPlanGroup"
+              ? { createdAt: new Date(), sortOrder: 0 }
             : {},
         (row, args) => this.readRelations(prismaDelegateName, row, args),
         async rows => {

@@ -1,5 +1,6 @@
-import { resolver } from "@/src/auth/server/cmResolver";
 import type { CMCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import { paginate } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
@@ -11,7 +12,7 @@ interface GetInput__
     > { }
 
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.sysadmin),
+    cmauthorize(Permission.sysadmin),
     async ({ where, orderBy, skip, take }: GetInput__, ctx: CMCtx) => {
         try {
             (await ctx.auth.refresh(db)).requirePermission(Permission.sysadmin);

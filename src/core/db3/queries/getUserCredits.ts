@@ -1,4 +1,5 @@
-import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import { Permission } from "shared/permissions";
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
 import * as db3 from "../db3";
@@ -12,7 +13,7 @@ import { queryView } from "../server/db3QueryCore";
 // };
 
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.manage_users), // ?
+    cmauthorize(Permission.manage_users), // ?
     resolver.zod(ZGetUserEventAttendanceArgrs),
     async (args, ctx: CMCtx) => {
         const authorization = ctx.auth;

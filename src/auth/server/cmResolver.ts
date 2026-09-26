@@ -1,4 +1,4 @@
-import { resolver as blitzResolver } from "@blitzjs/rpc";
+//import { resolver as blitzResolver } from "@blitzjs/rpc";
 import type { AuthenticatedCtx, Ctx } from "blitz";
 import { Permission } from "shared/permissions";
 import type { UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
@@ -15,9 +15,9 @@ interface ContextResult<TInput, TContext> {
     readonly ctx: TContext;
 }
 
-function cmauthorize(permission: typeof Permission.login): <TInput>(input: TInput, ctx: Ctx) => ContextResult<TInput, CMAuthenticatedCtx>;
-function cmauthorize(permission: Permission): <TInput>(input: TInput, ctx: Ctx) => ContextResult<TInput, CMCtx>;
-function cmauthorize(permission: Permission) {
+export function cmauthorize(permission: typeof Permission.login): <TInput>(input: TInput, ctx: Ctx) => ContextResult<TInput, CMAuthenticatedCtx>;
+export function cmauthorize(permission: Permission): <TInput>(input: TInput, ctx: Ctx) => ContextResult<TInput, CMCtx>;
+export function cmauthorize(permission: Permission) {
     const middleware = async <TInput>(input: TInput, ctx: Ctx) => {
         const auth = await loadAuthorization(ctx.session);
         auth.requirePermission(permission);
@@ -33,4 +33,5 @@ function cmauthorize(permission: Permission) {
     return middleware as unknown as <TInput>(input: TInput, ctx: Ctx) => ContextResult<TInput, CMCtx>;
 }
 
-export const resolver = { ...blitzResolver, cmauthorize };
+// this is fun but not necessary and import resolution is awkward. just use cmauthorize()
+// export const resolver = { ...blitzResolver, cmauthorize };

@@ -1,5 +1,5 @@
-import { db3Server } from "../server/db3Server";
-import { resolver, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import { AuthorizationError, NotFoundError } from "blitz";
 import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
@@ -7,6 +7,7 @@ import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { resolvePublicId, resolvePublicIds } from "../server/db3PublicIds";
+import { db3Server } from "../server/db3Server";
 import {
     TupdateUserEventAttendanceMutationArgs,
     ZupdateUserEventAttendanceMutationArgs,
@@ -21,7 +22,7 @@ export class EventAttendanceAuthorizationError extends AuthorizationError {
 }
 
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.login),
+    cmauthorize(Permission.login),
     resolver.zod(ZupdateUserEventAttendanceMutationArgs),
     async (args: TupdateUserEventAttendanceMutationArgs, ctx: CMAuthenticatedCtx) => {
         const currentUser = ctx.auth.user;

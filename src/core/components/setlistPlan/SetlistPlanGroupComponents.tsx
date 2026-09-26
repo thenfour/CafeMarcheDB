@@ -1,7 +1,6 @@
 import { assert } from "blitz";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
-import { API } from "../../db3/clientAPI";
 import * as db3 from "../../db3/db3";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from "../../db3/components/db3NewObjectDialog";
 import { gIconMap } from "../../db3/components/IconMap";
@@ -14,39 +13,42 @@ import { CMSingleSelect } from "../select/CMSelect";
 import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import { ColorSwatch } from "../color/ColorSwatch";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import type { SetlistPlanGroupPublicId } from "shared/publicId";
+import reorderSetlistPlans from "../../db3/mutations/reorderSetlistPlans";
+import { useMutation } from "@blitzjs/rpc";
 
 interface SetlistPlanGroupSelectProps {
     tableClient: DB3Client.xTableRenderClient<typeof db3.setlistPlanGroupEditorView>
-    selectedGroupId?: number | null;
+    selectedGroupId?: SetlistPlanGroupPublicId | null;
     onChange: (group: db3.SetlistPlanGroupEditorClient | null) => void;
 };
 
 export const SetlistPlanGroupSelect = ({ tableClient, selectedGroupId, onChange }: SetlistPlanGroupSelectProps) => {
     const items = tableClient.items;
-    return <CMSingleSelect<number>
-        renderOption={(groupId) => items.find(g => g.id === groupId)?.name || "Unknown Group"}
+    return <CMSingleSelect<SetlistPlanGroupPublicId>
+        renderOption={(groupId) => items.find(g => g.publicId === groupId)?.name || "Unknown Group"}
         getOptionInfo={(groupId) => {
-            const group = items.find(g => g.id === groupId)!;
+            const group = items.find(g => g.publicId === groupId)!;
             return {
                 label: group.name,
-                value: group.id,
+                value: group.publicId,
                 tooltip: group.description,
                 color: group.color?.id ?? null,
-                id: group.id,
+                id: group.publicId,
             };
         }}
-        getOptions={() => items.map(g => g.id)}
+        getOptions={() => items.map(g => g.publicId)}
         value={selectedGroupId || null}
         nullBehavior={CMSelectNullBehavior.AllowNull}
         onChange={groupId => {
-            const group = items.find(g => g.id === groupId) || null;
+            const group = items.find(g => g.publicId === groupId) || null;
             onChange(group);
         }}
     />;
 };
 
 export const SetlistPlanGroupClientColumns = DB3Client.makeClientColumnSet({
-    id: columnName => new DB3Client.PKColumnClient({ columnName }),
+    publicId: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 140 }),
     name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250 }),
     description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
     color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 100 }),
@@ -78,7 +80,7 @@ export const SetlistPlanGroupListItem = (props: SetlistPlanGroupListItemProps) =
         const confirmed = await confirm({});
         if (!confirmed) return;
         await snackbar.invokeAsync(async () => {
-            await commands.delete(props.group.id);
+            await commands.delete(props.group.publicId);
         });
     };
 
@@ -123,7 +125,7 @@ interface SetlistPlanGroupListProps {
 export const SetlistPlanGroupList = (props: SetlistPlanGroupListProps) => {
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
-    const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
+    const [reorder] = useMutation(reorderSetlistPlans);
     const commands = DB3Client.useCrudViewCommands({
         view: db3.setlistPlanGroupEditorView,
         tableClient: props.tableClient,
@@ -150,12 +152,11 @@ export const SetlistPlanGroupList = (props: SetlistPlanGroupListProps) => {
         assert(!!movingItem && !!newPositionItem, "moving item not found?");
 
         await snackbar.invokeAsync(async () => {
-            await updateSortOrderMutation.invoke({
-                tableID: client.schema.tableID,
-                tableName: client.schema.tableName,
-                movingItemId: movingItem.id,
-                newPositionItemId: newPositionItem.id,
-                scopeRowIds: items.map(item => item.id),
+            await reorder({
+                kind: "group",
+                movingPublicId: movingItem.publicId,
+                newPositionPublicId: newPositionItem.publicId,
+                scopePublicIds: items.map(item => item.publicId),
             });
             client.refetch();
         });
@@ -177,8 +178,8 @@ export const SetlistPlanGroupList = (props: SetlistPlanGroupListProps) => {
                 onDrop={onDrop}
             >
                 {props.tableClient.items.map((group) => (
-                    <ReactSmoothDndDraggable key={group.id}>
-                        <SetlistPlanGroupListItem key={group.id} tableClient={props.tableClient} group={group} />
+                    <ReactSmoothDndDraggable key={group.publicId}>
+                        <SetlistPlanGroupListItem key={group.publicId} tableClient={props.tableClient} group={group} />
                     </ReactSmoothDndDraggable>
                 ))}
             </ReactSmoothDndContainer>

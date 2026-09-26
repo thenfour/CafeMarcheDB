@@ -11,6 +11,7 @@ import {
     type InstrumentPublicId,
     type SongCreditTypePublicId,
     type SongPublicId,
+    type SetlistPlanPublicId,
 } from "shared/publicId";
 import { isPublicId } from "shared/publicId";
 import { z } from "zod";
@@ -37,6 +38,10 @@ function projectActivityGalleryItem(value: { publicId: string } | null) {
     return value ? { publicId: db3.xFrontpageGalleryItem.parseIdentity(value.publicId) } : null;
 }
 
+function projectActivityPlan(value: { publicId: string; name: string } | null) {
+    return value ? { publicId: db3.xSetlistPlan.parseIdentity(value.publicId), name: value.name } : null;
+}
+
 // manually run script to redact these in the database.
 // export const redactLegacyNumericUserRoute = (uri: string | null): string | null =>
 //     uri?.replace(/(\/backstage\/user\/)\d+(?=\/|[?#]|$)/gi, "$1[legacy-user]") ?? null;
@@ -61,7 +66,7 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
         },
         frontpageGalleryItem: { select: { publicId: true } },
         menuLink: { select: { id: true, caption: true } },
-        setlistPlan: { select: { id: true, name: true } },
+        setlistPlan: { select: { publicId: true, name: true } },
         songCreditType: {
             select: {
                 publicId: true,
@@ -74,7 +79,7 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
 type GeneralActivityReportDetailDbPayload = Prisma.ActionGetPayload<typeof GeneralActivityReportDetailArgs>;
 export type GeneralActivityReportDetailPayload = Omit<
     GeneralActivityReportDetailDbPayload,
-    "user" | "userId" | "event" | "eventId" | "song" | "songId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment" | "frontpageGalleryItemId" | "frontpageGalleryItem"
+    "user" | "userId" | "event" | "eventId" | "song" | "songId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment" | "frontpageGalleryItemId" | "frontpageGalleryItem" | "setlistPlanId" | "setlistPlan"
 > & {
     userHash: string | null;
     songId: SongPublicId | null;
@@ -88,6 +93,8 @@ export type GeneralActivityReportDetailPayload = Omit<
     eventSongList: ReturnType<typeof projectActivitySetlist>;
     frontpageGalleryItemId: FrontpageGalleryItemPublicId | null;
     frontpageGalleryItem: ReturnType<typeof projectActivityGalleryItem>;
+    setlistPlanId: SetlistPlanPublicId | null;
+    setlistPlan: ReturnType<typeof projectActivityPlan>;
     eventId: EventPublicId | null;
     event: { publicId: EventPublicId; name: string; startsAt: Date | null } | null;
 };
@@ -96,7 +103,7 @@ export function projectGeneralActivityReportDetailItem(
     row: GeneralActivityReportDetailDbPayload,
     userHash: string | null,
 ): GeneralActivityReportDetailPayload {
-    const { userId: _userId, event, eventId: _eventId, song, songId: _songId, songCreditType, songCreditTypeId: _songCreditTypeId, ...rest } = row;
+    const { userId: _userId, event, eventId: _eventId, song, songId: _songId, songCreditType, songCreditTypeId: _songCreditTypeId, setlistPlanId: _setlistPlanId, setlistPlan: _setlistPlan, ...rest } = row;
     return {
         ...rest,
         uri: row.uri,
@@ -109,6 +116,8 @@ export function projectGeneralActivityReportDetailItem(
         eventSongList: projectActivitySetlist(row.eventSongList),
         eventSongListId: row.eventSongList ? db3.xEventSongList.parseIdentity(row.eventSongList.publicId) : null,
         frontpageGalleryItem: projectActivityGalleryItem(row.frontpageGalleryItem),
+        setlistPlan: projectActivityPlan(row.setlistPlan),
+        setlistPlanId: row.setlistPlan ? db3.xSetlistPlan.parseIdentity(row.setlistPlan.publicId) : null,
         frontpageGalleryItemId: row.frontpageGalleryItem
             ? db3.xFrontpageGalleryItem.parseIdentity(row.frontpageGalleryItem.publicId)
             : null,
@@ -347,7 +356,7 @@ const GetFeatureReportDetailResultArgsUnvalidated /*: Prisma.ActionDefaultArgs*/
         eventSongList: { select: { publicId: true, name: true, event: { select: { publicId: true } } } },
         frontpageGalleryItem: { select: { publicId: true } },
         menuLink: { select: { id: true, caption: true } },
-        setlistPlan: { select: { id: true, name: true } },
+        setlistPlan: { select: { publicId: true, name: true } },
         songCreditType: {
             select: {
                 publicId: true,
@@ -373,7 +382,7 @@ type GetFeatureReportDetailDbPayload = Prisma.ActionGetPayload<typeof GetFeature
 type FeatureReportSongCreditType = NonNullable<GetFeatureReportDetailDbPayload["songCreditType"]>;
 export type GetFeatureReportDetailItemPayload = Omit<
     GetFeatureReportDetailDbPayload,
-    "userId" | "instrument" | "event" | "eventId" | "song" | "songId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment" | "frontpageGalleryItemId" | "frontpageGalleryItem"
+    "userId" | "instrument" | "event" | "eventId" | "song" | "songId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment" | "frontpageGalleryItemId" | "frontpageGalleryItem" | "setlistPlanId" | "setlistPlan"
 > & {
     instrumentId: InstrumentPublicId | null;
     songId: SongPublicId | null;
@@ -387,6 +396,8 @@ export type GetFeatureReportDetailItemPayload = Omit<
     eventSongList: ReturnType<typeof projectActivitySetlist>;
     frontpageGalleryItemId: FrontpageGalleryItemPublicId | null;
     frontpageGalleryItem: ReturnType<typeof projectActivityGalleryItem>;
+    setlistPlanId: SetlistPlanPublicId | null;
+    setlistPlan: ReturnType<typeof projectActivityPlan>;
     songCreditType: null | (Omit<FeatureReportSongCreditType, "publicId"> & {
         publicId: SongCreditTypePublicId;
     });
@@ -410,6 +421,8 @@ export function projectFeatureReportDetailItem(
         songId: _songId,
         songCreditType,
         songCreditTypeId: _songCreditTypeId,
+        setlistPlanId: _setlistPlanId,
+        setlistPlan: _setlistPlan,
         ...rest
     } = row;
     return {
@@ -424,6 +437,8 @@ export function projectFeatureReportDetailItem(
         eventSongList: projectActivitySetlist(row.eventSongList),
         eventSongListId: row.eventSongList ? db3.xEventSongList.parseIdentity(row.eventSongList.publicId) : null,
         frontpageGalleryItem: projectActivityGalleryItem(row.frontpageGalleryItem),
+        setlistPlan: projectActivityPlan(row.setlistPlan),
+        setlistPlanId: row.setlistPlan ? db3.xSetlistPlan.parseIdentity(row.setlistPlan.publicId) : null,
         frontpageGalleryItemId: row.frontpageGalleryItem
             ? db3.xFrontpageGalleryItem.parseIdentity(row.frontpageGalleryItem.publicId)
             : null,

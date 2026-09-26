@@ -1,14 +1,15 @@
 
-import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
+import { assertIsNumberArray } from "@/shared/arrayUtils";
+import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
-import { GetSongActivityReportArgs, GetSongActivityReportRet, GetSongActivityReportRetEvent } from "../shared/apiTypes";
 import { resolvePublicId, resolvePublicIds } from "../server/db3PublicIds";
-import { assertIsNumberArray } from "@/shared/arrayUtils";
+import { GetSongActivityReportArgs, GetSongActivityReportRet, GetSongActivityReportRetEvent } from "../shared/apiTypes";
 
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.view_songs),
+    cmauthorize(Permission.view_songs),
     async (args: GetSongActivityReportArgs, ctx: CMCtx): Promise<GetSongActivityReportRet> => {
         try {
             const u = ctx.auth.user;

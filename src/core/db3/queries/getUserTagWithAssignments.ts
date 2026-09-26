@@ -1,4 +1,5 @@
-import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import { Permission } from "shared/permissions";
 import { isPublicId, type UserTagPublicId } from "shared/publicId";
 import { z } from "zod";
@@ -10,7 +11,7 @@ const ZInp = z.object({
 });
 
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.public),
+    cmauthorize(Permission.public),
     resolver.zod(ZInp),
     async (args, ctx: CMCtx) => {
         const authorization = ctx.auth;

@@ -489,7 +489,7 @@ describe("DB3 commands", () => {
         expect(db3.userInstrumentEditorView.crud.operations.delete.deleteType).toBe("hard");
 
         expect(db3.setlistPlanGroupEditorView.parseDto({
-            id: 11,
+            publicId: "SetlistGroup0001",
             name: "First half",
             description: "Opening material",
             color: "blue",
@@ -497,19 +497,19 @@ describe("DB3 commands", () => {
             createdByUserId: userPublicId(6),
             createdAt: new Date("2026-09-21T12:00:00.000Z"),
         })).toMatchObject({
-            id: 11,
+            publicId: "SetlistGroup0001",
             name: "First half",
             sortOrder: 1,
         });
         expect(db3.setlistPlanGroupEditorView.crud.operations.update.command.parseDto({
-            identity: 11,
+            identity: "SetlistGroup0001",
             patch: {
                 name: "Opening half",
                 description: "Start here",
                 color: "green",
             },
         })).toEqual({
-            identity: 11,
+            identity: "SetlistGroup0001",
             patch: {
                 name: "Opening half",
                 description: "Start here",
@@ -517,7 +517,7 @@ describe("DB3 commands", () => {
             },
         });
         expect(() => db3.setlistPlanGroupEditorView.crud.operations.update.command.parseDto({
-            identity: 11,
+            identity: "SetlistGroup0001",
             patch: { setlistPlans: [] },
         })).toThrow();
         expect(db3.setlistPlanGroupEditorView.crud.operations.delete.deleteType).toBe("hard");

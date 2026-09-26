@@ -1,4 +1,5 @@
-import { resolver } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc"
+import { cmauthorize } from "@/src/auth/server/cmResolver";
 import type { CMCtx } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
 import { CreateChangeContext } from "shared/activityLog";
@@ -9,7 +10,7 @@ import { writeSettingValue } from "../server/settingWrite";
 
 export default resolver.pipe(
     resolver.zod(UpdateBulkSettingsSchema),
-    resolver.cmauthorize(Permission.sysadmin),
+    cmauthorize(Permission.sysadmin),
     async (items, ctx: CMCtx) => {
         await db.$transaction(async tx => {
             (await ctx.auth.refresh(tx)).requirePermission(Permission.sysadmin);

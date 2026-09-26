@@ -1,16 +1,17 @@
 
-import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
+import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
+import type { EventPublicId, EventStatusPublicId, EventTagPublicId, EventTypePublicId, UserTagPublicId } from "shared/publicId";
+import { SplitQuickFilter } from "shared/quickFilter";
 import { DateSortPredicateAsc, DateSortPredicateDesc } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
+import { resolvePublicIds } from "../server/db3PublicIds";
 import { queryView } from "../server/db3QueryCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter } from "../shared/apiTypes";
-import { SplitQuickFilter } from "shared/quickFilter";
-import { MysqlEscape } from "shared/mysqlUtils";
-import type { EventPublicId, EventStatusPublicId, EventTagPublicId, EventTypePublicId, UserTagPublicId } from "shared/publicId";
-import { resolvePublicIds } from "../server/db3PublicIds";
 
 interface TArgs {
     filterSpec: {
@@ -30,7 +31,7 @@ interface TArgs {
 };
 
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.view_events_nonpublic),
+    cmauthorize(Permission.view_events_nonpublic),
     async (args: TArgs, ctx: CMCtx): Promise<GetEventFilterInfoRet> => {
         try {
             const u = ctx.auth.user;

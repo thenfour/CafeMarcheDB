@@ -1,4 +1,5 @@
-import { resolver } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
+import { cmauthorize } from "@/src/auth/server/cmResolver";
 import db from "db";
 import { Permission } from "shared/permissions";
 import {
@@ -7,7 +8,7 @@ import {
 import { queryView } from "src/core/db3/server/db3QueryCore";
 
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.sysadmin),
+    cmauthorize(Permission.sysadmin),
     async (_params: unknown, ctx) => {
         const auth = await ctx.auth.refresh(db);
         auth.requirePermission(Permission.sysadmin);

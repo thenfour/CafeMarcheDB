@@ -5,7 +5,7 @@ import { xSetlistPlanGroup } from "../../schema/setlistPlan";
 import { xUser } from "../../schema/user";
 
 const SetlistPlanGroupEditorDtoSchema = z.object({
-    id: z.number().int(),
+    publicId: xSetlistPlanGroup.identitySchema,
     name: z.string(),
     description: z.string(),
     color: z.string().nullable(),
@@ -18,6 +18,7 @@ export const setlistPlanGroupEditorView = defineCrudView({
     viewID: "SetlistPlanGroup_Editor",
     entity: xSetlistPlanGroup,
     operations: { create: true, update: true, delete: true },
+    selection: { include: { createdByUser: { select: { publicId: true } } } },
     dtoSchema: SetlistPlanGroupEditorDtoSchema,
     hydrate: dto => xSetlistPlanGroup.getClientModel(dto, "view"),
 });

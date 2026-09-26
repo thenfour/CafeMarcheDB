@@ -93,8 +93,15 @@ async function CorrectPublicIds(delegate: PublicIdRepairDelegate, modelName: str
     const replacementCount = await repairPublicIdPlaceholders({
         delegate,
         modelName,
+        onBegin: (placeholderCount) => {
+            console.log(`CORRECTING table ${modelName}: ${placeholderCount} public IDs need to be generated...`);
+        },
     });
-    console.log(`Replaced ${replacementCount} ${modelName} public-ID placeholders.`);
+    if (replacementCount === 0) {
+        console.log(`Public ID conformant for table ${modelName}`);
+    } else {
+        console.log(`Replaced ${replacementCount} ${modelName} public-ID placeholders.`);
+    }
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
@@ -269,6 +276,8 @@ export async function registerNodeInstrumentation() {
     await CorrectPublicIds(db.file, "File");
     await CorrectPublicIds(db.frontpageGalleryItem, "FrontpageGalleryItem");
     await CorrectPublicIds(db.user, "User");
+    await CorrectPublicIds(db.setlistPlanGroup, "SetlistPlanGroup");
+    await CorrectPublicIds(db.setlistPlan, "SetlistPlan");
     await CorrectPublicIds(db.songCreditType, "SongCreditType");
     await CorrectPublicIds(db.songCredit, "SongCredit");
     await CorrectPublicIds(db.fileTag, "FileTag");

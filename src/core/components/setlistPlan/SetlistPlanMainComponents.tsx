@@ -765,7 +765,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
     const rowToPlaylistTrack = (row: SetlistPlan['payload']['rows'][number], rowIndex: number): MediaPlayerTrack => {
         if (row.type === "divider") {
             return {
-                setlistPlanId: docOrTempDoc.id,
+                setlistPlanId: docOrTempDoc.publicId ?? docOrTempDoc.draftId,
                 playlistIndex: rowIndex,
                 setListItemContext: {
                     type: "divider",
@@ -786,7 +786,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
         const song = allSongs.find(s => s.publicId === row.songId);
         const pinnedRecording = (row.songId && pinnedRecordings) ? pinnedRecordings[row.songId] : undefined;
         return {
-            setlistPlanId: docOrTempDoc.id,
+            setlistPlanId: docOrTempDoc.publicId ?? docOrTempDoc.draftId,
             playlistIndex: rowIndex,
             file: pinnedRecording,
             songContext: song,
@@ -1600,7 +1600,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                 <NameValuePair name="Group" value={
                     <SetlistPlanGroupSelect
                         onChange={(group) => {
-                            props.mutator.setGroupId(group?.id || null);
+                            props.mutator.setGroupId(group?.publicId || null);
                         }}
                         selectedGroupId={docOrTempDoc.groupId || null}
                         tableClient={props.groupTableClient}

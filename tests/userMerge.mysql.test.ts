@@ -231,7 +231,7 @@ describe.skipIf(!url)("user merge with real MySQL", () => {
     it("blocks embedded references without changing any account data", async () => {
         await db.setlistPlan.create({
             data: {
-                name: "Private plan", description: "", createdByUserId: 1, payloadJson: JSON.stringify({
+                publicId: "PrivatePlan00001", name: "Private plan", description: "", createdByUserId: 1, payloadJson: JSON.stringify({
                     version: 1, rows: [], cells: [], columns: [{ columnId: "a", name: "Private column", associatedItem: { itemType: "user", id: 20, name: "Retiring" } }],
                 })
             }

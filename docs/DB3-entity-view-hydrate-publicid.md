@@ -1705,6 +1705,32 @@ suite, focused detail-view/UI regression tests, and the production build passed.
 The SQL migration has not been applied to a live database, and browser
 interaction against migrated data remains unverified.
 
+#### Completed slice: setlist planning
+
+`SetlistPlanGroup` and `SetlistPlan` now use public identities in the group
+editor, planner RPCs, sorting, playback state, activity tracking, reports, and
+CSV output. The schema migration adds unique ASCII/binary IDs with startup
+placeholder repair.
+
+Saved plans carry `publicId`; unsaved plans use a separate negative `draftId`
+only in local editor state. Group references resolve public IDs under the
+ordinary DB3 read policy before writes. Plan save and delete require public
+identity for existing rows, and reorder validates a complete visible scope
+within one group before applying changes in a transaction. The planner uses
+public IDs for React keys and stored accordion state.
+
+The feature ledger still stores numeric foreign keys internally. Telemetry
+resolves the public plan ID on the server, while report DTOs and CSV expose its
+public ID. Existing audit ledger keys remain under the operational ledger
+exception below.
+
+Validation: the full repository runner passed 112 test files. Focused
+identity, CRUD, reorder, telemetry, and report tests pass. TypeScript, lint,
+Prisma generation and schema validation, the production build, and
+`git diff --check` pass. The build retains the existing Blitz import warnings.
+The SQL migration has not been applied to a live database, and browser
+interaction against migrated data remains unverified.
+
 ## Active roadmap
 
 ### Completed foundation
@@ -1824,7 +1850,7 @@ conversions.
        deleting each numeric client-identity compatibility path before marking that
        model complete below.
 
-#### Client-facing model progress: 40 / 47 complete (85%)
+#### Client-facing model progress: 42 / 47 complete (89%)
 
 The denominator is the 47 in-scope Prisma models whose own row identity currently
 crosses a client boundary. It excludes the five server-only models and the two
@@ -1910,8 +1936,8 @@ completion definition.
 -  **User domain**
    -  [x] `User`
 -  **Setlist planning aggregate**
-   -  [ ] `SetlistPlanGroup`
-   -  [ ] `SetlistPlan`
+   -  [x] `SetlistPlanGroup`
+   -  [x] `SetlistPlan`
 -  **Wiki domain**
    -  [ ] `WikiPage`
    -  [ ] `WikiPageRevision`

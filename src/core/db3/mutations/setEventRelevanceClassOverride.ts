@@ -1,11 +1,12 @@
-import { resolver, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { gEventRelevanceClass } from "../shared/eventRelevance";
 import { resolvePublicId } from "../server/db3PublicIds";
+import { gEventRelevanceClass } from "../shared/eventRelevance";
 
 const ZArgs = z.object({
     eventId: db3.xEvent.identitySchema,
@@ -14,7 +15,7 @@ const ZArgs = z.object({
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.login),
+    cmauthorize(Permission.login),
     resolver.zod(ZArgs),
     async (args, ctx: CMAuthenticatedCtx) => {
         const eventId = await resolvePublicId(db3.xEvent, args.eventId, ctx.auth, db, true);

@@ -1,4 +1,3 @@
-import { resolver } from "@/src/auth/server/cmResolver";
 import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
 import {
@@ -12,6 +11,8 @@ import {
     type RoleDesignationValue,
     SetRoleDesignationInput,
 } from "../roleDesignations";
+import { resolver } from "@blitzjs/rpc";
+import { cmauthorize } from "../server/cmResolver";
 
 const designationFields: Record<RoleDesignationValue, "isRoleForNewUsers" | "isPublicRole" | "isSysAdminRole"> = {
     [RoleDesignation.newUsers]: "isRoleForNewUsers",
@@ -21,7 +22,7 @@ const designationFields: Record<RoleDesignationValue, "isRoleForNewUsers" | "isP
 
 export default resolver.pipe(
     resolver.zod(SetRoleDesignationInput),
-    resolver.cmauthorize(Permission.sysadmin),
+    cmauthorize(Permission.sysadmin),
     async ({ designation, roleId }, ctx) => db.$transaction(
         async tx => {
             (await ctx.auth.refresh(tx)).requirePermission(Permission.sysadmin);

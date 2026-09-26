@@ -1,14 +1,15 @@
-import { resolver, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { TupdateUserPrimaryInstrumentMutationArgs } from "../shared/apiTypes";
 import { resolvePublicId } from "../server/db3PublicIds";
+import { TupdateUserPrimaryInstrumentMutationArgs } from "../shared/apiTypes";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.login),
+    cmauthorize(Permission.login),
     async (args: TupdateUserPrimaryInstrumentMutationArgs, ctx: CMAuthenticatedCtx) => {
         const publicData = ctx.auth;
         const instrumentId = await resolvePublicId(db3.xInstrument, args.instrumentId, publicData, db);

@@ -1,11 +1,12 @@
 // src/auth/mutations/impersonateUser.ts
-import { resolver } from "@/src/auth/server/cmResolver"
+import { cmauthorize } from "@/src/auth/server/cmResolver"
+import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { Permission } from "shared/permissions"
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads"
-import { createPublicDataFromDatabase } from "../server/effectivePermissions"
 import * as z from "zod"
 import { UserPublicIdSchema } from "../schemas"
+import { createPublicDataFromDatabase } from "../server/effectivePermissions"
 import { registerImpersonationAudit } from "../server/impersonationAudit"
 import { requireCanManageUser } from "../server/userManagementPolicy"
 import { makeUserManagementActor, makeUserManagementTarget } from "../server/userManagementState"
@@ -16,7 +17,7 @@ export const ImpersonateUserInput = z.object({
 
 export default resolver.pipe(
     resolver.zod(ImpersonateUserInput),
-    resolver.cmauthorize(Permission.impersonate_user),
+    cmauthorize(Permission.impersonate_user),
     async ({ userId }, ctx) => {
         const originalActorUserId = ctx.auth.requireUser().id;
 

@@ -1,4 +1,5 @@
-import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
@@ -22,7 +23,7 @@ const auditResponses = (rows: Prisma.EventSegmentUserResponseGetPayload<{}>[]) =
     }));
 
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.admin_events),
+    cmauthorize(Permission.admin_events),
     resolver.zod(ZArgs),
     async (args, ctx: CMCtx) => {
         await db.$transaction(async tx => {

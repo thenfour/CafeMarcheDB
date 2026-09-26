@@ -40,6 +40,7 @@ export async function repairPublicIdPlaceholders(args: {
     delegate: PublicIdRepairDelegate;
     modelName: string;
     generate?: () => string;
+    onBegin?: (placeholderCount: number) => void;
 }): Promise<number> {
     const generate = args.generate || generatePublicId;
     let replacementCount = 0;
@@ -51,7 +52,13 @@ export async function repairPublicIdPlaceholders(args: {
             orderBy: { id: "asc" },
             take: PUBLIC_ID_REPAIR_BATCH_SIZE,
         });
-        if (placeholders.length === 0) break;
+        if (placeholders.length === 0) {
+            break;
+        }
+
+        if (args.onBegin) {
+            args.onBegin(placeholders.length);
+        }
 
         for (const row of placeholders) {
             let replaced = false;
@@ -67,7 +74,9 @@ export async function repairPublicIdPlaceholders(args: {
                     replaced = true;
                     break;
                 } catch (error) {
-                    if (!isPublicIdUniqueCollision(error)) throw error;
+                    if (!isPublicIdUniqueCollision(error)) {
+                        throw error;
+                    }
                 }
             }
             if (!replaced) {

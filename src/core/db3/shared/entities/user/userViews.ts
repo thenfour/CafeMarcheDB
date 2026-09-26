@@ -8,7 +8,6 @@ import {
     type UserInstrumentPublicId,
     type UserTagAssignmentPublicId,
     type UserTagPublicId,
-    type UserPublicId,
 } from "shared/publicId";
 import { defineCrudView } from "../../core/db3CrudView";
 import { deriveViewContract } from "../../core/db3ViewContract";

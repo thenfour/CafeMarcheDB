@@ -85,7 +85,7 @@ export interface SetlistPlanMutator {
     setVisiblePermissionId: (permissionId: PermissionPublicId | null) => void;
 
     setName: (name: string) => void;
-    setGroupId: (groupId: number | null) => void;
+    setGroupId: (groupId: SetlistPlan["groupId"]) => void;
     setDescription: (description: string) => void;
     setAutocompleteMaxPointsPerRehearsal: (maxPoints: number) => void;
     setNotes: (notes: string) => void;

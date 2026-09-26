@@ -1,8 +1,9 @@
-import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
-import { z } from "zod";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
+import { z } from "zod";
 import * as db3 from "../db3";
 import { resolvePublicId } from "../server/db3PublicIds";
 import { CallMutateEventHooks } from "../server/db3mutationCore";
@@ -10,7 +11,7 @@ import { CallMutateEventHooks } from "../server/db3mutationCore";
 const ZArgs = z.object({ eventSegmentId: db3.xEventSegment.identitySchema }).strict();
 
 export default resolver.pipe(
-    resolver.cmauthorize(Permission.admin_events),
+    cmauthorize(Permission.admin_events),
     resolver.zod(ZArgs),
     async (args, ctx: CMCtx) => {
 

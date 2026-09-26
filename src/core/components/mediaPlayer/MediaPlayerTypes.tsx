@@ -1,5 +1,5 @@
 import { Prisma } from "db";
-import type { EventPublicId, EventStatusPublicId, EventTypePublicId, FilePublicId, SongPublicId } from "shared/publicId";
+import type { EventPublicId, EventStatusPublicId, EventTypePublicId, FilePublicId, SetlistPlanPublicId, SongPublicId } from "shared/publicId";
 import { EventSongListItem } from "../../db3/shared/setlistApi";
 import type { SetlistClientId } from "../../db3/shared/entities/eventSongList/eventSongListDraft";
 
@@ -41,7 +41,7 @@ export type MediaPlayerSetlistItemContextPayload = EventSongListItem;// & {
 export interface MediaPlayerTrack {
     playlistIndex: number; // index in the playlist, used for playback
     setlistClientId?: SetlistClientId; // Persisted setlist or unsaved draft owning this track.
-    setlistPlanId?: number;
+    setlistPlanId?: SetlistPlanPublicId | number; // Number is a local unsaved plan key.
 
     songContext?: MediaPlayerSongContextPayload;
     eventContext?: MediaPlayerEventContextPayload;
@@ -70,7 +70,7 @@ export interface MediaPlayerContextType {
     previousEnabled: () => boolean;
     nextEnabled: () => boolean;
     isPlayingFile: (fileId: FilePublicId) => boolean;
-    isPlayingSetlistItem: (args: { setlistClientId?: SetlistClientId, setlistPlanId?: number | undefined, setlistItemIndex: number, fileId: FilePublicId }) => boolean;
+    isPlayingSetlistItem: (args: { setlistClientId?: SetlistClientId, setlistPlanId?: SetlistPlanPublicId | number, setlistItemIndex: number, fileId: FilePublicId }) => boolean;
     isPlayingTrack: (track: MediaPlayerTrack) => boolean;
     isPlayable: (track: MediaPlayerTrack) => boolean; // unplayable tracks don't have any file/uri to play (dividers or missing song/file info etc.) unplayable tracks cannot be seeked to; they are skipped over.
 

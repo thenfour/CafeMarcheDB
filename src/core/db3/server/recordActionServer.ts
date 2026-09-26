@@ -116,7 +116,7 @@ function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null,
         eventSongListId: null,
         frontpageGalleryItemId: null,
         menuLinkId: toSafeId(args.menuLinkId),
-        setlistPlanId: toSafeId(args.setlistPlanId),
+        setlistPlanId: null,
         songCreditTypeId: null,
         instrumentId: null,
     };
@@ -196,6 +196,13 @@ export async function createActionRecord(args: RecordActionArgs & { userId?: num
             select: { id: true },
         });
         sanitizedData.eventSongListId = songList?.id ?? null;
+    }
+    if (args.setlistPlanId) {
+        const plan = await db.setlistPlan.findUnique({
+            where: { publicId: args.setlistPlanId },
+            select: { id: true },
+        });
+        sanitizedData.setlistPlanId = plan?.id ?? null;
     }
 
     await db.action.create({
