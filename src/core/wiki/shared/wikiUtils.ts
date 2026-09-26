@@ -1,7 +1,7 @@
 import { Prisma } from "db";
 import { diffChars, diffLines } from 'diff';
 import { z } from "zod";
-import { isPublicId, type EventPublicId, type PermissionPublicId } from "shared/publicId";
+import { isPublicId, type EventPublicId, type PermissionPublicId, type UserPublicId } from "shared/publicId";
 import { slugify } from "../../../../shared/rootroot";
 import type { EventWikiPageContextDto } from "../../db3/shared/entities/event/eventViews";
 import type { WikiPageApiDto } from "../../db3/shared/entities/wiki/wikiViews";
@@ -247,7 +247,7 @@ export enum UpdateWikiPageResultOutcome {
 
 type GetWikiPageLockStatusArgs = {
     currentPage: WikiPageApiPayload | null;
-    currentUserId: number | null;
+    currentUserId: UserPublicId | null;
     userClientLockId: string | null;
     baseRevisionId: number | null;
     baseContentVersion: number;
@@ -286,7 +286,7 @@ export const GetWikiPageUpdatability = ({ currentPage, currentUserId, userClient
 
     const isLockExpired = currentPage.lockExpiresAt != null && currentPage.lockExpiresAt <= new Date();
     const isLocked = currentPage.lockId != null && currentPage.lockExpiresAt != null && !isLockExpired;
-    const isLockedInThisContext = isLocked && currentPage.lockedByUser?.id === currentUserId && currentPage.lockId === userClientLockId;
+    const isLockedInThisContext = isLocked && currentPage.lockedByUser?.publicId === currentUserId && currentPage.lockId === userClientLockId;
     const isRevisionCompatible = (currentPage.currentRevision?.id ?? null) === baseRevisionId && currentPage.contentVersion === baseContentVersion;
     const isLockConflict = isLocked && !isLockedInThisContext;
 

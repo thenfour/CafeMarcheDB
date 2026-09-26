@@ -11,7 +11,9 @@ import {
   type PermissionPublicId,
   type RolePermissionPublicId,
   type RolePublicId,
+  type UserPublicId,
 } from "shared/publicId"
+import { userPublicId } from "tests/support/userFixtures"
 import type { PublicDataType } from "types"
 
 export type AuthorizationPersona =
@@ -48,6 +50,7 @@ type TestRole = {
 
 export type AuthorizationTestUser = {
   id: number
+  publicId: UserPublicId
   name: string
   email: string
   phone: string | null
@@ -117,6 +120,7 @@ export function createAuthorizationTestUser(
 
   return {
     id,
+    publicId: overrides.publicId ?? userPublicId(id),
     name: overrides.name ?? `${persona} user`,
     email: overrides.email ?? `${persona}.${id}@test.invalid`,
     phone: overrides.phone ?? null,

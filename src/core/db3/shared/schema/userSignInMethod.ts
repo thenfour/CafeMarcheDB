@@ -30,10 +30,10 @@ export const xUserSignInMethod = defineTable({
     },
     naturalOrderBy: [{ createdAt: "asc" }, { publicId: "asc" }],
     queryParameters: {
-        userId: { kind: "integer", authorizeAs: "userId" },
+        userId: { kind: "string", authorizeAs: "user" },
     },
-    getParameterizedWhereClause: (params: { userId?: number }): Prisma.UserSignInMethodWhereInput[] => (
-        params.userId === undefined ? [] : [{ userId: params.userId }]
+    getParameterizedWhereClause: (params: { userId?: string }): Prisma.UserSignInMethodWhereInput[] => (
+        params.userId === undefined ? [] : [{ user: { publicId: params.userId } }]
     ),
     getRowInfo: (row: Prisma.UserSignInMethodGetPayload<{}>) => ({
         pk: row.publicId,

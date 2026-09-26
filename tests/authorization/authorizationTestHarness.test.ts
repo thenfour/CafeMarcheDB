@@ -2,6 +2,7 @@ import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import { hash256 } from "@blitzjs/auth"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { songPublicId } from "../support/songFixtures"
+import { userPublicId } from "../support/userFixtures"
 
 vi.mock("db", async () => {
   const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client")
@@ -133,8 +134,8 @@ describe("generic DB3 resolver harness", () => {
 
     expect(result.items).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: sysadmin.id }),
-        expect.objectContaining({ id: target.id, name: "Before mutation" }),
+        expect.objectContaining({ publicId: sysadmin.publicId }),
+        expect.objectContaining({ publicId: target.publicId, name: "Before mutation" }),
       ]),
     )
     expect(authorizationTestDb.snapshot("user")).toHaveLength(2)
@@ -146,13 +147,12 @@ describe("generic DB3 resolver harness", () => {
     const result = await invokeResolver(
       db3Mutation,
       forgeDb3Update("User", target.id, {
-        id: target.id,
         name: "After mutation",
       }),
       ctx,
     )
 
-    expect(result).toEqual(expect.objectContaining({ id: target.id, name: "After mutation" }))
+    expect(result).toEqual(expect.objectContaining({ publicId: target.publicId, name: "After mutation" }))
     expect(authorizationTestDb.snapshot("user")).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: target.id, name: "After mutation" }),
@@ -252,16 +252,16 @@ describe("BA-A001 generic DB3 request validation", () => {
   it("validates table parameters against the selected table contract", () => {
     const valid = validateDB3QueryRequest(
       forgeDb3Query("User", {
-        filter: { items: [], tableParams: { userId: target.id, userIds: [target.id] } },
+        filter: { items: [], tableParams: { userId: target.publicId, userIds: [target.publicId] } },
       }),
     )
-    expect(valid.filter.tableParams).toEqual({ userId: target.id, userIds: [target.id] })
+    expect(valid.filter.tableParams).toEqual({ userId: target.publicId, userIds: [target.publicId] })
 
     expect(() =>
       validateDB3QueryRequest(
-        forgeDb3Query("User", { filter: { items: [], tableParams: { userId: "3" } } }),
+        forgeDb3Query("User", { filter: { items: [], tableParams: { userId: 3 } } }),
       ),
-    ).toThrow("filter.tableParams.userId: Expected number")
+    ).toThrow("filter.tableParams.userId: Expected string")
 
     expect(() =>
       validateDB3QueryRequest(
@@ -307,9 +307,9 @@ describe("BA-A001 generic DB3 request validation", () => {
 
     expect(() =>
       validateDB3MutationRequest(
-        forgeDb3Update("User", target.id, { id: target.id + 1, name: "mismatch" }),
+        forgeDb3Update("User", target.id, { publicId: userPublicId(target.id + 1), name: "mismatch" }),
       ),
-    ).toThrow("update model field 'id' must match updateId")
+    ).toThrow("field 'publicId' is immutable")
   })
 
   it("uses database authorization and excludes deleted rows for every actor by default", async () => {
@@ -851,7 +851,6 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
       invokeResolver(
         db3Mutation,
         forgeDb3Update("User", target.id, {
-          id: target.id,
           name: "Must not be persisted",
           isSysAdmin: true,
         }),
@@ -883,10 +882,10 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
       await expect(
         invokeResolver(
           db3Mutation,
-          forgeDb3Update("User", target.id, { id: target.id, isSysAdmin: true }),
+          forgeDb3Update("User", target.id, { isSysAdmin: true }),
           ctx,
         ),
-      ).rejects.toThrow("Not authorized to mutate User fields")
+      ).rejects.toThrow(persona === "limited" ? "User was not found." : "Not authorized to mutate User fields")
 
       expect(update).not.toHaveBeenCalled()
       expect(authorizationTestDb.snapshot("user")).toEqual(
@@ -968,14 +967,13 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
     const result = await invokeResolver(
       db3Mutation,
       forgeDb3Update("User", target.id, {
-        id: target.id,
         name: "Authorized mutation",
       }),
       ctx,
     )
 
     expect(result).toEqual(expect.objectContaining({
-      id: target.id,
+      publicId: target.publicId,
       name: "Authorized mutation",
       isSysAdmin: false,
     }))
@@ -1054,13 +1052,12 @@ describe("BA-U001 user management boundaries", () => {
     await invokeResolver(
       db3Mutation,
       forgeDb3Update("User", ordinaryUser.id, {
-        id: ordinaryUser.id,
         name: "Managed by Band Admin",
       }),
       ctx,
     )
     await invokeResolver(assignUserRole, {
-      userId: ordinaryUser.id,
+      userId: ordinaryUser.publicId,
       roleId: ordinaryRole.publicId,
       acknowledgeContinuityRisk: false,
     }, ctx)
@@ -1086,14 +1083,14 @@ describe("BA-U001 user management boundaries", () => {
     await expect(
       invokeResolver(
         db3Mutation,
-        forgeDb3Update("User", target.id, { id: target.id, name: "Forbidden edit" }),
+        forgeDb3Update("User", target.id, { name: "Forbidden edit" }),
         ctx,
       ),
     ).resolves.toEqual(expect.objectContaining({ name: "Forbidden edit" }))
     const assignment = invokeResolver(
       assignUserRole,
       {
-        userId: target.id,
+        userId: target.publicId,
         roleId: ordinaryRole.publicId,
         acknowledgeContinuityRisk: false,
       },
@@ -1119,7 +1116,7 @@ describe("BA-U001 user management boundaries", () => {
       invokeResolver(
         assignUserRole,
         {
-          userId: target.id,
+          userId: target.publicId,
           roleId: protectedRole.publicId,
           acknowledgeContinuityRisk: false,
         },
@@ -1159,7 +1156,7 @@ describe("BA-U001 user management boundaries", () => {
     const tokenCreate = vi.spyOn(authorizationTestDb.getDelegate("token"), "create")
 
     await expect(
-      invokeResolver(forgotPassword, { userId: target.id }, ctx),
+      invokeResolver(forgotPassword, { userId: target.publicId }, ctx),
     ).rejects.toThrow("Unauthorized test persona; required: sysadmin")
 
     expect(tokenDelete).not.toHaveBeenCalled()
@@ -1175,7 +1172,7 @@ describe("BA-U001 user management boundaries", () => {
       action: "impersonate",
     })).toBe(false)
     await expect(
-      invokeResolver(impersonateUser, { userId: isSysAdminUser.id }, ctx),
+      invokeResolver(impersonateUser, { userId: isSysAdminUser.publicId }, ctx),
     ).rejects.toThrow("Unauthorized test persona; required: impersonate_user")
   })
 
@@ -1186,8 +1183,8 @@ describe("BA-U001 user management boundaries", () => {
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
 
     await expect(
-      invokeResolver(impersonateUser, { userId: target.id }, ctx),
-    ).resolves.toEqual({ userId: target.id })
+      invokeResolver(impersonateUser, { userId: target.publicId }, ctx),
+    ).resolves.toEqual({ userId: target.publicId })
   })
 
   it("returns server-computed UI decisions for ordinary and protected targets", async () => {
@@ -1200,7 +1197,7 @@ describe("BA-U001 user management boundaries", () => {
 
     const bandAdminOrdinaryCapabilities = await invokeResolver(
       getUserManagementCapabilities,
-      { userId: ordinaryUser.id },
+      { userId: ordinaryUser.publicId },
       bandAdminCtx,
     )
     expect(bandAdminOrdinaryCapabilities).toEqual(expect.objectContaining({
@@ -1226,7 +1223,7 @@ describe("BA-U001 user management boundaries", () => {
 
     const bandAdminProtectedCapabilities = await invokeResolver(
       getUserManagementCapabilities,
-      { userId: protectedRoleUser.id },
+      { userId: protectedRoleUser.publicId },
       bandAdminCtx,
     )
     expect(bandAdminProtectedCapabilities).toEqual(expect.objectContaining({
@@ -1241,7 +1238,7 @@ describe("BA-U001 user management boundaries", () => {
 
     const sysadminCapabilities = await invokeResolver(
       getUserManagementCapabilities,
-      { userId: ordinaryUser.id },
+      { userId: ordinaryUser.publicId },
       sysadminCtx,
     )
     expect(sysadminCapabilities).toEqual(expect.objectContaining({
@@ -1272,7 +1269,6 @@ describe("BA-U001 user management boundaries", () => {
       invokeResolver(
         db3Mutation,
         forgeDb3Update("User", ordinaryUser.id, {
-          id: ordinaryUser.id,
           roleId: ordinaryRole.publicId,
         }),
         ctx,
@@ -1282,7 +1278,6 @@ describe("BA-U001 user management boundaries", () => {
       invokeResolver(
         db3Mutation,
         forgeDb3Update("User", protectedRoleUser.id, {
-          id: protectedRoleUser.id,
           name: "Forbidden protected edit",
         }),
         ctx,
@@ -1384,7 +1379,7 @@ describe("BA-U002 delegated user administration", () => {
     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
 
     await invokeResolver(assignUserRole, {
-      userId: peer.id,
+      userId: peer.publicId,
       roleId: ordinaryRole.publicId,
       acknowledgeContinuityRisk: false,
     }, ctx)
@@ -1411,7 +1406,7 @@ describe("BA-U002 delegated user administration", () => {
     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
 
     await expect(invokeResolver(assignUserRole, {
-      userId: ordinaryUser.id,
+      userId: ordinaryUser.publicId,
       roleId: role.publicId,
       acknowledgeContinuityRisk: false,
     }, ctx)).rejects.toThrow("Not authorized to assignRole this user")
@@ -1436,7 +1431,7 @@ describe("BA-U002 delegated user administration", () => {
     )).toEqual([Permission.deactivate_users, Permission.assign_user_roles])
 
     await expect(invokeResolver(assignUserRole, {
-      userId: selfInPeerRole.id,
+      userId: selfInPeerRole.publicId,
       roleId: ordinaryRole.publicId,
       acknowledgeContinuityRisk: false,
     }, ctx)).rejects.toThrow(
@@ -1445,7 +1440,7 @@ describe("BA-U002 delegated user administration", () => {
     expect(authorizationTestDb.snapshot("change")).toEqual([])
 
     await invokeResolver(assignUserRole, {
-      userId: selfInPeerRole.id,
+      userId: selfInPeerRole.publicId,
       roleId: ordinaryRole.publicId,
       acknowledgeContinuityRisk: true,
     }, ctx)
@@ -1474,12 +1469,12 @@ describe("BA-U002 delegated user administration", () => {
     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
 
     await expect(invokeResolver(deactivateUser, {
-      userId: bandAdmin.id,
+      userId: bandAdmin.publicId,
       acknowledgeContinuityRisk: false,
     }, ctx)).rejects.toThrow("CONTINUITY_ACKNOWLEDGEMENT_REQUIRED")
 
     await invokeResolver(deactivateUser, {
-      userId: bandAdmin.id,
+      userId: bandAdmin.publicId,
       acknowledgeContinuityRisk: true,
     }, ctx)
     expect(authorizationTestDb.snapshot("user")).toEqual(expect.arrayContaining([
@@ -1496,13 +1491,13 @@ describe("BA-U002 delegated user administration", () => {
     const { ctx: sysadminCtx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
 
     await expect(invokeResolver(setUserSysAdmin, {
-      userId: ordinaryUser.id,
+      userId: ordinaryUser.publicId,
       isSysAdmin: true,
     }, bandAdminCtx)).rejects.toThrow("Not authorized to setSysAdmin this user")
     expect(update).not.toHaveBeenCalled()
 
     await invokeResolver(setUserSysAdmin, {
-      userId: ordinaryUser.id,
+      userId: ordinaryUser.publicId,
       isSysAdmin: true,
     }, sysadminCtx)
     expect(authorizationTestDb.snapshot("user")).toEqual(expect.arrayContaining([
@@ -1532,6 +1527,7 @@ describe("BA-U002 delegated user administration", () => {
       data: {
         name: "New unprivileged user",
         email: "new-user@test.invalid",
+        publicId: expect.any(String),
       },
     })
   })
@@ -1646,7 +1642,7 @@ describe("BA-U003 password-reset hardening", () => {
     try {
       await expect(invokeResolver(
         forgotPassword,
-        { userId: target.id },
+        { userId: target.publicId },
         ctx,
       )).resolves.toContain("https://reset.test.invalid")
     } finally {
@@ -1664,7 +1660,7 @@ describe("BA-U003 password-reset hardening", () => {
     process.env.CMDB_BASE_URL = "https://reset.test.invalid"
 
     try {
-      const resetUrl = await invokeResolver(forgotPassword, { userId: target.id }, ctx)
+      const resetUrl = await invokeResolver(forgotPassword, { userId: target.publicId }, ctx)
       const rawToken = new URL(resetUrl).searchParams.get("token")
       const storedTokens = authorizationTestDb.snapshot("token")
 
@@ -1748,9 +1744,9 @@ describe("BA-U004 impersonation hardening", () => {
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
     const createSession = vi.spyOn(ctx.session, "$create")
 
-    const result = await invokeResolver(impersonateUser, { userId: target.id }, ctx)
+    const result = await invokeResolver(impersonateUser, { userId: target.publicId }, ctx)
 
-    expect(result).toEqual({ userId: target.id })
+    expect(result).toEqual({ userId: target.publicId })
     expect(createSession).toHaveBeenCalledTimes(1)
     expect(createSession).toHaveBeenCalledWith(expect.objectContaining({
       userId: target.id,
@@ -1788,8 +1784,8 @@ describe("BA-U004 impersonation hardening", () => {
     const createSession = vi.spyOn(ctx.session, "$create")
 
     await expect(
-      invokeResolver(impersonateUser, { userId: target.id }, ctx),
-    ).resolves.toEqual({ userId: target.id })
+      invokeResolver(impersonateUser, { userId: target.publicId }, ctx),
+    ).resolves.toEqual({ userId: target.publicId })
 
     expect(userFind).toHaveBeenCalled()
     expect(createSession).toHaveBeenCalled()
@@ -1810,8 +1806,8 @@ describe("BA-U004 impersonation hardening", () => {
     const createSession = vi.spyOn(ctx.session, "$create")
 
     await expect(
-      invokeResolver(impersonateUser, { userId: protectedTarget.id }, ctx),
-    ).resolves.toEqual({ userId: protectedTarget.id })
+      invokeResolver(impersonateUser, { userId: protectedTarget.publicId }, ctx),
+    ).resolves.toEqual({ userId: protectedTarget.publicId })
 
     expect(createSession).toHaveBeenCalledTimes(1)
     expect(authorizationTestDb.snapshot("change")).not.toEqual([])
@@ -1826,7 +1822,7 @@ describe("BA-U004 impersonation hardening", () => {
     const createSession = vi.spyOn(ctx.session, "$create")
 
     await expect(
-      invokeResolver(impersonateUser, { userId: protectedTarget.id }, ctx),
+      invokeResolver(impersonateUser, { userId: protectedTarget.publicId }, ctx),
     ).rejects.toThrow("Not authorized to impersonate this user")
 
     expect(createSession).not.toHaveBeenCalled()
@@ -2053,7 +2049,6 @@ describe("BA-A004 association authorization", () => {
       invokeResolver(
         db3Mutation,
         forgeDb3Update("User", otherUser.id, {
-          id: otherUser.id,
           instruments: [instrument.publicId],
         }),
         ctx,
@@ -2071,7 +2066,6 @@ describe("BA-A004 association authorization", () => {
     await invokeResolver(
       db3Mutation,
       forgeDb3Update("User", normal.id, {
-        id: normal.id,
         instruments: [instrument.publicId],
       }),
       ctx,
@@ -2083,7 +2077,6 @@ describe("BA-A004 association authorization", () => {
     await invokeResolver(
       db3Mutation,
       forgeDb3Update("User", normal.id, {
-        id: normal.id,
         instruments: [],
       }),
       ctx,
@@ -2115,11 +2108,12 @@ describe("BA-A004 association authorization", () => {
         instruments: [instrument.publicId],
       }),
       ctx,
-    ) as { id: number }
+    ) as { publicId: string } // The client result exposes the new public identity.
 
-    expect(result).toEqual(expect.objectContaining({ id: expect.any(Number) }))
+    expect(result).toEqual(expect.objectContaining({ publicId: expect.any(String) }))
+    const insertedUser = authorizationTestDb.snapshot("user").find(user => user.publicId === result.publicId)
     expect(authorizationTestDb.snapshot("userInstrument")).toEqual([
-      expect.objectContaining({ userId: result.id, instrumentId: 500 }),
+      expect.objectContaining({ userId: insertedUser?.id, instrumentId: 500 }),
     ])
   })
 
@@ -2346,7 +2340,7 @@ describe("BA-A005 delete authorization", () => {
     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
 
     await invokeResolver(deactivateUser, {
-      userId: ordinaryUser.id,
+      userId: ordinaryUser.publicId,
       acknowledgeContinuityRisk: false,
     }, ctx)
 
@@ -2367,10 +2361,10 @@ describe("BA-A005 delete authorization", () => {
     await expect(
       invokeResolver(
         deactivateUser,
-        { userId: target.id, acknowledgeContinuityRisk: false },
+        { userId: target.publicId, acknowledgeContinuityRisk: false },
         ctx,
       ),
-    ).resolves.toEqual(expect.objectContaining({ userId: target.id }))
+    ).resolves.toEqual(expect.objectContaining({ userId: target.publicId }))
 
     expect(update).toHaveBeenCalledTimes(1)
     expect(authorizationTestDb.snapshot("user")).toEqual(

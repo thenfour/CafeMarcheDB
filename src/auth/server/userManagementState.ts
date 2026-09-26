@@ -2,7 +2,7 @@
 
 import { Prisma } from "db";
 import type { Permission } from "shared/permissions";
-import type { RolePublicId } from "shared/publicId";
+import type { RolePublicId, UserPublicId } from "shared/publicId";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { RoleArgs, RoleNaturalOrderBy } from "src/core/db3/shared/schema/prismArgs";
 import { xRole } from "src/core/db3/shared/schema/user";
@@ -66,6 +66,17 @@ export const findUserManagementTarget = async (
     const principal = await db.user.findFirst({
         select: { ...UserWithRolesArgs.select, mergedIntoUserId: true },
         where: { id: userId },
+    });
+    return principal ? makeUserManagementTarget(principal) : null;
+};
+
+export const findUserManagementTargetByPublicId = async (
+    db: TransactionalPrismaClient,
+    publicId: UserPublicId,
+): Promise<UserManagementTarget | null> => {
+    const principal = await db.user.findFirst({
+        select: { ...UserWithRolesArgs.select, mergedIntoUserId: true },
+        where: { publicId },
     });
     return principal ? makeUserManagementTarget(principal) : null;
 };

@@ -1,6 +1,6 @@
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs } from "@mui/material";
-import { Prisma } from "db";
+import type { UserPublicId } from "shared/publicId";
 import React from "react";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
@@ -19,15 +19,15 @@ import { CMButton } from '../CMCoreComponents2';
 //////////////////////////////////////////////////////////////////////////////////////
 export interface AddUserButtonProps {
     buttonChildren?: React.ReactNode;
-    filterPredicate?: (u: db3.UserPayload) => boolean;
-    onSelect: (u: db3.UserPayload | null) => void;
+    filterPredicate?: (u: db3.UserClientPayload) => boolean;
+    onSelect: (u: db3.UserClientPayload | null) => void;
     title?: React.ReactNode;
     description?: React.ReactNode;
 };
 
 const AddUserPicker = (props: AddUserButtonProps & { onClose: () => void }) => {
-    const users = useDB3SelectionSource<db3.UserPayload>({ schema: db3.xUser, allowInsertFromString: false });
-    const source: SelectionSource<db3.UserPayload> = {
+    const users = useDB3SelectionSource<db3.UserClientPayload>({ schema: db3.xUser, allowInsertFromString: false });
+    const source: SelectionSource<db3.UserClientPayload> = {
         ...users,
         renderValue: user => <UserChip value={user} noLink size="small" />,
         useOptions(filterText, enabled) {
@@ -52,7 +52,7 @@ export const AddUserButton = (props: AddUserButtonProps) => {
 
 ////////////////////////////////////////////////////////////////
 export interface UserBreadcrumbProps {
-    user: Prisma.UserGetPayload<{ select: { id: true, name: true } }>,
+    user: { publicId: UserPublicId; name: string },
 };
 export const UserBreadcrumbs = (props: UserBreadcrumbProps) => {
     const dashboardContext = useDashboardContext();
@@ -72,7 +72,7 @@ export const UserBreadcrumbs = (props: UserBreadcrumbProps) => {
         <CMLink
             href={dashboardContext.routingApi.getURIForUser(props.user)}
         >
-            {IsNullOrWhitespace(props.user.name) ? props.user.id : props.user.name}
+            {IsNullOrWhitespace(props.user.name) ? props.user.publicId : props.user.name}
         </CMLink>
 
     </Breadcrumbs>

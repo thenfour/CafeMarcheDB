@@ -9,7 +9,7 @@ import { EventResponseInfo, fn_makeMockEventSegmentResponse, fn_makeMockEventUse
 import { DashboardContextData, useDashboardContext } from '../dashboardContext/DashboardContext';
 import { DashboardContextDataBase } from '../dashboardContext/dashboardContextTypes';
 import { calculateEventAttendance, EventAttendanceResult } from "./attendanceCalculation";
-import type { EventStatusPublicId, UserTagPublicId } from 'shared/publicId';
+import type { EventStatusPublicId, UserPublicId, UserTagPublicId } from 'shared/publicId';
 
 
 export type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & {
@@ -93,17 +93,17 @@ export function CalculateEventDetailMetadata({ event, tabSlug, dashboardContext 
     // because of the last point, a fetch is absolutely required.
     const invitees = event.expectedAttendanceUserTag?.userAssignments.map(a => a.userId) || [];
 
-    const userIdMap = new Set<number>([
+    const userIdMap = new Set<UserPublicId>([
         ...event.responses.map(r => r.userId),
         ...event.segments.map(seg => seg.responses.map(r => r.userId)).flat(),
         ...invitees,
     ]);
-    if (dashboardContext.currentUser?.id) {
+    if (dashboardContext.currentUser?.publicId) {
         // if current user is viewing, we should be able to generate event response data for them even if not responded or even invited.
-        userIdMap.add(dashboardContext.currentUser.id);
+        userIdMap.add(dashboardContext.currentUser.publicId);
     }
 
-    const tableParams: db3.UserTablParams = {
+    const tableParams = {
         userIds: [...userIdMap]
     };
 
@@ -132,27 +132,26 @@ export function CalculateEventDetailMetadata({ event, tabSlug, dashboardContext 
         isAllDay: event.isAllDay,
     }), tabSlug, dashboardContext, userMap, event.expectedAttendanceUserTag,
         (segment, user) => {
-            if (!user?.id) return null;
+            if (!user?.publicId) return null;
             return {
                 attendanceId: null,
                 attendance: null,
                 eventSegmentId: segment.publicId,
                 publicId: null,
-                userId: user.id,
+                userId: user.publicId,
                 createdAt: new Date(),
                 updatedAt: new Date(),
-                createdByUserId: null,
-                updatedByUserId: null,
+                updatedByUser: null,
             }
         },
         (event, user, isInvited) => {
-            if (!user?.id) return null;
+            if (!user?.publicId) return null;
             return {
                 userComment: "",
                 revision: 0,
                 eventId: event.publicId,
                 publicId: null,
-                userId: user.id,
+                userId: user.publicId,
                 instrumentId: null,
                 instrument: null,
                 isInvited,
@@ -328,12 +327,12 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
         userMap,
         expectedAttendanceUserTag,
         (segment, user) => { // makeMockEventSegmentResponse
-            if (!user?.id) return null;
+            if (!user?.publicId) return null;
             return {
                 attendanceId: null,
                 eventSegmentId: segment.publicId,
                 publicId: null,
-                userId: user.id,
+                userId: user.publicId,
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 createdByUserId: null,
@@ -341,14 +340,14 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
             }
         },
         (event, user, isInvited) => { // makeMockEventUserResponse
-            if (!user?.id) return null;
+            if (!user?.publicId) return null;
             return {
                 userComment: "",
                 revision: 0,
                 uid: getUniqueNegativeID().toString(),
                 eventId: event.publicId,
                 publicId: null,
-                userId: user.id,
+                userId: user.publicId,
                 instrumentId: null,
                 isInvited,
                 createdAt: new Date(),

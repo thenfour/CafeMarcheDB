@@ -19,6 +19,7 @@ import { parsePublicId } from "shared/publicId"
 import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures"
 import { forgeDb3Insert, forgeDb3Query, forgeDb3PublicUpdate } from "./support/db3RequestBuilders"
 import { songPublicId } from "../support/songFixtures"
+import { userPublicId } from "../support/userFixtures"
 import { authorizationTestDb, matchesWhere } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 
@@ -33,6 +34,21 @@ const visibleListParent = { id: 100, event: { id: 100, isDeleted: false, visible
 beforeEach(() => authorizationTestDb.reset())
 
 describe("explicit DB3 authorization", () => {
+  it("uses public identity for client owner edit hints", () => {
+    const authorization = db3.createDB3Authorization(
+      { id: 501, publicId: userPublicId(501) },
+      new ServerPermissionSet([{ id: 1, name: Permission.view_songs }]),
+    )
+    const editArgs = {
+      model: null,
+      publicData: authorization,
+      columnName: "description",
+      fallbackOwnerId: null,
+    }
+    expect(db3.xSong.authorizeColumnForEdit({ ...editArgs, fallbackOwnerPublicId: userPublicId(501) })).toBe(true)
+    expect(db3.xSong.authorizeColumnForEdit({ ...editArgs, fallbackOwnerPublicId: userPublicId(502) })).toBe(false)
+  })
+
   it("requires an explicit permission set instead of silently supplying empty grants", () => {
     // @ts-expect-error Missing grants are a caller error, including at runtime.
     expect(() => db3.createDB3Authorization(null, undefined)).toThrow("effective permissions are required")
@@ -281,6 +297,7 @@ describe("explicit DB3 authorization", () => {
     const { user, ctx } = createAuthorizationPersona("sysadmin", { id: 501 })
     authorizationTestDb.reset({ user: [user!], song: [], change: [] })
     const result = await invokeResolver(db3Mutation, forgeDb3Insert("Song", { name: "Created song" }), ctx)
-    expect(result).toMatchObject({ name: "Created song", createdByUserId: user!.id })
+    expect(result).toMatchObject({ name: "Created song" })
+    expect(authorizationTestDb.snapshot("song")[0]).toMatchObject({ createdByUserId: user!.id })
   })
 })

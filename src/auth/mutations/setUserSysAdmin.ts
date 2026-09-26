@@ -8,11 +8,12 @@ import {
 } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
+import { UserPublicIdSchema } from "../schemas";
 import { requireCanManageUser } from "../server/userManagementPolicy";
-import { findUserManagementActor, findUserManagementTarget } from "../server/userManagementState";
+import { findUserManagementActor, findUserManagementTargetByPublicId } from "../server/userManagementState";
 
 export const SetUserSysAdminInput = z.object({
-    userId: z.number().int().positive(),
+    userId: UserPublicIdSchema,
     isSysAdmin: z.boolean(),
 });
 
@@ -23,7 +24,7 @@ export default resolver.pipe(
         async tx => {
             const [actor, target] = await Promise.all([
                 findUserManagementActor(tx, ctx.session.userId),
-                findUserManagementTarget(tx, userId),
+                findUserManagementTargetByPublicId(tx, userId),
             ]);
 
             if (!target) throw new NotFoundError();
@@ -34,14 +35,14 @@ export default resolver.pipe(
             }
 
             await tx.user.update({
-                where: { id: userId },
+                where: { id: target.principal.id },
                 data: { isSysAdmin },
             });
             await RegisterChange({
                 action: ChangeAction.update,
                 changeContext: CreateChangeContext("setUserSysAdmin"),
                 table: "User",
-                pkid: userId,
+                pkid: target.principal.id,
                 oldValues: { isSysAdmin: target.principal.isSysAdmin },
                 newValues: { isSysAdmin },
                 ctx,

@@ -26,7 +26,7 @@ export default resolver.pipe(
         // this could be done in SQL with like, UPDATE UserInstruments SET isPrimary = (u.instrumentId = requestedId) WHERE userID = userID
         const existingInstruments = await db.userInstrument.findMany({
             where: {
-                userId: args.userId,
+                userId: ctx.session.userId,
             }
         });
         if (!existingInstruments) {

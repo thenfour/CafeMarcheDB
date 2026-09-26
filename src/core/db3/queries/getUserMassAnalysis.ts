@@ -6,18 +6,19 @@ import { UserMassAnalysisResult } from "../shared/getUserMassAnalysisTypes";
 import { requireFreshPermission } from "@/src/auth/server/permissionAuthorization";
 import { Permission } from "shared/permissions";
 import { xRole } from "../shared/schema/user";
+import { xUser } from "../shared/schema/user";
+import { UserPublicIdSchema } from "src/auth/schemas";
 
 export default resolver.pipe(
-    resolver.zod(z.object({ userId: z.number() })),
+    resolver.zod(z.object({ userId: UserPublicIdSchema })),
     async (args, ctx: AuthenticatedCtx): Promise<UserMassAnalysisResult> => {
         await requireFreshPermission(db, ctx.session.userId, Permission.sysadmin);
-        const userId = args.userId;
 
         // Intentional read-policy bypass: this administrative dependency report
         // must include inactive targets and all referenced records, including
         // hidden or soft-deleted content, so lifecycle decisions are complete.
         const user = await db.user.findUnique({
-            where: { id: userId },
+            where: { publicId: args.userId },
             include: {
                 role: {
                     select: { publicId: true, name: true }
@@ -26,8 +27,9 @@ export default resolver.pipe(
         });
 
         if (!user) {
-            throw new Error(`User with id ${userId} not found`);
+            throw new Error("User not found");
         }
+        const userId = user.id;
 
         // These are existence counts only; domain rows are never returned.
         const [
@@ -136,7 +138,7 @@ export default resolver.pipe(
 
         return {
             userInfo: {
-                id: user.id,
+                publicId: xUser.parseIdentity(user.publicId),
                 name: user.name,
                 email: user.email,
                 createdAt: user.createdAt,

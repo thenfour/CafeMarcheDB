@@ -7,7 +7,7 @@ type GoogleAnalyticsProps = {
 };
 
 const GoogleAnalytics: React.FC<GoogleAnalyticsProps> = ({ trackingId }) => {
-  const userId: number | undefined = useCurrentUser()[0]?.id || undefined;
+  const userId = useCurrentUser()[0]?.publicId || undefined;
 
   useEffect(() => {
     if (IsNullOrWhitespace(trackingId)) {

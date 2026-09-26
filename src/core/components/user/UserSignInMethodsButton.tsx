@@ -16,7 +16,7 @@ import { xUserSignInMethod } from "src/core/db3/shared/schema/userSignInMethod";
 type Props = { user: EnrichedVerboseUser; onChanged?: () => void };
 
 const SignInMethodsEditor = ({ user, onChanged }: Props) => {
-    const [data, { refetch }] = useQuery(getUserSignInMethods, { userId: user.id });
+    const [data, { refetch }] = useQuery(getUserSignInMethods, { userId: user.publicId });
     const [addMethod] = useMutation(addUserSignInMethod);
     const [removeMethod] = useMutation(removeUserSignInMethod);
     const confirm = useConfirm();
@@ -54,7 +54,7 @@ const SignInMethodsEditor = ({ user, onChanged }: Props) => {
                         title: "Release sign-in method?",
                         description: `Remove ${method.identifier} from ${user.name}?`,
                     })) return;
-                    await apply(() => removeMethod({ userId: user.id, methodPublicId: xUserSignInMethod.getIdentity(method) }));
+                    await apply(() => removeMethod({ userId: user.publicId, methodPublicId: xUserSignInMethod.getIdentity(method) }));
                 }}>Remove</Button></TableCell>
             </TableRow>)}</TableBody>
         </Table>
@@ -75,7 +75,7 @@ const SignInMethodsEditor = ({ user, onChanged }: Props) => {
             <div>
                 <Button disabled={pending || !identifier.trim()} onClick={() => apply(async () => {
                     const method = SignInMethodSchema.parse({ type, identifier });
-                    await addMethod({ userId: user.id, method });
+                    await addMethod({ userId: user.publicId, method });
                 })}>
                     Add method
                 </Button>

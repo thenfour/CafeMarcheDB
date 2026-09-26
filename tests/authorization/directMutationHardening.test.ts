@@ -454,7 +454,7 @@ describe("DB3 command boundary", () => {
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.userEditorView.crud.operations.update.command.commandID,
       payload: {
-        identity: target.id,
+        identity: target.publicId,
         patch: {
           name: "Updated user",
           phone: "+32 123",
@@ -462,7 +462,7 @@ describe("DB3 command boundary", () => {
           tags: [userTag.publicId],
         },
       },
-    }, ctx)).resolves.toEqual({ identity: target.id })
+    }, ctx)).resolves.toEqual({ identity: target.publicId })
 
     expect(authorizationTestDb.snapshot("user")).toContainEqual(
       expect.objectContaining({ id: target.id, name: "Updated user", phone: "+32 123" }),
@@ -1272,7 +1272,7 @@ describe("BA-S003 event attendance ownership", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
     await invokeResolver(updateUserEventAttendance, {
-      userId: actor.id,
+      userId: actor.publicId,
       eventId: eventPublicId(100),
       comment: "I will be there",
       segmentResponses: { [segmentPublicId(101)]: { attendanceId: attendancePublicId(2) } },
@@ -1304,7 +1304,7 @@ describe("BA-S003 event attendance ownership", () => {
     const eventLookup = vi.spyOn(authorizationTestDb.getDelegate("event"), "findFirst")
 
     await expect(invokeResolver(updateUserEventAttendance, {
-      userId: target.id,
+      userId: target.publicId,
       eventId: eventPublicId(100),
       comment: "Forged",
     }, ctx)).rejects.toThrow(`required: ${Permission.change_others_event_responses}`)
@@ -1327,7 +1327,7 @@ describe("BA-S003 event attendance ownership", () => {
     const eventLookup = vi.spyOn(authorizationTestDb.getDelegate("event"), "findFirst")
 
     await expect(invokeResolver(updateUserEventAttendance, {
-      userId: target.id,
+      userId: target.publicId,
       eventId: eventPublicId(100),
       comment: "Stale grant",
     }, ctx)).rejects.toThrow(`required: ${Permission.change_others_event_responses}`)
@@ -1366,7 +1366,7 @@ describe("BA-S003 event attendance ownership", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
     await invokeResolver(updateUserEventAttendance, {
-      userId: target.id,
+      userId: target.publicId,
       eventId: eventPublicId(100),
       comment: "Updated by delegate",
       segmentResponses: { [segmentPublicId(101)]: { attendanceId: attendancePublicId(2) } },
@@ -1391,7 +1391,7 @@ describe("BA-S003 event attendance ownership", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
     await expect(invokeResolver(updateUserEventAttendance, {
-      userId: actor.id,
+      userId: actor.publicId,
       eventId: eventPublicId(100),
       isInvited: true,
     }, ctx)).rejects.toThrow(`required: ${Permission.manage_events}`)
@@ -1413,7 +1413,7 @@ describe("BA-S003 event attendance ownership", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
     await invokeResolver(updateUserEventAttendance, {
-      userId: target.id,
+      userId: target.publicId,
       eventId: eventPublicId(100),
       isInvited: true,
     }, ctx)
@@ -1442,7 +1442,7 @@ describe("BA-S003 event attendance ownership", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
     await expect(invokeResolver(updateUserEventAttendance, {
-      userId: actor.id,
+      userId: actor.publicId,
       eventId: eventPublicId(100),
       segmentResponses: { [segmentPublicId(102)]: { attendanceId: attendancePublicId(2) } },
     }, ctx)).rejects.toThrow()
@@ -1459,7 +1459,7 @@ describe("BA-S003 event attendance ownership", () => {
     const eventLookup = vi.spyOn(authorizationTestDb.getDelegate("event"), "findFirst")
 
     await expect(invokeResolver(updateUserEventAttendance, {
-      userId: actor.id,
+      userId: actor.publicId,
       eventId: eventPublicId(100),
       segmentResponses: { "101suffix": { attendanceId: attendancePublicId(2) } },
     } as never, ctx)).rejects.toThrow("Invalid event segment ID")
@@ -1468,7 +1468,7 @@ describe("BA-S003 event attendance ownership", () => {
   })
 
   it("does not let generic inserts bypass the self-versus-other boundary", async () => {
-    const permissions = [Permission.login, Permission.respond_to_events]
+    const permissions = [Permission.login, Permission.respond_to_events, Permission.view_users_basic_info]
     const actor = createAuthorizationTestUser("normal", { id: 37, permissions })
     const target = createAuthorizationTestUser("normal", { id: 38 })
     authorizationTestDb.reset({
@@ -1483,7 +1483,7 @@ describe("BA-S003 event attendance ownership", () => {
 
     await expect(invokeResolver(db3Mutation, forgeDb3Insert(
       db3.xEventSegmentUserResponse.tableID,
-      { userId: target.id, eventSegmentId: segmentPublicId(101), attendanceId: attendancePublicId(2) },
+      { userId: target.publicId, eventSegmentId: segmentPublicId(101), attendanceId: attendancePublicId(2) },
     ), ctx)).rejects.toThrow("Not authorized to mutate EventSegmentUserResponse")
 
     expect(authorizationTestDb.snapshot("eventSegmentUserResponse")).toEqual([])
@@ -1569,7 +1569,7 @@ describe("Band Admin split mutation boundaries", () => {
       ["sizeBytes", 999],
       ["mimeType", "text/plain"],
       ["customData", "forged"],
-      ["uploadedByUserId", actor.id],
+      ["uploadedByUserId", actor.publicId],
     ] as const) {
       await expect(invokeResolver(
         db3Mutation,

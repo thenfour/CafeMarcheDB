@@ -9,7 +9,6 @@ import { formatFileSize } from "shared/rootroot";
 import { CalcRelativeTiming, DateTimeRange, formatMillisecondsToDHMS } from "shared/time";
 import { AdminInspectObject, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
-import { ActivityLogUserChip } from "src/core/db3/DB3Client";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 import getServerHealth from "src/core/db3/queries/getServerHealth";
 import { GetServerHealthResult, ServerHealthFileResult, TableStatsQueryRow } from "src/core/db3/shared/apiTypes";
@@ -43,7 +42,9 @@ const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerH
             { memberName: "mimeType" },
             {
                 memberName: "uploadedByUserId", render: args => {
-                    return args.row.uploadedByUserId ? <ActivityLogUserChip userId={args.row.uploadedByUserId} cacheData={filterSourceData} /> : null;
+                    return args.row.uploadedByUserId
+                        ? <a href={dashboardContext.routingApi.getURIForUser({ publicId: args.row.uploadedByUserId })}>{args.row.uploadedByUserId}</a>
+                        : null;
                 }
             },
             { memberName: "uploadedAt" },

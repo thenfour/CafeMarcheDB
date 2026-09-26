@@ -23,6 +23,7 @@ import type {
     EventTagAssignmentPublicId,
     EventTagPublicId,
     EventTypePublicId,
+    UserPublicId,
 } from "shared/publicId";
 import { type CMDBTableFilterModel } from "../apiTypes";
 import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../columnTypes/genericString";
@@ -1144,11 +1145,12 @@ type EventResponses_MinimalEventUserResponseDb = Prisma.EventUserResponseGetPayl
 >;
 export type EventResponses_MinimalEventUserResponse = Omit<
     EventResponses_MinimalEventUserResponseDb,
-    "instrumentId"
+    "instrumentId" | "userId"
 > & {
     // Shared attendance algorithms consume both trusted Prisma rows and
     // projected client responses after Instrument migrated to public identity.
     instrumentId: InstrumentIdentity | null;
+    userId: number | UserPublicId;
 };
 
 export const EventResponses_MinimalEventSegmentUserResponseArgs = Prisma.validator<Prisma.EventSegmentUserResponseFindManyArgs>()({
@@ -1158,8 +1160,8 @@ export const EventResponses_MinimalEventSegmentUserResponseArgs = Prisma.validat
     }
 });
 export type EventResponses_MinimalEventSegmentUserResponse = Omit<
-    Prisma.EventSegmentUserResponseGetPayload<typeof EventResponses_MinimalEventSegmentUserResponseArgs>, "attendanceId"
-> & { attendanceId: EventAttendancePublicId | null };
+    Prisma.EventSegmentUserResponseGetPayload<typeof EventResponses_MinimalEventSegmentUserResponseArgs>, "attendanceId" | "userId"
+> & { attendanceId: EventAttendancePublicId | null; userId: number | UserPublicId };
 
 
 

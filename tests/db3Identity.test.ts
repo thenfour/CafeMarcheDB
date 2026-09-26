@@ -2,6 +2,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import { QuickSearchItemType, type QuickSearchItemMatch } from "shared/quickFilter";
 import { parsePublicId, type EventPublicId, type InstrumentPublicId, type SongPublicId } from "shared/publicId";
 import { songPublicId } from "./support/songFixtures";
+import { userPublicId } from "./support/userFixtures";
 import { filePublicId } from "./support/fileFixtures";
 import { galleryPublicId } from "./support/galleryFixtures";
 import * as db3 from "src/core/db3/db3";
@@ -83,12 +84,12 @@ describe("DB3 table identity authority", () => {
             .toBe("Instrument");
         expect(db3.xUserWithInstrument.fields.instruments.getForeignIdentity(instrumentPublicId))
             .toBe(instrumentPublicId);
-        const user = { id: 12, instruments: [] };
+        const user = { id: 12, publicId: userPublicId(12), instruments: [] };
         const instrument = { publicId: instrumentPublicId, name: "Trumpet" };
         const editedUser = db3.xUser.fields.instruments.withForeignObjects(user, [instrument]);
         expect(editedUser.instruments).toEqual([{
             user,
-            userId: user.id,
+            userId: user.publicId,
             instrument,
             instrumentId: instrumentPublicId,
         }]);

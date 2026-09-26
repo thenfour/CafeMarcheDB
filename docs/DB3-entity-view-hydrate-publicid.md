@@ -1678,6 +1678,33 @@ passed. The build retains the existing Blitz import warnings.
 The SQL migration has not been applied to a live database, and browser
 interaction against migrated data remains unverified.
 
+#### Completed slice: central User
+
+`User` now has public identity across profile routes, search, directory and
+editor views, attendance, authorship, setlist references, file tagging, account
+administration, and user merge requests. The schema migration backfills a
+unique ASCII/binary public ID; startup repair and new-user creation assign real
+IDs.
+
+The numeric User key stays in the Blitz session and trusted database joins.
+`getCurrentUser` may return that key to its owner. Other User DTOs omit it, and
+client requests use public IDs to target users. Inactive account management
+resolves public IDs on the server. Historical Change JSON is redacted before
+transport because it can contain numeric User keys in arbitrary fields; this
+temporarily removes old/new value diffs from the sysadmin log UI. Activity
+reports and CSV output omit numeric User keys and redact old numeric profile
+URLs. Stored setlist plans correct embedded User references in the shared
+reference migration pass. Song and Event detail views expose creator public
+identity without transporting the numeric creator key. Client owner-edit hints
+compare public IDs; the server still checks persisted ownership using the
+session.
+
+Validation: Prisma schema validation, TypeScript checking, lint, the full unit
+suite, focused detail-view/UI regression tests, and the production build passed.
+
+The SQL migration has not been applied to a live database, and browser
+interaction against migrated data remains unverified.
+
 ## Active roadmap
 
 ### Completed foundation
@@ -1797,7 +1824,7 @@ conversions.
        deleting each numeric client-identity compatibility path before marking that
        model complete below.
 
-#### Client-facing model progress: 39 / 47 complete (83%)
+#### Client-facing model progress: 40 / 47 complete (85%)
 
 The denominator is the 47 in-scope Prisma models whose own row identity currently
 crosses a client boundary. It excludes the five server-only models and the two
@@ -1881,7 +1908,7 @@ completion definition.
    -  [x] `File`
    -  [x] `FrontpageGalleryItem`
 -  **User domain**
-   -  [ ] `User`
+   -  [x] `User`
 -  **Setlist planning aggregate**
    -  [ ] `SetlistPlanGroup`
    -  [ ] `SetlistPlan`

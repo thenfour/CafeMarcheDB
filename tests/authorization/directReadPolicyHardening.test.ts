@@ -79,7 +79,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     )
     await expect(invokeResolver(
       getUserWikiContributions,
-      { userId: pageOnlyActor.id },
+      { userId: pageOnlyActor.publicId },
       ctx,
     )).rejects.toThrow("Unauthorized test persona; required: view_wiki_page_revisions")
   })
@@ -206,7 +206,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       permissions: analyticsPermissions,
     })
     authorizationTestDb.reset({
-      user: [analyticsActor],
+      user: [analyticsActor, createAuthorizationTestUser("normal", { id: 900 })],
       songCredit: [
         {
           id: 501,
@@ -266,7 +266,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       permissions: analyticsPermissions,
     })
 
-    const result = await invokeResolver(getUserCredits, { userId: 900, take: 10 }, ctx)
+    const result = await invokeResolver(getUserCredits, { userId: createAuthorizationTestUser("normal", { id: 900 }).publicId, take: 10 }, ctx)
 
     expect(result.songCredits.map(credit => credit.publicId)).toEqual(["SongCredit000501"])
   })
@@ -309,7 +309,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
 
     // Ownership makes a null visibility row readable, but it must not override
     // an explicit visibility permission the actor does not possess.
-    await expect(invokeResolver(getSetlistPlans, { userId: actor.id }, ctx)).resolves.toEqual([])
+    await expect(invokeResolver(getSetlistPlans, { userId: actor.publicId }, ctx)).resolves.toEqual([])
   })
 
   it("applies WikiPage visibility to page, contribution, and revision reads", async () => {
@@ -346,7 +346,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     )).resolves.toEqual(expect.objectContaining({ id: 41 }))
     await expect(invokeResolver(
       getUserWikiContributions,
-      { userId: actor.id },
+      { userId: actor.publicId },
       ctx,
     )).resolves.toEqual({ wikiContributions: [privateOwnerPage] })
     await expect(invokeResolver(getWikiPageRevision, { revisionId: 401 }, ctx)).resolves.toBeNull()

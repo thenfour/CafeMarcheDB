@@ -5,13 +5,14 @@ import { Permission } from "shared/permissions"
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads"
 import { createPublicDataFromDatabase } from "../server/effectivePermissions"
 import * as z from "zod"
+import { UserPublicIdSchema } from "../schemas"
 import { requireFreshPermission } from "../server/permissionAuthorization"
 import { registerImpersonationAudit } from "../server/impersonationAudit"
 import { requireCanManageUser } from "../server/userManagementPolicy"
 import { makeUserManagementActor, makeUserManagementTarget } from "../server/userManagementState"
 
 export const ImpersonateUserInput = z.object({
-    userId: z.number().int().positive(),
+    userId: UserPublicIdSchema,
 })
 
 export default resolver.pipe(
@@ -26,7 +27,7 @@ export default resolver.pipe(
 
         const user = await db.user.findFirst({
             ...UserWithRolesArgs,
-            where: { id: userId },
+            where: { publicId: userId },
         })
         if (!user) throw new Error("Could not find user id " + userId)
 
@@ -48,6 +49,6 @@ export default resolver.pipe(
             impersonatingFromUserId: originalActorUserId,
         }));
 
-        return { userId: user.id }
+        return { userId: user.publicId }
     }
 )

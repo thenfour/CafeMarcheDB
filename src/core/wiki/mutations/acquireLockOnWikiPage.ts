@@ -45,13 +45,13 @@ export default resolver.pipe(
 
             const updatability = GetWikiPageUpdatability({
                 currentPage: currentPage,
-                currentUserId: ctx.session.userId,
+                currentUserId: db3.xUser.parseIdentity(currentUser.publicId),
                 baseRevisionId: args.baseRevisionId,
                 baseContentVersion: args.baseContentVersion,
                 userClientLockId: args.lockId,
             });
 
-            const isOwnTakeover = currentPage?.lockedByUser?.id === currentUser.id &&
+            const isOwnTakeover = currentPage?.lockedByUser?.publicId === currentUser.publicId &&
                 !!args.takeOverLockId && currentPage.lockId === args.takeOverLockId;
             if ((updatability.isLockConflict && !isOwnTakeover) || updatability.isRevisionConflict) {
                 return updatability;
@@ -102,7 +102,7 @@ export default resolver.pipe(
             if (!currentPage) throw new Error("Updated wiki page was not authorized for reading.");
 
             return {
-                ...GetWikiPageUpdatability({ currentPage, currentUserId: currentUser.id,
+                ...GetWikiPageUpdatability({ currentPage, currentUserId: db3.xUser.parseIdentity(currentUser.publicId),
                     userClientLockId: args.lockId, baseRevisionId: args.baseRevisionId,
                     baseContentVersion: args.baseContentVersion }),
             }

@@ -5,6 +5,7 @@ import type { EventResponses_MinimalEvent, EventResponses_MinimalEventUserRespon
 import type { UserWithInstrumentsPayload } from "src/core/db3/shared/schema/prismArgs";
 import type { DashboardContextDataBase } from "src/core/components/dashboardContext/dashboardContextTypes";
 import { eventPublicId } from "./support/eventResponseFixtures";
+import { userPublicId } from "./support/userFixtures";
 
 describe("event invitation", () => {
     it.each([
@@ -35,8 +36,8 @@ describe("event invitation", () => {
 
 describe("website invitation resolution", () => {
     // No instrument lookup is needed for this user, keeping the fixture focused on invitations.
-    const user = { id: 10, instruments: [] } as unknown as UserWithInstrumentsPayload;
-    const resolve = (responses: EventResponses_MinimalEventUserResponse[], invitedUserIds: number[]) =>
+    const user = { publicId: userPublicId(10), instruments: [] } as unknown as UserWithInstrumentsPayload; // The fixture supplies only fields used by invitation resolution.
+    const resolve = (responses: EventResponses_MinimalEventUserResponse[], invitedUserIds: UserWithInstrumentsPayload["publicId"][]) =>
         getEventResponseForUser({
             user,
             event: { publicId: eventPublicId(1), responses, segments: [] } satisfies EventResponses_MinimalEvent,
@@ -44,22 +45,22 @@ describe("website invitation resolution", () => {
             dashboardContext: {} as DashboardContextDataBase,
             userMap: [user],
             makeMockEventUserResponse: (_event, user, isInvited) => ({
-                id: -1, userId: user.id, isInvited, userComment: "", instrumentId: null,
+                id: -1, userId: user.publicId, isInvited, userComment: "", instrumentId: null,
             }),
         });
 
     it("resolves invitation through the tag while preserving the stored individual flag", () => {
-        const response = { id: 1, userId: user.id, isInvited: false, userComment: "", instrumentId: null };
-        const result = resolve([response], [user.id]);
+        const response = { id: 1, userId: user.publicId, isInvited: false, userComment: "", instrumentId: null };
+        const result = resolve([response], [user.publicId]);
         expect(result?.isInvited).toBe(true);
         expect(result?.response).toBe(response);
         expect(result?.response.isInvited).toBe(false);
     });
 
     it.each([true, false])("resolves missing response rows for tag membership %s", tagMember => {
-        const result = resolve([], tagMember ? [user.id] : []);
+        const result = resolve([], tagMember ? [user.publicId] : []);
         expect(result?.isInvited).toBe(tagMember);
         expect(result?.isRelevantForDisplay).toBe(tagMember);
-        expect(result?.response).toMatchObject({ userId: user.id, isInvited: tagMember });
+        expect(result?.response).toMatchObject({ userId: user.publicId, isInvited: tagMember });
     });
 });

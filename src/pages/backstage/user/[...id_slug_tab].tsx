@@ -12,11 +12,11 @@ import db from "db";
 import { useRouter } from "next/router";
 import { Suspense } from 'react';
 import { Permission } from "shared/permissions";
-import { CoerceToNumberOrNull } from "shared/utils";
+import type { UserPublicId } from "shared/publicId";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 
-const MyComponent = ({ userId }: { userId: number | null }) => {
+const MyComponent = ({ userId }: { userId: UserPublicId | null }) => {
     const params = useParams();
     const router = useRouter();
     const [id__, slug, tab] = params.id_slug_tab as string[];
@@ -36,7 +36,7 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
         tableSpec: DB3Client.defineTableClientSpec({
             view: db3.userEditorView,
             columns: {
-                id: columnName => new DB3Client.PKColumnClient({ columnName }),
+                publicId: DB3Client.publicIdFieldGen(),
                 name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 160 }),
                 email: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 }),
                 phone: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 120 }),
@@ -50,7 +50,7 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
             },
         }),
         filterModel: {
-            pks: [userId]
+            publicIds: [userId]
         }
     };
 
@@ -76,13 +76,13 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
 
 interface PageProps {
     title: string,
-    userId: number | null,
+    userId: UserPublicId | null,
 };
 
 export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
     const [id__] = params!.id_slug_tab as string[];
-    const id = CoerceToNumberOrNull(id__);
-    if (!id) return { notFound: true };
+    if (!db3.xUser.isIdentity(id__)) return { notFound: true };
+    const publicId = db3.xUser.parseIdentity(id__);
 
     // id: required always. even though we have "slugs", we require the ID to avoid conflicts.
     // slug: ignored.
@@ -98,11 +98,11 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
         ctx,
         permission: Permission.view_users_basic_info,
         table: db3.xUser,
-        identity: id,
+        identity: publicId,
         includeDeleted: effectivePermissions.includesName(Permission.recover_users),
         load: where => db.user.findFirst({
             select: {
-                id: true,
+                publicId: true,
                 name: true,
             },
             where,
@@ -110,7 +110,7 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
     });
     if (!user) return { notFound: true };
 
-    return { props: { title: user.name, userId: user.id } };
+    return { props: { title: user.name, userId: publicId } };
 });
 
 const UserDetailPage: BlitzPage = (x: PageProps) => {

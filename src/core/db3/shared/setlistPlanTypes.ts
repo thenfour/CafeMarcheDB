@@ -1,7 +1,7 @@
 import type { Nullish } from "@/shared/rootroot";
 import { Prisma } from "db";
 import { QuickSearchItemType } from "shared/quickFilter";
-import { isPublicId, type PermissionPublicId } from "shared/publicId";
+import { isPublicId, type PermissionPublicId, type UserPublicId } from "shared/publicId";
 import { z } from "zod";
 import * as db3 from "../db3";
 
@@ -27,7 +27,7 @@ export const ZSetlistPlanAssociatedItem = z.discriminatedUnion("itemType", [
     z.object({
         ...SetlistPlanAssociatedItemBase,
         itemType: z.literal(QuickSearchItemType.user),
-        id: z.number()
+        id: db3.xUser.identitySchema
     }),
     z.object({
         ...SetlistPlanAssociatedItemBase,
@@ -122,7 +122,7 @@ export const ZSetlistPlan = z.object({
     sortOrder: z.number().optional(),
     description: z.string(),
     createdAt: z.date(),
-    createdByUserId: z.number(),
+    createdByUserId: db3.xUser.identitySchema,
     payload: ZSetlistPlanPayload,
     visiblePermissionId: z.custom<PermissionPublicId>(isPublicId).nullable(),
     // NOTE: Adding non-primitives (e.g. Date) here will cause issues with serialization to/from JSON.
@@ -166,7 +166,7 @@ export const CreatePastedSetlistPlanPreservingMetadata = ({
 };
 
 // doesn't serialize to db.
-export const CreateNewSetlistPlan = (id: number, name: string, groupId: number | Nullish, createdByUserId: number): SetlistPlan => {
+export const CreateNewSetlistPlan = (id: number, name: string, groupId: number | Nullish, createdByUserId: UserPublicId): SetlistPlan => {
     //if (!dashboardContext.currentUser) throw new Error("must be logged in to create a new setlist plan");
     return {
         id,
@@ -190,6 +190,7 @@ export const SetlistPlanWithVisibilityArgs = Prisma.validator<Prisma.SetlistPlan
         visiblePermission: {
             select: { publicId: true },
         },
+        createdByUser: { select: { publicId: true } },
     },
 });
 
@@ -211,7 +212,7 @@ export const DeserializeSetlistPlan = (obj: SetlistPlanWithVisibilityPayload): S
         console.error(e);
     }
     return {
-        createdByUserId: obj.createdByUserId,
+        createdByUserId: db3.xUser.parseIdentity(obj.createdByUser.publicId),
         createdAt: obj.createdAt,
         description: obj.description,
         id: obj.id,

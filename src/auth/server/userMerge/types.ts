@@ -1,5 +1,5 @@
 import type { Prisma } from "db";
-import type { MergeReportSection, UserMergeParticipants } from "../../userMergeSchemas";
+import type { MergeReportSection, UserMergeDatabaseParticipants } from "../../userMergeSchemas";
 
 
 // types and utilities shared by merge policies
@@ -10,7 +10,7 @@ export type MergeUser = Prisma.UserGetPayload<{
     include: { role: { include: { permissions: { include: { permission: true } } } } }
 }>;
 
-export interface MergeContext extends UserMergeParticipants {
+export interface MergeContext extends UserMergeDatabaseParticipants {
     db: MergeDatabase;
     main: MergeUser;
     retiring: MergeUser;
@@ -36,6 +36,6 @@ export interface MergePolicy {
 export const countEffect = (label: string, count: number) => ({ label, count });
 
 // prisma where clause for selecting participants in a user merge
-export const participantWhere = (context: UserMergeParticipants) => ({
+export const participantWhere = (context: UserMergeDatabaseParticipants) => ({
     userId: { in: [context.mainUserId, context.retiringUserId] },
 });

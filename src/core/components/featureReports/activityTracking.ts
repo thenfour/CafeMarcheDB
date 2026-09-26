@@ -335,7 +335,6 @@ function detectBrowser(uaData?: /* NavigatorUAData */ any): Browsers | string | 
 
 export const ZTRecordActionArgs = z.object({
     uri: z.string().optional(), // for server side this may not be available.
-    userId: z.number().optional(), // optional for client-side actions
     feature: z.nativeEnum(ActivityFeature),
     context: z.string().optional(),
     deviceInfo: ZDeviceInfo.optional(),

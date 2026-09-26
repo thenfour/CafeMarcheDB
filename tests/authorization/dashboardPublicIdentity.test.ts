@@ -24,6 +24,7 @@ import { PermissionSet } from "src/auth/shared/PermissionSet";
 import { Permission } from "shared/permissions";
 import type { EventPublicId } from "shared/publicId";
 import { eventPublicId } from "../support/eventResponseFixtures";
+import { userPublicId } from "../support/userFixtures";
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { invokeResolver } from "./support/resolverHarness";
@@ -144,5 +145,5 @@ it("rejects natural targeting for every migrated table while retaining legacy-ta
         expect(() => validateDB3QueryRequest({ ...input, filter: { items: [{ field: table.pkMember, operator: "equals", value: 1 }] } }))
             .toThrow("queries require public identity");
     }
-    expect(() => validateDB3QueryRequest({ ...request({ pks: [1] }), table: { tableID: "User", tableName: "User" } })).not.toThrow();
+    expect(() => validateDB3QueryRequest({ ...request({ publicIds: [userPublicId(1)] }), table: { tableID: "User", tableName: "User" } })).not.toThrow();
 });

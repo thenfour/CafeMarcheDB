@@ -226,7 +226,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         };
     }, [sess.permissionNames, setShowingAdminControlsMutation]);
 
-    const [dashboardDto, { refetch }] = useQuery(getDashboardData, { userId: currentUser?.id ?? null });
+    const [dashboardDto, { refetch }] = useQuery(getDashboardData, {});
     const dashboardData = React.useMemo(() => db3.hydrateDashboardData(dashboardDto), [dashboardDto]);
     valueRef.current.refetchDashboardData = refetch;
     valueRef.current.permission = new TableAccessor(dashboardData.permission);

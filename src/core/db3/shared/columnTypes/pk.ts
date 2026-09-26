@@ -1,5 +1,6 @@
 
 import { TAnyModel } from "@/shared/rootroot";
+import { Permission } from "shared/permissions";
 import { z } from "zod";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion,
@@ -20,17 +21,18 @@ import { type UserWithRolesPayload } from "../schema/userPayloads";
 // };
 
 
-export type PKNaturalIdVisibility = "all" | "sysadmin" | undefined;
+export type PKNaturalIdVisibility = "all" | "sysadmin" | "never" | undefined;
 
 type PKReadPresence<TVisibility extends PKNaturalIdVisibility> =
-    TVisibility extends "sysadmin" ? "optional" : "required";
+    TVisibility extends "sysadmin" | "never" ? "optional" : "required";
 
 export type PKFieldArgs<TVisibility extends PKNaturalIdVisibility = undefined> = {
     columnName: string;
     isRowOwner?: boolean;
 
     // "all" = visible to all users; the default for tables without publicId (only natural monotonic id)
-    // "sysadmin" = show natural id only to system administrators; this is useful on tables with publicId where we don't normally show the id; this grants an exception to sysadmins only.
+    // "sysadmin" = show natural id only to system administrators.
+    // "never" = keep the natural id inside trusted server code only.
     naturalIdVisibility?: TVisibility;
 };// & DB3AuthSpec;
 
@@ -50,9 +52,17 @@ export class PKField<
             fieldTableAssociation: "tableColumn",
             defaultValue: null,
             readTransportSchema: z.number().int(),
-            authMap: args.naturalIdVisibility === "sysadmin"
-                ? createAuthContextMap_SysadminNaturalPK()
-                : createAuthContextMap_PK(),
+            authMap: args.naturalIdVisibility === "never"
+                ? {
+                    PostQuery: Permission.never_grant,
+                    PostQueryAsOwner: Permission.never_grant,
+                    PreInsert: Permission.never_grant,
+                    PreMutate: Permission.never_grant,
+                    PreMutateAsOwner: Permission.never_grant,
+                }
+                : args.naturalIdVisibility === "sysadmin"
+                    ? createAuthContextMap_SysadminNaturalPK()
+                    : createAuthContextMap_PK(),
             specialFunction: args.isRowOwner
                 ? SqlSpecialColumnFunction.ownerUser
                 : SqlSpecialColumnFunction.pk,

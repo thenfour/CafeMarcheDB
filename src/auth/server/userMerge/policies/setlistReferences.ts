@@ -21,7 +21,7 @@ export const setlistReferencesPolicy: MergePolicy = {
                 ]
                     .map(item => item.associatedItem);
 
-                if (associations.some(item => item?.itemType === "user" && item.id === context.retiringUserId)) {
+                if (associations.some(item => item?.itemType === "user" && item.id === context.retiring.publicId)) {
                     referencingPlans.push(plan.id);
                 }
             } catch {

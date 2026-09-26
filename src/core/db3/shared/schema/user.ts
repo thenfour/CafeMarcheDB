@@ -10,17 +10,17 @@ import type {
     RolePermissionPublicId,
     RolePublicId,
     UserInstrumentPublicId,
+    UserPublicId,
     UserTagAssignmentPublicId,
     UserTagPublicId,
 } from "shared/publicId";
 import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
-import { z } from "zod";
 import { CMDBTableFilterModel, PermissionSignificance } from "../apiTypes";
 import { BoolField, ForeignCollectionField, foreignRef, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserPayloadMinimum, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
+import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
 import { xInstrument } from "./instrument";
 
 // Basic profile data is self-service for the account owner and readable for
@@ -179,17 +179,18 @@ const xRoleAdministrationTableAuthMap: db3.DB3AuthTablePermissionMap = {
 
 export const xUserMinimum = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.UserDelegate>(),
+    getIdentity: (user: { publicId: UserPublicId }) => user.publicId,
     getSelectionArgs: (): Prisma.UserDefaultArgs => {
         return UserMinimumArgs;
     },
     tableName: "User",
     deletePolicy: "disabled", // deletion is performed through a dedicated mutation.
     queryParameters: {
-        userId: { kind: "integer", authorizeAs: "id" },
+        userId: { kind: "entityIdentity", targetTableID: "User", authorizeAs: "publicId" },
     },
     naturalOrderBy: UserNaturalOrderBy,
-    getRowInfo: (row: UserPayloadMinimum) => ({
-        pk: row.id,
+    getRowInfo: (row: Pick<UserPayload, "id" | "publicId" | "name">) => ({
+        pk: row.publicId,
         name: row.name,
         ownerUserId: row.id,
     }),
@@ -221,7 +222,8 @@ export const xUserMinimum = db3.defineTable({
         return false;
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield({ isRowOwner: true }),
+        id: () => MakePKfield({ isRowOwner: true, naturalIdVisibility: "never" }),
+        publicId: () => MakePublicIdField<UserPublicId>(),
         createdAt: () => MakeCreatedAtField({ authMap: xUserOperationalMetadataAuthMap }),
         isDeleted: () => MakeIsDeletedField({ authMap: xUserOperationalMetadataAuthMap }),
 
@@ -568,7 +570,7 @@ export const xUserTag = db3.defineTable(userTagBaseArgs);
 
 
 
-export type EventResponses_ExpectedUserTag = Prisma.UserTagGetPayload<{
+type EventResponses_ExpectedUserTagDb = Prisma.UserTagGetPayload<{
     select: {
         publicId: true,
         userAssignments: {
@@ -578,6 +580,9 @@ export type EventResponses_ExpectedUserTag = Prisma.UserTagGetPayload<{
         }
     }
 }>;
+export type EventResponses_ExpectedUserTag = Omit<EventResponses_ExpectedUserTagDb, "userAssignments"> & {
+    userAssignments: { userId: UserPublicId }[];
+};
 
 
 
@@ -626,9 +631,8 @@ export const xUserTagAssignment = db3.defineTable({
             fkidMember: "userTagId",
             authMap: xUserBasicProfileManagerWriteAuthMap,
         }),
-        userId: memberName => new GhostField({
-            memberName,
-            readTransportSchema: z.number().int(),
+        user: foreignRef(() => xUser, {
+            fkidMember: "userId",
             specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
             authMap: xUserBasicProfileManagerWriteAuthMap,
         }),
@@ -686,7 +690,7 @@ export interface UserTablParams {
 
 const userBaseArgs = db3.defineTableDesc({
     prismaModel: db3.prismaModel<Prisma.UserDelegate>(),
-    getIdentity: (user: { id: number }) => user.id,
+    getIdentity: (user: { publicId: UserPublicId }) => user.publicId,
     getSelectionArgs: (): Prisma.UserDefaultArgs => {
         return UserSafeArgs;
     },
@@ -695,13 +699,13 @@ const userBaseArgs = db3.defineTableDesc({
     viewDeletedPermission: Permission.recover_users,
     searchCapabilities: { includeDeleted: true },
     queryParameters: {
-        userId: { kind: "integer", authorizeAs: "id" },
-        userIds: { kind: "integerArray", authorizeAs: "id" },
+        userId: { kind: "entityIdentity", targetTableID: "User", authorizeAs: "publicId" },
+        userIds: { kind: "entityIdentityArray", targetTableID: "User", authorizeAs: "publicId" },
     },
     tableAuthMap: xUserTableAuthMap_SysadminInsert,
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.name,
         ownerUserId: row.id,
     }),
@@ -722,7 +726,8 @@ const userBaseArgs = db3.defineTableDesc({
         return ret;
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield({ isRowOwner: true }),
+        id: () => MakePKfield({ isRowOwner: true, naturalIdVisibility: "never" }),
+        publicId: () => MakePublicIdField<UserPublicId>(),
         isDeleted: () => MakeIsDeletedField({ authMap: xUserOperationalMetadataAuthMap }),
         createdAt: () => MakeCreatedAtField({ authMap: xUserOperationalMetadataAuthMap }),
         name: columnName => new GenericStringField({

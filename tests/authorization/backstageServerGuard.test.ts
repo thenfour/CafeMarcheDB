@@ -241,7 +241,7 @@ describe("backstage server page guard", () => {
     it("keeps user Mass Analysis behind the sysadmin permission", async () => {
         await expect(invokeResolver(
             getUserMassAnalysis,
-            { userId: eventAdmin.id },
+            { userId: eventAdmin.publicId },
             createAuthorizationTestContext(eventAdmin),
         )).rejects.toThrow(new RegExp(`Not authorized for ${Permission.sysadmin}`));
     });

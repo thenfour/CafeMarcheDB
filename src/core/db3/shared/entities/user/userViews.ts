@@ -8,6 +8,7 @@ import {
     type UserInstrumentPublicId,
     type UserTagAssignmentPublicId,
     type UserTagPublicId,
+    type UserPublicId,
 } from "shared/publicId";
 import { defineCrudView } from "../../core/db3CrudView";
 import { deriveViewContract } from "../../core/db3ViewContract";
@@ -28,7 +29,7 @@ const UserEditorRoleDtoSchema = z.object({
 
 const UserEditorInstrumentAssociationDtoSchema = z.object({
     publicId: z.custom<UserInstrumentPublicId>(isPublicId),
-    userId: z.number().int().optional(),
+    userId: xUser.identitySchema.optional(),
     instrumentId: z.custom<InstrumentPublicId>(isPublicId).optional(),
     isPrimary: z.boolean().optional(),
     instrument: z.object({
@@ -45,7 +46,7 @@ const UserEditorInstrumentAssociationDtoSchema = z.object({
 
 const UserEditorTagAssociationDtoSchema = z.object({
     publicId: z.custom<UserTagAssignmentPublicId>(isPublicId),
-    userId: z.number().int().optional(),
+    userId: xUser.identitySchema.optional(),
     userTagId: z.custom<UserTagPublicId>(isPublicId).optional(),
     userTag: z.object({
         publicId: z.custom<UserTagPublicId>(isPublicId),
@@ -59,7 +60,7 @@ const UserEditorTagAssociationDtoSchema = z.object({
 });
 
 const UserEditorDtoSchema = z.object({
-    id: z.number().int(),
+    publicId: xUser.identitySchema,
     isDeleted: z.boolean().optional(),
     name: z.string().optional(),
     email: z.string().optional(),
@@ -119,7 +120,7 @@ const userInstrumentEditorSelection = Prisma.validator<Prisma.UserInstrumentDefa
     select: {
         publicId: true,
         userId: true,
-        user: { select: { id: true, name: true } },
+        user: { select: { publicId: true, name: true } },
         instrumentId: true,
         instrument: {
             select: {

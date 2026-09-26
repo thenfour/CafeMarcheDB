@@ -8,20 +8,21 @@ import {
 } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
+import { UserPublicIdSchema } from "../schemas";
 import {
     requireCanManageUser,
     requireContinuityAcknowledgement,
 } from "../server/userManagementPolicy";
 import {
     findUserManagementActor,
-    findUserManagementTarget,
+    findUserManagementTargetByPublicId,
     getUserManagementContinuityWarnings,
 } from "../server/userManagementState";
 import { revokeUserSignInState } from "../server/signInMethods";
 import { PermissionSet } from "../shared/PermissionSet";
 
 export const DeactivateUserInput = z.object({
-    userId: z.number().int().positive(),
+    userId: UserPublicIdSchema,
     acknowledgeContinuityRisk: z.boolean().default(false),
 });
 
@@ -32,7 +33,7 @@ export default resolver.pipe(
         async tx => {
             const [actor, target] = await Promise.all([
                 findUserManagementActor(tx, ctx.session.userId),
-                findUserManagementTarget(tx, userId),
+                findUserManagementTargetByPublicId(tx, userId),
             ]);
 
             if (!target) throw new NotFoundError();
@@ -49,15 +50,15 @@ export default resolver.pipe(
             );
 
             await tx.user.update({
-                where: { id: userId },
+                where: { id: target.principal.id },
                 data: { isDeleted: true },
             });
-            await revokeUserSignInState(tx, userId);
+            await revokeUserSignInState(tx, target.principal.id);
             await RegisterChange({
                 action: ChangeAction.update,
                 changeContext: CreateChangeContext("deactivateUser"),
                 table: "User",
-                pkid: userId,
+                pkid: target.principal.id,
                 oldValues: { isDeleted: false },
                 newValues: { isDeleted: true },
                 ctx,

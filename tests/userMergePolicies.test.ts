@@ -9,12 +9,15 @@ import { setlistReferencesPolicy } from "src/auth/server/userMerge/policies/setl
 import { signInMethodsPolicy } from "src/auth/server/userMerge/policies/signInMethods";
 import { userTagsPolicy } from "src/auth/server/userMerge/policies/userTags";
 import type { MergeContext, MergePolicy } from "src/auth/server/userMerge/types";
+import { userPublicId } from "./support/userFixtures";
 
 const mainUserId = 10;
 const retiringUserId = 20;
 const context = (db: unknown, main = {}, retiring = {}) => ({
-    db, mainUserId, retiringUserId, main: { hashedPassword: null, ...main }, retiring: { hashedPassword: null, ...retiring },
-}) as MergeContext;
+    db, mainUserId, retiringUserId,
+    main: { publicId: userPublicId(mainUserId), hashedPassword: null, ...main },
+    retiring: { publicId: userPublicId(retiringUserId), hashedPassword: null, ...retiring },
+}) as unknown as MergeContext; // Policy test double supplies only fields read by the policy.
 const count = (step: Awaited<ReturnType<MergePolicy["prepare"]>>, label: string) => step.report.effects.find(effect => effect.label === label)?.count;
 
 describe("user merge policy coverage", () => {
@@ -116,7 +119,7 @@ describe("fixed password policy", () => {
 describe("unsupported embedded references", () => {
     it.each(["columns", "columnLeds", "rowLeds"])("blocks user references in %s without disclosing plan data", async field => {
         const item = field === "columns" ? { columnId: "c", name: "private column" } : { ledId: "l", name: "private LED" };
-        const payload = { version: 1, columns: [], rows: [], cells: [], [field]: [{ ...item, associatedItem: { itemType: "user", id: retiringUserId, name: "private name" } }] };
+        const payload = { version: 1, columns: [], rows: [], cells: [], [field]: [{ ...item, associatedItem: { itemType: "user", id: userPublicId(retiringUserId), name: "private name" } }] };
         const step = await setlistReferencesPolicy.prepare(context({ setlistPlan: { findMany: async () => [{ id: 1, payloadJson: JSON.stringify(payload) }] } }));
         expect(step.report.blockers).toHaveLength(1);
         expect(count(step, "Plans referencing Retiring")).toBe(1);

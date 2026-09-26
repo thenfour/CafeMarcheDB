@@ -150,6 +150,7 @@ export async function MigrateEventDescriptionWikiPaths() {
 type SetlistPlanPublicIds = {
     event: ReadonlyMap<number, string>;
     song: ReadonlyMap<number, string>;
+    user: ReadonlyMap<number, string>;
 };
 
 export async function MigrateSetlistPlanPublicIdReferences() {
@@ -157,6 +158,7 @@ export async function MigrateSetlistPlanPublicIdReferences() {
     const parsedPlans: { id: number; payload: unknown }[] = [];
     const numericEventIds = new Set<number>();
     const numericSongIds = new Set<number>();
+    const numericUserIds = new Set<number>();
     for (const plan of plans) {
         try {
             const payload: unknown = JSON.parse(plan.payloadJson);
@@ -169,6 +171,9 @@ export async function MigrateSetlistPlanPublicIdReferences() {
                 }
                 if (item.itemType === QuickSearchItemType.song && typeof item.id === "number") {
                     numericSongIds.add(item.id);
+                }
+                if (item.itemType === QuickSearchItemType.user && typeof item.id === "number") {
+                    numericUserIds.add(item.id);
                 }
             }
             parsedPlans.push({ id: plan.id, payload });
@@ -189,9 +194,16 @@ export async function MigrateSetlistPlanPublicIdReferences() {
             where: { id: { in: [...numericSongIds] } },
             select: { id: true, publicId: true },
         });
+    const users = numericUserIds.size === 0
+        ? []
+        : await db.user.findMany({
+            where: { id: { in: [...numericUserIds] } },
+            select: { id: true, publicId: true },
+        });
     const publicIds: SetlistPlanPublicIds = {
         event: new Map(events.map(event => [event.id, event.publicId])),
         song: new Map(songs.map(song => [song.id, song.publicId])),
+        user: new Map(users.map(user => [user.id, user.publicId])),
     };
     let migratedPlans = 0;
     for (const plan of parsedPlans) {
@@ -221,14 +233,17 @@ export function migrateSetlistPlanReferences(
         if (typeof item.id !== "number") continue;
         const isEvent = item.itemType === QuickSearchItemType.event;
         const isSong = item.itemType === QuickSearchItemType.song;
-        if (!isEvent && !isSong) continue;
-        const publicId = (isEvent ? publicIds.event : publicIds.song).get(item.id);
+        const isUser = item.itemType === QuickSearchItemType.user;
+        if (!isEvent && !isSong && !isUser) continue;
+        const publicId = (isEvent ? publicIds.event : isSong ? publicIds.song : publicIds.user).get(item.id);
         if (!publicId) continue;
         item.id = publicId;
         if (typeof item.absoluteUri === "string") {
             item.absoluteUri = item.absoluteUri.replace(
-                isEvent ? /\/backstage\/event\/\d+(?=\/|$)/ : /\/backstage\/song\/\d+(?=\/|$)/,
-                `/backstage/${isEvent ? "event" : "song"}/${publicId}`,
+                isEvent ? /\/backstage\/event\/\d+(?=\/|$)/ :
+                    isSong ? /\/backstage\/song\/\d+(?=\/|$)/ :
+                        /\/backstage\/user\/\d+(?=\/|$)/,
+                `/backstage/${isEvent ? "event" : isSong ? "song" : "user"}/${publicId}`,
             );
         }
         changed = true;
@@ -253,6 +268,7 @@ export async function registerNodeInstrumentation() {
     await CorrectPublicIds(db.song, "Song");
     await CorrectPublicIds(db.file, "File");
     await CorrectPublicIds(db.frontpageGalleryItem, "FrontpageGalleryItem");
+    await CorrectPublicIds(db.user, "User");
     await CorrectPublicIds(db.songCreditType, "SongCreditType");
     await CorrectPublicIds(db.songCredit, "SongCredit");
     await CorrectPublicIds(db.fileTag, "FileTag");

@@ -14,17 +14,36 @@ export interface UserExtraInfo {
 
 export default resolver.pipe(
     resolver.zod(z.object({
-        userId: z.number(),
-    })),
+        userId: xUser.identitySchema,
+    }).strict()),
     async (args, ctx: AuthenticatedCtx) => {
         const { user, effectivePermissions } = await getRequestAuthorization(ctx.session);
         const publicData = createDB3Authorization(user, effectivePermissions);
+        const ret = await db.user.findFirst({
+            select: {
+                id: true,
+                signInMethods: {
+                    select: { type: true, },
+                },
+            },
+            where: await GetAuthorizedTableReadWhere({
+                table: xUser,
+                currentUser: user,
+                where: { publicId: args.userId },
+                includeDeleted: effectivePermissions.includesName(Permission.recover_users),
+            }),
+        });
+
+        if (!ret) {
+            throw new NotFoundError();
+        }
+
         const summaryAuthorization = xUser.authorizeAndSanitize({
             contextDesc: "getUserExtraInfo",
             publicData,
             rowMode: "view",
             model: {
-                id: args.userId,
+                id: ret.id,
                 signInMethodSummary: null, // force inclusion of this field for authorization purposes
             },
             fallbackOwnerId: null,
@@ -34,29 +53,10 @@ export default resolver.pipe(
             throw new AuthorizationError();
         }
 
-        const ret = await db.user.findFirst({
-            select: {
-                signInMethods: {
-                    select: { type: true, },
-                },
-            },
-            where: await GetAuthorizedTableReadWhere({
-                table: xUser,
-                currentUser: user,
-                where: { id: args.userId },
-                includeDeleted: effectivePermissions.includesName(Permission.recover_users),
-            }),
-        });
-
-        if (!ret) {
-            throw new NotFoundError();
-        }
-
         return {
             signinMethods: ret.signInMethods.map(method => method.type),
         } satisfies UserExtraInfo;
     }
 );
-
 
 

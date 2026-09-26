@@ -1,9 +1,10 @@
 import { z } from "zod";
-import type { RolePublicId } from "shared/publicId";
+import type { RolePublicId, UserPublicId } from "shared/publicId";
+import { UserPublicIdSchema } from "./schemas";
 
 export const UserMergeInput = z.object({
-    mainUserId: z.number().int().positive(),
-    retiringUserId: z.number().int().positive(),
+    mainUserId: UserPublicIdSchema,
+    retiringUserId: UserPublicIdSchema,
 }).strict().refine(input => input.mainUserId !== input.retiringUserId, "Choose two different accounts.");
 
 export const CommitUserMergeInput = z.object({
@@ -12,10 +13,11 @@ export const CommitUserMergeInput = z.object({
 }).strict();
 
 export type UserMergeParticipants = z.infer<typeof UserMergeInput>;
+export type UserMergeDatabaseParticipants = { mainUserId: number; retiringUserId: number };
 
 // This is the entire disclosure contract. Detailed plans never cross the RPC boundary.
 export interface MergeIdentity {
-    id: number;
+    publicId: UserPublicId;
     name: string;
     email: string;
     createdAt: Date;

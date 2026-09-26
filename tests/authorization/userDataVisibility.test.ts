@@ -112,7 +112,7 @@ async function queryTargetAs(actor: typeof basicViewer) {
   const result = await invokeResolver(
     db3queries,
     forgeDb3Query("User", {
-      filter: { items: [], tableParams: { userId: target.id } },
+      filter: { items: [], tableParams: { userId: target.publicId } },
     }),
     createAuthorizationTestContext(actor),
   )
@@ -130,14 +130,14 @@ describe("focused user data visibility", () => {
     const result = await invokeResolver(
       db3queries,
       forgeDb3Query("User", {
-        filter: { items: [], tableParams: { userId: owner.id } },
+        filter: { items: [], tableParams: { userId: owner.publicId } },
       }),
       createAuthorizationTestContext(owner),
     )
 
     expect(result.items).toHaveLength(1)
     expect(result.items[0]).toMatchObject({
-      id: owner.id,
+      publicId: owner.publicId,
       name: owner.name,
       email: owner.email,
       phone: owner.phone,
@@ -150,6 +150,7 @@ describe("focused user data visibility", () => {
     expect(result.items[0]).not.toHaveProperty("role")
     expect(result.items[0]).not.toHaveProperty("roleId")
     expect(result.items[0]).not.toHaveProperty("signInMethods")
+    expect(result.items[0]).not.toHaveProperty("id")
   })
 
   it("does not let login or search_users alone reveal another user", async () => {
@@ -160,31 +161,25 @@ describe("focused user data visibility", () => {
     authorizationTestDb.reset({ user: [searchOnly, target] })
 
     await expect(
-      invokeResolver(getUser, { userId: target.id }, createAuthorizationTestContext(searchOnly)),
+      invokeResolver(getUser, { userId: target.publicId }, createAuthorizationTestContext(searchOnly)),
     ).resolves.toBeNull()
   })
 
   it("returns only basic profile data for view_users_basic_info", async () => {
-    const result = await invokeResolver(
-      getUser,
-      { userId: target.id },
-      createAuthorizationTestContext(basicViewer),
-    )
+    const result = await queryTargetAs(basicViewer)
 
     expect(result).toMatchObject({
-      id: target.id,
+      publicId: target.publicId,
       name: target.name,
       cssClass: target.cssClass,
       instruments: [{
         publicId: userInstrumentPublicId,
-        userId: target.id,
         instrumentId: instrumentPublicId,
         instrument: { publicId: instrumentPublicId },
         isPrimary: true,
       }],
       tags: [{
         publicId: userTagAssignmentPublicId,
-        userId: target.id,
         userTagId: userTagPublicId,
         userTag: {
           publicId: userTagPublicId,
@@ -201,13 +196,14 @@ describe("focused user data visibility", () => {
     expect(result).not.toHaveProperty("roleId")
     expect(result).not.toHaveProperty("signInMethods")
     expect(result).not.toHaveProperty("hashedPassword")
+    expect(result).not.toHaveProperty("id")
   })
 
   it("adds contact fields only with view_user_contact_info", async () => {
     const result = await queryTargetAs(contactViewer)
 
     expect(result).toMatchObject({
-      id: target.id,
+      publicId: target.publicId,
       name: target.name,
       email: target.email,
       phone: target.phone,
@@ -217,13 +213,14 @@ describe("focused user data visibility", () => {
     expect(result).not.toHaveProperty("isSysAdmin")
     expect(result).not.toHaveProperty("role")
     expect(result).not.toHaveProperty("roleId")
+    expect(result).not.toHaveProperty("id")
   })
 
   it("adds operational account metadata only with manage_users", async () => {
     const result = await queryTargetAs(userManager)
 
     expect(result).toMatchObject({
-      id: target.id,
+      publicId: target.publicId,
       name: target.name,
       email: target.email,
       phone: target.phone,
@@ -246,19 +243,20 @@ describe("focused user data visibility", () => {
     })
     expect(result).not.toHaveProperty("signInMethods")
     expect(result).not.toHaveProperty("hashedPassword")
+    expect(result).not.toHaveProperty("id")
   })
 
   it("uses login for one's own coarse sign-in type and manage_users for another user", async () => {
     await expect(
-      invokeResolver(getUserExtraInfo, { userId: owner.id }, createAuthorizationTestContext(owner)),
+      invokeResolver(getUserExtraInfo, { userId: owner.publicId }, createAuthorizationTestContext(owner)),
     ).resolves.toEqual({ signinMethods: ["google"] })
 
     await expect(
-      invokeResolver(getUserExtraInfo, { userId: target.id }, createAuthorizationTestContext(basicViewer)),
+      invokeResolver(getUserExtraInfo, { userId: target.publicId }, createAuthorizationTestContext(basicViewer)),
     ).rejects.toThrow()
 
     await expect(
-      invokeResolver(getUserExtraInfo, { userId: target.id }, createAuthorizationTestContext(userManager)),
+      invokeResolver(getUserExtraInfo, { userId: target.publicId }, createAuthorizationTestContext(userManager)),
     ).resolves.toEqual({ signinMethods: ["google"] })
   })
 

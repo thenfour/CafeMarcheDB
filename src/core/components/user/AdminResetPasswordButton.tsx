@@ -9,7 +9,7 @@ import { CMDialog } from "../CMDialog";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import type * as db3 from "src/core/db3/db3";
 
-export const AdminResetPasswordButton = ({ user }: { user: Pick<db3.UserPayload, "id" | "name" | "email"> }) => {
+export const AdminResetPasswordButton = ({ user }: { user: Pick<db3.UserClientPayload, "publicId" | "name" | "email"> }) => {
     const [showConfirm, setShowConfirm] = React.useState<boolean>(false);
     const [resetURL, setResetURL] = React.useState<string | null>(null);
     const [showCopied, setShowCopied] = React.useState<boolean>(false);
@@ -17,7 +17,7 @@ export const AdminResetPasswordButton = ({ user }: { user: Pick<db3.UserPayload,
     const dashboardContext = useDashboardContext();
 
     const handleConfirmClick = () => {
-        forgotPasswordMutation({ userId: user.id }).then((r) => {
+        forgotPasswordMutation({ userId: user.publicId }).then((r) => {
             setShowConfirm(false);
             setResetURL(r);
         }).catch(e => {

@@ -44,23 +44,24 @@ export default resolver.pipe(
                     {
                         const file = await db.file.findFirst({
                             where: { id: input.pk },
-                            include: {
-                                taggedEvents: true,
+                            select: {
+                                publicId: true,
+                                fileLeafName: true,
+                                taggedEvents: { select: { eventId: true } },
                                 taggedInstruments: {
-                                    include: { instrument: { select: { publicId: true } } },
+                                    select: { instrument: { select: { publicId: true } } },
                                 },
-                                taggedSongs: true,
-                                taggedUsers: true,
+                                taggedSongs: { select: { songId: true } },
+                                taggedUsers: { select: { user: { select: { publicId: true } } } },
                             }
                         });
                         if (!file) break;
-                        const { taggedEvents, taggedInstruments, taggedSongs, taggedUsers, ...basicFile } = file;
                         return {
                             eventIds: file.taggedEvents.map(e => e.eventId),
                             instrumentIds: file.taggedInstruments.map(e => e.instrument.publicId),
                             songIds: file.taggedSongs.map(e => e.songId),
-                            userIds: file.taggedUsers.map(e => e.userId),
-                            file: basicFile,
+                            userIds: file.taggedUsers.map(e => e.user.publicId),
+                            file: { publicId: file.publicId, fileLeafName: file.fileLeafName },
                         };
                     }
             }

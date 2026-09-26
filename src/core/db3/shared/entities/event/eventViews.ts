@@ -327,7 +327,7 @@ const eventDetailTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
         isAllDay: true,
         visiblePermissionId: true,
         createdAt: true,
-        createdByUserId: true,
+        createdByUser: { select: { publicId: true } },
         segmentBehavior: true,
         expectedAttendanceUserTagId: true,
         frontpageVisible: true,
@@ -390,9 +390,8 @@ const eventDetailTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
                         userId: true,
                         attendanceId: true,
                         createdAt: true,
-                        createdByUserId: true,
                         updatedAt: true,
-                        updatedByUserId: true,
+                        updatedByUser: { select: { publicId: true, name: true } },
                     },
                 },
             },
@@ -446,6 +445,7 @@ const eventDetailTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
 const eventDetailRequestedSelection = Prisma.validator<Prisma.EventDefaultArgs>()(
     graft(eventDetailTransportSelection, {
         select: {
+            createdByUserId: true,
             isDeleted: true,
             fileTags: {
                 select: {

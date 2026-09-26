@@ -516,6 +516,8 @@ export interface DB3AuthorizeForEditColumnArgs<T extends TAnyModel> {
 
     columnName: string;
     fallbackOwnerId: number | null;
+    // Client edit controls may know the owner only by public ID.
+    fallbackOwnerPublicId?: string | null;
 };
 
 
@@ -1518,9 +1520,11 @@ export class xTable<
     authorizeColumnForEdit = <T extends TAnyModel,>(args: DB3AuthorizeForEditColumnArgs<T>) => {
         const rowInfo = args.model ? this.getRowInfo(args.model) : null;
         const ownerUserId = this.getOwnerUserId(args.model, rowInfo?.ownerUserId, args.fallbackOwnerId);
-        const isOwner = ownerUserId != null
+        const isOwnerByNumericId = ownerUserId != null
             && ((args.publicData.userId || 0) > 0)
             && (args.publicData.userId === ownerUserId);
+        const isOwner = isOwnerByNumericId || (args.fallbackOwnerPublicId != null
+            && args.publicData.userPublicId === args.fallbackOwnerPublicId);
         const col = this.columns.find(candidate => candidate.member === args.columnName);
         if (!col) return false;
         return col.authorize({

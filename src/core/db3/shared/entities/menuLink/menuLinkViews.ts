@@ -46,7 +46,7 @@ const menuLinkListSelection = Prisma.validator<Prisma.MenuLinkDefaultArgs>()({
         createdByUserId: true,
         createdByUser: {
             select: {
-                id: true,
+                publicId: true,
                 name: true,
                 cssClass: true,
             },

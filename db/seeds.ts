@@ -766,6 +766,7 @@ const main = async () => {
     if (specialUser) {
       user = await gState.prisma.user.create({
         data: {
+          publicId: generatePublicId<"User">(),
           name: specialUser.name,
           email: specialUser.email,
           phone: faker.phone.number(),
@@ -777,6 +778,7 @@ const main = async () => {
     } else {
       user = await gState.prisma.user.create({
         data: {
+          publicId: generatePublicId<"User">(),
           name: faker.person.fullName(),
           email: faker.internet.email(),
           phone: faker.phone.number(),

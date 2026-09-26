@@ -127,6 +127,16 @@ const testRelations: Record<string, Record<string, Relation>> = {
     eventSegment: { table: "eventSegment", local: "eventSegmentId", foreign: "id" },
     attendance: { table: "eventAttendance", local: "attendanceId", foreign: "id" },
   },
+  songCredit: {
+    user: { table: "user", local: "userId", foreign: "id" },
+    song: { table: "song", local: "songId", foreign: "id" },
+  },
+  userSignInMethod: {
+    user: { table: "user", local: "userId", foreign: "id" },
+  },
+  change: {
+    user: { table: "user", local: "userId", foreign: "id" },
+  },
 }
 
 export class InMemoryDelegate {

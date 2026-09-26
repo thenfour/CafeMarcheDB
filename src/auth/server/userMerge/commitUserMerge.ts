@@ -6,11 +6,13 @@ import type { CommitUserMergeInput } from "../../userMergeSchemas";
 import { authorizeMergeActor } from "./mergeEligibility";
 import { prepareUserMerge } from "./prepareUserMerge";
 import { UserMergeError } from "./publicResponse";
+import type { UserPublicId } from "shared/publicId";
+import { xUser } from "src/core/db3/shared/schema/user";
 
 export const MERGE_REVIEW_CHANGED = "The accounts changed since this report was prepared. Refresh the report before merging.";
 
 type CommitUserMergeResult = {
-    mainUserId: number;
+    mainUserId: UserPublicId;
 };
 
 export async function commitUserMerge(db: PrismaClient, ctx: Ctx, input: z.infer<typeof CommitUserMergeInput>): Promise<CommitUserMergeResult> {
@@ -59,14 +61,14 @@ export async function commitUserMerge(db: PrismaClient, ctx: Ctx, input: z.infer
                 pkid: context.retiringUserId,
                 oldValues: {},
                 newValues: {
-                    mainUserId: context.mainUserId,
-                    retiringUserId: context.retiringUserId,
+                    mainUserId: context.main.publicId,
+                    retiringUserId: context.retiring.publicId,
                     policyVersion: preview.policyVersion,
                     sections: preview.sections,
                 },
                 options: { dontCalculateChanges: true }, ctx, db: tx,
             });
-            return { mainUserId: context.mainUserId };
+            return { mainUserId: xUser.parseIdentity(context.main.publicId) };
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 30_000, maxWait: 10_000 });
     } catch (error) {
         // https://www.prisma.io/docs/orm/v6/reference/error-reference

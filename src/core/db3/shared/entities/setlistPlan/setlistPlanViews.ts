@@ -2,6 +2,7 @@ import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import type { ClientOf } from "../../core/db3View";
 import { xSetlistPlanGroup } from "../../schema/setlistPlan";
+import { xUser } from "../../schema/user";
 
 const SetlistPlanGroupEditorDtoSchema = z.object({
     id: z.number().int(),
@@ -9,7 +10,7 @@ const SetlistPlanGroupEditorDtoSchema = z.object({
     description: z.string(),
     color: z.string().nullable(),
     sortOrder: z.number().int(),
-    createdByUserId: z.number().int(),
+    createdByUserId: xUser.identitySchema,
     createdAt: z.date(),
 });
 

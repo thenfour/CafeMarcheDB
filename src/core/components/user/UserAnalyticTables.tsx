@@ -34,7 +34,7 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
     const dashboardContext = useDashboardContext();
     const [take, setTake] = React.useState<number>(50);
 
-    const [qr, refetch] = useQuery(getUserEventAttendance, { userId: props.user.id, take });
+    const [qr, refetch] = useQuery(getUserEventAttendance, { userId: props.user.publicId, take });
     const agg = qr.events.reduce((acc, event) => {
         const segAgg = event.segments.reduce((segAcc, seg) => {
             const hasResponse = seg.attendanceId != null;
@@ -179,7 +179,7 @@ type UserCreditsTabContentProps = {
 export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
     const dashboardContext = useDashboardContext();
     const allSongs = useSongsContext().songs;
-    const [qr, refetch] = useQuery(getUserCredits, { userId: props.user.id, take: 100 });
+    const [qr, refetch] = useQuery(getUserCredits, { userId: props.user.publicId, take: 100 });
 
     const songCreditsWithAddl = qr.songCredits.map((credit, index) => ({
         ...credit,
@@ -244,7 +244,7 @@ type UserWikiContributionsTabContentProps = {
 };
 export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabContentProps) => {
     const dashboardContext = useDashboardContext();
-    const [qr, refetch] = useQuery(getUserWikiContributions, { userId: props.user.id });
+    const [qr, refetch] = useQuery(getUserWikiContributions, { userId: props.user.publicId });
 
     const wikiContributionsWithAddl = qr.wikiContributions.map((contribution, index) => ({
         ...contribution,
@@ -317,9 +317,9 @@ type UserMassAnalysisTabContentProps = {
 };
 
 export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProps) => {
-    const [qr, refetch] = useQuery(getUserMassAnalysis, { userId: props.user.id });
-    const [compareWithUser, setCompareWithUser] = React.useState<db3.UserPayload | null>(null);
-    const [compareQr, refetchCompare] = useQuery(getUserMassAnalysis, { userId: compareWithUser?.id || -1 }, { enabled: !!compareWithUser });
+    const [qr, refetch] = useQuery(getUserMassAnalysis, { userId: props.user.publicId });
+    const [compareWithUser, setCompareWithUser] = React.useState<db3.UserClientPayload | null>(null);
+    const [compareQr, refetchCompare] = useQuery(getUserMassAnalysis, { userId: compareWithUser?.publicId ?? props.user.publicId }, { enabled: !!compareWithUser });
 
     const getRiskColor = (level: 'low' | 'medium' | 'high') => {
         switch (level) {

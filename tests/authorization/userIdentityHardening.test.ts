@@ -73,7 +73,7 @@ describe("BA-U006 generic User identity boundaries", () => {
 
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3Update("User", target.id, { id: target.id, [field]: value }),
+      forgeDb3Update("User", target.id, { [field]: value }),
       ctx,
     )).rejects.toThrow(`Not authorized to mutate User fields: ${field}`)
 
@@ -94,7 +94,7 @@ describe("BA-U006 generic User identity boundaries", () => {
 
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3Update("User", target.id, { id: target.id, [field]: value }),
+      forgeDb3Update("User", target.id, { [field]: value }),
       ctx,
     )).rejects.toThrow(`Not authorized to mutate User fields: ${field}`)
 

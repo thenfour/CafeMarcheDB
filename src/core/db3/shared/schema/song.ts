@@ -389,7 +389,7 @@ export const xSongCredit = db3.defineTable({
     deletePolicy: "hard",
     queryParameters: {
         songId: { kind: "entityIdentity", targetTableID: "Song", authorizeAs: "songId", nullable: true },
-        userId: { kind: "integer", authorizeAs: "userId", nullable: true },
+        userId: { kind: "entityIdentity", targetTableID: "User", authorizeAs: "publicId", nullable: true },
     } satisfies db3.DB3QueryParameterMap,
     tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongCreditNaturalOrderBy,

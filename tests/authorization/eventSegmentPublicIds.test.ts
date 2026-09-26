@@ -130,7 +130,7 @@ describe("Event segment and response public identities", () => {
         const badKey = kind === "numeric" ? "2" : kind === "malformed" ? "bad" : segmentPublicId(kind === "unknown" ? 999 : 2);
         const before = snapshots();
         const create = vi.spyOn(authorizationTestDb.getDelegate("eventSegmentUserResponse"), "create");
-        await expect(invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.id, comment: "Must not save",
+        await expect(invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.publicId, comment: "Must not save",
             segmentResponses: { [segmentPublicId(1)]: { attendanceId: null }, [badKey]: { attendanceId: null } },
         }, ctx)).rejects.toThrow();
         expect(create).not.toHaveBeenCalled();
@@ -139,7 +139,7 @@ describe("Event segment and response public identities", () => {
 
     it("assigns public IDs when creating both response kinds", async () => {
         reset({ eventUserResponse: [], eventSegmentUserResponse: [] });
-        await invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.id, comment: "New response",
+        await invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.publicId, comment: "New response",
             segmentResponses: { [segmentPublicId(1)]: { attendanceId: attendancePublicId(2) } } }, ctx);
         for (const table of ["eventUserResponse", "eventSegmentUserResponse"]) {
             expect(isPublicId(authorizationTestDb.snapshot(table)[0]!.publicId)).toBe(true);

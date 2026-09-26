@@ -2,6 +2,7 @@ import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponseP
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
 import { songPublicId } from "../support/songFixtures";
+import { userPublicId } from "../support/userFixtures";
 import { filePublicId } from "../support/fileFixtures";
 import { galleryPublicId } from "../support/galleryFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
@@ -503,7 +504,7 @@ describe("DB3 named views", () => {
 
     it("queries the finite Custom Link and Menu Link collection views", async () => {
         const createdAt = new Date("2026-09-21T12:00:00.000Z");
-        const createdByUser = { id: 100, name: "Ada", cssClass: null, isDeleted: false };
+        const createdByUser = { id: 100, publicId: userPublicId(100), name: "Ada", cssClass: null, isDeleted: false };
         const customLink = {
             id: 20,
             name: "Scores",
@@ -573,9 +574,9 @@ describe("DB3 named views", () => {
             MenuLink: { findMany: vi.fn(async () => [menuLink]) },
         } as any);
 
-        const createdByUserDto = { id: createdByUser.id, name: createdByUser.name, cssClass: createdByUser.cssClass };
-        expect(customResult.items).toEqual([{ ...customLink, createdByUser: createdByUserDto }]);
-        expect(menuResult.items).toEqual([{ ...menuLink, createdByUser: createdByUserDto }]);
+        const createdByUserDto = { publicId: createdByUser.publicId, name: createdByUser.name, cssClass: createdByUser.cssClass };
+        expect(customResult.items).toEqual([{ ...customLink, createdByUserId: createdByUser.publicId, createdByUser: createdByUserDto }]);
+        expect(menuResult.items).toEqual([{ ...menuLink, createdByUserId: createdByUser.publicId, createdByUser: createdByUserDto }]);
     });
 
     it("represents authorization-stripped fields as absent optional DTO members", () => {
@@ -932,7 +933,7 @@ describe("DB3 named views", () => {
             isDeleted: true,
             visiblePermissionId: permission.publicId,
             tags: [{ publicId: fileTagAssignmentPublicId, fileTagId: fileTag.publicId }],
-            taggedUsers: [{ publicId: fileUserTagPublicId, user: { id: 13, name: "Ada" } }],
+            taggedUsers: [{ publicId: fileUserTagPublicId, user: { publicId: userPublicId(13), name: "Ada" } }],
             taggedSongs: [{ publicId: fileSongTagPublicId, song: { publicId: songPublicId(14), name: "A song" } }],
             taggedEvents: [{
                 publicId: fileEventTagPublicId,
@@ -962,7 +963,7 @@ describe("DB3 named views", () => {
         expect(hydrated.tags?.[0]?.fileTag).toEqual(
             references.require(db3.xFileTag, fileTag.publicId, "test"),
         );
-        expect(hydrated.taggedUsers).toEqual([{ publicId: fileUserTagPublicId, user: { id: 13, name: "Ada" } }]);
+        expect(hydrated.taggedUsers).toEqual([{ publicId: fileUserTagPublicId, user: { publicId: userPublicId(13), name: "Ada" } }]);
         expect(hydrated.taggedSongs).toEqual([{ publicId: fileSongTagPublicId, song: { publicId: songPublicId(14), name: "A song" } }]);
         expect(hydrated.taggedEvents?.[0]?.event.name).toBe("A concert");
         expect(hydrated.taggedInstruments?.[0]?.instrument).toEqual(
@@ -1025,10 +1026,10 @@ describe("DB3 named views", () => {
             typeId: eventType.publicId,
             statusId: eventStatus.publicId,
             tags: [{ publicId: eventTagAssignmentPublicId, eventTagId: eventTag.publicId }],
-            responses: [{ id: 11, publicId: eventResponsePublicId(11), userId: 42, instrumentId: null, isInvited: true, userComment: null }],
+            responses: [{ publicId: eventResponsePublicId(11), userId: userPublicId(42), instrumentId: null, isInvited: true, userComment: null }],
             expectedAttendanceUserTag: {
                 publicId: userTagPublicId,
-                userAssignments: [{ userId: 42 }],
+                userAssignments: [{ userId: userPublicId(42) }],
             },
         });
         const hydrated = db3.hydrateView(db3.eventSearchView, dto, references);
@@ -1042,7 +1043,7 @@ describe("DB3 named views", () => {
         expect(hydrated.tags?.[0]?.eventTag).toEqual(
             references.require(db3.xEventTag, eventTag.publicId, "test"),
         );
-        expect(hydrated.expectedAttendanceUserTag?.userAssignments?.[0]?.userId).toBe(42);
+        expect(hydrated.expectedAttendanceUserTag?.userAssignments?.[0]?.userId).toBe(userPublicId(42));
         expect(hydrated.dateRange).toBeInstanceOf(DateTimeRange);
         expect("startsAt" in hydrated).toBe(false);
         expect(hydrated.segments).toBeUndefined();
@@ -1134,7 +1135,7 @@ describe("DB3 named views", () => {
                 eventTagId: 4,
                 eventTag: { publicId: eventTagPublicId },
             }],
-            responses: [{ id: 11, publicId: eventResponsePublicId(11), userId: 42, instrumentId: null, isInvited: true, userComment: null }],
+            responses: [{ id: 11, publicId: eventResponsePublicId(11), userId: 42, user: { id: 42, publicId: userPublicId(42), isDeleted: false }, instrumentId: null, isInvited: true, userComment: null }],
             segments: [{
                 id: 20, publicId: segmentPublicId(20),
                 name: "Main",
@@ -1142,13 +1143,13 @@ describe("DB3 named views", () => {
                 durationMillis: BigInt(3_600_000),
                 isAllDay: false,
                 statusId: null,
-                responses: [{ id: 21, publicId: segmentResponsePublicId(21), userId: 42, attendanceId: null }],
+                responses: [{ id: 21, publicId: segmentResponsePublicId(21), userId: 42, user: { id: 42, publicId: userPublicId(42), isDeleted: false }, attendanceId: null }],
             }],
             songLists: [],
             expectedAttendanceUserTag: {
                 id: 5,
                 publicId: userTagPublicId,
-                userAssignments: [{ id: 22, userId: 42 }],
+                userAssignments: [{ id: 22, userId: 42, user: { id: 42, publicId: userPublicId(42), isDeleted: false } }],
             },
             descriptionWikiPage: {
                 id: 30,
@@ -1193,12 +1194,12 @@ describe("DB3 named views", () => {
 
         expect(result.items).toEqual([expect.objectContaining({
             publicId: eventPublicId(1),
-            responses: [expect.objectContaining({ userId: 42 })],
+            responses: [expect.objectContaining({ userId: userPublicId(42) })],
             segments: [expect.objectContaining({
-                responses: [expect.objectContaining({ userId: 42 })],
+                responses: [expect.objectContaining({ userId: userPublicId(42) })],
             })],
             expectedAttendanceUserTag: expect.objectContaining({
-                userAssignments: [expect.objectContaining({ userId: 42 })],
+                userAssignments: [expect.objectContaining({ userId: userPublicId(42) })],
             }),
             descriptionWikiPage: {
                 id: 30,
@@ -1354,7 +1355,7 @@ describe("DB3 named views", () => {
                 type: { publicId: songCreditTypePublicId },
                 year: "2026",
                 comment: "",
-                user: { id: 100, name: "Composer", isDeleted: false },
+                user: { id: 100, publicId: userPublicId(100), name: "Composer", isDeleted: false },
             }],
         }]);
         const effectivePermissions = new ServerPermissionSet([
@@ -1402,7 +1403,7 @@ describe("DB3 named views", () => {
             credits: [{
                 publicId: songCreditPublicId,
                 typeId: songCreditTypePublicId,
-                user: { id: 100, name: "Composer" },
+                user: { publicId: userPublicId(100), name: "Composer" },
             }],
         });
         expect(result.items[0]).not.toHaveProperty("createdByUserId");
@@ -1447,6 +1448,7 @@ describe("DB3 named views", () => {
 
         const dto = db3.songDetailView.parseDto({
             publicId: songPublicId(7),
+            createdByUser: { publicId: userPublicId(100) },
             name: "A song",
             aliases: "",
             description: "Detail description",
@@ -1480,6 +1482,8 @@ describe("DB3 named views", () => {
             credits: [],
         });
         const hydrated = db3.hydrateView(db3.songDetailView, dto, references);
+        expect(dto).not.toHaveProperty("createdByUserId");
+        expect(hydrated.createdByUser?.publicId).toBe(userPublicId(100));
 
         expect(hydrated.visiblePermission).toEqual(
             references.require(db3.xPermission, permission.publicId, "test"),

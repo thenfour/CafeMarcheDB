@@ -10,6 +10,7 @@ import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { GetUserAttendanceArgs, GetUserAttendanceRet } from "src/core/db3/shared/apiTypes";
 import { xEvent, xEventSegment, xEventAttendance, xEventStatus } from "src/core/db3/shared/schema/event";
 import { xInstrument } from "src/core/db3/shared/schema/instrument";
+import { xUser } from "src/core/db3/shared/schema/user";
 import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
 
 
@@ -22,7 +23,7 @@ async function getUserAttendanceCore(
     // validation.
 
     const user = await db.user.findFirst({
-        where: { id: userId, isDeleted: false },
+        where: { publicId: userId, isDeleted: false },
     });
     if (!user) throw new Error("User not found");
     const event = await db.event.findFirst({
@@ -31,7 +32,7 @@ async function getUserAttendanceCore(
     if (!event) throw new Error("Event not found");
     const eventResponse = await db.eventUserResponse.findFirst({
         where: {
-            userId: userId,
+            userId: user.id,
             eventId: event.id,
         },
         select: {
@@ -65,7 +66,7 @@ async function getUserAttendanceCore(
             },
         },
         where: {
-            userId: userId,
+            userId: user.id,
             eventSegment: {
                 eventId: event.id,
             },
@@ -98,7 +99,7 @@ async function getUserAttendanceCore(
 
 function ParseQueryInput(query: any): GetUserAttendanceArgs {
     return {
-        userId: parseInt(query.userId),
+        userId: xUser.parseIdentity(query.userId),
         eventId: xEvent.parseIdentity(query.eventId),
     };
 }

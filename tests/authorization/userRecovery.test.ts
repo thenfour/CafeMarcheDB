@@ -26,6 +26,7 @@ import {
 } from "./support/authorizationFixtures";
 import { forgeDb3Query, forgeDb3Update } from "./support/db3RequestBuilders";
 import { invokeResolver } from "./support/resolverHarness";
+import { userPublicId } from "tests/support/userFixtures";
 
 const permissions = [Permission.login, Permission.search_users, Permission.view_users_basic_info,
 Permission.view_user_contact_info, Permission.manage_users, Permission.deactivate_users, Permission.recover_users];
@@ -41,7 +42,7 @@ describe("user recovery", () => {
     });
 
     it("reactivates an ordinary user, preserving identity and role, revoking sessions and auditing the transition", async () => {
-        await invokeResolver(reactivateUser, { userId: target.id }, createAuthorizationTestContext(admin));
+        await invokeResolver(reactivateUser, { userId: target.publicId }, createAuthorizationTestContext(admin));
         expect(authorizationTestDb.snapshot("user").find(row => row.id === target.id))
             .toEqual({ ...target, isDeleted: false });
         expect(authorizationTestDb.snapshot("session")).toEqual([]);
@@ -55,7 +56,7 @@ describe("user recovery", () => {
             id: admin.id, permissions: permissions.filter(p => p !== Permission.recover_users),
         });
         authorizationTestDb.reset({ user: [actor, target], change: [] });
-        await expect(invokeResolver(reactivateUser, { userId: target.id }, createAuthorizationTestContext(admin)))
+        await expect(invokeResolver(reactivateUser, { userId: target.publicId }, createAuthorizationTestContext(admin)))
             .rejects.toThrow("Not authorized to reactivate");
         expect(authorizationTestDb.snapshot("user").find(row => row.id === target.id)?.isDeleted).toBe(true);
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
@@ -67,7 +68,7 @@ describe("user recovery", () => {
         createAuthorizationTestUser("normal", { id: target.id, isDeleted: true, permissions: [Permission.manage_songs] }),
     ])("rejects restoring protected or out-of-envelope accounts", async protectedTarget => {
         authorizationTestDb.reset({ user: [admin, protectedTarget], change: [] });
-        await expect(invokeResolver(reactivateUser, { userId: target.id }, createAuthorizationTestContext(admin)))
+        await expect(invokeResolver(reactivateUser, { userId: target.publicId }, createAuthorizationTestContext(admin)))
             .rejects.toThrow("Not authorized to reactivate");
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
@@ -78,9 +79,9 @@ describe("user recovery", () => {
         authorizationTestDb.reset({ user: [sysadmin, protectedTarget], change: [] });
         const ctx = createAuthorizationTestContext(sysadmin);
         await getRequestAuthorization(ctx.session);
-        const caps = await invokeResolver(getUserManagementCapabilities, { userId: target.id }, ctx);
+        const caps = await invokeResolver(getUserManagementCapabilities, { userId: target.publicId }, ctx);
         expect(caps).toMatchObject({ canReactivate: true, canDeactivate: false, canAssignRole: false });
-        await invokeResolver(reactivateUser, { userId: target.id }, ctx);
+        await invokeResolver(reactivateUser, { userId: target.publicId }, ctx);
         expect(authorizationTestDb.snapshot("user").find(row => row.id === target.id)?.isDeleted).toBe(false);
     });
 
@@ -92,14 +93,14 @@ describe("user recovery", () => {
             action: "reactivate",
         })).toBe(false);
         authorizationTestDb.reset({ user: [deletedAdmin, target], change: [] });
-        await expect(invokeResolver(reactivateUser, { userId: target.id }, createAuthorizationTestContext(admin))).rejects.toThrow();
+        await expect(invokeResolver(reactivateUser, { userId: target.publicId }, createAuthorizationTestContext(admin))).rejects.toThrow();
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
     it("rejects repeat restoration and unknown users without producing an audit entry", async () => {
         authorizationTestDb.reset({ user: [admin, { ...target, isDeleted: false }], change: [] });
-        await expect(invokeResolver(reactivateUser, { userId: target.id }, createAuthorizationTestContext(admin))).rejects.toThrow();
-        await expect(invokeResolver(reactivateUser, { userId: 999999 }, createAuthorizationTestContext(admin))).rejects.toThrow();
+        await expect(invokeResolver(reactivateUser, { userId: target.publicId }, createAuthorizationTestContext(admin))).rejects.toThrow();
+        await expect(invokeResolver(reactivateUser, { userId: userPublicId(999999) }, createAuthorizationTestContext(admin))).rejects.toThrow();
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
@@ -111,22 +112,22 @@ describe("user recovery", () => {
         const ctx = createAuthorizationTestContext(actor);
         const auth = await getRequestAuthorization(ctx.session);
         const profile = await loadAuthorizedPageEntity({
-            ctx, permission: Permission.view_users_basic_info, table: xUser, id: target.id,
+            ctx, permission: Permission.view_users_basic_info, table: xUser, identity: target.publicId,
             includeDeleted: auth.effectivePermissions.includesName(Permission.recover_users),
             load: where => authorizationTestDb.getDelegate("user").findFirst({ where }),
         });
         expect(profile?.id ?? null).toBe(canRecover ? target.id : null);
         const activeOnly = await invokeResolver(db3queries, forgeDb3Query("User"), ctx);
-        expect(activeOnly.items.some(row => row.id === target.id)).toBe(false);
+        expect(activeOnly.items.some(row => row.publicId === target.publicId)).toBe(false);
         if (canRecover) {
             const recovered = await invokeResolver(db3queries, forgeDb3Query("User", { includeDeleted: true }), ctx);
-            expect(recovered.items).toContainEqual(expect.objectContaining({ id: target.id, isDeleted: true }));
-            await expect(invokeResolver(getUserExtraInfo, { userId: target.id }, ctx)).resolves
+            expect(recovered.items).toContainEqual(expect.objectContaining({ publicId: target.publicId, isDeleted: true }));
+            await expect(invokeResolver(getUserExtraInfo, { userId: target.publicId }, ctx)).resolves
                 .toEqual({ signinMethods: ["google"] });
         } else {
             await expect(invokeResolver(db3queries, forgeDb3Query("User", { includeDeleted: true }), ctx)).rejects.toThrow();
-            await expect(invokeResolver(getUserExtraInfo, { userId: target.id }, ctx)).rejects.toThrow();
-            await expect(invokeResolver(getUserManagementCapabilities, { userId: target.id }, ctx)).rejects.toThrow();
+            await expect(invokeResolver(getUserExtraInfo, { userId: target.publicId }, ctx)).rejects.toThrow();
+            await expect(invokeResolver(getUserManagementCapabilities, { userId: target.publicId }, ctx)).rejects.toThrow();
         }
     });
 
@@ -137,11 +138,11 @@ describe("user recovery", () => {
 
     it("completes deactivate and reactivate with refreshed capabilities", async () => {
         authorizationTestDb.reset({ user: [admin, { ...target, isDeleted: false }], session: [], change: [] });
-        await invokeResolver(deactivateUser, { userId: target.id, acknowledgeContinuityRisk: false }, createAuthorizationTestContext(admin));
-        expect(await invokeResolver(getUserManagementCapabilities, { userId: target.id }, createAuthorizationTestContext(admin)))
+        await invokeResolver(deactivateUser, { userId: target.publicId, acknowledgeContinuityRisk: false }, createAuthorizationTestContext(admin));
+        expect(await invokeResolver(getUserManagementCapabilities, { userId: target.publicId }, createAuthorizationTestContext(admin)))
             .toMatchObject({ canReactivate: true, canDeactivate: false });
-        await invokeResolver(reactivateUser, { userId: target.id }, createAuthorizationTestContext(admin));
-        expect(await invokeResolver(getUserManagementCapabilities, { userId: target.id }, createAuthorizationTestContext(admin)))
+        await invokeResolver(reactivateUser, { userId: target.publicId }, createAuthorizationTestContext(admin));
+        expect(await invokeResolver(getUserManagementCapabilities, { userId: target.publicId }, createAuthorizationTestContext(admin)))
             .toMatchObject({ canReactivate: false, canDeactivate: true });
         expect(authorizationTestDb.snapshot("change")).toHaveLength(2);
     });

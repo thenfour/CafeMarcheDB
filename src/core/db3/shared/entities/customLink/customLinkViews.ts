@@ -4,6 +4,7 @@ import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { xCustomLink } from "../../schema/customLinks";
+import { xUser } from "../../schema/user";
 
 const CustomLinkEditorDtoSchema = z.object({
     id: z.number().int(),
@@ -29,9 +30,9 @@ export const customLinkEditorView = defineCrudView({
 const CustomLinkListDtoSchema = z.object({
     ...CustomLinkEditorDtoSchema.shape,
     createdAt: z.date(),
-    createdByUserId: z.number().int().nullable(),
+    createdByUserId: xUser.identitySchema.nullable(),
     createdByUser: z.object({
-        id: z.number().int(),
+        publicId: xUser.identitySchema,
         name: z.string(),
         cssClass: z.string().nullable(),
     }).nullable(),

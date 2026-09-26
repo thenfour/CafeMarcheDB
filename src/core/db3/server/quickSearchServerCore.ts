@@ -15,6 +15,7 @@ import { PermissionSet } from "@/src/auth/shared/PermissionSet";
 import { xInstrument } from "../shared/schema/instrument";
 import { xEvent } from "../shared/schema/event";
 import { xSong } from "../shared/schema/song";
+import { xUser } from "../shared/schema/user";
 
 // per type; this is not the amount to return to users. after this, relevance prunes to the top N results.
 // this just sets a practical limit.
@@ -309,7 +310,7 @@ const UserQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.user> = {
                 ],
             },
             select: {
-                id: true,
+                publicId: true,
                 name: true,
             },
             take: kItemsPerType,
@@ -318,7 +319,7 @@ const UserQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.user> = {
         const makeUserInfo = (x: typeof users[0]): QuickSearchItemMatch<QuickSearchItemType.user> => {
             const bestMatch = CalculateMatchStrength(userFields, x, query);
             return {
-                id: x.id,
+                id: xUser.parseIdentity(x.publicId),
                 absoluteUri: undefined,
                 name: x.name,
                 matchStrength: bestMatch.matchStrength,

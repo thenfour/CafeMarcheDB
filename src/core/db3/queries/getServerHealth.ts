@@ -2,7 +2,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { xFile } from "../db3";
+import { xFile, xUser } from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { FileStatResult, GetServerHealthResult, ServerHealthFileResult, TableStatsQueryRowRaw } from "../shared/apiTypes";
 
@@ -71,7 +71,10 @@ order by
             const fileRows = await db.file.findMany({
                 where: {
                     storedLeafName: { in: fileNames }
-                }
+                },
+                include: {
+                    uploadedByUser: { select: { publicId: true } },
+                },
             });
             const uploadsInfo: ServerHealthFileResult[] = uploadsDirInfo.map(di => {
                 const f = fileRows.find(x => x.storedLeafName === di.fileName);
@@ -81,7 +84,7 @@ order by
                     leafName: f ? f.fileLeafName : undefined,
                     isDeleted: f ? f.isDeleted : undefined,
                     mimeType: f?.mimeType || undefined,
-                    uploadedByUserId: f?.uploadedByUserId || undefined,
+                    uploadedByUserId: f?.uploadedByUser ? xUser.parseIdentity(f.uploadedByUser.publicId) : undefined,
                     uploadedAt: f ? f.uploadedAt : undefined,
                     externalURI: f?.externalURI || undefined,
                 };

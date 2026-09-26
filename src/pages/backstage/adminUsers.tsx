@@ -25,7 +25,7 @@ const UserListContent: React.FC<{}> = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.userEditorView,
         columns: {
-            id: DB3Client.pkFieldGen(),
+            publicId: DB3Client.publicIdFieldGen(),
 
             // isDeleted should require continuity checks and dedicated lifecycle actions.
             // but this adds complexity to the grid capabilities; as this is sysadmin maintenance only,
@@ -46,10 +46,10 @@ const UserListContent: React.FC<{}> = () => {
     });
 
     const extraActions = (args: DB3EditGridExtraActionsArgs) => {
-        const userPayload = args.row as db3.UserPayload;
+        const userPayload = args.row as db3.UserClientPayload; // DB3EditGrid supplies the user editor DTO.
         const profileUrl = dashboardContext.routingApi.getURIForUser(userPayload);
         return <div>
-            <ImpersonateUserButton userId={userPayload.id} />
+            <ImpersonateUserButton userId={userPayload.publicId} />
             <AdminResetPasswordButton user={userPayload} />
             <CMLinkButton href={profileUrl}>Visit Profile</CMLinkButton>
         </div>;
@@ -59,7 +59,7 @@ const UserListContent: React.FC<{}> = () => {
         tableSpec={tableSpec}
         view={db3.userEditorView}
         renderExtraActions={extraActions}
-        defaultSortModel={[{ field: "id", sort: "desc" }]}
+        defaultSortModel={[{ field: "createdAt", sort: "desc" }]}
     />;
 };
 

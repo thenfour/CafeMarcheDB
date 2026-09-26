@@ -2,6 +2,7 @@ import { eventPublicId, segmentPublicId } from "./support/eventResponseFixtures"
 import { attendancePublicId } from "./support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId } from "./support/eventSongListFixtures";
 import { songPublicId } from "./support/songFixtures";
+import { userPublicId } from "./support/userFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { eventSongListSaveCommandHandler } from "@db3/server/commands/eventSongListSaveCommand";
@@ -424,8 +425,8 @@ describe("DB3 commands", () => {
             publicId: songCreditPublicId,
             year: "2026",
             comment: "Original arrangement",
-            userId: 6,
-            user: { id: 6, name: "Ada" },
+            userId: userPublicId(6),
+            user: { publicId: userPublicId(6), name: "Ada" },
             songId: songPublicId(7),
             song: { publicId: songPublicId(7), name: "Autumn Leaves", description: "" },
             typeId: songCreditTypePublicId,
@@ -446,13 +447,13 @@ describe("DB3 commands", () => {
             type: { text: "Composer" },
         });
         expect(db3.songCreditEditorView.crud.operations.create.command.parseDto({
-            userId: 6,
+            userId: userPublicId(6),
             songId: songPublicId(7),
             typeId: songCreditTypePublicId,
             year: "2026",
             comment: "Original arrangement",
         })).toEqual({
-            userId: 6,
+            userId: userPublicId(6),
             songId: songPublicId(7),
             typeId: songCreditTypePublicId,
             year: "2026",
@@ -462,8 +463,8 @@ describe("DB3 commands", () => {
 
         expect(db3.userInstrumentEditorView.parseDto({
             publicId: userInstrumentPublicId,
-            userId: 6,
-            user: { id: 6, name: "Ada" },
+            userId: userPublicId(6),
+            user: { publicId: userPublicId(6), name: "Ada" },
             instrumentId: instrumentPublicId,
             instrument: {
                 publicId: instrumentPublicId,
@@ -493,7 +494,7 @@ describe("DB3 commands", () => {
             description: "Opening material",
             color: "blue",
             sortOrder: 1,
-            createdByUserId: 6,
+            createdByUserId: userPublicId(6),
             createdAt: new Date("2026-09-21T12:00:00.000Z"),
         })).toMatchObject({
             id: 11,

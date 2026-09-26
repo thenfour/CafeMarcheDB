@@ -94,7 +94,8 @@ describe("search recovery capability", () => {
             return [];
         });
         const result = await GetSearchResultsCore(query({ includeDeleted }), createAuthorizationTestContext(actor) as AuthenticatedCtx);
-        expect(result.results.map(row => row.id)).toEqual(ids);
+        expect(result.results.map(row => row.publicId)).toEqual(ids.map(id => id === activeUser.id ? activeUser.publicId : deletedUser.publicId));
+        expect(result.results.every(row => !("id" in row))).toBe(true);
         expect(result.rowCount).toBe(ids.length);
         expect(statements.length).toBeGreaterThanOrEqual(3);
         for (const statement of statements) {
@@ -113,7 +114,7 @@ describe("search recovery capability", () => {
         });
         const result = await GetSearchResultsCore(query({ includeDeleted: true, offset: 1, take: 1 }),
             createAuthorizationTestContext(actor) as AuthenticatedCtx);
-        expect(result.results).toEqual([expect.objectContaining({ id: deletedUser.id, isDeleted: true })]);
+        expect(result.results).toEqual([expect.objectContaining({ publicId: deletedUser.publicId, isDeleted: true })]);
         expect(result.rowCount).toBe(2);
     });
 

@@ -23,10 +23,11 @@ import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabCon
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
 import { EnrichedVerboseUser } from "./UserListItem";
 import { UserSignInMethodsButton } from "./UserSignInMethodsButton";
+import type { UserPublicId } from "shared/publicId";
 
 type RoleControlProps = {
     value: db3.RoleDisplay | null | undefined;
-    userId: number;
+    userId: UserPublicId;
     tableClient: DB3Client.xTableRenderClient<typeof db3.userEditorView>;
     readonly: boolean;
     onChange: () => void;
@@ -49,11 +50,11 @@ export const RoleControl = ({ value, userId, tableClient, readonly, onChange }: 
                     const newid = option ? db3.xRole.getIdentity(option) : null;
                     console.log("Updating role for userId:", userId, "to roleId:", newid, " - ", dashboardContext.role.getById(newid));
                     await editCommands.update({
-                        id: userId,
+                        publicId: userId,
                         roleId: newid,
                         //role: dashboardContext.role.getById(newid) ?? null,
                     }, {
-                        id: userId,
+                        publicId: userId,
                         roleId: value ? db3.xRole.getIdentity(value) : null,
                     });
                 });
@@ -106,7 +107,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
 
     const [capabilities, { refetch: refetchCapabilities }] = useQuery(
         getUserManagementCapabilities,
-        { userId: user.id },
+        { userId: user.publicId },
     );
 
 
@@ -143,7 +144,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                 </div>
 
                 {canManageUsers && <RoleControl
-                    userId={user.id}
+                    userId={user.publicId}
                     value={user.role}
                     readonly={props.readonly || !capabilities.canAssignRole}
                     tableClient={tableClient}

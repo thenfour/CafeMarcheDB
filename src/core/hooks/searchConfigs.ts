@@ -78,7 +78,7 @@ export const userSearchConfig = defineLegacySearchConfig({
         dashboardContext.userTag,
         dashboardContext.instrument,
     ),
-    getItemKey: item => item.id,
+    getItemKey: item => item.publicId,
 
     errorMessage: 'Failed to load more users.',
 });

@@ -3,6 +3,7 @@ import type { Ctx } from "@blitzjs/next";
 import { assert } from "blitz";
 import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { generatePublicId } from "src/server/publicId";
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { SignInMethodSchema } from "../signInMethodSchemas";
 import { addSignInMethod, SignInMethodConflictError, signInMethodWhere } from "./signInMethods";
@@ -38,6 +39,7 @@ export const createSignupUser = async (args: CreateSignupUserArgs, ctx: Ctx) => 
         }
 
         const data: Prisma.UserUncheckedCreateInput = {
+            publicId: generatePublicId<"User">(),
             name: args.name,
             email: emailMethod.identifier,
             hashedPassword,

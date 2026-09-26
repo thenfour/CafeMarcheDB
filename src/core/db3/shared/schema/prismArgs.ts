@@ -24,6 +24,7 @@ import type {
     UserTagAssignmentPublicId,
     UserTagPublicId,
     UserInstrumentPublicId,
+    UserPublicId,
     PermissionPublicId,
     RolePermissionPublicId,
     RolePublicId,
@@ -413,9 +414,10 @@ export type UserInstrumentPayload = Prisma.UserInstrumentGetPayload<typeof UserI
 
 export type UserInstrumentClientPayload = Omit<
     UserInstrumentPayload,
-    "id" | "publicId" | "instrumentId" | "instrument"
+    "id" | "publicId" | "userId" | "instrumentId" | "instrument"
 > & {
     publicId: UserInstrumentPublicId;
+    userId: UserPublicId;
     instrumentId: InstrumentPublicId;
     instrument: InstrumentClientPayload;
 };
@@ -478,9 +480,10 @@ type UserInstrumentReferenceDbPayload = Prisma.UserInstrumentGetPayload<
 
 type UserInstrumentReferenceClientPayload = Omit<
     UserInstrumentReferenceDbPayload,
-    "id" | "publicId" | "instrumentId" | "instrument"
+    "id" | "publicId" | "userId" | "instrumentId" | "instrument"
 > & {
     publicId: UserInstrumentPublicId;
+    userId: UserPublicId;
     instrumentId: InstrumentPublicId;
     instrument: { publicId: InstrumentPublicId };
 };
@@ -499,16 +502,17 @@ type UserTagAssignmentReferenceDbPayload = Prisma.UserTagAssignmentGetPayload<
 
 type UserTagAssignmentReferenceClientPayload = Omit<
     UserTagAssignmentReferenceDbPayload,
-    "id" | "publicId" | "userTagId" | "userTag"
+    "id" | "publicId" | "userId" | "userTagId" | "userTag"
 > & {
     publicId: UserTagAssignmentPublicId;
+    userId: UserPublicId;
     userTagId: UserTagPublicId;
     userTag: { publicId: UserTagPublicId };
 };
 
 export type UserPayload_Name = Prisma.UserGetPayload<{
     select: {
-        id: true,
+        publicId: true,
         name: true,
     }
 }>;
@@ -519,6 +523,7 @@ export type UserPayload_Name = Prisma.UserGetPayload<{
 export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
     select: {
         id: true,
+        publicId: true,
         name: true,
         isSysAdmin: true,
         isDeleted: true,
@@ -560,27 +565,33 @@ export type UserTagClientPayload = Omit<
 };
 export type UserTagAssignmentClientPayload = Omit<
     UserPayload["tags"][number],
-    "id" | "publicId" | "userTagId" | "userTag"
+    "id" | "publicId" | "userId" | "userTagId" | "userTag"
 > & {
     publicId: UserTagAssignmentPublicId;
+    userId: UserPublicId;
     userTagId: UserTagPublicId;
     userTag: UserTagClientPayload;
 };
 export type UserClientPayload = Omit<
     UserPayload,
-    "instruments" | "tags" | "roleId" | "role"
+    "id" | "publicId" | "instruments" | "tags" | "roleId" | "role"
 > & {
+    publicId: UserPublicId;
     roleId: RolePublicId | null;
     role: RoleWithPermissionsClientPayload | null;
     instruments: UserInstrumentClientPayload[];
     tags: UserTagAssignmentClientPayload[];
 };
 
+// Only getCurrentUser may attach the session owner's natural ID.
+export type SelfUserClientPayload = UserClientPayload & { id: number };
+
 // Generic user queries must not expose role grants. Server authorization code
 // uses UserArgs/UserWithRolesArgs when it needs the permission composition.
 export const UserSafeArgs = Prisma.validator<Prisma.UserArgs>()({
     select: {
         id: true,
+        publicId: true,
         name: true,
         isSysAdmin: true,
         isDeleted: true,
@@ -607,6 +618,7 @@ export const UserSafeArgs = Prisma.validator<Prisma.UserArgs>()({
 export const UserMinimumArgs = Prisma.validator<Prisma.UserArgs>()({
     select: {
         id: true,
+        publicId: true,
         name: true,
         isSysAdmin: true,
         isDeleted: true,
@@ -619,7 +631,8 @@ export const UserMinimumArgs = Prisma.validator<Prisma.UserArgs>()({
     }
 });
 type UserPayloadMinimumDb = Prisma.UserGetPayload<typeof UserMinimumArgs>;
-export type UserPayloadMinimum = Omit<UserPayloadMinimumDb, "roleId"> & {
+export type UserPayloadMinimum = Omit<UserPayloadMinimumDb, "id" | "publicId" | "roleId"> & {
+    publicId: UserPublicId;
     roleId: RolePublicId | null;
 };
 
@@ -627,6 +640,7 @@ export type UserPayloadMinimum = Omit<UserPayloadMinimumDb, "roleId"> & {
 export const UserForCalBackendArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
     select: {
         id: true,
+        publicId: true,
         name: true,
         isSysAdmin: true,
         isDeleted: true,
@@ -653,6 +667,7 @@ export type UserForCalBackendPayload = Prisma.UserGetPayload<typeof UserForCalBa
 export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
     select: {
         id: true,
+        publicId: true,
         name: true,
         isSysAdmin: true,
         isDeleted: true,
@@ -670,8 +685,9 @@ export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserDefaultArgs>(
 export type UserWithInstrumentsDbPayload = Prisma.UserGetPayload<typeof UserWithInstrumentsArgs>;
 export type UserWithInstrumentsClientPayload = Omit<
     UserWithInstrumentsDbPayload,
-    "instruments" | "tags" | "roleId"
+    "id" | "publicId" | "instruments" | "tags" | "roleId"
 > & {
+    publicId: UserPublicId;
     roleId: RolePublicId | null;
     instruments: UserInstrumentReferenceClientPayload[];
     tags: UserTagAssignmentReferenceClientPayload[];
@@ -995,18 +1011,22 @@ export type EventSegmentUserResponsePayload = Prisma.EventSegmentUserResponseGet
 }>;
 
 export type EventSegmentUserResponseClientPayload = Omit<
-    Prisma.EventSegmentUserResponseGetPayload<{}>, "id" | "publicId" | "eventSegmentId" | "attendanceId"
+    Prisma.EventSegmentUserResponseGetPayload<{}>, "id" | "publicId" | "eventSegmentId" | "attendanceId" | "userId" | "createdByUserId" | "updatedByUserId"
 > & {
     publicId: EventSegmentUserResponsePublicId;
     eventSegmentId: EventSegmentPublicId;
     attendanceId: EventAttendancePublicId | null;
+    userId: UserPublicId;
+    createdByUserId: UserPublicId | null;
+    updatedByUserId: UserPublicId | null;
 };
 export type EventUserResponseClientPayload = Omit<
-    Prisma.EventUserResponseGetPayload<{}>, "id" | "publicId" | "eventId" | "instrumentId"
+    Prisma.EventUserResponseGetPayload<{}>, "id" | "publicId" | "eventId" | "instrumentId" | "userId"
 > & {
     publicId: EventUserResponsePublicId;
     eventId: EventPublicId;
     instrumentId: InstrumentPublicId | null;
+    userId: UserPublicId;
 };
 
 export const EventSegmentUserResponseNaturalOrderBy: Prisma.EventSegmentUserResponseOrderByWithRelationInput[] = [
@@ -1606,4 +1626,3 @@ export type DashboardDynMenuLink = Prisma.MenuLinkGetPayload<{ include: { create
 export interface ObjectWithVisiblePermission {
     visiblePermissionId: PermissionPublicId | null;
 };
-

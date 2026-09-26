@@ -24,7 +24,7 @@ import { invokeResolver } from "./support/resolverHarness";
 const admin = createAuthorizationTestUser("sysadmin", { id: 1 });
 const member = createAuthorizationTestUser("normal", { id: 10 });
 const retiring = createAuthorizationTestUser("normal", { id: 20 });
-const pair = { mainUserId: 10, retiringUserId: 20 };
+const pair = { mainUserId: member.publicId, retiringUserId: retiring.publicId };
 beforeEach(() => authorizationTestDb.reset({ user: [admin, member, retiring] }));
 
 describe("merge authorization and lifecycle", () => {
@@ -35,7 +35,7 @@ describe("merge authorization and lifecycle", () => {
     it.each(["preview", "search", "commit"])("rejects a user without merge permission at %s", async endpoint => {
         const ctx = createAuthorizationTestContext(member);
         const call = endpoint === "preview" ? invokeResolver(previewUserMerge, pair, ctx)
-            : endpoint === "search" ? invokeResolver(searchUserMergeCandidates, { query: "", excludeUserId: 10 }, ctx)
+            : endpoint === "search" ? invokeResolver(searchUserMergeCandidates, { query: "", excludeUserId: member.publicId }, ctx)
                 : invokeResolver(mergeUsers, { participants: pair, confirmation: "a".repeat(64) }, ctx);
         await expect(call).rejects.toThrow();
     });
@@ -44,7 +44,7 @@ describe("merge authorization and lifecycle", () => {
         const ctx = createAuthorizationTestContext(admin);
         authorizationTestDb.reset({ user: [{ ...admin, isSysAdmin: false, role: member.role }, member, retiring] });
         await expect(invokeResolver(previewUserMerge, pair, ctx)).rejects.toThrow("merge_users");
-        await expect(invokeResolver(searchUserMergeCandidates, { query: "", excludeUserId: 10 }, ctx)).rejects.toThrow("merge_users");
+        await expect(invokeResolver(searchUserMergeCandidates, { query: "", excludeUserId: member.publicId }, ctx)).rejects.toThrow("merge_users");
     });
 
     it("rejects merges from an impersonated session", async () => {

@@ -99,8 +99,9 @@ const hour = 3_600_000;
 export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex: number) {
     const person = scenario.users[userIndex]!;
     const now = new Date(scenario.now);
+    const userPublicId = parsePublicId<"User">(`ScenarioUser${String(userIndex + 1).padStart(4, "0")}`);
     const user: db3.UserWithInstrumentsPayload = {
-        id: -(userIndex + 1),
+        publicId: userPublicId,
         name: person.name,
         isSysAdmin: false,
         isDeleted: false,
@@ -116,7 +117,7 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
             ),
             instrumentId: parsePublicId<"Instrument">(instrument.publicId),
             instrument: { publicId: parsePublicId<"Instrument">(instrument.publicId) },
-            userId: -(userIndex + 1),
+            userId: userPublicId,
             isPrimary: instrument.id === person.primaryInstrumentId,
         })),
     };
@@ -132,7 +133,7 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
             durationMillis: BigInt(2 * hour),
             statusId: config.cancelled ? cancelledStatusId : null,
             responses: attendanceId === "missing" ? [] : [{
-                eventSegmentId: scenarioSegmentPublicId(index), userId: user.id,
+                eventSegmentId: scenarioSegmentPublicId(index), userId: user.publicId,
                 attendanceId: attendanceId === null ? null : scenarioAttendances[attendanceId - 1]!.publicId,
                 createdAt: now, updatedAt: now, createdByUserId: null, updatedByUserId: null,
             }],
@@ -145,7 +146,7 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
         publicId: scenarioEventPublicId, name: scenario.eventName, startsAt: dateRange.getStartDateTime(), segments,
         responses: [{
             id: -1,
-            userId: user.id,
+            userId: user.publicId,
             instrumentId: person.instrumentId == null
                 ? null
                 : scenarioClientInstruments[person.instrumentId - 1]!.publicId,
@@ -153,13 +154,13 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
         }],
     };
     const eventUserResponse = getEventResponseForUser({
-        user, event, userMap: [user], defaultInvitationUserIds: new Set(person.tagInvited ? [user.id] : []),
+        user, event, userMap: [user], defaultInvitationUserIds: new Set(person.tagInvited ? [user.publicId] : []),
         dashboardContext: { instrument: { find: predicate => scenarioClientInstruments.find(predicate) } },
         makeMockEventUserResponse: () => event.responses[0]!,
     })!;
     const segmentUserResponses = segments.map(segment => getEventSegmentResponseForSegmentAndUser({
         user, segment, expectedAttendanceTag: null,
-        makeMockEventSegmentResponse: () => ({ userId: user.id, attendanceId: null }),
+        makeMockEventSegmentResponse: () => ({ userId: user.publicId, attendanceId: null }),
     })!);
     const attendance = calculateEventAttendance({
         eventUserResponse,

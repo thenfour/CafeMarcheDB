@@ -11,11 +11,11 @@ import { DateValue } from "../DateTime/DateTimeComponents";
 export interface AttendanceChipTooltipProps {
     value: db3.EventAttendanceDisplay | null;
     eventResponse?: Pick<db3.EventUserResponseClientPayload, "instrumentId" | "userComment"> | undefined;
-    segmentResponse?: Pick<db3.EventSegmentUserResponseClientPayload, "attendanceId" | "createdByUserId" | "createdAt" | "updatedAt" | "updatedByUserId"> | undefined;
+    segmentResponse?: Pick<db3.EventDetailSegmentResponse, "attendanceId" | "createdAt" | "updatedAt" | "updatedByUser"> | undefined;
     event?: { publicId: EventPublicId; name: string; startsAt: Date | null } | undefined;
     eventSegment?: Pick<db3.EventDetailSegmentClient, "publicId" | "name" | "startsAt"> | undefined;
 };
-export const AttendanceChipTooltipContent = (props: AttendanceChipTooltipProps & { updatedByUserName?: string }) => {
+export const AttendanceChipTooltipContent = (props: AttendanceChipTooltipProps) => {
     return <div>
         <div className="attendanceChipTooltip">
             <div className="attendanceChipTooltipResponse">
@@ -39,7 +39,7 @@ export const AttendanceChipTooltipContent = (props: AttendanceChipTooltipProps &
         {props.segmentResponse && props.segmentResponse.updatedAt &&
             <div className="attendanceChipTooltipUpdated" style={{ marginTop: "4px" }}>
                 Updated on <DateValue value={props.segmentResponse.updatedAt} />
-                {props.updatedByUserName && `by ${props.updatedByUserName}`}
+                {props.segmentResponse.updatedByUser?.name && `by ${props.segmentResponse.updatedByUser.name}`}
             </div>
         }
     </div>;
@@ -48,7 +48,7 @@ export interface AttendanceChipProps {
     event?: { publicId: EventPublicId; name: string; startsAt: Date | null } | undefined;
     eventSegment?: Pick<db3.EventDetailSegmentClient, "publicId" | "name" | "startsAt"> | undefined;
     eventResponse?: Pick<db3.EventUserResponseClientPayload, "instrumentId" | "userComment"> | undefined;
-    segmentResponse?: Pick<db3.EventSegmentUserResponseClientPayload, "attendanceId" | "createdByUserId" | "createdAt" | "updatedAt" | "updatedByUserId"> | undefined;
+    segmentResponse?: Pick<db3.EventDetailSegmentResponse, "attendanceId" | "createdAt" | "updatedAt" | "updatedByUser"> | undefined;
 
     showLabel?: boolean | undefined;
     fadeNoResponse?: boolean | undefined;

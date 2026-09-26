@@ -96,7 +96,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
     };
     let result = await acquireLockOnWikiPageMutation(request);
     if (result.outcome === UpdateWikiPageResultOutcome.lockConflict &&
-        result.currentPage?.lockedByUser?.id === dashboardContext.currentUser?.id) {
+        result.currentPage?.lockedByUser?.publicId === dashboardContext.currentUser?.publicId) {
       const answer = await messageBox.showMessage({
         title: "Take over editing here?",
         message: "This page is open in another editor belonging to you. Taking over prevents that editor from saving until it reacquires the lock. Its unsaved text will remain there.",

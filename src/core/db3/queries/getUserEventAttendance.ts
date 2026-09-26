@@ -67,6 +67,8 @@ export default resolver.pipe(
         try {
             const currentUser = await getCurrentUserCore(ctx);
             if (!currentUser) throw new Error("Current user was not found.");
+            const target = await db.user.findUnique({ where: { publicId: args.userId }, select: { id: true } });
+            if (!target) return { events: [] };
             const eventPolicyWhere = await GetAuthorizedTableReadWhere({
                 table: xEvent,
                 currentUser,
@@ -76,7 +78,7 @@ export default resolver.pipe(
             const earliestUserEvent = await db.event.findFirst({
                 where: ComposePrismaWhere(eventPolicyWhere, {
                     responses: {
-                        some: { userId: args.userId },
+                        some: { userId: target.id },
                     },
                     NOT: { startsAt: null },
                 }),
@@ -90,7 +92,7 @@ export default resolver.pipe(
                 where: {
                     event: eventPolicyWhere,
                     responses: {
-                        some: { userId: args.userId }
+                        some: { userId: target.id }
                     },
                     NOT: {
                         startsAt: null
@@ -120,13 +122,13 @@ export default resolver.pipe(
                         include: {
                             status: { select: { publicId: true } },
                             responses: {
-                                where: { userId: args.userId },
+                                where: { userId: target.id },
                                 include: { attendance: { select: { publicId: true } } },
                             },
                         },
                     },
                     responses: {
-                        where: { userId: args.userId },
+                        where: { userId: target.id },
                         include: { instrument: { select: { publicId: true } } },
                     },
                 },

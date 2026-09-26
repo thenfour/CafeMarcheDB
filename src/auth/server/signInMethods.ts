@@ -9,6 +9,7 @@ import type { SignInMethodInput } from "../signInMethodSchemas";
 import { requireFreshPermission } from "./permissionAuthorization";
 import { db3Server } from "src/core/db3/server/db3Server";
 import { xUserSignInMethod } from "src/core/db3/shared/schema/userSignInMethod";
+import type { UserPublicId } from "shared/publicId";
 
 const signInMethodServer = db3Server.table(xUserSignInMethod);
 
@@ -98,6 +99,12 @@ export const requireSignInMethodAdmin = async (db: TransactionalPrismaClient, ct
 // admins may want to deactivate a user before managing their sign-in methods
 export const requireSignInMethodTarget = async (db: TransactionalPrismaClient, userId: number) => {
     const user = await db.user.findFirst({ where: { id: userId } });
+    if (!user) throw new NotFoundError();
+    return user;
+};
+
+export const requireSignInMethodTargetByPublicId = async (db: TransactionalPrismaClient, publicId: UserPublicId) => {
+    const user = await db.user.findFirst({ where: { publicId } });
     if (!user) throw new NotFoundError();
     return user;
 };

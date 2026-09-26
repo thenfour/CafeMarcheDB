@@ -1,18 +1,18 @@
 import { isAttendanceGoing, isAttendanceNotGoing } from "shared/eventAttendance";
 
-type CalendarAttendanceSegment<TStatusIdentity extends number | string, TAttendanceIdentity extends number | string> = {
+type CalendarAttendanceSegment<TStatusIdentity extends number | string, TAttendanceIdentity extends number | string, TUserIdentity extends number | string> = {
     statusId: TStatusIdentity | null;
-    responses: readonly { userId: number; attendanceId: TAttendanceIdentity | null }[];
+    responses: readonly { userId: TUserIdentity; attendanceId: TAttendanceIdentity | null }[];
 };
 
 // Applies the subscriber's invitation and attendance preferences to a whole event.
 // Event visibility, deletion and other export filters are handled separately.
-export const shouldIncludeEventInCalendarFeed = <TStatusIdentity extends number | string, TAttendanceIdentity extends number | string>(args: {
-    userId: number;
+export const shouldIncludeEventInCalendarFeed = <TStatusIdentity extends number | string, TAttendanceIdentity extends number | string, TUserIdentity extends number | string>(args: {
+    userId: TUserIdentity;
     showDeclinedEvents: boolean;
     showUninvitedEvents: boolean;
     isInvited: boolean;
-    segments: readonly CalendarAttendanceSegment<TStatusIdentity, TAttendanceIdentity>[];
+    segments: readonly CalendarAttendanceSegment<TStatusIdentity, TAttendanceIdentity, TUserIdentity>[];
     cancelledStatusIds: ReadonlySet<TStatusIdentity>;
     attendanceById: ReadonlyMap<TAttendanceIdentity, { strength: number }>;
 }): boolean => {

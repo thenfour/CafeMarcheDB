@@ -1,5 +1,5 @@
 import { Prisma } from "db";
-import type { FilePublicId } from "shared/publicId";
+import type { FilePublicId, UserPublicId } from "shared/publicId";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
@@ -59,7 +59,7 @@ const frontpageGalleryItemEditorSelection = Prisma.validator<Prisma.FrontpageGal
         createdByUserId: true,
         createdByUser: {
             select: {
-                id: true,
+                publicId: true,
                 name: true,
             },
         },
@@ -89,7 +89,7 @@ const requireFrontpageGalleryItemEditorFields = <TItem extends {
         sizeBytes?: number | null;
         mimeType?: string | null;
         customData?: string | null;
-        uploadedByUserId?: number | null;
+        uploadedByUserId?: UserPublicId | null;
     };
     displayParams?: string;
     visiblePermissionId?: unknown;
@@ -231,7 +231,7 @@ export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArg
         uploadedByUserId: true,
         uploadedByUser: {
             select: {
-                id: true,
+                publicId: true,
                 name: true,
             },
         },
@@ -255,7 +255,7 @@ export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArg
                 publicId: true,
                 user: {
                     select: {
-                        id: true,
+                        publicId: true,
                         name: true,
                     },
                 },

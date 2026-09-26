@@ -57,7 +57,6 @@ export const getServerSideProps = gSSP<PageProps>(async (args) => {
         clientBaseContentVersion: 0,
         clientBaseRevisionId: null,
         clientLockId: null,
-        currentUserId: null,
     });
 
     const retProps: PageProps = {

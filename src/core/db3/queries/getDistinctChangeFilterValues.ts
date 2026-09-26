@@ -17,7 +17,7 @@ export default resolver.pipe(
             // circumvent soft deletion etc.
             const users = await db.user.findMany({
                 select: {
-                    id: true,
+                    publicId: true,
                     name: true,
                     email: true,
                 }

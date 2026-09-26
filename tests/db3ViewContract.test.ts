@@ -27,6 +27,7 @@ import {
   type SongPublicId,
   type UserTagPublicId,
   type UserTagAssignmentPublicId,
+  type UserPublicId,
   type WikiPageTagAssignmentPublicId,
   type WikiPageTagPublicId,
 } from "shared/publicId"
@@ -120,7 +121,7 @@ describe("DB3 scalar selection compiler", () => {
       statusId?: EventStatusPublicId | null
       responses?: Array<{
         publicId: EventSegmentUserResponsePublicId
-        userId?: number
+        userId?: UserPublicId
         attendanceId?: EventAttendancePublicId | null
       }>
     }>()
@@ -132,6 +133,13 @@ describe("DB3 scalar selection compiler", () => {
     expectTypeOf<CurrentRevision["content"]>().toEqualTypeOf<string | undefined>()
     expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<WikiAuthorizationOnlyKeys>().toEqualTypeOf<never>()
+  })
+
+  it("keeps the Event detail creator public", () => {
+    expectTypeOf<Extract<keyof db3.EventDetailDto, "createdByUserId">>()
+      .toEqualTypeOf<never>()
+    expectTypeOf<NonNullable<db3.EventDetailClient["createdByUser"]>["publicId"]>()
+      .toEqualTypeOf<UserPublicId>()
   })
 
   it("derives the File Search transport and concrete consumer relations", () => {
@@ -334,10 +342,10 @@ describe("DB3 scalar selection compiler", () => {
     type Dto = z.infer<typeof compiled.dtoSchema>
 
     expectTypeOf<Dto["userAssignments"]>().toEqualTypeOf<{
-      userId?: number
+      userId?: UserPublicId
     }[] | undefined>()
-    expect(compiled.dtoSchema.parse({ userAssignments: [{ userId: 12 }] }))
-      .toEqual({ userAssignments: [{ userId: 12 }] })
+    expect(compiled.dtoSchema.parse({ userAssignments: [{ userId: parsePublicId<"User">("TestUser00000012") }] }))
+      .toEqual({ userAssignments: [{ userId: parsePublicId<"User">("TestUser00000012") }] })
     expect(compiled.dtoSchema.safeParse({
       userAssignments: [{ userId: "12" }],
     }).success).toBe(false)
@@ -816,22 +824,26 @@ describe("UserTag Event search derived-view migration", () => {
 
     expectTypeOf<Dto["publicId"]>().toEqualTypeOf<UserTagPublicId>()
     expectTypeOf<Dto["userAssignments"]>().toEqualTypeOf<{
-      userId?: number
+      userId?: UserPublicId
     }[] | undefined>()
     expectTypeOf<Client["publicId"]>().toEqualTypeOf<UserTagPublicId>()
     expectTypeOf<Client["text"]>().toEqualTypeOf<string>()
     expectTypeOf<Client["userAssignments"]>().toEqualTypeOf<{
-      userId?: number
+      userId?: UserPublicId
     }[] | undefined>()
     expect(db3.userTagEventSearchView.entity).toBe(db3.xUserTag)
     expect(db3.userTagEventSearchView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
-    )).toBe(db3.userTagEventSearchSelection)
+    )).toEqual(expect.objectContaining({ select: expect.objectContaining({
+      userAssignments: expect.objectContaining({ select: expect.objectContaining({
+        user: { select: { id: true, isDeleted: true, publicId: true } },
+      }) }),
+    }) }))
 
     const dto: Dto = {
       publicId: userTagPublicId,
       text: "Members",
-      userAssignments: [{ userId: 42 }],
+      userAssignments: [{ userId: parsePublicId<"User">("TestUser00000042") }],
     }
     expect(db3.userTagEventSearchView.hydrate(
       dto,
@@ -1040,7 +1052,7 @@ describe("Song derived-view migration", () => {
     expectTypeOf<CreditDto["typeId"]>()
       .toEqualTypeOf<SongCreditTypePublicId>()
     expectTypeOf<CreditDto["userId"]>()
-      .toEqualTypeOf<number | null>()
+      .toEqualTypeOf<UserPublicId | null>()
      expectTypeOf<CreditDto["songId"]>().toEqualTypeOf<SongPublicId>()
     expectTypeOf<NestedCreditTypeDto["color"]>()
       .toEqualTypeOf<string | null>()
@@ -1173,6 +1185,10 @@ describe("Song derived-view migration", () => {
       .toEqualTypeOf<ColorPaletteEntry | null>()
     expectTypeOf<ClientCredit["publicId"]>().toEqualTypeOf<SongCreditPublicId>()
     expectTypeOf<ClientCredit["typeId"]>().toEqualTypeOf<SongCreditTypePublicId>()
+    expectTypeOf<Extract<keyof db3.SongDetailDto, "createdByUserId">>()
+      .toEqualTypeOf<never>()
+    expectTypeOf<NonNullable<db3.SongDetailClient["createdByUser"]>["publicId"]>()
+      .toEqualTypeOf<UserPublicId>()
     expectTypeOf<ClientCreditType["publicId"]>()
       .toEqualTypeOf<SongCreditTypePublicId>()
     expect(db3.songDetailView.getSelectionArgs(

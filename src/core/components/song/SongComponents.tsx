@@ -98,7 +98,7 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
 };
 
 type SongWithDescription = Pick<db3.SongDetailClient,
-    "publicId" | "name" | "description" | "createdByUserId">;
+    "publicId" | "name" | "description" | "createdByUser">;
 
 ////////////////////////////////////////////////////////////////
 interface SongDescriptionEditorProps {
@@ -166,7 +166,8 @@ export const SongDescriptionControl = ({ song, refetch, readonly }: { song: Song
         model: null,
         columnName: "description",
         publicData,
-        fallbackOwnerId: song.createdByUserId ?? null,
+        fallbackOwnerId: null,
+        fallbackOwnerPublicId: song.createdByUser?.publicId ?? null,
     });
 
     readonly = readonly || !authorized;

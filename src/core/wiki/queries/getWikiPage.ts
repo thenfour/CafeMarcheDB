@@ -13,7 +13,6 @@ export default resolver.pipe(
     async (args: TGetWikiPageArgs, ctx: AuthenticatedCtx) => {
         const ret = await GetWikiPageCore({
             canonicalWikiSlug: args.canonicalWikiPath,
-            currentUserId: ctx.session.userId,
             clientBaseContentVersion: args.baseContentVersion,
             clientBaseRevisionId: args.baseRevisionId,
             clientLockId: args.lockId,

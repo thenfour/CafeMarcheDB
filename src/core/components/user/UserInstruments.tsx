@@ -52,7 +52,7 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
         void recordFeature({
             feature: ActivityFeature.profile_change_default_instrument,
         });
-        updatePrimaryMutationToken.invoke({ userId: currentUser.id, instrumentId }).then(e => {
+        updatePrimaryMutationToken.invoke({ instrumentId }).then(e => {
             showSnackbar({ severity: "success", children: "Primary instrument updated" });
         }).catch(e => {
             console.log(e);
@@ -165,13 +165,13 @@ export const OwnInstrumentsControl = () => {
         tableSpec: DB3Client.defineTableClientSpec({
             view: db3.userEditorView,
             columns: {
-                id: columnName => new DB3Client.PKColumnClient({ columnName }),
+                publicId: DB3Client.publicIdFieldGen(),
                 instruments: columnName => new DB3Client.TagsFieldClient<UserEditorInstrumentAssociation>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
             },
         }),
         filterModel: {
             tableParams: {
-                userId: currentUser.id,
+                userId: currentUser.publicId,
             }
         },
     });

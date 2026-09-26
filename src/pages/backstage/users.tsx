@@ -166,18 +166,18 @@ const UserListOuter = () => {
         renderItem: (user, index, filterSpec, results, refetch) => (
             <UserListItem
                 index={index}
-                key={user.id}
+                key={user.publicId}
                 user={user}
                 filterSpec={filterSpec}
                 refetch={refetch}
                 results={results}
             />
         ),
-        getItemKey: (user) => user.id,
+        getItemKey: (user) => user.publicId,
         csvExporter: {
             itemToCSVRow: (user, index) => ({
                 Order: index.toString(),
-                ID: user.id.toString(),
+                "Public ID": user.publicId,
                 Name: user.name,
                 URL: dashboardContext.routingApi.getURIForUser(user),
             }),

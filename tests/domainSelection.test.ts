@@ -4,6 +4,7 @@ import { act, Simulate } from "react-dom/test-utils";
 import { createRoot, Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parsePublicId } from "shared/publicId";
+import { userPublicId } from "./support/userFixtures";
 
 vi.mock("src/core/db3/db3", async () => {
     const { z } = await import("zod");
@@ -12,7 +13,7 @@ vi.mock("src/core/db3/db3", async () => {
         // Selection tests load telemetry's schemas but do not exercise telemetry.
         xEventSongList: { identitySchema: z.string().refine(isPublicId) },
         xSongCreditType: { identitySchema: z.string().refine(isPublicId) },
-        xUser: { getRowInfo: (user: any) => ({ pk: user.id, name: user.name }) },
+        xUser: { getRowInfo: (user: any) => ({ pk: user.publicId, name: user.name }) },
         xEvent: { authorizeColumnForEdit: vi.fn() },
         xUserTag: { getIdentity: (tag: any) => tag.publicId },
         xPermission: {
@@ -51,11 +52,15 @@ const tags: db3.UserTagDisplay[] = [
     { publicId: parsePublicId<"UserTag">("UserTagPublic001"), text: "Performers", description: "", color: null, significance: null, sortOrder: 1, cssClass: null },
     { publicId: parsePublicId<"UserTag">("UserTagPublic002"), text: "Volunteers", description: "", color: null, significance: null, sortOrder: 2, cssClass: null },
 ];
-const users = [{ id: 1, name: "Alex Martin" }, { id: 2, name: "Sam Dupont" }, { id: 3, name: "Already invited" }];
+const users = [
+    { publicId: userPublicId(1), name: "Alex Martin" },
+    { publicId: userPublicId(2), name: "Sam Dupont" },
+    { publicId: userPublicId(3), name: "Already invited" },
+];
 const eventPublicId = parsePublicId<"Event">("EventPublic00010");
 const event: React.ComponentProps<typeof EventAttendanceUserTagControl>["event"] = {
     publicId: eventPublicId,
-    createdByUserId: 4,
+    createdByUser: { publicId: userPublicId(4) },
     expectedAttendanceUserTag: tags[0]!,
 };
 const onChange = vi.fn();
@@ -186,7 +191,7 @@ describe("migrated domain pickers", () => {
     });
 
     it("loads Add User only when opened, keeps caller exclusions and user chips, and returns the selected record", async () => {
-        await render(React.createElement(AddUserButton, { onSelect: onChange, filterPredicate: user => user.id !== 3 }));
+        await render(React.createElement(AddUserButton, { onSelect: onChange, filterPredicate: user => user.publicId !== userPublicId(3) }));
         expect(fetchUnsuspended).not.toHaveBeenCalled();
         await click(button("Add users"));
         expect(button("Already invited")).toBeUndefined();

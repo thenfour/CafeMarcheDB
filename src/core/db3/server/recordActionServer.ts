@@ -221,7 +221,7 @@ export async function recordAuthenticatedClientAction(args: RecordActionArgs, ct
 }
 
 // For legacy usage, keep the original recordAction for server-side/mutation
-export async function recordAction({ userId, ...args }: RecordActionArgs, ctx: Ctx) {
+export async function recordAction({ userId, ...args }: RecordActionArgs & { userId?: number }, ctx: Ctx) {
     if (!userId) {
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
         userId = currentUser?.id;

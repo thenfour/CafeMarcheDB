@@ -10,11 +10,12 @@ import { commitUserMerge, MERGE_REVIEW_CHANGED } from "src/auth/server/userMerge
 import { findSignInUser } from "src/auth/server/signInMethods";
 //import { requireUnmergedUserReferences } from "src/auth/server/mergedUserReferences";
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./authorization/support/authorizationFixtures";
+import { userPublicId } from "./support/userFixtures";
 
 const url = process.env.USER_MERGE_TEST_DATABASE_URL;
 const db = new PrismaClient({ datasourceUrl: url });
 const adminContext = () => createAuthorizationTestContext(createAuthorizationTestUser("sysadmin", { id: 1 }));
-const pair = { mainUserId: 10, retiringUserId: 20 };
+const pair = { mainUserId: userPublicId(10), retiringUserId: userPublicId(20) };
 let mainPassword: string;
 let retiringPassword: string;
 
@@ -58,9 +59,9 @@ async function seedAccounts() {
     });
     await db.user.createMany({
         data: [
-            { id: 1, name: "Operator", email: "operator@test.invalid", isSysAdmin: true, roleId: 1 },
-            { id: 10, name: "Main", email: "main-contact@test.invalid", roleId: 2, hashedPassword: mainPassword, calendarFeedToken: "main-calendar-secret" },
-            { id: 20, name: "Retiring", email: "retiring-contact@test.invalid", roleId: 2, hashedPassword: retiringPassword, calendarFeedToken: "retiring-calendar-secret" },
+            { id: 1, publicId: userPublicId(1), name: "Operator", email: "operator@test.invalid", isSysAdmin: true, roleId: 1 },
+            { id: 10, publicId: userPublicId(10), name: "Main", email: "main-contact@test.invalid", roleId: 2, hashedPassword: mainPassword, calendarFeedToken: "main-calendar-secret" },
+            { id: 20, publicId: userPublicId(20), name: "Retiring", email: "retiring-contact@test.invalid", roleId: 2, hashedPassword: retiringPassword, calendarFeedToken: "retiring-calendar-secret" },
         ]
     });
     await db.userSignInMethod.createMany({
@@ -148,7 +149,7 @@ describe.skipIf(!url)("user merge with real MySQL", () => {
         expect(await db.eventUserResponse.count({ where: { userId: 20 } })).toBe(2);
         const originalMain = await db.user.findUniqueOrThrow({ where: { id: 10 } });
 
-        await expect(merge(before.confirmation)).resolves.toEqual({ mainUserId: 10, alreadyMerged: false });
+        await expect(merge(before.confirmation)).resolves.toEqual({ mainUserId: userPublicId(10) });
         const main = await db.user.findUniqueOrThrow({ where: { id: 10 } });
         const retired = await db.user.findUniqueOrThrow({ where: { id: 20 } });
         expect(main.uid).toBe(originalMain.uid);
@@ -180,7 +181,7 @@ describe.skipIf(!url)("user merge with real MySQL", () => {
         expect(JSON.parse(audit.newValues!).sections).toEqual(before.sections);
         expect(audit.newValues).not.toContain("private");
         expect(await db.change.findFirst({ where: { context: "historical" } })).toMatchObject({ userId: 20 });
-        await expect(merge(before.confirmation)).resolves.toEqual({ mainUserId: 10, alreadyMerged: true });
+        await expect(merge(before.confirmation)).resolves.toEqual({ mainUserId: userPublicId(10) });
         expect(await db.change.count({ where: { context: "mergeUsers" } })).toBe(1);
         //await expect(requireUnmergedUserReferences(db, [20])).rejects.toThrow("merged");
     });
@@ -222,7 +223,7 @@ describe.skipIf(!url)("user merge with real MySQL", () => {
     it("rechecks authorization and blocks changing Main or forging confirmation", async () => {
         const before = await preview();
         await expect(merge("a".repeat(64))).rejects.toThrow(MERGE_REVIEW_CHANGED);
-        await expect(commitUserMerge(db, adminContext(), { participants: { mainUserId: 20, retiringUserId: 10 }, confirmation: before.confirmation })).rejects.toThrow(MERGE_REVIEW_CHANGED);
+        await expect(commitUserMerge(db, adminContext(), { participants: { mainUserId: userPublicId(20), retiringUserId: userPublicId(10) }, confirmation: before.confirmation })).rejects.toThrow(MERGE_REVIEW_CHANGED);
         await db.user.update({ where: { id: 1 }, data: { isDeleted: true } });
         await expect(merge(before.confirmation)).rejects.toThrow("merge_users");
     });
@@ -261,6 +262,6 @@ describe.skipIf(!url)("user merge with real MySQL", () => {
         const results = await Promise.allSettled([merge(report.confirmation), merge(report.confirmation)]);
         expect(results.some(result => result.status === "fulfilled")).toBe(true);
         expect(await db.change.count({ where: { context: "mergeUsers" } })).toBe(1);
-        await expect(merge(report.confirmation)).resolves.toEqual({ mainUserId: 10, alreadyMerged: true });
+        await expect(merge(report.confirmation)).resolves.toEqual({ mainUserId: userPublicId(10) });
     });
 });

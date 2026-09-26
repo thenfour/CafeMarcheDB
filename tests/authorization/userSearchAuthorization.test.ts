@@ -94,7 +94,7 @@ describe("user search field authorization", () => {
         expect(sql).toContain("FROM UserSignInMethod signInMethod");
         expect(sql).toContain("signInMethod.type = 'email'");
         expect(sql).toContain("signInMethod.identifier LIKE '%signin-only@test.invalid%'");
-        expect(result.results).toEqual([expect.objectContaining({ id: target.id })]);
+        expect(result.results).toEqual([expect.objectContaining({ publicId: target.publicId })]);
         expect(result.results[0]).not.toHaveProperty("signInMethods");
     });
 

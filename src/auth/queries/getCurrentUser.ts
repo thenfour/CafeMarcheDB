@@ -17,5 +17,9 @@ export default async function getCurrentUser(_ = null, { session }: Ctx) {
   if (!user) return null;
   // xUser's relation metadata defines the runtime projection; this annotation
   // records the corresponding client shape for Blitz's inferred query result.
-  return projectDB3ModelPublicIds(db3.xUser, user) as db3.UserClientPayload;
+  const projected = projectDB3ModelPublicIds(db3.xUser, user) as db3.UserClientPayload;
+
+  // blitz auth requires the numeric id; this is one exception to the "public id"
+  // policy.
+  return { ...projected, id: user.id } satisfies db3.SelfUserClientPayload;
 }

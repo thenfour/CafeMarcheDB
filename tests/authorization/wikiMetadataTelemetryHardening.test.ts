@@ -184,7 +184,8 @@ describe("BA-S005 server-rendered entity metadata", () => {
             table: testCase.table,
             identity: testCase.delegate === "event" ? eventPublicId(testCase.row.id)
                 : testCase.delegate === "song" ? songPublicId(testCase.row.id)
-                    : testCase.delegate === "file" ? filePublicId(testCase.row.id) : testCase.row.id,
+                    : testCase.delegate === "file" ? filePublicId(testCase.row.id)
+                        : testCase.row.publicId,
             load: where => authorizationTestDb.getDelegate(testCase.delegate).findFirst({ where }),
         });
 
@@ -249,7 +250,6 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
 
         await recordAuthenticatedClientAction({
             feature: ActivityFeature.song_view,
-            userId: 999,
             songId: songPublicId(3),
         }, ctx);
 
@@ -263,7 +263,6 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
 
         await recordAuthenticatedClientAction({
             feature: ActivityFeature.song_view,
-            userId: 999,
         }, ctx);
 
         expect(authorizationTestDb.snapshot("action")).toEqual([

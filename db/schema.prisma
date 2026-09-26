@@ -157,6 +157,7 @@ model UserTagAssignment {
 
 model User {
   id         Int     @id @default(autoincrement())
+  publicId   String  @unique @db.Char(16)
   name       String  @default("") @db.VarChar(768)
   isSysAdmin Boolean @default(false)
   isDeleted  Boolean @default(false)

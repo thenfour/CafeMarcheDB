@@ -6,7 +6,7 @@ import { Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { Permission } from 'shared/permissions';
-import type { EventPublicId, EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FilePublicId, FileSongTagPublicId, FileTagPublicId, SongPublicId } from 'shared/publicId';
+import type { EventPublicId, EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FilePublicId, FileSongTagPublicId, FileTagPublicId, SongPublicId, UserPublicId } from 'shared/publicId';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { formatFileSize, SortDirection } from 'shared/rootroot';
 import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
@@ -191,7 +191,7 @@ export const FileExternalLink = ({ file, highlight }: { file: DetailFile, highli
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface FileViewerHiddenTagIds {
     fileTagIds?: FileTagPublicId[];
-    userTagIds?: number[];
+    userTagIds?: UserPublicId[];
     instrumentTagIds?: db3.InstrumentIdentity[];
     songTagIds?: SongPublicId[];
     eventTagIds?: EventPublicId[];
@@ -348,7 +348,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
 
                     {(taggedUsers.length > 0) && (
                         taggedUsers
-                            .filter(a => !props.hiddenTagIds.userTagIds || !existsInArray(props.hiddenTagIds.userTagIds, a.user.id))
+                            .filter(a => !props.hiddenTagIds.userTagIds || !existsInArray(props.hiddenTagIds.userTagIds, a.user.publicId))
                             .map(a => <UserChip key={db3.xFile.fields.taggedUsers.getForeignIdentity(a)} value={a.user} size="small" variation={variation} />)
                     )}
 
@@ -566,7 +566,7 @@ export const FileEditor = (props: FileEditorProps) => {
 interface FileFilterAndSortSpec {
     quickFilter: string;
     tagIds: FileTagPublicId[];
-    taggedUserIds: number[];
+    taggedUserIds: UserPublicId[];
     taggedInstrumentIds: db3.InstrumentIdentity[];
     taggedSongIds: SongPublicId[];
     taggedEventIds: EventPublicId[];
@@ -590,7 +590,7 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         const tagIds = tags.map(tag => db3.xFileTag.getIdentity(tag.fileTag));
         if (spec.tagIds.length && !tagIds.some(id => spec.tagIds.includes(id))) return false;
 
-        const userIds = taggedUsers.map(user => user.user.id);
+        const userIds = taggedUsers.map(user => user.user.publicId);
         if (spec.taggedUserIds.length && !userIds.some(id => spec.taggedUserIds.includes(id))) return false;
 
         const instrumentIds = taggedInstruments.map(instrument => db3.getInstrumentIdentity(instrument.instrument));
@@ -848,12 +848,12 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                                     {uniqueUserTags.length > 1 && <CMChipContainer>
                                         {uniqueUserTags.map(t => (
                                             <CMChip
-                                                key={t.tag.id}
+                                                key={t.tag.publicId}
                                                 //color={t.tag.color}
                                                 tooltip={"User"}
                                                 size='small'
-                                                variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedUserIds, t.tag.id) }}
-                                                onClick={() => props.onChange({ ...props.value, taggedUserIds: toggleValueInArray(props.value.taggedUserIds, t.tag.id) })}
+                                                variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedUserIds, t.tag.publicId) }}
+                                                onClick={() => props.onChange({ ...props.value, taggedUserIds: toggleValueInArray(props.value.taggedUserIds, t.tag.publicId) })}
                                             >
                                                 {t.tag.name} ({t.count})
                                             </CMChip>))}

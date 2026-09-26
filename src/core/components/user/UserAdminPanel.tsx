@@ -60,7 +60,7 @@ export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
                         const changed = await lifecycle.deactivate(user, capabilities.deactivationContinuityWarnings);
                         if (!changed) return;
                         snackbar.showSuccess("User deactivated");
-                        if (dashboardContext.currentUser?.id === user.id) {
+                        if (dashboardContext.currentUser?.publicId === user.publicId) {
                             window.location.assign("/backstage");
                         } else if (!dashboardContext.isAuthorized(Permission.recover_users)) {
                             await router.replace(dashboardContext.isAuthorized(Permission.search_users)
@@ -121,7 +121,7 @@ export const SetUserSysadminButton = ({ capabilities, user, onOK }: SetUserSysad
                         description: `${isSysAdmin ? "Grant" : "Revoke"} Sysadmin status for ${user.name}?`,
                     })) return;
                     await snackbar.invokeAsync(async () => {
-                        await setUserSysAdminMutation({ userId: user.id, isSysAdmin });
+                        await setUserSysAdminMutation({ userId: user.publicId, isSysAdmin });
                         void onOK?.();
                     }, "Sysadmin status updated");
                 }}
@@ -159,7 +159,7 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
             }}
         />
 
-        {capabilities.canImpersonate && <ImpersonateUserButton userId={props.user.id} />}
+        {capabilities.canImpersonate && <ImpersonateUserButton userId={props.user.publicId} />}
 
     </>;
 };

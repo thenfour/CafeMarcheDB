@@ -221,7 +221,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             eventId: props.event.publicId,
         });
         mutationToken.invoke({
-            userId: props.user.id,
+            userId: props.user.publicId,
             eventId: props.event.publicId,
             comment: eventResponseValue.userComment,
             instrumentId: eventResponseValue.instrumentId,
@@ -364,7 +364,7 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
     }
 
     const authorizedForEdit = dashboardContext.isAuthorized(Permission.change_others_event_responses);
-    const isYou = eventResponse.user.id === currentUser.id;
+    const isYou = eventResponse.user.publicId === currentUser.publicId;
 
     const [_, uncancelledSegments] = dashboardContext.partitionEventSegmentsByCancellation(event.segments);
     const shownSegments: (typeof event.segments[0])[] = showCancelledSegments ? event.segments : uncancelledSegments;
@@ -455,14 +455,14 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
         setSortSegment(shownSegments.find(s => s.publicId === sortSegmentId) || null);
     }, [sortSegmentId, event]);
 
-    const onAddUser = (u: db3.UserPayload | null) => {
+    const onAddUser = (u: db3.UserClientPayload | null) => {
         if (u == null) return;
         void recordFeature({
             feature: ActivityFeature.attendance_explicit_invite,
         });
         token.invoke({
             eventId: event.publicId,
-            userId: u.id,
+            userId: u.publicId,
             isInvited: true,
         }).then(e => {
             showSnackbar({ severity: "success", children: "user invited" });
@@ -562,7 +562,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                 {
                     sortedUsers.map(user => {
                         return <EventAttendanceDetailRow
-                            key={user.id}
+                            key={user.publicId}
                             responseInfo={responseInfo}
                             event={event}
                             user={user}
@@ -581,7 +581,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                             onSelect={onAddUser}
                             filterPredicate={(u) => {
                                 // don't show users who are already being displayed.
-                                const isDisplayed = responseInfo.allEventResponses.some(r => r.user.id === u.id && r.isRelevantForDisplay);
+                                const isDisplayed = responseInfo.allEventResponses.some(r => r.user.publicId === u.publicId && r.isRelevantForDisplay);
                                 return !isDisplayed;
                                 //!props.responseInfo.distinctUsers.some(d => d.id === u.id)
                             }}
@@ -763,7 +763,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                                             const going = isAttendanceGoing(att);
                                             const color = going ? att?.color : null;
                                             const style = GetStyleVariablesForColor({ color, ...StandardVariationSpec.Strong });
-                                            return <Tooltip disableInteractive key={resp.user.id} title={`${resp.user.name}: ${att?.text || "no response"}`}>
+                                            return <Tooltip disableInteractive key={resp.user.publicId} title={`${resp.user.name}: ${att?.text || "no response"}`}>
                                                 <div className={`attendanceResponseColorBarSegment applyColor ${style.cssClass} ${going ? "going" : "notgoing"}`} style={style.style}>
                                                     {/* {resp.user.name.substring(0, 1).toLocaleUpperCase()} */}
                                                     {resp.user.name}

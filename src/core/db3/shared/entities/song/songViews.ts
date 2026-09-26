@@ -51,7 +51,7 @@ export const songCreditEditorSelection = Prisma.validator<Prisma.SongCreditDefau
         userId: true,
         user: {
             select: {
-                id: true,
+                publicId: true,
                 name: true,
             },
         },
@@ -109,7 +109,7 @@ export const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
         createdByUserId: true,
         createdByUser: {
             select: {
-                id: true,
+                publicId: true,
                 name: true,
                 cssClass: true,
             },
@@ -214,7 +214,7 @@ const songSearchTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
                 comment: true,
                 user: {
                     select: {
-                        id: true,
+                        publicId: true,
                         name: true,
                     },
                 },
@@ -317,7 +317,7 @@ const songDetailTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
         endBPM: true,
         introducedYear: true,
         lengthSeconds: true,
-        createdByUserId: true,
+        createdByUser: { select: { publicId: true } },
         visiblePermissionId: true,
         pinnedRecordingId: true,
         tags: {
@@ -342,7 +342,7 @@ const songDetailTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
                 comment: true,
                 user: {
                     select: {
-                        id: true,
+                        publicId: true,
                         name: true,
                     },
                 },
@@ -354,6 +354,7 @@ const songDetailTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
 const songDetailRequestedSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
     graft(songDetailTransportSelection, {
         select: {
+            createdByUserId: true,
             isDeleted: true,
             tags: {
                 select: {

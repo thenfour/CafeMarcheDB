@@ -11,7 +11,7 @@ vi.mock("db", async () => {
 vi.mock("@blitzjs/rpc", () => ({ resolver: {
     pipe: (...steps: any[]) => steps[steps.length - 1], authorize: vi.fn(), zod: vi.fn(),
 }}));
-vi.mock("src/core/db3/server/db3mutationCore", () => ({ getCurrentUserCore: async (ctx: any) => ({ id: ctx.session.userId }) }));
+vi.mock("src/core/db3/server/db3mutationCore", () => ({ getCurrentUserCore: async (ctx: any) => ({ id: ctx.session.userId, publicId: `TestUser${String(ctx.session.userId).padStart(8, "0")}` }) }));
 vi.mock("src/core/db3/server/db3ReadPolicy", () => ({ GetAuthorizedTableReadWhere: async (args: any) => args.where ?? {} }));
 vi.mock("src/core/db3/shared/db3Authorization", () => ({
     createDb3RequestAuthorization: async () => ({}),
@@ -34,10 +34,10 @@ const now = new Date("2026-09-15T12:00:00Z");
 const permissionPublicId = parsePublicId<"Permission">("WikiPermission01");
 const page = (overrides = {}): WikiPageApiPayload => ({
     id: 1, slug: "test", namespace: null, visiblePermissionId: permissionPublicId, contentVersion: 5,
-    lockId: "editor-a", lockedByUser: { id: 1, name: "Editor" },
+    lockId: "editor-a", lockedByUser: { publicId: parsePublicId<"User">("TestUser00000001"), name: "Editor" },
     lockAcquiredAt: now, lockExpiresAt: new Date(now.valueOf() + 900000),
     lastEditPingAt: new Date(now.valueOf() - 600000),
-    currentRevision: { id: 9, name: "Title", content: "Saved", createdAt: now, createdByUser: { id: 1, name: "Editor" } },
+    currentRevision: { id: 9, name: "Title", content: "Saved", createdAt: now, createdByUser: { publicId: parsePublicId<"User">("TestUser00000001"), name: "Editor" } },
     ...overrides,
 });
 const args = { canonicalWikiPath: "test", baseRevisionId: 9, baseContentVersion: 5, lockId: "editor-a", title: "Title", content: "Draft" };
@@ -47,7 +47,7 @@ beforeEach(() => {
     mockDb.wikiPage.findFirst.mockResolvedValue(page());
     mockDb.wikiPage.update.mockImplementation(async ({ data }: any) => page({ ...data,
         contentVersion: data.contentVersion ? 6 : 5,
-        lockedByUser: { id: data.lockedByUserId ?? 1, name: "Editor" },
+        lockedByUser: { publicId: parsePublicId<"User">("TestUser00000001"), name: "Editor" },
     }));
     mockDb.wikiPageRevision.findMany.mockResolvedValue([]);
     mockDb.wikiPageRevision.create.mockResolvedValue({ id: 10 });
@@ -55,7 +55,7 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); });
 describe("wiki lease and content protection", () => {
     it("keeps a lease despite missing presence pings", () => {
-        expect(GetWikiPageUpdatability({ currentPage: page(), currentUserId: 2,
+        expect(GetWikiPageUpdatability({ currentPage: page(), currentUserId: parsePublicId<"User">("TestUser00000002"),
             userClientLockId: "editor-b", baseRevisionId: 9, baseContentVersion: 5 }).isLockConflict).toBe(true);
     });
     it("rejects stale content even when the revision ID is unchanged", async () => {
@@ -93,7 +93,7 @@ describe("wiki lease and content protection", () => {
     });
     it("rechecks the winner's ownership after a serialization conflict", async () => {
         mockDb.$transaction.mockRejectedValueOnce(new Prisma.PrismaClientKnownRequestError("conflict", { code: "P2034", clientVersion: "5.12" }));
-        mockDb.wikiPage.findFirst.mockResolvedValue(page({ lockId: "winner", lockedByUser: { id: 2, name: "Other" } }));
+        mockDb.wikiPage.findFirst.mockResolvedValue(page({ lockId: "winner", lockedByUser: { publicId: parsePublicId<"User">("TestUser00000002"), name: "Other" } }));
         expect((await acquire(args, ctx)).outcome).toBe("lockConflict");
         expect(mockDb.$transaction).toHaveBeenCalledTimes(2);
         expect(mockDb.$transaction.mock.calls[1][1].isolationLevel).toBe("Serializable");

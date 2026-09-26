@@ -26,7 +26,7 @@ export const xSysadminColumnAuthMap = db3.defineAuthMap({
 
 export interface ChangeTableParams {
     tableNames?: string[] | null;
-    userIds?: number[] | null;
+    userIds?: string[] | null;
     recordId?: number | null;
 };
 
@@ -36,8 +36,7 @@ export const xChange = db3.defineTable({
     deletePolicy: "disabled",
     queryParameters: {
         tableNames: { kind: "stringArray", authorizeAs: "table", nullable: true },
-        userIds: { kind: "integerArray", authorizeAs: "userId", nullable: true },
-        recordId: { kind: "integer", authorizeAs: "recordId", nullable: true },
+        userIds: { kind: "stringArray", authorizeAs: "user", nullable: true },
     },
     getSelectionArgs: (): Prisma.ChangeDefaultArgs => {
         return {
@@ -64,7 +63,7 @@ export const xChange = db3.defineTable({
 
         if (params.userIds && params.userIds.length > 0) {
             ret.push({
-                OR: params.userIds.map(n => { return { userId: n }; })
+                OR: params.userIds.map(n => { return { user: { publicId: n } }; })
             });
         }
 

@@ -109,7 +109,7 @@ describe("user settings in dashboard context", () => {
         expect(inputs().map(input => input.checked)).toEqual([false, false]);
         expect([...container.querySelectorAll<HTMLInputElement>(`input:not([name="${name}"])`)]
             .every(input => input.checked)).toBe(true);
-        expect(setQueryData).toHaveBeenCalledWith(getDashboardData, { userId: 10 }, expect.any(Function), { refetch: false });
+        expect(setQueryData).toHaveBeenCalledWith(getDashboardData, {}, expect.any(Function), { refetch: false });
     });
 
     it.each(["calendar.showDeclinedEvents", "calendar.showUninvitedEvents"] as const)("retains %s and reports a failed save", async name => {

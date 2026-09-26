@@ -1,4 +1,5 @@
 import type { MutatorInput, QueryRequestInput } from "@db3/shared/db3core"
+import { userPublicId } from "tests/support/userFixtures"
 
 export function forgeDb3Query(
   tableID: string,
@@ -19,6 +20,14 @@ export function forgeDb3Update(
   updateModel: Record<string, unknown>,
   overrides: Partial<MutatorInput> = {},
 ): MutatorInput {
+  if (tableID === "User") return {
+    tableID,
+    tableName: tableID,
+    mutationType: "update",
+    updatePublicId: userPublicId(updateId),
+    updateModel,
+    ...overrides,
+  } as MutatorInput // Test builder converts trusted fixture IDs to client identity.
   return {
     tableID,
     tableName: tableID,
@@ -65,6 +74,14 @@ export function forgeDb3Delete(
   deleteType: "softWhenPossible" | "hard" = "hard",
   overrides: Partial<MutatorInput> = {},
 ): MutatorInput {
+  if (tableID === "User") return {
+    tableID,
+    tableName: tableID,
+    mutationType: "delete",
+    deletePublicId: userPublicId(deleteId),
+    deleteType,
+    ...overrides,
+  } as MutatorInput // Test builder converts trusted fixture IDs to client identity.
   return {
     tableID,
     tableName: tableID,

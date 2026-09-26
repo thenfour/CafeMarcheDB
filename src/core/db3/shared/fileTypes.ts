@@ -1,9 +1,9 @@
 import { Coord2D, Size } from "@/shared/rootroot";
 import type { Prisma } from "db";
-import type { EventPublicId, FilePublicId, FileTagPublicId, FrontpageGalleryItemPublicId, PermissionPublicId, SongPublicId } from "shared/publicId";
+import type { EventPublicId, FilePublicId, FileTagPublicId, FrontpageGalleryItemPublicId, PermissionPublicId, SongPublicId, UserPublicId } from "shared/publicId";
 
 export interface TClientFileUploadTags {
-    taggedUserId?: number;
+    taggedUserId?: UserPublicId;
     taggedSongId?: SongPublicId;
     taggedEventId?: EventPublicId;
     taggedInstrumentId?: number;
@@ -26,7 +26,7 @@ export interface TClientUpdateFile {
     visiblePermissionId?: PermissionPublicId | null;
 
     tagsIds?: FileTagPublicId[];
-    taggedUserIds?: number[];
+    taggedUserIds?: UserPublicId[];
     taggedSongIds?: SongPublicId[];
     taggedEventIds?: EventPublicId[];
     taggedInstrumentIds?: number[];
@@ -80,8 +80,8 @@ export interface FileCustomData {
 export type UploadedFile = Pick<
     Prisma.FileGetPayload<{}>,
     "storedLeafName" | "fileLeafName" | "mimeType" | "externalURI" | "description"
-    | "sizeBytes" | "customData" | "uploadedByUserId"
-> & { publicId: FilePublicId };
+    | "sizeBytes" | "customData"
+> & { publicId: FilePublicId; uploadedByUserId: UserPublicId | null };
 
 export interface UploadResponsePayload {
     files: UploadedFile[];

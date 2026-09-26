@@ -2,7 +2,7 @@ import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 
 import { Prisma } from "db";
 import { z } from "zod";
-import { isPublicId, type EventPublicId, type EventSegmentPublicId, type EventAttendancePublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type FilePublicId, type InstrumentPublicId, type PermissionPublicId, type SongPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId } from "shared/publicId";
+import { isPublicId, type EventPublicId, type EventSegmentPublicId, type EventAttendancePublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type FilePublicId, type InstrumentPublicId, type PermissionPublicId, type SongPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId, type UserPublicId } from "shared/publicId";
 
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 import { ColorPaletteEntry } from "../../components/color/palette";
@@ -36,7 +36,7 @@ export interface CMDBTableFilterModel {
 
 
 export interface TupdateUserEventAttendanceMutationArgs {
-    userId: number;
+    userId: UserPublicId;
     eventId: EventPublicId;
     comment?: string | null; // for event
     instrumentId?: InstrumentPublicId | null; // for event
@@ -54,7 +54,7 @@ export interface TupdateUserEventAttendanceMutationArgs {
 const ZPositiveRecordId = z.number().int().positive();
 
 export const ZupdateUserEventAttendanceMutationArgs = z.object({
-    userId: ZPositiveRecordId,
+    userId: z.custom<UserPublicId>(isPublicId),
     eventId: z.custom<EventPublicId>(isPublicId),
     comment: z.string().nullable().optional(),
     instrumentId: z.custom<InstrumentPublicId>(isPublicId).nullable().optional(),
@@ -102,7 +102,6 @@ export interface TupdateEventBasicFieldsArgs {
     statusId?: EventStatusPublicId;
     expectedAttendanceUserTagId?: UserTagPublicId | null;
     visiblePermissionId?: PermissionPublicId | null;
-    createdByUserId?: number;
 
     frontpageVisible?: boolean;
     frontpageDate?: string;  // e.g. "Zaterdag 11 november"
@@ -141,7 +140,6 @@ export interface TupdateSongBasicFieldsArgs {
 
 
 export interface TupdateUserPrimaryInstrumentMutationArgs {
-    userId: number;
     instrumentId: InstrumentPublicId;
 };
 
@@ -160,7 +158,7 @@ export interface TinsertEventSong {
 };
 
 export interface TinsertEventResponse {
-    userId: number;
+    userId: UserPublicId;
     userName?: string; // not always used; context-dependent.
     attendanceId: EventAttendancePublicId;
 };
@@ -719,7 +717,7 @@ export type ServerHealthFileResult = FileStatResult & {
     leafName: string | undefined;
     isDeleted: boolean | undefined;
     mimeType: string | undefined;
-    uploadedByUserId: number | undefined;
+    uploadedByUserId: UserPublicId | undefined;
     uploadedAt: Date | undefined;
     externalURI: string | undefined;
 
@@ -783,12 +781,12 @@ export interface ICalCalendarJSON {
 
 
 export type GetUserAttendanceArgs = {
-    userId: number;
+    userId: UserPublicId;
     eventId: EventPublicId;
 }
 
 export type GetUserAttendanceRet = {
-    userId: number;
+    userId: UserPublicId;
     eventId: EventPublicId;
     comment: string | null;
     instrumentId: InstrumentPublicId | null;

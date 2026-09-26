@@ -7,6 +7,7 @@ import { validateDB3MutationRequest, validateDB3QueryRequest } from "@db3/server
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
+import { userPublicId } from "../support/userFixtures";
 
 const publicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
 const tagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn02");
@@ -160,7 +161,7 @@ describe("instrument catalog public-ID transport", () => {
                 publicId: fileUserTagPublicId,
                 fileId: 90,
                 userId: 100,
-                user: { id: 100, name: "Ada" },
+                user: { id: 100, publicId: userPublicId(100), name: "Ada" },
             }],
             taggedSongs: [{
                 id: 94,
@@ -212,8 +213,8 @@ describe("instrument catalog public-ID transport", () => {
         expect(projectedFile.tags[0].fileTag).not.toHaveProperty("id");
         expect(projectedFile.taggedUsers[0]).toMatchObject({
             publicId: fileUserTagPublicId,
-            userId: 100,
-            user: { id: 100, name: "Ada" },
+            userId: userPublicId(100),
+            user: { publicId: userPublicId(100), name: "Ada" },
         });
         expect(projectedFile.taggedSongs[0]).toMatchObject({
             publicId: fileSongTagPublicId,
@@ -257,6 +258,7 @@ describe("instrument catalog public-ID transport", () => {
                 songId: 92,
                 song: { id: 92, publicId: songPublicId },
                 userId: 100,
+                user: { id: 100, publicId: userPublicId(100), name: "Ada", isDeleted: false },
                 typeId: 96,
                 type: {
                     id: 96,
@@ -264,7 +266,7 @@ describe("instrument catalog public-ID transport", () => {
                     text: "Composer",
                 },
             }],
-        }, authorization(Permission.view_songs));
+        }, authorization(Permission.view_songs, Permission.view_users_basic_info));
         expect(projectedSong.tags[0]).toMatchObject({
             publicId: songTagAssociationPublicId,
             songId: songPublicId,
@@ -276,7 +278,7 @@ describe("instrument catalog public-ID transport", () => {
         expect(projectedSong.credits[0]).toMatchObject({
             publicId: songCreditPublicId,
             songId: songPublicId,
-            userId: 100,
+            userId: userPublicId(100),
             typeId: songCreditTypePublicId,
             type: { publicId: songCreditTypePublicId, text: "Composer" },
         });
@@ -307,10 +309,12 @@ describe("instrument catalog public-ID transport", () => {
 
         const projectedUser = projectDB3ModelPublicIds(db3.xUser, {
             id: 99,
+            publicId: userPublicId(99),
             instruments: [{
                 id: 102,
                 publicId: userInstrumentPublicId,
                 userId: 99,
+                user: { id: 99, publicId: userPublicId(99) },
                 instrumentId: instrument.id,
                 instrument,
                 isPrimary: true,
@@ -319,6 +323,7 @@ describe("instrument catalog public-ID transport", () => {
                 id: 100,
                 publicId: userTagAssignmentPublicId,
                 userId: 99,
+                user: { id: 99, publicId: userPublicId(99) },
                 userTagId: 101,
                 userTag: {
                     id: 101,
@@ -329,7 +334,7 @@ describe("instrument catalog public-ID transport", () => {
         }, authorization(Permission.view_users_basic_info));
         expect(projectedUser.tags[0]).toMatchObject({
             publicId: userTagAssignmentPublicId,
-            userId: 99,
+            userId: userPublicId(99),
             userTagId: userTagPublicId,
             userTag: { publicId: userTagPublicId, text: "Members" },
         });
@@ -337,7 +342,7 @@ describe("instrument catalog public-ID transport", () => {
         expect(projectedUser.tags[0].userTag).not.toHaveProperty("id");
         expect(projectedUser.instruments[0]).toMatchObject({
             publicId: userInstrumentPublicId,
-            userId: 99,
+            userId: userPublicId(99),
             instrumentId: instrumentPublicId,
             instrument: { publicId: instrumentPublicId, name: "Trumpet" },
             isPrimary: true,

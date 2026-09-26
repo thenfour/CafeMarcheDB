@@ -15,15 +15,16 @@ import {
 } from "../server/userManagementPolicy";
 import {
     findUserManagementActor,
-    findUserManagementTarget,
+    findUserManagementTargetByPublicId,
     findUserManagementRole,
     getUserManagementContinuityWarnings,
     makePermissionSetFromRole,
 } from "../server/userManagementState";
 import { PermissionSet } from "../shared/PermissionSet";
+import { UserPublicIdSchema } from "../schemas";
 
 export const AssignUserRoleInput = z.object({
-    userId: z.number().int().positive(),
+    userId: UserPublicIdSchema,
     roleId: z.custom<RolePublicId>(isPublicId).nullable(),
     acknowledgeContinuityRisk: z.boolean().default(false),
 });
@@ -46,7 +47,7 @@ export default resolver.pipe(
             const desiredRoleDatabaseId = desiredRoleIdentity?.id ?? null;
             const [actor, target, desiredRole] = await Promise.all([
                 findUserManagementActor(tx, ctx.session.userId),
-                findUserManagementTarget(tx, userId),
+                findUserManagementTargetByPublicId(tx, userId),
                 findUserManagementRole(tx, desiredRoleDatabaseId),
             ]);
 
@@ -77,14 +78,14 @@ export default resolver.pipe(
             );
 
             await tx.user.update({
-                where: { id: userId },
+                where: { id: target.principal.id },
                 data: { roleId: desiredRoleDatabaseId },
             });
             await RegisterChange({
                 action: ChangeAction.update,
                 changeContext: CreateChangeContext("assignUserRole"),
                 table: "User",
-                pkid: userId,
+                pkid: target.principal.id,
                 oldValues: { roleId: target.principal.roleId },
                 newValues: { roleId: desiredRoleDatabaseId },
                 ctx,

@@ -1,5 +1,5 @@
 
-import type { RolePublicId } from "shared/publicId";
+import type { RolePublicId, UserPublicId } from "shared/publicId";
 
 export type UserMassAnalysisContentCounts = {
     createdSongs: number;
@@ -30,7 +30,7 @@ export type UserMassAnalysisSystemCounts = {
 };
 
 export type UserMassAnalysisUserInfo = {
-    id: number;
+    publicId: UserPublicId;
     name: string;
     email: string;
     createdAt: Date;
@@ -158,12 +158,12 @@ export const getUserInfoRows = (
     compareUserInfo?: UserMassAnalysisUserInfo
 ): MassAnalysisDataRow[] => [
         {
-            key: "id",
-            label: "ID",
-            value: userInfo.id,
-            compareValue: compareUserInfo?.id,
-            displayValue: userInfo.id.toString(),
-            compareDisplayValue: compareUserInfo?.id.toString()
+            key: "publicId",
+            label: "Public ID",
+            value: 0,
+            compareValue: 0,
+            displayValue: userInfo.publicId,
+            compareDisplayValue: compareUserInfo?.publicId
         },
         {
             key: "name",

@@ -70,7 +70,7 @@ function reset(overrides: Parameters<typeof authorizationTestDb.reset>[0] = {}) 
 const operations = db3.eventAttendanceEditorView.crud.operations;
 const command = (commandID: string, payload: unknown) => invokeResolver(executeCommand, { commandID, payload }, ctx);
 const changeResponse = (attendanceId: EventAttendancePublicId | null) =>
-    invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.id, segmentResponses: { [segment.publicId]: { attendanceId } } }, ctx);
+    invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.publicId, segmentResponses: { [segment.publicId]: { attendanceId } } }, ctx);
 
 describe("EventAttendance public identities", () => {
     beforeEach(() => { vi.restoreAllMocks(); vi.stubEnv("CMDB_BASE_URL", "https://band.test"); reset(); });
@@ -137,7 +137,7 @@ describe("EventAttendance public identities", () => {
     it("resolves a shared choice once for several segments", async () => {
         reset({ eventSegment: [segment, { ...segment, id: 102, publicId: segmentPublicId(102) }], eventSegmentUserResponse: [] });
         const lookup = vi.spyOn(authorizationTestDb.getDelegate("eventAttendance"), "findMany");
-        await invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.id,
+        await invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.publicId,
             segmentResponses: { [segment.publicId]: { attendanceId: attendance.publicId }, [segmentPublicId(102)]: { attendanceId: attendance.publicId } },
         }, ctx);
         expect(lookup).toHaveBeenCalledTimes(1);
@@ -154,7 +154,7 @@ describe("EventAttendance public identities", () => {
         const badChoice = kind === "numeric" ? 2 : attendancePublicId(kind === "deleted" ? 3 : 999);
         // Forged transport data deliberately bypasses the branded client type.
         await expect(invokeResolver(updateAttendance, {
-            eventId: event.publicId, userId: actor.id, comment: "Must not be saved",
+            eventId: event.publicId, userId: actor.publicId, comment: "Must not be saved",
             segmentResponses: { [segment.publicId]: { attendanceId: attendance.publicId }, [segmentPublicId(102)]: { attendanceId: badChoice } },
         } as unknown as TupdateUserEventAttendanceMutationArgs, ctx)).rejects.toThrow();
         expect(create).not.toHaveBeenCalled();
@@ -163,7 +163,7 @@ describe("EventAttendance public identities", () => {
     });
 
     it("projects user attendance report references", async () => {
-        const result = await invokeResolver(getUserEventAttendance, { userId: actor.id, take: 100 }, ctx);
+        const result = await invokeResolver(getUserEventAttendance, { userId: actor.publicId, take: 100 }, ctx);
         expect(result.events[0]!.segments[0]).toMatchObject({ attendanceId: attendance.publicId, statusId });
     });
 
@@ -173,7 +173,7 @@ describe("EventAttendance public identities", () => {
         const handler = attendanceApi as unknown as (req: { query: { userId: string; eventId: string } },
             res: { status: (code: number) => { json: typeof json } }, context: typeof ctx) => Promise<void>;
         const status = vi.fn(() => ({ json }));
-        await handler({ query: { userId: String(actor.id), eventId: event.publicId } }, { status }, ctx);
+        await handler({ query: { userId: actor.publicId, eventId: event.publicId } }, { status }, ctx);
         expect(status).toHaveBeenCalledWith(200);
         expect(json).toHaveBeenCalledWith(expect.objectContaining({
             segmentResponses: [expect.objectContaining({ attendanceId: attendance.publicId, statusId })],
@@ -185,7 +185,7 @@ describe("EventAttendance public identities", () => {
             event: { name: "New concert", locationDescription: "", typeId: null, statusId: null,
                 tags: [], expectedAttendanceUserTagId: null, visiblePermissionId: null },
             segment: { name: "First set", description: "", startsAt: null, durationMillis: 0, isAllDay: true },
-            responses: [{ userId: actor.id, attendanceId: attendance.publicId }],
+            responses: [{ userId: actor.publicId, attendanceId: attendance.publicId }],
         };
         const created = await invokeResolver(insertEvent, input, ctx);
         expect(isPublicId(created.segment.publicId)).toBe(true);
@@ -195,7 +195,7 @@ describe("EventAttendance public identities", () => {
         const before = ["event", "eventSegment", "eventSegmentUserResponse", "change"].map(table => ({ table, rows: authorizationTestDb.snapshot(table) }));
         for (const invalid of [2, attendancePublicId(999)]) {
             // This asserts that a forged numeric choice fails the server boundary too.
-            await expect(invokeResolver(insertEvent, { ...input, responses: [{ userId: actor.id, attendanceId: invalid }] } as unknown as TinsertEventArgs, ctx)).rejects.toThrow();
+            await expect(invokeResolver(insertEvent, { ...input, responses: [{ userId: actor.publicId, attendanceId: invalid }] } as unknown as TinsertEventArgs, ctx)).rejects.toThrow();
             for (const snapshot of before) expect(authorizationTestDb.snapshot(snapshot.table)).toEqual(snapshot.rows);
         }
     });
@@ -209,7 +209,7 @@ describe("EventAttendance public identities", () => {
         });
         const { ctx: adminCtx } = createAuthorizationPersona("sysadmin", { id: admin.id });
         const result = await invokeResolver(getImportEventData, { config: "", text: "Gig\ncarl" }, adminCtx);
-        expect(result.responses).toEqual([expect.objectContaining({ userId: actor.id, attendanceId: attendance.publicId })]);
+        expect(result.responses).toEqual([expect.objectContaining({ userId: actor.publicId, attendanceId: attendance.publicId })]);
     });
 
     it("stores telemetry references as numeric foreign keys and projects report and CSV references as public", async () => {

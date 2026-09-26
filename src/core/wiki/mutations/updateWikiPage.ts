@@ -15,6 +15,7 @@ import { calculateDiff, GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, 
 import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
 import { xWikiPage } from "src/core/db3/shared/schema/wiki";
 import { wikiPageApiSelection } from "src/core/db3/shared/entities/wiki/wikiViews";
+import { UserPublicId } from "@/shared/publicId";
 
 const ConsolidatedUpdate = async (args: TUpdateWikiPageArgs, existingRevisionToConsolidate: Prisma.WikiPageRevisionGetPayload<{}>, currentPage: WikiPageApiPayload, currentUserId: number, dbt: TransactionalPrismaClient): Promise<WikiPageApiRevisionPayload> => {
 
@@ -108,13 +109,14 @@ const UpdateExistingWikiPage = async (
     args: TUpdateWikiPageArgs,
     currentPage: WikiPageApiPayload,
     currentUserId: number,
+    currentUserPublicId: UserPublicId,
     publicData: DB3ServerAuthorization,
     dbt: TransactionalPrismaClient,
 ): Promise<GetWikiPageUpdatabilityResult> => {
 
     const updatability = GetWikiPageUpdatability({
         currentPage,
-        currentUserId,
+        currentUserId: currentUserPublicId,
         userClientLockId: args.lockId,
         baseRevisionId: args.baseRevisionId,
         baseContentVersion: args.baseContentVersion,
@@ -198,12 +200,25 @@ export default resolver.pipe(
                 : null;
             let result: GetWikiPageUpdatabilityResult;
             if (wikiPage) {
-                result = await UpdateExistingWikiPage(args, wikiPage, currentUser.id, publicData, dbt);
+                result = await UpdateExistingWikiPage(
+                    args,
+                    wikiPage,
+                    currentUser.id,
+                    db3.xUser.parseIdentity(currentUser.publicId),
+                    publicData,
+                    dbt
+                );
             } else {
-                result = { ...GetWikiPageUpdatability({ currentPage: null, currentUserId: currentUser.id,
-                    userClientLockId: args.lockId, baseRevisionId: args.baseRevisionId,
-                    baseContentVersion: args.baseContentVersion }),
-                    outcome: UpdateWikiPageResultOutcome.lockConflict, isLockConflict: true };
+                result = {
+                    ...GetWikiPageUpdatability({
+                        currentPage: null,
+                        currentUserId: db3.xUser.parseIdentity(currentUser.publicId),
+                        userClientLockId: args.lockId,
+                        baseRevisionId: args.baseRevisionId,
+                        baseContentVersion: args.baseContentVersion
+                    }),
+                    outcome: UpdateWikiPageResultOutcome.lockConflict, isLockConflict: true
+                };
             }
             if (result.outcome === UpdateWikiPageResultOutcome.success) {
                 await RegisterChange({

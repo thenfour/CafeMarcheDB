@@ -5,10 +5,10 @@ import { AuthenticatedCtx } from "blitz";
 import { getRequestAuthorization } from "src/auth/server/requestAuthorization";
 import { queryView } from "src/core/db3/server/db3QueryCore";
 import { wikiPageApiView } from "src/core/db3/shared/entities/wiki/wikiViews";
+import { xUser } from "src/core/db3/shared/schema/user";
 
 interface GetWikiPageCoreArgs {
     canonicalWikiSlug: string;
-    currentUserId: number | null;
     clientBaseContentVersion: number;
     clientBaseRevisionId: number | null;
     clientLockId: string | null;
@@ -36,7 +36,7 @@ export async function GetWikiPageCore({ canonicalWikiSlug, dbt, ctx, ...args }: 
     const path = wikiParseCanonicalWikiPath(canonicalWikiSlug);
     const lockStatus = GetWikiPageUpdatability({
         currentPage: page,
-        currentUserId: args.currentUserId,
+        currentUserId: xUser.parseIdentity(currentUser.publicId),
         userClientLockId: args.clientLockId,
         baseRevisionId: args.clientBaseRevisionId,
         baseContentVersion: args.clientBaseContentVersion,

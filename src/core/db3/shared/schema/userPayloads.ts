@@ -4,6 +4,7 @@ import { Prisma } from "db";
 export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
     select: {
         id: true,
+        publicId: true,
         name: true,
         isSysAdmin: true,
         isDeleted: true,

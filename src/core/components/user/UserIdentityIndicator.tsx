@@ -3,13 +3,14 @@ import { Email, Google } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
 import getUserExtraInfo from "../../db3/queries/getUserExtraInfo";
 import { NameValuePair } from "../CMCoreComponents2";
+import type { UserPublicId } from "shared/publicId";
 
 type UserIdentityIndicatorProps = {
     // whether to show the password indicator. for user search list items,
     // we only show a google badge / non-password-identity indicator.
     //showPassword?: boolean;
-    user?: { id: number };
-    userId?: number;
+    user?: { publicId: UserPublicId };
+    userId?: UserPublicId;
 };
 
 const GoogleIdentityBadge = () => <Tooltip title="Has a Google sign-in"><Google /></Tooltip>;
@@ -24,7 +25,7 @@ const IdentityIndicator = ({ signinMethods }: { signinMethods: string[] }) => {
 };
 
 export const UserIdentityIndicator = ({ /*showPassword = true,*/ ...props }: UserIdentityIndicatorProps) => {
-    const userId = props.user?.id || props.userId;
+    const userId = props.user?.publicId || props.userId;
     if (!userId) {
         return null;
     }
@@ -34,7 +35,7 @@ export const UserIdentityIndicator = ({ /*showPassword = true,*/ ...props }: Use
 }
 
 
-export const ProfilePageIdentityControl = ({ userId }: { userId: number }) => {
+export const ProfilePageIdentityControl = ({ userId }: { userId: UserPublicId }) => {
     if (!userId) {
         return null;
     }

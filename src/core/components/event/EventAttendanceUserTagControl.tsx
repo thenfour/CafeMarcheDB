@@ -9,11 +9,11 @@ import { CMSelectDisplayStyle, SelectionField } from "../select/SelectionField";
 import { CMSelectNullBehavior, makeLocalSelectionSource, withNullSelection } from "../select/selectionSource";
 import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from "../SettingMarkdown";
 import { SnackbarContext } from "../SnackbarContext";
-import type { EventPublicId } from "shared/publicId";
+import type { EventPublicId, UserPublicId } from "shared/publicId";
 
 interface EventAttendanceUserTagControlEvent {
     publicId: EventPublicId;
-    createdByUserId: number | null;
+    createdByUser: { publicId: UserPublicId } | null;
     expectedAttendanceUserTag: db3.UserTagDisplay | null;
 }
 
@@ -24,7 +24,9 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
     const recordFeature = useFeatureRecorder();
     const publicData = useDB3Authorization();
     const authorizedForEdit = db3.xEvent.authorizeColumnForEdit({
-        publicData, model: event, columnName: "expectedAttendanceUserTag", fallbackOwnerId: event.createdByUserId,
+        publicData, model: event, columnName: "expectedAttendanceUserTag",
+        fallbackOwnerId: null,
+        fallbackOwnerPublicId: event.createdByUser?.publicId ?? null,
     });
 
     const handleChange = (value: db3.UserTagDisplay | null | undefined) => {

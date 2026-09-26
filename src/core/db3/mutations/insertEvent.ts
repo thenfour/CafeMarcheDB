@@ -97,7 +97,7 @@ export default resolver.pipe(
                     const responseFields: Partial<db3.EventSegmentUserResponsePayload> = {
                         eventSegmentId: segment.id,
                         attendanceId: await resolvePublicId(db3.xEventAttendance, r.attendanceId, publicData, tx),
-                        userId: r.userId,
+                        userId: await resolvePublicId(db3.xUser, r.userId, publicData, tx),
                     };
                     await mutationCore.insertImpl(db3.xEventSegmentUserResponse, responseFields, ctx, tx);
                 };

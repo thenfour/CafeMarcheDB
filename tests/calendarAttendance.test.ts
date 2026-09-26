@@ -2,6 +2,7 @@ import { eventPublicId, segmentPublicId } from "./support/eventResponseFixtures"
 import { MakeICalEventUid } from "src/core/db3/shared/apiTypes";
 import { GetEventCalendarInput } from "src/core/db3/server/icalUtils";
 import { attendancePublicId } from "./support/eventAttendanceFixtures";
+import { userPublicId } from "./support/userFixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => ({
@@ -27,12 +28,12 @@ const attendanceRows = [0, 33, 50, 51, 66, 100].map(strength => ({
 const segment = (id: number, strength?: number | null, statusId: EventStatusPublicId | null = null) => ({
     publicId: segmentPublicId(id), name: `Segment ${id}`, uid: `segment-${id}`, description: "", statusId,
     startsAt: new Date("2026-10-01T10:00:00Z") as Date | null, isAllDay: false, durationMillis: BigInt(3_600_000),
-    responses: strength === undefined ? [] : [{ userId: owner.id, attendanceId: strength === null ? null : attendancePublicId(strength + 1) }],
+    responses: strength === undefined ? [] : [{ userId: owner.publicId, attendanceId: strength === null ? null : attendancePublicId(strength + 1) }],
 });
 const makeEvent = (segments: ReturnType<typeof segment>[]) => ({
     publicId: eventPublicId(1), name: "Concert", revision: 1, locationDescription: "Hall", segments,
-    songLists: [], responses: [] as { userId: number; isInvited: boolean | null }[],
-    expectedAttendanceUserTag: null as { userAssignments: { userId: number }[] } | null,
+    songLists: [], responses: [] as { userId: typeof owner.publicId; isInvited: boolean | null }[],
+    expectedAttendanceUserTag: null as { userAssignments: { userId: typeof owner.publicId }[] } | null,
     status: { significance: null as string | null },
 });
 
@@ -41,7 +42,7 @@ const mockCalendarEvents = (events: ReturnType<typeof makeEvent>[]) => {
     vi.mocked(queryHydratedView).mockResolvedValue({ items: events } as never);
 };
 
-const include = (segments: ReturnType<typeof segment>[], showDeclinedEvents = false, userId = owner.id, showUninvitedEvents = true) =>
+const include = (segments: ReturnType<typeof segment>[], showDeclinedEvents = false, userId = owner.publicId, showUninvitedEvents = true) =>
     shouldIncludeEventInCalendarFeed({
         segments, showDeclinedEvents, userId,
         showUninvitedEvents, isInvited: false,
@@ -68,7 +69,7 @@ describe("event-level calendar attendance", () => {
         expect(include([segment(1, 0)], true)).toBe(true);
     });
     it("uses only the subscribing user's responses", () => {
-        expect(include([segment(1, 0)], false, 20)).toBe(true);
+        expect(include([segment(1, 0)], false, userPublicId(20))).toBe(true);
     });
 
     it.each([
@@ -76,14 +77,14 @@ describe("event-level calendar attendance", () => {
         [51, true], [66, true], [100, true], [999, false],
     ] as const)("requires an explicit going response to override the invitation filter (%s => %s)", (strength, expected) => {
         const segments = [segment(1, 0), segment(2, strength)];
-        expect(include(segments, false, owner.id, false)).toBe(expected);
-        expect(include(segments, true, owner.id, false)).toBe(expected);
+        expect(include(segments, false, owner.publicId, false)).toBe(expected);
+        expect(include(segments, true, owner.publicId, false)).toBe(expected);
     });
 
     it("does not use cancelled segments or another user's going response to override the invitation filter", () => {
-        expect(include([segment(1), segment(2, 100, cancelledId)], true, owner.id, false)).toBe(false);
-        expect(include([segment(1, 100)], true, 20, false)).toBe(false);
-        expect(include([], true, owner.id, false)).toBe(false);
+        expect(include([segment(1), segment(2, 100, cancelledId)], true, owner.publicId, false)).toBe(false);
+        expect(include([segment(1, 100)], true, userPublicId(20), false)).toBe(false);
+        expect(include([], true, owner.publicId, false)).toBe(false);
     });
 });
 
@@ -146,10 +147,10 @@ describe("calendar export integration", () => {
             userId: owner.id, name: "calendar.showUninvitedEvents", value: showUninvitedEvents,
         } });
         const events = [
-            { ...makeEvent([segment(1, 100)]), responses: [{ userId: owner.id, isInvited: true }] },
-            { ...makeEvent([segment(2, 0)]), responses: [{ userId: owner.id, isInvited: true }] },
+            { ...makeEvent([segment(1, 100)]), responses: [{ userId: owner.publicId, isInvited: true }] },
+            { ...makeEvent([segment(2, 0)]), responses: [{ userId: owner.publicId, isInvited: true }] },
             // Going keeps this event in the feed despite the lack of an invitation.
-            { ...makeEvent([segment(3, 100)]), responses: [{ userId: 20, isInvited: true }] },
+            { ...makeEvent([segment(3, 100)]), responses: [{ userId: userPublicId(20), isInvited: true }] },
             makeEvent([segment(4, 0)]),
         ].map((event, index) => ({ ...event, publicId: eventPublicId(index + 1), name: `Event ${index + 1}` }));
         mockCalendarEvents(events);
@@ -181,15 +182,15 @@ describe("calendar export integration", () => {
             userId: owner.id, name: "calendar.showUninvitedEvents", value: false,
         } });
         const event = makeEvent([segment(1, 0), segment(2)]);
-        const tag = { userAssignments: [{ userId: owner.id }] };
+        const tag = { userAssignments: [{ userId: owner.publicId }] };
         event.expectedAttendanceUserTag = tag;
-        event.responses = [{ userId: owner.id, isInvited: false }];
+        event.responses = [{ userId: owner.publicId, isInvited: false }];
         mockCalendarEvents([event]);
 
         // The tag overrides the stored false, and one unanswered segment retains the whole event.
         const original = await exportFeed();
         expect(original.events()).toHaveLength(2);
-        tag.userAssignments = [{ userId: 20 }];
+        tag.userAssignments = [{ userId: userPublicId(20) }];
         expect((await exportFeed()).events()).toHaveLength(0);
         event.expectedAttendanceUserTag = null;
         event.responses[0]!.isInvited = true;
@@ -206,7 +207,7 @@ describe("calendar export integration", () => {
 
     it("keeps calendar UIDs, sequences, and stored hashes independent of new public identities", async () => {
         const event = { ...makeEvent([segment(1, 100)]), revision: 7,
-            responses: [{ userId: owner.id, isInvited: true, revision: 3 }] };
+            responses: [{ userId: owner.publicId, isInvited: true, revision: 3 }] };
         // The feed consumes an authorized Event projection; unrelated fields are omitted in this fixture.
         mockCalendarEvents([event]);
         const original = await exportFeed();

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { calculateMatchStrengthAllKeywordsRequired, calculateMatchStrengthAnyKeyword } from "./rootroot";
 import { IsEntirelyIntegral, IsNullOrWhitespace } from "./utils";
 import { partition } from "./arrayUtils";
-import type { EventPublicId, InstrumentPublicId, SongPublicId } from "./publicId";
+import type { EventPublicId, InstrumentPublicId, SongPublicId, UserPublicId } from "./publicId";
 
 // TODO: remove this in favor of better quick search stuff below.
 export function SplitQuickFilter(quickFilter: string): string[] {
@@ -60,7 +60,7 @@ interface QuickSearchIdentityByType {
     [QuickSearchItemType.event]: EventPublicId;
     [QuickSearchItemType.instrument]: InstrumentPublicId;
     [QuickSearchItemType.song]: SongPublicId;
-    [QuickSearchItemType.user]: number;
+    [QuickSearchItemType.user]: UserPublicId;
     [QuickSearchItemType.wikiPage]: number;
 }
 

@@ -51,7 +51,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const onSave = async (change: AttendanceChange) => {
         const eventId = props.eventData.event.publicId;
-        const userId = attendance.eventUserResponse.user.id;
+        const userId = attendance.eventUserResponse.user.publicId;
         const instrumentId = change.type === "instrument" ? change.instrumentId : undefined;
         if (typeof instrumentId === "number") {
             throw new Error("Client attendance updates require an Instrument public ID.");

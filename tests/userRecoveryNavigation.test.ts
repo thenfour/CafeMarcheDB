@@ -4,6 +4,7 @@ import React from "react";
 import { act } from "react-dom/test-utils";
 import { createRoot, Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { userPublicId } from "./support/userFixtures";
 
 vi.mock("@mui/material", async () => {
     const React = await vi.importActual<typeof import("react")>("react");
@@ -42,11 +43,11 @@ import { DeactivateUserButton, ReactivateUserButton } from "src/core/components/
 let root: Root;
 let container: HTMLDivElement;
 const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT");
-const user = { id: 2, name: "Member" } as any;
+const user = { publicId: userPublicId(2), name: "Member" } as any;
 const capabilities = { canDeactivate: true, canReactivate: false, deactivationContinuityWarnings: [] } as any;
 
 beforeEach(() => {
-    window.history.replaceState({}, "", "/backstage/user/2");
+    window.history.replaceState({}, "", `/backstage/user/${user.publicId}`);
     document.body.innerHTML = "<div id='root'></div>";
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     container = document.getElementById("root") as HTMLDivElement;
@@ -67,7 +68,7 @@ describe("user profile lifecycle navigation", () => {
         const deactivate = vi.fn().mockResolvedValue(true);
         vi.mocked(useRouter).mockReturnValue({ replace } as any);
         vi.mocked(useDashboardContext).mockReturnValue({
-            currentUser: { id: 1 },
+            currentUser: { publicId: userPublicId(1) },
             isAuthorized: (permission: Permission) => permission === Permission.recover_users ? canRecover : true,
         } as any);
         vi.mocked(useUserLifecycleActions).mockReturnValue({ deactivate, reactivate: vi.fn() });
@@ -89,7 +90,7 @@ describe("user profile lifecycle navigation", () => {
         const refresh = vi.fn();
         vi.spyOn(console, "error").mockImplementation(() => undefined);
         vi.mocked(useRouter).mockReturnValue({ replace } as any);
-        vi.mocked(useDashboardContext).mockReturnValue({ currentUser: { id: 1 }, isAuthorized: () => false } as any);
+        vi.mocked(useDashboardContext).mockReturnValue({ currentUser: { publicId: userPublicId(1) }, isAuthorized: () => false } as any);
         const deactivate = fails ? vi.fn().mockRejectedValue(new Error("Denied")) : vi.fn().mockResolvedValue(false);
         vi.mocked(useUserLifecycleActions).mockReturnValue({ deactivate, reactivate: vi.fn() });
         await act(async () => root.render(React.createElement(DeactivateUserButton, { user, capabilities, onOK: refresh })));

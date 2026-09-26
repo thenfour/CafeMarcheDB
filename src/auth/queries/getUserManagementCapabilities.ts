@@ -3,6 +3,7 @@ import { AuthorizationError, NotFoundError } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
+import { UserPublicIdSchema } from "../schemas";
 import {
     getContinuityWarningsForUserResult,
     getUserManagementCapabilities,
@@ -10,13 +11,13 @@ import {
 import {
     findActiveNonSysadminUsers,
     findUserManagementActor,
-    findUserManagementTarget,
+    findUserManagementTargetByPublicId,
     getAssignableRoles,
 } from "../server/userManagementState";
 import { PermissionSet } from "../shared/PermissionSet";
 
 const GetUserManagementCapabilitiesInput = z.object({
-    userId: z.number().int().positive(),
+    userId: UserPublicIdSchema,
 });
 
 export default resolver.pipe(
@@ -25,7 +26,7 @@ export default resolver.pipe(
     async ({ userId }, ctx) => {
         const [actor, target] = await Promise.all([
             findUserManagementActor(db, ctx.session.userId),
-            findUserManagementTarget(db, userId),
+            findUserManagementTargetByPublicId(db, userId),
         ]);
 
         if (!target) throw new NotFoundError();
@@ -42,7 +43,10 @@ export default resolver.pipe(
 
         return {
             ...capabilities,
-            mergedIntoUserId: target.principal.mergedIntoUserId,
+            mergedIntoUserId: target.principal.mergedIntoUserId == null ? null : (await db.user.findUnique({
+                where: { id: target.principal.mergedIntoUserId },
+                select: { publicId: true },
+            }))?.publicId ?? null,
             assignableRoles: await getAssignableRoles(
                 db,
                 actor,

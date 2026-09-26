@@ -5,6 +5,7 @@ const database = vi.hoisted(() => ({
     updatePlan: vi.fn(),
     findEvents: vi.fn(),
     findSongs: vi.fn(),
+    findUsers: vi.fn(),
 }));
 
 vi.mock("db", async () => ({
@@ -13,12 +14,14 @@ vi.mock("db", async () => ({
         setlistPlan: { findMany: database.findPlans, update: database.updatePlan },
         event: { findMany: database.findEvents },
         song: { findMany: database.findSongs },
+        user: { findMany: database.findUsers },
     },
 }));
 
 import { QuickSearchItemType } from "shared/quickFilter";
 import { MigrateSetlistPlanPublicIdReferences, migrateSetlistPlanReferences } from "src/instrumentation.node";
 import { songPublicId } from "./support/songFixtures";
+import { userPublicId } from "./support/userFixtures";
 
 describe("stored setlist public ID references", () => {
     it("converts Song rows and both kinds of associated links in one pass", () => {
@@ -43,12 +46,13 @@ describe("stored setlist public ID references", () => {
                     absoluteUri: "https://example.test/backstage/event/7/old-slug",
                 } },
                 { associatedItem: { itemType: QuickSearchItemType.event, id: 99 } },
-                { associatedItem: { itemType: QuickSearchItemType.user, id: 3 } },
+                { associatedItem: { itemType: QuickSearchItemType.user, id: 3, absoluteUri: "https://example.test/backstage/user/3" } },
             ],
         };
         const publicIds = {
             event: new Map([[7, "event-public-id"]]),
             song: new Map([[1, songPublicId(1)]]),
+            user: new Map([[3, userPublicId(3)]]),
         };
 
         expect(migrateSetlistPlanReferences(payload, publicIds)).toBe(true);
@@ -63,7 +67,9 @@ describe("stored setlist public ID references", () => {
             absoluteUri: "https://example.test/backstage/event/event-public-id/old-slug",
         });
         expect(payload.rowLeds[1]?.associatedItem.id).toBe(99);
-        expect(payload.rowLeds[2]?.associatedItem.id).toBe(3);
+        expect(payload.rowLeds[2]?.associatedItem).toMatchObject({
+            id: userPublicId(3), absoluteUri: `https://example.test/backstage/user/${userPublicId(3)}`,
+        });
         expect(migrateSetlistPlanReferences(payload, publicIds)).toBe(false);
     });
 

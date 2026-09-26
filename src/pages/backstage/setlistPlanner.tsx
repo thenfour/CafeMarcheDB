@@ -358,7 +358,7 @@ const getDuplicatedPlanName = (originalName: string) => {
     return `${trimmed} (Copy)`;
 };
 
-const createDuplicatedPlan = (plan: SetlistPlan, currentUserId?: number): SetlistPlan => {
+const createDuplicatedPlan = (plan: SetlistPlan, currentUserId?: SetlistPlan["createdByUserId"]): SetlistPlan => {
     const rowIdMap = new Map<string, string>();
     const columnIdMap = new Map<string, string>();
 
@@ -467,7 +467,7 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
                 </CMSmallButton>
                 <CMSmallButton
                     onClick={() => {
-                        const duplicatedPlan = createDuplicatedPlan(dbPlan, dashboardContext.currentUser?.id);
+                        const duplicatedPlan = createDuplicatedPlan(dbPlan, dashboardContext.currentUser?.publicId);
                         onSelect(duplicatedPlan);
                         snackbar.showSuccess("Duplicated setlist plan. Update details and save to keep it.");
                     }}
@@ -567,7 +567,7 @@ const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, re
             <CMSmallButton
                 onClick={() => {
                     const newDoc = CreateNewSetlistPlan(getUniqueNegativeID(), "New Setlist Plan", group?.id || null,
-                        dashboardContext.currentUser!.id);
+                        dashboardContext.currentUser!.publicId);
                     onSelect(newDoc);
                 }}
                 startIcon={gIconMap.Add()}
@@ -688,7 +688,7 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
 
     if (!dashboardContext.currentUser) return <div>you must be logged in to use this feature</div>;
 
-    const [plans, { refetch }] = useQuery(getSetlistPlans, { userId: dashboardContext.currentUser.id });
+    const [plans, { refetch }] = useQuery(getSetlistPlans, { userId: dashboardContext.currentUser.publicId });
 
     const [autocompleteProgressState, setAutocompleteProgressState] = React.useState<SetlistPlanSearchProgressState>();
     const cancellationTrigger = React.useRef<boolean>(false);
@@ -1466,7 +1466,7 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                 {/* <div> */}
                 {/* <CMSmallButton onClick={() => {
                         setModified(true);
-                        setDoc(CreateNewSetlistPlan(getUniqueNegativeID(), `Setlist plan ${nanoid(3)}`, null, dashboardContext.currentUser!.id));
+                        setDoc(CreateNewSetlistPlan(getUniqueNegativeID(), `Setlist plan ${nanoid(3)}`, null, dashboardContext.currentUser!.publicId));
                         setSelectedTab("setlistPlannerTab");
                     }}
                         startIcon={gIconMap.Add()}

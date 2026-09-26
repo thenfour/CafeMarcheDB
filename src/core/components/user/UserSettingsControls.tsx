@@ -1,4 +1,3 @@
-import { useSession } from "@blitzjs/auth";
 import { setQueryData, useMutation } from "@blitzjs/rpc";
 import { Checkbox, FormControl, FormControlLabel, FormHelperText } from "@mui/material";
 import React from "react";
@@ -10,7 +9,6 @@ import { useSnackbar } from "../SnackbarContext";
 
 export const CalendarUserSettingsControl = () => {
     const dashboardContext = useDashboardContext();
-    const session = useSession();
     const [updateSettings] = useMutation(updateMyUserSettings);
     const [saving, setSaving] = React.useState(false);
     const snackbar = useSnackbar();
@@ -21,7 +19,7 @@ export const CalendarUserSettingsControl = () => {
         setSaving(true);
         try {
             const userSettings = await updateSettings(patch);
-            await setQueryData(getDashboardData, { userId: session.userId ?? null }, previous => previous ? {
+            await setQueryData(getDashboardData, {}, previous => previous ? {
                 ...previous,
                 userSettings,
             } : previous, { refetch: false });
@@ -33,7 +31,7 @@ export const CalendarUserSettingsControl = () => {
         }
     };
 
-    return <FormControl disabled={saving || !session.userId}>
+    return <FormControl disabled={saving || !dashboardContext.currentUser}>
         <FormControlLabel
             label="Show declined events in my calendar feed"
             control={<Checkbox

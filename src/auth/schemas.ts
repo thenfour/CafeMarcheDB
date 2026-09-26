@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { isPublicId, type UserPublicId } from "shared/publicId";
+
+export const UserPublicIdSchema = z.custom<UserPublicId>(isPublicId);
 
 // generic
 export const GetObjectByNullableIdSchema = z.object({
@@ -45,7 +48,7 @@ export const Login = z.object({
 })
 
 export const ForgotPassword = z.union([
-  z.object({ userId: z.number().int().positive() }).strict(),
+  z.object({ userId: UserPublicIdSchema }).strict(),
   z.object({ email: UserEmailSchema }).strict(),
 ])
 
@@ -129,6 +132,6 @@ export const UpdateBulkSettingsSchema = z.array(UpdateSettingSchema);
 
 
 export const ZGetUserEventAttendanceArgrs = z.object({
-  userId: z.number(),
+  userId: UserPublicIdSchema,
   take: z.number(),
 });

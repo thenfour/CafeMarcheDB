@@ -1,5 +1,6 @@
 // for mimetype db https://cdn.jsdelivr.net/gh/jshttp/mime-db@master/db.json
 
+import { UserPublicId } from "@/shared/publicId";
 import { AutoAssignInstrumentPartition } from "@/src/core/db3/shared/autoAssignInstrumentPartition";
 import { TClientUploadFileArgs, UploadResponsePayload, type UploadedFile } from "@/src/core/db3/shared/fileTypes";
 import { Ctx } from "@blitzjs/next";
@@ -25,17 +26,18 @@ function stripExtension(filename: string): string {
     return filename.substring(0, lastDotIndex);
 }
 
-const toUploadedFile = (file: Prisma.FileGetPayload<{}>): UploadedFile => ({
-    publicId: db3.xFile.parseIdentity(file.publicId),
-    storedLeafName: file.storedLeafName,
-    fileLeafName: file.fileLeafName,
-    mimeType: file.mimeType,
-    externalURI: file.externalURI,
-    description: file.description,
-    sizeBytes: file.sizeBytes,
-    customData: file.customData,
-    uploadedByUserId: file.uploadedByUserId,
-});
+const toUploadedFile = (file: Prisma.FileGetPayload<{}>,
+    uploaderPublicId: UserPublicId | null): UploadedFile => ({
+        publicId: db3.xFile.parseIdentity(file.publicId),
+        storedLeafName: file.storedLeafName,
+        fileLeafName: file.fileLeafName,
+        mimeType: file.mimeType,
+        externalURI: file.externalURI,
+        description: file.description,
+        sizeBytes: file.sizeBytes,
+        customData: file.customData,
+        uploadedByUserId: uploaderPublicId,
+    });
 
 
 // todo: fields for database integration
@@ -73,7 +75,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                     args.taggedEventId = fields.taggedEventId && db3.xEvent.parseIdentity(fields.taggedEventId[0]);
                     args.taggedInstrumentId = fields.taggedInstrumentId && (CoerceToNumberOrNull(fields.taggedInstrumentId[0]));
                     args.taggedSongId = fields.taggedSongId && db3.xSong.parseIdentity(fields.taggedSongId[0]);
-                    args.taggedUserId = fields.taggedUserId && (CoerceToNumberOrNull(fields.taggedUserId[0]));
+                    args.taggedUserId = fields.taggedUserId && db3.xUser.parseIdentity(fields.taggedUserId[0]);
                     args.taggedWikiPageId = fields.taggedWikiPageId && (CoerceToNumberOrNull(fields.taggedWikiPageId[0]));
                     args.visiblePermissionId = fields.visiblePermissionId && db3.xPermission.parseIdentity(
                         fields.visiblePermissionId[0],
@@ -97,6 +99,9 @@ export default api(async (req, res, origCtx: Ctx) => {
                     const resolvedSongId = args.taggedSongId === undefined
                         ? undefined
                         : await resolvePublicId(db3.xSong, args.taggedSongId, publicData, db);
+                    const resolvedUserId = args.taggedUserId === undefined
+                        ? undefined
+                        : await resolvePublicId(db3.xUser, args.taggedUserId, publicData, db);
 
                     const visiblePermission = fields.visiblePermission && (CoerceToString(fields.visiblePermission[0]));
 
@@ -148,13 +153,13 @@ export default api(async (req, res, origCtx: Ctx) => {
                             if (args.taggedInstrumentId) fields.taggedInstruments = [args.taggedInstrumentId];
                             if (resolvedFileTagId) fields.tags = [resolvedFileTagId];
                             if (resolvedSongId) fields.taggedSongs = [resolvedSongId];
-                            if (args.taggedUserId) fields.taggedUsers = [args.taggedUserId];
+                            if (resolvedUserId) fields.taggedUsers = [resolvedUserId];
                             if (args.taggedWikiPageId) fields.taggedWikiPages = [args.taggedWikiPageId];
                             if (args.externalURI) (fields as db3.FilePayloadMinimum).externalURI = args.externalURI;
 
                             const newFile = await mutationCore.insertImpl(db3.xFile, fields, ctx) as Prisma.FileGetPayload<{}>;
 
-                            responsePayload.files.push(toUploadedFile(newFile));
+                            responsePayload.files.push(toUploadedFile(newFile, db3.xUser.parseIdentity(currentUser.publicId)));
                         }
                     }
 
@@ -234,7 +239,7 @@ export default api(async (req, res, origCtx: Ctx) => {
 
                             if (resolvedEventId) fields.taggedEvents = [resolvedEventId];
                             if (resolvedSongId) fields.taggedSongs = [resolvedSongId];
-                            if (args.taggedUserId) fields.taggedUsers = [args.taggedUserId];
+                            if (resolvedUserId) fields.taggedUsers = [resolvedUserId];
                             if (args.taggedWikiPageId) fields.taggedWikiPages = [args.taggedWikiPageId];
                             fields.tags = [...tags];
 
@@ -251,12 +256,12 @@ export default api(async (req, res, origCtx: Ctx) => {
                                     maxImageDimension,
                                 });
                                 if (resizedFile !== null) {
-                                    responsePayload.files.push(toUploadedFile(resizedFile));
+                                    responsePayload.files.push(toUploadedFile(resizedFile, db3.xUser.parseIdentity(currentUser.publicId)));
                                 } else {
-                                    responsePayload.files.push(toUploadedFile(newFile));
+                                    responsePayload.files.push(toUploadedFile(newFile, db3.xUser.parseIdentity(currentUser.publicId)));
                                 }
                             } else {
-                                responsePayload.files.push(toUploadedFile(newFile));
+                                responsePayload.files.push(toUploadedFile(newFile, db3.xUser.parseIdentity(currentUser.publicId)));
                             }
                         }
                     });

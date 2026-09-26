@@ -96,7 +96,7 @@ describe("multiple sign-in resolution", () => {
     });
 
     it("preserves reservations on deactivation and restores access through the same methods", async () => {
-        await invokeResolver(deactivateUser, { userId: target.id }, adminContext());
+        await invokeResolver(deactivateUser, { userId: target.publicId }, adminContext());
         expect(authorizationTestDb.snapshot("userSignInMethod")).toEqual(methods);
         expect(authorizationTestDb.snapshot("token")).toEqual([]);
         await expect(authenticateUser(methods[0]!.identifier, validPassword)).rejects.toThrow();
@@ -105,16 +105,16 @@ describe("multiple sign-in resolution", () => {
         await expect(invokeResolver(signup, { email: methods[0]!.identifier, name: "New", password: validPassword }, publicContext()))
             .rejects.toThrow("already assigned");
         expect(authorizationTestDb.snapshot("user")).toHaveLength(4);
-        await invokeResolver(reactivateUser, { userId: target.id }, adminContext());
+        await invokeResolver(reactivateUser, { userId: target.publicId }, adminContext());
         expect((await authenticateUser(methods[1]!.identifier, validPassword)).id).toBe(target.id);
     });
 
     it("allows fresh signup after explicit release without reclaiming the email on reactivation", async () => {
-        await invokeResolver(deactivateUser, { userId: target.id }, adminContext());
-        await invokeResolver(removeUserSignInMethod, { userId: target.id, methodPublicId: methods[0]!.publicId }, adminContext());
+        await invokeResolver(deactivateUser, { userId: target.publicId }, adminContext());
+        await invokeResolver(removeUserSignInMethod, { userId: target.publicId, methodPublicId: methods[0]!.publicId }, adminContext());
         const fresh = await invokeResolver(signup, { email: methods[0]!.identifier, name: "New", password: validPassword }, publicContext());
         expect(authorizationTestDb.snapshot("user").find(row => row.id === fresh.id)?.isDeleted).toBe(false);
-        await invokeResolver(reactivateUser, { userId: target.id }, adminContext());
+        await invokeResolver(reactivateUser, { userId: target.publicId }, adminContext());
         expect((await authenticateUser(methods[0]!.identifier, validPassword)).id).toBe(fresh.id);
         expect((await authenticateUser(methods[1]!.identifier, validPassword)).id).toBe(target.id);
     });
@@ -123,22 +123,22 @@ describe("multiple sign-in resolution", () => {
 describe("Sysadmin sign-in maintenance", () => {
     it.each([null, bandAdmin, target])("rejects unauthorized readers and writers", async actor => {
         const ctx = createAuthorizationTestContext(actor);
-        await expect(invokeResolver(getUserSignInMethods, { userId: target.id }, ctx)).rejects.toThrow();
-        await expect(invokeResolver(addUserSignInMethod, { userId: target.id, method: { type: "email", identifier: "new@test.invalid" } }, ctx)).rejects.toThrow();
-        await expect(invokeResolver(removeUserSignInMethod, { userId: target.id, methodPublicId: methods[0]!.publicId }, ctx)).rejects.toThrow();
+        await expect(invokeResolver(getUserSignInMethods, { userId: target.publicId }, ctx)).rejects.toThrow();
+        await expect(invokeResolver(addUserSignInMethod, { userId: target.publicId, method: { type: "email", identifier: "new@test.invalid" } }, ctx)).rejects.toThrow();
+        await expect(invokeResolver(removeUserSignInMethod, { userId: target.publicId, methodPublicId: methods[0]!.publicId }, ctx)).rejects.toThrow();
         expect(authorizationTestDb.snapshot("userSignInMethod")).toEqual(methods);
     });
 
     it("rechecks a stale Sysadmin session before exposing identifiers", async () => {
         await authorizationTestDb.getDelegate("user").update({ where: { id: admin.id }, data: { isSysAdmin: false, role: { permissions: [] } } });
-        await expect(invokeResolver(getUserSignInMethods, { userId: target.id }, adminContext())).rejects.toThrow();
-        await expect(invokeResolver(removeUserSignInMethod, { userId: target.id, methodPublicId: methods[0]!.publicId }, adminContext())).rejects.toThrow();
+        await expect(invokeResolver(getUserSignInMethods, { userId: target.publicId }, adminContext())).rejects.toThrow();
+        await expect(invokeResolver(removeUserSignInMethod, { userId: target.publicId, methodPublicId: methods[0]!.publicId }, adminContext())).rejects.toThrow();
     });
 
     it("accepts a fresh role-carried Sysadmin grant consistently with other maintenance operations", async () => {
         const actor = createAuthorizationTestUser("normal", { id: 30, permissions: [Permission.sysadmin] });
         await authorizationTestDb.getDelegate("user").create({ data: actor });
-        await expect(invokeResolver(getUserSignInMethods, { userId: target.id }, createAuthorizationTestContext(actor)))
+        await expect(invokeResolver(getUserSignInMethods, { userId: target.publicId }, createAuthorizationTestContext(actor)))
             .resolves.toMatchObject({ hasPassword: true });
     });
 
@@ -147,7 +147,7 @@ describe("Sysadmin sign-in maintenance", () => {
             publicId: xUserSignInMethod.parseIdentity("SignInOther00001"), userId: other.id,
             type: "google", identifier: "OtherUserSubject", createdAt: new Date("2026-01-04"),
         } });
-        const result = await invokeResolver(getUserSignInMethods, { userId: target.id }, adminContext());
+        const result = await invokeResolver(getUserSignInMethods, { userId: target.publicId }, adminContext());
         expect(result.methods).toHaveLength(3);
         expect(result.hasPassword).toBe(true);
         expect(JSON.stringify(result)).not.toContain(hashedPassword);
@@ -156,7 +156,7 @@ describe("Sysadmin sign-in maintenance", () => {
     });
 
     it("normalizes an added email, retains contact data, revokes sessions/tokens, and audits without identifiers", async () => {
-        const result = await invokeResolver(addUserSignInMethod, { userId: target.id, method: { type: "email", identifier: "  Third@Test.Invalid " } }, adminContext());
+        const result = await invokeResolver(addUserSignInMethod, { userId: target.publicId, method: { type: "email", identifier: "  Third@Test.Invalid " } }, adminContext());
         expect(result).toEqual({ publicId: expect.any(String) });
         expect(xUserSignInMethod.isIdentity(result.publicId)).toBe(true);
         expectTypeOf(result.publicId).toEqualTypeOf<UserSignInMethodPublicId>();
@@ -172,12 +172,12 @@ describe("Sysadmin sign-in maintenance", () => {
 
     it("rejects ownership conflicts even when the owner is inactive", async () => {
         await authorizationTestDb.getDelegate("user").update({ where: { id: target.id }, data: { isDeleted: true } });
-        await expect(invokeResolver(addUserSignInMethod, { userId: other.id, method: { type: "email", identifier: methods[0]!.identifier } }, adminContext()))
+        await expect(invokeResolver(addUserSignInMethod, { userId: other.publicId, method: { type: "email", identifier: methods[0]!.identifier } }, adminContext()))
             .rejects.toThrow("already assigned");
     });
 
     it("does not remove another user's method through a forged target ID", async () => {
-        await expect(invokeResolver(removeUserSignInMethod, { userId: other.id, methodPublicId: methods[0]!.publicId }, adminContext())).rejects.toThrow();
+        await expect(invokeResolver(removeUserSignInMethod, { userId: other.publicId, methodPublicId: methods[0]!.publicId }, adminContext())).rejects.toThrow();
         expect(authorizationTestDb.snapshot("userSignInMethod")).toEqual(methods);
     });
 
@@ -198,11 +198,11 @@ describe("Sysadmin sign-in maintenance", () => {
 
     it("gives missing and wrong-owner public identities the same not-found result", async () => {
         const missing = xUserSignInMethod.parseIdentity("SignInMissing001");
-        const remove = (userId: number, methodPublicId: UserSignInMethodPublicId) => (
+        const remove = (userId: typeof target.publicId, methodPublicId: UserSignInMethodPublicId) => (
             invokeResolver(removeUserSignInMethod, { userId, methodPublicId }, adminContext())
         );
-        await expect(remove(target.id, missing)).rejects.toMatchObject({ name: "NotFoundError" });
-        await expect(remove(other.id, methods[0]!.publicId)).rejects.toMatchObject({ name: "NotFoundError" });
+        await expect(remove(target.publicId, missing)).rejects.toMatchObject({ name: "NotFoundError" });
+        await expect(remove(other.publicId, methods[0]!.publicId)).rejects.toMatchObject({ name: "NotFoundError" });
         expect(authorizationTestDb.snapshot("userSignInMethod")).toEqual(methods);
     });
 
@@ -210,7 +210,7 @@ describe("Sysadmin sign-in maintenance", () => {
         const query = {
             cmdbQueryContext: "sign-in-method-test",
             table: { tableID: xUserSignInMethod.tableID, tableName: xUserSignInMethod.tableName, viewID: "UserSignInMethod_Admin" },
-            filter: { tableParams: { userId: target.id } },
+            filter: { tableParams: { userId: target.publicId } },
             orderBy: undefined,
         };
         const memberAuthorization = await getRequestAuthorization(createAuthorizationTestContext(target).session);
@@ -224,7 +224,7 @@ describe("Sysadmin sign-in maintenance", () => {
     });
 
     it.each([
-        { mutationType: "insert", insertModel: { userId: target.id, type: "email", identifier: "bypass@test.invalid" } },
+        { mutationType: "insert", insertModel: { userId: target.publicId, type: "email", identifier: "bypass@test.invalid" } },
         { mutationType: "update", updatePublicId: methods[0]!.publicId, updateModel: { identifier: "bypass@test.invalid" } },
         { mutationType: "delete", deletePublicId: methods[0]!.publicId, deleteType: "hard" },
     ])("prevents generic maintenance bypass even for Sysadmins: $mutationType", async operation => {
@@ -242,7 +242,7 @@ describe("Sysadmin sign-in maintenance", () => {
             }));
         try {
             const result = await invokeResolver(addUserSignInMethod, {
-                userId: target.id, method: { type: "google", identifier: "NewSubject" },
+                userId: target.publicId, method: { type: "google", identifier: "NewSubject" },
             }, adminContext());
             expect(create).toHaveBeenCalledTimes(2);
             expect(authorizationTestDb.snapshot("userSignInMethod")).toContainEqual(expect.objectContaining({ publicId: result.publicId }));
@@ -259,7 +259,7 @@ describe("Sysadmin sign-in maintenance", () => {
             }));
         try {
             await expect(invokeResolver(addUserSignInMethod, {
-                userId: target.id, method: { type: "google", identifier: "NewSubject" },
+                userId: target.publicId, method: { type: "google", identifier: "NewSubject" },
             }, adminContext())).rejects.toThrow("already assigned");
             expect(create).toHaveBeenCalledTimes(1);
             expect(authorizationTestDb.snapshot("change")).toEqual([]);
@@ -270,10 +270,10 @@ describe("Sysadmin sign-in maintenance", () => {
 
     it("preserves the last usable method on active users, accounting for passwordless email aliases", async () => {
         await authorizationTestDb.getDelegate("user").update({ where: { id: target.id }, data: { hashedPassword: null } });
-        await expect(invokeResolver(removeUserSignInMethod, { userId: target.id, methodPublicId: methods[2]!.publicId }, adminContext())).rejects.toThrow("usable replacement");
-        await invokeResolver(deactivateUser, { userId: target.id }, adminContext());
+        await expect(invokeResolver(removeUserSignInMethod, { userId: target.publicId, methodPublicId: methods[2]!.publicId }, adminContext())).rejects.toThrow("usable replacement");
+        await invokeResolver(deactivateUser, { userId: target.publicId }, adminContext());
         for (const method of methods) {
-            const result = await invokeResolver(removeUserSignInMethod, { userId: target.id, methodPublicId: method.publicId }, adminContext());
+            const result = await invokeResolver(removeUserSignInMethod, { userId: target.publicId, methodPublicId: method.publicId }, adminContext());
             expect(result).toEqual({ publicId: method.publicId });
         }
         expect(authorizationTestDb.snapshot("userSignInMethod")).toEqual([]);

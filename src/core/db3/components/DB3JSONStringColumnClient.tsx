@@ -86,12 +86,15 @@ const Id = ({ value }: { value: number | null | undefined | boolean | string }):
     return <>{value}</>;
 };
 
-export const ActivityLogUserChip = ({ userId, cacheData }: { userId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
-    const foundUser = cacheData.users.find(u => u.id === userId);
-    if (!foundUser) {
-        return <ActivityLogChip><Id value={userId} /></ActivityLogChip>;
+export const ActivityLogUserChip = ({ userId, cacheData }: { userId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
+    const dashboardContext = useDashboardContext();
+    if (isPublicId(userId)) {
+        const user = cacheData.users.find(entry => entry.publicId === userId);
+        return <ActivityLogChip uri={dashboardContext.routingApi.getURIForUser({ publicId: db3.xUser.parseIdentity(userId) })}>{user?.name ?? "User"}</ActivityLogChip>;
     }
-    return <ActivityLogChip>{foundUser.name} #{userId}</ActivityLogChip>;
+    // Legacy JSON contains natural user keys. Its raw values are redacted from
+    // Change queries, so any remaining number must stay undisclosed here too.
+    return <ActivityLogChip>{userId == null ? "Unknown user" : "User"}</ActivityLogChip>;
 };
 
 const ActivityLogEventSegment = ({ eventSegmentId, cacheData }: { eventSegmentId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
@@ -272,11 +275,11 @@ const ActivityLogInstrument = ({ instrumentId, cacheData }: { instrumentId: numb
     </ActivityLogChip>;
 };
 
-const ActivityLogFile = ({ file, cacheData }: { file: Prisma.FileGetPayload<{}>, cacheData: ActivityLogCacheData }) => {
+const ActivityLogFile = ({ file, cacheData }: { file: Pick<Prisma.FileGetPayload<{}>, "publicId" | "fileLeafName">, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
     return <ActivityLogChip
     >
-        {file.fileLeafName}#{file.id}
+        {file.fileLeafName}#{file.publicId}
     </ActivityLogChip>;
 };
 

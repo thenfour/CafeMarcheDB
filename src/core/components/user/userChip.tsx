@@ -6,6 +6,7 @@ import { getHashedColor } from "shared/utils";
 import { ColorVariationSpec } from "../color/palette";
 import { Permission } from "@/shared/permissions";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import type { UserPublicId } from "shared/publicId";
 
 
 export interface UserChipBaseProps {
@@ -21,22 +22,22 @@ export interface UserChipBaseProps {
 
 // the user chip when you know the user info.
 type ValuedUserChipProps = UserChipBaseProps & {
-    value: { id: number; name?: string } | null;
+    value: { publicId: UserPublicId; name?: string } | null;
     userId?: never;
     color?: string | null;
 };
 
 // the user chip when you know the user ID, and need to query for the info.
 type QueriedUserChipProps = UserChipBaseProps & {
-    userId: number | null;
+    userId: UserPublicId | null;
     color?: string | null;
 };
 
 const ValuedUserChip = (props: ValuedUserChipProps) => {
     const dashboardContext = useDashboardContext();
 
-    const userId = props.value?.id || null;
-    const userURI = userId && dashboardContext.isAuthorized(Permission.view_users_basic_info) ? dashboardContext.routingApi.getURIForUser({ id: userId }) : undefined;
+    const userId = props.value?.publicId || null;
+    const userURI = userId && dashboardContext.isAuthorized(Permission.view_users_basic_info) ? dashboardContext.routingApi.getURIForUser({ publicId: userId }) : undefined;
 
     const clickHandler = props.onClick;
 
@@ -49,7 +50,7 @@ const ValuedUserChip = (props: ValuedUserChipProps) => {
         color={props.color}
     >
         {props.startAdornment}
-        <span style={{ color: props.useHashedColor ? getHashedColor(props.value?.id.toString() || "") : undefined }}>
+        <span style={{ color: props.useHashedColor ? getHashedColor(props.value?.publicId || "") : undefined }}>
             {props.value?.name || "--"}
         </span>
         {props.endAdornment}

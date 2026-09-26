@@ -3,8 +3,9 @@ import deactivateUser from "src/auth/mutations/deactivateUser";
 import reactivateUser from "src/auth/mutations/reactivateUser";
 import { kContinuityAcknowledgementErrorPrefix } from "src/auth/server/userManagementPolicy";
 import { useConfirm } from "../ConfirmationDialog";
+import type { UserPublicId } from "shared/publicId";
 
-type LifecycleUser = { id: number; name: string };
+type LifecycleUser = { publicId: UserPublicId; name: string };
 
 export const useUserLifecycleActions = () => {
     const [deactivateMutation] = useMutation(deactivateUser);
@@ -25,7 +26,7 @@ export const useUserLifecycleActions = () => {
         const acknowledged = knownWarnings.length > 0 && await confirmContinuityRisk(user, knownWarnings);
         if (knownWarnings.length > 0 && !acknowledged) return false;
         try {
-            await deactivateMutation({ userId: user.id, acknowledgeContinuityRisk: acknowledged });
+            await deactivateMutation({ userId: user.publicId, acknowledgeContinuityRisk: acknowledged });
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             const markerIndex = message.indexOf(kContinuityAcknowledgementErrorPrefix);
@@ -34,7 +35,7 @@ export const useUserLifecycleActions = () => {
                 .split(",").map(value => value.trim()).filter(Boolean);
             if (!warnings.length) throw error;
             if (!await confirmContinuityRisk(user, warnings)) return false;
-            await deactivateMutation({ userId: user.id, acknowledgeContinuityRisk: true });
+            await deactivateMutation({ userId: user.publicId, acknowledgeContinuityRisk: true });
         }
         return true;
     };
@@ -44,7 +45,7 @@ export const useUserLifecycleActions = () => {
             title: "Reactivate user",
             description: `Reactivate ${user.name}'s account with its existing role? They will need to sign in again.`,
         })) return false;
-        await reactivateMutation({ userId: user.id });
+        await reactivateMutation({ userId: user.publicId });
         return true;
     };
 

@@ -2,6 +2,7 @@ import type { EventSegmentPublicId } from "shared/publicId";
 import { DashboardContextDataBase } from "@/src/core/components/dashboardContext/dashboardContextTypes";
 import * as db3 from "@db3/db3";
 import { isUserInvitedToEvent } from "shared/eventInvitation";
+import type { UserPublicId } from "shared/publicId";
 
 
 ////////////////////////////////////////////////////////////////
@@ -78,19 +79,19 @@ export function getUserPrimaryInstrument(user: db3.UserWithInstrumentsPayload, d
     return findInstrument(data, user.instruments[0]!.instrumentId);
 }
 
-export function getInstrumentForEventUserResponse<TEventResponse extends db3.EventResponses_MinimalEventUserResponse>(response: TEventResponse, userId: number, data: EventResponseInstrumentLookup, users: UserInstrumentList): (db3.InstrumentClientOrDbPayload | null) {
+export function getInstrumentForEventUserResponse<TEventResponse extends db3.EventResponses_MinimalEventUserResponse>(response: TEventResponse, userId: UserPublicId, data: EventResponseInstrumentLookup, users: UserInstrumentList): (db3.InstrumentClientOrDbPayload | null) {
     if (response.instrumentId != null) {
         return findInstrument(data, response.instrumentId);
     }
-    const ret = getUserPrimaryInstrument(users.find(u => u.id === userId)!, data);
+    const ret = getUserPrimaryInstrument(users.find(u => u.publicId === userId)!, data);
     return ret;
 };
 
 
 export interface createMockEventUserResponseArgs<TEvent extends db3.EventResponses_MinimalEvent, TEventResponse extends db3.EventResponses_MinimalEventUserResponse> {
-    userId: number,
+    userId: UserPublicId,
     event: TEvent;
-    defaultInvitees: Set<number>;
+    defaultInvitees: Set<UserPublicId>;
     dashboardContext: EventResponseInstrumentLookup;
     users: UserInstrumentList;
     makeMockEventUserResponse: fn_makeMockEventUserResponse<TEvent, TEventResponse>;
@@ -104,7 +105,7 @@ export function createMockEventUserResponse<TEvent extends db3.EventResponses_Mi
         defaultInvitationUserIds: args.defaultInvitees,
         responses: args.event.responses,
     });
-    const user = args.users.find(u => u.id === args.userId)!;
+    const user = args.users.find(u => u.publicId === args.userId)!;
 
     // mock response when none exists
     const mockResponse = args.makeMockEventUserResponse(args.event, user, isInvited);
@@ -127,7 +128,7 @@ export function getEventSegmentResponseForSegmentAndUser<
     : db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse> | null {
     console.assert(!!args.segment.responses);
 
-    const responseNullable = args.segment.responses.find(r => r.userId === args.user.id);
+    const responseNullable = args.segment.responses.find(r => r.userId === args.user.publicId);
     if (!!responseNullable) {
         // makes the assumption that the caller has properly typed TSegmentResponse as the result of TSegment.responses[n]
         const response = responseNullable as unknown as TSegmentResponse;
@@ -148,7 +149,7 @@ export interface GetEventResponseForUserArgs<
 > {
     user: db3.UserWithInstrumentsPayload;
     event: TEvent;
-    defaultInvitationUserIds: Set<number>;
+    defaultInvitationUserIds: Set<UserPublicId>;
     dashboardContext: EventResponseInstrumentLookup;
     userMap: UserInstrumentList;
     makeMockEventUserResponse: fn_makeMockEventUserResponse<TEvent, TEventResponse>;
@@ -158,10 +159,10 @@ export interface GetEventResponseForUserArgs<
 export function getEventResponseForUser<TEvent extends db3.EventResponses_MinimalEvent,
     TEventResponse extends db3.EventResponses_MinimalEventUserResponse
 >({ event, user, defaultInvitationUserIds, dashboardContext, userMap, makeMockEventUserResponse }: GetEventResponseForUserArgs<TEvent, TEventResponse>): db3.EventUserResponse<TEvent, TEventResponse> | null {
-    const response = event.responses.find(r => r.userId === user.id);
+    const response = event.responses.find(r => r.userId === user.publicId);
     if (response) {
-        const isInvited = isUserInvitedToEvent({ userId: user.id, defaultInvitationUserIds, responses: event.responses });
-        const instrument = getInstrumentForEventUserResponse(response, user.id, dashboardContext, userMap);
+        const isInvited = isUserInvitedToEvent({ userId: user.publicId, defaultInvitationUserIds, responses: event.responses });
+        const instrument = getInstrumentForEventUserResponse(response, user.publicId, dashboardContext, userMap);
         return {
             isInvited,
             event,
@@ -172,7 +173,7 @@ export function getEventResponseForUser<TEvent extends db3.EventResponses_Minima
         };
     }
 
-    return createMockEventUserResponse({ event, defaultInvitees: defaultInvitationUserIds, userId: user.id, dashboardContext, users: userMap, makeMockEventUserResponse });
+    return createMockEventUserResponse({ event, defaultInvitees: defaultInvitationUserIds, userId: user.publicId, dashboardContext, users: userMap, makeMockEventUserResponse });
 };
 
 
@@ -189,7 +190,7 @@ export interface EventResponseInfoBase<
     allSegmentResponses: db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse>[];
     distinctUsers: db3.UserWithInstrumentsPayload[];
     expectedAttendanceTag: db3.EventResponses_ExpectedUserTag | null;
-    defaultInvitationUserIds: Set<number>;
+    defaultInvitationUserIds: Set<UserPublicId>;
 
     makeMockEventSegmentResponse: fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>;
     makeMockEventUserResponse: fn_makeMockEventUserResponse<TEvent, TEventResponse>;
@@ -208,7 +209,7 @@ export class EventResponseInfo<
     allSegmentResponses: db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse>[];
     distinctUsers: db3.UserWithInstrumentsPayload[];
     expectedAttendanceTag: db3.EventResponses_ExpectedUserTag | null;
-    defaultInvitationUserIds: Set<number>;
+    defaultInvitationUserIds: Set<UserPublicId>;
 
     makeMockEventSegmentResponse: fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>;
     makeMockEventUserResponse: fn_makeMockEventUserResponse<TEvent, TEventResponse>;
@@ -235,7 +236,7 @@ export class EventResponseInfo<
     // ALWAYS returns a response. if doesn't exist in the list then a mock one is created.
     getResponseForUserAndSegment({ user, segment }: { user: db3.UserWithInstrumentsPayload, segment: TEventSegment }):
         db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse> | null {
-        const f = this.allSegmentResponses.find(resp => resp.user.id === user.id && resp.segment.publicId === segment.publicId);
+        const f = this.allSegmentResponses.find(resp => resp.user.publicId === user.publicId && resp.segment.publicId === segment.publicId);
         if (f) return f;
         return createMockEventSegmentUserResponse({ expectedAttendanceTag: this.expectedAttendanceTag, user, segment, makeMockEventSegmentResponse: this.makeMockEventSegmentResponse });
     };
@@ -256,8 +257,8 @@ export class EventResponseInfo<
     getResponsesForSegment = (segmentId: EventSegmentPublicId) => this.allSegmentResponses.filter(r => r.segment.publicId === segmentId);
 
     getEventResponseForUser = (user: db3.UserWithInstrumentsPayload, dashboardContext: DashboardContextDataBase, userMap: UserInstrumentList) => {
-        const ret = this.allEventResponses.find(r => r.user.id === user.id);
-        if (!ret) return createMockEventUserResponse({ event: this.event, defaultInvitees: this.defaultInvitationUserIds, dashboardContext, users: userMap, userId: user.id, makeMockEventUserResponse: this.makeMockEventUserResponse });
+        const ret = this.allEventResponses.find(r => r.user.publicId === user.publicId);
+        if (!ret) return createMockEventUserResponse({ event: this.event, defaultInvitees: this.defaultInvitationUserIds, dashboardContext, users: userMap, userId: user.publicId, makeMockEventUserResponse: this.makeMockEventUserResponse });
         return ret;
     }
 };
@@ -294,14 +295,14 @@ export function GetEventResponseInfo<
     (null | EventResponseInfo<TEvent, TEventSegment, TEventResponse, TSegmentResponse>) {
     if (!event.segments) return null; // limited users don't see segments.
 
-    let defaultInvitationUserIds = new Set<number>();
+    let defaultInvitationUserIds = new Set<UserPublicId>();
 
     // calculate a list of potentially relevant users to all segments of the event.
     const users: db3.UserWithInstrumentsPayload[] = [];
     if (expectedAttendanceTag) {
-        defaultInvitationUserIds = new Set<number>(expectedAttendanceTag.userAssignments.map(ua => ua.userId));
+        defaultInvitationUserIds = new Set<UserPublicId>(expectedAttendanceTag.userAssignments.map(ua => ua.userId));
         expectedAttendanceTag.userAssignments.forEach(ua => {
-            const user = userMap.find(u => u.id === ua.userId);
+            const user = userMap.find(u => u.publicId === ua.userId);
             if (user) {
                 users.push(user);
             }
@@ -310,8 +311,8 @@ export function GetEventResponseInfo<
     event.segments.forEach((seg) => {
         // get user ids for this segment
         seg.responses.forEach(resp => {
-            if (users.find(u => u.id === resp.userId) == null) { // doesn't already exist
-                const mapUser = userMap.find(u => u.id === resp.userId);
+            if (users.find(u => u.publicId === resp.userId) == null) { // doesn't already exist
+                const mapUser = userMap.find(u => u.publicId === resp.userId);
                 if (!mapUser) {
                     // console.log(`resp.userId=${resp.userId}`);
                     // console.log(userMap);
@@ -327,9 +328,9 @@ export function GetEventResponseInfo<
         //     users.push(userMap.find(u => u.id === eventResponse.userId)!);
         // }
         if (users.find((u) => {
-            return u.id === eventResponse.userId;
+            return u.publicId === eventResponse.userId;
         }) == null) {
-            const mappedUser = userMap.find(u => u.id === eventResponse.userId);
+            const mappedUser = userMap.find(u => u.publicId === eventResponse.userId);
             if (!mappedUser) {
                 // console.log(`resp.userId=${eventResponse.userId}`);
                 // console.log(userMap);

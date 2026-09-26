@@ -1,6 +1,6 @@
 import { DbBrandConfig } from "@/shared/brandConfigBase";
 import { isAbsoluteUri, slugify, TableAccessor } from "@/shared/rootroot";
-import type { EventAttendancePublicId, EventPublicId, FilePublicId, InstrumentPublicId, PermissionPublicId, RolePublicId, SongPublicId } from "shared/publicId";
+import type { EventAttendancePublicId, EventPublicId, FilePublicId, InstrumentPublicId, PermissionPublicId, RolePublicId, SongPublicId, UserPublicId } from "shared/publicId";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
@@ -38,7 +38,7 @@ export abstract class DashboardContextDataBase {
         InstrumentFunctionalGroupPublicId
     >;
 
-    currentUser: db3.UserClientPayload | null;
+    currentUser: db3.SelfUserClientPayload | null;
     serverBaseUri: string;
     serverStartupState: ServerStartInfo | null; // null if not available (non-admins)
 
@@ -75,8 +75,8 @@ export abstract class DashboardContextDataBase {
             return this.getAbsoluteUri(`/backstage/song/${parts.join("/")}`);
         },
 
-        getURIForUser: (user: { id: number, name?: string }) => {
-            const parts: string[] = [user.id.toString()];
+        getURIForUser: (user: { publicId: UserPublicId, name?: string }) => {
+            const parts: string[] = [user.publicId];
             if (user.name) {
                 parts.push(slugify(user.name));
             }

@@ -16,6 +16,7 @@ import { DateValue } from "../DateTime/DateTimeComponents";
 import { RoleChip } from "../RoleChip";
 import { CMSelectDisplayStyle, CMSingleSelect } from "../select/CMSelect";
 import { CMSelectNullBehavior } from "../select/selectionSource";
+import type { UserPublicId } from "shared/publicId";
 
 export function UserMergeReport({ preview }: { preview: UserMergePreview }) {
     const dashboardContext = useDashboardContext();
@@ -23,8 +24,8 @@ export function UserMergeReport({ preview }: { preview: UserMergePreview }) {
     const retiringRole = dashboardContext.role.getById(preview.retiring.roleId);
     return <>
         <table><tbody>
-            <tr><th>Main account</th><td>{preview.main.name} - #{preview.main.id} - {preview.main.email}</td></tr>
-            <tr><th>Retiring account</th><td>{preview.retiring.name} - #{preview.retiring.id} - {preview.retiring.email}</td></tr>
+            <tr><th>Main account</th><td>{preview.main.name} - {preview.main.publicId} - {preview.main.email}</td></tr>
+            <tr><th>Retiring account</th><td>{preview.retiring.name} - {preview.retiring.publicId} - {preview.retiring.email}</td></tr>
             <tr><th>Resulting role</th><td><RoleChip role={resultingRole} />{preview.main.isSysAdmin ? " (Sysadmin)" : ""}</td></tr>
         </tbody></table>
         {preview.sections.map(section => <section key={section.key}>
@@ -42,7 +43,7 @@ export function UserMergeReport({ preview }: { preview: UserMergePreview }) {
 const MergeUserListItem = ({ user }: { user: MergeIdentity }) => {
     return <div style={{ gap: "8px", display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
         <div style={{ gap: "8px", display: "flex", alignItems: "center" }}>
-            <span style={{ opacity: 0.6 }}>#{user.id}</span>
+            <span style={{ opacity: 0.6 }}>{user.publicId}</span>
             <span style={{ fontWeight: "bold" }}>{user.name}</span>
             <span>{<RoleChip role={user.roleId} />}{user.isDeleted ? " (deactivated)" : ""}</span>
         </div>
@@ -69,7 +70,7 @@ const UserMassAnalysisSummaryCard = ({ analysis, caption, description }: UserMas
     const totalSystemItems = Object.values(analysis.systemCounts).reduce((sum, count) => sum + count, 0);
 
     userInfoRows.push(
-        { label: "ID", value: <>{analysis.userInfo.id}</> },
+        { label: "Public ID", value: <>{analysis.userInfo.publicId}</> },
         { label: "Name", value: analysis.userInfo.name },
         { label: "Email", value: analysis.userInfo.email },
         { label: "Role", value: <RoleChip role={analysis.userInfo.roleId} /> },
@@ -106,7 +107,7 @@ const UserMassAnalysisSummaryCard = ({ analysis, caption, description }: UserMas
     </div>;
 };
 
-function MergeUsersDialog({ user, onClose }: { user: { id: number; name: string }; onClose: () => void }) {
+function MergeUsersDialog({ user, onClose }: { user: { publicId: UserPublicId; name: string }; onClose: () => void }) {
     const router = useRouter();
     const [merge] = useMutation(mergeUsers);
     const [other, setOther] = React.useState<MergeIdentity | null>(null);
@@ -114,17 +115,17 @@ function MergeUsersDialog({ user, onClose }: { user: { id: number; name: string 
     const [preview, setPreview] = React.useState<UserMergePreview | null>(null);
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
-    const [userMassAnalysis, { refetch: refetchUser }] = useQuery(getUserMassAnalysis, { userId: user.id });
-    const [otherUserMassAnalysis, { refetch: refetchOther }] = useQuery(getUserMassAnalysis, { userId: other?.id || -1 }, { enabled: !!other });
+    const [userMassAnalysis, { refetch: refetchUser }] = useQuery(getUserMassAnalysis, { userId: user.publicId });
+    const [otherUserMassAnalysis, { refetch: refetchOther }] = useQuery(getUserMassAnalysis, { userId: other?.publicId ?? user.publicId }, { enabled: !!other });
 
     // The selector reloads when its provider changes. RPC context rerenders must
     // keep the same provider until the profile being excluded actually changes.
     const getCandidates = React.useCallback(({ quickFilter }: { quickFilter: string | undefined }) =>
-        invoke(searchUserMergeCandidates, { query: quickFilter || "", excludeUserId: user.id }), [user.id]);
+        invoke(searchUserMergeCandidates, { query: quickFilter || "", excludeUserId: user.publicId }), [user.publicId]);
 
     const participants = other ? {
-        mainUserId: mainIsProfile ? user.id : other.id,
-        retiringUserId: mainIsProfile ? other.id : user.id,
+        mainUserId: mainIsProfile ? user.publicId : other.publicId,
+        retiringUserId: mainIsProfile ? other.publicId : user.publicId,
     } : null;
 
     const showPreview = async () => {
@@ -189,7 +190,7 @@ function MergeUsersDialog({ user, onClose }: { user: { id: number; name: string 
                 value={other} nullBehavior={CMSelectNullBehavior.AllowNull} readonly={pending}
                 onChange={value => { setOther(value); setPreview(null); setError(null); }}
                 getOptions={getCandidates}
-                getOptionInfo={item => ({ id: item.id })}
+                getOptionInfo={item => ({ id: item.publicId })}
                 renderOption={item => <MergeUserListItem user={item} />}
                 displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
                 dialogTitle="Select the other account"
@@ -220,7 +221,7 @@ function MergeUsersDialog({ user, onClose }: { user: { id: number; name: string 
     </CMDialog>;
 }
 
-export function MergeUsersButton({ user }: { user: { id: number; name: string } }) {
+export function MergeUsersButton({ user }: { user: { publicId: UserPublicId; name: string } }) {
     const [open, setOpen] = React.useState(false);
     return <>
         <CMUserMgmtButton onClick={() => setOpen(true)}>Merge with another user</CMUserMgmtButton>

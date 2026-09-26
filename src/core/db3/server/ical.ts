@@ -1,4 +1,4 @@
-import type { EventAttendancePublicId, EventPublicId, EventSegmentPublicId } from "shared/publicId";
+import type { EventAttendancePublicId, EventPublicId, EventSegmentPublicId, UserPublicId } from "shared/publicId";
 import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import db, { Prisma } from "db";
 import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent } from "ical-generator";
@@ -88,11 +88,11 @@ export const addEventToCalendar2 = (
     // so wing it.
     const getEventUserResponse = (): null | { revision: number } => {
         if (!user) return null;
-        const found = calendarEvent.responses.find(u => u.userId === user.id);
+        const found = calendarEvent.responses.find(u => u.userId === user.publicId);
         return found || null;
     };
 
-    const isUserAttending = (userId: number): boolean => {
+    const isUserAttending = (userId: UserPublicId): boolean => {
         return calendarEvent.segments.some(segment =>
             segment.responses.some(response =>
                 response.userId === userId && response.attendanceId && eventAttendanceIdsRepresentingGoing.includes(response.attendanceId)
@@ -103,7 +103,7 @@ export const addEventToCalendar2 = (
     const eventUserResponse = getEventUserResponse();
 
     let summary = `${icalSettings.eventNamePrefix}${event.name}`;
-    if (user && isUserAttending(user.id)) {
+    if (user && isUserAttending(db3.xUser.parseIdentity(user.publicId))) {
         summary = `${icalSettings.eventNamePrefix}👍 ${event.name}`;
     }
 
@@ -266,11 +266,11 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
         const event = events[i]!;
         const defaultInviteeUserIds = new Set(event.expectedAttendanceUserTag?.userAssignments.map(assignment => assignment.userId));
         if (!shouldIncludeEventInCalendarFeed({
-            userId: currentUser.id,
+            userId: db3.xUser.parseIdentity(currentUser.publicId),
             showDeclinedEvents: userSettings["calendar.showDeclinedEvents"],
             showUninvitedEvents: userSettings["calendar.showUninvitedEvents"],
             isInvited: isUserInvitedToEvent({
-                userId: currentUser.id,
+                userId: db3.xUser.parseIdentity(currentUser.publicId),
                 defaultInvitationUserIds: defaultInviteeUserIds,
                 responses: event.responses,
             }),

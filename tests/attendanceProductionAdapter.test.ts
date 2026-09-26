@@ -7,9 +7,10 @@ import type { AttendanceControlViewProps } from "src/core/components/event/Atten
 import { DateTimeRange } from "shared/time";
 import { eventPublicId, segmentPublicId } from "./support/eventResponseFixtures";
 import { parsePublicId } from "shared/publicId";
+import { userPublicId } from "./support/userFixtures";
 
 vi.mock("src/core/db3/clientAPI", () => ({ API: { events: { updateUserEventAttendance: { useToken: () => ({ invoke }) } } } }));
-vi.mock("src/core/components/event/EventComponentsBase", () => ({ CalcEventAttendance: () => ({ eventUserResponse: { user: { id: 12 } } }) }));
+vi.mock("src/core/components/event/EventComponentsBase", () => ({ CalcEventAttendance: () => ({ eventUserResponse: { user: { publicId: userPublicId(12) } } }) }));
 vi.mock("src/core/components/event/AttendanceControlView", () => ({ AttendanceControlView: (props: AttendanceControlViewProps) => { view = props; return null; } }));
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({
     useDashboardContext: () => ({ eventAttendance: { items: [] }, instrument: { items: [] } }),
@@ -48,9 +49,9 @@ describe("production attendance adapter", () => {
             await view!.environment.onSave({ type: "instrument", instrumentId });
             await view!.environment.onSave({ type: "comment", comment: "Need a lift" });
             expect(invoke.mock.calls).toEqual([
-                [{ eventId: eventPublicId(42), userId: 12, segmentResponses: { [segmentPublicId(7)]: { attendanceId: null } } }],
-                [{ eventId: eventPublicId(42), userId: 12, instrumentId }],
-                [{ eventId: eventPublicId(42), userId: 12, comment: "Need a lift" }],
+                [{ eventId: eventPublicId(42), userId: userPublicId(12), segmentResponses: { [segmentPublicId(7)]: { attendanceId: null } } }],
+                [{ eventId: eventPublicId(42), userId: userPublicId(12), instrumentId }],
+                [{ eventId: eventPublicId(42), userId: userPublicId(12), comment: "Need a lift" }],
             ]);
             expect(refetch).toHaveBeenCalledTimes(3);
             expect(showMessage).toHaveBeenCalledTimes(3);

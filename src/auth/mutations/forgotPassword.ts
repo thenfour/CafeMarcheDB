@@ -21,7 +21,7 @@ export default resolver.pipe(
     const user = "userId" in input
       ? (await tx.user.findFirst({
         select: { ...UserWithRolesArgs.select },
-        where: { id: input.userId }
+        where: { publicId: input.userId }
       }))
       : (await findSignInUser(tx, { type: "email", identifier: input.email }, { allowInactive: false }))
     if (user) {

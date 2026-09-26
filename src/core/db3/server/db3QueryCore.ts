@@ -112,11 +112,26 @@ function sanitizeQueryRows(items: TAnyModel[], query: Awaited<ReturnType<typeof 
         });
     })
         .filter(result => result.rowIsAuthorized)
-        .map(result => (
-            query.readSelection.stripSupportFields(
+        .map(result => {
+            const projected = query.readSelection.stripSupportFields(
                 projectDB3ModelPublicIds(query.table, result.authorizedModel, query.publicData),
-            )
-        ));
+            );
+            return projected;
+
+            // TODO: this is a table-specific hack and i won't put it in db3 core.
+            // i will instead do a manual correction script.
+
+            // if (query.table.tableName !== "Change") return projected;
+            // // Historical change JSON can contain numeric user IDs in arbitrary
+            // // nested data. Keep the stored audit record, but redact its raw
+            // // values before any Change row crosses the RPC boundary.
+            // return {
+            //     ...projected,
+            //     recordId: projected.table === "User" ? null : projected.recordId,
+            //     oldValues: null,
+            //     newValues: null,
+            // };
+        });
 }
 
 export interface QueryTableExecutionOptions {

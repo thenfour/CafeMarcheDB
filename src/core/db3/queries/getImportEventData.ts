@@ -301,9 +301,9 @@ export default resolver.pipe(
                     isDeleted: false,
                 }
             }));
-            ret.log.push(`carl: ${carl?.id}`);
-            ret.log.push(`peter: ${peter?.id}`);
-            ret.log.push(`guido: ${guido?.id}`);
+            ret.log.push(`carl: ${carl?.publicId}`);
+            ret.log.push(`peter: ${peter?.publicId}`);
+            ret.log.push(`guido: ${guido?.publicId}`);
 
             const yesId = db3.xEventAttendance.parseIdentity((await db.eventAttendance.findFirst({
                 where: {
@@ -324,7 +324,7 @@ export default resolver.pipe(
 
             if (carl) {
                 ret.responses.push({
-                    userId: carl.id,
+                    userId: db3.xUser.parseIdentity(carl.publicId),
                     attendanceId: /\bcarl\b/i.test(eventTxt) ? yesId : noId,
                     userName: "carl",
                 });
@@ -332,7 +332,7 @@ export default resolver.pipe(
 
             if (peter) {
                 ret.responses.push({
-                    userId: peter.id,
+                    userId: db3.xUser.parseIdentity(peter.publicId),
                     attendanceId: /\bpeter\b/i.test(eventTxt) ? yesId : noId,
                     userName: "peter",
                 });
@@ -340,7 +340,7 @@ export default resolver.pipe(
 
             if (guido) {
                 ret.responses.push({
-                    userId: guido.id,
+                    userId: db3.xUser.parseIdentity(guido.publicId),
                     attendanceId: /\bguido\b/i.test(eventTxt) ? yesId : noId,
                     userName: "guido",
                 });

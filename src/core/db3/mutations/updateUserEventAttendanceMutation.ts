@@ -34,7 +34,7 @@ export default resolver.pipe(
             || args.instrumentId !== undefined
             || Object.keys(args.segmentResponses || {}).length > 0;
         if (hasResponseMutation) {
-            const isSelf = currentUser.id === args.userId;
+            const isSelf = currentUser.publicId === args.userId;
             const perm = isSelf ? Permission.respond_to_events : Permission.change_others_event_responses;
             if (!reqAuth.effectivePermissions.includesName(perm)) {
                 throw new EventAttendanceAuthorizationError(perm);
@@ -65,7 +65,7 @@ export default resolver.pipe(
                     include: { visiblePermission: { include: { roles: true } } },
                 }),
                 transactionalDb.user.findFirst({
-                    where: { id: args.userId, isDeleted: false },
+                    where: { publicId: args.userId, isDeleted: false },
                     select: { id: true },
                 }),
                 segmentResponses.length === 0
@@ -106,7 +106,7 @@ export default resolver.pipe(
                 const attendancePublicId = response.attendanceId;
                 const attendanceId = attendancePublicId === null ? null : attendanceIdByPublicId.get(attendancePublicId)!;
                 const existing = await transactionalDb.eventSegmentUserResponse.findFirst({
-                    where: { userId: args.userId, eventSegmentId },
+                    where: { userId: targetUser.id, eventSegmentId },
                 });
 
                 if (existing?.attendanceId === attendanceId) continue;
@@ -136,7 +136,7 @@ export default resolver.pipe(
                     });
                 } else {
                     const fields: Omit<Prisma.EventSegmentUserResponseUncheckedCreateInput, "publicId"> = {
-                        userId: args.userId,
+                        userId: targetUser.id,
                         eventSegmentId,
                         attendanceId,
                         createdByUserId: currentUser.id,
@@ -170,7 +170,7 @@ export default resolver.pipe(
             }
 
             const existingEventResponse = await transactionalDb.eventUserResponse.findFirst({
-                where: { userId: args.userId, eventId },
+                where: { userId: targetUser.id, eventId },
             });
 
             if (existingEventResponse) {
@@ -208,7 +208,7 @@ export default resolver.pipe(
                 }
             } else {
                 const fields: Omit<Prisma.EventUserResponseUncheckedCreateInput, "publicId"> = {
-                    userId: args.userId,
+                    userId: targetUser.id,
                     eventId,
                     userComment: args.comment || "",
                     instrumentId,

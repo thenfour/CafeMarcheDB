@@ -35,7 +35,7 @@ const MainContent = () => {
             email: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 }),
             phone: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 120 }),
             tags: columnName => new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false, selectionView: db3.userTagEditorView }),
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            publicId: DB3Client.publicIdFieldGen(),
         },
     });
 
@@ -43,7 +43,7 @@ const MainContent = () => {
         view: db3.userEditorView,
         tableSpec: spec,
         filterModel: {
-            items: [{ field: "id", value: dashboardContext.currentUser?.id || -1, operator: "equals" }]
+            publicIds: dashboardContext.currentUser ? [dashboardContext.currentUser.publicId] : []
         },
     });
     const editCommands = DB3Client.useCrudViewCommands({
@@ -96,7 +96,7 @@ const MainContent = () => {
                 )}
 
                 <Suspense>
-                    {dashboardContext.currentUser?.id && <ProfilePageIdentityControl userId={dashboardContext.currentUser.id} />}
+                    {dashboardContext.currentUser?.publicId && <ProfilePageIdentityControl userId={dashboardContext.currentUser.publicId} />}
                 </Suspense>
 
             </div>

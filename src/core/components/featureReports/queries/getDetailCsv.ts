@@ -120,7 +120,6 @@ function flattenActivityRecord(row: any): Record<string, string> {
     }
 
     // Other related IDs
-    flattened.userId = row.userId?.toString() || '';
     flattened.attendanceId = row.attendanceId?.toString() || '';
     flattened.instrumentId = row.instrumentId?.toString() || '';
     flattened.eventSegmentId = row.eventSegmentId?.toString() || '';

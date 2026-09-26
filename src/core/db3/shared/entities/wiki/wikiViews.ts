@@ -91,7 +91,7 @@ const wikiPageSearchTransportSelection = Prisma.validator<Prisma.WikiPageDefault
         createdAt: true,
         createdByUser: {
             select: {
-                id: true,
+                publicId: true,
                 name: true,
             },
         },
@@ -142,7 +142,7 @@ export const wikiPageApiRevisionSelection = Prisma.validator<Prisma.WikiPageRevi
         createdAt: true,
         createdByUser: {
             select: {
-                id: true,
+                publicId: true,
                 name: true,
             },
         },
@@ -162,7 +162,7 @@ const wikiPageApiTransportSelection = Prisma.validator<Prisma.WikiPageDefaultArg
         lastEditPingAt: true,
         lockedByUser: {
             select: {
-                id: true,
+                publicId: true,
                 name: true,
             },
         },

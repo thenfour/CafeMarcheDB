@@ -59,7 +59,7 @@ export const UserListItem = (props: UserListItemProps) => {
                         </CMChip>}
                     {canManageUsers && <Suspense>
                         <CMDivider />
-                        <UserIdentityIndicator userId={props.user.id} />
+                        <UserIdentityIndicator userId={props.user.publicId} />
                     </Suspense>}
                 </CMChipContainer>
 

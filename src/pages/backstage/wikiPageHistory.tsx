@@ -6,7 +6,6 @@ import { EnrichedUser } from "@/src/core/db3/shared/schema/enrichedUserTypes";
 import { BlitzPage, useRouterQuery } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import { Tooltip } from "@mui/material";
-import { Prisma } from "db";
 import React, { Suspense } from "react";
 import ReactDiffViewer from 'react-diff-viewer';
 import { toSorted } from "shared/arrayUtils";
@@ -26,6 +25,7 @@ import getWikiPageRevisions from "src/core/wiki/queries/getWikiPageRevisions";
 import { wikiParseCanonicalWikiPath } from "src/core/wiki/shared/wikiUtils";
 
 export type EnrichedVerboseUser = EnrichedUser<db3.UserClientPayload>;
+type RevisionHistoryItem = NonNullable<Awaited<ReturnType<typeof getWikiPageRevisions>>>["revisions"][number];
 
 interface WikiDiffViewerProps {
     revisionIdLeft: number | null;
@@ -85,7 +85,7 @@ const WikiRevisionPreviewButton = (props: { revisionId: number }) => {
     </>;
 };
 
-const WikiRevisionDeleteButton = (props: { revision: Prisma.WikiPageRevisionGetPayload<{}>, onChanged: () => void }) => {
+const WikiRevisionDeleteButton = (props: { revision: RevisionHistoryItem, onChanged: () => void }) => {
     const messageBox = useMessageBox();
     const snackbar = useSnackbar();
     const [deleteMutation] = useMutation(deleteWikiRevision);
@@ -134,8 +134,8 @@ const WikiRevisionHistoryPageContent = () => {
     const currentRevision = pageWithRevisions.currentRevision!;
     const revisions = toSorted(pageWithRevisions?.revisions || [], (a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-    const [selectedRevisionA, setSelectedRevisionA] = React.useState<Prisma.WikiPageRevisionGetPayload<{}> | null>(null);
-    const [selectedRevisionB, setSelectedRevisionB] = React.useState<Prisma.WikiPageRevisionGetPayload<{}>>(currentRevision);
+    const [selectedRevisionA, setSelectedRevisionA] = React.useState<RevisionHistoryItem | null>(null);
+    const [selectedRevisionB, setSelectedRevisionB] = React.useState<RevisionHistoryItem>(currentRevision);
 
     return <div className="contentSection fullWidth wikiRevisionHistoryPage">
         {dashboardContext.isAuthorized(Permission.admin_wiki_pages) && <RebuildStatsButton onChanged={() => {
@@ -224,7 +224,7 @@ const WikiRevisionHistoryPageContent = () => {
                             </Tooltip>
                         </td>
                         <td>
-                            <UserChip userId={rev.createdByUserId} />
+                            <UserChip value={rev.createdByUser} />
                         </td>
                         <td>
                             <Tooltip title={<div>{timeLabel} -- {rev.consolidationKey}</div>} disableInteractive><span>{timeLabel} {timing.label}</span></Tooltip>

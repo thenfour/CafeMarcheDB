@@ -6,7 +6,7 @@ import { useQuery } from "@blitzjs/rpc";
 import { Prisma } from "db";
 import * as React from 'react';
 import { existsInArray, toggleValueInArray } from "shared/arrayUtils";
-import { CoerceToNumberOrNull, IsNullOrWhitespace, getHashedColor } from "shared/utils";
+import { IsNullOrWhitespace, getHashedColor } from "shared/utils";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
@@ -19,7 +19,7 @@ import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChang
 type AdHocUser = Prisma.UserGetPayload<{
     select: {
         name: true,
-        id: true,
+        publicId: true,
         email: true,
     }
 }>;
@@ -32,11 +32,10 @@ type AdHocUser = Prisma.UserGetPayload<{
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 
 const AdHocUsersEqual = (a: AdHocUser, b: AdHocUser): boolean => {
-    return a.id === b.id;
+    return a.publicId === b.publicId;
 };
 
 const MainContent = () => {
-    const [recordIdFilter, setRecordIdFilter] = React.useState<string>("");
     const [tableNameFilter, setTableNameFilter] = React.useState<string>("");
     const [userNameFilter, setUserNameFilter] = React.useState<string>("");
     const [tableNames, setTableNames] = React.useState<string[]>([]);
@@ -59,9 +58,9 @@ const MainContent = () => {
                     if (!user) return "--";
                     return <CMChip
                         size="small"
-                        tooltip={`${user.name} #${user.id}`}
+                        tooltip={`${user.name} ${user.publicId}`}
                     >
-                        <a href={dashboardContext.routingApi.getURIForUser(user)} target="_blank" rel="noreferrer" style={{ color: getHashedColor(user.id.toString()) }}>
+                        <a href={dashboardContext.routingApi.getURIForUser(user)} target="_blank" rel="noreferrer" style={{ color: getHashedColor(user.publicId) }}>
                             {user.name}
                         </a>
                     </CMChip>;
@@ -103,13 +102,13 @@ const MainContent = () => {
     const userButton = (user: AdHocUser) => {
         const selected = existsInArray(users, user, AdHocUsersEqual);// (tableNames.indexOf(otherTableName) !== -1);
         return <CMChip
-            key={user.id}
+            key={user.publicId}
             variation={{ ...StandardVariationSpec.Strong, selected }}
             size="small"
             onClick={() => {
                 setUsers(toggleValueInArray(users, user, AdHocUsersEqual));
             }}
-            tooltip={`id:${user.id} email:${user.email}`}
+            tooltip={`publicId:${user.publicId} email:${user.email}`}
         >
             {user.name}
         </CMChip>;
@@ -169,20 +168,12 @@ const MainContent = () => {
                 </div>
             }
         />
-        <NameValuePair
-            isReadOnly={false}
-            name={"Record ID"}
-            value={
-                <CMTextInputBase onChange={(e, v) => setRecordIdFilter(v)} value={recordIdFilter} />
-            }
-        />
         <DB3EditGrid
             readOnly={true}
             tableSpec={tableSpec}
             tableParams={{
                 tableNames,
-                userIds: users.map(u => u.id),
-                recordId: CoerceToNumberOrNull(recordIdFilter),
+                userIds: users.map(u => u.publicId),
             }}
         />
     </>;

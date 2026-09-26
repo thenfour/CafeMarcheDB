@@ -39,7 +39,6 @@ export default resolver.pipe(
             isDeleted: args.isDeleted,
             statusId: resolvedForeignIds.statusId,
             expectedAttendanceUserTagId: resolvedForeignIds.expectedAttendanceUserTagId,
-            createdByUserId: args.createdByUserId, // TODO: validate client info
 
             frontpageVisible: args.frontpageVisible,
             frontpageDate: args.frontpageDate,
