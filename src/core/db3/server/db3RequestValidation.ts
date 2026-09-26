@@ -1,17 +1,17 @@
 import { z } from "zod";
 import * as db3 from "../db3";
 import { isPublicId } from "shared/publicId";
+import { MAX_DB3_PAGE_SIZE } from "../shared/apiTypes";
 
 const MAX_FILTER_ITEMS = 100;
 const MAX_FILTER_VALUES = 1000;
 const MAX_MODEL_FIELDS = 200;
 const MAX_QUERY_TEXT_LENGTH = 500;
-const MAX_TAKE = 1000;
 
 const SafeInteger = z.number().int().refine(Number.isSafeInteger, "Expected a safe integer");
 const RecordId = SafeInteger.refine(value => value > 0, "Expected a positive record ID");
 const PublicId = z.string().refine(isPublicId, "Expected a 16-character public ID");
-const Take = SafeInteger.refine(value => value >= 1 && value <= MAX_TAKE, `Expected a value between 1 and ${MAX_TAKE}`);
+const Take = SafeInteger.refine(value => value >= 1 && value <= MAX_DB3_PAGE_SIZE, `Expected a value between 1 and ${MAX_DB3_PAGE_SIZE}`);
 const Skip = SafeInteger.refine(value => value >= 0 && value <= 10_000_000, "Expected a value between 0 and 10000000");
 const Delay = SafeInteger.refine(value => value >= 0 && value <= 2_000, "Expected a value between 0 and 2000");
 const Identifier = z.string().min(1).max(128).regex(/^[A-Za-z][A-Za-z0-9_]*$/);

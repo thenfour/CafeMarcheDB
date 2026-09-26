@@ -17,7 +17,6 @@ import db3Mutation from "tests/authorization/db3MutationTestResolver"
 import executeDB3CommandMutation from "@db3/mutations/executeDB3Command"
 import * as db3 from "@db3/db3"
 import { listPublicId, listSongPublicId } from "../support/eventSongListFixtures"
-import updateGenericSortOrder from "src/core/db3/mutations/updateGenericSortOrder"
 import updateUserEventAttendance from "src/core/db3/mutations/updateUserEventAttendanceMutation"
 import { Permission } from "shared/permissions"
 import { isPublicId, parsePublicId } from "shared/publicId"
@@ -28,40 +27,6 @@ import {
 import { forgeDb3Insert, forgeDb3PublicUpdate } from "./support/db3RequestBuilders"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
-
-const rowScopedSortAuthMap = db3.defineAuthMap({
-  PostQueryAsOwner: Permission.view_events,
-  PostQuery: Permission.view_events,
-  PreMutateAsOwner: Permission.respond_to_events,
-  PreMutate: Permission.manage_events,
-  PreInsert: Permission.manage_events,
-})
-
-// This test-only table proves that every shifted row is checked before the
-// bulk operation writes anything. Production tables opt in alongside their
-// own schema in exactly the same way.
-const rowScopedSortTable = new db3.xTable({
-  tableName: "AuthorizationSortFixture",
-  deletePolicy: "hard",
-  sortOrderPolicy: { groupingColumn: null, scope: "explicitRowIds" },
-  tableAuthMap: {
-    ViewOwn: Permission.view_events,
-    View: Permission.view_events,
-    EditOwn: Permission.respond_to_events,
-    Edit: Permission.manage_events,
-    Insert: Permission.manage_events,
-  },
-  getSelectionArgs: () => ({}),
-  getRowInfo: row => ({
-    pk: row.id,
-    name: String(row.id),
-    ownerUserId: row.ownerUserId,
-  }),
-  columns: [
-    db3.MakePKfield(),
-    db3.MakeSortOrderField({ authMap: rowScopedSortAuthMap }),
-  ],
-})
 
 const publicVisibility = {
   id: 920_002, // Matches the inherited public-role grant in the database fixture.
@@ -900,62 +865,12 @@ describe("DB3 command boundary", () => {
   })
 })
 
-describe("BA-S003 generic sort-order authorization", () => {
+describe("public-ID reorder authorization", () => {
   const menuLinkPublicId = (id: number) => parsePublicId<"MenuLink">(`MenuLinkTest${id.toString().padStart(4, "0")}`)
 
   beforeEach(() => {
     vi.restoreAllMocks()
     authorizationTestDb.reset({ change: [] })
-  })
-
-  it("rejects mismatched table identity before looking up the actor", async () => {
-    const actor = createAuthorizationTestUser("normal", {
-      id: 1,
-      permissions: [Permission.login, Permission.customize_menu],
-    })
-    authorizationTestDb.reset({ user: [actor], change: [] })
-    const { ctx } = createAuthorizationPersona("normal", {
-      id: actor.id,
-      permissions: [Permission.login, Permission.customize_menu],
-    })
-    const userLookup = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
-
-    await expect(invokeResolver(updateGenericSortOrder, {
-      tableID: db3.xMenuLink.tableID,
-      tableName: db3.xRole.tableName,
-      movingItemId: 1,
-      newPositionItemId: 2,
-      scopeRowIds: [1, 2],
-    }, ctx)).rejects.toThrow("does not match")
-
-    expect(userLookup).not.toHaveBeenCalled()
-  })
-
-  it("allows only explicitly opted-in tables", async () => {
-    const permissions = [Permission.login, Permission.manage_users]
-    const actor = createAuthorizationTestUser("normal", { id: 2, permissions })
-    authorizationTestDb.reset({
-      user: [actor],
-      userTag: [
-        { id: 1, publicId: "UserTagPublic001", text: "A", description: "", sortOrder: 0 },
-        { id: 2, publicId: "UserTagPublic002", text: "B", description: "", sortOrder: 1 },
-      ],
-      change: [],
-    })
-    const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
-
-    await expect(invokeResolver(updateGenericSortOrder, {
-      tableID: db3.xUserTag.tableID,
-      tableName: db3.xUserTag.tableName,
-      movingItemId: 1,
-      newPositionItemId: 2,
-      scopeRowIds: [1, 2],
-    }, ctx)).rejects.toThrow("Not authorized to mutate UserTag fields: sortOrder")
-
-    expect(authorizationTestDb.snapshot("userTag")).toEqual([
-      expect.objectContaining({ id: 1, sortOrder: 0 }),
-      expect.objectContaining({ id: 2, sortOrder: 1 }),
-    ])
   })
 
   it("uses fresh grants and stops before reading reorder targets", async () => {
@@ -990,32 +905,43 @@ describe("BA-S003 generic sort-order authorization", () => {
     expect(targetLookup).not.toHaveBeenCalled()
   })
 
-  it("preflights every affected row before performing a write", async () => {
-    const permissions = [Permission.login, Permission.view_events, Permission.respond_to_events]
+  it("preflights every changed row before writing the first sort order", async () => {
+    const permissions = [Permission.login, Permission.customize_menu]
     const actor = createAuthorizationTestUser("normal", { id: 4, permissions })
     authorizationTestDb.reset({
       user: [actor],
-      authorizationSortFixture: [
-        { id: 1, ownerUserId: actor.id, sortOrder: 0 },
-        { id: 2, ownerUserId: 999, sortOrder: 1 },
-      ],
+      menuLink: [1, 2, 3].map((id, index) => ({
+        id,
+        publicId: menuLinkPublicId(id),
+        caption: `Link ${id}`,
+        sortOrder: index,
+        createdByUserId: actor.id,
+        visiblePermissionId: publicVisibility.id,
+        visiblePermission: publicVisibility,
+      })),
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
-    const update = vi.spyOn(
-      authorizationTestDb.getDelegate("authorizationSortFixture"),
-      "update",
-    )
+    const authorize = db3.xMenuLink.authorizeAndSanitize.bind(db3.xMenuLink)
+    vi.spyOn(db3.xMenuLink, "authorizeAndSanitize").mockImplementation(args => {
+      const result = authorize(args)
+      return args.rowMode === "update" && args.existingModel?.id === 2
+        ? { ...result, rowIsAuthorized: false }
+        : result
+    })
+    const update = vi.spyOn(authorizationTestDb.getDelegate("menuLink"), "update")
 
-    await expect(invokeResolver(updateGenericSortOrder, {
-      tableID: rowScopedSortTable.tableID,
-      tableName: rowScopedSortTable.tableName,
-      movingItemId: 1,
-      newPositionItemId: 2,
-      scopeRowIds: [1, 2],
-    }, ctx)).rejects.toThrow("Not authorized to mutate AuthorizationSortFixture")
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.reorderMenuLinksCommand.commandID,
+      payload: {
+        movingItemId: menuLinkPublicId(3),
+        newPositionItemId: menuLinkPublicId(1),
+        scopeRowIds: [menuLinkPublicId(1), menuLinkPublicId(2), menuLinkPublicId(3)],
+      },
+    }, ctx)).rejects.toThrow("Not authorized to mutate MenuLink fields: sortOrder")
 
     expect(update).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("reorders only the caller-supplied scope and preserves out-of-scope slots", async () => {

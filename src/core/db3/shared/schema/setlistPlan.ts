@@ -64,7 +64,6 @@ export const xSetlistPlanGroup = db3.defineTable({
     },
     tableName: "SetlistPlanGroup",
     deletePolicy: "hard",
-    sortOrderPolicy: { groupingColumn: null, scope: "explicitRowIds" },
     naturalOrderBy: SetlistPlanGroupNaturalOrderBy,
     getRowInfo: (row: SetlistPlanGroupPayload) => ({
         pk: row.publicId,
@@ -114,7 +113,6 @@ export const xSetlistPlan = db3.defineTable({
     deletePolicy: "softOnly",
     viewDeletedPermission: Permission.setlist_planner_access,
     restorePermission: Permission.setlist_planner_access,
-    sortOrderPolicy: { groupingColumn: "groupId", scope: "explicitRowIds" },
     naturalOrderBy: SetlistPlanNaturalOrderBy,
     getRowInfo: (row: SetlistPlanPayload) => ({
         pk: row.publicId,

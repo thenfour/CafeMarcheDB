@@ -9,7 +9,6 @@ vi.mock("db", async () => {
 import * as db3 from "@db3/db3";
 import executeCommand from "@db3/mutations/executeDB3Command";
 import query from "@db3/queries/db3queries";
-import updateGenericSortOrder from "@db3/mutations/updateGenericSortOrder";
 import insertEvent from "@db3/mutations/insertEvent";
 import { createActionRecord } from "@db3/server/recordActionServer";
 import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
@@ -153,10 +152,6 @@ describe("Event setlist public identities", () => {
         ]) await expect(save(payload)).rejects.toThrow();
         expect(() => db3.deleteEventSongListCommand.parseDto({ publicId: 50 })).toThrow();
         expect(() => db3.reorderEventSongListsCommand.parseDto({ eventId: event.publicId, movingItemId: 50, newPositionItemId: 50, scopeRowIds: [50] })).toThrow();
-        await expect(invokeResolver(updateGenericSortOrder, {
-            tableID: "EventSongList", tableName: "EventSongList", movingItemId: 50,
-            newPositionItemId: 50, scopeRowIds: [50], groupByColumn: "eventId", groupValue: 100,
-        }, ctx)).rejects.toThrow("reorder command");
     });
 
     it("keeps hidden parents inaccessible through reads and all commands", async () => {

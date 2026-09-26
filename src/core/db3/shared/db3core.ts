@@ -895,15 +895,6 @@ export interface TableDesc {
 
     tableAuthMap: DB3AuthTablePermissionMap;
 
-    // Opts this table into the scoped reorder mutation. The caller must name
-    // every row in the currently rendered reorder scope; rows outside that
-    // explicit scope never participate. The schema owns the exact column that
-    // defines an independent ordering group, when applicable.
-    sortOrderPolicy?: {
-        groupingColumn: string | null;
-        scope: "explicitRowIds";
-    };
-
     // Required so every table declares its generic-delete behavior alongside
     // its schema. This prevents a central table-name registry from drifting.
     deletePolicy: DB3DeletePolicy;
@@ -1175,11 +1166,6 @@ export class xTable<
     activeAsSelectable?: (params: TAnyModel) => boolean;
 
     tableAuthMap: DB3AuthTablePermissionMap;
-    sortOrderPolicy?: {
-        groupingColumn: string | null;
-        scope: "explicitRowIds";
-    };
-
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
     doesItemExactlyMatchText: (row: TAnyModel, filterText: string) => boolean;
@@ -1271,19 +1257,6 @@ export class xTable<
                 this.publicIdMember === this.SqlSpecialColumns.publicId.member,
                 `Table ${this.tableID} public-ID metadata is inconsistent.`,
             );
-        }
-
-        if (this.sortOrderPolicy) {
-            assert(
-                !!this.SqlSpecialColumns.sortOrder,
-                `Table ${this.tableID} enables generic reordering without a sort-order field.`,
-            );
-            if (this.sortOrderPolicy.groupingColumn !== null) {
-                assert(
-                    !!this.getColumnForAuthorization(this.sortOrderPolicy.groupingColumn),
-                    `Table ${this.tableID} groups generic reordering by unknown field ${this.sortOrderPolicy.groupingColumn}.`,
-                );
-            }
         }
 
         Object.entries(this.queryParameters || {}).forEach(([parameterName, spec]) => {

@@ -16,7 +16,6 @@ import getSetting from "src/auth/queries/getSetting";
 import insertEvent from "./mutations/insertEvent";
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
 import updateGalleryItemImage from "./mutations/updateGalleryItemImage";
-import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
 import updateSongBasicFields from "./mutations/updateSongBasicFields";
 import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttendanceMutation";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
@@ -152,7 +151,6 @@ class SongsAPI {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class OtherAPI {
-    updateGenericSortOrderMutation = CreateAPIMutationFunction(updateGenericSortOrder);
     setShowingAdminControlsMutation = CreateAPIMutationFunction(setShowingAdminControls);
 
     useIsShowingAdminControls() {

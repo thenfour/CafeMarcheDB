@@ -8,6 +8,8 @@ import type { SortDirection, TAnyModel } from "shared/rootroot";
 import { ColorPaletteEntry } from "../../components/color/palette";
 import type { SongSearchDto } from "./entities/song/songViews";
 
+export const MAX_DB3_PAGE_SIZE = 1000;
+
 // this really loves to break the typescript compiler... safest to just use "any"
 //export type TransactionalPrismaClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
 export type TransactionalPrismaClient = any;
@@ -211,52 +213,6 @@ export type TGeneralDeleteArgs = z.infer<typeof TGeneralDeleteArgsSchema>;
 export interface TdeleteEventCommentArgs {
     id: number;
 };
-
-
-export const ZupdateGenericSortOrderArgs = z.object({
-    tableID: z.string().min(1).max(128).regex(/^[A-Za-z][A-Za-z0-9_]*$/),
-    tableName: z.string().min(1).max(128).regex(/^[A-Za-z][A-Za-z0-9_]*$/),
-    movingItemId: ZPositiveRecordId, // pk of the item being moved
-    newPositionItemId: ZPositiveRecordId, // pk of the item this should replace.
-    scopeRowIds: z.array(ZPositiveRecordId).min(1).max(1000),
-    groupByColumn: z.string().min(1).max(128).regex(/^[A-Za-z][A-Za-z0-9_]*$/).optional(),
-    groupValue: z.union([z.string(), z.number().finite(), z.boolean(), z.null()]).optional(),
-}).strict().superRefine((args, ctx) => {
-    const hasGroupingColumn = args.groupByColumn !== undefined;
-    const hasGroupValue = args.groupValue !== undefined;
-    if (hasGroupingColumn !== hasGroupValue) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "groupByColumn and groupValue must be supplied together",
-        });
-    }
-
-    if (new Set(args.scopeRowIds).size !== args.scopeRowIds.length) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["scopeRowIds"],
-            message: "scopeRowIds must not contain duplicates",
-        });
-    }
-
-    if (!args.scopeRowIds.includes(args.movingItemId)) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["movingItemId"],
-            message: "movingItemId must be included in scopeRowIds",
-        });
-    }
-
-    if (!args.scopeRowIds.includes(args.newPositionItemId)) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["newPositionItemId"],
-            message: "newPositionItemId must be included in scopeRowIds",
-        });
-    }
-});
-
-export type TupdateGenericSortOrderArgs = z.infer<typeof ZupdateGenericSortOrderArgs>;
 
 
 export interface GetEventFilterInfoChipInfo<TIdentity extends number | string = number> {

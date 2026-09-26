@@ -23,6 +23,10 @@ export function validateSettingValue(name: string | undefined, value: string | n
     }
 }
 
+// Delegated branding managers may change only declared branding keys. DB3's
+// Setting mutation policy is Sysadmin-only, and its delete policy cannot model
+// clearing an empty setting. Keep this narrow name-based writer behind the
+// callers' fresh permission checks and shared serializable transactions.
 export const writeSettingValue = async (args: {
     db: TransactionalPrismaClient;
     ctx: Ctx;

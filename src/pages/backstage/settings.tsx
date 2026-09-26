@@ -1,10 +1,9 @@
 import { CMButton, CMButtonGroup } from "@/src/core/components/CMCoreComponents2";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
-import { useMutation, usePaginatedQuery } from "@blitzjs/rpc";
+import { useMutation } from "@blitzjs/rpc";
 import React from "react";
 import updateBulkSettings from "src/auth/mutations/updateBulkSettings";
-import getPaginatedSettings from "src/auth/queries/getPaginatedSettings";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -13,29 +12,24 @@ import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 
 
-const SettingsControls = (props) => {
-    const [{ items, count }, { refetch }] = usePaginatedQuery(getPaginatedSettings, {
-        orderBy: {},
-        where: {},
-        skip: 0,
-        take: 1000,
-    });
+const SettingsControls = () => {
+    const settings = DB3Client.useDb3Query({ view: db3.settingEditorView });
 
     const [updateBulkSettingsMutation] = useMutation(updateBulkSettings); // { name, value }
 
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const onCopy = async () => {
-        const txt = JSON.stringify(items, null, 2);
-        console.log(items);
+        const rows = settings.items.map(({ name, value }) => ({ name, value }));
+        const txt = JSON.stringify(rows, null, 2);
         await navigator.clipboard.writeText(txt);
-        showSnackbar({ severity: "success", children: `Copied ${items.length} settings to clipboard (${txt.length} characters)` });
+        showSnackbar({ severity: "success", children: `Copied ${rows.length} settings to clipboard (${txt.length} characters)` });
     };
 
     const onPaste = async () => {
         try {
             console.log(`Logging old values as a last-resort backup...`);
-            console.log(items);
+            console.log(settings.items);
             const txt = await navigator.clipboard.readText();
             const obj = JSON.parse(txt);
             // obj should be an array of { name, value }
@@ -45,8 +39,8 @@ const SettingsControls = (props) => {
             }
 
             await updateBulkSettingsMutation(obj);
-            showSnackbar({ severity: "success", children: `Updated ${items.length} settings` });
-            void refetch();
+            showSnackbar({ severity: "success", children: `Updated ${obj.length} settings` });
+            void settings.refetch();
 
         } catch (e) {
             console.log(e);

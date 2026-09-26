@@ -964,7 +964,6 @@ export const xEventSongList = db3.defineTable({
     },
     tableName: "EventSongList",
     deletePolicy: "hard",
-    sortOrderPolicy: { groupingColumn: "eventId", scope: "explicitRowIds" },
     queryParameters: {
         eventId: {
             kind: "entityIdentity",

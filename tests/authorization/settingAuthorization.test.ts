@@ -16,11 +16,11 @@ vi.mock("src/server/brand", () => ({
 import * as db3 from "@db3/db3"
 import db3Mutation from "tests/authorization/db3MutationTestResolver"
 import db3Query from "@db3/queries/db3queries"
+import db3PaginatedQuery from "@db3/queries/db3paginatedQueries"
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls"
 import updateBulkSettings from "src/auth/mutations/updateBulkSettings"
 import updateSetting from "src/auth/mutations/updateSetting"
 import updateSiteBrandingSettings from "src/auth/mutations/updateSiteBrandingSettings"
-import getPaginatedSettings from "src/auth/queries/getPaginatedSettings"
 import getSetting from "src/auth/queries/getSetting"
 import getSiteBrandingSettings from "src/auth/queries/getSiteBrandingSettings"
 import { clearBrandCache } from "src/server/brand"
@@ -259,8 +259,10 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
       expect.objectContaining({ siteTitle: "Public title" }),
     )
     await expect(invokeResolver(
-      getPaginatedSettings,
-      { where: {}, orderBy: {}, skip: 0, take: 50 },
+      db3Query,
+      forgeDb3Query("Setting", {
+        table: { tableID: "Setting", tableName: "Setting", viewID: db3.settingEditorView.viewID },
+      }),
       publicCtx,
     )).rejects.toThrow()
   })
@@ -294,8 +296,14 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
       ctx,
     )).resolves.toBeUndefined()
     const page = await invokeResolver(
-      getPaginatedSettings,
-      { where: {}, orderBy: {}, skip: 0, take: 50 },
+      db3PaginatedQuery,
+      {
+        ...forgeDb3Query("Setting", {
+          table: { tableID: "Setting", tableName: "Setting", viewID: db3.settingEditorView.viewID },
+        }),
+        skip: 0,
+        take: 1000,
+      },
       ctx,
     )
     expect(page.items[0]).toEqual(expect.objectContaining({ publicId: "SettingPublic001", value: "forged" }))

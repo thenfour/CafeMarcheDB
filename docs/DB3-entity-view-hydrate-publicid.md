@@ -1767,6 +1767,15 @@ public IDs; the menu reorder operation resolves a visible public-ID scope and
 checks every affected row before writing. Numeric foreign keys remain inside
 trusted server storage and the operational telemetry ledger.
 
+Follow-up: the bespoke settings pagination resolver was removed. Clipboard
+export reads the named view, and the editor grid uses the general DB3 paginated
+query with the same 1,000-row limit as request validation. `settingWrite`
+remains for delegated branding and empty-value deletion semantics, with its
+reason documented at the writer. Gallery, menu-link, event song-list, and
+setlist-plan reorders now share public-ID scope validation, authorization
+preflight, and sort-slot calculation. The unused numeric reorder RPC and its
+schema policy metadata were removed.
+
 Validation: Prisma generation and schema validation, TypeScript, focused
 authorization and transport tests, the repository test suite, lint, and the
 production build. The SQL migration has not been applied to a live database,

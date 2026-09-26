@@ -12,7 +12,6 @@ import query from "@db3/queries/db3queries";
 import upsertSetlistPlan from "@db3/mutations/upsertSetlistPlan";
 import deleteSetlistPlan from "@db3/mutations/deleteSetlistPlan";
 import reorderSetlistPlans from "@db3/mutations/reorderSetlistPlans";
-import updateGenericSortOrder from "@db3/mutations/updateGenericSortOrder";
 import { createActionRecord } from "@db3/server/recordActionServer";
 import { CreateNewSetlistPlan, ZSetlistPlan } from "@db3/shared/setlistPlanTypes";
 import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
@@ -99,10 +98,6 @@ describe("Setlist planning public identities", () => {
     });
 
     it("reorders only a complete public-ID scope within one group", async () => {
-        await expect(invokeResolver(updateGenericSortOrder, {
-            tableID: "SetlistPlan", tableName: "SetlistPlan", movingItemId: 30,
-            newPositionItemId: 31, scopeRowIds: [30, 31], groupByColumn: "groupId", groupValue: 20,
-        }, ctx)).rejects.toThrow();
         await invokeResolver(reorderSetlistPlans, {
             kind: "plan", movingPublicId: planId(30), newPositionPublicId: planId(31),
             scopePublicIds: [planId(30), planId(31)], groupId: groupId(20),

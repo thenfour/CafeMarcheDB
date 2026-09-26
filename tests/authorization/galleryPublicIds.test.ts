@@ -8,7 +8,6 @@ vi.mock("db", async () => {
 
 import * as db3 from "@db3/db3";
 import executeDB3CommandMutation from "@db3/mutations/executeDB3Command";
-import updateGenericSortOrder from "@db3/mutations/updateGenericSortOrder";
 import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
 import { projectFeatureReportDetailItem, projectGeneralActivityReportDetailItem } from "src/core/components/featureReports/activityReportTypes";
 import { createActionRecord } from "@db3/server/recordActionServer";
@@ -85,20 +84,6 @@ describe("FrontpageGalleryItem public identity", () => {
             newPositionItemId: galleryPublicId(21),
             scopeRowIds: [galleryPublicId(20)],
         })).toThrow();
-    });
-
-    it("rejects the old numeric reorder mutation", async () => {
-        const permissions = [Permission.login, Permission.edit_public_homepage];
-        const actor = createAuthorizationTestUser("normal", { id: 5, permissions });
-        authorizationTestDb.reset({ user: [actor], role: [publicRole], frontpageGalleryItem: [galleryRow(20, 0)] });
-        const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions });
-        await expect(invokeResolver(updateGenericSortOrder, {
-            tableID: "FrontpageGalleryItem",
-            tableName: "FrontpageGalleryItem",
-            movingItemId: 20,
-            newPositionItemId: 20,
-            scopeRowIds: [20],
-        }, ctx)).rejects.toThrow();
     });
 
     it("reorders scoped rows and leaves an unrelated row unchanged", async () => {

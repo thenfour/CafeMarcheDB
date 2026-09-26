@@ -6,6 +6,7 @@ import { sleep } from "shared/utils";
 import { loadAuthorization, type CMAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
+import { MAX_DB3_PAGE_SIZE } from "../shared/apiTypes";
 import type { TAnyModel } from "@/shared/rootroot";
 import { db3Server } from "./db3Server";
 import {
@@ -324,6 +325,7 @@ export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInpu
     const { items, ...pagination } = await paginate({
         skip: input.skip,
         take: input.take,
+        maxTake: MAX_DB3_PAGE_SIZE,
         count: () => delegate.count({ where: query.where }),
         query: paginateArgs => delegate.findMany({
             ...paginateArgs,
