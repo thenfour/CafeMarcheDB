@@ -108,7 +108,7 @@ function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null,
         // Association IDs - all must be positive integers
         eventId: null,
         fileId: toSafeId(args.fileId),
-        songId: toSafeId(args.songId),
+        songId: null,
         wikiPageId: toSafeId(args.wikiPageId),
         attendanceId: null,
         eventSegmentId: null,
@@ -129,6 +129,13 @@ function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null,
 export async function createActionRecord(args: RecordActionArgs & { userId?: number | null, isClient: boolean }) {
     // Sanitize and validate all inputs according to database constraints
     const sanitizedData = sanitizeActionInputs(args);
+    if (args.songId) {
+        const song = await db.song.findUnique({
+            where: { publicId: args.songId },
+            select: { id: true },
+        });
+        sanitizedData.songId = song?.id ?? null;
+    }
     if (args.eventId) {
         const event = await db.event.findUnique({
             where: { publicId: args.eventId },

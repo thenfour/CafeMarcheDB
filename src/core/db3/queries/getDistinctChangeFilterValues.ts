@@ -26,6 +26,7 @@ export default resolver.pipe(
             const songs = await db.song.findMany({
                 select: {
                     id: true,
+                    publicId: true,
                     name: true,
                 }
             });

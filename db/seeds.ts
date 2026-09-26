@@ -863,6 +863,7 @@ const main = async () => {
     const songName = faker.music.songName();
     const song = await gState.prisma.song.create({
       data: {
+        publicId: generatePublicId<"Song">(),
         name: songName,
         description: probabool(0.5) ? faker.lorem.paragraphs(faker.number.int({ max: 3 })) : "",
         aliases: probabool(0.2) ? faker.music.songName() : undefined,

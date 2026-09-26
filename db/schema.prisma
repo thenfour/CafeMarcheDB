@@ -327,6 +327,7 @@ model Token {
 
 model Song {
   id             Int    @id @default(autoincrement())
+  publicId       String @unique @db.Char(16)
   name           String @db.VarChar(768)
   aliases        String @default("") @db.VarChar(768)
   description    String @db.MediumText

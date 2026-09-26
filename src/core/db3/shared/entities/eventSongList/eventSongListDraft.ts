@@ -1,5 +1,5 @@
 import { getUniqueNegativeID } from "shared/utils";
-import type { EventPublicId, EventSongListPublicId, EventSongListSongPublicId, EventSongListDividerPublicId } from "shared/publicId";
+import type { EventPublicId, EventSongListPublicId, EventSongListSongPublicId, EventSongListDividerPublicId, SongPublicId } from "shared/publicId";
 import type {
     EventSongListDividerItem,
     EventSongListItem,
@@ -22,7 +22,7 @@ export interface EventSongListDraftSong {
     readonly type: "song";
     readonly publicId?: EventSongListSongPublicId;
     readonly clientId: string;
-    readonly songId: number;
+    readonly songId: SongPublicId;
     readonly song: EventSongListSongItem["song"];
     subtitle: string;
 }

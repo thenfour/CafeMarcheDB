@@ -2,10 +2,11 @@ import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 
 import { Prisma } from "db";
 import { z } from "zod";
-import { isPublicId, type EventPublicId, type EventSegmentPublicId, type EventAttendancePublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type InstrumentPublicId, type PermissionPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId } from "shared/publicId";
+import { isPublicId, type EventPublicId, type EventSegmentPublicId, type EventAttendancePublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type InstrumentPublicId, type PermissionPublicId, type SongPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId } from "shared/publicId";
 
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 import { ColorPaletteEntry } from "../../components/color/palette";
+import type { SongSearchDto } from "./entities/song/songViews";
 
 // this really loves to break the typescript compiler... safest to just use "any"
 //export type TransactionalPrismaClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
@@ -132,7 +133,7 @@ export interface TupdateEventBasicFieldsArgs {
 
 
 export interface TupdateSongBasicFieldsArgs {
-    songId: number;
+    songId: SongPublicId;
     description?: string;
 }
 
@@ -153,7 +154,7 @@ export interface TinsertEventCommentArgs {
 };
 
 export interface TinsertEventSong {
-    songId: number;
+    songId: SongPublicId;
     songName?: string; // not always used; context-dependent.
     comment: string;
 };
@@ -326,21 +327,21 @@ export type SongSelectionFilter = "relevant" | "all";
 
 export interface GetSongFilterInfoRet {
     rowCount: number;
-    songIds: number[];
+    songIds: SongPublicId[];
 
     tags: GetEventFilterInfoChipInfo<SongTagPublicId>[];
     tagsQuery: string;
     paginatedResultQuery: string;
     totalRowCountQuery: string;
 
-    fullSongs: any[];
+    fullSongs: SongSearchDto[];
 };
 
 
 
 export const GetFilteredSongsItemSongSelect = Prisma.validator<Prisma.SongSelect>()({
     name: true,
-    id: true,
+    publicId: true,
     aliases: true,
     startBPM: true,
     endBPM: true,
@@ -362,10 +363,11 @@ type GetFilteredSongsItemSongDbPayload = Prisma.SongGetPayload<{
     select: typeof GetFilteredSongsItemSongSelect,
 }>;
 
-export type GetFilteredSongsItemSongPayload = Omit<GetFilteredSongsItemSongDbPayload, "tags"> & {
+export type GetFilteredSongsItemSongPayload = Omit<GetFilteredSongsItemSongDbPayload, "publicId" | "tags"> & {
+    publicId: SongPublicId;
     tags: Array<{
         publicId: SongTagAssociationPublicId;
-        songId: number;
+        songId: SongPublicId;
         tagId: SongTagPublicId;
     }>;
 };
@@ -417,7 +419,7 @@ export interface GetSongActivityReportFilterSpec {
 };
 
 export interface GetSongActivityReportArgs {
-    songId: number;
+    songId: SongPublicId;
     filterSpec: GetSongActivityReportFilterSpec;
 };
 
@@ -432,7 +434,6 @@ export interface GetSongActivityReportRetEvent {
 
 export interface GetSongActivityReportRet {
     events: GetSongActivityReportRetEvent[];
-    query: string;
 };
 
 export interface GetGlobalStatsFilterSpec {
@@ -459,7 +460,7 @@ export interface GetGlobalStatsRetEvent {
 };
 
 export interface GetGlobalStatsRetPopularSongOccurrance {
-    songId: number,
+    songId: SongPublicId,
     songName: string,
     eventId: EventPublicId,
     eventName: string,

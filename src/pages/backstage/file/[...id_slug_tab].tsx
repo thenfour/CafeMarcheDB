@@ -177,7 +177,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                         (<CMChipContainer>
                             {file.taggedSongs.map((taggedSong, index) => (
                                 taggedSong.song.name !== undefined
-                                    ? <SongChip key={index} value={{ id: taggedSong.song.id, name: taggedSong.song.name }} />
+                                    ? <SongChip key={index} value={{ publicId: db3.xSong.parseIdentity(taggedSong.song.publicId), name: taggedSong.song.name }} />
                                     : null
                             ))}
                         </CMChipContainer>) : "",
@@ -235,7 +235,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                         {file.pinnedForSongs && file.pinnedForSongs.length > 0 && (
                             file.pinnedForSongs.map((pinnedSong, index) => (
                                 pinnedSong.name !== undefined
-                                    ? <SongChip key={index} value={{ id: pinnedSong.id, name: pinnedSong.name }} />
+                                    ? <SongChip key={index} value={{ publicId: pinnedSong.publicId, name: pinnedSong.name }} />
                                     : null
                             ))
                         )}</CMChipContainer>,

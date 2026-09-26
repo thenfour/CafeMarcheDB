@@ -23,6 +23,7 @@ import type {
     InstrumentTagPublicId,
     SongTagAssociationPublicId,
     SongTagPublicId,
+    SongPublicId,
     WikiPageTagAssignmentPublicId,
     WikiPageTagPublicId,
     UserTagAssignmentPublicId,
@@ -291,9 +292,10 @@ export type SongTagClientPayload = Omit<
 
 export type SongTagAssociationClientPayload = Omit<
     Prisma.SongTagAssociationGetPayload<{ include: { tag: true } }>,
-    "id" | "publicId" | "tagId" | "tag"
+    "id" | "publicId" | "songId" | "tagId" | "tag"
 > & {
     publicId: SongTagAssociationPublicId;
+    songId: SongPublicId;
     tagId: SongTagPublicId;
     tag: SongTagClientPayload;
 };
@@ -731,15 +733,14 @@ export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
 });
 
 export type SongPayload = Prisma.SongGetPayload<typeof SongArgs>;
-export type SongClientPayload = Omit<SongPayload, "tags"> & {
+export type SongClientPayload = Omit<SongPayload, "id" | "publicId" | "tags"> & {
+    publicId: SongPublicId;
     tags: SongTagAssociationClientPayload[];
 };
-export type SongPayloadMinimum = Prisma.SongGetPayload<{
-    select: {
-        id: true,
-        name: true,
-    }
-}>;
+export type SongPayloadMinimum = {
+    publicId: SongPublicId;
+    name: string,
+};
 
 
 
@@ -915,6 +916,14 @@ type FileWithTagsAssociationClientPayload<
     publicId: TPublicId;
 };
 
+type FileWithTagsSongClientPayload = Omit<
+    FileWithTagsPayload["taggedSongs"][number],
+    "song" | "songId"
+> & {
+    songId: SongPublicId;
+    song: { publicId: SongPublicId; name: string };
+};
+
 export type FileWithTagsClientPayload = Omit<
     FileWithTagsPayload,
     "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents"
@@ -928,7 +937,7 @@ export type FileWithTagsClientPayload = Omit<
         FileUserTagPublicId
     >>;
     taggedSongs: Array<FileWithTagsAssociationClientPayload<
-        FileWithTagsPayload["taggedSongs"][number],
+        FileWithTagsSongClientPayload,
         FileSongTagPublicId
     >>;
     taggedInstruments: FileInstrumentTagReferenceClientPayload[];

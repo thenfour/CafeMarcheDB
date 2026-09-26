@@ -8,15 +8,16 @@ import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 import { xFile } from "../shared/schema/file";
 import { xSong } from "../shared/schema/song";
+import type { SongPublicId } from "shared/publicId";
 
 const ZArgs = z.object({
-    songIds: z.array(z.number()),
+    songIds: z.array(xSong.identitySchema),
 });
 
 export default resolver.pipe(
     resolver.authorize(Permission.view_songs),
     resolver.zod(ZArgs),
-    async (args, ctx: AuthenticatedCtx): Promise<Record<number, TSongPinnedRecording>> => {
+    async (args, ctx: AuthenticatedCtx): Promise<Partial<Record<SongPublicId, TSongPinnedRecording>>> => {
         try {
             const currentUser = await getCurrentUserCore(ctx);
             if (!currentUser) throw new Error("Current user was not found.");
@@ -29,7 +30,7 @@ export default resolver.pipe(
                     table: xSong,
                     currentUser,
                     where: {
-                        id: { in: args.songIds },
+                        publicId: { in: args.songIds },
                         pinnedRecordingId: { not: null },
                         pinnedRecording: fileWhere,
                     },
@@ -40,10 +41,10 @@ export default resolver.pipe(
             });
 
             // Create a map of songId -> pinnedRecording for easy lookup
-            const result: Record<number, TSongPinnedRecording> = {};
+            const result: Partial<Record<SongPublicId, TSongPinnedRecording>> = {};
             qr.forEach(song => {
                 if (song.pinnedRecording) {
-                    result[song.id] = song.pinnedRecording;
+                    result[xSong.parseIdentity(song.publicId)] = song.pinnedRecording;
                 }
             });
 

@@ -23,6 +23,7 @@ See `docs/testing.md` for the rationale and full conventions.
 - Type casts (`x as T`, especially `as any`) must be given a brief comment
   justifying why stronger typing was either chosen, or impossible.
 - Comments should use brief, simple English, sometimes with illustrative examples.
+- Prefer `import` at the top of file; avoid inline `import()` syntax unless absolutely necessary.
 
 ## Task scope
 

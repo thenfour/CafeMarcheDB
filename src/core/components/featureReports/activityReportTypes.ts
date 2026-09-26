@@ -9,6 +9,7 @@ import {
     type EventTypePublicId,
     type InstrumentPublicId,
     type SongCreditTypePublicId,
+    type SongPublicId,
 } from "shared/publicId";
 import { isPublicId } from "shared/publicId";
 import { z } from "zod";
@@ -37,7 +38,7 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
         attendance: { select: { publicId: true } },
         user: true,
         file: true,
-        song: true,
+        song: { select: { publicId: true, name: true } },
         wikiPage: true,
         customLink: true,
         eventSegment: { select: { publicId: true, name: true, event: { select: { publicId: true } }, startsAt: true } },
@@ -65,9 +66,11 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
 type GeneralActivityReportDetailDbPayload = Prisma.ActionGetPayload<typeof GeneralActivityReportDetailArgs>;
 export type GeneralActivityReportDetailPayload = Omit<
     GeneralActivityReportDetailDbPayload,
-    "user" | "userId" | "event" | "eventId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment"
+    "user" | "userId" | "event" | "eventId" | "song" | "songId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment"
 > & {
     userHash: string | null;
+    songId: SongPublicId | null;
+    song: { publicId: SongPublicId; name: string } | null;
     songCreditTypeId: SongCreditTypePublicId | null;
     eventSegmentId: EventSegmentPublicId | null;
     eventSegment: ReturnType<typeof projectActivitySegment>;
@@ -83,9 +86,11 @@ export function projectGeneralActivityReportDetailItem(
     row: GeneralActivityReportDetailDbPayload,
     userHash: string | null,
 ): GeneralActivityReportDetailPayload {
-    const { user: _user, userId: _userId, event, eventId: _eventId, songCreditType, songCreditTypeId: _songCreditTypeId, ...rest } = row;
+    const { user: _user, userId: _userId, event, eventId: _eventId, song, songId: _songId, songCreditType, songCreditTypeId: _songCreditTypeId, ...rest } = row;
     return {
         ...rest,
+        songId: song ? db3.xSong.parseIdentity(song.publicId) : null,
+        song: song ? { publicId: db3.xSong.parseIdentity(song.publicId), name: song.name } : null,
         eventSegment: projectActivitySegment(row.eventSegment),
         eventSegmentId: row.eventSegment ? db3.xEventSegment.parseIdentity(row.eventSegment.publicId) : null,
         attendanceId: row.attendance ? db3.xEventAttendance.parseIdentity(row.attendance.publicId) : null,
@@ -182,7 +187,7 @@ export interface FacetedBreakdownResult {
             count: number;
         }[],
         songs: {
-            songId: number;
+            songId: SongPublicId;
             name: string;
             count: number;
         }[],
@@ -232,7 +237,7 @@ export const ZFeatureReportFilterSpec = z.object({
     includeCustomLinkIds: z.number().array(),
     includeEventIds: z.custom<EventPublicId>(isPublicId).array(),
     includeMenuLinkIds: z.number().array(),
-    includeSongIds: z.number().array(),
+    includeSongIds: z.custom<SongPublicId>(isPublicId).array(),
     includeWikiPageIds: z.number().array(),
 
     excludeFeatures: z.union([z.nativeEnum(ActivityFeature), z.string()]).array(),
@@ -246,7 +251,7 @@ export const ZFeatureReportFilterSpec = z.object({
     excludeCustomLinkIds: z.number().array(),
     excludeEventIds: z.custom<EventPublicId>(isPublicId).array(),
     excludeMenuLinkIds: z.number().array(),
-    excludeSongIds: z.number().array(),
+    excludeSongIds: z.custom<SongPublicId>(isPublicId).array(),
     excludeWikiPageIds: z.number().array(),
 
     // screenWidths: z.number().optional(),
@@ -317,7 +322,7 @@ const GetFeatureReportDetailResultArgsUnvalidated /*: Prisma.ActionDefaultArgs*/
         },
         song: {
             select: {
-                id: true,
+                publicId: true,
                 name: true,
             }
         },
@@ -359,9 +364,11 @@ type GetFeatureReportDetailDbPayload = Prisma.ActionGetPayload<typeof GetFeature
 type FeatureReportSongCreditType = NonNullable<GetFeatureReportDetailDbPayload["songCreditType"]>;
 export type GetFeatureReportDetailItemPayload = Omit<
     GetFeatureReportDetailDbPayload,
-    "instrument" | "event" | "eventId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment"
+    "instrument" | "event" | "eventId" | "song" | "songId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment"
 > & {
     instrumentId: InstrumentPublicId | null;
+    songId: SongPublicId | null;
+    song: { publicId: SongPublicId; name: string } | null;
     songCreditTypeId: SongCreditTypePublicId | null;
     eventSegmentId: EventSegmentPublicId | null;
     eventSegment: ReturnType<typeof projectActivitySegment>;
@@ -387,12 +394,16 @@ export function projectFeatureReportDetailItem(
         instrument,
         event,
         eventId: _eventId,
+        song,
+        songId: _songId,
         songCreditType,
         songCreditTypeId: _songCreditTypeId,
         ...rest
     } = row;
     return {
         ...rest,
+        songId: song ? db3.xSong.parseIdentity(song.publicId) : null,
+        song: song ? { publicId: db3.xSong.parseIdentity(song.publicId), name: song.name } : null,
         eventSegment: projectActivitySegment(row.eventSegment),
         eventSegmentId: row.eventSegment ? db3.xEventSegment.parseIdentity(row.eventSegment.publicId) : null,
         attendanceId: row.attendance ? db3.xEventAttendance.parseIdentity(row.attendance.publicId) : null,

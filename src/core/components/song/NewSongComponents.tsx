@@ -36,7 +36,7 @@ export const NewSongButton = () => {
         view: db3.songEditorView,
         columns: {
             ...DB3Client.makeClientColumnSelection(
-                SongClientColumns.id,
+                SongClientColumns.publicId,
                 SongClientColumns.name,
                 //new SearchableNameColumnClient({ columnName: "name", cellWidth: 250 }),
                 SongClientColumns.aliases,
@@ -72,7 +72,7 @@ export const NewSongButton = () => {
         songCommands.create(obj as db3.ClientOf<typeof db3.songEditorView>).then(async result => {
             showSnackbar({ severity: "success", children: "success" });
             void router.push(dashboardContext.routingApi.getURIForSong({
-                id: result.identity,
+                publicId: result.identity,
                 name: obj.name,
             }));
             api.closeDialog();

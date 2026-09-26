@@ -18,7 +18,7 @@ const SongPie: React.FC<SetlistPlannerVisualizationsProps> = (props) => {
 
     const songs = props.stats.songStats
         .map((songStat) => {
-            const song = allSongs.songs.find((x) => x.id === songStat.songId);
+            const song = allSongs.songs.find((x) => x.publicId === songStat.songId);
             return {
                 name: song?.name ?? "Unknown",
                 value: songStat.totalPointsAllocated,
@@ -124,9 +124,9 @@ const SongStackedBars: React.FC<SetlistPlannerVisualizationsProps> = (props) => 
 
     // gather the requisite info...
     const songs = props.stats.songStats
-        .filter(songStat => allSongs.songs.some((x) => x.id === songStat.songId))
+        .filter(songStat => allSongs.songs.some((x) => x.publicId === songStat.songId))
         .map((songStat) => {
-            const song = allSongs.songs.find((x) => x.id === songStat.songId);
+            const song = allSongs.songs.find((x) => x.publicId === songStat.songId);
             const allocatedCells = props.doc.payload.cells.filter((cell) => cell.rowId === songStat.rowId && (cell.pointsAllocated || 0) > 0);
             // sort allocatedCells by column index
             allocatedCells.sort((a, b) => {
@@ -157,7 +157,7 @@ const SongStackedBars: React.FC<SetlistPlannerVisualizationsProps> = (props) => 
     return <table>
         <tbody>
             {songs.map(song => {
-                return <tr key={song.song.id}>
+                return <tr key={song.song.publicId}>
                     <td>{song.name}</td>
                     <td>
                         <div style={{ display: "flex", color: "#fff", fontFamily: "monospace" }}>

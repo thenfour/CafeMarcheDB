@@ -14,6 +14,7 @@ import { loadEffectivePermissions } from "@/src/auth/server/effectivePermissions
 import { PermissionSet } from "@/src/auth/shared/PermissionSet";
 import { xInstrument } from "../shared/schema/instrument";
 import { xEvent } from "../shared/schema/event";
+import { xSong } from "../shared/schema/song";
 
 // per type; this is not the amount to return to users. after this, relevance prunes to the top N results.
 // this just sets a practical limit.
@@ -110,6 +111,7 @@ const SongQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.song> = {
             },
             select: {
                 id: true,
+                publicId: true,
                 introducedYear: true,
                 name: true,
                 aliases: true,
@@ -141,7 +143,8 @@ const SongQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.song> = {
         }
 
         const makeSongInfo = (x: typeof songs[0]): QuickSearchItemMatch<QuickSearchItemType.song> => {
-            const absoluteUri = ServerApi.getAbsoluteUri(`/backstage/song/${x.id}/${slugify(x.name || "")}`);
+            const publicId = xSong.parseIdentity(x.publicId);
+            const absoluteUri = ServerApi.getAbsoluteUri(`/backstage/song/${publicId}/${slugify(x.name || "")}`);
             let bestMatch = CalculateMatchStrength(songFields, x, query);
 
             const bestMatchForTags = CalculateMatchStrengthForTags(songTagField, x.tags.map(st => st.tag), query);
@@ -150,7 +153,7 @@ const SongQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.song> = {
             }
 
             return {
-                id: x.id,
+                id: publicId,
                 absoluteUri,
                 name: `${x.name}${x.introducedYear ? ` (${x.introducedYear})` : ""}`,
                 matchStrength: bestMatch.matchStrength,

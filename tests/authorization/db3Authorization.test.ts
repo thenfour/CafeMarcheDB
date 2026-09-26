@@ -17,12 +17,13 @@ import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 import { Permission } from "shared/permissions"
 import { parsePublicId } from "shared/publicId"
 import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures"
-import { forgeDb3Insert, forgeDb3Query, forgeDb3Update } from "./support/db3RequestBuilders"
+import { forgeDb3Insert, forgeDb3Query, forgeDb3PublicUpdate } from "./support/db3RequestBuilders"
+import { songPublicId } from "../support/songFixtures"
 import { authorizationTestDb, matchesWhere } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 
 const makeSong = (id: number, overrides: Record<string, unknown> = {}) => ({
-  id, name: `Song ${id}`, description: "before", isDeleted: false,
+  id, publicId: songPublicId(id), name: `Song ${id}`, description: "before", isDeleted: false,
   createdByUserId: 501, visiblePermissionId: null, ...overrides,
 })
 
@@ -54,7 +55,7 @@ describe("explicit DB3 authorization", () => {
       song: [makeSong(1, { visiblePermissionId: 703 }), makeSong(2), makeSong(3, { visiblePermissionId: 703, isDeleted: true })],
     })
     const result = await queryTable(forgeDb3Query("Song"), await loadUserAuthorization(null))
-    expect(result.items.map(row => row.id)).toEqual([1])
+    expect(result.items.map(row => row.publicId)).toEqual([songPublicId(1)])
 
     authorizationTestDb.reset({ role: [{ ...publicRole, permissions: [] }] })
     await expect(queryTable(forgeDb3Query("Song"), await loadUserAuthorization(null))).rejects.toThrow("Not authorized")
@@ -69,7 +70,7 @@ describe("explicit DB3 authorization", () => {
       song: [makeSong(1, { visiblePermissionId: 920_002, createdByUserId: 999 })],
     })
     const result = await invokeResolver(db3Query, forgeDb3Query("Song"), ctx)
-    expect(result.items.map(row => row.id)).toEqual([1])
+    expect(result.items.map(row => row.publicId)).toEqual([songPublicId(1)])
   })
 
   it("offers visibility choices from all effective roles", async () => {
@@ -131,9 +132,9 @@ describe("explicit DB3 authorization", () => {
     const request = forgeDb3Query("Song", { includeDeleted })
     const result = await invokeResolver(db3Query, request, ctx)
     const paginated = await invokeResolver(db3PaginatedQuery, { ...request, skip: 0, take: 20 }, ctx)
-    const expectedIds = includeDeleted ? [1, 2] : [1]
-    expect(result.items.map(row => row.id)).toEqual(expectedIds)
-    expect(paginated.items.map(row => row.id)).toEqual(expectedIds)
+    const expectedIds = includeDeleted ? [songPublicId(1), songPublicId(2)] : [songPublicId(1)]
+    expect(result.items.map(row => row.publicId)).toEqual(expectedIds)
+    expect(paginated.items.map(row => row.publicId)).toEqual(expectedIds)
     expect(paginated.count).toBe(expectedIds.length)
   })
 
@@ -166,8 +167,8 @@ describe("explicit DB3 authorization", () => {
       id: 501, permissions: [Permission.login, Permission.manage_songs, Permission.view_songs],
     })
     authorizationTestDb.reset({ user: [user!], song: [makeSong(1)], change: [] })
-    await invokeResolver(db3Mutation, forgeDb3Update("Song", 1, { description: "generic" }), ctx)
-    await invokeResolver(updateSongBasicFields, { songId: 1, description: "dedicated" }, ctx)
+    await invokeResolver(db3Mutation, forgeDb3PublicUpdate("Song", songPublicId(1), { description: "generic" }), ctx)
+    await invokeResolver(updateSongBasicFields, { songId: songPublicId(1), description: "dedicated" }, ctx)
     expect(authorizationTestDb.snapshot("song")[0]!.description).toBe("dedicated")
   })
 
@@ -271,8 +272,8 @@ describe("explicit DB3 authorization", () => {
   it("denies both mutation entry points when the operation grant is absent", async () => {
     const { user, ctx } = createAuthorizationPersona("normal", { id: 501 })
     authorizationTestDb.reset({ user: [user!], song: [makeSong(1)], change: [] })
-    await expect(invokeResolver(db3Mutation, forgeDb3Update("Song", 1, { description: "generic" }), ctx)).rejects.toThrow("Not authorized")
-    await expect(invokeResolver(updateSongBasicFields, { songId: 1, description: "dedicated" }, ctx)).rejects.toThrow("Not authorized")
+    await expect(invokeResolver(db3Mutation, forgeDb3PublicUpdate("Song", songPublicId(1), { description: "generic" }), ctx)).rejects.toThrow("Not authorized")
+    await expect(invokeResolver(updateSongBasicFields, { songId: songPublicId(1), description: "dedicated" }, ctx)).rejects.toThrow("Not authorized")
     expect(authorizationTestDb.snapshot("song")[0]!.description).toBe("before")
   })
 

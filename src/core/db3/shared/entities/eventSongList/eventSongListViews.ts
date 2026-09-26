@@ -7,11 +7,12 @@ import type { SetlistClientId } from "./eventSongListDraft";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { xEventSongList, xEventSongListSong, xEventSongListDivider } from "../../schema/event";
 import { isPublicId, type SongTagAssociationPublicId, type SongTagPublicId } from "shared/publicId";
+import { xSong } from "../../schema/song";
 import { graft } from "../common/viewCommon";
 
 const CompleteSongTagAssociationDtoSchema = z.object({
     publicId: z.custom<SongTagAssociationPublicId>(isPublicId, "invalid SongTagAssociation public ID"),
-    songId: z.number().int(),
+    songId: xSong.identitySchema,
     tagId: z.custom<SongTagPublicId>(isPublicId, "invalid SongTag public ID"),
 });
 
@@ -20,9 +21,9 @@ const CompleteSetlistSongDtoSchema = z.object({
     eventSongListId: xEventSongList.identitySchema,
     subtitle: z.string().nullable(),
     sortOrder: z.number().int(),
-    songId: z.number().int(),
+    songId: xSong.identitySchema,
     song: z.object({
-        id: z.number().int(),
+        publicId: xSong.identitySchema,
         name: z.string(),
         lengthSeconds: z.number().int().nullable(),
         startBPM: z.number().int().nullable(),
@@ -69,7 +70,7 @@ export const eventSongListTransportSelection = Prisma.validator<Prisma.EventSong
                 songId: true,
                 song: {
                     select: {
-                        id: true,
+                        publicId: true,
                         name: true,
                         lengthSeconds: true,
                         startBPM: true,

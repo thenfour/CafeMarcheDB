@@ -144,5 +144,5 @@ it("rejects natural targeting for every migrated table while retaining legacy-ta
         expect(() => validateDB3QueryRequest({ ...input, filter: { items: [{ field: table.pkMember, operator: "equals", value: 1 }] } }))
             .toThrow("queries require public identity");
     }
-    expect(() => validateDB3QueryRequest({ ...request({ pks: [1] }), table: { tableID: "Song", tableName: "Song" } })).not.toThrow();
+    expect(() => validateDB3QueryRequest({ ...request({ pks: [1] }), table: { tableID: "User", tableName: "User" } })).not.toThrow();
 });

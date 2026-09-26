@@ -109,12 +109,12 @@ const SongListOuter = () => {
                 results={results}
             />
         ),
-        getItemKey: (song) => song.id,
+        getItemKey: (song) => song.publicId,
         contextMarkerName: "SongList",
         csvExporter: {
             itemToCSVRow: (song, index) => ({
                 Order: index.toString(),
-                ID: song.id.toString(),
+                ID: song.publicId.toString(),
                 Name: song.name || "",
                 URL: dashboardContext.routingApi.getURIForSong(song),
             }),

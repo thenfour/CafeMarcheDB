@@ -80,9 +80,8 @@ export default resolver.pipe(
                     const s = args.songList[i]!;
                     const songFields: Partial<db3.EventSongListSongPayload> = {
                         eventSongListId: songList.id,
-                        //id: 0,
-                        //song: null,
-                        songId: s.songId,
+                        // TODO: don't resolve each individually. resolve the  whole song list at once and use a map.
+                        songId: await resolvePublicId(db3.xSong, s.songId, publicData, tx),
                         sortOrder: i,
                         subtitle: s.comment || "",
                     };

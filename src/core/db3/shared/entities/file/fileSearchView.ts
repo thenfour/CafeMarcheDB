@@ -33,7 +33,7 @@ const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
                 publicId: true,
                 song: {
                     select: {
-                        id: true,
+                        publicId: true,
                         name: true,
                     },
                 },

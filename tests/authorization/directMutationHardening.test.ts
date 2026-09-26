@@ -1,5 +1,6 @@
 import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
+import { songPublicId } from "../support/songFixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("db", async () => {
@@ -327,6 +328,7 @@ describe("DB3 command boundary", () => {
     }
     const song = {
       id: 8,
+      publicId: songPublicId(8),
       name: "Autumn Leaves",
       aliases: "",
       description: "",
@@ -383,14 +385,14 @@ describe("DB3 command boundary", () => {
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.songEditorView.crud.operations.update.command.commandID,
       payload: {
-        identity: song.id,
+        identity: song.publicId,
         patch: {
           aliases: "Les Feuilles mortes",
           visiblePermissionId: visibility.publicId,
           tags: [jazzTag.publicId],
         },
       },
-    }, ctx)).resolves.toEqual({ identity: song.id })
+    }, ctx)).resolves.toEqual({ identity: song.publicId })
 
     expect(authorizationTestDb.snapshot("song")).toEqual([
       expect.objectContaining({
@@ -405,8 +407,8 @@ describe("DB3 command boundary", () => {
 
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.songEditorView.crud.operations.delete.command.commandID,
-      payload: { identity: song.id },
-    }, ctx)).resolves.toEqual({ identity: song.id })
+      payload: { identity: song.publicId },
+    }, ctx)).resolves.toEqual({ identity: song.publicId })
     expect(authorizationTestDb.snapshot("song")[0]).toMatchObject({
       id: song.id,
       isDeleted: true,
@@ -788,6 +790,7 @@ describe("DB3 command boundary", () => {
       event: [makeEvent({ id: 100 })],
       song: [{
         id: 300,
+        publicId: songPublicId(300),
         name: "Visible song",
         description: "",
         aliases: "",
@@ -814,7 +817,7 @@ describe("DB3 command boundary", () => {
         isActuallyPlayed: false,
         isOrdered: true,
         sortOrder: 0,
-        songs: [{ songId: 300, sortOrder: 0, subtitle: "Open quietly" }],
+        songs: [{ songId: songPublicId(300), sortOrder: 0, subtitle: "Open quietly" }],
         dividers: [{
           sortOrder: 1,
           color: null,

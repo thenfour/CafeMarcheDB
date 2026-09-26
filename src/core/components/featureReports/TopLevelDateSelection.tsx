@@ -1,7 +1,6 @@
 import { useQuery } from "@blitzjs/rpc";
 import * as React from 'react';
 import { Bar, CartesianGrid, ComposedChart, Legend, Tooltip, XAxis, YAxis } from "recharts";
-//import getGeneralFeatureDetail from "src/core/db3/queries/getGeneralFeatureDetail";
 import getGeneralFeatureReport from "@/src/core/components/featureReports/queries/getGeneralFeatureReport";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { FeatureReportFilterSpec } from "./server/facetProcessor";

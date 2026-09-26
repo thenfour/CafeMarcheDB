@@ -409,7 +409,7 @@ const songsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['song
               GROUP BY songId
             )
             SELECT
-              s.id AS songId,
+              s.publicId AS songId,
               s.name,
               fs.count
             FROM FilteredSet fs
@@ -417,17 +417,17 @@ const songsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['song
             WHERE ${xSong.SqlGetVisFilterExpression(currentUser, "s")}
           `;
     },
-    postProcessRow: (row: { songId: number, name: string, count: bigint }) => ({
-        songId: row.songId,
+    postProcessRow: (row: { songId: string, name: string, count: bigint }) => ({
+        songId: xSong.parseIdentity(row.songId),
         name: row.name,
         count: Number(row.count),
     }),
     getFilterSqlConditions: (filterSpec, conditions) => {
         if (filterSpec.includeSongIds.length > 0) {
-            conditions.push(`${MySqlSymbol("songId")} IN (${filterSpec.includeSongIds.map((f) => (f.toString())).join(",")})`);
+            conditions.push(`${MySqlSymbol("songId")} IN (SELECT id FROM Song WHERE publicId IN (${filterSpec.includeSongIds.map(MySqlStringLiteral).join(",")}))`);
         }
         if (filterSpec.excludeSongIds.length > 0) {
-            conditions.push(`NOT ${MySqlSymbol("songId")} IN (${filterSpec.excludeSongIds.map((f) => MySqlStringLiteral(f.toString())).join(",")})`);
+            conditions.push(`NOT ${MySqlSymbol("songId")} IN (SELECT id FROM Song WHERE publicId IN (${filterSpec.excludeSongIds.map(MySqlStringLiteral).join(",")}))`);
         }
     },
     toCsvColumns: (item) => ({

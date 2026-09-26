@@ -1,12 +1,13 @@
 
 import { formatSongLength } from 'shared/time';
 import * as db3 from "src/core/db3/db3";
+import type { SongPublicId } from "shared/publicId";
 import { getFormattedBPM } from '../../db3/clientAPILL';
 import { DashboardContextData } from '../dashboardContext/DashboardContext';
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface SongMetadataSource {
-    id: number;
+    publicId: SongPublicId;
     name?: string;
     startBPM?: number | null;
     endBPM?: number | null;

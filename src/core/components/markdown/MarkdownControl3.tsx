@@ -1,16 +1,20 @@
-import { Collapse, Tooltip } from "@mui/material";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import CloseFullscreenIcon from "@mui/icons-material/CloseFullscreen";
 import OpenInFullIcon from "@mui/icons-material/OpenInFull";
 import TabIcon from "@mui/icons-material/Tab";
 import ViewAgendaIcon from "@mui/icons-material/ViewAgenda";
 import ViewWeekIcon from "@mui/icons-material/ViewWeek";
+import { Collapse, Tooltip } from "@mui/material";
 import React from "react";
 import { Permission } from 'shared/permissions';
-import type { EventPublicId, FileTagPublicId, PermissionPublicId } from "shared/publicId";
+import type { EventPublicId, FileTagPublicId, PermissionPublicId, SongPublicId } from "shared/publicId";
 import { IsNullOrWhitespace, parseMimeType } from 'shared/utils';
 import { gCharMap } from '../../db3/components/IconMap';
+import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { CMDBUploadFile } from '../file/CMDBUploadFile';
+import { ResponsiveDialog } from "../ResponsiveDialog";
 import { useSnackbar } from '../SnackbarContext';
+import { useLocalStorageState } from "../useLocalStorageState";
 import { Markdown } from './Markdown';
 import { MarkdownCommandInvocationTriggerMap, MarkdownEditorCommand, MarkdownEditorCommandApi } from './MarkdownEditorCommandBase';
 import { gMarkdownEditorCommandGroups } from './MarkdownEditorCommands';
@@ -19,10 +23,6 @@ import { MarkdownLockIndicator } from './MarkdownLockIndicator';
 import { MarkdownEditor } from "./RichTextEditor";
 import { useControlledTextArea } from './useControlledTextArea';
 import { WikiPageApi } from './useWikiPageApi';
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
-import { useLocalStorageState } from "../useLocalStorageState";
-import { ResponsiveDialog } from "../ResponsiveDialog";
 
 const kMaxImageDimension = 750;
 const kFullscreenSideBySideBreakpointQuery = "(min-width: 1200px)";
@@ -81,7 +81,7 @@ interface Markdown3EditorPropsBase {
      * Optional file upload context for tagging uploaded files (e.g. song, event, instrument, user, fileTagId, etc)
      */
     uploadFileContext?: {
-        taggedSongId?: number;
+        taggedSongId?: SongPublicId;
         taggedEventId?: EventPublicId;
         taggedInstrumentId?: number;
         taggedWikiPageId?: number;

@@ -9,6 +9,7 @@ import { BlitzPage } from "@blitzjs/next";
 import { Box, Menu, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
+import { parsePublicId } from "shared/publicId";
 
 import { createDraftSetlistId } from "@db3/shared/entities/eventSongList/eventSongListDraft";
 
@@ -19,7 +20,7 @@ const dialogTestMediaTrack: MediaPlayerTrack = {
     playlistIndex: 0,
     setlistClientId: kDialogTestMediaSetlistId,
     songContext: {
-        id: -8675309,
+        publicId: parsePublicId<"Song">("DialogSongTest01"),
         name: "Dialog UX media-bar fixture",
         pinnedRecordingId: null,
         lengthSeconds: 245,

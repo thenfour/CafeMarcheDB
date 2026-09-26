@@ -26,6 +26,7 @@ const songCreditPublicId = parsePublicId<"SongCredit">("AbCdEfGhIjKlMn15");
 const userInstrumentPublicId = parsePublicId<"UserInstrument">("AbCdEfGhIjKlMn16");
 const fileUserTagPublicId = parsePublicId<"FileUserTag">("AbCdEfGhIjKlMn17");
 const fileSongTagPublicId = parsePublicId<"FileSongTag">("AbCdEfGhIjKlMn18");
+const songPublicId = parsePublicId<"Song">("AbCdEfGhIjKlMn31");
 const fileEventTagPublicId = parsePublicId<"FileEventTag">("AbCdEfGhIjKlMn19");
 const fileInstrumentTagPublicId = parsePublicId<"FileInstrumentTag">("AbCdEfGhIjKlMn20");
 const fileWikiPageTagPublicId = parsePublicId<"FileWikiPageTag">("AbCdEfGhIjKlMn21");
@@ -164,7 +165,7 @@ describe("instrument catalog public-ID transport", () => {
                 publicId: fileSongTagPublicId,
                 fileId: 90,
                 songId: 101,
-                song: { id: 101, name: "A song" },
+                song: { id: 101, publicId: songPublicId, name: "A song" },
             }],
             taggedEvents: [{
                 id: 95,
@@ -210,8 +211,8 @@ describe("instrument catalog public-ID transport", () => {
         });
         expect(projectedFile.taggedSongs[0]).toMatchObject({
             publicId: fileSongTagPublicId,
-            songId: 101,
-            song: { id: 101, name: "A song" },
+            songId: songPublicId,
+            song: { publicId: songPublicId, name: "A song" },
         });
         expect(projectedFile.taggedEvents[0]).toMatchObject({
             publicId: fileEventTagPublicId,
@@ -231,10 +232,12 @@ describe("instrument catalog public-ID transport", () => {
 
         const projectedSong = projectDB3ModelPublicIds(db3.xSong, {
             id: 92,
+            publicId: songPublicId,
             tags: [{
                 id: 93,
                 publicId: songTagAssociationPublicId,
                 songId: 92,
+                song: { id: 92, publicId: songPublicId },
                 tagId: 94,
                 tag: {
                     id: 94,
@@ -246,6 +249,7 @@ describe("instrument catalog public-ID transport", () => {
                 id: 95,
                 publicId: songCreditPublicId,
                 songId: 92,
+                song: { id: 92, publicId: songPublicId },
                 userId: 100,
                 typeId: 96,
                 type: {
@@ -257,6 +261,7 @@ describe("instrument catalog public-ID transport", () => {
         }, authorization(Permission.view_songs));
         expect(projectedSong.tags[0]).toMatchObject({
             publicId: songTagAssociationPublicId,
+            songId: songPublicId,
             tagId: songTagPublicId,
             tag: { publicId: songTagPublicId, text: "March" },
         });
@@ -264,7 +269,7 @@ describe("instrument catalog public-ID transport", () => {
         expect(projectedSong.tags[0].tag).not.toHaveProperty("id");
         expect(projectedSong.credits[0]).toMatchObject({
             publicId: songCreditPublicId,
-            songId: 92,
+            songId: songPublicId,
             userId: 100,
             typeId: songCreditTypePublicId,
             type: { publicId: songCreditTypePublicId, text: "Composer" },
@@ -559,7 +564,7 @@ describe("instrument catalog public-ID transport", () => {
             tableName: "FileSongTag",
             mutationType: "update",
             updatePublicId: fileSongTagPublicId,
-            updateModel: { songId: 101 },
+            updateModel: { songId: songPublicId },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
             tableID: "FileEventTag",
@@ -587,7 +592,7 @@ describe("instrument catalog public-ID transport", () => {
             tableName: "FileSongTag",
             mutationType: "update",
             updateId: 94,
-            updateModel: { songId: 101 },
+            updateModel: { songId: songPublicId },
         })).toThrow("updates require updatePublicId");
     });
 

@@ -91,7 +91,7 @@ async function seedContent() {
             { id: 3, publicId: segmentResponsePublicId(3), userId: 20, eventSegmentId: 2, attendanceId: null, createdByUserId: 20 },
         ]
     });
-    await db.song.create({ data: { id: 1, name: "Private song", description: "", createdByUserId: 20 } });
+    await db.song.create({ data: { id: 1, publicId: "PrivateSong00001", name: "Private song", description: "", createdByUserId: 20 } });
     await db.songCreditType.create({ data: { id: 1, publicId: "CreditType000001", text: "Composer", description: "" } });
     await db.songCredit.createMany({
         data: [

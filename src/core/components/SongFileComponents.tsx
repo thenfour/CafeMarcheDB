@@ -6,7 +6,7 @@ import { Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { Permission } from 'shared/permissions';
-import type { EventPublicId, EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FileSongTagPublicId, FileTagPublicId } from 'shared/publicId';
+import type { EventPublicId, EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FileSongTagPublicId, FileTagPublicId, SongPublicId } from 'shared/publicId';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { formatFileSize, SortDirection } from 'shared/rootroot';
 import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
@@ -106,7 +106,7 @@ export const PinSongRecordingMenuItem = (props: PinSongRecordingMenuItemProps) =
         onClick={async () => {
             await snackbar.invokeAsync(async () => {
                 await pinMutation({
-                    songId: props.contextSong.id,
+                    songId: props.contextSong.publicId,
                     fileId: props.value.id,
                 });
                 if (props.refetch) {
@@ -115,7 +115,7 @@ export const PinSongRecordingMenuItem = (props: PinSongRecordingMenuItemProps) =
                 void recordFeature({
                     feature: ActivityFeature.song_pin_recording,
                     fileId: props.value.id,
-                    songId: props.contextSong.id,
+                    songId: props.contextSong.publicId,
                 });
                 props.closeProc();
             },
@@ -141,7 +141,7 @@ export const UnpinSongRecordingMenuItem = (props: Omit<PinSongRecordingMenuItemP
         onClick={async () => {
             await snackbar.invokeAsync(async () => {
                 await pinMutation({
-                    songId: props.contextSong.id,
+                    songId: props.contextSong.publicId,
                     fileId: null,
                 });
                 if (props.refetch) {
@@ -149,7 +149,7 @@ export const UnpinSongRecordingMenuItem = (props: Omit<PinSongRecordingMenuItemP
                 }
                 void recordFeature({
                     feature: ActivityFeature.song_pin_recording,
-                    songId: props.contextSong.id,
+                    songId: props.contextSong.publicId,
                 });
                 props.closeProc();
             },
@@ -195,7 +195,7 @@ interface FileViewerHiddenTagIds {
     fileTagIds?: FileTagPublicId[];
     userTagIds?: number[];
     instrumentTagIds?: db3.InstrumentIdentity[];
-    songTagIds?: number[];
+    songTagIds?: SongPublicId[];
     eventTagIds?: EventPublicId[];
     wikiPageTagIds?: number[]; // wikiPage ids
 };
@@ -356,10 +356,10 @@ export const FileValueViewer = (props: FileViewerProps) => {
 
                     {(taggedSongs.length > 0) && (
                         taggedSongs
-                            .filter(a => !props.hiddenTagIds.songTagIds || !existsInArray(props.hiddenTagIds.songTagIds, a.song.id))
+                            .filter(a => !props.hiddenTagIds.songTagIds || !existsInArray(props.hiddenTagIds.songTagIds, a.song.publicId))
                             .map(a => a.song.name === undefined
                                 ? null
-                                : <SongChip key={db3.xFile.fields.taggedSongs.getForeignIdentity(a)} value={{ id: a.song.id, name: a.song.name }} size="small" variation={variation} />)
+                                : <SongChip key={db3.xFile.fields.taggedSongs.getForeignIdentity(a)} value={{ publicId: db3.xSong.parseIdentity(a.song.publicId), name: a.song.name }} size="small" variation={variation} />)
                     )}
 
                     {(taggedInstruments.length > 0) && (
@@ -570,7 +570,7 @@ interface FileFilterAndSortSpec {
     tagIds: FileTagPublicId[];
     taggedUserIds: number[];
     taggedInstrumentIds: db3.InstrumentIdentity[];
-    taggedSongIds: number[];
+    taggedSongIds: SongPublicId[];
     taggedEventIds: EventPublicId[];
     taggedWikiPageIds: number[];
     mimeTypes: string[];
@@ -598,7 +598,7 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         const instrumentIds = taggedInstruments.map(instrument => db3.getInstrumentIdentity(instrument.instrument));
         if (spec.taggedInstrumentIds.length && !instrumentIds.some(id => spec.taggedInstrumentIds.includes(id))) return false;
 
-        const songIds = taggedSongs.map(song => song.song.id);
+        const songIds = taggedSongs.map(song => song.song.publicId);
         if (spec.taggedSongIds.length && !songIds.some(id => spec.taggedSongIds.includes(id))) return false;
 
         const eventIds = taggedEvents.map(event => event.event.publicId);
@@ -866,14 +866,14 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                             <div className={`EventsFilterControlsValue`}>
                                 <div className="row">
                                     {uniqueSongTags.length > 1 && <CMChipContainer>
-                                        {uniqueSongTags.map(t => (
+                                    {uniqueSongTags.map(t => (
                                             <CMChip
-                                                key={t.tag.id}
+                                                key={t.tag.publicId}
                                                 //color={t.tag.color}
                                                 size='small'
                                                 tooltip={"Song"}
-                                                variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedSongIds, t.tag.id) }}
-                                                onClick={() => props.onChange({ ...props.value, taggedSongIds: toggleValueInArray(props.value.taggedSongIds, t.tag.id) })}
+                                                variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedSongIds, t.tag.publicId) }}
+                                                onClick={() => props.onChange({ ...props.value, taggedSongIds: toggleValueInArray(props.value.taggedSongIds, t.tag.publicId) })}
                                             >
                                                 {t.tag.name} ({t.count})
                                             </CMChip>))}

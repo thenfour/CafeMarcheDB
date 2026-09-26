@@ -1,6 +1,7 @@
 import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
+import { songPublicId } from "../support/songFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { authorizeAndProjectDB3ViewModel } from "@db3/server/db3PublicIds";
@@ -713,7 +714,7 @@ describe("DB3 named views", () => {
         });
 
         const dto = db3.songSearchView.parseDto({
-            id: 7,
+            publicId: songPublicId(7),
             name: "A song",
             aliases: "",
             startBPM: null,
@@ -725,7 +726,7 @@ describe("DB3 named views", () => {
             taggedFiles: [{
                 publicId: fileSongTagPublicId,
                 fileId: 8,
-                songId: 7,
+                songId: songPublicId(7),
                 file: {
                     id: 8,
                     tags: [{ publicId: fileTagAssignmentPublicId, fileTagId: fileTag.publicId }],
@@ -813,7 +814,7 @@ describe("DB3 named views", () => {
             externalURI: null,
             visiblePermissionId: permission.publicId,
             tags: [{ publicId: fileTagAssignmentPublicId, fileTagId: fileTag.publicId }],
-            taggedSongs: [{ publicId: fileSongTagPublicId, song: { id: 7, name: "A song" } }],
+            taggedSongs: [{ publicId: fileSongTagPublicId, song: { publicId: songPublicId(7), name: "A song" } }],
             taggedEvents: [
                 {
                     publicId: fileEventTagPublicId,
@@ -913,7 +914,7 @@ describe("DB3 named views", () => {
                 childFiles: { select: { id: true, fileLeafName: true } },
                 previewFile: { select: { id: true, fileLeafName: true } },
                 previewForFile: { select: { id: true, fileLeafName: true } },
-                pinnedForSongs: { select: { id: true, name: true } },
+                pinnedForSongs: { select: { publicId: true, name: true } },
             },
         });
 
@@ -930,7 +931,7 @@ describe("DB3 named views", () => {
             visiblePermissionId: permission.publicId,
             tags: [{ publicId: fileTagAssignmentPublicId, fileTagId: fileTag.publicId }],
             taggedUsers: [{ publicId: fileUserTagPublicId, user: { id: 13, name: "Ada" } }],
-            taggedSongs: [{ publicId: fileSongTagPublicId, song: { id: 14, name: "A song" } }],
+            taggedSongs: [{ publicId: fileSongTagPublicId, song: { publicId: songPublicId(14), name: "A song" } }],
             taggedEvents: [{
                 publicId: fileEventTagPublicId,
                 event: {
@@ -948,7 +949,7 @@ describe("DB3 named views", () => {
             childFiles: [{ id: 9, fileLeafName: "part.pdf" }],
             previewFile: { id: 10, fileLeafName: "preview.png" },
             previewForFile: [{ id: 11, fileLeafName: "poster.pdf" }],
-            pinnedForSongs: [{ id: 12, name: "A song" }],
+            pinnedForSongs: [{ publicId: songPublicId(12), name: "A song" }],
         });
         const hydrated = db3.hydrateView(db3.fileDetailView, dto, references);
 
@@ -960,7 +961,7 @@ describe("DB3 named views", () => {
             references.require(db3.xFileTag, fileTag.publicId, "test"),
         );
         expect(hydrated.taggedUsers).toEqual([{ publicId: fileUserTagPublicId, user: { id: 13, name: "Ada" } }]);
-        expect(hydrated.taggedSongs).toEqual([{ publicId: fileSongTagPublicId, song: { id: 14, name: "A song" } }]);
+        expect(hydrated.taggedSongs).toEqual([{ publicId: fileSongTagPublicId, song: { publicId: songPublicId(14), name: "A song" } }]);
         expect(hydrated.taggedEvents?.[0]?.event.name).toBe("A concert");
         expect(hydrated.taggedInstruments?.[0]?.instrument).toEqual(
             references.require(db3.xInstrument, instrument.publicId, "test"),
@@ -974,7 +975,7 @@ describe("DB3 named views", () => {
         expect(hydrated.childFiles).toEqual([{ id: 9, fileLeafName: "part.pdf" }]);
         expect(hydrated.previewFile).toEqual({ id: 10, fileLeafName: "preview.png" });
         expect(hydrated.previewForFile).toEqual([{ id: 11, fileLeafName: "poster.pdf" }]);
-        expect(hydrated.pinnedForSongs).toEqual([{ id: 12, name: "A song" }]);
+        expect(hydrated.pinnedForSongs).toEqual([{ publicId: songPublicId(12), name: "A song" }]);
         expectTypeOf(hydrated).toEqualTypeOf<db3.FileDetailClient>();
     });
 
@@ -1305,6 +1306,7 @@ describe("DB3 named views", () => {
     it("projects the Song search DTO through nested field authorization", async () => {
         const findMany = vi.fn(async () => [{
             id: 7,
+            publicId: songPublicId(7),
             name: "A song",
             aliases: "",
             startBPM: null,
@@ -1318,6 +1320,7 @@ describe("DB3 named views", () => {
                 id: 70,
                 publicId: songTagAssociationPublicId,
                 songId: 7,
+                song: { publicId: songPublicId(7), createdByUserId: 100, visiblePermissionId: null, isDeleted: false },
                 tagId: 20,
                 tag: { publicId: songTagPublicId },
             }],
@@ -1378,7 +1381,7 @@ describe("DB3 named views", () => {
 
         expect(result.items).toHaveLength(1);
         expect(result.items[0]).toMatchObject({
-            id: 7,
+            publicId: songPublicId(7),
             tags: [{
                 publicId: songTagAssociationPublicId,
                 tagId: songTagPublicId,
@@ -1440,7 +1443,7 @@ describe("DB3 named views", () => {
         });
 
         const dto = db3.songDetailView.parseDto({
-            id: 7,
+            publicId: songPublicId(7),
             name: "A song",
             aliases: "",
             description: "Detail description",
@@ -1500,6 +1503,7 @@ describe("DB3 named views", () => {
         const uploadedAt = new Date("2026-01-02T12:00:00Z");
         const findMany = vi.fn(async () => [{
             id: 7,
+            publicId: songPublicId(7),
             name: "A song",
             aliases: "",
             description: "Detail description",
@@ -1516,6 +1520,7 @@ describe("DB3 named views", () => {
                 id: 70,
                 publicId: songTagAssociationPublicId,
                 songId: 7,
+                song: { publicId: songPublicId(7), createdByUserId: 100, visiblePermissionId: 3, isDeleted: false },
                 tagId: 20,
                 tag: { publicId: songTagPublicId },
             }],
@@ -1553,6 +1558,7 @@ describe("DB3 named views", () => {
                         songId: 9,
                         song: {
                             id: 9,
+                            publicId: songPublicId(9),
                             name: "Private related song",
                             createdByUserId: 100,
                             visiblePermissionId: null,
@@ -1582,7 +1588,7 @@ describe("DB3 named views", () => {
                 viewID: db3.songDetailView.viewID,
             },
             orderBy: undefined,
-            filter: { items: [], tableParams: { songId: 7 } },
+            filter: { items: [], tableParams: { songId: songPublicId(7) } },
             cmdbQueryContext: "song-detail-view-test",
         }, {
             user: { id: 100 } as any,
@@ -1593,7 +1599,7 @@ describe("DB3 named views", () => {
 
         expect(result.items).toHaveLength(1);
         expect(result.items[0]).toMatchObject({
-            id: 7,
+            publicId: songPublicId(7),
             name: "A song",
             tags: [{
                 publicId: songTagAssociationPublicId,
@@ -1610,7 +1616,7 @@ describe("DB3 named views", () => {
                     }],
                     taggedSongs: [{
                         publicId: fileSongTagPublicId,
-                        song: { id: 9, name: "Private related song" },
+                        song: { publicId: songPublicId(9), name: "Private related song" },
                     }],
                 },
             }],
@@ -1620,7 +1626,7 @@ describe("DB3 named views", () => {
         expect(result.items[0]?.taggedFiles?.[0]?.file).not.toHaveProperty("isDeleted");
         expect(result.items[0]?.taggedFiles?.[0]?.file?.taggedSongs?.[0]?.song)
             .not.toHaveProperty("createdByUserId");
-        expect(findMany).toHaveBeenCalledOnce();
+        expect(findMany).toHaveBeenCalledTimes(2); // Public-ID resolution precedes the detail query.
     });
 
     it("hydrates EventSongList persistence collections into one client value object", () => {
@@ -1637,9 +1643,9 @@ describe("DB3 named views", () => {
                 eventSongListId: listPublicId(50),
                 subtitle: "Open quietly",
                 sortOrder: 20,
-                songId: 7,
+                songId: songPublicId(7),
                 song: {
-                    id: 7,
+                    publicId: songPublicId(7),
                     name: "First song",
                     lengthSeconds: 120,
                     startBPM: 110,
@@ -1647,7 +1653,7 @@ describe("DB3 named views", () => {
                     pinnedRecordingId: null,
                     tags: [{
                         publicId: songTagAssociationPublicId,
-                        songId: 7,
+                        songId: songPublicId(7),
                         tagId: songTagPublicId,
                     }],
                 },
@@ -1656,9 +1662,9 @@ describe("DB3 named views", () => {
                 eventSongListId: listPublicId(50),
                 subtitle: null,
                 sortOrder: 40,
-                songId: 8,
+                songId: songPublicId(8),
                 song: {
-                    id: 8,
+                    publicId: songPublicId(8),
                     name: "Second song",
                     lengthSeconds: null,
                     startBPM: 140,
@@ -1729,9 +1735,9 @@ describe("DB3 named views", () => {
                     eventSongListId: listPublicId(50),
                     subtitle: "Open quietly",
                     sortOrder: 20,
-                    songId: 7,
+                    songId: songPublicId(7),
                     song: {
-                        id: 7,
+                        publicId: songPublicId(7),
                         name: "First song",
                         lengthSeconds: 120,
                         startBPM: 110,
@@ -1767,7 +1773,7 @@ describe("DB3 named views", () => {
         expect(mutation).toMatchObject({
             publicId: listPublicId(50),
             eventId: eventPublicId(5),
-            songs: [{ publicId: listSongPublicId(501), songId: 7, sortOrder: 0, subtitle: "Open quietly" }],
+            songs: [{ publicId: listSongPublicId(501), songId: songPublicId(7), sortOrder: 0, subtitle: "Open quietly" }],
             dividers: [{ publicId: listDividerPublicId(601), sortOrder: 1, subtitle: "Break" }],
         });
         expect(db3.eventSongListDraftToPreview(draft!).content?.items.map(item => item.type))
@@ -1878,7 +1884,7 @@ describe("DB3 named views", () => {
                     eventSongListId: listPublicId(50),
                     subtitle: null,
                     sortOrder: 10,
-                    songId: 7,
+                    songId: songPublicId(7),
                 }],
                 dividers: [],
             }),
@@ -1907,6 +1913,7 @@ describe("DB3 named views", () => {
                 songId: 7,
                 song: {
                     id: 7,
+                    publicId: songPublicId(7),
                     name: "Visible song",
                     lengthSeconds: 120,
                     startBPM: 110,
@@ -1919,6 +1926,7 @@ describe("DB3 named views", () => {
                         id: 701,
                         publicId: songTagAssociationPublicId,
                         songId: 7,
+                        song: { publicId: songPublicId(7), createdByUserId: 42, visiblePermissionId: null, isDeleted: false },
                         tagId: 9,
                         tag: { publicId: songTagPublicId },
                     }],
@@ -1957,7 +1965,7 @@ describe("DB3 named views", () => {
 
         expect(result.items[0]).toMatchObject({
             publicId: listPublicId(50),
-            songs: [{ song: { id: 7, name: "Visible song" } }],
+            songs: [{ song: { publicId: songPublicId(7), name: "Visible song" } }],
             dividers: [],
         });
         expect(result.items[0]?.songs?.[0]?.song).not.toHaveProperty("createdByUserId");

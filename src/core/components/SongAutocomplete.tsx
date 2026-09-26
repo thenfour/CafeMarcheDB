@@ -8,6 +8,7 @@ import { useQuery } from '@blitzjs/rpc';
 import React from "react";
 import { QuickSearchItemMatch, QuickSearchItemType } from 'shared/quickFilter';
 import * as db3 from "src/core/db3/db3";
+import type { SongPublicId } from "shared/publicId";
 import getFilteredSongs from '../db3/queries/getFilteredSongs';
 import { GetFilteredSongsItemSongPayload } from '../db3/shared/apiTypes';
 import { AssociationAutocomplete } from './ItemAssociation';
@@ -16,7 +17,7 @@ import { AssociationAutocomplete } from './ItemAssociation';
 export interface SongAutocompleteProps {
     value: Pick<db3.SongClientPayload, "name"> | null;
     onChange: (value: GetFilteredSongsItemSongPayload | null) => void;
-    fadedSongIds?: number[];
+    fadedSongIds?: SongPublicId[];
     autofocus?: boolean;
 };
 
@@ -25,9 +26,7 @@ export const SongAutocomplete = ({ value, onChange, fadedSongIds = [], autofocus
     const [pendingSelection, setPendingSelection] = React.useState<
         QuickSearchItemMatch<QuickSearchItemType.song> | null
     >(null);
-    const pendingSongId = pendingSelection
-        ? db3.xSong.getIdentity(pendingSelection)
-        : null;
+    const pendingSongId = pendingSelection?.id ?? null;
 
     const [fullResult, _] = useQuery(getFilteredSongs, { id: pendingSongId }, {
         suspense: false,
@@ -61,7 +60,7 @@ export const SongAutocomplete = ({ value, onChange, fadedSongIds = [], autofocus
         onValueChange={setInputValue}
         getItemInfo={(item) => {
             return {
-                className: fadedSongIds.includes(db3.xSong.getIdentity(item)) ? "faded" : "notfaded",
+                className: fadedSongIds.includes(item.id) ? "faded" : "notfaded",
             };
         }}
     />

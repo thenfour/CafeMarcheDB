@@ -34,7 +34,7 @@ import { MediaPlayerTrack } from "../mediaPlayer/MediaPlayerTypes";
 import { SongPlayButton } from "../mediaPlayer/SongPlayButton";
 import { useSongsContext } from "../song/SongsContext";
 import { SongTagIndicatorContainer } from "../SongTagIndicatorContainer";
-import type { SongTagPublicId } from "shared/publicId";
+import type { SongPublicId, SongTagPublicId } from "shared/publicId";
 import { VisibilityControl } from "../VisibilityControl";
 import { LerpColor, SetlistPlannerColorScheme } from "./SetlistPlanColorComponents";
 import { SetlistPlanGroupSelect } from "./SetlistPlanGroupComponents";
@@ -55,7 +55,7 @@ const AddSongComponent = (props: AddSongComponentProps) => {
             value={null}
             onChange={(newSong) => {
                 if (newSong) {
-                    props.mutator.addSong(newSong.id);
+                    props.mutator.addSong(newSong.publicId);
                 }
             }}
         />
@@ -107,7 +107,7 @@ const SetlistPlannerRowEditor = (props: SetlistPlannerRowEditorProps) => {
         props.mutator.setRowComment(props.rowId, newMarkdown);
     }, [props.mutator, props.rowId]);
 
-    const song = row.type === "song" ? allSongs.find((x) => x.id === row.songId) : null;
+    const song = row.type === "song" ? allSongs.find((x) => x.publicId === row.songId) : null;
 
     return (
         <div className="SetlistPlannerDocumentEditorSong">
@@ -183,7 +183,7 @@ const SetlistPlannerRowEditorDialog = (props: SetlistPlannerRowEditorDialogProps
         props.mutator.setRowComment(props.rowId, newMarkdown);
     }, [props.mutator, props.rowId]);
 
-    const song = row.type === "song" ? allSongs.find((x) => x.id === row.songId) : null;
+    const song = row.type === "song" ? allSongs.find((x) => x.publicId === row.songId) : null;
 
     return (
         <CMDialog
@@ -214,7 +214,7 @@ type SetlistPlannerMatrixRowProps = {
     allTagIds: SongTagPublicId[];
 
     rowIndex: number;
-    allPinnedRecordings: Record<number, TSongPinnedRecording>;
+    allPinnedRecordings: Partial<Record<SongPublicId, TSongPinnedRecording>>;
     thisTrack: MediaPlayerTrack;
     getPlaylist: () => MediaPlayerTrack[];
 
@@ -244,7 +244,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
     }
 
     const songRow = props.doc.payload.rows.find((x) => x.rowId === props.rowId)!;
-    const song = allSongs.find((x) => x.id === songRow.songId!);
+    const song = allSongs.find((x) => x.publicId === songRow.songId!);
     if (!song) {
         // maybe you have lost access to the song, or it was deleted.
         return <div style={{ fontStyle: "italic", color: "#888" }}>song not found</div>
@@ -256,7 +256,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
 
     // Duplicate detection
     const songOccurrences = props.doc.payload.rows.reduce((acc, row) => {
-        return acc + (row.type === "song" && row.songId === song.id ? 1 : 0);
+        return acc + (row.type === "song" && row.songId === song.publicId ? 1 : 0);
     }, 0);
     const isDupeWarning = songOccurrences > 1;
 
@@ -294,7 +294,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                     onLedValueChanged={val => props.mutator.setRowLedValue(songRow.rowId, val.ledId, val)}
                     additionalAssociatedItems={[{
                         itemType: QuickSearchItemType.song,
-                        id: song.id,
+                        id: song.publicId,
                         name: song.name,
                     }]}
                 />
@@ -530,7 +530,7 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
         const filteredCells = cellsThisColumn.filter((x) => !!x.pointsAllocated);
         const cellRowIds = filteredCells.map((x) => x.rowId);
         const songIds = props.doc.payload.rows.filter((x) => x.type === "song" && cellRowIds.includes(x.rowId)).map(row => row.songId);
-        const songs = allSongs.filter((x) => songIds.includes(x.id));
+        const songs = allSongs.filter((x) => songIds.includes(x.publicId));
         return songs.map((s, index) => ({
             sortOrder: index,
             comment: "",
@@ -540,7 +540,7 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
     };
 
     const allSongsToSetlist = (): PortableSongList => {
-        const songs = props.doc.payload.rows.filter((x) => x.type === "song").map(row => allSongs.find(s => s.id === row.songId)).filter(x => !!x) as any;
+        const songs = props.doc.payload.rows.filter((x) => x.type === "song").map(row => allSongs.find(s => s.publicId === row.songId)).filter(x => !!x) as any;
         return songs.map((s, index) => ({
             sortOrder: index,
             comment: "",
@@ -696,15 +696,15 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 songs: docOrTempDoc.payload.rows
                     .filter(row => row.type === 'song' && row.songId)
                     .map((row) => {
-                        const song = allSongs.find(s => s.id === row.songId);
+                        const song = allSongs.find(s => s.publicId === row.songId);
                         if (!song) return null;
                         return {
                             clientId: row.rowId,
                             sortOrder: docOrTempDoc.payload.rows.indexOf(row), // cannot use index; that's only divider index.
                             subtitle: row.commentMarkdown || "",
-                            songId: song.id,
+                            songId: song.publicId,
                             song: {
-                                id: song.id,
+                                publicId: song.publicId,
                                 name: song.name,
                                 lengthSeconds: song.lengthSeconds,
                                 startBPM: song.startBPM,
@@ -783,7 +783,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 } satisfies EventSongListDividerItem,
             } satisfies MediaPlayerTrack;
         }
-        const song = allSongs.find(s => s.id === row.songId);
+        const song = allSongs.find(s => s.publicId === row.songId);
         const pinnedRecording = (row.songId && pinnedRecordings) ? pinnedRecordings[row.songId] : undefined;
         return {
             setlistPlanId: docOrTempDoc.id,
@@ -814,7 +814,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
         const tagIds = new Set<SongTagPublicId>();
         docOrTempDoc.payload.rows.forEach(row => {
             if (row.type === 'song' && row.songId) {
-                const song = allSongs.find(s => s.id === row.songId);
+                const song = allSongs.find(s => s.publicId === row.songId);
                 if (song) {
                     song.tags.forEach(tag => tagIds.add(tag.tagId));
                 }
@@ -1170,12 +1170,12 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
         // find songs that are in the setlist but not in the current plan document.
         const missingSongs = setlist
             .filter(row => row.type === "song")
-            .map(x => x.song.id)
+            .map(x => x.song.publicId)
             .filter(x => !props.doc.payload.rows.some(s => s.songId === x))
-            .map(songId => allSongs.find(s => s.id === songId));
+            .map(songId => allSongs.find(s => s.publicId === songId));
 
         // add these songs to the plan.
-        props.mutator.addAndRemoveSongs(missingSongs.map(x => x!.id), []);
+        props.mutator.addAndRemoveSongs(missingSongs.map(x => x!.publicId), []);
         setAnchorEl(null);
         console.log(`Adding ${missingSongs.length} songs...`);
         console.log(missingSongs.map(x => x?.name));
@@ -1243,15 +1243,15 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
                 snackbar.showError("Clipboard does not contain a valid setlist");
                 return;
             }
-            const existing = new Set<number>(
+            const existing = new Set<SongPublicId>(
                 props.doc.payload.rows
                     .filter((r) => r.type === "song")
                     .map((r) => r.songId!)
             );
-            const incoming = new Set<number>(
+            const incoming = new Set<SongPublicId>(
                 setlist
                     .filter((item) => item.type === "song")
-                    .map((item) => item.song.id)
+                    .map((item) => item.song.publicId)
             );
             const toAdd = [...incoming].filter((id) => !existing.has(id));
             const toRemove = [...existing].filter((id) => !incoming.has(id));
@@ -1262,11 +1262,11 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
                 return;
             }
 
-            const toAddSongs = toAdd.map((id) => allSongs.find((s) => s.id === id)).filter(s => !!s);
-            const toRemoveSongs = toRemove.map((id) => allSongs.find((s) => s.id === id)).filter(s => !!s);
+            const toAddSongs = toAdd.map((id) => allSongs.find((s) => s.publicId === id)).filter(s => !!s);
+            const toRemoveSongs = toRemove.map((id) => allSongs.find((s) => s.publicId === id)).filter(s => !!s);
 
-            const toAddComponents = toAddSongs.map((song) => <CMChip key={song.id}>{song.name}</CMChip>);
-            const toRemoveComponents = toRemoveSongs.map((song) => <CMChip key={song.id}>{song.name}</CMChip>);
+            const toAddComponents = toAddSongs.map((song) => <CMChip key={song.publicId}>{song.name}</CMChip>);
+            const toRemoveComponents = toRemoveSongs.map((song) => <CMChip key={song.publicId}>{song.name}</CMChip>);
 
             if (await confirm({
                 title: "Sync with clipboard setlist", description: <div>
@@ -1295,7 +1295,7 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
             const validRows = props.doc.payload.rows.filter((row) => {
                 if (row.type !== 'song') return true;
                 if (!row.songId) return false; // must have a songId
-                const song = allSongs.find(s => s.id === row.songId);
+                const song = allSongs.find(s => s.publicId === row.songId);
                 if (!song) return false; // must be a valid song
                 return true; // valid song row
             });
@@ -1303,7 +1303,7 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
             const portableSetlist: PortableSongList = validRows
                 .map((row, index) => {
                     if (row.type === 'song' && row.songId) {
-                        const song = allSongs.find(s => s.id === row.songId)!;
+                        const song = allSongs.find(s => s.publicId === row.songId)!;
                         return {
                             type: 'song',
                             sortOrder: index,
@@ -1700,7 +1700,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                         // return <div key={song.rowId} className="SetlistPlannerDocumentEditorSong">
                         //     <div>
                         //         {song.type === "song" && <div>
-                        //             <h3 className="name">{allSongs.find((x) => x.id === song.songId)?.name}</h3>
+                        //             <h3 className="name">{allSongs.find((x) => x.publicId === song.songId)?.name}</h3>
                         //         </div>}
 
                         //         <div style={{ display: "flex", alignItems: "center" }}>

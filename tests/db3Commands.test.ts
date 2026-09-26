@@ -1,6 +1,7 @@
 import { eventPublicId, segmentPublicId } from "./support/eventResponseFixtures";
 import { attendancePublicId } from "./support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId } from "./support/eventSongListFixtures";
+import { songPublicId } from "./support/songFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { eventSongListSaveCommandHandler } from "@db3/server/commands/eventSongListSaveCommand";
@@ -51,6 +52,8 @@ function createContext(seed?: {
             ? seed?.songList
             : entity === db3.xEvent
                 ? { id: 5, publicId: eventPublicId(5) }
+                : entity === db3.xSong
+                    ? { id: 7, publicId: songPublicId(7) }
                 : { id: identity }),
         tableID: entity.tableID,
     }));
@@ -423,8 +426,8 @@ describe("DB3 commands", () => {
             comment: "Original arrangement",
             userId: 6,
             user: { id: 6, name: "Ada" },
-            songId: 7,
-            song: { id: 7, name: "Autumn Leaves", description: "" },
+            songId: songPublicId(7),
+            song: { publicId: songPublicId(7), name: "Autumn Leaves", description: "" },
             typeId: songCreditTypePublicId,
             type: {
                 publicId: songCreditTypePublicId,
@@ -444,13 +447,13 @@ describe("DB3 commands", () => {
         });
         expect(db3.songCreditEditorView.crud.operations.create.command.parseDto({
             userId: 6,
-            songId: 7,
+            songId: songPublicId(7),
             typeId: songCreditTypePublicId,
             year: "2026",
             comment: "Original arrangement",
         })).toEqual({
             userId: 6,
-            songId: 7,
+            songId: songPublicId(7),
             typeId: songCreditTypePublicId,
             year: "2026",
             comment: "Original arrangement",
@@ -622,7 +625,7 @@ describe("DB3 commands", () => {
 
         const result = await eventSongListSaveCommandHandler.execute({
             ...parentFields,
-            songs: [{ songId: 7, sortOrder: 0, subtitle: "Open quietly" }],
+            songs: [{ songId: songPublicId(7), sortOrder: 0, subtitle: "Open quietly" }],
             dividers: [{
                 sortOrder: 1,
                 color: null,
@@ -637,11 +640,11 @@ describe("DB3 commands", () => {
 
         expect(result).toEqual({ publicId: listPublicId(50) });
         expect(requireVisible).toHaveBeenNthCalledWith(1, db3.xEvent, eventPublicId(5));
-        expect(requireVisible).toHaveBeenNthCalledWith(2, db3.xSong, 7);
+        expect(requireVisible).toHaveBeenNthCalledWith(2, db3.xSong, songPublicId(7));
         expect(insert).toHaveBeenNthCalledWith(1, db3.xEventSongList, parentFields);
         expect(insert).toHaveBeenNthCalledWith(2, db3.xEventSongListSong, {
             eventSongListId: listPublicId(50),
-            songId: 7,
+            songId: songPublicId(7),
             sortOrder: 0,
             subtitle: "Open quietly",
         });
@@ -682,7 +685,7 @@ describe("DB3 commands", () => {
         await eventSongListSaveCommandHandler.execute({
             publicId: listPublicId(50),
             ...parentFields,
-            songs: [{ publicId: listSongPublicId(501), songId: 7, sortOrder: 0, subtitle: "Changed" }],
+            songs: [{ publicId: listSongPublicId(501), songId: songPublicId(7), sortOrder: 0, subtitle: "Changed" }],
             dividers: [],
         }, context);
 
@@ -694,7 +697,7 @@ describe("DB3 commands", () => {
             sortOrder: parentFields.sortOrder,
         });
         expect(update).toHaveBeenCalledWith(db3.xEventSongListSong, listSongPublicId(501), {
-            songId: 7,
+            songId: songPublicId(7),
             sortOrder: 0,
             subtitle: "Changed",
         });
@@ -703,7 +706,7 @@ describe("DB3 commands", () => {
         await expect(eventSongListSaveCommandHandler.execute({
             publicId: listPublicId(50),
             ...parentFields,
-            songs: [{ publicId: listSongPublicId(999), songId: 7, sortOrder: 0, subtitle: "Forged" }],
+            songs: [{ publicId: listSongPublicId(999), songId: songPublicId(7), sortOrder: 0, subtitle: "Forged" }],
             dividers: [],
         }, context)).rejects.toThrow("does not belong to this setlist");
     });

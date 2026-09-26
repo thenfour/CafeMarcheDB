@@ -29,7 +29,7 @@ export const SongChip = (props: SongChipProps) => {
         className={props.className}
     >
         {props.startAdornment}
-        <span style={{ color: props.useHashedColor ? getHashedColor(props.value.id.toString()) : undefined }}>
+        <span style={{ color: props.useHashedColor ? getHashedColor(props.value.publicId) : undefined }}>
             {props.value.name}
         </span>
         {props.endAdornment}

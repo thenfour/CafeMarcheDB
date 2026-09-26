@@ -25,6 +25,7 @@ import {
 } from "./support/authorizationFixtures"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
+import { songPublicId } from "../support/songFixtures"
 
 const permissions = [
   Permission.login,
@@ -86,6 +87,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     authorizationTestDb.getDelegate("song").reset([
       {
         id: 1,
+        publicId: songPublicId(1),
         name: "Visible",
         isDeleted: false,
         createdByUserId: actor.id + 1,
@@ -100,6 +102,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       },
       {
         id: 2,
+        publicId: songPublicId(2),
         name: "Hidden",
         isDeleted: false,
         createdByUserId: actor.id + 1,
@@ -108,6 +111,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       },
       {
         id: 3,
+        publicId: songPublicId(3),
         name: "Deleted",
         isDeleted: true,
         createdByUserId: actor.id + 1,
@@ -117,25 +121,26 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     ])
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await expect(invokeResolver(getFilteredSongs, { id: 1 }, ctx)).resolves.toEqual({
+    await expect(invokeResolver(getFilteredSongs, { id: songPublicId(1) }, ctx)).resolves.toEqual({
       matchingItem: expect.objectContaining({
-        id: 1,
+        publicId: songPublicId(1),
         name: "Visible",
         tags: [{
           publicId: "SongAssocPublic1",
-          songId: 1,
+          songId: songPublicId(1),
           tagId: "SongTagPublic001",
         }],
       }),
     })
-    await expect(invokeResolver(getFilteredSongs, { id: 2 }, ctx)).resolves.toEqual({ matchingItem: null })
-    await expect(invokeResolver(getFilteredSongs, { id: 3 }, ctx)).resolves.toEqual({ matchingItem: null })
+    await expect(invokeResolver(getFilteredSongs, { id: songPublicId(2) }, ctx)).resolves.toEqual({ matchingItem: null })
+    await expect(invokeResolver(getFilteredSongs, { id: songPublicId(3) }, ctx)).resolves.toEqual({ matchingItem: null })
   })
 
   it("returns private songs to their owner without widening the requested ID", async () => {
     authorizationTestDb.getDelegate("song").reset([
       {
         id: 10,
+        publicId: songPublicId(10),
         name: "Mine",
         isDeleted: false,
         createdByUserId: actor.id,
@@ -144,6 +149,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       },
       {
         id: 11,
+        publicId: songPublicId(11),
         name: "Also mine",
         isDeleted: false,
         createdByUserId: actor.id,
@@ -153,14 +159,15 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     ])
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    const result = await invokeResolver(getFilteredSongs, { id: 10 }, ctx)
+    const result = await invokeResolver(getFilteredSongs, { id: songPublicId(10) }, ctx)
 
-    expect(result.matchingItem).toEqual(expect.objectContaining({ id: 10 }))
+    expect(result.matchingItem).toEqual(expect.objectContaining({ publicId: songPublicId(10) }))
   })
 
   it("filters the song and its pinned File independently", async () => {
     const visibleSong = {
       id: 20,
+      publicId: songPublicId(20),
       name: "Visible song",
       isDeleted: false,
       createdByUserId: actor.id + 1,
@@ -176,7 +183,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     authorizationTestDb.getDelegate("song").reset([visibleSong])
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await expect(invokeResolver(getSongPinnedRecording, { songIds: [20] }, ctx)).resolves.toEqual({})
+    await expect(invokeResolver(getSongPinnedRecording, { songIds: [songPublicId(20)] }, ctx)).resolves.toEqual({})
 
     authorizationTestDb.getDelegate("song").reset([{
       ...visibleSong,
@@ -185,8 +192,8 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
         visiblePermissionId: publicVisibilityId,
       },
     }])
-    await expect(invokeResolver(getSongPinnedRecording, { songIds: [20] }, ctx)).resolves.toEqual({
-      20: expect.objectContaining({ id: 200 }),
+    await expect(invokeResolver(getSongPinnedRecording, { songIds: [songPublicId(20)] }, ctx)).resolves.toEqual({
+      [songPublicId(20)]: expect.objectContaining({ id: 200 }),
     })
   })
 
@@ -210,6 +217,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
           type: { id: 71, publicId: "CreditType000071", text: "Composer" },
           song: {
             id: 51,
+            publicId: songPublicId(51),
             isDeleted: false,
             createdByUserId: analyticsActor.id + 1,
             visiblePermissionId: publicVisibilityId,
@@ -226,6 +234,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
           type: { id: 71, publicId: "CreditType000071", text: "Composer" },
           song: {
             id: 52,
+            publicId: songPublicId(52),
             isDeleted: false,
             createdByUserId: analyticsActor.id + 1,
             visiblePermissionId: hiddenVisibilityId,
@@ -242,6 +251,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
           type: { id: 71, publicId: "CreditType000071", text: "Composer" },
           song: {
             id: 53,
+            publicId: songPublicId(53),
             isDeleted: true,
             createdByUserId: analyticsActor.id + 1,
             visiblePermissionId: publicVisibilityId,

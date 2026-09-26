@@ -15,7 +15,7 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
         <CMButton onClick={() => {
             void router.push({
                 pathname: '/backstage/editSongCredits',
-                query: { songId: gridArgs.row.id },
+                query: { songId: gridArgs.row.publicId },
             });
         }}>Credits</CMButton>
     </>;
@@ -27,7 +27,7 @@ const MainContent = () => {
         view: db3.songEditorView,
         columns: {
             ...DB3Client.makeClientColumnSelection(
-                SongClientColumns.id,
+                SongClientColumns.publicId,
                 SongClientColumns.name,
                 SongClientColumns.aliases,
                 //SongClientColumns.slug,

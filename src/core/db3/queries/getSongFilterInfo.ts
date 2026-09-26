@@ -10,7 +10,7 @@ import { SplitQuickFilter } from "shared/quickFilter";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { queryTable } from "../server/db3QueryCore";
+import { queryView } from "../server/db3QueryCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "../shared/apiTypes";
 import { resolvePublicIds } from "../server/db3PublicIds";
 import type { SongTagPublicId } from "shared/publicId";
@@ -181,25 +181,16 @@ export default resolver.pipe(
             // FULL EVENT DETAILS USING DB3.
             let fullSongs: db3.SongSearchDto[] = [];
             if (songIds.length) {
-                const tableParams: db3.SongTableParams = {
-                    songIds: songIds.map(e => e.SongId), // prevent fetching the entire table!
-                };
-
-                const queryResult = await queryTable({
+                const queryResult = await queryView({
                     cmdbQueryContext: "getSongFilterInfo",
-                    table: {
-                        tableID: db3.xSong.tableID,
-                        tableName: db3.xSong.tableName,
-                        viewID: db3.songSearchView.viewID,
-                    },
-                    filter: {
-                        tableParams,
-                    },
+                    view: db3.songSearchView,
+                    filter: {},
                     orderBy: undefined,
-                }, authorization);
+                }, authorization, db, {
+                    trustedNaturalPrimaryKeys: songIds.map(song => song.SongId),
+                });
 
-                // queryTable's legacy return type does not yet carry its view.
-                fullSongs = queryResult.items as db3.SongSearchDto[];
+                fullSongs = queryResult.items;
             }
 
 
@@ -207,7 +198,7 @@ export default resolver.pipe(
 
             return {
                 rowCount: new Number(rowCountResult[0]!.rowCount).valueOf(),
-                songIds: songIds.map(e => e.SongId),
+                songIds: fullSongs.map(song => song.publicId),
 
                 tags,
                 // Raw SQL contains trusted natural IDs and remains server-only.

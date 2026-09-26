@@ -5,9 +5,12 @@ import { Permission } from "shared/permissions";
 import { z } from "zod";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
+import db from "db";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { resolvePublicId } from "../server/db3PublicIds";
 
 const ZArgs = z.object({
-    songId: z.number(),
+    songId: db3.xSong.identitySchema,
     fileId: z.number().nullable(),
 });
 
@@ -22,7 +25,16 @@ export default resolver.pipe(
         };
 
 
-        await mutationCore.updateImpl(db3.xSong, args.songId, fields, ctx);
+        const authorization = await getRequestAuthorization(ctx.session);
+        const publicData = db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
+        if (!db3.xSong.authorizeTableForEdit(publicData)) {
+            throw new mutationCore.DB3MutationAuthorizationError(db3.xSong.tableName, Object.keys(fields));
+        }
+        const songId = await resolvePublicId(
+            db3.xSong, args.songId,
+            publicData, db,
+        );
+        await mutationCore.updateImpl(db3.xSong, songId, fields, ctx);
 
         return args;
     }

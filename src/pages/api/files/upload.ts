@@ -60,7 +60,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                     const args: TClientUploadFileArgs = {};
                     args.taggedEventId = fields.taggedEventId && db3.xEvent.parseIdentity(fields.taggedEventId[0]);
                     args.taggedInstrumentId = fields.taggedInstrumentId && (CoerceToNumberOrNull(fields.taggedInstrumentId[0]));
-                    args.taggedSongId = fields.taggedSongId && (CoerceToNumberOrNull(fields.taggedSongId[0]));
+                    args.taggedSongId = fields.taggedSongId && db3.xSong.parseIdentity(fields.taggedSongId[0]);
                     args.taggedUserId = fields.taggedUserId && (CoerceToNumberOrNull(fields.taggedUserId[0]));
                     args.taggedWikiPageId = fields.taggedWikiPageId && (CoerceToNumberOrNull(fields.taggedWikiPageId[0]));
                     args.visiblePermissionId = fields.visiblePermissionId && db3.xPermission.parseIdentity(
@@ -82,6 +82,9 @@ export default api(async (req, res, origCtx: Ctx) => {
                     const resolvedEventId = args.taggedEventId === undefined
                         ? undefined
                         : await resolvePublicId(db3.xEvent, args.taggedEventId, publicData, db);
+                    const resolvedSongId = args.taggedSongId === undefined
+                        ? undefined
+                        : await resolvePublicId(db3.xSong, args.taggedSongId, publicData, db);
 
                     const visiblePermission = fields.visiblePermission && (CoerceToString(fields.visiblePermission[0]));
 
@@ -132,7 +135,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                             if (resolvedEventId) fields.taggedEvents = [resolvedEventId];
                             if (args.taggedInstrumentId) fields.taggedInstruments = [args.taggedInstrumentId];
                             if (resolvedFileTagId) fields.tags = [resolvedFileTagId];
-                            if (args.taggedSongId) fields.taggedSongs = [args.taggedSongId];
+                            if (resolvedSongId) fields.taggedSongs = [resolvedSongId];
                             if (args.taggedUserId) fields.taggedUsers = [args.taggedUserId];
                             if (args.taggedWikiPageId) fields.taggedWikiPages = [args.taggedWikiPageId];
                             if (args.externalURI) (fields as db3.FilePayloadMinimum).externalURI = args.externalURI;
@@ -218,7 +221,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                             }
 
                             if (resolvedEventId) fields.taggedEvents = [resolvedEventId];
-                            if (args.taggedSongId) fields.taggedSongs = [args.taggedSongId];
+                            if (resolvedSongId) fields.taggedSongs = [resolvedSongId];
                             if (args.taggedUserId) fields.taggedUsers = [args.taggedUserId];
                             if (args.taggedWikiPageId) fields.taggedWikiPages = [args.taggedWikiPageId];
                             fields.tags = [...tags];

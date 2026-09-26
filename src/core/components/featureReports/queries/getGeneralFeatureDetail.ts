@@ -4,6 +4,7 @@ import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { ActivityReportTimeBucketSize, parseBucketToDateRange } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
+import { isPublicId, type SongPublicId } from "shared/publicId";
 import { hashString } from "shared/utils";
 import { z } from "zod";
 import {
@@ -12,6 +13,7 @@ import {
     projectGeneralActivityReportDetailItem,
 } from "../activityReportTypes";
 import { ActivityFeature } from "../activityTracking";
+import * as db3 from "@/src/core/db3/db3";
 
 const ZTGeneralFeatureDetailArgs = z.object({
     features: z.nativeEnum(ActivityFeature).array(),
@@ -21,10 +23,10 @@ const ZTGeneralFeatureDetailArgs = z.object({
     excludeSysadmins: z.boolean(),
 
     contextBeginsWith: z.string().optional(),
-    filteredSongId: z.number().optional(),
-    filteredEventId: z.number().optional(),
-    //filteredUserId: z.number().optional(),
-    filteredWikiPageId: z.number().optional(),
+    filteredSongId: db3.xSong.identitySchema.optional(),
+    filteredEventId: z.number().optional(), // todo: db3.xEvent.identitySchema
+    //filteredUserId: z.number().optional(), // todo: db3.xUser.identitySchema
+    filteredWikiPageId: z.number().optional(), // todo: db3.xWikiPage.identitySchema
 });
 
 type TGeneralFeatureDetailArgs = z.infer<typeof ZTGeneralFeatureDetailArgs>;
@@ -60,7 +62,7 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
                     isSysAdmin: false,
                 },
             }),
-            ...(filteredSongId && { songId: filteredSongId }),
+            ...(filteredSongId && { song: { publicId: filteredSongId } }),
             ...(filteredEventId && { eventId: filteredEventId }),
             ...(filteredWikiPageId && { wikiPageId: filteredWikiPageId }),
             ...(contextBeginsWith && { context: { startsWith: contextBeginsWith } }),

@@ -22,7 +22,7 @@ export const ZSetlistPlanAssociatedItem = z.discriminatedUnion("itemType", [
     z.object({
         ...SetlistPlanAssociatedItemBase,
         itemType: z.literal(QuickSearchItemType.song),
-        id: z.number()
+        id: db3.xSong.identitySchema
     }),
     z.object({
         ...SetlistPlanAssociatedItemBase,
@@ -59,7 +59,7 @@ export type SetlistPlanLedValue = z.infer<typeof ZSetlistPlanLedValue>;
 
 export const ZSetlistPlanRow = z.object({
     rowId: z.string(),
-    songId: z.number().optional(),
+    songId: db3.xSong.identitySchema.optional(),
     pointsRequired: z.number().optional(),
     commentMarkdown: z.string().optional(),
     color: z.string().nullable().optional(),

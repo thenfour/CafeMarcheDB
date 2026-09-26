@@ -1,4 +1,4 @@
-import type { EventSongListPublicId } from "shared/publicId";
+import type { EventSongListPublicId, SongPublicId } from "shared/publicId";
 import type { TAnyModel } from "@/shared/rootroot";
 import type { Prisma } from "db";
 import {
@@ -56,6 +56,7 @@ async function synchronizeSongs(
     songListId: number,
     songListPublicId: EventSongListPublicId,
     desired: readonly EventSongListSongCommand[],
+    songPublicIdByNaturalId: ReadonlyMap<number, SongPublicId>,
     context: DB3CommandExecutionContext,
 ): Promise<void> {
     requireUniquePersistedIds("setlist songs", desired);
@@ -86,7 +87,13 @@ async function synchronizeSongs(
         }
 
         const existing = currentById.get(publicId)!;
-        if (fieldsDiffer(existing, values)) {
+        if (fieldsDiffer(
+            {
+                ...existing,
+                songId: songPublicIdByNaturalId.get(existing.songId)
+            },
+            values)) //
+        {
             await context.rowServices.update(xEventSongListSong, publicId, values);
         }
     }
@@ -138,8 +145,10 @@ async function saveEventSongList(
 ): Promise<{ publicId: EventSongListPublicId }> {
     const { publicId, eventId, songs, dividers, ...parentValues } = dto;
     const event = await context.rowServices.requireVisible(xEvent, eventId);
+    const songPublicIdByNaturalId = new Map<number, SongPublicId>();
     for (const songId of new Set(songs.map(item => item.songId))) {
-        await context.rowServices.requireVisible(xSong, songId);
+        const song = await context.rowServices.requireVisible(xSong, songId);
+        songPublicIdByNaturalId.set(xSong.parseDatabaseIdentity(song.id), songId);
     }
 
     let songList: TAnyModel;
@@ -154,7 +163,7 @@ async function saveEventSongList(
     }
     const songListId = xEventSongList.parseDatabaseIdentity(songList.id);
     const songListPublicId = xEventSongList.parseIdentity(songList.publicId);
-    await synchronizeSongs(songListId, songListPublicId, songs, context);
+    await synchronizeSongs(songListId, songListPublicId, songs, songPublicIdByNaturalId, context);
     await synchronizeDividers(songListId, songListPublicId, dividers, context);
     await context.rowServices.afterMutation(xEventSongList, { id: songListId });
     return { publicId: songListPublicId };

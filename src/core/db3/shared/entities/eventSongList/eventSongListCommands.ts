@@ -7,14 +7,14 @@ import {
     xEventSongList,
     xEventSongListSong,
 } from "../../schema/event";
+import { xSong } from "../../schema/song";
 
-const PersistedIdSchema = z.number().int().positive();
 const SortOrderSchema = z.number().int();
 
 export const EventSongListSongCommandSchema = z.object({
     publicId: xEventSongListSong.identitySchema.optional(),
     sortOrder: SortOrderSchema,
-    songId: PersistedIdSchema,
+    songId: xSong.identitySchema,
     subtitle: z.string(),
 }).strict();
 

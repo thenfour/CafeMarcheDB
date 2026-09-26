@@ -1,16 +1,14 @@
 import { Prisma } from "db";
-import type { EventPublicId, EventStatusPublicId, EventTypePublicId } from "shared/publicId";
+import type { EventPublicId, EventStatusPublicId, EventTypePublicId, SongPublicId } from "shared/publicId";
 import { EventSongListItem } from "../../db3/shared/setlistApi";
 import type { SetlistClientId } from "../../db3/shared/entities/eventSongList/eventSongListDraft";
 
-export type MediaPlayerSongContextPayload = Prisma.SongGetPayload<{
-    select: {
-        id: true,
-        name: true,
-        pinnedRecordingId: true,
-        lengthSeconds: true,
-    }
-}>;
+export type MediaPlayerSongContextPayload = {
+    publicId: SongPublicId;
+    name: string;
+    pinnedRecordingId: number | null;
+    lengthSeconds: number | null;
+};
 
 export interface MediaPlayerEventContextPayload {
     publicId: EventPublicId;

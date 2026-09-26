@@ -1,6 +1,7 @@
 import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import { hash256 } from "@blitzjs/auth"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { songPublicId } from "../support/songFixtures"
 
 vi.mock("db", async () => {
   const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client")
@@ -746,6 +747,7 @@ describe("Band Admin soft-delete recovery", () => {
   )!.permissionId
   const deletedPublicSong = {
     id: 51,
+    publicId: songPublicId(51),
     name: "Deleted public song",
     aliases: "",
     description: "",
@@ -757,6 +759,7 @@ describe("Band Admin soft-delete recovery", () => {
   const deletedPrivateSong = {
     ...deletedPublicSong,
     id: 52,
+    publicId: songPublicId(52),
     name: "Deleted private song",
     visiblePermissionId: null,
     visiblePermission: null,
@@ -779,7 +782,7 @@ describe("Band Admin soft-delete recovery", () => {
 
     await invokeResolver(
       db3Mutation,
-      forgeDb3Update("Song", deletedPublicSong.id, { isDeleted: false }),
+      forgeDb3PublicUpdate("Song", deletedPublicSong.publicId, { isDeleted: false }),
       ctx,
     )
 
@@ -797,9 +800,9 @@ describe("Band Admin soft-delete recovery", () => {
 
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3Update("Song", deletedPrivateSong.id, { isDeleted: false }),
+      forgeDb3PublicUpdate("Song", deletedPrivateSong.publicId, { isDeleted: false }),
       ctx,
-    )).rejects.toThrow("Not authorized to mutate Song fields")
+    )).rejects.toThrow("Song was not found.")
 
     expect(update).not.toHaveBeenCalled()
   })
@@ -813,9 +816,9 @@ describe("Band Admin soft-delete recovery", () => {
 
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3Update("Song", deletedPublicSong.id, { isDeleted: false }),
+      forgeDb3PublicUpdate("Song", deletedPublicSong.publicId, { isDeleted: false }),
       ctx,
-    )).rejects.toThrow("Not authorized to mutate Song fields")
+    )).rejects.toThrow("Song was not found.")
 
     expect(update).not.toHaveBeenCalled()
   })

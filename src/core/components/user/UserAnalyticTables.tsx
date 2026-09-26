@@ -184,8 +184,8 @@ export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
     const songCreditsWithAddl = qr.songCredits.map((credit, index) => ({
         ...credit,
         rowIndex: index,
-        songYear: allSongs.find(s => s.id === credit.songId)?.introducedYear,
-        songName: allSongs.find(s => s.id === credit.songId)?.name || `#${credit.songId}`,
+        songYear: allSongs.find(s => s.publicId === credit.songId)?.introducedYear,
+        songName: allSongs.find(s => s.publicId === credit.songId)?.name || `#${credit.songId}`,
     }));
 
     return <CMTable
@@ -204,7 +204,7 @@ export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
                 memberName: "songName",
                 allowSort: true,
                 render: (row) => {
-                    return <SongChip value={allSongs.find(s => s.id === row.row.songId) || { id: row.row.songId, name: `#${row.row.songId}` }} />;
+                    return <SongChip value={allSongs.find(s => s.publicId === row.row.songId) || { publicId: row.row.songId, name: `#${row.row.songId}` }} />;
                 },
             },
             {
@@ -212,7 +212,7 @@ export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
                 allowSort: true,
                 memberName: "songYear",
                 render: (row) => {
-                    const song = allSongs.find(s => s.id === row.row.songId)!;
+                    const song = allSongs.find(s => s.publicId === row.row.songId)!;
                     return <span>{song?.introducedYear}</span>;
                 },
             },

@@ -9,6 +9,7 @@ import type {
     SongCreditTypePublicId,
     SongTagAssociationPublicId,
     SongTagPublicId,
+    SongPublicId,
 } from "shared/publicId";
 import { CMDBTableFilterModel } from "../apiTypes";
 import { ColorField, ConstEnumStringField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
@@ -152,9 +153,8 @@ export const xSongTagAssociation = db3.defineTable({
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<SongTagAssociationPublicId>(),
-        songId: memberName => new GhostField({
-            memberName,
-            readTransportSchema: z.number().int(),
+        song: foreignRef(() => xSong, {
+            fkidMember: "songId",
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         tag: foreignRef(() => xSongTag, {
@@ -169,26 +169,28 @@ export const xSongTagAssociation = db3.defineTable({
 
 ////////////////////////////////////////////////////////////////
 export interface SongTableParams {
-    songId?: number;
-    songIds?: number[];
+    songId?: SongPublicId;
+    songIds?: SongPublicId[];
     songTagIds?: SongTagPublicId[];
 };
 
-interface ResolvedSongTableParams extends Omit<SongTableParams, "songTagIds"> {
+interface ResolvedSongTableParams {
+    songId?: number;
+    songIds?: number[];
     songTagIds?: number[];
 }
 
 ////////////////////////////////////////////////////////////////
 const xSongArgs_Base = db3.defineTableDesc({
     prismaModel: db3.prismaModel<Prisma.SongDelegate>(),
-    getIdentity: (song: { id: number }) => song.id,
+    getIdentity: (song: { publicId: SongPublicId }) => song.publicId,
     tableName: "Song",
     deletePolicy: "softOnly",
     viewDeletedPermission: Permission.recover_songs,
     restorePermission: Permission.recover_songs,
     queryParameters: {
-        songId: { kind: "integer", authorizeAs: "id", nullable: true },
-        songIds: { kind: "integerArray", authorizeAs: "id", nullable: true },
+        songId: { kind: "entityIdentity", targetTableID: "Song", authorizeAs: "publicId", nullable: true },
+        songIds: { kind: "entityIdentityArray", targetTableID: "Song", authorizeAs: "publicId", nullable: true },
         songTagIds: {
             kind: "entityIdentityArray",
             targetTableID: "SongTag",
@@ -202,7 +204,7 @@ const xSongArgs_Base = db3.defineTableDesc({
     tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongNaturalOrderBy,
     getRowInfo: (row: SongPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.name,
         description: row.description,
         ownerUserId: null,
@@ -227,7 +229,8 @@ const xSongArgs_Base = db3.defineTableDesc({
         return ret;
     },
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<SongPublicId>(),
         name: columnName => MakeTitleField(columnName, { authMap: xSongAuthMap_R_EOwn_EManagers, }),
         description: () => MakeDescriptionField({ authMap: xSongAuthMap_R_EOwn_EManagers, }),
         isDeleted: () => MakeIsDeletedField({ authMap: xSongAuthMap_R_EOwn_EManagers, }),
@@ -372,7 +375,7 @@ export const xSongCreditType = db3.defineTable({
 
 ////////////////////////////////////////////////////////////////
 export interface SongCreditTableParams {
-    songId?: number | null;
+    songId?: SongPublicId | null;
     userId?: number | null;
 }
 
@@ -385,7 +388,7 @@ export const xSongCredit = db3.defineTable({
     tableName: "SongCredit",
     deletePolicy: "hard",
     queryParameters: {
-        songId: { kind: "integer", authorizeAs: "songId", nullable: true },
+        songId: { kind: "entityIdentity", targetTableID: "Song", authorizeAs: "songId", nullable: true },
         userId: { kind: "integer", authorizeAs: "userId", nullable: true },
     } satisfies db3.DB3QueryParameterMap,
     tableAuthMap: xSongTableAuthMap_R_EManagers,
@@ -395,7 +398,7 @@ export const xSongCredit = db3.defineTable({
         name: "<a song credit>",
         ownerUserId: row.userId, // questionable.
     }),
-    getParameterizedWhereClause: (params: SongCreditTableParams): (Prisma.SongCreditWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: { songId?: number | null; userId?: number | null }): (Prisma.SongCreditWhereInput[] | false) => {
         const ret: Prisma.SongCreditWhereInput[] = [];
         if (params.songId != null) {
             ret.push({

@@ -12,6 +12,7 @@ vi.mock("db", async () => {
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { eventPublicId } from "../support/eventResponseFixtures";
+import { songPublicId } from "../support/songFixtures";
 import { ActivityFeature } from "src/core/components/featureReports/activityTracking";
 import * as db3 from "src/core/db3/db3";
 import { recordAuthenticatedClientAction } from "src/core/db3/server/recordActionServer";
@@ -155,7 +156,7 @@ describe("BA-S005 server-rendered entity metadata", () => {
             delegate: "song",
             permission: Permission.view_songs,
             table: db3.xSong,
-            row: { id: 3, name: "Private song", isDeleted: false, createdByUserId: null, visiblePermissionId: membersVisibilityId },
+            row: { id: 3, publicId: songPublicId(3), name: "Private song", isDeleted: false, createdByUserId: null, visiblePermissionId: membersVisibilityId },
         },
         {
             delegate: "user",
@@ -180,7 +181,8 @@ describe("BA-S005 server-rendered entity metadata", () => {
             ctx,
             permission: testCase.permission,
             table: testCase.table,
-            identity: testCase.delegate === "event" ? eventPublicId(testCase.row.id) : testCase.row.id,
+            identity: testCase.delegate === "event" ? eventPublicId(testCase.row.id)
+                : testCase.delegate === "song" ? songPublicId(testCase.row.id) : testCase.row.id,
             load: where => authorizationTestDb.getDelegate(testCase.delegate).findFirst({ where }),
         });
 
@@ -195,14 +197,14 @@ describe("BA-S005 server-rendered entity metadata", () => {
             ctx,
             permission: Permission.view_songs,
             table: db3.xSong,
-            id: 3,
+            identity: songPublicId(3),
             load,
         };
 
-        songDelegate.reset([{ id: 3, name: "Hidden", isDeleted: false, createdByUserId: null, visiblePermissionId: 999_999 }]);
+        songDelegate.reset([{ id: 3, publicId: songPublicId(3), name: "Hidden", isDeleted: false, createdByUserId: null, visiblePermissionId: 999_999 }]);
         await expect(loadAuthorizedPageEntity(baseArgs)).resolves.toBeNull();
 
-        songDelegate.reset([{ id: 3, name: "Deleted", isDeleted: true, createdByUserId: null, visiblePermissionId: membersVisibilityId }]);
+        songDelegate.reset([{ id: 3, publicId: songPublicId(3), name: "Deleted", isDeleted: true, createdByUserId: null, visiblePermissionId: membersVisibilityId }]);
         await expect(loadAuthorizedPageEntity(baseArgs)).resolves.toBeNull();
 
         songDelegate.reset([]);
@@ -222,7 +224,7 @@ describe("BA-S005 server-rendered entity metadata", () => {
             ctx,
             permission: Permission.view_songs,
             table: db3.xSong,
-            id: 3,
+            identity: songPublicId(3),
             load: where => authorizationTestDb.getDelegate("song").findFirst({ where }),
         })).resolves.toBeNull();
 
@@ -246,7 +248,7 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
         await recordAuthenticatedClientAction({
             feature: ActivityFeature.song_view,
             userId: 999,
-            songId: 3,
+            songId: songPublicId(3),
         }, ctx);
 
         expect(authorizationTestDb.snapshot("action")).toEqual([

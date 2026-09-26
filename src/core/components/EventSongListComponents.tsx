@@ -43,12 +43,12 @@ import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 import { SongTagIndicatorContainer } from './SongTagIndicatorContainer';
 import type { PortableSongList } from "../db3/shared/entities/eventSongList/eventSongListClipboard";
-import type { SongTagPublicId } from 'shared/publicId';
+import type { SongPublicId, SongTagPublicId } from 'shared/publicId';
 import type { EventDetailEvent } from './event/EventComponentsBase';
 
-const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, TSongPinnedRecording>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, setlistClientId: db3.SetlistClientId }): MediaPlayerTrack => {
+const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Partial<Record<SongPublicId, TSongPinnedRecording>>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, setlistClientId: db3.SetlistClientId }): MediaPlayerTrack => {
     if (args.rowItem.type === 'song') {
-        const pinnedRecording = args.allPinnedRecordings[args.rowItem.song.id];
+        const pinnedRecording = args.allPinnedRecordings[args.rowItem.song.publicId];
         return {
             playlistIndex: args.rowIndex,
             setlistClientId: args.setlistClientId,
@@ -224,7 +224,7 @@ interface EventSongListValueViewerRowProps {
     rowIndex: number; // The index of this row in the setlistRowItems array
     setlistRowItems: readonly SetlistAPI.EventSongListItem[];
     songList: db3.EventSongListPreview;
-    pinnedRecordings: Record<number, TSongPinnedRecording>; // songId -> pinnedRecording
+    pinnedRecordings: Partial<Record<SongPublicId, TSongPinnedRecording>>; // songId -> pinnedRecording
     lengthColumnMode: LengthColumnMode;
     toggleLengthColumnMode: () => void;
     mediaPlayerTrack: MediaPlayerTrack | undefined;
@@ -349,7 +349,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
     }, [props.songList.content]);
 
     return <div className={`SongListValueViewerRow tr ${!props.value.publicId ? 'newItem' : 'existingItem'} item ${props.value.type === 'new' ? 'invalidItem' : 'validItem'} type_${props.value.type} ${isCurrentMediaPlayerTrack ? 'currentMediaPlayerTrack' : ''}`}>
-        <AppContextMarker songId={song?.id || undefined}>
+        <AppContextMarker songId={song?.publicId || undefined}>
             <div className="td songIndex">
                 {props.songList.isOrdered === true && props.value.type === 'song' && (props.value.index + 1)}
             </div>
@@ -565,7 +565,7 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
     const snackbarContext = React.useContext(SnackbarContext);
 
     // Fetch all pinned recordings for songs in this list at once
-    const songIds = props.value.content?.songItems.map(item => item.song.id) ?? [];
+    const songIds = props.value.content?.songItems.map(item => item.song.publicId) ?? [];
     const [pinnedRecordings] = useQuery(getSongPinnedRecording, {
         songIds: songIds,
     }, {
@@ -613,7 +613,7 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
     const getCombinedContent = (): db3.EventSongListContent => {
         if (!props.allSongLists) throw new Error("Combined setlists are unavailable.");
 
-        const songsById = new Map<number, SetlistAPI.EventSongListSongItem>();
+        const songsById = new Map<SongPublicId, SetlistAPI.EventSongListSongItem>();
         props.allSongLists.forEach(songList => {
             songList.content?.songItems.forEach(item => songsById.set(item.songId, item));
         });
@@ -753,7 +753,7 @@ interface EventSongListValueEditorRowProps {
     value: SetlistAPI.EventSongListItem;
     rowIndex: number; // The index of this row in the setlistRowItems array
     songList: db3.EventSongListDraft;
-    pinnedRecordings: Record<number, TSongPinnedRecording>; // songId -> pinnedRecording
+    pinnedRecordings: Partial<Record<SongPublicId, TSongPinnedRecording>>; // songId -> pinnedRecording
     showDragHandle?: boolean;
     onChange: (newValue: SetlistAPI.EventSongListItem) => void;
     onDelete?: () => void;
@@ -1007,7 +1007,7 @@ const EventSongListValueEditorNewRow = (
             clientId: props.value.clientId,
             sortOrder: props.value.sortOrder,
             subtitle: "",
-            songId: song.id,
+            songId: song.publicId,
             song,
             index: 0,
             runningTimeSeconds: null,

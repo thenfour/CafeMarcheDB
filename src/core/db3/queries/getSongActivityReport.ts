@@ -7,7 +7,7 @@ import * as db3 from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetSongActivityReportArgs, GetSongActivityReportRet, GetSongActivityReportRetEvent } from "../shared/apiTypes";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
-import { resolvePublicIds } from "../server/db3PublicIds";
+import { resolvePublicId, resolvePublicIds } from "../server/db3PublicIds";
 import { assertIsNumberArray } from "@/shared/arrayUtils";
 
 export default resolver.pipe(
@@ -18,16 +18,15 @@ export default resolver.pipe(
             if (!u.role || u.role.permissions.length < 1) {
                 return {
                     events: [],
-                    query: "",
                 };
             }
 
-            const songId = new Number(args.songId).valueOf();
             const authorization = await getRequestAuthorization(ctx.session);
             const publicData = db3.createDB3Authorization(
                 authorization.user,
                 authorization.effectivePermissions,
             );
+            const songId = await resolvePublicId(db3.xSong, args.songId, publicData, db);
             const [eventTypeIds, eventStatusIds, eventTagIds] = await Promise.all([
                 resolvePublicIds(db3.xEventType, args.filterSpec.eventTypeIds, publicData, db),
                 resolvePublicIds(db3.xEventStatus, args.filterSpec.eventStatusIds, publicData, db),
@@ -120,7 +119,6 @@ export default resolver.pipe(
 
             return {
                 events,
-                query,
             };
         } catch (e) {
             console.error(e);

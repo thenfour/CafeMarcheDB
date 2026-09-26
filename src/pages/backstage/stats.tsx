@@ -15,7 +15,7 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { EventAPI, EventStatusSignificance, EventTypeSignificance } from "src/core/db3/db3";
 import getGlobalStats from "src/core/db3/queries/getGlobalStats";
 import { GetGlobalStatsFilterSpec, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance, GetSongActivityReportFilterSpecTimingFilter } from "src/core/db3/shared/apiTypes";
-import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, SongTagPublicId } from "shared/publicId";
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, SongPublicId, SongTagPublicId } from "shared/publicId";
 
 
 
@@ -127,7 +127,7 @@ const StatsPagePopularSong = ({ occurrances, expanded }: { occurrances: GetGloba
         <h2>
             <a
                 href={dashboardContext.routingApi.getURIForSong({
-                    id: occurrances[0]!.songId,
+                    publicId: occurrances[0]!.songId,
                     name: occurrances[0]!.songName,
                 })}
                 rel="noreferrer"
@@ -211,7 +211,7 @@ const StatsPageInner = () => {
 
     const [selectedEventBucket, setSelectedEventBucket] = React.useState<null | ActivityVisBucket<GetGlobalStatsRetEvent>>(null);
 
-    const songMap = new Map<number, GetGlobalStatsRetPopularSongOccurrance[]>();
+    const songMap = new Map<SongPublicId, GetGlobalStatsRetPopularSongOccurrance[]>();
     results.popularSongsOccurrances.forEach(s => {
         if (songMap.has(s.songId)) {
             songMap.get(s.songId)?.push(s);

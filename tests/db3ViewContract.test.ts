@@ -23,6 +23,7 @@ import {
   type SongCreditPublicId,
   type SongCreditTypePublicId,
   type SongTagPublicId,
+  type SongPublicId,
   type UserTagPublicId,
   type UserTagAssignmentPublicId,
   type WikiPageTagAssignmentPublicId,
@@ -185,20 +186,20 @@ describe("DB3 scalar selection compiler", () => {
   it("derives transport DTOs from a fetched selection subset", () => {
     const prismaSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
       select: {
-        id: true,
+        publicId: true,
         isDeleted: true,
       },
     })
     const transportSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
-      select: { id: true },
+      select: { publicId: true },
     })
     const derived = db3.deriveViewContract(db3.xSong, prismaSelection, {
       transportSelection,
     })
 
     expectTypeOf(derived.prismaSelection).toEqualTypeOf<typeof prismaSelection>()
-    expectTypeOf<z.infer<typeof derived.dtoSchema>>().toEqualTypeOf<{ id: number }>()
-    expect(derived.dtoSchema.parse({ id: 1, isDeleted: false })).toEqual({ id: 1 })
+    expectTypeOf<z.infer<typeof derived.dtoSchema>>().toEqualTypeOf<{ publicId: SongPublicId }>()
+    expect(derived.dtoSchema.parse({ publicId: "Song000000000001", isDeleted: false })).toEqual({ publicId: "Song000000000001" })
   })
 
   it("rejects transport members absent from the Prisma selection", () => {
@@ -935,9 +936,9 @@ describe("File derived-view migration", () => {
       id: number
       fileLeafName?: string
     }>()
-    expectTypeOf<PinnedSongDto>().toEqualTypeOf<{
-      id: number
-      name: string
+     expectTypeOf<PinnedSongDto>().toEqualTypeOf<{
+       publicId: SongPublicId
+       name: string
     }>()
     expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<RelatedAuthorizationOnlyKeys>().toEqualTypeOf<never>()
@@ -1038,7 +1039,7 @@ describe("Song derived-view migration", () => {
       .toEqualTypeOf<SongCreditTypePublicId>()
     expectTypeOf<CreditDto["userId"]>()
       .toEqualTypeOf<number | null>()
-    expectTypeOf<CreditDto["songId"]>().toEqualTypeOf<number>()
+     expectTypeOf<CreditDto["songId"]>().toEqualTypeOf<SongPublicId>()
     expectTypeOf<NestedCreditTypeDto["color"]>()
       .toEqualTypeOf<string | null>()
     expectTypeOf<NestedCreditTypeDto["publicId"]>()
@@ -1071,7 +1072,7 @@ describe("Song derived-view migration", () => {
     type TagDto = NonNullable<NonNullable<Dto["tags"]>[number]["tag"]>
     type TagClient = NonNullable<NonNullable<Client["tags"]>[number]["tag"]>
 
-    expectTypeOf<Dto["id"]>().toEqualTypeOf<number>()
+     expectTypeOf<Dto["publicId"]>().toEqualTypeOf<SongPublicId>()
     expectTypeOf<Dto["name"]>().toEqualTypeOf<string>()
     expectTypeOf<Dto["visiblePermissionId"]>()
       .toEqualTypeOf<typeof permissionPublicId | null>()

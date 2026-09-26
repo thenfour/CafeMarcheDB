@@ -170,7 +170,7 @@ const fileDetailRelatedFileSelection = {
 
 const fileDetailPinnedSongTransportSelection = {
     select: {
-        id: true,
+        publicId: true,
         name: true,
     },
 } as const;
@@ -230,7 +230,7 @@ export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArg
                 publicId: true,
                 song: {
                     select: {
-                        id: true,
+                        publicId: true,
                         name: true,
                     },
                 },

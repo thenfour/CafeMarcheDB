@@ -167,7 +167,7 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer, styleOverr
             const rect = e.currentTarget.getBoundingClientRect();
             const clickX = e.clientX - rect.left;
             const percentage = Math.max(0, Math.min(1, clickX / rect.width));
-            void recordAction({ feature: ActivityFeature.media_player_bar_seek_vis_segment, songId: item.songContext?.id, fileId: item.file?.id });
+            void recordAction({ feature: ActivityFeature.media_player_bar_seek_vis_segment, songId: item.songContext?.publicId, fileId: item.file?.id });
             seekToPosition(percentage);
         }
     };
@@ -177,7 +177,7 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer, styleOverr
 
         if (!isCurrentTrack) {
             // Switch to this track
-            void recordAction({ feature: ActivityFeature.media_player_bar_play_vis_segment, songId: item.songContext?.id, fileId: item.file?.id });
+            void recordAction({ feature: ActivityFeature.media_player_bar_play_vis_segment, songId: item.songContext?.publicId, fileId: item.file?.id });
 
             mediaPlayer.playTrackOfPlaylist(item.playlistIndex);
         }

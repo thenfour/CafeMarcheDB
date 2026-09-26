@@ -383,7 +383,7 @@ export default resolver.pipe(
                     ret.log.push(`  Pass with tokens [${matchInfo[0]!.matchingTokens}]`);
                     ret.songList.push({
                         comment: p.comment || "",
-                        songId: matchInfo[0]!.song.id,
+                        songId: db3.xSong.parseIdentity(matchInfo[0]!.song.publicId),
                         songName: matchInfo[0]!.song.name,
                     });
                 }

@@ -1587,6 +1587,39 @@ Deployment still requires applying the checked-in SQL migration and starting
 with placeholder repair enabled. The migration was not applied to a database,
 and browser interaction against migrated data remains unverified.
 
+#### Completed slice: central Song
+
+`Song` now uses branded public identity across routes, named views, search,
+setlists, file associations, telemetry, reports, and editor commands.
+
+-  The schema and checked-in SQL migration add a unique ASCII/binary public-ID
+   column with deployment placeholders. Startup repair and seeds assign real
+   IDs. `xSong` exposes public identity and restricts its natural key to trusted
+   sysadmin surfaces.
+-  Song and SongCredit query parameters resolve public IDs at the DB3 boundary.
+   Raw SQL keeps numeric joins server-side; Song search uses trusted natural
+   primary keys only as an execution option, then projects authorized public
+   DTOs. Setlist commands and File upload resolve public Song IDs before
+   writing database foreign keys.
+-  Existing SetlistPlan JSON is migrated at startup: song rows and associated
+   links receive public IDs, and Song links receive public URLs. The rewrite is
+   idempotent and leaves Event and other associations intact. Historical
+   Action/Change records keep natural database keys; current telemetry inputs
+   and report outputs use public Song IDs.
+-  The Song editor, search, detail, setlist, and nested File views select and
+   validate public Song identity. Dedicated Song mutations enforce the edit
+   grant before resolving public IDs and retain row-level authorization in the
+   shared mutation core. Markdown mentions now render and edit public Song and
+   Event IDs; old numeric mentions still need manual repair.
+
+Validation: the full repository runner passed 108 test files; 23 MySQL
+integration tests were skipped. The focused markdown mention and persisted
+setlist migration tests passed. TypeScript, ESLint, Prisma client generation
+and schema validation, the production build, and `git diff --check` passed.
+The build retains its existing Blitz import and color-environment warnings.
+The SQL migration was not applied to a live database, and browser interaction
+against migrated data remains unverified.
+
 ## Active roadmap
 
 ### Completed foundation
@@ -1667,7 +1700,7 @@ conversions.
        soft-deleted rows to authorized recovery reads. Fetching complete policy data
        now applies that existing restriction consistently to nested projections;
        this read-dependency fix does not introduce a historical-reference exception.
--  [ ] Update markdown mention parsing/editing for public IDs. Existing numeric
+-  [x] Update markdown mention parsing/editing for public IDs. Existing numeric
        mentions are few enough to repair manually: no compatibility aliases,
        per-object legacy-PK flags, or content-rewriting migration are planned.
 -  [ ] Collapse the RolePermission command's association and role lookup into one
@@ -1706,7 +1739,7 @@ conversions.
        deleting each numeric client-identity compatibility path before marking that
        model complete below.
 
-#### Client-facing model progress: 36 / 47 complete (77%)
+#### Client-facing model progress: 37 / 47 complete (79%)
 
 The denominator is the 47 in-scope Prisma models whose own row identity currently
 crosses a client boundary. It excludes the five server-only models and the two
@@ -1754,6 +1787,7 @@ Completed models:
 -  [x] `EventSegmentUserResponse`
 -  [x] `EventUserResponse`
 -  [x] `Event`
+-  [x] `Song`
 
 Remaining models are grouped into coherent intended slices. The pressure label
 describes why the slice is ordered there; it does not relax the per-model
@@ -1781,8 +1815,8 @@ completion definition.
    -  [x] `EventUserResponse`
 -  **Completed: central Event**
    -  [x] `Event`
--  **Song domain**
-   -  [ ] `Song`
+-  **Completed: Song domain**
+   -  [x] `Song`
 -  **File and gallery domain**
    -  [ ] `File`
    -  [ ] `FrontpageGalleryItem`

@@ -1,6 +1,7 @@
 import { Collapse } from "@mui/material";
 import React from "react";
 import { Pre } from "../CMCoreComponents2";
+import { PUBLIC_ID_LENGTH } from "@/shared/publicId";
 
 
 const M3TipsTabValues = [
@@ -258,7 +259,7 @@ But this is a new paragraph.`}
                         When you type <code>@</code> in the editor and continue typing, you'll
                         see suggestions to link a song, event, or wiki page. Selecting one
                         inserts a link in this format:
-                        <Pre text={`[[song:82|It's Now Or Never (2005)]]`} />
+                        <Pre text={`[[song:-${PUBLIC_ID_LENGTH}char-song-id-|It's Now Or Never (2005)]]`} />
                     </dd>
 
                     {/* Wiki Pages */}

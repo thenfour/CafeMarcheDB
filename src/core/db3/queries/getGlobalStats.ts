@@ -128,7 +128,7 @@ export default resolver.pipe(
                 limit 10
             )
             select
-                ps.id songId,
+                ps.publicId songId,
                 ps.name songName,
                 e.publicId eventId,
                 e.name eventName,
@@ -152,7 +152,8 @@ export default resolver.pipe(
 
             // Raw SQL exposes public-ID strings; parse each branded value at the boundary.
             const rawPopularSongs = await db.$queryRaw(Prisma.raw(popularSongsQuery)) as Array<
-                Omit<GetGlobalStatsRetPopularSongOccurrance, "eventId" | "statusId" | "typeId"> & {
+                Omit<GetGlobalStatsRetPopularSongOccurrance, "songId" | "eventId" | "statusId" | "typeId"> & {
+                    songId: string;
                     eventId: string;
                     statusId: string | null;
                     typeId: string | null;
@@ -160,6 +161,7 @@ export default resolver.pipe(
             >;
             const popularSongsOccurrances: GetGlobalStatsRetPopularSongOccurrance[] = rawPopularSongs.map(item => ({
                 ...item,
+                songId: db3.xSong.parseIdentity(item.songId),
                 eventId: db3.xEvent.parseIdentity(item.eventId),
                 statusId: item.statusId ? db3.xEventStatus.parseIdentity(item.statusId) : null,
                 typeId: item.typeId ? db3.xEventType.parseIdentity(item.typeId) : null,

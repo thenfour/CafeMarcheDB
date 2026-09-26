@@ -44,7 +44,7 @@ export const SongListItem = (props: SongListItemProps) => {
     const hasAnyFooterInfo = hasBpm || hasLength || hasPartitions || hasRecordings || hasOtherFiles;
 
     return <div className={`songListItem`}>
-        <AppContextMarker name="SongListItem" songId={props.song.id}>
+        <AppContextMarker name="SongListItem" songId={props.song.publicId}>
             <div className="titleLine">
                 <div className="topTitleLine">
                     <CMLink className="nameLink" href={songData.songURI} trackingFeature={ActivityFeature.link_follow_internal}>{props.song.name || "(restricted song)"}</CMLink>

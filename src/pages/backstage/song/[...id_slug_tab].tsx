@@ -8,14 +8,15 @@ import { BlitzPage, useParams } from "@blitzjs/next";
 import db from "db";
 import { Suspense } from 'react';
 import { Permission } from "shared/permissions";
-import { CoerceToNumberOrNull, StringToEnumValue } from "shared/utils";
+import { StringToEnumValue } from "shared/utils";
+import type { SongPublicId } from "shared/publicId";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { NewSongButton } from "src/core/components/song/NewSongComponents";
 import { SongBreadcrumbs, SongClientColumns, SongDetail, SongDetailTabSlug } from "src/core/components/song/SongComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 
-const MyComponent = ({ songId }: { songId: number | null }) => {
+const MyComponent = ({ songId }: { songId: SongPublicId | null }) => {
     const params = useParams();
     const [id__, slug, tab] = params.id_slug_tab as string[];
 
@@ -28,7 +29,7 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.songDetailView,
         columns: DB3Client.makeClientColumnSelection(
-            SongClientColumns.id,
+            SongClientColumns.publicId,
             SongClientColumns.name,
             SongClientColumns.aliases,
             SongClientColumns.startBPM,
@@ -74,31 +75,29 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
 
 interface PageProps {
     title: string,
-    songId: number | null,
+    songId: SongPublicId | null,
 };
 
 export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
     const [id__] = params!.id_slug_tab as string[];
-    const id = CoerceToNumberOrNull(id__);
-    if (!id) return { notFound: true };
+    if (!db3.xSong.isIdentity(id__)) return { notFound: true };
+    const publicId = db3.xSong.parseIdentity(id__);
 
     // id: required always. even though we have "slugs", we require the ID to avoid conflicts.
     // slug: ignored.
     // tab: optional string
 
     // formats supported:
-    // /backstage/song/2             => ["2"]
-    // /backstage/song/2/slug/info   => ["2", "slug", "info"]
-    // /backstage/song/2/whateveridontcare/info
+    // /backstage/song/<publicId>/slug/info
 
     const song = await loadAuthorizedPageEntity({
         ctx,
         permission: Permission.view_songs,
         table: db3.xSong,
-        identity: id,
+        identity: publicId,
         load: where => db.song.findFirst({
             select: {
-                id: true,
+                publicId: true,
                 name: true,
             },
             where,
@@ -106,7 +105,7 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
     });
     if (!song) return { notFound: true };
 
-    return { props: { title: song.name, songId: song.id } };
+    return { props: { title: song.name, songId: db3.xSong.parseIdentity(song.publicId) } };
 });
 
 const SongDetailPage: BlitzPage = (x: PageProps) => {

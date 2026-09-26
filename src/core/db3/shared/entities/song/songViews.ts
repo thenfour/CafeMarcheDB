@@ -58,7 +58,7 @@ export const songCreditEditorSelection = Prisma.validator<Prisma.SongCreditDefau
         songId: true,
         song: {
             select: {
-                id: true,
+                publicId: true,
                 name: true,
                 description: true,
             },
@@ -97,7 +97,7 @@ const songCreditUserContract = deriveViewContract(
 
 export const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         name: true,
         aliases: true,
         description: true,
@@ -176,7 +176,7 @@ export const songEditorView = defineCrudView({
 
 const songSearchTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         name: true,
         aliases: true,
         startBPM: true,
@@ -309,7 +309,7 @@ export type SongSearchClient = ClientOf<typeof songSearchView>;
 
 const songDetailTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         name: true,
         aliases: true,
         description: true,

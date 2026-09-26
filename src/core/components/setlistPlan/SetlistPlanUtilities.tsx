@@ -1,7 +1,7 @@
 
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { toSorted } from "shared/arrayUtils";
-import type { PermissionPublicId } from "shared/publicId";
+import type { PermissionPublicId, SongPublicId } from "shared/publicId";
 import { generateFibonacci } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanColumn, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
@@ -90,8 +90,8 @@ export interface SetlistPlanMutator {
     setAutocompleteMaxPointsPerRehearsal: (maxPoints: number) => void;
     setNotes: (notes: string) => void;
 
-    addSong: (songId: number) => void;
-    addAndRemoveSongs: (add: number[], remove: number[]) => void;
+    addSong: (songId: SongPublicId) => void;
+    addAndRemoveSongs: (add: SongPublicId[], remove: SongPublicId[]) => void;
     addPortableSongList: (songList: PortableSongList, options?: { mode?: 'append' | 'replace' }) => void;
     addDivider: () => void;
     deleteRow: (rowId: string) => void;
@@ -181,7 +181,7 @@ export function CalculateSetlistPlanStatsForCostCalc(doc: SetlistPlan): SetlistP
         .filter(cell => !!cell.pointsAllocated)
         .map(cell => {
             //const songId = doc.payload.rows.find(row => row.rowId === cell.rowId)?.songId;
-            //const song = allSongs.find(s => s.id === songId);
+            //const song = allSongs.find(s => s.publicId === songId);
             const rowIndex = rowIdToRowIndexMap[cell.rowId]!;
             const columnIndex = columnIdToColumnIndexMap[cell.columnId]!;
             return {
@@ -229,7 +229,7 @@ export function CalculateSetlistPlanStatsForCostCalc(doc: SetlistPlan): SetlistP
                 rowIndex,
                 rowId: row.rowId,
                 // songId: row.songId,
-                // song: allSongs.find(s => s.id === row.songId),
+                // song: allSongs.find(s => s.publicId === row.songId),
                 songAllocatedCells,
                 requiredPoints: row.pointsRequired || 0,
                 totalPointsAllocated,
@@ -329,7 +329,7 @@ export function CalculateSetlistPlanStatsForCostCalc(doc: SetlistPlan): SetlistP
     // }, maxSongTotalPoints);
 
     // const totalSongLengthSeconds = songStats.reduce((acc, x) => {
-    //     const song = allSongs.find(s => s.id === x.songId);
+    //     const song = allSongs.find(s => s.publicId === x.songId);
     //     if (!song) return acc;
     //     return acc + (song.lengthSeconds || 0);
     // }, 0);
@@ -409,7 +409,7 @@ export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongCl
         .filter(cell => !!cell.pointsAllocated)
         .map(cell => {
             const songId = doc.payload.rows.find(row => row.rowId === cell.rowId)?.songId;
-            const song = allSongs.find(s => s.id === songId);
+            const song = allSongs.find(s => s.publicId === songId);
             const rowIndex = rowIdToRowIndexMap[cell.rowId]!;
             const columnIndex = columnIdToColumnIndexMap[cell.columnId]!;
             return {
@@ -456,7 +456,7 @@ export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongCl
                 rowIndex,
                 rowId: row.rowId,
                 songId: row.songId,
-                song: allSongs.find(s => s.id === row.songId),
+                song: allSongs.find(s => s.publicId === row.songId),
                 songAllocatedCells,
                 requiredPoints: row.pointsRequired || 0,
                 totalPointsAllocated,
@@ -556,7 +556,7 @@ export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongCl
     }, maxSongTotalPoints);
 
     const totalSongLengthSeconds = songStats.reduce((acc, x) => {
-        const song = allSongs.find(s => s.id === x.songId);
+        const song = allSongs.find(s => s.publicId === x.songId);
         if (!song) return acc;
         return acc + (song.lengthSeconds || 0);
     }, 0);

@@ -36,7 +36,7 @@ import { SongHistory } from './SongHistory';
 
 
 export const SongClientColumns = DB3Client.makeClientColumnSet({
-    id: columnName => new DB3Client.PKColumnClient({ columnName }),
+    publicId: DB3Client.publicIdFieldGen(),
     name: columnName => new SearchableNameColumnClient({ columnName, cellWidth: 250 }),
     //searchableName: new SearchableNameColumnClient({ columnName: "name", cellWidth: 250 }),
     aliases: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
@@ -61,7 +61,7 @@ export const SongClientColumns = DB3Client.makeClientColumnSet({
 
 ////////////////////////////////////////////////////////////////
 export interface SongBreadcrumbProps {
-    song: Pick<db3.SongDetailClient, "id" | "name">,
+    song: Pick<db3.SongDetailClient, "publicId" | "name">,
 };
 export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
     const dashboardContext = useDashboardContext();
@@ -98,7 +98,7 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
 };
 
 type SongWithDescription = Pick<db3.SongDetailClient,
-    "id" | "name" | "description" | "createdByUserId">;
+    "publicId" | "name" | "description" | "createdByUserId">;
 
 ////////////////////////////////////////////////////////////////
 interface SongDescriptionEditorProps {
@@ -120,7 +120,7 @@ export const SongDescriptionEditor = (props: SongDescriptionEditorProps) => {
                 feature: ActivityFeature.song_edit_description,
             });
             await mutationToken.invoke({
-                songId: props.song.id,
+                songId: props.song.publicId,
                 description: value,
             });
             showSnackbar({ severity: "success", children: "Success" });
@@ -151,7 +151,7 @@ export const SongDescriptionEditor = (props: SongDescriptionEditorProps) => {
             handleCancel={props.onClose}
             showActionButtons={true}
             hasEdits={hasEdits}
-            uploadFileContext={{ taggedSongId: props.song.id }}
+            uploadFileContext={{ taggedSongId: props.song.publicId }}
         />
     </>;
 };
@@ -313,7 +313,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
 
     const newObj = db3.xSongCredit.createNew(user);
     newObj.song = songData.song;
-    newObj.songId = songData.song.id;
+    newObj.songId = songData.song.publicId;
     newObj.year = `${(new Date()).getFullYear()}`;
 
     const insertAuthorized = db3.xSongCredit.authorizeRowBeforeInsert({
@@ -449,7 +449,7 @@ export const SongDetailContainer = ({ songData, tableClient, editCommands, ...pr
                         <NameValuePair
                             isReadOnly={true}
                             name={"songId"}
-                            value={song.id}
+                            value={song.publicId}
                         />
                         <AdminInspectObject src={song} />
                     </>
@@ -487,7 +487,7 @@ export const SongDetailContainer = ({ songData, tableClient, editCommands, ...pr
                             feature: ActivityFeature.song_delete,
                             context: "song detail dialog",
                         });
-                        editCommands.delete(song.id).then(() => {
+                        editCommands.delete(song.publicId).then(() => {
                             showSnackbar({ children: "delete successful", severity: 'success' });
                             api.close();
                         }).catch(err => {
@@ -557,7 +557,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
         && song.pinnedRecordingId !== undefined
         && song.lengthSeconds !== undefined
         ? {
-            id: song.id,
+            publicId: song.publicId,
             name: song.name,
             pinnedRecordingId: song.pinnedRecordingId,
             lengthSeconds: song.lengthSeconds,
@@ -601,7 +601,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summaryIcon={gIconMap.Info()}
                 canBeDefault={!IsNullOrWhitespace(song.description)}
             >
-                <AppContextMarker name="info tab" songId={song.id}>
+                <AppContextMarker name="info tab" songId={song.publicId}>
                     <SongDescriptionControl readonly={props.readonly} refetch={refetch} song={song} />
                 </AppContextMarker>
             </CMTab>
@@ -612,17 +612,17 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summarySubtitle={fileInfo.partitions.length}
                 canBeDefault={!!fileInfo.partitions.length}
             >
-                <AppContextMarker name="partitions tab" songId={song.id}>
+                <AppContextMarker name="partitions tab" songId={song.publicId}>
                     <FilesTabContent
                         fileTags={fileInfo.partitions}
                         readonly={props.readonly}
                         refetch={refetch}
                         uploadTags={{
-                            taggedSongId: song.id,
+                            taggedSongId: song.publicId,
                             fileTagId: partitionTagId,
                         }}
                         hiddenTagIds={{
-                            songTagIds: [song.id],
+                            songTagIds: [song.publicId],
                             fileTagIds: partitionTagId ? [partitionTagId] : [],
                         }}
                         contextSong={contextSong}
@@ -636,17 +636,17 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summarySubtitle={fileInfo.recordings.length}
                 canBeDefault={!!fileInfo.recordings.length}
             >
-                <AppContextMarker name="recordings tab" songId={song.id}>
+                <AppContextMarker name="recordings tab" songId={song.publicId}>
                     <FilesTabContent
                         fileTags={fileInfo.recordings}
                         readonly={props.readonly}
                         refetch={refetch}
                         uploadTags={{
-                            taggedSongId: song.id,
+                            taggedSongId: song.publicId,
                             fileTagId: recordingTagId,
                         }}
                         hiddenTagIds={{
-                            songTagIds: [song.id],
+                            songTagIds: [song.publicId],
                             fileTagIds: recordingTagId ? [recordingTagId] : [],
                         }}
                         contextSong={contextSong}
@@ -660,17 +660,17 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summarySubtitle={song.taggedFiles?.length || 0}
                 canBeDefault={!!song.taggedFiles?.length}
             >
-                <AppContextMarker name="all files tab" songId={song.id}>
+                <AppContextMarker name="all files tab" songId={song.publicId}>
                     <FilesTabContent
                         fileTags={fileInfo.enrichedFiles}
                         readonly={props.readonly}
                         refetch={refetch}
                         uploadTags={{
-                            taggedSongId: song.id,
+                            taggedSongId: song.publicId,
                         }}
                         contextSong={contextSong}
                         hiddenTagIds={{
-                            songTagIds: [song.id],
+                            songTagIds: [song.publicId],
                         }}
                     />
                 </AppContextMarker>
@@ -680,7 +680,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summaryTitle={"Stats"}
                 summaryIcon={gIconMap.Equalizer()}
             >
-                <AppContextMarker name="stats tab" songId={song.id}>
+                <AppContextMarker name="stats tab" songId={song.publicId}>
                     <SongHistory song={song} />
                 </AppContextMarker>
             </CMTab>

@@ -424,7 +424,7 @@ export const gClientFacetHandlers = {
     }),
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    songs: MakeHandler<FacetedBreakdownResult['facets']['songs'][0], number>({
+    songs: MakeHandler<FacetedBreakdownResult['facets']['songs'][0], import("shared/publicId").SongPublicId>({
         getItemKey: (item) => item.songId,
         getFacetName: () => "Song",
         getItemLabel: (item) => item.name,
@@ -446,7 +446,7 @@ export const gClientFacetHandlers = {
         }),
         renderItem: (props) => {
             return <FacetItemRenderHelper {...props}>
-                <SongChip value={{ ...props.item, id: props.item.songId }} startAdornment={gIconMap.MusicNote()} useHashedColor={true} />
+                <SongChip value={{ publicId: props.item.songId, name: props.item.name }} startAdornment={gIconMap.MusicNote()} useHashedColor={true} />
             </FacetItemRenderHelper>;
         },
         renderFilter: (props) => {

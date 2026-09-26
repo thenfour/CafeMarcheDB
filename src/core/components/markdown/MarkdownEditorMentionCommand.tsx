@@ -1,6 +1,7 @@
 import { InputBase } from "@mui/material";
 import React from "react";
 import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
+import { isPublicId } from "shared/publicId";
 import { IsNullOrWhitespace } from "shared/utils";
 import { CMDialog } from "../CMDialog";
 import { NameValuePair } from "../CMCoreComponents2";
@@ -14,7 +15,7 @@ const kCommandId = "MarkdownEditorMentionCommand";
 interface ParsedMarkdownMention {
     isMention: boolean;
     type: string;
-    id: number;
+    id: string;
     parsedRef: ParsedMarkdownReference;
 };
 
@@ -23,7 +24,7 @@ const parseMarkdownMention = (text: string): ParsedMarkdownMention => {
     const fallbackReturnValue: ParsedMarkdownMention = {
         isMention: false,
         type: "",
-        id: -1,
+        id: "",
         parsedRef: parsedRef,
     };
     if (!parsedRef.isReference) {
@@ -37,8 +38,8 @@ const parseMarkdownMention = (text: string): ParsedMarkdownMention => {
         return fallbackReturnValue;
     }
     const type = parts[0]!.trim();
-    const id = parseInt(parts[1]!.trim(), 10);
-    if (isNaN(id)) {
+    const id = parts[1]!.trim();
+    if (!isPublicId(id)) {
         return fallbackReturnValue;
     }
     return {

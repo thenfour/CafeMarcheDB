@@ -312,6 +312,14 @@ export async function CorrectEventPublicIds() {
     console.log(`Replaced ${replacementCount} Event public-ID placeholders.`);
 }
 
+export async function CorrectSongPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.song,
+        modelName: "Song",
+    });
+    console.log(`Replaced ${replacementCount} Song public-ID placeholders.`);
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> => (
     typeof value === "object" && value !== null && !Array.isArray(value)
 );
@@ -329,6 +337,10 @@ const getSetlistPlanAssociatedItems = (payload: unknown): Record<string, unknown
     }
     return associatedItems;
 };
+
+const getSetlistPlanRows = (payload: unknown): Record<string, unknown>[] => (
+    isRecord(payload) && Array.isArray(payload.rows) ? payload.rows.filter(isRecord) : []
+);
 
 export async function MigrateEventPublicIdReferences() {
     const describedEvents = await db.event.findMany({
@@ -408,6 +420,76 @@ export async function MigrateEventPublicIdReferences() {
     console.log(`Migrated ${migratedWikiPages} Event-description wiki paths and ${migratedSetlistPlans} SetlistPlan Event references.`);
 }
 
+export async function MigrateSongPublicIdReferences() {
+    const plans = await db.setlistPlan.findMany({ select: { id: true, payloadJson: true } });
+    const parsedPlans: { id: number; payload: unknown }[] = [];
+    const numericSongIds = new Set<number>();
+    for (const plan of plans) {
+        try {
+            const payload: unknown = JSON.parse(plan.payloadJson);
+            const rows = getSetlistPlanRows(payload);
+            const associatedItems = getSetlistPlanAssociatedItems(payload);
+            for (const row of rows) {
+                if (typeof row.songId === "number") numericSongIds.add(row.songId);
+            }
+            for (const item of associatedItems) {
+                if (item.itemType === QuickSearchItemType.song && typeof item.id === "number") {
+                    numericSongIds.add(item.id);
+                }
+            }
+            parsedPlans.push({ id: plan.id, payload });
+        } catch {
+            console.warn(`SetlistPlan #${plan.id} has invalid JSON; its Song references were not migrated.`);
+        }
+    }
+
+    const songs = numericSongIds.size === 0
+        ? []
+        : await db.song.findMany({
+            where: { id: { in: [...numericSongIds] } },
+            select: { id: true, publicId: true },
+        });
+    const publicIdByNumericId = new Map(songs.map(song => [song.id, song.publicId]));
+    let migratedPlans = 0;
+    for (const plan of parsedPlans) {
+        if (!migrateSetlistPlanSongPayload(plan.payload, publicIdByNumericId)) continue;
+        await db.setlistPlan.update({
+            where: { id: plan.id },
+            data: { payloadJson: JSON.stringify(plan.payload) },
+        });
+        migratedPlans++;
+    }
+    console.log(`Migrated ${migratedPlans} SetlistPlan Song references.`);
+}
+
+export function migrateSetlistPlanSongPayload(
+    payload: unknown,
+    publicIdByNumericId: ReadonlyMap<number, string>,
+): boolean {
+    let changed = false;
+    for (const row of getSetlistPlanRows(payload)) {
+        if (typeof row.songId !== "number") continue;
+        const publicId = publicIdByNumericId.get(row.songId);
+        if (!publicId) continue;
+        row.songId = publicId;
+        changed = true;
+    }
+    for (const item of getSetlistPlanAssociatedItems(payload)) {
+        if (item.itemType !== QuickSearchItemType.song || typeof item.id !== "number") continue;
+        const publicId = publicIdByNumericId.get(item.id);
+        if (!publicId) continue;
+        item.id = publicId;
+        if (typeof item.absoluteUri === "string") {
+            item.absoluteUri = item.absoluteUri.replace(
+                /\/backstage\/song\/\d+(?=\/|$)/,
+                `/backstage/song/${publicId}`,
+            );
+        }
+        changed = true;
+    }
+    return changed;
+}
+
 export async function CorrectEventSegmentPublicIds() {
     const replacementCount = await repairPublicIdPlaceholders({
         delegate: db.eventSegment, modelName: "EventSegment",
@@ -480,6 +562,8 @@ export async function registerNodeInstrumentation() {
     await CorrectInstrumentTagAssociationPublicIds();
     await CorrectSongTagPublicIds();
     await CorrectSongTagAssociationPublicIds();
+    await CorrectSongPublicIds();
+    await MigrateSongPublicIdReferences();
     await CorrectSongCreditTypePublicIds();
     await CorrectSongCreditPublicIds();
     await CorrectFileTagPublicIds();

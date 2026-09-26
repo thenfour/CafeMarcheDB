@@ -12,7 +12,7 @@ import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from '../search/
 import { arraysContainSameValues } from 'shared/arrayUtils';
 import { AdminInspectObject } from '../CMCoreComponents2';
 import { useDashboardContext } from '../dashboardContext/DashboardContext';
-import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId } from 'shared/publicId';
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, SongPublicId } from 'shared/publicId';
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -99,7 +99,7 @@ export const SongHistoryFilterControls = ({ filterSpec, setFilterSpec, defaultFi
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface SongHistoryQuerierProps {
     filterSpec: GetSongActivityReportFilterSpec,
-    songId: number;
+    songId: SongPublicId;
     setResults: (x: GetSongActivityReportRet) => void;
 }
 const SongHistoryQuerier = (props: SongHistoryQuerierProps) => {
@@ -133,7 +133,6 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
     const [filterSpec, setFilterSpec] = React.useState<GetSongActivityReportFilterSpec>(defaultFilterSpec);
     const [results, setResults] = React.useState<GetSongActivityReportRet>({
         events: [],
-        query: "",
     });
 
     const [selectedBucket, setSelectedBucket] = React.useState<null | ActivityVisBucket<GetSongActivityReportRetEvent>>(null);
@@ -150,7 +149,7 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
         />
 
         <Suspense>
-            <SongHistoryQuerier filterSpec={filterSpec} songId={song.id} setResults={setResults} />
+            <SongHistoryQuerier filterSpec={filterSpec} songId={song.publicId} setResults={setResults} />
         </Suspense>
 
         <div>

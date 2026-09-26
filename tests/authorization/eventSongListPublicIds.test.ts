@@ -18,6 +18,7 @@ import { Permission } from "shared/permissions";
 import { isPublicId } from "shared/publicId";
 import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
 import { eventPublicId } from "../support/eventResponseFixtures";
+import { songPublicId } from "../support/songFixtures";
 import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { forgeDb3Query } from "./support/db3RequestBuilders";
@@ -40,7 +41,7 @@ const dividerFields = {
     isSong: false, subtitleIfSong: null, lengthSeconds: null, textStyle: null,
 };
 const song = {
-    id: 300, name: "Tune", description: "", aliases: "", isDeleted: false,
+    id: 300, publicId: songPublicId(300), name: "Tune", description: "", aliases: "", isDeleted: false,
     visiblePermissionId: 920_002, createdByUserId: null, tags: [],
     lengthSeconds: 120, startBPM: null, endBPM: null, pinnedRecordingId: null,
 };
@@ -60,7 +61,7 @@ const save = (payload: unknown) => invokeResolver(executeCommand, {
 }, ctx);
 const updatePayload = {
     ...parentFields, publicId: listPublicId(50),
-    songs: [{ publicId: listSongPublicId(501), songId: 300, sortOrder: 0, subtitle: "Edited" }],
+    songs: [{ publicId: listSongPublicId(501), songId: songPublicId(300), sortOrder: 0, subtitle: "Edited" }],
     dividers: [{ publicId: listDividerPublicId(601), ...dividerFields }],
 };
 
@@ -87,7 +88,7 @@ describe("Event setlist public identities", () => {
     it("keeps existing row identities while inserting mixed new children into an undated event", async () => {
         await save({
             ...updatePayload,
-            songs: [...updatePayload.songs, { songId: 300, sortOrder: 2, subtitle: "Reprise" }],
+            songs: [...updatePayload.songs, { songId: songPublicId(300), sortOrder: 2, subtitle: "Reprise" }],
             dividers: [...updatePayload.dividers, { ...dividerFields, sortOrder: 3 }],
         });
         expect(authorizationTestDb.snapshot("event")[0]?.calendarInputHash).not.toBe("unchanged");
@@ -111,7 +112,7 @@ describe("Event setlist public identities", () => {
                 tags: [], expectedAttendanceUserTagId: null, visiblePermissionId: null,
             },
             segment: { name: "First set", description: "", startsAt: null, durationMillis: 0, isAllDay: true },
-            songList: [{ songId: 300, comment: "Intro" }],
+            songList: [{ songId: songPublicId(300), comment: "Intro" }],
         }, ctx);
         const list = authorizationTestDb.snapshot("eventSongList").find(row => row.id !== 50)!;
         const item = authorizationTestDb.snapshot("eventSongListSong").find(row => row.eventSongListId === list.id)!;

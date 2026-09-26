@@ -44,6 +44,7 @@ import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
 import { CopySetlistPlanPayloadWithoutDerivedStats, CreateNewSetlistPlan, SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanCell, SetlistPlanLedDef, SetlistPlanLedValue, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
+import { SongPublicId } from "shared/publicId";
 
 function getId(prefix: string) {
     //return `${prefix}${nanoid(3)}`;
@@ -901,7 +902,7 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                     });
                 }
             },
-            addSong: (songId: number) => {
+            addSong: (songId: SongPublicId) => {
                 if (doc) {
                     setDocWrapper({
                         ...doc,
@@ -919,7 +920,7 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                     });
                 }
             },
-            addAndRemoveSongs: (add: number[], remove: number[]) => {
+            addAndRemoveSongs: (add: SongPublicId[], remove: SongPublicId[]) => {
                 if (doc) {
                     const newRows: SetlistPlanRow[] = add.map(songId => ({
                         rowId: getId("row"),
@@ -961,7 +962,7 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                         if (item.type === "song") {
                             return {
                                 rowId: getId("row"),
-                                songId: item.song.id,
+                                songId: item.song.publicId,
                                 commentMarkdown: "",
                                 type: "song",
                                 pointsRequired: 0,

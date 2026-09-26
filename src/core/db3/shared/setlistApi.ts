@@ -10,7 +10,7 @@ import { arrayToTSV, IsNullOrWhitespace, StringToEnumValue } from "shared/utils"
 import { getFormattedBPM } from "../clientAPILL";
 import { EventSongListDividerTextStyle } from "./schema/prismArgs";
 import type { SongTagAssociationReferenceClientPayload } from "./schema/prismArgs";
-import type { EventSongListPublicId, EventSongListSongPublicId, EventSongListDividerPublicId } from "shared/publicId";
+import type { EventSongListPublicId, EventSongListSongPublicId, EventSongListDividerPublicId, SongPublicId } from "shared/publicId";
 
 // Text/calendar formatting needs only semantic fields, never persistence identity.
 interface BasicSongListSongItem {
@@ -39,9 +39,9 @@ export interface EventSongListSongItemWithSong extends BasicSongListSongItem {
     clientId: string;
     publicId?: EventSongListSongPublicId;
     eventSongListId?: EventSongListPublicId;
-    songId: number;
+    songId: SongPublicId;
     song: BasicSongListSongItem["song"] & {
-        id: number;
+        publicId: SongPublicId;
         pinnedRecordingId: number | null;
         tags: SongTagAssociationReferenceClientPayload[];
     };

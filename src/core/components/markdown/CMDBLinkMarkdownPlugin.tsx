@@ -37,8 +37,8 @@
 //     };
 // }
 
-export const MarkdownMentionRegex = /\[\[(event|song):(\d+)\|?(.*?)\]\]/g;
-export const MarkdownMentionRegexWithSurroundingWhitespace = /\s*\[\[(event|song):(\d+)\|?(.*?)\]\]\s*/g;
+export const MarkdownMentionRegex = /\[\[(event|song):([A-Za-z0-9_-]{16})\|?(.*?)\]\]/g;
+export const MarkdownMentionRegexWithSurroundingWhitespace = /\s*\[\[(event|song):([A-Za-z0-9_-]{16})\|?(.*?)\]\]\s*/g;
 
 export const MarkdownWikiLinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 export const MarkdownWikiLinkRegexWithSurroundingWhitespace = /\s*\[\[([^\]|]+)(?:\|([^\]]+))?\]\]\s*/g;

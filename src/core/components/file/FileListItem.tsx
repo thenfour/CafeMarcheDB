@@ -109,7 +109,7 @@ export const FileListItem = (props: FileListItemProps) => {
                 {(props.file.taggedSongs || []).map(taggedSong => taggedSong.song.name === undefined
                     ? null
                     : <SongChip key={db3.xFile.fields.taggedSongs.getForeignIdentity(taggedSong)} value={{
-                        id: taggedSong.song.id,
+                        publicId: db3.xSong.parseIdentity(taggedSong.song.publicId),
                         name: taggedSong.song.name,
                     }} size="small" variation={StandardVariationSpec.Weak} />)}
 

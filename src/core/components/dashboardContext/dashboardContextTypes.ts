@@ -1,6 +1,6 @@
 import { DbBrandConfig } from "@/shared/brandConfigBase";
 import { isAbsoluteUri, slugify, TableAccessor } from "@/shared/rootroot";
-import type { EventAttendancePublicId, EventPublicId, InstrumentPublicId, PermissionPublicId, RolePublicId } from "shared/publicId";
+import type { EventAttendancePublicId, EventPublicId, InstrumentPublicId, PermissionPublicId, RolePublicId, SongPublicId } from "shared/publicId";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
@@ -68,8 +68,8 @@ export abstract class DashboardContextDataBase {
             return this.getAbsoluteUri(`/backstage/event/${parts.join("/")}`);
         },
 
-        getURIForSong: (song: { id: number, name?: string }, tabSlug?: string) => {
-            const parts: string[] = [song.id.toString()];
+        getURIForSong: (song: { publicId: SongPublicId, name?: string }, tabSlug?: string) => {
+            const parts: string[] = [song.publicId];
             if (song.name) parts.push(slugify(song.name));
             if (!IsNullOrWhitespace(tabSlug)) parts.push(tabSlug || "");
             return this.getAbsoluteUri(`/backstage/song/${parts.join("/")}`);

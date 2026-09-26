@@ -62,7 +62,7 @@ export const FacetItemDetailTableRow = ({ value, index, ...props }: FacetItemDet
         </td>
         <td>
             {value.song && <FilterableChip
-                item={{ songId: value.song.id, name: value.song.name, count: 0 }}
+                item={{ songId: value.song.publicId, name: value.song.name, count: 0 }}
                 handler={gClientFacetHandlers.songs}
                 filterSpec={props.filterSpec}
                 setFilterSpec={props.setFilterSpec}

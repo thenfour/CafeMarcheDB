@@ -74,7 +74,7 @@ export function portableSongListToDraftItems(value: PortableSongList): EventSong
                     type: 'song',
                     clientId: createEventSongListLocalKey(),
                     subtitle: p.comment,
-                    songId: p.song.id,
+                    songId: p.song.publicId,
                     song: p.song,
                 }
                 return song;

@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { QuickSearchItemType, type QuickSearchItemMatch } from "shared/quickFilter";
-import { parsePublicId, type EventPublicId, type InstrumentPublicId } from "shared/publicId";
+import { parsePublicId, type EventPublicId, type InstrumentPublicId, type SongPublicId } from "shared/publicId";
+import { songPublicId } from "./support/songFixtures";
 import * as db3 from "src/core/db3/db3";
 
 describe("DB3 table identity authority", () => {
@@ -23,8 +24,8 @@ describe("DB3 table identity authority", () => {
         expect(db3.xInstrument.isIdentity(42)).toBe(false);
         expect(db3.xInstrument.identitySchema.safeParse("not-a-public-id").success).toBe(false);
 
-        expect(db3.xSong.getIdentity({ id: 42 })).toBe(42);
-        expect(db3.xSong.parseIdentity(42)).toBe(42);
+        expect(db3.xSong.getIdentity({ publicId: songPublicId(42) })).toBe(songPublicId(42));
+        expect(db3.xSong.parseIdentity(songPublicId(42))).toBe(songPublicId(42));
         expect(db3.xInstrument.parseDatabaseIdentity(42)).toBe(42);
         expect(db3.xFileTag.getIdentity({ publicId: fileTagPublicId })).toBe(fileTagPublicId);
         expect(db3.xFileTagAssignment.getIdentity({ publicId: fileTagAssignmentPublicId }))
@@ -104,6 +105,6 @@ describe("DB3 table identity authority", () => {
         expectTypeOf<QuickSearchItemMatch<QuickSearchItemType.instrument>["id"]>()
             .toEqualTypeOf<InstrumentPublicId>();
         expectTypeOf<QuickSearchItemMatch<QuickSearchItemType.song>["id"]>()
-            .toEqualTypeOf<number>();
+            .toEqualTypeOf<SongPublicId>();
     });
 });

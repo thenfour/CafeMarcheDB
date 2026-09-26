@@ -221,9 +221,9 @@ const ActivityLogUserTag = ({ userTagId, cacheData }: { userTagId: number | stri
     </ActivityLogChip>;
 };
 
-const ActivityLogSong = ({ songId, cacheData }: { songId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
+const ActivityLogSong = ({ songId, cacheData }: { songId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
-    const found = cacheData.songs.find(s => s.id === songId);
+    const found = cacheData.songs.find(s => typeof songId === "number" ? s.id === songId : s.publicId === songId);
     if (!found) {
         return <ActivityLogChip><Id value={songId} /></ActivityLogChip>;
     }
@@ -281,7 +281,7 @@ const ActivityLogFile = ({ file, cacheData }: { file: Prisma.FileGetPayload<{}>,
 };
 
 
-type ActivityLogSongListSongPayload = { id?: number | undefined, songId: number, sortOrder: number, subtitle: string, type: "song" };
+type ActivityLogSongListSongPayload = { id?: number | undefined, songId: number | string, sortOrder: number, subtitle: string, type: "song" };
 type ActivityLogSongListDividerPayload = {
     id?: number | undefined,
     sortOrder: number,
