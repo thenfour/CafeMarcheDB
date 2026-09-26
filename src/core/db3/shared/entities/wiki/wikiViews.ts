@@ -1,4 +1,5 @@
 import { Prisma } from "db";
+import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DbPayloadOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
@@ -256,19 +257,66 @@ const wikiPageRevisionDetailContract = deriveViewContract(
     wikiPageRevisionDetailSelection,
 );
 
+const visibleWikiPageRevisionWhere = (authorization: DB3ServerAuthorization): Prisma.WikiPageRevisionWhereInput => ({
+    wikiPage: xWikiPage.CalculateWhereClause({
+        filterModel: { tableParams: {} },
+        publicData: authorization,
+        includeDeleted: false,
+    }),
+});
+
 export const wikiPageRevisionDetailView = defineView({
     viewID: "WikiPageRevision_Detail",
     entity: xWikiPageRevision,
     selection: wikiPageRevisionDetailContract.prismaSelection,
-    where: ({ authorization }) => ({
-        wikiPage: xWikiPage.CalculateWhereClause({
-            filterModel: { tableParams: {} },
-            publicData: authorization,
-            includeDeleted: false,
-        }),
-    }),
+    where: ({ authorization }) => visibleWikiPageRevisionWhere(authorization),
     dtoSchema: wikiPageRevisionDetailContract.dtoSchema,
     hydrate: wikiPageRevisionDetailContract.hydrate,
+});
+
+const wikiPageRevisionContributionSelection = Prisma.validator<Prisma.WikiPageRevisionDefaultArgs>()({
+    select: {
+        publicId: true,
+        createdAt: true,
+        createdByUser: { select: { publicId: true, name: true } },
+        wikiPage: { select: { publicId: true, slug: true } },
+    },
+});
+
+const wikiPageRevisionContributionContract = deriveViewContract(
+    xWikiPageRevision,
+    wikiPageRevisionContributionSelection,
+);
+
+export const wikiPageRevisionContributionView = defineView({
+    viewID: "WikiPageRevision_Contribution",
+    entity: xWikiPageRevision,
+    selection: wikiPageRevisionContributionContract.prismaSelection,
+    where: ({ authorization, filter }) => ({
+        AND: [
+            visibleWikiPageRevisionWhere(authorization),
+            // This view must never return every contributor when userId is absent.
+            { createdByUserId: typeof filter.tableParams?.userId === "number"
+                ? filter.tableParams.userId
+                : { in: [] } },
+        ],
+    }),
+    dtoSchema: wikiPageRevisionContributionContract.dtoSchema,
+    hydrate: wikiPageRevisionContributionContract.hydrate,
+});
+
+const wikiPageRevisionDeleteTargetContract = deriveViewContract(
+    xWikiPageRevision,
+    Prisma.validator<Prisma.WikiPageRevisionDefaultArgs>()({ select: { publicId: true } }),
+);
+
+export const wikiPageRevisionDeleteTargetView = defineView({
+    viewID: "WikiPageRevision_DeleteTarget",
+    entity: xWikiPageRevision,
+    selection: wikiPageRevisionDeleteTargetContract.prismaSelection,
+    where: ({ authorization }) => visibleWikiPageRevisionWhere(authorization),
+    dtoSchema: wikiPageRevisionDeleteTargetContract.dtoSchema,
+    hydrate: wikiPageRevisionDeleteTargetContract.hydrate,
 });
 
 export type WikiPageEditorDto = DtoOf<typeof wikiPageEditorView>;

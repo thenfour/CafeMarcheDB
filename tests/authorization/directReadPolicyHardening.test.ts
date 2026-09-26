@@ -366,6 +366,14 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     authorizationTestDb.getDelegate("wikiPageRevision").reset([
       { ...hiddenRevision, wikiPage: hiddenPage },
       { ...privateOwnerRevision, wikiPage: privateOwnerPage },
+      {
+        ...privateOwnerRevision,
+        id: 412,
+        publicId: parsePublicId<"WikiPageRevision">("WikiRevOther0001"),
+        createdByUserId: actor.id + 1,
+        createdByUser: null,
+        wikiPage: privateOwnerPage,
+      },
     ])
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
@@ -383,11 +391,23 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     expect(visibleHistory).not.toHaveProperty("id")
     expect(visibleHistory).not.toHaveProperty("createdByUserId")
     expect(visibleHistory?.revisions?.[0]).not.toHaveProperty("createdByUserId")
-    await expect(invokeResolver(
+    const contributions = await invokeResolver(
       getUserWikiContributions,
       { userId: actor.publicId },
       ctx,
-    )).resolves.toMatchObject({ wikiContributions: [{ publicId: privatePagePublicId, slug: privateOwnerPage.slug }] })
+    )
+    expect(contributions).toMatchObject({
+      wikiContributions: [{
+        publicId: privatePagePublicId,
+        slug: privateOwnerPage.slug,
+        revisions: [{ createdAt: privateOwnerRevision.createdAt }],
+      }],
+    })
+    expect(contributions.wikiContributions).toHaveLength(1)
+    expect(contributions.wikiContributions[0]?.revisions).toHaveLength(1)
+    expect(contributions.wikiContributions[0]).not.toHaveProperty("id")
+    expect(contributions.wikiContributions[0]?.revisions[0]).not.toHaveProperty("createdByUserId")
+    expect(contributions.wikiContributions[0]?.revisions[0]).not.toHaveProperty("wikiPageId")
     await expect(invokeResolver(getWikiPageRevision, { revisionId: hiddenRevisionPublicId }, ctx)).resolves.toBeNull()
     const visibleRevision = await invokeResolver(getWikiPageRevision, { revisionId: privateRevisionPublicId }, ctx)
     expect(visibleRevision).toEqual(expect.objectContaining({ publicId: privateRevisionPublicId }))

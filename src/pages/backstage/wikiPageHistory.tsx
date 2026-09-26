@@ -100,6 +100,7 @@ const WikiRevisionDeleteButton = (props: { revision: RevisionHistoryItem, onChan
         })) {
             await snackbar.invokeAsync(async () => {
                 await deleteMutation({ revisionId: props.revision.publicId });
+                props.onChanged();
             });
         }
     };
@@ -177,7 +178,7 @@ const WikiRevisionHistoryPageContent = () => {
                     >
                         <td>
                             <WikiRevisionPreviewButton revisionId={rev.publicId} />
-                            {dashboardContext.isAuthorized(Permission.admin_wiki_pages) && <WikiRevisionDeleteButton revision={rev} onChanged={() => {
+                            {rev.publicId !== currentRevision.publicId && dashboardContext.isAuthorized(Permission.admin_wiki_pages) && <WikiRevisionDeleteButton revision={rev} onChanged={() => {
                                 void qExtra.refetch();
                             }} />}
                         </td>

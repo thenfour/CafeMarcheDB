@@ -1,12 +1,11 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import { z } from "zod";
-import db from "db";
 import { Permission } from "shared/permissions";
-import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
-import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
-import { xWikiPage } from "src/core/db3/shared/schema/wiki";
+import { loadAuthorization } from "src/auth/server/requestAuthorization";
 import { UserPublicIdSchema } from "src/auth/schemas";
+import { queryView } from "src/core/db3/server/db3QueryCore";
+import { wikiPageRevisionContributionView } from "src/core/db3/shared/entities/wiki/wikiViews";
 
 const GetUserWikiContributionsInput = z.object({
     userId: UserPublicIdSchema,
@@ -18,62 +17,41 @@ export default resolver.pipe(
     resolver.authorize(Permission.view_wiki_page_revisions),
     resolver.zod(GetUserWikiContributionsInput),
     async (input: GetUserWikiContributionsInputType, ctx: AuthenticatedCtx) => {
-        const currentUser = await getCurrentUserCore(ctx);
-        if (!currentUser) throw new Error("Current user was not found.");
-        const target = await db.user.findUnique({ where: { publicId: input.userId }, select: { id: true } });
-        if (!target) return { wikiContributions: [] };
+        const authorization = await loadAuthorization(ctx.session);
+        const result = await queryView({
+            view: wikiPageRevisionContributionView,
+            filter: { tableParams: { userId: input.userId } },
+            orderBy: { createdAt: "desc" },
+            cmdbQueryContext: "wiki/user-contributions",
+        }, authorization);
 
-        // Get distinct wiki pages where the user has made revisions
-        const wikiContributions = await db.wikiPage.findMany({
-            where: await GetAuthorizedTableReadWhere({
-                table: xWikiPage,
-                currentUser,
-                where: {
-                revisions: {
-                    some: {
-                        createdByUserId: target.id
-                    }
-                }
-                },
-            }),
-            select: {
-                publicId: true,
-                slug: true,
-                revisions: {
-                    where: {
-                        createdByUserId: target.id
-                    },
-                    orderBy: {
-                        createdAt: 'desc'
-                    },
-                    select: {
-                        createdAt: true,
-                        createdByUser: {
-                            select: {
-                                publicId: true,
-                                name: true,
-                            }
-                        }
-                    }
-                },
-            },
-            orderBy: {
-                slug: 'asc'
+        const pages = new Map<string, {
+            publicId: NonNullable<typeof result.items[number]["wikiPage"]>["publicId"];
+            slug: string;
+            revisions: {
+                createdAt: NonNullable<typeof result.items[number]["createdAt"]>;
+                createdByUser: typeof result.items[number]["createdByUser"];
+            }[];
+        }>();
+        for (const revision of result.items) {
+            if (!revision.wikiPage || !revision.wikiPage.slug || !revision.createdAt) {
+                throw new Error("Wiki contribution view returned an incomplete authorized row.");
             }
-        });
+            let page = pages.get(revision.wikiPage.publicId);
+            if (!page) {
+                page = {
+                    publicId: revision.wikiPage.publicId,
+                    slug: revision.wikiPage.slug,
+                    revisions: [],
+                };
+                pages.set(page.publicId, page);
+            }
+            page.revisions.push({
+                createdAt: revision.createdAt,
+                createdByUser: revision.createdByUser ?? null,
+            });
+        }
 
-        return {
-            wikiContributions: wikiContributions.map(page => ({
-                publicId: xWikiPage.parseIdentity(page.publicId),
-                slug: page.slug,
-                revisions: page.revisions.map(revision => ({
-                    createdAt: revision.createdAt,
-                    createdByUser: revision.createdByUser ? {
-                        publicId: revision.createdByUser.publicId,
-                        name: revision.createdByUser.name,
-                    } : null,
-                })),
-            })),
-        };
+        return { wikiContributions: [...pages.values()].sort((a, b) => a.slug.localeCompare(b.slug)) };
     }
 );

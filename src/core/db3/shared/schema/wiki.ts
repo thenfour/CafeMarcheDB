@@ -227,14 +227,16 @@ export const WikiPageRevisionNaturalOrderBy: Prisma.WikiPageRevisionOrderByWithR
     { createdAt: "desc" },
 ];
 
-export interface WikiPageRevisionTableParams {
-    wikiPageSlug: string,
-};
-
 ////////////////////////////////////////////////////////////////
 export const xWikiPageRevision = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.WikiPageRevisionDelegate>(),
     getIdentity: (revision: { publicId: WikiPageRevisionPublicId }) => revision.publicId,
+    queryParameters: {
+        userId: { kind: "entityIdentity", targetTableID: "User", authorizeAs: "createdByUser" },
+    } satisfies db3.DB3QueryParameterMap,
+    getParameterizedWhereClause: (params: { userId?: number }): Prisma.WikiPageRevisionWhereInput[] => (
+        params.userId === undefined ? [] : [{ createdByUserId: params.userId }]
+    ),
     getSelectionArgs: (): Prisma.WikiPageRevisionDefaultArgs => {
         return WikiPageRevisionArgs;
     },

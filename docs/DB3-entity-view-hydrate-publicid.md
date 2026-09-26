@@ -1744,8 +1744,10 @@ remain slug based. Existing setlist JSON is corrected in the shared reference
 pass. File uploads resolve wiki page IDs under DB3 read policy; activity
 telemetry resolves them on the server and reports project public IDs. Numeric
 page and revision keys remain inside trusted Prisma relations and audit ledger
-entries. The contribution query explicitly shapes its response so those keys
-cannot leak from a Prisma row.
+entries. Contributions now query a parent-scoped revision view with a typed
+User public-ID parameter, then group authorized DTOs by page. Revision
+deletion checks that same parent visibility scope before the DB3 hard delete
+in a serializable transaction and rejects the current revision.
 
 Validation: Prisma generation and schema validation, TypeScript, focused
 view/authorization/editor tests, the repository test suite, lint, and the
