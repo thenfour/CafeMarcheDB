@@ -204,9 +204,9 @@ const StatsPageInner = () => {
     const [filterSpec, setFilterSpec] = React.useState<GetGlobalStatsFilterSpec>(defaultFilterSpec);
     const [results, setResults] = React.useState<GetGlobalStatsRet>({
         allEvents: [],
-        eventsQuery: "",
+        //eventsQuery: "",
         popularSongsOccurrances: [],
-        popularSongsQuery: "",
+        //popularSongsQuery: "",
     });
 
     const [selectedEventBucket, setSelectedEventBucket] = React.useState<null | ActivityVisBucket<GetGlobalStatsRetEvent>>(null);

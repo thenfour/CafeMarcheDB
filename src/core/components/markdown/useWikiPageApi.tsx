@@ -51,6 +51,7 @@ export interface WikiPageApi {
 
 type UseWikiPageArgs = {
   canonicalWikiPath: string;
+  isEditing: boolean;
 };
 
 //////////////////////////////////
@@ -70,7 +71,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
     baseContentVersion: basePage?.contentVersion ?? 0,
     lockId: lockUid,
   }, {
-    refetchInterval: 5000,
+    refetchInterval: args.isEditing ? 5000 : false,
   });
 
   const [updateWikiPageMutation, updateWikiPageMutationExtras] = useMutation(updateWikiPage);
@@ -112,7 +113,9 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   }
 
   async function beginEditing(): Promise<GetWikiPageUpdatabilityResult> {
-    const result = await acquire(currentRevisionData.wikiPage);
+    const refreshed = await currentRevisionDataQueryExtras.refetch({ throwOnError: true });
+    if (!refreshed.data) throw new Error("Unable to load the latest wiki page.");
+    const result = await acquire(refreshed.data.wikiPage);
     if (result.outcome === UpdateWikiPageResultOutcome.success) setBase(result.currentPage);
     return result;
   }

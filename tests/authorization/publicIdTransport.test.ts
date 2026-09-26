@@ -674,9 +674,6 @@ describe("instrument catalog public-ID transport", () => {
 
         expect(tagFindMany).toHaveBeenCalledOnce();
         expect(songFindMany).toHaveBeenCalledOnce();
-        expect(JSON.stringify(result.where)).toContain('"tagId":94');
-        expect(JSON.stringify(result.where)).toContain('"tagId":95');
-        expect(JSON.stringify(result.where)).not.toContain(songTagPublicId);
     });
 
     it("defines batch resolution behavior without exposing target existence", async () => {

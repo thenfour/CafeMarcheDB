@@ -49,24 +49,29 @@ const WikiStandaloneControlInner = ({ floatingHeader = false, ...props }: WikiSt
     const [editing, setEditing] = React.useState<boolean>(false);
     const wikiPageApi = useWikiPageApi({
         canonicalWikiPath: props.canonicalWikiPath,
+        isEditing: editing,
     });
 
     const handleEnterEditMode = async () => {
         if (editing) return;
-        const result = await wikiPageApi.beginEditing();
-        switch (result.outcome) {
-            case UpdateWikiPageResultOutcome.success:
-                setEditing(true);
-                break;
-            case UpdateWikiPageResultOutcome.lockConflict:
-                snackbar.showError("Unable to edit: page is locked by another user");
-                break;
-            case UpdateWikiPageResultOutcome.revisionConflict:
-                snackbar.showError("Unable to edit: page has been updated since you loaded it");
-                break;
-            default:
-                snackbar.showError("Unable to edit: unknown error");
-                break;
+        try {
+            const result = await wikiPageApi.beginEditing();
+            switch (result.outcome) {
+                case UpdateWikiPageResultOutcome.success:
+                    setEditing(true);
+                    break;
+                case UpdateWikiPageResultOutcome.lockConflict:
+                    snackbar.showError("Unable to edit: page is locked by another user");
+                    break;
+                case UpdateWikiPageResultOutcome.revisionConflict:
+                    snackbar.showError("Unable to edit: page changed while opening the editor; please try again");
+                    break;
+                default:
+                    snackbar.showError("Unable to edit: unknown error");
+                    break;
+            }
+        } catch {
+            snackbar.showError("Unable to load the latest page. Check your connection and try again.");
         }
     };
 

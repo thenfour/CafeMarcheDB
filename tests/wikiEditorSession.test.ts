@@ -26,16 +26,20 @@ let root: Root;
 const page = (version: number) => ({ id: 1, slug: "test", contentVersion: version, visiblePermissionId: 1,
     currentRevision: { id: 9, content: "Saved " + version, name: "Title" } });
 const refetch = vi.fn();
-function Harness() { api = useWikiPageApi({ canonicalWikiPath: "test" }); return null; }
+function Harness() { api = useWikiPageApi({ canonicalWikiPath: "test", isEditing: false }); return null; }
 const render = async () => { await act(async () => root.render(React.createElement(Harness))); };
-const poll = (version: number) => vi.mocked(useQuery).mockImplementation((_query, args: any) => [
-    { wikiPage: page(version), lockStatus: { isRevisionConflict: version !== args.baseContentVersion } },
-    { refetch, isFetching: false },
-] as any);
+const poll = (version: number) => {
+    refetch.mockResolvedValue({ data: { wikiPage: page(version) }, isError: false });
+    vi.mocked(useQuery).mockImplementation((_query, args: any) => [
+        { wikiPage: page(version), lockStatus: { isRevisionConflict: version !== args.baseContentVersion } },
+        { refetch, isFetching: false },
+    ] as any);
+};
 beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     document.body.innerHTML = "<div id='root'></div>";
     root = createRoot(document.getElementById("root")!);
+    refetch.mockReset();
     poll(5);
     vi.mocked(acquire).mockResolvedValue({ outcome: "success", currentPage: page(5) } as any);
     vi.mocked(save).mockResolvedValue({ outcome: "success", currentPage: page(6) } as any);
@@ -43,6 +47,19 @@ beforeEach(() => {
 });
 afterEach(async () => { await act(async () => root.unmount()); Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT"); });
 describe("wiki editor draft base", () => {
+    it("starts editing from a fresh page after the read-only view becomes stale", async () => {
+        await render();
+        refetch.mockResolvedValueOnce({ data: { wikiPage: page(6) }, isError: false });
+        await act(async () => { await api.beginEditing(); });
+        expect(refetch).toHaveBeenCalledWith({ throwOnError: true });
+        expect(vi.mocked(acquire).mock.calls[0]![0]).toMatchObject({ baseContentVersion: 6, baseRevisionId: 9 });
+    });
+    it("does not acquire a lock if the latest page cannot be loaded", async () => {
+        await render();
+        refetch.mockRejectedValueOnce(new Error("offline"));
+        await act(async () => { await expect(api.beginEditing()).rejects.toThrow("offline"); });
+        expect(acquire).not.toHaveBeenCalled();
+    });
     it("saves against the draft version even after polling newer content with the same revision ID", async () => {
         await render();
         await act(async () => { await api.beginEditing(); });

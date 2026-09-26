@@ -9,6 +9,12 @@ export default async function getCurrentUser(_ = null, { session }: Ctx) {
     return null;
   }
 
+  // TODO: I don't think this query even needs to exist. useDashboardData provides this.
+  // it has other problems too:
+  // 1. it queries the database directly instead of using db3 views
+  // 2. it returns a very large payload with unnecessary data because it's just using
+  //    the full db3.UserArgs.
+
   const user = await db.user.findFirst({
     where: { id: session.userId, isDeleted: false },
     ...db3.UserArgs

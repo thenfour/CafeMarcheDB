@@ -503,24 +503,29 @@ export const WikiPageControl = (props: WikiPageControlProps) => {
 
     const wikiPageApi = useWikiPageApi({
         canonicalWikiPath: props.wikiPath.canonicalWikiPath,
+        isEditing: editing,
     });
 
     const handleEnterEditMode = async () => {
         if (editing) return;
-        const result = await wikiPageApi.beginEditing();
-        switch (result.outcome) {
-            case UpdateWikiPageResultOutcome.success:
-                setEditing(true);
-                break;
-            case UpdateWikiPageResultOutcome.lockConflict:
-                snackbar.showError("Unable to edit: The article is being edited by another user");
-                break;
-            case UpdateWikiPageResultOutcome.revisionConflict:
-                snackbar.showError("Unable to edit: There is a newer version of the article; please refresh the page.");
-                break;
-            default:
-                snackbar.showError("Unable to edit: unknown error");
-                break;
+        try {
+            const result = await wikiPageApi.beginEditing();
+            switch (result.outcome) {
+                case UpdateWikiPageResultOutcome.success:
+                    setEditing(true);
+                    break;
+                case UpdateWikiPageResultOutcome.lockConflict:
+                    snackbar.showError("Unable to edit: The article is being edited by another user");
+                    break;
+                case UpdateWikiPageResultOutcome.revisionConflict:
+                    snackbar.showError("Unable to edit: The article changed while opening the editor; please try again.");
+                    break;
+                default:
+                    snackbar.showError("Unable to edit: unknown error");
+                    break;
+            }
+        } catch {
+            snackbar.showError("Unable to load the latest article. Check your connection and try again.");
         }
     };
 
