@@ -2,7 +2,7 @@ import db from "db"
 import { execSync } from "child_process";
 import { nanoid } from "nanoid";
 import { instrumentationSetup } from "./setup/instrumentation-setup";
-import { repairPublicIdPlaceholders } from "./server/publicId";
+import { PublicIdRepairDelegate, repairPublicIdPlaceholders } from "./server/publicId";
 import { QuickSearchItemType } from "shared/quickFilter";
 
 type GitVersionInfo = {
@@ -89,242 +89,12 @@ async function CorrectEventSegmentUids() {
     }
 };
 
-export async function CorrectInstrumentFunctionalGroupPublicIds() {
+async function CorrectPublicIds(delegate: PublicIdRepairDelegate, modelName: string) {
     const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.instrumentFunctionalGroup,
-        modelName: "InstrumentFunctionalGroup",
+        delegate,
+        modelName,
     });
-    console.log(`Replaced ${replacementCount} InstrumentFunctionalGroup public-ID placeholders.`);
-}
-
-export async function CorrectInstrumentTagPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.instrumentTag,
-        modelName: "InstrumentTag",
-    });
-    console.log(`Replaced ${replacementCount} InstrumentTag public-ID placeholders.`);
-}
-
-export async function CorrectInstrumentTagAssociationPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.instrumentTagAssociation,
-        modelName: "InstrumentTagAssociation",
-    });
-    console.log(`Replaced ${replacementCount} InstrumentTagAssociation public-ID placeholders.`);
-}
-
-export async function CorrectInstrumentPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.instrument,
-        modelName: "Instrument",
-    });
-    console.log(`Replaced ${replacementCount} Instrument public-ID placeholders.`);
-}
-
-export async function CorrectSongTagPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.songTag,
-        modelName: "SongTag",
-    });
-    console.log(`Replaced ${replacementCount} SongTag public-ID placeholders.`);
-}
-
-export async function CorrectSongTagAssociationPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.songTagAssociation,
-        modelName: "SongTagAssociation",
-    });
-    console.log(`Replaced ${replacementCount} SongTagAssociation public-ID placeholders.`);
-}
-
-export async function CorrectSongCreditTypePublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.songCreditType,
-        modelName: "SongCreditType",
-    });
-    console.log(`Replaced ${replacementCount} SongCreditType public-ID placeholders.`);
-}
-
-export async function CorrectSongCreditPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.songCredit,
-        modelName: "SongCredit",
-    });
-    console.log(`Replaced ${replacementCount} SongCredit public-ID placeholders.`);
-}
-
-export async function CorrectFileTagPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.fileTag,
-        modelName: "FileTag",
-    });
-    console.log(`Replaced ${replacementCount} FileTag public-ID placeholders.`);
-}
-
-export async function CorrectFileTagAssignmentPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.fileTagAssignment,
-        modelName: "FileTagAssignment",
-    });
-    console.log(`Replaced ${replacementCount} FileTagAssignment public-ID placeholders.`);
-}
-
-export async function CorrectWikiPageTagPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.wikiPageTag,
-        modelName: "WikiPageTag",
-    });
-    console.log(`Replaced ${replacementCount} WikiPageTag public-ID placeholders.`);
-}
-
-export async function CorrectWikiPageTagAssignmentPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.wikiPageTagAssignment,
-        modelName: "WikiPageTagAssignment",
-    });
-    console.log(`Replaced ${replacementCount} WikiPageTagAssignment public-ID placeholders.`);
-}
-
-export async function CorrectEventTypePublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.eventType,
-        modelName: "EventType",
-    });
-    console.log(`Replaced ${replacementCount} EventType public-ID placeholders.`);
-}
-
-export async function CorrectEventStatusPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.eventStatus,
-        modelName: "EventStatus",
-    });
-    console.log(`Replaced ${replacementCount} EventStatus public-ID placeholders.`);
-}
-
-export async function CorrectEventTagPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.eventTag,
-        modelName: "EventTag",
-    });
-    console.log(`Replaced ${replacementCount} EventTag public-ID placeholders.`);
-}
-
-export async function CorrectEventTagAssignmentPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.eventTagAssignment,
-        modelName: "EventTagAssignment",
-    });
-    console.log(`Replaced ${replacementCount} EventTagAssignment public-ID placeholders.`);
-}
-
-export async function CorrectUserTagPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.userTag,
-        modelName: "UserTag",
-    });
-    console.log(`Replaced ${replacementCount} UserTag public-ID placeholders.`);
-}
-
-export async function CorrectUserTagAssignmentPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.userTagAssignment,
-        modelName: "UserTagAssignment",
-    });
-    console.log(`Replaced ${replacementCount} UserTagAssignment public-ID placeholders.`);
-}
-
-export async function CorrectUserInstrumentPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.userInstrument,
-        modelName: "UserInstrument",
-    });
-    console.log(`Replaced ${replacementCount} UserInstrument public-ID placeholders.`);
-}
-
-export async function CorrectFileUserTagPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.fileUserTag,
-        modelName: "FileUserTag",
-    });
-    console.log(`Replaced ${replacementCount} FileUserTag public-ID placeholders.`);
-}
-
-export async function CorrectFileSongTagPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.fileSongTag,
-        modelName: "FileSongTag",
-    });
-    console.log(`Replaced ${replacementCount} FileSongTag public-ID placeholders.`);
-}
-
-export async function CorrectFileEventTagPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.fileEventTag,
-        modelName: "FileEventTag",
-    });
-    console.log(`Replaced ${replacementCount} FileEventTag public-ID placeholders.`);
-}
-
-export async function CorrectFileInstrumentTagPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.fileInstrumentTag,
-        modelName: "FileInstrumentTag",
-    });
-    console.log(`Replaced ${replacementCount} FileInstrumentTag public-ID placeholders.`);
-}
-
-export async function CorrectFileWikiPageTagPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.fileWikiPageTag,
-        modelName: "FileWikiPageTag",
-    });
-    console.log(`Replaced ${replacementCount} FileWikiPageTag public-ID placeholders.`);
-}
-
-export async function CorrectPermissionPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.permission,
-        modelName: "Permission",
-    });
-    console.log(`Replaced ${replacementCount} Permission public-ID placeholders.`);
-}
-
-export async function CorrectRolePublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.role,
-        modelName: "Role",
-    });
-    console.log(`Replaced ${replacementCount} Role public-ID placeholders.`);
-}
-
-export async function CorrectRolePermissionPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.rolePermission,
-        modelName: "RolePermission",
-    });
-    console.log(`Replaced ${replacementCount} RolePermission public-ID placeholders.`);
-}
-
-export async function CorrectEventPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.event, modelName: "Event",
-    });
-    console.log(`Replaced ${replacementCount} Event public-ID placeholders.`);
-}
-
-export async function CorrectSongPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.song,
-        modelName: "Song",
-    });
-    console.log(`Replaced ${replacementCount} Song public-ID placeholders.`);
-}
-
-export async function CorrectFilePublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.file, modelName: "File",
-    });
-    console.log(`Replaced ${replacementCount} File public-ID placeholders.`);
+    console.log(`Replaced ${replacementCount} ${modelName} public-ID placeholders.`);
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
@@ -466,64 +236,6 @@ export function migrateSetlistPlanReferences(
     return changed;
 }
 
-export async function CorrectEventSegmentPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.eventSegment, modelName: "EventSegment",
-    });
-    console.log(`Replaced ${replacementCount} EventSegment public-ID placeholders.`);
-}
-
-export async function CorrectEventUserResponsePublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.eventUserResponse, modelName: "EventUserResponse",
-    });
-    console.log(`Replaced ${replacementCount} EventUserResponse public-ID placeholders.`);
-}
-
-export async function CorrectEventSegmentUserResponsePublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.eventSegmentUserResponse, modelName: "EventSegmentUserResponse",
-    });
-    console.log(`Replaced ${replacementCount} EventSegmentUserResponse public-ID placeholders.`);
-}
-
-export async function CorrectEventAttendancePublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({ delegate: db.eventAttendance, modelName: "EventAttendance" });
-    console.log(`Replaced ${replacementCount} EventAttendance public-ID placeholders.`);
-}
-
-export async function CorrectEventSongListPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.eventSongList,
-        modelName: "EventSongList",
-    });
-    console.log(`Replaced ${replacementCount} EventSongList public-ID placeholders.`);
-}
-
-export async function CorrectEventSongListSongPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.eventSongListSong,
-        modelName: "EventSongListSong",
-    });
-    console.log(`Replaced ${replacementCount} EventSongListSong public-ID placeholders.`);
-}
-
-export async function CorrectEventSongListDividerPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.eventSongListDivider,
-        modelName: "EventSongListDivider",
-    });
-    console.log(`Replaced ${replacementCount} EventSongListDivider public-ID placeholders.`);
-}
-
-export async function CorrectUserSignInMethodPublicIds() {
-    const replacementCount = await repairPublicIdPlaceholders({
-        delegate: db.userSignInMethod,
-        modelName: "UserSignInMethod",
-    });
-    console.log(`Replaced ${replacementCount} UserSignInMethod public-ID placeholders.`);
-}
-
 export async function registerNodeInstrumentation() {
     console.log(`INSTRUMENTATION RUNNING`);
     await instrumentationSetup();
@@ -531,47 +243,48 @@ export async function registerNodeInstrumentation() {
     await CorrectUserUids();
     await CorrectEventSegmentUids();
 
-    // public id corrections
-    await CorrectInstrumentFunctionalGroupPublicIds();
-    await CorrectInstrumentPublicIds();
-    await CorrectInstrumentTagPublicIds();
-    await CorrectInstrumentTagAssociationPublicIds();
-    await CorrectSongTagPublicIds();
-    await CorrectSongTagAssociationPublicIds();
-    await CorrectSongPublicIds();
-    await CorrectFilePublicIds();
-    await CorrectSongCreditTypePublicIds();
-    await CorrectSongCreditPublicIds();
-    await CorrectFileTagPublicIds();
-    await CorrectFileTagAssignmentPublicIds();
-    await CorrectWikiPageTagPublicIds();
-    await CorrectWikiPageTagAssignmentPublicIds();
-    await CorrectEventTypePublicIds();
-    await CorrectEventStatusPublicIds();
-    await CorrectEventTagPublicIds();
-    await CorrectEventTagAssignmentPublicIds();
-    await CorrectUserTagPublicIds();
-    await CorrectUserTagAssignmentPublicIds();
-    await CorrectUserInstrumentPublicIds();
-    await CorrectFileUserTagPublicIds();
-    await CorrectFileSongTagPublicIds();
-    await CorrectFileEventTagPublicIds();
-    await CorrectFileInstrumentTagPublicIds();
-    await CorrectFileWikiPageTagPublicIds();
-    await CorrectPermissionPublicIds();
-    await CorrectRolePublicIds();
-    await CorrectRolePermissionPublicIds();
-    await CorrectUserSignInMethodPublicIds();
-    await CorrectEventPublicIds();
+    // public id corrections    
+    await CorrectPublicIds(db.instrumentFunctionalGroup, "InstrumentFunctionalGroup");
+    await CorrectPublicIds(db.instrument, "Instrument");
+    await CorrectPublicIds(db.instrumentTag, "InstrumentTag");
+    await CorrectPublicIds(db.instrumentTagAssociation, "InstrumentTagAssociation");
+    await CorrectPublicIds(db.songTag, "SongTag");
+    await CorrectPublicIds(db.songTagAssociation, "SongTagAssociation");
+    await CorrectPublicIds(db.song, "Song");
+    await CorrectPublicIds(db.file, "File");
+    await CorrectPublicIds(db.songCreditType, "SongCreditType");
+    await CorrectPublicIds(db.songCredit, "SongCredit");
+    await CorrectPublicIds(db.fileTag, "FileTag");
+    await CorrectPublicIds(db.fileTagAssignment, "FileTagAssignment");
+    await CorrectPublicIds(db.wikiPageTag, "WikiPageTag");
+    await CorrectPublicIds(db.wikiPageTagAssignment, "WikiPageTagAssignment");
+    await CorrectPublicIds(db.eventType, "EventType");
+    await CorrectPublicIds(db.eventStatus, "EventStatus");
+    await CorrectPublicIds(db.eventTag, "EventTag");
+    await CorrectPublicIds(db.eventTagAssignment, "EventTagAssignment");
+    await CorrectPublicIds(db.userTag, "UserTag");
+    await CorrectPublicIds(db.userTagAssignment, "UserTagAssignment");
+    await CorrectPublicIds(db.userInstrument, "UserInstrument");
+    await CorrectPublicIds(db.fileUserTag, "FileUserTag");
+    await CorrectPublicIds(db.fileSongTag, "FileSongTag");
+    await CorrectPublicIds(db.fileEventTag, "FileEventTag");
+    await CorrectPublicIds(db.fileInstrumentTag, "FileInstrumentTag");
+    await CorrectPublicIds(db.fileWikiPageTag, "FileWikiPageTag");
+    await CorrectPublicIds(db.permission, "Permission");
+    await CorrectPublicIds(db.role, "Role");
+    await CorrectPublicIds(db.rolePermission, "RolePermission");
+    await CorrectPublicIds(db.userSignInMethod, "UserSignInMethod");
+    await CorrectPublicIds(db.event, "Event");
+    await CorrectPublicIds(db.eventSegment, "EventSegment");
+    await CorrectPublicIds(db.eventUserResponse, "EventUserResponse");
+    await CorrectPublicIds(db.eventSegmentUserResponse, "EventSegmentUserResponse");
+    await CorrectPublicIds(db.eventAttendance, "EventAttendance");
+    await CorrectPublicIds(db.eventSongList, "EventSongList");
+    await CorrectPublicIds(db.eventSongListSong, "EventSongListSong");
+    await CorrectPublicIds(db.eventSongListDivider, "EventSongListDivider");
+
     await MigrateEventDescriptionWikiPaths();
     await MigrateSetlistPlanPublicIdReferences();
-    await CorrectEventSegmentPublicIds();
-    await CorrectEventUserResponsePublicIds();
-    await CorrectEventSegmentUserResponsePublicIds();
-    await CorrectEventAttendancePublicIds();
-    await CorrectEventSongListPublicIds();
-    await CorrectEventSongListSongPublicIds();
-    await CorrectEventSongListDividerPublicIds();
 
     //const startupState = getServerStartStateRef();
     process.env.CMDB_START_TIME = `${new Date().valueOf()}`;
