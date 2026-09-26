@@ -8,6 +8,7 @@ import { Clamp, gMinImageDimension } from "shared/utils";
 import { getFileCustomData } from "./fileAPI";
 import { ImageEditParams, MakeDefaultImageEditParams } from "./fileTypes";
 import { PublicGalleryItemSpec } from "./publicTypes";
+import type { FrontpageGalleryItemPublicId } from "shared/publicId";
 
 
 // db3.FilePayloadMinimum
@@ -20,7 +21,7 @@ type GetImageFileEditInfo_File = {
 };
 
 type GetGalleryItemImageInfo_Item = {
-    id: number;
+    publicId: FrontpageGalleryItemPublicId;
     displayParams: string;
     file: GetImageFileEditInfo_File;
 };
@@ -110,9 +111,15 @@ class FilesSharedAPI {
 
 
     // always returns valid
-    getGalleryItemDisplayParams = (f: Prisma.FrontpageGalleryItemGetPayload<{ select: { displayParams: true, id: true } }>): ImageEditParams => {
+    getGalleryItemDisplayParams = (f: {
+        displayParams: string
+    } & (
+            // q: why can the publicid be expressed as either?
+            { publicId: FrontpageGalleryItemPublicId }
+            | { id: FrontpageGalleryItemPublicId }
+        )): ImageEditParams => {
         const ret = parsePayloadJSON<ImageEditParams>(f.displayParams, MakeDefaultImageEditParams, (e) => {
-            console.log(`failed to parse gallery item display params for gallery item id ${f.id}, val:${f.displayParams}`);
+            console.log(`failed to parse gallery item display params for gallery item ${"publicId" in f ? f.publicId : f.id}, val:${f.displayParams}`);
         });
         // validate since this is coming from db.
         if (!ret.cropBegin) ret.cropBegin = { x: 0, y: 0 };

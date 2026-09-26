@@ -10,7 +10,7 @@ const MainContent = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.frontpageGalleryItemEditorView,
         columns: {
-            id: DB3Client.pkFieldGen(),
+            publicId: DB3Client.publicIdFieldGen(),
             file: DB3Client.foreignRefFieldGen({}),
             sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
             isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),

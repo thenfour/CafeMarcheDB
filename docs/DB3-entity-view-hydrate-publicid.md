@@ -1653,6 +1653,31 @@ on the remaining changed file passed. The production build was not run.
 The SQL migration was not applied to a live database, and browser interaction
 against migrated data remains unverified.
 
+#### Completed slice: frontpage gallery item
+
+`FrontpageGalleryItem` now has a public identity in its editor, homepage feed,
+image mutation, reorder command, telemetry, and activity reports.
+
+-  The schema and SQL migration add a unique ASCII/binary public-ID column with
+   deployment placeholders. Startup repair assigns real IDs. DB3 uses the public
+   ID as row identity and limits the natural key to trusted sysadmin surfaces.
+-  The gallery editor and homepage feed use named views that project public IDs.
+   File detail embeds gallery public IDs. The image mutation resolves its target
+   by public ID before changing the stored record.
+-  Gallery reordering uses a typed public-ID command. It resolves the scoped rows
+   under read policy, authorizes all changed sort-order fields before writing,
+   and leaves unrelated rows untouched. Telemetry resolves public gallery IDs
+   to internal Action foreign keys; report projections return public IDs.
+
+Validation: the full repository runner passed 110 test files; 23 MySQL
+integration tests were skipped. The final focused gallery test passed after
+adding the legacy-reorder rejection case. TypeScript, ESLint, Prisma client
+generation and schema validation, the production build, and `git diff --check`
+passed. The build retains the existing Blitz import warnings.
+
+The SQL migration has not been applied to a live database, and browser
+interaction against migrated data remains unverified.
+
 ## Active roadmap
 
 ### Completed foundation
@@ -1772,7 +1797,7 @@ conversions.
        deleting each numeric client-identity compatibility path before marking that
        model complete below.
 
-#### Client-facing model progress: 38 / 47 complete (81%)
+#### Client-facing model progress: 39 / 47 complete (83%)
 
 The denominator is the 47 in-scope Prisma models whose own row identity currently
 crosses a client boundary. It excludes the five server-only models and the two
@@ -1822,6 +1847,7 @@ Completed models:
 -  [x] `Event`
 -  [x] `Song`
 -  [x] `File`
+-  [x] `FrontpageGalleryItem`
 
 Remaining models are grouped into coherent intended slices. The pressure label
 describes why the slice is ordered there; it does not relax the per-model
@@ -1851,9 +1877,9 @@ completion definition.
    -  [x] `Event`
 -  **Completed: Song domain**
    -  [x] `Song`
--  **File and gallery domain**
+-  **Completed: File and gallery domain**
    -  [x] `File`
-   -  [ ] `FrontpageGalleryItem`
+   -  [x] `FrontpageGalleryItem`
 -  **User domain**
    -  [ ] `User`
 -  **Setlist planning aggregate**

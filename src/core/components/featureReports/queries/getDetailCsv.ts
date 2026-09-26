@@ -126,7 +126,7 @@ function flattenActivityRecord(row: any): Record<string, string> {
     flattened.eventSegmentId = row.eventSegmentId?.toString() || '';
     flattened.customLinkId = row.customLinkId?.toString() || '';
     flattened.eventSongListId = row.eventSongListId?.toString() || '';
-    flattened.frontpageGalleryItemId = row.frontpageGalleryItemId?.toString() || '';
+    flattened.frontpageGalleryItemId = row.frontpageGalleryItemId || '';
     flattened.menuLinkId = row.menuLinkId?.toString() || '';
     flattened.setlistPlanId = row.setlistPlanId?.toString() || '';
     flattened.songCreditTypeId = row.songCreditTypeId?.toString() || '';

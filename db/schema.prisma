@@ -1024,6 +1024,7 @@ model FileWikiPageTag {
 
 model FrontpageGalleryItem {
   id            Int     @id @default(autoincrement())
+  publicId      String  @unique @db.Char(16)
   isDeleted     Boolean @default(false) //  soft delete. when hidden, users won't see them.
   caption       String  @db.MediumText // markdown
   caption_nl    String? @db.MediumText // markdown

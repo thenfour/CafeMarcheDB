@@ -35,7 +35,7 @@ export const fileTagEditorView = defineCrudView({
 
 const frontpageGalleryItemEditorSelection = Prisma.validator<Prisma.FrontpageGalleryItemDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         isDeleted: true,
         caption: true,
         caption_nl: true,
@@ -154,6 +154,38 @@ export const frontpageGalleryItemEditorView = defineCrudView({
         frontpageGalleryItemEditorContract.hydrate(dto, references),
     ),
 });
+
+const frontpageGalleryFeedSelection = Prisma.validator<Prisma.FrontpageGalleryItemDefaultArgs>()({
+    select: {
+        publicId: true,
+        sortOrder: true,
+        caption: true,
+        displayParams: true,
+        file: {
+            select: {
+                publicId: true,
+                storedLeafName: true,
+                customData: true,
+                mimeType: true,
+            },
+        },
+    },
+});
+
+const frontpageGalleryFeedContract = deriveViewContract(
+    xFrontpageGalleryItem,
+    frontpageGalleryFeedSelection,
+);
+
+export const frontpageGalleryFeedView = defineView({
+    viewID: "FrontpageGalleryItem_Feed",
+    entity: xFrontpageGalleryItem,
+    selection: frontpageGalleryFeedContract.prismaSelection,
+    dtoSchema: frontpageGalleryFeedContract.dtoSchema,
+    hydrate: frontpageGalleryFeedContract.hydrate,
+});
+
+export type FrontpageGalleryFeedDto = DtoOf<typeof frontpageGalleryFeedView>;
 
 const fileDetailRelatedFileTransportSelection = {
     select: {
@@ -334,7 +366,7 @@ const fileDetailTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
     select: {
         ...fileCardTransportSelection.select,
         frontpageGalleryItems: {
-            select: { id: true },
+            select: { publicId: true },
         },
         parentFile: fileDetailRelatedFileTransportSelection,
         childFiles: fileDetailRelatedFileTransportSelection,
@@ -348,7 +380,7 @@ const fileDetailRequestedSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
     select: {
         ...fileCardSelection.select,
         frontpageGalleryItems: {
-            select: { id: true },
+            select: { publicId: true },
         },
         parentFile: fileDetailRelatedFileSelection,
         childFiles: fileDetailRelatedFileSelection,

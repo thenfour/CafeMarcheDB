@@ -20,6 +20,7 @@ export type SongCreditTypePublicId = PublicId<"SongCreditType">;
 export type SongCreditPublicId = PublicId<"SongCredit">;
 export type FileTagPublicId = PublicId<"FileTag">;
 export type FilePublicId = PublicId<"File">;
+export type FrontpageGalleryItemPublicId = PublicId<"FrontpageGalleryItem">;
 export type FileTagAssignmentPublicId = PublicId<"FileTagAssignment">;
 export type FileUserTagPublicId = PublicId<"FileUserTag">;
 export type FileSongTagPublicId = PublicId<"FileSongTag">;

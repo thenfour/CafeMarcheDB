@@ -16,7 +16,7 @@ const gSettings = {
     landscapeNaturalWidth: 1500, // horiz
 };
 
-export const generateHomepageId = (n: string, instanceKey: string, postId: number) => `${n}_${instanceKey}_${postId}`;
+export const generateHomepageId = (n: string, instanceKey: string, postId: PublicGalleryItemSpec["id"]) => `${n}_${instanceKey}_${postId}`;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

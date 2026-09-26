@@ -16,6 +16,10 @@ export class DB3PublicIdError extends Error {
 // Resolve public IDs through the target table's ordinary row-visibility policy.
 // Missing and inaccessible rows intentionally have the same error so this
 // boundary cannot be used as an existence oracle.
+// ---
+// TODO: considering this is replicating a lot of the row-level auth of a db3 view,
+// i would rather do this through a view. and that lets the caller specify the
+// shape of object to return; this always just returns an id.
 export async function resolvePublicIds(
     table: db3.xTable,
     publicIds: readonly unknown[],

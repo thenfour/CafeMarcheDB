@@ -3,6 +3,7 @@ import { QuickSearchItemType, type QuickSearchItemMatch } from "shared/quickFilt
 import { parsePublicId, type EventPublicId, type InstrumentPublicId, type SongPublicId } from "shared/publicId";
 import { songPublicId } from "./support/songFixtures";
 import { filePublicId } from "./support/fileFixtures";
+import { galleryPublicId } from "./support/galleryFixtures";
 import * as db3 from "src/core/db3/db3";
 
 describe("DB3 table identity authority", () => {
@@ -30,6 +31,9 @@ describe("DB3 table identity authority", () => {
         expect(db3.xFile.getIdentity({ publicId: filePublicId(42) })).toBe(filePublicId(42));
         expect(db3.xFile.parseIdentity(filePublicId(42))).toBe(filePublicId(42));
         expect(db3.xFile.isIdentity(42)).toBe(false);
+        expect(db3.xFrontpageGalleryItem.getIdentity({ publicId: galleryPublicId(42) }))
+            .toBe(galleryPublicId(42));
+        expect(db3.xFrontpageGalleryItem.isIdentity(42)).toBe(false);
         expect(db3.xInstrument.parseDatabaseIdentity(42)).toBe(42);
         expect(db3.xFileTag.getIdentity({ publicId: fileTagPublicId })).toBe(fileTagPublicId);
         expect(db3.xFileTagAssignment.getIdentity({ publicId: fileTagAssignmentPublicId }))

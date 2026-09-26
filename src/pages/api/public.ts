@@ -46,7 +46,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
     const galleryCall = queryTable({
         filter: { items: [] },
         cmdbQueryContext: "publicDataFeed",
-        table: db3.xFrontpageGalleryItem,
+        table: {
+            tableID: db3.xFrontpageGalleryItem.tableID,
+            tableName: db3.xFrontpageGalleryItem.tableName,
+            viewID: db3.frontpageGalleryFeedView.viewID,
+        },
         orderBy: undefined,
     },
         authorization);
@@ -56,8 +60,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
         galleryCall,
     ]);
 
-    const galleryResult: db3.FrontpageGalleryItemPayload[] = galleryResultRaw.items as db3.FrontpageGalleryItemPayload[];
-
     // empty reference store. hydration on eventFrontpageView shall not use references; all data should come from the prisma selection.
     const referenceStore = new db3.DB3ReferenceStore();
 
@@ -65,6 +67,28 @@ async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
         db3.eventFrontpageView.parseDto(event),
         referenceStore,
     ));
+
+    const galleryResult = galleryResultRaw.items.map(item => db3.frontpageGalleryFeedView.hydrate(
+        db3.frontpageGalleryFeedView.parseDto(item),
+        referenceStore,
+    )).flatMap(item => {
+        const file = item.file;
+        if (item.sortOrder === undefined || item.caption === undefined
+            || item.displayParams === undefined || !file
+            || file.storedLeafName === undefined || file.customData === undefined
+            || file.mimeType === undefined) return [];
+        return [{
+            publicId: item.publicId,
+            sortOrder: item.sortOrder,
+            caption: item.caption,
+            displayParams: item.displayParams,
+            file: {
+                storedLeafName: file.storedLeafName,
+                customData: file.customData,
+                mimeType: file.mimeType,
+            },
+        }];
+    });
 
     const payload = MakePublicFeedResponseSpec(hydrated, lang, galleryResult);
 

@@ -24,7 +24,7 @@ export default resolver.pipe(
         // gallery rows have no owner-specific mutation rules.
         const galleryItem = await db.frontpageGalleryItem.findFirst({
             where: {
-                id: args.galleryItemId,
+                publicId: args.galleryItemId,
                 isDeleted: false,
             },
         });
@@ -67,7 +67,7 @@ export default resolver.pipe(
             displayParams: JSON.stringify(newDisplayParams),
         }
 
-        await mutationCore.updateImpl(db3.xFrontpageGalleryItem, args.galleryItemId, fields, ctx);
+        await mutationCore.updateImpl(db3.xFrontpageGalleryItem, galleryItem.id, fields, ctx);
 
         return {
             newFile: { publicId: db3.xFile.parseIdentity(newFile.publicId) },

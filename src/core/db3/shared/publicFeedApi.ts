@@ -1,5 +1,5 @@
 import { EnNlFr, LangSelectString } from "@/shared/lang";
-import { Prisma } from "db";
+import type { FrontpageGalleryItemPublicId } from "shared/publicId";
 import * as db3 from "../db3";
 import { sortEvents } from "./apiTypes";
 import { PublicAgendaItemSpec, PublicFeedResponseSpec, PublicGalleryItemSpec } from "./publicTypes";
@@ -48,25 +48,21 @@ export function getAgendaItem(event: AgendaItemSource, lang: EnNlFr): PublicAgen
     return ret;
 }
 
-type PrismaFrontpageGalleryItemWithFile = Prisma.FrontpageGalleryItemGetPayload<{
-    select: {
-        id: true;
-        sortOrder: true;
-        caption: true;
-        displayParams: true;
-        file: {
-            select: {
-                storedLeafName: true;
-                customData: true;
-                mimeType: true;
-            }
-        }
-    }
-}>;
+type GalleryItemSource = {
+    publicId: FrontpageGalleryItemPublicId;
+    sortOrder: number;
+    caption: string;
+    displayParams: string;
+    file: {
+        storedLeafName: string;
+        customData: string | null;
+        mimeType: string | null;
+    };
+};
 
-function convertGalleryItem(item: PrismaFrontpageGalleryItemWithFile): PublicGalleryItemSpec {
+function convertGalleryItem(item: GalleryItemSource): PublicGalleryItemSpec {
     return {
-        id: item.id,
+        id: item.publicId,
         sortOrder: item.sortOrder,
         caption: item.caption,
         imageFileUri: SharedAPI.files.getURIForFile(item.file),
@@ -78,7 +74,7 @@ function convertGalleryItem(item: PrismaFrontpageGalleryItemWithFile): PublicGal
     };
 };
 
-export function MakePublicFeedResponseSpec(events: db3.EventFrontpageClient[], lang: EnNlFr, gallery: PrismaFrontpageGalleryItemWithFile[]): PublicFeedResponseSpec {
+export function MakePublicFeedResponseSpec(events: db3.EventFrontpageClient[], lang: EnNlFr, gallery: GalleryItemSource[]): PublicFeedResponseSpec {
     const agenda: PublicAgendaItemSpec[] = events.map(e => getAgendaItem(e, lang));
     const sortedAgenda = sortEvents(agenda);
     const publicGallery: PublicGalleryItemSpec[] = gallery.map(g => convertGalleryItem(g));

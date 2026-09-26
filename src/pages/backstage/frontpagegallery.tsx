@@ -160,7 +160,7 @@ export const GalleryItemDescriptionEditor = (props: GalleryItemDescriptionEditor
         try {
             void recordFeature({
                 feature: ActivityFeature.frontpagegallery_item_edit,
-                frontpageGalleryItemId: props.galleryItem.id,
+                frontpageGalleryItemId: props.galleryItem.publicId,
             });
             const newrow: FrontpageGalleryItemClient = {
                 ...props.galleryItem,
@@ -314,11 +314,11 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
     const handleSaveClick = () => {
         void recordFeature({
             feature: ActivityFeature.frontpagegallery_item_edit,
-            frontpageGalleryItemId: editingValue.id,
+            frontpageGalleryItemId: editingValue.publicId,
             context: `ImageEditorBake`,
         });
         const args: UpdateGalleryItemImageParams = {
-            galleryItemId: editingValue.id,
+            galleryItemId: editingValue.publicId,
             imageParams: {
                 quality: 80,
                 outputType: "jpg",
@@ -342,7 +342,7 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
     const handleSaveRotationClick = () => {
         void recordFeature({
             feature: ActivityFeature.frontpagegallery_item_edit,
-            frontpageGalleryItemId: editingValue.id,
+            frontpageGalleryItemId: editingValue.publicId,
             context: `ImageEditorSave`,
         });
         props.client.crud.update(editingValue, props.value).then(() => {
@@ -528,7 +528,7 @@ const GalleryItem = (props: GalleryItemProps) => {
         const newrow: FrontpageGalleryItemClient = { ...props.value, isDeleted: true };
         void recordFeature({
             feature: ActivityFeature.frontpagegallery_item_delete,
-            frontpageGalleryItemId: newrow.id,
+            frontpageGalleryItemId: newrow.publicId,
         });
         props.client.crud.update(newrow, props.value).then(() => {
             showSnackbar({ severity: "success", children: `item soft-deleted.` });
@@ -550,7 +550,7 @@ const GalleryItem = (props: GalleryItemProps) => {
         };
         void recordFeature({
             feature: ActivityFeature.frontpagegallery_item_change_visibility,
-            frontpageGalleryItemId: newrow.id,
+            frontpageGalleryItemId: newrow.publicId,
         });
         props.client.crud.update(newrow, props.value).then(() => {
             showSnackbar({ severity: "success", children: `Visibility updated.` });
@@ -601,12 +601,12 @@ const GalleryItem = (props: GalleryItemProps) => {
 const MainContent = () => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
-    const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
+    const reorderCommand = DB3Client.useDB3Command(db3.reorderGalleryItemsCommand);
 
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.frontpageGalleryItemEditorView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            publicId: DB3Client.publicIdFieldGen(),
             // fields which are editable through db3mutation need to be specified here.
             file: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
             sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
@@ -638,20 +638,18 @@ const MainContent = () => {
 
         void recordFeature({
             feature: ActivityFeature.frontpagegallery_reorder,
-            frontpageGalleryItemId: movingItem.id,
+            frontpageGalleryItemId: movingItem.publicId,
         });
 
         // be optimistic while we're refetching. if we were keeping our own state then we could, but we're displaying sort order directly from teh database so can't.
         //const newOrder = moveItemInArray(items, args.removedIndex, args.addedIndex).map((item, index) => ({ ...item, sortOrder: index }));
 
-        updateSortOrderMutation.invoke({
-            tableID: db3.xFrontpageGalleryItem.tableID,
-            tableName: db3.xFrontpageGalleryItem.tableName,
-            movingItemId: movingItem.id,
-            newPositionItemId: newPositionItem.id,
-            scopeRowIds: items.map(item => item.id),
+        reorderCommand.invoke({
+            movingItemId: movingItem.publicId,
+            newPositionItemId: newPositionItem.publicId,
+            scopeRowIds: items.map(item => item.publicId),
         }).then(() => {
-            showSnackbar({ severity: "success", children: "song list reorder successful" });
+            showSnackbar({ severity: "success", children: "Gallery reorder successful" });
             client.refetch();
         }).catch((e) => {
             console.log(e);
@@ -669,7 +667,7 @@ const MainContent = () => {
             onDrop={onDrop}
         >
             {items.length < 1 ? "Nothing here!" : items.map(i =>
-                <ReactSmoothDndDraggable key={i.id}>
+                <ReactSmoothDndDraggable key={i.publicId}>
                     <GalleryItem value={i} client={client} />
                 </ReactSmoothDndDraggable>)
             }

@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import type { FileEventTagPublicId, FileInstrumentTagPublicId, FilePublicId, FileSongTagPublicId, FileTagAssignmentPublicId, FileTagPublicId, FileUserTagPublicId, FileWikiPageTagPublicId } from "shared/publicId";
+import type { FileEventTagPublicId, FileInstrumentTagPublicId, FilePublicId, FileSongTagPublicId, FileTagAssignmentPublicId, FileTagPublicId, FileUserTagPublicId, FileWikiPageTagPublicId, FrontpageGalleryItemPublicId } from "shared/publicId";
 import { TAnyModel } from "shared/rootroot";
 import { CMDBTableFilterModel } from "../apiTypes";
 import { DateTimeField, foreignRef, ForeignCollectionField, foreignRefByTableId, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
@@ -682,12 +682,11 @@ export const xFrontpageAuthMap_Basic = db3.defineAuthMap({
 //   }
 export const xFrontpageGalleryItem = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FrontpageGalleryItemDelegate>(),
-    getIdentity: (item: { id: number }) => item.id,
+    getIdentity: (item: { publicId: FrontpageGalleryItemPublicId }) => item.publicId,
     tableName: "FrontpageGalleryItem",
     deletePolicy: "softOnly",
     viewDeletedPermission: Permission.edit_public_homepage,
     restorePermission: Permission.edit_public_homepage,
-    sortOrderPolicy: { groupingColumn: null, scope: "explicitRowIds" },
     queryParameters: {},
     getSelectionArgs: (): Prisma.FrontpageGalleryItemDefaultArgs => {
         return FrontpageGalleryItemArgs;
@@ -696,13 +695,14 @@ export const xFrontpageGalleryItem = db3.defineTable({
     naturalOrderBy: FrontpageGalleryItemNaturalOrderBy,
     getParameterizedWhereClause: (params: any): (Prisma.FrontpageGalleryItemWhereInput[]) => [],
     getRowInfo: (row: FrontpageGalleryItemPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.caption,
         description: row.caption,
         ownerUserId: null,
     }),
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<FrontpageGalleryItemPublicId>(),
         isDeleted: () => MakeIsDeletedField({ authMap: xFrontpageAuthMap_Basic }),
         sortOrder: () => MakeSortOrderField({ authMap: xFrontpageAuthMap_Basic }),
         createdByUser: () => MakeCreatedByField(),

@@ -1,6 +1,6 @@
 import { Coord2D, Size } from "@/shared/rootroot";
 import type { Prisma } from "db";
-import type { EventPublicId, FilePublicId, FileTagPublicId, PermissionPublicId, SongPublicId } from "shared/publicId";
+import type { EventPublicId, FilePublicId, FileTagPublicId, FrontpageGalleryItemPublicId, PermissionPublicId, SongPublicId } from "shared/publicId";
 
 export interface TClientFileUploadTags {
     taggedUserId?: number;
@@ -98,7 +98,7 @@ export interface ForkImageParams {
 };
 
 export interface UpdateGalleryItemImageParams {
-    galleryItemId: number;
+    galleryItemId: FrontpageGalleryItemPublicId;
     imageParams: ForkImageParams;
 };
 

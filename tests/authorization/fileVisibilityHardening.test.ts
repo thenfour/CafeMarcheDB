@@ -25,6 +25,7 @@ import {
 } from "src/core/db3/server/fileDownload"
 import type { ForkImageParams } from "src/core/db3/shared/fileTypes"
 import { filePublicId } from "../support/fileFixtures"
+import { galleryPublicId } from "../support/galleryFixtures"
 import {
   createAuthorizationPersona,
   createAuthorizationTestUser,
@@ -55,6 +56,7 @@ const makeFile = (overrides: Record<string, unknown> = {}) => ({
 
 const makeGalleryItem = (overrides: Record<string, unknown> = {}) => ({
   id: 20,
+  publicId: galleryPublicId(20),
   isDeleted: false,
   caption: "Gallery image",
   caption_nl: "",
@@ -333,7 +335,7 @@ describe("BA-S002 image mutation authorization", () => {
 
     await expect(invokeResolver(
       updateGalleryItemImage,
-      { galleryItemId: 20, imageParams },
+      { galleryItemId: galleryPublicId(20), imageParams },
       ctx,
     )).rejects.toThrow()
     expect(galleryLookup).not.toHaveBeenCalled()
@@ -354,7 +356,7 @@ describe("BA-S002 image mutation authorization", () => {
 
     await expect(invokeResolver(
       updateGalleryItemImage,
-      { galleryItemId: 999, imageParams },
+      { galleryItemId: galleryPublicId(999), imageParams },
       ctx,
     )).rejects.toThrow("Gallery item was not found")
     expect(fileLookup).not.toHaveBeenCalled()
@@ -385,7 +387,7 @@ describe("BA-S002 image mutation authorization", () => {
 
     await expect(invokeResolver(
       updateGalleryItemImage,
-      { galleryItemId: 20, imageParams },
+      { galleryItemId: galleryPublicId(20), imageParams },
       ctx,
     )).rejects.toThrow("Not authorized to mutate FrontpageGalleryItem")
     expect(fileLookup).not.toHaveBeenCalled()

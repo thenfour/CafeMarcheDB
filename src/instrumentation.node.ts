@@ -252,6 +252,7 @@ export async function registerNodeInstrumentation() {
     await CorrectPublicIds(db.songTagAssociation, "SongTagAssociation");
     await CorrectPublicIds(db.song, "Song");
     await CorrectPublicIds(db.file, "File");
+    await CorrectPublicIds(db.frontpageGalleryItem, "FrontpageGalleryItem");
     await CorrectPublicIds(db.songCreditType, "SongCreditType");
     await CorrectPublicIds(db.songCredit, "SongCredit");
     await CorrectPublicIds(db.fileTag, "FileTag");

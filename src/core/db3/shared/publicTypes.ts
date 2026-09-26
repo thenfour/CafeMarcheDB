@@ -1,5 +1,5 @@
 import { ImageEditParams } from "./fileTypes";
-import type { EventPublicId } from "shared/publicId";
+import type { EventPublicId, FrontpageGalleryItemPublicId } from "shared/publicId";
 
 export interface PublicAgendaItemSpec {
     date?: string | null;
@@ -14,7 +14,7 @@ export interface PublicAgendaItemSpec {
     startsAt: Date | null;
 };
 export interface PublicGalleryItemSpec {
-    id: number;
+    id: FrontpageGalleryItemPublicId;
     sortOrder: number;
     caption: string | null;
     imageFileUri: string;

@@ -33,6 +33,10 @@ export const eventSongListDeleteCommandHandler = defineCommandHandler(
     },
 );
 
+
+// this is largely duplicated with galleryReorderCommandHandler
+// next time any reordering  needs to be implemented, centralize/share the flow.
+// it's error-prone and unmaintainable to duplicate this logic across multiple command handlers.
 export const eventSongListReorderCommandHandler = defineCommandHandler(
     reorderEventSongListsCommand,
     async (dto, context) => {

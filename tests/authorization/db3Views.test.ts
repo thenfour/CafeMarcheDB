@@ -3,6 +3,7 @@ import { attendancePublicId } from "../support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
 import { songPublicId } from "../support/songFixtures";
 import { filePublicId } from "../support/fileFixtures";
+import { galleryPublicId } from "../support/galleryFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { authorizeAndProjectDB3ViewModel } from "@db3/server/db3PublicIds";
@@ -910,7 +911,7 @@ describe("DB3 named views", () => {
             select: {
                 customData: true,
                 isDeleted: true,
-                frontpageGalleryItems: { select: { id: true } },
+                frontpageGalleryItems: { select: { publicId: true } },
                 parentFile: { select: { publicId: true, fileLeafName: true } },
                 childFiles: { select: { publicId: true, fileLeafName: true } },
                 previewFile: { select: { publicId: true, fileLeafName: true } },
@@ -945,7 +946,7 @@ describe("DB3 named views", () => {
             }],
             taggedInstruments: [{ publicId: fileInstrumentTagPublicId, instrumentId: instrument.publicId }],
             taggedWikiPages: [{ publicId: fileWikiPageTagPublicId, wikiPage: { id: 16, slug: "repertoire" } }],
-            frontpageGalleryItems: [{ id: 90 }],
+            frontpageGalleryItems: [{ publicId: galleryPublicId(90) }],
             parentFile: { publicId: filePublicId(7), fileLeafName: "source.pdf" },
             childFiles: [{ publicId: filePublicId(9), fileLeafName: "part.pdf" }],
             previewFile: { publicId: filePublicId(10), fileLeafName: "preview.png" },
@@ -971,7 +972,7 @@ describe("DB3 named views", () => {
             publicId: fileWikiPageTagPublicId,
             wikiPage: { id: 16, slug: "repertoire" },
         }]);
-        expect(hydrated.frontpageGalleryItems).toEqual([{ id: 90 }]);
+        expect(hydrated.frontpageGalleryItems).toEqual([{ publicId: galleryPublicId(90) }]);
         expect(hydrated.parentFile).toEqual({ publicId: filePublicId(7), fileLeafName: "source.pdf" });
         expect(hydrated.childFiles).toEqual([{ publicId: filePublicId(9), fileLeafName: "part.pdf" }]);
         expect(hydrated.previewFile).toEqual({ publicId: filePublicId(10), fileLeafName: "preview.png" });

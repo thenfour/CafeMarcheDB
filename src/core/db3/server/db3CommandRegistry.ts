@@ -5,6 +5,7 @@ import { DB3CommandError } from "./db3CommandCore";
 import { defineEntityCrudCommandHandlers } from "./db3EntityCrudCommand";
 import { eventSongListSaveCommandHandler } from "./commands/eventSongListSaveCommand";
 import { rolePermissionSetCommandHandler } from "./commands/rolePermissionSetCommand";
+import { galleryReorderCommandHandler } from "./commands/galleryOperations";
 
 const commandHandlers = new Map<string, AnyDB3CommandHandler>();
 
@@ -27,6 +28,7 @@ registerDB3CommandHandlers([
     eventSongListDeleteCommandHandler,
     eventSongListReorderCommandHandler,
     rolePermissionSetCommandHandler,
+    galleryReorderCommandHandler,
 ]);
 
 function getGeneratedCrudCommandHandler(commandID: string): AnyDB3CommandHandler | undefined {

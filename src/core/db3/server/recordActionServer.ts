@@ -114,7 +114,7 @@ function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null,
         eventSegmentId: null,
         customLinkId: toSafeId(args.customLinkId),
         eventSongListId: null,
-        frontpageGalleryItemId: toSafeId(args.frontpageGalleryItemId),
+        frontpageGalleryItemId: null,
         menuLinkId: toSafeId(args.menuLinkId),
         setlistPlanId: toSafeId(args.setlistPlanId),
         songCreditTypeId: null,
@@ -142,6 +142,13 @@ export async function createActionRecord(args: RecordActionArgs & { userId?: num
             select: { id: true },
         });
         sanitizedData.fileId = file?.id ?? null;
+    }
+    if (args.frontpageGalleryItemId) {
+        const galleryItem = await db.frontpageGalleryItem.findUnique({
+            where: { publicId: args.frontpageGalleryItemId },
+            select: { id: true },
+        });
+        sanitizedData.frontpageGalleryItemId = galleryItem?.id ?? null;
     }
     if (args.eventId) {
         const event = await db.event.findUnique({
