@@ -2,9 +2,9 @@
 
 GitHub issues:
 
-- [#519 use publicId on clientside instead of raw db id](https://github.com/thenfour/CafeMarcheDB/issues/519)
-- [#697 introduce entity/view/hydrate for better design, automation, typesafety](https://github.com/thenfour/CafeMarcheDB/issues/697)
-- [#698 xTable to strengthen typesafety](https://github.com/thenfour/CafeMarcheDB/issues/698)
+-  [#519 use publicId on clientside instead of raw db id](https://github.com/thenfour/CafeMarcheDB/issues/519)
+-  [#697 introduce entity/view/hydrate for better design, automation, typesafety](https://github.com/thenfour/CafeMarcheDB/issues/697)
+-  [#698 xTable to strengthen typesafety](https://github.com/thenfour/CafeMarcheDB/issues/698)
 
 This is a living design document. The entity/view/hydration/command architecture
 described here is the supported DB3 baseline. The active project is no longer to
@@ -14,23 +14,23 @@ bounded entity slice at a time.
 
 ## Motivation
 
-- Client-facing information should be opaque to database implementation details.
-  Client-visible entity identity therefore uses a UUID-like `publicId`, rather
-  than the raw monotonic numeric database `id`, with the explicit operational
-  ledger exception described below.
-- Translating identity at the transport boundary puts pressure on the old DB3
-  assumption that a Prisma row, RPC payload, and useful client object all have
-  roughly the same shape. They do not.
-- Different uses of the same entity need different query shapes. Duplicating an
-  `xTable` for each shape would also duplicate policy and relation metadata.
-- Legacy `enrich*` functions such as `enrichSong` perform ad hoc and inconsistent
-  DTO-to-client transformations. That transformation should instead be an
-  explicit, typed DB3 responsibility.
-- Some useful client objects are deliberately not database-shaped. Examples are
-  `EventSongListContent` and `DateTimeRange`: they present semantic values and
-  behavior while hiding the persistence representation.
-- Authorization must remain effective across nested selections and hydration.
-  Hydration must never reconstruct a field or relation that the server omitted.
+-  Client-facing information should be opaque to database implementation details.
+   Client-visible entity identity therefore uses a UUID-like `publicId`, rather
+   than the raw monotonic numeric database `id`, with the explicit operational
+   ledger exception described below.
+-  Translating identity at the transport boundary puts pressure on the old DB3
+   assumption that a Prisma row, RPC payload, and useful client object all have
+   roughly the same shape. They do not.
+-  Different uses of the same entity need different query shapes. Duplicating an
+   `xTable` for each shape would also duplicate policy and relation metadata.
+-  Legacy `enrich*` functions such as `enrichSong` perform ad hoc and inconsistent
+   DTO-to-client transformations. That transformation should instead be an
+   explicit, typed DB3 responsibility.
+-  Some useful client objects are deliberately not database-shaped. Examples are
+   `EventSongListContent` and `DateTimeRange`: they present semantic values and
+   behavior while hiding the persistence representation.
+-  Authorization must remain effective across nested selections and hydration.
+   Hydration must never reconstruct a field or relation that the server omitted.
 
 The intended read pipeline is:
 
@@ -74,10 +74,10 @@ Commands are intended to become the only DB3 client-to-server write transport.
 That does not mean every write needs a bespoke aggregate implementation. The
 command system should support two authoring levels:
 
-- generated entity CRUD commands for ordinary single-row create, update, and
-  delete operations; and
-- handwritten domain commands for aggregates, workflows, and other operations
-  whose contract is not meaningfully row-shaped.
+-  generated entity CRUD commands for ordinary single-row create, update, and
+   delete operations; and
+-  handwritten domain commands for aggregates, workflows, and other operations
+   whose contract is not meaningfully row-shaped.
 
 The result is one mutation architecture with a simple form and an expressive
 form, not an easy legacy path beside a more type-safe command path. The
@@ -132,11 +132,11 @@ result.
 The typed `xTable` is the stable, view-independent application description of a
 database model. It binds together:
 
-- keyed field and policy metadata;
-- type-only Prisma delegate metadata, from which views derive their selected
-  database payload type;
-- an explicit `getIdentity()`, including whether consumer identity is a numeric
-  legacy ID or a branded `publicId`.
+-  keyed field and policy metadata;
+-  type-only Prisma delegate metadata, from which views derive their selected
+   database payload type;
+-  an explicit `getIdentity()`, including whether consumer identity is a numeric
+   legacy ID or a branded `publicId`.
 
 Identity policy is not repeated by consumers. `xTable.isIdentity()`,
 `parseIdentity()`, and `identitySchema` are the runtime authority for the
@@ -175,12 +175,12 @@ the view-bound provider contract.
 
 `defineView()` represents one use-specific read shape for an entity. A view owns:
 
-- a globally registered `viewID` tied to exactly one entity/table;
-- a Prisma selection describing exactly what the database should return;
-- a Zod DTO schema for the authorized transport shape;
-- a reference contract describing which entity values may be grafted and their
-  exact consumer types;
-- a pure hydration function from DTO plus references to a client value.
+-  a globally registered `viewID` tied to exactly one entity/table;
+-  a Prisma selection describing exactly what the database should return;
+-  a Zod DTO schema for the authorized transport shape;
+-  a reference contract describing which entity values may be grafted and their
+   exact consumer types;
+-  a pure hydration function from DTO plus references to a client value.
 
 For migrated views, `deriveViewContract(xTable, selection)` preserves the
 requested transport shape and compiles the DTO schema plus default
@@ -250,9 +250,9 @@ duplicating table schemas merely to obtain different payload shapes.
 
 The view is also the source of result-type inference:
 
-- `DbPayloadOf<TView>` is the selected pre-authorization Prisma payload;
-- `DtoOf<TView>` is inferred from the Zod transport schema; and
-- `ClientOf<TView>` is inferred from the hydration return type.
+-  `DbPayloadOf<TView>` is the selected pre-authorization Prisma payload;
+-  `DtoOf<TView>` is inferred from the Zod transport schema; and
+-  `ClientOf<TView>` is inferred from the hydration return type.
 
 `useDb3Query({ view })` carries `ClientOf<typeof view>` through to `items`.
 Consumers should not need assertions such as
@@ -311,29 +311,29 @@ A DTO is neither a Prisma model nor the final rich client object. It is the
 serializable shape that is allowed to cross the server/client boundary for one
 view.
 
-- Its type comes from the view's Zod schema, not from an asserted Prisma payload.
-- Fields that field authorization may remove must be optional in the DTO.
-- The compiler cannot know the requesting actor's runtime permissions. A field
-  selected by a view but removable by field authorization is therefore
-  optional for **every** client role, including Sysadmins. Callers must narrow
-  it before use; there is no role-dependent TypeScript payload type.
-- `undefined`/absent, `null`, and an empty collection have different meanings:
-  unauthorized or unselected, explicitly no value, and an authorized empty
-  collection respectively.
-- Converted entities and references contain public identity, never their natural
-  database identity.
-- DTO validation happens after authorization/public-ID projection on the server,
-  and may be repeated before hydration on the client.
+-  Its type comes from the view's Zod schema, not from an asserted Prisma payload.
+-  Fields that field authorization may remove must be optional in the DTO.
+-  The compiler cannot know the requesting actor's runtime permissions. A field
+   selected by a view but removable by field authorization is therefore
+   optional for **every** client role, including Sysadmins. Callers must narrow
+   it before use; there is no role-dependent TypeScript payload type.
+-  `undefined`/absent, `null`, and an empty collection have different meanings:
+   unauthorized or unselected, explicitly no value, and an authorized empty
+   collection respectively.
+-  Converted entities and references contain public identity, never their natural
+   database identity.
+-  DTO validation happens after authorization/public-ID projection on the server,
+   and may be repeated before hydration on the client.
 
 ### Hydration: pure DTO-to-client transformation
 
 Hydration is a view responsibility and may return an arbitrary semantic client
 value. It can:
 
-- replace foreign-key values with canonical reference objects;
-- combine persistence fields into a value object;
-- merge several persistence collections into one ordered model; and
-- attach behavior through a class or other non-transport client type.
+-  replace foreign-key values with canonical reference objects;
+-  combine persistence fields into a value object;
+-  merge several persistence collections into one ordered model; and
+-  attach behavior through a class or other non-transport client type.
 
 Hydration is deliberately synchronous and performs no fetching. All fetching,
 authorization, DTO validation, and reference-store population happen first. A
@@ -363,11 +363,11 @@ level on demand.
 
 `defineCommand()` is the write-side sibling of `defineView()`. A command owns:
 
-- a globally meaningful `commandID` and root entity;
-- an arbitrary typed client input;
-- a pure serializer from that client input to a strict transport DTO;
-- Zod schemas for both the command DTO and result; and
-- the corresponding inferred client-input, DTO, and result types.
+-  a globally meaningful `commandID` and root entity;
+-  an arbitrary typed client input;
+-  a pure serializer from that client input to a strict transport DTO;
+-  Zod schemas for both the command DTO and result; and
+-  the corresponding inferred client-input, DTO, and result types.
 
 The client descriptor and server handler are deliberately separate. The shared
 command describes the transport contract without importing server code. A
@@ -397,26 +397,26 @@ belong to the command handler.
 `useDB3Command(command)` is more than a naming wrapper around Blitz
 `useMutation()`:
 
-- it preserves one compile-time chain from the command's client input through
-  its DTO to its result;
-- it calls the command-owned serializer, so a component does not construct or
-  know the transport shape;
-- it validates the serialized DTO on the client, sends the generic
-  `{ commandID, payload }` envelope, and validates the returned result;
-- one save command can choose insert versus update from the input instead of
-  making the component select separate RPC endpoints; and
-- callers depend on a shared operation contract, not on a server resolver
-  module or its incidental parameter shape.
+-  it preserves one compile-time chain from the command's client input through
+   its DTO to its result;
+-  it calls the command-owned serializer, so a component does not construct or
+   know the transport shape;
+-  it validates the serialized DTO on the client, sends the generic
+   `{ commandID, payload }` envelope, and validates the returned result;
+-  one save command can choose insert versus update from the input instead of
+   making the component select separate RPC endpoints; and
+-  callers depend on a shared operation contract, not on a server resolver
+   module or its incidental parameter shape.
 
-| Concern | Raw `useMutation()` | Retired generic TableClient transport | `useDB3Command()` |
-| --- | --- | --- | --- |
-| Client input | Resolver input | Table/client-column row | Arbitrary command input |
-| Client transformation | Caller or endpoint-specific helper | Generic `prepareMutation()` | Command-owned `serialize()` |
-| Transport contract | One imported RPC resolver | Generic table-mutation envelope | Named strict command DTO and result |
-| Server unit of work | Whatever that resolver implements | One generic row operation | One registered aggregate-capable handler |
-| Authorization | Resolver-defined | DB3 table/row/field policy | Handler invariants plus the same DB3 row policy |
-| Transaction | Resolver-defined | One row mutation request | One serializable command transaction |
-| Refetch/editor lifecycle | Caller-defined | Partly integrated | Currently caller-defined |
+| Concern                  | Raw `useMutation()`                | Retired generic TableClient transport | `useDB3Command()`                               |
+| ------------------------ | ---------------------------------- | ------------------------------------- | ----------------------------------------------- |
+| Client input             | Resolver input                     | Table/client-column row               | Arbitrary command input                         |
+| Client transformation    | Caller or endpoint-specific helper | Generic `prepareMutation()`           | Command-owned `serialize()`                     |
+| Transport contract       | One imported RPC resolver          | Generic table-mutation envelope       | Named strict command DTO and result             |
+| Server unit of work      | Whatever that resolver implements  | One generic row operation             | One registered aggregate-capable handler        |
+| Authorization            | Resolver-defined                   | DB3 table/row/field policy            | Handler invariants plus the same DB3 row policy |
+| Transaction              | Resolver-defined                   | One row mutation request              | One serializable command transaction            |
+| Refetch/editor lifecycle | Caller-defined                     | Partly integrated                     | Currently caller-defined                        |
 
 These are client ergonomics and contract guarantees, not the security boundary.
 The server reparses the DTO and performs all authoritative authorization and
@@ -452,15 +452,15 @@ The returned contract always has fixed `create`, `update`, and `delete` slots;
 unsupported optional operations are `undefined`, while every enabled operation
 carries its discriminating `kind` and command descriptor:
 
-- create accepts the strict create DTO directly; natural and public identity
-  fields are server-owned and cannot be declared by the writable schema;
-- update accepts `{ identity, patch }`, where the patch is shallow, strict,
-  non-empty, and applies only its present keys; `undefined` is rejected rather
-  than being confused with omission, while `null` remains field-schema-defined;
-- delete accepts only `{ identity }`; hard-versus-soft behavior comes from the
-  trusted `xTable.deletePolicy`, not from client input; and
-- all enabled operations return the strict `{ identity }` result needed to find
-  or refetch the affected row without returning a persistence-shaped object.
+-  create accepts the strict create DTO directly; natural and public identity
+   fields are server-owned and cannot be declared by the writable schema;
+-  update accepts `{ identity, patch }`, where the patch is shallow, strict,
+   non-empty, and applies only its present keys; `undefined` is rejected rather
+   than being confused with omission, while `null` remains field-schema-defined;
+-  delete accepts only `{ identity }`; hard-versus-soft behavior comes from the
+   trusted `xTable.deletePolicy`, not from client input; and
+-  all enabled operations return the strict `{ identity }` result needed to find
+   or refetch the affected row without returning a persistence-shaped object.
 
 The shared generated handlers compose `DB3CommandExecutionContext.rowServices`,
 so validation and authorization failures continue to use the existing thrown
@@ -489,12 +489,12 @@ permutation-specific view types or presence guards.
 
 The CRUD contract is derived from two existing authorities:
 
-- the view supplies the selected DTO shape and hydrated client type; and
-- the view's entity supplies the typed client identity and links to the existing
-  `xTable`, which continues to supply
-  new-row defaults, writable-column behavior, validation, field and row
-  authorization, client-to-database transformation, delete policy, and
-  public-versus-natural identity metadata.
+-  the view supplies the selected DTO shape and hydrated client type; and
+-  the view's entity supplies the typed client identity and links to the existing
+   `xTable`, which continues to supply
+   new-row defaults, writable-column behavior, validation, field and row
+   authorization, client-to-database transformation, delete policy, and
+   public-versus-natural identity metadata.
 
 `defineCrudView()` does not perform an implicit table conversion. Its hydrator
 receives the declared DTO and must explicitly return the client type. A typed
@@ -524,14 +524,14 @@ facts already expressed by the table schema.
 The client counterpart is a generic `useCrudTableRenderContext()` with arguments
 similar to `useTableRenderContext()`, plus a CRUD-enabled view. It:
 
-- queries and hydrates through the supplied view;
-- infers its row type as `ClientOf<TView>` and its identity as
-  `DB3IdentityOf<TableOf<TView>>`;
-- uses typed client-column mutation projections followed by field codec
-  encoding for create and update values;
-- computes an update patch from the prepared previous and next values;
-- invokes the view's generated commands; and
-- owns the conventional refetch and invalidation lifecycle.
+-  queries and hydrates through the supplied view;
+-  infers its row type as `ClientOf<TView>` and its identity as
+   `DB3IdentityOf<TableOf<TView>>`;
+-  uses typed client-column mutation projections followed by field codec
+   encoding for create and update values;
+-  computes an update patch from the prepared previous and next values;
+-  invokes the view's generated commands; and
+-  owns the conventional refetch and invalidation lifecycle.
 
 The new `defineTableClientSpec({ view, columns })` path binds presentation to the
 same concrete view. Its keyed factories receive the object key as their runtime
@@ -565,10 +565,7 @@ accepted only by an explicitly legacy spec.
 limited to presentation metadata and the semantic view:
 
 ```tsx
-<DB3EditGrid
-    tableSpec={tableSpec}
-    view={instrumentFunctionalGroupEditorView}
-/>
+<DB3EditGrid tableSpec={tableSpec} view={instrumentFunctionalGroupEditorView} />
 ```
 
 It does not require per-entity command hooks, DTO mappers, mutation adapters, or
@@ -588,11 +585,11 @@ nominate arbitrary database tables.
 
 A handwritten command is preferable to generated CRUD when the operation:
 
-- accepts a rich client value that is not a table row;
-- has an operation-specific strict DTO or result;
-- spans multiple entities or tables;
-- must enforce aggregate invariants in one transaction; or
-- should hide insert/update choice and persistence layout from the component.
+-  accepts a rich client value that is not a table row;
+-  has an operation-specific strict DTO or result;
+-  spans multiple entities or tables;
+-  must enforce aggregate invariants in one transaction; or
+-  should hide insert/update choice and persistence layout from the component.
 
 Handwritten commands do not call the row-shaped `prepareMutation()` path.
 Their serializer is the explicit client-input-to-DTO transformation, while the
@@ -648,10 +645,10 @@ explicitly outside the active public-ID migration.
 
 The current supported boundary is sufficient for identity conversion:
 
-- ordinary row editors use the command-backed CRUD-view/TableClient model;
-- aggregates may define purpose-specific drafts and handwritten commands; and
-- commands that represent actions such as publish, approve, reorder, or merge
-  accept their operation-specific inputs directly.
+-  ordinary row editors use the command-backed CRUD-view/TableClient model;
+-  aggregates may define purpose-specific drafts and handwritten commands; and
+-  commands that represent actions such as publish, approve, reorder, or merge
+   accept their operation-specific inputs directly.
 
 A future edit-model project may compose `create`, `beginEdit`, and `clone`
 operations through a `useDB3Editor()`-style API. It must keep drafts detached
@@ -691,11 +688,11 @@ and API types in files such as `prismArgs.ts` and `apiTypes.ts` is not the targe
 layout. New entity/view work should be colocated under
 `shared/entities/<entity>/`, with separate modules where useful for:
 
-- stable entity metadata;
-- named views and DTO schemas;
-- hydrated value objects;
-- editable drafts; and
-- handwritten command descriptors, DTO/result schemas, and serializers.
+-  stable entity metadata;
+-  named views and DTO schemas;
+-  hydrated value objects;
+-  editable drafts; and
+-  handwritten command descriptors, DTO/result schemas, and serializers.
 
 Handwritten server command handlers remain under `server/commands/`, beside the
 generic dispatcher, handler registry, and command execution context. This keeps
@@ -713,18 +710,18 @@ catch-all file merely because similar legacy definitions are there.
 The abstraction should continue to be tested against materially different
 shapes, not only simple row queries:
 
-- a scalar foreign reference such as `eventTagId -> eventTag`, resolved through
-  the normalized reference provider;
-- a field-authorized partial DTO where scalar fields or whole nested
-  collections are absent;
-- a semantic value object such as event timing hydrated into `DateTimeRange`,
-  with useful behavior rather than only renamed fields;
-- a heterogeneous aggregate such as a setlist, where separate persistence
-  collections become one ordered client model and a distinct editor draft;
-- a cyclic domain model whose named view deliberately stops at a finite
-  reference boundary; and
-- a converted public-ID entity participating in reads, filters, foreign keys,
-  mutation commands, caches, React keys, and routes.
+-  a scalar foreign reference such as `eventTagId -> eventTag`, resolved through
+   the normalized reference provider;
+-  a field-authorized partial DTO where scalar fields or whole nested
+   collections are absent;
+-  a semantic value object such as event timing hydrated into `DateTimeRange`,
+   with useful behavior rather than only renamed fields;
+-  a heterogeneous aggregate such as a setlist, where separate persistence
+   collections become one ordered client model and a distinct editor draft;
+-  a cyclic domain model whose named view deliberately stops at a finite
+   reference boundary; and
+-  a converted public-ID entity participating in reads, filters, foreign keys,
+   mutation commands, caches, React keys, and routes.
 
 Future rich objects may also expose domain operations such as URI generation,
 provided those operations are deterministic client behavior and do not conceal
@@ -753,14 +750,14 @@ security. A future canonical URL would use `publicId` plus an optional slug.
 
 The current contract is:
 
-- 96 cryptographically random bits, generated server-side with `randomBytes(12)`;
-- base64url encoding, producing exactly 16 characters;
-- alphabet `A-Z`, `a-z`, `0-9`, `_`, and `-`;
-- stored as unique, non-null `CHAR(16)` with an ASCII binary/case-sensitive
-  collation;
-- immutable after creation; and
-- represented in TypeScript as `PublicId<"EntityName">`, so IDs from different
-  entities are not accidentally interchangeable in typed code.
+-  96 cryptographically random bits, generated server-side with `randomBytes(12)`;
+-  base64url encoding, producing exactly 16 characters;
+-  alphabet `A-Z`, `a-z`, `0-9`, `_`, and `-`;
+-  stored as unique, non-null `CHAR(16)` with an ASCII binary/case-sensitive
+   collation;
+-  immutable after creation; and
+-  represented in TypeScript as `PublicId<"EntityName">`, so IDs from different
+   entities are not accidentally interchangeable in typed code.
 
 The 16 characters are the full encoding of the 96 random bits; this is not a
 truncated textual UUID. No entity prefix is used. A prefix such as `usr_` would
@@ -777,13 +774,13 @@ Blitz session `userId: number` are not automatically part of this migration.
 
 For a converted entity:
 
-- canonical client DTOs omit the natural ID for every role, including Sysadmins;
-- client references to that entity use its public ID, even when the referring
-  entity itself has not yet been converted;
-- grids, selectors, caches, and React keys use the client/entity identity rather
-  than assuming `.id`; and
-- update and delete commands identify the target with the entity's canonical
-  identity. Inserts may not supply `publicId`.
+-  canonical client DTOs omit the natural ID for every role, including Sysadmins;
+-  client references to that entity use its public ID, even when the referring
+   entity itself has not yet been converted;
+-  grids, selectors, caches, and React keys use the client/entity identity rather
+   than assuming `.id`; and
+-  update and delete commands identify the target with the entity's canonical
+   identity. Inserts may not supply `publicId`.
 
 If a Sysadmin diagnostic or export genuinely needs the numeric ID, expose it via
 an explicitly internal/admin-only view or server operation. Do not make the
@@ -803,31 +800,31 @@ and is not a prerequisite for migrating the entities they describe.
 
 The current access paths support this narrower exception:
 
-- `Change` reads use the sysadmin-only `xChange` policy, and the admin log grid
-  is read-only. The generic DB3 query path still permits authorized primary-key
-  filtering; the rationale is not that an ID-based query is impossible.
-- `Action` detail and CSV queries require `view_feature_reports`. This is a
-  dedicated permission, not necessarily Sysadmin status. Client telemetry
-  appends observations without accepting or returning an Action row identity.
-- Neither ledger has a dedicated entity-detail route or an ordinary client
-  workflow that edits a ledger row by its identity. Authorization remains the
-  protection for every report and diagnostic lookup.
+-  `Change` reads use the sysadmin-only `xChange` policy, and the admin log grid
+   is read-only. The generic DB3 query path still permits authorized primary-key
+   filtering; the rationale is not that an ID-based query is impossible.
+-  `Action` detail and CSV queries require `view_feature_reports`. This is a
+   dedicated permission, not necessarily Sysadmin status. Client telemetry
+   appends observations without accepting or returning an Action row identity.
+-  Neither ledger has a dedicated entity-detail route or an ordinary client
+   workflow that edits a ledger row by its identity. Authorization remains the
+   protection for every report and diagnostic lookup.
 
 The exception distinguishes ledger evidence from live entity identity:
 
-- Historical `Change.recordId`, `oldValues`, and `newValues` may retain natural
-  IDs as protected audit data. Do not rewrite historical JSON merely to make
-  the public-ID inventory uniform. The sysadmin audit lookup may accept these
-  historical keys and resolve hidden or deleted records for diagnostics.
-- Canonical client references to migrated entities still use public IDs. This
-  includes telemetry association inputs, live feature-report relations and
-  filters, and navigation targets produced by audit lookups. A protected
-  historical lookup key is not a numeric fallback for a normal entity route,
-  selector, or mutation.
-- Existing admin audit caches may retain numeric keys for matching historical
-  evidence. When they construct a live link, they must supply the target's
-  canonical public identity after that target migrates. Unresolvable historical
-  references remain display-only evidence.
+-  Historical `Change.recordId`, `oldValues`, and `newValues` may retain natural
+   IDs as protected audit data. Do not rewrite historical JSON merely to make
+   the public-ID inventory uniform. The sysadmin audit lookup may accept these
+   historical keys and resolve hidden or deleted records for diagnostics.
+-  Canonical client references to migrated entities still use public IDs. This
+   includes telemetry association inputs, live feature-report relations and
+   filters, and navigation targets produced by audit lookups. A protected
+   historical lookup key is not a numeric fallback for a normal entity route,
+   selector, or mutation.
+-  Existing admin audit caches may retain numeric keys for matching historical
+   evidence. When they construct a live link, they must supply the target's
+   canonical public identity after that target migrates. Unresolvable historical
+   references remain display-only evidence.
 
 `getDistinctChangeFilterValues`, `getAdminLogItemInfo`,
 `DB3JSONStringColumnClient`, and the feature-report projection functions are
@@ -843,15 +840,15 @@ normal addressable application resource or broadens access to its diagnostics.
 
 Translation belongs at the trusted server boundary:
 
-- incoming public mutation targets are resolved to natural IDs only after format,
-  visibility, and authorization checks;
-- scalar foreign keys pointing to converted entities are resolved from public to
-  natural IDs before Prisma mutation code runs;
-- inner mutation, hook, audit, and transaction code continues to use natural IDs;
-- query and mutation results recursively replace converted foreign keys with
-  public IDs and remove converted natural IDs before DTO validation/transport;
-  and
-- `filter.publicIds` is the client-facing identity filter for converted tables.
+-  incoming public mutation targets are resolved to natural IDs only after format,
+   visibility, and authorization checks;
+-  scalar foreign keys pointing to converted entities are resolved from public to
+   natural IDs before Prisma mutation code runs;
+-  inner mutation, hook, audit, and transaction code continues to use natural IDs;
+-  query and mutation results recursively replace converted foreign keys with
+   public IDs and remove converted natural IDs before DTO validation/transport;
+   and
+-  `filter.publicIds` is the client-facing identity filter for converted tables.
 
 Generic query RPCs reject `filter.pks` and explicit primary-key item filters for
 converted tables, including for sysadmins. Capability grants never opt a client
@@ -894,142 +891,142 @@ a per-row compatibility flag or a second lookup mode.
 
 ### Established baseline and remaining migration limits
 
-- `InstrumentFunctionalGroup` is the public-ID pilot. `InstrumentTag` and its
-  `InstrumentTagAssociation` join rows are also converted; together they prove
-  that tag targets and association records cross the client boundary only with
-  public identities.
-- `SongTag` and `SongTagAssociation` extend that proof through identity-bearing
-  query parameters, active-search discrete criteria and facets, direct raw-SQL
-  filters/reporting, dashboard references, autocomplete, and setlist payloads.
-  Clients submit public IDs, one trusted batch resolver supplies natural IDs to
-  Prisma/raw SQL, and SQL diagnostics containing those natural IDs stay
-  server-side. `Song` itself deliberately remains on natural identity.
-- `Instrument` is the route/search identity proof. Its detail route, authorized
-  exact lookup, global quick-search result, dashboard reference cache, editor,
-  attendance mutations, telemetry, feature-report details, file associations,
-  user-instrument references, gallery tooling, and React keys now use its public
-  identity at client boundaries. Numeric foreign keys are resolved or retained
-  only inside trusted server/database work. The shared table accessor can infer
-  `publicId` as canonical identity for public-ID-only client models, while
-  explicit identity callbacks preserve internal numeric workflows such as file
-  upload auto-assignment.
-- Polymorphic quick-search results are a discriminated union: `itemType`
-  determines the entity-specific identity type. Search/select components retain
-  that correlation from their allowed-type list, then delegate extraction to
-  the matching xTable instead of checking whether an ID happens to be a number.
-- The entity/view/hydration/command boundaries are established well enough to
-  begin broad public-ID migration. Further general DB3 architecture work is not
-  a prerequisite unless a concrete entity conversion exposes a missing identity
-  capability.
-- Public-ID rollout remains incremental rather than a big-bang schema exercise.
-  Every converted slice must include its reads, writes, relations, filters,
-  caches, routes, and non-DB3 boundaries before its numeric client identity is
-  considered removed.
-- Entity/view/hydration/command primitives exist, and initial instrument, event,
-  file, song, and event-song-list views use the read-side primitives.
-- `defineView()`, `DbPayloadOf<>`, `DtoOf<>`, `ClientOf<>`,
-  `DB3ReferenceValueOf<>`, and typed `useDb3Query({ view })` establish the intended
-  inference chain without result casts.
-- `defineTable()`, field `DB3FieldCodec`s, explicit mutation projections,
-  `DB3SchemaClientModel<>`, and `DB3SchemaMutationModel<>` establish both
-  directions of the typed schema link. The `InstrumentFunctionalGroup` pilot's
-  hydrated `color` member is
-  inferred as `ColorPaletteEntry | null | undefined`; its prepared and generated
-  command value is `string | null | undefined`; and its public-ID identity
-  remains statically checked through the TableClient.
-- `TView` now propagates through view-bound TableClient specs and
-  `useTableRenderContext()`, so query results expose `ClientOf<TView>[]` and
-  client columns are checked against the hydrated row type. Explicitly legacy
-  table-only and runtime-dynamic specs remain cleanup targets rather than an
-  alternate typed architecture.
-- All in-tree `xTable` declarations now use keyed `makeColumnSet()` factories,
-  and fixed-name TableClient declarations use keyed client factories. Reusable
-  column sets follow the same contract. Composite event date-range columns are
-  keyed by their actual primary field, `startsAt`, while companion fields remain
-  explicit configuration. Runtime-selected legacy clients are separately named
-  and intentionally retain no inferred key or row contract.
-- Event timing proves hydration into a behavioral `DateTimeRange` value rather
-  than merely renaming fields. `Event_Frontpage` now proves that this transform
-  composes after xTable-derived scalar/relation hydration; EventStatus,
-  EventType, and EventTag editor views derive their full read contracts from
-  explicit Prisma selections.
-- Event song lists prove collection reshaping and a separate write model:
-  `EventSongListContent` merges songs and dividers, the editor consumes an
-  `EventSongListDraft`, and `saveEventSongListCommand` owns draft-to-DTO
-  serialization for both creation and update.
-- `defineCommand()`, typed `useDB3Command()`, the generic command RPC, the
-  server handler registry, and `DB3CommandExecutionContext` establish the first
-  named write-contract path. DTO and result validation occur on both sides of
-  transport as appropriate; server authorization remains authoritative.
-- `defineEntityCrudCommands()` and `defineEntityCrudCommandHandlers()` establish
-  strict create/update/delete contracts for ordinary rows. Generated deletes
-  derive hard-versus-soft behavior from trusted table metadata, update patches
-  use present-keys-only semantics, results return canonical identity, and
-  callers explicitly own refetching declared by command invalidation metadata.
-- Generic CRUD-enabled views now compose named reads with generated entity CRUD
-  commands. The command-backed table-render context retains existing
-  TableClient/client-column preparation, computes present-keys-only update
-  patches, invokes generated commands, and owns refetching. Server handlers are
-  discovered from registered CRUD views rather than wired per entity.
-- The `InstrumentFunctionalGroup` grid proves that generic path against the
-  public-ID pilot. Its view-bound table spec checks all configured column keys
-  and value types against the hydrated row. Its call site supplies only that
-  `tableSpec` and editor view;
-  it has no entity-specific writable schema, serializer, handler file, registry
-  entry, command hooks, mutation adapter, numeric ID, or generic mutation
-  envelope.
-- Selection creation can now opt into the same CRUD view. Both the generic DB3
-  selection source, `ForeignSingleFieldRenderContext`, and tag-field selector
-  query and hydrate
-  through that view, invoke its generated create command, and read the returned
-  canonical identity back through an authorized exact-identity view query
-  before publishing it as the selected value. A successful create that is not
-  readable through the view fails explicitly rather than manufacturing a
-  partial client row. The Instrument editor's functional-group and tag selectors
-  prove this path with public IDs. Create-from-string has no generic mutation
-  fallback: a creatable selector must name the matching CRUD view, and a
-  mismatched or missing view fails explicitly.
-- `DB3NewObjectDialog` now requires its table-render client to be injected. The
-  grid-owned dialog therefore cannot silently construct a second legacy
-  mutation client underneath a command-backed grid.
-- `DB3AssociationMatrix` now requires an explicit association command and no
-  longer requests TableClient mutation capability or posts a client-built tags
-  array. `defineAssociationCommand()` standardizes rich-row-to-identity
-  serialization and strict desired-state DTO/result validation. The
-  RolePermission handler reloads both authorized endpoints and the current join
-  set inside the command transaction, then applies the idempotent change through
-  the schema-owned `Permission.roles` association field so its authorization,
-  auditing, and mutation hooks remain authoritative. Role and Permission still
-  use numeric identities; the same identity-aware command transport can use
-  public identities when either endpoint is converted.
-- The registered event-song-list save handler now performs parent, song, and
-  divider synchronization atomically in one serializable transaction by
-  composing authorized DB3 row services. The two legacy insert/update RPCs and
-  the raw `UpdateEventSongListSongs` path have been removed.
-- Setlist divider persistence fields needed by the command are real DB3 fields
-  rather than `GhostField`s, so normal validation, transformation, and field
-  authorization apply. Setlist delete and generic list reordering remain on
-  legacy endpoints, and the server does not yet normalize or reject malformed
-  combined song/divider `sortOrder` namespaces independently of the trusted
-  serializer.
-- Legacy queries without a named view still use `xTable.getClientModel()` and the
-  generic public-ID projector.
-- Dashboard reference loaders now use `queryView` consistently and return DTOs.
-  Their hydration and reference registration run at the consumer boundary.
-- Legacy `enrich*` helpers and asserted Prisma payload aliases remain and should
-  disappear as their consumers move to named views.
-- Association-matrix assumptions, generic sorting/reordering, and raw-SQL/search
-  boundaries must be audited as their participating entities are converted.
-  Generated many-to-many/tag command inputs and row-service resolution are
-  already identity-aware.
-- Raw SQL returned in `SearchResultsRet` is intentionally unchanged for now and
-  is expected to be removed separately.
-- Most unconverted named views still expose numeric identities. They are the
-  input inventory for the active migration, not a permanent client contract.
-- The legacy TableClient mutation transport has been removed. Ordinary row
-  editors use generated entity CRUD commands; aggregate and workflow operations
-  use their existing explicit endpoints or named domain commands while those
-  boundaries are migrated independently.
+-  `InstrumentFunctionalGroup` is the public-ID pilot. `InstrumentTag` and its
+   `InstrumentTagAssociation` join rows are also converted; together they prove
+   that tag targets and association records cross the client boundary only with
+   public identities.
+-  `SongTag` and `SongTagAssociation` extend that proof through identity-bearing
+   query parameters, active-search discrete criteria and facets, direct raw-SQL
+   filters/reporting, dashboard references, autocomplete, and setlist payloads.
+   Clients submit public IDs, one trusted batch resolver supplies natural IDs to
+   Prisma/raw SQL, and SQL diagnostics containing those natural IDs stay
+   server-side. `Song` itself deliberately remains on natural identity.
+-  `Instrument` is the route/search identity proof. Its detail route, authorized
+   exact lookup, global quick-search result, dashboard reference cache, editor,
+   attendance mutations, telemetry, feature-report details, file associations,
+   user-instrument references, gallery tooling, and React keys now use its public
+   identity at client boundaries. Numeric foreign keys are resolved or retained
+   only inside trusted server/database work. The shared table accessor can infer
+   `publicId` as canonical identity for public-ID-only client models, while
+   explicit identity callbacks preserve internal numeric workflows such as file
+   upload auto-assignment.
+-  Polymorphic quick-search results are a discriminated union: `itemType`
+   determines the entity-specific identity type. Search/select components retain
+   that correlation from their allowed-type list, then delegate extraction to
+   the matching xTable instead of checking whether an ID happens to be a number.
+-  The entity/view/hydration/command boundaries are established well enough to
+   begin broad public-ID migration. Further general DB3 architecture work is not
+   a prerequisite unless a concrete entity conversion exposes a missing identity
+   capability.
+-  Public-ID rollout remains incremental rather than a big-bang schema exercise.
+   Every converted slice must include its reads, writes, relations, filters,
+   caches, routes, and non-DB3 boundaries before its numeric client identity is
+   considered removed.
+-  Entity/view/hydration/command primitives exist, and initial instrument, event,
+   file, song, and event-song-list views use the read-side primitives.
+-  `defineView()`, `DbPayloadOf<>`, `DtoOf<>`, `ClientOf<>`,
+   `DB3ReferenceValueOf<>`, and typed `useDb3Query({ view })` establish the intended
+   inference chain without result casts.
+-  `defineTable()`, field `DB3FieldCodec`s, explicit mutation projections,
+   `DB3SchemaClientModel<>`, and `DB3SchemaMutationModel<>` establish both
+   directions of the typed schema link. The `InstrumentFunctionalGroup` pilot's
+   hydrated `color` member is
+   inferred as `ColorPaletteEntry | null | undefined`; its prepared and generated
+   command value is `string | null | undefined`; and its public-ID identity
+   remains statically checked through the TableClient.
+-  `TView` now propagates through view-bound TableClient specs and
+   `useTableRenderContext()`, so query results expose `ClientOf<TView>[]` and
+   client columns are checked against the hydrated row type. Explicitly legacy
+   table-only and runtime-dynamic specs remain cleanup targets rather than an
+   alternate typed architecture.
+-  All in-tree `xTable` declarations now use keyed `makeColumnSet()` factories,
+   and fixed-name TableClient declarations use keyed client factories. Reusable
+   column sets follow the same contract. Composite event date-range columns are
+   keyed by their actual primary field, `startsAt`, while companion fields remain
+   explicit configuration. Runtime-selected legacy clients are separately named
+   and intentionally retain no inferred key or row contract.
+-  Event timing proves hydration into a behavioral `DateTimeRange` value rather
+   than merely renaming fields. `Event_Frontpage` now proves that this transform
+   composes after xTable-derived scalar/relation hydration; EventStatus,
+   EventType, and EventTag editor views derive their full read contracts from
+   explicit Prisma selections.
+-  Event song lists prove collection reshaping and a separate write model:
+   `EventSongListContent` merges songs and dividers, the editor consumes an
+   `EventSongListDraft`, and `saveEventSongListCommand` owns draft-to-DTO
+   serialization for both creation and update.
+-  `defineCommand()`, typed `useDB3Command()`, the generic command RPC, the
+   server handler registry, and `DB3CommandExecutionContext` establish the first
+   named write-contract path. DTO and result validation occur on both sides of
+   transport as appropriate; server authorization remains authoritative.
+-  `defineEntityCrudCommands()` and `defineEntityCrudCommandHandlers()` establish
+   strict create/update/delete contracts for ordinary rows. Generated deletes
+   derive hard-versus-soft behavior from trusted table metadata, update patches
+   use present-keys-only semantics, results return canonical identity, and
+   callers explicitly own refetching declared by command invalidation metadata.
+-  Generic CRUD-enabled views now compose named reads with generated entity CRUD
+   commands. The command-backed table-render context retains existing
+   TableClient/client-column preparation, computes present-keys-only update
+   patches, invokes generated commands, and owns refetching. Server handlers are
+   discovered from registered CRUD views rather than wired per entity.
+-  The `InstrumentFunctionalGroup` grid proves that generic path against the
+   public-ID pilot. Its view-bound table spec checks all configured column keys
+   and value types against the hydrated row. Its call site supplies only that
+   `tableSpec` and editor view;
+   it has no entity-specific writable schema, serializer, handler file, registry
+   entry, command hooks, mutation adapter, numeric ID, or generic mutation
+   envelope.
+-  Selection creation can now opt into the same CRUD view. Both the generic DB3
+   selection source, `ForeignSingleFieldRenderContext`, and tag-field selector
+   query and hydrate
+   through that view, invoke its generated create command, and read the returned
+   canonical identity back through an authorized exact-identity view query
+   before publishing it as the selected value. A successful create that is not
+   readable through the view fails explicitly rather than manufacturing a
+   partial client row. The Instrument editor's functional-group and tag selectors
+   prove this path with public IDs. Create-from-string has no generic mutation
+   fallback: a creatable selector must name the matching CRUD view, and a
+   mismatched or missing view fails explicitly.
+-  `DB3NewObjectDialog` now requires its table-render client to be injected. The
+   grid-owned dialog therefore cannot silently construct a second legacy
+   mutation client underneath a command-backed grid.
+-  `DB3AssociationMatrix` now requires an explicit association command and no
+   longer requests TableClient mutation capability or posts a client-built tags
+   array. `defineAssociationCommand()` standardizes rich-row-to-identity
+   serialization and strict desired-state DTO/result validation. The
+   RolePermission handler reloads both authorized endpoints and the current join
+   set inside the command transaction, then applies the idempotent change through
+   the schema-owned `Permission.roles` association field so its authorization,
+   auditing, and mutation hooks remain authoritative. Role and Permission still
+   use numeric identities; the same identity-aware command transport can use
+   public identities when either endpoint is converted.
+-  The registered event-song-list save handler now performs parent, song, and
+   divider synchronization atomically in one serializable transaction by
+   composing authorized DB3 row services. The two legacy insert/update RPCs and
+   the raw `UpdateEventSongListSongs` path have been removed.
+-  Setlist divider persistence fields needed by the command are real DB3 fields
+   rather than `GhostField`s, so normal validation, transformation, and field
+   authorization apply. Setlist delete and generic list reordering remain on
+   legacy endpoints, and the server does not yet normalize or reject malformed
+   combined song/divider `sortOrder` namespaces independently of the trusted
+   serializer.
+-  Legacy queries without a named view still use `xTable.getClientModel()` and the
+   generic public-ID projector.
+-  Dashboard reference loaders now use `queryView` consistently and return DTOs.
+   Their hydration and reference registration run at the consumer boundary.
+-  Legacy `enrich*` helpers and asserted Prisma payload aliases remain and should
+   disappear as their consumers move to named views.
+-  Association-matrix assumptions, generic sorting/reordering, and raw-SQL/search
+   boundaries must be audited as their participating entities are converted.
+   Generated many-to-many/tag command inputs and row-service resolution are
+   already identity-aware.
+-  Raw SQL returned in `SearchResultsRet` is intentionally unchanged for now and
+   is expected to be removed separately.
+-  Most unconverted named views still expose numeric identities. They are the
+   input inventory for the active migration, not a permanent client contract.
+-  The legacy TableClient mutation transport has been removed. Ordinary row
+   editors use generated entity CRUD commands; aggregate and workflow operations
+   use their existing explicit endpoints or named domain commands while those
+   boundaries are migrated independently.
 
 ### Retired TableClient mutation transport guard
 
@@ -1047,14 +1044,14 @@ capability.
 
 The resulting stable writer boundaries are:
 
-| Category | Remaining generic-transport surfaces | Supported boundary |
-| --- | --- | --- |
-| Row CRUD grids | None | Every writable `DB3EditGrid` now uses a command-backed editor view. File creation remains owned by the upload workflow rather than the metadata grid. |
-| Entity detail editors | None | Song, Event, File, User/Profile, and Wiki tag metadata now use generated CRUD commands for row-shaped patches. Privileged and operation-specific actions remain named workflows. |
-| Nested rows and relationships | None | Embedded Event Segment, Song Credit, File metadata, profile instrument-set, and Setlist Plan Group edits now use generated CRUD commands. Setlist group reordering remains an explicit ordered operation. |
-| Collection editors | None | Custom Link and Menu Link row edits use generated CRUD commands over narrow editor DTOs. Menu Link ordering remains an explicit scoped collection operation. |
-| Workflows and aggregates | None use the generic TableClient transport. | Gallery baking/reordering, setlist planning, and similar multi-step flows remain explicit endpoints or named commands according to their existing domain boundary; redesign is not a public-ID prerequisite. |
-| Compatibility infrastructure | None in production | The capability flag, client mutation methods/helpers, selection fallbacks, and generic table-selected mutation RPC have been deleted. |
+| Category                      | Remaining generic-transport surfaces        | Supported boundary                                                                                                                                                                                           |
+| ----------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Row CRUD grids                | None                                        | Every writable `DB3EditGrid` now uses a command-backed editor view. File creation remains owned by the upload workflow rather than the metadata grid.                                                        |
+| Entity detail editors         | None                                        | Song, Event, File, User/Profile, and Wiki tag metadata now use generated CRUD commands for row-shaped patches. Privileged and operation-specific actions remain named workflows.                             |
+| Nested rows and relationships | None                                        | Embedded Event Segment, Song Credit, File metadata, profile instrument-set, and Setlist Plan Group edits now use generated CRUD commands. Setlist group reordering remains an explicit ordered operation.    |
+| Collection editors            | None                                        | Custom Link and Menu Link row edits use generated CRUD commands over narrow editor DTOs. Menu Link ordering remains an explicit scoped collection operation.                                                 |
+| Workflows and aggregates      | None use the generic TableClient transport. | Gallery baking/reordering, setlist planning, and similar multi-step flows remain explicit endpoints or named commands according to their existing domain boundary; redesign is not a public-ID prerequisite. |
+| Compatibility infrastructure  | None in production                          | The capability flag, client mutation methods/helpers, selection fallbacks, and generic table-selected mutation RPC have been deleted.                                                                        |
 
 The retired RPC's hostile-input and row-authorization coverage remains in a
 clearly test-only compatibility resolver. It composes the same production row
@@ -1067,43 +1064,43 @@ boundaries, and none use the retired generic TableClient mutation transport.
 
 ## Design principles
 
-- Define an entity once; define multiple named views for its use-specific shapes.
-- Keep authorization and visibility policy on the server and schema-owned.
-- Treat the DTO schema as a real runtime boundary, not only a TypeScript aid.
-- Make view relation graphs finite and explicit. Cycles in the schema metadata
-  are valid, but derive only the edges named by the Prisma selection; do not
-  recursively hydrate an unbounded object graph.
-- Hydration is deterministic, synchronous, and free of I/O.
-- Hydration traverses only the finite graph declared by its named view.
-- Do not pretend arbitrary view hydration is reversible. Use field codecs only
-  for genuinely reversible values and named command serializers for semantic or
-  aggregate models.
-- Preserve the difference between absent, null, and empty.
-- Prefer semantic client values over persistence-shaped bags of fields.
-- Do not use a hydrated read model as an implicit write model.
-- Define named commands for operation-specific or aggregate writes; keep their
-  client input, strict DTO, strict result, and server handler connected by one
-  typed contract.
-- Use generated entity CRUD commands for ordinary row writes so commands become
-  the sole DB3 client mutation boundary without making simple editors verbose.
-- Compose ordinary CRUD from a named view and its linked `xTable`; do not repeat
-  table policy, writable schemas, field serializers, handlers, or registry
-  wiring for each simple entity.
-- Preserve the command-backed TableClient/grid facade as the supported automatic
-  row-editor API.
-- Treat `useDB3Command()` serialization and validation as client contract
-  ergonomics, never as a replacement for server validation or authorization.
-- Compose aggregate command handlers from the existing authoritative DB3 row
-  mutation services instead of copying table authorization and mutation rules.
-- Do not reintroduce the retired generic TableClient mutation transport or add a
-  second write path beside commands.
-- Keep domain-specific filters and selection behavior out of DB3 core.
-- Do not add generic untyped payload bags where a named DTO/client shape can
-  express the requirement.
-- Never use natural identity as a client sort contract or hidden default sort.
-- Keep natural/public identity conversion at the transport boundary; internal
-  persistence code continues to use the database's natural keys.
-- Never treat opacity as authorization.
+-  Define an entity once; define multiple named views for its use-specific shapes.
+-  Keep authorization and visibility policy on the server and schema-owned.
+-  Treat the DTO schema as a real runtime boundary, not only a TypeScript aid.
+-  Make view relation graphs finite and explicit. Cycles in the schema metadata
+   are valid, but derive only the edges named by the Prisma selection; do not
+   recursively hydrate an unbounded object graph.
+-  Hydration is deterministic, synchronous, and free of I/O.
+-  Hydration traverses only the finite graph declared by its named view.
+-  Do not pretend arbitrary view hydration is reversible. Use field codecs only
+   for genuinely reversible values and named command serializers for semantic or
+   aggregate models.
+-  Preserve the difference between absent, null, and empty.
+-  Prefer semantic client values over persistence-shaped bags of fields.
+-  Do not use a hydrated read model as an implicit write model.
+-  Define named commands for operation-specific or aggregate writes; keep their
+   client input, strict DTO, strict result, and server handler connected by one
+   typed contract.
+-  Use generated entity CRUD commands for ordinary row writes so commands become
+   the sole DB3 client mutation boundary without making simple editors verbose.
+-  Compose ordinary CRUD from a named view and its linked `xTable`; do not repeat
+   table policy, writable schemas, field serializers, handlers, or registry
+   wiring for each simple entity.
+-  Preserve the command-backed TableClient/grid facade as the supported automatic
+   row-editor API.
+-  Treat `useDB3Command()` serialization and validation as client contract
+   ergonomics, never as a replacement for server validation or authorization.
+-  Compose aggregate command handlers from the existing authoritative DB3 row
+   mutation services instead of copying table authorization and mutation rules.
+-  Do not reintroduce the retired generic TableClient mutation transport or add a
+   second write path beside commands.
+-  Keep domain-specific filters and selection behavior out of DB3 core.
+-  Do not add generic untyped payload bags where a named DTO/client shape can
+   express the requirement.
+-  Never use natural identity as a client sort contract or hidden default sort.
+-  Keep natural/public identity conversion at the transport boundary; internal
+   persistence code continues to use the database's natural keys.
+-  Never treat opacity as authorization.
 
 ## Migration method
 
@@ -1155,20 +1152,20 @@ require converting that entity's identity.
 
 An entity is complete only when the applicable items below are true:
 
-- it has stable typed entity metadata and named client views;
-- view DTOs are runtime validated and hydrate without result casts or
-  supplemental `enrich*` work;
-- ordinary editable rows use generated CRUD commands, while aggregates and
-  actions use explicit operation inputs and handwritten commands as needed;
-- all client writes use strict generated or handwritten commands;
-- no consumer uses the legacy TableClient generic mutation transport for the
-  entity, although a command-backed TableClient CRUD facade may remain;
-- public identity is used across client-facing DTOs, command inputs and results,
-  foreign references, filters, caches, and React keys;
-- associations, routes, search, imports/exports, and raw SQL have been audited;
-- recursive authorization and projection do not leak natural IDs or provide an
-  existence oracle; and
-- the replaced compatibility code and legacy endpoints have been removed.
+-  it has stable typed entity metadata and named client views;
+-  view DTOs are runtime validated and hydrate without result casts or
+   supplemental `enrich*` work;
+-  ordinary editable rows use generated CRUD commands, while aggregates and
+   actions use explicit operation inputs and handwritten commands as needed;
+-  all client writes use strict generated or handwritten commands;
+-  no consumer uses the legacy TableClient generic mutation transport for the
+   entity, although a command-backed TableClient CRUD facade may remain;
+-  public identity is used across client-facing DTOs, command inputs and results,
+   foreign references, filters, caches, and React keys;
+-  associations, routes, search, imports/exports, and raw SQL have been audited;
+-  recursive authorization and projection do not leak natural IDs or provide an
+   existence oracle; and
+-  the replaced compatibility code and legacy endpoints have been removed.
 
 Track these facts per entity. This is more useful than counting converted schema
 columns, because it records whether an entity has actually crossed every client
@@ -1179,20 +1176,20 @@ boundary safely.
 Migration order is not determined only by entity dependencies or by which table
 looks easiest. Classify the scenarios exercised by a proposed slice:
 
-- **Design pressure** covers a client-identity scenario that has not yet been
-  expressed cleanly by the shared DB3 design. Examples include identity-bearing
-  query parameters, batched translation for raw SQL, and route/search identity.
-  Address these first, using the smallest coherent domain slice that exposes the
-  missing capability.
-- **Trivial repetition** covers models that use only established read, command,
-  foreign-reference, association, query, and transport patterns. Group related
-  target and association models and migrate them together rather than creating
-  a long series of tiny schema-only changes.
-- **Application pressure** covers broad workflows and policy reconciliation that
-  may require substantial consumer work but is unlikely to change the public-ID
-  architecture. Start these domains once the narrower slices have established
-  their shared identity contracts. The Event phase followed this order: its
-  child aggregates migrated before the central Event identity.
+-  **Design pressure** covers a client-identity scenario that has not yet been
+   expressed cleanly by the shared DB3 design. Examples include identity-bearing
+   query parameters, batched translation for raw SQL, and route/search identity.
+   Address these first, using the smallest coherent domain slice that exposes the
+   missing capability.
+-  **Trivial repetition** covers models that use only established read, command,
+   foreign-reference, association, query, and transport patterns. Group related
+   target and association models and migrate them together rather than creating
+   a long series of tiny schema-only changes.
+-  **Application pressure** covers broad workflows and policy reconciliation that
+   may require substantial consumer work but is unlikely to change the public-ID
+   architecture. Start these domains once the narrower slices have established
+   their shared identity contracts. The Event phase followed this order: its
+   child aggregates migrated before the central Event identity.
 
 These categories apply to scenarios, not permanently to whole entities. A model
 can contain one design-pressure boundary surrounded by application-heavy work.
@@ -1266,6 +1263,7 @@ The current pressure-led sequence is:
    now a dedicated named Event view queried through `queryView()`; it uses the
    standard authorization, recursive projection, and DTO validation
    path instead of a raw Prisma query and a caller-owned projection helper.
+
 6. **Completed:** migrate `UserTag` and `UserTagAssignment` together. User-tag
    administration, user associations, dashboard references, user-search facets,
    invitation membership, event attendance defaults, event import/update, and
@@ -1287,6 +1285,7 @@ The current pressure-led sequence is:
    the membership data selected by the Event view. The apparent File user-tag
    surface was also confirmed to be a separate user-association taxonomy, not
    a hidden `UserTag` identity boundary.
+
 7. **Completed:** migrate `SongCreditType` and `SongCredit` together. Credit
    administration, Song editor/detail/search relations, dashboard references,
    user-credit analytics, telemetry/reporting, mutation preparation, and React
@@ -1303,6 +1302,7 @@ The current pressure-led sequence is:
    and project credit identity recursively, normalize credit types through the
    dashboard reference contract, and leave identity extraction to xTable
    rather than to React components.
+
 8. **Completed:** migrate `UserInstrument` without converting `User`.
    The association now has its own public identity while its User endpoint
    remains natural and its Instrument endpoint remains public. The standalone
@@ -1319,6 +1319,7 @@ The current pressure-led sequence is:
    The primary-selection RPC continues to address rows by natural IDs only after
    its trusted server-side lookup; no association database identity enters its
    request or result contract.
+
 9. **Completed:** migrate the five File cross-entity association rows as one
    family. `FileUserTag`, `FileSongTag`, `FileEventTag`,
    `FileInstrumentTag`, and `FileWikiPageTag` now have branded public row
@@ -1338,73 +1339,76 @@ The current pressure-led sequence is:
    because a newly selected relation has no server-generated association public
    ID yet. The association xTables own persisted row identity; components do
    not fall back to database IDs.
-10. **Completed:** migrate the authorization family (`Permission`, `Role`, and
-    `RolePermission`) while preserving natural permission keys in trusted
-    authorization evaluation. Role assignment, designation, visibility, and
-    role-permission commands now accept public identities and resolve them only
-    at their server boundaries; server-side `ServerPermissionSet` retains the
-    database identities needed for efficient visibility predicates. Shared
-    `PermissionSet` and the dashboard capability payload use names only.
 
-    This slice exposed two missing view facilities. Selection derivation now
-    automatically fetches a converted foreign target's public identity when a
-    DTO selects its foreign key, without widening the DTO itself. Named views
-    must execute that compiled selection; dynamic Event search layers its
-    actor-specific predicates over the compiled selection instead of bypassing
-    projection support. Mutation-specific RPCs can use
-    `authorizeAndProjectViewDto()` to apply the same authorization,
-    projection, and DTO validation path to a single returned row.
-    Wiki page locking is the first consumer, eliminating another handwritten
-    public-ID projection path.
+10.   **Completed:** migrate the authorization family (`Permission`, `Role`, and
+      `RolePermission`) while preserving natural permission keys in trusted
+      authorization evaluation. Role assignment, designation, visibility, and
+      role-permission commands now accept public identities and resolve them only
+      at their server boundaries; server-side `ServerPermissionSet` retains the
+      database identities needed for efficient visibility predicates. Shared
+      `PermissionSet` and the dashboard capability payload use names only.
 
-    The slice also strengthened the WikiPage entity: `lockedByUser` is now a
-    real foreign relation, and its lock/version ghost fields declare their
-    read schemas. Visibility IDs in File upload, Setlist Plan, and Wiki custom
-    APIs now stay public on the client and resolve through the Permission
-    entity at the trusted boundary. User-management capabilities expose
-    assignable Role public IDs, and the superseded raw-ID role/permission
-    matrix query endpoints were removed after the named views replaced them.
-    Startup repair registers all three models so deployment placeholders are
-    replaced before any public-ID contract begins serving requests.
-11. **Completed:** migrate `UserSignInMethod` as a protected operational child.
-    Its sysadmin read RPC now uses the derived `UserSignInMethod_Admin` view
-    through `queryView()`. The dedicated strict add/remove operations and React
-    keys use branded public identity; the User owner remains in its existing
-    natural-ID domain. Credential lookup, ownership checks, and deletion resolve
-    database rows only on the server. Current maintenance audits record the
-    method's public ID and omit credential identifiers.
+      This slice exposed two missing view facilities. Selection derivation now
+      automatically fetches a converted foreign target's public identity when a
+      DTO selects its foreign key, without widening the DTO itself. Named views
+      must execute that compiled selection; dynamic Event search layers its
+      actor-specific predicates over the compiled selection instead of bypassing
+      projection support. Mutation-specific RPCs can use
+      `authorizeAndProjectViewDto()` to apply the same authorization,
+      projection, and DTO validation path to a single returned row.
+      Wiki page locking is the first consumer, eliminating another handwritten
+      public-ID projection path.
 
-    The entity permits generic reads only to Sysadmins and disables generic
-    writes, preserving the dedicated operations' fresh authorization, session
-    revocation, transaction, and last-usable-method protections. New methods
-    created during signup and admin maintenance use the server table's
-    `createWithPublicId()` capability. This slice distinguishes retryable opaque
-    ID collisions from meaningful credential ownership conflicts; the same
-    server capability now also owns generic DB3 insert retries. Startup repair
-    covers existing rows, and seeds generate real public IDs.
-12. **Scope decision:** retain natural row identities for `Action` and `Change`
-    under the operational ledger exception above. Historical evidence remains
-    diagnostic data; live references follow each target entity's migration.
-    Remove the two ledger models from the denominator, not by counting them as
-    completed conversions.
-13. **Completed:** migrate the Event constellation from its outer aggregates
-    inward. Setlists, EventAttendance, segments/responses, and central Event now
-    use public identity across their client boundaries.
-14. Keep central Song, File, WikiPage, User, and the separate SetlistPlan
-    aggregate for later application slices. EventSongList migration does not
-    require converting SetlistPlan or SetlistPlanGroup.
+      The slice also strengthened the WikiPage entity: `lockedByUser` is now a
+      real foreign relation, and its lock/version ghost fields declare their
+      read schemas. Visibility IDs in File upload, Setlist Plan, and Wiki custom
+      APIs now stay public on the client and resolve through the Permission
+      entity at the trusted boundary. User-management capabilities expose
+      assignable Role public IDs, and the superseded raw-ID role/permission
+      matrix query endpoints were removed after the named views replaced them.
+      Startup repair registers all three models so deployment placeholders are
+      replaced before any public-ID contract begins serving requests.
+
+11.   **Completed:** migrate `UserSignInMethod` as a protected operational child.
+      Its sysadmin read RPC now uses the derived `UserSignInMethod_Admin` view
+      through `queryView()`. The dedicated strict add/remove operations and React
+      keys use branded public identity; the User owner remains in its existing
+      natural-ID domain. Credential lookup, ownership checks, and deletion resolve
+      database rows only on the server. Current maintenance audits record the
+      method's public ID and omit credential identifiers.
+
+      The entity permits generic reads only to Sysadmins and disables generic
+      writes, preserving the dedicated operations' fresh authorization, session
+      revocation, transaction, and last-usable-method protections. New methods
+      created during signup and admin maintenance use the server table's
+      `createWithPublicId()` capability. This slice distinguishes retryable opaque
+      ID collisions from meaningful credential ownership conflicts; the same
+      server capability now also owns generic DB3 insert retries. Startup repair
+      covers existing rows, and seeds generate real public IDs.
+
+12.   **Scope decision:** retain natural row identities for `Action` and `Change`
+      under the operational ledger exception above. Historical evidence remains
+      diagnostic data; live references follow each target entity's migration.
+      Remove the two ledger models from the denominator, not by counting them as
+      completed conversions.
+13.   **Completed:** migrate the Event constellation from its outer aggregates
+      inward. Setlists, EventAttendance, segments/responses, and central Event now
+      use public identity across their client boundaries.
+14.   Keep central Song, File, WikiPage, User, and the separate SetlistPlan
+      aggregate for later application slices. EventSongList migration does not
+      require converting SetlistPlan or SetlistPlanGroup.
 
 ### Completed application phase: Event constellation
 
 The Event classification family and FileEventTag are already converted. The
 eight Event-related models formed four coherent slices, all now complete:
 
-| Order | Models | Boundary exercised |
-| --- | --- | --- |
-| 1 (complete) | `EventSongList`, `EventSongListSong`, `EventSongListDivider` | An editable aggregate with persisted child identities, local draft keys, and mixed song/divider ordering. |
-| 2 (complete) | `EventAttendance` | The shared response-choice reference across dashboard caches, controls, reports, imports, and telemetry. |
-| 3 (complete) | `EventSegment`, `EventSegmentUserResponse`, `EventUserResponse` | Segment-keyed attendance operations and response creation/copying while Event and User remain natural. |
-| 4 (complete) | `Event` | Central routes, search, calendar links, visibility, creation/import, files, reports, and the complete embedded graph. |
+| Order        | Models                                                          | Boundary exercised                                                                                                    |
+| ------------ | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 1 (complete) | `EventSongList`, `EventSongListSong`, `EventSongListDivider`    | An editable aggregate with persisted child identities, local draft keys, and mixed song/divider ordering.             |
+| 2 (complete) | `EventAttendance`                                               | The shared response-choice reference across dashboard caches, controls, reports, imports, and telemetry.              |
+| 3 (complete) | `EventSegment`, `EventSegmentUserResponse`, `EventUserResponse` | Segment-keyed attendance operations and response creation/copying while Event and User remain natural.                |
+| 4 (complete) | `Event`                                                         | Central routes, search, calendar links, visibility, creation/import, files, reports, and the complete embedded graph. |
 
 Each slice includes all references to its converted models, even when those
 references occur in an unconverted parent. Keeping Event numeric during the
@@ -1418,39 +1422,39 @@ operation and hydrated content form one aggregate.
 public identities across their client boundaries. Event and Song retain natural
 identities; SetlistPlan remains a separate domain.
 
-- The migration adds unique public-ID columns with deployment placeholders.
-  Startup repair replaces placeholders before serving requests. DB3 inserts,
-  including the initial setlist in `insertEvent`, generate public IDs; seeds
-  generate real public IDs for all three models.
-- `EventSongList_Detail` derives its read contract from xTable and finite
-  selections. Nested Song authorization support stays outside transport;
-  public tag and parent references use the shared projection. Embedded Event
-  graphs also project public setlist and child identities. Content hydration
-  retains compact color keys and refuses to produce an editable draft from
-  incomplete authorized content.
-- Drafts distinguish stable string `clientId` keys from optional persisted
-  `publicId` values. Save serialization emits only persisted public IDs.
-  Clipboard export drops setlist/item identity, and each paste allocates fresh
-  local keys. Setlist drafts, previews, and media-player `setlistClientId` use
-  `SetlistClientId` (`EventSongListPublicId | DraftSetlistId`); only the draft-ID
-  factory creates branded temporary setlist identities.
-  `setlistApi` separates client rows from identity-free server formatting data.
-- Save, delete, and reorder use strict commands and shared transactional row
-  services. Child ownership, duplicate identities, Event/Song visibility,
-  field authorization, and reorder scope are checked on the server. Reorder
-  preserves healthy sort-order gaps; deletion retains one aggregate audit and
-  cascading child deletion. The old numeric delete RPC is removed, and the
-  generic numeric reorder RPC rejects converted tables.
-- Action recording accepts public setlist references and resolves numeric FKs
-  only on the server. Feature/general reports and CSV output project public
-  references. The sysadmin Change lookup cache keeps numeric IDs solely to
-  label historical ledger evidence under the explicit ledger exception.
-- Command, view, and authorization tests cover initial creation, mixed updates,
-  delete/reorder, fresh copy identities, preview behavior, incomplete hydration,
-  embedded Event projection, hidden parents/songs, duplicate/foreign/unknown
-  child IDs, rollback after a later write failure, explicit reorder scope, and
-  rejected numeric targets. The test database now models setlist relations,
-  cascading deletion, and transaction rollback for these checks.
+-  The migration adds unique public-ID columns with deployment placeholders.
+   Startup repair replaces placeholders before serving requests. DB3 inserts,
+   including the initial setlist in `insertEvent`, generate public IDs; seeds
+   generate real public IDs for all three models.
+-  `EventSongList_Detail` derives its read contract from xTable and finite
+   selections. Nested Song authorization support stays outside transport;
+   public tag and parent references use the shared projection. Embedded Event
+   graphs also project public setlist and child identities. Content hydration
+   retains compact color keys and refuses to produce an editable draft from
+   incomplete authorized content.
+-  Drafts distinguish stable string `clientId` keys from optional persisted
+   `publicId` values. Save serialization emits only persisted public IDs.
+   Clipboard export drops setlist/item identity, and each paste allocates fresh
+   local keys. Setlist drafts, previews, and media-player `setlistClientId` use
+   `SetlistClientId` (`EventSongListPublicId | DraftSetlistId`); only the draft-ID
+   factory creates branded temporary setlist identities.
+   `setlistApi` separates client rows from identity-free server formatting data.
+-  Save, delete, and reorder use strict commands and shared transactional row
+   services. Child ownership, duplicate identities, Event/Song visibility,
+   field authorization, and reorder scope are checked on the server. Reorder
+   preserves healthy sort-order gaps; deletion retains one aggregate audit and
+   cascading child deletion. The old numeric delete RPC is removed, and the
+   generic numeric reorder RPC rejects converted tables.
+-  Action recording accepts public setlist references and resolves numeric FKs
+   only on the server. Feature/general reports and CSV output project public
+   references. The sysadmin Change lookup cache keeps numeric IDs solely to
+   label historical ledger evidence under the explicit ledger exception.
+-  Command, view, and authorization tests cover initial creation, mixed updates,
+   delete/reorder, fresh copy identities, preview behavior, incomplete hydration,
+   embedded Event projection, hidden parents/songs, duplicate/foreign/unknown
+   child IDs, rollback after a later write failure, explicit reorder scope, and
+   rejected numeric targets. The test database now models setlist relations,
+   cascading deletion, and transaction rollback for these checks.
 
 Deployment still requires applying the checked-in SQL migration and starting
 with placeholder repair enabled. The migration was not applied to a database
@@ -1502,26 +1506,26 @@ to a database, and browser interaction against migrated data remains unverified.
 `EventSegment`, `EventSegmentUserResponse`, and `EventUserResponse` now use
 branded public identities. Event and User remain natural in this slice.
 
-- Unique public-ID columns use deployment placeholders and startup repair.
-  DB3 creates, initial Event/import responses, attendance submission, seeds,
-  copy, and the user-merge response upsert generate public IDs.
-- The segment editor and both response detail views derive finite contracts.
-  Legacy Event detail, Event search, and Wiki Event context project public
-  segment/response identities. Standalone child reads and target resolution
-  require a visible, nondeleted parent Event.
-- Segment-keyed attendance maps, controls, editors, copy/clear inputs, report
-  rows, HTTP attendance responses, and telemetry use public segment IDs.
-  Numeric targets are rejected. Attendance submission resolves all keys before
-  writing and keeps its same-event and self/other response authorization.
-  Unanswered presentation rows have no persisted response identity.
-- Copy replaces the target responses with fresh public identities and checks
-  that source and target are distinct segments of the same visible Event.
-  Copy and clear now use the transaction client for all writes, hooks, and
-  audit records. Regression tests cover escaped writes and rollback after
-  insert, hook, and audit failures. Audit record keys remain natural.
-- Calendar export retains existing UIDs and sequence behavior. The trusted
-  calendar revision calculation still hashes numeric segment IDs; adding or
-  replacing public IDs does not alter its stored hash.
+-  Unique public-ID columns use deployment placeholders and startup repair.
+   DB3 creates, initial Event/import responses, attendance submission, seeds,
+   copy, and the user-merge response upsert generate public IDs.
+-  The segment editor and both response detail views derive finite contracts.
+   Legacy Event detail, Event search, and Wiki Event context project public
+   segment/response identities. Standalone child reads and target resolution
+   require a visible, nondeleted parent Event.
+-  Segment-keyed attendance maps, controls, editors, copy/clear inputs, report
+   rows, HTTP attendance responses, and telemetry use public segment IDs.
+   Numeric targets are rejected. Attendance submission resolves all keys before
+   writing and keeps its same-event and self/other response authorization.
+   Unanswered presentation rows have no persisted response identity.
+-  Copy replaces the target responses with fresh public identities and checks
+   that source and target are distinct segments of the same visible Event.
+   Copy and clear now use the transaction client for all writes, hooks, and
+   audit records. Regression tests cover escaped writes and rollback after
+   insert, hook, and audit failures. Audit record keys remain natural.
+-  Calendar export retains existing UIDs and sequence behavior. The trusted
+   calendar revision calculation still hashes numeric segment IDs; adding or
+   replacing public IDs does not alter its stored hash.
 
 Validation includes public CRUD and view projection, ownership and visibility,
 invalid/cross-event map keys, generated response identities, import creation,
@@ -1537,40 +1541,40 @@ live migration nor browser interaction against migrated data was performed.
 
 `Event` now uses branded public identity across its complete client boundary.
 
-- The schema and checked-in SQL migration add a unique ASCII/binary public-ID
-  column with deployment placeholders. Startup repair and seeds assign real
-  IDs. Event creation returns the finite editor DTO after re-reading the new
-  row through its named selection.
-- `xEvent` owns public identity; its natural key is visible only to trusted
-  sysadmin surfaces. Routes, exact lookup, links, search results, filters,
-  calendar links, attendance requests, setlist commands, file associations,
-  telemetry, reports, and React keys now carry `EventPublicId`. Entity query
-  parameters resolve public IDs once at the server boundary. Search keeps its
-  raw-SQL natural keys in a server-only execution option while DB3 reapplies row
-  authorization and projects the returned Events.
-- `Event_Editor`, `Event_Search`, `Event_Frontpage`, `Event_WikiPageContext`,
-  `Event_Detail`, and `Event_Calendar` provide finite contracts for their
-  distinct consumers. Detail and calendar hydration validate that every member
-  required by their complete consumer types was selected. The detail page now
-  uses the named view and dashboard reference store directly.
-- The duplicate `xEventVerbose`, its Prisma/client payload aliases, the Event
-  enrichment module, and the final Event-side `enrichFile` call are removed.
-  Calendar export queries `Event_Calendar` and maps its hydrated setlist content
-  into the existing calendar formatter without casts or a second verbose row.
-- Calendar UIDs, persisted revision hashes, database foreign keys, and
-  Action/Change audit keys retain their server-owned natural-key contracts.
-  Current Action transport references are public and resolve only inside the
-  server operation.
-- Startup repair also rewrites `EventDescription` wiki slugs and persisted
-  SetlistPlan Event links to public paths. These rewrites cover stored strings
-  that cannot be expressed as Prisma foreign-key projection.
-- Dashboard follow-up: relevant-event selection and fetching now use public
-  identities end to end. Relevance SQL uses effective grants (including inherited
-  roles), retains retired cancelled statuses, and handles an empty status catalog.
-  Shared capability checks no longer require database permission IDs in the
-  dashboard payload. Regression coverage includes normal users, sysadmins,
-  empty results, private/deleted Events, forged numeric RPC targets, and trusted
-  server natural-key reads.
+-  The schema and checked-in SQL migration add a unique ASCII/binary public-ID
+   column with deployment placeholders. Startup repair and seeds assign real
+   IDs. Event creation returns the finite editor DTO after re-reading the new
+   row through its named selection.
+-  `xEvent` owns public identity; its natural key is visible only to trusted
+   sysadmin surfaces. Routes, exact lookup, links, search results, filters,
+   calendar links, attendance requests, setlist commands, file associations,
+   telemetry, reports, and React keys now carry `EventPublicId`. Entity query
+   parameters resolve public IDs once at the server boundary. Search keeps its
+   raw-SQL natural keys in a server-only execution option while DB3 reapplies row
+   authorization and projects the returned Events.
+-  `Event_Editor`, `Event_Search`, `Event_Frontpage`, `Event_WikiPageContext`,
+   `Event_Detail`, and `Event_Calendar` provide finite contracts for their
+   distinct consumers. Detail and calendar hydration validate that every member
+   required by their complete consumer types was selected. The detail page now
+   uses the named view and dashboard reference store directly.
+-  The duplicate `xEventVerbose`, its Prisma/client payload aliases, the Event
+   enrichment module, and the final Event-side `enrichFile` call are removed.
+   Calendar export queries `Event_Calendar` and maps its hydrated setlist content
+   into the existing calendar formatter without casts or a second verbose row.
+-  Calendar UIDs, persisted revision hashes, database foreign keys, and
+   Action/Change audit keys retain their server-owned natural-key contracts.
+   Current Action transport references are public and resolve only inside the
+   server operation.
+-  Startup repair also rewrites `EventDescription` wiki slugs and persisted
+   SetlistPlan Event links to public paths. These rewrites cover stored strings
+   that cannot be expressed as Prisma foreign-key projection.
+-  Dashboard follow-up: relevant-event selection and fetching now use public
+   identities end to end. Relevance SQL uses effective grants (including inherited
+   roles), retains retired cancelled statuses, and handles an empty status catalog.
+   Shared capability checks no longer require database permission IDs in the
+   dashboard payload. Regression coverage includes normal users, sysadmins,
+   empty results, private/deleted Events, forged numeric RPC targets, and trusted
+   server natural-key reads.
 
 Validation: the full repository runner passed 104 test files with 1,609 tests
 passing and 23 tests skipped across the three MySQL integration suites.
@@ -1587,19 +1591,19 @@ and browser interaction against migrated data remains unverified.
 
 ### Completed foundation
 
-- [x] Establish typed entities, named views, runtime DTOs, hydration, normalized
-  references, and inferred `ClientOf<TView>` query results.
-- [x] Establish keyed typed `xTable` and TableClient declarations, field codecs,
-  typed mutation projection, and view-bound `useTableRenderContext()` results.
-- [x] Establish typed commands, generated entity CRUD, aggregate command
-  composition, and command-backed generic editors.
-- [x] Remove the generic TableClient mutation transport, its capability flag,
-  table-name envelope, and production RPC.
-- [x] Prove the complete read/write/public-identity chain with
-  `InstrumentFunctionalGroup`.
-- [x] Establish selection-first read derivation from xTable field contracts,
-  including `inheritRow` presence, scalar codecs, embedded and normalized
-  foreign relations, and explicit Event date-range composition.
+-  [x] Establish typed entities, named views, runtime DTOs, hydration, normalized
+       references, and inferred `ClientOf<TView>` query results.
+-  [x] Establish keyed typed `xTable` and TableClient declarations, field codecs,
+       typed mutation projection, and view-bound `useTableRenderContext()` results.
+-  [x] Establish typed commands, generated entity CRUD, aggregate command
+       composition, and command-backed generic editors.
+-  [x] Remove the generic TableClient mutation transport, its capability flag,
+       table-name envelope, and production RPC.
+-  [x] Prove the complete read/write/public-identity chain with
+       `InstrumentFunctionalGroup`.
+-  [x] Establish selection-first read derivation from xTable field contracts,
+       including `inheritRow` presence, scalar codecs, embedded and normalized
+       foreign relations, and explicit Event date-range composition.
 
 ### Stabilization gate
 
@@ -1607,100 +1611,100 @@ This is a bounded cleanup pass, not another exploratory architecture phase. Its
 purpose is to leave one clearly supported path before multiplying public-ID
 conversions.
 
-- [x] Establish a categorized, non-growth source inventory for
-  `defineLegacyCrudView()`, `defineLegacyTableClientSpec()`,
-  `defineLegacyDynamicTableClientSpec()`, `bindLegacyTableClientSpecToView()`,
-  and `useLegacyTableRenderContext()`. Delete the zero-consumer legacy CRUD-view
-  constructor and convert the direct Custom Link and Menu Link view adapters to
-  typed `defineTableClientSpec()` declarations.
-- [x] Remove `bindLegacyTableClientSpecToView()`. The named-view overload of
-  `useDb3Query()` now accepts a typed view-bound spec or creates an empty typed
-  query-only spec; Song detail supplies its typed presentation columns.
-- [x] Convert the embedded Event Segment, Song Credit, and File editors that
-  already own CRUD views to typed view-bound specs, render contexts, and command
-  clients. The shared edit-dialog callback remains a documented untyped draft
-  boundary; File editing normalizes its detail row into the editor view shape
-  before entering that boundary.
-- [x] Convert the bespoke front-page gallery editor to its typed CRUD-view
-  facade. Its strict view DTO now carries the nested file metadata the editor
-  actually reads while generated writes remain limited to the gallery entity's
-  prepared fields. Delete the unused WikiPage TableClient module instead of
-  manufacturing a view consumer for it.
-- [x] Move the backstage File detail page onto `fileDetailView`, expand that
-  read DTO only with the relationship-panel and image-metadata fields the page
-  renders, retain `fileEditorView` as the narrower write contract, and remove
-  the page from the legacy-read compatibility inventory.
-- [x] Move the homepage-agenda editor onto a finite `eventFrontpageView`, apply
-  its intended `forFrontPageAgenda` query parameter, and replace the verbose
-  Event graph plus manual enrichment with the typed summary and frontpage-field
-  contract the page actually renders.
-- [ ] Convert the remaining view-backed inventory to the typed path. Retain a
-  separately documented
-  runtime-dynamic/query-only API only where static view binding is genuinely
-  impossible.
-- [ ] Convert remaining `enrich*` consumers and duplicate asserted Prisma query
-  shapes to named views where those values cross a client boundary.
-- [ ] Replace relation `GhostField`s that participate in client projection,
-  recursive authorization, hydration, or mutation. Keep deliberately opaque
-  server-only fields explicit rather than treating every `GhostField` as a
-  migration failure.
-- [x] Add identity-aware query-parameter declarations. The parameter names still
-  live in the table's `tableParams` contract, but `entityIdentity` and
-  `entityIdentityArray` now derive validation from their target table and are
-  resolved centrally before selection or where-clause construction.
-- [x] Add the discoverable server-only table slice and put public-ID generation
-  behind it. DB3-aware production code now derives parsing and generation from
-  its xTable rather than asserting a free-string public-ID brand.
-- [x] Let derived view contracts add their own hidden relation public IDs and
-  remove the redundant manual projection selections. EventSongList now uses
-  a derived contract as well, so its manual tag projection is removed.
-- [x] Supply execution-only ordering keys and recursive authorization inputs
-  centrally. Regression tests honor actual Prisma selections and cover Event
-  search ordering, complete Event detail hydration, private/deleted targets,
-  missing-input diagnostics, and support-field removal.
-- [ ] Reconcile retired-choice display policy: EventStatus/EventAttendance
-  comments allow historical references, but generic row authorization restricts
-  soft-deleted rows to authorized recovery reads. Fetching complete policy data
-  now applies that existing restriction consistently to nested projections;
-  this read-dependency fix does not introduce a historical-reference exception.
-- [ ] Update markdown mention parsing/editing for public IDs. Existing numeric
-  mentions are few enough to repair manually: no compatibility aliases,
-  per-object legacy-PK flags, or content-rewriting migration are planned.
-- [ ] Collapse the RolePermission command's association and role lookup into one
-  relational Prisma query, and teach the in-memory Prisma test double that
-  nested selection shape instead of preserving production complexity for it.
-- [ ] Normalize the remaining non-identity query parameter boundary so a view
-  can declare its parameter type instead of callers depending on an untyped
-  `tableParams` bag. This broader cleanup is no longer a public-ID prerequisite.
-- [ ] Remove obsolete compatibility constructors, markers, and casts once their
-  inventories reach zero. Retain focused source guards that prevent the retired
-  paths from returning. Any necessary cast at an external or dynamic boundary
-  must state the runtime invariant that makes it safe.
+-  [x] Establish a categorized, non-growth source inventory for
+       `defineLegacyCrudView()`, `defineLegacyTableClientSpec()`,
+       `defineLegacyDynamicTableClientSpec()`, `bindLegacyTableClientSpecToView()`,
+       and `useLegacyTableRenderContext()`. Delete the zero-consumer legacy CRUD-view
+       constructor and convert the direct Custom Link and Menu Link view adapters to
+       typed `defineTableClientSpec()` declarations.
+-  [x] Remove `bindLegacyTableClientSpecToView()`. The named-view overload of
+       `useDb3Query()` now accepts a typed view-bound spec or creates an empty typed
+       query-only spec; Song detail supplies its typed presentation columns.
+-  [x] Convert the embedded Event Segment, Song Credit, and File editors that
+       already own CRUD views to typed view-bound specs, render contexts, and command
+       clients. The shared edit-dialog callback remains a documented untyped draft
+       boundary; File editing normalizes its detail row into the editor view shape
+       before entering that boundary.
+-  [x] Convert the bespoke front-page gallery editor to its typed CRUD-view
+       facade. Its strict view DTO now carries the nested file metadata the editor
+       actually reads while generated writes remain limited to the gallery entity's
+       prepared fields. Delete the unused WikiPage TableClient module instead of
+       manufacturing a view consumer for it.
+-  [x] Move the backstage File detail page onto `fileDetailView`, expand that
+       read DTO only with the relationship-panel and image-metadata fields the page
+       renders, retain `fileEditorView` as the narrower write contract, and remove
+       the page from the legacy-read compatibility inventory.
+-  [x] Move the homepage-agenda editor onto a finite `eventFrontpageView`, apply
+       its intended `forFrontPageAgenda` query parameter, and replace the verbose
+       Event graph plus manual enrichment with the typed summary and frontpage-field
+       contract the page actually renders.
+-  [ ] Convert the remaining view-backed inventory to the typed path. Retain a
+       separately documented
+       runtime-dynamic/query-only API only where static view binding is genuinely
+       impossible.
+-  [ ] Convert remaining `enrich*` consumers and duplicate asserted Prisma query
+       shapes to named views where those values cross a client boundary.
+-  [ ] Replace relation `GhostField`s that participate in client projection,
+       recursive authorization, hydration, or mutation. Keep deliberately opaque
+       server-only fields explicit rather than treating every `GhostField` as a
+       migration failure.
+-  [x] Add identity-aware query-parameter declarations. The parameter names still
+       live in the table's `tableParams` contract, but `entityIdentity` and
+       `entityIdentityArray` now derive validation from their target table and are
+       resolved centrally before selection or where-clause construction.
+-  [x] Add the discoverable server-only table slice and put public-ID generation
+       behind it. DB3-aware production code now derives parsing and generation from
+       its xTable rather than asserting a free-string public-ID brand.
+-  [x] Let derived view contracts add their own hidden relation public IDs and
+       remove the redundant manual projection selections. EventSongList now uses
+       a derived contract as well, so its manual tag projection is removed.
+-  [x] Supply execution-only ordering keys and recursive authorization inputs
+       centrally. Regression tests honor actual Prisma selections and cover Event
+       search ordering, complete Event detail hydration, private/deleted targets,
+       missing-input diagnostics, and support-field removal.
+-  [ ] Reconcile retired-choice display policy: EventStatus/EventAttendance
+       comments allow historical references, but generic row authorization restricts
+       soft-deleted rows to authorized recovery reads. Fetching complete policy data
+       now applies that existing restriction consistently to nested projections;
+       this read-dependency fix does not introduce a historical-reference exception.
+-  [ ] Update markdown mention parsing/editing for public IDs. Existing numeric
+       mentions are few enough to repair manually: no compatibility aliases,
+       per-object legacy-PK flags, or content-rewriting migration are planned.
+-  [ ] Collapse the RolePermission command's association and role lookup into one
+       relational Prisma query, and teach the in-memory Prisma test double that
+       nested selection shape instead of preserving production complexity for it.
+-  [ ] Normalize the remaining non-identity query parameter boundary so a view
+       can declare its parameter type instead of callers depending on an untyped
+       `tableParams` bag. This broader cleanup is no longer a public-ID prerequisite.
+-  [ ] Remove obsolete compatibility constructors, markers, and casts once their
+       inventories reach zero. Retain focused source guards that prevent the retired
+       paths from returning. Any necessary cast at an external or dynamic boundary
+       must state the runtime invariant that makes it safe.
 
 ### Public-ID migration
 
-- [x] Establish an explicit client-facing model inventory and document the
-  models excluded from its denominator.
-- [x] Exclude `Action` and `Change` row identities under the explicit operational
-  ledger exception; retain target-entity migration obligations for live
-  references.
-- [ ] Keep the inventory current when a Prisma model or client transport is
-  added. Respect identity dependencies, but order work by the pressure model
-  above: uncovered shared identity scenarios first, established patterns
-  second, and central application-heavy migrations last.
-- [x] Generalize public-ID translation for association/tag command inputs before
-  converting an entity used through those mutation shapes.
-- [x] Migrate `SongTag` and `SongTagAssociation` as the identity-bearing query
-  parameter, generic search/facet, and raw-SQL translation proof. `Song` remains
-  unconverted in this slice.
-- [x] Migrate `Instrument` as the bounded route, exact-lookup, and search identity
-  proof before converting Event or User.
-- [ ] Audit and adapt the shared identity-sensitive infrastructure: exact lookup,
-  generic sorting/reordering, association matrices, caches, React keys, raw SQL,
-  search results, imports/exports, routes, and non-DB3 Prisma endpoints.
-- [ ] Convert all 47 in-scope client-facing models one bounded slice at a time,
-  deleting each numeric client-identity compatibility path before marking that
-  model complete below.
+-  [x] Establish an explicit client-facing model inventory and document the
+       models excluded from its denominator.
+-  [x] Exclude `Action` and `Change` row identities under the explicit operational
+       ledger exception; retain target-entity migration obligations for live
+       references.
+-  [ ] Keep the inventory current when a Prisma model or client transport is
+       added. Respect identity dependencies, but order work by the pressure model
+       above: uncovered shared identity scenarios first, established patterns
+       second, and central application-heavy migrations last.
+-  [x] Generalize public-ID translation for association/tag command inputs before
+       converting an entity used through those mutation shapes.
+-  [x] Migrate `SongTag` and `SongTagAssociation` as the identity-bearing query
+       parameter, generic search/facet, and raw-SQL translation proof. `Song` remains
+       unconverted in this slice.
+-  [x] Migrate `Instrument` as the bounded route, exact-lookup, and search identity
+       proof before converting Event or User.
+-  [ ] Audit and adapt the shared identity-sensitive infrastructure: exact lookup,
+       generic sorting/reordering, association matrices, caches, React keys, raw SQL,
+       search results, imports/exports, routes, and non-DB3 Prisma endpoints.
+-  [ ] Convert all 47 in-scope client-facing models one bounded slice at a time,
+       deleting each numeric client-identity compatibility path before marking that
+       model complete below.
 
 #### Client-facing model progress: 36 / 47 complete (77%)
 
@@ -1714,108 +1718,108 @@ declarations over one Prisma model count once.
 
 Completed models:
 
-- [x] `InstrumentFunctionalGroup`
-- [x] `InstrumentTag`
-- [x] `InstrumentTagAssociation`
-- [x] `SongTag`
-- [x] `SongTagAssociation`
-- [x] `Instrument`
-- [x] `FileTag`
-- [x] `FileTagAssignment`
-- [x] `WikiPageTag`
-- [x] `WikiPageTagAssignment`
-- [x] `EventType`
-- [x] `EventStatus`
-- [x] `EventTag`
-- [x] `EventTagAssignment`
-- [x] `UserTag`
-- [x] `UserTagAssignment`
-- [x] `SongCreditType`
-- [x] `SongCredit`
-- [x] `UserInstrument`
-- [x] `FileUserTag`
-- [x] `FileSongTag`
-- [x] `FileEventTag`
-- [x] `FileInstrumentTag`
-- [x] `FileWikiPageTag`
-- [x] `Permission`
-- [x] `Role`
-- [x] `RolePermission`
-- [x] `UserSignInMethod`
-- [x] `EventSongList`
-- [x] `EventSongListSong`
-- [x] `EventSongListDivider`
-- [x] `EventAttendance`
-- [x] `EventSegment`
-- [x] `EventSegmentUserResponse`
-- [x] `EventUserResponse`
-- [x] `Event`
+-  [x] `InstrumentFunctionalGroup`
+-  [x] `InstrumentTag`
+-  [x] `InstrumentTagAssociation`
+-  [x] `SongTag`
+-  [x] `SongTagAssociation`
+-  [x] `Instrument`
+-  [x] `FileTag`
+-  [x] `FileTagAssignment`
+-  [x] `WikiPageTag`
+-  [x] `WikiPageTagAssignment`
+-  [x] `EventType`
+-  [x] `EventStatus`
+-  [x] `EventTag`
+-  [x] `EventTagAssignment`
+-  [x] `UserTag`
+-  [x] `UserTagAssignment`
+-  [x] `SongCreditType`
+-  [x] `SongCredit`
+-  [x] `UserInstrument`
+-  [x] `FileUserTag`
+-  [x] `FileSongTag`
+-  [x] `FileEventTag`
+-  [x] `FileInstrumentTag`
+-  [x] `FileWikiPageTag`
+-  [x] `Permission`
+-  [x] `Role`
+-  [x] `RolePermission`
+-  [x] `UserSignInMethod`
+-  [x] `EventSongList`
+-  [x] `EventSongListSong`
+-  [x] `EventSongListDivider`
+-  [x] `EventAttendance`
+-  [x] `EventSegment`
+-  [x] `EventSegmentUserResponse`
+-  [x] `EventUserResponse`
+-  [x] `Event`
 
 Remaining models are grouped into coherent intended slices. The pressure label
 describes why the slice is ordered there; it does not relax the per-model
 completion definition.
 
-- **Authorization family: design pressure.** Preserve natural permission keys
-  inside trusted authorization evaluation while projecting public identity for
-  role editors, visibility selectors, dashboard references, and associations.
-  - [x] `Permission`
-  - [x] `Role`
-  - [x] `RolePermission`
-- **Sign-in identity child: design pressure.** Its sysadmin-only view and strict
-  maintenance operations use public row identity while credential lookup and
-  ownership remain trusted server concerns.
-  - [x] `UserSignInMethod`
-- **Completed: Event setlist aggregate**
-  - [x] `EventSongList`
-  - [x] `EventSongListSong`
-  - [x] `EventSongListDivider`
-- **Completed: Event attendance reference**
-  - [x] `EventAttendance`
-- **Completed: Event segments and responses**
-  - [x] `EventSegment`
-  - [x] `EventSegmentUserResponse`
-  - [x] `EventUserResponse`
-- **Completed: central Event**
-  - [x] `Event`
-- **Small independent repetition slices**
-  - [ ] `Setting`
-  - [ ] `CustomLink`
-  - [ ] `MenuLink`
-- **User domain: application pressure**
-  - [ ] `User`
-- **Song domain: application pressure**
-  - [ ] `Song`
-- **File and gallery domain: application pressure**
-  - [ ] `File`
-  - [ ] `FrontpageGalleryItem`
-- **Wiki domain: application pressure**
-  - [ ] `WikiPage`
-  - [ ] `WikiPageRevision`
-- **Setlist planning aggregate: application pressure**
-  - [ ] `SetlistPlanGroup`
-  - [ ] `SetlistPlan`
+-  **Authorization family: design pressure.** Preserve natural permission keys
+   inside trusted authorization evaluation while projecting public identity for
+   role editors, visibility selectors, dashboard references, and associations.
+   -  [x] `Permission`
+   -  [x] `Role`
+   -  [x] `RolePermission`
+-  **Sign-in identity child: design pressure.** Its sysadmin-only view and strict
+   maintenance operations use public row identity while credential lookup and
+   ownership remain trusted server concerns.
+   -  [x] `UserSignInMethod`
+-  **Completed: Event setlist aggregate**
+   -  [x] `EventSongList`
+   -  [x] `EventSongListSong`
+   -  [x] `EventSongListDivider`
+-  **Completed: Event attendance reference**
+   -  [x] `EventAttendance`
+-  **Completed: Event segments and responses**
+   -  [x] `EventSegment`
+   -  [x] `EventSegmentUserResponse`
+   -  [x] `EventUserResponse`
+-  **Completed: central Event**
+   -  [x] `Event`
+-  **Song domain**
+   -  [ ] `Song`
+-  **File and gallery domain**
+   -  [ ] `File`
+   -  [ ] `FrontpageGalleryItem`
+-  **User domain**
+   -  [ ] `User`
+-  **Setlist planning aggregate**
+   -  [ ] `SetlistPlanGroup`
+   -  [ ] `SetlistPlan`
+-  **Wiki domain**
+   -  [ ] `WikiPage`
+   -  [ ] `WikiPageRevision`
+-  **Small independent repetition slices**
+   -  [ ] `Setting`
+   -  [ ] `CustomLink`
+   -  [ ] `MenuLink`
 
 The following five Prisma models are outside the progress denominator because
 their row identity is currently server-only. If a future transport exposes one
 of these row identities, move that model into the checklist before shipping the
 consumer.
 
-- `AdminBootstrapClaim`: server-only replay-prevention state addressed by token
-  hash, never returned as a row.
-- `UserSetting`: loaded and returned as a typed settings object keyed by declared
-  setting names; its storage-row ID is not transported.
-- `Session` and `Token`: authentication persistence whose rows are created,
-  resolved, and revoked only at trusted server boundaries.
-- `CustomLinkVisit`: append-only server telemetry with no client row query or
-  mutation surface.
+-  `AdminBootstrapClaim`: server-only replay-prevention state addressed by token
+   hash, never returned as a row.
+-  `UserSetting`: loaded and returned as a typed settings object keyed by declared
+   setting names; its storage-row ID is not transported.
+-  `Session` and `Token`: authentication persistence whose rows are created,
+   resolved, and revoked only at trusted server boundaries.
+-  `CustomLinkVisit`: append-only server telemetry with no client row query or
+   mutation surface.
 
 Two additional models are excluded even though their row identity is visible in
 protected reports. These are deliberate scope exceptions, not server-only
 models or completed migrations:
 
-- `Action`: numeric ledger row identity for feature-usage reporting.
-- `Change`: numeric ledger row identity and historical record keys for sysadmin
-  audit diagnostics.
+-  `Action`: numeric ledger row identity for feature-usage reporting.
+-  `Change`: numeric ledger row identity and historical record keys for sysadmin
+   audit diagnostics.
 
 The operational ledger policy above governs their live references. Do not use
 these exceptions to preserve numeric identity in another entity's ordinary
@@ -1826,45 +1830,45 @@ client contract.
 These checks track reusable scenarios and do not contribute additional models
 to the model progress count above.
 
-- [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
-- [x] Exercise an association/tag command with public identities
-  (`Instrument.instrumentTags`).
-- [x] Exercise identity-bearing query parameters, batched translation, and
-  public search facets (`Song.songTagIds` and Song `tags` criteria).
-- [x] Exercise route and search identity before converting Event and User.
-- [x] Exercise a raw multipart upload boundary and public-keyed legacy file
-  enrichment (`FileTag` upload context and Event detail files).
-- [x] Replace a hand-authored association DTO and component-owned mock-row
-  shape with derived views, normalized references, and `TagsField` draft
-  construction (`WikiPageTag` and Wiki page editing).
-- [x] Exercise one classification family across dashboard caches, embedded
-  summaries, raw-SQL facets/reports, import/insert workflows, and shared
-  server/client algorithms (`EventType`, `EventStatus`, and `EventTag`).
-- [x] Exercise a partially migrated association whose owner remains natural
-  while its target and association row are public (`UserTagAssignment`).
-- [x] Exercise a rich association with public row identity, a public lookup
-  target, natural central-domain endpoints, and authorization inherited from
-  a visible target relationship (`SongCredit`).
-- [x] Exercise a mutable rich association embedded in User and Event payloads,
-  including relation-owned draft identity and a server-only multi-row workflow
-  (`UserInstrument`).
-- [x] Exercise one cross-entity association family across heterogeneous target
-  identity domains, reverse relations, reusable nested view graphs, and
-  relation-owned draft keys (`FileUserTag`, `FileSongTag`, `FileEventTag`,
-  `FileInstrumentTag`, and `FileWikiPageTag`).
-- [x] Exercise a protected operational child with a derived admin read view,
-  dedicated maintenance writes, public audit references, and creation that
-  distinguishes ID collisions from credential ownership conflicts
-  (`UserSignInMethod`).
+-  [x] Exercise a scalar public foreign key (`Instrument.functionalGroupId`).
+-  [x] Exercise an association/tag command with public identities
+       (`Instrument.instrumentTags`).
+-  [x] Exercise identity-bearing query parameters, batched translation, and
+       public search facets (`Song.songTagIds` and Song `tags` criteria).
+-  [x] Exercise route and search identity before converting Event and User.
+-  [x] Exercise a raw multipart upload boundary and public-keyed legacy file
+       enrichment (`FileTag` upload context and Event detail files).
+-  [x] Replace a hand-authored association DTO and component-owned mock-row
+       shape with derived views, normalized references, and `TagsField` draft
+       construction (`WikiPageTag` and Wiki page editing).
+-  [x] Exercise one classification family across dashboard caches, embedded
+       summaries, raw-SQL facets/reports, import/insert workflows, and shared
+       server/client algorithms (`EventType`, `EventStatus`, and `EventTag`).
+-  [x] Exercise a partially migrated association whose owner remains natural
+       while its target and association row are public (`UserTagAssignment`).
+-  [x] Exercise a rich association with public row identity, a public lookup
+       target, natural central-domain endpoints, and authorization inherited from
+       a visible target relationship (`SongCredit`).
+-  [x] Exercise a mutable rich association embedded in User and Event payloads,
+       including relation-owned draft identity and a server-only multi-row workflow
+       (`UserInstrument`).
+-  [x] Exercise one cross-entity association family across heterogeneous target
+       identity domains, reverse relations, reusable nested view graphs, and
+       relation-owned draft keys (`FileUserTag`, `FileSongTag`, `FileEventTag`,
+       `FileInstrumentTag`, and `FileWikiPageTag`).
+-  [x] Exercise a protected operational child with a derived admin read view,
+       dedicated maintenance writes, public audit references, and creation that
+       distinguishes ID collisions from credential ownership conflicts
+       (`UserSignInMethod`).
 
 ### Deferred DB3 enhancements
 
 The following may be worthwhile, but they are not prerequisites for public-ID
 migration and should be tracked separately from this roadmap:
 
-- a first-class `DB3EditModel`/edit-session abstraction;
-- generalized draft cloning and local identity allocation;
-- setlist concurrency, combined-position normalization, and delete/reorder
-  workflow redesign beyond correctness fixes required independently; and
-- broader reshaping of stable `xTable` metadata that is not required by a
-  concrete public-ID slice.
+-  a first-class `DB3EditModel`/edit-session abstraction;
+-  generalized draft cloning and local identity allocation;
+-  setlist concurrency, combined-position normalization, and delete/reorder
+   workflow redesign beyond correctness fixes required independently; and
+-  broader reshaping of stable `xTable` metadata that is not required by a
+   concrete public-ID slice.
