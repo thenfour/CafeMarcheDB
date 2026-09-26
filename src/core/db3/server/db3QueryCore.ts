@@ -23,7 +23,7 @@ export class DB3QueryAuthorizationError extends AuthorizationError {
 }
 
 async function prepareTableQuery(
-    input: db3.QueryInputBase,
+    input: db3.LegacyQueryInputBase,
     authorization: RequestAuthorization,
     database: TransactionalPrismaClient,
     executionOptions: QueryTableExecutionOptions = {},
@@ -196,10 +196,11 @@ export async function queryTable(
 }
 
 export type QueryViewInput<TView extends db3.AnyDB3View> = Omit<
-    db3.QueryRequestInput,
+    db3.QueryInputBase<NoInfer<TView>>,
     "table"
 > & {
     readonly view: TView;
+    readonly take?: number;
 };
 
 export type QueryViewResult<TView extends db3.AnyDB3View> = Omit<
@@ -265,6 +266,7 @@ export async function queryView<TView extends db3.AnyDB3View>(
 
     const result = await queryTable({
         ...queryInput,
+        orderBy: queryInput.orderBy,
         table: {
             tableID: view.tableID,
             tableName: view.tableName,

@@ -10,7 +10,7 @@ import type { SortDirection, TAnyModel } from "shared/rootroot";
 import { z } from "zod";
 import type { ColorPaletteEntry } from "../../components/color/palette";
 import {
-    type CMDBTableFilterModel, type CriterionQueryElements,
+    type CMDBTableFilterItem, type CMDBTableFilterModel, type CriterionQueryElements,
     type DiscreteCriterion, type GetSearchResultsSortModel,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "./apiTypes";
@@ -18,6 +18,7 @@ import { type DB3Authorization } from "./db3Authorization";
 import type { DB3ServerAuthorization } from "../server/db3ServerAuthorization";
 import { GetVisibilityWhereExpression } from "./db3Helpers";
 import type { UserWithRolesPayload } from "./schema/userPayloads";
+import type { AnyDB3View, TableOf } from "./core/db3View";
 
 export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "foreignObject" | "calculated";
 
@@ -65,7 +66,106 @@ export type MutatorInput = MutatorDeleteByNaturalId
     | MutatorUpdateByPublicId;
 
 ////////////////////////////////////////////////////////////////
-export interface QueryInputBase {
+type DB3QueryParameterValue<TSpec extends DB3QueryParameterSpec> =
+    TSpec["kind"] extends "entityIdentity"
+    ? DB3IdentityOf<DB3ResolvedRelationTarget<TSpec["targetTableID"]>>
+    : TSpec["kind"] extends "entityIdentityArray"
+    ? DB3IdentityOf<DB3ResolvedRelationTarget<TSpec["targetTableID"]>>[]
+    : TSpec["kind"] extends "date"
+    ? Date
+    : TSpec["kind"] extends "boolean"
+    ? boolean
+    : TSpec["kind"] extends "integer"
+    ? number
+    : TSpec["kind"] extends "integerArray"
+    ? number[]
+    : TSpec["kind"] extends "stringArray"
+    ? string[]
+    : string;
+
+type DB3QueryParameterInput<TSpec extends DB3QueryParameterSpec> =
+    DB3QueryParameterValue<TSpec> | (TSpec extends { nullable: true } ? null : never);
+
+type DB3QueryParameterInputs<TMap extends DB3QueryParameterMap> =
+    { [K in keyof TMap as TMap[K] extends { required: true } ? K : never]: DB3QueryParameterInput<TMap[K]> }
+    & { [K in keyof TMap as TMap[K] extends { required: true } ? never : K]?: DB3QueryParameterInput<TMap[K]> };
+
+type DB3RequiredQueryParameterKeys<TTable extends AnyDB3Table> =
+    TTable extends { readonly __typedQueryParameters?: infer TMap }
+    ? TMap extends DB3QueryParameterMap
+    ? { [K in keyof TMap]: TMap[K] extends { required: true } ? K : never }[keyof TMap]
+    : never
+    : never;
+
+export type DB3TableQueryParams<TTable extends AnyDB3Table> =
+    TTable extends { readonly __typedQueryParameters?: infer TMap }
+    ? TMap extends DB3QueryParameterMap
+    ? DB3QueryParameterInputs<TMap>
+    : Record<string, never>
+    : Record<string, never>;
+
+type DB3ForeignKeyFieldNames<TTable extends AnyDB3Table> =
+    DB3ForeignKeyMemberOf<DB3FieldsOf<TTable>[keyof DB3FieldsOf<TTable>]>;
+
+type DB3QueryFieldNames<TTable extends AnyDB3Table> = Extract<
+    keyof DB3PrismaPayloadOf<TTable>,
+    keyof DB3FieldsOf<TTable> | DB3ForeignKeyFieldNames<TTable>
+> & string;
+
+type DB3QueryScalarFieldNames<TTable extends AnyDB3Table> = {
+    [K in DB3QueryFieldNames<TTable>]:
+    DB3PrismaPayloadOf<TTable>[K] extends string | number | boolean | Date | null ? K : never
+}[DB3QueryFieldNames<TTable>];
+
+export type DB3QueryFilterItem<TTable extends AnyDB3Table> = {
+    [K in DB3QueryScalarFieldNames<TTable>]: Omit<CMDBTableFilterItem, "field" | "value"> & {
+        field: K;
+        value: DB3PrismaPayloadOf<TTable>[K];
+    }
+}[DB3QueryScalarFieldNames<TTable>];
+
+export type DB3QueryFilter<TTable extends AnyDB3Table> = Omit<
+    CMDBTableFilterModel,
+    "items" | "quickFilterValues" | "publicIds" | "tagIds" | "tableParams"
+> & {
+    items?: DB3QueryFilterItem<TTable>[];
+    quickFilterValues?: string[];
+    publicIds?: TTable["fields"] extends { readonly publicId: infer TField extends AnyDB3Field }
+    ? DB3ReadTransportValueOf<TField>[]
+    : never;
+    tagIds?: TTable["tableID"] extends "Event" ? number[] : never;
+} & (DB3RequiredQueryParameterKeys<TTable> extends never
+    ? { tableParams?: DB3TableQueryParams<TTable> }
+    : { tableParams: DB3TableQueryParams<TTable> });
+
+export type DB3QueryOrderBy<TTable extends AnyDB3Table> = {
+    [K in DB3QueryScalarFieldNames<TTable>]:
+    { [TField in K]: SortDirection }
+    & { [TOther in Exclude<DB3QueryScalarFieldNames<TTable>, K>]?: never }
+}[DB3QueryScalarFieldNames<TTable>];
+
+/** A trusted query bound to the table that owns a named view. */
+export interface QueryInputBase<TView extends AnyDB3View> {
+    table: {
+        tableName: TView["tableName"];
+        tableID: TView["tableID"];
+        // Named views own query selection and DTO shape. Omitted by legacy
+        // callers that still use the table-bound getSelectionArgs contract.
+        viewID: TView["viewID"];
+    };
+    orderBy?: DB3QueryOrderBy<TableOf<TView>>;
+    filter: DB3QueryFilter<TableOf<TView>>;
+    cmdbQueryContext: string;
+    // Deleted rows are excluded unless the caller explicitly opts in and the
+    // table grants its recovery capability. Visibility is still enforced.
+    includeDeleted?: boolean;
+    delayMS?: number;
+}
+
+///////////////////////////////////////////////////////////////
+// it's not just untyped, it's truly legacy because
+// it represents non-view-based queries
+export interface LegacyQueryInputBase {
     table: {
         // xTable provides these; pass in an xtable.
         tableName: string;
@@ -74,8 +174,6 @@ export interface QueryInputBase {
         // callers that still use the table-bound getSelectionArgs contract.
         viewID?: string;
     },
-    // tableID: string;
-    // tableName: string;
     orderBy: TAnyModel | undefined;
     filter: CMDBTableFilterModel;
     cmdbQueryContext: string;
@@ -86,13 +184,13 @@ export interface QueryInputBase {
 };
 
 ////////////////////////////////////////////////////////////////
-export interface QueryRequestInput extends QueryInputBase {
+export interface QueryRequestInput extends LegacyQueryInputBase {
     take?: number | undefined;
 };
 
 
 ////////////////////////////////////////////////////////////////
-export interface PaginatedQueryRequestInput extends QueryInputBase {
+export interface PaginatedQueryRequestInput extends LegacyQueryInputBase {
     skip: number;
     take: number;
 };
@@ -1929,8 +2027,14 @@ export type DB3TypedTableDesc<
     TFields extends DB3FieldMap,
     TDelegate,
     TIdentityAccessor extends DB3IdentityAccessor | undefined = undefined,
+    TTableName extends string = string,
+    TTableUniqueName extends string | undefined = undefined,
+    TQueryParameters extends DB3QueryParameterMap | undefined = undefined,
 > =
-    Omit<TableDesc, "columns" | "getIdentity"> & {
+    Omit<TableDesc, "columns" | "getIdentity" | "tableName" | "tableUniqueName" | "queryParameters"> & {
+        readonly tableName: TTableName;
+        readonly tableUniqueName?: TTableUniqueName;
+        readonly queryParameters?: TQueryParameters;
         readonly fields: TFields;
         readonly prismaModel: DB3PrismaModel<TDelegate>;
         readonly getIdentity?: TIdentityAccessor;
@@ -1941,9 +2045,12 @@ export function defineTableDesc<
     TFields extends DB3FieldMap,
     TDelegate,
     TIdentityAccessor extends DB3IdentityAccessor | undefined = undefined,
+    const TTableName extends string = string,
+    const TTableUniqueName extends string | undefined = undefined,
+    const TQueryParameters extends DB3QueryParameterMap | undefined = undefined,
 >(
-    args: DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor>,
-): DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor> {
+    args: DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor, TTableName, TTableUniqueName, TQueryParameters>,
+): DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor, TTableName, TTableUniqueName, TQueryParameters> {
     return args;
 }
 
@@ -1952,10 +2059,18 @@ export type DB3TypedTable<
     TFields extends DB3FieldMap,
     TDelegate,
     TIdentityAccessor extends DB3IdentityAccessor | undefined = undefined,
+    TTableName extends string = string,
+    TTableUniqueName extends string | undefined = undefined,
+    TQueryParameters extends DB3QueryParameterMap | undefined = undefined,
 > =
     {
         readonly fields: TFields;
         readonly columns: Array<TFields[keyof TFields]>;
+        readonly tableName: TTableName;
+        readonly tableID: [TTableUniqueName] extends [string] ? TTableUniqueName : TTableName;
+        readonly queryParameters: TQueryParameters;
+        // xTable keeps a broad runtime map; this marker retains the exact keys.
+        readonly __typedQueryParameters?: TQueryParameters;
     } & xTable<TFields, TDelegate, TIdentityAccessor>;
 
 // A typed xTable that can anchor views, reference hydration, and commands.
@@ -1966,7 +2081,14 @@ export type DB3IdentifiedTable<
     TFields extends DB3FieldMap = DB3FieldMap,
     TDelegate = any,
     TIdentityAccessor extends DB3IdentityAccessor = DB3IdentityAccessor<any, DB3Identity>,
-> = DB3TypedTable<TFields, TDelegate, TIdentityAccessor>;
+> = DB3TypedTable<
+    TFields,
+    TDelegate,
+    TIdentityAccessor,
+    string,
+    string | undefined,
+    DB3QueryParameterMap | undefined
+>;
 
 export type AnyDB3Table = DB3IdentifiedTable<
     DB3FieldMap,
@@ -1983,9 +2105,12 @@ export function defineTable<
     TFields extends DB3FieldMap,
     TDelegate,
     TIdentityAccessor extends DB3IdentityAccessor | undefined = undefined,
+    const TTableName extends string = string,
+    const TTableUniqueName extends string | undefined = undefined,
+    const TQueryParameters extends DB3QueryParameterMap | undefined = undefined,
 >(
-    args: DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor>,
-): DB3TypedTable<TFields, TDelegate, TIdentityAccessor> {
+    args: DB3TypedTableDesc<TFields, TDelegate, TIdentityAccessor, TTableName, TTableUniqueName, TQueryParameters>,
+): DB3TypedTable<TFields, TDelegate, TIdentityAccessor, TTableName, TTableUniqueName, TQueryParameters> {
     const columns = Object.entries(args.fields).map(([member, field]) => {
         if (field.member !== member) {
             throw new Error(
@@ -2005,14 +2130,16 @@ export function defineTable<
         writable: false,
     });
 
-    // The runtime xTable was built from exactly this keyed map, and getClientModel
-    // executes the codec stored on those same field instances. The cast only
-    // exposes that construction invariant to TypeScript; it does not invent a
-    // separate model declaration or conversion path.
+    // xTable copies the name and query parameters from args and derives tableID
+    // from tableUniqueName or tableName. The field map builds the same columns.
+    // The cast exposes those construction invariants to TypeScript.
     return table as unknown as DB3TypedTable<
         TFields,
         TDelegate,
-        TIdentityAccessor
+        TIdentityAccessor,
+        TTableName,
+        TTableUniqueName,
+        TQueryParameters
     >;
 }
 

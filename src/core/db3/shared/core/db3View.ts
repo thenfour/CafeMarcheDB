@@ -46,8 +46,8 @@ export interface DB3View<
     // verification
     readonly viewID: string;
     readonly entity: TEntity;
-    readonly tableID: string;
-    readonly tableName: string;
+    readonly tableID: TEntity["tableID"];
+    readonly tableName: TEntity["tableName"];
     readonly dtoSchema: TDtoSchema;
     readonly referenceContract: TReferences;
     readonly getSelectionArgs: (context: DB3ViewSelectionContext) => TSelection;
