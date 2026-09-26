@@ -261,6 +261,7 @@ model UserSetting {
 
 model Setting {
   id    Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
   name  String @unique @default("") @db.VarChar(768)
   value String @db.MediumText // json value et al
 
@@ -1050,6 +1051,7 @@ model FrontpageGalleryItem {
 
 model CustomLink {
   id                  Int     @id @default(autoincrement())
+  publicId            String  @unique @db.Char(16)
   name                String  @db.VarChar(768)
   description         String  @db.MediumText
   slug                String  @db.VarChar(768)
@@ -1183,6 +1185,7 @@ model WikiPageTagAssignment {
 
 model MenuLink {
   id        Int @id @default(autoincrement())
+  publicId  String @unique @db.Char(16)
   sortOrder Int @default(0)
 
   realm String? @db.VarChar(768)

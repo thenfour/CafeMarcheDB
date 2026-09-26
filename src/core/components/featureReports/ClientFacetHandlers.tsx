@@ -358,10 +358,10 @@ export const gClientFacetHandlers = {
     }),
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    customLinks: MakeHandler<FacetedBreakdownResult['facets']['customLinks'][0], number>({
+    customLinks: MakeHandler<FacetedBreakdownResult['facets']['customLinks'][0], import("shared/publicId").CustomLinkPublicId>({
         getItemKey: (item) => item.customLinkId,
         getFacetName: () => "Custom Link",
-        getItemLabel: (item) => item.customLinkId.toString(),
+        getItemLabel: (item) => item.name,
         supportsDrilldown: true,
         getItemColor: (item, alpha) => getHashedColor(item.customLinkId.toString(), { alpha }),
         addFilter: (filterSpec, item) => {
@@ -375,13 +375,13 @@ export const gClientFacetHandlers = {
         includedItemsSelector: (filterSpec) => filterSpec.includeCustomLinkIds,
         itemFromKey: (itemKey) => ({
             customLinkId: itemKey,
-            name: `#${itemKey.toString()}`,
+            name: "Custom link",
             count: 0,
         }),
         renderItem: (props) => {
             return <FacetItemRenderHelper {...props}>
                 <CMAdhocChip style={{ color: getHashedColor(props.item.customLinkId.toString()) }} >
-                    <span style={{ fontFamily: "var(--ff-mono)" }}>#{props.item.customLinkId}</span>
+                    <span>{props.item.name}</span>
                 </CMAdhocChip>
             </FacetItemRenderHelper>;
         },
@@ -391,9 +391,9 @@ export const gClientFacetHandlers = {
     }),
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    menuLinks: MakeHandler<FacetedBreakdownResult['facets']['menuLinks'][0], number>({
+    menuLinks: MakeHandler<FacetedBreakdownResult['facets']['menuLinks'][0], import("shared/publicId").MenuLinkPublicId>({
         getItemKey: (item) => item.menuLinkId,
-        getItemLabel: (item) => item.menuLinkId.toString(),
+        getItemLabel: (item) => item.name,
         getFacetName: () => "Menu Link",
         supportsDrilldown: true,
         getItemColor: (item, alpha) => getHashedColor(item.menuLinkId.toString(), { alpha }),
@@ -408,13 +408,13 @@ export const gClientFacetHandlers = {
         includedItemsSelector: (filterSpec) => filterSpec.includeMenuLinkIds,
         itemFromKey: (itemKey) => ({
             menuLinkId: itemKey,
-            name: `#${itemKey.toString()}`,
+            name: "Menu link",
             count: 0,
         }),
         renderItem: (props) => {
             return <FacetItemRenderHelper {...props}>
                 <CMAdhocChip style={{ color: getHashedColor(props.item.menuLinkId.toString()) }} >
-                    <span style={{ fontFamily: "var(--ff-mono)" }}>#{props.item.menuLinkId}</span>
+                    <span>{props.item.name}</span>
                 </CMAdhocChip>
             </FacetItemRenderHelper>;
         },

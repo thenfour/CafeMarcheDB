@@ -3,7 +3,8 @@ import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { gIconOptions } from "shared/utils";
 import { DynamicMenuLinkRealm, DynamicMenuLinkType } from "../../../../../shared/dynMenuTypes";
-import { ConstEnumStringField, MakeCreatedAtField, MakeIconField, MakePKfield, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
+import { ConstEnumStringField, MakeCreatedAtField, MakeIconField, MakePKfield, MakePublicIdField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
+import type { MenuLinkPublicId } from "shared/publicId";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
 import { UserMinimalSelect } from "./prismArgs";
@@ -42,7 +43,7 @@ export const MenuLinkNaturalOrderBy: Prisma.MenuLinkOrderByWithRelationInput[] =
 ////////////////////////////////////////////////////////////////
 export const xMenuLink = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.MenuLinkDelegate>(),
-    getIdentity: (link: { id: number }) => link.id,
+    getIdentity: (link: { publicId: MenuLinkPublicId }) => link.publicId,
     getSelectionArgs: (): Prisma.MenuLinkDefaultArgs => {
         return MenuLinkArgs;
     },
@@ -51,7 +52,7 @@ export const xMenuLink = db3.defineTable({
     sortOrderPolicy: { groupingColumn: null, scope: "explicitRowIds" },
     naturalOrderBy: MenuLinkNaturalOrderBy,
     getRowInfo: (row: MenuLinkPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.caption,
         description: undefined,
         color: null,
@@ -60,7 +61,8 @@ export const xMenuLink = db3.defineTable({
     }),
     tableAuthMap: xTableAuthMap,
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "never" }),
+        publicId: () => MakePublicIdField<MenuLinkPublicId>(),
         iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xAuthMap, }),
         sortOrder: () => MakeSortOrderField({ authMap: xAuthMap, }),
         createdAt: () => MakeCreatedAtField({}),

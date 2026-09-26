@@ -7,7 +7,7 @@ import { xCustomLink } from "../../schema/customLinks";
 import { xUser } from "../../schema/user";
 
 const CustomLinkEditorDtoSchema = z.object({
-    id: z.number().int(),
+    publicId: xCustomLink.identitySchema,
 
     name: z.string().optional(),
     description: z.string().optional(),

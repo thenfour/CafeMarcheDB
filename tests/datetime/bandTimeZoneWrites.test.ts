@@ -16,13 +16,13 @@ import { Permission } from "shared/permissions"
 import { Setting } from "shared/settingKeys"
 import { authorizationTestDb } from "../authorization/support/inMemoryPrisma"
 import { createAuthorizationPersona, createAuthorizationTestUser } from "../authorization/support/authorizationFixtures"
-import { forgeDb3Insert, forgeDb3Update } from "../authorization/support/db3RequestBuilders"
+import { forgeDb3Insert, forgeDb3PublicUpdate } from "../authorization/support/db3RequestBuilders"
 import { invokeResolver } from "../authorization/support/resolverHarness"
 import { loadBandTimeZone } from "@/src/server/bandTimeZone"
 
 const sysadmin = createAuthorizationTestUser("sysadmin", { id: 710 })
 const adminContext = () => createAuthorizationPersona("sysadmin", { id: sysadmin.id }).ctx
-const originalSetting = { id: 1, name: Setting.BandTimeZone, value: "Europe/Brussels" }
+const originalSetting = { id: 1, publicId: "SettingPublic001", name: Setting.BandTimeZone, value: "Europe/Brussels" }
 
 function expectNoWrites() {
   expect(authorizationTestDb.snapshot("change")).toEqual([])
@@ -99,7 +99,7 @@ describe("band timezone validation in generic setting mutations", () => {
     await expect(loadBandTimeZone()).resolves.toBe("Asia/Tokyo")
     expect(authorizationTestDb.snapshot("setting")).toEqual([
       { ...originalSetting, value: "Asia/Tokyo" },
-      { id: 2, name: "UnrelatedSetting", value: "not a timezone" },
+      expect.objectContaining({ id: 2, publicId: expect.any(String), name: "UnrelatedSetting", value: "not a timezone" }),
     ])
   })
 })
@@ -123,7 +123,7 @@ describe("band timezone validation in the raw DB3 setting editor", () => {
   })
 
   it("checks the persisted name during a value-only update", async () => {
-    await expect(invokeResolver(db3Mutation, forgeDb3Update("Setting", 1, {
+    await expect(invokeResolver(db3Mutation, forgeDb3PublicUpdate("Setting", originalSetting.publicId, {
       value: "Moon/Base",
     }), adminContext())).rejects.toThrow()
     expect(authorizationTestDb.snapshot("setting")).toEqual([originalSetting])
@@ -131,9 +131,9 @@ describe("band timezone validation in the raw DB3 setting editor", () => {
   })
 
   it("checks the persisted value when renaming another setting to BandTimeZone", async () => {
-    const otherSetting = { id: 1, name: "UnrelatedSetting", value: "not a timezone" }
+    const otherSetting = { ...originalSetting, name: "UnrelatedSetting", value: "not a timezone" }
     authorizationTestDb.getDelegate("setting").reset([otherSetting])
-    await expect(invokeResolver(db3Mutation, forgeDb3Update("Setting", 1, {
+    await expect(invokeResolver(db3Mutation, forgeDb3PublicUpdate("Setting", originalSetting.publicId, {
       name: Setting.BandTimeZone,
     }), adminContext())).rejects.toThrow()
     expect(authorizationTestDb.snapshot("setting")).toEqual([otherSetting])
@@ -141,14 +141,14 @@ describe("band timezone validation in the raw DB3 setting editor", () => {
   })
 
   it("accepts a name-only rename whose persisted value is a valid timezone", async () => {
-    authorizationTestDb.getDelegate("setting").reset([{ id: 1, name: "UnrelatedSetting", value: "Asia/Tokyo" }])
-    await invokeResolver(db3Mutation, forgeDb3Update("Setting", 1, { name: Setting.BandTimeZone }), adminContext())
+    authorizationTestDb.getDelegate("setting").reset([{ ...originalSetting, name: "UnrelatedSetting", value: "Asia/Tokyo" }])
+    await invokeResolver(db3Mutation, forgeDb3PublicUpdate("Setting", originalSetting.publicId, { name: Setting.BandTimeZone }), adminContext())
     await expect(loadBandTimeZone()).resolves.toBe("Asia/Tokyo")
   })
 
   it("validates the resulting name and value when both are changed", async () => {
-    authorizationTestDb.getDelegate("setting").reset([{ id: 1, name: "UnrelatedSetting", value: "not a timezone" }])
-    await invokeResolver(db3Mutation, forgeDb3Update("Setting", 1, {
+    authorizationTestDb.getDelegate("setting").reset([{ ...originalSetting, name: "UnrelatedSetting", value: "not a timezone" }])
+    await invokeResolver(db3Mutation, forgeDb3PublicUpdate("Setting", originalSetting.publicId, {
       name: Setting.BandTimeZone, value: "America/Los_Angeles",
     }), adminContext())
     await expect(loadBandTimeZone()).resolves.toBe("America/Los_Angeles")
@@ -156,19 +156,19 @@ describe("band timezone validation in the raw DB3 setting editor", () => {
 
   it("allows a malformed legacy setting to be repaired with a value-only update", async () => {
     authorizationTestDb.getDelegate("setting").reset([{ ...originalSetting, value: "Moon/Base" }])
-    await invokeResolver(db3Mutation, forgeDb3Update("Setting", 1, { value: "Asia/Tokyo" }), adminContext())
+    await invokeResolver(db3Mutation, forgeDb3PublicUpdate("Setting", originalSetting.publicId, { value: "Asia/Tokyo" }), adminContext())
     await expect(loadBandTimeZone()).resolves.toBe("Asia/Tokyo")
   })
 
   it("allows renaming a malformed legacy setting away from BandTimeZone", async () => {
     authorizationTestDb.getDelegate("setting").reset([{ ...originalSetting, value: "Moon/Base" }])
-    await invokeResolver(db3Mutation, forgeDb3Update("Setting", 1, { name: "UnrelatedSetting" }), adminContext())
+    await invokeResolver(db3Mutation, forgeDb3PublicUpdate("Setting", originalSetting.publicId, { name: "UnrelatedSetting" }), adminContext())
     await expect(loadBandTimeZone()).resolves.toBe("Europe/Brussels")
-    expect(authorizationTestDb.snapshot("setting")).toEqual([{ id: 1, name: "UnrelatedSetting", value: "Moon/Base" }])
+    expect(authorizationTestDb.snapshot("setting")).toEqual([{ ...originalSetting, name: "UnrelatedSetting", value: "Moon/Base" }])
   })
 
   it("preserves an empty stored value as the default timezone", async () => {
-    await invokeResolver(db3Mutation, forgeDb3Update("Setting", 1, { value: "" }), adminContext())
+    await invokeResolver(db3Mutation, forgeDb3PublicUpdate("Setting", originalSetting.publicId, { value: "" }), adminContext())
     expect(authorizationTestDb.snapshot("setting")).toEqual([{ ...originalSetting, value: "" }])
     await expect(loadBandTimeZone()).resolves.toBe("Europe/Brussels")
   })
@@ -176,7 +176,7 @@ describe("band timezone validation in the raw DB3 setting editor", () => {
   it("checks case-equivalent keys in a value-only update", async () => {
     const setting = { ...originalSetting, name: "bandtimezone" }
     authorizationTestDb.getDelegate("setting").reset([setting])
-    await expect(invokeResolver(db3Mutation, forgeDb3Update("Setting", 1, {
+    await expect(invokeResolver(db3Mutation, forgeDb3PublicUpdate("Setting", originalSetting.publicId, {
       value: "Moon/Base",
     }), adminContext())).rejects.toThrow()
     expect(authorizationTestDb.snapshot("setting")).toEqual([setting])
@@ -192,7 +192,7 @@ it("keeps generic write paths restricted to sysadmins even for branding managers
   await expect(invokeResolver(updateSetting, {
     name: Setting.BandTimeZone, value: "Asia/Tokyo",
   }, ctx)).rejects.toThrow()
-  await expect(invokeResolver(db3Mutation, forgeDb3Update("Setting", 1, {
+  await expect(invokeResolver(db3Mutation, forgeDb3PublicUpdate("Setting", originalSetting.publicId, {
     value: "Asia/Tokyo",
   }), ctx)).rejects.toThrow()
   expect(authorizationTestDb.snapshot("setting")).toEqual([originalSetting])

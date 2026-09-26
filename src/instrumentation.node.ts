@@ -292,6 +292,9 @@ export async function registerNodeInstrumentation() {
     await CorrectPublicIds(db.song, "Song");
     await CorrectPublicIds(db.file, "File");
     await CorrectPublicIds(db.frontpageGalleryItem, "FrontpageGalleryItem");
+    await CorrectPublicIds(db.setting, "Setting");
+    await CorrectPublicIds(db.customLink, "CustomLink");
+    await CorrectPublicIds(db.menuLink, "MenuLink");
     await CorrectPublicIds(db.user, "User");
     await CorrectPublicIds(db.setlistPlanGroup, "SetlistPlanGroup");
     await CorrectPublicIds(db.setlistPlan, "SetlistPlan");

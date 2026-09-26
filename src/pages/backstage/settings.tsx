@@ -70,7 +70,7 @@ const SettingsContent = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.settingEditorView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            publicId: DB3Client.publicIdFieldGen(),
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
             value: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
         },

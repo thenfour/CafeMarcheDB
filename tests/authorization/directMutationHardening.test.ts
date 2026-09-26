@@ -676,6 +676,7 @@ describe("DB3 command boundary", () => {
     const actor = createAuthorizationTestUser("normal", { id: 103, permissions })
     const customLink = {
       id: 70,
+      publicId: parsePublicId<"CustomLink">("CustomLinkTest01"),
       name: "Scores",
       description: "Old description",
       slug: "scores",
@@ -688,6 +689,7 @@ describe("DB3 command boundary", () => {
     }
     const menuLink = {
       id: 71,
+      publicId: parsePublicId<"MenuLink">("MenuLinkTest0001"),
       sortOrder: 3,
       realm: "General",
       applicationPage: null,
@@ -714,17 +716,17 @@ describe("DB3 command boundary", () => {
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.customLinkEditorView.crud.operations.update.command.commandID,
       payload: {
-        identity: customLink.id,
+        identity: customLink.publicId,
         patch: { description: "Updated description", forwardQuery: false },
       },
-    }, ctx)).resolves.toEqual({ identity: customLink.id })
+    }, ctx)).resolves.toEqual({ identity: customLink.publicId })
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.menuLinkEditorView.crud.operations.update.command.commandID,
       payload: {
-        identity: menuLink.id,
+        identity: menuLink.publicId,
         patch: { caption: "Updated scores" },
       },
-    }, ctx)).resolves.toEqual({ identity: menuLink.id })
+    }, ctx)).resolves.toEqual({ identity: menuLink.publicId })
 
     expect(authorizationTestDb.snapshot("customLink")[0]).toMatchObject({
       id: customLink.id,
@@ -739,11 +741,11 @@ describe("DB3 command boundary", () => {
 
     await invokeResolver(executeDB3CommandMutation, {
       commandID: db3.customLinkEditorView.crud.operations.delete.command.commandID,
-      payload: { identity: customLink.id },
+      payload: { identity: customLink.publicId },
     }, ctx)
     await invokeResolver(executeDB3CommandMutation, {
       commandID: db3.menuLinkEditorView.crud.operations.delete.command.commandID,
-      payload: { identity: menuLink.id },
+      payload: { identity: menuLink.publicId },
     }, ctx)
     expect(authorizationTestDb.snapshot("customLink")).toEqual([])
     expect(authorizationTestDb.snapshot("menuLink")).toEqual([])
@@ -899,6 +901,8 @@ describe("DB3 command boundary", () => {
 })
 
 describe("BA-S003 generic sort-order authorization", () => {
+  const menuLinkPublicId = (id: number) => parsePublicId<"MenuLink">(`MenuLinkTest${id.toString().padStart(4, "0")}`)
+
   beforeEach(() => {
     vi.restoreAllMocks()
     authorizationTestDb.reset({ change: [] })
@@ -963,8 +967,8 @@ describe("BA-S003 generic sort-order authorization", () => {
     authorizationTestDb.reset({
       user: [databaseActor],
       menuLink: [
-        { id: 1, caption: "A", sortOrder: 0, createdByUserId: databaseActor.id },
-        { id: 2, caption: "B", sortOrder: 1, createdByUserId: databaseActor.id },
+        { id: 1, publicId: menuLinkPublicId(1), caption: "A", sortOrder: 0, createdByUserId: databaseActor.id },
+        { id: 2, publicId: menuLinkPublicId(2), caption: "B", sortOrder: 1, createdByUserId: databaseActor.id },
       ],
       change: [],
     })
@@ -974,12 +978,13 @@ describe("BA-S003 generic sort-order authorization", () => {
     })
     const targetLookup = vi.spyOn(authorizationTestDb.getDelegate("menuLink"), "findMany")
 
-    await expect(invokeResolver(updateGenericSortOrder, {
-      tableID: db3.xMenuLink.tableID,
-      tableName: db3.xMenuLink.tableName,
-      movingItemId: 1,
-      newPositionItemId: 2,
-      scopeRowIds: [1, 2],
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.reorderMenuLinksCommand.commandID,
+      payload: {
+        movingItemId: menuLinkPublicId(1),
+        newPositionItemId: menuLinkPublicId(2),
+        scopeRowIds: [menuLinkPublicId(1), menuLinkPublicId(2)],
+      },
     }, ctx)).rejects.toThrow("Not authorized to mutate MenuLink fields: sortOrder")
 
     expect(targetLookup).not.toHaveBeenCalled()
@@ -1019,22 +1024,23 @@ describe("BA-S003 generic sort-order authorization", () => {
     authorizationTestDb.reset({
       user: [actor],
       menuLink: [
-        { id: 1, caption: "A", sortOrder: 0, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
-        { id: 2, caption: "Hidden", sortOrder: 1, createdByUserId: actor.id, visiblePermissionId: membersVisibility.id, visiblePermission: membersVisibility },
-        { id: 3, caption: "B", sortOrder: 2, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
-        { id: 4, caption: "C", sortOrder: 3, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
+        { id: 1, publicId: menuLinkPublicId(1), caption: "A", sortOrder: 0, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
+        { id: 2, publicId: menuLinkPublicId(2), caption: "Hidden", sortOrder: 1, createdByUserId: actor.id, visiblePermissionId: membersVisibility.id, visiblePermission: membersVisibility },
+        { id: 3, publicId: menuLinkPublicId(3), caption: "B", sortOrder: 2, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
+        { id: 4, publicId: menuLinkPublicId(4), caption: "C", sortOrder: 3, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
       ],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
     const targetLookup = vi.spyOn(authorizationTestDb.getDelegate("menuLink"), "findMany")
 
-    await invokeResolver(updateGenericSortOrder, {
-      tableID: db3.xMenuLink.tableID,
-      tableName: db3.xMenuLink.tableName,
-      movingItemId: 4,
-      newPositionItemId: 1,
-      scopeRowIds: [1, 3, 4],
+    await invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.reorderMenuLinksCommand.commandID,
+      payload: {
+        movingItemId: menuLinkPublicId(4),
+        newPositionItemId: menuLinkPublicId(1),
+        scopeRowIds: [menuLinkPublicId(1), menuLinkPublicId(3), menuLinkPublicId(4)],
+      },
     }, ctx)
 
     expect(targetLookup).toHaveBeenCalledWith(expect.objectContaining({
@@ -1054,21 +1060,22 @@ describe("BA-S003 generic sort-order authorization", () => {
     authorizationTestDb.reset({
       user: [actor],
       menuLink: [
-        { id: 1, caption: "Visible", sortOrder: 0, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
-        { id: 2, caption: "Hidden", sortOrder: 1, createdByUserId: actor.id, visiblePermissionId: membersVisibility.id, visiblePermission: membersVisibility },
+        { id: 1, publicId: menuLinkPublicId(1), caption: "Visible", sortOrder: 0, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
+        { id: 2, publicId: menuLinkPublicId(2), caption: "Hidden", sortOrder: 1, createdByUserId: actor.id, visiblePermissionId: membersVisibility.id, visiblePermission: membersVisibility },
       ],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
     const update = vi.spyOn(authorizationTestDb.getDelegate("menuLink"), "update")
 
-    await expect(invokeResolver(updateGenericSortOrder, {
-      tableID: db3.xMenuLink.tableID,
-      tableName: db3.xMenuLink.tableName,
-      movingItemId: 1,
-      newPositionItemId: 2,
-      scopeRowIds: [1, 2],
-    }, ctx)).rejects.toThrow("Not authorized to mutate MenuLink fields: sortOrder")
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.reorderMenuLinksCommand.commandID,
+      payload: {
+        movingItemId: menuLinkPublicId(1),
+        newPositionItemId: menuLinkPublicId(2),
+        scopeRowIds: [menuLinkPublicId(1), menuLinkPublicId(2)],
+      },
+    }, ctx)).rejects.toThrow("MenuLink was not found")
 
     expect(update).not.toHaveBeenCalled()
   })

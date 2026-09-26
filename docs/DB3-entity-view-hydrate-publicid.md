@@ -1754,6 +1754,24 @@ view/authorization/editor tests, the repository test suite, lint, and the
 production build. The SQL migration has not been applied to a live database,
 and browser interaction against migrated data remains unverified.
 
+#### Completed slice: settings and links
+
+`Setting`, `CustomLink`, and `MenuLink` now use branded public identities in
+their DB3 editors and list views. The schema migration adds unique ASCII/binary
+IDs, and startup repair replaces deployment placeholders. Both DB3 creation and
+the name-based setting writer generate public IDs.
+
+The settings list uses its named DB3 view with a fresh Sysadmin check. The
+custom-link and menu-link editors, telemetry, report DTOs, facets, and CSV use
+public IDs; the menu reorder operation resolves a visible public-ID scope and
+checks every affected row before writing. Numeric foreign keys remain inside
+trusted server storage and the operational telemetry ledger.
+
+Validation: Prisma generation and schema validation, TypeScript, focused
+authorization and transport tests, the repository test suite, lint, and the
+production build. The SQL migration has not been applied to a live database,
+and browser interaction against migrated data remains unverified.
+
 ## Active roadmap
 
 ### Completed foundation
@@ -1869,11 +1887,11 @@ conversions.
 -  [ ] Audit and adapt the shared identity-sensitive infrastructure: exact lookup,
        generic sorting/reordering, association matrices, caches, React keys, raw SQL,
        search results, imports/exports, routes, and non-DB3 Prisma endpoints.
--  [ ] Convert all 47 in-scope client-facing models one bounded slice at a time,
+-  [x] Convert all 47 in-scope client-facing models one bounded slice at a time,
        deleting each numeric client-identity compatibility path before marking that
        model complete below.
 
-#### Client-facing model progress: 44 / 47 complete (94%)
+#### Client-facing model progress: 47 / 47 complete (100%)
 
 The denominator is the 47 in-scope Prisma models whose own row identity currently
 crosses a client boundary. It excludes the five server-only models and the two
@@ -1964,10 +1982,10 @@ completion definition.
 -  **Wiki domain**
    -  [x] `WikiPage`
    -  [x] `WikiPageRevision`
--  **Small independent repetition slices**
-   -  [ ] `Setting`
-   -  [ ] `CustomLink`
-   -  [ ] `MenuLink`
+-  **Completed: settings and links**
+   -  [x] `Setting`
+   -  [x] `CustomLink`
+   -  [x] `MenuLink`
 
 The following five Prisma models are outside the progress denominator because
 their row identity is currently server-only. If a future transport exposes one

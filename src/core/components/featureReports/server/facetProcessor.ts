@@ -533,7 +533,7 @@ const menuLinksFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['
               GROUP BY menuLinkId
             )
             SELECT
-              e.id AS menuLinkId,
+              e.publicId AS menuLinkId,
               e.caption,
               fs.count
             FROM FilteredSet fs
@@ -541,17 +541,17 @@ const menuLinksFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['
             WHERE ${xMenuLink.SqlGetVisFilterExpression(currentUser, "e")}
           `;
     },
-    postProcessRow: (row: { menuLinkId: number, caption: string, count: bigint }) => ({
-        menuLinkId: row.menuLinkId,
+    postProcessRow: (row: { menuLinkId: string, caption: string, count: bigint }) => ({
+        menuLinkId: xMenuLink.parseIdentity(row.menuLinkId),
         name: row.caption,
         count: Number(row.count),
     }),
     getFilterSqlConditions: (filterSpec, conditions) => {
         if (filterSpec.includeMenuLinkIds.length > 0) {
-            conditions.push(`${MySqlSymbol("menuLinkId")} IN (${filterSpec.includeMenuLinkIds.map((f) => f.toString()).join(",")})`);
+            conditions.push(`${MySqlSymbol("menuLinkId")} IN (SELECT id FROM MenuLink WHERE publicId IN (${filterSpec.includeMenuLinkIds.map(MySqlStringLiteral).join(",")}))`);
         }
         if (filterSpec.excludeMenuLinkIds.length > 0) {
-            conditions.push(`NOT ${MySqlSymbol("menuLinkId")} IN (${filterSpec.excludeMenuLinkIds.map((f) => f.toString()).join(",")})`);
+            conditions.push(`NOT ${MySqlSymbol("menuLinkId")} IN (SELECT id FROM MenuLink WHERE publicId IN (${filterSpec.excludeMenuLinkIds.map(MySqlStringLiteral).join(",")}))`);
         }
     },
 };
@@ -568,7 +568,7 @@ const customLinksFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']
               GROUP BY customLinkId
             )
             SELECT
-              e.id AS customLinkId,
+              e.publicId AS customLinkId,
               e.name,
               fs.count
             FROM FilteredSet fs
@@ -576,17 +576,17 @@ const customLinksFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']
             WHERE ${xCustomLink.SqlGetVisFilterExpression(currentUser, "e")}
           `;
     },
-    postProcessRow: (row: { customLinkId: number, name: string, count: bigint }) => ({
-        customLinkId: row.customLinkId,
+    postProcessRow: (row: { customLinkId: string, name: string, count: bigint }) => ({
+        customLinkId: xCustomLink.parseIdentity(row.customLinkId),
         name: row.name,
         count: Number(row.count),
     }),
     getFilterSqlConditions: (filterSpec, conditions) => {
         if (filterSpec.includeCustomLinkIds.length > 0) {
-            conditions.push(`${MySqlSymbol("customLinkId")} IN (${filterSpec.includeCustomLinkIds.map((f) => f.toString()).join(",")})`);
+            conditions.push(`${MySqlSymbol("customLinkId")} IN (SELECT id FROM CustomLink WHERE publicId IN (${filterSpec.includeCustomLinkIds.map(MySqlStringLiteral).join(",")}))`);
         }
         if (filterSpec.excludeCustomLinkIds.length > 0) {
-            conditions.push(`NOT ${MySqlSymbol("customLinkId")} IN (${filterSpec.excludeCustomLinkIds.map((f) => f.toString()).join(",")})`);
+            conditions.push(`NOT ${MySqlSymbol("customLinkId")} IN (SELECT id FROM CustomLink WHERE publicId IN (${filterSpec.excludeCustomLinkIds.map(MySqlStringLiteral).join(",")}))`);
         }
     },
 };

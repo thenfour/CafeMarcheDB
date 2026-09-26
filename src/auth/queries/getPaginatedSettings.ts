@@ -1,44 +1,42 @@
 import type { CMCtx } from "@/src/auth/server/cmResolver";
 import { cmauthorize } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
-import { paginate } from "blitz";
-import db, { Prisma } from "db";
+import type { AuthenticatedCtx } from "blitz";
+import db from "db";
 import { Permission } from "shared/permissions";
+import { z } from "zod";
+import { DB3PaginatedQueryCore } from "src/core/db3/server/db3QueryCore";
+import { settingEditorView } from "src/core/db3/shared/entities/setting/settingViews";
 
-interface GetInput__
-    extends Pick<
-        Prisma.SettingFindManyArgs,
-        "where" | "orderBy" | "skip" | "take"
-    > { }
+const GetInput = z.object({
+    skip: z.number().int().min(0),
+    take: z.number().int().min(1).max(1000),
+});
 
 export default resolver.pipe(
     cmauthorize(Permission.sysadmin),
-    async ({ where, orderBy, skip, take }: GetInput__, ctx: CMCtx) => {
+    resolver.zod(GetInput),
+    async ({ skip, take }, ctx: CMCtx) => {
         try {
             (await ctx.auth.refresh(db)).requirePermission(Permission.sysadmin);
-            const {
-                items,
-                hasMore,
-                nextPage,
-                count,
-            } = await paginate({
+            const result = await DB3PaginatedQueryCore({
+                table: {
+                    tableID: settingEditorView.tableID,
+                    tableName: settingEditorView.tableName,
+                    viewID: settingEditorView.viewID,
+                },
+                filter: {},
+                orderBy: undefined,
                 skip,
                 take,
-                maxTake: 1000, // apparently prevents overload when take is user input.
-                count: () => db.setting.count({ where }),
-                query: (paginateArgs) =>
-                    db.setting.findMany({
-                        ...paginateArgs,
-                        where,
-                        orderBy,
-                    }),
-            });
+                cmdbQueryContext: "settings/list",
+            }, ctx as AuthenticatedCtx); // The fresh Sysadmin check above requires an authenticated actor.
 
             return {
-                items,
-                nextPage,
-                hasMore,
-                count,
+                items: result.items.map(item => settingEditorView.parseDto(item)),
+                nextPage: result.nextPage,
+                hasMore: result.hasMore,
+                count: result.count,
             };
         } catch (e) {
             console.error(`Exception while querying setting`);

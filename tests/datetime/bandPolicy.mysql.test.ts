@@ -28,7 +28,7 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     await db.event.deleteMany({ where: { id: { in: eventIds } } })
     await db.setting.deleteMany()
     await db.change.deleteMany()
-    await db.setting.create({ data: { name: Setting.BandTimeZone, value: "Europe/Brussels" } })
+    await db.setting.create({ data: { publicId: generatePublicId<"Setting">(), name: Setting.BandTimeZone, value: "Europe/Brussels" } })
     const segment = (allDay: boolean) => ({ publicId: generatePublicId(), name: "Segment", description: "", isAllDay: allDay,
       startsAt: new Date(allDay ? "2026-07-09T22:00:00Z" : "2026-07-10T22:30:12.345Z"),
       durationMillis: BigInt(allDay ? day : 1_200_789) })
@@ -89,7 +89,7 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
       model = await tx.setting.update({ where: { id: model.id }, data: { name: "OtherSetting" } })
       await CallMutateEventHooks({ tableNameOrSpecialMutationKey: "Setting", model, oldModel, db: tx })
       expect((await tx.event.findUnique({ where: { id: 5001 } }))!.endDateTime!.toISOString()).toBe("2026-07-10T22:00:00.000Z")
-      model = await tx.setting.create({ data: { name: Setting.BandTimeZone, value: "America/Los_Angeles" } })
+      model = await tx.setting.create({ data: { publicId: generatePublicId<"Setting">(), name: Setting.BandTimeZone, value: "America/Los_Angeles" } })
       await CallMutateEventHooks({ tableNameOrSpecialMutationKey: "Setting", model, db: tx })
       expect((await tx.event.findUnique({ where: { id: 5001 } }))!.endDateTime!.toISOString()).toBe("2026-07-11T07:00:00.000Z")
       await tx.setting.delete({ where: { id: model.id } })

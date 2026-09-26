@@ -3,7 +3,7 @@ import { defineCrudView } from "../../core/db3CrudView";
 import { xSetting } from "../../db3schema";
 
 const SettingEditorDtoSchema = z.object({
-    id: z.number().int(),
+    publicId: xSetting.identitySchema,
     name: z.string().optional(),
     value: z.string().optional(),
 });

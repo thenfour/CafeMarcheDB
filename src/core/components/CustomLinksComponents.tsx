@@ -76,7 +76,7 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
     const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
         void recordFeature({
             feature: ActivityFeature.custom_link_update,
-            customLinkId: props.item.id,
+            customLinkId: props.item.publicId,
             context: `CustomLinkItem`,
         });
         props.commands.update(obj, props.item).then(() => {
@@ -91,10 +91,10 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
     const handleDelete = (api: DB3EditRowButtonAPI) => {
         void recordFeature({
             feature: ActivityFeature.custom_link_delete,
-            customLinkId: props.item.id,
+            customLinkId: props.item.publicId,
             context: `CustomLinkItem`,
         });
-        props.commands.delete(props.item.id).then(() => {
+        props.commands.delete(props.item.publicId).then(() => {
             showSnackbar({ children: "delete successful", severity: 'success' });
             api.closeDialog();
         }).catch(err => {
@@ -198,7 +198,7 @@ export const CustomLinkList = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.customLinkListView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            publicId: DB3Client.publicIdFieldGen(),
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Name" }),
             description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 250, visible: true }), // required field but it's distracting to see here.
             slug: columnName => new CustomLinkSlugColumn({ columnName, fieldCaption: "Slug" }),
@@ -251,7 +251,7 @@ export const CustomLinkList = () => {
 
             <div className='EventDashboard'>
                 {items.map(i => <CustomLinkItem
-                    key={i.id}
+                    key={i.publicId}
                     item={i}
                     client={client}
                     commands={commands}

@@ -25,6 +25,7 @@ describe("activity report User identity boundary", () => {
             select: { publicId: true, fileLeafName: true, storedLeafName: true, externalURI: true },
         });
         expect(GetFeatureReportDetailResultArgs.select).not.toHaveProperty("user");
-        expect(GetFeatureReportDetailResultArgs.select.customLink).toEqual({ select: { id: true, name: true } });
+        expect(GetFeatureReportDetailResultArgs.select.customLink).toEqual({ select: { publicId: true, name: true } });
+        expect(GetFeatureReportDetailResultArgs.select.menuLink).toEqual({ select: { publicId: true, caption: true } });
     });
 });

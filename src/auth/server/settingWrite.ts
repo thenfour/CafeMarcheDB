@@ -6,15 +6,14 @@ import {
     RegisterChange,
 } from "shared/activityLog";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
+import type { Prisma } from "db";
+import { db3Server } from "src/core/db3/server/db3Server";
+import { xSetting } from "src/core/db3/shared/db3schema";
 import { resolveBandTimeZone } from "shared/dateTimePolicy";
 import { Setting } from "shared/settingKeys";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 
-export type SettingValue = {
-    id: number;
-    name: string;
-    value: string;
-};
+export type SettingValue = Prisma.SettingGetPayload<{}>;
 
 // Generic setting editors must enforce the same scheduling contract as the
 // branding form. Empty values retain their existing clear/default semantics.
@@ -45,9 +44,7 @@ export const writeSettingValue = async (args: {
             );
         }
     };
-    const shouldDelete = args.value === null || args.value === undefined || args.value === "";
-
-    if (shouldDelete) {
+    if (args.value === null || args.value === undefined || args.value === "") {
         if (!oldValue) return null;
         await args.db.setting.delete({ where: { id: oldValue.id } });
         await RegisterChange({
@@ -83,9 +80,12 @@ export const writeSettingValue = async (args: {
         return newValue;
     }
 
-    const newValue = await args.db.setting.create({
-        data: { name: args.name, value: args.value },
-    });
+    const value = args.value;
+    const settingDelegate = args.db.setting as Prisma.SettingDelegate; // The transactional client preserves Prisma's Setting delegate.
+    const newValue = await db3Server.table(xSetting).createWithPublicId(publicId =>
+        settingDelegate.create({
+            data: { publicId, name: args.name, value },
+        }));
     await RegisterChange({
         action: ChangeAction.insert,
         changeContext: args.changeContext,

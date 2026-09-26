@@ -492,5 +492,8 @@ async function EnsureBrandingDefaults() {
         return;
     }
 
-    await SeedTable("setting", db.setting, toCreate);
+    await SeedTable("setting", db.setting, toCreate.map(item => ({
+        ...item,
+        publicId: generatePublicId<"Setting">(),
+    })));
 }

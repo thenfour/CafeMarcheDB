@@ -8,7 +8,6 @@ import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/compo
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { API } from "../../db3/clientAPI";
 import { gIconMap, RenderMuiIcon } from "../../db3/components/IconMap";
 import { DB3EditRowButton, type DB3EditRowButtonAPI } from '../../db3/components/db3NewObjectDialog';
 import { AppContextMarker } from "../AppContext";
@@ -37,7 +36,7 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
     const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
         void recordFeature({
             feature: ActivityFeature.menu_link_update,
-            menuLinkId: props.item.id,
+            menuLinkId: props.item.publicId,
             context: "MenuLinkItem",
         });
         props.commands.update(obj, props.item).then(() => {
@@ -53,10 +52,10 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
     const handleDelete = (api: DB3EditRowButtonAPI) => {
         void recordFeature({
             feature: ActivityFeature.menu_link_delete,
-            menuLinkId: props.item.id,
+            menuLinkId: props.item.publicId,
             context: "MenuLinkItem",
         });
-        props.commands.delete(props.item.id).then(() => {
+        props.commands.delete(props.item.publicId).then(() => {
             showSnackbar({ children: "delete successful", severity: 'success' });
             api.closeDialog();
         }).catch(err => {
@@ -210,14 +209,14 @@ export class SearchableWikiSlugColumnClient extends DB3Client.GenericStringColum
 
 export const MenuLinkList = () => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
+    const reorderCommand = DB3Client.useDB3Command(db3.reorderMenuLinksCommand);
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.menuLinkListView,
         columns: {
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            publicId: DB3Client.publicIdFieldGen(),
 
             applicationPage: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Section name" }),
             groupName: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Group name" }),
@@ -288,15 +287,13 @@ export const MenuLinkList = () => {
         void recordFeature({
             feature: ActivityFeature.menu_link_reorder,
             context: "MenuLinkList",
-            menuLinkId: movingItem.id,
+            menuLinkId: movingItem.publicId,
         });
 
-        updateSortOrderMutation.invoke({
-            tableID: db3.xMenuLink.tableID,
-            tableName: db3.xMenuLink.tableName,
-            movingItemId: movingItem.id,
-            newPositionItemId: newPositionItem.id,
-            scopeRowIds: items.map(item => item.id),
+        reorderCommand.invoke({
+            movingItemId: movingItem.publicId,
+            newPositionItemId: newPositionItem.publicId,
+            scopeRowIds: items.map(item => item.publicId),
         }).then(() => {
             showSnackbar({ severity: "success", children: "reorder successful" });
             dashboardContext.refetchDashboardData();
@@ -324,9 +321,9 @@ export const MenuLinkList = () => {
                     onDrop={onDrop}
                 >
                     {items.map(i =>
-                        <ReactSmoothDndDraggable key={i.id}>
+                        <ReactSmoothDndDraggable key={i.publicId}>
                             <MenuLinkItem
-                                key={i.id}
+                                key={i.publicId}
                                 item={i}
                                 client={client}
                                 commands={commands}

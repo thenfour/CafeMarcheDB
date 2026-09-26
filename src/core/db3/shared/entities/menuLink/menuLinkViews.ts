@@ -7,7 +7,7 @@ import { xMenuLink } from "../../schema/menuLink";
 
 const menuLinkEditorSelection = Prisma.validator<Prisma.MenuLinkDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         applicationPage: true,
         groupName: true,
         caption: true,

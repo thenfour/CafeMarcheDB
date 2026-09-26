@@ -89,22 +89,22 @@ export const FacetItemDetailTableRow = ({ value, index, ...props }: FacetItemDet
 
             {value.eventSegmentId && <CMChip>Segment #{value.eventSegmentId}</CMChip>}
             {value.customLinkId && <FilterableChip
-                item={{ customLinkId: value.customLinkId, name: `#${value.customLinkId}`, count: 0 }}
+                item={{ customLinkId: value.customLinkId, name: value.customLink?.name ?? "Custom link", count: 0 }}
                 handler={gClientFacetHandlers.customLinks}
                 filterSpec={props.filterSpec}
                 setFilterSpec={props.setFilterSpec}
             >
-                <CMChip>Custom link #{value.customLinkId}</CMChip>
+                <CMChip>{value.customLink?.name ?? "Custom link"}</CMChip>
             </FilterableChip>}
             {value.eventSongListId && <CMChip>Setlist #{value.eventSongListId}</CMChip>}
             {value.frontpageGalleryItemId && <CMChip>Gallery item #{value.frontpageGalleryItemId}</CMChip>}
             {value.menuLinkId && <FilterableChip
-                item={{ menuLinkId: value.menuLinkId, name: `#${value.menuLinkId}`, count: 0 }}
+                item={{ menuLinkId: value.menuLinkId, name: value.menuLink?.caption ?? "Menu link", count: 0 }}
                 handler={gClientFacetHandlers.menuLinks}
                 filterSpec={props.filterSpec}
                 setFilterSpec={props.setFilterSpec}
             >
-                <CMChip>Menu link #{value.menuLinkId}</CMChip>
+                <CMChip>{value.menuLink?.caption ?? "Menu link"}</CMChip>
             </FilterableChip>}
             {value.setlistPlanId && <CMChip>Setlist plan {value.setlistPlan?.name ?? value.setlistPlanId}</CMChip>}
             {value.songCreditTypeId && <CMChip>

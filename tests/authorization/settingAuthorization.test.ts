@@ -37,7 +37,7 @@ import {
   createAuthorizationPersona,
   createAuthorizationTestUser,
 } from "./support/authorizationFixtures"
-import { forgeDb3Query, forgeDb3Update } from "./support/db3RequestBuilders"
+import { forgeDb3Query, forgeDb3PublicUpdate } from "./support/db3RequestBuilders"
 import { invokeResolver } from "./support/resolverHarness"
 
 const brandingPermissionSet = [
@@ -133,7 +133,7 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
   it.each([undefined, "", "   "])("defaults an unset band time zone (%s) without writing settings", async value => {
     if (value !== undefined) {
       authorizationTestDb.getDelegate("setting").reset([
-        { id: 1, name: Setting.BandTimeZone, value },
+        { id: 1, publicId: "SettingPublic001", name: Setting.BandTimeZone, value },
       ])
     }
     const before = authorizationTestDb.snapshot("setting")
@@ -148,8 +148,8 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
 
   it.each(["", "   ", "Europe/NotAPlace", "+02:00"])("rejects invalid band time zone %s before changing any branding", async bandTimeZone => {
     const initialSettings = [
-      { id: 1, name: Setting.Dashboard_SiteTitle, value: "Original title" },
-      { id: 2, name: Setting.BandTimeZone, value: "Europe/Brussels" },
+      { id: 1, publicId: "SettingPublic001", name: Setting.Dashboard_SiteTitle, value: "Original title" },
+      { id: 2, publicId: "SettingPublic002", name: Setting.BandTimeZone, value: "Europe/Brussels" },
     ]
     authorizationTestDb.getDelegate("setting").reset(initialSettings)
     const { ctx } = createAuthorizationPersona("normal", {
@@ -246,7 +246,7 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
 
   it("keeps individual reads public without exposing the raw settings index", async () => {
     authorizationTestDb.getDelegate("setting").reset([
-      { id: 1, name: Setting.Dashboard_SiteTitle, value: "Public title" },
+      { id: 1, publicId: "SettingPublic001", name: Setting.Dashboard_SiteTitle, value: "Public title" },
     ])
     const { ctx: publicCtx } = createAuthorizationPersona("public")
 
@@ -273,7 +273,7 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
     })
     authorizationTestDb.reset({
       user: [roleGrantedSysadmin],
-      setting: [{ id: 1, name: "technical_setting", value: "before" }],
+      setting: [{ id: 1, publicId: "SettingPublic001", name: "technical_setting", value: "before" }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", {
@@ -281,21 +281,25 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
       permissions: [Permission.login, Permission.sysadmin],
     })
 
-    await expect(invokeResolver(
+    const updated = await invokeResolver(
       updateSetting,
       { name: "technical_setting", value: "forged" },
       ctx,
-    )).resolves.toEqual(expect.objectContaining({ value: "forged" }))
+    )
+    expect(updated).toEqual(expect.objectContaining({ publicId: "SettingPublic001", value: "forged" }))
+    expect(updated).not.toHaveProperty("id")
     await expect(invokeResolver(
       updateBulkSettings,
       [{ name: "technical_setting", value: "forged" }],
       ctx,
     )).resolves.toBeUndefined()
-    await expect(invokeResolver(
+    const page = await invokeResolver(
       getPaginatedSettings,
       { where: {}, orderBy: {}, skip: 0, take: 50 },
       ctx,
-    )).resolves.toEqual(expect.objectContaining({ items: expect.any(Array) }))
+    )
+    expect(page.items[0]).toEqual(expect.objectContaining({ publicId: "SettingPublic001", value: "forged" }))
+    expect(page.items[0]).not.toHaveProperty("id")
     await expect(invokeResolver(
       setShowingAdminControls,
       { showAdminControls: true },
@@ -304,8 +308,7 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
     await expect(invokeResolver(db3Query, forgeDb3Query("Setting"), ctx)).resolves.toBeDefined()
     await expect(invokeResolver(
       db3Mutation,
-      forgeDb3Update("Setting", 1, {
-        id: 1,
+      forgeDb3PublicUpdate("Setting", "SettingPublic001", {
         name: "technical_setting",
         value: "forged",
       }),
@@ -323,7 +326,7 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
     await invokeResolver(updateSetting, { name: "technical_setting", value: "after" }, ctx)
 
     expect(authorizationTestDb.snapshot("setting")).toEqual([
-      expect.objectContaining({ name: "technical_setting", value: "after" }),
+      expect.objectContaining({ publicId: expect.any(String), name: "technical_setting", value: "after" }),
     ])
     expect(clearBrandCache).toHaveBeenCalledTimes(1)
   })
@@ -331,15 +334,14 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
   it("invalidates brand cache after a Sysadmin uses the raw DB3 setting grid", async () => {
     authorizationTestDb.reset({
       user: [sysadmin],
-      setting: [{ id: 1, name: Setting.Dashboard_SiteTitle, value: "Before" }],
+      setting: [{ id: 1, publicId: "SettingPublic001", name: Setting.Dashboard_SiteTitle, value: "Before" }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
 
     await invokeResolver(
       db3Mutation,
-      forgeDb3Update("Setting", 1, {
-        id: 1,
+      forgeDb3PublicUpdate("Setting", "SettingPublic001", {
         name: Setting.Dashboard_SiteTitle,
         value: "After",
       }),

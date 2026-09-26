@@ -112,10 +112,10 @@ function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null,
         wikiPageId: null,
         attendanceId: null,
         eventSegmentId: null,
-        customLinkId: toSafeId(args.customLinkId),
+        customLinkId: null,
         eventSongListId: null,
         frontpageGalleryItemId: null,
-        menuLinkId: toSafeId(args.menuLinkId),
+        menuLinkId: null,
         setlistPlanId: null,
         songCreditTypeId: null,
         instrumentId: null,
@@ -135,6 +135,20 @@ export async function createActionRecord(args: RecordActionArgs & { userId?: num
             select: { id: true },
         });
         sanitizedData.songId = song?.id ?? null;
+    }
+    if (args.customLinkId) {
+        const link = await db.customLink.findUnique({
+            where: { publicId: args.customLinkId },
+            select: { id: true },
+        });
+        sanitizedData.customLinkId = link?.id ?? null;
+    }
+    if (args.menuLinkId) {
+        const link = await db.menuLink.findUnique({
+            where: { publicId: args.menuLinkId },
+            select: { id: true },
+        });
+        sanitizedData.menuLinkId = link?.id ?? null;
     }
     if (args.wikiPageId) {
         const wikiPage = await db.wikiPage.findUnique({

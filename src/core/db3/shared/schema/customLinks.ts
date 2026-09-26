@@ -2,7 +2,8 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
-import { BoolField, ConstEnumStringField, GhostField, MakeCreatedAtField, MakePKfield } from "../columnTypes/xTableColumnTypes";
+import { BoolField, ConstEnumStringField, GhostField, MakeCreatedAtField, MakePKfield, MakePublicIdField } from "../columnTypes/xTableColumnTypes";
+import type { CustomLinkPublicId } from "shared/publicId";
 import * as db3 from "../db3core";
 import { MakeCreatedByField } from "./user";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
@@ -54,7 +55,7 @@ export const CustomLinkRedirectType = {
 ////////////////////////////////////////////////////////////////
 export const xCustomLink = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.CustomLinkDelegate>(),
-    getIdentity: (link: { id: number }) => link.id,
+    getIdentity: (link: { publicId: CustomLinkPublicId }) => link.publicId,
     getSelectionArgs: (): Prisma.CustomLinkDefaultArgs => {
         return CustomLinkArgs;
     },
@@ -62,7 +63,7 @@ export const xCustomLink = db3.defineTable({
     deletePolicy: "hard",
     naturalOrderBy: CustomLinkNaturalOrderBy,
     getRowInfo: (row: CustomLinkPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.name,
         description: row.description,
         color: null,
@@ -70,7 +71,8 @@ export const xCustomLink = db3.defineTable({
     }),
     tableAuthMap: xTableAuthMap,
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "never" }),
+        publicId: () => MakePublicIdField<CustomLinkPublicId>(),
         name: columnName => MakeTitleField(columnName, { authMap: xAuthMap, }),
         description: () => MakeDescriptionField({ authMap: xAuthMap, }),
         createdAt: () => MakeCreatedAtField(),

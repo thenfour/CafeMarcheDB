@@ -7,7 +7,8 @@
 
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { MakePKfield } from "./columnTypes/xTableColumnTypes";
+import { MakePKfield, MakePublicIdField } from "./columnTypes/xTableColumnTypes";
+import type { SettingPublicId } from "shared/publicId";
 import { DB3AuthTablePermissionMap, defineAuthMap, defineTable, makeColumnSet, prismaModel, SqlSpecialColumnFunction } from "./db3core";
 import { GenericStringField } from "./columnTypes/genericString";
 
@@ -37,19 +38,20 @@ export const SettingNaturalOrderBy: Prisma.SettingOrderByWithRelationInput[] = [
 
 export const xSetting = defineTable({
     prismaModel: prismaModel<Prisma.SettingDelegate>(),
-    getIdentity: (setting: Prisma.SettingGetPayload<{}>) => setting.id,
+    getIdentity: (setting: { publicId: SettingPublicId }) => setting.publicId,
     getSelectionArgs: () => ({}),
     tableName: "Setting",
     deletePolicy: "disabled",
     tableAuthMap: xSettingsTableAuthMap,
     naturalOrderBy: SettingNaturalOrderBy,
     getRowInfo: (row: SettingPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.name,
         ownerUserId: null,
     }),
     fields: makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "never" }),
+        publicId: () => MakePublicIdField<SettingPublicId>(),
         name: columnName => new GenericStringField({
             columnName,
             allowNull: false,

@@ -2,6 +2,7 @@ import { ActivityReportTimeBucketSize } from "@/shared/mysqlUtils";
 import { Prisma } from "db";
 import {
     type EventAttendancePublicId,
+    type CustomLinkPublicId,
     type EventPublicId,
     type EventSegmentPublicId,
     type EventSongListPublicId,
@@ -9,6 +10,7 @@ import {
     type EventTypePublicId,
     type FrontpageGalleryItemPublicId,
     type InstrumentPublicId,
+    type MenuLinkPublicId,
     type SongCreditTypePublicId,
     type SongPublicId,
     type SetlistPlanPublicId,
@@ -43,6 +45,14 @@ function projectActivityPlan(value: { publicId: string; name: string } | null) {
     return value ? { publicId: db3.xSetlistPlan.parseIdentity(value.publicId), name: value.name } : null;
 }
 
+function projectActivityCustomLink(value: { publicId: string; name: string } | null) {
+    return value ? { publicId: db3.xCustomLink.parseIdentity(value.publicId), name: value.name } : null;
+}
+
+function projectActivityMenuLink(value: { publicId: string; caption: string } | null) {
+    return value ? { publicId: db3.xMenuLink.parseIdentity(value.publicId), caption: value.caption } : null;
+}
+
 // manually run script to redact these in the database.
 // export const redactLegacyNumericUserRoute = (uri: string | null): string | null =>
 //     uri?.replace(/(\/backstage\/user\/)\d+(?=\/|[?#]|$)/gi, "$1[legacy-user]") ?? null;
@@ -54,7 +64,7 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
         file: { select: { publicId: true, fileLeafName: true, storedLeafName: true, externalURI: true } },
         song: { select: { publicId: true, name: true } },
         wikiPage: { select: { publicId: true, slug: true } },
-        customLink: { select: { id: true, name: true } },
+        customLink: { select: { publicId: true, name: true } },
         eventSegment: { select: { publicId: true, name: true, event: { select: { publicId: true } }, startsAt: true } },
         eventSongList:
         {
@@ -66,7 +76,7 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
             },
         },
         frontpageGalleryItem: { select: { publicId: true } },
-        menuLink: { select: { id: true, caption: true } },
+        menuLink: { select: { publicId: true, caption: true } },
         setlistPlan: { select: { publicId: true, name: true } },
         songCreditType: {
             select: {
@@ -80,7 +90,7 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
 type GeneralActivityReportDetailDbPayload = Prisma.ActionGetPayload<typeof GeneralActivityReportDetailArgs>;
 export type GeneralActivityReportDetailPayload = Omit<
     GeneralActivityReportDetailDbPayload,
-    "user" | "userId" | "event" | "eventId" | "song" | "songId" | "wikiPage" | "wikiPageId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment" | "frontpageGalleryItemId" | "frontpageGalleryItem" | "setlistPlanId" | "setlistPlan"
+    "user" | "userId" | "event" | "eventId" | "song" | "songId" | "wikiPage" | "wikiPageId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment" | "frontpageGalleryItemId" | "frontpageGalleryItem" | "setlistPlanId" | "setlistPlan" | "customLinkId" | "customLink" | "menuLinkId" | "menuLink"
 > & {
     userHash: string | null;
     songId: SongPublicId | null;
@@ -100,13 +110,17 @@ export type GeneralActivityReportDetailPayload = Omit<
     setlistPlan: ReturnType<typeof projectActivityPlan>;
     eventId: EventPublicId | null;
     event: { publicId: EventPublicId; name: string; startsAt: Date | null } | null;
+    customLinkId: CustomLinkPublicId | null;
+    customLink: ReturnType<typeof projectActivityCustomLink>;
+    menuLinkId: MenuLinkPublicId | null;
+    menuLink: ReturnType<typeof projectActivityMenuLink>;
 };
 
 export function projectGeneralActivityReportDetailItem(
     row: GeneralActivityReportDetailDbPayload,
     userHash: string | null,
 ): GeneralActivityReportDetailPayload {
-    const { userId: _userId, event, eventId: _eventId, song, songId: _songId, wikiPage, wikiPageId: _wikiPageId, songCreditType, songCreditTypeId: _songCreditTypeId, setlistPlanId: _setlistPlanId, setlistPlan: _setlistPlan, ...rest } = row;
+    const { userId: _userId, event, eventId: _eventId, song, songId: _songId, wikiPage, wikiPageId: _wikiPageId, songCreditType, songCreditTypeId: _songCreditTypeId, setlistPlanId: _setlistPlanId, setlistPlan: _setlistPlan, customLink, customLinkId: _customLinkId, menuLink, menuLinkId: _menuLinkId, ...rest } = row;
     return {
         ...rest,
         uri: row.uri,
@@ -128,6 +142,10 @@ export function projectGeneralActivityReportDetailItem(
             : null,
         eventId: event ? db3.xEvent.parseIdentity(event.publicId) : null,
         event: event ? { ...event, publicId: db3.xEvent.parseIdentity(event.publicId) } : null,
+        customLinkId: customLink ? db3.xCustomLink.parseIdentity(customLink.publicId) : null,
+        customLink: projectActivityCustomLink(customLink),
+        menuLinkId: menuLink ? db3.xMenuLink.parseIdentity(menuLink.publicId) : null,
+        menuLink: projectActivityMenuLink(menuLink),
         userHash,
         songCreditTypeId: songCreditType
             ? db3.xSongCreditType.parseIdentity(songCreditType.publicId)
@@ -236,12 +254,12 @@ export interface FacetedBreakdownResult {
             count: number;
         }[],
         menuLinks: {
-            menuLinkId: number;
+            menuLinkId: MenuLinkPublicId;
             name: string;
             count: number;
         }[],
         customLinks: {
-            customLinkId: number;
+            customLinkId: CustomLinkPublicId;
             name: string;
             count: number;
         }[],
@@ -263,9 +281,9 @@ export const ZFeatureReportFilterSpec = z.object({
     includeTimezones: z.string().array(),
     includeLanguages: z.string().array(),
     includeLocales: z.string().array(),
-    includeCustomLinkIds: z.number().array(),
+    includeCustomLinkIds: db3.xCustomLink.identitySchema.array(),
     includeEventIds: z.custom<EventPublicId>(isPublicId).array(),
-    includeMenuLinkIds: z.number().array(),
+    includeMenuLinkIds: db3.xMenuLink.identitySchema.array(),
     includeSongIds: z.custom<SongPublicId>(isPublicId).array(),
     includeWikiPageIds: db3.xWikiPage.identitySchema.array(),
 
@@ -277,9 +295,9 @@ export const ZFeatureReportFilterSpec = z.object({
     excludeTimezones: z.string().array(),
     excludeLanguages: z.string().array(),
     excludeLocales: z.string().array(),
-    excludeCustomLinkIds: z.number().array(),
+    excludeCustomLinkIds: db3.xCustomLink.identitySchema.array(),
     excludeEventIds: z.custom<EventPublicId>(isPublicId).array(),
-    excludeMenuLinkIds: z.number().array(),
+    excludeMenuLinkIds: db3.xMenuLink.identitySchema.array(),
     excludeSongIds: z.custom<SongPublicId>(isPublicId).array(),
     excludeWikiPageIds: db3.xWikiPage.identitySchema.array(),
 
@@ -357,10 +375,10 @@ const GetFeatureReportDetailResultArgsUnvalidated /*: Prisma.ActionDefaultArgs*/
         },
         eventSegment: { select: { publicId: true, name: true, event: { select: { publicId: true } }, startsAt: true } },
         attendance: { select: { publicId: true } },
-        customLink: { select: { id: true, name: true } },
+        customLink: { select: { publicId: true, name: true } },
         eventSongList: { select: { publicId: true, name: true, event: { select: { publicId: true } } } },
         frontpageGalleryItem: { select: { publicId: true } },
-        menuLink: { select: { id: true, caption: true } },
+        menuLink: { select: { publicId: true, caption: true } },
         setlistPlan: { select: { publicId: true, name: true } },
         songCreditType: {
             select: {
@@ -387,7 +405,7 @@ type GetFeatureReportDetailDbPayload = Prisma.ActionGetPayload<typeof GetFeature
 type FeatureReportSongCreditType = NonNullable<GetFeatureReportDetailDbPayload["songCreditType"]>;
 export type GetFeatureReportDetailItemPayload = Omit<
     GetFeatureReportDetailDbPayload,
-    "userId" | "instrument" | "event" | "eventId" | "song" | "songId" | "wikiPage" | "wikiPageId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment" | "frontpageGalleryItemId" | "frontpageGalleryItem" | "setlistPlanId" | "setlistPlan"
+    "userId" | "instrument" | "event" | "eventId" | "song" | "songId" | "wikiPage" | "wikiPageId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment" | "frontpageGalleryItemId" | "frontpageGalleryItem" | "setlistPlanId" | "setlistPlan" | "customLinkId" | "customLink" | "menuLinkId" | "menuLink"
 > & {
     instrumentId: InstrumentPublicId | null;
     songId: SongPublicId | null;
@@ -409,6 +427,10 @@ export type GetFeatureReportDetailItemPayload = Omit<
         publicId: SongCreditTypePublicId;
     });
     eventId: EventPublicId | null;
+    customLinkId: CustomLinkPublicId | null;
+    customLink: ReturnType<typeof projectActivityCustomLink>;
+    menuLinkId: MenuLinkPublicId | null;
+    menuLink: ReturnType<typeof projectActivityMenuLink>;
     event: null | (Omit<NonNullable<GetFeatureReportDetailDbPayload["event"]>, "publicId" | "type" | "status"> & {
         publicId: EventPublicId;
         typeId: EventTypePublicId | null;
@@ -428,6 +450,10 @@ export function projectFeatureReportDetailItem(
         songId: _songId,
         wikiPage,
         wikiPageId: _wikiPageId,
+        customLink,
+        customLinkId: _customLinkId,
+        menuLink,
+        menuLinkId: _menuLinkId,
         songCreditType,
         songCreditTypeId: _songCreditTypeId,
         setlistPlanId: _setlistPlanId,
@@ -441,6 +467,10 @@ export function projectFeatureReportDetailItem(
         song: song ? { publicId: db3.xSong.parseIdentity(song.publicId), name: song.name } : null,
         wikiPageId: wikiPage ? db3.xWikiPage.parseIdentity(wikiPage.publicId) : null,
         wikiPage: wikiPage ? { publicId: db3.xWikiPage.parseIdentity(wikiPage.publicId), slug: wikiPage.slug } : null,
+        customLinkId: customLink ? db3.xCustomLink.parseIdentity(customLink.publicId) : null,
+        customLink: projectActivityCustomLink(customLink),
+        menuLinkId: menuLink ? db3.xMenuLink.parseIdentity(menuLink.publicId) : null,
+        menuLink: projectActivityMenuLink(menuLink),
         eventSegment: projectActivitySegment(row.eventSegment),
         eventSegmentId: row.eventSegment ? db3.xEventSegment.parseIdentity(row.eventSegment.publicId) : null,
         attendanceId: row.attendance ? db3.xEventAttendance.parseIdentity(row.attendance.publicId) : null,

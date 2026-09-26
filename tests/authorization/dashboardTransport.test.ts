@@ -47,7 +47,7 @@ const instrument = {
     }],
 };
 const menuLink = {
-    id: 14, sortOrder: 1, realm: "General", applicationPage: null, groupName: "Resources",
+    id: 14, publicId: db3.xMenuLink.parseIdentity("DashboardMenu001"), sortOrder: 1, realm: "General", applicationPage: null, groupName: "Resources",
     caption: "Scores", iconName: null, linkType: "ExternalURL", externalURI: "https://example.test/scores",
     wikiSlug: null, groupCssClass: "", itemCssClass: "", createdAt: new Date("2026-09-26T12:00:00Z"),
     createdByUserId: user.id, createdByUser: user,

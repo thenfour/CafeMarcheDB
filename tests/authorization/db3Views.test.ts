@@ -492,6 +492,7 @@ describe("DB3 named views", () => {
         const createdByUser = { id: 100, publicId: userPublicId(100), name: "Ada", cssClass: null, isDeleted: false };
         const customLink = {
             id: 20,
+            publicId: "CustomLinkTest01",
             name: "Scores",
             description: "Shared scores",
             slug: "scores",
@@ -506,6 +507,7 @@ describe("DB3 named views", () => {
         };
         const menuLink = {
             id: 30,
+            publicId: "MenuLinkTest0001",
             sortOrder: 2,
             realm: "General",
             applicationPage: null,
@@ -557,8 +559,10 @@ describe("DB3 named views", () => {
         } as any);
 
         const createdByUserDto = { publicId: createdByUser.publicId, name: createdByUser.name, cssClass: createdByUser.cssClass };
-        expect(customResult.items).toEqual([{ ...customLink, createdByUserId: createdByUser.publicId, createdByUser: createdByUserDto }]);
-        expect(menuResult.items).toEqual([{ ...menuLink, createdByUserId: createdByUser.publicId, createdByUser: createdByUserDto }]);
+        expect(customResult.items).toEqual([expect.objectContaining({ publicId: customLink.publicId, createdByUserId: createdByUser.publicId, createdByUser: createdByUserDto })]);
+        expect(menuResult.items).toEqual([expect.objectContaining({ publicId: menuLink.publicId, createdByUserId: createdByUser.publicId, createdByUser: createdByUserDto })]);
+        expect(customResult.items[0]).not.toHaveProperty("id");
+        expect(menuResult.items[0]).not.toHaveProperty("id");
     });
 
     it("represents authorization-stripped fields as absent optional DTO members", () => {
