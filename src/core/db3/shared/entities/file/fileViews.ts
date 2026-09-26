@@ -1,4 +1,5 @@
 import { Prisma } from "db";
+import type { FilePublicId } from "shared/publicId";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
@@ -43,7 +44,7 @@ const frontpageGalleryItemEditorSelection = Prisma.validator<Prisma.FrontpageGal
         fileId: true,
         file: {
             select: {
-                id: true,
+                publicId: true,
                 fileLeafName: true,
                 storedLeafName: true,
                 externalURI: true,
@@ -78,8 +79,9 @@ const requireFrontpageGalleryItemEditorFields = <TItem extends {
     caption_nl?: string | null;
     caption_fr?: string | null;
     sortOrder?: number;
-    fileId?: number;
+    fileId?: FilePublicId;
     file?: {
+        publicId?: FilePublicId;
         fileLeafName?: string;
         storedLeafName?: string;
         externalURI?: string | null;
@@ -104,6 +106,7 @@ const requireFrontpageGalleryItemEditorFields = <TItem extends {
         || item.visiblePermissionId === undefined
         || item.visiblePermission === undefined
         || !file
+        || file.publicId === undefined
         || file.fileLeafName === undefined
         || file.storedLeafName === undefined
         || file.externalURI === undefined
@@ -127,6 +130,7 @@ const requireFrontpageGalleryItemEditorFields = <TItem extends {
         visiblePermission: item.visiblePermission,
         file: {
             ...file,
+            publicId: file.publicId,
             fileLeafName: file.fileLeafName,
             storedLeafName: file.storedLeafName,
             externalURI: file.externalURI,
@@ -153,14 +157,14 @@ export const frontpageGalleryItemEditorView = defineCrudView({
 
 const fileDetailRelatedFileTransportSelection = {
     select: {
-        id: true,
+        publicId: true,
         fileLeafName: true,
     },
 } as const;
 
 const fileDetailRelatedFileSelection = {
     select: {
-        id: true,
+        publicId: true,
         fileLeafName: true,
         uploadedByUserId: true,
         visiblePermissionId: true,
@@ -188,7 +192,7 @@ const fileDetailPinnedSongSelection = {
 // File_Detail-only reverse relations such as childFiles and pinnedForSongs.
 export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         fileLeafName: true,
         description: true,
         uploadedAt: true,
@@ -365,7 +369,7 @@ const fileDetailContract = deriveViewContract(
 
 const fileEditorTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         fileLeafName: true,
         storedLeafName: true,
         description: true,
@@ -430,3 +434,10 @@ export const fileDetailView = defineView({
 
 export type FileDetailDto = DtoOf<typeof fileDetailView>;
 export type FileDetailClient = ClientOf<typeof fileDetailView>;
+export type FileEditorClient = ClientOf<typeof fileEditorView>;
+export type FileEditorTag = NonNullable<FileEditorClient["tags"]>[number];
+export type FileEditorUserTag = NonNullable<FileEditorClient["taggedUsers"]>[number];
+export type FileEditorSongTag = NonNullable<FileEditorClient["taggedSongs"]>[number];
+export type FileEditorEventTag = NonNullable<FileEditorClient["taggedEvents"]>[number];
+export type FileEditorInstrumentTag = NonNullable<FileEditorClient["taggedInstruments"]>[number];
+export type FileEditorWikiPageTag = NonNullable<FileEditorClient["taggedWikiPages"]>[number];

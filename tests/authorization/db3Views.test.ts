@@ -2,6 +2,7 @@ import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponseP
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
 import { songPublicId } from "../support/songFixtures";
+import { filePublicId } from "../support/fileFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { authorizeAndProjectDB3ViewModel } from "@db3/server/db3PublicIds";
@@ -193,7 +194,7 @@ describe("DB3 named views", () => {
                 select: {
                     file: {
                         select: {
-                            id: true,
+                            publicId: true,
                             fileLeafName: true,
                             storedLeafName: true,
                             externalURI: true,
@@ -728,7 +729,7 @@ describe("DB3 named views", () => {
                 fileId: 8,
                 songId: songPublicId(7),
                 file: {
-                    id: 8,
+                    publicId: filePublicId(8),
                     tags: [{ publicId: fileTagAssignmentPublicId, fileTagId: fileTag.publicId }],
                 },
             }],
@@ -808,7 +809,7 @@ describe("DB3 named views", () => {
         });
 
         const dto = db3.fileSearchView.parseDto({
-            id: 8,
+            publicId: filePublicId(8),
             fileLeafName: "score.pdf",
             description: "",
             externalURI: null,
@@ -910,16 +911,16 @@ describe("DB3 named views", () => {
                 customData: true,
                 isDeleted: true,
                 frontpageGalleryItems: { select: { id: true } },
-                parentFile: { select: { id: true, fileLeafName: true } },
-                childFiles: { select: { id: true, fileLeafName: true } },
-                previewFile: { select: { id: true, fileLeafName: true } },
-                previewForFile: { select: { id: true, fileLeafName: true } },
+                parentFile: { select: { publicId: true, fileLeafName: true } },
+                childFiles: { select: { publicId: true, fileLeafName: true } },
+                previewFile: { select: { publicId: true, fileLeafName: true } },
+                previewForFile: { select: { publicId: true, fileLeafName: true } },
                 pinnedForSongs: { select: { publicId: true, name: true } },
             },
         });
 
         const dto = db3.fileDetailView.parseDto({
-            id: 8,
+            publicId: filePublicId(8),
             fileLeafName: "score.pdf",
             description: "",
             customData: "{\"width\":1200}",
@@ -945,10 +946,10 @@ describe("DB3 named views", () => {
             taggedInstruments: [{ publicId: fileInstrumentTagPublicId, instrumentId: instrument.publicId }],
             taggedWikiPages: [{ publicId: fileWikiPageTagPublicId, wikiPage: { id: 16, slug: "repertoire" } }],
             frontpageGalleryItems: [{ id: 90 }],
-            parentFile: { id: 7, fileLeafName: "source.pdf" },
-            childFiles: [{ id: 9, fileLeafName: "part.pdf" }],
-            previewFile: { id: 10, fileLeafName: "preview.png" },
-            previewForFile: [{ id: 11, fileLeafName: "poster.pdf" }],
+            parentFile: { publicId: filePublicId(7), fileLeafName: "source.pdf" },
+            childFiles: [{ publicId: filePublicId(9), fileLeafName: "part.pdf" }],
+            previewFile: { publicId: filePublicId(10), fileLeafName: "preview.png" },
+            previewForFile: [{ publicId: filePublicId(11), fileLeafName: "poster.pdf" }],
             pinnedForSongs: [{ publicId: songPublicId(12), name: "A song" }],
         });
         const hydrated = db3.hydrateView(db3.fileDetailView, dto, references);
@@ -971,10 +972,10 @@ describe("DB3 named views", () => {
             wikiPage: { id: 16, slug: "repertoire" },
         }]);
         expect(hydrated.frontpageGalleryItems).toEqual([{ id: 90 }]);
-        expect(hydrated.parentFile).toEqual({ id: 7, fileLeafName: "source.pdf" });
-        expect(hydrated.childFiles).toEqual([{ id: 9, fileLeafName: "part.pdf" }]);
-        expect(hydrated.previewFile).toEqual({ id: 10, fileLeafName: "preview.png" });
-        expect(hydrated.previewForFile).toEqual([{ id: 11, fileLeafName: "poster.pdf" }]);
+        expect(hydrated.parentFile).toEqual({ publicId: filePublicId(7), fileLeafName: "source.pdf" });
+        expect(hydrated.childFiles).toEqual([{ publicId: filePublicId(9), fileLeafName: "part.pdf" }]);
+        expect(hydrated.previewFile).toEqual({ publicId: filePublicId(10), fileLeafName: "preview.png" });
+        expect(hydrated.previewForFile).toEqual([{ publicId: filePublicId(11), fileLeafName: "poster.pdf" }]);
         expect(hydrated.pinnedForSongs).toEqual([{ publicId: songPublicId(12), name: "A song" }]);
         expectTypeOf(hydrated).toEqualTypeOf<db3.FileDetailClient>();
     });
@@ -1331,6 +1332,7 @@ describe("DB3 named views", () => {
                 songId: 7,
                 file: {
                     id: 8,
+                    publicId: filePublicId(8),
                     uploadedByUserId: 100,
                     visiblePermissionId: null,
                     isDeleted: false,
@@ -1389,7 +1391,7 @@ describe("DB3 named views", () => {
             taggedFiles: [{
                 publicId: fileSongTagPublicId,
                 file: {
-                    id: 8,
+                    publicId: filePublicId(8),
                     tags: [{
                         publicId: fileTagAssignmentPublicId,
                         fileTagId: fileTagPublicId,
@@ -1456,9 +1458,9 @@ describe("DB3 named views", () => {
             tags: [{ publicId: songTagAssociationPublicId, tagId: songTag.publicId }],
             taggedFiles: [{
                 publicId: fileSongTagPublicId,
-                fileId: 8,
+                fileId: filePublicId(8),
                 file: {
-                    id: 8,
+                    publicId: filePublicId(8),
                     fileLeafName: "score.pdf",
                     description: "",
                     externalURI: null,
@@ -1531,6 +1533,7 @@ describe("DB3 named views", () => {
                 songId: 7,
                 file: {
                     id: 8,
+                    publicId: filePublicId(8),
                     fileLeafName: "score.pdf",
                     description: "",
                     uploadedAt,
@@ -1608,7 +1611,7 @@ describe("DB3 named views", () => {
             taggedFiles: [{
                 publicId: fileSongTagPublicId,
                 file: {
-                    id: 8,
+                    publicId: filePublicId(8),
                     fileLeafName: "score.pdf",
                     tags: [{
                         publicId: fileTagAssignmentPublicId,

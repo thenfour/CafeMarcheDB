@@ -5,17 +5,18 @@ import send from "send";
 import * as mime from "mime";
 import * as db3 from "src/core/db3/db3";
 import * as mutationCore from "src/core/db3/server/db3mutationCore";
+import type { FilePublicId } from "shared/publicId";
 
 type DownloadableFile = Pick<db3.FilePayloadMinimum,
     "fileLeafName" | "storedLeafName" | "isDeleted"
->;
+> & { publicId: FilePublicId };
 
 export const GetAuthorizedDirectDownloadFile = async (
     storedLeafName: string,
     ctx: Ctx,
-): Promise<db3.FilePayloadMinimum | null> => {
+): Promise<DownloadableFile | null> => {
 
-    const { item } = await mutationCore.queryFirstImpl<db3.FilePayloadMinimum>({
+    const { item } = await mutationCore.queryFirstImpl<DownloadableFile>({
         ctx,
         schema: db3.xFile,
         filterModel: {

@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import type { FileEventTagPublicId, FileInstrumentTagPublicId, FileSongTagPublicId, FileTagAssignmentPublicId, FileTagPublicId, FileUserTagPublicId, FileWikiPageTagPublicId } from "shared/publicId";
+import type { FileEventTagPublicId, FileInstrumentTagPublicId, FilePublicId, FileSongTagPublicId, FileTagAssignmentPublicId, FileTagPublicId, FileUserTagPublicId, FileWikiPageTagPublicId } from "shared/publicId";
 import { TAnyModel } from "shared/rootroot";
 import { CMDBTableFilterModel } from "../apiTypes";
 import { DateTimeField, foreignRef, ForeignCollectionField, foreignRefByTableId, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
@@ -171,6 +171,10 @@ export const xFileTagAssignment = db3.defineTable({
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<FileTagAssignmentPublicId>(),
+        file: foreignRefByTableId("File", {
+            fkidMember: "fileId",
+            authMap: xFileAuthMap_FileObjects,
+        }),
         fileTag: foreignRef(() => xFileTag, {
             fkidMember: "fileTagId",
             authMap: xFileAuthMap_FileObjects,
@@ -396,23 +400,24 @@ export const xFileInstrumentTag = db3.defineTable({
 ////////////////////////////////////////////////////////////////
 
 export interface xFileFilterParams {
-    fileId?: number;
+    fileId?: FilePublicId;
     fileTagIds: FileTagPublicId[];
 };
 
-interface ResolvedFileFilterParams extends Omit<xFileFilterParams, "fileTagIds"> {
+interface ResolvedFileFilterParams {
+    fileId?: number;
     fileTagIds: number[];
 }
 
 const xFileBaseArgs = {
     prismaModel: db3.prismaModel<Prisma.FileDelegate>(),
-    getIdentity: (file: { id: number }) => file.id,
+    getIdentity: (file: { publicId: FilePublicId }) => file.publicId,
     tableName: "File",
     deletePolicy: "softOnly" as const,
     viewDeletedPermission: Permission.recover_files,
     restorePermission: Permission.recover_files,
     queryParameters: {
-        fileId: { kind: "integer", authorizeAs: "id" },
+        fileId: { kind: "entityIdentity", targetTableID: "File", authorizeAs: "publicId" },
         fileTagIds: {
             kind: "entityIdentityArray",
             targetTableID: "FileTag",
@@ -439,13 +444,14 @@ const xFileBaseArgs = {
         return ret;
     },
     getRowInfo: (row: FilePayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.fileLeafName,
         description: row.description,
         ownerUserId: row.uploadedByUserId,
     }),
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField<FilePublicId>(),
         fileLeafName: columnName => MakeTitleField(columnName, { authMap: xFileAuthMap_FileObjects_AdminEdit }),
         description: () => MakeDescriptionField({ authMap: xFileAuthMap_FileObjects }),
         uploadedAt: columnName => MakeCreatedAtField({ columnName }),

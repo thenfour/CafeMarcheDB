@@ -11,7 +11,7 @@ import { resolvePublicId } from "../server/db3PublicIds";
 
 const ZArgs = z.object({
     songId: db3.xSong.identitySchema,
-    fileId: z.number().nullable(),
+    fileId: db3.xFile.identitySchema.nullable(),
 });
 
 export default resolver.pipe(
@@ -19,17 +19,16 @@ export default resolver.pipe(
     resolver.zod(ZArgs),
     async (args, ctx: AuthenticatedCtx) => {
 
-        // verbose on purpose in order to validate args type against UncheckedUpdateInput
-        const fields: Prisma.SongUncheckedUpdateInput = {
-            pinnedRecordingId: args.fileId,
-        };
-
-
         const authorization = await getRequestAuthorization(ctx.session);
         const publicData = db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
         if (!db3.xSong.authorizeTableForEdit(publicData)) {
-            throw new mutationCore.DB3MutationAuthorizationError(db3.xSong.tableName, Object.keys(fields));
+            throw new mutationCore.DB3MutationAuthorizationError(db3.xSong.tableName, ["pinnedRecordingId"]);
         }
+        const fileId = args.fileId === null
+            ? null
+            : await resolvePublicId(db3.xFile, args.fileId, publicData, db);
+        // Keep the database foreign key numeric after resolving the public input.
+        const fields: Prisma.SongUncheckedUpdateInput = { pinnedRecordingId: fileId };
         const songId = await resolvePublicId(
             db3.xSong, args.songId,
             publicData, db,

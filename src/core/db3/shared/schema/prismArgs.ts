@@ -6,13 +6,8 @@ import type {
     EventUserResponsePublicId,
     EventSegmentUserResponsePublicId,
     EventAttendancePublicId,
-    FileTagAssignmentPublicId,
+    FilePublicId,
     FileTagPublicId,
-    FileEventTagPublicId,
-    FileInstrumentTagPublicId,
-    FileSongTagPublicId,
-    FileUserTagPublicId,
-    FileWikiPageTagPublicId,
     EventStatusPublicId,
     EventTagAssignmentPublicId,
     EventTagPublicId,
@@ -709,6 +704,7 @@ export const InstrumentNaturalOrderBy: Prisma.InstrumentOrderByWithRelationInput
 // a medium-verbosity song payload, used for non-primary things like song lists etc.
 export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
     include: {
+        pinnedRecording: { select: { publicId: true } },
         createdByUser: AuxUserArgs,
         visiblePermission: true,
         //     visiblePermission: {
@@ -733,8 +729,9 @@ export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
 });
 
 export type SongPayload = Prisma.SongGetPayload<typeof SongArgs>;
-export type SongClientPayload = Omit<SongPayload, "id" | "publicId" | "tags"> & {
+export type SongClientPayload = Omit<SongPayload, "id" | "publicId" | "tags" | "pinnedRecording" | "pinnedRecordingId"> & {
     publicId: SongPublicId;
+    pinnedRecordingId: FilePublicId | null;
     tags: SongTagAssociationClientPayload[];
 };
 export type SongPayloadMinimum = {
@@ -838,125 +835,6 @@ export const UserMinimalSelect = Prisma.validator<Prisma.UserSelect>()({
 });
 
 ////////////////////////////////////////////////////////////////
-export const FileWithTagsArgs = Prisma.validator<Prisma.FileArgs>()({
-    //export const FileWithTagsArgs: Prisma.FileArgs = {
-    include: {
-        visiblePermission: { select: { publicId: true } },
-        uploadedByUser: { select: UserMinimalSelect },
-        tags: {
-            include: {
-                // Selected only so the legacy projection boundary can replace
-                // fileTagId with the target's public identity.
-                fileTag: { select: { publicId: true } },
-            },
-        },
-        // {
-        //     include: {
-        //         fileTag: true,
-        //     },
-        //     orderBy: {
-        //         fileTag: {
-        //             sortOrder: 'asc'
-        //         }
-        //     }
-        // },
-        taggedEvents: {
-            include: {
-                event: {
-                    include: {
-                        type: { select: { publicId: true } },
-                        status: { select: { publicId: true } },
-                    },
-                },
-            }
-        },
-        taggedInstruments: {
-            include: {
-                // Same projection support for the already-converted Instrument target.
-                instrument: { select: { publicId: true } },
-            },
-        },
-        taggedSongs: {
-            include: {
-                song: true,
-            }
-        },
-        taggedUsers: {
-            include: {
-                user: {
-                    select: UserMinimalSelect,
-                },
-            }
-        },
-        taggedWikiPages: {
-            include: {
-                wikiPage: true,
-            }
-        },
-    },
-}
-);
-export type FileWithTagsPayload = Prisma.FileGetPayload<typeof FileWithTagsArgs>;
-
-type FileWithTagsEventClientPayload = Omit<
-    FileWithTagsPayload["taggedEvents"][number]["event"],
-    "id" | "publicId" | "typeId" | "statusId" | "type" | "status"
-> & {
-    publicId: EventPublicId;
-    typeId: EventTypePublicId | null;
-    statusId: EventStatusPublicId | null;
-    type: { publicId: EventTypePublicId } | null;
-    status: { publicId: EventStatusPublicId } | null;
-};
-
-type FileWithTagsAssociationClientPayload<
-    TAssociation,
-    TPublicId,
-> = Omit<TAssociation, "id" | "publicId"> & {
-    publicId: TPublicId;
-};
-
-type FileWithTagsSongClientPayload = Omit<
-    FileWithTagsPayload["taggedSongs"][number],
-    "song" | "songId"
-> & {
-    songId: SongPublicId;
-    song: { publicId: SongPublicId; name: string };
-};
-
-export type FileWithTagsClientPayload = Omit<
-    FileWithTagsPayload,
-    "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents"
-    | "taggedInstruments" | "taggedWikiPages" | "visiblePermissionId"
-    | "visiblePermission"
-> & {
-    visiblePermissionId: PermissionPublicId | null;
-    tags: FileTagAssignmentReferenceClientPayload[];
-    taggedUsers: Array<FileWithTagsAssociationClientPayload<
-        FileWithTagsPayload["taggedUsers"][number],
-        FileUserTagPublicId
-    >>;
-    taggedSongs: Array<FileWithTagsAssociationClientPayload<
-        FileWithTagsSongClientPayload,
-        FileSongTagPublicId
-    >>;
-    taggedInstruments: FileInstrumentTagReferenceClientPayload[];
-    taggedEvents: Array<FileWithTagsAssociationClientPayload<
-        Omit<FileWithTagsPayload["taggedEvents"][number], "event">,
-        FileEventTagPublicId
-    > & {
-        event: FileWithTagsEventClientPayload;
-    }>;
-    taggedWikiPages: Array<FileWithTagsAssociationClientPayload<
-        FileWithTagsPayload["taggedWikiPages"][number],
-        FileWikiPageTagPublicId
-    >>;
-};
-
-
-
-
-
 // export const EventSongListDividerTextStyle = {
 //     Default: "Default",
 //     MonospaceTitle: "MonospaceTitle",
@@ -1328,21 +1206,6 @@ export const FileTagAssignmentArgs = Prisma.validator<Prisma.FileTagAssignmentAr
 });
 export type FileTagAssignmentPayload = Prisma.FileTagAssignmentGetPayload<typeof FileTagAssignmentArgs>;
 
-export type FileTagAssignmentClientPayload = Omit<
-    Prisma.FileTagAssignmentGetPayload<{ include: { fileTag: true } }>,
-    "id" | "publicId" | "fileTagId" | "fileTag"
-> & {
-    publicId: FileTagAssignmentPublicId;
-    fileTagId: FileTagPublicId;
-    fileTag: FileTagClientPayload;
-};
-
-export type FileTagAssignmentReferenceClientPayload = Pick<
-    FileTagAssignmentClientPayload,
-    "publicId" | "fileId" | "fileTagId"
->;
-
-
 export const FileTagAssignmentNaturalOrderBy: Prisma.FileTagAssignmentOrderByWithRelationInput[] = [
     { fileTag: { sortOrder: 'asc' } },
     { fileTag: { text: 'asc' } },
@@ -1402,13 +1265,6 @@ export const FileUserTagArgs = Prisma.validator<Prisma.FileUserTagArgs>()({
     }
 });
 export type FileUserTagPayload = Prisma.FileUserTagGetPayload<typeof FileUserTagArgs>;
-export type FileUserTagClientPayload = Omit<
-    FileUserTagPayload,
-    "id" | "publicId"
-> & {
-    publicId: FileUserTagPublicId;
-};
-
 export const FileUserTagNaturalOrderBy: Prisma.FileUserTagOrderByWithRelationInput[] = [
     { user: { name: 'asc' } },
     { user: { id: 'asc' } },
@@ -1421,13 +1277,6 @@ export const FileSongTagArgs = Prisma.validator<Prisma.FileSongTagArgs>()({
     }
 });
 export type FileSongTagPayload = Prisma.FileSongTagGetPayload<typeof FileSongTagArgs>;
-export type FileSongTagClientPayload = Omit<
-    FileSongTagPayload,
-    "id" | "publicId"
-> & {
-    publicId: FileSongTagPublicId;
-};
-
 export const FileSongTagNaturalOrderBy: Prisma.FileSongTagOrderByWithRelationInput[] = [
     { song: { name: 'asc' } },
     { song: { id: 'asc' } },
@@ -1449,20 +1298,6 @@ export const FileEventTagArgs = Prisma.validator<Prisma.FileEventTagArgs>()({
     }
 });
 export type FileEventTagPayload = Prisma.FileEventTagGetPayload<typeof FileEventTagArgs>;
-export type FileEventTagClientPayload = Omit<
-    FileEventTagPayload,
-    "id" | "publicId" | "event"
-> & {
-    publicId: FileEventTagPublicId;
-    event: Omit<FileEventTagPayload["event"], "typeId" | "statusId" | "type" | "status"> & {
-        typeId: EventTypePublicId | null;
-        statusId: EventStatusPublicId | null;
-        type: { publicId: EventTypePublicId } | null;
-        status: { publicId: EventStatusPublicId } | null;
-    };
-};
-
-
 // because it comes from the event payload, it doesn't include the event.
 export const FileEventTagMinimumArgs = Prisma.validator<Prisma.FileEventTagArgs>()({
     include: {
@@ -1489,21 +1324,6 @@ export const FileInstrumentTagArgs = Prisma.validator<Prisma.FileInstrumentTagAr
     }
 });
 export type FileInstrumentTagPayload = Prisma.FileInstrumentTagGetPayload<typeof FileInstrumentTagArgs>;
-export type FileInstrumentTagReferenceClientPayload = Omit<
-    Prisma.FileInstrumentTagGetPayload<{}>,
-    "id" | "publicId" | "instrumentId"
-> & {
-    publicId: FileInstrumentTagPublicId;
-    instrumentId: InstrumentPublicId;
-};
-export type FileInstrumentTagClientPayload = Omit<
-    FileInstrumentTagPayload,
-    "id" | "publicId" | "instrumentId" | "instrument"
-> & {
-    publicId: FileInstrumentTagPublicId;
-    instrumentId: InstrumentPublicId;
-    instrument: InstrumentWithFunctionalGroupClientPayload;
-};
 export type FileInstrumentTagPayloadWithInstrument = Prisma.FileInstrumentTagGetPayload<{
     include: {
         instrument: true,
@@ -1523,13 +1343,6 @@ export const FileWikiPageTagArgs = Prisma.validator<Prisma.FileWikiPageTagArgs>(
     }
 });
 export type FileWikiPageTagPayload = Prisma.FileWikiPageTagGetPayload<typeof FileWikiPageTagArgs>;
-export type FileWikiPageTagClientPayload = Omit<
-    FileWikiPageTagPayload,
-    "id" | "publicId"
-> & {
-    publicId: FileWikiPageTagPublicId;
-};
-
 export const FileWikiPageTagNaturalOrderBy: Prisma.FileWikiPageTagOrderByWithRelationInput[] = [
     { wikiPage: { slug: 'asc' } },
     { wikiPage: { id: 'asc' } },
@@ -1793,6 +1606,4 @@ export type DashboardDynMenuLink = Prisma.MenuLinkGetPayload<{ include: { create
 export interface ObjectWithVisiblePermission {
     visiblePermissionId: PermissionPublicId | null;
 };
-
-
 

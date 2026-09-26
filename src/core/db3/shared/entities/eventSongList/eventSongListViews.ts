@@ -6,7 +6,7 @@ import { EventSongListContent } from "./eventSongListContent";
 import type { SetlistClientId } from "./eventSongListDraft";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { xEventSongList, xEventSongListSong, xEventSongListDivider } from "../../schema/event";
-import { isPublicId, type SongTagAssociationPublicId, type SongTagPublicId } from "shared/publicId";
+import { isPublicId, type FilePublicId, type SongTagAssociationPublicId, type SongTagPublicId } from "shared/publicId";
 import { xSong } from "../../schema/song";
 import { graft } from "../common/viewCommon";
 
@@ -28,7 +28,7 @@ const CompleteSetlistSongDtoSchema = z.object({
         lengthSeconds: z.number().int().nullable(),
         startBPM: z.number().int().nullable(),
         endBPM: z.number().int().nullable(),
-        pinnedRecordingId: z.number().int().nullable(),
+        pinnedRecordingId: z.custom<FilePublicId>(isPublicId).nullable(),
         tags: z.array(CompleteSongTagAssociationDtoSchema),
     }),
 });

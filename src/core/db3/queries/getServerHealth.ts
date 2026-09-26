@@ -2,6 +2,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
+import { xFile } from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { FileStatResult, GetServerHealthResult, ServerHealthFileResult, TableStatsQueryRowRaw } from "../shared/apiTypes";
 
@@ -76,7 +77,7 @@ order by
                 const f = fileRows.find(x => x.storedLeafName === di.fileName);
                 return {
                     ...di,
-                    fileId: f ? f.id : undefined,
+                    fileId: f ? xFile.parseIdentity(f.publicId) : undefined,
                     leafName: f ? f.fileLeafName : undefined,
                     isDeleted: f ? f.isDeleted : undefined,
                     mimeType: f?.mimeType || undefined,

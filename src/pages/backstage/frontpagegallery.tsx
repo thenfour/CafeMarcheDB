@@ -88,7 +88,7 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
                 });
                 const promises = resp.files.map(file => {
                     const newGalleryItem = props.client.tableSpec.args.table.createNew(currentUser) as Partial<FrontpageGalleryItemClient>;
-                    newGalleryItem.fileId = file.id;
+                    newGalleryItem.fileId = file.publicId;
                     newGalleryItem.file = file;
                     return props.client.crud.create(newGalleryItem);
                 });

@@ -13,6 +13,7 @@ import {
   type EventTagPublicId,
   type EventTypePublicId,
   type FileTagAssignmentPublicId,
+  type FilePublicId,
   type FileTagPublicId,
   type FileEventTagPublicId,
   type FileInstrumentTagPublicId,
@@ -933,7 +934,7 @@ describe("File derived-view migration", () => {
     expectTypeOf<Dto["customData"]>()
       .toEqualTypeOf<string | null | undefined>()
     expectTypeOf<RelatedFileDto>().toEqualTypeOf<{
-      id: number
+      publicId: FilePublicId
       fileLeafName?: string
     }>()
      expectTypeOf<PinnedSongDto>().toEqualTypeOf<{
@@ -979,7 +980,7 @@ describe("File derived-view migration", () => {
       "frontpageGalleryItems" | "parentFile" | "childFiles" | "pinnedForSongs"
     >
 
-    expectTypeOf<Dto["id"]>().toEqualTypeOf<number>()
+    expectTypeOf<Dto["publicId"]>().toEqualTypeOf<FilePublicId>()
     expectTypeOf<Dto["isDeleted"]>()
       .toEqualTypeOf<boolean>()
     expectTypeOf<Dto["customData"]>()
@@ -994,7 +995,7 @@ describe("File derived-view migration", () => {
 })
 
 describe("Song derived-view migration", () => {
-  it("preserves exact nullable transport typing for primitive ghost fields", () => {
+  it("projects the nullable pinned File reference to public identity", () => {
     const selection = Prisma.validator<Prisma.SongDefaultArgs>()({
       select: { pinnedRecordingId: true },
     })
@@ -1002,13 +1003,14 @@ describe("Song derived-view migration", () => {
     type Dto = z.infer<typeof derived.dtoSchema>
 
     expectTypeOf<Dto>().toEqualTypeOf<{
-      pinnedRecordingId: number | null
+      pinnedRecordingId: FilePublicId | null
     }>()
     expect(derived.dtoSchema.parse({ pinnedRecordingId: null }))
       .toEqual({ pinnedRecordingId: null })
-    expect(derived.dtoSchema.parse({ pinnedRecordingId: 12 }))
-      .toEqual({ pinnedRecordingId: 12 })
-    expect(derived.dtoSchema.safeParse({ pinnedRecordingId: "12" }).success)
+    const fileId = parsePublicId<"File">("File000000000012")
+    expect(derived.dtoSchema.parse({ pinnedRecordingId: fileId }))
+      .toEqual({ pinnedRecordingId: fileId })
+    expect(derived.dtoSchema.safeParse({ pinnedRecordingId: 12 }).success)
       .toBe(false)
   })
 
@@ -1151,11 +1153,11 @@ describe("Song derived-view migration", () => {
     >
 
     expectTypeOf<Dto["pinnedRecordingId"]>()
-      .toEqualTypeOf<number | null>()
+      .toEqualTypeOf<FilePublicId | null>()
     expectTypeOf<DtoFile["parentFileId"]>()
-      .toEqualTypeOf<number | null>()
+      .toEqualTypeOf<FilePublicId | null>()
     expectTypeOf<DtoFile["previewFileId"]>()
-      .toEqualTypeOf<number | null>()
+      .toEqualTypeOf<FilePublicId | null>()
     expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<TagAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<FileAssociationAuthorizationOnlyKeys>().toEqualTypeOf<never>()

@@ -1,12 +1,12 @@
 import { Prisma } from "db";
-import type { EventPublicId, EventStatusPublicId, EventTypePublicId, SongPublicId } from "shared/publicId";
+import type { EventPublicId, EventStatusPublicId, EventTypePublicId, FilePublicId, SongPublicId } from "shared/publicId";
 import { EventSongListItem } from "../../db3/shared/setlistApi";
 import type { SetlistClientId } from "../../db3/shared/entities/eventSongList/eventSongListDraft";
 
 export type MediaPlayerSongContextPayload = {
     publicId: SongPublicId;
     name: string;
-    pinnedRecordingId: number | null;
+    pinnedRecordingId: FilePublicId | null;
     lengthSeconds: number | null;
 };
 
@@ -22,18 +22,16 @@ export interface MediaPlayerEventContextPayload {
 
 export type MediaPlayerFileContextPayload = Prisma.FileGetPayload<{
     select: {
-        id: true,
+        publicId: true,
         fileLeafName: true,
         externalURI: true,
         mimeType: true,
         sizeBytes: true,
-        parentFileId: true,
-        previewFileId: true,
         fileCreatedAt: true,
         storedLeafName: true,
         uploadedAt: true,
     }
-}>;
+}> & { publicId: FilePublicId };
 
 export type MediaPlayerSetlistItemContextPayload = EventSongListItem;// & {
 //    displayIndex: number | undefined; // index in the setlist, used for display
@@ -71,8 +69,8 @@ export interface MediaPlayerContextType {
     getTrackUri: (track: MediaPlayerTrack) => string | undefined;
     previousEnabled: () => boolean;
     nextEnabled: () => boolean;
-    isPlayingFile: (fileId: number) => boolean;
-    isPlayingSetlistItem: (args: { setlistClientId?: SetlistClientId, setlistPlanId?: number | undefined, setlistItemIndex: number, fileId: number }) => boolean;
+    isPlayingFile: (fileId: FilePublicId) => boolean;
+    isPlayingSetlistItem: (args: { setlistClientId?: SetlistClientId, setlistPlanId?: number | undefined, setlistItemIndex: number, fileId: FilePublicId }) => boolean;
     isPlayingTrack: (track: MediaPlayerTrack) => boolean;
     isPlayable: (track: MediaPlayerTrack) => boolean; // unplayable tracks don't have any file/uri to play (dividers or missing song/file info etc.) unplayable tracks cannot be seeked to; they are skipped over.
 

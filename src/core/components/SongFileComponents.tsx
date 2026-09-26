@@ -6,7 +6,7 @@ import { Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { Permission } from 'shared/permissions';
-import type { EventPublicId, EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FileSongTagPublicId, FileTagPublicId, SongPublicId } from 'shared/publicId';
+import type { EventPublicId, EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FilePublicId, FileSongTagPublicId, FileTagPublicId, SongPublicId } from 'shared/publicId';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { formatFileSize, SortDirection } from 'shared/rootroot';
 import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
@@ -17,7 +17,6 @@ import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import updateSongPinnedRecording from '../db3/mutations/updateSongPinnedRecording';
 import { TClientFileUploadTags } from '../db3/shared/fileTypes';
-import { EnrichedFile } from '../db3/shared/schema/enrichedFileTypes';
 import { AppContextMarker } from './AppContext';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { InstrumentChip } from "./CMCoreComponents";
@@ -44,8 +43,7 @@ type SongDetailFile = NonNullable<
     NonNullable<db3.SongDetailClient["taggedFiles"]>[number]["file"]
 >;
 type DetailFile = db3.FileDetailClient
-    | SongDetailFile
-    | EnrichedFile<db3.FileWithTagsClientPayload>;
+    | SongDetailFile;
 
 const getEventChipValue = (event: {
     publicId: string;
@@ -80,7 +78,7 @@ type SortByKey = "uploadedAt" | "uploadedByUserName" | "mimeType" | "sizeBytes" 
 export interface FileTagBase {
     publicId: FileEventTagPublicId | FileSongTagPublicId;
     file: DetailFile;
-    fileId?: number;
+    fileId?: FilePublicId;
     // plus a songId, eventId, whatever...
 };
 
@@ -107,14 +105,14 @@ export const PinSongRecordingMenuItem = (props: PinSongRecordingMenuItemProps) =
             await snackbar.invokeAsync(async () => {
                 await pinMutation({
                     songId: props.contextSong.publicId,
-                    fileId: props.value.id,
+                    fileId: props.value.publicId,
                 });
                 if (props.refetch) {
                     void props.refetch();
                 }
                 void recordFeature({
                     feature: ActivityFeature.song_pin_recording,
-                    fileId: props.value.id,
+                    fileId: props.value.publicId,
                     songId: props.contextSong.publicId,
                 });
                 props.closeProc();
@@ -251,10 +249,10 @@ export const FileValueViewer = (props: FileViewerProps) => {
         })
         : undefined);
 
-    const isPinned = props.contextSong?.pinnedRecordingId === file.id;
+    const isPinned = props.contextSong?.pinnedRecordingId === file.publicId;
 
     return <div className={classes.join(" ")}>
-        <AppContextMarker fileId={props.value.id}>
+        <AppContextMarker fileId={props.value.publicId}>
 
             <div className="header">
 
@@ -438,7 +436,7 @@ export const FileEditor = (props: FileEditorProps) => {
         columns: {
             // Any columns updated by the file CRUD command need to be specified here.
             // if they shouldn't be displayed to users, make a hidden version.
-            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            publicId: DB3Client.publicIdFieldGen(),
             visiblePermission: DB3Client.foreignRefFieldGen({
                 selectionView: db3.permissionVisibilityView,
             }),
@@ -446,19 +444,19 @@ export const FileEditor = (props: FileEditorProps) => {
             description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 150 }),
             fileCreatedAt: columnName => new DB3Client.DateTimeColumn({ columnName }),
 
-            tags: DB3Client.tagsFieldClientGen<db3.FileTagAssignmentPayload>({ allowDeleteFromCell: false, selectStyle: 'inline', selectionView: db3.fileTagEditorView }),
-            taggedInstruments: DB3Client.tagsFieldClientGen<db3.FileInstrumentTagClientPayload>({
+            tags: DB3Client.tagsFieldClientGen<db3.FileEditorTag>({ allowDeleteFromCell: false, selectStyle: 'inline', selectionView: db3.fileTagEditorView }),
+            taggedInstruments: DB3Client.tagsFieldClientGen<db3.FileEditorInstrumentTag>({
                 cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline',
-                overrideRowInfo: (association: db3.FileInstrumentTagClientPayload, rowInfo: db3.RowInfo) => {
+                overrideRowInfo: (association: db3.FileEditorInstrumentTag, rowInfo: db3.RowInfo) => {
                     // because the query doesn't include instrument functional group, get it from global dashboard context
                     const fg = dashboardContext.instrumentFunctionalGroup.getById(association.instrument.functionalGroupId);
                     if (!fg) return rowInfo;
                     return { ...rowInfo, color: gGeneralPaletteList.findEntry(fg.color) };
                 }
             }),
-            taggedUsers: DB3Client.tagsFieldClientGen<db3.FileUserTagClientPayload>({ allowDeleteFromCell: false }),
-            taggedSongs: DB3Client.tagsFieldClientGen<db3.FileSongTagClientPayload>({ allowDeleteFromCell: false }),
-            taggedEvents: DB3Client.tagsFieldClientGen<db3.FileEventTagClientPayload>({
+            taggedUsers: DB3Client.tagsFieldClientGen<db3.FileEditorUserTag>({ allowDeleteFromCell: false }),
+            taggedSongs: DB3Client.tagsFieldClientGen<db3.FileEditorSongTag>({ allowDeleteFromCell: false }),
+            taggedEvents: DB3Client.tagsFieldClientGen<db3.FileEditorEventTag>({
                 cellWidth: 150,
                 allowDeleteFromCell: false,
                 renderAsChip: (args) => {
@@ -473,7 +471,7 @@ export const FileEditor = (props: FileEditorProps) => {
                     return event ? <EventChip renderAsLink={false} value={event} /> : null;
                 }
             }),
-            taggedWikiPages: DB3Client.tagsFieldClientGen<db3.FileWikiPageTagClientPayload>({ allowDeleteFromCell: false }),
+            taggedWikiPages: DB3Client.tagsFieldClientGen<db3.FileEditorWikiPageTag>({ allowDeleteFromCell: false }),
         },
     });
     const tableRenderClient = DB3Client.useTableRenderContext({
@@ -492,14 +490,14 @@ export const FileEditor = (props: FileEditorProps) => {
             : dashboardContext.referenceStore.require(
                 db3.xPermission,
                 props.initialValue.visiblePermissionId,
-                `File(${props.initialValue.id}).visiblePermission`,
+                `File(${props.initialValue.publicId}).visiblePermission`,
             ),
         tags: props.initialValue.tags.map(association => ({
             ...association,
             fileTag: dashboardContext.referenceStore.require(
                 db3.xFileTag,
                 association.fileTagId,
-                `File(${props.initialValue.id}).tags.fileTag`,
+                `File(${props.initialValue.publicId}).tags.fileTag`,
             ),
         })),
         taggedInstruments: props.initialValue.taggedInstruments.map(association => ({
@@ -507,7 +505,7 @@ export const FileEditor = (props: FileEditorProps) => {
             instrument: dashboardContext.referenceStore.require(
                 db3.xInstrument,
                 association.instrumentId,
-                `File(${props.initialValue.id}).taggedInstruments.instrument`,
+                `File(${props.initialValue.publicId}).taggedInstruments.instrument`,
             ),
         })),
         taggedEvents: props.initialValue.taggedEvents.map(association => ({
@@ -519,7 +517,7 @@ export const FileEditor = (props: FileEditorProps) => {
             },
         })),
         isDeleted: "isDeleted" in props.initialValue
-            ? props.initialValue.isDeleted
+            ? props.initialValue.isDeleted === true
             : false,
         customData: undefined,
     };
@@ -530,9 +528,9 @@ export const FileEditor = (props: FileEditorProps) => {
         onDelete={() => {
             void recordFeature({
                 feature: ActivityFeature.file_delete,
-                fileId: props.initialValue.id,
+                fileId: props.initialValue.publicId,
             });
-            editCommands.delete(props.initialValue.id).then(() => {
+            editCommands.delete(props.initialValue.publicId).then(() => {
                 showSnackbar({ severity: "success", children: "file delete successful" });
             }).catch((e) => {
                 console.log(e);
@@ -544,7 +542,7 @@ export const FileEditor = (props: FileEditorProps) => {
         onOK={(value) => {
             void recordFeature({
                 feature: ActivityFeature.file_edit,
-                fileId: props.initialValue.id,
+                fileId: props.initialValue.publicId,
             });
             // DB3EditObjectDialog is still a transitional untyped dialog boundary.
             const editorValue = value as db3.ClientOf<typeof db3.fileEditorView>;
@@ -1136,15 +1134,13 @@ type AudioPlayerFileControlsProps = {
 
 export function AudioPlayerFileControls({ file, song, event }: AudioPlayerFileControlsProps) {
     const mediaPlayer = useMediaPlayer();
-    const isCurrent = mediaPlayer.isPlayingFile(file.id);
+    const isCurrent = mediaPlayer.isPlayingFile(file.publicId);
     const isPlaying = isCurrent && mediaPlayer.isPlaying;
 
     if (file.fileLeafName === undefined
         || file.externalURI === undefined
         || file.mimeType === undefined
         || file.sizeBytes === undefined
-        || file.parentFileId === undefined
-        || file.previewFileId === undefined
         || file.fileCreatedAt === undefined
         || file.storedLeafName === undefined
         || file.uploadedAt === undefined) {
@@ -1152,13 +1148,11 @@ export function AudioPlayerFileControls({ file, song, event }: AudioPlayerFileCo
     }
 
     const playableFile = {
-        id: file.id,
+        publicId: file.publicId,
         fileLeafName: file.fileLeafName,
         externalURI: file.externalURI,
         mimeType: file.mimeType,
         sizeBytes: file.sizeBytes,
-        parentFileId: file.parentFileId,
-        previewFileId: file.previewFileId,
         fileCreatedAt: file.fileCreatedAt,
         storedLeafName: file.storedLeafName,
         uploadedAt: file.uploadedAt,

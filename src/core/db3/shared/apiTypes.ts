@@ -2,7 +2,7 @@ import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 
 import { Prisma } from "db";
 import { z } from "zod";
-import { isPublicId, type EventPublicId, type EventSegmentPublicId, type EventAttendancePublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type InstrumentPublicId, type PermissionPublicId, type SongPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId } from "shared/publicId";
+import { isPublicId, type EventPublicId, type EventSegmentPublicId, type EventAttendancePublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type FilePublicId, type InstrumentPublicId, type PermissionPublicId, type SongPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId } from "shared/publicId";
 
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 import { ColorPaletteEntry } from "../../components/color/palette";
@@ -345,7 +345,7 @@ export const GetFilteredSongsItemSongSelect = Prisma.validator<Prisma.SongSelect
     aliases: true,
     startBPM: true,
     endBPM: true,
-    pinnedRecordingId: true,
+    pinnedRecording: { select: { publicId: true } },
     tags: {
         select: {
             publicId: true,
@@ -363,8 +363,9 @@ type GetFilteredSongsItemSongDbPayload = Prisma.SongGetPayload<{
     select: typeof GetFilteredSongsItemSongSelect,
 }>;
 
-export type GetFilteredSongsItemSongPayload = Omit<GetFilteredSongsItemSongDbPayload, "publicId" | "tags"> & {
+export type GetFilteredSongsItemSongPayload = Omit<GetFilteredSongsItemSongDbPayload, "publicId" | "tags" | "pinnedRecording"> & {
     publicId: SongPublicId;
+    pinnedRecordingId: FilePublicId | null;
     tags: Array<{
         publicId: SongTagAssociationPublicId;
         songId: SongPublicId;
@@ -714,7 +715,7 @@ export type FileStatResult = {
 }
 
 export type ServerHealthFileResult = FileStatResult & {
-    fileId: number | undefined;
+    fileId: FilePublicId | undefined;
     leafName: string | undefined;
     isDeleted: boolean | undefined;
     mimeType: string | undefined;
@@ -812,7 +813,11 @@ export const PermissionSignificance = {
     Visibility_Editors: "Visibility_Editors",
 } as const satisfies Record<string, string>;
 
-export type TSongPinnedRecording = Prisma.FileGetPayload<{}>;
+export type TSongPinnedRecording = Pick<
+    Prisma.FileGetPayload<{}>,
+    "fileLeafName" | "externalURI" | "mimeType" | "sizeBytes" | "fileCreatedAt"
+    | "storedLeafName" | "uploadedAt"
+> & { publicId: FilePublicId };
 
 
 // sorts by start date, from newest to latest, NULL = future.

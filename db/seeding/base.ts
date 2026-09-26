@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { Prisma, PrismaClient } from '@prisma/client';
+import { generatePublicId } from '../../src/server/publicId';
 
 function monthsFromNow(months: number): Date {
     const date = new Date();
@@ -47,6 +48,7 @@ export class SeedingState {
     FakeFile = async (visiblePermissionId) => {
         return await this.prisma.file.create({
             data: {
+                publicId: generatePublicId<"File">(),
                 storedLeafName: faker.git.commitSha(),
                 isDeleted: faker.datatype.boolean(0.8),
                 fileLeafName: faker.git.commitSha(),

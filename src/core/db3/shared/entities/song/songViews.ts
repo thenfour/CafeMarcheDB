@@ -195,7 +195,7 @@ const songSearchTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
                 publicId: true,
                 file: {
                     select: {
-                        id: true,
+                        publicId: true,
                         tags: {
                             select: {
                                 publicId: true,

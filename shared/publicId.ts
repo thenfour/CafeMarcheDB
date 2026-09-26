@@ -19,6 +19,7 @@ export type SongTagAssociationPublicId = PublicId<"SongTagAssociation">;
 export type SongCreditTypePublicId = PublicId<"SongCreditType">;
 export type SongCreditPublicId = PublicId<"SongCredit">;
 export type FileTagPublicId = PublicId<"FileTag">;
+export type FilePublicId = PublicId<"File">;
 export type FileTagAssignmentPublicId = PublicId<"FileTagAssignment">;
 export type FileUserTagPublicId = PublicId<"FileUserTag">;
 export type FileSongTagPublicId = PublicId<"FileSongTag">;

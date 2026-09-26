@@ -12,6 +12,7 @@ vi.mock("db", async () => {
 import getFilteredSongs from "@db3/queries/getFilteredSongs"
 import getSetlistPlans from "@db3/queries/getSetlistPlans"
 import getSongPinnedRecording from "@db3/queries/getSongPinnedRecording"
+import { filePublicId } from "../support/fileFixtures"
 import getUserCredits from "@db3/queries/getUserCredits"
 import getUserTagWithAssignments from "@db3/queries/getUserTagWithAssignments"
 import getUserWikiContributions from "@db3/queries/getUserWikiContributions"
@@ -175,6 +176,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       pinnedRecordingId: 200,
       pinnedRecording: {
         id: 200,
+        publicId: filePublicId(200),
         isDeleted: false,
         uploadedByUserId: actor.id + 1,
         visiblePermissionId: hiddenVisibilityId,
@@ -193,7 +195,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       },
     }])
     await expect(invokeResolver(getSongPinnedRecording, { songIds: [songPublicId(20)] }, ctx)).resolves.toEqual({
-      [songPublicId(20)]: expect.objectContaining({ id: 200 }),
+      [songPublicId(20)]: expect.objectContaining({ publicId: filePublicId(200) }),
     })
   })
 

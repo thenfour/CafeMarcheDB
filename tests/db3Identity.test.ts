@@ -2,6 +2,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import { QuickSearchItemType, type QuickSearchItemMatch } from "shared/quickFilter";
 import { parsePublicId, type EventPublicId, type InstrumentPublicId, type SongPublicId } from "shared/publicId";
 import { songPublicId } from "./support/songFixtures";
+import { filePublicId } from "./support/fileFixtures";
 import * as db3 from "src/core/db3/db3";
 
 describe("DB3 table identity authority", () => {
@@ -26,6 +27,9 @@ describe("DB3 table identity authority", () => {
 
         expect(db3.xSong.getIdentity({ publicId: songPublicId(42) })).toBe(songPublicId(42));
         expect(db3.xSong.parseIdentity(songPublicId(42))).toBe(songPublicId(42));
+        expect(db3.xFile.getIdentity({ publicId: filePublicId(42) })).toBe(filePublicId(42));
+        expect(db3.xFile.parseIdentity(filePublicId(42))).toBe(filePublicId(42));
+        expect(db3.xFile.isIdentity(42)).toBe(false);
         expect(db3.xInstrument.parseDatabaseIdentity(42)).toBe(42);
         expect(db3.xFileTag.getIdentity({ publicId: fileTagPublicId })).toBe(fileTagPublicId);
         expect(db3.xFileTagAssignment.getIdentity({ publicId: fileTagAssignmentPublicId }))

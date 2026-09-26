@@ -39,9 +39,9 @@ export const GetFileClass = (file: Prisma.FileGetPayload<{ select: { externalURI
 export const MakeDefaultFileCustomData = (): FileCustomData => ({});
 
 // always returns valid
-export const getFileCustomData = (f: Prisma.FileGetPayload<{ select: { customData: true, id: true } }>): FileCustomData => {
+export const getFileCustomData = (f: { customData: string | null; id?: number; publicId?: string }): FileCustomData => {
     return parsePayloadJSON<FileCustomData>(f.customData, MakeDefaultFileCustomData, (e) => {
-        console.log(`failed to parse file custom data for file id ${f.id}`);
+        console.log(`failed to parse file custom data for file ${f.publicId ?? f.id}`);
     });
 };
 

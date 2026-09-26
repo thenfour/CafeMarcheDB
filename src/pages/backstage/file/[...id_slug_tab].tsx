@@ -29,7 +29,8 @@ import { Breadcrumbs } from "@mui/material";
 import db from "db";
 import { Suspense } from 'react';
 import { Permission } from "shared/permissions";
-import { CoerceToNumberOrNull, parseMimeType } from "shared/utils";
+import type { FilePublicId } from "shared/publicId";
+import { parseMimeType } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { FileTableClientColumns } from "src/core/components/file/FileComponentsBase";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -90,7 +91,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
         && file.customData !== undefined
         && file.mimeType !== undefined
         ? SharedAPI.files.getImageFileDimensions({
-            id: file.id,
+            //publicId: file.publicId,
             storedLeafName: file.storedLeafName,
             customData: file.customData,
             mimeType: file.mimeType,
@@ -126,7 +127,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                     });
 
                     await snackbar.invokeAsync(async () => {
-                        await editCommands.delete(file.id);
+                        await editCommands.delete(file.publicId);
                         api.close();
                     });
                 }}
@@ -253,7 +254,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
     );
 };
 
-const MyComponent = ({ fileId }: { fileId: number | null }) => {
+const MyComponent = ({ fileId }: { fileId: FilePublicId | null }) => {
     if (!fileId) throw new Error(`file not found`);
 
     const dashboardContext = useDashboardContext();
@@ -263,7 +264,7 @@ const MyComponent = ({ fileId }: { fileId: number | null }) => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.fileDetailView,
         columns: DB3Client.makeClientColumnSelection(
-            FileTableClientColumns.id,
+            FileTableClientColumns.publicId,
             FileTableClientColumns.fileLeafName,
             FileTableClientColumns.description,
             FileTableClientColumns.tags,
@@ -314,22 +315,22 @@ const MyComponent = ({ fileId }: { fileId: number | null }) => {
 
 interface PageProps {
     title: string;
-    fileId: number | null;
+    fileId: FilePublicId | null;
 }
 
 export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
     const [id__] = params!.id_slug_tab as string[];
-    const id = CoerceToNumberOrNull(id__);
-    if (!id) return { notFound: true };
+    if (!db3.xFile.isIdentity(id__)) return { notFound: true };
+    const publicId = db3.xFile.parseIdentity(id__);
 
     const file = await loadAuthorizedPageEntity({
         ctx,
         permission: Permission.access_file_landing_page,
         table: db3.xFile,
-        identity: id,
+        identity: publicId,
         load: where => db.file.findFirst({
             select: {
-                id: true,
+                publicId: true,
                 fileLeafName: true,
             },
             where,
@@ -337,7 +338,7 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
     });
     if (!file) return { notFound: true };
 
-    return { props: { title: file.fileLeafName, fileId: file.id } };
+    return { props: { title: file.fileLeafName, fileId: db3.xFile.parseIdentity(file.publicId) } };
 });
 
 const FileDetailPage: BlitzPage = (x: PageProps) => {

@@ -1621,6 +1621,38 @@ The build retains its existing Blitz import and color-environment warnings.
 The SQL migration was not applied to a live database, and browser interaction
 against migrated data remains unverified.
 
+#### Completed slice: central File
+
+`File` now uses branded public identity across its detail route, list and
+search views, upload responses, gallery and Song references, media playback,
+telemetry, reports, and editor commands.
+
+-  The schema and checked-in SQL migration add a unique ASCII/binary public-ID
+   column with deployment placeholders. Startup repair and seeds assign real
+   IDs. `xFile` exposes public identity and restricts its natural key to trusted
+   sysadmin surfaces.
+-  File query parameters and dedicated image and pinned-recording operations
+   resolve public IDs before writing numeric database foreign keys. Upload and
+   image-fork responses project only the fields clients need, including the
+   File public ID.
+-  File views, embedded File cards, gallery item editors, playback state,
+   activity records, CSV output, and the server-health file list carry public
+   File IDs. FileTagAssignment now declares its File relation so generic
+   projection cannot retain an unresolved numeric `fileId`. File editor column
+   types now come from its hydrated view, and the unused File enrichment and
+   legacy transport aliases are removed.
+
+Validation: the full repository runner passed 109 test files; 23 MySQL
+integration tests were skipped. Focused File view and transport tests passed
+after cleanup. Prisma schema validation and `git diff --check` passed. TypeScript
+passed against a freshly generated client at an alternate output path because
+the running dev server holds the normal Windows Prisma query-engine DLL open.
+The full ESLint pass found unused imports; after removing them, targeted lint
+on the remaining changed file passed. The production build was not run.
+
+The SQL migration was not applied to a live database, and browser interaction
+against migrated data remains unverified.
+
 ## Active roadmap
 
 ### Completed foundation
@@ -1740,7 +1772,7 @@ conversions.
        deleting each numeric client-identity compatibility path before marking that
        model complete below.
 
-#### Client-facing model progress: 37 / 47 complete (79%)
+#### Client-facing model progress: 38 / 47 complete (81%)
 
 The denominator is the 47 in-scope Prisma models whose own row identity currently
 crosses a client boundary. It excludes the five server-only models and the two
@@ -1789,6 +1821,7 @@ Completed models:
 -  [x] `EventUserResponse`
 -  [x] `Event`
 -  [x] `Song`
+-  [x] `File`
 
 Remaining models are grouped into coherent intended slices. The pressure label
 describes why the slice is ordered there; it does not relax the per-model
@@ -1819,7 +1852,7 @@ completion definition.
 -  **Completed: Song domain**
    -  [x] `Song`
 -  **File and gallery domain**
-   -  [ ] `File`
+   -  [x] `File`
    -  [ ] `FrontpageGalleryItem`
 -  **User domain**
    -  [ ] `User`

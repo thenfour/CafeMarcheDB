@@ -1,6 +1,6 @@
 import { DbBrandConfig } from "@/shared/brandConfigBase";
 import { isAbsoluteUri, slugify, TableAccessor } from "@/shared/rootroot";
-import type { EventAttendancePublicId, EventPublicId, InstrumentPublicId, PermissionPublicId, RolePublicId, SongPublicId } from "shared/publicId";
+import type { EventAttendancePublicId, EventPublicId, FilePublicId, InstrumentPublicId, PermissionPublicId, RolePublicId, SongPublicId } from "shared/publicId";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
@@ -93,11 +93,11 @@ export abstract class DashboardContextDataBase {
             return this.getAbsoluteUri(`/api/files/download/${value.storedLeafName}/${slugify(value.fileLeafName)}`);
         },
 
-        getURIForFileLandingPage: (value: { id: number, slug?: string | null | undefined }) => {
+        getURIForFileLandingPage: (value: { publicId: FilePublicId, slug?: string | null | undefined }) => {
             if (IsNullOrWhitespace(value.slug)) {
-                return this.getAbsoluteUri(`/backstage/file/${value.id}`);
+                return this.getAbsoluteUri(`/backstage/file/${value.publicId}`);
             };
-            return this.getAbsoluteUri(`/backstage/file/${value.id}/${slugify(value.slug || "")}`);
+            return this.getAbsoluteUri(`/backstage/file/${value.publicId}/${slugify(value.slug || "")}`);
         },
 
         getURLClass: (url: string, baseDomain: string = window.location.hostname): "internalPage" | "internalAPI" | "external" => {

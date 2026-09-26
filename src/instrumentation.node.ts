@@ -320,6 +320,13 @@ export async function CorrectSongPublicIds() {
     console.log(`Replaced ${replacementCount} Song public-ID placeholders.`);
 }
 
+export async function CorrectFilePublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.file, modelName: "File",
+    });
+    console.log(`Replaced ${replacementCount} File public-ID placeholders.`);
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> => (
     typeof value === "object" && value !== null && !Array.isArray(value)
 );
@@ -532,6 +539,7 @@ export async function registerNodeInstrumentation() {
     await CorrectSongTagPublicIds();
     await CorrectSongTagAssociationPublicIds();
     await CorrectSongPublicIds();
+    await CorrectFilePublicIds();
     await CorrectSongCreditTypePublicIds();
     await CorrectSongCreditPublicIds();
     await CorrectFileTagPublicIds();

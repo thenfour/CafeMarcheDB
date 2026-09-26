@@ -108,7 +108,7 @@ function flattenActivityRecord(row: any): Record<string, string> {
 
     // Handle remaining fields not covered by processors
     if (row.file) {
-        flattened.fileId = row.file.id?.toString() || '';
+        flattened.fileId = row.file.publicId || '';
         flattened.fileName = row.file.fileLeafName || '';
         flattened.fileStoredName = row.file.storedLeafName || '';
         flattened.fileExternalURI = row.file.externalURI || '';

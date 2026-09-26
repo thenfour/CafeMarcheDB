@@ -7,6 +7,7 @@ import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 import { xSong, xSongTag, xSongTagAssociation } from "../shared/schema/song";
 import type { SongPublicId } from "shared/publicId";
+import { xFile } from "../shared/schema/file";
 
 interface TArgs {
     id: SongPublicId | null;
@@ -34,6 +35,9 @@ export default resolver.pipe(
                 matchingItem: {
                     ...qr,
                     publicId: xSong.parseIdentity(qr.publicId),
+                    pinnedRecordingId: qr.pinnedRecording
+                        ? xFile.parseIdentity(qr.pinnedRecording.publicId)
+                        : null,
                     tags: qr.tags.map(association => ({
                         publicId: xSongTagAssociation.parseIdentity(association.publicId),
                         songId: xSong.parseIdentity(qr.publicId),

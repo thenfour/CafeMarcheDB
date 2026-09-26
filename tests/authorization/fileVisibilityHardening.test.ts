@@ -24,6 +24,7 @@ import {
   SendFileDownload,
 } from "src/core/db3/server/fileDownload"
 import type { ForkImageParams } from "src/core/db3/shared/fileTypes"
+import { filePublicId } from "../support/fileFixtures"
 import {
   createAuthorizationPersona,
   createAuthorizationTestUser,
@@ -36,6 +37,7 @@ const hiddenPermissionId = 799 // distinct from every grant in seedPublicRole()
 
 const makeFile = (overrides: Record<string, unknown> = {}) => ({
   id: 10,
+  publicId: filePublicId(10),
   fileLeafName: "photo.jpg",
   storedLeafName: "stored-photo.jpg",
   description: "",
@@ -72,7 +74,7 @@ const makeGalleryItem = (overrides: Record<string, unknown> = {}) => ({
 })
 
 const imageParams: ForkImageParams = {
-  parentFileId: 10,
+  parentFileId: filePublicId(10),
   outputType: "jpg",
   quality: 80,
   editParams: {
@@ -133,7 +135,7 @@ describe("BA-S002 direct and parent-authorized file delivery", () => {
     const { ctx } = createAuthorizationPersona("public")
 
     await expect(GetAuthorizedDirectDownloadFile("stored-photo.jpg", ctx)).resolves.toEqual(
-      expect.objectContaining({ id: 10 }),
+      expect.objectContaining({ publicId: filePublicId(10) }),
     )
     await expect(GetAuthorizedDirectDownloadFile("hidden.jpg", ctx)).resolves.toBeNull()
     await expect(GetAuthorizedDirectDownloadFile("deleted.jpg", ctx)).resolves.toBeNull()
@@ -161,7 +163,7 @@ describe("BA-S002 direct and parent-authorized file delivery", () => {
     const { ctx: publicCtx } = createAuthorizationPersona("public")
 
     await expect(GetAuthorizedDirectDownloadFile("stored-photo.jpg", ownerCtx)).resolves.toEqual(
-      expect.objectContaining({ id: 10 }),
+      expect.objectContaining({ publicId: filePublicId(10) }),
     )
     await expect(GetAuthorizedDirectDownloadFile("stored-photo.jpg", publicCtx)).resolves.toBeNull()
   })

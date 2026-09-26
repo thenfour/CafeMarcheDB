@@ -88,7 +88,7 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                             <Tooltip title="Refresh Playlist" arrow>
                                 <div>
                                     <CMSmallButton onClick={() => {
-                                        void recordFeatureUse({ feature: ActivityFeature.media_player_bar_pull_playlist, songId: current?.songContext?.publicId, fileId: current?.file?.id });
+                                        void recordFeatureUse({ feature: ActivityFeature.media_player_bar_pull_playlist, songId: current?.songContext?.publicId, fileId: current?.file?.publicId });
                                         mediaPlayer.pullPlaylist();
                                     }}>
                                         <Sync />
@@ -98,20 +98,20 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                         )}
                         {mediaPlayer.playlist.length > 1 && (<>
                             <CMSmallButton enabled={mediaPlayer.previousEnabled()} onClick={() => {
-                                void recordFeatureUse({ feature: ActivityFeature.media_player_bar_previous, songId: current?.songContext?.publicId, fileId: current?.file?.id });
+                                void recordFeatureUse({ feature: ActivityFeature.media_player_bar_previous, songId: current?.songContext?.publicId, fileId: current?.file?.publicId });
                                 mediaPlayer.prev();
                             }}>
                                 <SkipPrevious />
                             </CMSmallButton>
                             <CMSmallButton enabled={mediaPlayer.nextEnabled()} onClick={() => {
-                                void recordFeatureUse({ feature: ActivityFeature.media_player_bar_next, songId: current?.songContext?.publicId, fileId: current?.file?.id });
+                                void recordFeatureUse({ feature: ActivityFeature.media_player_bar_next, songId: current?.songContext?.publicId, fileId: current?.file?.publicId });
                                 mediaPlayer.next();
                             }}>
                                 <SkipNext />
                             </CMSmallButton>
                         </>)}
                         {current && (
-                            <AppContextMarker songId={current.songContext?.publicId} fileId={current.file?.id}>
+                            <AppContextMarker songId={current.songContext?.publicId} fileId={current.file?.publicId}>
                                 <CustomAudioPlayer
                                     src={currentUri}
                                     ref={audioRef}

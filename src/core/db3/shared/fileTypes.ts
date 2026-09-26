@@ -1,6 +1,6 @@
 import { Coord2D, Size } from "@/shared/rootroot";
-import { Prisma } from "db";
-import type { EventPublicId, FileTagPublicId, PermissionPublicId, SongPublicId } from "shared/publicId";
+import type { Prisma } from "db";
+import type { EventPublicId, FilePublicId, FileTagPublicId, PermissionPublicId, SongPublicId } from "shared/publicId";
 
 export interface TClientFileUploadTags {
     taggedUserId?: number;
@@ -77,14 +77,20 @@ export interface FileCustomData {
     };
 };
 
+export type UploadedFile = Pick<
+    Prisma.FileGetPayload<{}>,
+    "storedLeafName" | "fileLeafName" | "mimeType" | "externalURI" | "description"
+    | "sizeBytes" | "customData" | "uploadedByUserId"
+> & { publicId: FilePublicId };
+
 export interface UploadResponsePayload {
-    files: Prisma.FileGetPayload<{}>[];
+    files: UploadedFile[];
     isSuccess: boolean;
     errorMessage?: string;
 };
 
 export interface ForkImageParams {
-    parentFileId: number; // which image file to use. for gallery items it may be different than the previous one.
+    parentFileId: FilePublicId; // which image file to use. for gallery items it may be different than the previous one.
     outputType: ImageFileFormat;
     quality: number; // 0-100 corresponds with jpeg quality / https://sharp.pixelplumbing.com/api-output options.quality.
     editParams: ImageEditParams;

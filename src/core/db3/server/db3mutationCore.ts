@@ -807,7 +807,7 @@ export interface PrepareNewFileRecordArgs {
     parentFileId?: number;
     previewFileId?: number;
 };
-export function PrepareNewFileRecord({ uploadedByUserId, humanReadableLeafName, sizeBytes, visiblePermissionId, previewFileId, parentFileId, lastModifiedDate }: PrepareNewFileRecordArgs): Prisma.FileUncheckedCreateInput {
+export function PrepareNewFileRecord({ uploadedByUserId, humanReadableLeafName, sizeBytes, visiblePermissionId, previewFileId, parentFileId, lastModifiedDate }: PrepareNewFileRecordArgs): Omit<Prisma.FileUncheckedCreateInput, "publicId"> {
     //const file = field[iFile];
     //const oldpath = file.filepath; // temp location that formidable has saved it to. 'C:\Users\carl\AppData\Local\Temp\2e3b4218f38f5aedcf765f801'
 
@@ -829,7 +829,7 @@ export function PrepareNewFileRecord({ uploadedByUserId, humanReadableLeafName, 
     // workaround broken
     const mimeType = (mime as any).getType(humanReadableLeafName); // requires a leaf only, for some reason explicitly fails on a full path.
 
-    const fields: Prisma.FileUncheckedCreateInput = {
+    const fields: Omit<Prisma.FileUncheckedCreateInput, "publicId"> = {
         fileLeafName: humanReadableLeafName,
         uploadedAt: new Date(),
         uploadedByUserId,
@@ -888,7 +888,7 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedC
         filterModel: {
             items: [{
                 operator: "equals",
-                field: "id",
+                field: "publicId",
                 value: params.parentFileId,
             }],
         },
@@ -1101,4 +1101,3 @@ export const PostProcessFile = async ({ file }: { file: Prisma.FileGetPayload<{}
         return;
     }
 };
-

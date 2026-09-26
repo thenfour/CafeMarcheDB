@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useState } from "react";
+import type { FilePublicId } from "shared/publicId";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { MediaPlayerContextType, MediaPlayerTrack, MediaPlayerTrackTitle } from "./MediaPlayerTypes";
 
@@ -178,11 +179,11 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setIsPlaying(true);
     }, []);
 
-    const isPlayingFile = useCallback((fileId: number | undefined | null) => {
+    const isPlayingFile = useCallback((fileId: FilePublicId | undefined | null) => {
         if (fileId == null) return false; // If fileId is null or undefined, return false
         if (currentIndex === undefined || currentIndex < 0 || currentIndex >= playlist.length) return false;
         const track = playlist[currentIndex]!;
-        return track.file?.id === fileId;
+        return track.file?.publicId === fileId;
     }, [currentIndex, playlist]);
 
     const getTrackUri = useCallback((track: MediaPlayerTrack): string | undefined => {

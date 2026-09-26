@@ -13,6 +13,7 @@ import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { eventPublicId } from "../support/eventResponseFixtures";
 import { songPublicId } from "../support/songFixtures";
+import { filePublicId } from "../support/fileFixtures";
 import { ActivityFeature } from "src/core/components/featureReports/activityTracking";
 import * as db3 from "src/core/db3/db3";
 import { recordAuthenticatedClientAction } from "src/core/db3/server/recordActionServer";
@@ -150,7 +151,7 @@ describe("BA-S005 server-rendered entity metadata", () => {
             delegate: "file",
             permission: Permission.access_file_landing_page,
             table: db3.xFile,
-            row: { id: 2, fileLeafName: "private.pdf", isDeleted: false, uploadedByUserId: null, visiblePermissionId: membersVisibilityId },
+            row: { id: 2, publicId: filePublicId(2), fileLeafName: "private.pdf", isDeleted: false, uploadedByUserId: null, visiblePermissionId: membersVisibilityId },
         },
         {
             delegate: "song",
@@ -182,7 +183,8 @@ describe("BA-S005 server-rendered entity metadata", () => {
             permission: testCase.permission,
             table: testCase.table,
             identity: testCase.delegate === "event" ? eventPublicId(testCase.row.id)
-                : testCase.delegate === "song" ? songPublicId(testCase.row.id) : testCase.row.id,
+                : testCase.delegate === "song" ? songPublicId(testCase.row.id)
+                    : testCase.delegate === "file" ? filePublicId(testCase.row.id) : testCase.row.id,
             load: where => authorizationTestDb.getDelegate(testCase.delegate).findFirst({ where }),
         });
 

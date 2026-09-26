@@ -126,12 +126,12 @@ const FileListOuter = () => {
                 filterSpec={filterSpec}
             />
         ),
-        getItemKey: (file) => file.id,
+        getItemKey: (file) => file.publicId,
         contextMarkerName: "Files list",
         csvExporter: {
             itemToCSVRow: (file, index) => ({
                 Order: (index + 1).toString(),
-                ID: file.id.toString(),
+                ID: file.publicId,
                 Name: file.fileLeafName || "",
                 Description: file.description || "",
                 MimeType: file.mimeType || "",

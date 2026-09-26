@@ -27,6 +27,7 @@ const userInstrumentPublicId = parsePublicId<"UserInstrument">("AbCdEfGhIjKlMn16
 const fileUserTagPublicId = parsePublicId<"FileUserTag">("AbCdEfGhIjKlMn17");
 const fileSongTagPublicId = parsePublicId<"FileSongTag">("AbCdEfGhIjKlMn18");
 const songPublicId = parsePublicId<"Song">("AbCdEfGhIjKlMn31");
+const filePublicId = parsePublicId<"File">("AbCdEfGhIjKlMn32");
 const fileEventTagPublicId = parsePublicId<"FileEventTag">("AbCdEfGhIjKlMn19");
 const fileInstrumentTagPublicId = parsePublicId<"FileInstrumentTag">("AbCdEfGhIjKlMn20");
 const fileWikiPageTagPublicId = parsePublicId<"FileWikiPageTag">("AbCdEfGhIjKlMn21");
@@ -142,6 +143,7 @@ describe("instrument catalog public-ID transport", () => {
 
         const projectedFile = projectDB3ModelPublicIds(db3.xFile, {
             id: 90,
+            publicId: filePublicId,
             tags: [{
                 id: 92,
                 publicId: fileTagAssociationPublicId,
@@ -189,6 +191,10 @@ describe("instrument catalog public-ID transport", () => {
                 wikiPage: { id: 103, slug: "repertoire" },
             }],
         }, publicData);
+        expect(projectedFile.publicId).toBe(filePublicId);
+        expect(projectedFile).not.toHaveProperty("id");
+        expect(projectedFile.tags[0]).not.toHaveProperty("fileId");
+        expect(projectedFile.taggedSongs[0]).not.toHaveProperty("fileId");
         const nestedInstrument = projectedFile.taggedInstruments[0].instrument;
         expect(projectedFile.taggedInstruments[0].instrumentId).toBe(instrumentPublicId);
         expect(projectedFile.taggedInstruments[0].publicId).toBe(fileInstrumentTagPublicId);
@@ -379,6 +385,16 @@ describe("instrument catalog public-ID transport", () => {
             filter: { items: [], tableParams: { fileTagIds: [fileTagPublicId] } },
             cmdbQueryContext: "file-tag-public-id-test",
         })).not.toThrow();
+        expect(() => validateDB3QueryRequest({
+            table: { tableID: "File", tableName: "File" },
+            filter: { items: [], tableParams: { fileId: filePublicId } },
+            cmdbQueryContext: "file-public-id-test",
+        })).not.toThrow();
+        expect(() => validateDB3QueryRequest({
+            table: { tableID: "File", tableName: "File" },
+            filter: { items: [], tableParams: { fileId: 90 } },
+            cmdbQueryContext: "file-natural-id-test",
+        })).toThrow("Expected string, received number");
         expect(() => validateDB3QueryRequest({
             table: { tableID: "File", tableName: "File" },
             filter: { items: [], tableParams: { fileTagIds: [21] } },

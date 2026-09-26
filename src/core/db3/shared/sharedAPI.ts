@@ -14,7 +14,8 @@ import { PublicGalleryItemSpec } from "./publicTypes";
 type GetImageFileEditInfo_File = {
     storedLeafName: string;
     customData: string | null;
-    id: number;
+    // id?: number;
+    // publicId?: string;
     mimeType: string | null;
 };
 

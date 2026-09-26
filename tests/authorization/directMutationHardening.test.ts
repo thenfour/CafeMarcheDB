@@ -1,6 +1,7 @@
 import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
 import { songPublicId } from "../support/songFixtures";
+import { filePublicId } from "../support/fileFixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("db", async () => {
@@ -24,7 +25,7 @@ import {
   createAuthorizationPersona,
   createAuthorizationTestUser,
 } from "./support/authorizationFixtures"
-import { forgeDb3Insert, forgeDb3PublicUpdate, forgeDb3Update } from "./support/db3RequestBuilders"
+import { forgeDb3Insert, forgeDb3PublicUpdate } from "./support/db3RequestBuilders"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 
@@ -604,6 +605,7 @@ describe("DB3 command boundary", () => {
     }
     const file = {
       id: 62,
+      publicId: filePublicId(62),
       fileLeafName: "old-name.pdf",
       storedLeafName: "server-storage-id.pdf",
       description: "",
@@ -628,14 +630,14 @@ describe("DB3 command boundary", () => {
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.fileEditorView.crud.operations.update.command.commandID,
       payload: {
-        identity: file.id,
+        identity: file.publicId,
         patch: {
           fileLeafName: "new-name.pdf",
           description: "Program",
           tags: [fileTag.publicId],
         },
       },
-    }, ctx)).resolves.toEqual({ identity: file.id })
+    }, ctx)).resolves.toEqual({ identity: file.publicId })
 
     expect(authorizationTestDb.snapshot("file")).toEqual([
       expect.objectContaining({
@@ -657,7 +659,7 @@ describe("DB3 command boundary", () => {
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.fileEditorView.crud.operations.update.command.commandID,
       payload: {
-        identity: file.id,
+        identity: file.publicId,
         patch: { storedLeafName: "forged.pdf" },
       },
     }, ctx)).rejects.toThrow("Not authorized to mutate File fields: storedLeafName")
@@ -1538,6 +1540,7 @@ describe("Band Admin split mutation boundaries", () => {
     )!.permissionId
     const file = {
       id: 61,
+      publicId: filePublicId(61),
       fileLeafName: "old-name.pdf",
       storedLeafName: "server-storage-id.pdf",
       description: "",
@@ -1554,7 +1557,7 @@ describe("Band Admin split mutation boundaries", () => {
 
     await invokeResolver(
       db3Mutation,
-      forgeDb3Update("File", file.id, { fileLeafName: "corrected-name.pdf" }),
+      forgeDb3PublicUpdate("File", file.publicId, { fileLeafName: "corrected-name.pdf" }),
       ctx,
     )
     expect(authorizationTestDb.snapshot("file")).toEqual([
@@ -1570,7 +1573,7 @@ describe("Band Admin split mutation boundaries", () => {
     ] as const) {
       await expect(invokeResolver(
         db3Mutation,
-        forgeDb3Update("File", file.id, { [field]: value }),
+        forgeDb3PublicUpdate("File", file.publicId, { [field]: value }),
         ctx,
       )).rejects.toThrow("Not authorized to mutate File fields")
     }

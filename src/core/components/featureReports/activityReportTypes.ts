@@ -305,7 +305,7 @@ const GetFeatureReportDetailResultArgsUnvalidated /*: Prisma.ActionDefaultArgs*/
         },
         file: {
             select: {
-                id: true,
+                publicId: true,
                 storedLeafName: true,
                 fileLeafName: true,
                 externalURI: true

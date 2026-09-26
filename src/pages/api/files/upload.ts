@@ -1,7 +1,7 @@
 // for mimetype db https://cdn.jsdelivr.net/gh/jshttp/mime-db@master/db.json
 
 import { AutoAssignInstrumentPartition } from "@/src/core/db3/shared/autoAssignInstrumentPartition";
-import { TClientUploadFileArgs, UploadResponsePayload } from "@/src/core/db3/shared/fileTypes";
+import { TClientUploadFileArgs, UploadResponsePayload, type UploadedFile } from "@/src/core/db3/shared/fileTypes";
 import { Ctx } from "@blitzjs/next";
 import { AuthenticatedCtx } from 'blitz';
 import db, { Prisma } from "db";
@@ -24,6 +24,18 @@ function stripExtension(filename: string): string {
     if (lastDotIndex <= 0) return filename;
     return filename.substring(0, lastDotIndex);
 }
+
+const toUploadedFile = (file: Prisma.FileGetPayload<{}>): UploadedFile => ({
+    publicId: db3.xFile.parseIdentity(file.publicId),
+    storedLeafName: file.storedLeafName,
+    fileLeafName: file.fileLeafName,
+    mimeType: file.mimeType,
+    externalURI: file.externalURI,
+    description: file.description,
+    sizeBytes: file.sizeBytes,
+    customData: file.customData,
+    uploadedByUserId: file.uploadedByUserId,
+});
 
 
 // todo: fields for database integration
@@ -142,7 +154,7 @@ export default api(async (req, res, origCtx: Ctx) => {
 
                             const newFile = await mutationCore.insertImpl(db3.xFile, fields, ctx) as Prisma.FileGetPayload<{}>;
 
-                            responsePayload.files.push(newFile);
+                            responsePayload.files.push(toUploadedFile(newFile));
                         }
                     }
 
@@ -239,12 +251,12 @@ export default api(async (req, res, origCtx: Ctx) => {
                                     maxImageDimension,
                                 });
                                 if (resizedFile !== null) {
-                                    responsePayload.files.push(resizedFile);
+                                    responsePayload.files.push(toUploadedFile(resizedFile));
                                 } else {
-                                    responsePayload.files.push(newFile);
+                                    responsePayload.files.push(toUploadedFile(newFile));
                                 }
                             } else {
-                                responsePayload.files.push(newFile);
+                                responsePayload.files.push(toUploadedFile(newFile));
                             }
                         }
                     });

@@ -9,7 +9,7 @@ import { Markdown } from "../markdown/Markdown";
 
 
 export interface FileChipProps {
-    value: Prisma.FileGetPayload<{ select: { id: true, storedLeafName: true, fileLeafName: true, externalURI: true } }> | db3.FilePayloadMinimum;
+    value: Prisma.FileGetPayload<{ select: { publicId: true, storedLeafName: true, fileLeafName: true, externalURI: true } }>;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
@@ -29,7 +29,7 @@ export const FileChip = (props: FileChipProps) => {
         className={props.className}
     >
         {props.startAdornment}
-        <span style={{ color: props.useHashedColor ? getHashedColor(props.value.id.toString()) : undefined }}>
+        <span style={{ color: props.useHashedColor ? getHashedColor(props.value.publicId) : undefined }}>
             {props.value.fileLeafName}
         </span>
         {props.endAdornment}

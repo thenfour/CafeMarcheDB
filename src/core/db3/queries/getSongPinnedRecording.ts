@@ -35,16 +35,31 @@ export default resolver.pipe(
                         pinnedRecording: fileWhere,
                     },
                 }),
-                include: {
-                    pinnedRecording: true,
-                }
+                select: {
+                    publicId: true,
+                    pinnedRecording: {
+                        select: {
+                            publicId: true,
+                            fileLeafName: true,
+                            externalURI: true,
+                            mimeType: true,
+                            sizeBytes: true,
+                            fileCreatedAt: true,
+                            storedLeafName: true,
+                            uploadedAt: true,
+                        },
+                    },
+                },
             });
 
             // Create a map of songId -> pinnedRecording for easy lookup
             const result: Partial<Record<SongPublicId, TSongPinnedRecording>> = {};
             qr.forEach(song => {
                 if (song.pinnedRecording) {
-                    result[xSong.parseIdentity(song.publicId)] = song.pinnedRecording;
+                    result[xSong.parseIdentity(song.publicId)] = {
+                        ...song.pinnedRecording,
+                        publicId: xFile.parseIdentity(song.pinnedRecording.publicId),
+                    };
                 }
             });
 

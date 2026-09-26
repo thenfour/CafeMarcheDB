@@ -334,7 +334,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
 
     const pinnedRecording = props.value.type === "song" && props.pinnedRecordings?.[props.value.songId];
     const isCurrentMediaPlayerTrack = !!pinnedRecording && mediaPlayer.isPlayingSetlistItem({
-        fileId: pinnedRecording.id,
+        fileId: pinnedRecording.publicId,
         setlistClientId: props.songList.clientId,
         setlistItemIndex: props.rowIndex,
     });
@@ -882,7 +882,7 @@ const EventSongListValueEditorSongRow = (
 
     const pinnedRecording = props.pinnedRecordings?.[props.value.songId];
     const isCurrentMediaPlayerTrack = !!pinnedRecording && mediaPlayer.isPlayingSetlistItem({
-        fileId: pinnedRecording.id,
+        fileId: pinnedRecording.publicId,
         setlistClientId: props.songList.clientId,
         setlistItemIndex: props.rowIndex,
     });

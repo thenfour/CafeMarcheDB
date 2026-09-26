@@ -4,7 +4,6 @@ import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { ActivityReportTimeBucketSize, parseBucketToDateRange } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
-import { isPublicId, type SongPublicId } from "shared/publicId";
 import { hashString } from "shared/utils";
 import { z } from "zod";
 import {

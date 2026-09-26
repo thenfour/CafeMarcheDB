@@ -7,7 +7,6 @@ import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { CMTextInputBase } from "./CMTextField";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { useFeatureRecorder } from "./dashboardContext/DashboardContext";
-import * as db3 from "src/core/db3/db3";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

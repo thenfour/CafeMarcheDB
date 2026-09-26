@@ -12,13 +12,12 @@ import type {
     SongPublicId,
 } from "shared/publicId";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { ColorField, ConstEnumStringField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { ColorField, ConstEnumStringField, ForeignCollectionField, foreignRef, foreignRefByTableId, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
-import { z } from "zod";
 
 
 export const xSongAuthMap_R_EOwn_EManagers = db3.defineAuthMap({
@@ -305,10 +304,11 @@ const xSongArgs_Base = db3.defineTableDesc({
             foreignTableID: "SongCredit",
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
-        pinnedRecordingId: memberName => new GhostField({
-            memberName,
-            readTransportSchema: z.number().int().nullable(),
+        pinnedRecording: foreignRefByTableId("File", {
+            fkidMember: "pinnedRecordingId",
+            allowNull: true,
             authMap: xSongAuthMap_R_EOwn_EManagers,
+            getQuickFilterWhereClause: (query: string) => false,
         }),
     })
 });

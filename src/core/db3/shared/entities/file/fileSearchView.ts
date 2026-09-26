@@ -7,7 +7,7 @@ import { graft } from "../common/viewCommon";
 
 const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         fileLeafName: true,
         description: true,
         uploadedAt: true,

@@ -70,7 +70,7 @@ export default resolver.pipe(
         await mutationCore.updateImpl(db3.xFrontpageGalleryItem, args.galleryItemId, fields, ctx);
 
         return {
-            newFile,
+            newFile: { publicId: db3.xFile.parseIdentity(newFile.publicId) },
             newDisplayParams,
         };
     },
