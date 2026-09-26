@@ -203,7 +203,7 @@ export async function queryTable(
     if (input.delayMS) await sleep(input.delayMS);
     return {
         items: sanitizeQueryRows(orderedItems, query, `query:${query.table.tableName}`),
-        where,
+        //where,
         selectionArgs: query.selectionArgs,
         executionTimeMillis: Date.now() - startTimestamp,
         resultId: randomUUID(),
@@ -336,7 +336,7 @@ export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInpu
     return {
         items: sanitizeQueryRows(items as TAnyModel[], query, `paginatedQuery:${query.table.tableName}`),
         ...pagination,
-        where: query.where,
+        //where: query.where,
         selectionArgs: query.selectionArgs,
         executionTimeMillis: Date.now() - startTimestamp,
         resultId: randomUUID(),

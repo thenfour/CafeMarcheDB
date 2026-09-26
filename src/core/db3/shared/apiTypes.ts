@@ -474,8 +474,8 @@ export interface GetGlobalStatsRetPopularSongOccurrance {
 export interface GetGlobalStatsRet {
     allEvents: GetGlobalStatsRetEvent[];
     popularSongsOccurrances: GetGlobalStatsRetPopularSongOccurrance[];
-    eventsQuery: string;
-    popularSongsQuery: string;
+    // eventsQuery: string;
+    // popularSongsQuery: string;
 };
 
 export interface TGetImportEventDataArgs {

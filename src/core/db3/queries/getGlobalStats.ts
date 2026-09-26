@@ -17,8 +17,8 @@ export default resolver.pipe(
                 return {
                     allEvents: [],
                     popularSongsOccurrances: [],
-                    eventsQuery: "",
-                    popularSongsQuery: "",
+                    //eventsQuery: "",
+                    //popularSongsQuery: "",
                 };
             }
 
@@ -216,10 +216,10 @@ export default resolver.pipe(
             const isSysadmin = authorization.effectivePermissions.includesName(Permission.sysadmin);
 
             return {
-                popularSongsQuery: isSysadmin ? popularSongsQuery : "",
                 popularSongsOccurrances,
                 allEvents,
-                eventsQuery: isSysadmin ? eventsQuery : "",
+                //popularSongsQuery: isSysadmin ? popularSongsQuery : "",
+                //eventsQuery: isSysadmin ? eventsQuery : "",
             };
         } catch (e) {
             console.error(e);
