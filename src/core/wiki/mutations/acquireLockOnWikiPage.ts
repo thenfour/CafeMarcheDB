@@ -1,3 +1,4 @@
+import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 import { wikiTransaction } from "../server/wikiTransaction";
 // acquireLockOnWikiPage
 
@@ -21,7 +22,7 @@ export default resolver.pipe(
     async (args: TAcquireLockOnWikiPageArgs, ctx: AuthenticatedCtx): Promise<GetWikiPageUpdatabilityResult> => {
 
         const currentUser = (await getCurrentUserCore(ctx))!;
-        const publicData = await db3.createDb3RequestAuthorization(ctx);
+        const publicData = await loadAuthorization(ctx.session);
 
         return await wikiTransaction(async (dbt) => {
 

@@ -1,15 +1,12 @@
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 // based off the structure/logic of getEventFilterInfo
 
-import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
+import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
 import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { SplitQuickFilter } from "shared/quickFilter";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
-import { getCurrentUserCore } from "../server/db3mutationCore";
 import { queryView } from "../server/db3QueryCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "../shared/apiTypes";
 import { resolvePublicIds } from "../server/db3PublicIds";
@@ -27,19 +24,19 @@ interface TArgs {
 };
 
 export default resolver.pipe(
-    resolver.authorize(Permission.view_songs),
-    async (args: TArgs, ctx: AuthenticatedCtx): Promise<GetSongFilterInfoRet> => {
+    resolver.cmauthorize(Permission.view_songs),
+    async (args: TArgs, ctx: CMCtx): Promise<GetSongFilterInfoRet> => {
         try {
-            const authorization = await getRequestAuthorization(ctx.session);
-            const u = (await getCurrentUserCore(ctx))!;
-            if (!u.role || u.role.permissions.length < 1) {
+            const authorization = ctx.auth;
+            const u = ctx.auth.user;
+            if (!u?.role || u.role.permissions.length < 1) {
                 return MakeGetSongFilterInfoRet();
             }
 
             const tagIds = await resolvePublicIds(
                 db3.xSongTag,
                 args.filterSpec.tagIds,
-                db3.createDB3Authorization(authorization.user, authorization.effectivePermissions),
+                authorization,
                 db,
             );
 

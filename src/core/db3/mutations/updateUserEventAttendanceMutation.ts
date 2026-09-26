@@ -1,7 +1,6 @@
 import { db3Server } from "../server/db3Server";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
-import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx, AuthorizationError, NotFoundError } from "blitz";
+import { resolver, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { AuthorizationError, NotFoundError } from "blitz";
 import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
@@ -22,27 +21,24 @@ export class EventAttendanceAuthorizationError extends AuthorizationError {
 }
 
 export default resolver.pipe(
-    resolver.authorize(Permission.login),
+    resolver.cmauthorize(Permission.login),
     resolver.zod(ZupdateUserEventAttendanceMutationArgs),
-    async (args: TupdateUserEventAttendanceMutationArgs, ctx: AuthenticatedCtx) => {
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        if (!currentUser) throw new EventAttendanceAuthorizationError(Permission.login);
-
-        const reqAuth = await getRequestAuthorization(ctx.session);
-        const publicData = db3.createDB3Authorization(currentUser, reqAuth.effectivePermissions);
+    async (args: TupdateUserEventAttendanceMutationArgs, ctx: CMAuthenticatedCtx) => {
+        const currentUser = ctx.auth.user;
+        const publicData = ctx.auth;
         const hasResponseMutation = args.comment !== undefined
             || args.instrumentId !== undefined
             || Object.keys(args.segmentResponses || {}).length > 0;
         if (hasResponseMutation) {
             const isSelf = currentUser.publicId === args.userId;
             const perm = isSelf ? Permission.respond_to_events : Permission.change_others_event_responses;
-            if (!reqAuth.effectivePermissions.includesName(perm)) {
+            if (!ctx.auth.hasPermission(perm)) {
                 throw new EventAttendanceAuthorizationError(perm);
             }
         }
         if (args.isInvited !== undefined) {
             const perm = Permission.manage_events;
-            if (!reqAuth.effectivePermissions.includesName(perm)) {
+            if (!ctx.auth.hasPermission(perm)) {
                 throw new EventAttendanceAuthorizationError(perm);
             }
         }

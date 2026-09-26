@@ -12,7 +12,7 @@ import { queryTable, queryHydratedView } from "src/core/db3/server/db3QueryCore"
 import { authorizeAndProjectDB3ViewModel } from "src/core/db3/server/db3PublicIds";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import type { DB3ReadSelectionArgs } from "src/core/db3/shared/core/db3ReadSelection";
-import { getRequestAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/requestAuthorization";
 import { Permission } from "shared/permissions";
 import { eventPublicId, segmentPublicId } from "../support/eventResponseFixtures";
 import { selectPrismaTestRow } from "../support/prismaSelection";
@@ -66,7 +66,7 @@ describe("DB3 read execution dependencies", () => {
         const result = await queryHydratedView({
             view: db3.eventDetailView, filter: { items: [], publicIds: [event.publicId] },
             orderBy: undefined, cmdbQueryContext: "event-detail-dependency-test",
-        }, await getRequestAuthorization(actor.ctx.session), db3.createDashboardReferenceStore(), database);
+        }, await loadAuthorization(actor.ctx.session), db3.createDashboardReferenceStore(), database);
 
         expect(result.items).toHaveLength(1);
         expect(result.items[0]!.segments[0]).toMatchObject({
@@ -97,7 +97,7 @@ describe("DB3 read execution dependencies", () => {
             table: { tableID: "Event", tableName: "Event", viewID: db3.eventSearchView.viewID },
             filter: { items: [] }, orderBy: undefined, cmdbQueryContext: "event-search-order-test",
         };
-        const auth = await getRequestAuthorization(actor.ctx.session);
+        const auth = await loadAuthorization(actor.ctx.session);
         const result = await queryTable(input, auth, database, {
             orderedPrimaryKeys: [102, 999, 100], trustedNaturalPrimaryKeys: [102, 999, 100],
         });
@@ -153,7 +153,7 @@ describe("DB3 read execution dependencies", () => {
         const result = await queryTable({
             table: { tableID: "Song", tableName: "Song" }, filter: { items: [] },
             orderBy: undefined, cmdbQueryContext: "legacy-selected-read-test",
-        }, await getRequestAuthorization(actor.ctx.session), database, { orderedPrimaryKeys: [10] });
+        }, await loadAuthorization(actor.ctx.session), database, { orderedPrimaryKeys: [10] });
         expect(result.items).toStrictEqual([{ name: "Song" }]);
         expect(findMany.mock.calls[0]![0].select).toEqual({
             name: true, id: true, createdByUserId: true, visiblePermissionId: true, isDeleted: true,

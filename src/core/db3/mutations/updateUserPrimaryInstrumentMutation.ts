@@ -1,8 +1,6 @@
-import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
+import { resolver, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
 import db from "db";
 import { Permission } from "shared/permissions";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TupdateUserPrimaryInstrumentMutationArgs } from "../shared/apiTypes";
@@ -10,13 +8,9 @@ import { resolvePublicId } from "../server/db3PublicIds";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.authorize(Permission.login),
-    async (args: TupdateUserPrimaryInstrumentMutationArgs, ctx: AuthenticatedCtx) => {
-        const requestAuthorization = await getRequestAuthorization(ctx.session);
-        const publicData = db3.createDB3Authorization(
-            requestAuthorization.user,
-            requestAuthorization.effectivePermissions,
-        );
+    resolver.cmauthorize(Permission.login),
+    async (args: TupdateUserPrimaryInstrumentMutationArgs, ctx: CMAuthenticatedCtx) => {
+        const publicData = ctx.auth;
         const instrumentId = await resolvePublicId(db3.xInstrument, args.instrumentId, publicData, db);
 
         // load ALL instruments because it's always a small list,

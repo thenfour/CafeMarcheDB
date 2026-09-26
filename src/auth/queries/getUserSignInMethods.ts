@@ -1,7 +1,8 @@
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { Permission } from "shared/permissions";
-import { createDb3RequestAuthorization, userSignInMethodAdminView } from "src/core/db3/db3";
+import { userSignInMethodAdminView } from "src/core/db3/db3";
+import { loadAuthorization } from "../server/requestAuthorization";
 import { queryView } from "src/core/db3/server/db3QueryCore";
 import { z } from "zod";
 import { requireSignInMethodTargetByPublicId } from "../server/signInMethods";
@@ -11,7 +12,7 @@ export default resolver.pipe(
     resolver.zod(z.object({ userId: UserPublicIdSchema }).strict()),
     resolver.authorize(Permission.sysadmin),
     async ({ userId }, ctx) => {
-        const auth = await createDb3RequestAuthorization(ctx);
+        const auth = await loadAuthorization(ctx.session);
         const result = await queryView({
             cmdbQueryContext: "getUserSignInMethods",
             view: userSignInMethodAdminView,

@@ -1,3 +1,4 @@
+import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 // for mimetype db https://cdn.jsdelivr.net/gh/jshttp/mime-db@master/db.json
 
 import { UserPublicId } from "@/shared/publicId";
@@ -84,7 +85,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                         fields.fileTagId[0],
                     );
 
-                    const publicData = await db3.createDb3RequestAuthorization(ctx);
+                    const publicData = await loadAuthorization(ctx.session);
                     const resolvedFileTagId = args.fileTagId === undefined
                         ? undefined
                         : await resolvePublicId(

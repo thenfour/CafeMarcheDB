@@ -1,7 +1,6 @@
 import { AuthorizationError } from "blitz";
 import type { TAnyModel } from "shared/rootroot";
-import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
-import { createDB3Authorization } from "../shared/db3Authorization";
+import { loadAuthorizationForUser } from "@/src/auth/server/requestAuthorization";
 import type { xTable } from "../shared/db3core";
 import type { UserWithRolesPayload } from "../shared/schema/userPayloads";
 
@@ -33,8 +32,8 @@ export async function GetAuthorizedTableReadWhere({
     includeDeleted = false,
 }: GetAuthorizedTableReadWhereArgs): Promise<TAnyModel> {
 
-    const authorization = await loadUserAuthorization(currentUser);
-    const publicData = createDB3Authorization(authorization.user, authorization.effectivePermissions);
+    const authorization = await loadAuthorizationForUser(currentUser);
+    const publicData = authorization;
 
     if (!table.authorizeTableForView(publicData) || !table.authorizeIncludeDeleted(publicData, includeDeleted)) throw new AuthorizationError();
 

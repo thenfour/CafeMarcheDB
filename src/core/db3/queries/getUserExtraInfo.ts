@@ -2,11 +2,10 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx, AuthorizationError, NotFoundError } from "blitz";
 import db, { $Enums } from "db";
 import { Permission } from "shared/permissions";
-import { getRequestAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/requestAuthorization";
 import { z } from "zod";
 import { xUser } from "../db3";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
-import { createDB3Authorization } from "../shared/db3Authorization";
 
 export interface UserExtraInfo {
     signinMethods: ($Enums.SignInMethodType)[];
@@ -17,8 +16,7 @@ export default resolver.pipe(
         userId: xUser.identitySchema,
     }).strict()),
     async (args, ctx: AuthenticatedCtx) => {
-        const { user, effectivePermissions } = await getRequestAuthorization(ctx.session);
-        const publicData = createDB3Authorization(user, effectivePermissions);
+        const publicData = await loadAuthorization(ctx.session);
         const ret = await db.user.findFirst({
             select: {
                 id: true,
@@ -28,9 +26,9 @@ export default resolver.pipe(
             },
             where: await GetAuthorizedTableReadWhere({
                 table: xUser,
-                currentUser: user,
+                currentUser: publicData.user,
                 where: { publicId: args.userId },
-                includeDeleted: effectivePermissions.includesName(Permission.recover_users),
+                includeDeleted: publicData.hasPermission(Permission.recover_users),
             }),
         });
 
@@ -58,5 +56,3 @@ export default resolver.pipe(
         } satisfies UserExtraInfo;
     }
 );
-
-

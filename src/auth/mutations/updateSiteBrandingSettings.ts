@@ -1,5 +1,5 @@
-import { resolver } from "@blitzjs/rpc";
-import type { AuthenticatedCtx } from "blitz";
+import { resolver } from "@/src/auth/server/cmResolver";
+import type { CMCtx } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
 import { CreateChangeContext } from "shared/activityLog";
 import { Permission } from "shared/permissions";
@@ -9,15 +9,14 @@ import {
     type SiteBrandingSettings,
 } from "shared/siteBranding";
 import { clearBrandCache } from "src/server/brand";
-import { requireFreshPermission } from "../server/permissionAuthorization";
 import { writeSettingValue } from "../server/settingWrite";
 
 export default resolver.pipe(
     resolver.zod(SiteBrandingSettingsSchema),
-    resolver.authorize(Permission.manage_site_branding),
-    async (settings: SiteBrandingSettings, ctx: AuthenticatedCtx) => {
+    resolver.cmauthorize(Permission.manage_site_branding),
+    async (settings: SiteBrandingSettings, ctx: CMCtx) => {
         const result = await db.$transaction(async tx => {
-            await requireFreshPermission(tx, ctx.session.userId, Permission.manage_site_branding);
+            (await ctx.auth.refresh(tx)).requirePermission(Permission.manage_site_branding);
             const changeContext = CreateChangeContext("updateSiteBrandingSettings");
             const updatedEntries: Array<[string, string]> = [];
             for (const [field, settingName] of Object.entries(siteBrandingSettingByField)) {

@@ -1,13 +1,11 @@
-import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
+import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
-import { z } from "zod";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
-import { Permission } from "shared/permissions";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { Permission } from "shared/permissions";
+import { z } from "zod";
 import * as db3 from "../db3";
-import { db3Server } from "../server/db3Server";
 import { resolvePublicIds } from "../server/db3PublicIds";
+import { db3Server } from "../server/db3Server";
 import { CallMutateEventHooks } from "../server/db3mutationCore";
 
 const ZArgs = z.object({
@@ -24,15 +22,13 @@ const auditResponses = (rows: Prisma.EventSegmentUserResponseGetPayload<{}>[]) =
     }));
 
 export default resolver.pipe(
-    resolver.authorize(Permission.admin_events),
+    resolver.cmauthorize(Permission.admin_events),
     resolver.zod(ZArgs),
-    async (args, ctx: AuthenticatedCtx) => {
-        const authorization = await getRequestAuthorization(ctx.session);
-        const publicData = db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
+    async (args, ctx: CMCtx) => {
         await db.$transaction(async tx => {
             const [fromId, toId] = await resolvePublicIds(db3.xEventSegment,
                 [args.fromEventSegmentId, args.toEventSegmentId],
-                publicData,
+                ctx.auth,
                 tx);
             const segments = await tx.eventSegment.findMany({
                 where: { id: { in: [fromId!, toId!] } },

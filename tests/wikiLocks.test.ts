@@ -14,9 +14,9 @@ vi.mock("@blitzjs/rpc", () => ({ resolver: {
 vi.mock("src/core/db3/server/db3mutationCore", () => ({ getCurrentUserCore: async (ctx: any) => ({ id: ctx.session.userId, publicId: `TestUser${String(ctx.session.userId).padStart(8, "0")}` }) }));
 vi.mock("src/core/db3/server/db3ReadPolicy", () => ({ GetAuthorizedTableReadWhere: async (args: any) => args.where ?? {} }));
 vi.mock("src/core/db3/shared/db3Authorization", () => ({
-    createDb3RequestAuthorization: async () => ({}),
     createDB3Authorization: () => ({}),
 }));
+vi.mock("src/auth/server/requestAuthorization", () => ({ loadAuthorization: async () => ({}) }));
 vi.mock("src/core/db3/server/db3QueryCore", () => ({
     authorizeAndProjectViewDto: (_view: unknown, row: unknown) => row,
 }));

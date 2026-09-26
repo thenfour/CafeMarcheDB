@@ -1,4 +1,4 @@
-import { resolver } from "@blitzjs/rpc";
+import { resolver } from "@/src/auth/server/cmResolver";
 import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
 import {
@@ -12,7 +12,6 @@ import {
     type RoleDesignationValue,
     SetRoleDesignationInput,
 } from "../roleDesignations";
-import { requireFreshPermission } from "../server/permissionAuthorization";
 
 const designationFields: Record<RoleDesignationValue, "isRoleForNewUsers" | "isPublicRole" | "isSysAdminRole"> = {
     [RoleDesignation.newUsers]: "isRoleForNewUsers",
@@ -22,10 +21,10 @@ const designationFields: Record<RoleDesignationValue, "isRoleForNewUsers" | "isP
 
 export default resolver.pipe(
     resolver.zod(SetRoleDesignationInput),
-    resolver.authorize(Permission.sysadmin),
+    resolver.cmauthorize(Permission.sysadmin),
     async ({ designation, roleId }, ctx) => db.$transaction(
         async tx => {
-            await requireFreshPermission(tx, ctx.session.userId, Permission.sysadmin);
+            (await ctx.auth.refresh(tx)).requirePermission(Permission.sysadmin);
 
             // Lock every existing Role row before inspecting or changing either
             // singleton designation. Concurrent reassignments therefore serialize.

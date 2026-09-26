@@ -1,5 +1,5 @@
 import { isPublicId } from "shared/publicId";
-import type { RequestAuthorization } from "src/auth/server/requestAuthorization";
+import type { CMAuthorization } from "src/auth/server/requestAuthorization";
 import { eventWikiPageContextView } from "../../db3/shared/entities/event/eventViews";
 import { queryView } from "../../db3/server/db3QueryCore";
 import type { TransactionalPrismaClient } from "../../db3/shared/apiTypes";
@@ -14,7 +14,7 @@ export const ProcessEventDescriptionForWikiPage = async (
     namespace: string,
     slugWithoutNamespace: string,
     inp: WikiPageData,
-    authorization: RequestAuthorization,
+    authorization: CMAuthorization,
     database: TransactionalPrismaClient,
 ): Promise<WikiPageData> => {
     if (namespace.toLowerCase() !== SpecialWikiNamespace.EventDescription.toLowerCase()) {

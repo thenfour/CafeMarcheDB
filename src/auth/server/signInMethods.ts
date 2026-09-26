@@ -6,7 +6,7 @@ import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activi
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { UserWithRolesArgs, type UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
 import type { SignInMethodInput } from "../signInMethodSchemas";
-import { requireFreshPermission } from "./permissionAuthorization";
+import { loadAuthorization } from "./requestAuthorization";
 import { db3Server } from "src/core/db3/server/db3Server";
 import { xUserSignInMethod } from "src/core/db3/shared/schema/userSignInMethod";
 import type { UserPublicId } from "shared/publicId";
@@ -91,8 +91,9 @@ export const requireActiveSignInUser = async (db: TransactionalPrismaClient, met
 };
 
 export const requireSignInMethodAdmin = async (db: TransactionalPrismaClient, ctx: Ctx) => {
-    const actor = await requireFreshPermission(db, ctx.session.userId, Permission.sysadmin);
-    return actor;
+    const auth = await (await loadAuthorization(ctx.session)).refresh(db);
+    auth.requirePermission(Permission.sysadmin);
+    return auth;
 };
 
 // this explicitly allows deactivated users, because

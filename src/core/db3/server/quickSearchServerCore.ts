@@ -1,7 +1,6 @@
 // consider unifying with the normal search api for consistency and simplicity.
 
 import { Permission } from "@/shared/permissions";
-import { principalHasPermission } from "@/src/auth/server/permissionAuthorization";
 import { ServerApi } from "@/src/server/serverApi";
 import db, { Prisma } from "db";
 import { toSorted } from "shared/arrayUtils";
@@ -33,7 +32,7 @@ interface QuickSearchPlugin<TItemType extends QuickSearchItemType> {
 };
 
 const IsAuthorized = (permissionSet: Readonly<PermissionSet>, permission: Permission): boolean => {
-    return principalHasPermission(permissionSet, permission);
+    return permission !== Permission.never_grant && permissionSet.includesName(permission);
 };
 
 

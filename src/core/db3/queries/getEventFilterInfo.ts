@@ -1,14 +1,11 @@
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 
-import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
+import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { DateSortPredicateAsc, DateSortPredicateDesc } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
 import { queryView } from "../server/db3QueryCore";
-import { getCurrentUserCore } from "../server/db3mutationCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter } from "../shared/apiTypes";
 import { SplitQuickFilter } from "shared/quickFilter";
 import { MysqlEscape } from "shared/mysqlUtils";
@@ -33,22 +30,19 @@ interface TArgs {
 };
 
 export default resolver.pipe(
-    resolver.authorize(Permission.view_events_nonpublic),
-    async (args: TArgs, ctx: AuthenticatedCtx): Promise<GetEventFilterInfoRet> => {
+    resolver.cmauthorize(Permission.view_events_nonpublic),
+    async (args: TArgs, ctx: CMCtx): Promise<GetEventFilterInfoRet> => {
         try {
-            const u = (await getCurrentUserCore(ctx))!;
-            if (!u.role || u.role.permissions.length < 1) {
+            const u = ctx.auth.user;
+            if (!u?.role || u.role.permissions.length < 1) {
                 return MakeGetEventFilterInfoRet();
             }
 
             const pageSize = Math.min(args.filterSpec.pageSize, 100); // sanity.
 
             const startTimestamp = Date.now();
-            const authorization = await getRequestAuthorization(ctx.session);
-            const publicData = db3.createDB3Authorization(
-                authorization.user,
-                authorization.effectivePermissions,
-            );
+            const authorization = ctx.auth;
+            const publicData = authorization;
             const [statusIds, tagIds, typeIds] = await Promise.all([
                 resolvePublicIds(db3.xEventStatus, args.filterSpec.statusIds, publicData, db),
                 resolvePublicIds(db3.xEventTag, args.filterSpec.tagIds, publicData, db),

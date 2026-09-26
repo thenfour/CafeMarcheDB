@@ -1,31 +1,25 @@
 
-import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
+import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
-import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetSongActivityReportArgs, GetSongActivityReportRet, GetSongActivityReportRetEvent } from "../shared/apiTypes";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import { resolvePublicId, resolvePublicIds } from "../server/db3PublicIds";
 import { assertIsNumberArray } from "@/shared/arrayUtils";
 
 export default resolver.pipe(
-    resolver.authorize(Permission.view_songs),
-    async (args: GetSongActivityReportArgs, ctx: AuthenticatedCtx): Promise<GetSongActivityReportRet> => {
+    resolver.cmauthorize(Permission.view_songs),
+    async (args: GetSongActivityReportArgs, ctx: CMCtx): Promise<GetSongActivityReportRet> => {
         try {
-            const u = (await getCurrentUserCore(ctx))!;
-            if (!u.role || u.role.permissions.length < 1) {
+            const u = ctx.auth.user;
+            if (!u?.role || u.role.permissions.length < 1) {
                 return {
                     events: [],
                 };
             }
 
-            const authorization = await getRequestAuthorization(ctx.session);
-            const publicData = db3.createDB3Authorization(
-                authorization.user,
-                authorization.effectivePermissions,
-            );
+            const authorization = ctx.auth;
+            const publicData = authorization;
             const songId = await resolvePublicId(db3.xSong, args.songId, publicData, db);
             const [eventTypeIds, eventStatusIds, eventTagIds] = await Promise.all([
                 resolvePublicIds(db3.xEventType, args.filterSpec.eventTypeIds, publicData, db),

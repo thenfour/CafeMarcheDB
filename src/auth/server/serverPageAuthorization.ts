@@ -3,13 +3,12 @@ import type { Ctx } from "blitz";
 import { Permission } from "shared/permissions";
 import { gSSP } from "src/blitz-server";
 import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
-import { createDb3RequestAuthorization } from "src/core/db3/shared/db3Authorization";
+import { loadAuthorization } from "./requestAuthorization";
 import type { xTable } from "src/core/db3/shared/db3core";
-import { authIncludesPermission, requirePermission } from "./requestAuthorization";
 
 export async function isAuthorizedForServerPage(ctx: Ctx, permission: Permission): Promise<boolean> {
-    const auth = await createDb3RequestAuthorization(ctx);
-    if (!authIncludesPermission(auth, permission)) {
+    const auth = await loadAuthorization(ctx.session);
+    if (!auth.hasPermission(permission)) {
         return false;
     }
     return true;
@@ -49,11 +48,10 @@ export async function loadAuthorizedPageEntity<T>(args: LoadAuthorizedPageEntity
         load,
     } = args;
 
-    const auth = await createDb3RequestAuthorization(ctx);
-    if (!authIncludesPermission(auth, permission)) {
+    const auth = await loadAuthorization(ctx.session);
+    if (!auth.hasPermission(permission)) {
         return null;
     }
-    requirePermission(auth, permission);
     if (!table.authorizeTableForView(auth)) {
         return null;
     }

@@ -3,7 +3,7 @@ import { AuthenticatedCtx, AuthorizationError, paginate } from "blitz";
 import { randomUUID } from "crypto";
 import db from "db";
 import { sleep } from "shared/utils";
-import { getRequestAuthorization, type RequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorization, type CMAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import type { TAnyModel } from "@/shared/rootroot";
@@ -24,7 +24,7 @@ export class DB3QueryAuthorizationError extends AuthorizationError {
 
 async function prepareTableQuery(
     input: db3.LegacyQueryInputBase,
-    authorization: RequestAuthorization,
+    authorization: CMAuthorization,
     database: TransactionalPrismaClient,
     executionOptions: QueryTableExecutionOptions = {},
 ) {
@@ -33,7 +33,7 @@ async function prepareTableQuery(
     if (view && view.tableID !== table.tableID) {
         throw new Error(`DB3 view '${view.viewID}' does not belong to table '${table.tableID}'.`);
     }
-    const publicData = db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
+    const publicData = authorization;
     const includeDeleted = input.includeDeleted === true;
 
     if (!table.authorizeTableForView(publicData) || !table.authorizeIncludeDeleted(publicData, includeDeleted)) {
@@ -177,7 +177,7 @@ function orderRawRowsByPrimaryKey<T extends TAnyModel>(
 
 export async function queryTable(
     input: db3.QueryRequestInput,
-    authorization: RequestAuthorization,
+    authorization: CMAuthorization,
     database: TransactionalPrismaClient = db,
     executionOptions: QueryTableExecutionOptions = {},
 ) {
@@ -270,7 +270,7 @@ export function authorizeAndHydrateViewModel<
 /** Named-view query returning authorized, validated transport DTOs. */
 export async function queryView<TView extends db3.AnyDB3View>(
     input: QueryViewInput<TView>,
-    authorization: RequestAuthorization,
+    authorization: CMAuthorization,
     database: TransactionalPrismaClient = db,
     executionOptions: QueryTableExecutionOptions = {},
 ): Promise<QueryViewResult<TView>> {
@@ -301,7 +301,7 @@ export async function queryView<TView extends db3.AnyDB3View>(
 /** Query and hydrate when a server consumer needs the view's client shape. */
 export async function queryHydratedView<TView extends db3.AnyDB3View>(
     input: QueryViewInput<TView>,
-    authorization: RequestAuthorization,
+    authorization: CMAuthorization,
     references: db3.DB3ReferenceProvider<db3.ReferenceContractOf<NoInfer<TView>>>,
     database: TransactionalPrismaClient = db,
     executionOptions: QueryTableExecutionOptions = {},
@@ -314,12 +314,12 @@ export async function queryHydratedView<TView extends db3.AnyDB3View>(
 }
 
 export const DB3QueryCore = async (request: db3.QueryRequestInput, ctx: AuthenticatedCtx) => (
-    queryTable(request, await getRequestAuthorization(ctx.session))
+    queryTable(request, await loadAuthorization(ctx.session))
 );
 
 export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInput, ctx: AuthenticatedCtx) {
     const startTimestamp = Date.now();
-    const query = await prepareTableQuery(input, await getRequestAuthorization(ctx.session), db);
+    const query = await prepareTableQuery(input, await loadAuthorization(ctx.session), db);
     const delegate = db[query.table.tableName];
     const { items, ...pagination } = await paginate({
         skip: input.skip,

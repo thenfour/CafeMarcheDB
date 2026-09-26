@@ -11,7 +11,7 @@ import type {
     DB3CommandRequest,
     DB3IdentityOf
 } from "../db3";
-import { createDb3RequestAuthorization } from "../db3";
+import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 import type { DB3ServerAuthorization } from "./db3ServerAuthorization";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import {
@@ -216,7 +216,7 @@ export async function executeDB3Command(
             `Command handler '${handler.command.commandID}' cannot execute '${request.commandID}'.`,
         );
     }
-    const authorization = await createDb3RequestAuthorization(ctx);
+    const authorization = await loadAuthorization(ctx.session);
     const dto = handler.command.parseDto(request.payload);
     const rowServices = createCommandRowServices(ctx, authorization, transactionalDb);
     const result = await handler.execute(dto, {

@@ -12,7 +12,7 @@ import updateSongBasicFields from "@db3/mutations/updateSongBasicFields"
 import db3Query from "@db3/queries/db3queries"
 import db3PaginatedQuery from "@db3/queries/db3paginatedQueries"
 import { queryTable } from "@db3/server/db3QueryCore"
-import { loadUserAuthorization } from "src/auth/server/requestAuthorization"
+import { loadAuthorizationForUser } from "src/auth/server/requestAuthorization"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 import { Permission } from "shared/permissions"
 import { parsePublicId } from "shared/publicId"
@@ -70,11 +70,11 @@ describe("explicit DB3 authorization", () => {
       role: [publicRole],
       song: [makeSong(1, { visiblePermissionId: 703 }), makeSong(2), makeSong(3, { visiblePermissionId: 703, isDeleted: true })],
     })
-    const result = await queryTable(forgeDb3Query("Song"), await loadUserAuthorization(null))
+    const result = await queryTable(forgeDb3Query("Song"), await loadAuthorizationForUser(null))
     expect(result.items.map(row => row.publicId)).toEqual([songPublicId(1)])
 
     authorizationTestDb.reset({ role: [{ ...publicRole, permissions: [] }] })
-    await expect(queryTable(forgeDb3Query("Song"), await loadUserAuthorization(null))).rejects.toThrow("Not authorized")
+    await expect(queryTable(forgeDb3Query("Song"), await loadAuthorizationForUser(null))).rejects.toThrow("Not authorized")
   })
 
   it("uses inherited public permission IDs for both predicates and row sanitization", async () => {
@@ -93,7 +93,7 @@ describe("explicit DB3 authorization", () => {
     const { user: actor, ctx } = createAuthorizationPersona("sysadmin", {
       permissions: [Permission.login],
     })
-    const resolved = await loadUserAuthorization(actor as any)
+    const resolved = await loadAuthorizationForUser(actor as any)
     const authorization = db3.createDB3Authorization(resolved.user, resolved.effectivePermissions)
     const where = db3.permissionVisibilityView.getWhereClause({
       authorization,
@@ -164,7 +164,7 @@ describe("explicit DB3 authorization", () => {
 
   it("applies the same recovery and private-owner rules to included relations", async () => {
     const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
-    const resolved = await loadUserAuthorization(actor as any)
+    const resolved = await loadAuthorizationForUser(actor as any)
     const authorization = db3.createDB3Authorization(resolved.user, resolved.effectivePermissions)
     const selection = await db3.xSong.CalculateSelectionArgs(
       authorization,
@@ -191,7 +191,7 @@ describe("explicit DB3 authorization", () => {
   it.each([db3.xEventSongList, db3.xEventSongListSong, db3.xSongCredit])(
     "enforces song visibility through $tableID at the query boundary", async table => {
       const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
-      const authorization = await loadUserAuthorization(actor as any)
+      const authorization = await loadAuthorizationForUser(actor as any)
       const findMany = vi.fn(async (_args: any) => [])
       await queryTable(forgeDb3Query(table.tableID), authorization, { [table.tableName]: { findMany } } as any)
       const args = findMany.mock.calls[0]![0]
@@ -211,7 +211,7 @@ describe("explicit DB3 authorization", () => {
   it("enforces song visibility through the Event calendar view", async () => {
     const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
     // The authorization fixture omits generated user fields that this path never reads.
-    const authorization = await loadUserAuthorization(actor as any)
+    const authorization = await loadAuthorizationForUser(actor as any)
     const findMany = vi.fn(async (_args: any) => [])
     // This focused Prisma double implements only the Event delegate queried here.
     await queryTable(forgeDb3Query(db3.xEvent.tableID, {
@@ -235,9 +235,9 @@ describe("explicit DB3 authorization", () => {
 
   it("keeps nested event song filters specific to each viewer and recovery request", async () => {
     const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
-    const resolved = await loadUserAuthorization(actor as any)
+    const resolved = await loadAuthorizationForUser(actor as any)
     const owner = db3.createDB3Authorization(resolved.user, resolved.effectivePermissions)
-    const otherResolved = await loadUserAuthorization(createAuthorizationTestUser("sysadmin", { id: 502 }) as any)
+    const otherResolved = await loadAuthorizationForUser(createAuthorizationTestUser("sysadmin", { id: 502 }) as any)
     const other = db3.createDB3Authorization(otherResolved.user, otherResolved.effectivePermissions)
     const publicViewer = db3.createDB3Authorization(null, resolved.effectivePermissions)
     const entry = { id: 1, eventSongList: visibleListParent, song: makeSong(1) }
@@ -257,7 +257,7 @@ describe("explicit DB3 authorization", () => {
   })
 
   it("requires song read permission even when the parent event is readable", async () => {
-    const resolved = await loadUserAuthorization(null)
+    const resolved = await loadAuthorizationForUser(null)
     const selection = await db3.xEvent.CalculateSelectionArgs(
       db3.createDB3Authorization(null, resolved.effectivePermissions), { items: [] }, false,
       db3.eventCalendarView.getSelectionArgs,
@@ -267,7 +267,7 @@ describe("explicit DB3 authorization", () => {
   })
 
   it.each(["include", "select"])("traverses association targets with %s and preserves authored filters", async selectionKind => {
-    const resolved = await loadUserAuthorization(createAuthorizationTestUser("sysadmin", { id: 501 }) as any)
+    const resolved = await loadAuthorizationForUser(createAuthorizationTestUser("sysadmin", { id: 501 }) as any)
     const authorization = db3.createDB3Authorization(resolved.user, resolved.effectivePermissions)
     const selection: any = {
       songs: {

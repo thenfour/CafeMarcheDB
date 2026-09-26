@@ -1,7 +1,7 @@
 import type { DB3ServerAuthorization } from "./db3ServerAuthorization";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import { calendarWindowSql } from "./calendarWindowSql";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 // generalized version of search results.
 // hopefully can unify song & event search, and then extend to users & files.
 
@@ -207,9 +207,9 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
     try {
         const rootsw = new Stopwatch();
         const ret: SearchResultsRet = MakeEmptySearchResultsRet();//{
-        const authorization = await getRequestAuthorization(ctx.session);
+        const authorization = await loadAuthorization(ctx.session);
         if (!authorization.user) throw new AuthorizationError();
-        const publicData = db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
+        const publicData = authorization;
         const u = authorization.user;
 
         // todo: input validation. it's very important because things are being appended to SQL.

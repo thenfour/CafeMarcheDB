@@ -2,7 +2,7 @@ import type { Ctx } from "@blitzjs/next";
 import { AuthorizationError, NotFoundError } from "blitz";
 import { Permission } from "shared/permissions";
 import type { MergeIdentity, UserMergeParticipants } from "../../userMergeSchemas";
-import { requireFreshPermission } from "../permissionAuthorization";
+import { loadAuthorization } from "../requestAuthorization";
 import { canManageUser } from "../userManagementPolicy";
 import { makeUserManagementActor, makeUserManagementTarget } from "../userManagementState";
 import type { MergeContext, MergeDatabase, MergeUser } from "./types";
@@ -13,8 +13,9 @@ export async function authorizeMergeActor(db: MergeDatabase, ctx: Ctx) {
     if (ctx.session.$publicData.impersonatingFromUserId != null) {
         throw new AuthorizationError();
     }
-    const actor = await requireFreshPermission(db, ctx.session.userId, Permission.merge_users);
-    return makeUserManagementActor(actor, actor.effectivePermissions);
+    const auth = await (await loadAuthorization(ctx.session)).refresh(db);
+    auth.requirePermission(Permission.merge_users);
+    return makeUserManagementActor(auth.requireUser(), auth.effectivePermissions);
 }
 
 // also does auth check

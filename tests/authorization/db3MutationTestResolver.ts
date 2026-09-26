@@ -1,6 +1,6 @@
 import { resolver } from "@blitzjs/rpc";
 import type { TAnyModel } from "@/shared/rootroot";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 import { Permission } from "shared/permissions";
 import type { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
@@ -28,7 +28,7 @@ export default resolver.pipe(
     async (untrustedInput: unknown, ctx: AuthenticatedCtx) => {
         const input = validateDB3MutationRequest(untrustedInput);
         const table = db3.GetTableById(input.tableID);
-        const requestAuthorization = await getRequestAuthorization(ctx.session);
+        const requestAuthorization = await loadAuthorization(ctx.session);
         const publicData = db3.createDB3Authorization(
             requestAuthorization.user,
             requestAuthorization.effectivePermissions,

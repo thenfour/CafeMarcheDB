@@ -1,9 +1,9 @@
+import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 //import { requireUnmergedUserReferences } from "src/auth/server/mergedUserReferences";
-import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { resolvePublicForeignIds } from "../server/db3PublicIds";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
@@ -20,7 +20,7 @@ export default resolver.pipe(
             throw new Error("No current user");
         }
 
-        const publicData = await db3.createDb3RequestAuthorization(ctx);
+        const publicData = await loadAuthorization(ctx.session);
         const resolvedForeignIds = await resolvePublicForeignIds(
             xSetlistPlan,
             { visiblePermissionId: args.visiblePermissionId },

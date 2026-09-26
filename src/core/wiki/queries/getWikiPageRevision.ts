@@ -38,7 +38,7 @@ export default resolver.pipe(
         });
 
         if (!page) {
-            throw new Error(`Wiki page not found for revision ID ${args.revisionId}`);
+            return null;
         }
 
         const { createdByUserId, wikiPage, ...publicRevision } = page;

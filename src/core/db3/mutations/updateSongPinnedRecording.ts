@@ -1,12 +1,10 @@
-import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
+import { resolver, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import db from "db";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import { resolvePublicId } from "../server/db3PublicIds";
 
 const ZArgs = z.object({
@@ -15,23 +13,21 @@ const ZArgs = z.object({
 });
 
 export default resolver.pipe(
-    resolver.authorize(Permission.login),
+    resolver.cmauthorize(Permission.login),
     resolver.zod(ZArgs),
-    async (args, ctx: AuthenticatedCtx) => {
+    async (args, ctx: CMAuthenticatedCtx) => {
 
-        const authorization = await getRequestAuthorization(ctx.session);
-        const publicData = db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
-        if (!db3.xSong.authorizeTableForEdit(publicData)) {
+        if (!db3.xSong.authorizeTableForEdit(ctx.auth)) {
             throw new mutationCore.DB3MutationAuthorizationError(db3.xSong.tableName, ["pinnedRecordingId"]);
         }
         const fileId = args.fileId === null
             ? null
-            : await resolvePublicId(db3.xFile, args.fileId, publicData, db);
+            : await resolvePublicId(db3.xFile, args.fileId, ctx.auth, db);
         // Keep the database foreign key numeric after resolving the public input.
         const fields: Prisma.SongUncheckedUpdateInput = { pinnedRecordingId: fileId };
         const songId = await resolvePublicId(
             db3.xSong, args.songId,
-            publicData, db,
+            ctx.auth, db,
         );
         await mutationCore.updateImpl(db3.xSong, songId, fields, ctx);
 

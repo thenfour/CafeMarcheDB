@@ -1,9 +1,7 @@
-import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
+import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
 import db from "db";
 import { z } from "zod";
 import { UserMassAnalysisResult } from "../shared/getUserMassAnalysisTypes";
-import { requireFreshPermission } from "@/src/auth/server/permissionAuthorization";
 import { Permission } from "shared/permissions";
 import { xRole } from "../shared/schema/user";
 import { xUser } from "../shared/schema/user";
@@ -11,8 +9,9 @@ import { UserPublicIdSchema } from "src/auth/schemas";
 
 export default resolver.pipe(
     resolver.zod(z.object({ userId: UserPublicIdSchema })),
-    async (args, ctx: AuthenticatedCtx): Promise<UserMassAnalysisResult> => {
-        await requireFreshPermission(db, ctx.session.userId, Permission.sysadmin);
+    resolver.cmauthorize(Permission.sysadmin),
+    async (args, ctx: CMCtx): Promise<UserMassAnalysisResult> => {
+        (await ctx.auth.refresh(db)).requirePermission(Permission.sysadmin);
 
         // Intentional read-policy bypass: this administrative dependency report
         // must include inactive targets and all referenced records, including

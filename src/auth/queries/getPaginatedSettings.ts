@@ -1,9 +1,8 @@
-import { resolver } from "@blitzjs/rpc";
-import type { AuthenticatedCtx } from "blitz";
+import { resolver } from "@/src/auth/server/cmResolver";
+import type { CMCtx } from "@/src/auth/server/cmResolver";
 import { paginate } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { requireFreshPermission } from "../server/permissionAuthorization";
 
 interface GetInput__
     extends Pick<
@@ -12,10 +11,10 @@ interface GetInput__
     > { }
 
 export default resolver.pipe(
-    resolver.authorize(Permission.sysadmin),
-    async ({ where, orderBy, skip, take }: GetInput__, ctx: AuthenticatedCtx) => {
+    resolver.cmauthorize(Permission.sysadmin),
+    async ({ where, orderBy, skip, take }: GetInput__, ctx: CMCtx) => {
         try {
-            await requireFreshPermission(db, ctx.session.userId, Permission.sysadmin);
+            (await ctx.auth.refresh(db)).requirePermission(Permission.sysadmin);
             const {
                 items,
                 hasMore,

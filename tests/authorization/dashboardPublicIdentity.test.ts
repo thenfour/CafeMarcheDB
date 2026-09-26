@@ -19,7 +19,7 @@ import * as db3 from "src/core/db3/db3";
 import type { CMDBTableFilterModel } from "src/core/db3/shared/apiTypes";
 import { queryView } from "src/core/db3/server/db3QueryCore";
 import { validateDB3QueryRequest } from "src/core/db3/server/db3RequestValidation";
-import { getRequestAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/requestAuthorization";
 import { PermissionSet } from "src/auth/shared/PermissionSet";
 import { Permission } from "shared/permissions";
 import type { EventPublicId } from "shared/publicId";
@@ -88,7 +88,7 @@ describe.each(["normal", "sysadmin"] as const)("dashboard public identities for 
         expect(relevanceQuery.mock.calls[0]![0].sql).toMatch(/SELECT\s+e\.publicId,/);
         expect(relevanceQuery.mock.calls[0]![0].sql).not.toMatch(/e\.id\b/);
         expect(relevanceQuery.mock.calls[0]![0].sql).not.toMatch(/NOT IN\s*\(\s*\)/);
-        const authorization = await getRequestAuthorization(ctx.session);
+        const authorization = await loadAuthorization(ctx.session);
         expect(relevanceQuery.mock.calls[0]![0].sql)
             .toContain(`e.visiblePermissionId IN (${authorization.effectivePermissions.ids.join(",")})`);
 
@@ -133,7 +133,7 @@ describe.each(["normal", "sysadmin"] as const)("dashboard public identities for 
         const ctx = seedActor();
         const result = await queryView({
             view: db3.eventSearchView, filter: {}, orderBy: undefined, cmdbQueryContext: "trusted-event-read",
-        }, await getRequestAuthorization(ctx.session), undefined, { trustedNaturalPrimaryKeys: [event.id] });
+        }, await loadAuthorization(ctx.session), undefined, { trustedNaturalPrimaryKeys: [event.id] });
         expect(result.items.map(row => row.publicId)).toEqual([event.publicId]);
     });
 });

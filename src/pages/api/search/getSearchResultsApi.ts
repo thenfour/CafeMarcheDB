@@ -3,7 +3,7 @@ import { AuthenticationError, AuthorizationError } from "blitz";
 import { Permission } from "shared/permissions";
 import { api } from "src/blitz-server";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
-import { getRequestAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/requestAuthorization";
 import { GetSearchResultsCore } from "src/core/db3/server/searchServerCore";
 import { ZGetSearchResultsInput } from "src/core/db3/shared/apiTypes";
 import superjson from "superjson";
@@ -11,7 +11,7 @@ import superjson from "superjson";
 
 export default api(async (req, res, ctx: Ctx) => {
     try {
-        const { user, effectivePermissions } = await getRequestAuthorization(ctx.session);
+        const { user, effectivePermissions } = await loadAuthorization(ctx.session);
         if (!user) throw new AuthenticationError();
         if (!effectivePermissions.includesName(Permission.visibility_members)) throw new AuthorizationError();
         const authenticatedCtx = mutationCore.getAuthenticatedCtx(ctx, Permission.visibility_members);

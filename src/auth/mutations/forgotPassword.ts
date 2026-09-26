@@ -16,7 +16,7 @@ export default resolver.pipe(
   resolver.zod(ForgotPassword),
   async (input, ctx) => db.$transaction(async tx => {
     // Re-read effective grants before target lookup or token generation.
-    const actor = await requireSignInMethodAdmin(tx, ctx)
+    const auth = await requireSignInMethodAdmin(tx, ctx)
 
     const user = "userId" in input
       ? (await tx.user.findFirst({
@@ -26,7 +26,7 @@ export default resolver.pipe(
       : (await findSignInUser(tx, { type: "email", identifier: input.email }, { allowInactive: false }))
     if (user) {
       requireCanManageUser({
-        actor: makeUserManagementActor(actor, actor.effectivePermissions),
+        actor: makeUserManagementActor(auth.requireUser(), auth.effectivePermissions),
         target: makeUserManagementTarget(user),
         action: "resetPassword",
       })

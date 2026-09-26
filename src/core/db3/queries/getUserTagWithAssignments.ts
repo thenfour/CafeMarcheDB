@@ -1,9 +1,7 @@
-import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
+import { resolver, type CMCtx } from "@/src/auth/server/cmResolver";
 import { Permission } from "shared/permissions";
 import { isPublicId, type UserTagPublicId } from "shared/publicId";
 import { z } from "zod";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from "../db3";
 import { queryView } from "../server/db3QueryCore";
 
@@ -12,10 +10,10 @@ const ZInp = z.object({
 });
 
 export default resolver.pipe(
-    resolver.authorize(Permission.public),
+    resolver.cmauthorize(Permission.public),
     resolver.zod(ZInp),
-    async (args, ctx: AuthenticatedCtx) => {
-        const authorization = await getRequestAuthorization(ctx.session);
+    async (args, ctx: CMCtx) => {
+        const authorization = ctx.auth;
         const result = await queryView({
             cmdbQueryContext: "getUserTagWithAssignments",
             view: db3.userTagEventSearchView,

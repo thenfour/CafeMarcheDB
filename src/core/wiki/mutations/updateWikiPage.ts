@@ -1,3 +1,4 @@
+import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 import { wikiTransaction } from "../server/wikiTransaction";
 // updateWikiPage
 import { resolver } from "@blitzjs/rpc";
@@ -178,7 +179,7 @@ export default resolver.pipe(
     async (args: TUpdateWikiPageArgs, ctx: AuthenticatedCtx): Promise<GetWikiPageUpdatabilityResult> => {
 
         const currentUser = (await mutationCore.getCurrentUserCore(ctx))!;
-        const publicData = await db3.createDb3RequestAuthorization(ctx);
+        const publicData = await loadAuthorization(ctx.session);
         const changeContext = CreateChangeContext("updateWikiPage");
 
         return await wikiTransaction(async (dbt) => {

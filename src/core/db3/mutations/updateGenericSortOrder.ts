@@ -4,7 +4,7 @@ import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { moveItemInArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from "../db3";
 import { DB3RequestValidationError } from "../server/db3RequestValidation";
 import * as mutationCore from "../server/db3mutationCore";
@@ -52,13 +52,7 @@ export default resolver.pipe(
             );
         }
 
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        if (!currentUser) {
-            throw new mutationCore.DB3MutationAuthorizationError(table.tableName, [sortOrderColumn.member]);
-        }
-
-        const permSet = (await getRequestAuthorization(ctx.session)).effectivePermissions;
-        const publicData = db3.createDB3Authorization(currentUser, permSet);
+        const publicData = await loadAuthorization(ctx.session);
         if (!table.authorizeTableForEdit(publicData)) {
             throw new mutationCore.DB3MutationAuthorizationError(table.tableName, [sortOrderColumn.member]);
         }

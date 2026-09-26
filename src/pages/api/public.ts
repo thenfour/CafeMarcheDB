@@ -1,6 +1,6 @@
 // server
 
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 // provide json feed of content for public homepage consumption.
 
 // input: lang
@@ -16,7 +16,7 @@ import { api } from "src/blitz-server";
 import * as db3 from "src/core/db3/db3";
 
 async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
-    const authorization = await getRequestAuthorization(ctx.session);
+    const authorization = await loadAuthorization(ctx.session);
     const langParam = req.query.lang;
     const lang: EnNlFr = (langParam === "nl" ? "nl" : langParam === "fr" ? "fr" : "en");
 

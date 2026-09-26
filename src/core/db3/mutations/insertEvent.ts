@@ -1,29 +1,20 @@
 // insertEvent
-import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx, assert } from "blitz";
+import { resolver, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { assert } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TinsertEventArgs } from "../shared/apiTypes";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import { authorizeAndProjectDB3ViewModel, resolvePublicForeignIds, resolvePublicId } from "../server/db3PublicIds";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.authorize(Permission.login),
-    async (args: TinsertEventArgs, ctx: AuthenticatedCtx) => {
+    resolver.cmauthorize(Permission.login),
+    async (args: TinsertEventArgs, ctx: CMAuthenticatedCtx) => {
 
         return db.$transaction(async tx => {
-            const currentUser = await mutationCore.getCurrentUserCore(ctx);
-            assert(!!currentUser, "user required to insert an event")
-
-
-            const authorization = await getRequestAuthorization(ctx.session);
-            const publicData = db3.createDB3Authorization(
-                authorization.user,
-                authorization.effectivePermissions,
-            );
+            const publicData = ctx.auth;
             const resolvedEventFields = await resolvePublicForeignIds(
                 db3.xEvent,
                 args.event,

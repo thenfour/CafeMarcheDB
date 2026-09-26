@@ -5,6 +5,7 @@ import { projectDB3ModelPublicIds, resolvePublicForeignIds, resolvePublicIds } f
 import { queryTable } from "@db3/server/db3QueryCore";
 import { validateDB3MutationRequest, validateDB3QueryRequest } from "@db3/server/db3RequestValidation";
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
+import { CMAuthorization } from "src/auth/server/requestAuthorization";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { userPublicId } from "../support/userFixtures";
@@ -663,11 +664,10 @@ describe("instrument catalog public-ID transport", () => {
             },
             orderBy: undefined,
             cmdbQueryContext: "song-tag-query-parameter-resolution-test",
-        }, {
-            // RequestAuthorization carries the full session user; this query only reads its ID.
-            user: { id: 100 } as any,
-            effectivePermissions,
-        }, {
+        }, new CMAuthorization(
+            // This focused query needs only the actor identity.
+            { id: 100 } as any, effectivePermissions,
+        ), {
             SongTag: { findMany: tagFindMany },
             Song: { findMany: songFindMany },
         } as any); // Focused delegate doubles intentionally implement only the queried models.

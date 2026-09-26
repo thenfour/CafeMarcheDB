@@ -1,8 +1,7 @@
-import { EmptyPublicData, SimpleRolesIsAuthorized } from "@blitzjs/auth";
+import { SimpleRolesIsAuthorized } from "@blitzjs/auth";
 import { Ctx } from "@blitzjs/next";
-import { AuthenticatedCtx, assert } from "blitz";
 import { Prisma } from "db";
-import { Permission } from "shared/permissions";
+import { isPermission, Permission } from "shared/permissions";
 import { UserWithRolesPayload } from "./src/core/db3/shared/schema/userPayloads";
 //import { UserWithRolesPayload } from "./src/core/db3/db3";
 //import { UserWithRolesPayload } from "src/core/db3/db3"; // circular dep
@@ -30,57 +29,19 @@ export type PublicDataType = {
   GOOGLE_ANALYTICS_ID_PUBLIC: string | undefined;
 };
 
-export type CMAuthorize2Args = {
-  reason: string,
-  permission: Permission | null,
-
-  isSysAdmin: boolean,
-  userPermissions: string[],
-  userId: number | null;
-};
-
-export function CMAuthorize2(args: CMAuthorize2Args) {
-  assert(!!args.permission && args.permission.length, `CMAuthorize: Permission is invalid; Maybe a call was improperly made. args=${JSON.stringify(args)}`);
-  assert(!!args.reason && args.reason.length, `CMAuthorize: Permission is invalid; this is required for diagnostics and tracing. Maybe a call was improperly made. args=${JSON.stringify(args)}`);
-  const ret = args.userPermissions.some(p => p === args.permission);
-
-  return ret || false;
-};
-
-type CMAuthorizeArgs = {
-  reason: string,
-  permission: Permission | null,
-  publicData: Partial<PublicDataType> | EmptyPublicData,
-};
-
-export function CMAuthorize(args: CMAuthorizeArgs) {
-  return CMAuthorize2({
-    isSysAdmin: args.publicData.isSysAdmin || false,
-    userPermissions: args.publicData.permissionNames || [],
-    reason: args.reason,
-    permission: args.permission,
-    userId: args.publicData.userId || null,
-  });
-};
-
-export function CMDBAuthorizeOrThrow(reason: string, permission: Permission, ctx: AuthenticatedCtx) {
-  if (!CMAuthorize({ reason, permission, publicData: ctx.session.$publicData })) {
-    throw new Error(`Unauthorized: ${reason}`);
-  }
-}
-
-// use instead of resolver.authorize
+// Blitz still invokes this for resolvers using resolver.authorize.
 interface CMDBResolverAuthorizeArgs {
   ctx: Ctx,
   args: [permission: string],
 };
 
 export function CMDBResolverAuthorize(args: CMDBResolverAuthorizeArgs) {
-  return CMAuthorize({
-    permission: args.args[0] as Permission,
-    reason: "resolver.authorize => CMDBResolverAuthorize",
-    publicData: args.ctx.session.$publicData,
-  });
+  // Blitz's synchronous callback reads the grants refreshed at request entry.
+  const permission = args.args[0];
+  if (!isPermission(permission)) throw new Error(`Unknown resolver permission: ${permission}`);
+  if (permission === Permission.never_grant) return false;
+  if (permission === Permission.login && !args.ctx.session.userId) return false;
+  return args.ctx.session.$publicData.permissionNames?.includes(permission) ?? false;
 }
 
 declare module "@blitzjs/auth" {

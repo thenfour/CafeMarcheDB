@@ -12,7 +12,7 @@ import deactivateUser from "src/auth/mutations/deactivateUser";
 import getUserManagementCapabilities from "src/auth/queries/getUserManagementCapabilities";
 import { canManageUser } from "src/auth/server/userManagementPolicy";
 import { loadAuthorizedPageEntity } from "src/auth/server/serverPageAuthorization";
-import { getRequestAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/requestAuthorization";
 import getUserExtraInfo from "src/core/db3/queries/getUserExtraInfo";
 import db3queries from "src/core/db3/queries/db3queries";
 import db3mutations from "tests/authorization/db3MutationTestResolver";
@@ -78,7 +78,7 @@ describe("user recovery", () => {
         const protectedTarget = createAuthorizationTestUser("sysadmin", { id: target.id, isDeleted: true });
         authorizationTestDb.reset({ user: [sysadmin, protectedTarget], change: [] });
         const ctx = createAuthorizationTestContext(sysadmin);
-        await getRequestAuthorization(ctx.session);
+        await loadAuthorization(ctx.session);
         const caps = await invokeResolver(getUserManagementCapabilities, { userId: target.publicId }, ctx);
         expect(caps).toMatchObject({ canReactivate: true, canDeactivate: false, canAssignRole: false });
         await invokeResolver(reactivateUser, { userId: target.publicId }, ctx);
@@ -110,7 +110,7 @@ describe("user recovery", () => {
         });
         authorizationTestDb.reset({ user: [actor, target] });
         const ctx = createAuthorizationTestContext(actor);
-        const auth = await getRequestAuthorization(ctx.session);
+        const auth = await loadAuthorization(ctx.session);
         const profile = await loadAuthorizedPageEntity({
             ctx, permission: Permission.view_users_basic_info, table: xUser, identity: target.publicId,
             includeDeleted: auth.effectivePermissions.includesName(Permission.recover_users),

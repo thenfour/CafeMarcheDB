@@ -10,8 +10,6 @@ import { Stopwatch } from "shared/rootroot";
 import { getClientServerState } from "shared/serverStateBase";
 import {
     type AnyDB3View,
-    createDB3Authorization,
-    createDb3RequestAuthorization,
     type DashboardDataDto,
     type DtoOf,
     eventAttendanceDashboardView,
@@ -38,14 +36,15 @@ import {
 } from "src/core/db3/server/db3QueryCore";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import {
-    type RequestAuthorization
+    loadAuthorization,
+    type CMAuthorization
 } from "../server/requestAuthorization";
 import { loadUserSettings } from "../server/userSettings";
 
 // does not choke when auth doesn't allow it; returns empty.
 async function queryOptionalDashboardView<TView extends AnyDB3View>(
     view: TView,
-    authorization: RequestAuthorization,
+    authorization: CMAuthorization,
 ): Promise<DtoOf<TView>[]> {
     try {
         const result = await queryView({
@@ -64,7 +63,7 @@ async function queryOptionalDashboardView<TView extends AnyDB3View>(
 
 // Returns public event identities to show in the dashboard for the current user.
 async function getTopRelevantEvents(
-    authorization: RequestAuthorization,
+    authorization: CMAuthorization,
     eventStatuses: readonly { id: number; significance: string | null }[],
     db: TransactionalPrismaClient,
 ): Promise<EventPublicId[]> {
@@ -73,7 +72,7 @@ async function getTopRelevantEvents(
         // no user, no events.
         return [];
     }
-    const publicData = createDB3Authorization(currentUser, authorization.effectivePermissions);
+    const publicData = authorization;
     const now = new Date();
     const sevenDaysFromNow = new Date(now);
     sevenDaysFromNow.setDate(now.getDate() + 7); // 7 days allows you to see next week's rehearsal just after the last one ends.
@@ -182,7 +181,7 @@ export default resolver.pipe(
         try {
             const sw = new Stopwatch();
 
-            const authorization = await createDb3RequestAuthorization(ctx);
+            const authorization = await loadAuthorization(ctx.session);
             const currentUser = authorization.user;
             const effectivePermissions = authorization.effectivePermissions;
 

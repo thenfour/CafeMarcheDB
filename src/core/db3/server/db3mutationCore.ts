@@ -5,7 +5,7 @@ import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
 import { isBandTimeZoneSetting, reanchorAllDayEvents } from "src/server/dateTime";
 
 import { TAnyModel } from "@/shared/rootroot";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 import { validateSettingValue } from "@/src/auth/server/settingWrite";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 import { clearBrandCache } from "@/src/server/brand";
@@ -64,8 +64,7 @@ const createDB3Row = async (
 };
 
 const getMutationPublicData = async (ctx: Ctx): Promise<DB3ServerAuthorization> => {
-    const authorization = await getRequestAuthorization(ctx.session);
-    return db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
+    return loadAuthorization(ctx.session);
 };
 
 const requireAuthorizedMutationFields = (
@@ -112,7 +111,7 @@ export const getAuthenticatedCtx = (unauthenticatedCtx: Ctx, perm: Permission): 
 
 
 // returns null if public
-export const getCurrentUserCore = async (ctx: Ctx) => (await getRequestAuthorization(ctx.session)).user;
+export const getCurrentUserCore = async (ctx: Ctx) => (await loadAuthorization(ctx.session)).user;
 
 export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: number, updatingEventModel: Partial<EventForCal>, db?: TransactionalPrismaClient, }) => {
     const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
@@ -778,7 +777,7 @@ export const queryFirstImpl = async <TitemPayload,>({ schema, filterModel, ctx }
         orderBy: undefined,
         take: 1,
         cmdbQueryContext: "queryFirstImpl",
-    }, await getRequestAuthorization(ctx.session));
+    }, await loadAuthorization(ctx.session));
     return { item: (result.items[0] as TitemPayload | undefined) ?? null };
 };
 

@@ -1,5 +1,5 @@
 import type { EventAttendancePublicId, EventPublicId, EventSegmentPublicId, UserPublicId } from "shared/publicId";
-import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorizationForUser } from "@/src/auth/server/requestAuthorization";
 import db, { Prisma } from "db";
 import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent } from "ical-generator";
 import { floorLocalToLocalDay } from "shared/time";
@@ -219,7 +219,7 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
         eventUids: type === "event" ? [(args as CalExportCoreArgsSingleEvent).eventUid] : undefined,
     };
 
-    const authorization = await loadUserAuthorization(currentUser);
+    const authorization = await loadAuthorizationForUser(currentUser);
     const { eventsRaw, bandTimeZone } = await db.$transaction(async tx => {
         const bandTimeZone = await loadBandTimeZone(tx);
         const eventsRaw = await queryHydratedView({

@@ -1,16 +1,17 @@
-import { resolver } from "@blitzjs/rpc";
+import { resolver } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { UserSettingsPatchSchema } from "shared/userSettings";
-import { requireFreshPermission } from "../server/permissionAuthorization";
 import { loadUserSettings } from "../server/userSettings";
 
 export default resolver.pipe(
     resolver.zod(UserSettingsPatchSchema),
-    resolver.authorize(Permission.login),
+    resolver.cmauthorize(Permission.login),
     async (patch, ctx) => db.$transaction(async tx => {
-        const user = await requireFreshPermission(tx, ctx.session.userId, Permission.login);
+        const auth = await ctx.auth.refresh(tx);
+        auth.requirePermission(Permission.login);
+        const user = auth.requireUser();
         const changeContext = CreateChangeContext("updateMyUserSettings");
 
         for (const [name, value] of Object.entries(patch)) {

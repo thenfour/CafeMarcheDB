@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from 'blitz';
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from 'src/core/db3/db3';
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { ImageEditParams, UpdateGalleryItemImageParams } from "../shared/fileTypes";
@@ -13,8 +13,8 @@ import { ImageEditParams, UpdateGalleryItemImageParams } from "../shared/fileTyp
 export default resolver.pipe(
     resolver.authorize(Permission.edit_public_homepage),
     async (args: UpdateGalleryItemImageParams, ctx: AuthenticatedCtx) => {
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        if (!currentUser) {
+        const auth = await loadAuthorization(ctx.session);
+        if (!auth.user) {
             throw new Error("Current user was not found.");
         }
 
@@ -40,7 +40,7 @@ export default resolver.pipe(
             contextDesc: "updateGalleryItemImage:preflight",
             model: galleryMutationFields,
             existingModel: galleryItem,
-            publicData: db3.createDB3Authorization(currentUser, (await getRequestAuthorization(ctx.session)).effectivePermissions),
+            publicData: auth,
             rowMode: "update",
             fallbackOwnerId: null,
         });

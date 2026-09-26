@@ -2,7 +2,7 @@ import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { GetWikiPageUpdatability, WikiPageData, wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
 import { ProcessEventDescriptionForWikiPage } from "./wikiNamespaceEventDescription";
 import { AuthenticatedCtx } from "blitz";
-import { getRequestAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/requestAuthorization";
 import { queryView } from "src/core/db3/server/db3QueryCore";
 import { wikiPageApiView } from "src/core/db3/shared/entities/wiki/wikiViews";
 import { xUser } from "src/core/db3/shared/schema/user";
@@ -18,7 +18,7 @@ interface GetWikiPageCoreArgs {
 
 export async function GetWikiPageCore({ canonicalWikiSlug, dbt, ctx, ...args }: GetWikiPageCoreArgs): Promise<WikiPageData> {
 
-    const authorization = await getRequestAuthorization(ctx.session);
+    const authorization = await loadAuthorization(ctx.session);
     const currentUser = authorization.user;
     if (!currentUser) throw new Error("Current user was not found.");
 

@@ -1,4 +1,4 @@
-import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorizationForUser } from "@/src/auth/server/requestAuthorization";
 import { hash256 } from "@blitzjs/auth"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { songPublicId } from "../support/songFixtures"
@@ -404,7 +404,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
 
     await expect(queryTable({
       ...forgeDb3Query("Role"),
-    }, await loadUserAuthorization(databaseNormal))).rejects.toThrow("Not authorized to perform this query.")
+    }, await loadAuthorizationForUser(databaseNormal))).rejects.toThrow("Not authorized to perform this query.")
     expect(findMany).not.toHaveBeenCalled()
   })
 
@@ -1173,7 +1173,7 @@ describe("BA-U001 user management boundaries", () => {
     })).toBe(false)
     await expect(
       invokeResolver(impersonateUser, { userId: isSysAdminUser.publicId }, ctx),
-    ).rejects.toThrow("Unauthorized test persona; required: impersonate_user")
+    ).rejects.toThrow("Not authorized for impersonate_user.")
   })
 
   it.each([

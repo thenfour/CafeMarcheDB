@@ -26,7 +26,7 @@ import { xUserSignInMethod } from "src/core/db3/shared/schema/userSignInMethod";
 import type { UserSignInMethodPublicId } from "shared/publicId";
 import { Prisma } from "db";
 import { queryTable } from "src/core/db3/server/db3QueryCore";
-import { getRequestAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/requestAuthorization";
 import db3Mutation from "./db3MutationTestResolver";
 
 const admin = createAuthorizationTestUser("sysadmin", { id: 1 });
@@ -213,9 +213,9 @@ describe("Sysadmin sign-in maintenance", () => {
             filter: { tableParams: { userId: target.publicId } },
             orderBy: undefined,
         };
-        const memberAuthorization = await getRequestAuthorization(createAuthorizationTestContext(target).session);
+        const memberAuthorization = await loadAuthorization(createAuthorizationTestContext(target).session);
         await expect(queryTable(query, memberAuthorization)).rejects.toThrow("Not authorized");
-        const result = await queryTable(query, await getRequestAuthorization(adminContext().session));
+        const result = await queryTable(query, await loadAuthorization(adminContext().session));
         expect(result.items).toHaveLength(3);
         for (const method of result.items) {
             expect(method).not.toHaveProperty("id");
