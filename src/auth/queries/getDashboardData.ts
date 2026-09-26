@@ -1,6 +1,7 @@
 import { BigintToNumberNullable } from "@/shared/utils";
 import { EventRelevanceClassValue, GetRelevantEvents, gEventRelevanceClass, kMaxRelevantEventsToQuery } from "@/src/core/db3/shared/eventRelevance";
 import type { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
+import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 import { resolver } from "@blitzjs/rpc";
 import type { Ctx } from "blitz";
 import db, { Prisma } from "db";
@@ -9,11 +10,12 @@ import { Stopwatch } from "shared/rootroot";
 import { getClientServerState } from "shared/serverStateBase";
 import {
     type AnyDB3View,
+    createDb3RequestAuthorization,
     type DashboardDataDto,
     type DtoOf,
     eventAttendanceDashboardView,
-    EventStatusSignificance,
     eventStatusDashboardView,
+    EventStatusSignificance,
     eventTagDashboardView,
     eventTypeDashboardView,
     fileTagDashboardView,
@@ -35,11 +37,9 @@ import {
 } from "src/core/db3/server/db3QueryCore";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import {
-    getRequestAuthorization,
-    type RequestAuthorization,
+    type RequestAuthorization
 } from "../server/requestAuthorization";
 import { loadUserSettings } from "../server/userSettings";
-import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 
 // does not choke when auth doesn't allow it; returns empty.
 async function queryOptionalDashboardView<TView extends AnyDB3View>(
@@ -175,7 +175,7 @@ export default resolver.pipe(
         try {
             const sw = new Stopwatch();
 
-            const authorization = await getRequestAuthorization(ctx.session);
+            const authorization = await createDb3RequestAuthorization(ctx);
             const currentUser = authorization.user;
             const effectivePermissions = authorization.effectivePermissions;
 

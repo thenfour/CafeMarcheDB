@@ -21,6 +21,9 @@ export const principalHasPermission = (
     return permissionSet.includesName(permission);
 };
 
+// consider using
+//     const auth = await getRequestAuthorization(session);
+//    requirePermission(auth, route.permission);
 export function assertPermission(permissionSet: Readonly<PermissionSet>, permission: Permission): void {
     if (!principalHasPermission(permissionSet, permission)) {
         throw new FreshPermissionAuthorizationError(permission);

@@ -1,11 +1,13 @@
-import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
+import { Permission } from "@/shared/permissions";
 import type { SessionContext } from "@blitzjs/auth";
+import { AuthenticationError } from "blitz";
 import db from "db";
-import type { PublicDataType } from "types";
-import { loadEffectivePermissions } from "./effectivePermissions";
-import type { PermissionSet } from "../shared/PermissionSet";
-import { loadFreshPrincipal } from "./permissionAuthorization";
+import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import type { UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
+import type { PublicDataType } from "types";
+import type { PermissionSet } from "../shared/PermissionSet";
+import { loadEffectivePermissions } from "./effectivePermissions";
+import { loadFreshPrincipal } from "./permissionAuthorization";
 
 // Blitz creates a SessionContext for each request
 // use that as a cache key for request authorizations.
@@ -70,4 +72,15 @@ export function getRequestAuthorization(session: SessionContext): Promise<Reques
 // Non-session entry points (for example calendar subscriptions) resolve the same effective grants as ordinary requests.
 export async function loadUserAuthorization(user: UserWithRolesPayload | null, database: TransactionalPrismaClient = db): Promise<RequestAuthorization> {
     return { user, effectivePermissions: await loadEffectivePermissions(database, user) };
+}
+
+export const requirePermission = (auth: RequestAuthorization, permission: Permission): void => {
+    if (!auth.effectivePermissions.includesName(permission)) {
+        throw new AuthenticationError(`Missing required permission: ${permission}`);
+    }
+}
+
+// named like this to avoid collision with the imported includesPermission from "shared/permissions"
+export const authIncludesPermission = (auth: RequestAuthorization, permission: Permission) => {
+    return auth.effectivePermissions.includesName(permission);
 }

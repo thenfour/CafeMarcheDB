@@ -1,5 +1,5 @@
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
-import { AuthenticatedCtx } from "blitz";
+import { Ctx } from "@blitzjs/next";
 import { assert } from "blitz";
 import { PermissionSet } from "src/auth/shared/PermissionSet";
 
@@ -22,7 +22,7 @@ export function createDB3Authorization(
 //     requestAuthorization.user,
 //     requestAuthorization.effectivePermissions,
 // );
-export async function createDb3RequestAuthorization(ctx: AuthenticatedCtx) {
+export async function createDb3RequestAuthorization(ctx: Ctx) {
     const requestAuthorization = await getRequestAuthorization(ctx.session);
     const ret = createDB3Authorization(
         requestAuthorization.user,

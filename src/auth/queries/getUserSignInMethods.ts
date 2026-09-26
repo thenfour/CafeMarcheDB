@@ -1,22 +1,22 @@
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
-import { z } from "zod";
 import { Permission } from "shared/permissions";
-import { requireSignInMethodTarget } from "../server/signInMethods";
-import { getRequestAuthorization } from "../server/requestAuthorization";
-import { userSignInMethodAdminView } from "src/core/db3/db3";
+import { createDb3RequestAuthorization, userSignInMethodAdminView } from "src/core/db3/db3";
 import { queryView } from "src/core/db3/server/db3QueryCore";
+import { z } from "zod";
+import { requireSignInMethodTarget } from "../server/signInMethods";
 
 export default resolver.pipe(
     resolver.zod(z.object({ userId: z.number().int().positive() }).strict()),
     resolver.authorize(Permission.sysadmin),
     async ({ userId }, ctx) => {
+        const auth = await createDb3RequestAuthorization(ctx);
         const result = await queryView({
             cmdbQueryContext: "getUserSignInMethods",
             view: userSignInMethodAdminView,
             filter: { tableParams: { userId } },
             orderBy: undefined,
-        }, await getRequestAuthorization(ctx.session));
+        }, auth);
         // The view checks fresh admin authorization before any target lookup.
         const user = await requireSignInMethodTarget(db, userId);
         return {

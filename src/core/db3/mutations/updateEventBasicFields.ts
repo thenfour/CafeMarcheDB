@@ -3,7 +3,6 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { resolvePublicForeignIds, resolvePublicId } from "../server/db3PublicIds";
@@ -13,12 +12,8 @@ import { TupdateEventBasicFieldsArgs } from "../shared/apiTypes";
 export default resolver.pipe(
     resolver.authorize(Permission.login),
     async (args: TupdateEventBasicFieldsArgs, ctx: AuthenticatedCtx) => {
-        const authorization = await getRequestAuthorization(ctx.session);
-        const publicData = db3.createDB3Authorization(
-            authorization.user,
-            authorization.effectivePermissions,
-        );
-        const eventId = await resolvePublicId(db3.xEvent, args.eventId, publicData, db, true);
+        const auth = await db3.createDb3RequestAuthorization(ctx);
+        const eventId = await resolvePublicId(db3.xEvent, args.eventId, auth, db, true);
         const resolvedForeignIds = await resolvePublicForeignIds(
             db3.xEvent,
             {
@@ -27,7 +22,7 @@ export default resolver.pipe(
                 expectedAttendanceUserTagId: args.expectedAttendanceUserTagId,
                 visiblePermissionId: args.visiblePermissionId,
             },
-            publicData,
+            auth,
             db,
         );
 

@@ -1,22 +1,18 @@
-import { createDB3Authorization } from "src/core/db3/shared/db3Authorization";
+import type { TAnyModel } from "@/shared/rootroot";
 import type { Ctx } from "blitz";
 import { Permission } from "shared/permissions";
 import { gSSP } from "src/blitz-server";
-import type { xTable } from "src/core/db3/shared/db3core";
 import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
-import { CMAuthorize, CreatePublicData } from "types";
-import { getRequestAuthorization } from "./requestAuthorization";
-import type { TAnyModel } from "@/shared/rootroot";
-import { isPublicId } from "shared/publicId";
+import { createDb3RequestAuthorization } from "src/core/db3/shared/db3Authorization";
+import type { xTable } from "src/core/db3/shared/db3core";
+import { authIncludesPermission, requirePermission } from "./requestAuthorization";
 
 export async function isAuthorizedForServerPage(ctx: Ctx, permission: Permission): Promise<boolean> {
-    const { user, effectivePermissions } = await getRequestAuthorization(ctx.session);
-    const publicData = CreatePublicData({ user, permissions: effectivePermissions.names });
-    return CMAuthorize({
-        reason: "server-rendered page",
-        permission,
-        publicData,
-    });
+    const auth = await createDb3RequestAuthorization(ctx);
+    if (!authIncludesPermission(auth, permission)) {
+        return false;
+    }
+    return true;
 }
 
 export const makeServerSidePermissionGuard = (permission: Permission) => gSSP(async ({ ctx }) => {
@@ -53,26 +49,26 @@ export async function loadAuthorizedPageEntity<T>(args: LoadAuthorizedPageEntity
         load,
     } = args;
 
-    const identity = "identity" in args ? args.identity : args.id;
-
-    const { user: currentUser, effectivePermissions } = await getRequestAuthorization(ctx.session);
-    const publicData = CreatePublicData({ user: currentUser, permissions: effectivePermissions.names });
-    if (!CMAuthorize({ reason: "server-rendered entity metadata", permission, publicData })) {
+    const auth = await createDb3RequestAuthorization(ctx);
+    if (!authIncludesPermission(auth, permission)) {
         return null;
     }
-    if (!table.authorizeTableForView(createDB3Authorization(currentUser, effectivePermissions))) return null;
-
-    // validate the id
-    if (table.publicIdMember && !isPublicId(identity)) {
-        return null;
-    } else if (!table.publicIdMember && typeof identity !== "number") {
+    requirePermission(auth, permission);
+    if (!table.authorizeTableForView(auth)) {
         return null;
     }
 
+    // validates the id
+    const identityRaw = "identity" in args ? args.identity : args.id;
+    const identity = table.parseIdentity(identityRaw);
+
+    // TODO: this is not supposed to be here; this should be
+    // table.identityMember,
+    // or better: where: table.identityPrismaWhereExpression(identity)
     const identityMember = table.publicIdMember ?? table.pkMember;
     const where = await GetAuthorizedTableReadWhere({
         table,
-        currentUser,
+        currentUser: auth.user,
         where: { [identityMember]: identity },
         includeDeleted,
     });
