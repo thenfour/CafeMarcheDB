@@ -2,11 +2,10 @@
 
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import db from "db";
 import { Permission } from "shared/permissions";
-import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
-import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
-import { xWikiPage } from "src/core/db3/shared/schema/wiki";
+import { loadAuthorization } from "src/auth/server/requestAuthorization";
+import { queryView } from "src/core/db3/server/db3QueryCore";
+import { wikiPageRevisionDetailView } from "src/core/db3/shared/entities/wiki/wikiViews";
 import { TGetWikiPageRevisionArgs, ZTGetWikiPageRevisionArgs } from "src/core/wiki/shared/wikiUtils";
 
 export default resolver.pipe(
@@ -17,36 +16,15 @@ export default resolver.pipe(
             return null;
         }
 
-        const currentUser = await getCurrentUserCore(ctx);
-        if (!currentUser) throw new Error("Current user was not found.");
-        const wikiPageWhere = await GetAuthorizedTableReadWhere({
-            table: xWikiPage,
-            currentUser,
-        });
-
-        // TODO: this should go through normal db3 view layer,
-        // for authorization and output sanitizing.
-
-        const page = await db.wikiPageRevision.findFirst({
-            where: {
-                id: args.revisionId,
-                wikiPage: wikiPageWhere,
-            },
-            include: {
-                wikiPage: true,
-            }
-        });
-
-        if (!page) {
-            return null;
-        }
-
-        const { createdByUserId, wikiPage, ...publicRevision } = page;
-        const { createdByUserId: pageCreatorId, lockedByUserId, ...publicWikiPage } = wikiPage;
-        return {
-            ...publicRevision,
-            wikiPage: publicWikiPage,
-        };
+        const authorization = await loadAuthorization(ctx.session);
+        const result = await queryView({
+            view: wikiPageRevisionDetailView,
+            filter: { pks: [args.revisionId] },
+            orderBy: undefined,
+            take: 1,
+            cmdbQueryContext: "wiki/revision-detail",
+        }, authorization);
+        return result.items[0] ?? null;
     }
 );
 

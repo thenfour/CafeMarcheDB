@@ -25,7 +25,9 @@ import getWikiPageRevisions from "src/core/wiki/queries/getWikiPageRevisions";
 import { wikiParseCanonicalWikiPath } from "src/core/wiki/shared/wikiUtils";
 
 export type EnrichedVerboseUser = EnrichedUser<db3.UserClientPayload>;
-type RevisionHistoryItem = NonNullable<Awaited<ReturnType<typeof getWikiPageRevisions>>>["revisions"][number];
+type RevisionHistoryItem = NonNullable<
+    NonNullable<Awaited<ReturnType<typeof getWikiPageRevisions>>>["revisions"]
+>[number];
 
 interface WikiDiffViewerProps {
     revisionIdLeft: number | null;
@@ -224,7 +226,7 @@ const WikiRevisionHistoryPageContent = () => {
                             </Tooltip>
                         </td>
                         <td>
-                            <UserChip value={rev.createdByUser} />
+                            <UserChip value={rev.createdByUser ?? null} />
                         </td>
                         <td>
                             <Tooltip title={<div>{timeLabel} -- {rev.consolidationKey}</div>} disableInteractive><span>{timeLabel} {timing.label}</span></Tooltip>

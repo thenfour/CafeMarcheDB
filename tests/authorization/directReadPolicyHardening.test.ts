@@ -313,24 +313,49 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
   })
 
   it("applies WikiPage visibility to page, contribution, and revision reads", async () => {
+    const hiddenRevision = {
+      id: 401,
+      name: "Hidden revision",
+      content: "Hidden content",
+      consolidationKey: null,
+      createdByUserId: actor.id,
+      createdByUser: actor,
+      createdAt: new Date("2025-01-01T00:00:00.000Z"),
+      linesAdded: null,
+      linesRemoved: null,
+      prevLineCount: null,
+      lineCount: null,
+      charsAdded: null,
+      charsRemoved: null,
+      sizeChars: null,
+      prevSizeChars: null,
+    }
+    const privateOwnerRevision = {
+      ...hiddenRevision,
+      id: 411,
+      name: "Private owner revision",
+      content: "Private owner content",
+    }
     const hiddenPage = {
       id: 40,
       slug: "hidden",
       createdByUserId: actor.id + 1,
       visiblePermissionId: hiddenVisibilityId,
-      revisions: [{ id: 401, createdByUserId: actor.id }],
+      revisions: [hiddenRevision],
+      currentRevision: hiddenRevision,
     }
     const privateOwnerPage = {
       id: 41,
       slug: "private-owner",
       createdByUserId: actor.id,
       visiblePermissionId: null,
-      revisions: [{ id: 411, createdByUserId: actor.id }],
+      revisions: [privateOwnerRevision],
+      currentRevision: privateOwnerRevision,
     }
     authorizationTestDb.getDelegate("wikiPage").reset([hiddenPage, privateOwnerPage])
     authorizationTestDb.getDelegate("wikiPageRevision").reset([
-      { id: 401, wikiPage: hiddenPage },
-      { id: 411, wikiPage: privateOwnerPage },
+      { ...hiddenRevision, wikiPage: hiddenPage },
+      { ...privateOwnerRevision, wikiPage: privateOwnerPage },
     ])
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
@@ -339,19 +364,53 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       { canonicalWikiPath: "hidden" },
       ctx,
     )).resolves.toBeNull()
-    await expect(invokeResolver(
+    const visibleHistory = await invokeResolver(
       getWikiPageRevisions,
       { canonicalWikiPath: "private-owner" },
       ctx,
-    )).resolves.toEqual(expect.objectContaining({ id: 41 }))
+    )
+    expect(visibleHistory).toEqual(expect.objectContaining({ id: 41 }))
+    expect(visibleHistory).not.toHaveProperty("createdByUserId")
+    expect(visibleHistory?.revisions?.[0]).not.toHaveProperty("createdByUserId")
     await expect(invokeResolver(
       getUserWikiContributions,
       { userId: actor.publicId },
       ctx,
     )).resolves.toEqual({ wikiContributions: [privateOwnerPage] })
     await expect(invokeResolver(getWikiPageRevision, { revisionId: 401 }, ctx)).resolves.toBeNull()
-    await expect(invokeResolver(getWikiPageRevision, { revisionId: 411 }, ctx)).resolves.toEqual(
-      expect.objectContaining({ id: 411 }),
+    const visibleRevision = await invokeResolver(getWikiPageRevision, { revisionId: 411 }, ctx)
+    expect(visibleRevision).toEqual(expect.objectContaining({ id: 411 }))
+    expect(visibleRevision).not.toHaveProperty("wikiPage")
+
+    const revisionOnlyPermissions = permissions.filter(
+      permission => permission !== Permission.view_users_basic_info,
     )
+    const revisionOnlyActor = createAuthorizationTestUser("normal", {
+      id: 804,
+      permissions: revisionOnlyPermissions,
+    })
+    const memberPage = {
+      ...privateOwnerPage,
+      id: 42,
+      slug: "member-page",
+      createdByUserId: revisionOnlyActor.id,
+      visiblePermissionId: null,
+    }
+    authorizationTestDb.getDelegate("user").reset([revisionOnlyActor])
+    authorizationTestDb.getDelegate("wikiPage").reset([memberPage])
+    const { ctx: revisionOnlyCtx } = createAuthorizationPersona("normal", {
+      id: revisionOnlyActor.id,
+      permissions: revisionOnlyPermissions,
+    })
+
+    const historyWithoutUserAccess = await invokeResolver(
+      getWikiPageRevisions,
+      { canonicalWikiPath: memberPage.slug },
+      revisionOnlyCtx,
+    )
+    expect(historyWithoutUserAccess?.revisions?.[0]).toEqual(
+      expect.objectContaining({ id: privateOwnerRevision.id }),
+    )
+    expect(historyWithoutUserAccess?.revisions?.[0]).not.toHaveProperty("createdByUser")
   })
 })

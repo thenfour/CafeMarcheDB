@@ -4,7 +4,7 @@ import { defineView, type ClientOf, type DbPayloadOf, type DtoOf } from "../../c
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
 import { WikiPageTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
-import { xWikiPage } from "../../schema/wiki";
+import { WikiPageRevisionNaturalOrderBy, xWikiPage, xWikiPageRevision } from "../../schema/wiki";
 import { graft } from "../common/viewCommon";
 import type { PermissionPublicId } from "shared/publicId";
 
@@ -186,6 +186,83 @@ export const wikiPageApiView = defineView({
     hydrate: wikiPageApiContract.hydrate,
 });
 
+const wikiPageRevisionSummarySelection = Prisma.validator<Prisma.WikiPageRevisionDefaultArgs>()({
+    select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        consolidationKey: true,
+        linesAdded: true,
+        linesRemoved: true,
+        prevLineCount: true,
+        lineCount: true,
+        charsAdded: true,
+        charsRemoved: true,
+        sizeChars: true,
+        prevSizeChars: true,
+        createdByUser: {
+            select: {
+                publicId: true,
+                name: true,
+            },
+        },
+    },
+});
+
+const wikiPageRevisionHistorySelection = Prisma.validator<Prisma.WikiPageDefaultArgs>()({
+    select: {
+        id: true,
+        slug: true,
+        currentRevision: wikiPageRevisionSummarySelection,
+        revisions: {
+            ...wikiPageRevisionSummarySelection,
+            orderBy: WikiPageRevisionNaturalOrderBy,
+        },
+    },
+});
+
+const wikiPageRevisionHistoryContract = deriveViewContract(
+    xWikiPage,
+    wikiPageRevisionHistorySelection,
+);
+
+export const wikiPageRevisionHistoryView = defineView({
+    viewID: "WikiPage_RevisionHistory",
+    entity: xWikiPage,
+    selection: wikiPageRevisionHistoryContract.prismaSelection,
+    dtoSchema: wikiPageRevisionHistoryContract.dtoSchema,
+    hydrate: wikiPageRevisionHistoryContract.hydrate,
+});
+
+const wikiPageRevisionDetailSelection = Prisma.validator<Prisma.WikiPageRevisionDefaultArgs>()({
+    select: {
+        id: true,
+        name: true,
+        content: true,
+        createdAt: true,
+    },
+});
+
+const wikiPageRevisionDetailContract = deriveViewContract(
+    xWikiPageRevision,
+    wikiPageRevisionDetailSelection,
+);
+
+export const wikiPageRevisionDetailView = defineView({
+    viewID: "WikiPageRevision_Detail",
+    entity: xWikiPageRevision,
+    selection: wikiPageRevisionDetailContract.prismaSelection,
+    where: ({ authorization }) => ({
+        wikiPage: xWikiPage.CalculateWhereClause({
+            filterModel: { tableParams: {} },
+            publicData: authorization,
+            includeDeleted: false,
+        }),
+    }),
+    dtoSchema: wikiPageRevisionDetailContract.dtoSchema,
+    hydrate: wikiPageRevisionDetailContract.hydrate,
+});
+
 export type WikiPageEditorDto = DtoOf<typeof wikiPageEditorView>;
 export type WikiPageEditorClient = ClientOf<typeof wikiPageEditorView>;
 export type WikiPageSearchDto = DtoOf<typeof wikiPageSearchView>;
@@ -193,3 +270,5 @@ export type WikiPageSearchClient = ClientOf<typeof wikiPageSearchView>;
 export type WikiPageApiDbPayload = DbPayloadOf<typeof wikiPageApiView>;
 export type WikiPageApiClient = ClientOf<typeof wikiPageApiView>;
 export type WikiPageApiDto = DtoOf<typeof wikiPageApiView>;
+export type WikiPageRevisionHistoryDto = DtoOf<typeof wikiPageRevisionHistoryView>;
+export type WikiPageRevisionDetailDto = DtoOf<typeof wikiPageRevisionDetailView>;

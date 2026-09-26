@@ -3,7 +3,7 @@ import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { foreignRef, foreignRefByTableId, GhostField, MakeCreatedAtField, MakePKfield, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { foreignRef, foreignRefByTableId, ForeignCollectionField, GenericIntegerField, GhostField, MakeCreatedAtField, MakePKfield, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
@@ -36,6 +36,14 @@ const wikiPageAdministrationAuthMap = db3.defineAuthMap({
 });
 
 const wikiPageRevisionAuthMap = db3.defineAuthMap({
+    PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+    PostQuery: db3.DB3FieldReadAuth.inheritRow,
+    PreMutateAsOwner: Permission.admin_wiki_pages,
+    PreMutate: Permission.admin_wiki_pages,
+    PreInsert: Permission.admin_wiki_pages,
+});
+
+const wikiPageRevisionCollectionAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_wiki_page_revisions,
     PostQuery: Permission.view_wiki_page_revisions,
     PreMutateAsOwner: Permission.admin_wiki_pages,
@@ -136,6 +144,11 @@ export const xWikiPage = db3.defineTable({
             allowNull: true,
             authMap: wikiPageCurrentRevisionAuthMap,
         }),
+        revisions: memberName => new ForeignCollectionField({
+            memberName,
+            foreignTableID: "WikiPageRevision",
+            authMap: wikiPageRevisionCollectionAuthMap,
+        }),
         lockedByUser: foreignRef(() => xUser, {
             fkidMember: "lockedByUserId",
             allowNull: true,
@@ -219,6 +232,7 @@ export interface WikiPageRevisionTableParams {
 ////////////////////////////////////////////////////////////////
 export const xWikiPageRevision = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.WikiPageRevisionDelegate>(),
+    getIdentity: (revision: { id: number }) => revision.id,
     getSelectionArgs: (): Prisma.WikiPageRevisionDefaultArgs => {
         return WikiPageRevisionArgs;
     },
@@ -237,13 +251,27 @@ export const xWikiPageRevision = db3.defineTable({
         id: () => MakePKfield(),
         name: columnName => MakeTitleField(columnName, { authMap: wikiPageRevisionAuthMap, }),
         createdByUser: () => MakeCreatedByField(),
-        createdAt: () => MakeCreatedAtField(),
+        createdAt: () => MakeCreatedAtField({ authMap: wikiPageRevisionAuthMap }),
         content: columnName => new GenericStringField({
             columnName,
             allowNull: false,
             format: "markdown",
             authMap: wikiPageRevisionAuthMap,
         }),
+        consolidationKey: columnName => new GenericStringField({
+            columnName,
+            allowNull: true,
+            format: "plain",
+            authMap: wikiPageRevisionAuthMap,
+        }),
+        linesAdded: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        linesRemoved: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        prevLineCount: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        lineCount: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        charsAdded: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        charsRemoved: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        sizeChars: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        prevSizeChars: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
 
         wikiPage: foreignRef(() => xWikiPage, {
             fkidMember: "wikiPageId",

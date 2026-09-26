@@ -104,6 +104,8 @@ describe("DB3 scalar selection compiler", () => {
       .toEqualTypeOf<typeof db3.xEventTagAssignment>()
     expectTypeOf<db3.DB3RelationTargetTableOf<typeof db3.xWikiPage.fields.currentRevision>>()
       .toEqualTypeOf<typeof db3.xWikiPageRevision>()
+    expectTypeOf<db3.DB3RelationTargetTableOf<typeof db3.xWikiPage.fields.revisions>>()
+      .toEqualTypeOf<typeof db3.xWikiPageRevision>()
     expectTypeOf<typeof db3.xEvent.fields.tags.associationTableID>()
       .toEqualTypeOf<"EventTagAssignment">()
     expectTypeOf<typeof db3.xEvent.fields.tags.foreignTableID>()
@@ -130,7 +132,7 @@ describe("DB3 scalar selection compiler", () => {
     expectTypeOf<TransportDto["name"]>().toEqualTypeOf<string>()
     expectTypeOf<TransportDto["tags"]>().toBeArray()
     expectTypeOf<ContentIsAny>().toEqualTypeOf<false>()
-    expectTypeOf<CurrentRevision["content"]>().toEqualTypeOf<string | undefined>()
+    expectTypeOf<CurrentRevision["content"]>().toEqualTypeOf<string>()
     expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<WikiAuthorizationOnlyKeys>().toEqualTypeOf<never>()
   })
@@ -834,11 +836,15 @@ describe("UserTag Event search derived-view migration", () => {
     expect(db3.userTagEventSearchView.entity).toBe(db3.xUserTag)
     expect(db3.userTagEventSearchView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
-    )).toEqual(expect.objectContaining({ select: expect.objectContaining({
-      userAssignments: expect.objectContaining({ select: expect.objectContaining({
-        user: { select: { id: true, isDeleted: true, publicId: true } },
-      }) }),
-    }) }))
+    )).toEqual(expect.objectContaining({
+      select: expect.objectContaining({
+        userAssignments: expect.objectContaining({
+          select: expect.objectContaining({
+            user: { select: { id: true, isDeleted: true, publicId: true } },
+          })
+        }),
+      })
+    }))
 
     const dto: Dto = {
       publicId: userTagPublicId,
@@ -949,9 +955,9 @@ describe("File derived-view migration", () => {
       publicId: FilePublicId
       fileLeafName?: string
     }>()
-     expectTypeOf<PinnedSongDto>().toEqualTypeOf<{
-       publicId: SongPublicId
-       name: string
+    expectTypeOf<PinnedSongDto>().toEqualTypeOf<{
+      publicId: SongPublicId
+      name: string
     }>()
     expectTypeOf<RootAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<RelatedAuthorizationOnlyKeys>().toEqualTypeOf<never>()
@@ -1053,7 +1059,7 @@ describe("Song derived-view migration", () => {
       .toEqualTypeOf<SongCreditTypePublicId>()
     expectTypeOf<CreditDto["userId"]>()
       .toEqualTypeOf<UserPublicId | null>()
-     expectTypeOf<CreditDto["songId"]>().toEqualTypeOf<SongPublicId>()
+    expectTypeOf<CreditDto["songId"]>().toEqualTypeOf<SongPublicId>()
     expectTypeOf<NestedCreditTypeDto["color"]>()
       .toEqualTypeOf<string | null>()
     expectTypeOf<NestedCreditTypeDto["publicId"]>()
@@ -1086,7 +1092,7 @@ describe("Song derived-view migration", () => {
     type TagDto = NonNullable<NonNullable<Dto["tags"]>[number]["tag"]>
     type TagClient = NonNullable<NonNullable<Client["tags"]>[number]["tag"]>
 
-     expectTypeOf<Dto["publicId"]>().toEqualTypeOf<SongPublicId>()
+    expectTypeOf<Dto["publicId"]>().toEqualTypeOf<SongPublicId>()
     expectTypeOf<Dto["name"]>().toEqualTypeOf<string>()
     expectTypeOf<Dto["visiblePermissionId"]>()
       .toEqualTypeOf<typeof permissionPublicId | null>()
@@ -1355,12 +1361,12 @@ describe("Event frontpage derived-view migration", () => {
 })
 
 describe("DB3 normalized foreign-single hydration", () => {
-    const statusReferences = db3.defineReferenceContract({
-      eventStatus: db3.reference(db3.xEventStatus)<{
-        publicId: EventStatusPublicId
-        caption: string
-        render: () => string
-      }>(),
+  const statusReferences = db3.defineReferenceContract({
+    eventStatus: db3.reference(db3.xEventStatus)<{
+      publicId: EventStatusPublicId
+      caption: string
+      render: () => string
+    }>(),
   })
 
   it("declares and resolves a selected foreign key while retaining its transport member", () => {

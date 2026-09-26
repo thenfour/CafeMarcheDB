@@ -6,7 +6,7 @@ import {
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
 import {
-    type DB3AuthSpec, type DB3RowMode,
+    type DB3AuthSpec, type DB3ReadPresenceForAuthSpec, type DB3RowMode,
     FieldBase,
     type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
@@ -17,13 +17,22 @@ import { type UserWithRolesPayload } from "../schema/userPayloads";
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export type CreatedAtFieldArgs = {
+export type CreatedAtFieldArgs<TAuthSpec extends Partial<DB3AuthSpec> = {}> = {
     columnName: string;
     specialFunction?: SqlSpecialColumnFunction;
-} & Partial<DB3AuthSpec>;
+} & TAuthSpec;
 
-export class CreatedAtField extends FieldBase<Date, undefined, true, Date, Date> {
-    constructor(args: CreatedAtFieldArgs) {
+export class CreatedAtField<
+    const TAuthSpec extends Partial<DB3AuthSpec> = {},
+> extends FieldBase<
+    Date,
+    undefined,
+    true,
+    Date,
+    Date,
+    DB3ReadPresenceForAuthSpec<TAuthSpec>
+> {
+    constructor(args: CreatedAtFieldArgs<Partial<DB3AuthSpec>>) {
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
@@ -112,8 +121,10 @@ export class CreatedAtField extends FieldBase<Date, undefined, true, Date, Date>
 
 // higher-level conveniences
 
-export const MakeCreatedAtField = (args: ({ columnName?: string } & Partial<DB3AuthSpec>) = {}) => (
-    new CreatedAtField({
+export const MakeCreatedAtField = <
+    const TAuthSpec extends Partial<DB3AuthSpec> = {},
+>(args?: { columnName?: string } & TAuthSpec) => (
+    new CreatedAtField<TAuthSpec>({
         ...args,
         columnName: args?.columnName || "createdAt",
         specialFunction: SqlSpecialColumnFunction.createdAt,
