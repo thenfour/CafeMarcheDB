@@ -13,7 +13,7 @@ import db3Query from "@db3/queries/db3queries"
 import db3PaginatedQuery from "@db3/queries/db3paginatedQueries"
 import { queryTable } from "@db3/server/db3QueryCore"
 import { loadUserAuthorization } from "src/auth/server/requestAuthorization"
-import { PermissionSet } from "src/auth/shared/PermissionSet"
+import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 import { Permission } from "shared/permissions"
 import { parsePublicId } from "shared/publicId"
 import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures"
@@ -37,7 +37,7 @@ describe("explicit DB3 authorization", () => {
     expect(() => db3.createDB3Authorization(null, undefined)).toThrow("effective permissions are required")
     // @ts-expect-error Plain transport data must be resolved into a PermissionSet.
     expect(() => db3.createDB3Authorization(null, { names: [], ids: [] })).toThrow("effective permissions are required")
-    const noGrants = db3.createDB3Authorization(null, new PermissionSet([]))
+    const noGrants = db3.createDB3Authorization(null, new ServerPermissionSet([]))
     expect(db3.xSong.authorizeTableForView(noGrants)).toBe(false)
     // @ts-expect-error Partial public/session data is not schema authorization.
     expect(() => db3.xSong.authorizeTableForView({ userId: 0 })).toThrow()

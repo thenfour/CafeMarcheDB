@@ -6,7 +6,7 @@ import {
 import type { Prisma } from "db";
 import type { z } from "zod";
 import type { CMDBTableFilterModel } from "../apiTypes";
-import type { DB3Authorization } from "../db3Authorization";
+import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
 import type { AnyDB3Table, DB3PrismaDelegateOf } from "../db3core";
 import {
     emptyReferenceContract,
@@ -18,7 +18,7 @@ type ArrayItem<T> = T extends readonly (infer TItem)[] ? TItem : never;
 
 export interface DB3ViewSelectionContext {
     readonly filter: CMDBTableFilterModel;
-    readonly authorization: DB3Authorization;
+    readonly authorization: DB3ServerAuthorization;
 }
 
 export type DB3ViewSelectionArgs<TEntity extends AnyDB3Table> = Partial<Pick<

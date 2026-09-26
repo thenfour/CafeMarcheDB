@@ -1038,7 +1038,7 @@ describe("BA-U001 user management boundaries", () => {
     expect(canManageUser({
       actor: {
         principal: null,
-        effectivePermissions: new PermissionSet([{ id: 1, name: Permission.deactivate_users }]),
+        effectivePermissions: new PermissionSet([Permission.deactivate_users]),
       },
       target: asUserManagementTarget(ordinaryUser),
       action: "deactivate",

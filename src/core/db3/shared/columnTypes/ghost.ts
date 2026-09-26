@@ -5,7 +5,7 @@ import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
-import type { DB3Authorization } from "../db3Authorization";
+import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
 import {
     type DB3AuthSpec, type DB3ReadPresenceForAuthSpec,
     FieldBase,
@@ -57,7 +57,7 @@ export class GhostField<
 
     connectToTable = (table: xTable) => { this.table = table; };
 
-    ApplyIncludeFiltering = (include: TAnyModel, publicData: DB3Authorization, includeDeleted: boolean): void | Promise<void> => { };
+    ApplyIncludeFiltering = (include: TAnyModel, publicData: DB3ServerAuthorization, includeDeleted: boolean): void | Promise<void> => { };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;
 

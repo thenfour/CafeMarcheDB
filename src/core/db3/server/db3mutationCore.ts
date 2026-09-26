@@ -1,3 +1,4 @@
+import type { DB3ServerAuthorization } from "./db3ServerAuthorization";
 //'use server' - https://stackoverflow.com/questions/76957592/error-only-async-functions-are-allowed-to-be-exported-in-a-use-server-file
 
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
@@ -62,7 +63,7 @@ const createDB3Row = async (
     });
 };
 
-const getMutationPublicData = async (ctx: Ctx): Promise<db3.DB3Authorization> => {
+const getMutationPublicData = async (ctx: Ctx): Promise<DB3ServerAuthorization> => {
     const authorization = await getRequestAuthorization(ctx.session);
     return db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
 };
@@ -1100,5 +1101,4 @@ export const PostProcessFile = async ({ file }: { file: Prisma.FileGetPayload<{}
         return;
     }
 };
-
 

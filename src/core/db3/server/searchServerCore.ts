@@ -1,3 +1,4 @@
+import type { DB3ServerAuthorization } from "./db3ServerAuthorization";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import { calendarWindowSql } from "./calendarWindowSql";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
@@ -73,7 +74,7 @@ const optionBearingDiscreteBehaviors = new Set<DiscreteCriterionFilterType>([
 export async function resolveSearchDiscreteCriteria(
     table: db3.xTable,
     criteria: readonly DiscreteCriterion[],
-    publicData: db3.DB3Authorization,
+    publicData: DB3ServerAuthorization,
     database: TransactionalPrismaClient,
 ): Promise<DiscreteCriterion[]> {
     return Promise.all(criteria.map(async criterion => {
@@ -106,7 +107,7 @@ function calculateFilterQuery(currentUser: UserWithRolesPayload,
     args: GetSearchResultsInput,
     excludeCriterionColumn: string | null,
     sortElements: SortQueryElements,
-    publicData: db3.DB3Authorization,
+    publicData: DB3ServerAuthorization,
     calendarPredicate: string | null,
 ): CalculateFilterQueryResult {
     const table = db3.GetTableById(args.tableID);

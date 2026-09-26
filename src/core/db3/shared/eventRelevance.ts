@@ -28,7 +28,6 @@ type EventRelevanceContext = {
 }
 
 type EventBase = {
-    id: number,
     startsAt: Date | null, // TBD events have this null. TBD events are only "relevant" when explicitly pinned.
     durationMillis: number | null,
     isAllDay: boolean | null,
@@ -39,7 +38,7 @@ type EventWithRelevanceOverride = EventBase & {
     relevanceClassOverride: EventRelevanceClassValue | null,
 };
 
-type EventWithRelevanceAndPrio = EventBase & {
+type EventWithRelevanceAndPrio<TEvent extends EventBase> = Omit<TEvent, "relevanceClassOverride"> & {
     relevance_class: EventRelevanceClassValue,
     isExplicitlyPinned: boolean,
     prioWithinClass: number,
@@ -93,10 +92,10 @@ const gClassifiers: Record<ClassifiableRelevance, ClassifyWithPrio> = {
 };
 
 // takes an event from db (with override), outputs the final classification and priority
-const ClassifyEventRelevance = (e: EventWithRelevanceOverride, ctx: EventRelevanceContext): EventWithRelevanceAndPrio => {
+const ClassifyEventRelevance = <TEvent extends EventWithRelevanceOverride>(e: TEvent, ctx: EventRelevanceContext): EventWithRelevanceAndPrio<TEvent> => {
     const { relevanceClassOverride, ...rest } = e;
     const isExplicitlyPinned = relevanceClassOverride === gEventRelevanceClass.Pinned;
-    const ret: EventWithRelevanceAndPrio = {
+    const ret: EventWithRelevanceAndPrio<TEvent> = {
         ...rest,
         // A pin is itself a visible classification when the event is too old to
         // fit any of the date-based classes.
@@ -169,7 +168,8 @@ export const kMaxRelevantEventsToShow = 5 as const;
 // we show you 'the next event to think about'". better than nothing, and better than spamming too many.
 export const kMaxRelevantFutureEventsToShow = 1 as const;
 
-export const GetRelevantEvents = (events: EventWithRelevanceOverride[], ctx: EventRelevanceContext) => {
+// Classification preserves the caller's identity and other payload fields.
+export const GetRelevantEvents = <TEvent extends EventWithRelevanceOverride>(events: TEvent[], ctx: EventRelevanceContext) => {
     // - calc final relevance classification (after applying overrides)
 
     const classifiedEvents = events.map(e => ClassifyEventRelevance(e, ctx));
@@ -183,7 +183,7 @@ export const GetRelevantEvents = (events: EventWithRelevanceOverride[], ctx: Eve
 
     const hasNonFuture = visibleEvents.some(e => e.relevance_class !== gEventRelevanceClass.Future);
 
-    let eventsToShow: EventWithRelevanceAndPrio[];
+    let eventsToShow: EventWithRelevanceAndPrio<TEvent>[];
     if (hasNonFuture) {
         // remove future unless pinned
         eventsToShow = visibleEvents.filter(e => e.relevance_class !== gEventRelevanceClass.Future || e.isExplicitlyPinned);

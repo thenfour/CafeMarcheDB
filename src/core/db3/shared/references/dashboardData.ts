@@ -1,5 +1,6 @@
 import type { ServerStartInfo } from "shared/serverStateBase";
 import type { UserSettings } from "shared/userSettings";
+import type { EventPublicId } from "shared/publicId";
 import { hydrateView, type AnyDB3View, type ClientOf, type DtoOf } from "../core/db3View";
 import { menuLinkListView } from "../entities/menuLink/menuLinkViews";
 import * as dashboard from "./dashboardReferences";
@@ -23,11 +24,10 @@ export interface DashboardDataDto {
     dynMenuLinks: DtoOf<typeof menuLinkListView>[];
     serverBaseUri: string;
     serverStartupState: ServerStartInfo | null;
-    relevantEventIds: number[];
+    relevantEventIds: EventPublicId[];
     bandTimeZone: string;
     userSettings: UserSettings;
     effectivePermissionNames: string[];
-    effectivePermissionIds: number[];
 }
 
 /** Hydrate one complete snapshot; old or revoked references cannot survive a refresh. */

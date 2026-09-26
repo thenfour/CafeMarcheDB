@@ -8,11 +8,11 @@ import type {
     AnyDB3Table,
     CommandDtoOf,
     CommandResultOf,
-    DB3Authorization,
     DB3CommandRequest,
     DB3IdentityOf
 } from "../db3";
 import { createDb3RequestAuthorization } from "../db3";
+import type { DB3ServerAuthorization } from "./db3ServerAuthorization";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import {
     CallMutateEventHooks,
@@ -63,7 +63,7 @@ export interface DB3CommandRowService {
 }
 
 export interface DB3CommandExecutionContext {
-    readonly authorization: DB3Authorization;
+    readonly authorization: DB3ServerAuthorization;
     readonly transaction: TransactionalPrismaClient;
     readonly rowServices: DB3CommandRowService;
 }
@@ -99,7 +99,7 @@ export function defineCommandHandler<TCommand extends AnyDB3Command>(
 async function resolveEntityIdentity<TEntity extends AnyDB3Table>(
     entity: TEntity,
     identity: DB3IdentityOf<TEntity>,
-    authorization: DB3Authorization,
+    authorization: DB3ServerAuthorization,
     transactionalDb: TransactionalPrismaClient,
 ): Promise<number | string> {
     if (!entity.publicIdMember) return identity;
@@ -112,7 +112,7 @@ async function resolveEntityIdentity<TEntity extends AnyDB3Table>(
 // creates wrappers around the internal `*Impl` functions; more consistent and type-aware.
 function createCommandRowServices(
     ctx: AuthenticatedCtx,
-    authorization: DB3Authorization,
+    authorization: DB3ServerAuthorization,
     transactionalDb: TransactionalPrismaClient,
 ): DB3CommandRowService {
     return {

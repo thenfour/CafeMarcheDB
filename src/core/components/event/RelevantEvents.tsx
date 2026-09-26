@@ -87,7 +87,7 @@ const RelevantEventsWithDashboardContext = ({
 
     const tableClient = useDb3Query({
         view: db3.eventSearchView, filterSpec: {
-            pks: dashboardContext.relevantEventIds,
+            publicIds: dashboardContext.relevantEventIds,
         }
     });
     const enrichedEvents = tableClient.items;

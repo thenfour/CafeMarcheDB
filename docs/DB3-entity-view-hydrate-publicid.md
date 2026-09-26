@@ -277,6 +277,14 @@ owns the dependency order and complete-option filtering outside React, and
 creates a fresh reference store for every snapshot so removed entries cannot
 survive a refresh. The reference store always holds hydrated values, never DTOs.
 
+The dashboard sends only `effectivePermissionNames`, not database permission
+IDs. Shared `PermissionSet` owns name-based capability and delegation checks;
+`ServerPermissionSet` adds database IDs for trusted visibility predicates.
+Database reads require `DB3ServerAuthorization`, while client-side editing and
+display checks use the shared `DB3Authorization` contract. `relevantEventIds`
+contains branded Event public IDs, consumed through `filter.publicIds`, including
+an empty array when there are no relevant events.
+
 The former Song filter path's `xSong_Verbose` table variant and
 `SongPayload_Verbose` alias have been removed. It now queries canonical `xSong`
 through `Song_Search`; the view owns the payload shape while its transport subset
@@ -845,6 +853,12 @@ Translation belongs at the trusted server boundary:
   and
 - `filter.publicIds` is the client-facing identity filter for converted tables.
 
+Generic query RPCs reject `filter.pks` and explicit primary-key item filters for
+converted tables, including for sysadmins. Capability grants never opt a client
+back into natural identity. Trusted server reads can still use
+`trustedNaturalPrimaryKeys` execution options without exposing that option in
+the request DTO.
+
 This translation must be centralized in DB3 or explicitly invoked by a
 non-DB3 server endpoint. A raw Prisma result must not be returned directly merely
 because the endpoint itself is trusted.
@@ -1328,8 +1342,9 @@ The current pressure-led sequence is:
     `RolePermission`) while preserving natural permission keys in trusted
     authorization evaluation. Role assignment, designation, visibility, and
     role-permission commands now accept public identities and resolve them only
-    at their server boundaries; `PermissionSet` and policy evaluation continue
-    to use the database identities they need for efficient authorization.
+    at their server boundaries; server-side `ServerPermissionSet` retains the
+    database identities needed for efficient visibility predicates. Shared
+    `PermissionSet` and the dashboard capability payload use names only.
 
     This slice exposed two missing view facilities. Selection derivation now
     automatically fetches a converted foreign target's public identity when a
@@ -1549,6 +1564,13 @@ live migration nor browser interaction against migrated data was performed.
 - Startup repair also rewrites `EventDescription` wiki slugs and persisted
   SetlistPlan Event links to public paths. These rewrites cover stored strings
   that cannot be expressed as Prisma foreign-key projection.
+- Dashboard follow-up: relevant-event selection and fetching now use public
+  identities end to end. Relevance SQL uses effective grants (including inherited
+  roles), retains retired cancelled statuses, and handles an empty status catalog.
+  Shared capability checks no longer require database permission IDs in the
+  dashboard payload. Regression coverage includes normal users, sysadmins,
+  empty results, private/deleted Events, forged numeric RPC targets, and trusted
+  server natural-key reads.
 
 Validation: the full repository runner passed 104 test files with 1,609 tests
 passing and 23 tests skipped across the three MySQL integration suites.

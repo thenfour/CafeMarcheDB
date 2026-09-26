@@ -1,3 +1,4 @@
+import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("db", async () => {
@@ -9,7 +10,7 @@ vi.mock("db", async () => {
 import * as db3 from "@db3/db3"
 import db3Mutation from "tests/authorization/db3MutationTestResolver"
 import { UpdateAssociations } from "@db3/server/db3mutationCore"
-import { PermissionSet } from "src/auth/shared/PermissionSet"
+import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 import { Permission } from "shared/permissions"
 import { parsePublicId } from "shared/publicId"
 import { CreateChangeContext } from "shared/activityLog"
@@ -22,9 +23,9 @@ import {
 } from "./support/db3RequestBuilders"
 import { invokeResolver } from "./support/resolverHarness"
 
-const authorization = (...names: Permission[]): db3.DB3Authorization => ({
+const authorization = (...names: Permission[]): DB3ServerAuthorization => ({
   userId: 501,
-  effectivePermissions: new PermissionSet(names.map((name, index) => ({ id: index + 1, name }))),
+  effectivePermissions: new ServerPermissionSet(names.map((name, index) => ({ id: index + 1, name }))),
 })
 
 const inheritedReadMap = db3.defineAuthMap({

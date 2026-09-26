@@ -15,6 +15,7 @@ import {
     type SearchResultsFacetQuery, type SortQueryElements
 } from "./apiTypes";
 import { type DB3Authorization } from "./db3Authorization";
+import type { DB3ServerAuthorization } from "../server/db3ServerAuthorization";
 import { GetVisibilityWhereExpression } from "./db3Helpers";
 import type { UserWithRolesPayload } from "./schema/userPayloads";
 
@@ -286,7 +287,7 @@ export type DB3AuthSpec = {
 } | {
     readonly authMap: DB3AuthContextPermissionMap<"optional">;
 } | {
-    readonly _customAuth: (args: DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean;
+    readonly _customAuth: (args: DB3AuthorizeAndSanitizeFieldInput<TAnyModel>) => boolean;
 };
 
 /**
@@ -359,7 +360,7 @@ export type FieldBaseArgs<FieldDataType, TReadTransportValue> = {
     authMap: DB3AuthContextPermissionMapShape | null;
     specialFunction: SqlSpecialColumnFunction | undefined;
     fkidMember?: string | undefined;
-    _customAuth: ((args: DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean) | null;
+    _customAuth: ((args: DB3AuthorizeAndSanitizeFieldInput<TAnyModel>) => boolean) | null;
     _matchesMemberForAuthorization?: ((memberName: string) => boolean) | null;
 }
 
@@ -370,7 +371,7 @@ export interface ValidateAndParseArgs<FieldDataType> {
 
 };
 
-export interface DB3AuthorizeAndSanitizeInput<T extends TAnyModel> {
+interface DB3AuthorizeAndSanitizeInputBase<T extends TAnyModel> {
     includeDeleted?: boolean;
     contextDesc: string,
     model: T | null,
@@ -378,25 +379,37 @@ export interface DB3AuthorizeAndSanitizeInput<T extends TAnyModel> {
     // values) while row ownership and table authorization are derived from
     // the persisted row.
     existingModel?: T | null,
-    rowMode: DB3RowMode,
-    publicData: DB3Authorization,
 
     fallbackOwnerId: number | null;
 };
 
-export type DB3AuthorizeAndSanitizeFieldInput<T extends TAnyModel> = DB3AuthorizeAndSanitizeInput<T> & {
+// Database reads need persisted permission identities; client mutation checks do not.
+export type DB3AuthorizeAndSanitizeInput<T extends TAnyModel> = DB3AuthorizeAndSanitizeInputBase<T> & (
+    | { rowMode: "view"; publicData: DB3ServerAuthorization }
+    | { rowMode: "new" | "update"; publicData: DB3Authorization }
+);
+
+export type DB3AuthorizeAndSanitizeFieldInput<T extends TAnyModel> = DB3AuthorizeAndSanitizeInputBase<T> & {
+    rowMode: DB3RowMode;
+    publicData: DB3Authorization;
     //rowInfo: RowInfo | null;
     authContext: DB3AuthorizationContext;
     isOwner: boolean;
 };
 
 
-export interface DB3AuthorizeForViewColumnArgs<T extends TAnyModel> {
-    model: T | null,
-    publicData: DB3Authorization,
-
+export type DB3AuthorizeForViewColumnArgs<T extends TAnyModel> = {
     columnName: string;
-};
+} & (
+        | { model: null; publicData: DB3Authorization }
+        | { model: T; publicData: DB3ServerAuthorization }
+    );
+
+function hasRowReadModel<T extends TAnyModel>(
+    args: DB3AuthorizeForViewColumnArgs<T>,
+): args is { model: T; publicData: DB3ServerAuthorization; columnName: string } {
+    return args.model !== null;
+}
 
 
 export interface DB3AuthorizeForEditColumnArgs<T extends TAnyModel> {
@@ -408,10 +421,10 @@ export interface DB3AuthorizeForEditColumnArgs<T extends TAnyModel> {
 };
 
 
-export interface DB3AuthorizeForRowArgs<T extends TAnyModel> {
+export interface DB3AuthorizeForRowArgs<T extends TAnyModel, TAuthorization extends DB3Authorization = DB3Authorization> {
     includeDeleted?: boolean;
     model: T | null,
-    publicData: DB3Authorization,
+    publicData: TAuthorization,
 
 };
 
@@ -674,10 +687,10 @@ export abstract class FieldBase<
     abstract ApplyDbToClient: (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode, currentUser?: UserWithRolesPayload | null) => void; // apply the value from db to client.
 
     // for foreign "includes", we need to apply a WHERE clause which excludes soft deletes, irrelevant things, & records the user doesn't have access to.
-    abstract ApplyIncludeFiltering: (include: TAnyModel, publicData: DB3Authorization, includeDeleted: boolean) => void | Promise<void>;
+    abstract ApplyIncludeFiltering: (include: TAnyModel, publicData: DB3ServerAuthorization, includeDeleted: boolean) => void | Promise<void>;
 
     // Relations may require their target to be readable for this row to appear.
-    getRowVisibilityWhereClause = (_publicData: DB3Authorization, _includeDeleted: boolean): TAnyModel | undefined => undefined;
+    getRowVisibilityWhereClause = (_publicData: DB3ServerAuthorization, _includeDeleted: boolean): TAnyModel | undefined => undefined;
 };
 
 export interface SortModel {
@@ -704,7 +717,7 @@ export interface CalculateWhereClauseArgs {
     includeDeleted?: boolean;
     filterModel: CMDBTableFilterModel;
 
-    publicData: DB3Authorization;
+    publicData: DB3ServerAuthorization;
 };
 
 export type DB3QueryParameterKind =
@@ -769,7 +782,7 @@ export interface TableDesc {
      */
     getIdentity?: DB3IdentityAccessor;
 
-    getSelectionArgs: (filterModel: CMDBTableFilterModel, authorization: DB3Authorization) => TAnyModel,
+    getSelectionArgs: (filterModel: CMDBTableFilterModel, authorization: DB3ServerAuthorization) => TAnyModel,
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
     doesItemExactlyMatchText?: (row: TAnyModel, filterText: string) => boolean,
@@ -1045,7 +1058,7 @@ export class xTable<
     columns: AnyDB3Field[];
     readonly prismaMemberRegistry: ReadonlyMap<string, DB3PrismaMemberOwnership>;
 
-    getSelectionArgs: (filterModel: CMDBTableFilterModel, authorization: DB3Authorization) => TAnyModel;
+    getSelectionArgs: (filterModel: CMDBTableFilterModel, authorization: DB3ServerAuthorization) => TAnyModel;
 
     deletePolicy: DB3DeletePolicy;
     viewDeletedPermission?: Permission;
@@ -1252,7 +1265,7 @@ export class xTable<
     parseDatabaseIdentity = (value: unknown): number => this.databaseIdentitySchema.parse(value);
 
     // AND this into your query to apply visibility & soft delete logic.
-    SqlGetVisFilterExpression(currentUser: UserWithRolesPayload, tableAlias: string, includeDeleted = false, publicData?: DB3Authorization) {
+    SqlGetVisFilterExpression(currentUser: UserWithRolesPayload, tableAlias: string, includeDeleted = false, publicData?: DB3ServerAuthorization) {
         const AND: string[] = [];
         const canIncludeDeleted = includeDeleted && !!publicData && this.canViewDeletedRows(publicData);
         if (this.SqlSpecialColumns.isDeleted && !canIncludeDeleted) {
@@ -1388,7 +1401,7 @@ export class xTable<
         if (!col) return false;
         const authContext = isOwner ? "PostQueryAsOwner" : "PostQuery";
         if (col.readAuthorizationInheritsRow(authContext)) {
-            const rowIsAuthorized = args.model
+            const rowIsAuthorized = hasRowReadModel(args)
                 ? this.authorizeRowForView({ model: args.model, publicData: args.publicData })
                 : this.authorizeTableForView(args.publicData);
             if (!rowIsAuthorized) return false;
@@ -1423,7 +1436,7 @@ export class xTable<
         });
     };
 
-    authorizeColumnForInsert = <T extends TAnyModel,>(args: DB3AuthorizeForViewColumnArgs<T>) => {
+    authorizeColumnForInsert = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T> & { columnName: string }) => {
         const col = this.columns.find(candidate => candidate.member === args.columnName);
         if (!col) return false;
         return col.authorize({
@@ -1448,7 +1461,7 @@ export class xTable<
             .map(column => column.fkidMember || column.member);
     };
 
-    private isRowVisibleToActor = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>): boolean => {
+    private isRowVisibleToActor = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T, DB3ServerAuthorization>): boolean => {
         const rowInfo = args.model ? this.getRowInfo(args.model) : null;
         const ownerUserId = this.getOwnerUserId(args.model, rowInfo?.ownerUserId, null);
         const isOwner = ownerUserId != null
@@ -1486,12 +1499,12 @@ export class xTable<
     ): boolean => !includeDeleted
         || (!!this.SqlSpecialColumns.isDeleted && this.canViewDeletedRows(publicData));
 
-    authorizeRowForRestore = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>): boolean => {
+    authorizeRowForRestore = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T, DB3ServerAuthorization>): boolean => {
         if (!this.restorePermission || !this.hasPermission(args.publicData, this.restorePermission)) return false;
         return this.isRowVisibleToActor(args);
     };
 
-    authorizeRowForView = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>) => {
+    authorizeRowForView = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T, DB3ServerAuthorization>) => {
         const rowInfo = args.model ? this.getRowInfo(args.model) : null;
         const ownerUserId = this.getOwnerUserId(args.model, rowInfo?.ownerUserId, null);
         const isOwner = ownerUserId != null
@@ -1658,12 +1671,12 @@ export class xTable<
     };
 
     CalculateSelectionArgs = async (
-        publicData: DB3Authorization,
+        publicData: DB3ServerAuthorization,
         filterModel: CMDBTableFilterModel,
         includeDeleted = false,
         getSelectionArgs?: (context: {
             readonly filter: CMDBTableFilterModel;
-            readonly authorization: DB3Authorization;
+            readonly authorization: DB3ServerAuthorization;
         }) => TAnyModel,
     ): Promise<TAnyModel | undefined> => {
         // create a deep copy so our modifications don't spill into other stuff.
@@ -1691,7 +1704,7 @@ export class xTable<
 
     // takes an "include" Prisma clause, and adds a WHERE clause to it to exclude objects that should be hidden.
     // really it just delegates down to columns.
-    ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3Authorization, includeDeleted = false): Promise<void> => {
+    ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3ServerAuthorization, includeDeleted = false): Promise<void> => {
         if (!include) return;
         await Promise.all(this.columns.map(col => col.ApplyIncludeFiltering(include, publicData, includeDeleted)));
     };
@@ -2015,7 +2028,7 @@ export const GetTableById = (tableID: string): xTable => {
 }
 
 ////////////////////////////////////////////////////////////////
-export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, memberName: string, foreignMemberOnAssociation: string | null, foreignTableID: string, publicData: DB3Authorization, includeDeleted = false) => {
+export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, memberName: string, foreignMemberOnAssociation: string | null, foreignTableID: string, publicData: DB3ServerAuthorization, includeDeleted = false) => {
     const foreignTable = GetTableById(foreignTableID);
     let member = include[memberName];
     if (!member) { // applies to === false, === null, === undefined

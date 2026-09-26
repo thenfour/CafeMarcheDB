@@ -30,7 +30,7 @@ import {
 } from "shared/publicId"
 import type { DateTimeRange } from "shared/time"
 import { compileDB3Selection } from "src/core/db3/shared/core/db3ViewContract"
-import { PermissionSet } from "src/auth/shared/PermissionSet"
+import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 import { eventPublicId } from "./support/eventResponseFixtures"
 
 const eventTypePublicId = parsePublicId<"EventType">("AbCdEfGhIjKlMn11")
@@ -75,7 +75,7 @@ describe("DB3 scalar selection compiler", () => {
   it("derives the finite Event Search relation graph without recursive widening", () => {
     const selection = db3.eventSearchSelection({
       filter: { items: [] },
-      authorization: db3.createDB3Authorization(null, new PermissionSet([])),
+      authorization: db3.createDB3Authorization(null, new ServerPermissionSet([])),
     })
     const derived = db3.deriveViewContract(db3.xEvent, selection)
     type FullDto = z.infer<typeof derived.dtoSchema>

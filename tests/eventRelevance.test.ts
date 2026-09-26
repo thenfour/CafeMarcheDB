@@ -5,7 +5,7 @@ import {
     kMaxRelevantEventsToShow,
 } from "src/core/db3/shared/eventRelevance";
 
-type RelevanceEvent = Parameters<typeof GetRelevantEvents>[0][number];
+type RelevanceEvent = Parameters<typeof GetRelevantEvents>[0][number] & { id: number };
 type RelevanceContext = Parameters<typeof GetRelevantEvents>[1];
 
 const hour = 60 * 60 * 1000;

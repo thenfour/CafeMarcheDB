@@ -4,6 +4,7 @@ import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { UserWithRolesArgs, type UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
 import { loadEffectivePermissions } from "./effectivePermissions";
 import { PermissionSet } from "../shared/PermissionSet";
+import type { ServerPermissionSet } from "./ServerPermissionSet";
 
 class FreshPermissionAuthorizationError extends AuthorizationError {
     constructor(permission: Permission) {
@@ -58,7 +59,7 @@ export const requireFreshPermission = async (
     db: TransactionalPrismaClient,
     userId: number | null | undefined,
     permission: Permission,
-): Promise<UserWithRolesPayload & { effectivePermissions: PermissionSet }> => {
+): Promise<UserWithRolesPayload & { effectivePermissions: ServerPermissionSet }> => {
     const actor = await requireFreshAuthorization(db, userId, permission);
     if (!actor) {
         throw new FreshPermissionAuthorizationError(permission);

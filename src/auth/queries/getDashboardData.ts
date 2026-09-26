@@ -1,15 +1,16 @@
 import { BigintToNumberNullable } from "@/shared/utils";
 import { EventRelevanceClassValue, GetRelevantEvents, gEventRelevanceClass, kMaxRelevantEventsToQuery } from "@/src/core/db3/shared/eventRelevance";
-import type { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 import { resolver } from "@blitzjs/rpc";
 import type { Ctx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
+import type { EventPublicId } from "shared/publicId";
 import { Stopwatch } from "shared/rootroot";
 import { getClientServerState } from "shared/serverStateBase";
 import {
     type AnyDB3View,
+    createDB3Authorization,
     createDb3RequestAuthorization,
     type DashboardDataDto,
     type DtoOf,
@@ -61,16 +62,18 @@ async function queryOptionalDashboardView<TView extends AnyDB3View>(
 }
 
 
-// returns a list of eventIds to show in the dashboard for the current user.
+// Returns public event identities to show in the dashboard for the current user.
 async function getTopRelevantEvents(
-    currentUser: UserWithRolesPayload | null,
+    authorization: RequestAuthorization,
     eventStatuses: readonly { id: number; significance: string | null }[],
     db: TransactionalPrismaClient,
-): Promise<number[]> {
+): Promise<EventPublicId[]> {
+    const currentUser = authorization.user;
     if (!currentUser) {
         // no user, no events.
         return [];
     }
+    const publicData = createDB3Authorization(currentUser, authorization.effectivePermissions);
     const now = new Date();
     const sevenDaysFromNow = new Date(now);
     sevenDaysFromNow.setDate(now.getDate() + 7); // 7 days allows you to see next week's rehearsal just after the last one ends.
@@ -97,12 +100,16 @@ async function getTopRelevantEvents(
         .filter(s => s.significance === EventStatusSignificance.Cancelled)
         .map(s => s.id)
         .join(", ");
+    // An empty status catalog must not produce invalid SQL: NOT IN ().
+    const uncancelledPredicate = cancelledStatusIds
+        ? `(e.statusId is null or e.statusId NOT IN (${cancelledStatusIds}))`
+        : "TRUE";
 
     // this query only needs to return events that are possibly eligible,
     // to be later filtered / classified - not the full relevance calculation.
     const query = `
     SELECT
-        e.id,
+        e.publicId,
         e.startsAt,
         e.durationMillis,
         e.isAllDay,
@@ -112,13 +119,13 @@ async function getTopRelevantEvents(
         Event e
     WHERE
         -- critical visibility
-        (${xEvent.SqlGetVisFilterExpression(currentUser, "e")})
+        (${xEvent.SqlGetVisFilterExpression(currentUser, "e", false, publicData)})
         and (
             -- relevance class has overrides except for hidden.
             (e.relevanceClassOverride IS NOT NULL and e.relevanceClassOverride != '${gEventRelevanceClass.Hidden}')
             or (
                 -- uncancelled events
-                (e.statusId is null or e.statusId NOT IN (${cancelledStatusIds}))
+                ${uncancelledPredicate}
 
                 -- TBD events don't normally get shown (unless you explicitly pin)
                 and e.startsAt is not null
@@ -139,7 +146,7 @@ async function getTopRelevantEvents(
     // TransactionalPrismaClient deliberately erases raw-query generics; keep
     // the declared result shape next to the SELECT that establishes it.
     const dbResults: {
-        id: number,
+        publicId: string,
         startsAt: Date | null,
         durationMillis: bigint | null,
         isAllDay: boolean | null,
@@ -149,7 +156,7 @@ async function getTopRelevantEvents(
 
     const saneResults = dbResults.map(r => {
         return {
-            id: r.id,
+            publicId: xEvent.parseIdentity(r.publicId),
             startsAt: r.startsAt,
             durationMillis: BigintToNumberNullable(r.durationMillis),
             isAllDay: r.isAllDay,
@@ -162,7 +169,7 @@ async function getTopRelevantEvents(
 
     const results = GetRelevantEvents(saneResults, ctx);
 
-    const ret = results.map(e => e.id);
+    const ret = results.map(e => e.publicId);
     return ret;
 }
 
@@ -187,7 +194,7 @@ export default resolver.pipe(
             });
             const relevantEventsCall = allEventStatusesCall.then(eventStatuses => (
                 getTopRelevantEvents(
-                    currentUser,
+                    authorization,
                     eventStatuses,
                     db,
                 )
@@ -257,7 +264,6 @@ export default resolver.pipe(
                 bandTimeZone,
                 userSettings,
                 effectivePermissionNames: effectivePermissions.names,
-                effectivePermissionIds: effectivePermissions.ids,
             };
             if (process.env.NODE_ENV === "development") {
                 sw.loghelper("total", ret);
@@ -269,4 +275,3 @@ export default resolver.pipe(
         }
     }
 );
-

@@ -220,6 +220,14 @@ function validateQueryForTable<T extends db3.QueryRequestInput | db3.PaginatedQu
         }
     }
 
+    // Identity is an API contract, not a permission-dependent exception for admins.
+    // Trusted server reads use queryTable execution options instead of this RPC input.
+    // TODO: public id policy should be a table policy, not inferred from existence of publicIdMember
+    if (table.publicIdMember) {
+        if (input.filter.pks !== undefined || input.filter.items?.some(item => item.field === table.pkMember)) {
+            throw new DB3RequestValidationError(`table '${table.tableID}' queries require public identity; database primary-key filters are not accepted`);
+        }
+    }
     input.filter.items?.forEach(item => validateFieldName(table, item.field, "filter"));
     if (input.orderBy) {
         validateFieldName(table, Object.keys(input.orderBy)[0]!, "order");

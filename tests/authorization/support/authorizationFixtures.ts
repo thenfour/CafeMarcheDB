@@ -1,4 +1,4 @@
-import { PermissionSet } from "src/auth/shared/PermissionSet";
+import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 import {
   makeUserManagementActor,
   makeUserManagementTarget,
@@ -238,7 +238,7 @@ export function createAuthorizationTarget(
 // Direct schema tests use synthetic row IDs from the fixture's assigned role.
 // Server-path tests resolve inherited role IDs through the real loader.
 export function createAuthorizationSchemaData(user: AuthorizationTestUser | null) {
-  return createDB3Authorization(user, new PermissionSet([
+  return createDB3Authorization(user, new ServerPermissionSet([
     ...testPublicRolePermissions.map((name, index) => ({ id: 920_000 + index, name })),
     ...(user?.role?.permissions.map(entry => entry.permission) ?? []),
   ]))

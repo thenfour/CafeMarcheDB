@@ -1,6 +1,6 @@
 
 import { TAnyModel } from "@/shared/rootroot";
-import type { DB3Authorization } from "../db3Authorization";
+import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
 import {
     ApplyIncludeFilteringToRelation, type DB3FieldPrismaMember,
     type DB3RegisteredTableID, type DB3RelationTargetField, GetTableById,
@@ -28,7 +28,7 @@ export class ForeignCollectionField<
         getTargetTable: () => GetTableById(this.foreignTableID),
     }];
 
-    ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3Authorization, includeDeleted: boolean) => {
+    ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3ServerAuthorization, includeDeleted: boolean) => {
         await ApplyIncludeFilteringToRelation(include, this.member, null, this.foreignTableID, publicData, includeDeleted);
     };
 }

@@ -41,7 +41,7 @@ const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_R
 
 const dashboardData = (showDeclinedEvents: boolean) => ({
     ...Object.fromEntries([
-        "permission", "effectivePermissionIds", "effectivePermissionNames", "userTag", "wikiPageTag", "role",
+        "permission", "effectivePermissionNames", "userTag", "wikiPageTag", "role",
         "eventType", "eventStatus", "eventTag", "eventAttendance", "fileTag", "instrumentTag", "instrumentFunctionalGroup",
         "songTag", "songCreditType", "relevantEventIds", "dynMenuLinks", "instrument",
     ].map(name => [name, []])),

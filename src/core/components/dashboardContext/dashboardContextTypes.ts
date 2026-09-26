@@ -123,7 +123,7 @@ export abstract class DashboardContextDataBase {
 
     };
 
-    relevantEventIds: number[];
+    relevantEventIds: EventPublicId[];
 
     brand: DbBrandConfig;
 

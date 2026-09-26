@@ -131,7 +131,7 @@ type BuiltInRoleFlag = "isRoleForNewUsers" | "isPublicRole" | "isSysAdminRole";
 // Built-in role designations are reassigned through one dedicated transaction.
 // Generic creation may only create an ordinary, unassigned role.
 const authorizeBuiltInRoleFlag = (flag: BuiltInRoleFlag) => (
-    args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>,
+    args: db3.DB3AuthorizeAndSanitizeFieldInput<TAnyModel>,
 ): boolean => {
     if (args.rowMode === "view") return true;
     return args.rowMode === "new" && args.model?.[flag] === false;
@@ -835,7 +835,7 @@ export type CreatedByUserFieldArgs<
     fkidMember?: TForeignKeyMember; // "instrumentTypeId"
     specialFunction?: db3.SqlSpecialColumnFunction;
     authMap?: db3.DB3AuthContextPermissionMap<"required"> | db3.DB3AuthContextPermissionMap<"optional">;
-    _customAuth?: (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean;
+    _customAuth?: (args: db3.DB3AuthorizeAndSanitizeFieldInput<TAnyModel>) => boolean;
 };
 
 export class CreatedByUserField<

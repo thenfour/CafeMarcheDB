@@ -1,6 +1,6 @@
 import { distinctValuesOfArray } from "@/shared/arrayUtils";
 import { isPermission, Permission } from "@/shared/permissions";
-import { PermissionSet } from "../shared/PermissionSet";
+import { ServerPermissionSet } from "./ServerPermissionSet";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { CreatePublicData, type CreatePublicDataArgs, type PublicDataType } from "types";
 import type { Prisma, PrismaClient } from "@prisma/client";
@@ -30,7 +30,7 @@ type UserWithPermissions = Prisma.UserGetPayload<{
 export const loadEffectivePermissions = async (
     db_: TransactionalPrismaClient,
     user: UserWithPermissions | null | undefined,
-): Promise<PermissionSet> => {
+): Promise<ServerPermissionSet> => {
 
     const db = db_ as PrismaClient; // cast for tooling/typing
 
@@ -85,7 +85,7 @@ export const loadEffectivePermissions = async (
         console.warn(`Ignoring unknown persisted permissions: ${unknownNames.join(", ")}`);
     }
 
-    return new PermissionSet(recognized.map(entry => entry.permission));
+    return new ServerPermissionSet(recognized.map(entry => entry.permission));
 
 };
 

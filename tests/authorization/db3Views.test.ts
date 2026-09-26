@@ -12,7 +12,7 @@ import {
     queryHydratedView,
 } from "@db3/server/db3QueryCore";
 import { validateDB3QueryRequest } from "@db3/server/db3RequestValidation";
-import { PermissionSet } from "src/auth/shared/PermissionSet";
+import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { DateTimeRange } from "shared/time";
@@ -88,7 +88,7 @@ describe("DB3 named views", () => {
         // deliberately implements only the delegate exercised by this view.
         const database = { EventAttendance: { findMany } } as unknown as Parameters<typeof queryHydratedView>[3];
         const references = db3.createDashboardReferenceStore();
-        const effectivePermissions = new PermissionSet([
+        const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.public },
             { id: 3, name: Permission.view_events_nonpublic },
@@ -159,7 +159,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
         }, {
             user: null,
-            effectivePermissions: new PermissionSet([
+            effectivePermissions: new ServerPermissionSet([
                 { id: 1, name: Permission.always_grant },
                 { id: 2, name: Permission.public },
             ]),
@@ -172,7 +172,7 @@ describe("DB3 named views", () => {
     it("derives ordinary selections from DTO schemas and preserves explicit query additions", async () => {
         const context = {
             filter: { items: [] },
-            authorization: db3.createDB3Authorization(null, new PermissionSet([])),
+            authorization: db3.createDB3Authorization(null, new ServerPermissionSet([])),
         };
 
         expect(db3.eventTypeEditorView.getSelectionArgs(context)).toEqual({
@@ -269,7 +269,7 @@ describe("DB3 named views", () => {
             hydrate: dto => dto,
         });
         const findMany = vi.fn(async (_args: unknown) => []);
-        const effectivePermissions = new PermissionSet([
+        const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.public },
             { id: 3, name: Permission.view_events },
@@ -341,7 +341,7 @@ describe("DB3 named views", () => {
 
     it("parses the authorized DTO shape and never exposes a database ID", async () => {
         const findMany = vi.fn(async () => [{ id: 54, ...group }]);
-        const effectivePermissions = new PermissionSet([
+        const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
             { id: 3, name: Permission.sysadmin },
@@ -375,7 +375,7 @@ describe("DB3 named views", () => {
     });
 
     it("applies the same view boundary to a single row returned by a mutation", () => {
-        const effectivePermissions = new PermissionSet([
+        const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
             { id: 3, name: Permission.sysadmin },
@@ -408,7 +408,7 @@ describe("DB3 named views", () => {
             { id: 1, ...group },
             { id: 2, ...group, publicId: secondPublicId, name: "Woodwind" },
         ].map(row => selectPrismaTestRow(row, args)));
-        const effectivePermissions = new PermissionSet([
+        const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
             { id: 3, name: Permission.sysadmin },
@@ -453,7 +453,7 @@ describe("DB3 named views", () => {
                 tag: { publicId: tagPublicId },
             }],
         }]);
-        const effectivePermissions = new PermissionSet([
+        const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
         ]);
@@ -533,7 +533,7 @@ describe("DB3 named views", () => {
             createdByUserId: createdByUser.id,
             createdByUser,
         };
-        const effectivePermissions = new PermissionSet([
+        const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
             { id: 3, name: Permission.sysadmin },
@@ -576,7 +576,7 @@ describe("DB3 named views", () => {
     });
 
     it("represents authorization-stripped fields as absent optional DTO members", () => {
-        const publicData = db3.createDB3Authorization(null, new PermissionSet([
+        const publicData = db3.createDB3Authorization(null, new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.public },
         ]));
@@ -617,7 +617,7 @@ describe("DB3 named views", () => {
                 },
             }],
         }]);
-        const effectivePermissions = new PermissionSet([
+        const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
             { id: 3, name: Permission.view_wiki_pages },
@@ -902,7 +902,7 @@ describe("DB3 named views", () => {
 
         const selection = db3.fileDetailView.getSelectionArgs({
             filter: { items: [] },
-            authorization: db3.createDB3Authorization(null, new PermissionSet([])),
+            authorization: db3.createDB3Authorization(null, new ServerPermissionSet([])),
         });
         expect(selection).toMatchObject({
             select: {
@@ -979,7 +979,7 @@ describe("DB3 named views", () => {
     });
 
     it("builds Event search selections from the authenticated actor, never client identity", () => {
-        const authorization = db3.createDB3Authorization({ id: 42 }, new PermissionSet([]));
+        const authorization = db3.createDB3Authorization({ id: 42 }, new ServerPermissionSet([]));
         const selection = db3.eventSearchView.getSelectionArgs({
             filter: { items: [] },
             authorization,
@@ -1167,7 +1167,7 @@ describe("DB3 named views", () => {
             Permission.view_wiki_pages,
             Permission.view_wiki_page_revisions,
         ];
-        const effectivePermissions = new PermissionSet(permissionNames.map((name, index) => ({
+        const effectivePermissions = new ServerPermissionSet(permissionNames.map((name, index) => ({
             id: index + 1,
             name,
         })));
@@ -1249,7 +1249,7 @@ describe("DB3 named views", () => {
             Permission.public,
             Permission.view_events_nonpublic,
         ];
-        const effectivePermissions = new PermissionSet(permissionNames.map((name, index) => ({
+        const effectivePermissions = new ServerPermissionSet(permissionNames.map((name, index) => ({
             id: index + 1,
             name,
         })));
@@ -1351,7 +1351,7 @@ describe("DB3 named views", () => {
                 user: { id: 100, name: "Composer", isDeleted: false },
             }],
         }]);
-        const effectivePermissions = new PermissionSet([
+        const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.public },
             { id: 3, name: Permission.login },
@@ -1566,7 +1566,7 @@ describe("DB3 named views", () => {
             }],
             credits: [],
         }]);
-        const effectivePermissions = new PermissionSet([
+        const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
             { id: 3, name: Permission.visibility_members },
@@ -1933,7 +1933,7 @@ describe("DB3 named views", () => {
             Permission.view_events_nonpublic,
             Permission.view_songs,
         ];
-        const effectivePermissions = new PermissionSet(permissionNames.map((name, index) => ({
+        const effectivePermissions = new ServerPermissionSet(permissionNames.map((name, index) => ({
             id: index + 1,
             name,
         })));
@@ -1981,7 +1981,7 @@ describe("DB3 named views", () => {
             songs: [],
             dividers: [],
         }]);
-        const effectivePermissions = new PermissionSet([
+        const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.public },
         ]);

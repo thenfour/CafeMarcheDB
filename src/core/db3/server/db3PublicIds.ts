@@ -1,3 +1,4 @@
+import type { DB3ServerAuthorization } from "./db3ServerAuthorization";
 // server
 import type { TAnyModel } from "@/shared/rootroot";
 import { isPublicId } from "shared/publicId";
@@ -18,7 +19,7 @@ export class DB3PublicIdError extends Error {
 export async function resolvePublicIds(
     table: db3.xTable,
     publicIds: readonly unknown[],
-    publicData: db3.DB3Authorization,
+    publicData: DB3ServerAuthorization,
     database: TransactionalPrismaClient,
     includeDeleted = false,
 ): Promise<number[]> {
@@ -60,7 +61,7 @@ export async function resolvePublicIds(
 export async function resolvePublicId(
     table: db3.xTable,
     publicId: string,
-    publicData: db3.DB3Authorization,
+    publicData: DB3ServerAuthorization,
     database: TransactionalPrismaClient,
     includeDeleted = false,
 ): Promise<number> {
@@ -76,7 +77,7 @@ export async function resolvePublicId(
 export async function resolvePublicQueryParameters(
     table: db3.xTable,
     params: Record<string, unknown>,
-    publicData: db3.DB3Authorization,
+    publicData: DB3ServerAuthorization,
     database: TransactionalPrismaClient,
 ): Promise<Record<string, unknown>> {
     const resolved = { ...params };
@@ -119,7 +120,7 @@ export async function resolvePublicQueryParameters(
 export async function resolvePublicForeignIds(
     table: db3.xTable,
     model: TAnyModel,
-    publicData: db3.DB3Authorization,
+    publicData: DB3ServerAuthorization,
     database: TransactionalPrismaClient,
 ): Promise<TAnyModel> {
     const ret = { ...model };
@@ -184,7 +185,7 @@ export async function resolvePublicForeignIds(
 export function projectDB3ModelPublicIds(
     table: db3.xTable,
     model: TAnyModel,
-    publicData?: db3.DB3Authorization,
+    publicData?: DB3ServerAuthorization,
 ): TAnyModel {
     const ret = { ...model };
 
@@ -248,7 +249,7 @@ export function projectDB3ModelPublicIds(
 export function authorizeAndProjectDB3ViewModel(
     table: db3.xTable,
     model: TAnyModel,
-    publicData: db3.DB3Authorization,
+    publicData: DB3ServerAuthorization,
     contextDesc: string,
     includeDeleted = false,
 ): TAnyModel | null {
@@ -351,7 +352,7 @@ export function tableUsesPublicIdsInTransport(table: db3.xTable, ancestors = new
 export function sanitizeDB3ModelForTransport(
     table: db3.xTable,
     model: TAnyModel | null,
-    publicData: db3.DB3Authorization,
+    publicData: DB3ServerAuthorization,
     contextDesc: string,
 ): TAnyModel {
     if (!model) {

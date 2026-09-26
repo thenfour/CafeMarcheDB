@@ -6,7 +6,7 @@ import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
-import type { DB3Authorization } from "../db3Authorization";
+import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
 import {
     type DB3AuthSpec, type DB3FieldPrismaMember, type DB3ForeignSingleReferenceField, type DB3IdentityOf, type DB3PrismaPayloadOf, type DB3ReadPresenceForAuthSpec, type DB3RegisteredTableID, type DB3RowMode, ErrorValidateAndParseResult,
     FieldBase, GetTableById, makeNullableReadTransportSchema, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
@@ -194,7 +194,7 @@ export class ForeignSingleField<
 
     getOverallWhereClause = (): TAnyModel | boolean => false;
 
-    getRowVisibilityWhereClause = (publicData: DB3Authorization, includeDeleted: boolean): TAnyModel | undefined => {
+    getRowVisibilityWhereClause = (publicData: DB3ServerAuthorization, includeDeleted: boolean): TAnyModel | undefined => {
         if (!this.requireVisibleTarget) return undefined;
         const where = this.getForeignTableSchema().CalculateWhereClause({
             publicData, includeDeleted, filterModel: { items: [] },
@@ -202,7 +202,7 @@ export class ForeignSingleField<
         return { [this.member]: { is: where || {} } };
     };
 
-    ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3Authorization, includeDeleted: boolean) => {
+    ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3ServerAuthorization, includeDeleted: boolean) => {
         const targetArgs = include[this.member];
         if (!targetArgs) return;
         await this.getForeignTableSchema().ApplyIncludeFiltering(targetArgs.include || targetArgs.select, publicData, includeDeleted);

@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { PermissionSet } from "src/auth/shared/PermissionSet"
+import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 
 vi.mock("db", async () => {
   const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client")
@@ -152,7 +152,7 @@ describe("schema-wide DB3 read-policy contracts", () => {
       }],
     })
     const publicAuthorization = createAuthorizationSchemaData(null)
-    const publicData = { ...publicAuthorization, effectivePermissions: new PermissionSet(
+    const publicData = { ...publicAuthorization, effectivePermissions: new ServerPermissionSet(
       publicAuthorization.effectivePermissions.names.map((name, index) => ({
         id: name === Permission.visibility_public ? publicVisibilityId : 920_000 + index, name,
       })),

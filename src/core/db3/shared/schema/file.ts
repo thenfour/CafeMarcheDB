@@ -77,7 +77,7 @@ export const xFileAuthMap_FileObjects_AdminEdit = db3.defineAuthMap({
 // - readable along with the file itself
 // - only creatable by trusted server-side code
 // - never modified
-const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>): boolean => {
+const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeFieldInput<TAnyModel>): boolean => {
     if (args.rowMode === "view") {
         return args.publicData.effectivePermissions.includesName(Permission.view_files);
     }

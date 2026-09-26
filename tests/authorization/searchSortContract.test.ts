@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { processSearchSortModel, resolveSearchDiscreteCriteria } from "@db3/server/searchServerCore";
 import { DiscreteCriterionFilterType, ZGetSearchResultsInput } from "@db3/shared/apiTypes";
-import { PermissionSet } from "src/auth/shared/PermissionSet";
+import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 
@@ -32,7 +32,7 @@ describe("search sort contract", () => {
             { id: 21, publicId: secondPublicId },
         ]);
         // The search authorization path only needs an authenticated user ID here.
-        const publicData = db3.createDB3Authorization({ id: 100 } as any, new PermissionSet([
+        const publicData = db3.createDB3Authorization({ id: 100 } as any, new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
             { id: 3, name: Permission.view_songs },
@@ -90,7 +90,7 @@ describe("search sort contract", () => {
         const publicId = parsePublicId<"WikiPageTag">("WikiTagPublic001");
         const findMany = vi.fn(async () => [{ id: 31, publicId }]);
         // The focused authorization path only reads the authenticated user ID.
-        const publicData = db3.createDB3Authorization({ id: 100 } as any, new PermissionSet([
+        const publicData = db3.createDB3Authorization({ id: 100 } as any, new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
             { id: 3, name: Permission.view_wiki_pages },

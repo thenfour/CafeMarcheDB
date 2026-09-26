@@ -43,7 +43,7 @@ type UserManagementPrincipalPayload = UserManagementPrincipal & {
 };
 
 export const makePermissionSetFromRole = (role: RoleWithPermissionIdentities | null | undefined): PermissionSet => (
-    new PermissionSet(role?.permissions.map(entry => entry.permission) ?? [])
+    new PermissionSet(role?.permissions.map(entry => entry.permission.name) ?? [])
 );
 
 export const makeUserManagementActor = (

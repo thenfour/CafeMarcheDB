@@ -7,6 +7,7 @@ import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activi
 import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
 import * as db3 from "src/core/db3/db3";
+import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
 import { authorizeAndProjectViewDto } from "src/core/db3/server/db3QueryCore";
 import * as mutationCore from "src/core/db3/server/db3mutationCore";
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
@@ -107,7 +108,7 @@ const UpdateExistingWikiPage = async (
     args: TUpdateWikiPageArgs,
     currentPage: WikiPageApiPayload,
     currentUserId: number,
-    publicData: db3.DB3Authorization,
+    publicData: DB3ServerAuthorization,
     dbt: TransactionalPrismaClient,
 ): Promise<GetWikiPageUpdatabilityResult> => {
 

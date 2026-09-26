@@ -6,7 +6,7 @@ import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
-import type { DB3Authorization } from "../db3Authorization";
+import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
 import {
     ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3FieldPrismaMember,
     type DB3IdentityOf, type DB3MutationProjectionField,
@@ -405,7 +405,7 @@ class TagsFieldImpl<
     getCustomFilterWhereClause = (query: CMDBTableFilterModel) => this.getCustomFilterWhereClause__(query);
     getOverallWhereClause = (): TAnyModel | boolean => false;
 
-    ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3Authorization, includeDeleted: boolean) => {
+    ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3ServerAuthorization, includeDeleted: boolean) => {
         await ApplyIncludeFilteringToRelation(include, this.member, this.associationForeignObjectMember, this.foreignTableID, publicData, includeDeleted);
     };
 

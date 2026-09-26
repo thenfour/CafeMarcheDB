@@ -1,9 +1,10 @@
+import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
 import { describe, expect, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { projectDB3ModelPublicIds, resolvePublicForeignIds, resolvePublicIds } from "@db3/server/db3PublicIds";
 import { queryTable } from "@db3/server/db3QueryCore";
 import { validateDB3MutationRequest, validateDB3QueryRequest } from "@db3/server/db3RequestValidation";
-import { PermissionSet } from "src/auth/shared/PermissionSet";
+import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 
@@ -48,15 +49,15 @@ const tag = {
     sortOrder: 1,
 };
 
-const authorization = (...permissions: Permission[]): db3.DB3Authorization => ({
+const authorization = (...permissions: Permission[]): DB3ServerAuthorization => ({
     userId: 100,
-    effectivePermissions: new PermissionSet([
+    effectivePermissions: new ServerPermissionSet([
         { id: 1, name: Permission.always_grant },
         ...permissions.map((name, index) => ({ id: index + 2, name })),
     ]),
 });
 
-const sanitizeGroup = (publicData: db3.DB3Authorization) => {
+const sanitizeGroup = (publicData: DB3ServerAuthorization) => {
     const result = db3.xInstrumentFunctionalGroup.authorizeAndSanitize({
         contextDesc: "public-id-transport-test",
         model: group,
@@ -68,7 +69,7 @@ const sanitizeGroup = (publicData: db3.DB3Authorization) => {
     return projectDB3ModelPublicIds(db3.xInstrumentFunctionalGroup, result.authorizedModel, publicData);
 };
 
-const sanitizeTag = (publicData: db3.DB3Authorization) => {
+const sanitizeTag = (publicData: DB3ServerAuthorization) => {
     const result = db3.xInstrumentTag.authorizeAndSanitize({
         contextDesc: "public-id-transport-test",
         model: tag,
@@ -622,7 +623,7 @@ describe("instrument catalog public-ID transport", () => {
             { id: 95, publicId: otherSongTagPublicId },
         ]);
         const songFindMany = vi.fn(async () => []);
-        const effectivePermissions = new PermissionSet([
+        const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
             { id: 3, name: Permission.view_songs },

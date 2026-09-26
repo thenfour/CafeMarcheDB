@@ -1,3 +1,4 @@
+import type { DB3ServerAuthorization } from "./db3ServerAuthorization";
 import { AuthenticatedCtx, AuthorizationError, paginate } from "blitz";
 import { randomUUID } from "crypto";
 import db from "db";
@@ -222,7 +223,7 @@ export function authorizeAndProjectViewDto<
 >(
     view: TView,
     model: TModel,
-    publicData: db3.DB3Authorization,
+    publicData: DB3ServerAuthorization,
     contextDesc: string,
 ): db3.DtoOf<TView> | null {
     const projected = authorizeAndProjectDB3ViewModel(
@@ -242,7 +243,7 @@ export function authorizeAndHydrateViewModel<
 >(
     view: TView,
     model: TModel,
-    publicData: db3.DB3Authorization,
+    publicData: DB3ServerAuthorization,
     references: db3.DB3ReferenceProvider<db3.ReferenceContractOf<NoInfer<TView>>>,
     contextDesc: string,
 ): db3.ClientOf<TView> | null {

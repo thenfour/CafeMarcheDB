@@ -21,7 +21,7 @@ import { useBrand } from '@/shared/brandConfig';
 import { DashboardContextDataBase } from './dashboardContextTypes';
 import { PermissionSet } from '@/src/auth/shared/PermissionSet';
 import { isAttendanceGoing } from 'shared/eventAttendance';
-import { partition, zip } from "@/shared/arrayUtils";
+import { partition } from "@/shared/arrayUtils";
 import { EventStatusPublicId, PermissionPublicId } from "@/shared/publicId";
 
 type CmdbWindow = Window & {
@@ -42,7 +42,7 @@ export class DashboardContextData extends DashboardContextDataBase {
 
     session: ClientSession | null;
     refetchDashboardData: (() => void) = () => { };
-    effectivePermissions: PermissionSet = new PermissionSet([], []);
+    effectivePermissions: PermissionSet = new PermissionSet([]);
     authorization: db3.DB3Authorization = db3.createDB3Authorization(null, new PermissionSet([]));
 
     constructor() {
@@ -231,11 +231,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.refetchDashboardData = refetch;
     valueRef.current.permission = new TableAccessor(dashboardData.permission);
 
-    valueRef.current.effectivePermissions = new PermissionSet(zip(
-        dashboardData.effectivePermissionIds,
-        dashboardData.effectivePermissionNames,
-        (id, name) => ({ id: id, name: name })
-    ));
+    valueRef.current.effectivePermissions = new PermissionSet(dashboardData.effectivePermissionNames);
 
     valueRef.current.authorization = db3.createDB3Authorization(currentUser, valueRef.current.effectivePermissions);
 

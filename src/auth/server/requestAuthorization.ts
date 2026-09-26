@@ -5,7 +5,7 @@ import db from "db";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import type { UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
 import type { PublicDataType } from "types";
-import type { PermissionSet } from "../shared/PermissionSet";
+import type { ServerPermissionSet } from "./ServerPermissionSet";
 import { loadEffectivePermissions } from "./effectivePermissions";
 import { loadFreshPrincipal } from "./permissionAuthorization";
 
@@ -14,7 +14,7 @@ import { loadFreshPrincipal } from "./permissionAuthorization";
 
 export interface RequestAuthorization {
     user: UserWithRolesPayload | null;
-    effectivePermissions: PermissionSet;
+    effectivePermissions: ServerPermissionSet;
 }
 
 const requestAuthorizations = new WeakMap<SessionContext, {
