@@ -1565,9 +1565,10 @@ live migration nor browser interaction against migrated data was performed.
    Action/Change audit keys retain their server-owned natural-key contracts.
    Current Action transport references are public and resolve only inside the
    server operation.
--  Startup repair also rewrites `EventDescription` wiki slugs and persisted
-   SetlistPlan Event links to public paths. These rewrites cover stored strings
-   that cannot be expressed as Prisma foreign-key projection.
+-  Startup repair also rewrites `EventDescription` wiki slugs. A shared
+   SetlistPlan reference pass converts persisted Event and Song IDs and links
+   after both models have public IDs. These rewrites cover stored strings that
+   cannot be expressed as Prisma foreign-key projection.
 -  Dashboard follow-up: relevant-event selection and fetching now use public
    identities end to end. Relevance SQL uses effective grants (including inherited
    roles), retains retired cancelled statuses, and handles an empty status catalog.
@@ -1601,11 +1602,11 @@ setlists, file associations, telemetry, reports, and editor commands.
    primary keys only as an execution option, then projects authorized public
    DTOs. Setlist commands and File upload resolve public Song IDs before
    writing database foreign keys.
--  Existing SetlistPlan JSON is migrated at startup: song rows and associated
-   links receive public IDs, and Song links receive public URLs. The rewrite is
-   idempotent and leaves Event and other associations intact. Historical
-   Action/Change records keep natural database keys; current telemetry inputs
-   and report outputs use public Song IDs.
+-  Existing SetlistPlan JSON is loaded and parsed once at startup. Song rows
+   receive public IDs; Song and Event association IDs and URLs are corrected in
+   the same pass. The rewrite is idempotent and leaves other associations
+   intact. Historical Action/Change records keep natural database keys; current
+   telemetry inputs and report outputs use public Song IDs.
 -  The Song editor, search, detail, setlist, and nested File views select and
    validate public Song identity. Dedicated Song mutations enforce the edit
    grant before resolving public IDs and retain row-level authorization in the

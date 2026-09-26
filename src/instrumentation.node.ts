@@ -342,7 +342,7 @@ const getSetlistPlanRows = (payload: unknown): Record<string, unknown>[] => (
     isRecord(payload) && Array.isArray(payload.rows) ? payload.rows.filter(isRecord) : []
 );
 
-export async function MigrateEventPublicIdReferences() {
+export async function MigrateEventDescriptionWikiPaths() {
     const describedEvents = await db.event.findMany({
         where: { descriptionWikiPageId: { not: null } },
         select: {
@@ -367,22 +367,36 @@ export async function MigrateEventPublicIdReferences() {
         migratedWikiPages++;
     }
 
-    // setlist plans
+    console.log(`Migrated ${migratedWikiPages} Event-description wiki paths.`);
+}
+
+type SetlistPlanPublicIds = {
+    event: ReadonlyMap<number, string>;
+    song: ReadonlyMap<number, string>;
+};
+
+export async function MigrateSetlistPlanPublicIdReferences() {
     const plans = await db.setlistPlan.findMany({ select: { id: true, payloadJson: true } });
-    const parsedPlans: { id: number; payload: unknown; associatedItems: Record<string, unknown>[] }[] = [];
+    const parsedPlans: { id: number; payload: unknown }[] = [];
     const numericEventIds = new Set<number>();
+    const numericSongIds = new Set<number>();
     for (const plan of plans) {
         try {
             const payload: unknown = JSON.parse(plan.payloadJson);
-            const associatedItems = getSetlistPlanAssociatedItems(payload);
-            for (const item of associatedItems) {
+            for (const row of getSetlistPlanRows(payload)) {
+                if (typeof row.songId === "number") numericSongIds.add(row.songId);
+            }
+            for (const item of getSetlistPlanAssociatedItems(payload)) {
                 if (item.itemType === QuickSearchItemType.event && typeof item.id === "number") {
                     numericEventIds.add(item.id);
                 }
+                if (item.itemType === QuickSearchItemType.song && typeof item.id === "number") {
+                    numericSongIds.add(item.id);
+                }
             }
-            parsedPlans.push({ id: plan.id, payload, associatedItems });
+            parsedPlans.push({ id: plan.id, payload });
         } catch {
-            console.warn(`SetlistPlan #${plan.id} has invalid JSON; its Event references were not migrated.`);
+            console.warn(`SetlistPlan #${plan.id} has invalid JSON; its references were not migrated.`);
         }
     }
 
@@ -392,97 +406,52 @@ export async function MigrateEventPublicIdReferences() {
             where: { id: { in: [...numericEventIds] } },
             select: { id: true, publicId: true },
         });
-    const publicIdByNumericId = new Map(events.map(event => [event.id, event.publicId]));
-    let migratedSetlistPlans = 0;
-    for (const plan of parsedPlans) {
-        let changed = false;
-        for (const item of plan.associatedItems) {
-            if (item.itemType !== QuickSearchItemType.event || typeof item.id !== "number") continue;
-            const publicId = publicIdByNumericId.get(item.id);
-            if (!publicId) continue;
-            item.id = publicId;
-            if (typeof item.absoluteUri === "string") {
-                item.absoluteUri = item.absoluteUri.replace(
-                    /\/backstage\/event\/\d+(?=\/|$)/,
-                    `/backstage/event/${publicId}`,
-                );
-            }
-            changed = true;
-        }
-        if (!changed) continue;
-        await db.setlistPlan.update({
-            where: { id: plan.id },
-            data: { payloadJson: JSON.stringify(plan.payload) },
-        });
-        migratedSetlistPlans++;
-    }
-
-    console.log(`Migrated ${migratedWikiPages} Event-description wiki paths and ${migratedSetlistPlans} SetlistPlan Event references.`);
-}
-
-export async function MigrateSongPublicIdReferences() {
-    const plans = await db.setlistPlan.findMany({ select: { id: true, payloadJson: true } });
-    const parsedPlans: { id: number; payload: unknown }[] = [];
-    const numericSongIds = new Set<number>();
-    for (const plan of plans) {
-        try {
-            const payload: unknown = JSON.parse(plan.payloadJson);
-            const rows = getSetlistPlanRows(payload);
-            const associatedItems = getSetlistPlanAssociatedItems(payload);
-            for (const row of rows) {
-                if (typeof row.songId === "number") numericSongIds.add(row.songId);
-            }
-            for (const item of associatedItems) {
-                if (item.itemType === QuickSearchItemType.song && typeof item.id === "number") {
-                    numericSongIds.add(item.id);
-                }
-            }
-            parsedPlans.push({ id: plan.id, payload });
-        } catch {
-            console.warn(`SetlistPlan #${plan.id} has invalid JSON; its Song references were not migrated.`);
-        }
-    }
-
     const songs = numericSongIds.size === 0
         ? []
         : await db.song.findMany({
             where: { id: { in: [...numericSongIds] } },
             select: { id: true, publicId: true },
         });
-    const publicIdByNumericId = new Map(songs.map(song => [song.id, song.publicId]));
+    const publicIds: SetlistPlanPublicIds = {
+        event: new Map(events.map(event => [event.id, event.publicId])),
+        song: new Map(songs.map(song => [song.id, song.publicId])),
+    };
     let migratedPlans = 0;
     for (const plan of parsedPlans) {
-        if (!migrateSetlistPlanSongPayload(plan.payload, publicIdByNumericId)) continue;
+        if (!migrateSetlistPlanReferences(plan.payload, publicIds)) continue;
         await db.setlistPlan.update({
             where: { id: plan.id },
             data: { payloadJson: JSON.stringify(plan.payload) },
         });
         migratedPlans++;
     }
-    console.log(`Migrated ${migratedPlans} SetlistPlan Song references.`);
+    console.log(`Migrated public ID references in ${migratedPlans} SetlistPlan records.`);
 }
 
-export function migrateSetlistPlanSongPayload(
+export function migrateSetlistPlanReferences(
     payload: unknown,
-    publicIdByNumericId: ReadonlyMap<number, string>,
+    publicIds: SetlistPlanPublicIds,
 ): boolean {
     let changed = false;
     for (const row of getSetlistPlanRows(payload)) {
         if (typeof row.songId !== "number") continue;
-        const publicId = publicIdByNumericId.get(row.songId);
+        const publicId = publicIds.song.get(row.songId);
         if (!publicId) continue;
         row.songId = publicId;
         changed = true;
     }
     for (const item of getSetlistPlanAssociatedItems(payload)) {
-        if (item.itemType !== QuickSearchItemType.song || typeof item.id !== "number") continue;
-        const publicId = publicIdByNumericId.get(item.id);
+        if (typeof item.id !== "number") continue;
+        const isEvent = item.itemType === QuickSearchItemType.event;
+        const isSong = item.itemType === QuickSearchItemType.song;
+        if (!isEvent && !isSong) continue;
+        const publicId = (isEvent ? publicIds.event : publicIds.song).get(item.id);
         if (!publicId) continue;
         item.id = publicId;
         if (typeof item.absoluteUri === "string") {
             item.absoluteUri = item.absoluteUri.replace(
-                /\/backstage\/song\/\d+(?=\/|$)/,
-                `/backstage/song/${publicId}`,
+                isEvent ? /\/backstage\/event\/\d+(?=\/|$)/ : /\/backstage\/song\/\d+(?=\/|$)/,
+                `/backstage/${isEvent ? "event" : "song"}/${publicId}`,
             );
         }
         changed = true;
@@ -563,7 +532,6 @@ export async function registerNodeInstrumentation() {
     await CorrectSongTagPublicIds();
     await CorrectSongTagAssociationPublicIds();
     await CorrectSongPublicIds();
-    await MigrateSongPublicIdReferences();
     await CorrectSongCreditTypePublicIds();
     await CorrectSongCreditPublicIds();
     await CorrectFileTagPublicIds();
@@ -587,7 +555,8 @@ export async function registerNodeInstrumentation() {
     await CorrectRolePermissionPublicIds();
     await CorrectUserSignInMethodPublicIds();
     await CorrectEventPublicIds();
-    await MigrateEventPublicIdReferences();
+    await MigrateEventDescriptionWikiPaths();
+    await MigrateSetlistPlanPublicIdReferences();
     await CorrectEventSegmentPublicIds();
     await CorrectEventUserResponsePublicIds();
     await CorrectEventSegmentUserResponsePublicIds();
