@@ -67,7 +67,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
 
   const [currentRevisionData, currentRevisionDataQueryExtras] = useQuery(getWikiPage, {
     canonicalWikiPath: args.canonicalWikiPath,
-    baseRevisionId: basePage?.currentRevision?.id ?? null,
+    baseRevisionId: basePage?.currentRevision?.publicId ?? null,
     baseContentVersion: basePage?.contentVersion ?? 0,
     lockId: lockUid,
   }, {
@@ -92,7 +92,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
     const request = {
       canonicalWikiPath: args.canonicalWikiPath,
       lockId,
-      baseRevisionId: base?.currentRevision?.id ?? null,
+      baseRevisionId: base?.currentRevision?.publicId ?? null,
       baseContentVersion: base?.contentVersion ?? 0,
     };
     let result = await acquireLockOnWikiPageMutation(request);
@@ -132,7 +132,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
       // Reacquisition is explicit in the UI; a stale editor never takes ownership on save.
       const result = await updateWikiPageMutation({
         canonicalWikiPath: args.canonicalWikiPath,
-        baseRevisionId: baseRef.current?.currentRevision?.id ?? null,
+        baseRevisionId: baseRef.current?.currentRevision?.publicId ?? null,
         baseContentVersion: baseRef.current?.contentVersion ?? 0,
         lockId: lockRef.current,
         title: saveProgressArgs.revisionData.name,
@@ -140,7 +140,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
       });
       if (result.outcome === UpdateWikiPageResultOutcome.success) {
         setBase(result.currentPage);
-        void recordFeature({ feature: ActivityFeature.wiki_edit, wikiPageId: result.currentPage?.id });
+        void recordFeature({ feature: ActivityFeature.wiki_edit, wikiPageId: result.currentPage?.publicId });
       }
       void currentRevisionDataQueryExtras.refetch();
       return result;
@@ -189,7 +189,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   // A save response can lead polling. Keep its confirmed content until polling
   // catches up, while still accepting polling's ownership and visibility updates.
   const polledPage = currentRevisionData.wikiPage;
-  const currentPage = polledPage && basePage && polledPage.id === basePage.id &&
+  const currentPage = polledPage && basePage && polledPage.publicId === basePage.publicId &&
     (polledPage.contentVersion ?? 0) < (basePage.contentVersion ?? 0)
     ? { ...polledPage, contentVersion: basePage.contentVersion, currentRevision: basePage.currentRevision }
     : polledPage;
@@ -199,7 +199,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   // a poll may see our own commit before its response has advanced the base.
   const isRevisionConflict = !saving && (
     (currentPage?.contentVersion ?? 0) !== (basePage?.contentVersion ?? 0) ||
-    (currentPage?.currentRevision?.id ?? null) !== (basePage?.currentRevision?.id ?? null)
+    (currentPage?.currentRevision?.publicId ?? null) !== (basePage?.currentRevision?.publicId ?? null)
   );
   const lockStatus: GetWikiPageUpdatabilityResult = {
     ...currentRevisionData.lockStatus,

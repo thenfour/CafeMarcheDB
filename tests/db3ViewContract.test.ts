@@ -893,11 +893,12 @@ describe("Wiki page tag derived-view migration", () => {
     db3.registerDashboardReferences(references, { wikiPageTag: [tag] })
 
     const dto = db3.wikiPageEditorView.parseDto({
-      id: 12,
+      publicId: parsePublicId<"WikiPage">("AbCdEfGhIjKlMn99"),
       tags: [{ publicId: assignmentPublicId, tagId: tagPublicId }],
     })
     const hydrated = db3.hydrateView(db3.wikiPageEditorView, dto, references)
 
+    expect(dto).not.toHaveProperty("id")
     expect(hydrated.tags).toEqual([{
       publicId: assignmentPublicId,
       tagId: tagPublicId,

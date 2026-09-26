@@ -14,6 +14,7 @@ import { GetDefaultVisibilityPermission } from "../../db3/shared/db3Helpers";
 import { GetAuthorizedTableReadWhere } from "../../db3/server/db3ReadPolicy";
 import { xWikiPage } from "../../db3/shared/schema/wiki";
 import { wikiPageApiSelection } from "../../db3/shared/entities/wiki/wikiViews";
+import { generatePublicId } from "src/server/publicId";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
@@ -61,11 +62,13 @@ export default resolver.pipe(
             // we are clear: acquire lock.
 
             // page must be created in order to store lock info.
+            let currentPageNaturalId = currentPageRow?.id;
             if (!currentPage) {
                 const wikiPath = wikiParseCanonicalWikiPath(args.canonicalWikiPath);
                 const visPerm = await GetDefaultVisibilityPermission(dbt);
                 const createdPage = await dbt.wikiPage.create({
                     data: {
+                        publicId: generatePublicId<"WikiPage">(),
                         slug: args.canonicalWikiPath,
                         namespace: wikiPath.namespace,
                         visiblePermissionId: visPerm?.id || null,
@@ -80,11 +83,13 @@ export default resolver.pipe(
                     "mutation:WikiPage.acquireLock.create",
                 );
                 if (!currentPage) throw new Error("Created wiki page was not authorized for reading.");
+                currentPageNaturalId = createdPage.id;
             }
 
             // now acquire the lock
+            if (currentPageNaturalId === undefined) throw new Error("Wiki page has no database identity.");
             const updatedPage = await dbt.wikiPage.update({
-                where: { id: currentPage!.id },
+                where: { id: currentPageNaturalId },
                 data: {
                     lockId: args.lockId,
                     lockAcquiredAt: new Date(),

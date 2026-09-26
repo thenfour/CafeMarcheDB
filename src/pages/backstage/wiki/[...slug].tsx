@@ -2,6 +2,7 @@ import { BlitzPage } from "@blitzjs/next";
 import db from "db";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
+import type { WikiPagePublicId } from "shared/publicId";
 import { SettingKey } from "shared/settingKeys";
 import { gSSP } from "src/blitz-server";
 import { AppContextMarker } from "src/core/components/AppContext";
@@ -15,7 +16,7 @@ import { wikiParsePathComponents, WikiPath } from "src/core/wiki/shared/wikiUtil
 import { useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
 
 
-const WikiPageComponent = ({ wikiPath, wikiPageId }: { wikiPath: WikiPath, wikiPageId: number | undefined }) => {
+const WikiPageComponent = ({ wikiPath, wikiPageId }: { wikiPath: WikiPath, wikiPageId: WikiPagePublicId | undefined }) => {
     useRecordFeatureUse({
         feature: ActivityFeature.wiki_page_view,
         wikiPageId,
@@ -31,7 +32,7 @@ const WikiPageComponent = ({ wikiPath, wikiPageId }: { wikiPath: WikiPath, wikiP
 type PageProps = {
     title: string;
     wikiPath: WikiPath;
-    wikiPageId: number | null;
+    wikiPageId: WikiPagePublicId | null;
 };
 
 // type Props = {
@@ -62,7 +63,7 @@ export const getServerSideProps = gSSP<PageProps>(async (args) => {
     const retProps: PageProps = {
         title: ret.wikiPage?.currentRevision?.name ?? wikiPath.slugWithoutNamespace,
         wikiPath,
-        wikiPageId: ret.wikiPage?.id ?? null,
+        wikiPageId: ret.wikiPage?.publicId ?? null,
     };
 
     return {

@@ -128,14 +128,14 @@ const WikiPageListOuter = () => {
                 filterSpec={filterSpec}
             />
         ),
-        getItemKey: (wikiPage) => wikiPage.id,
+        getItemKey: (wikiPage) => wikiPage.publicId,
         contextMarkerName: "Wiki pages list",
         csvExporter: {
             itemToCSVRow: (wikiPage, index) => {
                 const path = wikiParseCanonicalWikiPath(wikiPage.slug);
                 return {
                     Order: (index + 1).toString(),
-                    ID: wikiPage.id.toString(),
+                    ID: wikiPage.publicId.toString(),
                     Slug: wikiPage.slug,
                     Namespace: wikiPage.namespace || "",
                     URL: dashboardContext.getAbsoluteUri(path.uriRelativeToHost),

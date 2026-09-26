@@ -76,7 +76,7 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
     const featureRecorder = useClientTelemetryEvent();
-    const wikiPageId = props.wikiPageApi.currentPageData?.wikiPage?.id
+    const wikiPageId = props.wikiPageApi.currentPageData?.wikiPage?.publicId
     if (!wikiPageId) return null;
 
     const tagsTableSpec = React.useMemo(() => DB3Client.defineTableClientSpec({
@@ -90,7 +90,7 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
     }), []);
 
     const filterModel = React.useMemo(() => ({
-        pks: [wikiPageId],
+        publicIds: [wikiPageId],
     }), [wikiPageId]);
 
     const tableClient = DB3Client.useCrudTableRenderContext({
@@ -274,7 +274,7 @@ export const WikiPageContentEditor = ({ showNamespace = true, showVisiblePermiss
                         handleCancel={props.onClose}
                         handleSave={handleSave}
                         handleSaveAndClose={handleSaveAndClose}
-                        uploadFileContext={getFileUploadContext(props.wikiPageApi.basePage?.id, props.wikiPageApi.wikiPath)}
+                        uploadFileContext={getFileUploadContext(props.wikiPageApi.basePage?.publicId, props.wikiPageApi.wikiPath)}
                     />
                 </div>
 
@@ -308,7 +308,7 @@ const WikiPageVisibilityControl = (props: WikiPageVisibilityControlProps) => {
         onChange={async (v) => {
             void recordFeature({
                 feature: ActivityFeature.wiki_change_visibility,
-                wikiPageId: props.wikiPageApi.currentPageData?.wikiPage?.id,
+                wikiPageId: props.wikiPageApi.currentPageData?.wikiPage?.publicId,
             });
             await snackbar.invokeAsync(async () => {
                 await wikiPageSetVisibilityMutation({
@@ -466,15 +466,15 @@ export const WikiDebugIndicator = ({ wikiPageApi }: { wikiPageApi: WikiPageApi }
 
     return <div className="wikiLockIndicator">
         <KeyValueTable data={{
-            "page id": `${wikiPageApi.currentPageData?.wikiPage?.id || "-"} ${wikiPageApi.wikiPath.canonicalWikiPath}`,
+            "page id": `${wikiPageApi.currentPageData?.wikiPage?.publicId || "-"} ${wikiPageApi.wikiPath.canonicalWikiPath}`,
             "Page Locked by": page.lockedByUser?.name || "-",
             "Page Lock ID": page.lockId || "-",
             "Page Locked since": page.lockAcquiredAt ? page.lockAcquiredAt.toLocaleString() : "-",
             "Page Lock Expires at": page.lockExpiresAt ? <>{page.lockExpiresAt.toLocaleString()} <AgeRelativeToNow value={page.lockExpiresAt} /></> : "-",
             "Last editing activity": page.lastEditPingAt ? <>{page.lastEditPingAt.toLocaleString()} <AgeRelativeToNow value={page.lastEditPingAt} /></> : "-",
-            "Your base revision id": wikiPageApi.basePage?.currentRevision?.id || "-",
+            "Your base revision id": wikiPageApi.basePage?.currentRevision?.publicId || "-",
             "Your lock ID": wikiPageApi.yourLockId || "-",
-            "current revision id": wikiPageApi.currentPageData?.wikiPage?.currentRevision?.id || "-",
+            "current revision id": wikiPageApi.currentPageData?.wikiPage?.currentRevision?.publicId || "-",
             "API object": <AdminInspectObject src={wikiPageApi} />,
         }} />
     </div>
@@ -536,7 +536,7 @@ export const WikiPageControl = (props: WikiPageControlProps) => {
     };
 
     return <div className="wikiPage contentSection">
-        <AppContextMarker wikiPageId={wikiPageApi.currentPageData?.wikiPage?.id}>
+        <AppContextMarker wikiPageId={wikiPageApi.currentPageData?.wikiPage?.publicId}>
             <AdminContainer>
                 <WikiDebugIndicator wikiPageApi={wikiPageApi} />
             </AdminContainer>

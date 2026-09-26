@@ -1,10 +1,7 @@
-import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 //import { requireUnmergedUserReferences } from "src/auth/server/mergedUserReferences";
-import * as mutationCore from "../server/db3mutationCore";
 import { resolvePublicForeignIds } from "../server/db3PublicIds";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 import { db3Server } from "../server/db3Server";
@@ -81,4 +78,3 @@ export default resolver.pipe(
         return DeserializeSetlistPlan(newObj);
     }
 );
-

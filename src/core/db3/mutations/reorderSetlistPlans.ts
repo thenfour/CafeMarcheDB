@@ -1,9 +1,7 @@
 // TODO: unify/centralize with updateGenericSortOrder, eventSongListReorderCommandHandler,
 // galleryReorderCommandHandler
 
-import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { moveItemInArray } from "shared/arrayUtils";

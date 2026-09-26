@@ -25,7 +25,7 @@ const ZTGeneralFeatureDetailArgs = z.object({
     filteredSongId: db3.xSong.identitySchema.optional(),
     filteredEventId: z.number().optional(), // todo: db3.xEvent.identitySchema
     //filteredUserId: z.number().optional(), // todo: db3.xUser.identitySchema
-    filteredWikiPageId: z.number().optional(), // todo: db3.xWikiPage.identitySchema
+    filteredWikiPageId: db3.xWikiPage.identitySchema.optional(),
 });
 
 type TGeneralFeatureDetailArgs = z.infer<typeof ZTGeneralFeatureDetailArgs>;
@@ -63,7 +63,7 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
             }),
             ...(filteredSongId && { song: { publicId: filteredSongId } }),
             ...(filteredEventId && { eventId: filteredEventId }),
-            ...(filteredWikiPageId && { wikiPageId: filteredWikiPageId }),
+            ...(filteredWikiPageId && { wikiPage: { publicId: filteredWikiPageId } }),
             ...(contextBeginsWith && { context: { startsWith: contextBeginsWith } }),
         },
         ...GeneralActivityReportDetailArgs,

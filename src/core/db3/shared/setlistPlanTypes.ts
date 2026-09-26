@@ -32,7 +32,7 @@ export const ZSetlistPlanAssociatedItem = z.discriminatedUnion("itemType", [
     z.object({
         ...SetlistPlanAssociatedItemBase,
         itemType: z.literal(QuickSearchItemType.wikiPage),
-        id: z.number()
+        id: db3.xWikiPage.identitySchema
     }),
 ]);
 

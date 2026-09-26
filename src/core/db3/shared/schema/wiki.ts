@@ -3,13 +3,14 @@ import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { foreignRef, foreignRefByTableId, ForeignCollectionField, GenericIntegerField, GhostField, MakeCreatedAtField, MakePKfield, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { foreignRef, foreignRefByTableId, ForeignCollectionField, GenericIntegerField, GhostField, MakeCreatedAtField, MakePKfield, MakePublicIdField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { xUser } from "./user";
 import { z } from "zod";
+import type { WikiPagePublicId, WikiPageRevisionPublicId } from "shared/publicId";
 
 const wikiPageAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_wiki_pages,
@@ -90,7 +91,7 @@ export const WikiPageNaturalOrderBy: Prisma.WikiPageOrderByWithRelationInput[] =
 ////////////////////////////////////////////////////////////////
 export const xWikiPage = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.WikiPageDelegate>(),
-    getIdentity: (page: { id: number }) => page.id,
+    getIdentity: (page: { publicId: WikiPagePublicId }) => page.publicId,
     getSelectionArgs: (): Prisma.WikiPageDefaultArgs => {
         return WikiPageArgs;
     },
@@ -98,7 +99,7 @@ export const xWikiPage = db3.defineTable({
     deletePolicy: "hard",
     naturalOrderBy: WikiPageNaturalOrderBy,
     getRowInfo: (row: WikiPagePayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.slug,
         description: undefined,
         color: gGeneralPaletteList.findEntry(row.visiblePermission?.color || null),
@@ -106,7 +107,8 @@ export const xWikiPage = db3.defineTable({
     }),
     tableAuthMap: wikiPageTableAuthMap,
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "never" }),
+        publicId: () => MakePublicIdField<WikiPagePublicId>(),
         createdByUser: () => MakeCreatedByField(),
         createdAt: () => MakeCreatedAtField(),
         visiblePermission: () => MakeVisiblePermissionField({ authMap: wikiPageAuthMap, }),
@@ -232,7 +234,7 @@ export interface WikiPageRevisionTableParams {
 ////////////////////////////////////////////////////////////////
 export const xWikiPageRevision = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.WikiPageRevisionDelegate>(),
-    getIdentity: (revision: { id: number }) => revision.id,
+    getIdentity: (revision: { publicId: WikiPageRevisionPublicId }) => revision.publicId,
     getSelectionArgs: (): Prisma.WikiPageRevisionDefaultArgs => {
         return WikiPageRevisionArgs;
     },
@@ -240,7 +242,7 @@ export const xWikiPageRevision = db3.defineTable({
     deletePolicy: "hard",
     naturalOrderBy: WikiPageRevisionNaturalOrderBy,
     getRowInfo: (row: WikiPageRevisionPayload) => ({
-        pk: row.id,
+        pk: row.publicId,
         name: row.name,
         description: undefined,
         color: null,
@@ -248,7 +250,8 @@ export const xWikiPageRevision = db3.defineTable({
     }),
     tableAuthMap: wikiPageRevisionTableAuthMap,
     fields: db3.makeColumnSet({
-        id: () => MakePKfield(),
+        id: () => MakePKfield({ naturalIdVisibility: "never" }),
+        publicId: () => MakePublicIdField<WikiPageRevisionPublicId>(),
         name: columnName => MakeTitleField(columnName, { authMap: wikiPageRevisionAuthMap, }),
         createdByUser: () => MakeCreatedByField(),
         createdAt: () => MakeCreatedAtField({ authMap: wikiPageRevisionAuthMap }),

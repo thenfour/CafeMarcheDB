@@ -37,6 +37,7 @@ export default resolver.pipe(
                 },
             }),
             select: {
+                publicId: true,
                 slug: true,
                 revisions: {
                     where: {
@@ -62,7 +63,17 @@ export default resolver.pipe(
         });
 
         return {
-            wikiContributions
+            wikiContributions: wikiContributions.map(page => ({
+                publicId: xWikiPage.parseIdentity(page.publicId),
+                slug: page.slug,
+                revisions: page.revisions.map(revision => ({
+                    createdAt: revision.createdAt,
+                    createdByUser: revision.createdByUser ? {
+                        publicId: revision.createdByUser.publicId,
+                        name: revision.createdByUser.name,
+                    } : null,
+                })),
+            })),
         };
     }
 );

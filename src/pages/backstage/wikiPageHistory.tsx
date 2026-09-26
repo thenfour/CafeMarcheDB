@@ -10,6 +10,7 @@ import React, { Suspense } from "react";
 import ReactDiffViewer from 'react-diff-viewer';
 import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
+import type { WikiPageRevisionPublicId } from "shared/publicId";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
 import { CMDialog } from "src/core/components/CMDialog";
 import { CMButton, CMSmallButton } from "src/core/components/CMCoreComponents2";
@@ -30,8 +31,8 @@ type RevisionHistoryItem = NonNullable<
 >[number];
 
 interface WikiDiffViewerProps {
-    revisionIdLeft: number | null;
-    revisionIdRight: number;
+    revisionIdLeft: WikiPageRevisionPublicId | null;
+    revisionIdRight: WikiPageRevisionPublicId;
 };
 
 const WikiDiffViewer = (props: WikiDiffViewerProps) => {
@@ -57,7 +58,7 @@ const WikiDiffViewer = (props: WikiDiffViewerProps) => {
     />;
 };
 
-const WikiRevisionPreviewDialog = (props: { revisionId: number, onClose: () => void }) => {
+const WikiRevisionPreviewDialog = (props: { revisionId: WikiPageRevisionPublicId, onClose: () => void }) => {
     const [revision, revisionX] = useQuery(getWikiPageRevision, { revisionId: props.revisionId });
     return <CMDialog
         open
@@ -75,7 +76,7 @@ const WikiRevisionPreviewDialog = (props: { revisionId: number, onClose: () => v
     </CMDialog>;
 };
 
-const WikiRevisionPreviewButton = (props: { revisionId: number }) => {
+const WikiRevisionPreviewButton = (props: { revisionId: WikiPageRevisionPublicId }) => {
     const [isOpen, setIsOpen] = React.useState(false);
     return <>
         <CMSmallButton onClick={() => setIsOpen(!isOpen)}>
@@ -98,7 +99,7 @@ const WikiRevisionDeleteButton = (props: { revision: RevisionHistoryItem, onChan
             buttons: ["yes", "cancel"]
         })) {
             await snackbar.invokeAsync(async () => {
-                await deleteMutation({ revisionId: props.revision.id });
+                await deleteMutation({ revisionId: props.revision.publicId });
             });
         }
     };
@@ -171,11 +172,11 @@ const WikiRevisionHistoryPageContent = () => {
                     );
                     const timeLabel = rev.createdAt.toLocaleString();
                     return <tr
-                        key={rev.id}
-                        className={`revisionItem ${rev.id === selectedRevisionA?.id ? "selected selectedA" : ""} ${rev.id === selectedRevisionB?.id ? "selected selectedB" : ""}`}
+                        key={rev.publicId}
+                        className={`revisionItem ${rev.publicId === selectedRevisionA?.publicId ? "selected selectedA" : ""} ${rev.publicId === selectedRevisionB?.publicId ? "selected selectedB" : ""}`}
                     >
                         <td>
-                            <WikiRevisionPreviewButton revisionId={rev.id} />
+                            <WikiRevisionPreviewButton revisionId={rev.publicId} />
                             {dashboardContext.isAuthorized(Permission.admin_wiki_pages) && <WikiRevisionDeleteButton revision={rev} onChanged={() => {
                                 void qExtra.refetch();
                             }} />}
@@ -184,7 +185,7 @@ const WikiRevisionHistoryPageContent = () => {
                             <CMSmallButton onClick={() => setSelectedRevisionA(rev)} >Left</CMSmallButton>
                             <CMSmallButton onClick={() => setSelectedRevisionB(rev)} >Right</CMSmallButton>
                             <CMSmallButton
-                                style={{ visibility: rev.id === currentRevision.id ? "hidden" : "visible" }}
+                                style={{ visibility: rev.publicId === currentRevision.publicId ? "hidden" : "visible" }}
                                 onClick={() => {
                                     setSelectedRevisionA(rev);
                                     setSelectedRevisionB(currentRevision);
@@ -230,7 +231,7 @@ const WikiRevisionHistoryPageContent = () => {
                         </td>
                         <td>
                             <Tooltip title={<div>{timeLabel} -- {rev.consolidationKey}</div>} disableInteractive><span>{timeLabel} {timing.label}</span></Tooltip>
-                            {rev.id === currentRevision.id ? <i>(Current version)</i> : ""}
+                            {rev.publicId === currentRevision.publicId ? <i>(Current version)</i> : ""}
                         </td>
                     </tr>;
                 })}
@@ -241,8 +242,8 @@ const WikiRevisionHistoryPageContent = () => {
             <div className="diffContainer">
                 <Suspense>
                     <WikiDiffViewer
-                        revisionIdLeft={selectedRevisionA?.id || null}
-                        revisionIdRight={selectedRevisionB.id}
+                        revisionIdLeft={selectedRevisionA?.publicId || null}
+                        revisionIdRight={selectedRevisionB.publicId}
                     />
                 </Suspense>
             </div>

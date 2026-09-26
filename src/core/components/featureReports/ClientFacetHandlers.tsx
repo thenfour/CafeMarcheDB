@@ -13,7 +13,7 @@ import React, { Key } from "react";
 import { gGeneralPaletteList } from "../color/palette";
 import { SongChip } from "../song/SongChip";
 import { WikiPageChip } from "../wiki/WikiPageChip";
-import type { EventPublicId } from "shared/publicId";
+import type { EventPublicId, WikiPagePublicId } from "shared/publicId";
 
 
 interface ScreenSizeIndicatorProps {
@@ -489,7 +489,7 @@ export const gClientFacetHandlers = {
     }),
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    wikiPages: MakeHandler<FacetedBreakdownResult['facets']['wikiPages'][0], number>({
+    wikiPages: MakeHandler<FacetedBreakdownResult['facets']['wikiPages'][0], WikiPagePublicId>({
         getItemKey: (item) => item.wikiPageId,
         getFacetName: () => "Wiki Page",
         getItemLabel: (item) => item.slug,

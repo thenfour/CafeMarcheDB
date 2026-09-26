@@ -19,7 +19,7 @@ export default resolver.pipe(
         const authorization = await loadAuthorization(ctx.session);
         const result = await queryView({
             view: wikiPageRevisionDetailView,
-            filter: { pks: [args.revisionId] },
+            filter: { publicIds: [args.revisionId] },
             orderBy: undefined,
             take: 1,
             cmdbQueryContext: "wiki/revision-detail",

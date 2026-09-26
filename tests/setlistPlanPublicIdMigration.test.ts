@@ -6,6 +6,7 @@ const database = vi.hoisted(() => ({
     findEvents: vi.fn(),
     findSongs: vi.fn(),
     findUsers: vi.fn(),
+    findWikiPages: vi.fn(),
 }));
 
 vi.mock("db", async () => ({
@@ -15,6 +16,7 @@ vi.mock("db", async () => ({
         event: { findMany: database.findEvents },
         song: { findMany: database.findSongs },
         user: { findMany: database.findUsers },
+        wikiPage: { findMany: database.findWikiPages },
     },
 }));
 
@@ -47,12 +49,14 @@ describe("stored setlist public ID references", () => {
                 } },
                 { associatedItem: { itemType: QuickSearchItemType.event, id: 99 } },
                 { associatedItem: { itemType: QuickSearchItemType.user, id: 3, absoluteUri: "https://example.test/backstage/user/3" } },
+                { associatedItem: { itemType: QuickSearchItemType.wikiPage, id: 5, absoluteUri: "https://example.test/backstage/wiki/5" } },
             ],
         };
         const publicIds = {
             event: new Map([[7, "event-public-id"]]),
             song: new Map([[1, songPublicId(1)]]),
             user: new Map([[3, userPublicId(3)]]),
+            wikiPage: new Map([[5, "WikiPagePublic05"]]),
         };
 
         expect(migrateSetlistPlanReferences(payload, publicIds)).toBe(true);
@@ -69,6 +73,9 @@ describe("stored setlist public ID references", () => {
         expect(payload.rowLeds[1]?.associatedItem.id).toBe(99);
         expect(payload.rowLeds[2]?.associatedItem).toMatchObject({
             id: userPublicId(3), absoluteUri: `https://example.test/backstage/user/${userPublicId(3)}`,
+        });
+        expect(payload.rowLeds[3]?.associatedItem).toMatchObject({
+            id: "WikiPagePublic05", absoluteUri: "https://example.test/backstage/wiki/WikiPagePublic05",
         });
         expect(migrateSetlistPlanReferences(payload, publicIds)).toBe(false);
     });

@@ -3,6 +3,7 @@ import React from "react";
 import { act } from "react-dom/test-utils";
 import { createRoot, Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { parsePublicId } from "shared/publicId";
 vi.mock("db", async () => await vi.importActual<any>("@prisma/client"));
 vi.mock("@blitzjs/rpc", () => ({ useQuery: vi.fn(), useMutation: (mutation: any) => [mutation, { isLoading: false }] }));
 vi.mock("src/core/wiki/mutations/acquireLockOnWikiPage", () => ({ default: vi.fn() }));
@@ -23,8 +24,10 @@ import release from "src/core/wiki/mutations/wikiReleaseYourLock";
 import { useWikiPageApi, WikiPageApi } from "src/core/components/markdown/useWikiPageApi";
 let api: WikiPageApi;
 let root: Root;
-const page = (version: number) => ({ id: 1, slug: "test", contentVersion: version, visiblePermissionId: 1,
-    currentRevision: { id: 9, content: "Saved " + version, name: "Title" } });
+const pagePublicId = parsePublicId<"WikiPage">("TestWikiPage0001");
+const revisionPublicId = parsePublicId<"WikiPageRevision">("TestWikiRev00001");
+const page = (version: number) => ({ publicId: pagePublicId, slug: "test", contentVersion: version, visiblePermissionId: 1,
+    currentRevision: { publicId: revisionPublicId, content: "Saved " + version, name: "Title" } });
 const refetch = vi.fn();
 function Harness() { api = useWikiPageApi({ canonicalWikiPath: "test", isEditing: false }); return null; }
 const render = async () => { await act(async () => root.render(React.createElement(Harness))); };
@@ -52,7 +55,7 @@ describe("wiki editor draft base", () => {
         refetch.mockResolvedValueOnce({ data: { wikiPage: page(6) }, isError: false });
         await act(async () => { await api.beginEditing(); });
         expect(refetch).toHaveBeenCalledWith({ throwOnError: true });
-        expect(vi.mocked(acquire).mock.calls[0]![0]).toMatchObject({ baseContentVersion: 6, baseRevisionId: 9 });
+        expect(vi.mocked(acquire).mock.calls[0]![0]).toMatchObject({ baseContentVersion: 6, baseRevisionId: revisionPublicId });
     });
     it("does not acquire a lock if the latest page cannot be loaded", async () => {
         await render();
@@ -65,7 +68,7 @@ describe("wiki editor draft base", () => {
         await act(async () => { await api.beginEditing(); });
         poll(6); await render();
         await act(async () => { await api.saveProgress({ revisionData: { name: "Title", content: "My draft" } }); });
-        expect(vi.mocked(save).mock.calls[0]![0]).toMatchObject({ baseContentVersion: 5, baseRevisionId: 9, content: "My draft" });
+        expect(vi.mocked(save).mock.calls[0]![0]).toMatchObject({ baseContentVersion: 5, baseRevisionId: revisionPublicId, content: "My draft" });
         expect(api.basePage?.contentVersion).toBe(6);
     });
     it("keeps the original base after a rejected save and uses it for reacquisition", async () => {

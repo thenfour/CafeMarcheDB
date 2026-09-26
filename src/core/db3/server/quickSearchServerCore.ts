@@ -15,6 +15,7 @@ import { xInstrument } from "../shared/schema/instrument";
 import { xEvent } from "../shared/schema/event";
 import { xSong } from "../shared/schema/song";
 import { xUser } from "../shared/schema/user";
+import { xWikiPage } from "../shared/schema/wiki";
 
 // per type; this is not the amount to return to users. after this, relevance prunes to the top N results.
 // this just sets a practical limit.
@@ -376,7 +377,7 @@ const WikiPageQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.wikiPage>
                 ]
             },
             select: {
-                id: true,
+                publicId: true,
                 slug: true,
                 currentRevision: {
                     select: {
@@ -403,7 +404,7 @@ const WikiPageQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.wikiPage>
             }
 
             return {
-                id: x.id,
+                id: xWikiPage.parseIdentity(x.publicId),
                 absoluteUri,
                 name: x.currentRevision ? `${x.currentRevision.name} (${x.slug})` : x.slug,
                 canonicalWikiSlug: x.slug,

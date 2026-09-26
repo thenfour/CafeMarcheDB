@@ -41,7 +41,7 @@ const requireWikiPageSearchFields = <TPage extends {
 
 const wikiPageEditorTransportSelection = Prisma.validator<Prisma.WikiPageDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         tags: wikiPageTagAssociationTransportSelection,
     },
 });
@@ -85,7 +85,7 @@ export const wikiPageEditorView = defineCrudView({
 
 const wikiPageSearchTransportSelection = Prisma.validator<Prisma.WikiPageDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         slug: true,
         namespace: true,
         createdAt: true,
@@ -136,7 +136,7 @@ export const wikiPageSearchView = defineView({
 
 export const wikiPageApiRevisionSelection = Prisma.validator<Prisma.WikiPageRevisionDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         name: true,
         content: true,
         createdAt: true,
@@ -155,7 +155,7 @@ const wikiPageApiTransportSelection = Prisma.validator<Prisma.WikiPageDefaultArg
         slug: true,
         namespace: true,
         visiblePermissionId: true,
-        id: true,
+        publicId: true,
         lockId: true,
         lockAcquiredAt: true,
         lockExpiresAt: true,
@@ -170,9 +170,17 @@ const wikiPageApiTransportSelection = Prisma.validator<Prisma.WikiPageDefaultArg
     },
 });
 
+const wikiPageApiRequestedSelection = Prisma.validator<Prisma.WikiPageDefaultArgs>()({
+    select: {
+        ...wikiPageApiTransportSelection.select,
+        id: true, // Mutation helpers use the natural key before DTO projection.
+    },
+});
+
 const wikiPageApiContract = deriveViewContract(
     xWikiPage,
-    wikiPageApiTransportSelection,
+    wikiPageApiRequestedSelection,
+    { transportSelection: wikiPageApiTransportSelection },
 );
 
 export const wikiPageApiSelection = wikiPageApiContract.prismaSelection;
@@ -188,7 +196,7 @@ export const wikiPageApiView = defineView({
 
 const wikiPageRevisionSummarySelection = Prisma.validator<Prisma.WikiPageRevisionDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         name: true,
         createdAt: true,
         consolidationKey: true,
@@ -211,7 +219,7 @@ const wikiPageRevisionSummarySelection = Prisma.validator<Prisma.WikiPageRevisio
 
 const wikiPageRevisionHistorySelection = Prisma.validator<Prisma.WikiPageDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         slug: true,
         currentRevision: wikiPageRevisionSummarySelection,
         revisions: {
@@ -236,7 +244,7 @@ export const wikiPageRevisionHistoryView = defineView({
 
 const wikiPageRevisionDetailSelection = Prisma.validator<Prisma.WikiPageRevisionDefaultArgs>()({
     select: {
-        id: true,
+        publicId: true,
         name: true,
         content: true,
         createdAt: true,

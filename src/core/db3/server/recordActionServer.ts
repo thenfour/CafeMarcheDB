@@ -109,7 +109,7 @@ function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null,
         eventId: null,
         fileId: null,
         songId: null,
-        wikiPageId: toSafeId(args.wikiPageId),
+        wikiPageId: null,
         attendanceId: null,
         eventSegmentId: null,
         customLinkId: toSafeId(args.customLinkId),
@@ -135,6 +135,13 @@ export async function createActionRecord(args: RecordActionArgs & { userId?: num
             select: { id: true },
         });
         sanitizedData.songId = song?.id ?? null;
+    }
+    if (args.wikiPageId) {
+        const wikiPage = await db.wikiPage.findUnique({
+            where: { publicId: args.wikiPageId },
+            select: { id: true },
+        });
+        sanitizedData.wikiPageId = wikiPage?.id ?? null;
     }
     if (args.fileId) {
         const file = await db.file.findUnique({

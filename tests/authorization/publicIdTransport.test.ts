@@ -33,6 +33,7 @@ const filePublicId = parsePublicId<"File">("AbCdEfGhIjKlMn32");
 const fileEventTagPublicId = parsePublicId<"FileEventTag">("AbCdEfGhIjKlMn19");
 const fileInstrumentTagPublicId = parsePublicId<"FileInstrumentTag">("AbCdEfGhIjKlMn20");
 const fileWikiPageTagPublicId = parsePublicId<"FileWikiPageTag">("AbCdEfGhIjKlMn21");
+const wikiPagePublicId = parsePublicId<"WikiPage">("AbCdEfGhIjKlMn23");
 const eventPublicId = parsePublicId<"Event">("AbCdEfGhIjKlMn22");
 const instrumentId = 7;
 const group = {
@@ -190,7 +191,7 @@ describe("instrument catalog public-ID transport", () => {
                 publicId: fileWikiPageTagPublicId,
                 fileId: 90,
                 wikiPageId: 103,
-                wikiPage: { id: 103, slug: "repertoire" },
+                wikiPage: { id: 103, publicId: wikiPagePublicId, slug: "repertoire" },
             }],
         }, publicData);
         expect(projectedFile.publicId).toBe(filePublicId);
@@ -230,8 +231,8 @@ describe("instrument catalog public-ID transport", () => {
         expect(projectedFile.taggedEvents[0].event).not.toHaveProperty("id");
         expect(projectedFile.taggedWikiPages[0]).toMatchObject({
             publicId: fileWikiPageTagPublicId,
-            wikiPageId: 103,
-            wikiPage: { id: 103, slug: "repertoire" },
+            wikiPageId: wikiPagePublicId,
+            wikiPage: { publicId: wikiPagePublicId, slug: "repertoire" },
         });
         expect(projectedFile.taggedUsers[0]).not.toHaveProperty("id");
         expect(projectedFile.taggedSongs[0]).not.toHaveProperty("id");
@@ -288,6 +289,7 @@ describe("instrument catalog public-ID transport", () => {
 
         const projectedWikiPage = projectDB3ModelPublicIds(db3.xWikiPage, {
             id: 96,
+            publicId: wikiPagePublicId,
             tags: [{
                 id: 97,
                 publicId: wikiPageTagAssignmentPublicId,

@@ -430,10 +430,10 @@ const eventDetailTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
         },
         descriptionWikiPage: {
             select: {
-                id: true,
+                publicId: true,
                 currentRevision: {
                     select: {
-                        id: true,
+                        publicId: true,
                         content: true,
                     },
                 },
@@ -599,10 +599,10 @@ const eventCalendarTransportSelection = Prisma.validator<Prisma.EventDefaultArgs
         },
         descriptionWikiPage: {
             select: {
-                id: true,
+                publicId: true,
                 currentRevision: {
                     select: {
-                        id: true,
+                        publicId: true,
                         content: true,
                     },
                 },
@@ -737,10 +737,10 @@ const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
         },
         descriptionWikiPage: {
             select: {
-                id: true,
+                publicId: true,
                 currentRevision: {
                     select: {
-                        id: true,
+                        publicId: true,
                         content: true,
                     },
                 },

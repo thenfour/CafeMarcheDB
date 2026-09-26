@@ -6,7 +6,7 @@ import { Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { Permission } from 'shared/permissions';
-import type { EventPublicId, EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FilePublicId, FileSongTagPublicId, FileTagPublicId, SongPublicId, UserPublicId } from 'shared/publicId';
+import type { EventPublicId, EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FilePublicId, FileSongTagPublicId, FileTagPublicId, SongPublicId, UserPublicId, WikiPagePublicId } from 'shared/publicId';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { formatFileSize, SortDirection } from 'shared/rootroot';
 import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
@@ -195,7 +195,7 @@ interface FileViewerHiddenTagIds {
     instrumentTagIds?: db3.InstrumentIdentity[];
     songTagIds?: SongPublicId[];
     eventTagIds?: EventPublicId[];
-    wikiPageTagIds?: number[]; // wikiPage ids
+    wikiPageTagIds?: WikiPagePublicId[];
 };
 
 interface FileViewerProps {
@@ -371,7 +371,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
 
                     {(taggedWikiPages.length > 0) && (
                         taggedWikiPages
-                            .filter(a => !props.hiddenTagIds.wikiPageTagIds || !existsInArray(props.hiddenTagIds.wikiPageTagIds, a.wikiPage.id))
+                            .filter(a => !props.hiddenTagIds.wikiPageTagIds || !existsInArray(props.hiddenTagIds.wikiPageTagIds, a.wikiPage.publicId))
                             .map(a => a.wikiPage.slug === undefined
                                 ? null
                                 : <WikiPageChip key={db3.xFile.fields.taggedWikiPages.getForeignIdentity(a)} slug={a.wikiPage.slug} size="small" variation={variation} />)
@@ -570,7 +570,7 @@ interface FileFilterAndSortSpec {
     taggedInstrumentIds: db3.InstrumentIdentity[];
     taggedSongIds: SongPublicId[];
     taggedEventIds: EventPublicId[];
-    taggedWikiPageIds: number[];
+    taggedWikiPageIds: WikiPagePublicId[];
     mimeTypes: string[];
 
     sortBy: SortByKey;
@@ -602,7 +602,7 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         const eventIds = taggedEvents.map(event => event.event.publicId);
         if (spec.taggedEventIds.length && !eventIds.some(id => spec.taggedEventIds.includes(id))) return false;
 
-        const wikiPageIds = taggedWikiPages.map(wikiPage => wikiPage.wikiPage.id);
+        const wikiPageIds = taggedWikiPages.map(wikiPage => wikiPage.wikiPage.publicId);
         if (spec.taggedWikiPageIds.length && !wikiPageIds.some(id => spec.taggedWikiPageIds.includes(id))) return false;
 
         if (spec.mimeTypes.length) {
@@ -904,11 +904,11 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                                     {uniqueWikiPageTags.length > 1 && <CMChipContainer>
                                         {uniqueWikiPageTags.map(t => (
                                             <CMChip
-                                                key={t.tag.id}
+                                                key={t.tag.publicId}
                                                 tooltip={"Wiki Page"}
                                                 size='small'
-                                                variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedWikiPageIds, t.tag.id) }}
-                                                onClick={() => props.onChange({ ...props.value, taggedWikiPageIds: toggleValueInArray(props.value.taggedWikiPageIds, t.tag.id) })}
+                                                variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedWikiPageIds, db3.xWikiPage.parseIdentity(t.tag.publicId)) }}
+                                                onClick={() => props.onChange({ ...props.value, taggedWikiPageIds: toggleValueInArray(props.value.taggedWikiPageIds, db3.xWikiPage.parseIdentity(t.tag.publicId)) })}
                                             >
                                                 {t.tag.slug} ({t.count})
                                             </CMChip>))}

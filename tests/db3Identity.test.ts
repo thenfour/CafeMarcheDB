@@ -97,12 +97,12 @@ describe("DB3 table identity authority", () => {
             .toBe(instrumentPublicId);
 
         const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("WikiTagPublic001");
-        const wikiPage: { id: number; tags: unknown[] } = { id: 12, tags: [] };
+        const wikiPage = { publicId: parsePublicId<"WikiPage">("WikiPagePublic01"), tags: [] as unknown[] };
         const wikiTag = { publicId: wikiPageTagPublicId, text: "Policy" };
         const editedWikiPage = db3.xWikiPage.fields.tags.withForeignObjects(wikiPage, [wikiTag]);
         expect(editedWikiPage.tags).toEqual([{
             wikiPage,
-            wikiPageId: wikiPage.id,
+            wikiPageId: wikiPage.publicId,
             tag: wikiTag,
             tagId: wikiPageTagPublicId,
         }]);

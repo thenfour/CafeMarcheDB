@@ -1,4 +1,4 @@
-import type { EventAttendancePublicId, EventPublicId, EventSegmentPublicId, EventSongListPublicId, FilePublicId, FrontpageGalleryItemPublicId, SetlistPlanPublicId, SongPublicId } from "shared/publicId";
+import type { EventAttendancePublicId, EventPublicId, EventSegmentPublicId, EventSongListPublicId, FilePublicId, FrontpageGalleryItemPublicId, SetlistPlanPublicId, SongPublicId, WikiPagePublicId } from "shared/publicId";
 import { z } from "zod";
 import {
     isPublicId,
@@ -344,7 +344,7 @@ export const ZTRecordActionArgs = z.object({
     eventId: z.custom<EventPublicId>(isPublicId).optional(),
     fileId: z.custom<FilePublicId>(isPublicId).optional(),
     songId: z.custom<SongPublicId>(isPublicId).optional(),
-    wikiPageId: z.number().optional(),
+    wikiPageId: z.custom<WikiPagePublicId>(isPublicId).optional(),
     attendanceId: z.custom<EventAttendancePublicId>(isPublicId).optional(),
     eventSegmentId: z.custom<EventSegmentPublicId>(isPublicId).optional(),
     customLinkId: z.number().optional(),
@@ -362,7 +362,7 @@ export type ActivityFeatureAssociations = {
     eventId?: EventPublicId;
     fileId?: FilePublicId;
     songId?: SongPublicId;
-    wikiPageId?: number;
+    wikiPageId?: WikiPagePublicId;
     attendanceId?: EventAttendancePublicId;
     eventSegmentId?: EventSegmentPublicId;
 

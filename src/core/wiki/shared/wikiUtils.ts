@@ -1,7 +1,7 @@
 import { Prisma } from "db";
 import { diffChars, diffLines } from 'diff';
 import { z } from "zod";
-import { isPublicId, type EventPublicId, type PermissionPublicId, type UserPublicId } from "shared/publicId";
+import { isPublicId, type EventPublicId, type PermissionPublicId, type UserPublicId, type WikiPagePublicId, type WikiPageRevisionPublicId } from "shared/publicId";
 import { slugify } from "../../../../shared/rootroot";
 import type { EventWikiPageContextDto } from "../../db3/shared/entities/event/eventViews";
 import type { WikiPageApiDto } from "../../db3/shared/entities/wiki/wikiViews";
@@ -13,9 +13,9 @@ export const enum SpecialWikiNamespace {
 };
 
 // Returns file tag context for uploads based on wiki namespace/slug
-export function getFileUploadContext(wikiPageId: number | undefined, wikiPath: WikiPath): {
+export function getFileUploadContext(wikiPageId: WikiPagePublicId | undefined, wikiPath: WikiPath): {
     taggedEventId: EventPublicId | undefined;
-    taggedWikiPageId: number | undefined;
+    taggedWikiPageId: WikiPagePublicId | undefined;
     // Add more tags as needed for other namespaces
 } {
     if (wikiPath.namespace === SpecialWikiNamespace.EventDescription) {
@@ -82,7 +82,7 @@ const ZWikiTitle = z.string().min(1);
 export const ZTGetWikiPageArgs = z.object({
     canonicalWikiPath: ZWikiSlug,
     baseContentVersion: z.number().int().nonnegative(),
-    baseRevisionId: z.number().nullable(), // used to return updateability status.
+    baseRevisionId: db3.xWikiPageRevision.identitySchema.nullable(), // used to return updateability status.
     lockId: z.string().nullable(), // used to return updateability status
 });
 
@@ -97,7 +97,7 @@ export type TGetWikiPageRevisionsArgs = z.infer<typeof ZTGetWikiPageRevisionsArg
 
 ////////////////////////////////////////////////////////////////
 export const ZTGetWikiPageRevisionArgs = z.object({
-    revisionId: z.number().nullable(), // if null, returns null.
+    revisionId: db3.xWikiPageRevision.identitySchema.nullable(), // if null, returns null.
 });
 
 export type TGetWikiPageRevisionArgs = z.infer<typeof ZTGetWikiPageRevisionArgs>;
@@ -116,7 +116,7 @@ export const ZTUpdateWikiPageArgs = z.object({
     title: ZWikiTitle,
     content: z.string(),
     baseContentVersion: z.number().int().nonnegative(),
-    baseRevisionId: z.number().nullable(),
+    baseRevisionId: db3.xWikiPageRevision.identitySchema.nullable(),
     lockId: z.string().nullable(), // you should always have a lock, but some weird cases like admin forcibly removing locks may cancel them.
 });
 
@@ -126,7 +126,7 @@ export type TUpdateWikiPageArgs = z.infer<typeof ZTUpdateWikiPageArgs>;
 export const ZTAcquireLockOnWikiPageArgs = z.object({
     canonicalWikiPath: ZWikiSlug,
     baseContentVersion: z.number().int().nonnegative(),
-    baseRevisionId: z.number().nullable(),
+    baseRevisionId: db3.xWikiPageRevision.identitySchema.nullable(),
     lockId: z.string().min(1),
     takeOverLockId: z.string().optional(),
 });
@@ -249,7 +249,7 @@ type GetWikiPageLockStatusArgs = {
     currentPage: WikiPageApiPayload | null;
     currentUserId: UserPublicId | null;
     userClientLockId: string | null;
-    baseRevisionId: number | null;
+    baseRevisionId: WikiPageRevisionPublicId | null;
     baseContentVersion: number;
 }
 
@@ -287,7 +287,7 @@ export const GetWikiPageUpdatability = ({ currentPage, currentUserId, userClient
     const isLockExpired = currentPage.lockExpiresAt != null && currentPage.lockExpiresAt <= new Date();
     const isLocked = currentPage.lockId != null && currentPage.lockExpiresAt != null && !isLockExpired;
     const isLockedInThisContext = isLocked && currentPage.lockedByUser?.publicId === currentUserId && currentPage.lockId === userClientLockId;
-    const isRevisionCompatible = (currentPage.currentRevision?.id ?? null) === baseRevisionId && currentPage.contentVersion === baseContentVersion;
+    const isRevisionCompatible = (currentPage.currentRevision?.publicId ?? null) === baseRevisionId && currentPage.contentVersion === baseContentVersion;
     const isLockConflict = isLocked && !isLockedInThisContext;
 
     return {

@@ -158,6 +158,7 @@ type SetlistPlanPublicIds = {
     event: ReadonlyMap<number, string>;
     song: ReadonlyMap<number, string>;
     user: ReadonlyMap<number, string>;
+    wikiPage: ReadonlyMap<number, string>;
 };
 
 export async function MigrateSetlistPlanPublicIdReferences() {
@@ -166,6 +167,7 @@ export async function MigrateSetlistPlanPublicIdReferences() {
     const numericEventIds = new Set<number>();
     const numericSongIds = new Set<number>();
     const numericUserIds = new Set<number>();
+    const numericWikiPageIds = new Set<number>();
     for (const plan of plans) {
         try {
             const payload: unknown = JSON.parse(plan.payloadJson);
@@ -181,6 +183,9 @@ export async function MigrateSetlistPlanPublicIdReferences() {
                 }
                 if (item.itemType === QuickSearchItemType.user && typeof item.id === "number") {
                     numericUserIds.add(item.id);
+                }
+                if (item.itemType === QuickSearchItemType.wikiPage && typeof item.id === "number") {
+                    numericWikiPageIds.add(item.id);
                 }
             }
             parsedPlans.push({ id: plan.id, payload });
@@ -207,10 +212,17 @@ export async function MigrateSetlistPlanPublicIdReferences() {
             where: { id: { in: [...numericUserIds] } },
             select: { id: true, publicId: true },
         });
+    const wikiPages = numericWikiPageIds.size === 0
+        ? []
+        : await db.wikiPage.findMany({
+            where: { id: { in: [...numericWikiPageIds] } },
+            select: { id: true, publicId: true },
+        });
     const publicIds: SetlistPlanPublicIds = {
         event: new Map(events.map(event => [event.id, event.publicId])),
         song: new Map(songs.map(song => [song.id, song.publicId])),
         user: new Map(users.map(user => [user.id, user.publicId])),
+        wikiPage: new Map(wikiPages.map(page => [page.id, page.publicId])),
     };
     let migratedPlans = 0;
     for (const plan of parsedPlans) {
@@ -241,16 +253,21 @@ export function migrateSetlistPlanReferences(
         const isEvent = item.itemType === QuickSearchItemType.event;
         const isSong = item.itemType === QuickSearchItemType.song;
         const isUser = item.itemType === QuickSearchItemType.user;
-        if (!isEvent && !isSong && !isUser) continue;
-        const publicId = (isEvent ? publicIds.event : isSong ? publicIds.song : publicIds.user).get(item.id);
+        const isWikiPage = item.itemType === QuickSearchItemType.wikiPage;
+        if (!isEvent && !isSong && !isUser && !isWikiPage) continue;
+        const publicId = (isEvent ? publicIds.event : isSong ? publicIds.song : isUser ? publicIds.user : publicIds.wikiPage).get(item.id);
         if (!publicId) continue;
         item.id = publicId;
         if (typeof item.absoluteUri === "string") {
             item.absoluteUri = item.absoluteUri.replace(
                 isEvent ? /\/backstage\/event\/\d+(?=\/|$)/ :
                     isSong ? /\/backstage\/song\/\d+(?=\/|$)/ :
-                        /\/backstage\/user\/\d+(?=\/|$)/,
-                `/backstage/${isEvent ? "event" : isSong ? "song" : "user"}/${publicId}`,
+                        isUser ? /\/backstage\/user\/\d+(?=\/|$)/ :
+                            /\/backstage\/wiki\/\d+(?=\/|$)/, // wiki
+                `/backstage/${isEvent ? "event" :
+                    isSong ? "song" :
+                        isUser ? "user" :
+                            "wiki"}/${publicId}`,
             );
         }
         changed = true;
@@ -278,6 +295,8 @@ export async function registerNodeInstrumentation() {
     await CorrectPublicIds(db.user, "User");
     await CorrectPublicIds(db.setlistPlanGroup, "SetlistPlanGroup");
     await CorrectPublicIds(db.setlistPlan, "SetlistPlan");
+    await CorrectPublicIds(db.wikiPage, "WikiPage");
+    await CorrectPublicIds(db.wikiPageRevision, "WikiPageRevision");
     await CorrectPublicIds(db.songCreditType, "SongCreditType");
     await CorrectPublicIds(db.songCredit, "SongCredit");
     await CorrectPublicIds(db.fileTag, "FileTag");

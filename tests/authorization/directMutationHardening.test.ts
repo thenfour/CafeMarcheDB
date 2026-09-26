@@ -485,6 +485,7 @@ describe("DB3 command boundary", () => {
     const actor = createAuthorizationTestUser("normal", { id: 105, permissions })
     const wikiPage = {
       id: 106,
+      publicId: parsePublicId<"WikiPage">("WikiPagePublic01"),
       slug: "rehearsal-policy",
       namespace: null,
       createdByUserId: actor.id,
@@ -511,10 +512,10 @@ describe("DB3 command boundary", () => {
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.wikiPageEditorView.crud.operations.update.command.commandID,
       payload: {
-        identity: wikiPage.id,
+        identity: wikiPage.publicId,
         patch: { tags: [wikiPageTag.publicId] },
       },
-    }, ctx)).resolves.toEqual({ identity: wikiPage.id })
+    }, ctx)).resolves.toEqual({ identity: wikiPage.publicId })
 
     expect(authorizationTestDb.snapshot("wikiPageTagAssignment")).toEqual([
       expect.objectContaining({

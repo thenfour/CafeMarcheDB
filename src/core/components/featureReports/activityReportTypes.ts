@@ -12,6 +12,7 @@ import {
     type SongCreditTypePublicId,
     type SongPublicId,
     type SetlistPlanPublicId,
+    type WikiPagePublicId,
 } from "shared/publicId";
 import { isPublicId } from "shared/publicId";
 import { z } from "zod";
@@ -52,7 +53,7 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
         attendance: { select: { publicId: true } },
         file: { select: { publicId: true, fileLeafName: true, storedLeafName: true, externalURI: true } },
         song: { select: { publicId: true, name: true } },
-        wikiPage: { select: { id: true, slug: true } },
+        wikiPage: { select: { publicId: true, slug: true } },
         customLink: { select: { id: true, name: true } },
         eventSegment: { select: { publicId: true, name: true, event: { select: { publicId: true } }, startsAt: true } },
         eventSongList:
@@ -79,11 +80,13 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
 type GeneralActivityReportDetailDbPayload = Prisma.ActionGetPayload<typeof GeneralActivityReportDetailArgs>;
 export type GeneralActivityReportDetailPayload = Omit<
     GeneralActivityReportDetailDbPayload,
-    "user" | "userId" | "event" | "eventId" | "song" | "songId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment" | "frontpageGalleryItemId" | "frontpageGalleryItem" | "setlistPlanId" | "setlistPlan"
+    "user" | "userId" | "event" | "eventId" | "song" | "songId" | "wikiPage" | "wikiPageId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment" | "frontpageGalleryItemId" | "frontpageGalleryItem" | "setlistPlanId" | "setlistPlan"
 > & {
     userHash: string | null;
     songId: SongPublicId | null;
     song: { publicId: SongPublicId; name: string } | null;
+    wikiPageId: WikiPagePublicId | null;
+    wikiPage: { publicId: WikiPagePublicId; slug: string } | null;
     songCreditTypeId: SongCreditTypePublicId | null;
     eventSegmentId: EventSegmentPublicId | null;
     eventSegment: ReturnType<typeof projectActivitySegment>;
@@ -103,12 +106,14 @@ export function projectGeneralActivityReportDetailItem(
     row: GeneralActivityReportDetailDbPayload,
     userHash: string | null,
 ): GeneralActivityReportDetailPayload {
-    const { userId: _userId, event, eventId: _eventId, song, songId: _songId, songCreditType, songCreditTypeId: _songCreditTypeId, setlistPlanId: _setlistPlanId, setlistPlan: _setlistPlan, ...rest } = row;
+    const { userId: _userId, event, eventId: _eventId, song, songId: _songId, wikiPage, wikiPageId: _wikiPageId, songCreditType, songCreditTypeId: _songCreditTypeId, setlistPlanId: _setlistPlanId, setlistPlan: _setlistPlan, ...rest } = row;
     return {
         ...rest,
         uri: row.uri,
         songId: song ? db3.xSong.parseIdentity(song.publicId) : null,
         song: song ? { publicId: db3.xSong.parseIdentity(song.publicId), name: song.name } : null,
+        wikiPageId: wikiPage ? db3.xWikiPage.parseIdentity(wikiPage.publicId) : null,
+        wikiPage: wikiPage ? { publicId: db3.xWikiPage.parseIdentity(wikiPage.publicId), slug: wikiPage.slug } : null,
         eventSegment: projectActivitySegment(row.eventSegment),
         eventSegmentId: row.eventSegment ? db3.xEventSegment.parseIdentity(row.eventSegment.publicId) : null,
         attendanceId: row.attendance ? db3.xEventAttendance.parseIdentity(row.attendance.publicId) : null,
@@ -226,7 +231,7 @@ export interface FacetedBreakdownResult {
             count: number;
         }[],
         wikiPages: {
-            wikiPageId: number;
+            wikiPageId: WikiPagePublicId;
             slug: string;
             count: number;
         }[],
@@ -262,7 +267,7 @@ export const ZFeatureReportFilterSpec = z.object({
     includeEventIds: z.custom<EventPublicId>(isPublicId).array(),
     includeMenuLinkIds: z.number().array(),
     includeSongIds: z.custom<SongPublicId>(isPublicId).array(),
-    includeWikiPageIds: z.number().array(),
+    includeWikiPageIds: db3.xWikiPage.identitySchema.array(),
 
     excludeFeatures: z.union([z.nativeEnum(ActivityFeature), z.string()]).array(),
     excludeOperatingSystems: z.union([z.nativeEnum(OperatingSystem), z.string()]).array(),
@@ -276,7 +281,7 @@ export const ZFeatureReportFilterSpec = z.object({
     excludeEventIds: z.custom<EventPublicId>(isPublicId).array(),
     excludeMenuLinkIds: z.number().array(),
     excludeSongIds: z.custom<SongPublicId>(isPublicId).array(),
-    excludeWikiPageIds: z.number().array(),
+    excludeWikiPageIds: db3.xWikiPage.identitySchema.array(),
 
     // screenWidths: z.number().optional(),
     // screenHeights: z.number().optional(),
@@ -346,7 +351,7 @@ const GetFeatureReportDetailResultArgsUnvalidated /*: Prisma.ActionDefaultArgs*/
         },
         wikiPage: {
             select: {
-                id: true,
+                publicId: true,
                 slug: true,
             }
         },
@@ -382,11 +387,13 @@ type GetFeatureReportDetailDbPayload = Prisma.ActionGetPayload<typeof GetFeature
 type FeatureReportSongCreditType = NonNullable<GetFeatureReportDetailDbPayload["songCreditType"]>;
 export type GetFeatureReportDetailItemPayload = Omit<
     GetFeatureReportDetailDbPayload,
-    "userId" | "instrument" | "event" | "eventId" | "song" | "songId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment" | "frontpageGalleryItemId" | "frontpageGalleryItem" | "setlistPlanId" | "setlistPlan"
+    "userId" | "instrument" | "event" | "eventId" | "song" | "songId" | "wikiPage" | "wikiPageId" | "songCreditType" | "songCreditTypeId" | "eventSongListId" | "eventSongList" | "attendanceId" | "attendance" | "eventSegmentId" | "eventSegment" | "frontpageGalleryItemId" | "frontpageGalleryItem" | "setlistPlanId" | "setlistPlan"
 > & {
     instrumentId: InstrumentPublicId | null;
     songId: SongPublicId | null;
     song: { publicId: SongPublicId; name: string } | null;
+    wikiPageId: WikiPagePublicId | null;
+    wikiPage: { publicId: WikiPagePublicId; slug: string } | null;
     songCreditTypeId: SongCreditTypePublicId | null;
     eventSegmentId: EventSegmentPublicId | null;
     eventSegment: ReturnType<typeof projectActivitySegment>;
@@ -419,6 +426,8 @@ export function projectFeatureReportDetailItem(
         eventId: _eventId,
         song,
         songId: _songId,
+        wikiPage,
+        wikiPageId: _wikiPageId,
         songCreditType,
         songCreditTypeId: _songCreditTypeId,
         setlistPlanId: _setlistPlanId,
@@ -430,6 +439,8 @@ export function projectFeatureReportDetailItem(
         uri: row.uri,
         songId: song ? db3.xSong.parseIdentity(song.publicId) : null,
         song: song ? { publicId: db3.xSong.parseIdentity(song.publicId), name: song.name } : null,
+        wikiPageId: wikiPage ? db3.xWikiPage.parseIdentity(wikiPage.publicId) : null,
+        wikiPage: wikiPage ? { publicId: db3.xWikiPage.parseIdentity(wikiPage.publicId), slug: wikiPage.slug } : null,
         eventSegment: projectActivitySegment(row.eventSegment),
         eventSegmentId: row.eventSegment ? db3.xEventSegment.parseIdentity(row.eventSegment.publicId) : null,
         attendanceId: row.attendance ? db3.xEventAttendance.parseIdentity(row.attendance.publicId) : null,

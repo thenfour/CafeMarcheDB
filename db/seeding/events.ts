@@ -109,11 +109,13 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
     if (faker.datatype.boolean(0.5)) {
         const wp = await gState.prisma.wikiPage.create({
             data: {
+                publicId: generatePublicId<"WikiPage">(),
                 slug: `EventDescription/${event.publicId}`,
                 namespace: 'eventdescription',
                 visiblePermissionId: visibilityPermissionId,
                 revisions: {
                     create: {
+                        publicId: generatePublicId<"WikiPageRevision">(),
                         content: faker.lorem.paragraphs(faker.number.int({ min: 1, max: 5 })),
                         createdAt: new Date(),
                         name: `(description for event #${event.id} ${event.name})`,

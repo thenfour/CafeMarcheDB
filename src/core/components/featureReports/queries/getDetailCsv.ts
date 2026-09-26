@@ -115,7 +115,7 @@ function flattenActivityRecord(row: any): Record<string, string> {
     }
 
     if (row.wikiPage) {
-        flattened.wikiPageId = row.wikiPage.id?.toString() || '';
+        flattened.wikiPageId = row.wikiPage.publicId;
         flattened.wikiPageSlug = row.wikiPage.slug || '';
     }
 

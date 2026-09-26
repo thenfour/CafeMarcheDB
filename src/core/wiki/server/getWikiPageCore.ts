@@ -6,11 +6,12 @@ import { loadAuthorization } from "src/auth/server/requestAuthorization";
 import { queryView } from "src/core/db3/server/db3QueryCore";
 import { wikiPageApiView } from "src/core/db3/shared/entities/wiki/wikiViews";
 import { xUser } from "src/core/db3/shared/schema/user";
+import type { WikiPageRevisionPublicId } from "shared/publicId";
 
 interface GetWikiPageCoreArgs {
     canonicalWikiSlug: string;
     clientBaseContentVersion: number;
-    clientBaseRevisionId: number | null;
+    clientBaseRevisionId: WikiPageRevisionPublicId | null;
     clientLockId: string | null;
     ctx: AuthenticatedCtx;
     dbt: TransactionalPrismaClient;
@@ -47,7 +48,7 @@ export async function GetWikiPageCore({ canonicalWikiSlug, dbt, ctx, ...args }: 
         wikiPage: page,// || await MakeNewWikiPage(slug),
         titleIsEditable: true,
         specialWikiNamespace: null,
-        isExisting: !!page && page.id > 0,
+        isExisting: page !== null,
         lockStatus,
     };
 

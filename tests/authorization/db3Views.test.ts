@@ -50,6 +50,8 @@ const fileSongTagPublicId = parsePublicId<"FileSongTag">("AbCdEfGhIjKlMn19");
 const fileEventTagPublicId = parsePublicId<"FileEventTag">("AbCdEfGhIjKlMn20");
 const fileInstrumentTagPublicId = parsePublicId<"FileInstrumentTag">("AbCdEfGhIjKlMn21");
 const fileWikiPageTagPublicId = parsePublicId<"FileWikiPageTag">("AbCdEfGhIjKlMn22");
+const wikiPagePublicId = parsePublicId<"WikiPage">("AbCdEfGhIjKlMn23");
+const wikiRevisionPublicId = parsePublicId<"WikiPageRevision">("AbCdEfGhIjKlMn24");
 const group = {
     publicId: groupPublicId,
     name: "Brass",
@@ -583,6 +585,7 @@ describe("DB3 named views", () => {
     it("projects the finite WikiPage tag editor view", async () => {
         const findMany = vi.fn(async () => [{
             id: 15,
+            publicId: wikiPagePublicId,
             slug: "policy",
             createdByUserId: 100,
             visiblePermissionId: null,
@@ -614,14 +617,14 @@ describe("DB3 named views", () => {
                 viewID: db3.wikiPageEditorView.viewID,
             },
             orderBy: undefined,
-            filter: { pks: [15] },
+            filter: { publicIds: [wikiPagePublicId] },
             cmdbQueryContext: "wiki-page-editor-view-test",
         }, new CMAuthorization({ id: 100 } as any, effectivePermissions), {
             WikiPage: { findMany },
         } as any);
 
         expect(result.items).toEqual([{
-            id: 15,
+            publicId: wikiPagePublicId,
             tags: [{
                 publicId: wikiPageTagAssignmentPublicId,
                 tagId: wikiPageTagPublicId,
@@ -808,7 +811,7 @@ describe("DB3 named views", () => {
                 },
             ],
             taggedInstruments: [{ publicId: fileInstrumentTagPublicId, instrumentId: instrument.publicId }],
-            taggedWikiPages: [{ publicId: fileWikiPageTagPublicId, wikiPage: { id: 12, slug: "repertoire" } }],
+            taggedWikiPages: [{ publicId: fileWikiPageTagPublicId, wikiPage: { id: 12, publicId: wikiPagePublicId, slug: "repertoire" } }],
         });
         const hydrated = db3.hydrateView(db3.fileSearchView, dto, references);
 
@@ -923,7 +926,7 @@ describe("DB3 named views", () => {
                 },
             }],
             taggedInstruments: [{ publicId: fileInstrumentTagPublicId, instrumentId: instrument.publicId }],
-            taggedWikiPages: [{ publicId: fileWikiPageTagPublicId, wikiPage: { id: 16, slug: "repertoire" } }],
+            taggedWikiPages: [{ publicId: fileWikiPageTagPublicId, wikiPage: { id: 16, publicId: wikiPagePublicId, slug: "repertoire" } }],
             frontpageGalleryItems: [{ publicId: galleryPublicId(90) }],
             parentFile: { publicId: filePublicId(7), fileLeafName: "source.pdf" },
             childFiles: [{ publicId: filePublicId(9), fileLeafName: "part.pdf" }],
@@ -948,7 +951,7 @@ describe("DB3 named views", () => {
         );
         expect(hydrated.taggedWikiPages).toEqual([{
             publicId: fileWikiPageTagPublicId,
-            wikiPage: { id: 16, slug: "repertoire" },
+            wikiPage: { publicId: wikiPagePublicId, slug: "repertoire" },
         }]);
         expect(hydrated.frontpageGalleryItems).toEqual([{ publicId: galleryPublicId(90) }]);
         expect(hydrated.parentFile).toEqual({ publicId: filePublicId(7), fileLeafName: "source.pdf" });
@@ -1130,10 +1133,12 @@ describe("DB3 named views", () => {
             },
             descriptionWikiPage: {
                 id: 30,
+                publicId: wikiPagePublicId,
                 createdByUserId: 42,
                 visiblePermissionId: null,
                 currentRevision: {
                     id: 31,
+                    publicId: wikiRevisionPublicId,
                     content: "Event details",
                 },
             },
@@ -1176,8 +1181,8 @@ describe("DB3 named views", () => {
                 userAssignments: [expect.objectContaining({ userId: userPublicId(42) })],
             }),
             descriptionWikiPage: {
-                id: 30,
-                currentRevision: { id: 31, content: "Event details" },
+                publicId: wikiPagePublicId,
+                currentRevision: { publicId: wikiRevisionPublicId, content: "Event details" },
             },
         })]);
         expect(result.items[0]).not.toHaveProperty("createdByUserId");

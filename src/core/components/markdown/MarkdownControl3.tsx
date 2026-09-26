@@ -7,7 +7,7 @@ import ViewWeekIcon from "@mui/icons-material/ViewWeek";
 import { Collapse, Tooltip } from "@mui/material";
 import React from "react";
 import { Permission } from 'shared/permissions';
-import type { EventPublicId, FileTagPublicId, PermissionPublicId, SongPublicId, UserPublicId } from "shared/publicId";
+import type { EventPublicId, FileTagPublicId, PermissionPublicId, SongPublicId, UserPublicId, WikiPagePublicId } from "shared/publicId";
 import { IsNullOrWhitespace, parseMimeType } from 'shared/utils';
 import { gCharMap } from '../../db3/components/IconMap';
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
@@ -84,7 +84,7 @@ interface Markdown3EditorPropsBase {
         taggedSongId?: SongPublicId;
         taggedEventId?: EventPublicId;
         taggedInstrumentId?: number;
-        taggedWikiPageId?: number;
+        taggedWikiPageId?: WikiPagePublicId;
         taggedUserId?: UserPublicId;
         fileTagId?: FileTagPublicId;
         visiblePermissionId?: PermissionPublicId;

@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 import { SeedingState } from './base';
+import { generatePublicId } from '../../src/server/publicId';
 
 export const SeedWikiPages = async (gState: SeedingState) => {
 
@@ -18,6 +19,7 @@ export const SeedWikiPages = async (gState: SeedingState) => {
         const slug = faker.lorem.slug({ min: 1, max: 3 });
         const page = await gState.prisma.wikiPage.create({
             data: {
+                publicId: generatePublicId<"WikiPage">(),
                 slug: namespace ? `${namespace}/${slug}` : slug,
                 namespace,
                 visiblePermissionId: gState.randomVisibilityPermissionId(),
@@ -31,6 +33,7 @@ export const SeedWikiPages = async (gState: SeedingState) => {
         for (let j = 0; j < revisionCount; j++) {
             const revision = await gState.prisma.wikiPageRevision.create({
                 data: {
+                    publicId: generatePublicId<"WikiPageRevision">(),
                     wikiPageId: page.id,
                     name: faker.lorem.sentence(3),
                     content: faker.lorem.paragraphs(faker.number.int({ min: 1, max: 5 })),

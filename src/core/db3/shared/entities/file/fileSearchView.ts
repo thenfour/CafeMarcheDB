@@ -64,7 +64,7 @@ const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
                 publicId: true,
                 wikiPage: {
                     select: {
-                        id: true,
+                        publicId: true,
                         slug: true,
                     },
                 },

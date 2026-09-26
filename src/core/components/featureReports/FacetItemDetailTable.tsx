@@ -79,7 +79,7 @@ export const FacetItemDetailTableRow = ({ value, index, ...props }: FacetItemDet
             </FilterableChip>}
             {value.file && <FileChip value={value.file} startAdornment={gIconMap.AttachFile()} useHashedColor={true} />}
             {value.wikiPage && <FilterableChip
-                item={{ wikiPageId: value.wikiPage.id, slug: value.wikiPage.slug, count: 0 }}
+                item={{ wikiPageId: value.wikiPage.publicId, slug: value.wikiPage.slug, count: 0 }}
                 handler={gClientFacetHandlers.wikiPages}
                 filterSpec={props.filterSpec}
                 setFilterSpec={props.setFilterSpec}

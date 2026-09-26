@@ -1731,6 +1731,27 @@ Prisma generation and schema validation, the production build, and
 The SQL migration has not been applied to a live database, and browser
 interaction against migrated data remains unverified.
 
+#### Completed slice: wiki pages and revisions
+
+`WikiPage` and `WikiPageRevision` now have branded public identities. The SQL
+migration adds unique ASCII/binary IDs, and startup repair replaces deployment
+placeholders before requests are served. New pages and revisions receive IDs
+when created.
+
+The editor, lock and revision RPCs, history UI, quick search, file tagging,
+setlist associations, and Event detail views use public identities. Wiki URLs
+remain slug based. Existing setlist JSON is corrected in the shared reference
+pass. File uploads resolve wiki page IDs under DB3 read policy; activity
+telemetry resolves them on the server and reports project public IDs. Numeric
+page and revision keys remain inside trusted Prisma relations and audit ledger
+entries. The contribution query explicitly shapes its response so those keys
+cannot leak from a Prisma row.
+
+Validation: Prisma generation and schema validation, TypeScript, focused
+view/authorization/editor tests, the repository test suite, lint, and the
+production build. The SQL migration has not been applied to a live database,
+and browser interaction against migrated data remains unverified.
+
 ## Active roadmap
 
 ### Completed foundation
@@ -1850,7 +1871,7 @@ conversions.
        deleting each numeric client-identity compatibility path before marking that
        model complete below.
 
-#### Client-facing model progress: 42 / 47 complete (89%)
+#### Client-facing model progress: 44 / 47 complete (94%)
 
 The denominator is the 47 in-scope Prisma models whose own row identity currently
 crosses a client boundary. It excludes the five server-only models and the two
@@ -1939,8 +1960,8 @@ completion definition.
    -  [x] `SetlistPlanGroup`
    -  [x] `SetlistPlan`
 -  **Wiki domain**
-   -  [ ] `WikiPage`
-   -  [ ] `WikiPageRevision`
+   -  [x] `WikiPage`
+   -  [x] `WikiPageRevision`
 -  **Small independent repetition slices**
    -  [ ] `Setting`
    -  [ ] `CustomLink`

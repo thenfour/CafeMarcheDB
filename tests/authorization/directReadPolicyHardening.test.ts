@@ -27,6 +27,7 @@ import {
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 import { songPublicId } from "../support/songFixtures"
+import { parsePublicId } from "shared/publicId"
 
 const permissions = [
   Permission.login,
@@ -313,8 +314,14 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
   })
 
   it("applies WikiPage visibility to page, contribution, and revision reads", async () => {
+    const hiddenPagePublicId = parsePublicId<"WikiPage">("WikiPageHidden01")
+    const privatePagePublicId = parsePublicId<"WikiPage">("WikiPagePrivat01")
+    const memberPagePublicId = parsePublicId<"WikiPage">("WikiPageMember01")
+    const hiddenRevisionPublicId = parsePublicId<"WikiPageRevision">("WikiRevHidden001")
+    const privateRevisionPublicId = parsePublicId<"WikiPageRevision">("WikiRevPrivat001")
     const hiddenRevision = {
       id: 401,
+      publicId: hiddenRevisionPublicId,
       name: "Hidden revision",
       content: "Hidden content",
       consolidationKey: null,
@@ -333,11 +340,13 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     const privateOwnerRevision = {
       ...hiddenRevision,
       id: 411,
+      publicId: privateRevisionPublicId,
       name: "Private owner revision",
       content: "Private owner content",
     }
     const hiddenPage = {
       id: 40,
+      publicId: hiddenPagePublicId,
       slug: "hidden",
       createdByUserId: actor.id + 1,
       visiblePermissionId: hiddenVisibilityId,
@@ -346,6 +355,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     }
     const privateOwnerPage = {
       id: 41,
+      publicId: privatePagePublicId,
       slug: "private-owner",
       createdByUserId: actor.id,
       visiblePermissionId: null,
@@ -369,17 +379,19 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       { canonicalWikiPath: "private-owner" },
       ctx,
     )
-    expect(visibleHistory).toEqual(expect.objectContaining({ id: 41 }))
+    expect(visibleHistory).toEqual(expect.objectContaining({ publicId: privatePagePublicId }))
+    expect(visibleHistory).not.toHaveProperty("id")
     expect(visibleHistory).not.toHaveProperty("createdByUserId")
     expect(visibleHistory?.revisions?.[0]).not.toHaveProperty("createdByUserId")
     await expect(invokeResolver(
       getUserWikiContributions,
       { userId: actor.publicId },
       ctx,
-    )).resolves.toEqual({ wikiContributions: [privateOwnerPage] })
-    await expect(invokeResolver(getWikiPageRevision, { revisionId: 401 }, ctx)).resolves.toBeNull()
-    const visibleRevision = await invokeResolver(getWikiPageRevision, { revisionId: 411 }, ctx)
-    expect(visibleRevision).toEqual(expect.objectContaining({ id: 411 }))
+    )).resolves.toMatchObject({ wikiContributions: [{ publicId: privatePagePublicId, slug: privateOwnerPage.slug }] })
+    await expect(invokeResolver(getWikiPageRevision, { revisionId: hiddenRevisionPublicId }, ctx)).resolves.toBeNull()
+    const visibleRevision = await invokeResolver(getWikiPageRevision, { revisionId: privateRevisionPublicId }, ctx)
+    expect(visibleRevision).toEqual(expect.objectContaining({ publicId: privateRevisionPublicId }))
+    expect(visibleRevision).not.toHaveProperty("id")
     expect(visibleRevision).not.toHaveProperty("wikiPage")
 
     const revisionOnlyPermissions = permissions.filter(
@@ -392,6 +404,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     const memberPage = {
       ...privateOwnerPage,
       id: 42,
+      publicId: memberPagePublicId,
       slug: "member-page",
       createdByUserId: revisionOnlyActor.id,
       visiblePermissionId: null,
@@ -409,7 +422,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       revisionOnlyCtx,
     )
     expect(historyWithoutUserAccess?.revisions?.[0]).toEqual(
-      expect.objectContaining({ id: privateOwnerRevision.id }),
+      expect.objectContaining({ publicId: privateRevisionPublicId }),
     )
     expect(historyWithoutUserAccess?.revisions?.[0]).not.toHaveProperty("createdByUser")
   })

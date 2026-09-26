@@ -498,7 +498,7 @@ const wikiPagesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['
               GROUP BY wikiPageId
             )
             SELECT
-              e.id AS wikiPageId,
+              e.publicId AS wikiPageId,
               e.slug,
               fs.count
             FROM FilteredSet fs
@@ -506,17 +506,17 @@ const wikiPagesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['
             WHERE ${xWikiPage.SqlGetVisFilterExpression(currentUser, "e")}
           `;
     },
-    postProcessRow: (row: { wikiPageId: number, slug: string, count: bigint }) => ({
-        wikiPageId: row.wikiPageId,
+    postProcessRow: (row: { wikiPageId: string, slug: string, count: bigint }) => ({
+        wikiPageId: xWikiPage.parseIdentity(row.wikiPageId),
         slug: row.slug,
         count: Number(row.count),
     }),
     getFilterSqlConditions: (filterSpec, conditions) => {
         if (filterSpec.includeWikiPageIds.length > 0) {
-            conditions.push(`${MySqlSymbol("wikiPageId")} IN (${filterSpec.includeWikiPageIds.map((f) => f.toString()).join(",")})`);
+            conditions.push(`${MySqlSymbol("wikiPageId")} IN (SELECT id FROM WikiPage WHERE publicId IN (${filterSpec.includeWikiPageIds.map(MySqlStringLiteral).join(",")}))`);
         }
         if (filterSpec.excludeWikiPageIds.length > 0) {
-            conditions.push(`NOT ${MySqlSymbol("wikiPageId")} IN (${filterSpec.excludeWikiPageIds.map((f) => f.toString()).join(",")})`);
+            conditions.push(`NOT ${MySqlSymbol("wikiPageId")} IN (SELECT id FROM WikiPage WHERE publicId IN (${filterSpec.excludeWikiPageIds.map(MySqlStringLiteral).join(",")}))`);
         }
     },
 };

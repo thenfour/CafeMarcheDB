@@ -1083,6 +1083,7 @@ model CustomLinkVisit {
 
 model WikiPage {
   id        Int     @id @default(autoincrement())
+  publicId  String  @unique @db.Char(16)
   slug      String  @db.VarChar(768) // slugified name. actual display name can be changed in Revision
   namespace String? @db.VarChar(768) // the namespace part of the slug; for example "EventDescription"
 
@@ -1122,6 +1123,7 @@ model WikiPage {
 
 model WikiPageRevision {
   id Int @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
 
   wikiPageId    Int
   wikiPage      WikiPage  @relation(name: "AllRevisions", fields: [wikiPageId], references: [id], onDelete: Cascade)

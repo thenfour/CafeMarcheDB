@@ -297,7 +297,7 @@ export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArg
                 publicId: true,
                 wikiPage: {
                     select: {
-                        id: true,
+                        publicId: true,
                         slug: true,
                     },
                 },

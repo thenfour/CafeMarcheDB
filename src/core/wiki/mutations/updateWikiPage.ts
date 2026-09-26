@@ -3,7 +3,7 @@ import { wikiTransaction } from "../server/wikiTransaction";
 // updateWikiPage
 import { resolver } from "@blitzjs/rpc";
 import { assert, AuthenticatedCtx } from "blitz";
-import { Prisma, PrismaClient } from "db";
+import { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
@@ -17,13 +17,14 @@ import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
 import { xWikiPage } from "src/core/db3/shared/schema/wiki";
 import { wikiPageApiSelection } from "src/core/db3/shared/entities/wiki/wikiViews";
 import { UserPublicId } from "@/shared/publicId";
+import { generatePublicId } from "src/server/publicId";
 
-const ConsolidatedUpdate = async (args: TUpdateWikiPageArgs, existingRevisionToConsolidate: Prisma.WikiPageRevisionGetPayload<{}>, currentPage: WikiPageApiPayload, currentUserId: number, dbt: TransactionalPrismaClient): Promise<WikiPageApiRevisionPayload> => {
+const ConsolidatedUpdate = async (args: TUpdateWikiPageArgs, existingRevisionToConsolidate: Prisma.WikiPageRevisionGetPayload<{}>, currentPageNaturalId: number, dbt: TransactionalPrismaClient): Promise<WikiPageApiRevisionPayload> => {
 
     // we must also calculate stats from the previous revision to this one.
     const prevRevision = await dbt.wikiPageRevision.findFirst({
         where: {
-            wikiPageId: currentPage.id,
+            wikiPageId: currentPageNaturalId,
             createdAt: { lt: existingRevisionToConsolidate.createdAt },
         },
         orderBy: { createdAt: "desc" },
@@ -56,13 +57,13 @@ const ConsolidatedUpdate = async (args: TUpdateWikiPageArgs, existingRevisionToC
 };
 
 // internal; makes assumptions.
-const UpdateOrConsolidateRevision = async (args: TUpdateWikiPageArgs, currentPage: WikiPageApiPayload, currentUserId: number, dbt): Promise<WikiPageApiRevisionPayload> => {
+const UpdateOrConsolidateRevision = async (args: TUpdateWikiPageArgs, currentPage: WikiPageApiPayload, currentPageNaturalId: number, currentUserId: number, dbt: TransactionalPrismaClient): Promise<WikiPageApiRevisionPayload> => {
     // check if we should consolidate the revision. don't create a new revision if
     // - the current revision was made with the same lock ID
-    const revisionForConsolidation = await (dbt as PrismaClient).wikiPageRevision.findMany({
+    const revisionForConsolidation = currentPage.currentRevision ? await dbt.wikiPageRevision.findMany({
         where: {
-            id: currentPage.currentRevision?.id ?? -1,
-            wikiPageId: currentPage.id,
+            publicId: currentPage.currentRevision.publicId,
+            wikiPageId: currentPageNaturalId,
             createdByUserId: currentUserId,
             consolidationKey: args.lockId,
             // tempting to do this but it's just kinda not useful and prevents you from ever making deliberate revisions.
@@ -72,10 +73,10 @@ const UpdateOrConsolidateRevision = async (args: TUpdateWikiPageArgs, currentPag
         },
         orderBy: { createdAt: "desc" },
         take: 1,
-    });
+    }) : [];
 
     if (revisionForConsolidation.length > 0) {
-        const newRevision = await ConsolidatedUpdate(args, revisionForConsolidation[0]!, currentPage, currentUserId, dbt);
+        const newRevision = await ConsolidatedUpdate(args, revisionForConsolidation[0]!, currentPageNaturalId, dbt);
         return newRevision;
     }
 
@@ -83,10 +84,11 @@ const UpdateOrConsolidateRevision = async (args: TUpdateWikiPageArgs, currentPag
 
     const newRevision = await dbt.wikiPageRevision.create({
         data: {
+            publicId: generatePublicId<"WikiPageRevision">(),
             name: args.title,
             content: args.content,
             createdByUserId: currentUserId,
-            wikiPageId: currentPage.id,
+            wikiPageId: currentPageNaturalId,
             consolidationKey: args.lockId,
 
             lineCount: stats.newLines,
@@ -109,6 +111,7 @@ const UpdateOrConsolidateRevision = async (args: TUpdateWikiPageArgs, currentPag
 const UpdateExistingWikiPage = async (
     args: TUpdateWikiPageArgs,
     currentPage: WikiPageApiPayload,
+    currentPageNaturalId: number,
     currentUserId: number,
     currentUserPublicId: UserPublicId,
     publicData: DB3ServerAuthorization,
@@ -131,10 +134,10 @@ const UpdateExistingWikiPage = async (
         return { ...updatability, outcome: UpdateWikiPageResultOutcome.lockConflict, isLockConflict: true };
     }
 
-    const newRevision = await UpdateOrConsolidateRevision(args, currentPage, currentUserId, dbt);
+    const newRevision = await UpdateOrConsolidateRevision(args, currentPage, currentPageNaturalId, currentUserId, dbt);
 
     const updatedPage = await dbt.wikiPage.update({
-        where: { id: currentPage.id },
+        where: { id: currentPageNaturalId },
         data: {
             currentRevisionId: newRevision.id,
             contentVersion: { increment: 1 },
@@ -154,13 +157,13 @@ const UpdateExistingWikiPage = async (
     const wikiPath = wikiParseCanonicalWikiPath(args.canonicalWikiPath);
     if (wikiPath.namespace?.toLowerCase() === SpecialWikiNamespace.EventDescription.toLowerCase()) {
         // for safety, now make sure the event is linked to this page. yes it's redundant, but safe.
-        assert(currentPage.id === updatedPage.id, "Wiki page ID mismatch after update.");
+        assert(currentPageNaturalId === updatedPage.id, "Wiki page ID mismatch after update.");
         if (db3.xEvent.isIdentity(wikiPath.slugWithoutNamespace)) {
             const eventId = db3.xEvent.parseIdentity(wikiPath.slugWithoutNamespace);
             await dbt.event.update({
                 where: { publicId: eventId },
                 data: {
-                    descriptionWikiPageId: currentPage.id,
+                    descriptionWikiPageId: currentPageNaturalId,
                 },
             });
         }
@@ -200,10 +203,11 @@ export default resolver.pipe(
                 )
                 : null;
             let result: GetWikiPageUpdatabilityResult;
-            if (wikiPage) {
+            if (wikiPage && wikiPageRow) {
                 result = await UpdateExistingWikiPage(
                     args,
                     wikiPage,
+                    wikiPageRow.id,
                     currentUser.id,
                     db3.xUser.parseIdentity(currentUser.publicId),
                     publicData,
@@ -222,12 +226,16 @@ export default resolver.pipe(
                 };
             }
             if (result.outcome === UpdateWikiPageResultOutcome.success) {
+                const revision = await dbt.wikiPageRevision.findUniqueOrThrow({
+                    where: { publicId: result.currentPage!.currentRevision!.publicId },
+                    select: { id: true },
+                });
                 await RegisterChange({
                     db: dbt,
                     action: ChangeAction.insert,
                     ctx,
                     changeContext,
-                    pkid: result.currentPage!.currentRevision!.id,
+                    pkid: revision.id,
                     table: "wikiPageRevision",
                     newValues: result.currentPage!.currentRevision!,
                 });
