@@ -425,10 +425,13 @@ class TagsFieldImpl<
         // so basically we just need to reduce associations down to an update/mutate model.
         if (clientModel[this.member] === undefined) return;
 
-        // Serialized transport values and rich association rows share one
-        // persistence-side extraction path after public IDs have been resolved.
+        // Client preparation sends public identities. After the command
+        // resolves them, persistence preparation receives numeric identities.
+        const foreignTable = this.getForeignTableShema();
         mutationModel[this.member] = this.getAssociations(clientModel)
-            .map(association => this.getForeignDatabaseIdentity(association));
+            .map(association => foreignTable.isDatabaseIdentity(association)
+                ? association
+                : this.getForeignIdentity(association));
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving

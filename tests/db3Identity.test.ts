@@ -108,6 +108,40 @@ describe("DB3 table identity authority", () => {
         }]);
     });
 
+    it("prepares public tag identities for commands and resolved identities for persistence", () => {
+        const user = { publicId: userPublicId(12), instruments: [] };
+        const instrument = { publicId: instrumentPublicId, name: "Trumpet" };
+        const editedUser = db3.xUser.fields.instruments.withForeignObjects(user, [instrument]);
+        const userMutation = {};
+        db3.xUser.fields.instruments.ApplyClientToDb(editedUser, userMutation, "update");
+        expect(userMutation).toEqual({ instruments: [instrumentPublicId] });
+        expect(db3.userEditorView.crud.operations.update.command.parseDto({
+            identity: user.publicId,
+            patch: userMutation,
+        }).patch).toEqual(userMutation);
+
+        const eventTagPublicId = parsePublicId<"EventTag">("EventTagPublic01");
+        const eventMutation = {};
+        db3.xEvent.fields.tags.ApplyClientToDb({
+            tags: [{ eventTagId: eventTagPublicId }],
+        }, eventMutation, "new");
+        expect(eventMutation).toEqual({ tags: [eventTagPublicId] });
+
+        const wikiTagPublicId = parsePublicId<"WikiPageTag">("WikiTagPublic001");
+        const wikiMutation = {};
+        db3.xWikiPage.fields.tags.ApplyClientToDb({
+            tags: [{ tag: { publicId: wikiTagPublicId } }],
+        }, wikiMutation, "update");
+        expect(wikiMutation).toEqual({ tags: [wikiTagPublicId] });
+
+        const resolvedMutation = {};
+        db3.xUser.fields.instruments.ApplyClientToDb({ instruments: [42] }, resolvedMutation, "update");
+        expect(resolvedMutation).toEqual({ instruments: [42] });
+        expect(() => db3.xUser.fields.instruments.ApplyClientToDb({
+            instruments: [{ instrumentId: 42 }],
+        }, {}, "update")).toThrow();
+    });
+
     it("keeps polymorphic search identity correlated with the item discriminator", () => {
         expectTypeOf<QuickSearchItemMatch<QuickSearchItemType.event>["id"]>()
             .toEqualTypeOf<EventPublicId>();

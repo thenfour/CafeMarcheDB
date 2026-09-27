@@ -644,22 +644,17 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
                 </div>
             </MenuItem>
 
-            {
-                props.doc.payload.columns.length > 1 && <>
-                    <Divider />
-                    {
-                        props.doc.payload.columns.filter(c => c.columnId != props.columnId).map((c) => (
-                            <MenuItem key={c.columnId} onClick={() => handleSwapAllocationWith(c.columnId)}>
-                                <div>
-                                    <div>Swap allocation with {c.name}</div>
-                                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
-                                        Exchange rehearsal points between columns
-                                    </div>
-                                </div>
-                            </MenuItem>
-                        ))
-                    }
-                </>}
+            {props.doc.payload.columns.length > 1 && <Divider />}
+            {props.doc.payload.columns.filter(c => c.columnId != props.columnId).map((c) => (
+                <MenuItem key={c.columnId} onClick={() => handleSwapAllocationWith(c.columnId)}>
+                    <div>
+                        <div>Swap allocation with {c.name}</div>
+                        <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                            Exchange rehearsal points between columns
+                        </div>
+                    </div>
+                </MenuItem>
+            ))}
         </Menu >
     ];
 };
