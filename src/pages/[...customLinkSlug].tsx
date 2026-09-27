@@ -58,7 +58,7 @@ export const getServerSideProps = async ({ params, req, query }) => {
             };
         case db3.CustomLinkRedirectType.IntermediatePage:
             return {
-                props: { intermediate: true, destinationURL, forwardQuery: link.forwardQuery, linkName: link.name, intermediateMessage: link.intermediateMessage },
+                props: { intermediate: true, destinationURL, forwardQuery: link.forwardQuery, intermediateMessage: link.intermediateMessage },
             };
         default:
             return { notFound: true };
@@ -68,7 +68,6 @@ export const getServerSideProps = async ({ params, req, query }) => {
 interface CustomLinkClientProps {
     destinationURL: string;
     intermediate: boolean;
-    linkName: string | null;
     intermediateMessage: string | null;
     forwardQuery: boolean;
 };
@@ -111,13 +110,12 @@ const CustomLinkClient = (props: CustomLinkClientProps) => {
     return null;
 };
 
-const CustomURLSlug: BlitzPage<{ destinationURL?: string, intermediate?: boolean, linkName?: string | null, intermediateMessage?: string | null, forwardQuery?: boolean | null }> = (props) => {
+const CustomURLSlug: BlitzPage<{ destinationURL?: string, intermediate?: boolean, intermediateMessage?: string | null, forwardQuery?: boolean | null }> = (props) => {
     if (!props.destinationURL) throw new Error();
     return <NoSsr>
         <CustomLinkClient
             destinationURL={props.destinationURL}
             intermediate={CoerceToBoolean(props.intermediate, true)}
-            linkName={props.linkName || null}
             intermediateMessage={props.intermediateMessage || null}
             forwardQuery={CoerceToBoolean(props.forwardQuery, true)}
         />

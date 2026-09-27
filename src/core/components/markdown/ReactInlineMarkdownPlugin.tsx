@@ -1,8 +1,7 @@
 import { getHashedColor } from '@/shared/utils';
-import { assert } from 'blitz';
 import MarkdownIt from 'markdown-it';
 import { generateQrApiUrl, QrContentConfig, QrHelpers } from '../../db3/shared/qrApi';
-import { getDashboardContextDataSingleton } from '../dashboardContext/DashboardContext';
+import { markdownAbsoluteUri } from './markdownAbsoluteUri';
 
 export function ReactInlineMarkdownPlugin(md: MarkdownIt) {
     // Register a custom inline rule that parses {{...}} before linkify
@@ -80,8 +79,6 @@ export function ReactInlineMarkdownPlugin(md: MarkdownIt) {
 
 // Extract the component processing logic to a separate function for reuse
 function processInlineComponent(match: string, componentName: string, propsString: string = ''): string {
-    const dashboardContext = getDashboardContextDataSingleton();
-    assert(!!dashboardContext, "Dashboard context must be available for ReactInlineMarkdownPlugin");
     if (propsString && propsString.length > 1) {
         propsString = propsString.slice(1).replaceAll("\\}", "}");
     }
@@ -98,7 +95,7 @@ function processInlineComponent(match: string, componentName: string, propsStrin
 
         // Create img element for inline ABC notation
         const img = document.createElement('img');
-        img.src = dashboardContext.getAbsoluteUri(`/api/abc/render?notation=${encodedNotation}`);
+        img.src = markdownAbsoluteUri(`/api/abc/render?notation=${encodedNotation}`);
         img.className = 'abc-notation-inline';
         img.alt = `ABC notation: ${abcContent}`;
 
@@ -196,15 +193,13 @@ function processInlineComponent(match: string, componentName: string, propsStrin
 
             // Generate QR API URL using the type-safe function
             //console.log(`generating QR code for content:`, contentConfig);
-            const dashboardContext = getDashboardContextDataSingleton();
-            assert(!!dashboardContext, "Dashboard context must be available for QR code generation");
             const qrApiUrl = generateQrApiUrl(
                 {
                     content: contentConfig,
                     //type: 'png', // Use PNG for inline display
                     width: 128 // Default inline size
                 },
-                dashboardContext
+                { getAbsoluteUri: markdownAbsoluteUri }
             );
 
             // Create img element for inline QR code

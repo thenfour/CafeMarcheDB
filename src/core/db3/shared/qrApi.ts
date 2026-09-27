@@ -75,7 +75,7 @@ export interface QrCodeOptions {
  * @param options - QR code generation options
  * @returns The complete API URL with query parameters
  */
-export function generateQrApiUrl(options: QrCodeOptions, dashboardContext: DashboardContextDataBase): string {
+export function generateQrApiUrl(options: QrCodeOptions, uriContext: Pick<DashboardContextDataBase, 'getAbsoluteUri'>): string {
     const {
         type = 'svg',
         errorCorrectionLevel = 'M',
@@ -138,7 +138,7 @@ export function generateQrApiUrl(options: QrCodeOptions, dashboardContext: Dashb
     }
 
     // Build URL manually to avoid double-encoding query parameters
-    const baseUrl = dashboardContext.getAbsoluteUri('/api/qr');
+    const baseUrl = uriContext.getAbsoluteUri('/api/qr');
     return `${baseUrl}?${params.toString()}`;
 }
 
