@@ -1,11 +1,15 @@
 import { BlitzPage } from "@blitzjs/next";
-import { NoSsr } from "@mui/material";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { Box, NoSsr, Paper, Stack, Typography } from "@mui/material";
 import db from "db";
+import Head from "next/head";
 import { useRouter } from "next/router";
+import React from "react";
+import { useBrand } from "shared/brandConfig";
 import { CoerceToBoolean, IsNullOrWhitespace } from "shared/utils";
 import { Markdown } from "src/core/components/markdown/Markdown";
-//import { CustomLinkRedirectType } from "src/core/db3/db3";
 import * as db3 from "src/core/db3/db3";
+import { CMButton } from "../core/components/CMCoreComponents2";
 
 export const getServerSideProps = async ({ params, req, query }) => {
     const slug = params.customLinkSlug?.join('/') || '';
@@ -32,13 +36,10 @@ export const getServerSideProps = async ({ params, req, query }) => {
 
     // Build the destination URL with query string
     let destinationURL = link.destinationURL;
-    let hash = null;
     if (link.forwardQuery) {
         const baseUrl = new URL(link.destinationURL);
         Object.keys(query).filter(key => key !== "customLinkSlug").forEach(key => baseUrl.searchParams.append(key, query[key]));
         destinationURL = baseUrl.toString();
-
-        hash = req.url.split('#')[1] || null; // Extract the hash from the original request URL. normally it's not sent to the server, but this at least preserves in case.
     }
 
     // Handle redirection
@@ -53,11 +54,11 @@ export const getServerSideProps = async ({ params, req, query }) => {
             };
         case db3.CustomLinkRedirectType.Client:
             return {
-                props: { destinationURL, hash, intermediate: false }, // Client-side redirection
+                props: { destinationURL, forwardQuery: link.forwardQuery, intermediate: false }, // Client-side redirection
             };
         case db3.CustomLinkRedirectType.IntermediatePage:
             return {
-                props: { intermediate: true, destinationURL, hash, intermediateMessage: link.intermediateMessage },
+                props: { intermediate: true, destinationURL, forwardQuery: link.forwardQuery, linkName: link.name, intermediateMessage: link.intermediateMessage },
             };
         default:
             return { notFound: true };
@@ -67,39 +68,56 @@ export const getServerSideProps = async ({ params, req, query }) => {
 interface CustomLinkClientProps {
     destinationURL: string;
     intermediate: boolean;
-    serverHash: string | null;
+    linkName: string | null;
     intermediateMessage: string | null;
     forwardQuery: boolean;
 };
 
 const CustomLinkClient = (props: CustomLinkClientProps) => {
     const router = useRouter();
-    const hashFragment = window.location.hash;
-    let destinationURL = props.destinationURL;
-    let hash = (hashFragment || props.serverHash); // favor the one on the client
-    if (hash && props.forwardQuery) {
-        destinationURL += hash;
-    }
+    const brand = useBrand();
+    const destinationURL = props.forwardQuery ? props.destinationURL + window.location.hash : props.destinationURL;
+
+    React.useEffect(() => {
+        if (!props.intermediate) void router.replace(destinationURL);
+    }, [destinationURL, props.intermediate, router]);
 
     if (props.intermediate) {
-        return <div>
-            <a href={destinationURL}>
-                {IsNullOrWhitespace(props.intermediateMessage) ? "Click here to continue" : <Markdown markdown={props.intermediateMessage} />}
-            </a>
-        </div>;
+        return <>
+            <Head><title>Continue to link</title></Head>
+            <Box sx={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "background.default", px: 2, py: 4 }}>
+                <Paper component="main" elevation={2} sx={{ width: "100%", maxWidth: 680, p: { xs: 3, sm: 4 }, overflowWrap: "anywhere" }}>
+                    <Stack spacing={3}>
+                        {brand.siteTitle && <Typography variant="overline" color="text.secondary">{brand.siteTitle}</Typography>}
+                        <Typography component="h1" variant="h4">Continue to this link</Typography>
+                        {IsNullOrWhitespace(props.intermediateMessage)
+                            ? <Typography>Please review the destination before continuing.</Typography>
+                            : <Markdown markdown={props.intermediateMessage} />}
+                        <Box sx={{ borderTop: 1, borderColor: "divider", pt: 2 }}>
+                            <Typography variant="caption" color="text.secondary">Destination</Typography>
+                            <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>{destinationURL}</Typography>
+                        </Box>
+                        <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                            <CMButton component="a" color="info" href={destinationURL} endIcon={<ArrowForwardIcon />}>
+                                Continue
+                            </CMButton>
+                        </Stack>
+                    </Stack>
+                </Paper>
+            </Box>
+        </>;
     }
 
-    void router.replace(destinationURL);
     return null;
 };
 
-const CustomURLSlug: BlitzPage<{ destinationURL?: string, intermediate?: boolean, serverHash?: string | null, intermediateMessage?: string | null, forwardQuery?: boolean | null }> = (props) => {
+const CustomURLSlug: BlitzPage<{ destinationURL?: string, intermediate?: boolean, linkName?: string | null, intermediateMessage?: string | null, forwardQuery?: boolean | null }> = (props) => {
     if (!props.destinationURL) throw new Error();
     return <NoSsr>
         <CustomLinkClient
             destinationURL={props.destinationURL}
             intermediate={CoerceToBoolean(props.intermediate, true)}
-            serverHash={props.serverHash || null}
+            linkName={props.linkName || null}
             intermediateMessage={props.intermediateMessage || null}
             forwardQuery={CoerceToBoolean(props.forwardQuery, true)}
         />

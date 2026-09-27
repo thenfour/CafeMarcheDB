@@ -12,6 +12,7 @@ import { AdminInspectObject, CMButton, CMButtonGroup, CMDialogContentText, CMSma
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 import * as db3 from "../db3";
+import { MarkdownStringColumnClient } from "./DB3ClientBasicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
 
@@ -79,12 +80,16 @@ function DB3NewObjectDialogWithClient<TView extends ViewBase>({
     };
 
     let encounteredAutofocusable = false;
+    const hasMarkdownEditor = tableClient.clientColumns.some(column => column.visible && column instanceof MarkdownStringColumnClient);
 
     return (
         <Suspense>
             <CMDialog
                 open
                 onClose={onCancel}
+                maxWidth={"md"}
+                //maxWidth={hasMarkdownEditor ? "md" : "sm"}
+                //fullWidth={hasMarkdownEditor}
                 title={props.caption || <>New {table.args.table.tableName}</>}
                 actions={<>
                     <CMButton onClick={onCancel} disabled={grayed}>Cancel</CMButton>
@@ -179,12 +184,16 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
     }
 
     let encounteredAutofocusable = false;
+    //const hasMarkdownEditor = tableRenderClient.clientColumns.some(column => column.visible && column instanceof MarkdownStringColumnClient);
 
     return (
         <Suspense>
             <CMDialog
                 open={true}
                 onClose={onCancel}
+                maxWidth={"md"}
+                //maxWidth={hasMarkdownEditor ? "md" : "sm"}
+                //fullWidth={hasMarkdownEditor}
                 className="ReactiveInputDialog"
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
                 title={<>

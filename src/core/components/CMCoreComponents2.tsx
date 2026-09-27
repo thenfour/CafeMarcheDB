@@ -213,6 +213,7 @@ export interface CMButtonProps {
     enabled?: boolean;
     disabled?: boolean; // i like positive flags like enabled but this is convention
     startIcon?: React.ReactNode;
+    endIcon?: React.ReactNode;
     tooltip?: React.ReactNode;
 
     component?: React.ElementType;
@@ -233,6 +234,7 @@ export const CMButton = React.forwardRef<HTMLElement, React.PropsWithChildren<CM
     let innerContent = <>
         {props.startIcon}
         {props.children}
+        {props.endIcon}
     </>;
 
     const color = props.color ? props.color : "default";
