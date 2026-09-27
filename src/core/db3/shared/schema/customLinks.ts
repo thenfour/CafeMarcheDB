@@ -8,6 +8,7 @@ import * as db3 from "../db3core";
 import { MakeCreatedByField } from "./user";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { xFile } from "./file";
+import { z } from "zod";
 
 const xAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_custom_links,
@@ -15,6 +16,14 @@ const xAuthMap = db3.defineAuthMap({
     PreMutateAsOwner: Permission.manage_custom_links,
     PreMutate: Permission.manage_custom_links,
     PreInsert: Permission.manage_custom_links,
+});
+
+const xReadOnlyMetadataAuthMap = db3.defineAuthMap({
+    PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+    PostQuery: db3.DB3FieldReadAuth.inheritRow,
+    PreMutateAsOwner: Permission.never_grant,
+    PreMutate: Permission.never_grant,
+    PreInsert: Permission.never_grant,
 });
 
 const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
@@ -77,7 +86,7 @@ export const xCustomLink = db3.defineTable({
         publicId: () => MakePublicIdField<CustomLinkPublicId>(),
         name: columnName => MakeTitleField(columnName, { authMap: xAuthMap, }),
         description: () => MakeDescriptionField({ authMap: xAuthMap, }),
-        createdAt: () => MakeCreatedAtField(),
+        createdAt: () => MakeCreatedAtField({ authMap: xReadOnlyMetadataAuthMap }),
         createdByUser: () => MakeCreatedByField(),
         slug: columnName => new GenericStringField({
             columnName,
@@ -124,8 +133,11 @@ export const xCustomLink = db3.defineTable({
             authMap: xAuthMap,
         }),
         _count: memberName => new GhostField({
-            authMap: xAuthMap,
+            authMap: xReadOnlyMetadataAuthMap,
             memberName,
+            readTransportSchema: z.object({
+                visits: z.number().int().nonnegative(),
+            }),
         }),
     })
 });

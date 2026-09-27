@@ -356,6 +356,29 @@ describe("DB3 scalar selection compiler", () => {
     }).success).toBe(false)
   })
 
+  it("derives a selected Prisma count as a validated structured value", () => {
+    const selection = Prisma.validator<Prisma.CustomLinkDefaultArgs>()({
+      select: { _count: { select: { visits: true } } },
+    })
+
+    const compiled = compileDB3Selection(db3.xCustomLink, selection)
+    type Dto = z.infer<typeof compiled.dtoSchema>
+
+    expectTypeOf<Dto>().toEqualTypeOf<{ _count: { visits: number } }>()
+    expect(compiled.members[0]).toMatchObject({ kind: "value", ownershipKind: "field" })
+    expect(compiled.dtoSchema.parse({ _count: { visits: 3 } }))
+      .toEqual({ _count: { visits: 3 } })
+    expect(compiled.dtoSchema.safeParse({ _count: { visits: -1 } }).success).toBe(false)
+    expect(compiled.dtoSchema.safeParse({ _count: { visits: "3" } }).success).toBe(false)
+
+    // A malformed runtime selection can bypass Prisma's compile-time key check.
+    const unknownCountSelection = {
+      select: { _count: { select: { missing: true } } },
+    } as unknown as Prisma.CustomLinkDefaultArgs
+    expect(() => compileDB3Selection(db3.xCustomLink, unknownCountSelection))
+      .toThrow("CustomLink.select._count.select.missing")
+  })
+
   it("derives normalized foreign-key transport schemas", () => {
     const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
       select: { statusId: true },

@@ -109,6 +109,8 @@ type DB3SelectedMemberValue<
     ? DB3ScalarDtoValue<TPayload[TKey], TFields, TKey, TField>
     : DB3NestedSelect<TSelect[TKey]> extends never
     ? TPayload[TKey]
+    : [DB3RelationTargetTableOf<TField>] extends [never]
+    ? TPayload[TKey]
     : DB3NestedRelationValue<
         TPayload[TKey],
         DB3NestedSelect<TSelect[TKey]>,
@@ -650,15 +652,36 @@ function compileSelect(
         switch (ownership.kind) {
             case "field":
             case "foreignKey": {
+                let readSchema = ownership.readTransportSchema;
                 if (memberSelection !== true) {
-                    throw selectionError(
-                        entity,
-                        selectionPath,
-                        `${fieldClass} field '${ownership.field.member}' uses an unsupported `
-                        + "non-scalar selection shape.",
-                    );
+                    if (ownership.kind !== "field"
+                        || !(readSchema instanceof z.ZodObject)
+                        || !memberSelection || typeof memberSelection !== "object"
+                        || Array.isArray(memberSelection)) {
+                        throw selectionError(
+                            entity,
+                            selectionPath,
+                            `${fieldClass} field '${ownership.field.member}' uses an unsupported `
+                            + "non-scalar selection shape.",
+                        );
+                    }
+                    const nestedSelect = getExplicitSelect(entity, memberSelection, selectionPath);
+                    const declaredShape = readSchema.shape;
+                    const selectedShape: z.ZodRawShape = {};
+                    for (const [child, childSelection] of Object.entries(nestedSelect)) {
+                        if (childSelection === false || childSelection === undefined) continue;
+                        if (childSelection !== true || !Object.prototype.hasOwnProperty.call(declaredShape, child)) {
+                            throw selectionError(
+                                entity,
+                                `${selectionPath}.select.${child}`,
+                                `field '${ownership.field.member}' does not declare this scalar member.`,
+                            );
+                        }
+                        selectedShape[child] = declaredShape[child];
+                    }
+                    readSchema = z.object(selectedShape);
                 }
-                if (!ownership.readTransportSchema) {
+                if (!readSchema) {
                     throw selectionError(
                         entity,
                         selectionPath,
@@ -669,7 +692,7 @@ function compileSelect(
 
                 const presence = applyReadPresence(
                     ownership.field,
-                    ownership.readTransportSchema,
+                    readSchema,
                 );
                 let referenceDependency: DB3ReferenceDependency | undefined;
                 if (ownership.kind === "foreignKey") {
