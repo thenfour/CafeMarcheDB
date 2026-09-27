@@ -22,6 +22,7 @@ import {
 import {
   GetAuthorizedDirectDownloadFile,
   SendFileDownload,
+  ServeAuthorizedFileDownload,
 } from "src/core/db3/server/fileDownload"
 import type { ForkImageParams } from "src/core/db3/shared/fileTypes"
 import { filePublicId } from "../support/fileFixtures"
@@ -168,6 +169,63 @@ describe("BA-S002 direct and parent-authorized file delivery", () => {
       expect.objectContaining({ publicId: filePublicId(10) }),
     )
     await expect(GetAuthorizedDirectDownloadFile("stored-photo.jpg", publicCtx)).resolves.toBeNull()
+  })
+
+  it("streams HTML at an alias only for the same viewers as the file URL", async () => {
+    const owner = createAuthorizationTestUser("normal", {
+      id: 30,
+      permissions: [Permission.login, Permission.view_files, Permission.upload_files],
+    })
+    authorizationTestDb.reset({
+      user: [owner],
+      role: [seedPublicRole()],
+      file: [makeFile({
+        fileLeafName: "mypage.html",
+        storedLeafName: "stored-page.html",
+        uploadedByUserId: owner.id,
+        visiblePermissionId: null,
+        visiblePermission: null,
+      })],
+    })
+    const { ctx: ownerCtx } = createAuthorizationPersona("normal", {
+      id: owner.id,
+      permissions: [Permission.login, Permission.view_files, Permission.upload_files],
+    })
+    const { ctx: publicCtx } = createAuthorizationPersona("public")
+    const previousUploadPath = process.env.FILE_UPLOAD_PATH
+    process.env.FILE_UPLOAD_PATH = "C:\\file-storage"
+    const handlers = new Map<string, () => void>()
+    const stream = {
+      on: vi.fn((event: string, handler: () => void) => {
+        handlers.set(event, handler)
+        return stream
+      }),
+      pipe: vi.fn(() => handlers.get("end")?.()),
+    }
+    // The send mock only needs the event and pipe methods used by the streamer.
+    vi.mocked(send).mockReturnValue(stream as ReturnType<typeof send>)
+    const req = { headers: { range: "bytes=10-19" }, url: "/MyPage" }
+    const response = () => ({ statusCode: 200, headersSent: false, setHeader: vi.fn(), end: vi.fn() })
+    const publicRes = response()
+    const ownerRes = response()
+
+    try {
+      // These request and response objects expose the Node members used here.
+      await ServeAuthorizedFileDownload(req as Parameters<typeof ServeAuthorizedFileDownload>[0], publicRes as unknown as Parameters<typeof ServeAuthorizedFileDownload>[1], publicCtx, "stored-page.html")
+      expect(publicRes.statusCode).toBe(404)
+      expect(publicRes.end).toHaveBeenCalledOnce()
+      expect(send).not.toHaveBeenCalled()
+
+      await ServeAuthorizedFileDownload(req as Parameters<typeof ServeAuthorizedFileDownload>[0], ownerRes as unknown as Parameters<typeof ServeAuthorizedFileDownload>[1], ownerCtx, "stored-page.html")
+    } finally {
+      if (previousUploadPath === undefined) delete process.env.FILE_UPLOAD_PATH
+      else process.env.FILE_UPLOAD_PATH = previousUploadPath
+    }
+
+    expect(send).toHaveBeenCalledWith(req, "stored-page.html", expect.any(Object))
+    expect(ownerRes.setHeader).toHaveBeenCalledWith("Content-Type", "text/html")
+    expect(ownerRes.setHeader).toHaveBeenCalledWith("Content-Disposition", expect.stringContaining("inline;"))
+    expect(req.headers.range).toBe("bytes=10-19")
   })
 
   it("retains the original request when delegating range-capable streaming", async () => {

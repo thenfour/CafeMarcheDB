@@ -945,6 +945,7 @@ model File {
   previewForFile File[]   @relation("previewFiles")
   childFiles     File[]   @relation("fileHierarchy")
   actions        Action[]
+  customLinks    CustomLink[]
 
   // Songs that have this file as their pinned recording
   pinnedForSongs Song[] @relation("pinnedRecordings")
@@ -1055,8 +1056,10 @@ model CustomLink {
   name                String  @db.VarChar(768)
   description         String  @db.MediumText
   slug                String  @db.VarChar(768)
-  destinationURL      String  @db.VarChar(768)
+  destinationURL      String? @db.VarChar(768)
   redirectType        String // potentially various options like temporary / permanent redirect etc.
+  fileId              Int?
+  file                File?   @relation(fields: [fileId], references: [id], onDelete: SetNull)
   forwardQuery        Boolean @default(false) // forward the query string?
   intermediateMessage String? @db.MediumText // for intermediate page type, this is the message users will see.
 
@@ -1069,6 +1072,7 @@ model CustomLink {
 
   @@unique([slug])
   @@index([name])
+  @@index([fileId])
 }
 
 model CustomLinkVisit {

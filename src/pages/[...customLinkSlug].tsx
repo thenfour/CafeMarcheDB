@@ -9,12 +9,22 @@ import { useBrand } from "shared/brandConfig";
 import { CoerceToBoolean, IsNullOrWhitespace } from "shared/utils";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import * as db3 from "src/core/db3/db3";
+import { ServeAuthorizedFileDownload } from "src/core/db3/server/fileDownload";
+import { gSSP } from "src/blitz-server";
 import { CMButton } from "../core/components/CMCoreComponents2";
 
-export const getServerSideProps = async ({ params, req, query }) => {
-    const slug = params.customLinkSlug?.join('/') || '';
+interface CustomLinkPageProps {
+    destinationURL?: string;
+    intermediate?: boolean;
+    intermediateMessage?: string | null;
+    forwardQuery?: boolean | null;
+}
 
-    const link = await db.customLink.findUnique({ where: { slug } });
+export const getServerSideProps = gSSP<CustomLinkPageProps>(async ({ params, req, res, query, ctx }) => {
+    const slugParts = params?.customLinkSlug;
+    const slug = Array.isArray(slugParts) ? slugParts.join('/') : slugParts || '';
+
+    const link = await db.customLink.findUnique({ where: { slug }, include: { file: true } });
 
     if (!link || link.redirectType === db3.CustomLinkRedirectType.Disabled) {
         return { notFound: true };
@@ -24,7 +34,9 @@ export const getServerSideProps = async ({ params, req, query }) => {
     await db.customLinkVisit.create({
         data: {
             customLinkId: link.id,
-            visitorIP: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+            visitorIP: Array.isArray(req.headers['x-forwarded-for'])
+                ? req.headers['x-forwarded-for'][0]
+                : req.headers['x-forwarded-for'] || req.socket.remoteAddress,
             userAgent: req.headers['user-agent'] || null,
             referrerURL: req.headers.referer || null,
             URI: req.url || null
@@ -34,11 +46,29 @@ export const getServerSideProps = async ({ params, req, query }) => {
     // NORMALLY I would record the feature use here, but without a user ID or much client data
     // it's not the right place to record it.
 
+    if (link.redirectType === db3.CustomLinkRedirectType.ServeFile) {
+        if (!link.file) {
+            res.statusCode = 404;
+            res.end();
+            return { props: {} };
+        }
+        await ServeAuthorizedFileDownload(req, res, ctx, link.file.storedLeafName);
+        // Next skips page rendering after the stream has ended the response.
+        return { props: {} };
+    }
+
+    if (!link.destinationURL) return { notFound: true };
+
     // Build the destination URL with query string
     let destinationURL = link.destinationURL;
     if (link.forwardQuery) {
         const baseUrl = new URL(link.destinationURL);
-        Object.keys(query).filter(key => key !== "customLinkSlug").forEach(key => baseUrl.searchParams.append(key, query[key]));
+        Object.keys(query).filter(key => key !== "customLinkSlug").forEach(key => {
+            const value = query[key];
+            for (const part of Array.isArray(value) ? value : [value]) {
+                if (part !== undefined) baseUrl.searchParams.append(key, part);
+            }
+        });
         destinationURL = baseUrl.toString();
     }
 
@@ -63,7 +93,7 @@ export const getServerSideProps = async ({ params, req, query }) => {
         default:
             return { notFound: true };
     }
-};
+});
 
 interface CustomLinkClientProps {
     destinationURL: string;
@@ -110,7 +140,7 @@ const CustomLinkClient = (props: CustomLinkClientProps) => {
     return null;
 };
 
-const CustomURLSlug: BlitzPage<{ destinationURL?: string, intermediate?: boolean, intermediateMessage?: string | null, forwardQuery?: boolean | null }> = (props) => {
+const CustomURLSlug: BlitzPage<CustomLinkPageProps> = (props) => {
     if (!props.destinationURL) throw new Error();
     return <NoSsr>
         <CustomLinkClient

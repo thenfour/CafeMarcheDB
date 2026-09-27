@@ -2,11 +2,12 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
-import { BoolField, ConstEnumStringField, GhostField, MakeCreatedAtField, MakePKfield, MakePublicIdField } from "../columnTypes/xTableColumnTypes";
+import { BoolField, ConstEnumStringField, foreignRef, GhostField, MakeCreatedAtField, MakePKfield, MakePublicIdField } from "../columnTypes/xTableColumnTypes";
 import type { CustomLinkPublicId } from "shared/publicId";
 import * as db3 from "../db3core";
 import { MakeCreatedByField } from "./user";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
+import { xFile } from "./file";
 
 const xAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.view_custom_links,
@@ -48,6 +49,7 @@ export const CustomLinkRedirectType = {
     Client: "Client", // allows preserving hash
     Disabled: "Disabled",
     IntermediatePage: "IntermediatePage",
+    ServeFile: "ServeFile",
 } as const satisfies Record<string, string>;
 
 
@@ -83,10 +85,23 @@ export const xCustomLink = db3.defineTable({
             format: "customLinkSlug",
             authMap: xAuthMap,
         }),
-        destinationURL: columnName => new GenericStringField({
-            columnName,
-            allowNull: false,
-            format: "uri",
+        destinationURL: columnName => {
+            const field = new GenericStringField({
+                columnName,
+                allowNull: true,
+                format: "uri",
+                authMap: xAuthMap,
+            });
+            const parse = field.ValidateAndParse;
+            // redirectType-dependent validation
+            field.ValidateAndParse = args => args.row.redirectType === CustomLinkRedirectType.ServeFile
+                ? db3.SuccessfulValidateAndParseResult({ [columnName]: null })
+                : parse(args);
+            return field;
+        },
+        file: foreignRef(() => xFile, {
+            fkidMember: "fileId",
+            allowNull: true,
             authMap: xAuthMap,
         }),
         redirectType: columnName => new ConstEnumStringField({

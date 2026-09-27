@@ -2,8 +2,7 @@ import { Ctx } from "@blitzjs/next";
 import { NextApiRequest, NextApiResponse } from "next";
 import { api } from "src/blitz-server";
 import {
-    GetAuthorizedDirectDownloadFile,
-    SendFileDownload,
+    ServeAuthorizedFileDownload,
 } from "src/core/db3/server/fileDownload";
 
 export const downloadFileRoute = async (
@@ -18,15 +17,7 @@ export const downloadFileRoute = async (
         return;
     }
 
-    const file = await GetAuthorizedDirectDownloadFile(storedLeafName, ctx);
-    if (!file) {
-        // Use the same response for absent and unauthorized files so this route
-        // does not disclose whether a storage identifier exists.
-        res.status(404).end();
-        return;
-    }
-
-    await SendFileDownload(req, res, file);
+    await ServeAuthorizedFileDownload(req, res, ctx, storedLeafName);
 };
 
 export default api(downloadFileRoute);

@@ -1,5 +1,5 @@
 import { Ctx } from "@blitzjs/next";
-import { NextApiRequest, NextApiResponse } from "next";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import send from "send";
 import * as mime from "mime";
@@ -31,8 +31,8 @@ export const GetAuthorizedDirectDownloadFile = async (
 };
 
 export const SendFileDownload = (
-    req: NextApiRequest,
-    res: NextApiResponse,
+    req: IncomingMessage,
+    res: ServerResponse,
     file: DownloadableFile,
 ): Promise<void> => {
     const fullpath = mutationCore.GetFileServerStoragePath(file.storedLeafName);
@@ -57,11 +57,28 @@ export const SendFileDownload = (
             .on("error", (err) => {
                 console.error("Send error:", err);
                 if (!res.headersSent) {
-                    res.status((err as any).statusCode || 500).end();
+                    res.statusCode = (err as { statusCode?: number }).statusCode || 500; // send reports HTTP errors with an optional status code.
+                    res.end();
                 }
                 reject(err);
             })
             .on("end", () => resolve())
             .pipe(res);
     });
+};
+
+export const ServeAuthorizedFileDownload = async (
+    req: IncomingMessage,
+    res: ServerResponse,
+    ctx: Ctx,
+    storedLeafName: string,
+): Promise<void> => {
+    const file = await GetAuthorizedDirectDownloadFile(storedLeafName, ctx);
+    if (!file) {
+        // An absent file and an inaccessible file have the same response.
+        res.statusCode = 404;
+        res.end();
+        return;
+    }
+    await SendFileDownload(req, res, file);
 };

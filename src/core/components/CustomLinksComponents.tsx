@@ -1,5 +1,5 @@
 import { gNullValue, TAnyModel } from "@/shared/rootroot";
-import { Tooltip } from "@mui/material";
+import { Tooltip, Typography } from "@mui/material";
 import React from "react";
 import { Permission } from 'shared/permissions';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -23,7 +23,24 @@ const gRedirectTypeColorMap: Record<keyof typeof db3.CustomLinkRedirectType, str
     [db3.CustomLinkRedirectType.Temporary]: gSwatchColors.blue,
     [db3.CustomLinkRedirectType.Client]: gSwatchColors.teal,
     [db3.CustomLinkRedirectType.IntermediatePage]: gSwatchColors.purple,
+    [db3.CustomLinkRedirectType.ServeFile]: gSwatchColors.orange,
 };
+
+// DB3 passes the editor's generic row model to this feature specific save path.
+const prepareCustomLinkForSave = (row: TAnyModel): TAnyModel | string => {
+    if (row.redirectType === db3.CustomLinkRedirectType.ServeFile) {
+        if (!row.fileId || row.file?.isDeleted || row.file?.externalURI) {
+            return "Choose an uploaded file to serve at this slug.";
+        }
+        return { ...row, destinationURL: null, forwardQuery: false };
+    }
+    if (row.redirectType === db3.CustomLinkRedirectType.Disabled) return row;
+    if (!row.destinationURL) return "Enter an external URL for this link.";
+    return { ...row, fileId: null, file: null };
+};
+
+const usesFileTarget = (row: TAnyModel): boolean => row.redirectType === db3.CustomLinkRedirectType.ServeFile
+    || (row.redirectType === db3.CustomLinkRedirectType.Disabled && !!row.fileId);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CustomLinkSlugColumnArgs {
@@ -74,12 +91,17 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
     const dashboardContext = useDashboardContext();
 
     const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
+        const prepared = prepareCustomLinkForSave(obj);
+        if (typeof prepared === "string") {
+            showSnackbar({ severity: "error", children: prepared });
+            return;
+        }
         void recordFeature({
             feature: ActivityFeature.custom_link_update,
             customLinkId: props.item.publicId,
             context: `CustomLinkItem`,
         });
-        props.commands.update(obj, props.item).then(() => {
+        props.commands.update(prepared, props.item).then(() => {
             showSnackbar({ severity: "success", children: "success" });
             api.closeDialog();
         }).catch(e => {
@@ -103,7 +125,8 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
         });
     }
 
-    const redirectType: keyof typeof db3.CustomLinkRedirectType = props.item.redirectType as any;
+    // The DB3 enum validates persisted redirect types before they reach this view.
+    const redirectType = props.item.redirectType as keyof typeof db3.CustomLinkRedirectType;
 
     // Optional view members represent fields omitted by authorization. Keep
     // those values absent rather than inventing a legacy display/copy fallback.
@@ -137,13 +160,13 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
                     color={gRedirectTypeColorMap[redirectType]}
                     shape="rectangle"
                 >
-                    {props.item.redirectType}
+                    {redirectType === db3.CustomLinkRedirectType.ServeFile ? "Serve uploaded file" : props.item.redirectType}
                 </CMChip>
-                <CMChip
+                {!usesFileTarget(props.item) && <CMChip
                     color={props.item.forwardQuery ? gLightSwatchColors.light_green : gLightSwatchColors.light_gold}
                 >
                     {props.item.forwardQuery ? "Query forwarding enabled" : "Query forwarding disabled"}
-                </CMChip>
+                </CMChip>}
             </CMChipContainer>
 
             <div className='subtitleLine'>Visited {props.item._count.visits} times</div>
@@ -163,17 +186,23 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
                 </div>}
             />
 
-            <NameValuePair
+            {usesFileTarget(props.item) && <NameValuePair
+                isReadOnly={props.readonly}
+                name="Uploaded file"
+                value={props.item.file?.fileLeafName ?? "No file selected"}
+            />}
+
+            {destinationURL && <NameValuePair
                 isReadOnly={props.readonly}
                 name="External URL"
                 value={<div className="customURLslugValueRow">
                     <div>{destinationURL}</div>
                     <div className="flex-spacer"></div>
-                    {destinationURL !== undefined && <Tooltip title={"Copy URL to clipboard."}>
+                    {typeof destinationURL === "string" && <Tooltip title={"Copy URL to clipboard."}>
                         <div><CMSmallButton onClick={() => { void clipboardCopy(destinationURL) }} >{gIconMap.ContentCopy()}</CMSmallButton></div>
                     </Tooltip>}
                 </div>}
-            />
+            />}
 
             {redirectType === "IntermediatePage" &&
                 <Markdown markdown={props.item.intermediateMessage ?? null} />}
@@ -191,7 +220,10 @@ export const CustomLinkList = () => {
         if (option.value === gNullValue) return {};
         return {
             color: gRedirectTypeColorMap[option.value],
-            descriptionMarkdownSettingKey: `CustomLinkRedirectTypeDescriptionMarkdown_${option.value}`,
+            label: option.value === db3.CustomLinkRedirectType.ServeFile ? "Serve uploaded file" : option.label,
+            descriptionMarkdownSettingKey: option.value === db3.CustomLinkRedirectType.ServeFile
+                ? undefined
+                : `CustomLinkRedirectTypeDescriptionMarkdown_${option.value}`,
         };
     };
 
@@ -202,10 +234,46 @@ export const CustomLinkList = () => {
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Name" }),
             description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 250, visible: true }), // required field but it's distracting to see here.
             slug: columnName => new CustomLinkSlugColumn({ columnName, fieldCaption: "Slug" }),
-            destinationURL: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "External URL" }),
-            redirectType: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 250, getItemInfo }),
-            intermediateMessage: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 250, visible: true }),
-            forwardQuery: columnName => new DB3Client.BoolColumnClient({ columnName, fieldCaption: "Forward URL parameters?" }),
+            redirectType: columnName => {
+                const column = new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 250, fieldCaption: "Link behavior", getItemInfo });
+                const render = column.renderForNewDialog;
+                column.renderForNewDialog = params => <>
+                    {render(params)}
+                    {params.row.redirectType === db3.CustomLinkRedirectType.ServeFile && <Typography variant="body2" color="text.secondary">
+                        The file is served at this slug using its existing permissions. HTML runs on this site's origin.
+                    </Typography>}
+                </>;
+                return column;
+            },
+            destinationURL: columnName => {
+                const column = new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "External URL" });
+                const render = column.renderForNewDialog;
+                column.renderForNewDialog = params => usesFileTarget(params.row) ? <></> : render(params);
+                return column;
+            },
+            file: columnName => {
+                const column = new DB3Client.ForeignSingleFieldClient<NonNullable<db3.CustomLinkListClient["file"]>>({
+                    columnName,
+                    cellWidth: 250,
+                    fieldCaption: "Uploaded file",
+                    selectionView: db3.customLinkFileSelectionView,
+                });
+                const render = column.renderForNewDialog;
+                column.renderForNewDialog = params => usesFileTarget(params.row) ? render(params) : <></>;
+                return column;
+            },
+            intermediateMessage: columnName => {
+                const column = new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 250, visible: true });
+                const render = column.renderForNewDialog;
+                column.renderForNewDialog = params => params.row.redirectType === db3.CustomLinkRedirectType.IntermediatePage ? render(params) : <></>;
+                return column;
+            },
+            forwardQuery: columnName => {
+                const column = new DB3Client.BoolColumnClient({ columnName, fieldCaption: "Forward URL parameters?" });
+                const render = column.renderForNewDialog;
+                column.renderForNewDialog = params => usesFileTarget(params.row) ? <></> : render(params);
+                return column;
+            },
         },
     });
     const client = DB3Client.useTableRenderContext({
@@ -223,11 +291,16 @@ export const CustomLinkList = () => {
     const newObj = db3.xCustomLink.createNew(dashboardContext.currentUser);
 
     const handleSaveNew = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
+        const prepared = prepareCustomLinkForSave(obj);
+        if (typeof prepared === "string") {
+            showSnackbar({ severity: "error", children: prepared });
+            return;
+        }
         void recordFeature({
             feature: ActivityFeature.custom_link_create,
             context: `CustomLinkList`,
         });
-        commands.create(obj).then(() => {
+        commands.create(prepared).then(() => {
             showSnackbar({ severity: "success", children: "success" });
             api.closeDialog();
         }).catch(e => {

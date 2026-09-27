@@ -505,6 +505,27 @@ describe("DB3 named views", () => {
             createdByUser,
             _count: { visits: 42 },
         };
+        const directFileLink = {
+            ...customLink,
+            id: 21,
+            publicId: "CustomLinkTest02",
+            slug: "MyPage",
+            destinationURL: null,
+            redirectType: "ServeFile",
+            fileId: 8,
+            file: {
+                id: 8,
+                publicId: filePublicId(8),
+                fileLeafName: "mypage.html",
+                storedLeafName: "stored-page.html",
+                description: "Page",
+                isDeleted: false,
+                externalURI: null,
+                uploadedByUserId: null,
+                visiblePermissionId: 7,
+                visiblePermission: { id: 7, name: Permission.visibility_public, roles: [] },
+            },
+        };
         const menuLink = {
             id: 30,
             publicId: "MenuLinkTest0001",
@@ -530,6 +551,8 @@ describe("DB3 named views", () => {
             { id: 3, name: Permission.sysadmin },
             { id: 4, name: Permission.view_custom_links },
             { id: 5, name: Permission.public },
+            { id: 6, name: Permission.view_files },
+            { id: 7, name: Permission.visibility_public },
         ]);
         const authorization = new CMAuthorization({ id: createdByUser.id } as any, effectivePermissions);
 
@@ -543,7 +566,7 @@ describe("DB3 named views", () => {
             filter: { items: [] },
             cmdbQueryContext: "custom-link-list-view-test",
         }, authorization, {
-            CustomLink: { findMany: vi.fn(async () => [customLink]) },
+            CustomLink: { findMany: vi.fn(async () => [customLink, directFileLink]) },
         } as any);
         const menuResult = await queryTable({
             table: {
@@ -559,7 +582,14 @@ describe("DB3 named views", () => {
         } as any);
 
         const createdByUserDto = { publicId: createdByUser.publicId, name: createdByUser.name, cssClass: createdByUser.cssClass };
-        expect(customResult.items).toEqual([expect.objectContaining({ publicId: customLink.publicId, createdByUserId: createdByUser.publicId, createdByUser: createdByUserDto })]);
+        expect(customResult.items).toEqual([
+            expect.objectContaining({ publicId: customLink.publicId, createdByUserId: createdByUser.publicId, createdByUser: createdByUserDto }),
+            expect.objectContaining({
+                publicId: directFileLink.publicId,
+                fileId: filePublicId(8),
+                file: expect.objectContaining({ publicId: filePublicId(8), fileLeafName: "mypage.html" }),
+            }),
+        ]);
         expect(menuResult.items).toEqual([expect.objectContaining({ publicId: menuLink.publicId, createdByUserId: createdByUser.publicId, createdByUser: createdByUserDto })]);
         expect(customResult.items[0]).not.toHaveProperty("id");
         expect(menuResult.items[0]).not.toHaveProperty("id");
