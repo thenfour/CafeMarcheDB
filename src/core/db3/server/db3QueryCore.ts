@@ -205,7 +205,7 @@ export async function queryTable(
     return {
         items: sanitizeQueryRows(orderedItems, query, `query:${query.table.tableName}`),
         //where,
-        selectionArgs: query.selectionArgs,
+        //selectionArgs: query.selectionArgs,
         executionTimeMillis: Date.now() - startTimestamp,
         resultId: randomUUID(),
     };
@@ -339,7 +339,7 @@ export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInpu
         items: sanitizeQueryRows(items as TAnyModel[], query, `paginatedQuery:${query.table.tableName}`),
         ...pagination,
         //where: query.where,
-        selectionArgs: query.selectionArgs,
+        //selectionArgs: query.selectionArgs,
         executionTimeMillis: Date.now() - startTimestamp,
         resultId: randomUUID(),
     };

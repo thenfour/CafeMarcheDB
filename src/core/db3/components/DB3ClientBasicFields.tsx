@@ -115,7 +115,7 @@ export const publicIdFieldGen = () => (columnName: string) => new PublicIdColumn
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface GenericStringColumnArgs<TColumnName extends string = string> {
     columnName: TColumnName;
-    cellWidth: number;
+    cellWidth?: number;
     className?: string;
     fieldCaption?: string;
     fieldDescriptionSettingName?: SettingKey;
@@ -132,7 +132,7 @@ export class GenericStringColumnClient<TColumnName extends string = string>
             columnName: args.columnName,
             editable: true,
             headerName: args.columnName,
-            width: args.cellWidth,
+            width: args.cellWidth ?? 150,
             visible: true,
             className: args.className,
             isAutoFocusable: false, // on mobile this causes on screen keyboard display and zoom which is disruptive because this field may not be that important. case in point: setlist name.
@@ -153,7 +153,7 @@ export class GenericStringColumnClient<TColumnName extends string = string>
             this.typedSchemaColumn.format === "title" ||
             this.typedSchemaColumn.format === "customLinkSlug" ||
             this.typedSchemaColumn.format === "uri"
-            , `GenericStringColumnClient[${tableClient.tableSpec.args.table.tableID}.${this.schemaColumn.member}] has an unsupported type.`);
+            , `GenericStringColumnClient[${tableClient.tableSpec.args.table.tableID}.${this.schemaColumn.member}] has an unsupported type: ${this.typedSchemaColumn.format}`);
 
         this.GridColProps = {
             type: "string",

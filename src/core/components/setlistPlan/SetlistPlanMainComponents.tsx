@@ -581,9 +581,10 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
         }, `Copied ${column.name} as setlist`);
     };
 
-    return <>
-        <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
-        <Menu
+    return [
+        <CMSmallButton key="btn" className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>,
+        <Menu key="menu"
+
             id="menu-setlistplannercolumn"
             anchorEl={anchorEl}
             keepMounted
@@ -660,7 +661,7 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
                     }
                 </>}
         </Menu >
-    </>;
+    ];
 };
 
 

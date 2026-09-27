@@ -2,21 +2,21 @@ import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization
 
 import { TAnyModel } from '@/shared/rootroot';
 import HomeIcon from '@mui/icons-material/Home';
-import { Breadcrumbs, Button, Tooltip } from "@mui/material";
+import { Breadcrumbs, Tooltip } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
+import type { SongTagPublicId } from "shared/publicId";
 import { IsNullOrWhitespace, StringToEnumValue } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import type { SongTagPublicId } from "shared/publicId";
 import { API } from '../../db3/clientAPI';
 import { gIconMap } from '../../db3/components/IconMap';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../../db3/components/db3NewObjectDialog';
 import { AppContextMarker } from '../AppContext';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
-import { AdminInspectObject, NameValuePair } from '../CMCoreComponents2';
+import { AdminInspectObject, CMButton, NameValuePair } from '../CMCoreComponents2';
 import { CMLink } from '../CMLink';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from '../EditFieldsDialog';
 import { MetronomeButton } from '../Metronome';
@@ -173,7 +173,7 @@ export const SongDescriptionControl = ({ song, refetch, readonly }: { song: Song
     readonly = readonly || !authorized;
 
     return <div className='descriptionContainer'>
-        {!readonly && !editing && <Button onClick={() => setEditing(true)}>Edit</Button>}
+        {!readonly && !editing && <CMButton onClick={() => setEditing(true)}>Edit</CMButton>}
         {editing ? <SongDescriptionEditor
             song={song}
             refetch={refetch}

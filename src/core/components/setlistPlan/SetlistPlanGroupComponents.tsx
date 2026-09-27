@@ -48,7 +48,8 @@ export const SetlistPlanGroupSelect = ({ tableClient, selectedGroupId, onChange 
 };
 
 export const SetlistPlanGroupClientColumns = DB3Client.makeClientColumnSet({
-    publicId: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 140 }),
+    //publicId: columnName => new DB3Client.GenericStringColumnClient({ columnName }),
+    publicId: DB3Client.publicIdFieldGen(),
     name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250 }),
     description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
     color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 100 }),
