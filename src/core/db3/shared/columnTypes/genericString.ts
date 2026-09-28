@@ -10,7 +10,6 @@ import {
     type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult,
     UndefinedValidateAndParseResult, type ValidateAndParseArgs, type ValidateAndParseResult, xTable
 } from "../db3core";
-import type { UserWithRolesPayload } from "../schema/userPayloads";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // for validation and client UI behavior.

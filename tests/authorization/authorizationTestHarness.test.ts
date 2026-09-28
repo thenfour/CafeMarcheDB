@@ -1,8 +1,8 @@
 import { loadAuthorizationForUser } from "@/src/auth/server/serverAuthorization";
-import { hash256 } from "@blitzjs/auth"
-import { beforeEach, describe, expect, it, vi } from "vitest"
-import { songPublicId } from "../support/songFixtures"
-import { userPublicId } from "../support/userFixtures"
+import { hash256 } from "@blitzjs/auth";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { songPublicId } from "../support/songFixtures";
+import { userPublicId } from "../support/userFixtures";
 
 vi.mock("db", async () => {
   const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client")
@@ -13,38 +13,37 @@ vi.mock("db", async () => {
   }
 })
 
-import db3Mutation from "tests/authorization/db3MutationTestResolver"
-import db3PaginatedQuery from "@db3/queries/db3paginatedQueries"
-import db3Query from "@db3/queries/db3queries"
-import * as db3 from "@db3/db3"
-import forgotPassword from "src/auth/mutations/forgotPassword"
-import impersonateUser from "src/auth/mutations/impersonateUser"
-import stopImpersonating from "src/auth/mutations/stopImpersonating"
-import assignUserRole from "src/auth/mutations/assignUserRole"
-import deactivateUser from "src/auth/mutations/deactivateUser"
-import resetPassword from "src/auth/mutations/resetPassword"
-import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin"
-import getAllRoles from "src/auth/queries/getAllRoles"
-import getUserManagementCapabilities from "src/auth/queries/getUserManagementCapabilities"
-import {
-  canManageUser,
-  getContinuityWarningsForUserResult,
-  isRoleWithinDelegationEnvelope,
-} from "src/auth/server/userManagementPolicy"
-import { makePermissionSetFromRole } from "src/auth/server/userManagementState"
+import * as db3 from "@db3/db3";
+import db3PaginatedQuery from "@db3/queries/db3paginatedQueries";
+import db3Query from "@db3/queries/db3queries";
+import { queryTable } from "@db3/server/db3QueryCore";
 import {
   validateDB3MutationRequest,
   validateDB3PaginatedQueryRequest,
   validateDB3QueryRequest,
-} from "@db3/server/db3RequestValidation"
-import { queryTable } from "@db3/server/db3QueryCore"
-import type { UserWithRolesPayload } from "@db3/shared/schema/userPayloads"
-import { Permission } from "shared/permissions"
-import { parsePublicId } from "shared/publicId"
-import { eventPublicId } from "../support/eventResponseFixtures"
-import { PermissionSet } from "src/auth/shared/PermissionSet"
-import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
-import { testServerAuthorization } from "tests/support/serverAuthorization"
+} from "@db3/server/db3RequestValidation";
+import type { UserWithRolesPayload } from "@db3/shared/schema/userPayloads";
+import { Permission } from "shared/permissions";
+import { parsePublicId } from "shared/publicId";
+import assignUserRole from "src/auth/mutations/assignUserRole";
+import deactivateUser from "src/auth/mutations/deactivateUser";
+import forgotPassword from "src/auth/mutations/forgotPassword";
+import impersonateUser from "src/auth/mutations/impersonateUser";
+import resetPassword from "src/auth/mutations/resetPassword";
+import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin";
+import stopImpersonating from "src/auth/mutations/stopImpersonating";
+import getAllRoles from "src/auth/queries/getAllRoles";
+import getUserManagementCapabilities from "src/auth/queries/getUserManagementCapabilities";
+import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
+import {
+  canManageUser,
+  getContinuityWarningsForUserResult,
+  isRoleWithinDelegationEnvelope,
+} from "src/auth/server/userManagementPolicy";
+import { makePermissionSetFromRole } from "src/auth/server/userManagementState";
+import db3Mutation from "tests/authorization/db3MutationTestResolver";
+import { testServerAuthorization } from "tests/support/serverAuthorization";
+import { eventPublicId } from "../support/eventResponseFixtures";
 import {
   asUserManagementActor,
   asUserManagementTarget,
@@ -53,7 +52,7 @@ import {
   createAuthorizationTestUser,
   type AuthorizationPersona,
   type AuthorizationTargetKind,
-} from "./support/authorizationFixtures"
+} from "./support/authorizationFixtures";
 import {
   forgeDb3Delete,
   forgeDb3Insert,
@@ -61,9 +60,9 @@ import {
   forgeDb3PublicUpdate,
   forgeDb3Query,
   forgeDb3Update,
-} from "./support/db3RequestBuilders"
-import { authorizationTestDb } from "./support/inMemoryPrisma"
-import { invokeResolver } from "./support/resolverHarness"
+} from "./support/db3RequestBuilders";
+import { authorizationTestDb } from "./support/inMemoryPrisma";
+import { invokeResolver } from "./support/resolverHarness";
 
 describe("authorization test personas", () => {
   const personas: AuthorizationPersona[] = [

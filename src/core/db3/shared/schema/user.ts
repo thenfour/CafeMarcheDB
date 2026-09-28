@@ -91,13 +91,11 @@ const xUserOperationalMetadataAuthMap = db3.defineAuthMap({
     PreInsert: Permission.sysadmin,
 });
 
-// Raw authentication fields remain unavailable to generic DB3 queries. These
-// virtual fields centralize authorization for the coarse sign-in summary and
-// sign-in-email search. Global search uses PostQuery, so only user maintainers
-// can search another account's sign-in email.
+// Sign-in methods and sign-in-email search are readable only by Sysadmins.
+// Dedicated auth operations own all writes.
 const xUserSignInMetadataAuthMap = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.login,
-    PostQuery: Permission.manage_users,
+    PostQueryAsOwner: Permission.sysadmin,
+    PostQuery: Permission.sysadmin,
     PreMutateAsOwner: Permission.never_grant,
     PreMutate: Permission.never_grant,
     PreInsert: Permission.never_grant,
@@ -800,11 +798,11 @@ const userBaseArgs = db3.defineTableDesc({
             },
         }), // column: tags
 
-        signInMethods: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
-
-        // this is not a real db column but allows us to attach auth maps to arbitrary
-        // queries like getUserExtraInfo
-        signInMethodSummary: memberName => new GhostField({ memberName, authMap: xUserSignInMetadataAuthMap }),
+        signInMethods: memberName => new ForeignCollectionField({
+            memberName,
+            foreignTableID: "UserSignInMethod",
+            authMap: xUserSignInMetadataAuthMap,
+        }),
 
         // This search-only field's runtime member is signInEmailSearch; the old
         // array placement beside email did not make it a second email field.

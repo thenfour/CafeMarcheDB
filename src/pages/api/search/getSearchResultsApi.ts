@@ -11,8 +11,7 @@ import superjson from "superjson";
 export default api(async (req, res, ctx: Ctx) => {
     try {
         const auth = await loadAuthorization(ctx.session);
-        auth.requireUser();
-        auth.requirePermission(Permission.visibility_members);
+        //auth.requireUser(); // why?
 
         let args;
         try {
@@ -23,9 +22,6 @@ export default api(async (req, res, ctx: Ctx) => {
         }
 
         const result = await GetSearchResultsCore(args, auth);
-        // SQL diagnostics contain trusted natural IDs after public-ID
-        // resolution. Keep those server-side for non-sysadmins even though the timing/error
-        // metadata is useful to the search client.
         const canSeeSql = auth.hasPermission(Permission.sysadmin);
         const clientResult = canSeeSql ? result : {
             ...result,

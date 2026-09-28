@@ -1,11 +1,9 @@
+import { cmauthorize } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { xFile, xUser } from "../db3";
-import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { FileStatResult, GetServerHealthResult, ServerHealthFileResult, TableStatsQueryRowRaw } from "../shared/apiTypes";
-import { cmauthorize } from "@/src/auth/server/cmResolver";
 
 var fs = require('fs');
 var path = require('path');

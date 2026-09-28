@@ -1,3 +1,5 @@
+import type { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
+import type { IAuthorization } from "@/src/auth/shared/cmAuthorization";
 import { assert } from "blitz";
 import { Prisma } from "db";
 import { isEmptyArray } from "shared/arrayUtils";
@@ -8,16 +10,14 @@ import { isPublicId } from "shared/publicId";
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 import { z } from "zod";
 import type { ColorPaletteEntry } from "../../components/color/palette";
+import { GetVisibilityWhereExpression } from "../server/db3Helpers";
 import {
     type CMDBTableFilterItem, type CMDBTableFilterModel, type CriterionQueryElements,
     type DiscreteCriterion, type GetSearchResultsSortModel,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "./apiTypes";
-import { GetVisibilityWhereExpression } from "./db3Helpers";
-import type { UserWithRolesPayload } from "./schema/userPayloads";
 import type { AnyDB3View, TableOf } from "./core/db3View";
-import type { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
-import type { IAuthorization } from "@/src/auth/shared/cmAuthorization";
+import type { UserWithRolesPayload } from "./schema/userPayloads";
 
 export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "foreignObject" | "calculated";
 
@@ -1882,9 +1882,10 @@ export class xTable<
         }
         if (this.SqlSpecialColumns.visiblePermission) {
             and.push(GetVisibilityWhereExpression({
-                permissionIds: [...auth.effectivePermissions.ids],
+                auth,
+                //permissionIds: [...auth.effectivePermissions.ids],
                 visiblePermissionIdColumnName: this.SqlSpecialColumns.visiblePermission.fkidMember,
-                ownerUserId: auth.userId || undefined,
+                //ownerUserId: auth.userId || undefined,
                 ownerUserIdColumnName: this.SqlSpecialColumns.ownerUser?.fkidMember || this.SqlSpecialColumns.ownerUser?.member,
             }));
         }

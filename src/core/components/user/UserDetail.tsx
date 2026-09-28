@@ -115,6 +115,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
     const canViewBasicInfo = dashboardContext.isAuthorized(Permission.view_users_basic_info);
     const canViewContactInfo = dashboardContext.isAuthorized(Permission.view_user_contact_info);
     const canManageUsers = dashboardContext.isAuthorized(Permission.manage_users);
+    const canViewSignInMethods = dashboardContext.isAuthorized(Permission.sysadmin);
 
     const [selectedTab, setSelectedTab] = React.useState<UserDetailTabSlug>(props.initialTab || UserDetailTabSlug.attendance);
 
@@ -214,7 +215,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                 }} />
             }
 
-            {canManageUsers &&
+            {canViewSignInMethods &&
                 <KeyValueTable data={{
                     Identity: <Suspense>
                         <CMChipContainer>

@@ -54,7 +54,7 @@ const owner = {
   }),
   instruments: [],
   tags: [],
-  signInMethods: [{ id: 1, type: "google", identifier: "owner-google" }],
+  signInMethods: [{ id: 1, type: "google", identifier: "owner-google", displayId: "owner-google@example.com" }],
 }
 
 const target = {
@@ -80,7 +80,7 @@ const target = {
     userTagId: targetUserTag.id,
     userTag: targetUserTag,
   }],
-  signInMethods: [{ id: 2, type: "google", identifier: "target-google" }],
+  signInMethods: [{ id: 2, type: "google", identifier: "target-google", displayId: "target-google@example.com" }],
   hashedPassword: "secret-password-hash",
 }
 
@@ -108,6 +108,8 @@ const userManager = createAuthorizationTestUser("bandAdmin", {
   ],
 })
 
+const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1_206 })
+
 async function queryTargetAs(actor: typeof basicViewer) {
   const result = await invokeResolver(
     db3queries,
@@ -122,7 +124,7 @@ async function queryTargetAs(actor: typeof basicViewer) {
 describe("focused user data visibility", () => {
   beforeEach(() => {
     authorizationTestDb.reset({
-      user: [owner, target, basicViewer, contactViewer, userManager],
+      user: [owner, target, basicViewer, contactViewer, userManager, sysadmin],
     })
   })
 
@@ -246,10 +248,10 @@ describe("focused user data visibility", () => {
     expect(result).not.toHaveProperty("id")
   })
 
-  it("uses login for one's own coarse sign-in type and manage_users for another user", async () => {
+  it("reserves sign-in method summaries for Sysadmins", async () => {
     await expect(
       invokeResolver(getUserExtraInfo, { userId: owner.publicId }, createAuthorizationTestContext(owner)),
-    ).resolves.toEqual({ signinMethods: ["google"] })
+    ).rejects.toThrow()
 
     await expect(
       invokeResolver(getUserExtraInfo, { userId: target.publicId }, createAuthorizationTestContext(basicViewer)),
@@ -257,7 +259,11 @@ describe("focused user data visibility", () => {
 
     await expect(
       invokeResolver(getUserExtraInfo, { userId: target.publicId }, createAuthorizationTestContext(userManager)),
-    ).resolves.toEqual({ signinMethods: ["google"] })
+    ).rejects.toThrow()
+
+    await expect(
+      invokeResolver(getUserExtraInfo, { userId: target.publicId }, createAuthorizationTestContext(sysadmin)),
+    ).resolves.toEqual({ signinMethods: [{ type: "google", displayId: "target-google@example.com" }] })
   })
 
   it("keeps search and basic-view distinct while assigning them to the same default roles", () => {

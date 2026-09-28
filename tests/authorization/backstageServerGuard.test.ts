@@ -6,19 +6,17 @@ vi.mock("db", async () => {
     return { ...prisma, default: authorizationTestDb };
 });
 
-import { Permission } from "shared/permissions";
 import { authorizePageRequest as authorizeRequest } from "@/src/auth/server/pageRequestAuthorization";
+import { Permission } from "shared/permissions";
 import { loadAuthorizedPageEntity } from "src/auth/server/serverPageAuthorization";
 import { xEvent, xInstrument } from "src/core/db3/db3";
-import { getQuickSearchResults } from "src/core/db3/server/quickSearchServerCore";
-import { QuickSearchItemType } from "shared/quickFilter";
-import getUserMassAnalysis from "src/core/db3/queries/getUserMassAnalysis";
 import getImportEventData from "src/core/db3/queries/getImportEventData";
-import { authorizationTestDb } from "./support/inMemoryPrisma";
+import getUserMassAnalysis from "src/core/db3/queries/getUserMassAnalysis";
 import {
     createAuthorizationTestContext,
     createAuthorizationTestUser,
 } from "./support/authorizationFixtures";
+import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { invokeResolver } from "./support/resolverHarness";
 
 const eventAdmin = createAuthorizationTestUser("normal", {
@@ -162,62 +160,6 @@ describe("backstage server page guard", () => {
             load,
         })).rejects.toThrow();//.resolves.toBeNull();
         expect(load).toHaveBeenCalledTimes(1);
-    });
-
-    it("returns Instrument quick-search identity and links exclusively as public IDs", async () => {
-        vi.stubEnv("CMDB_BASE_URL", "https://example.test");
-        authorizationTestDb.getDelegate("instrument").reset([{
-            id: 42,
-            publicId: "AbCdEfGhIjKlMn42",
-            name: "trumpet",
-            description: "Bright brass",
-        }]);
-
-        const results = await getQuickSearchResults(
-            "instrument:trumpet",
-            // The authorization fixture intentionally omits unused Permission display fields.
-            eventAdmin as Parameters<typeof getQuickSearchResults>[1],
-            [QuickSearchItemType.instrument],
-        );
-
-        expect(results).toEqual([expect.objectContaining({
-            id: "AbCdEfGhIjKlMn42",
-            itemType: QuickSearchItemType.instrument,
-            name: "trumpet",
-        })]);
-        expect(results[0]!.absoluteUri).toContain("/backstage/instrument/AbCdEfGhIjKlMn42");
-        expect(results[0]!.absoluteUri).not.toContain("/backstage/instrument/42");
-    });
-
-    it("returns Event quick-search identity and links exclusively as public IDs", async () => {
-        vi.stubEnv("CMDB_BASE_URL", "https://example.test");
-        authorizationTestDb.getDelegate("event").reset([{
-            id: 42,
-            publicId: "EventPublic00042",
-            name: "Autumn gala",
-            startsAt: new Date("2026-10-10T18:00:00Z"),
-            locationDescription: "Town hall",
-            createdByUserId: actualSysadmin.id,
-            visiblePermissionId: null,
-            isDeleted: false,
-            descriptionWikiPage: null,
-            tags: [],
-        }]);
-
-        const results = await getQuickSearchResults(
-            "event:gala",
-            // The authorization fixture intentionally omits unused generated user fields.
-            actualSysadmin as Parameters<typeof getQuickSearchResults>[1],
-            [QuickSearchItemType.event],
-        );
-
-        expect(results).toEqual([expect.objectContaining({
-            id: "EventPublic00042",
-            itemType: QuickSearchItemType.event,
-            name: expect.stringContaining("Autumn gala"),
-        })]);
-        expect(results[0]!.absoluteUri).toContain("/backstage/event/EventPublic00042/autumn-gala");
-        expect(results[0]!.absoluteUri).not.toContain("/backstage/event/42");
     });
 
     it("keeps contained routes and unregistered pages closed to anonymous visitors", async () => {

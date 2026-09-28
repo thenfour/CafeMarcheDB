@@ -17,10 +17,13 @@ export interface CreateSignupUserArgs {
 }
 
 export const createSignupUser = async (args: CreateSignupUserArgs, ctx: Ctx) => {
+
     const emailMethod = SignInMethodSchema.parse({ type: "email", identifier: args.email });
     const googleMethod = args.googleId === undefined ? null
         : SignInMethodSchema.parse({ type: "google", identifier: args.googleId });
+
     const hashedPassword = await SecurePassword.hash(args.password.trim());
+
     return db.$transaction(async tx => {
         const defaultRoles = await tx.role.findMany({
             where: { isRoleForNewUsers: true },
@@ -32,9 +35,13 @@ export const createSignupUser = async (args: CreateSignupUserArgs, ctx: Ctx) => 
             `Expected exactly one role for new users; found ${defaultRoles.length}.`,
         );
 
-        // A profile's contact address may be shared, but a sign-in identifier may not.
-        for (const method of [emailMethod, ...(googleMethod ? [googleMethod] : [])]) {
-            if (await tx.userSignInMethod.findFirst({ where: signInMethodWhere(method) })) {
+        const methodsDesired = [emailMethod, ...(googleMethod ? [googleMethod] : [])];
+
+        // as we are creating a new user, only pass if there are no signin conflicts with
+        // existing users. and don't reveal which specific method is causing the conflict.
+        for (const method of methodsDesired) {
+            const existing = await tx.userSignInMethod.findFirst({ where: signInMethodWhere(method) });
+            if (existing) {
                 throw new SignInMethodConflictError();
             }
         }
@@ -51,8 +58,12 @@ export const createSignupUser = async (args: CreateSignupUserArgs, ctx: Ctx) => 
             data,
             ...UserWithRolesArgs,
         });
-        await addSignInMethod(tx, user.id, emailMethod);
-        if (googleMethod) await addSignInMethod(tx, user.id, googleMethod);
+
+        // oauth methods still get an email signin method (but they would need to change their password)
+        await addSignInMethod(tx, user.id, emailMethod, emailMethod.identifier);
+        if (googleMethod) {
+            await addSignInMethod(tx, user.id, googleMethod, emailMethod.identifier);
+        }
 
         await RegisterChange({
             action: ChangeAction.insert,

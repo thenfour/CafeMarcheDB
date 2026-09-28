@@ -9,7 +9,7 @@ import { GetDateSecondsFromNow } from "shared/time";
 import * as db3 from "src/core/db3/db3";
 import { authorizeAndProjectViewDto } from "src/core/db3/server/db3QueryCore";
 import { GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, TAcquireLockOnWikiPageArgs, WikiPageApiPayload, wikiParseCanonicalWikiPath, ZTAcquireLockOnWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
-import { GetDefaultVisibilityPermission } from "../../db3/shared/db3Helpers";
+import { GetDefaultVisibilityPermission } from "../../db3/server/db3Helpers";
 import { GetAuthorizedTableReadWhere } from "../../db3/server/db3ReadPolicy";
 import { xWikiPage } from "../../db3/shared/schema/wiki";
 import { wikiPageApiSelection } from "../../db3/shared/entities/wiki/wikiViews";
@@ -107,9 +107,11 @@ export default resolver.pipe(
             if (!currentPage) throw new Error("Updated wiki page was not authorized for reading.");
 
             return {
-                ...GetWikiPageUpdatability({ currentPage, currentUserPublicId: auth.userPublicId,
+                ...GetWikiPageUpdatability({
+                    currentPage, currentUserPublicId: auth.userPublicId,
                     userClientLockId: args.lockId, baseRevisionId: args.baseRevisionId,
-                    baseContentVersion: args.baseContentVersion }),
+                    baseContentVersion: args.baseContentVersion
+                }),
             }
         });
     }

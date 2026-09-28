@@ -1,4 +1,3 @@
-import type { AuthenticatedCtx } from "blitz";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => {
@@ -17,9 +16,9 @@ vi.mock("db", async () => {
 
 import db from "db";
 import { Permission } from "shared/permissions";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import * as db3 from "src/core/db3/db3";
 import { GetSearchResultsCore } from "src/core/db3/server/searchServerCore";
-import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { DiscreteCriterionFilterType, type GetSearchResultsInput } from "src/core/db3/shared/apiTypes";
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
@@ -83,20 +82,24 @@ describe("user search field authorization", () => {
         expect(sql).not.toContain("UserSignInMethod");
     });
 
-    it("searches email sign-in methods for user maintainers without exposing them in the payload", async () => {
-        const actor = makeActor(1_303, [Permission.view_user_contact_info, Permission.manage_users]);
+    it("reserves sign-in-email search for Sysadmins", async () => {
+        const manager = makeActor(1_303, [Permission.view_user_contact_info, Permission.manage_users]);
         const target = {
             ...createAuthorizationTestUser("normal", { id: 1_305, email: "contact@test.invalid" }),
             signInMethods: [{ id: 1, type: "email", identifier: "signin-only@test.invalid" }],
         };
-        const result = await runSearch(actor, [target]);
+        const managerResult = await runSearch(manager, [target]);
+        expect(managerResult.filterQueryResult.sqlSelect).not.toContain("UserSignInMethod");
+        expect(managerResult.results[0]).not.toHaveProperty("signInMethods");
+
+        const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1_306 });
+        const result = await runSearch(sysadmin, [target]);
         const sql = result.filterQueryResult.sqlSelect;
 
         expect(sql).toContain("FROM UserSignInMethod signInMethod");
         expect(sql).toContain("signInMethod.type = 'email'");
         expect(sql).toContain("signInMethod.identifier LIKE '%signin-only@test.invalid%'");
         expect(result.results).toEqual([expect.objectContaining({ publicId: target.publicId })]);
-        expect(result.results[0]).not.toHaveProperty("signInMethods");
     });
 
     it("rejects explicit sorting and filtering by unreadable operational fields", async () => {

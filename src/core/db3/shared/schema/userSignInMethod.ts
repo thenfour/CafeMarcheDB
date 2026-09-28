@@ -50,6 +50,9 @@ export const xUserSignInMethod = defineTable({
         identifier: columnName => new GenericStringField({
             columnName, allowNull: false, format: "raw", authMap: readOnlyFields,
         }),
+        displayId: columnName => new GenericStringField({ // typically an email but in theory can be anything.
+            columnName, allowNull: true, format: "raw", authMap: readOnlyFields,
+        }),
         createdAt: () => MakeCreatedAtField({ authMap: readOnlyFields }),
     }),
 });

@@ -1,7 +1,7 @@
 import { useQuery } from "@blitzjs/rpc";
 import { Email, Google } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
-import getUserExtraInfo from "../../db3/queries/getUserExtraInfo";
+import getUserExtraInfo, { type UserExtraInfo } from "../../db3/queries/getUserExtraInfo";
 import { NameValuePair } from "../CMCoreComponents2";
 import type { UserPublicId } from "shared/publicId";
 
@@ -13,13 +13,13 @@ type UserIdentityIndicatorProps = {
     userId?: UserPublicId;
 };
 
-const GoogleIdentityBadge = () => <Tooltip title="Has a Google sign-in"><Google /></Tooltip>;
-const EmailIdentityBadge = () => <Tooltip title="Has an email sign-in"><Email /></Tooltip>;
+const GoogleIdentityBadge = ({ display }: { display: string | null }) => <Tooltip title={display ? `Google sign-in: ${display}` : "Has a Google sign-in"}><Google /></Tooltip>;
+const EmailIdentityBadge = ({ display }: { display: string | null }) => <Tooltip title={display ? `Email sign-in: ${display}` : "Has an email sign-in"}><Email /></Tooltip>;
 
-const IdentityIndicator = ({ signinMethods }: { signinMethods: string[] }) => {
-    return signinMethods.sort((a, b) => a.localeCompare(b)).map((method, index) => {
-        if (method === "google") return <GoogleIdentityBadge key={`google-${index}`} />;
-        if (method === "email") return <EmailIdentityBadge key={`email-${index}`} />;
+const IdentityIndicator = ({ signinMethods }: UserExtraInfo) => {
+    return [...signinMethods].sort((a, b) => a.type.localeCompare(b.type)).map((method, index) => {
+        if (method.type === "google") return <GoogleIdentityBadge key={`google-${index}`} display={method.displayId} />;
+        if (method.type === "email") return <EmailIdentityBadge key={`email-${index}`} display={method.displayId} />;
         return null;
     });
 };

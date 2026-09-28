@@ -31,7 +31,7 @@ export default async function getCurrentUser(_ = null, { session }: Ctx) {
   // records the corresponding client shape for Blitz's inferred query result.
   const projected = projectDB3ModelPublicIds(
     db3.xUser,
-    authWithUser.user,
+    user,
     authWithUser) as db3.UserClientPayload;
 
   // blitz auth requires the numeric id; this is one exception to the "public id"

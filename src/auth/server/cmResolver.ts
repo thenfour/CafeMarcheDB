@@ -36,12 +36,14 @@ export function cmauthorize(argsOrPermission: CmauthorizeArgs | Permission) {
     const middleware = async <TInput>(input: TInput, ctx: Ctx) => {
         const auth = await loadAuthorization(ctx.session);
 
+        let permission: Permission;
+        let requireUser: boolean;
         if (typeof argsOrPermission === "object") {
-            var permission = argsOrPermission.permission;
-            var requireUser = argsOrPermission.requireUser ?? false;
+            permission = argsOrPermission.permission;
+            requireUser = argsOrPermission.requireUser ?? false;
         } else {
-            var permission = argsOrPermission;
-            var requireUser = false;
+            permission = argsOrPermission;
+            requireUser = false;
         }
 
         auth.requirePermission(permission);

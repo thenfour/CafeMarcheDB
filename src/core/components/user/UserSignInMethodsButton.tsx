@@ -1,9 +1,10 @@
-import { useMutation, useQuery } from "@blitzjs/rpc";
+import { invalidateQuery, useMutation, useQuery } from "@blitzjs/rpc";
 import { Alert, Button, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import React, { Suspense } from "react";
 import addUserSignInMethod from "src/auth/mutations/addUserSignInMethod";
 import removeUserSignInMethod from "src/auth/mutations/removeUserSignInMethod";
 import getUserSignInMethods from "src/auth/queries/getUserSignInMethods";
+import getUserExtraInfo from "src/core/db3/queries/getUserExtraInfo";
 import { SignInMethodSchema } from "src/auth/signInMethodSchemas";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { CMButton } from "../CMCoreComponents2";
@@ -31,6 +32,7 @@ const SignInMethodsEditor = ({ user, onChanged }: Props) => {
             await operation();
             setIdentifier("");
             await refetch();
+            await invalidateQuery(getUserExtraInfo, { userId: user.publicId });
             await onChanged?.();
         } catch (err) {
             setError(err instanceof Error ? err.message : "Unable to update sign-in methods.");
@@ -45,14 +47,20 @@ const SignInMethodsEditor = ({ user, onChanged }: Props) => {
         {user.isDeleted && <Alert severity="info">This user is deactivated. These methods remain reserved and cannot sign in until the user is reactivated.</Alert>}
         {error && <Alert severity="error">{error}</Alert>}
         <Table size="small">
-            <TableHead><TableRow><TableCell>Type</TableCell><TableCell>Identifier</TableCell><TableCell /></TableRow></TableHead>
+            <TableHead>
+                <TableRow>
+                    <TableCell>Type</TableCell>
+                    <TableCell>Identifier</TableCell>
+                    <TableCell />
+                </TableRow>
+            </TableHead>
             <TableBody>{data.methods.map(method => <TableRow key={xUserSignInMethod.getIdentity(method)}>
                 <TableCell>{method.type === "email" ? "Email" : "Google subject"}</TableCell>
-                <TableCell sx={{ overflowWrap: "anywhere" }}>{method.identifier}</TableCell>
+                <TableCell sx={{ overflowWrap: "anywhere" }}>{method.displayId ?? method.identifier}</TableCell>
                 <TableCell><Button disabled={pending} onClick={async () => {
                     if (!await confirm({
                         title: "Release sign-in method?",
-                        description: `Remove ${method.identifier} from ${user.name}?`,
+                        description: `Remove ${method.displayId ?? method.identifier} from ${user.name}?`,
                     })) return;
                     await apply(() => removeMethod({ userId: user.publicId, methodPublicId: xUserSignInMethod.getIdentity(method) }));
                 }}>Remove</Button></TableCell>

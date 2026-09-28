@@ -1,4 +1,4 @@
-import { cmauthorize, type CMAuthCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import { Permission } from "shared/permissions";
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";

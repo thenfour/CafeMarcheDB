@@ -3,6 +3,7 @@ import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext, useFeatureRecorder, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { ProfilePageIdentityControl } from "@/src/core/components/user/UserIdentityIndicator";
+import { Permission } from "@/shared/permissions";
 import { OwnInstrumentsControl } from "@/src/core/components/user/UserInstruments";
 import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from "react";
@@ -96,7 +97,8 @@ const MainContent = () => {
                 )}
 
                 <Suspense>
-                    {dashboardContext.currentUser?.publicId && <ProfilePageIdentityControl userId={dashboardContext.currentUser.publicId} />}
+                    {dashboardContext.isAuthorized(Permission.sysadmin) && dashboardContext.currentUser?.publicId
+                        && <ProfilePageIdentityControl userId={dashboardContext.currentUser.publicId} />}
                 </Suspense>
 
             </div>

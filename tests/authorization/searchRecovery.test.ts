@@ -15,21 +15,20 @@ vi.mock("db", async () => {
 });
 
 import db from "db";
-import type { AuthenticatedCtx } from "blitz";
-import { Permission } from "shared/permissions";
 import { getCalendarWindow } from "shared/dateTimePolicy";
+import { Permission } from "shared/permissions";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import * as db3 from "src/core/db3/db3";
 import { GetSearchResultsCore } from "src/core/db3/server/searchServerCore";
-import { loadAuthorization } from "src/auth/server/serverAuthorization";
-import { GetSearchResultsInput, DiscreteCriterionFilterType, ZGetSearchResultsInput } from "src/core/db3/shared/apiTypes";
+import { DiscreteCriterionFilterType, GetSearchResultsInput, ZGetSearchResultsInput } from "src/core/db3/shared/apiTypes";
+import { eventPublicId } from "../support/eventResponseFixtures";
 import { createAuthorizationPersona, createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
-import { eventPublicId } from "../support/eventResponseFixtures";
 const rawQuery = vi.mocked(db.$queryRaw as (sql: any) => Promise<any[]>);
 
 const permissions = [Permission.login, Permission.view_users_basic_info, Permission.view_user_contact_info,
-    Permission.manage_users, Permission.search_users, Permission.visibility_members, Permission.view_events_nonpublic,
-    Permission.recover_users];
+Permission.manage_users, Permission.search_users, Permission.visibility_members, Permission.view_events_nonpublic,
+Permission.recover_users];
 const actor = createAuthorizationTestUser("bandAdmin", { id: 901, permissions });
 const activeUser = createAuthorizationTestUser("normal", { id: 902, name: "Member Active" });
 const deletedUser = createAuthorizationTestUser("normal", { id: 903, name: "Member Deleted", isDeleted: true });

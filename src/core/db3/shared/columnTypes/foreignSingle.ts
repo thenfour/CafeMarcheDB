@@ -1,19 +1,18 @@
 
 import { TAnyModel } from "@/shared/rootroot";
 import { assertIsNumberArray } from "shared/arrayUtils";
+import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { z } from "zod";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
-import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import {
     type DB3AuthSpec, type DB3FacetInfoArgs, type DB3FieldPrismaMember, type DB3ForeignSingleReferenceField, type DB3IdentityOf, type DB3PrismaPayloadOf, type DB3ReadPresenceForAuthSpec, type DB3RegisteredTableID, type DB3RowMode, ErrorValidateAndParseResult,
     FieldBase, GetTableById, makeNullableReadTransportSchema, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
 } from "../db3core";
-import { type UserWithRolesPayload } from "../schema/userPayloads";
 
 ////////////////////////////////////////////////////////////////
 // a single select field where the items are a db table with relation

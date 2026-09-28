@@ -231,6 +231,7 @@ model UserSignInMethod {
   userId     Int
   type       SignInMethodType
   identifier String           @db.VarChar(320)
+  displayId  String?          @db.VarChar(320) // for google, the last verified address returned for this Google subject. for others: a display-friendly name.
   createdAt  DateTime         @default(now())
   user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -260,10 +261,10 @@ model UserSetting {
 }
 
 model Setting {
-  id    Int    @id @default(autoincrement())
+  id       Int    @id @default(autoincrement())
   publicId String @unique @db.Char(16)
-  name  String @unique @default("") @db.VarChar(768)
-  value String @db.MediumText // json value et al
+  name     String @unique @default("") @db.VarChar(768)
+  value    String @db.MediumText // json value et al
 
   @@index([name])
 }
@@ -529,7 +530,7 @@ model UserInstrument {
 // they get separate data for the different types. but that's not really the case because this Events table is quite general for events;
 // nothing here is specific to any type of event. should that be the case it can be attached somehow.
 model Event {
-  publicId String @unique @db.Char(16)
+  publicId          String  @unique @db.Char(16)
   id                Int     @id @default(autoincrement())
   revision          Int
   calendarInputHash String? @db.VarChar(200) // ical input payload, to know if revision should be updated.
@@ -637,9 +638,9 @@ model Event {
 // concerts may have one or more multiple sets
 model EventSegment {
   publicId String @unique @db.Char(16)
-  id      Int   @id @default(autoincrement())
-  eventId Int
-  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade) // events are soft-delete.
+  id       Int    @id @default(autoincrement())
+  eventId  Int
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade) // events are soft-delete.
 
   name        String  @db.VarChar(768)
   description String  @db.MediumText // short description, like 
@@ -743,7 +744,7 @@ model EventTagAssignment {
 }
 
 model EventSongList {
-  publicId String @unique @db.Char(16)
+  publicId    String @unique @db.Char(16)
   id          Int    @id @default(autoincrement())
   sortOrder   Int    @default(0)
   name        String @db.VarChar(768)
@@ -766,7 +767,7 @@ model EventSongList {
 }
 
 model EventSongListSong {
-  publicId String @unique @db.Char(16)
+  publicId  String  @unique @db.Char(16)
   id        Int     @id @default(autoincrement())
   subtitle  String? @db.MediumText // could be a small comment like "short version"
   sortOrder Int     @default(0)
@@ -783,7 +784,7 @@ model EventSongListSong {
 }
 
 model EventSongListDivider {
-  publicId String @unique @db.Char(16)
+  publicId       String  @unique @db.Char(16)
   id             Int     @id @default(autoincrement())
   subtitle       String? @db.MediumText // could be a small comment like "15 min break"
   sortOrder      Int     @default(0)
@@ -804,9 +805,9 @@ model EventSongListDivider {
 
 // things like yes, no, not-sure-yes, not-sure-no, partially
 model EventAttendance {
-  publicId String @unique @db.Char(16)
-  id        Int @id @default(autoincrement())
-  sortOrder Int @default(0)
+  publicId  String @unique @db.Char(16)
+  id        Int    @id @default(autoincrement())
+  sortOrder Int    @default(0)
 
   text             String  @db.VarChar(768) // generic button text ("yes", "probably")
   personalText     String  @default("") // more personal text explanation ("you are going", "you are probably going")
@@ -830,9 +831,9 @@ model EventAttendance {
 
 model EventUserResponse {
   publicId String @unique @db.Char(16)
-  id      Int @id @default(autoincrement())
-  userId  Int
-  eventId Int
+  id       Int    @id @default(autoincrement())
+  userId   Int
+  eventId  Int
 
   revision Int     @default(1)
   uid      String? @default(uuid())
@@ -851,9 +852,9 @@ model EventUserResponse {
 
 model EventSegmentUserResponse {
   publicId String @unique @db.Char(16)
-  id     Int  @id @default(autoincrement())
-  userId Int
-  user   User @relation("EventSegmentUserResponseUser", fields: [userId], references: [id], onDelete: Cascade)
+  id       Int    @id @default(autoincrement())
+  userId   Int
+  user     User   @relation("EventSegmentUserResponseUser", fields: [userId], references: [id], onDelete: Cascade)
 
   eventSegmentId Int
   eventSegment   EventSegment @relation(fields: [eventSegmentId], references: [id], onDelete: Cascade)
@@ -902,8 +903,8 @@ model FileTagAssignment {
 // TODO: default sorting should probably be implemented. and depending on where it's being viewed it may be different.
 // so let's not work on this now; see how it feels necessary.
 model File {
-    publicId       String  @unique @db.Char(16)
-    id             Int     @id @default(autoincrement())
+  publicId       String  @unique @db.Char(16)
+  id             Int     @id @default(autoincrement())
   fileLeafName   String  @db.VarChar(768) // the name of the file as it was uploaded, visible to (& editable) users. IMG20113.jpg for example.
   storedLeafName String  @unique @db.VarChar(768) // a unique filename used in server storage; a guid probably. this is also what is used in params for identifying files.
   description    String  @db.MediumText
@@ -942,8 +943,8 @@ model File {
   taggedWikiPages       FileWikiPageTag[]
   frontpageGalleryItems FrontpageGalleryItem[]
 
-  previewForFile File[]   @relation("previewFiles")
-  childFiles     File[]   @relation("fileHierarchy")
+  previewForFile File[]       @relation("previewFiles")
+  childFiles     File[]       @relation("fileHierarchy")
   actions        Action[]
   customLinks    CustomLink[]
 
@@ -962,10 +963,10 @@ model File {
 model FileUserTag {
   id       Int    @id @default(autoincrement())
   publicId String @unique @db.Char(16)
-  fileId Int
-  file   File @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId Int
+  fileId   Int
+  file     File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   Int
 
   @@unique([fileId, userId]) // 
   @@index([fileId])
@@ -975,10 +976,10 @@ model FileUserTag {
 model FileSongTag {
   id       Int    @id @default(autoincrement())
   publicId String @unique @db.Char(16)
-  fileId Int
-  file   File @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  song   Song @relation(fields: [songId], references: [id], onDelete: Cascade)
-  songId Int
+  fileId   Int
+  file     File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  song     Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  songId   Int
 
   @@unique([fileId, songId]) // 
   @@index([fileId])
@@ -988,10 +989,10 @@ model FileSongTag {
 model FileEventTag {
   id       Int    @id @default(autoincrement())
   publicId String @unique @db.Char(16)
-  fileId  Int
-  file    File  @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventId Int
+  fileId   Int
+  file     File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId  Int
 
   @@unique([fileId, eventId]) // 
   @@index([fileId])
@@ -1128,7 +1129,7 @@ model WikiPage {
 }
 
 model WikiPageRevision {
-  id Int @id @default(autoincrement())
+  id       Int    @id @default(autoincrement())
   publicId String @unique @db.Char(16)
 
   wikiPageId    Int
@@ -1188,9 +1189,9 @@ model WikiPageTagAssignment {
 }
 
 model MenuLink {
-  id        Int @id @default(autoincrement())
+  id        Int    @id @default(autoincrement())
   publicId  String @unique @db.Char(16)
-  sortOrder Int @default(0)
+  sortOrder Int    @default(0)
 
   realm String? @db.VarChar(768)
 

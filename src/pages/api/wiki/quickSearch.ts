@@ -11,7 +11,7 @@ import { getQuickSearchResults } from "src/core/db3/server/quickSearchServerCore
 export default api(async (req, res, ctx: Ctx) => {
     const auth = await loadAuthorization(ctx.session);
     auth.requirePermission(Permission.visibility_public);
-    const currentUser = auth.requireUser().user; // TODO: why is this necessary? public should have fundamental rights to quick search
+    //const currentUser = auth.requireUser().user; // TODO: why is this necessary? public should have fundamental rights to quick search
 
     const { keyword, allowedItemTypes } = req.query;
 
@@ -24,10 +24,11 @@ export default api(async (req, res, ctx: Ctx) => {
     }
 
     // The validator returns the runtime shape but does not preserve the array's union type.
-    const parsedAllowedTypes = ZodJsonParseAndValidate(allowedItemTypes, ZQuickSearchItemTypeArray) as QuickSearchItemTypeArray;
+    const parsedAllowedTypes =
+        ZodJsonParseAndValidate(allowedItemTypes, ZQuickSearchItemTypeArray) as QuickSearchItemTypeArray;
 
     try {
-        const slugs = await getQuickSearchResults(keyword, currentUser, parsedAllowedTypes);
+        const slugs = await getQuickSearchResults(keyword, auth, parsedAllowedTypes);
         return res.status(200).json(slugs);
     } catch (error) {
         console.error("Failed to fetch slugs", error);

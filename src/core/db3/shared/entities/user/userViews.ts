@@ -1,6 +1,5 @@
-import { Prisma } from "db";
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
-import { z } from "zod";
+import { Prisma } from "db";
 import {
     type InstrumentPublicId,
     isPublicId,
@@ -9,13 +8,35 @@ import {
     type UserTagAssignmentPublicId,
     type UserTagPublicId,
 } from "shared/publicId";
+import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
+import { defineView } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import {
     UserInstrumentNaturalOrderBy,
     UserTagAssignmentNaturalOrderBy,
 } from "../../schema/prismArgs";
 import { xUser, xUserInstrument } from "../../schema/user";
+
+const userIdentitySummaryArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
+    select: {
+        publicId: true,
+        signInMethods: {
+            select: { type: true, displayId: true },
+            orderBy: [{ createdAt: "asc" }, { publicId: "asc" }],
+        },
+    },
+});
+
+const userIdentitySummaryViewContract = deriveViewContract(xUser, userIdentitySummaryArgs);
+
+export const userIdentitySummaryView = defineView({
+    viewID: "User_IdentitySummary",
+    entity: xUser,
+    selection: userIdentitySummaryViewContract.prismaSelection,
+    dtoSchema: userIdentitySummaryViewContract.dtoSchema,
+    hydrate: userIdentitySummaryViewContract.hydrate
+});
 
 const UserEditorRoleDtoSchema = z.object({
     publicId: z.custom<RolePublicId>(isPublicId),

@@ -12,7 +12,6 @@ import {
     type ValidateAndParseArgs, type ValidateAndParseResult,
     createAuthContextMap_PK, createAuthContextMap_SysadminNaturalPK, xTable
 } from "../db3core";
-import { type UserWithRolesPayload } from "../schema/userPayloads";
 
 // export type DB3AuthSpec = {
 //     authMap: DB3AuthContextPermissionMap;

@@ -99,6 +99,9 @@ function sanitizeQueryRows(items: TAnyModel[], query: Awaited<ReturnType<typeof 
             .map(model => query.view!.parseDto(query.readSelection.stripSupportFields(model)));
     }
 
+    // Legacy table reads authorize the parent fields without recursively
+    // authorizing selected relations. New reads should use queryView or apply
+    // their own authorization and sanitization before returning a payload.
     return items.map(model => {
         db3Server.table(query.table).assertReadAuthorizationInput(model, contextDesc);
         return query.table.authorizeAndSanitize({

@@ -8,6 +8,7 @@ const contract = deriveViewContract(xUserSignInMethod, Prisma.validator<Prisma.U
         publicId: true,
         type: true,
         identifier: true,
+        displayId: true,
         createdAt: true,
     },
 }));

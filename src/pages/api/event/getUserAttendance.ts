@@ -1,19 +1,16 @@
 // TODO: unify with the normal search api.
 // fyi i think this is only used by the setlist planner LEDs
 
+import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
 import { Ctx } from "@blitzjs/next";
-import { AuthenticatedCtx } from "blitz";
 import db from "db";
-import { Permission } from "shared/permissions";
 import { BigintToNumber } from "shared/utils";
 import { api } from "src/blitz-server";
-import * as mutationCore from 'src/core/db3/server/db3mutationCore';
+import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
 import { GetUserAttendanceArgs, GetUserAttendanceRet } from "src/core/db3/shared/apiTypes";
-import { xEvent, xEventSegment, xEventAttendance, xEventStatus } from "src/core/db3/shared/schema/event";
+import { xEvent, xEventAttendance, xEventSegment, xEventStatus } from "src/core/db3/shared/schema/event";
 import { xInstrument } from "src/core/db3/shared/schema/instrument";
 import { xUser } from "src/core/db3/shared/schema/user";
-import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
-import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
 
 
 

@@ -192,9 +192,6 @@ function calculateFilterQuery(
     return result;
 };
 
-// export default resolver.pipe(
-//     resolver.authorize(Permission.visibility_members), // ? right or?
-//     resolver.zod(ZGetSearchResultsInput),
 export async function GetSearchResultsCore(args: GetSearchResultsInput, auth: CMServerAuthorization): Promise<SearchResultsRet> {
     if (!args.calendarWindow) return getSearchResults(args, auth, db);
     return db.$transaction(tx => getSearchResults(args, auth, tx), {

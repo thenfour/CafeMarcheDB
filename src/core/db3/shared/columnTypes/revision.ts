@@ -15,7 +15,6 @@ import {
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
 } from "../db3core";
-import { type UserWithRolesPayload } from "../schema/userPayloads";
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export type RevisionFieldArgs<TAuthSpec extends DB3AuthSpec> = {

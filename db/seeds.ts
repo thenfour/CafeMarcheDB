@@ -536,9 +536,9 @@ const main = async () => {
 
 
   const defaultRoles: Prisma.RoleUncheckedCreateInput[] = DefaultRoles.map(role => ({
-      ...role,
-      publicId: generatePublicId<"Role">(),
-    }));
+    ...role,
+    publicId: generatePublicId<"Role">(),
+  }));
   await SeedTable("role", gState.prisma.role, defaultRoles);
 
   for (const definition of gPermissionRegistry) {
@@ -797,6 +797,7 @@ const main = async () => {
           publicId: generatePublicId<"UserSignInMethod">(),
           userId: user.id,
           type: "google",
+          displayId: specialUser.email.toLowerCase().trim(),
           // special value lets the system recognize the sysadmin user in dev environment.
           identifier: `GOOGLE_FIRST_TIME_INSTALL_USER_EMAIL:${specialUser.email.toLowerCase().trim()}`,
         },
@@ -808,17 +809,23 @@ const main = async () => {
         userId: number;
         type: "email" | "google";
         identifier: string;
+        displayId: string | null;
       }[] = [];
 
       if (signInMethodCount > 0) {
-        methods.push({ userId: user.id, type: "email", identifier: user.email.toLowerCase().trim() });
+        methods.push({
+          userId: user.id,
+          type: "email",
+          identifier: user.email.toLowerCase().trim(),
+          displayId: user.email.toLowerCase().trim(),
+        });
         signInMethodCount--;
       }
 
       for (let j = 0; j < signInMethodCount; j++) {
         const type = faker.helpers.arrayElement(["email", "google"]) as "email" | "google";
         const identifier = type === "email" ? faker.internet.email().toLowerCase().trim() : faker.internet.email().toLowerCase().trim();
-        methods.push({ userId: user.id, type, identifier });
+        methods.push({ userId: user.id, type, identifier, displayId: identifier });
       }
       await gState.prisma.userSignInMethod.createMany({
         data: methods.map(method => ({ ...method, publicId: generatePublicId<"UserSignInMethod">() })),

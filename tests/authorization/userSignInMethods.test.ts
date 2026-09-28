@@ -34,9 +34,9 @@ const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 });
 const target = createAuthorizationTestUser("normal", { id: 10, email: "contact@test.invalid" });
 const other = createAuthorizationTestUser("normal", { id: 11, email: target.email });
 const methods = [
-    { id: 100, publicId: xUserSignInMethod.parseIdentity("SignInMethod0001"), createdAt: new Date("2026-01-01"), userId: target.id, type: "email", identifier: "first@test.invalid" },
-    { id: 101, publicId: xUserSignInMethod.parseIdentity("SignInMethod0002"), createdAt: new Date("2026-01-02"), userId: target.id, type: "email", identifier: "second@test.invalid" },
-    { id: 102, publicId: xUserSignInMethod.parseIdentity("SignInMethod0003"), createdAt: new Date("2026-01-03"), userId: target.id, type: "google", identifier: "GoogleSubject123" },
+    { id: 100, publicId: xUserSignInMethod.parseIdentity("SignInMethod0001"), createdAt: new Date("2026-01-01"), userId: target.id, type: "email", identifier: "first@test.invalid", displayId: null },
+    { id: 101, publicId: xUserSignInMethod.parseIdentity("SignInMethod0002"), createdAt: new Date("2026-01-02"), userId: target.id, type: "email", identifier: "second@test.invalid", displayId: null },
+    { id: 102, publicId: xUserSignInMethod.parseIdentity("SignInMethod0003"), createdAt: new Date("2026-01-03"), userId: target.id, type: "google", identifier: "GoogleSubject123", displayId: null },
 ];
 const adminContext = () => createAuthorizationTestContext(admin);
 const publicContext = () => createAuthorizationTestContext(null);
@@ -69,29 +69,77 @@ describe("multiple sign-in resolution", () => {
     it("recognizes an established Google subject without requiring an unchanged or verified email", async () => {
         const result = await resolveGoogleSignIn({ id: methods[2]!.identifier, displayName: "Changed" }, publicContext());
         expect(result).toMatchObject({ user: { id: target.id }, created: false });
+        expect(authorizationTestDb.snapshot("userSignInMethod")).toEqual(methods);
+    });
+
+    it("records the latest verified address for the matching Google subject", async () => {
+        await authorizationTestDb.getDelegate("userSignInMethod").create({
+            data: {
+                id: 103, publicId: xUserSignInMethod.parseIdentity("SignInMethod0004"), userId: target.id,
+                type: "google", identifier: "SecondGoogleSubject", displayId: "second@example.com",
+                createdAt: new Date("2026-01-04"),
+            }
+        });
+        const profile = { id: methods[2]!.identifier, emails: [{ value: "  Linked@Example.COM ", verified: true }] };
+        await resolveGoogleSignIn(profile, publicContext());
+        expect(authorizationTestDb.snapshot("userSignInMethod")[2]).toMatchObject({
+            identifier: profile.id, displayId: "linked@example.com",
+        });
+        expect(authorizationTestDb.snapshot("user").find(row => row.id === target.id)?.email).toBe(target.email);
+        expect(authorizationTestDb.snapshot("userSignInMethod")[3]?.displayId).toBe("second@example.com");
+        expect(authorizationTestDb.snapshot("userSignInMethod")[0]?.displayId).toBeNull();
+
+        await resolveGoogleSignIn({ id: profile.id, emails: [{ value: "unverified@example.com", verified: false }] }, publicContext());
+        expect(authorizationTestDb.snapshot("userSignInMethod")[2]?.displayId).toBe("linked@example.com");
+
+        await resolveGoogleSignIn({ id: profile.id, emails: [{ value: "new@example.com", verified: true }] }, publicContext());
+        expect(authorizationTestDb.snapshot("userSignInMethod")[2]?.displayId).toBe("new@example.com");
+    });
+
+    it("records the verified address when claiming a first-install Google placeholder", async () => {
+        await authorizationTestDb.getDelegate("userSignInMethod").create({
+            data: {
+                id: 103, publicId: xUserSignInMethod.parseIdentity("SignInMethod0004"), userId: admin.id,
+                type: "google", identifier: `GOOGLE_FIRST_TIME_INSTALL_USER_EMAIL:${admin.email}`,
+                displayId: null, createdAt: new Date("2026-01-04"),
+            }
+        });
+        const result = await resolveGoogleSignIn({
+            id: "claimed-subject", emails: [{ value: admin.email, verified: true }],
+        }, publicContext());
+        expect(result).toMatchObject({ user: { id: admin.id }, created: false });
+        expect(authorizationTestDb.snapshot("userSignInMethod")[3]).toMatchObject({
+            identifier: "claimed-subject", displayId: admin.email,
+        });
     });
 
     it("does not auto-link an unknown Google subject through a reserved email", async () => {
-        await expect(resolveGoogleSignIn({ id: "new-subject", displayName: "New",
-            emails: [{ value: methods[0]!.identifier, verified: true }] }, publicContext())).rejects.toThrow("already assigned");
+        await expect(resolveGoogleSignIn({
+            id: "new-subject", displayName: "New",
+            emails: [{ value: methods[0]!.identifier, verified: true }]
+        }, publicContext())).rejects.toThrow("already assigned");
         expect(authorizationTestDb.snapshot("userSignInMethod")).toEqual(methods);
         expect(authorizationTestDb.snapshot("user")).toHaveLength(4);
     });
 
     it("creates email and subject ownership together for a new Google signup", async () => {
-        const result = await resolveGoogleSignIn({ id: "new-subject", displayName: "New",
-            emails: [{ value: "new@test.invalid", verified: true }] }, publicContext());
+        const result = await resolveGoogleSignIn({
+            id: "new-subject", displayName: "New",
+            emails: [{ value: "new@test.invalid", verified: true }]
+        }, publicContext());
         expect(result.created).toBe(true);
         expect(authorizationTestDb.snapshot("userSignInMethod").filter(row => row.userId === result.user.id))
             .toEqual(expect.arrayContaining([
                 expect.objectContaining({ type: "email", identifier: "new@test.invalid" }),
-                expect.objectContaining({ type: "google", identifier: "new-subject" }),
+                expect.objectContaining({ type: "google", identifier: "new-subject", displayId: "new@test.invalid" }),
             ]));
     });
 
     it("requires a verified address for a new Google signup", async () => {
-        await expect(resolveGoogleSignIn({ id: "new-subject", displayName: "New",
-            emails: [{ value: "new@test.invalid", verified: false }] }, publicContext())).rejects.toThrow();
+        await expect(resolveGoogleSignIn({
+            id: "new-subject", displayName: "New",
+            emails: [{ value: "new@test.invalid", verified: false }]
+        }, publicContext())).rejects.toThrow();
         expect(authorizationTestDb.snapshot("user")).toHaveLength(4);
     });
 
@@ -100,8 +148,10 @@ describe("multiple sign-in resolution", () => {
         expect(authorizationTestDb.snapshot("userSignInMethod")).toEqual(methods);
         expect(authorizationTestDb.snapshot("token")).toEqual([]);
         await expect(authenticateUser(methods[0]!.identifier, validPassword)).rejects.toThrow();
-        await expect(resolveGoogleSignIn({ id: methods[2]!.identifier, displayName: "New",
-            emails: [{ value: "changed@test.invalid", verified: true }] }, publicContext())).rejects.toThrow();
+        await expect(resolveGoogleSignIn({
+            id: methods[2]!.identifier, displayName: "New",
+            emails: [{ value: "changed@test.invalid", verified: true }]
+        }, publicContext())).rejects.toThrow();
         await expect(invokeResolver(signup, { email: methods[0]!.identifier, name: "New", password: validPassword }, publicContext()))
             .rejects.toThrow("already assigned");
         expect(authorizationTestDb.snapshot("user")).toHaveLength(4);
@@ -143,15 +193,17 @@ describe("Sysadmin sign-in maintenance", () => {
     });
 
     it("lists methods through the admin view without exposing storage IDs or the password hash", async () => {
-        await authorizationTestDb.getDelegate("userSignInMethod").create({ data: {
-            publicId: xUserSignInMethod.parseIdentity("SignInOther00001"), userId: other.id,
-            type: "google", identifier: "OtherUserSubject", createdAt: new Date("2026-01-04"),
-        } });
+        await authorizationTestDb.getDelegate("userSignInMethod").create({
+            data: {
+                publicId: xUserSignInMethod.parseIdentity("SignInOther00001"), userId: other.id,
+                type: "google", identifier: "OtherUserSubject", displayId: "other@example.com", createdAt: new Date("2026-01-04"),
+            }
+        });
         const result = await invokeResolver(getUserSignInMethods, { userId: target.publicId }, adminContext());
         expect(result.methods).toHaveLength(3);
         expect(result.hasPassword).toBe(true);
         expect(JSON.stringify(result)).not.toContain(hashedPassword);
-        expect(result.methods).toEqual(methods.map(({ publicId, type, identifier, createdAt }) => ({ publicId, type, identifier, createdAt })));
+        expect(result.methods).toEqual(methods.map(({ publicId, type, identifier, displayId, createdAt }) => ({ publicId, type, identifier, displayId, createdAt })));
         expectTypeOf(result.methods[0]!.publicId).toEqualTypeOf<UserSignInMethodPublicId>();
     });
 

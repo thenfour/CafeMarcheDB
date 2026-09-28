@@ -33,7 +33,7 @@ Permission.view_user_contact_info, Permission.manage_users, Permission.deactivat
 const admin = createAuthorizationTestUser("bandAdmin", { id: 801, permissions });
 const target = {
     ...createAuthorizationTestUser("normal", { id: 802, isDeleted: true }),
-    signInMethods: [{ id: 1, type: "google", identifier: "existing-google-identity" }], hashedPassword: "existing-password-hash"
+    signInMethods: [{ id: 1, type: "google", identifier: "existing-google-identity", displayId: null }], hashedPassword: "existing-password-hash"
 };
 
 describe("user recovery", () => {
@@ -122,13 +122,23 @@ describe("user recovery", () => {
         if (canRecover) {
             const recovered = await invokeResolver(db3queries, forgeDb3Query("User", { includeDeleted: true }), ctx);
             expect(recovered.items).toContainEqual(expect.objectContaining({ publicId: target.publicId, isDeleted: true }));
-            await expect(invokeResolver(getUserExtraInfo, { userId: target.publicId }, ctx)).resolves
-                .toEqual({ signinMethods: ["google"] });
+            await expect(invokeResolver(getUserExtraInfo, { userId: target.publicId }, ctx)).rejects.toThrow();
         } else {
             await expect(invokeResolver(db3queries, forgeDb3Query("User", { includeDeleted: true }), ctx)).rejects.toThrow();
             await expect(invokeResolver(getUserExtraInfo, { userId: target.publicId }, ctx)).rejects.toThrow();
             await expect(invokeResolver(getUserManagementCapabilities, { userId: target.publicId }, ctx)).rejects.toThrow();
         }
+    });
+
+    it("lets a Sysadmin view a deactivated user's sign-in methods", async () => {
+        const sysadmin = createAuthorizationTestUser("sysadmin", { id: 803 });
+        authorizationTestDb.reset({ user: [sysadmin, target] });
+
+        await expect(invokeResolver(
+            getUserExtraInfo,
+            { userId: target.publicId },
+            createAuthorizationTestContext(sysadmin),
+        )).resolves.toEqual({ signinMethods: [{ type: "google", displayId: null }] });
     });
 
     it("keeps generic user recovery disabled", async () => {

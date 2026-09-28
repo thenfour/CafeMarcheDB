@@ -26,6 +26,7 @@ export const UserListItem = (props: UserListItemProps) => {
     const dashboardContext = useDashboardContext();
     const canViewContactInfo = dashboardContext.isAuthorized(Permission.view_user_contact_info);
     const canManageUsers = dashboardContext.isAuthorized(Permission.manage_users);
+    const canViewSignInMethods = dashboardContext.isAuthorized(Permission.sysadmin);
     return <GenericSearchListItem<EnrichedVerboseUser>
         index={props.index}
         item={props.user}
@@ -57,7 +58,7 @@ export const UserListItem = (props: UserListItemProps) => {
                         >
                             {props.user.role.name}
                         </CMChip>}
-                    {canManageUsers && <Suspense>
+                    {canViewSignInMethods && <Suspense>
                         <CMDivider />
                         <UserIdentityIndicator userId={props.user.publicId} />
                     </Suspense>}

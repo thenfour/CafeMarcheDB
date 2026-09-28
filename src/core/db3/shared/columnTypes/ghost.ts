@@ -1,11 +1,11 @@
 
 import { TAnyModel } from "@/shared/rootroot";
+import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import type { z } from "zod";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
-import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import {
     type DB3AuthSpec, type DB3ReadPresenceForAuthSpec,
     FieldBase,
@@ -13,7 +13,6 @@ import {
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
 } from "../db3core";
-import { type UserWithRolesPayload } from "../schema/userPayloads";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // field types

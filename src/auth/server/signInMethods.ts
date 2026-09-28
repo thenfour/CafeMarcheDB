@@ -20,7 +20,12 @@ export class SignInMethodConflictError extends Error {
     }
 }
 
-export const signInMethodWhere = (method: SignInMethodInput) => ({ type: method.type, identifier: method.identifier });
+export const signInMethodWhere = (method: SignInMethodInput) => (
+    {
+        type: method.type,
+        identifier: method.identifier,
+    }
+);
 
 // Resolve ownership without filtering inactive users out of the lookup.
 export const findSignInUser = async (
@@ -110,13 +115,25 @@ export const requireSignInMethodTargetByPublicId = async (db: TransactionalPrism
     return user;
 };
 
-export const addSignInMethod = async (db: TransactionalPrismaClient, userId: number, method: SignInMethodInput) => {
+export const addSignInMethod = async (
+    db: TransactionalPrismaClient,
+    userId: number,
+    method: SignInMethodInput,
+    displayId: string,
+) => {
     if (await db.userSignInMethod.findFirst({ where: signInMethodWhere(method) })) {
         throw new SignInMethodConflictError();
     }
     try {
         return await signInMethodServer.createWithPublicId(async publicId => (
-            db.userSignInMethod.create({ data: { userId, ...method, publicId } })
+            db.userSignInMethod.create({
+                data: {
+                    userId,
+                    ...method,
+                    publicId,
+                    displayId,
+                }
+            })
         ));
     } catch (error) {
         // P2002 = "Unique constraint failed on the {constraint}"

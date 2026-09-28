@@ -1,18 +1,17 @@
 // consider unifying with the normal search api for consistency and simplicity.
 
 import { Permission } from "@/shared/permissions";
+import { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
+import { PermissionSet } from "@/src/auth/shared/PermissionSet";
+import { GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "@/src/core/db3/server/db3Helpers";
 import { ServerApi } from "@/src/server/serverApi";
-import db, { Prisma } from "db";
+import db from "db";
 import { toSorted } from "shared/arrayUtils";
 import { CalculateMatchStrength, CalculateMatchStrengthForTags, MakeWhereCondition, MakeWhereConditionForTags, ParseQuickFilter, ParseQuickFilterResult, QuickSearchItemMatch, QuickSearchItemType, SearchableTableFieldSpec } from "shared/quickFilter";
 import { slugify } from "shared/rootroot";
 import { IsNullOrWhitespace } from "shared/utils";
-import { GetPublicRole, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression2 } from "src/core/db3/shared/db3Helpers";
-import { UserWithRolesPayload } from "../shared/schema/userPayloads";
-import { loadEffectivePermissions } from "@/src/auth/server/effectivePermissions";
-import { PermissionSet } from "@/src/auth/shared/PermissionSet";
-import { xInstrument } from "../shared/schema/instrument";
 import { xEvent } from "../shared/schema/event";
+import { xInstrument } from "../shared/schema/instrument";
 import { xSong } from "../shared/schema/song";
 import { xUser } from "../shared/schema/user";
 import { xWikiPage } from "../shared/schema/wiki";
@@ -25,10 +24,11 @@ interface QuickSearchPlugin<TItemType extends QuickSearchItemType> {
     // return true if this plugin can handle the type of item.
     matchesTypeFilter: (type: string) => boolean;
     getMatches: (args: {
-        user: UserWithRolesPayload,
-        permissionSet: Readonly<PermissionSet>,
+        //user: UserWithRolesPayload,
+        //permissionSet: Readonly<PermissionSet>,
         query: ParseQuickFilterResult,
-        publicRole: Prisma.RoleGetPayload<{ include: { permissions: true } }>
+        auth: CMServerAuthorization,
+        //publicRole: Prisma.RoleGetPayload<{ include: { permissions: true } }>
     }) => Promise<QuickSearchItemMatch<TItemType>[]>;
 };
 
@@ -40,8 +40,8 @@ const IsAuthorized = (permissionSet: Readonly<PermissionSet>, permission: Permis
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 const InstrumentQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.instrument> = {
     matchesTypeFilter: (type: string) => type === QuickSearchItemType.instrument || type === "i",
-    getMatches: async ({ query, permissionSet }) => {
-        if (!IsAuthorized(permissionSet, Permission.login)) return [];
+    getMatches: async ({ query, auth }) => {
+        if (!auth.hasPermission(Permission.login)) return [];
 
         const instrumentFields: SearchableTableFieldSpec[] = [
             { fieldName: "publicId", fieldType: "string", strengthMultiplier: 1 },
@@ -72,7 +72,7 @@ const InstrumentQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.instrum
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 const SongQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.song> = {
     matchesTypeFilter: (type: string) => type === QuickSearchItemType.song || type == "s",
-    getMatches: async ({ user, query, publicRole, permissionSet }) => {
+    getMatches: async ({ query, auth }) => {
         const songFields: SearchableTableFieldSpec[] = [
             { fieldName: "id", fieldType: "pk", strengthMultiplier: 1 },
             { fieldName: "aliases", fieldType: "string", strengthMultiplier: 0.7 },
@@ -80,7 +80,7 @@ const SongQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.song> = {
             { fieldName: "description", fieldType: "string", strengthMultiplier: 0.5 },
         ];
 
-        if (!IsAuthorized(permissionSet, Permission.view_songs)) {
+        if (!auth.hasPermission(Permission.view_songs)) {
             return [];
         }
 
@@ -90,11 +90,9 @@ const SongQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.song> = {
             where: {
                 AND: [
                     GetSoftDeleteWhereExpression(),
-                    GetUserVisibilityWhereExpression2({
-                        user,
-                        userRole: user.role,
-                        publicRole,
+                    GetUserVisibilityWhereExpression({
                         createdByUserIDColumnName: "createdByUserId",
+                        auth,
                     }),
                     {
                         OR: [
@@ -171,9 +169,9 @@ const SongQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.song> = {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 const EventQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.event> = {
     matchesTypeFilter: (type: string) => type === QuickSearchItemType.event || type == "e",
-    getMatches: async ({ user, query, publicRole, permissionSet }) => {
+    getMatches: async ({ query, auth }) => {
 
-        if (!IsAuthorized(permissionSet, Permission.view_events)) {
+        if (!auth.hasPermission(Permission.view_events)) {
             return [];
         }
 
@@ -194,10 +192,8 @@ const EventQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.event> = {
             where: {
                 AND: [
                     GetSoftDeleteWhereExpression(),
-                    GetUserVisibilityWhereExpression2({
-                        user,
-                        userRole: user.role,
-                        publicRole,
+                    GetUserVisibilityWhereExpression({
+                        auth,
                         createdByUserIDColumnName: "createdByUserId",
                     }),
                     {
@@ -292,9 +288,9 @@ const EventQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.event> = {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 const UserQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.user> = {
     matchesTypeFilter: (type: string) => type === QuickSearchItemType.user || type == "u",
-    getMatches: async ({ user, query, publicRole, permissionSet }) => {
+    getMatches: async ({ query, auth }) => {
 
-        if (!IsAuthorized(permissionSet, Permission.search_users)) {
+        if (!auth.hasPermission(Permission.search_users)) {
             return [];
         }
 
@@ -336,9 +332,9 @@ const UserQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.user> = {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 const WikiPageQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.wikiPage> = {
     matchesTypeFilter: (type: string) => type === QuickSearchItemType.wikiPage || type == "w",
-    getMatches: async ({ user, query, publicRole, permissionSet }) => {
+    getMatches: async ({ query, auth }) => {
 
-        if (!IsAuthorized(permissionSet, Permission.search_wiki_pages)) {
+        if (!auth.hasPermission(Permission.search_wiki_pages)) {
             return [];
         }
 
@@ -360,10 +356,8 @@ const WikiPageQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.wikiPage>
                             { namespace: null },
                         ]
                     },
-                    GetUserVisibilityWhereExpression2({
-                        user,
-                        userRole: user.role,
-                        publicRole,
+                    GetUserVisibilityWhereExpression({
+                        auth,
                         createdByUserIDColumnName: "createdByUserId",
                     }),
                     {
@@ -421,10 +415,10 @@ const WikiPageQuickSearchPlugin: QuickSearchPlugin<QuickSearchItemType.wikiPage>
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-export async function getQuickSearchResults(keyword__: string, user: UserWithRolesPayload, allowedItemTypes: QuickSearchItemType[]): Promise<QuickSearchItemMatch[]> {
+export async function getQuickSearchResults(keyword__: string, auth: CMServerAuthorization, allowedItemTypes: QuickSearchItemType[]): Promise<QuickSearchItemMatch[]> {
 
-    const publicRole = await GetPublicRole();
-    const permissionSet = await loadEffectivePermissions(db, user);
+    //const publicRole = await GetPublicRole();
+    //const permissionSet = await loadEffectivePermissions(db, user);
     const query = ParseQuickFilter(keyword__);
     const itemsToReturn = 15;
 
@@ -441,7 +435,10 @@ export async function getQuickSearchResults(keyword__: string, user: UserWithRol
         .filter(plugin => plugin !== undefined)
         .filter(plugin => !query.typeFilter || plugin.matchesTypeFilter(query.typeFilter));
 
-    let allCalls = pluginsToUse.map(plugin => plugin.getMatches({ user, query, publicRole, permissionSet }));
+    let allCalls = pluginsToUse.map(plugin => plugin.getMatches({
+        query,
+        auth,
+    }));
     let ret = (await Promise.all(allCalls))
         .flat(1)
         .filter(s => s.matchStrength > 0);
