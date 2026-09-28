@@ -7,11 +7,11 @@ import { ErrorComponent } from "@blitzjs/next"
 export default function Page404() {
   const statusCode = 404
   const title = "This page could not be found"
-  const titleCh = <>{statusCode}: {title}</>;
+  const pageTitle = `${statusCode}: ${title}`
   return (
     <>
       <Head>
-        <title>{titleCh}</title>
+        <title>{pageTitle}</title>
       </Head>
       <ErrorComponent statusCode={statusCode} title={title} />
     </>
