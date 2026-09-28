@@ -1,4 +1,4 @@
-import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
 import { wikiTransaction } from "../server/wikiTransaction";
 // acquireLockOnWikiPage
 
@@ -8,7 +8,6 @@ import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
 import * as db3 from "src/core/db3/db3";
 import { authorizeAndProjectViewDto } from "src/core/db3/server/db3QueryCore";
-import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
 import { GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, TAcquireLockOnWikiPageArgs, WikiPageApiPayload, wikiParseCanonicalWikiPath, ZTAcquireLockOnWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
 import { GetDefaultVisibilityPermission } from "../../db3/shared/db3Helpers";
 import { GetAuthorizedTableReadWhere } from "../../db3/server/db3ReadPolicy";
@@ -22,8 +21,8 @@ export default resolver.pipe(
     resolver.zod(ZTAcquireLockOnWikiPageArgs),
     async (args: TAcquireLockOnWikiPageArgs, ctx: AuthenticatedCtx): Promise<GetWikiPageUpdatabilityResult> => {
 
-        const currentUser = (await getCurrentUserCore(ctx))!;
-        const publicData = await loadAuthorization(ctx.session);
+        const auth = (await loadAuthorization(ctx.session)).requireUser();
+        const currentUser = auth.user;
 
         return await wikiTransaction(async (dbt) => {
 
@@ -31,7 +30,7 @@ export default resolver.pipe(
             const currentPageRow = await dbt.wikiPage.findFirst({
                 where: await GetAuthorizedTableReadWhere({
                     table: xWikiPage,
-                    currentUser,
+                    auth: auth,
                     where: { slug: args.canonicalWikiPath },
                 }),
                 ...wikiPageApiSelection,
@@ -40,14 +39,14 @@ export default resolver.pipe(
                 ? authorizeAndProjectViewDto(
                     db3.wikiPageApiView,
                     currentPageRow,
-                    publicData,
+                    auth,
                     "mutation:WikiPage.acquireLock",
                 )
                 : null;
 
             const updatability = GetWikiPageUpdatability({
                 currentPage: currentPage,
-                currentUserId: db3.xUser.parseIdentity(currentUser.publicId),
+                currentUserPublicId: auth.userPublicId,
                 baseRevisionId: args.baseRevisionId,
                 baseContentVersion: args.baseContentVersion,
                 userClientLockId: args.lockId,
@@ -79,7 +78,7 @@ export default resolver.pipe(
                 currentPage = authorizeAndProjectViewDto(
                     db3.wikiPageApiView,
                     createdPage,
-                    publicData,
+                    auth,
                     "mutation:WikiPage.acquireLock.create",
                 );
                 if (!currentPage) throw new Error("Created wiki page was not authorized for reading.");
@@ -102,13 +101,13 @@ export default resolver.pipe(
             currentPage = authorizeAndProjectViewDto(
                 db3.wikiPageApiView,
                 updatedPage,
-                publicData,
+                auth,
                 "mutation:WikiPage.acquireLock.update",
             );
             if (!currentPage) throw new Error("Updated wiki page was not authorized for reading.");
 
             return {
-                ...GetWikiPageUpdatability({ currentPage, currentUserId: db3.xUser.parseIdentity(currentUser.publicId),
+                ...GetWikiPageUpdatability({ currentPage, currentUserPublicId: auth.userPublicId,
                     userClientLockId: args.lockId, baseRevisionId: args.baseRevisionId,
                     baseContentVersion: args.baseContentVersion }),
             }

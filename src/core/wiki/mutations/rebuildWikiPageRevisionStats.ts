@@ -1,7 +1,8 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { PrismaClient } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
+import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
 import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
@@ -56,7 +57,7 @@ export default resolver.pipe(
 
         await RegisterChange({
             action: ChangeAction.delete,
-            ctx,
+            auth: await loadAuthorization(ctx.session),
             changeContext,
             pkid: -1,
             table: "WikiPageRevision",

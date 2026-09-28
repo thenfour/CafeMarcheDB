@@ -2,6 +2,7 @@ import { Ctx } from "blitz";
 import { ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
 import { recordAuthenticatedClientAction } from "src/core/db3/server/recordActionServer";
 import { api } from "src/blitz-server";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 
 // This endpoint receives telemetry/analytics events via keepalive POST requests.
 
@@ -27,7 +28,7 @@ export default api(async (req, res, ctx: Ctx) => {
 
     // Store the telemetry event in the database using shared logic
     try {
-        await recordAuthenticatedClientAction(parsedEvent.data, ctx);
+        await recordAuthenticatedClientAction(parsedEvent.data, await loadAuthorization(ctx.session));
     } catch (e) {
         console.error("[Telemetry] Failed to record action", e);
         return res.status(500).json({ error: "Failed to record telemetry event" });

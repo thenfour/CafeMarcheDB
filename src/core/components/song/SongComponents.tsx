@@ -1,4 +1,4 @@
-import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 
 import { TAnyModel } from '@/shared/rootroot';
 import HomeIcon from '@mui/icons-material/Home';
@@ -159,13 +159,13 @@ export const SongDescriptionEditor = (props: SongDescriptionEditorProps) => {
 export const SongDescriptionControl = ({ song, refetch, readonly }: { song: SongWithDescription, refetch: () => void, readonly: boolean }) => {
     const [editing, setEditing] = React.useState<boolean>(false);
 
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
 
 
     const authorized = db3.xSong.authorizeColumnForEdit({
         model: null,
         columnName: "description",
-        publicData,
+        auth: auth,
         fallbackOwnerId: null,
         fallbackOwnerPublicId: song.createdByUser?.publicId ?? null,
     });
@@ -208,7 +208,7 @@ export interface SongCreditEditButtonProps {
 export const SongCreditEditButton = ({ creditsTableClient, creditsCommands, ...props }: SongCreditEditButtonProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
 
     const handleConfirmedDelete = (api: DB3EditRowButtonAPI) => {
         void recordFeature({
@@ -246,7 +246,7 @@ export const SongCreditEditButton = ({ creditsTableClient, creditsCommands, ...p
 
     const editAuthorized = db3.xSongCredit.authorizeRowForEdit({
         model: props.value,
-        publicData,
+        auth: auth,
     });
 
     if (!editAuthorized) return null;
@@ -268,7 +268,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const user = useCurrentUser()[0]!;
 
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
@@ -318,7 +318,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
     newObj.year = `${(new Date()).getFullYear()}`;
 
     const insertAuthorized = db3.xSongCredit.authorizeRowBeforeInsert({
-        publicData,
+        auth: auth,
     });
 
     const refetch = () => {

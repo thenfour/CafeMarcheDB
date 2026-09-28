@@ -6,9 +6,9 @@ import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
-import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
+import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import {
-    type DB3AuthSpec, type DB3FieldPrismaMember, type DB3ForeignSingleReferenceField, type DB3IdentityOf, type DB3PrismaPayloadOf, type DB3ReadPresenceForAuthSpec, type DB3RegisteredTableID, type DB3RowMode, ErrorValidateAndParseResult,
+    type DB3AuthSpec, type DB3FacetInfoArgs, type DB3FieldPrismaMember, type DB3ForeignSingleReferenceField, type DB3IdentityOf, type DB3PrismaPayloadOf, type DB3ReadPresenceForAuthSpec, type DB3RegisteredTableID, type DB3RowMode, ErrorValidateAndParseResult,
     FieldBase, GetTableById, makeNullableReadTransportSchema, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
@@ -194,18 +194,18 @@ export class ForeignSingleField<
 
     getOverallWhereClause = (): TAnyModel | boolean => false;
 
-    getRowVisibilityWhereClause = (publicData: DB3ServerAuthorization, includeDeleted: boolean): TAnyModel | undefined => {
+    getRowVisibilityWhereClause = (auth: CMServerAuthorization, includeDeleted: boolean): TAnyModel | undefined => {
         if (!this.requireVisibleTarget) return undefined;
         const where = this.getForeignTableSchema().CalculateWhereClause({
-            publicData, includeDeleted, filterModel: { items: [] },
+            auth: auth, includeDeleted, filterModel: { items: [] },
         });
         return { [this.member]: { is: where || {} } };
     };
 
-    ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3ServerAuthorization, includeDeleted: boolean) => {
+    ApplyIncludeFiltering = async (include: TAnyModel, auth: CMServerAuthorization, includeDeleted: boolean) => {
         const targetArgs = include[this.member];
         if (!targetArgs) return;
-        await this.getForeignTableSchema().ApplyIncludeFiltering(targetArgs.include || targetArgs.select, publicData, includeDeleted);
+        await this.getForeignTableSchema().ApplyIncludeFiltering(targetArgs.include || targetArgs.select, auth, includeDeleted);
     };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
@@ -351,7 +351,7 @@ export class ForeignSingleField<
         };
         return map[crit.behavior]();
     };
-    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => {
+    SqlGetFacetInfoQuery = ({ auth, filteredItemsQueryExcludingThisCriterion }: DB3FacetInfoArgs): SearchResultsFacetQuery | null => {
 
         const filteredQuery = filteredItemsQueryExcludingThisCriterion;
 
@@ -395,7 +395,7 @@ export class ForeignSingleField<
             inner join ${this.localTableSpec.tableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the statusId field
             right join ${foreignTable} as FT on FT.${foreignSchema.pkMember} = P.${this.fkidMember}            -- like eventStatus
         where
-            ${foreignSchema.SqlGetVisFilterExpression(currentUser, "FT")} -- account for delete, visibility
+            ${foreignSchema.SqlGetVisFilterExpression({ auth, tableAlias: "FT" })} -- account for delete, visibility
         GROUP BY 
             FT.${foreignSchema.pkMember}
         order by

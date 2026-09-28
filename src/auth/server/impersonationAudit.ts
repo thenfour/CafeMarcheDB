@@ -1,5 +1,6 @@
 import type { Ctx } from "@blitzjs/next";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
+import { loadAuthorization } from "./serverAuthorization";
 
 type ImpersonationAuditEvent = "start" | "stop";
 
@@ -29,7 +30,7 @@ export const registerImpersonationAudit = async ({
             impersonatedByUserId: event === "start" ? null : originalActorUserId,
         },
         newValues: { impersonatedByUserId },
-        ctx,
+        auth: await loadAuthorization(ctx.session),
         actorUserId: originalActorUserId,
         options: { dontCalculateChanges: true },
     });

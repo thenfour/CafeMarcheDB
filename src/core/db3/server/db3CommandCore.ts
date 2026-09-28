@@ -11,8 +11,6 @@ import type {
     DB3CommandRequest,
     DB3IdentityOf
 } from "../db3";
-import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
-import type { DB3ServerAuthorization } from "./db3ServerAuthorization";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import {
     CallMutateEventHooks,
@@ -22,6 +20,7 @@ import {
     updateImpl,
 } from "./db3mutationCore";
 import { resolvePublicForeignIds, resolvePublicId } from "./db3PublicIds";
+import { CMServerAuthorization, loadAuthorization } from "@/src/auth/server/serverAuthorization";
 
 export class DB3CommandError extends Error {
     constructor(message: string) {
@@ -63,7 +62,7 @@ export interface DB3CommandRowService {
 }
 
 export interface DB3CommandExecutionContext {
-    readonly authorization: DB3ServerAuthorization;
+    readonly authorization: CMServerAuthorization;
     readonly transaction: TransactionalPrismaClient;
     readonly rowServices: DB3CommandRowService;
 }
@@ -99,7 +98,7 @@ export function defineCommandHandler<TCommand extends AnyDB3Command>(
 async function resolveEntityIdentity<TEntity extends AnyDB3Table>(
     entity: TEntity,
     identity: DB3IdentityOf<TEntity>,
-    authorization: DB3ServerAuthorization,
+    authorization: CMServerAuthorization,
     transactionalDb: TransactionalPrismaClient,
 ): Promise<number | string> {
     if (!entity.publicIdMember) return identity;
@@ -111,8 +110,7 @@ async function resolveEntityIdentity<TEntity extends AnyDB3Table>(
 
 // creates wrappers around the internal `*Impl` functions; more consistent and type-aware.
 function createCommandRowServices(
-    ctx: AuthenticatedCtx,
-    authorization: DB3ServerAuthorization,
+    authorization: CMServerAuthorization,
     transactionalDb: TransactionalPrismaClient,
 ): DB3CommandRowService {
     return {
@@ -123,7 +121,7 @@ function createCommandRowServices(
                 authorization,
                 transactionalDb,
             );
-            return insertImpl<TAnyModel>(entity, resolvedValues, ctx, transactionalDb);
+            return insertImpl<TAnyModel>(entity, resolvedValues, authorization, transactionalDb);
         },
 
         update: async (entity, identity, values) => {
@@ -146,7 +144,7 @@ function createCommandRowServices(
                 entity,
                 resolvedIdentity,
                 resolvedValues,
-                ctx,
+                authorization,
                 transactionalDb,
             )).newModel;
         },
@@ -161,7 +159,7 @@ function createCommandRowServices(
             if (typeof resolvedIdentity !== "number") {
                 throw new DB3CommandError(`Resolved identity for ${entity.tableID} is not numeric.`);
             }
-            await deleteImpl(entity, resolvedIdentity, ctx, deleteType, transactionalDb);
+            await deleteImpl(entity, resolvedIdentity, authorization, deleteType, transactionalDb);
         },
 
         requireVisible: async (entity, identity) => {
@@ -183,7 +181,7 @@ function createCommandRowServices(
             const authorized = entity.authorizeAndSanitize({
                 contextDesc: `command reference:${entity.tableID}`,
                 model,
-                publicData: authorization,
+                auth: authorization,
                 rowMode: "view",
                 includeDeleted: false,
                 fallbackOwnerId: null,
@@ -216,9 +214,9 @@ export async function executeDB3Command(
             `Command handler '${handler.command.commandID}' cannot execute '${request.commandID}'.`,
         );
     }
-    const authorization = await loadAuthorization(ctx.session);
+    const authorization = await (await loadAuthorization(ctx.session)).refresh(transactionalDb);
     const dto = handler.command.parseDto(request.payload);
-    const rowServices = createCommandRowServices(ctx, authorization, transactionalDb);
+    const rowServices = createCommandRowServices(authorization, transactionalDb);
     const result = await handler.execute(dto, {
         authorization,
         transaction: transactionalDb,

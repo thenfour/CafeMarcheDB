@@ -1,4 +1,4 @@
-import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
 import { xWikiPage } from "src/core/db3/shared/schema/wiki";
 // wikiRenewYourLock
@@ -16,8 +16,8 @@ export default resolver.pipe(
     resolver.zod(ZTWikiReleaseYourLockArgs),
     async (args: TWikiReleaseYourLockArgs, ctx: AuthenticatedCtx) => {
 
-        const currentUser = (await getCurrentUserCore(ctx))!;
-        const readable = await GetAuthorizedTableReadWhere({ table: xWikiPage, currentUser });
+        const auth = (await loadAuthorization(ctx.session)).requireUser();
+        const readable = await GetAuthorizedTableReadWhere({ table: xWikiPage, auth });
         const result = await db.wikiPage.updateMany({
             where: {
                 AND: [readable],

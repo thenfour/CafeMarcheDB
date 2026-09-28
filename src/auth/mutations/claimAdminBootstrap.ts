@@ -1,7 +1,7 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthorizationError } from "blitz";
 import db, { Prisma } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import {
     UserWithRolesArgs,
@@ -18,6 +18,7 @@ import {
     recordAdminBootstrapTokenClaim,
 } from "../server/adminBootstrapClaims";
 import { createPublicDataFromDatabase } from "../server/effectivePermissions";
+import { cmauthorize } from "../server/cmResolver";
 
 export const ClaimAdminBootstrapInput = z.object({
     secret: z.string().min(kMinimumAdminBootstrapSecretLength).max(4096),
@@ -37,7 +38,7 @@ const failClaim = (): never => {
 
 export default resolver.pipe(
     resolver.zod(ClaimAdminBootstrapInput),
-    resolver.authorize(Permission.login),
+    cmauthorize({ permission: Permission.login, requireUser: true }),
     async ({ secret }, ctx) => {
         const configuration = getAdminBootstrapConfiguration();
         if (!configuration) throw new AdminBootstrapClaimError();
@@ -107,7 +108,7 @@ export default resolver.pipe(
                     pkid: user.id,
                     oldValues: { isSysAdmin: false },
                     newValues: { isSysAdmin: true },
-                    ctx,
+                    auth: ctx.auth,
                     db: tx,
                 });
 

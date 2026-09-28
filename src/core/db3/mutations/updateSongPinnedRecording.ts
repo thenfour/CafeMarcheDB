@@ -1,4 +1,4 @@
-import { cmauthorize, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthCtxWithUser } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
@@ -15,7 +15,7 @@ const ZArgs = z.object({
 export default resolver.pipe(
     cmauthorize(Permission.login),
     resolver.zod(ZArgs),
-    async (args, ctx: CMAuthenticatedCtx) => {
+    async (args, ctx: CMAuthCtxWithUser) => {
 
         if (!db3.xSong.authorizeTableForEdit(ctx.auth)) {
             throw new mutationCore.DB3MutationAuthorizationError(db3.xSong.tableName, ["pinnedRecordingId"]);
@@ -29,7 +29,7 @@ export default resolver.pipe(
             db3.xSong, args.songId,
             ctx.auth, db,
         );
-        await mutationCore.updateImpl(db3.xSong, songId, fields, ctx);
+        await mutationCore.updateImpl(db3.xSong, songId, fields, ctx.auth);
 
         return args;
     }

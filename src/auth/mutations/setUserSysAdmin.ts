@@ -5,8 +5,9 @@ import {
     ChangeAction,
     CreateChangeContext,
     RegisterChange,
-} from "shared/activityLog";
+} from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
+import { cmauthorize } from "../server/cmResolver";
 import { z } from "zod";
 import { UserPublicIdSchema } from "../schemas";
 import { requireCanManageUser } from "../server/userManagementPolicy";
@@ -19,7 +20,7 @@ export const SetUserSysAdminInput = z.object({
 
 export default resolver.pipe(
     resolver.zod(SetUserSysAdminInput),
-    resolver.authorize(Permission.login),
+    cmauthorize(Permission.login),
     async ({ userId, isSysAdmin }, ctx) => db.$transaction(
         async tx => {
             const [actor, target] = await Promise.all([
@@ -45,7 +46,7 @@ export default resolver.pipe(
                 pkid: target.principal.id,
                 oldValues: { isSysAdmin: target.principal.isSysAdmin },
                 newValues: { isSysAdmin },
-                ctx,
+                auth: ctx.auth,
                 db: tx,
             });
 

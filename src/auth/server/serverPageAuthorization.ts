@@ -3,8 +3,8 @@ import type { Ctx } from "blitz";
 import { Permission } from "shared/permissions";
 import { gSSP } from "src/blitz-server";
 import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
-import { loadAuthorization } from "./requestAuthorization";
 import type { xTable } from "src/core/db3/shared/db3core";
+import { loadAuthorization } from "./serverAuthorization";
 
 export async function isAuthorizedForServerPage(ctx: Ctx, permission: Permission): Promise<boolean> {
     const auth = await loadAuthorization(ctx.session);
@@ -30,8 +30,16 @@ interface LoadAuthorizedPageEntityArgsBase<T> {
 }
 
 type LoadAuthorizedPageEntityArgs<T> = LoadAuthorizedPageEntityArgsBase<T> & (
-    | { identity: number | string; id?: never }
-    | { id: number; identity?: never }
+    | {
+        // by identity (publicly-visible ID)
+        identity: number | string;
+        id?: never
+    }
+    | {
+        // by database identity
+        id: number;
+        identity?: never
+    }
 );
 
 /**
@@ -66,7 +74,7 @@ export async function loadAuthorizedPageEntity<T>(args: LoadAuthorizedPageEntity
     const identityMember = table.publicIdMember ?? table.pkMember;
     const where = await GetAuthorizedTableReadWhere({
         table,
-        currentUser: auth.user,
+        auth,
         where: { [identityMember]: identity },
         includeDeleted,
     });

@@ -1,6 +1,7 @@
 import { Ctx } from "@blitzjs/next";
 import { NextApiRequest, NextApiResponse } from "next";
 import { api } from "src/blitz-server";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import {
     ServeAuthorizedFileDownload,
 } from "src/core/db3/server/fileDownload";
@@ -17,7 +18,7 @@ export const downloadFileRoute = async (
         return;
     }
 
-    await ServeAuthorizedFileDownload(req, res, ctx, storedLeafName);
+    await ServeAuthorizedFileDownload(req, res, await loadAuthorization(ctx.session), storedLeafName);
 };
 
 export default api(downloadFileRoute);

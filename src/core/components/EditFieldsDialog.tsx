@@ -1,4 +1,4 @@
-import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 
 
 
@@ -39,10 +39,10 @@ export const EditFieldsDialogButton = <
 >({ buttonComponent, ...props }: EditFieldsDialogButtonProps<TRowModel, TTableClient>) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
 
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
 
     const authorizedForEdit = props.tableSpec.args.table.authorizeRowForEdit({
-        publicData,
+        auth: auth,
         model: props.initialValue,
     });
 

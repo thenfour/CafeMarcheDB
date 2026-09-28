@@ -5,7 +5,7 @@ import { CoerceToBoolean, isValidURL } from "shared/utils";
 import { z } from "zod";
 import { type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType, type SearchResultsFacetQuery, type SortQueryElements } from "../apiTypes";
 import {
-    type DB3AuthSpec, type DB3MaybeNull, type DB3ReadPresenceForAuthSpec,
+    type DB3AuthSpec, type DB3FacetInfoArgs, type DB3MaybeNull, type DB3ReadPresenceForAuthSpec,
     ErrorValidateAndParseResult, FieldBase, makeNullableReadTransportSchema,
     type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult,
     UndefinedValidateAndParseResult, type ValidateAndParseArgs, type ValidateAndParseResult, xTable
@@ -275,7 +275,7 @@ export class GenericStringField<
         return map[crit.behavior]();
     };
 
-    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => {
+    SqlGetFacetInfoQuery = ({ filteredItemsQueryExcludingThisCriterion }: DB3FacetInfoArgs): SearchResultsFacetQuery | null => {
         // Only support facet queries if explicitly enabled for this field
         if (!this.allowDiscreteCriteria) return null;
 

@@ -19,7 +19,7 @@ export default resolver.pipe(
     resolver.zod(ImpersonateUserInput),
     cmauthorize(Permission.impersonate_user),
     async ({ userId }, ctx) => {
-        const originalActorUserId = ctx.auth.requireUser().id;
+        const originalActorUserId = ctx.auth.requireUser().userId;
 
         // Re-read the actor and effective grants so revocation takes effect
         // before this sensitive operation.
@@ -34,7 +34,7 @@ export default resolver.pipe(
         if (!user) throw new Error("Could not find user id " + userId)
 
         requireCanManageUser({
-            actor: makeUserManagementActor(actor, freshAuth.effectivePermissions),
+            actor: makeUserManagementActor(actor.user, freshAuth),
             target: makeUserManagementTarget(user),
             action: "impersonate",
         })

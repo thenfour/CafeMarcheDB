@@ -26,7 +26,7 @@ export default resolver.pipe(
       : (await findSignInUser(tx, { type: "email", identifier: input.email }, { allowInactive: false }))
     if (user) {
       requireCanManageUser({
-        actor: makeUserManagementActor(auth.requireUser(), auth.effectivePermissions),
+        actor: makeUserManagementActor(auth.requireUser().user, auth),
         target: makeUserManagementTarget(user),
         action: "resetPassword",
       })

@@ -1,3 +1,4 @@
+import { testServerAuthorization } from "tests/support/serverAuthorization";
 import type { EventAttendancePublicId, EventSegmentPublicId, EventSegmentUserResponsePublicId, EventUserResponsePublicId } from "shared/publicId";
 import { Prisma } from "db"
 import { z } from "zod"
@@ -78,7 +79,7 @@ describe("DB3 scalar selection compiler", () => {
   it("derives the finite Event Search relation graph without recursive widening", () => {
     const selection = db3.eventSearchSelection({
       filter: { items: [] },
-      authorization: db3.createDB3Authorization(null, new ServerPermissionSet([])),
+      auth: testServerAuthorization(null, new ServerPermissionSet([])),
     })
     const derived = db3.deriveViewContract(db3.xEvent, selection)
     type FullDto = z.infer<typeof derived.dtoSchema>

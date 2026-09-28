@@ -1,6 +1,6 @@
 import { getPermissionDefinition, isPermission } from "@/shared/permissions";
 
-/** Shared capability checks depend on permission names, never database identities. */
+// client-friendly permission set with only names (no db ids)
 export class PermissionSet {
     private readonly permissionNames: ReadonlySet<string>;
 

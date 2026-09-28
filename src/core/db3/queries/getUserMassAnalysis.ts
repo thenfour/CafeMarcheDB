@@ -1,4 +1,4 @@
-import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthCtx } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { Permission } from "shared/permissions";
@@ -10,7 +10,7 @@ import { xRole, xUser } from "../shared/schema/user";
 export default resolver.pipe(
     resolver.zod(z.object({ userId: UserPublicIdSchema })),
     cmauthorize(Permission.sysadmin),
-    async (args, ctx: CMCtx): Promise<UserMassAnalysisResult> => {
+    async (args, ctx: CMAuthCtx): Promise<UserMassAnalysisResult> => {
         (await ctx.auth.refresh(db)).requirePermission(Permission.sysadmin);
 
         // Intentional read-policy bypass: this administrative dependency report

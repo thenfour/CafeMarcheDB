@@ -1,10 +1,10 @@
 import { isBandTimeZoneSetting, reanchorAllDayEvents } from "src/server/dateTime";
-import type { Ctx } from "@blitzjs/next";
+import type { CMServerAuthorization } from "./serverAuthorization";
 import {
     ChangeAction,
     type ChangeContext,
     RegisterChange,
-} from "shared/activityLog";
+} from "@/src/auth/server/activityLog";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import type { Prisma } from "db";
 import { db3Server } from "src/core/db3/server/db3Server";
@@ -29,7 +29,7 @@ export function validateSettingValue(name: string | undefined, value: string | n
 // callers' fresh permission checks and shared serializable transactions.
 export const writeSettingValue = async (args: {
     db: TransactionalPrismaClient;
-    ctx: Ctx;
+    auth: CMServerAuthorization;
     changeContext: ChangeContext;
     name: string;
     value: string | null | undefined;
@@ -57,7 +57,7 @@ export const writeSettingValue = async (args: {
             table: "setting",
             pkid: oldValue.id,
             oldValues: oldValue,
-            ctx: args.ctx,
+            auth: args.auth,
             db: args.db,
         });
         await refreshBounds();
@@ -77,7 +77,7 @@ export const writeSettingValue = async (args: {
             pkid: oldValue.id,
             oldValues: oldValue,
             newValues: newValue,
-            ctx: args.ctx,
+            auth: args.auth,
             db: args.db,
         });
         await refreshBounds();
@@ -96,7 +96,7 @@ export const writeSettingValue = async (args: {
         table: "setting",
         pkid: newValue.id,
         newValues: newValue,
-        ctx: args.ctx,
+        auth: args.auth,
         db: args.db,
     });
     await refreshBounds();

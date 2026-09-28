@@ -1,6 +1,6 @@
 'use client';
 
-import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import { Box } from "@mui/material";
@@ -565,12 +565,12 @@ export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props
         matchesText: (item, text) => foreignSchema.doesItemExactlyMatchText(item, text),
         useOptions(filterText) {
             const query = useForeignSingleFieldRenderContext({ spec: props.spec, filterText, suspense: false });
-            const publicData = useDB3Authorization();
+            const auth = useClientAuth();
             const { showMessage } = React.useContext(SnackbarContext);
             const canCreate = props.spec.typedSchemaColumn.allowInsertFromString
                 && !!foreignSchema.createInsertModelFromString
                 && !!query.crudCreate
-                && foreignSchema.authorizeRowBeforeInsert({ publicData });
+                && foreignSchema.authorizeRowBeforeInsert({ auth: auth });
             return {
                 ...query,
                 createOption: canCreate ? async text => {

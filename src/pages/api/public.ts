@@ -1,6 +1,6 @@
 // server
 
-import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
 // provide json feed of content for public homepage consumption.
 
 // input: lang

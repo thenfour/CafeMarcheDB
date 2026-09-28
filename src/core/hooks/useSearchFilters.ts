@@ -4,7 +4,7 @@ import { SortDirection } from "shared/rootroot";
 import { arraysContainSameValues } from "shared/arrayUtils";
 import React from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 import type { xTable } from "src/core/db3/shared/db3core";
 
 export interface DiscreteFilterConfig<T extends number | boolean | string = number> {
@@ -145,8 +145,8 @@ export function useSearchPage<TStaticFilter extends Record<string, any>, TFilter
     config: SearchPageConfig<TStaticFilter, TFilterSpec>
 ): SearchPageState<TStaticFilter, TFilterSpec> {
     const snackbarContext = React.useContext(SnackbarContext);
-    const publicData = useDB3Authorization();
-    const capabilities = config.table?.getSearchCapabilities(publicData) ?? { includeDeleted: false };
+    const auth = useClientAuth();
+    const capabilities = config.table?.getSearchCapabilities(auth) ?? { includeDeleted: false };
     const [requestedIncludeDeleted, setIncludeDeleted] = useURLState<boolean>("includeDeleted", false);
     const includeDeleted = capabilities.includeDeleted && requestedIncludeDeleted === true;
 

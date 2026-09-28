@@ -1,8 +1,8 @@
 import { resolver } from "@blitzjs/rpc"
 import { cmauthorize } from "@/src/auth/server/cmResolver";
-import type { CMCtx } from "@/src/auth/server/cmResolver";
+import type { CMAuthCtx } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
-import { CreateChangeContext } from "shared/activityLog";
+import { CreateChangeContext } from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import {
     siteBrandingSettingByField,
@@ -15,16 +15,17 @@ import { writeSettingValue } from "../server/settingWrite";
 export default resolver.pipe(
     resolver.zod(SiteBrandingSettingsSchema),
     cmauthorize(Permission.manage_site_branding),
-    async (settings: SiteBrandingSettings, ctx: CMCtx) => {
+    async (settings: SiteBrandingSettings, ctx: CMAuthCtx) => {
         const result = await db.$transaction(async tx => {
-            (await ctx.auth.refresh(tx)).requirePermission(Permission.manage_site_branding);
+            const auth = await ctx.auth.refresh(tx);
+            auth.requirePermission(Permission.manage_site_branding);
             const changeContext = CreateChangeContext("updateSiteBrandingSettings");
             const updatedEntries: Array<[string, string]> = [];
             for (const [field, settingName] of Object.entries(siteBrandingSettingByField)) {
                 const value = settings[field as keyof SiteBrandingSettings];
                 const row = await writeSettingValue({
                     db: tx,
-                    ctx,
+                    auth,
                     changeContext,
                     name: settingName,
                     value,

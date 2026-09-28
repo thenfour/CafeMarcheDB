@@ -24,9 +24,9 @@ export const permissionVisibilityView = defineView({
     entity: xPermission,
     selection: permissionMetadataViewContract.prismaSelection,
     // Only show permissions that are marked as visible and that the user has effective access to.
-    where: ({ authorization }) => ({
+    where: ({ auth }) => ({
         isVisibility: { equals: true },
-        id: { in: authorization.effectivePermissions.ids },
+        id: { in: auth.effectivePermissions.ids },
     }),
     dtoSchema: permissionMetadataViewContract.dtoSchema,
     hydrate: permissionMetadataViewContract.hydrate,

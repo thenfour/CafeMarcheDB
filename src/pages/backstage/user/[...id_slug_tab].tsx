@@ -1,5 +1,5 @@
 import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorization";
-import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
 import { gSSP } from "@/src/blitz-server";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";

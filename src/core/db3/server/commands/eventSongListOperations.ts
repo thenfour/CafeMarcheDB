@@ -38,7 +38,7 @@ export const eventSongListReorderCommandHandler = defineCommandHandler(
     async (dto, context) => {
         await executePublicIdReorder({
             table: xEventSongList,
-            authorization: context.authorization,
+            auth: context.authorization,
             scopePublicIds: dto.scopeRowIds,
             movingPublicId: dto.movingItemId,
             newPositionPublicId: dto.newPositionItemId,

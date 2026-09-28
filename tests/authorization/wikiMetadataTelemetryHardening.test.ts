@@ -17,6 +17,7 @@ import { filePublicId } from "../support/fileFixtures";
 import { ActivityFeature } from "src/core/components/featureReports/activityTracking";
 import * as db3 from "src/core/db3/db3";
 import { recordAuthenticatedClientAction } from "src/core/db3/server/recordActionServer";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import {
     isAuthorizedForServerPage,
     loadAuthorizedPageEntity,
@@ -30,7 +31,7 @@ import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { CallMutateEventHooks } from "src/core/db3/server/db3mutationCore";
 
 const makeAuthorizationArgs = (user: ReturnType<typeof createAuthorizationTestUser>) => ({
-    publicData: createAuthorizationSchemaData(user),
+    auth: createAuthorizationSchemaData(user),
 });
 
 describe("BA-S004 wiki DB3 capabilities", () => {
@@ -251,7 +252,7 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
         await recordAuthenticatedClientAction({
             feature: ActivityFeature.song_view,
             songId: songPublicId(3),
-        }, ctx);
+        }, await loadAuthorization(ctx.session));
 
         expect(authorizationTestDb.snapshot("action")).toEqual([
             expect.objectContaining({ userId: actor.id, feature: ActivityFeature.song_view }),
@@ -263,7 +264,7 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
 
         await recordAuthenticatedClientAction({
             feature: ActivityFeature.song_view,
-        }, ctx);
+        }, await loadAuthorization(ctx.session));
 
         expect(authorizationTestDb.snapshot("action")).toEqual([
             expect.objectContaining({ userId: null, feature: ActivityFeature.song_view }),
@@ -287,7 +288,7 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
         await recordAuthenticatedClientAction({
             feature: ActivityFeature.song_credit_edit,
             songCreditTypeId: songCreditTypePublicId,
-        }, ctx);
+        }, await loadAuthorization(ctx.session));
 
         expect(authorizationTestDb.snapshot("action")).toEqual([
             expect.objectContaining({

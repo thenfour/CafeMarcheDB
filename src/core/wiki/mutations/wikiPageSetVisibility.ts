@@ -1,4 +1,4 @@
-import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
 // it's just less effort to make this mutation for this single field than to use db3 superimposed over
 // all this custom stuff.
 import { resolver } from "@blitzjs/rpc";
@@ -14,11 +14,11 @@ export default resolver.pipe(
     resolver.authorize(Permission.edit_wiki_pages),
     resolver.zod(ZTSetWikiPageVisibilityArgs),
     async (args: TSetWikiPageVisibilityArgs, ctx: AuthenticatedCtx): Promise<void> => {
-        const publicData = await loadAuthorization(ctx.session);
+        const auth = await loadAuthorization(ctx.session);
         const resolvedForeignIds = await resolvePublicForeignIds(
             db3.xWikiPage,
             { visiblePermissionId: args.visiblePermissionId },
-            publicData,
+            auth,
             db,
         );
         await db.wikiPage.update({

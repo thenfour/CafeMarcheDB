@@ -1,4 +1,4 @@
-import { loadAuthorizationForUser } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorizationForUser } from "@/src/auth/server/serverAuthorization";
 import { hash256 } from "@blitzjs/auth"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { songPublicId } from "../support/songFixtures"
@@ -43,6 +43,8 @@ import { Permission } from "shared/permissions"
 import { parsePublicId } from "shared/publicId"
 import { eventPublicId } from "../support/eventResponseFixtures"
 import { PermissionSet } from "src/auth/shared/PermissionSet"
+import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
+import { testServerAuthorization } from "tests/support/serverAuthorization"
 import {
   asUserManagementActor,
   asUserManagementTarget,
@@ -451,7 +453,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
     const { schemaAuthorization: publicData } = createAuthorizationPersona("public")
     const result = db3.xChange.authorizeAndSanitize({
       contextDesc: "BA-A002 protected-row regression",
-      publicData,
+      auth: publicData,
       rowMode: "view",
       model: { id: 41, table: "User", recordId: activeTarget.id },
       fallbackOwnerId: null,
@@ -1039,7 +1041,7 @@ describe("BA-U001 user management boundaries", () => {
     expect(canManageUser({
       actor: {
         principal: null,
-        effectivePermissions: new PermissionSet([Permission.deactivate_users]),
+        auth: testServerAuthorization(null, new ServerPermissionSet([{ id: 1, name: Permission.deactivate_users }])),
       },
       target: asUserManagementTarget(ordinaryUser),
       action: "deactivate",

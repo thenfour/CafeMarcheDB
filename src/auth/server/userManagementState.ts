@@ -6,9 +6,9 @@ import type { RolePublicId, UserPublicId } from "shared/publicId";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { RoleArgs, RoleNaturalOrderBy } from "src/core/db3/shared/schema/prismArgs";
 import { xRole } from "src/core/db3/shared/schema/user";
-import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
+import { UserWithRolesArgs, UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
 import { PermissionSet } from "../shared/PermissionSet";
-import { loadEffectivePermissions } from "./effectivePermissions";
+import { CMServerAuthorization, loadAuthorizationForUser } from "./serverAuthorization";
 import {
     canManageUser,
     getContinuityWarningsForUserResult,
@@ -48,8 +48,8 @@ export const makePermissionSetFromRole = (role: RoleWithPermissionIdentities | n
 
 export const makeUserManagementActor = (
     principal: UserManagementPrincipalPayload | null,
-    effectivePermissions: PermissionSet,
-): UserManagementActor => ({ principal, effectivePermissions });
+    auth: CMServerAuthorization,
+): UserManagementActor => ({ principal, auth });
 
 export const makeUserManagementTarget = (
     principal: UserManagementPrincipalPayload,
@@ -85,15 +85,12 @@ export const findUserManagementActor = async (
     db: TransactionalPrismaClient,
     userId: number | null | undefined,
 ): Promise<UserManagementActor> => {
-    const principal = userId ? await db.user.findFirst({
+    const principal: UserWithRolesPayload | null = userId ? await db.user.findFirst({
         ...UserWithRolesArgs,
         where: { id: userId },
     }) : null;
-    const effectivePermissions = await loadEffectivePermissions(
-        db,
-        principal?.isDeleted ? null : principal,
-    );
-    return makeUserManagementActor(principal, effectivePermissions);
+    const auth = await loadAuthorizationForUser(principal, db);
+    return makeUserManagementActor(principal, auth);
 };
 
 export const findUserManagementRole = async (

@@ -1,8 +1,9 @@
 import { resolver } from "@blitzjs/rpc";
 import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
+import { cmauthorize } from "../server/cmResolver";
 import { z } from "zod";
 import { UserPublicIdSchema } from "../schemas";
 import { requireCanManageUser } from "../server/userManagementPolicy";
@@ -11,7 +12,7 @@ import { revokeUserSignInState } from "../server/signInMethods";
 
 export default resolver.pipe(
     resolver.zod(z.object({ userId: UserPublicIdSchema }).strict()),
-    resolver.authorize(Permission.recover_users),
+    cmauthorize(Permission.recover_users),
     async ({ userId }, ctx) => db.$transaction(async tx => {
         const [actor, target] = await Promise.all([
             findUserManagementActor(tx, ctx.session.userId),
@@ -30,7 +31,7 @@ export default resolver.pipe(
             pkid: target.principal.id,
             oldValues: { isDeleted: true },
             newValues: { isDeleted: false },
-            ctx,
+            auth: ctx.auth,
             db: tx,
         });
         return { userId };

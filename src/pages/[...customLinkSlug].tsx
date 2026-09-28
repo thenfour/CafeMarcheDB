@@ -11,6 +11,7 @@ import { Markdown } from "src/core/components/markdown/Markdown";
 import * as db3 from "src/core/db3/db3";
 import { ServeAuthorizedFileDownload } from "src/core/db3/server/fileDownload";
 import { gSSP } from "src/blitz-server";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { CMButton } from "../core/components/CMCoreComponents2";
 
 interface CustomLinkPageProps {
@@ -52,7 +53,7 @@ export const getServerSideProps = gSSP<CustomLinkPageProps>(async ({ params, req
             res.end();
             return { props: {} };
         }
-        await ServeAuthorizedFileDownload(req, res, ctx, link.file.storedLeafName);
+        await ServeAuthorizedFileDownload(req, res, await loadAuthorization(ctx.session), link.file.storedLeafName);
         // Next skips page rendering after the stream has ended the response.
         return { props: {} };
     }

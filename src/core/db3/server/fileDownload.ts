@@ -1,11 +1,11 @@
-import { Ctx } from "@blitzjs/next";
+import { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
+import * as mime from "mime";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import send from "send";
-import * as mime from "mime";
+import type { FilePublicId } from "shared/publicId";
 import * as db3 from "src/core/db3/db3";
 import * as mutationCore from "src/core/db3/server/db3mutationCore";
-import type { FilePublicId } from "shared/publicId";
 
 type DownloadableFile = Pick<db3.FilePayloadMinimum,
     "fileLeafName" | "storedLeafName" | "isDeleted"
@@ -13,11 +13,11 @@ type DownloadableFile = Pick<db3.FilePayloadMinimum,
 
 export const GetAuthorizedDirectDownloadFile = async (
     storedLeafName: string,
-    ctx: Ctx,
+    auth: CMServerAuthorization,
 ): Promise<DownloadableFile | null> => {
 
     const { item } = await mutationCore.queryFirstImpl<DownloadableFile>({
-        ctx,
+        auth,
         schema: db3.xFile,
         filterModel: {
             items: [{
@@ -70,10 +70,10 @@ export const SendFileDownload = (
 export const ServeAuthorizedFileDownload = async (
     req: IncomingMessage,
     res: ServerResponse,
-    ctx: Ctx,
+    auth: CMServerAuthorization,
     storedLeafName: string,
 ): Promise<void> => {
-    const file = await GetAuthorizedDirectDownloadFile(storedLeafName, ctx);
+    const file = await GetAuthorizedDirectDownloadFile(storedLeafName, auth);
     if (!file) {
         // An absent file and an inaccessible file have the same response.
         res.statusCode = 404;

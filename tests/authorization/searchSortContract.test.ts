@@ -1,3 +1,4 @@
+import { testServerAuthorization } from "tests/support/serverAuthorization";
 import { describe, expect, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { processSearchSortModel, resolveSearchDiscreteCriteria } from "@db3/server/searchServerCore";
@@ -32,7 +33,7 @@ describe("search sort contract", () => {
             { id: 21, publicId: secondPublicId },
         ]);
         // The search authorization path only needs an authenticated user ID here.
-        const publicData = db3.createDB3Authorization({ id: 100 } as any, new ServerPermissionSet([
+        const publicData = testServerAuthorization({ id: 100 } as any, new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
             { id: 3, name: Permission.view_songs },
@@ -56,12 +57,12 @@ describe("search sort contract", () => {
         expect(tagsColumn.SqlGetDiscreteCriterionElements(resolved[0]!, "P")?.whereAnd)
             .toContain("mt.tagId = 20");
 
-        const facet = tagsColumn.SqlGetFacetInfoQuery(
-            {} as any, // The tag facet SQL does not inspect the current-user payload.
-            "select 1 id",
-            "select 1 id",
-            criterion,
-        )!;
+        const facet = tagsColumn.SqlGetFacetInfoQuery({
+            auth: publicData,
+            filteredItemsQuery: "select 1 id",
+            filteredItemsQueryExcludingThisCriterion: "select 1 id",
+            crit: criterion,
+        })!;
         expect(facet.sql).toContain("FT.publicId AS id");
         expect(facet.transformResult({
             id: firstPublicId,
@@ -90,7 +91,7 @@ describe("search sort contract", () => {
         const publicId = parsePublicId<"WikiPageTag">("WikiTagPublic001");
         const findMany = vi.fn(async () => [{ id: 31, publicId }]);
         // The focused authorization path only reads the authenticated user ID.
-        const publicData = db3.createDB3Authorization({ id: 100 } as any, new ServerPermissionSet([
+        const publicData = testServerAuthorization({ id: 100 } as any, new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
             { id: 3, name: Permission.view_wiki_pages },
@@ -109,11 +110,11 @@ describe("search sort contract", () => {
         );
 
         expect(resolved[0]?.options).toEqual([31]);
-        expect(db3.xWikiPage.fields.tags.SqlGetFacetInfoQuery(
-            {} as any, // The tag facet SQL does not inspect the current-user payload.
-            "select 1 id",
-            "select 1 id",
-            criterion,
-        )?.sql).toContain("FT.publicId AS id");
+        expect(db3.xWikiPage.fields.tags.SqlGetFacetInfoQuery({
+            auth: publicData,
+            filteredItemsQuery: "select 1 id",
+            filteredItemsQueryExcludingThisCriterion: "select 1 id",
+            crit: criterion,
+        })?.sql).toContain("FT.publicId AS id");
     });
 });

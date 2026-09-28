@@ -8,7 +8,7 @@ import { gSSP } from "src/blitz-server";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WikiPageControl } from "src/core/components/wiki/WikiComponents";
-import { getAuthenticatedCtx } from "src/core/db3/server/db3mutationCore";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { GetWikiPageCore } from "src/core/wiki/server/getWikiPageCore";
@@ -35,14 +35,10 @@ type PageProps = {
     wikiPageId: WikiPagePublicId | null;
 };
 
-// type Props = {
-//     publicData: SessionContext["$publicData"],
-// }
-
 export const getServerSideProps = gSSP<PageProps>(async (args) => {
     const wikiPath = wikiParsePathComponents((args.params?.slug || []) as string[]);
-    const actx = getAuthenticatedCtx(args.ctx, Permission.view_wiki_pages);
-    if (!actx) {
+    const auth = await loadAuthorization(args.ctx.session);
+    if (!auth.user || !auth.hasPermission(Permission.view_wiki_pages)) {
         return {
             redirect: {
                 destination: "/",
@@ -54,7 +50,7 @@ export const getServerSideProps = gSSP<PageProps>(async (args) => {
     const ret = await GetWikiPageCore({
         canonicalWikiSlug: wikiPath.canonicalWikiPath || "<never>",
         dbt: db as any,
-        ctx: actx,
+        ctx: args.ctx,
         clientBaseContentVersion: 0,
         clientBaseRevisionId: null,
         clientLockId: null,
@@ -70,14 +66,6 @@ export const getServerSideProps = gSSP<PageProps>(async (args) => {
         props: retProps,
     };
 
-    // return {
-    //     props: {
-    //         title: ret.wikiPage?.currentRevision?.name ?? wikiPath.slugWithoutNamespace,
-    //         wikiPath,
-    //         //slug: args.params?.slug as string[],
-    //         //publicData: args.ctx.session.$publicData,
-    //     },
-    // };
 });
 
 const WikiPage: BlitzPage = (x: PageProps) => {

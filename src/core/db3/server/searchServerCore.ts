@@ -1,11 +1,11 @@
-import type { DB3ServerAuthorization } from "./db3ServerAuthorization";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import { calendarWindowSql } from "./calendarWindowSql";
-import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 // generalized version of search results.
 // hopefully can unify song & event search, and then extend to users & files.
 
-import { AuthenticatedCtx, AuthorizationError } from "blitz";
+import { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
+import { loadBandTimeZone } from "@/src/server/bandTimeZone";
+import { AuthorizationError } from "blitz";
 import db, { Prisma } from "db";
 import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUtils";
 import { SplitQuickFilter } from "shared/quickFilter";
@@ -13,8 +13,6 @@ import { Stopwatch, TAnyModel } from "shared/rootroot";
 import { queryTable } from "src/core/db3/server/db3QueryCore";
 import { CalculateFilterQueryResult, type DiscreteCriterion, DiscreteCriterionFilterType, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchResultsRet, SortQueryElements } from "src/core/db3/shared/apiTypes";
 import * as db3 from "../../../core/db3/db3";
-import { UserWithRolesPayload } from "../shared/schema/userPayloads";
-import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 import { resolvePublicIds } from "./db3PublicIds";
 
 
@@ -74,7 +72,7 @@ const optionBearingDiscreteBehaviors = new Set<DiscreteCriterionFilterType>([
 export async function resolveSearchDiscreteCriteria(
     table: db3.xTable,
     criteria: readonly DiscreteCriterion[],
-    publicData: DB3ServerAuthorization,
+    auth: CMServerAuthorization,
     database: TransactionalPrismaClient,
 ): Promise<DiscreteCriterion[]> {
     return Promise.all(criteria.map(async criterion => {
@@ -94,7 +92,7 @@ export async function resolveSearchDiscreteCriteria(
             options: await resolvePublicIds(
                 targetTable,
                 criterion.options,
-                publicData,
+                auth,
                 database,
             ),
         };
@@ -103,11 +101,12 @@ export async function resolveSearchDiscreteCriteria(
 
 // construct a SQL select clause returning filtered items.
 // no pagination or sorting applied yet
-function calculateFilterQuery(currentUser: UserWithRolesPayload,
+function calculateFilterQuery(
+    //currentUser: UserWithRolesPayload,
     args: GetSearchResultsInput,
     excludeCriterionColumn: string | null,
     sortElements: SortQueryElements,
-    publicData: DB3ServerAuthorization,
+    auth: CMServerAuthorization,
     calendarPredicate: string | null,
 ): CalculateFilterQueryResult {
     const table = db3.GetTableById(args.tableID);
@@ -138,7 +137,7 @@ function calculateFilterQuery(currentUser: UserWithRolesPayload,
             // the presence or absence of matching rows.
             if (!table.authorizeColumnForView({
                 model: null,
-                publicData,
+                auth,
                 columnName: column.member,
             })) continue;
             const orExpr = column.SqlGetQuickFilterElementsForToken(token, qfTokens);
@@ -175,7 +174,7 @@ function calculateFilterQuery(currentUser: UserWithRolesPayload,
         whereAnd.push(elements.whereAnd);
     }
 
-    whereAnd.push(table.SqlGetVisFilterExpression(currentUser, "P", args.includeDeleted === true, publicData));
+    whereAnd.push(table.SqlGetVisFilterExpression({ tableAlias: "P", includeDeleted: args.includeDeleted, auth }));
 
     const ret: string = `
         SELECT
@@ -196,21 +195,17 @@ function calculateFilterQuery(currentUser: UserWithRolesPayload,
 // export default resolver.pipe(
 //     resolver.authorize(Permission.visibility_members), // ? right or?
 //     resolver.zod(ZGetSearchResultsInput),
-export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: AuthenticatedCtx): Promise<SearchResultsRet> {
-    if (!args.calendarWindow) return getSearchResults(args, ctx, db);
-    return db.$transaction(tx => getSearchResults(args, ctx, tx), {
+export async function GetSearchResultsCore(args: GetSearchResultsInput, auth: CMServerAuthorization): Promise<SearchResultsRet> {
+    if (!args.calendarWindow) return getSearchResults(args, auth, db);
+    return db.$transaction(tx => getSearchResults(args, auth, tx), {
         isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 30_000,
     });
 }
 
-async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedCtx, database: TransactionalPrismaClient): Promise<SearchResultsRet> {
+async function getSearchResults(args: GetSearchResultsInput, auth: CMServerAuthorization, database: TransactionalPrismaClient): Promise<SearchResultsRet> {
     try {
         const rootsw = new Stopwatch();
         const ret: SearchResultsRet = MakeEmptySearchResultsRet();//{
-        const authorization = await loadAuthorization(ctx.session);
-        if (!authorization.user) throw new AuthorizationError();
-        const publicData = authorization;
-        const u = authorization.user;
 
         // todo: input validation. it's very important because things are being appended to SQL.
 
@@ -223,8 +218,8 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
             throw new Error(`DB3 view '${view.viewID}' does not belong to table '${table.tableID}'.`);
         }
 
-        if (!table.authorizeTableForView(publicData)
-            || (args.includeDeleted === true && !table.getSearchCapabilities(publicData).includeDeleted)) {
+        if (!table.authorizeTableForView(auth)
+            || (args.includeDeleted === true && !table.getSearchCapabilities(auth).includeDeleted)) {
             throw new AuthorizationError();
         }
 
@@ -235,7 +230,7 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
             if (!table.getColumn(columnName)) {
                 throw new Error(`Search column ${columnName} not found on table ${table.tableName}`);
             }
-            return table.authorizeColumnForView({ model: null, publicData, columnName });
+            return table.authorizeColumnForView({ model: null, auth, columnName });
         };
         const requireReadableSearchColumn = (columnName: string) => {
             if (!isReadableSearchColumn(columnName)) {
@@ -255,7 +250,7 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
         const resolvedDiscreteCriteria = await resolveSearchDiscreteCriteria(
             table,
             readableDiscreteCriteria,
-            publicData,
+            auth,
             database,
         );
         const authorizedSearchArgs = { ...args, discreteCriteria: resolvedDiscreteCriteria };
@@ -264,7 +259,7 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
         const bandTimeZone = await loadBandTimeZone(database);
         const calendarPredicate = args.calendarWindow ? calendarWindowSql(args.calendarWindow, bandTimeZone) : null;
 
-        const filterResult = calculateFilterQuery(u, authorizedSearchArgs, null, sortElements, publicData, calendarPredicate);
+        const filterResult = calculateFilterQuery(authorizedSearchArgs, null, sortElements, auth, calendarPredicate);
         ret.filterQueryResult = filterResult;
 
         const queries: Promise<any>[] = [];
@@ -276,9 +271,15 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
                 throw new Error(`Column ${criterion.db3Column} wasn't found on table ${table.tableName} / ID:${table.tableID}; unable to form the search query.`);
             }
 
-            const filterResult2 = calculateFilterQuery(u, authorizedSearchArgs, col.member, sortElements, publicData, calendarPredicate);
+            const filterResult2 = calculateFilterQuery(authorizedSearchArgs, col.member, sortElements, auth, calendarPredicate);
 
-            const facetInfoQuery = col.SqlGetFacetInfoQuery(u, filterResult.sqlSelect, filterResult2.sqlSelect, criterion);
+            const facetInfoQuery = col.SqlGetFacetInfoQuery({
+                auth,
+                filteredItemsQuery: filterResult.sqlSelect,
+                filteredItemsQueryExcludingThisCriterion: filterResult2.sqlSelect,
+                crit: criterion,
+            });
+
             // no facet info to be done on this column
             if (!facetInfoQuery) continue;
 
@@ -375,25 +376,27 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
 
         // FULL DETAILS USING DB3.
         if (resultIds.length) {
-            const queryResult = await queryTable({
-                cmdbQueryContext: `getSearchResults[${table.tableName}]`,
-                table: {
-                    tableID: table.tableID,
-                    tableName: table.tableName,
-                    viewID: view?.viewID,
+            const queryResult = await queryTable(
+                {
+                    cmdbQueryContext: `getSearchResults[${table.tableName}]`,
+                    table: {
+                        tableID: table.tableID,
+                        tableName: table.tableName,
+                        viewID: view?.viewID,
+                    },
+                    includeDeleted: args.includeDeleted === true,
+                    filter: {
+                        items: [],
+                    },
+                    orderBy: undefined,
                 },
-                includeDeleted: args.includeDeleted === true,
-                filter: {
-                    items: [],
-                },
-                orderBy: undefined,
-            },
-                authorization,
+                auth,
                 database,
                 {
                     orderedPrimaryKeys: resultIds,
                     trustedNaturalPrimaryKeys: resultIds,
-                });
+                }
+            );
             ret.queryMetrics.push({
                 title: view ? `db3 view items [${view.viewID}]` : "db3 legacy items",
                 millis: queryResult.executionTimeMillis,

@@ -1,11 +1,10 @@
-import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
 // for mimetype db https://cdn.jsdelivr.net/gh/jshttp/mime-db@master/db.json
 
 import { UserPublicId } from "@/shared/publicId";
 import { AutoAssignInstrumentPartition } from "@/src/core/db3/shared/autoAssignInstrumentPartition";
 import { TClientUploadFileArgs, UploadResponsePayload, type UploadedFile } from "@/src/core/db3/shared/fileTypes";
 import { Ctx } from "@blitzjs/next";
-import { AuthenticatedCtx } from 'blitz';
 import db, { Prisma } from "db";
 import formidable, { PersistentFile } from 'formidable';
 import * as mime from 'mime';
@@ -52,11 +51,12 @@ export const config = {
 
 
 // on making blitz-integrated "raw" server API routes: https://blitzjs.com/docs/auth-server#api-routes
-export default api(async (req, res, origCtx: Ctx) => {
-    origCtx.session.$authorize(Permission.upload_files);
-    const ctx: AuthenticatedCtx = origCtx as any; // authorize ensures this.
-    const currentUser = (await mutationCore.getCurrentUserCore(ctx))!;
-    if (!currentUser) throw new Error(`uploads possible only for users`);
+export default api(async (req, res, ctx: Ctx) => {
+    const auth = await loadAuthorization(ctx.session);
+    auth.requirePermission(Permission.upload_files);
+    const authenticatedAuth = auth.requireUser(); // a user is required in order to specify uploadedByUserId et al.
+    const currentUserId = authenticatedAuth.userId;
+    const currentUserPublicId = authenticatedAuth.userPublicId;
 
     return new Promise(async (resolve, reject) => {
         if (req.method == 'POST') {
@@ -85,27 +85,26 @@ export default api(async (req, res, origCtx: Ctx) => {
                         fields.fileTagId[0],
                     );
 
-                    const publicData = await loadAuthorization(ctx.session);
                     const resolvedFileTagId = args.fileTagId === undefined
                         ? undefined
                         : await resolvePublicId(
                             db3.xFileTag,
                             args.fileTagId,
-                            publicData,
+                            auth,
                             db,
                         );
                     const resolvedEventId = args.taggedEventId === undefined
                         ? undefined
-                        : await resolvePublicId(db3.xEvent, args.taggedEventId, publicData, db);
+                        : await resolvePublicId(db3.xEvent, args.taggedEventId, auth, db);
                     const resolvedSongId = args.taggedSongId === undefined
                         ? undefined
-                        : await resolvePublicId(db3.xSong, args.taggedSongId, publicData, db);
+                        : await resolvePublicId(db3.xSong, args.taggedSongId, auth, db);
                     const resolvedUserId = args.taggedUserId === undefined
                         ? undefined
-                        : await resolvePublicId(db3.xUser, args.taggedUserId, publicData, db);
+                        : await resolvePublicId(db3.xUser, args.taggedUserId, auth, db);
                     const resolvedWikiPageId = args.taggedWikiPageId === undefined
                         ? undefined
-                        : await resolvePublicId(db3.xWikiPage, args.taggedWikiPageId, publicData, db);
+                        : await resolvePublicId(db3.xWikiPage, args.taggedWikiPageId, auth, db);
 
                     const visiblePermission = fields.visiblePermission && (CoerceToString(fields.visiblePermission[0]));
 
@@ -122,7 +121,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                     const resolvedVisibility = await resolvePublicForeignIds(
                         db3.xFile,
                         { visiblePermissionId: args.visiblePermissionId },
-                        publicData,
+                        auth,
                         db,
                     );
                     const visiblePermissionId = resolvedVisibility.visiblePermissionId;
@@ -149,7 +148,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                                 humanReadableLeafName: leaf,
                                 sizeBytes: null,
                                 lastModifiedDate: new Date(), // no modified date possible here; it will be safer to just set it to today instead of unknown, so at least some temporal data is saved
-                                uploadedByUserId: currentUser.id,
+                                uploadedByUserId: currentUserId,
                                 visiblePermissionId: visiblePermissionId ?? null,
                             }) as Record<string, any>; // because we're adding custom fields and i'm too lazy to create more types                           
 
@@ -161,9 +160,9 @@ export default api(async (req, res, origCtx: Ctx) => {
                             if (resolvedWikiPageId) fields.taggedWikiPages = [resolvedWikiPageId];
                             if (args.externalURI) (fields as db3.FilePayloadMinimum).externalURI = args.externalURI;
 
-                            const newFile = await mutationCore.insertImpl(db3.xFile, fields, ctx) as Prisma.FileGetPayload<{}>;
+                            const newFile = await mutationCore.insertImpl(db3.xFile, fields, auth) as Prisma.FileGetPayload<{}>;
 
-                            responsePayload.files.push(toUploadedFile(newFile, db3.xUser.parseIdentity(currentUser.publicId)));
+                            responsePayload.files.push(toUploadedFile(newFile, currentUserPublicId));
                         }
                     }
 
@@ -177,7 +176,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                                 humanReadableLeafName: file.originalFilename,
                                 lastModifiedDate: file.lastModifiedDate,
                                 sizeBytes: file.size,
-                                uploadedByUserId: currentUser.id,
+                                uploadedByUserId: currentUserId,
                                 visiblePermissionId: visiblePermissionId ?? null,
                             }) as Record<string, any>; // because we're adding custom fields and i'm too lazy to create more types
 
@@ -247,7 +246,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                             if (resolvedWikiPageId) fields.taggedWikiPages = [resolvedWikiPageId];
                             fields.tags = [...tags];
 
-                            const newFile = await mutationCore.insertImpl(db3.xFile, fields, ctx) as Prisma.FileGetPayload<{}>;
+                            const newFile = await mutationCore.insertImpl(db3.xFile, fields, auth) as Prisma.FileGetPayload<{}>;
 
                             await rename(oldpath, newpath);
 
@@ -255,17 +254,17 @@ export default api(async (req, res, origCtx: Ctx) => {
 
                             if (maxImageDimension !== undefined) {
                                 const resizedFile = await mutationCore.ForkResizeImageImpl({
-                                    ctx,
+                                    auth: authenticatedAuth,
                                     parentFile: newFile,
                                     maxImageDimension,
                                 });
                                 if (resizedFile !== null) {
-                                    responsePayload.files.push(toUploadedFile(resizedFile, db3.xUser.parseIdentity(currentUser.publicId)));
+                                    responsePayload.files.push(toUploadedFile(resizedFile, currentUserPublicId));
                                 } else {
-                                    responsePayload.files.push(toUploadedFile(newFile, db3.xUser.parseIdentity(currentUser.publicId)));
+                                    responsePayload.files.push(toUploadedFile(newFile, currentUserPublicId));
                                 }
                             } else {
-                                responsePayload.files.push(toUploadedFile(newFile, db3.xUser.parseIdentity(currentUser.publicId)));
+                                responsePayload.files.push(toUploadedFile(newFile, currentUserPublicId));
                             }
                         }
                     });
@@ -273,7 +272,6 @@ export default api(async (req, res, origCtx: Ctx) => {
                     await Promise.all(promises);
 
                     res.json(responsePayload);
-                    //res.write(`Files uploaded successfully; cur user : ${ctx.session.$publicData.userId}`);
                     res.end(() => {
                         resolve(undefined);
                     });

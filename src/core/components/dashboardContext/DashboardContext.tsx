@@ -20,6 +20,7 @@ import { DbBrandConfig, DefaultDbBrandConfig } from '@/shared/brandConfigBase';
 import { useBrand } from '@/shared/brandConfig';
 import { DashboardContextDataBase } from './dashboardContextTypes';
 import { PermissionSet } from '@/src/auth/shared/PermissionSet';
+import { CMClientAuthorization } from '@/src/auth/shared/cmAuthorization';
 import { isAttendanceGoing } from 'shared/eventAttendance';
 import { partition } from "@/shared/arrayUtils";
 import { EventStatusPublicId, PermissionPublicId } from "@/shared/publicId";
@@ -43,7 +44,7 @@ export class DashboardContextData extends DashboardContextDataBase {
     session: ClientSession | null;
     refetchDashboardData: (() => void) = () => { };
     effectivePermissions: PermissionSet = new PermissionSet([]);
-    authorization: db3.DB3Authorization = db3.createDB3Authorization(null, new PermissionSet([]));
+    authorization: CMClientAuthorization = new CMClientAuthorization(null, new PermissionSet([]));
 
     constructor() {
         super();
@@ -233,7 +234,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
 
     valueRef.current.effectivePermissions = new PermissionSet(dashboardData.effectivePermissionNames);
 
-    valueRef.current.authorization = db3.createDB3Authorization(currentUser, valueRef.current.effectivePermissions);
+    valueRef.current.authorization = new CMClientAuthorization(currentUser, valueRef.current.effectivePermissions);
 
     valueRef.current.userTag = new TableAccessor(dashboardData.userTag);
     valueRef.current.wikiPageTag = new TableAccessor(

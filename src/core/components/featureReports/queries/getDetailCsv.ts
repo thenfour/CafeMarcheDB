@@ -1,7 +1,7 @@
 // CSV export for activity detail data
 
 import { Stopwatch } from "@/shared/rootroot";
-import { getCurrentUserCore } from "@/src/core/db3/server/db3mutationCore";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
@@ -143,7 +143,7 @@ async function getCsvExport(args: TArgs, ctx: AuthenticatedCtx): Promise<CsvExpo
     if (!args.filterSpec.selectedBucket) {
         return null;
     }
-    const currentUser = await getCurrentUserCore(ctx);
+    const currentUser = (await loadAuthorization(ctx.session)).user;
     if (!currentUser) {
         return null;
     }

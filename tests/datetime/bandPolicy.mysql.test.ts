@@ -1,9 +1,10 @@
 import { generatePublicId } from "src/server/publicId";
 import { Prisma, PrismaClient } from "@prisma/client"
 import { readFileSync } from "node:fs"
-import type { Ctx } from "@blitzjs/next"
+import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
+import { testServerAuthorization } from "tests/support/serverAuthorization"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
-import { CreateChangeContext } from "shared/activityLog"
+import { CreateChangeContext } from "@/src/auth/server/activityLog"
 import { Setting } from "shared/settingKeys"
 import { writeSettingValue } from "src/auth/server/settingWrite"
 import { CallMutateEventHooks } from "src/core/db3/server/db3mutationCore"
@@ -17,6 +18,7 @@ const db = new PrismaClient({ datasourceUrl: url })
 const transactionOptions = { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120_000 }
 const day = 86_400_000
 const eventIds = [5001, 5002, 5003]
+const testAuth = testServerAuthorization(null, new ServerPermissionSet([]))
 
 describe.skipIf(!url)("band policy writes with real MySQL", () => {
   beforeAll(() => {
@@ -29,9 +31,11 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     await db.setting.deleteMany()
     await db.change.deleteMany()
     await db.setting.create({ data: { publicId: generatePublicId<"Setting">(), name: Setting.BandTimeZone, value: "Europe/Brussels" } })
-    const segment = (allDay: boolean) => ({ publicId: generatePublicId(), name: "Segment", description: "", isAllDay: allDay,
+    const segment = (allDay: boolean) => ({
+      publicId: generatePublicId(), name: "Segment", description: "", isAllDay: allDay,
       startsAt: new Date(allDay ? "2026-07-09T22:00:00Z" : "2026-07-10T22:30:12.345Z"),
-      durationMillis: BigInt(allDay ? day : 1_200_789) })
+      durationMillis: BigInt(allDay ? day : 1_200_789)
+    })
     for (const [id, segments] of [[5001, [segment(true)]], [5002, [segment(false)]], [5003, [segment(true), segment(false)]]] as const) {
       await db.event.create({ data: { id, publicId: generatePublicId<"Event">(), name: "Policy fixture", locationDescription: "", revision: 1, segments: { create: [...segments] } } })
     }
@@ -49,8 +53,10 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
 
   const events = () => db.event.findMany({ where: { id: { in: eventIds } }, orderBy: { id: "asc" } })
   const segments = () => db.eventSegment.findMany({ where: { eventId: { in: eventIds } }, orderBy: { id: "asc" } })
-  const changeZone = (value: string | null) => db.$transaction(tx => writeSettingValue({ db: tx, ctx: {} as Ctx,
-    changeContext: CreateChangeContext("band-policy-test"), name: Setting.BandTimeZone, value }), transactionOptions)
+  const changeZone = (value: string | null) => db.$transaction(tx => writeSettingValue({
+    db: tx, auth: testAuth,
+    changeContext: CreateChangeContext("band-policy-test"), name: Setting.BandTimeZone, value
+  }), transactionOptions)
 
   it("reanchors all-day segments and exact mixed bounds while preserving timed segments", async () => {
     const before = await events()
@@ -103,18 +109,24 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     const segmentsBefore = await segments()
     let writes = 0
     await expect(db.$transaction(async tx => {
-      const failingDb = new Proxy(tx, { get(target, key) {
-        if (key !== "event") return target[key as keyof typeof target]
-        return new Proxy(target.event, { get(delegate, operation) {
-          if (operation !== "update") return delegate[operation as keyof typeof delegate]
-          return async (args: Parameters<typeof delegate.update>[0]) => {
-            if (++writes === 2) throw new Error("Injected aggregate failure")
-            return delegate.update(args)
-          }
-        } })
-      } })
-      await writeSettingValue({ db: failingDb, ctx: {} as Ctx, changeContext: CreateChangeContext("rollback-test"),
-        name: Setting.BandTimeZone, value: "Asia/Tokyo" })
+      const failingDb = new Proxy(tx, {
+        get(target, key) {
+          if (key !== "event") return target[key as keyof typeof target]
+          return new Proxy(target.event, {
+            get(delegate, operation) {
+              if (operation !== "update") return delegate[operation as keyof typeof delegate]
+              return async (args: Parameters<typeof delegate.update>[0]) => {
+                if (++writes === 2) throw new Error("Injected aggregate failure")
+                return delegate.update(args)
+              }
+            }
+          })
+        }
+      })
+      await writeSettingValue({
+        db: failingDb, auth: testAuth, changeContext: CreateChangeContext("rollback-test"),
+        name: Setting.BandTimeZone, value: "Asia/Tokyo"
+      })
     }, transactionOptions)).rejects.toThrow("Injected aggregate failure")
     expect(writes).toBe(2)
     expect((await db.setting.findFirst())!.value).toBe("Europe/Brussels")
@@ -137,8 +149,10 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
 
   it("previews, converts and safely reruns the versioned storage migration", async () => {
     await db.eventSegment.updateMany({ where: { eventId: { in: eventIds } }, data: { dateTimeVersion: 1 } })
-    await db.eventSegment.updateMany({ where: { eventId: { in: eventIds }, isAllDay: true },
-      data: { startsAt: new Date("2026-03-29T00:00:00Z"), durationMillis: BigInt(day) } })
+    await db.eventSegment.updateMany({
+      where: { eventId: { in: eventIds }, isAllDay: true },
+      data: { startsAt: new Date("2026-03-29T00:00:00Z"), durationMillis: BigInt(day) }
+    })
     const before = await segments()
     const preview = await db.$transaction(tx => migrateEventUtcSpans(tx, false), transactionOptions)
     expect(preview.changes).toHaveLength(4)
@@ -158,8 +172,10 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
   })
 
   it("preserves selected calendar dates while a setting change alters elapsed DST duration", async () => {
-    await db.eventSegment.updateMany({ where: { eventId: { in: eventIds }, isAllDay: true },
-      data: { startsAt: new Date("2026-03-28T23:00:00Z"), durationMillis: BigInt(23 * 3_600_000) } })
+    await db.eventSegment.updateMany({
+      where: { eventId: { in: eventIds }, isAllDay: true },
+      data: { startsAt: new Date("2026-03-28T23:00:00Z"), durationMillis: BigInt(23 * 3_600_000) }
+    })
     await changeZone("Asia/Tokyo")
     for (const segment of (await segments()).filter(segment => segment.isAllDay)) {
       expect(segment.startsAt!.toISOString()).toBe("2026-03-28T15:00:00.000Z")

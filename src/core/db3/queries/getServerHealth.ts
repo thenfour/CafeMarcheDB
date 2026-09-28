@@ -3,8 +3,9 @@ import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { xFile, xUser } from "../db3";
-import { getCurrentUserCore } from "../server/db3mutationCore";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { FileStatResult, GetServerHealthResult, ServerHealthFileResult, TableStatsQueryRowRaw } from "../shared/apiTypes";
+import { cmauthorize } from "@/src/auth/server/cmResolver";
 
 var fs = require('fs');
 var path = require('path');
@@ -42,11 +43,9 @@ async function GetDirectoryInfo(relativePath: string) {
 };
 
 export default resolver.pipe(
-    resolver.authorize(Permission.sysadmin),
-    async (args: {}, ctx: AuthenticatedCtx): Promise<GetServerHealthResult> => {
+    cmauthorize(Permission.sysadmin),
+    async (args: {}, ctx): Promise<GetServerHealthResult> => {
         try {
-            const u = (await getCurrentUserCore(ctx))!;
-
             const dbTableStatsQuery = `
 SELECT
 	TABLE_NAME,

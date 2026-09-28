@@ -1,6 +1,6 @@
 // updateSongBasicFields
 import { resolver } from "@blitzjs/rpc"
-import { cmauthorize, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthCtxWithUser } from "@/src/auth/server/cmResolver";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
@@ -12,7 +12,7 @@ import { resolvePublicId } from "../server/db3PublicIds";
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     cmauthorize(Permission.login),
-    async (args: TupdateSongBasicFieldsArgs, ctx: CMAuthenticatedCtx) => {
+    async (args: TupdateSongBasicFieldsArgs, ctx: CMAuthCtxWithUser) => {
 
         // verbose on purpose in order to validate args type against UncheckedUpdateInput
         const fields: Prisma.SongUncheckedUpdateInput = {
@@ -27,7 +27,7 @@ export default resolver.pipe(
             db3.xSong, args.songId,
             ctx.auth, db,
         );
-        await mutationCore.updateImpl(db3.xSong, songId, fields, ctx);
+        await mutationCore.updateImpl(db3.xSong, songId, fields, ctx.auth);
 
         return args;
     }

@@ -1,4 +1,4 @@
-import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 import { Box, Button } from "@mui/material";
 import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import React from "react";
@@ -72,12 +72,12 @@ function DB3SelectTagsDialogInner<TAssociation extends TAnyModel>(props: DB3Sele
         matchesText: (item, text) => props.spec.typedSchemaColumn.getAssociationTableShema().doesItemExactlyMatchText(item, text),
         useOptions(filterText) {
             const query = useTagsFieldRenderContext({ spec: props.spec, row: props.row, filterText, suspense: false });
-            const publicData = useDB3Authorization();
+            const auth = useClientAuth();
             const { showMessage } = React.useContext(SnackbarContext);
             const foreignSchema = props.spec.typedSchemaColumn.getForeignTableShema();
             const canCreate = props.spec.typedSchemaColumn.allowInsertFromString
                 && !!query.crudCreate
-                && foreignSchema.authorizeRowBeforeInsert({ publicData });
+                && foreignSchema.authorizeRowBeforeInsert({ auth: auth });
             return {
                 ...query, items: query.options,
                 createOption: canCreate ? async text => {

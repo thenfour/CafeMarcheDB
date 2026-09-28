@@ -12,7 +12,7 @@ describe("DB3 client mutation preparation", () => {
 
 
   it("omits viewable login fields while retaining an authorized user-tag edit", () => {
-    const { schemaAuthorization: publicData } = createAuthorizationPersona("bandAdmin", { id: 2 })
+    const { schemaAuthorization: auth } = createAuthorizationPersona("bandAdmin", { id: 2 })
     const tags = [{
       publicId: "UserTagAsgn00001",
       userId: target.id,
@@ -28,7 +28,7 @@ describe("DB3 client mutation preparation", () => {
       },
       existingModel: target,
       mode: "update",
-      publicData,
+      auth,
     })
 
     expect(result).toEqual({
@@ -37,7 +37,7 @@ describe("DB3 client mutation preparation", () => {
   })
 
   it("covers profile edits by omitting email while retaining owner-editable fields", () => {
-    const { schemaAuthorization: publicData } = createAuthorizationPersona("normal", { id: target.id })
+    const { schemaAuthorization: auth } = createAuthorizationPersona("normal", { id: target.id })
 
     const result = omitUnauthorizedMutationFields({
       schema: xUser,
@@ -49,7 +49,7 @@ describe("DB3 client mutation preparation", () => {
       },
       existingModel: target,
       mode: "update",
-      publicData,
+      auth,
     })
 
     expect(result).toEqual({
@@ -59,7 +59,7 @@ describe("DB3 client mutation preparation", () => {
   })
 
   it("preserves unknown fields so the server can reject schema drift", () => {
-    const { schemaAuthorization: publicData } = createAuthorizationPersona("bandAdmin", { id: 2 })
+    const { schemaAuthorization: auth } = createAuthorizationPersona("bandAdmin", { id: 2 })
 
     const result = omitUnauthorizedMutationFields({
       schema: xUser,
@@ -69,7 +69,7 @@ describe("DB3 client mutation preparation", () => {
       },
       existingModel: target,
       mode: "update",
-      publicData,
+      auth,
     })
 
     expect(result).toEqual({

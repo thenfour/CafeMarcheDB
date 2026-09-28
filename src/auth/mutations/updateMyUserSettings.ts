@@ -1,7 +1,7 @@
 import { resolver } from "@blitzjs/rpc";
 import { cmauthorize } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import { UserSettingsPatchSchema } from "shared/userSettings";
 import { loadUserSettings } from "../server/userSettings";
@@ -17,10 +17,10 @@ export default resolver.pipe(
 
         for (const [name, value] of Object.entries(patch)) {
             if (value === undefined) continue;
-            const existing = await tx.userSetting.findFirst({ where: { userId: user.id, name } });
+            const existing = await tx.userSetting.findFirst({ where: { userId: user.userId, name } });
             if (existing && JSON.stringify(existing.value) === JSON.stringify(value)) continue;
 
-            const data = { userId: user.id, name, value };
+            const data = { userId: user.userId, name, value };
             const saved = existing
                 ? await tx.userSetting.update({ where: { id: existing.id }, data: { value } })
                 : await tx.userSetting.create({ data });
@@ -31,11 +31,11 @@ export default resolver.pipe(
                 pkid: saved.id,
                 oldValues: existing ? { name, value: existing.value } : undefined,
                 newValues: { name, value },
-                ctx,
+                auth,
                 db: tx,
             });
         }
 
-        return loadUserSettings(user.id, tx);
+        return loadUserSettings(user.userId, tx);
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }),
 );

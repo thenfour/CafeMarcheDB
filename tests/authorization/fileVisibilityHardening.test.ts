@@ -13,6 +13,7 @@ vi.mock("send", () => ({ default: vi.fn() }))
 
 import send from "send"
 import { Permission } from "shared/permissions"
+import { loadAuthorization } from "src/auth/server/serverAuthorization"
 import forkImage from "src/core/db3/mutations/forkImage"
 import updateGalleryItemImage from "src/core/db3/mutations/updateGalleryItemImage"
 import {
@@ -137,11 +138,11 @@ describe("BA-S002 direct and parent-authorized file delivery", () => {
     })
     const { ctx } = createAuthorizationPersona("public")
 
-    await expect(GetAuthorizedDirectDownloadFile("stored-photo.jpg", ctx)).resolves.toEqual(
+    await expect(GetAuthorizedDirectDownloadFile("stored-photo.jpg", await loadAuthorization(ctx.session))).resolves.toEqual(
       expect.objectContaining({ publicId: filePublicId(10) }),
     )
-    await expect(GetAuthorizedDirectDownloadFile("hidden.jpg", ctx)).resolves.toBeNull()
-    await expect(GetAuthorizedDirectDownloadFile("deleted.jpg", ctx)).resolves.toBeNull()
+    await expect(GetAuthorizedDirectDownloadFile("hidden.jpg", await loadAuthorization(ctx.session))).resolves.toBeNull()
+    await expect(GetAuthorizedDirectDownloadFile("deleted.jpg", await loadAuthorization(ctx.session))).resolves.toBeNull()
   })
 
   it("allows a private file only to its uploader", async () => {
@@ -165,10 +166,10 @@ describe("BA-S002 direct and parent-authorized file delivery", () => {
     })
     const { ctx: publicCtx } = createAuthorizationPersona("public")
 
-    await expect(GetAuthorizedDirectDownloadFile("stored-photo.jpg", ownerCtx)).resolves.toEqual(
+    await expect(GetAuthorizedDirectDownloadFile("stored-photo.jpg", await loadAuthorization(ownerCtx.session))).resolves.toEqual(
       expect.objectContaining({ publicId: filePublicId(10) }),
     )
-    await expect(GetAuthorizedDirectDownloadFile("stored-photo.jpg", publicCtx)).resolves.toBeNull()
+    await expect(GetAuthorizedDirectDownloadFile("stored-photo.jpg", await loadAuthorization(publicCtx.session))).resolves.toBeNull()
   })
 
   it("streams HTML at an alias only for the same viewers as the file URL", async () => {
@@ -211,12 +212,12 @@ describe("BA-S002 direct and parent-authorized file delivery", () => {
 
     try {
       // These request and response objects expose the Node members used here.
-      await ServeAuthorizedFileDownload(req as Parameters<typeof ServeAuthorizedFileDownload>[0], publicRes as unknown as Parameters<typeof ServeAuthorizedFileDownload>[1], publicCtx, "stored-page.html")
+      await ServeAuthorizedFileDownload(req as Parameters<typeof ServeAuthorizedFileDownload>[0], publicRes as unknown as Parameters<typeof ServeAuthorizedFileDownload>[1], await loadAuthorization(publicCtx.session), "stored-page.html")
       expect(publicRes.statusCode).toBe(404)
       expect(publicRes.end).toHaveBeenCalledOnce()
       expect(send).not.toHaveBeenCalled()
 
-      await ServeAuthorizedFileDownload(req as Parameters<typeof ServeAuthorizedFileDownload>[0], ownerRes as unknown as Parameters<typeof ServeAuthorizedFileDownload>[1], ownerCtx, "stored-page.html")
+      await ServeAuthorizedFileDownload(req as Parameters<typeof ServeAuthorizedFileDownload>[0], ownerRes as unknown as Parameters<typeof ServeAuthorizedFileDownload>[1], await loadAuthorization(ownerCtx.session), "stored-page.html")
     } finally {
       if (previousUploadPath === undefined) delete process.env.FILE_UPLOAD_PATH
       else process.env.FILE_UPLOAD_PATH = previousUploadPath
@@ -314,7 +315,7 @@ describe("BA-S002 image mutation authorization", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await expect(ForkImageImpl(imageParams, ctx as any)).rejects.toThrow("parent file not found")
+    await expect(ForkImageImpl(imageParams, (await loadAuthorization(ctx.session)).requireUser())).rejects.toThrow("parent file not found")
     expect(authorizationTestDb.snapshot("file")).toHaveLength(1)
   })
 
@@ -339,7 +340,7 @@ describe("BA-S002 image mutation authorization", () => {
     })
     const fileLookup = vi.spyOn(authorizationTestDb.getDelegate("file"), "findFirst")
 
-    await expect(ForkImageImpl(imageParams, ctx as any)).rejects.toThrow(
+    await expect(ForkImageImpl(imageParams, (await loadAuthorization(ctx.session)).requireUser())).rejects.toThrow(
       "Not authorized to mutate File fields: insert",
     )
     expect(fileLookup).not.toHaveBeenCalled()
@@ -373,7 +374,7 @@ describe("BA-S002 image mutation authorization", () => {
     delete process.env.FILE_UPLOAD_PATH
 
     try {
-      await expect(ForkImageImpl(imageParams, ctx as any)).rejects.toThrow(
+      await expect(ForkImageImpl(imageParams, (await loadAuthorization(ctx.session)).requireUser())).rejects.toThrow(
         "FILE_UPLOAD_PATH is not configured",
       )
     } finally {

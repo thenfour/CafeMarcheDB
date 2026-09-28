@@ -1,5 +1,5 @@
 
-import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthCtx } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { MysqlEscape } from "shared/mysqlUtils";
@@ -32,7 +32,7 @@ interface TArgs {
 
 export default resolver.pipe(
     cmauthorize(Permission.view_events_nonpublic),
-    async (args: TArgs, ctx: CMCtx): Promise<GetEventFilterInfoRet> => {
+    async (args: TArgs, ctx: CMAuthCtx): Promise<GetEventFilterInfoRet> => {
         try {
             const u = ctx.auth.user;
             if (!u?.role || u.role.permissions.length < 1) {
@@ -43,11 +43,10 @@ export default resolver.pipe(
 
             const startTimestamp = Date.now();
             const authorization = ctx.auth;
-            const publicData = authorization;
             const [statusIds, tagIds, typeIds] = await Promise.all([
-                resolvePublicIds(db3.xEventStatus, args.filterSpec.statusIds, publicData, db),
-                resolvePublicIds(db3.xEventTag, args.filterSpec.tagIds, publicData, db),
-                resolvePublicIds(db3.xEventType, args.filterSpec.typeIds, publicData, db),
+                resolvePublicIds(db3.xEventStatus, args.filterSpec.statusIds, authorization, db),
+                resolvePublicIds(db3.xEventTag, args.filterSpec.tagIds, authorization, db),
+                resolvePublicIds(db3.xEventType, args.filterSpec.typeIds, authorization, db),
             ]);
 
             const eventFilterExpressions: string[] = [];
@@ -102,7 +101,7 @@ export default resolver.pipe(
             const AND: string[] = [];
 
             //AND.push(db3.GetBasicVisFilterExpressionForEvent(u, "Event"));
-            AND.push(db3.xEvent.SqlGetVisFilterExpression(u, "Event"));
+            AND.push(db3.xEvent.SqlGetVisFilterExpression({ auth: ctx.auth, tableAlias: "Event" }));
 
             if (!IsNullOrWhitespace(eventFilterExpression)) {
                 AND.push(eventFilterExpression);

@@ -1,8 +1,8 @@
 import { resolver } from "@blitzjs/rpc"
 import { cmauthorize } from "@/src/auth/server/cmResolver";
-import type { CMCtx } from "@/src/auth/server/cmResolver";
+import type { CMAuthCtx } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
-import { CreateChangeContext } from "shared/activityLog";
+import { CreateChangeContext } from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import { clearBrandCache } from "src/server/brand";
 import { UpdateSettingSchema } from "../schemas";
@@ -14,12 +14,13 @@ import { settingEditorView } from "src/core/db3/shared/entities/setting/settingV
 export default resolver.pipe(
     resolver.zod(UpdateSettingSchema),
     cmauthorize(Permission.sysadmin),
-    async (args, ctx: CMCtx) => {
+    async (args, ctx: CMAuthCtx) => {
         const result = await db.$transaction(async tx => {
-            (await ctx.auth.refresh(tx)).requirePermission(Permission.sysadmin);
+            const auth = await ctx.auth.refresh(tx);
+            auth.requirePermission(Permission.sysadmin);
             return writeSettingValue({
                 db: tx,
-                ctx,
+                auth,
                 changeContext: CreateChangeContext("updateSetting"),
                 name: args.name,
                 value: args.value,

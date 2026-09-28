@@ -97,7 +97,7 @@ describe("EventSegment generated UID", () => {
   it("recognizes all returned columns without unknown-column diagnostics", () => {
     const { schemaAuthorization } = createAuthorizationPersona("sysadmin")
     const result = db3.xEventSegment.authorizeAndSanitize({
-      contextDesc: "event-segment-grid-test", publicData: schemaAuthorization,
+      contextDesc: "event-segment-grid-test", auth: schemaAuthorization,
       rowMode: "view", model: segments[0]!, fallbackOwnerId: null,
     })
     expect(result.rowIsAuthorized).toBe(true)

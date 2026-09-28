@@ -1,11 +1,11 @@
-import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
+import { testServerAuthorization } from "tests/support/serverAuthorization";
 import { describe, expect, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { projectDB3ModelPublicIds, resolvePublicForeignIds, resolvePublicIds } from "@db3/server/db3PublicIds";
 import { queryTable } from "@db3/server/db3QueryCore";
 import { validateDB3MutationRequest, validateDB3QueryRequest } from "@db3/server/db3RequestValidation";
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
-import { CMAuthorization } from "src/auth/server/requestAuthorization";
+import { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { userPublicId } from "../support/userFixtures";
@@ -54,33 +54,33 @@ const tag = {
     sortOrder: 1,
 };
 
-const authorization = (...permissions: Permission[]): DB3ServerAuthorization => ({
-    userId: 100,
-    effectivePermissions: new ServerPermissionSet([
+const authorization = (...permissions: Permission[]): CMServerAuthorization => testServerAuthorization(
+    { id: 100 },
+    new ServerPermissionSet([
         { id: 1, name: Permission.always_grant },
         ...permissions.map((name, index) => ({ id: index + 2, name })),
     ]),
-});
+);
 
-const sanitizeGroup = (publicData: DB3ServerAuthorization) => {
+const sanitizeGroup = (publicData: CMServerAuthorization) => {
     const result = db3.xInstrumentFunctionalGroup.authorizeAndSanitize({
         contextDesc: "public-id-transport-test",
         model: group,
         rowMode: "view",
         fallbackOwnerId: null,
-        publicData,
+        auth: publicData,
     });
     expect(result.rowIsAuthorized).toBe(true);
     return projectDB3ModelPublicIds(db3.xInstrumentFunctionalGroup, result.authorizedModel, publicData);
 };
 
-const sanitizeTag = (publicData: DB3ServerAuthorization) => {
+const sanitizeTag = (publicData: CMServerAuthorization) => {
     const result = db3.xInstrumentTag.authorizeAndSanitize({
         contextDesc: "public-id-transport-test",
         model: tag,
         rowMode: "view",
         fallbackOwnerId: null,
-        publicData,
+        auth: publicData,
     });
     expect(result.rowIsAuthorized).toBe(true);
     return projectDB3ModelPublicIds(db3.xInstrumentTag, result.authorizedModel, publicData);
@@ -666,7 +666,7 @@ describe("instrument catalog public-ID transport", () => {
             },
             orderBy: undefined,
             cmdbQueryContext: "song-tag-query-parameter-resolution-test",
-        }, new CMAuthorization(
+        }, new CMServerAuthorization(
             // This focused query needs only the actor identity.
             { id: 100 } as any, effectivePermissions,
         ), {

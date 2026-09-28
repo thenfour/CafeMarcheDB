@@ -4,7 +4,8 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import { z } from "zod";
-import { DB3QueryCore } from "../server/db3QueryCore";
+import { queryTable } from "../server/db3QueryCore";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { xUser } from "../db3";
 import type { UserPublicId } from "shared/publicId";
 import { DB3PublicIdError } from "../server/db3PublicIds";
@@ -15,7 +16,7 @@ export default resolver.pipe(
         let result;
         try {
             // TODO: use db3 views to handle authorization / sanitization.
-            result = await DB3QueryCore({
+            result = await queryTable({
                 table: xUser,
                 orderBy: undefined,
                 filter: {
@@ -23,7 +24,7 @@ export default resolver.pipe(
                 },
                 take: 1,
                 cmdbQueryContext: "getUser",
-            }, ctx);
+            }, await loadAuthorization(ctx.session));
         } catch (error) {
             if (error instanceof DB3PublicIdError) return null;
             throw error;

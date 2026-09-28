@@ -1,6 +1,6 @@
+import { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
 import { moveItemInArray } from "shared/arrayUtils";
 import type { xTable } from "../shared/db3core";
-import type { DB3ServerAuthorization } from "./db3ServerAuthorization";
 import { createUsableSortOrderSlots } from "./db3SortOrder";
 
 export interface PublicIdReorderRow {
@@ -21,7 +21,7 @@ type ReorderFailure = "unauthorized" | "scope" | "endpoints";
 // their audit policy. All changed rows are checked before the first write.
 export async function executePublicIdReorder<TRow extends PublicIdReorderRow>(args: {
     table: xTable;
-    authorization: DB3ServerAuthorization;
+    auth: CMServerAuthorization;
     scopePublicIds: readonly string[];
     movingPublicId: string;
     newPositionPublicId: string;
@@ -30,10 +30,10 @@ export async function executePublicIdReorder<TRow extends PublicIdReorderRow>(ar
     error: (reason: ReorderFailure) => Error;
 }): Promise<PublicIdReorderChange<TRow>[]> {
     const {
-        table, authorization, scopePublicIds, movingPublicId,
+        table, auth, scopePublicIds, movingPublicId,
         newPositionPublicId, loadRows, writeChange, error,
     } = args;
-    if (!table.authorizeTableForEdit(authorization)) throw error("unauthorized");
+    if (!table.authorizeTableForEdit(auth)) throw error("unauthorized");
     const scope = new Set(scopePublicIds);
     if (scope.size !== scopePublicIds.length || scope.size === 0
         || !scope.has(movingPublicId) || !scope.has(newPositionPublicId)) {
@@ -43,7 +43,7 @@ export async function executePublicIdReorder<TRow extends PublicIdReorderRow>(ar
     const rows = await loadRows();
     if (rows.length !== scope.size || rows.some(row =>
         !scope.has(row.publicId)
-        || !table.authorizeRowForView({ model: row, publicData: authorization }))) {
+        || !table.authorizeRowForView({ model: row, auth }))) {
         throw error("scope");
     }
 
@@ -64,7 +64,7 @@ export async function executePublicIdReorder<TRow extends PublicIdReorderRow>(ar
             contextDesc: `reorder:${table.tableName}:preflight`,
             model: { sortOrder: change.newSortOrder },
             existingModel: change.item,
-            publicData: authorization,
+            auth,
             rowMode: "update",
             fallbackOwnerId: null,
         });

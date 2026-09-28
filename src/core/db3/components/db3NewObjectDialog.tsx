@@ -10,7 +10,7 @@ import { AppContextMarker } from "src/core/components/AppContext";
 import { CMDialog } from "src/core/components/CMDialog";
 import { AdminInspectObject, CMButton, CMButtonGroup, CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 import * as db3 from "../db3";
 import { MarkdownStringColumnClient } from "./DB3ClientBasicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
@@ -48,7 +48,7 @@ function DB3NewObjectDialogWithClient<TView extends ViewBase>({
     const [obj, setObj] = React.useState(table.args.table.createNew(currentUser));
     const [oldObj, setOldObj] = React.useState(table.args.table.createNew(currentUser)); // needed for tracking changes
     const [validationResult, setValidationResult] = React.useState<db3.ValidateAndComputeDiffResult>(db3.EmptyValidateAndComputeDiffResult); // don't allow null for syntax simplicity
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
     const [grayed, setGrayed] = React.useState<boolean>(false);
 
     // validate on change
@@ -105,7 +105,7 @@ function DB3NewObjectDialogWithClient<TView extends ViewBase>({
                             return tableClient.schema.authorizeColumnForInsert({
                                 model: obj,
                                 columnName: c.columnName,
-                                publicData,
+                                auth: auth,
                             });
                         }).map(column => {
                             let autoFocus = false;
@@ -145,7 +145,7 @@ type DB3EditObject2DialogProps = {
 };
 
 export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initialValue, onDelete, ...props }: DB3EditObject2DialogProps) {
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
     const [obj, setObj] = React.useState(initialValue);
     const [oldObj, setOldObj] = React.useState(initialValue); // needed for tracking changes during validation
     const [validationResult, setValidationResult] = React.useState<db3.ValidateAndComputeDiffResult>(db3.EmptyValidateAndComputeDiffResult); // don't allow null for syntax simplicity
@@ -224,7 +224,7 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                             return (c.schemaTable.authorizeColumnForEdit({
                                 columnName: c.columnName,
                                 model: obj,
-                                publicData,
+                                auth: auth,
                                 fallbackOwnerId: null,// assume model has this.
                             }));
                         }).map(column => {
@@ -302,10 +302,10 @@ export interface DB3EditRowButtonProps {
 // TODO: is this the same thing as DB3EditObjectDialog? if so, merge them.
 export const DB3EditRowButton = (props: DB3EditRowButtonProps) => {
     const [editOpen, setEditOpen] = React.useState<boolean>(false);
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
 
     const deleteAuthorized = props.tableRenderClient.args.tableSpec.args.table.authorizeRowForDeletePreferSoft({
-        publicData,
+        auth: auth,
         model: props.row,
     });
 

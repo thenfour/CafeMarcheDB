@@ -1,22 +1,20 @@
-import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
 import { wikiTransaction } from "../server/wikiTransaction";
 // updateWikiPage
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
+import { CMAuthCtxWithUser, cmauthorize } from "@/src/auth/server/cmResolver";
+import { CMServerAuthorizationWithUser } from "@/src/auth/server/serverAuthorization";
 import { resolver } from "@blitzjs/rpc";
-import { assert, AuthenticatedCtx } from "blitz";
+import { assert } from "blitz";
 import { Prisma } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
 import * as db3 from "src/core/db3/db3";
-import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
 import { authorizeAndProjectViewDto } from "src/core/db3/server/db3QueryCore";
-import * as mutationCore from "src/core/db3/server/db3mutationCore";
-import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { calculateDiff, GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, SpecialWikiNamespace, TUpdateWikiPageArgs, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiRevisionPayload, WikiPageApiRevisionPayloadArgs, wikiParseCanonicalWikiPath, ZTUpdateWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
 import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
-import { xWikiPage } from "src/core/db3/shared/schema/wiki";
+import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { wikiPageApiSelection } from "src/core/db3/shared/entities/wiki/wikiViews";
-import { UserPublicId } from "@/shared/publicId";
+import { xWikiPage } from "src/core/db3/shared/schema/wiki";
+import { calculateDiff, GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, SpecialWikiNamespace, TUpdateWikiPageArgs, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiRevisionPayload, WikiPageApiRevisionPayloadArgs, wikiParseCanonicalWikiPath, ZTUpdateWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
 import { generatePublicId } from "src/server/publicId";
 
 const ConsolidatedUpdate = async (args: TUpdateWikiPageArgs, existingRevisionToConsolidate: Prisma.WikiPageRevisionGetPayload<{}>, currentPageNaturalId: number, dbt: TransactionalPrismaClient): Promise<WikiPageApiRevisionPayload> => {
@@ -112,15 +110,13 @@ const UpdateExistingWikiPage = async (
     args: TUpdateWikiPageArgs,
     currentPage: WikiPageApiPayload,
     currentPageNaturalId: number,
-    currentUserId: number,
-    currentUserPublicId: UserPublicId,
-    publicData: DB3ServerAuthorization,
+    auth: CMServerAuthorizationWithUser,
     dbt: TransactionalPrismaClient,
 ): Promise<GetWikiPageUpdatabilityResult> => {
 
     const updatability = GetWikiPageUpdatability({
         currentPage,
-        currentUserId: currentUserPublicId,
+        currentUserPublicId: auth.userPublicId,
         userClientLockId: args.lockId,
         baseRevisionId: args.baseRevisionId,
         baseContentVersion: args.baseContentVersion,
@@ -134,7 +130,7 @@ const UpdateExistingWikiPage = async (
         return { ...updatability, outcome: UpdateWikiPageResultOutcome.lockConflict, isLockConflict: true };
     }
 
-    const newRevision = await UpdateOrConsolidateRevision(args, currentPage, currentPageNaturalId, currentUserId, dbt);
+    const newRevision = await UpdateOrConsolidateRevision(args, currentPage, currentPageNaturalId, auth.userId, dbt);
 
     const updatedPage = await dbt.wikiPage.update({
         where: { id: currentPageNaturalId },
@@ -149,7 +145,7 @@ const UpdateExistingWikiPage = async (
     const projectedUpdatedPage = authorizeAndProjectViewDto(
         db3.wikiPageApiView,
         updatedPage,
-        publicData,
+        auth,
         "mutation:WikiPage.update",
     );
     if (!projectedUpdatedPage) throw new Error("Updated wiki page was not authorized for reading.");
@@ -177,19 +173,18 @@ const UpdateExistingWikiPage = async (
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.authorize(Permission.edit_wiki_pages),
+    cmauthorize(Permission.edit_wiki_pages),
     resolver.zod(ZTUpdateWikiPageArgs),
-    async (args: TUpdateWikiPageArgs, ctx: AuthenticatedCtx): Promise<GetWikiPageUpdatabilityResult> => {
+    async (args: TUpdateWikiPageArgs, ctx: CMAuthCtxWithUser): Promise<GetWikiPageUpdatabilityResult> => {
 
-        const currentUser = (await mutationCore.getCurrentUserCore(ctx))!;
-        const publicData = await loadAuthorization(ctx.session);
         const changeContext = CreateChangeContext("updateWikiPage");
+        const authWithUser = ctx.auth.requireUser();
 
         return await wikiTransaction(async (dbt) => {
             const wikiPageRow = await dbt.wikiPage.findFirst({
                 where: await GetAuthorizedTableReadWhere({
                     table: xWikiPage,
-                    currentUser,
+                    auth: ctx.auth,
                     where: { slug: args.canonicalWikiPath },
                 }),
                 ...wikiPageApiSelection,
@@ -198,7 +193,7 @@ export default resolver.pipe(
                 ? authorizeAndProjectViewDto(
                     db3.wikiPageApiView,
                     wikiPageRow,
-                    publicData,
+                    ctx.auth,
                     "mutation:WikiPage.update.load",
                 )
                 : null;
@@ -208,16 +203,16 @@ export default resolver.pipe(
                     args,
                     wikiPage,
                     wikiPageRow.id,
-                    currentUser.id,
-                    db3.xUser.parseIdentity(currentUser.publicId),
-                    publicData,
+                    //currentUser.id,
+                    //db3.xUser.parseIdentity(currentUser.publicId),
+                    authWithUser,
                     dbt
                 );
             } else {
                 result = {
                     ...GetWikiPageUpdatability({
                         currentPage: null,
-                        currentUserId: db3.xUser.parseIdentity(currentUser.publicId),
+                        currentUserPublicId: authWithUser.userPublicId,
                         userClientLockId: args.lockId,
                         baseRevisionId: args.baseRevisionId,
                         baseContentVersion: args.baseContentVersion
@@ -233,7 +228,7 @@ export default resolver.pipe(
                 await RegisterChange({
                     db: dbt,
                     action: ChangeAction.insert,
-                    ctx,
+                    auth: ctx.auth,
                     changeContext,
                     pkid: revision.id,
                     table: "wikiPageRevision",

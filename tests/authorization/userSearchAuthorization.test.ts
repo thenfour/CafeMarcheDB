@@ -19,6 +19,7 @@ import db from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "src/core/db3/db3";
 import { GetSearchResultsCore } from "src/core/db3/server/searchServerCore";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { DiscreteCriterionFilterType, type GetSearchResultsInput } from "src/core/db3/shared/apiTypes";
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
@@ -55,7 +56,7 @@ const runSearch = async (
     });
     return GetSearchResultsCore(
         query(),
-        createAuthorizationTestContext(actor) as AuthenticatedCtx,
+        await loadAuthorization(createAuthorizationTestContext(actor).session),
     );
 };
 
@@ -104,11 +105,11 @@ describe("user search field authorization", () => {
 
         await expect(GetSearchResultsCore(
             query({ sort: [{ db3Column: "createdAt", direction: "desc" }] }),
-            createAuthorizationTestContext(actor) as AuthenticatedCtx,
+            await loadAuthorization(createAuthorizationTestContext(actor).session),
         )).rejects.toMatchObject({ statusCode: 403 });
         await expect(GetSearchResultsCore(
             query({ discreteCriteria: [{ db3Column: "role", behavior: DiscreteCriterionFilterType.hasSomeOf, options: [1] }] }),
-            createAuthorizationTestContext(actor) as AuthenticatedCtx,
+            await loadAuthorization(createAuthorizationTestContext(actor).session),
         )).rejects.toMatchObject({ statusCode: 403 });
         expect(rawQuery).not.toHaveBeenCalled();
     });

@@ -1,4 +1,5 @@
-import { CMAuthorization } from "src/auth/server/requestAuthorization";
+import { testServerAuthorization } from "tests/support/serverAuthorization";
+import { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
@@ -107,7 +108,7 @@ describe("DB3 named views", () => {
             cmdbQueryContext: "dashboard-view-query-test",
             orderBy: undefined,
         };
-        const authorization = new CMAuthorization(null, effectivePermissions);
+        const authorization = new CMServerAuthorization(null, effectivePermissions);
         const hydrate = vi.spyOn(input.view, "hydrate");
         const dtoResult = await queryView(input, authorization, database);
         expect(dtoResult.items).toEqual([{ ...row, id: undefined }]);
@@ -161,7 +162,7 @@ describe("DB3 named views", () => {
             filter: { items: [] },
             cmdbQueryContext: "dashboard-view-authorization-test",
             orderBy: undefined,
-        }, new CMAuthorization(null, new ServerPermissionSet([
+        }, new CMServerAuthorization(null, new ServerPermissionSet([
                 { id: 1, name: Permission.always_grant },
                 { id: 2, name: Permission.public },
             ])), db3.createDashboardReferenceStore(), database);
@@ -173,7 +174,7 @@ describe("DB3 named views", () => {
     it("derives ordinary selections from DTO schemas and preserves explicit query additions", async () => {
         const context = {
             filter: { items: [] },
-            authorization: db3.createDB3Authorization(null, new ServerPermissionSet([])),
+            auth: testServerAuthorization(null, new ServerPermissionSet([])),
         };
 
         expect(db3.eventTypeEditorView.getSelectionArgs(context)).toEqual({
@@ -260,8 +261,8 @@ describe("DB3 named views", () => {
             viewID: "Test_EventNestedWhere",
             entity: db3.xEvent,
             selection,
-            where: ({ authorization }) => ({
-                createdByUserId: authorization.userId,
+            where: ({ auth }) => ({
+                createdByUserId: auth.userId,
             }),
             dtoSchema: z.object({
                 id: z.number().int(),
@@ -286,7 +287,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "db3-view-where-composition-test",
-        }, new CMAuthorization({ id: 42 } as any, effectivePermissions), {
+        }, new CMServerAuthorization({ id: 42 } as any, effectivePermissions), {
             Event: { findMany },
         } as any);
 
@@ -299,7 +300,7 @@ describe("DB3 named views", () => {
         ]));
         expectTypeOf(view.getWhereClause({
             filter: { items: [] },
-            authorization: db3.createDB3Authorization({ id: 42 }, effectivePermissions),
+            auth: testServerAuthorization({ id: 42 }, effectivePermissions),
         })).toEqualTypeOf<Prisma.EventWhereInput | undefined>();
     });
 
@@ -354,7 +355,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "db3-view-test",
-        }, new CMAuthorization({ id: 100 } as any, effectivePermissions), {
+        }, new CMServerAuthorization({ id: 100 } as any, effectivePermissions), {
             InstrumentFunctionalGroup: { findMany },
         } as any);
 
@@ -378,7 +379,7 @@ describe("DB3 named views", () => {
         const dto = authorizeAndProjectViewDto(
             db3.instrumentFunctionalGroupListView,
             { id: 54, ...group },
-            db3.createDB3Authorization({ id: 100 }, effectivePermissions),
+            testServerAuthorization({ id: 100 }, effectivePermissions),
             "db3-single-view-dto-test",
         );
         expect(dto).toEqual(group);
@@ -388,7 +389,7 @@ describe("DB3 named views", () => {
         const result = authorizeAndHydrateViewModel(
             db3.instrumentFunctionalGroupListView,
             { id: 54, ...group },
-            db3.createDB3Authorization({ id: 100 }, effectivePermissions),
+            testServerAuthorization({ id: 100 }, effectivePermissions),
             db3.createDashboardReferenceStore(),
             "db3-single-view-model-test",
         );
@@ -418,7 +419,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "db3-view-ordered-test",
-        }, new CMAuthorization({ id: 100 } as any, effectivePermissions), {
+        }, new CMServerAuthorization({ id: 100 } as any, effectivePermissions), {
             InstrumentFunctionalGroup: { findMany },
         } as any, {
             orderedPrimaryKeys: [2, 1],
@@ -459,7 +460,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "instrument-editor-view-test",
-        }, new CMAuthorization({ id: 100 } as any, effectivePermissions), {
+        }, new CMServerAuthorization({ id: 100 } as any, effectivePermissions), {
             Instrument: { findMany },
         } as any);
 
@@ -554,7 +555,7 @@ describe("DB3 named views", () => {
             { id: 6, name: Permission.view_files },
             { id: 7, name: Permission.visibility_public },
         ]);
-        const authorization = new CMAuthorization({ id: createdByUser.id } as any, effectivePermissions);
+        const authorization = new CMServerAuthorization({ id: createdByUser.id } as any, effectivePermissions);
 
         const customResult = await queryTable({
             table: {
@@ -596,7 +597,7 @@ describe("DB3 named views", () => {
     });
 
     it("represents authorization-stripped fields as absent optional DTO members", () => {
-        const publicData = db3.createDB3Authorization(null, new ServerPermissionSet([
+        const publicData = testServerAuthorization(null, new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.public },
         ]));
@@ -653,7 +654,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { publicIds: [wikiPagePublicId] },
             cmdbQueryContext: "wiki-page-editor-view-test",
-        }, new CMAuthorization({ id: 100 } as any, effectivePermissions), {
+        }, new CMServerAuthorization({ id: 100 } as any, effectivePermissions), {
             WikiPage: { findMany },
         } as any);
 
@@ -920,7 +921,7 @@ describe("DB3 named views", () => {
 
         const selection = db3.fileDetailView.getSelectionArgs({
             filter: { items: [] },
-            authorization: db3.createDB3Authorization(null, new ServerPermissionSet([])),
+            auth: testServerAuthorization(null, new ServerPermissionSet([])),
         });
         expect(selection).toMatchObject({
             select: {
@@ -997,10 +998,10 @@ describe("DB3 named views", () => {
     });
 
     it("builds Event search selections from the authenticated actor, never client identity", () => {
-        const authorization = db3.createDB3Authorization({ id: 42 }, new ServerPermissionSet([]));
+        const authorization = testServerAuthorization({ id: 42 }, new ServerPermissionSet([]));
         const selection = db3.eventSearchView.getSelectionArgs({
             filter: { items: [] },
-            authorization,
+            auth: authorization,
         });
 
         expect(selection.select.responses.where).toEqual({ userId: 42 });
@@ -1201,7 +1202,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "event-search-view-test",
-        }, new CMAuthorization({ id: 42 } as any, effectivePermissions), {
+        }, new CMServerAuthorization({ id: 42 } as any, effectivePermissions), {
             Event: { findMany },
         } as any);
 
@@ -1277,7 +1278,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             take: 1,
             cmdbQueryContext: "wiki-event-context-view-test",
-        }, new CMAuthorization(
+        }, new CMServerAuthorization(
             // This focused authorization fixture only needs the actor identity.
             { id: 42 } as any, effectivePermissions,
         ), {
@@ -1388,7 +1389,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "song-search-view-test",
-        }, new CMAuthorization({ id: 100 } as any, effectivePermissions), {
+        }, new CMServerAuthorization({ id: 100 } as any, effectivePermissions), {
             Song: { findMany },
         } as any);
 
@@ -1607,7 +1608,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [], tableParams: { songId: songPublicId(7) } },
             cmdbQueryContext: "song-detail-view-test",
-        }, new CMAuthorization({ id: 100 } as any, effectivePermissions), {
+        }, new CMServerAuthorization({ id: 100 } as any, effectivePermissions), {
             Song: { findMany },
         } as any);
 
@@ -1969,7 +1970,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [], tableParams: { eventId: eventPublicId(5) } },
             cmdbQueryContext: "event-song-list-detail-view-test",
-        }, new CMAuthorization({ id: 42 } as any, effectivePermissions), {
+        }, new CMServerAuthorization({ id: 42 } as any, effectivePermissions), {
             EventSongList: { findMany },
             Event: { findMany: vi.fn(async () => [{ id: 5, publicId: eventPublicId(5) }]) },
         } as any);
@@ -2014,7 +2015,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "restricted-event-song-list-detail-view-test",
-        }, new CMAuthorization(null, effectivePermissions), {
+        }, new CMServerAuthorization(null, effectivePermissions), {
             EventSongList: { findMany },
         } as any);
 

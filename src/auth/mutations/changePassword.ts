@@ -4,7 +4,8 @@ import { NotFoundError } from "blitz"
 import db from "db"
 import { Permission } from "shared/permissions"
 import { ChangePassword } from "../schemas"
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog"
+import { loadAuthorization } from "../server/serverAuthorization"
 
 //resolver.authorize is defined to take only role/roles. so i can't make my own custom resolver.authorize unfortunately,
 // even though it's overridden via isAuthorized: CMDBRolesIsAuthorized.
@@ -44,7 +45,7 @@ export default resolver.pipe(
       pkid: user.id,
       oldValues: oldUser,
       newValues: newUser,
-      ctx,
+      auth: await loadAuthorization(ctx.session),
     });
 
     return true

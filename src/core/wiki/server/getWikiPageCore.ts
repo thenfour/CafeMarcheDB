@@ -1,8 +1,8 @@
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { GetWikiPageUpdatability, WikiPageData, wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
 import { ProcessEventDescriptionForWikiPage } from "./wikiNamespaceEventDescription";
-import { AuthenticatedCtx } from "blitz";
-import { loadAuthorization } from "src/auth/server/requestAuthorization";
+import type { Ctx } from "blitz";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { queryView } from "src/core/db3/server/db3QueryCore";
 import { wikiPageApiView } from "src/core/db3/shared/entities/wiki/wikiViews";
 import { xUser } from "src/core/db3/shared/schema/user";
@@ -13,7 +13,7 @@ interface GetWikiPageCoreArgs {
     clientBaseContentVersion: number;
     clientBaseRevisionId: WikiPageRevisionPublicId | null;
     clientLockId: string | null;
-    ctx: AuthenticatedCtx;
+    ctx: Ctx;
     dbt: TransactionalPrismaClient;
 };
 
@@ -37,7 +37,7 @@ export async function GetWikiPageCore({ canonicalWikiSlug, dbt, ctx, ...args }: 
     const path = wikiParseCanonicalWikiPath(canonicalWikiSlug);
     const lockStatus = GetWikiPageUpdatability({
         currentPage: page,
-        currentUserId: xUser.parseIdentity(currentUser.publicId),
+        currentUserPublicId: authorization.userPublicId,
         userClientLockId: args.clientLockId,
         baseRevisionId: args.clientBaseRevisionId,
         baseContentVersion: args.clientBaseContentVersion,

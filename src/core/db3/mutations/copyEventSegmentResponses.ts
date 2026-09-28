@@ -1,7 +1,7 @@
-import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
+import { cmauthorize, type CMAuthCtx } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import * as db3 from "../db3";
@@ -25,7 +25,7 @@ const auditResponses = (rows: Prisma.EventSegmentUserResponseGetPayload<{}>[]) =
 export default resolver.pipe(
     cmauthorize(Permission.admin_events),
     resolver.zod(ZArgs),
-    async (args, ctx: CMCtx) => {
+    async (args, ctx: CMAuthCtx) => {
         await db.$transaction(async tx => {
             const [fromId, toId] = await resolvePublicIds(db3.xEventSegment,
                 [args.fromEventSegmentId, args.toEventSegmentId],
@@ -72,7 +72,7 @@ export default resolver.pipe(
                 pkid: toId!,
                 oldValues: auditResponses(oldValues),
                 newValues: auditResponses(sourceValues),
-                ctx,
+                auth: ctx.auth,
                 db: tx,
             });
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });

@@ -1,8 +1,8 @@
-import { cmauthorize, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthCtxWithUser } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import { AuthorizationError, NotFoundError } from "blitz";
 import db, { Prisma } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
@@ -24,9 +24,9 @@ export class EventAttendanceAuthorizationError extends AuthorizationError {
 export default resolver.pipe(
     cmauthorize(Permission.login),
     resolver.zod(ZupdateUserEventAttendanceMutationArgs),
-    async (args: TupdateUserEventAttendanceMutationArgs, ctx: CMAuthenticatedCtx) => {
+    async (args: TupdateUserEventAttendanceMutationArgs, ctx: CMAuthCtxWithUser) => {
         const currentUser = ctx.auth.user;
-        const publicData = ctx.auth;
+        const auth = ctx.auth;
         const hasResponseMutation = args.comment !== undefined
             || args.instrumentId !== undefined
             || Object.keys(args.segmentResponses || {}).length > 0;
@@ -52,10 +52,10 @@ export default resolver.pipe(
             }));
         const changeContext = CreateChangeContext("updateUserEventAttendance");
         await db.$transaction(async transactionalDb => {
-            const eventId = await resolvePublicId(db3.xEvent, args.eventId, publicData, transactionalDb);
+            const eventId = await resolvePublicId(db3.xEvent, args.eventId, auth, transactionalDb);
             const instrumentId = args.instrumentId == null
                 ? args.instrumentId
-                : await resolvePublicId(db3.xInstrument, args.instrumentId, publicData, transactionalDb);
+                : await resolvePublicId(db3.xInstrument, args.instrumentId, auth, transactionalDb);
             const [event, targetUser, eventSegments] = await Promise.all([
                 transactionalDb.event.findFirst({
                     where: { id: eventId, isDeleted: false },
@@ -84,7 +84,7 @@ export default resolver.pipe(
             ]);
 
             if (!event
-                || !db3.xEvent.authorizeRowForView({ model: event, publicData })) {
+                || !db3.xEvent.authorizeRowForView({ model: event, auth: auth })) {
                 throw new NotFoundError();
             }
             if (!targetUser || eventSegments.length !== segmentResponses.length) {
@@ -93,7 +93,7 @@ export default resolver.pipe(
 
             const attendancePublicIds = [...new Set(segmentResponses
                 .flatMap(response => response.attendanceId === null ? [] : [response.attendanceId]))];
-            const attendanceIds = await resolvePublicIds(db3.xEventAttendance, attendancePublicIds, publicData, transactionalDb);
+            const attendanceIds = await resolvePublicIds(db3.xEventAttendance, attendancePublicIds, auth, transactionalDb);
             const attendanceIdByPublicId = new Map(attendancePublicIds.map((publicId, index) => [publicId, attendanceIds[index]!]));
 
             let didSegmentChangesOccur = false;
@@ -123,7 +123,7 @@ export default resolver.pipe(
                         pkid: existing.id,
                         oldValues: existing,
                         newValues: updated,
-                        ctx,
+                        auth: ctx.auth,
                         db: transactionalDb,
                     });
                     await mutationCore.CallMutateEventHooks({
@@ -154,7 +154,7 @@ export default resolver.pipe(
                         table: db3.xEventSegmentUserResponse.tableName,
                         pkid: inserted.id,
                         newValues: inserted,
-                        ctx,
+                        auth: ctx.auth,
                         db: transactionalDb,
                     });
                     await mutationCore.CallMutateEventHooks({
@@ -199,7 +199,7 @@ export default resolver.pipe(
                         pkid: existingEventResponse.id,
                         oldValues: existingEventResponse,
                         newValues: updated,
-                        ctx,
+                        auth: ctx.auth,
                         db: transactionalDb,
                     });
                 }
@@ -226,7 +226,7 @@ export default resolver.pipe(
                     table: db3.xEventUserResponse.tableName,
                     pkid: inserted.id,
                     newValues: inserted,
-                    ctx,
+                    auth: ctx.auth,
                     db: transactionalDb,
                 });
             }

@@ -5,8 +5,9 @@ import {
     ChangeAction,
     CreateChangeContext,
     RegisterChange,
-} from "shared/activityLog";
+} from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
+import { cmauthorize } from "../server/cmResolver";
 import { z } from "zod";
 import { isPublicId, type RolePublicId } from "shared/publicId";
 import {
@@ -31,7 +32,7 @@ export const AssignUserRoleInput = z.object({
 
 export default resolver.pipe(
     resolver.zod(AssignUserRoleInput),
-    resolver.authorize(Permission.assign_user_roles),
+    cmauthorize(Permission.assign_user_roles),
     async ({ userId, roleId, acknowledgeContinuityRisk }, ctx) => db.$transaction(
         async tx => {
             // desiredRole perm set is NOT "effective" perms, on purpose.
@@ -88,7 +89,7 @@ export default resolver.pipe(
                 pkid: target.principal.id,
                 oldValues: { roleId: target.principal.roleId },
                 newValues: { roleId: desiredRoleDatabaseId },
-                ctx,
+                auth: ctx.auth,
                 db: tx,
             });
 

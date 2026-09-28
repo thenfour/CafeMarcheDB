@@ -1,7 +1,7 @@
 // returns a row-by-row detail of data,
 
 import { Stopwatch } from "@/shared/rootroot";
-import { getCurrentUserCore } from "@/src/core/db3/server/db3mutationCore";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
@@ -21,7 +21,7 @@ async function getFilteredDetails(args: TArgs, ctx: AuthenticatedCtx): Promise<T
     if (!args.filterSpec.selectedBucket) {
         return null;
     }
-    const currentUser = await getCurrentUserCore(ctx);
+    const currentUser = (await loadAuthorization(ctx.session)).user;
     if (!currentUser) {
         return null;
     }

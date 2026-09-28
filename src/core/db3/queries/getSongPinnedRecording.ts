@@ -4,7 +4,7 @@ import db from "db";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { TSongPinnedRecording } from "../shared/apiTypes";
-import { getCurrentUserCore } from "../server/db3mutationCore";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 import { xFile } from "../shared/schema/file";
 import { xSong } from "../shared/schema/song";
@@ -19,16 +19,16 @@ export default resolver.pipe(
     resolver.zod(ZArgs),
     async (args, ctx: AuthenticatedCtx): Promise<Partial<Record<SongPublicId, TSongPinnedRecording>>> => {
         try {
-            const currentUser = await getCurrentUserCore(ctx);
+            const currentUser = (await loadAuthorization(ctx.session)).user;
             if (!currentUser) throw new Error("Current user was not found.");
             const fileWhere = await GetAuthorizedTableReadWhere({
                 table: xFile,
-                currentUser,
+                auth: await loadAuthorization(ctx.session),
             });
             const qr = await db.song.findMany({
                 where: await GetAuthorizedTableReadWhere({
                     table: xSong,
-                    currentUser,
+                    auth: await loadAuthorization(ctx.session),
                     where: {
                         publicId: { in: args.songIds },
                         pinnedRecordingId: { not: null },

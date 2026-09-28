@@ -1,4 +1,4 @@
-import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthCtx } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
@@ -8,7 +8,7 @@ import { GetGlobalStatsArgs, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGloba
 
 export default resolver.pipe(
     cmauthorize(Permission.view_events_reports),
-    async (args: GetGlobalStatsArgs, ctx: CMCtx): Promise<GetGlobalStatsRet> => {
+    async (args: GetGlobalStatsArgs, ctx: CMAuthCtx): Promise<GetGlobalStatsRet> => {
         try {
             const u = ctx.auth.user;
             if (!u?.role || u.role.permissions.length < 1) {
@@ -21,12 +21,11 @@ export default resolver.pipe(
             }
 
             const authorization = ctx.auth;
-            const publicData = authorization;
             const [eventTypeIds, eventStatusIds, eventTagIds, songTagIds] = await Promise.all([
-                resolvePublicIds(db3.xEventType, args.filterSpec.eventTypeIds, publicData, db),
-                resolvePublicIds(db3.xEventStatus, args.filterSpec.eventStatusIds, publicData, db),
-                resolvePublicIds(db3.xEventTag, args.filterSpec.eventTagIds, publicData, db),
-                resolvePublicIds(db3.xSongTag, args.filterSpec.songTagIds, publicData, db),
+                resolvePublicIds(db3.xEventType, args.filterSpec.eventTypeIds, authorization, db),
+                resolvePublicIds(db3.xEventStatus, args.filterSpec.eventStatusIds, authorization, db),
+                resolvePublicIds(db3.xEventTag, args.filterSpec.eventTagIds, authorization, db),
+                resolvePublicIds(db3.xSongTag, args.filterSpec.songTagIds, authorization, db),
             ]);
 
             const eventFilters: string[] = [];
@@ -88,7 +87,7 @@ export default resolver.pipe(
                     Song s
                     left join SongTagAssociation sta on sta.songId = s.id
                 where
-                    ${db3.xSong.SqlGetVisFilterExpression(u, "s")}
+                    ${db3.xSong.SqlGetVisFilterExpression({ auth: ctx.auth, tableAlias: "s" })}
                     AND (${songFilters.join(" AND ")})
                 group by
                     s.id
@@ -100,7 +99,7 @@ export default resolver.pipe(
                     Event e
                     left join EventTagAssignment eta on eta.eventId = e.id
                 where
-                    ${db3.xEvent.SqlGetVisFilterExpression(u, "e")}
+                    ${db3.xEvent.SqlGetVisFilterExpression({ auth: ctx.auth, tableAlias: "e" })}
                     AND (e.startsAt is not null) -- TBD events are almost by definition irrelevant to stats like this. don't bother with a param
                     AND (${eventFilters.join(" AND ")})
                 group by
@@ -171,7 +170,7 @@ export default resolver.pipe(
                     Event e
                     left join EventTagAssignment eta on eta.eventId = e.id
                 where
-                    ${db3.xEvent.SqlGetVisFilterExpression(u, "e")}
+                    ${db3.xEvent.SqlGetVisFilterExpression({ auth: ctx.auth, tableAlias: "e" })}
                     AND (startsAt is not null) -- TBD events are almost by definition irrelevant to stats like this. don't bother with a param
                     AND (${eventFilters.join(" AND ")})
                 group by

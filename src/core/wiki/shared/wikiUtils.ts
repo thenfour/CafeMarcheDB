@@ -247,7 +247,7 @@ export enum UpdateWikiPageResultOutcome {
 
 type GetWikiPageLockStatusArgs = {
     currentPage: WikiPageApiPayload | null;
-    currentUserId: UserPublicId | null;
+    currentUserPublicId: UserPublicId | null;
     userClientLockId: string | null;
     baseRevisionId: WikiPageRevisionPublicId | null;
     baseContentVersion: number;
@@ -267,8 +267,8 @@ export type GetWikiPageUpdatabilityResult = {
     currentPage: WikiPageApiPayload | null;
 };
 
-export const GetWikiPageUpdatability = ({ currentPage, currentUserId, userClientLockId, baseRevisionId, baseContentVersion }: GetWikiPageLockStatusArgs): GetWikiPageUpdatabilityResult => {
-    if (!currentPage || !currentUserId) {
+export const GetWikiPageUpdatability = ({ currentPage, currentUserPublicId, userClientLockId, baseRevisionId, baseContentVersion }: GetWikiPageLockStatusArgs): GetWikiPageUpdatabilityResult => {
+    if (!currentPage || !currentUserPublicId) {
         const isRevisionConflict = baseRevisionId !== null || baseContentVersion !== 0;
         return {
             isLocked: false,
@@ -286,7 +286,7 @@ export const GetWikiPageUpdatability = ({ currentPage, currentUserId, userClient
 
     const isLockExpired = currentPage.lockExpiresAt != null && currentPage.lockExpiresAt <= new Date();
     const isLocked = currentPage.lockId != null && currentPage.lockExpiresAt != null && !isLockExpired;
-    const isLockedInThisContext = isLocked && currentPage.lockedByUser?.publicId === currentUserId && currentPage.lockId === userClientLockId;
+    const isLockedInThisContext = isLocked && currentPage.lockedByUser?.publicId === currentUserPublicId && currentPage.lockId === userClientLockId;
     const isRevisionCompatible = (currentPage.currentRevision?.publicId ?? null) === baseRevisionId && currentPage.contentVersion === baseContentVersion;
     const isLockConflict = isLocked && !isLockedInThisContext;
 

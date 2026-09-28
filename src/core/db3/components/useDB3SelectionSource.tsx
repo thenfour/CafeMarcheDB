@@ -10,7 +10,7 @@ import { SelectionSource } from "src/core/components/select/selectionSource";
 import * as db3 from "../db3";
 import { fetchUnsuspended } from "./DB3ClientCore";
 import { useCrudViewCreate } from "./useCrudViewCreate";
-import { useDB3Authorization } from "./useDB3Authorization";
+import { useClientAuth } from "./useClientAuth";
 
 interface DB3SelectionSourceProps<T> {
     schema: db3.xTable;
@@ -47,7 +47,7 @@ export function useDB3SelectionSource<T extends TAnyModel>(props: DB3SelectionSo
             return <CMChip size={props.chipSize || "small"} shape={props.chipShape || "rectangle"} color={info.color} tooltip={info.tooltip} variation={StandardVariationSpec.Strong}>{props.renderOption ? props.renderOption(item) : info.name}</CMChip>;
         },
         useOptions(filterText, enabled) {
-            const publicData = useDB3Authorization();
+            const auth = useClientAuth();
             const dashboard = useDashboardContext();
             const crudCreate = useCrudViewCreate(props.view);
             const query = fetchUnsuspended<T>({
@@ -60,7 +60,7 @@ export function useDB3SelectionSource<T extends TAnyModel>(props: DB3SelectionSo
             const canCreate = props.allowInsertFromString !== false
                 && !!props.schema.createInsertModelFromString
                 && !!crudCreate
-                && props.schema.authorizeRowBeforeInsert({ publicData });
+                && props.schema.authorizeRowBeforeInsert({ auth: auth });
             return {
                 items: query.items, isLoading: enabled && query.isLoading,
                 isFetching: enabled && query.queryResult?.isFetching,

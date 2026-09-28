@@ -3,6 +3,7 @@ import db, { Prisma } from "db";
 import { z } from "zod";
 import { ZTRecordActionArgs } from "../../components/featureReports/activityTracking";
 import * as mutationCore from "../server/db3mutationCore";
+import { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
 
 type RecordActionArgs = z.infer<typeof ZTRecordActionArgs>;
 
@@ -239,20 +240,10 @@ export async function createActionRecord(args: RecordActionArgs & { userId?: num
     // });
 }
 
-export async function recordAuthenticatedClientAction(args: RecordActionArgs, ctx: Ctx) {
-    const currentUser = await mutationCore.getCurrentUserCore(ctx);
+export async function recordAuthenticatedClientAction(args: RecordActionArgs, auth: CMServerAuthorization) {
     await createActionRecord({
         ...args,
-        userId: currentUser?.id,
+        userId: auth.userId,
         isClient: true,
     });
-}
-
-// For legacy usage, keep the original recordAction for server-side/mutation
-export async function recordAction({ userId, ...args }: RecordActionArgs & { userId?: number }, ctx: Ctx) {
-    if (!userId) {
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        userId = currentUser?.id;
-    }
-    await createActionRecord({ userId, isClient: false, ...args });
 }

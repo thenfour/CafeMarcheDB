@@ -30,12 +30,13 @@ import {
   CreateChangeContext,
   RegisterChange,
   redactAuditValues,
-} from "shared/activityLog"
+} from "@/src/auth/server/activityLog"
 import {
   createAuthorizationPersona,
   createAuthorizationTestUser,
 } from "./support/authorizationFixtures"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
+import { loadAuthorization } from "src/auth/server/serverAuthorization"
 import { invokeResolver } from "./support/resolverHarness"
 
 const existingToken = "a".repeat(64)
@@ -282,7 +283,7 @@ describe("BA-S001 credential containment", () => {
       pkid: 10,
       oldValues: { hashedPassword: "old-password-hash", calendarFeedToken: existingToken },
       newValues: { hashedPassword: "new-password-hash", calendarFeedToken: otherToken },
-      ctx,
+      auth: await loadAuthorization(ctx.session),
       options: { dontCalculateChanges: true },
       db: authorizationTestDb as never,
     })

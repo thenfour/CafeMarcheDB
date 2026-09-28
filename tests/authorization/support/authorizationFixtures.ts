@@ -3,7 +3,7 @@ import {
   makeUserManagementActor,
   makeUserManagementTarget,
 } from "src/auth/server/userManagementState";
-import { createDB3Authorization } from "src/core/db3/shared/db3Authorization";
+import { testServerAuthorization } from "tests/support/serverAuthorization";
 import type { AuthenticatedCtx, Ctx } from "blitz"
 import { Permission } from "shared/permissions"
 import {
@@ -242,7 +242,7 @@ export function createAuthorizationTarget(
 // Direct schema tests use synthetic row IDs from the fixture's assigned role.
 // Server-path tests resolve inherited role IDs through the real loader.
 export function createAuthorizationSchemaData(user: AuthorizationTestUser | null) {
-  return createDB3Authorization(user, new ServerPermissionSet([
+  return testServerAuthorization(user, new ServerPermissionSet([
     ...testPublicRolePermissions.map((name, index) => ({ id: 920_000 + index, name })),
     ...(user?.role?.permissions.map(entry => entry.permission) ?? []),
   ]))
@@ -251,7 +251,7 @@ export function createAuthorizationSchemaData(user: AuthorizationTestUser | null
 export function asUserManagementActor(
   user: AuthorizationTestUser | null,
 ) {
-  return makeUserManagementActor(user, createAuthorizationSchemaData(user).effectivePermissions)
+  return makeUserManagementActor(user, createAuthorizationSchemaData(user))
 }
 
 export function asUserManagementTarget(

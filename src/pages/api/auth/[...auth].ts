@@ -6,7 +6,7 @@ import db from "db";
 import { resolveGoogleSignIn } from "src/auth/server/googleSignIn";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { api } from "src/blitz-server";
-import { recordAction } from "src/core/db3/server/recordActionServer";
+import { createActionRecord } from "src/core/db3/server/recordActionServer";
 import { createPublicDataFromDatabase } from "src/auth/server/effectivePermissions";
 import { GoogleProfileWithEmails } from "@/src/auth/server/googleProfile";
 
@@ -28,11 +28,12 @@ export default api(
             try {
               //console.log("Google profile:", profile);
               const { user, created } = await resolveGoogleSignIn(profile, ctx);
-              await recordAction({
+              await createActionRecord({
                 feature: created ? ActivityFeature.signup_google : ActivityFeature.login_google,
                 userId: user.id,
                 uri: undefined,
-              }, ctx);
+                isClient: false,
+              });
               done(null, { publicData: await createPublicDataFromDatabase(db, { user }) });
             } catch (err) {
               done(null, false);

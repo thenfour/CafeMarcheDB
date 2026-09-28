@@ -1,13 +1,12 @@
+import { cmauthorize } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
-import { GetFilteredSongsItemSongSelect, GetFilteredSongsRet } from "../shared/apiTypes";
-import { getCurrentUserCore } from "../server/db3mutationCore";
-import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
-import { xSong, xSongTag, xSongTagAssociation } from "../shared/schema/song";
 import type { SongPublicId } from "shared/publicId";
+import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
+import { GetFilteredSongsItemSongSelect, GetFilteredSongsRet } from "../shared/apiTypes";
 import { xFile } from "../shared/schema/file";
+import { xSong, xSongTag, xSongTagAssociation } from "../shared/schema/song";
 
 interface TArgs {
     id: SongPublicId | null;
@@ -15,17 +14,19 @@ interface TArgs {
 
 
 export default resolver.pipe(
-    resolver.authorize(Permission.view_songs),
-    async (args: TArgs, ctx: AuthenticatedCtx): Promise<GetFilteredSongsRet> => {
+    cmauthorize(Permission.view_songs),
+    async (args: TArgs, ctx): Promise<GetFilteredSongsRet> => {
         try {
             if (args.id === null) return { matchingItem: null };
-            const currentUser = await getCurrentUserCore(ctx);
+            //const currentUser = (await loadAuthorization(ctx.session)).user;
+            const currentUser = ctx.auth.user;
+
             if (!currentUser) throw new Error("Current user was not found.");
             const qr = await db.song.findFirst({
                 select: GetFilteredSongsItemSongSelect,
                 where: await GetAuthorizedTableReadWhere({
                     table: xSong,
-                    currentUser,
+                    auth: ctx.auth,
                     where: { publicId: args.id },
                 }),
             });

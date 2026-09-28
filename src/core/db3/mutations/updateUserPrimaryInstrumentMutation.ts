@@ -1,4 +1,4 @@
-import { cmauthorize, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthCtxWithUser } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { Permission } from "shared/permissions";
@@ -10,9 +10,9 @@ import { TupdateUserPrimaryInstrumentMutationArgs } from "../shared/apiTypes";
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     cmauthorize(Permission.login),
-    async (args: TupdateUserPrimaryInstrumentMutationArgs, ctx: CMAuthenticatedCtx) => {
-        const publicData = ctx.auth;
-        const instrumentId = await resolvePublicId(db3.xInstrument, args.instrumentId, publicData, db);
+    async (args: TupdateUserPrimaryInstrumentMutationArgs, ctx: CMAuthCtxWithUser) => {
+        const auth = ctx.auth;
+        const instrumentId = await resolvePublicId(db3.xInstrument, args.instrumentId, auth, db);
 
         // load ALL instruments because it's always a small list,
         // and we want to get multiple data:
@@ -39,13 +39,13 @@ export default resolver.pipe(
         for (let i = 0; i < existingIds.length; ++i) {
             await mutationCore.updateImpl(db3.xUserInstrument, existingIds[i]!, {
                 isPrimary: false,
-            }, ctx);
+            }, ctx.auth);
         }
 
         if (newId) {
             await mutationCore.updateImpl(db3.xUserInstrument, newId, {
                 isPrimary: true,
-            }, ctx);
+            }, ctx.auth);
         }
 
         return args;

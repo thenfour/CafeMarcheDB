@@ -6,9 +6,9 @@ import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
-import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
+import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import {
-    ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3FieldPrismaMember,
+    ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3FacetInfoArgs, type DB3FieldPrismaMember,
     type DB3IdentityOf, type DB3MutationProjectionField,
     type DB3ReadPresenceForAuthSpec, type DB3RegisteredTableID,
     type DB3RelationTargetField, type DB3ResolvedRelationTarget, type DB3RowMode,
@@ -405,8 +405,8 @@ class TagsFieldImpl<
     getCustomFilterWhereClause = (query: CMDBTableFilterModel) => this.getCustomFilterWhereClause__(query);
     getOverallWhereClause = (): TAnyModel | boolean => false;
 
-    ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3ServerAuthorization, includeDeleted: boolean) => {
-        await ApplyIncludeFilteringToRelation(include, this.member, this.associationForeignObjectMember, this.foreignTableID, publicData, includeDeleted);
+    ApplyIncludeFiltering = async (include: TAnyModel, auth: CMServerAuthorization, includeDeleted: boolean) => {
+        await ApplyIncludeFilteringToRelation(include, this.member, this.associationForeignObjectMember, this.foreignTableID, auth, includeDeleted);
     };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
@@ -521,12 +521,7 @@ class TagsFieldImpl<
         return map[crit.behavior]();
     }
 
-    SqlGetFacetInfoQuery = (
-        currentUser: UserWithRolesPayload,
-        filteredItemsQuery: string,
-        filteredItemsQueryExcludingThisCriterion: string,
-        crit: DiscreteCriterion
-    ): SearchResultsFacetQuery | null => {
+    SqlGetFacetInfoQuery = ({ filteredItemsQueryExcludingThisCriterion }: DB3FacetInfoArgs): SearchResultsFacetQuery | null => {
         //return null;
         const foreignSchema = this.getForeignTableShema();
         const foreignTable = foreignSchema.tableName;

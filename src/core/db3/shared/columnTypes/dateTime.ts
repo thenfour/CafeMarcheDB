@@ -124,7 +124,7 @@ export class DateTimeField<
 
     SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
     SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
-    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
+    SqlGetFacetInfoQuery = (): SearchResultsFacetQuery | null => null;
     SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => {
         return {
             join: [],

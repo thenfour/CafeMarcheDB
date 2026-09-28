@@ -1,3 +1,4 @@
+import { testServerAuthorization } from "tests/support/serverAuthorization";
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("db", async () => {
@@ -12,7 +13,7 @@ import updateSongBasicFields from "@db3/mutations/updateSongBasicFields"
 import db3Query from "@db3/queries/db3queries"
 import db3PaginatedQuery from "@db3/queries/db3paginatedQueries"
 import { queryTable } from "@db3/server/db3QueryCore"
-import { loadAuthorizationForUser } from "src/auth/server/requestAuthorization"
+import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 import { Permission } from "shared/permissions"
 import { parsePublicId } from "shared/publicId"
@@ -35,13 +36,13 @@ beforeEach(() => authorizationTestDb.reset())
 
 describe("explicit DB3 authorization", () => {
   it("uses public identity for client owner edit hints", () => {
-    const authorization = db3.createDB3Authorization(
+    const authorization = testServerAuthorization(
       { id: 501, publicId: userPublicId(501) },
       new ServerPermissionSet([{ id: 1, name: Permission.view_songs }]),
     )
     const editArgs = {
       model: null,
-      publicData: authorization,
+      auth: authorization,
       columnName: "description",
       fallbackOwnerId: null,
     }
@@ -51,10 +52,10 @@ describe("explicit DB3 authorization", () => {
 
   it("requires an explicit permission set instead of silently supplying empty grants", () => {
     // @ts-expect-error Missing grants are a caller error, including at runtime.
-    expect(() => db3.createDB3Authorization(null, undefined)).toThrow("effective permissions are required")
+    expect(() => testServerAuthorization(null, undefined)).toThrow("effective permissions are required")
     // @ts-expect-error Plain transport data must be resolved into a PermissionSet.
-    expect(() => db3.createDB3Authorization(null, { names: [], ids: [] })).toThrow("effective permissions are required")
-    const noGrants = db3.createDB3Authorization(null, new ServerPermissionSet([]))
+    expect(() => testServerAuthorization(null, { names: [], ids: [] })).toThrow("effective permissions are required")
+    const noGrants = testServerAuthorization(null, new ServerPermissionSet([]))
     expect(db3.xSong.authorizeTableForView(noGrants)).toBe(false)
     // @ts-expect-error Partial public/session data is not schema authorization.
     expect(() => db3.xSong.authorizeTableForView({ userId: 0 })).toThrow()
@@ -94,9 +95,9 @@ describe("explicit DB3 authorization", () => {
       permissions: [Permission.login],
     })
     const resolved = await loadAuthorizationForUser(actor as any)
-    const authorization = db3.createDB3Authorization(resolved.user, resolved.effectivePermissions)
+    const authorization = testServerAuthorization(resolved.user, resolved.effectivePermissions)
     const where = db3.permissionVisibilityView.getWhereClause({
-      authorization,
+      auth: authorization,
       filter: { items: [] },
     })
     expect(matchesWhere({ id: 920_002, isVisibility: true }, where)).toBe(true)
@@ -165,7 +166,7 @@ describe("explicit DB3 authorization", () => {
   it("applies the same recovery and private-owner rules to included relations", async () => {
     const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
     const resolved = await loadAuthorizationForUser(actor as any)
-    const authorization = db3.createDB3Authorization(resolved.user, resolved.effectivePermissions)
+    const authorization = testServerAuthorization(resolved.user, resolved.effectivePermissions)
     const selection = await db3.xSong.CalculateSelectionArgs(
       authorization,
       { items: [] },
@@ -236,10 +237,10 @@ describe("explicit DB3 authorization", () => {
   it("keeps nested event song filters specific to each viewer and recovery request", async () => {
     const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
     const resolved = await loadAuthorizationForUser(actor as any)
-    const owner = db3.createDB3Authorization(resolved.user, resolved.effectivePermissions)
+    const owner = testServerAuthorization(resolved.user, resolved.effectivePermissions)
     const otherResolved = await loadAuthorizationForUser(createAuthorizationTestUser("sysadmin", { id: 502 }) as any)
-    const other = db3.createDB3Authorization(otherResolved.user, otherResolved.effectivePermissions)
-    const publicViewer = db3.createDB3Authorization(null, resolved.effectivePermissions)
+    const other = testServerAuthorization(otherResolved.user, otherResolved.effectivePermissions)
+    const publicViewer = testServerAuthorization(null, resolved.effectivePermissions)
     const entry = { id: 1, eventSongList: visibleListParent, song: makeSong(1) }
     for (const [viewer, expected] of [[owner, true], [other, false], [publicViewer, false]] as const) {
       const selection = await db3.xEvent.CalculateSelectionArgs(
@@ -259,7 +260,7 @@ describe("explicit DB3 authorization", () => {
   it("requires song read permission even when the parent event is readable", async () => {
     const resolved = await loadAuthorizationForUser(null)
     const selection = await db3.xEvent.CalculateSelectionArgs(
-      db3.createDB3Authorization(null, resolved.effectivePermissions), { items: [] }, false,
+      testServerAuthorization(null, resolved.effectivePermissions), { items: [] }, false,
       db3.eventCalendarView.getSelectionArgs,
     )
     const entry = { id: 1, eventSongList: visibleListParent, song: makeSong(1, { visiblePermissionId: 920_002 }) }
@@ -268,7 +269,7 @@ describe("explicit DB3 authorization", () => {
 
   it.each(["include", "select"])("traverses association targets with %s and preserves authored filters", async selectionKind => {
     const resolved = await loadAuthorizationForUser(createAuthorizationTestUser("sysadmin", { id: 501 }) as any)
-    const authorization = db3.createDB3Authorization(resolved.user, resolved.effectivePermissions)
+    const authorization = testServerAuthorization(resolved.user, resolved.effectivePermissions)
     const selection: any = {
       songs: {
         where: { sortOrder: { gte: 10 } },

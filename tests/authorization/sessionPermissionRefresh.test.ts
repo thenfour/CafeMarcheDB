@@ -9,8 +9,8 @@ vi.mock("db", async () => {
 });
 
 import getDashboardData from "src/auth/queries/getDashboardData";
-import { cmauthorize, type CMAuthenticatedCtx, type CMCtx } from "src/auth/server/cmResolver";
-import { loadAuthorization } from "src/auth/server/requestAuthorization";
+import { cmauthorize, type CMAuthCtxWithUser, type CMAuthCtx } from "src/auth/server/cmResolver";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { createAuthorizationPublicData, createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { invokeResolver } from "./support/resolverHarness";
@@ -217,7 +217,7 @@ describe("authorization refresh on every request", () => {
         const ctx = createAuthorizationTestContext(user);
         const guarded = resolver.pipe(
             cmauthorize(Permission.login),
-            async (_input: {}, resolverCtx: CMAuthenticatedCtx) => ({
+            async (_input: {}, resolverCtx: CMAuthCtxWithUser) => ({
                 userId: resolverCtx.auth.user.id,
                 canViewUsers: resolverCtx.auth.hasPermission(Permission.view_users_basic_info),
             }),
@@ -232,7 +232,7 @@ describe("authorization refresh on every request", () => {
 
         const publicResolver = resolver.pipe(
             cmauthorize(Permission.public),
-            async (_input: {}, resolverCtx: CMCtx) => resolverCtx.auth.userId,
+            async (_input: {}, resolverCtx: CMAuthCtx) => resolverCtx.auth.userId,
         );
         await expect(invokeResolver(publicResolver, {}, anonymous)).resolves.toBeNull();
     });

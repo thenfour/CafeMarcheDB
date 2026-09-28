@@ -37,14 +37,14 @@ import {
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import {
     loadAuthorization,
-    type CMAuthorization
-} from "../server/requestAuthorization";
+    type CMServerAuthorization
+} from "../server/serverAuthorization";
 import { loadUserSettings } from "../server/userSettings";
 
 // does not choke when auth doesn't allow it; returns empty.
 async function queryOptionalDashboardView<TView extends AnyDB3View>(
     view: TView,
-    authorization: CMAuthorization,
+    authorization: CMServerAuthorization,
 ): Promise<DtoOf<TView>[]> {
     try {
         const result = await queryView({
@@ -63,7 +63,7 @@ async function queryOptionalDashboardView<TView extends AnyDB3View>(
 
 // Returns public event identities to show in the dashboard for the current user.
 async function getTopRelevantEvents(
-    authorization: CMAuthorization,
+    authorization: CMServerAuthorization,
     eventStatuses: readonly { id: number; significance: string | null }[],
     db: TransactionalPrismaClient,
 ): Promise<EventPublicId[]> {
@@ -72,7 +72,6 @@ async function getTopRelevantEvents(
         // no user, no events.
         return [];
     }
-    const publicData = authorization;
     const now = new Date();
     const sevenDaysFromNow = new Date(now);
     sevenDaysFromNow.setDate(now.getDate() + 7); // 7 days allows you to see next week's rehearsal just after the last one ends.
@@ -118,7 +117,7 @@ async function getTopRelevantEvents(
         Event e
     WHERE
         -- critical visibility
-        (${xEvent.SqlGetVisFilterExpression(currentUser, "e", false, publicData)})
+        (${xEvent.SqlGetVisFilterExpression({ auth: authorization, tableAlias: "e" })})
         and (
             -- relevance class has overrides except for hidden.
             (e.relevanceClassOverride IS NOT NULL and e.relevanceClassOverride != '${gEventRelevanceClass.Hidden}')

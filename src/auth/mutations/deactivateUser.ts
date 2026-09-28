@@ -5,7 +5,7 @@ import {
     ChangeAction,
     CreateChangeContext,
     RegisterChange,
-} from "shared/activityLog";
+} from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { UserPublicIdSchema } from "../schemas";
@@ -20,6 +20,7 @@ import {
 } from "../server/userManagementState";
 import { revokeUserSignInState } from "../server/signInMethods";
 import { PermissionSet } from "../shared/PermissionSet";
+import { cmauthorize } from "../server/cmResolver";
 
 export const DeactivateUserInput = z.object({
     userId: UserPublicIdSchema,
@@ -28,7 +29,7 @@ export const DeactivateUserInput = z.object({
 
 export default resolver.pipe(
     resolver.zod(DeactivateUserInput),
-    resolver.authorize(Permission.deactivate_users),
+    cmauthorize(Permission.deactivate_users),
     async ({ userId, acknowledgeContinuityRisk }, ctx) => db.$transaction(
         async tx => {
             const [actor, target] = await Promise.all([
@@ -61,7 +62,7 @@ export default resolver.pipe(
                 pkid: target.principal.id,
                 oldValues: { isDeleted: false },
                 newValues: { isDeleted: true },
-                ctx,
+                auth: ctx.auth,
                 db: tx,
             });
 

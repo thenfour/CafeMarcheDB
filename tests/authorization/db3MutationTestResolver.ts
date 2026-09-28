@@ -1,6 +1,7 @@
+import { testServerAuthorization } from "tests/support/serverAuthorization";
 import { resolver } from "@blitzjs/rpc";
 import type { TAnyModel } from "@/shared/rootroot";
-import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
 import { Permission } from "shared/permissions";
 import type { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
@@ -28,10 +29,10 @@ export default resolver.pipe(
     async (untrustedInput: unknown, ctx: AuthenticatedCtx) => {
         const input = validateDB3MutationRequest(untrustedInput);
         const table = db3.GetTableById(input.tableID);
-        const requestAuthorization = await loadAuthorization(ctx.session);
-        const publicData = db3.createDB3Authorization(
-            requestAuthorization.user,
-            requestAuthorization.effectivePermissions,
+        const serverAuthorization = await loadAuthorization(ctx.session);
+        const publicData = testServerAuthorization(
+            serverAuthorization.user,
+            serverAuthorization.effectivePermissions,
         );
 
         if (input.mutationType !== "insert" && !table.authorizeTableForEdit(publicData)) {
@@ -61,7 +62,7 @@ export default resolver.pipe(
                 return mutationCore.deleteImpl(
                     table,
                     deleteId,
-                    ctx,
+                    publicData,
                     input.deleteType,
                     transactionalDb,
                 );
@@ -77,7 +78,7 @@ export default resolver.pipe(
                 const inserted = await mutationCore.insertImpl<TAnyModel>(
                     table,
                     insertModel,
-                    ctx,
+                    publicData,
                     transactionalDb,
                 );
                 if (!tableUsesPublicIdsInTransport(table)) return inserted;
@@ -114,7 +115,7 @@ export default resolver.pipe(
                 table,
                 updateId,
                 updateModel,
-                ctx,
+                publicData,
                 transactionalDb,
             )).newModel;
             if (!tableUsesPublicIdsInTransport(table)) return updated;

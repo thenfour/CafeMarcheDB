@@ -1,22 +1,20 @@
-import type { DB3ServerAuthorization } from "./db3ServerAuthorization";
 //'use server' - https://stackoverflow.com/questions/76957592/error-only-async-functions-are-allowed-to-be-exported-in-a-use-server-file
 
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
 import { isBandTimeZoneSetting, reanchorAllDayEvents } from "src/server/dateTime";
 
 import { TAnyModel } from "@/shared/rootroot";
-import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
+import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
+import { CMServerAuthorization, CMServerAuthorizationWithUser } from "@/src/auth/server/serverAuthorization";
 import { validateSettingValue } from "@/src/auth/server/settingWrite";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 import { clearBrandCache } from "@/src/server/brand";
-import { AuthenticatedCtx, AuthorizationError, Ctx, assert } from "blitz";
+import { AuthorizationError, assert } from "blitz";
 import db, { Prisma } from "db";
 import * as mime from 'mime';
 import * as mm from 'music-metadata';
 import { nanoid } from 'nanoid';
-import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { ComputeChangePlan, getIntersectingFields } from "shared/associationUtils";
-import { Permission } from "shared/permissions";
 import { ObjectDiff } from "shared/utils";
 import sharp from "sharp";
 import { z } from "zod";
@@ -27,10 +25,8 @@ import { FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata } from 
 import { UserWithRolesArgs } from "../shared/schema/userPayloads";
 import { SharedAPI } from "../shared/sharedAPI";
 import { queryTable } from "./db3QueryCore";
-import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
 import { db3Server } from "./db3Server";
-//import { requireUnmergedMutationUsers } from "./mergedUserMutationGuard";
-//import { requireUnmergedUserReferences } from "src/auth/server/mergedUserReferences";
+import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
 
 var path = require('path');
 var fs = require('fs');
@@ -63,10 +59,6 @@ const createDB3Row = async (
     });
 };
 
-const getMutationPublicData = async (ctx: Ctx): Promise<DB3ServerAuthorization> => {
-    return loadAuthorization(ctx.session);
-};
-
 const requireAuthorizedMutationFields = (
     table: db3.xTable,
     authResult: db3.DB3AuthorizeAndSanitizeResult<TAnyModel>,
@@ -97,21 +89,6 @@ const requireDeleteOperationAuthorization = (
     }
     throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
 };
-
-// returns null if not authorized.
-export const getAuthenticatedCtx = (unauthenticatedCtx: Ctx, perm: Permission): AuthenticatedCtx | null => {
-    try {
-        unauthenticatedCtx.session.$authorize(perm);
-        return unauthenticatedCtx as AuthenticatedCtx;
-    }
-    catch (e) {
-        return null;
-    }
-};
-
-
-// returns null if public
-export const getCurrentUserCore = async (ctx: Ctx) => (await loadAuthorization(ctx.session)).user;
 
 export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: number, updatingEventModel: Partial<EventForCal>, db?: TransactionalPrismaClient, }) => {
     const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
@@ -291,7 +268,7 @@ export const CallMutateEventHooks = async (args: {
 
 
 export interface UpdateAssociationsArgs {
-    ctx: AuthenticatedCtx;
+    auth: CMServerAuthorization;
     changeContext: ChangeContext;
 
 
@@ -308,11 +285,10 @@ export interface UpdateAssociationsArgs {
 
 // creates/deletes associations. does not update any other data in associations table; this is only for making/breaking associations.
 // this is specifically for arrays of tag IDs. if the association has more to it than just associating two PKs, then you'll need something more sophisticated.
-export const UpdateAssociations = async ({ changeContext, ctx, ...args }: UpdateAssociationsArgs) => {
+export const UpdateAssociations = async ({ changeContext, auth, ...args }: UpdateAssociationsArgs) => {
     const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
     const associationTable = args.column.getAssociationTableShema();
     const associationTableName = associationTable.tableName;
-    const publicData = await getMutationPublicData(ctx);
     const rowMode = args.rowMode || "update";
 
     let localModel = args.localModel;
@@ -329,7 +305,7 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
         contextDesc: `association:${args.localTable.tableName}.${args.column.member}`,
         model: { [args.column.member]: args.desiredTagIds },
         existingModel: rowMode === "update" ? localModel : undefined,
-        publicData,
+        auth,
         rowMode,
         fallbackOwnerId: null,
     }));
@@ -378,7 +354,7 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
             table: associationTableName,
             pkid: oldValues.id,
             oldValues,
-            ctx,
+            auth,
             db: transactionalDb,
         });
     }
@@ -406,7 +382,7 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
             table: associationTableName,
             pkid: newAssoc.id,
             newValues: newAssoc,
-            ctx,
+            auth,
             db: transactionalDb,
         });
     }
@@ -425,20 +401,19 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
 
 
 // DELETE ////////////////////////////////////////////////
-export const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedCtx, deleteType: "softWhenPossible" | "hard", transactionalDb: TransactionalPrismaClient = db as any): Promise<boolean> => {
+export const deleteImpl = async (table: db3.xTable, id: number, auth: CMServerAuthorization, deleteType: "softWhenPossible" | "hard", transactionalDb: TransactionalPrismaClient = db as any): Promise<boolean> => {
     try {
         const contextDesc = `delete:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = transactionalDb[table.tableName]; // the prisma interface
-        const publicData = await getMutationPublicData(ctx);
-        if (!table.authorizeTableForEdit(publicData)) {
+        if (!table.authorizeTableForEdit(auth)) {
             throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
         }
         const deleteOperation = requireDeleteOperationAuthorization(table, deleteType);
 
         const selectionArgs = table.tableName === db3.xUser.tableName
             ? UserWithRolesArgs // require roles in order to do protected auth checks
-            : table.getSelectionArgs({ items: [] }, publicData);
+            : table.getSelectionArgs({ items: [] }, auth);
         const oldValues = await dbTableClient.findFirst({
             ...selectionArgs,
             where: { [table.pkMember]: id },
@@ -448,8 +423,8 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         }
 
         const rowIsAuthorized = deleteOperation === "soft"
-            ? table.authorizeRowForDeletePreferSoft({ model: oldValues, publicData })
-            : table.authorizeRowForDeleteHard({ model: oldValues, publicData });
+            ? table.authorizeRowForDeletePreferSoft({ model: oldValues, auth })
+            : table.authorizeRowForDeleteHard({ model: oldValues, auth });
         if (!rowIsAuthorized) {
             throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
         }
@@ -457,7 +432,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         if (deleteOperation === "soft") {
             await updateImpl(table, id, {
                 [table.SqlSpecialColumns.isDeleted!.member]: true,
-            }, ctx, transactionalDb);
+            }, auth, transactionalDb);
             return true;
         }
 
@@ -466,7 +441,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
             if (column.fieldTableAssociation !== "associationRecord") continue;
             await UpdateAssociations({
                 changeContext,
-                ctx,
+                auth,
                 localId: id,
                 localModel: oldValues,
                 localTable: table,
@@ -504,7 +479,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
             table: table.tableName,
             pkid: id,
             oldValues: oldValues,
-            ctx,
+            auth,
             db: transactionalDb,
         });
         return true;
@@ -515,19 +490,18 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
 };
 
 // INSERT ////////////////////////////////////////////////
-export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAnyModel, ctx: AuthenticatedCtx, transactionalDb: TransactionalPrismaClient = db as any): Promise<TReturnPayload> => {
+export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAnyModel, auth: CMServerAuthorization, transactionalDb: TransactionalPrismaClient = db as any): Promise<TReturnPayload> => {
     try {
         const contextDesc = `insert:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = transactionalDb[table.tableName]; // the prisma interface
-        const publicData = await getMutationPublicData(ctx);
-        if (!table.authorizeRowBeforeInsert({ publicData })) {
+        if (!table.authorizeRowBeforeInsert({ auth })) {
             throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
         }
 
         // converts serialized -> client, but not perfect. because ForeignSingle fields come through with an ID-only, but client payload wants the object not ID.
         // so those values will continue to be ID.
-        const clientModelForValidation: TAnyModel = table.getClientModel(fields, "new", await getCurrentUserCore(ctx));
+        const clientModelForValidation: TAnyModel = table.getClientModel(fields, "new", auth.user);
         // converts client -> sanitized client
         const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation, "new");
         if (!validateResult.success) {
@@ -552,7 +526,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             const authResult = table.authorizeAndSanitize({
                 contextDesc,
                 model: proposedModel,
-                publicData,
+                auth,
                 rowMode: "new",
                 fallbackOwnerId: null,
             });
@@ -564,10 +538,10 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         if (Object.keys(proposedModel).length > 0) {
             // createdBy and updatedBy.
             if (table.SqlSpecialColumns.createdByUser) {
-                authorizedLocalFields[table.SqlSpecialColumns.createdByUser.fkidMember!] = publicData.userId;
+                authorizedLocalFields[table.SqlSpecialColumns.createdByUser.fkidMember!] = auth.userId;
             }
             if (table.SqlSpecialColumns.updatedByUser) {
-                authorizedLocalFields[table.SqlSpecialColumns.updatedByUser.fkidMember!] = publicData.userId;
+                authorizedLocalFields[table.SqlSpecialColumns.updatedByUser.fkidMember!] = auth.userId;
             }
             // createdAt and updatedAt are done automatically by prisma.
 
@@ -584,7 +558,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
                 table: table.tableName,
                 pkid: obj[table.pkMember],
                 newValues: authorizedLocalFields,
-                ctx,
+                auth,
                 db: transactionalDb,
             });
         }
@@ -594,7 +568,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             if (!Object.prototype.hasOwnProperty.call(authorizedAssociationFields, column.member)) continue;
             await UpdateAssociations({
                 changeContext,
-                ctx,
+                auth,
                 localId: obj[table.pkMember],
                 localModel: obj,
                 localTable: table,
@@ -624,13 +598,12 @@ interface UpdateImplResult<T> {
     newModel: T,
     didChangesOccur: boolean,
 };
-export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedCtx, transactionalDb: TransactionalPrismaClient = db as any): Promise<UpdateImplResult<TAnyModel>> => {
+export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, auth: CMServerAuthorization, transactionalDb: TransactionalPrismaClient = db as any): Promise<UpdateImplResult<TAnyModel>> => {
     try {
         const contextDesc = `update:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = transactionalDb[table.tableName]; // the prisma interface
-        const publicData = await getMutationPublicData(ctx);
-        if (!table.authorizeTableForEdit(publicData)) {
+        if (!table.authorizeTableForEdit(auth)) {
             throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
         }
 
@@ -667,7 +640,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             // sufficient to alter or restore deleted content.
             if (!table.authorizeRowForRestore({
                 model: fullOldObj,
-                publicData,
+                auth,
             })) {
                 throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
             }
@@ -685,7 +658,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
                 // ownership change from authorizing itself.
                 model: proposedModel,
                 existingModel: fullOldObj,
-                publicData,
+                auth,
                 rowMode: "update",
                 fallbackOwnerId: null,
             });
@@ -705,7 +678,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
 
             // updatedBy.
             if (table.SqlSpecialColumns.updatedByUser) {
-                authorizedLocalFields[table.SqlSpecialColumns.updatedByUser.fkidMember!] = publicData.userId;
+                authorizedLocalFields[table.SqlSpecialColumns.updatedByUser.fkidMember!] = auth.userId;
             }
             // updatedAt are done automatically by prisma.
 
@@ -725,7 +698,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
                     pkid,
                     oldValues,
                     newValues: obj,
-                    ctx,
+                    auth,
                     db: transactionalDb,
                 });
             }
@@ -737,7 +710,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             if (!Object.prototype.hasOwnProperty.call(authorizedAssociationFields, column.member)) continue;
             const didAssociationsChange = await UpdateAssociations({
                 changeContext,
-                ctx,
+                auth,
                 localId: pkid,
                 localModel: fullOldObj,
                 localTable: table,
@@ -766,10 +739,10 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
 }
 
 
-export const queryFirstImpl = async <TitemPayload,>({ schema, filterModel, ctx }: {
+export const queryFirstImpl = async <TitemPayload,>({ schema, filterModel, auth }: {
     schema: db3.xTable;
     filterModel: CMDBTableFilterModel;
-    ctx: Ctx;
+    auth: CMServerAuthorization;
 }) => {
     const result = await queryTable({
         table: schema,
@@ -777,7 +750,7 @@ export const queryFirstImpl = async <TitemPayload,>({ schema, filterModel, ctx }
         orderBy: undefined,
         take: 1,
         cmdbQueryContext: "queryFirstImpl",
-    }, await loadAuthorization(ctx.session));
+    }, auth);
     return { item: (result.items[0] as TitemPayload | undefined) ?? null };
 };
 
@@ -862,28 +835,19 @@ export const GetImageMetadata = async (img: sharp.Sharp): Promise<ImageMetadata>
     });
 };
 
-export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedCtx) => {
+export const ForkImageImpl = async (params: ForkImageParams, auth: CMServerAuthorizationWithUser) => {
     // Image forking creates a new upload and writes to disk. Check mutation
     // authority before looking up or opening the source file.
-    ctx.session.$authorize(Permission.upload_files);
 
-    const currentUser = await getCurrentUserCore(ctx);
-    if (!currentUser) {
-        throw new Error(`public cannot create files`);
-    }
-
-    const publicData = await getMutationPublicData(ctx);
-
-    const requiredInsertPermission = db3.xFile.tableAuthMap.Insert;
-    if (!publicData.effectivePermissions.includesName(requiredInsertPermission)) {
+    if (!db3.xFile.authorizeRowBeforeInsert({ auth })) {
         throw new DB3MutationAuthorizationError(db3.xFile.tableName, ["insert"]);
     }
 
     // Resolve the source through the normal File visibility policy. The
     // storedLeafName is a storage identifier, never a bearer capability.
     const { item: parentFile } = await queryFirstImpl<db3.FilePayload>({
-        ctx,
         schema: db3.xFile,
+        auth,
         filterModel: {
             items: [{
                 operator: "equals",
@@ -908,7 +872,7 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedC
     const newFile = PrepareNewFileRecord({
         humanReadableLeafName: newLeaf,
         sizeBytes: 0, // fill in later when it's known!
-        uploadedByUserId: currentUser.id,
+        uploadedByUserId: auth.userId,
         visiblePermissionId: parentFile.visiblePermissionId, // theoretically this can result in issues if original uploader is not the same as the new uploader and this is NULL. however NULL implies it's not meant to be seen by others so i don't think it's something that needs to be fixed.
         parentFileId: parentFile.id,
         lastModifiedDate: new Date(),
@@ -919,7 +883,7 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedC
     requireAuthorizedMutationFields(db3.xFile, db3.xFile.authorizeAndSanitize({
         contextDesc: "forkImage:insertFile",
         model: newFile,
-        publicData,
+        auth,
         rowMode: "new",
         fallbackOwnerId: null,
     }));
@@ -972,7 +936,7 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedC
     // seems natural to gather the metadata right now, however it gets done in post-processing so it's not necessary.
     newFile.customData = JSON.stringify(customData);
 
-    const ret = await insertImpl(db3.xFile, newFile, ctx) as Prisma.FileGetPayload<{}>;
+    const ret = await insertImpl(db3.xFile, newFile, auth) as Prisma.FileGetPayload<{}>;
 
     await PostProcessFile({ file: ret });
 
@@ -982,20 +946,15 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedC
 
 export interface ForkResizeImageParams {
     parentFile: Prisma.FileGetPayload<{}>;
-    ctx: AuthenticatedCtx;
+    auth: CMServerAuthorizationWithUser;
     maxImageDimension: number;
 };
 
-export const ForkResizeImageImpl = async ({ parentFile, ctx, maxImageDimension }: ForkResizeImageParams): Promise<Prisma.FileGetPayload<{}> | null> => {
+export const ForkResizeImageImpl = async ({ parentFile, auth, maxImageDimension }: ForkResizeImageParams): Promise<Prisma.FileGetPayload<{}> | null> => {
     const outputType: ImageFileFormat = "jpg";
 
     if (!(parentFile.mimeType || "").toLowerCase().startsWith("image")) {
         return null;
-    }
-
-    const currentUser = await getCurrentUserCore(ctx);
-    if (!currentUser) {
-        throw new Error(`public cannot create files`);
     }
 
 
@@ -1007,7 +966,7 @@ export const ForkResizeImageImpl = async ({ parentFile, ctx, maxImageDimension }
     const newFile = PrepareNewFileRecord({
         humanReadableLeafName: newLeaf,
         sizeBytes: 0, // fill in later when it's known!
-        uploadedByUserId: currentUser.id,
+        uploadedByUserId: auth.userId,
         visiblePermissionId: parentFile.visiblePermissionId, // theoretically this can result in issues if original uploader is not the same as the new uploader and this is NULL. however NULL implies it's not meant to be seen by others so i don't think it's something that needs to be fixed.
         parentFileId: parentFile.id,
         lastModifiedDate: new Date(),
@@ -1049,7 +1008,7 @@ export const ForkResizeImageImpl = async ({ parentFile, ctx, maxImageDimension }
     // seems natural to gather the metadata right now, however it gets done in post-processing so it's not necessary.
     newFile.customData = JSON.stringify(customData);
 
-    const ret = await insertImpl(db3.xFile, newFile, ctx) as Prisma.FileGetPayload<{}>;
+    const ret = await insertImpl(db3.xFile, newFile, auth) as Prisma.FileGetPayload<{}>;
 
     await PostProcessFile({ file: ret });
 

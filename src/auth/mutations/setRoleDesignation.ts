@@ -4,7 +4,7 @@ import {
     ChangeAction,
     CreateChangeContext,
     RegisterChange,
-} from "shared/activityLog";
+} from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import {
     RoleDesignation,
@@ -25,7 +25,8 @@ export default resolver.pipe(
     cmauthorize(Permission.sysadmin),
     async ({ designation, roleId }, ctx) => db.$transaction(
         async tx => {
-            (await ctx.auth.refresh(tx)).requirePermission(Permission.sysadmin);
+            const auth = await ctx.auth.refresh(tx);
+            auth.requirePermission(Permission.sysadmin);
 
             // Lock every existing Role row before inspecting or changing either
             // singleton designation. Concurrent reassignments therefore serialize.
@@ -67,7 +68,7 @@ export default resolver.pipe(
                     pkid: role.id,
                     oldValues: { [field]: true },
                     newValues: { [field]: false },
-                    ctx,
+                    auth,
                     db: tx,
                 });
             }
@@ -84,7 +85,7 @@ export default resolver.pipe(
                     pkid: selectedRole.id,
                     oldValues: { [field]: false },
                     newValues: { [field]: true },
-                    ctx,
+                    auth,
                     db: tx,
                 });
             }

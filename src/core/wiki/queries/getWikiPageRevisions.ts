@@ -1,7 +1,7 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
-import { loadAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { queryView } from "src/core/db3/server/db3QueryCore";
 import { wikiPageRevisionHistoryView } from "src/core/db3/shared/entities/wiki/wikiViews";
 import { TGetWikiPageRevisionsArgs, ZTGetWikiPageRevisionsArgs } from "../shared/wikiUtils";

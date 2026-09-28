@@ -5,8 +5,9 @@ import {
     ChangeAction,
     CreateChangeContext,
     RegisterChange,
-} from "shared/activityLog";
+} from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
+import { loadAuthorization } from "../server/serverAuthorization";
 import {
     generateCalendarFeedToken,
     getCalendarFeedSubscriptionInfo,
@@ -36,7 +37,7 @@ export default resolver.pipe(
                 pkid: userId,
                 oldValues: { calendarFeedLinkReplaced: false },
                 newValues: { calendarFeedLinkReplaced: true },
-                ctx,
+                auth: await loadAuthorization(ctx.session),
                 db: tx,
             });
 

@@ -1,4 +1,4 @@
-import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
@@ -1468,11 +1468,11 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
 
     const [editMode, setEditMode] = React.useState<boolean>(false);
     const snackbar = useSnackbar();
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
 
     const draft = db3.eventSongListClientToDraft(props.value);
     const editAuthorized = !!draft && db3.xEventSongList.authorizeRowForEdit({
-        publicData,
+        auth: auth,
         model: draft,
     });
 
@@ -1635,7 +1635,7 @@ export const EventSongListList = ({ values, event, readonly, refetch }: {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const EventSongListTabContent = ({ event, readonly, refetch }: { event: EventDetailEvent, readonly: boolean, refetch: () => void }) => {
     const [newOpen, setNewOpen] = React.useState<boolean>(false);
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
     const songListsClient = DB3Client.useDb3Query({
         view: db3.eventSongListDetailView,
         filterSpec: {
@@ -1651,7 +1651,7 @@ export const EventSongListTabContent = ({ event, readonly, refetch }: { event: E
 
 
     const insertAuthorized = db3.xEventSongList.authorizeRowBeforeInsert({
-        publicData,
+        auth: auth,
     });
 
     return <div className="EventSongListTabContent">

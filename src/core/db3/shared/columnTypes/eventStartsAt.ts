@@ -12,7 +12,7 @@ import {
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
 import {
-    type DB3AuthSpec, type DB3MaybeNull, type DB3ReadPresenceForAuthSpec,
+    type DB3AuthSpec, type DB3FacetInfoArgs, type DB3MaybeNull, type DB3ReadPresenceForAuthSpec,
     type DB3RowMode, ErrorValidateAndParseResult, FieldBase, makeNullableReadTransportSchema,
     type SqlGetSortableQueryElementsAPI,
     SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
@@ -409,7 +409,7 @@ export class EventStartsAtField<
     };
 
     // return a SQL query which is executed, then a transformation function that returns the 
-    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => {
+    SqlGetFacetInfoQuery = ({ filteredItemsQuery: filteredQuery }: DB3FacetInfoArgs): SearchResultsFacetQuery | null => {
         return {
             sql: `
         with FIQ as (${filteredQuery})

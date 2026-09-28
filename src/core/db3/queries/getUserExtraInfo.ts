@@ -2,7 +2,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx, AuthorizationError, NotFoundError } from "blitz";
 import db, { $Enums } from "db";
 import { Permission } from "shared/permissions";
-import { loadAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { z } from "zod";
 import { xUser } from "../db3";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
@@ -16,7 +16,7 @@ export default resolver.pipe(
         userId: xUser.identitySchema,
     }).strict()),
     async (args, ctx: AuthenticatedCtx) => {
-        const publicData = await loadAuthorization(ctx.session);
+        const auth = await loadAuthorization(ctx.session);
         const ret = await db.user.findFirst({
             select: {
                 id: true,
@@ -26,9 +26,9 @@ export default resolver.pipe(
             },
             where: await GetAuthorizedTableReadWhere({
                 table: xUser,
-                currentUser: publicData.user,
+                auth: auth,
                 where: { publicId: args.userId },
-                includeDeleted: publicData.hasPermission(Permission.recover_users),
+                includeDeleted: auth.hasPermission(Permission.recover_users),
             }),
         });
 
@@ -38,7 +38,7 @@ export default resolver.pipe(
 
         const summaryAuthorization = xUser.authorizeAndSanitize({
             contextDesc: "getUserExtraInfo",
-            publicData,
+            auth: auth,
             rowMode: "view",
             model: {
                 id: ret.id,

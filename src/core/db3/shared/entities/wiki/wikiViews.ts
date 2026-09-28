@@ -1,5 +1,5 @@
 import { Prisma } from "db";
-import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
+import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DbPayloadOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
@@ -257,10 +257,10 @@ const wikiPageRevisionDetailContract = deriveViewContract(
     wikiPageRevisionDetailSelection,
 );
 
-const visibleWikiPageRevisionWhere = (authorization: DB3ServerAuthorization): Prisma.WikiPageRevisionWhereInput => ({
+const visibleWikiPageRevisionWhere = (authorization: CMServerAuthorization): Prisma.WikiPageRevisionWhereInput => ({
     wikiPage: xWikiPage.CalculateWhereClause({
         filterModel: { tableParams: {} },
-        publicData: authorization,
+        auth: authorization,
         includeDeleted: false,
     }),
 });
@@ -269,7 +269,7 @@ export const wikiPageRevisionDetailView = defineView({
     viewID: "WikiPageRevision_Detail",
     entity: xWikiPageRevision,
     selection: wikiPageRevisionDetailContract.prismaSelection,
-    where: ({ authorization }) => visibleWikiPageRevisionWhere(authorization),
+    where: ({ auth }) => visibleWikiPageRevisionWhere(auth),
     dtoSchema: wikiPageRevisionDetailContract.dtoSchema,
     hydrate: wikiPageRevisionDetailContract.hydrate,
 });
@@ -292,9 +292,9 @@ export const wikiPageRevisionContributionView = defineView({
     viewID: "WikiPageRevision_Contribution",
     entity: xWikiPageRevision,
     selection: wikiPageRevisionContributionContract.prismaSelection,
-    where: ({ authorization, filter }) => ({
+    where: ({ auth, filter }) => ({
         AND: [
-            visibleWikiPageRevisionWhere(authorization),
+            visibleWikiPageRevisionWhere(auth),
             // This view must never return every contributor when userId is absent.
             { createdByUserId: typeof filter.tableParams?.userId === "number"
                 ? filter.tableParams.userId
@@ -314,7 +314,7 @@ export const wikiPageRevisionDeleteTargetView = defineView({
     viewID: "WikiPageRevision_DeleteTarget",
     entity: xWikiPageRevision,
     selection: wikiPageRevisionDeleteTargetContract.prismaSelection,
-    where: ({ authorization }) => visibleWikiPageRevisionWhere(authorization),
+    where: ({ auth }) => visibleWikiPageRevisionWhere(auth),
     dtoSchema: wikiPageRevisionDeleteTargetContract.dtoSchema,
     hydrate: wikiPageRevisionDeleteTargetContract.hydrate,
 });

@@ -69,13 +69,6 @@ export function parsePublicId<TTable extends string = string>(value: unknown): P
     return value as PublicId<TTable>;
 }
 
-// function isNumber(value: unknown): value is number {
-//     return typeof value === "number";
-// }
-// function isString(value: unknown): value is string {
-//     return typeof value === "string";
-// }
-
 export function isPublicIdIsh(value: unknown): value is number | string {
     return typeof value === "number" || typeof value === "string";
 }

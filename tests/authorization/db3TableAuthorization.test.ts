@@ -1,4 +1,5 @@
-import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
+import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
+import { testServerAuthorization } from "tests/support/serverAuthorization";
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("db", async () => {
@@ -13,7 +14,8 @@ import { UpdateAssociations } from "@db3/server/db3mutationCore"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 import { Permission } from "shared/permissions"
 import { parsePublicId } from "shared/publicId"
-import { CreateChangeContext } from "shared/activityLog"
+import { CreateChangeContext } from "@/src/auth/server/activityLog"
+import { loadAuthorization } from "src/auth/server/serverAuthorization"
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import {
@@ -23,10 +25,10 @@ import {
 } from "./support/db3RequestBuilders"
 import { invokeResolver } from "./support/resolverHarness"
 
-const authorization = (...names: Permission[]): DB3ServerAuthorization => ({
-  userId: 501,
-  effectivePermissions: new ServerPermissionSet(names.map((name, index) => ({ id: index + 1, name }))),
-})
+const authorization = (...names: Permission[]): CMServerAuthorization => testServerAuthorization(
+  { id: 501 },
+  new ServerPermissionSet(names.map((name, index) => ({ id: index + 1, name }))),
+)
 
 const inheritedReadMap = db3.defineAuthMap({
   PostQuery: db3.DB3FieldReadAuth.inheritRow,
@@ -96,7 +98,7 @@ describe("metadata and association mutation entry points", () => {
     authorizationTestDb.reset({ user: [manager], role: [role], permission: [permission] })
     const joinLookup = vi.spyOn(authorizationTestDb.getDelegate("rolePermission"), "findMany")
     await expect(UpdateAssociations({
-      ctx: createAuthorizationTestContext(manager) as any,
+      auth: await loadAuthorization(createAuthorizationTestContext(manager).session),
       changeContext: CreateChangeContext("association-authorization-test"),
       localTable: db3.xPermission,
       column: db3.xPermission.getColumn("roles") as db3.TagsField<any>,
@@ -164,17 +166,17 @@ describe("inherited field read authorization", () => {
 
     expect(db3.xEventStatus.authorizeColumnForView({
       model: null,
-      publicData,
+      auth: publicData,
       columnName: "publicId",
     })).toBe(true)
     expect(db3.xEventStatus.authorizeColumnForView({
       model: null,
-      publicData,
+      auth: publicData,
       columnName: "id",
     })).toBe(false)
     expect(db3.xChange.authorizeColumnForView({
       model: null,
-      publicData,
+      auth: publicData,
       columnName: "id",
     })).toBe(false)
   })
@@ -184,7 +186,7 @@ describe("inherited field read authorization", () => {
 
     expect(db3.xChange.authorizeColumnForView({
       model: { id: 41, table: "User", recordId: 99 },
-      publicData,
+      auth: publicData,
       columnName: "id",
     })).toBe(false)
   })
@@ -206,7 +208,7 @@ describe("inherited field read authorization", () => {
       contextDesc: "event-status-inherit-row-test",
       model,
       rowMode: "view",
-      publicData,
+      auth: publicData,
       fallbackOwnerId: null,
     })
 
@@ -228,7 +230,7 @@ describe("inherited field read authorization", () => {
       model: { label: "Replacement" },
       existingModel: { id: 10, label: "Confirmed" },
       rowMode: "update",
-      publicData,
+      auth: publicData,
       fallbackOwnerId: null,
     })
 
@@ -244,10 +246,10 @@ describe("schema-owned table authorization", () => {
     table => {
       expect(table.authorizeTableForView(sysadminGrant)).toBe(true)
       expect(table.authorizeTableForEdit(sysadminGrant)).toBe(true)
-      expect(table.authorizeRowBeforeInsert({ publicData: sysadminGrant })).toBe(true)
+      expect(table.authorizeRowBeforeInsert({ auth: sysadminGrant })).toBe(true)
       expect(table.authorizeTableForView(userManager)).toBe(false)
       expect(table.authorizeTableForEdit(userManager)).toBe(false)
-      expect(table.authorizeRowBeforeInsert({ publicData: userManager })).toBe(false)
+      expect(table.authorizeRowBeforeInsert({ auth: userManager })).toBe(false)
     },
   )
 
@@ -274,7 +276,7 @@ describe("schema-owned table authorization", () => {
       existingModel: { id: 100, name: "Metadata" },
       rowMode: "update",
       fallbackOwnerId: null,
-      publicData: sysadminGrant,
+      auth: sysadminGrant,
     })
     expect(result.rowIsAuthorized).toBe(true)
     expect(result.unauthorizedColumnCount).toBe(0)
@@ -286,7 +288,7 @@ describe("schema-owned table authorization", () => {
     const table = db3.xUser
     const publicData = authorization(Permission.login)
     expect(table.authorizeTableForEdit(publicData)).toBe(true)
-    expect(table.authorizeRowForEdit({ publicData, model: { id: publicData.userId } })).toBe(true)
-    expect(table.authorizeRowForEdit({ publicData, model: { id: 999 } })).toBe(false)
+    expect(table.authorizeRowForEdit({ auth: publicData, model: { id: publicData.userId } })).toBe(true)
+    expect(table.authorizeRowForEdit({ auth: publicData, model: { id: 999 } })).toBe(false)
   })
 })

@@ -4,7 +4,7 @@ import { BlitzLogger, BlitzServerMiddleware } from "blitz"
 import db from "db"
 import type { IncomingMessage, ServerResponse } from "http"
 import { CMDBResolverAuthorize } from "types"
-import { loadAuthorization } from "./auth/server/requestAuthorization"
+import { loadAuthorization } from "./auth/server/serverAuthorization"
 import { authConfig } from "./blitz-client"
 
 // Used both by Blitz middleware and the Next page adapter in _app.

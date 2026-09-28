@@ -1,4 +1,4 @@
-import { cmauthorize, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthCtxWithUser } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
@@ -17,7 +17,7 @@ const ZArgs = z.object({
 export default resolver.pipe(
     cmauthorize(Permission.login),
     resolver.zod(ZArgs),
-    async (args, ctx: CMAuthenticatedCtx) => {
+    async (args, ctx: CMAuthCtxWithUser) => {
         const eventId = await resolvePublicId(db3.xEvent, args.eventId, ctx.auth, db, true);
         const relevanceClassValue = args.relevanceClassOverrideName == null ? null : gEventRelevanceClass[args.relevanceClassOverrideName] || null;
 
@@ -25,7 +25,7 @@ export default resolver.pipe(
             relevanceClassOverride: relevanceClassValue,
         };
 
-        await mutationCore.updateImpl(db3.xEvent, eventId, fields, ctx);
+        await mutationCore.updateImpl(db3.xEvent, eventId, fields, ctx.auth);
         return args;
     }
 );

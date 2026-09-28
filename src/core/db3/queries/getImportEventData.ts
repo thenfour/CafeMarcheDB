@@ -1,17 +1,18 @@
 import { CalendarDate } from "shared/dateTimePolicy";
 
+import { cmauthorize } from "@/src/auth/server/cmResolver";
+import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { SplitQuickFilter } from "shared/quickFilter";
 import { createAllDayRange } from "shared/time";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import * as db3 from "../db3";
-import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 import { TGetImportEventDataArgs, TGetImportEventDataRet } from "../shared/apiTypes";
 import { GetDefaultVisibilityPermission } from "../shared/db3Helpers";
-import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 
 
 
@@ -180,10 +181,11 @@ const extractFirstNonEmptyLine = (text: string): string | null => {
 
 
 export default resolver.pipe(
-    resolver.authorize(Permission.sysadmin),
-    async (args: TGetImportEventDataArgs, ctx: AuthenticatedCtx): Promise<TGetImportEventDataRet> => {
-        const currentUser = await getCurrentUserCore(ctx);
-        if (!currentUser) throw new Error("Current user was not found.");
+    cmauthorize(Permission.sysadmin),
+    async (args: TGetImportEventDataArgs, ctx): Promise<TGetImportEventDataRet> => {
+        //const currentUser = (await loadAuthorization(ctx.session)).user;
+        //if (!currentUser) throw new Error("Current user was not found.");
+        ctx.auth.requireUser();
         const bandTimeZone = await loadBandTimeZone(db);
         const today = CalendarDate.fromInstant({ value: new Date(), timeZone: bandTimeZone });
         const todayRange = createAllDayRange({ startDate: today.date, endDateExclusive: today.addDays(1).date }, bandTimeZone);
@@ -349,7 +351,7 @@ export default resolver.pipe(
             const allSongs = await db.song.findMany({
                 where: await GetAuthorizedTableReadWhere({
                     table: db3.xSong,
-                    currentUser,
+                    auth: ctx.auth,
                 }),
             });
 

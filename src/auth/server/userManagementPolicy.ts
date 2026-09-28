@@ -5,6 +5,7 @@ import {
     Permission,
 } from "shared/permissions";
 import { PermissionSet } from "../shared/PermissionSet";
+import { CMServerAuthorization } from "./serverAuthorization";
 
 export type UserManagementAction =
     | "merge"
@@ -29,13 +30,14 @@ export type UserManagementPrincipal = {
 
 export type UserManagementActor = {
     principal: UserManagementPrincipal | null; //  null = unauthenticated user / anonymous
-    effectivePermissions: PermissionSet;
+    auth: CMServerAuthorization;
 };
 
 // why do we need permissions of the target?
 // to be able to test if they're in your delegable permission envelope.
 export type UserManagementTarget = {
     principal: UserManagementPrincipal;
+    //auth: CMServerAuthorization;
     rolePermissions: PermissionSet;
 };
 
@@ -75,7 +77,7 @@ export const isRoleWithinDelegationEnvelope = (
     actor: UserManagementActor,
     role: PermissionSet,
 ): boolean => {
-    return actor.effectivePermissions.hasAllDelegable(role);
+    return actor.auth.hasAllDelegable(role);
 };
 
 // This is an additional target/ceiling policy. Existing endpoint, table, row,
@@ -84,16 +86,16 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     if (actor.principal?.isDeleted) {
         return false; // deleted users can't act.
     }
-    const actorIsSysadmin = actor.effectivePermissions.includesName(Permission.sysadmin);
+    const actorIsSysadmin = actor.auth.hasPermission(Permission.sysadmin);
 
     if (target.principal.mergedIntoUserId != null) {
         return false;
     }
 
     if (action === "merge") {
-        return actor.effectivePermissions.includesName(Permission.merge_users)
+        return actor.auth.hasPermission(Permission.merge_users)
             && actor.principal?.id !== target.principal.id
-            && (!target.principal.isDeleted || actor.effectivePermissions.includesName(Permission.recover_users))
+            && (!target.principal.isDeleted || actor.auth.hasPermission(Permission.recover_users))
             && (actorIsSysadmin || isRoleWithinDelegationEnvelope(actor, target.rolePermissions));
     }
 
@@ -103,7 +105,7 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
 
     if (action === "reactivate") {
         return target.principal.isDeleted === true
-            && actor.effectivePermissions.includesName(Permission.recover_users)
+            && actor.auth.hasPermission(Permission.recover_users)
             && (actorIsSysadmin || isRoleWithinDelegationEnvelope(actor, target.rolePermissions));
     }
 
@@ -127,7 +129,7 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
 
     // Impersonation is controlled by its dedicated capability and cannot target oneself.
     if (action === "impersonate") {
-        return actor.effectivePermissions.includesName(Permission.impersonate_user)
+        return actor.auth.hasPermission(Permission.impersonate_user)
             && actor.principal?.id !== target.principal.id;
     }
 
@@ -136,14 +138,14 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     }
 
     if (action === "assignRole") {
-        if (!actor.effectivePermissions.includesName(Permission.assign_user_roles)) return false;
+        if (!actor.auth.hasPermission(Permission.assign_user_roles)) return false;
         if (!isRoleWithinDelegationEnvelope(actor, target.rolePermissions)) return false;
         if (desiredRole !== undefined && !isRoleWithinDelegationEnvelope(actor, desiredRole)) return false;
         return true;
     }
 
     if (action === "deactivate") {
-        return actor.effectivePermissions.includesName(Permission.deactivate_users);
+        return actor.auth.hasPermission(Permission.deactivate_users);
     }
 
     // edit not handled here; DB3 handles normal table mutations of users;

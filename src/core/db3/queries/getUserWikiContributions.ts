@@ -2,7 +2,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import { z } from "zod";
 import { Permission } from "shared/permissions";
-import { loadAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { UserPublicIdSchema } from "src/auth/schemas";
 import { queryView } from "src/core/db3/server/db3QueryCore";
 import { wikiPageRevisionContributionView } from "src/core/db3/shared/entities/wiki/wikiViews";

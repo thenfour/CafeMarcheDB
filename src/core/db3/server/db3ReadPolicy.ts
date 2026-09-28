@@ -1,8 +1,7 @@
+import { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
 import { AuthorizationError } from "blitz";
 import type { TAnyModel } from "shared/rootroot";
-import { loadAuthorizationForUser } from "@/src/auth/server/requestAuthorization";
 import type { xTable } from "../shared/db3core";
-import type { UserWithRolesPayload } from "../shared/schema/userPayloads";
 
 const emptyFilter = {
     tableParams: {},
@@ -19,7 +18,7 @@ export function ComposePrismaWhere(
 
 interface GetAuthorizedTableReadWhereArgs {
     table: xTable;
-    currentUser: UserWithRolesPayload | null;
+    auth: CMServerAuthorization;
     where?: TAnyModel | null;
     includeDeleted?: boolean;
 }
@@ -27,18 +26,17 @@ interface GetAuthorizedTableReadWhereArgs {
 // returns a prisma where clause that enforces the table's read policy
 export async function GetAuthorizedTableReadWhere({
     table,
-    currentUser,
+    auth,
     where,
     includeDeleted = false,
 }: GetAuthorizedTableReadWhereArgs): Promise<TAnyModel> {
 
-    const authorization = await loadAuthorizationForUser(currentUser);
-    const publicData = authorization;
-
-    if (!table.authorizeTableForView(publicData) || !table.authorizeIncludeDeleted(publicData, includeDeleted)) throw new AuthorizationError();
+    if (!table.authorizeTableForView(auth) || !table.authorizeIncludeDeleted(auth, includeDeleted)) {
+        throw new AuthorizationError();
+    }
 
     const policyWhere = table.CalculateWhereClause({
-        publicData,
+        auth,
         includeDeleted,
         filterModel: emptyFilter,
     });

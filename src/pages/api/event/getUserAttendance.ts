@@ -1,4 +1,5 @@
 // TODO: unify with the normal search api.
+// fyi i think this is only used by the setlist planner LEDs
 
 import { Ctx } from "@blitzjs/next";
 import { AuthenticatedCtx } from "blitz";
@@ -12,6 +13,7 @@ import { xEvent, xEventSegment, xEventAttendance, xEventStatus } from "src/core/
 import { xInstrument } from "src/core/db3/shared/schema/instrument";
 import { xUser } from "src/core/db3/shared/schema/user";
 import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
+import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
 
 
 
@@ -104,16 +106,12 @@ function ParseQueryInput(query: any): GetUserAttendanceArgs {
     };
 }
 
-export default api(async (req, res, origCtx: Ctx) => {
+export default api(async (req, res, ctx: Ctx) => {
     try {
-        // technically we should authorize your own attendance, or check sysadmin or something.
-        origCtx.session.$authorize(Permission.visibility_members);
-        const ctx: AuthenticatedCtx = origCtx as any; // authorize ensures this.
-        const currentUser = (await mutationCore.getCurrentUserCore(ctx))!;
-        if (!currentUser) throw new Error(`not authorized`);
+        const auth = await loadAuthorization(ctx.session);
         const eventPolicyWhere = await GetAuthorizedTableReadWhere({
             table: xEvent,
-            currentUser,
+            auth,
         });
 
         const inp = ParseQueryInput(req.query);

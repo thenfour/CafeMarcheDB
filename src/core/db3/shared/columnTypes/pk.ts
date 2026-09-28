@@ -123,7 +123,7 @@ export class PKField<
     };
 
     SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
-    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
+    SqlGetFacetInfoQuery = (): SearchResultsFacetQuery | null => null;
     SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => {
         // the only time we support searching by pk is when it's the only token in the qf, and then search for an exact match.
         if (quickFilterTokens.length !== 1) return null;

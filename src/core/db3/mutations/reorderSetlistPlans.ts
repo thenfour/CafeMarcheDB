@@ -1,13 +1,13 @@
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
+import { cmauthorize } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { executePublicIdReorder, type PublicIdReorderRow } from "../server/db3PublicIdReorder";
 import { resolvePublicId } from "../server/db3PublicIds";
 import { DB3MutationAuthorizationError } from "../server/db3mutationCore";
 import { xSetlistPlan, xSetlistPlanGroup } from "../shared/schema/setlistPlan";
-import { cmauthorize } from "@/src/auth/server/cmResolver";
 
 const groupReorder = z.object({
     kind: z.literal("group"),
@@ -32,7 +32,7 @@ export default resolver.pipe(
         await db.$transaction(async tx => {
             const changes = await executePublicIdReorder<PublicIdReorderRow>({
                 table,
-                authorization: ctx.auth,
+                auth: ctx.auth,
                 scopePublicIds: args.scopePublicIds,
                 movingPublicId: args.movingPublicId,
                 newPositionPublicId: args.newPositionPublicId,
@@ -67,7 +67,7 @@ export default resolver.pipe(
                     pkid: 0,
                     oldValues: changes.map(change => ({ publicId: change.item.publicId, sortOrder: change.oldSortOrder })),
                     newValues: changes.map(change => ({ publicId: change.item.publicId, sortOrder: change.newSortOrder })),
-                    ctx,
+                    auth: ctx.auth,
                     db: tx,
                 });
             }

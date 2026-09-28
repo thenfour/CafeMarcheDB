@@ -3,7 +3,7 @@ import { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import * as db3 from "src/core/db3/db3";
-import { loadAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { deleteImpl } from "src/core/db3/server/db3mutationCore";
 import { queryView } from "src/core/db3/server/db3QueryCore";
 import { wikiPageRevisionDeleteTargetView } from "src/core/db3/shared/entities/wiki/wikiViews";
@@ -35,7 +35,7 @@ export default resolver.pipe(
                 throw new Error("The current wiki page revision cannot be deleted.");
             }
 
-            await deleteImpl(db3.xWikiPageRevision, revision.id, ctx, "hard", tx);
+            await deleteImpl(db3.xWikiPageRevision, revision.id, authorization, "hard", tx);
         });
     }
 );

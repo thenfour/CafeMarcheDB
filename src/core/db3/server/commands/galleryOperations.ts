@@ -10,7 +10,7 @@ export const galleryReorderCommandHandler = defineCommandHandler(
     async (dto, context) => {
         await executePublicIdReorder({
             table: xFrontpageGalleryItem,
-            authorization: context.authorization,
+            auth: context.authorization,
             scopePublicIds: dto.scopeRowIds,
             movingPublicId: dto.movingItemId,
             newPositionPublicId: dto.newPositionItemId,

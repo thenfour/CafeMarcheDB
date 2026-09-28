@@ -4,11 +4,13 @@ import { Permission } from "shared/permissions";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import * as db3 from 'src/core/db3/db3';
 import { ForkImageParams } from "../shared/fileTypes";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 
 export default resolver.pipe(
     resolver.authorize(Permission.upload_files),
     async (args: ForkImageParams, ctx: AuthenticatedCtx) => {
-        const newFile = await mutationCore.ForkImageImpl(args, ctx);
+        const auth = (await loadAuthorization(ctx.session)).requireUser();
+        const newFile = await mutationCore.ForkImageImpl(args, auth);
         return { publicId: db3.xFile.parseIdentity(newFile.publicId) };
     },
 );

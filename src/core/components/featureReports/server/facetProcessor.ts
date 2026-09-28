@@ -1,3 +1,4 @@
+import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { MySqlDateTimeLiteral, MySqlStringLiteral, MySqlStringLiteralAllowingPercent, MySqlSymbol, parseBucketToDateRange } from "@/shared/mysqlUtils";
 import { xCustomLink, xEvent, xEventStatus, xEventType, xMenuLink, xSong, xWikiPage } from "@/src/core/db3/db3";
 import { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
@@ -37,7 +38,7 @@ export function buildFeatureReportFiltersSQL(filterSpec: FeatureReportFilterSpec
 
 
 export interface FacetProcessor<T> {
-    getGroupedQuery: (filterSql: string, currentUser: UserWithRolesPayload) => string;
+    getGroupedQuery: (filterSql: string, auth: CMServerAuthorization) => string;
     postProcessRow: (row: unknown, filterSql: string, currentUser: UserWithRolesPayload) => T | null; // if null, excluded.
     getFilterSqlConditions: (filterSpec: FeatureReportFilterSpec, conditions: string[]) => void;
     // For CSV export: flatten complex objects to key-value pairs
@@ -398,7 +399,7 @@ const anonymizedUsersFacetProcessor: FacetProcessor<FacetedBreakdownResult['face
 };
 
 const songsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['songs'][0]> = {
-    getGroupedQuery: (filterSql, currentUser) => {
+    getGroupedQuery: (filterSql, auth) => {
         return `
             WITH FilteredSet AS (
               SELECT songId, COUNT(*) AS count
@@ -414,7 +415,7 @@ const songsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['song
               fs.count
             FROM FilteredSet fs
             JOIN Song s ON fs.songId = s.id
-            WHERE ${xSong.SqlGetVisFilterExpression(currentUser, "s")}
+            WHERE ${xSong.SqlGetVisFilterExpression({ auth, tableAlias: "s" })}
           `;
     },
     postProcessRow: (row: { songId: string, name: string, count: bigint }) => ({
@@ -437,7 +438,7 @@ const songsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['song
 };
 
 const eventsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['events'][0]> = {
-    getGroupedQuery: (filterSql, currentUser) => {
+    getGroupedQuery: (filterSql, auth) => {
         return `
             WITH FilteredSet AS (
               SELECT eventId, COUNT(*) AS count
@@ -458,7 +459,7 @@ const eventsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['eve
             JOIN Event e ON fs.eventId = e.id
             LEFT JOIN EventStatus eventStatus ON eventStatus.id = e.statusId
             LEFT JOIN EventType eventType ON eventType.id = e.typeId
-            WHERE ${xEvent.SqlGetVisFilterExpression(currentUser, "e")}
+            WHERE ${xEvent.SqlGetVisFilterExpression({ auth, tableAlias: "e" })}
           `;
     },
     postProcessRow: (row: { eventId: string, name: string, statusId: string | null, typeId: string | null, startsAt: Date | null, count: bigint }) => ({
@@ -487,7 +488,7 @@ const eventsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['eve
 };
 
 const wikiPagesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['wikiPages'][0]> = {
-    getGroupedQuery: (filterSql, currentUser) => {
+    getGroupedQuery: (filterSql, auth) => {
         return `
             WITH FilteredSet AS (
               SELECT wikiPageId, COUNT(*) AS count
@@ -503,7 +504,7 @@ const wikiPagesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['
               fs.count
             FROM FilteredSet fs
             JOIN WikiPage e ON fs.wikiPageId = e.id
-            WHERE ${xWikiPage.SqlGetVisFilterExpression(currentUser, "e")}
+            WHERE ${xWikiPage.SqlGetVisFilterExpression({ auth, tableAlias: "e" })}
           `;
     },
     postProcessRow: (row: { wikiPageId: string, slug: string, count: bigint }) => ({
@@ -522,7 +523,7 @@ const wikiPagesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['
 };
 
 const menuLinksFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['menuLinks'][0]> = {
-    getGroupedQuery: (filterSql, currentUser) => {
+    getGroupedQuery: (filterSql, auth) => {
         return `
             WITH FilteredSet AS (
               SELECT menuLinkId, COUNT(*) AS count
@@ -538,7 +539,7 @@ const menuLinksFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['
               fs.count
             FROM FilteredSet fs
             JOIN MenuLink e ON fs.menuLinkId = e.id
-            WHERE ${xMenuLink.SqlGetVisFilterExpression(currentUser, "e")}
+            WHERE ${xMenuLink.SqlGetVisFilterExpression({ auth, tableAlias: "e" })}
           `;
     },
     postProcessRow: (row: { menuLinkId: string, caption: string, count: bigint }) => ({
@@ -557,7 +558,7 @@ const menuLinksFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['
 };
 
 const customLinksFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['customLinks'][0]> = {
-    getGroupedQuery: (filterSql, currentUser) => {
+    getGroupedQuery: (filterSql, auth) => {
         return `
             WITH FilteredSet AS (
               SELECT customLinkId, COUNT(*) AS count
@@ -573,7 +574,7 @@ const customLinksFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']
               fs.count
             FROM FilteredSet fs
             JOIN CustomLink e ON fs.customLinkId = e.id
-            WHERE ${xCustomLink.SqlGetVisFilterExpression(currentUser, "e")}
+            WHERE ${xCustomLink.SqlGetVisFilterExpression({ auth, tableAlias: "e" })}
           `;
     },
     postProcessRow: (row: { customLinkId: string, name: string, count: bigint }) => ({

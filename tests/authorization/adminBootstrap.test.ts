@@ -139,7 +139,7 @@ describe("BA-U005 administrator bootstrap", () => {
     await expect(invokeResolver(getAdminBootstrapStatus, null, ctx)).rejects.toThrow("Unauthorized")
     await expect(invokeResolver(claimAdminBootstrap, {
       secret: bootstrapSecret,
-    }, ctx)).rejects.toThrow("Unauthorized")
+    }, ctx)).rejects.toThrow("Not authorized for login")
 
     expect(findUser).not.toHaveBeenCalled()
     expect(authorizationTestDb.snapshot("adminBootstrapClaim")).toEqual([])
@@ -198,7 +198,7 @@ describe("BA-U005 administrator bootstrap", () => {
     })
     await expect(invokeResolver(claimAdminBootstrap, {
       secret: bootstrapSecret,
-    }, ctx)).rejects.toThrow("Administrator bootstrap is unavailable")
+    }, ctx)).rejects.toThrow("Not authorized for login")
 
     expect(authorizationTestDb.snapshot("user")[0]).toEqual(expect.objectContaining({ isSysAdmin: false }))
     expect(authorizationTestDb.snapshot("adminBootstrapClaim")).toEqual([])

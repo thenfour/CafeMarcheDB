@@ -26,7 +26,7 @@ import { xUserSignInMethod } from "src/core/db3/shared/schema/userSignInMethod";
 import type { UserSignInMethodPublicId } from "shared/publicId";
 import { Prisma } from "db";
 import { queryTable } from "src/core/db3/server/db3QueryCore";
-import { loadAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import db3Mutation from "./db3MutationTestResolver";
 
 const admin = createAuthorizationTestUser("sysadmin", { id: 1 });

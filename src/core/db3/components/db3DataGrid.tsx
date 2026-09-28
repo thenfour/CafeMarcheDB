@@ -1,4 +1,4 @@
-import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 
 import { TAnyModel } from '@/shared/rootroot';
 import { AgeRelativeToNow } from '@components/DateTime/RelativeTimeComponents';
@@ -183,8 +183,8 @@ function useDB3EditGridQueryState(
     });
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
 
-    const publicData = useDB3Authorization();
-    const canRecoverDeletedRows = tableSpec.args.table.authorizeIncludeDeleted(publicData, true);
+    const auth = useClientAuth();
+    const canRecoverDeletedRows = tableSpec.args.table.authorizeIncludeDeleted(auth, true);
     const includeDeleted = props.includeDeleted ?? canRecoverDeletedRows;
     return {
         paginationModel,
@@ -193,7 +193,7 @@ function useDB3EditGridQueryState(
         setSortModel,
         filterModel,
         setFilterModel,
-        publicData,
+        auth,
         includeDeleted,
     };
 }
@@ -298,7 +298,7 @@ function DB3EditGridImpl<
         setSortModel,
         filterModel,
         setFilterModel,
-        publicData,
+        auth,
     } = queryState;
 
     const [rowModesModel, setRowModesModel] = React.useState({});
@@ -485,7 +485,7 @@ function DB3EditGridImpl<
         if (!column.schemaTable.authorizeColumnForView({
             columnName: column.columnName,
             model: null,
-            publicData,
+            auth: auth,
         })) {
             continue;
         }

@@ -15,7 +15,7 @@ export default resolver.pipe(
         const existing = await db.setlistPlan.findFirst({
             where: await GetAuthorizedTableReadWhere({
                 table: xSetlistPlan,
-                currentUser: ctx.auth.user,
+                auth: ctx.auth,
                 where: { publicId: args },
             }),
             select: { id: true },

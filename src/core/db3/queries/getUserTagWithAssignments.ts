@@ -1,4 +1,4 @@
-import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthCtx } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import { Permission } from "shared/permissions";
 import { isPublicId, type UserTagPublicId } from "shared/publicId";
@@ -13,7 +13,7 @@ const ZInp = z.object({
 export default resolver.pipe(
     cmauthorize(Permission.public),
     resolver.zod(ZInp),
-    async (args, ctx: CMCtx) => {
+    async (args, ctx: CMAuthCtx) => {
         const authorization = ctx.auth;
         const result = await queryView({
             cmdbQueryContext: "getUserTagWithAssignments",

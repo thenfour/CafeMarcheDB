@@ -3,9 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const fileServe = vi.hoisted(() => vi.fn(async (_req, res) => { res.end() }))
 const findLink = vi.hoisted(() => vi.fn())
 const createVisit = vi.hoisted(() => vi.fn())
+const testAuth = vi.hoisted(() => ({ userId: null, userPublicId: null }))
 
 vi.mock("src/blitz-server", () => ({ gSSP: (handler: unknown) => handler }))
 vi.mock("src/core/db3/server/fileDownload", () => ({ ServeAuthorizedFileDownload: fileServe }))
+vi.mock("src/auth/server/serverAuthorization", () => ({ loadAuthorization: async () => testAuth }))
 vi.mock("db", async () => {
   const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client")
   return {
@@ -56,7 +58,7 @@ describe("custom link direct file response", () => {
 
     expect(result).toEqual({ props: {} })
     expect(findLink).toHaveBeenCalledWith({ where: { slug: "MyPage" }, include: { file: true } })
-    expect(fileServe).toHaveBeenCalledWith(req, res, ctx, "stored-page.html")
+    expect(fileServe).toHaveBeenCalledWith(req, res, testAuth, "stored-page.html")
     expect(req.headers.range).toBe("bytes=10-19")
     expect(createVisit).toHaveBeenCalledOnce()
   })

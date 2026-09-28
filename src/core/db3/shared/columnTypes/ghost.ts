@@ -5,7 +5,7 @@ import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "../apiTypes";
-import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
+import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import {
     type DB3AuthSpec, type DB3ReadPresenceForAuthSpec,
     FieldBase,
@@ -57,7 +57,7 @@ export class GhostField<
 
     connectToTable = (table: xTable) => { this.table = table; };
 
-    ApplyIncludeFiltering = (include: TAnyModel, publicData: DB3ServerAuthorization, includeDeleted: boolean): void | Promise<void> => { };
+    ApplyIncludeFiltering = (include: TAnyModel, auth: CMServerAuthorization, includeDeleted: boolean): void | Promise<void> => { };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;
 
@@ -88,7 +88,7 @@ export class GhostField<
 
     SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
     SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
-    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
+    SqlGetFacetInfoQuery = (): SearchResultsFacetQuery | null => null;
     SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
 
 }

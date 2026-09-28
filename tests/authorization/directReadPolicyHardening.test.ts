@@ -16,7 +16,7 @@ import { filePublicId } from "../support/fileFixtures"
 import getUserCredits from "@db3/queries/getUserCredits"
 import getUserTagWithAssignments from "@db3/queries/getUserTagWithAssignments"
 import getUserWikiContributions from "@db3/queries/getUserWikiContributions"
-import { getCurrentUserCore } from "@db3/server/db3mutationCore"
+import { loadAuthorization } from "src/auth/server/serverAuthorization"
 import getWikiPageRevision from "src/core/wiki/queries/getWikiPageRevision"
 import getWikiPageRevisions from "src/core/wiki/queries/getWikiPageRevisions"
 import { Permission } from "shared/permissions"
@@ -58,7 +58,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     authorizationTestDb.reset({ user: [{ ...actor, isDeleted: true }] })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await expect(getCurrentUserCore(ctx)).resolves.toBeNull()
+    await expect(loadAuthorization(ctx.session)).resolves.toMatchObject({ user: null })
   })
 
   it("requires revision-history permission for direct revision and contribution reads", async () => {

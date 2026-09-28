@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from 'blitz';
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { loadAuthorization } from "@/src/auth/server/requestAuthorization";
+import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
 import * as db3 from 'src/core/db3/db3';
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { ImageEditParams, UpdateGalleryItemImageParams } from "../shared/fileTypes";
@@ -14,9 +14,7 @@ export default resolver.pipe(
     resolver.authorize(Permission.edit_public_homepage),
     async (args: UpdateGalleryItemImageParams, ctx: AuthenticatedCtx) => {
         const auth = await loadAuthorization(ctx.session);
-        if (!auth.user) {
-            throw new Error("Current user was not found.");
-        }
+        const authWithUser = auth.requireUser();
 
 
         // Verify the target before ForkImageImpl performs any filesystem work.
@@ -40,7 +38,7 @@ export default resolver.pipe(
             contextDesc: "updateGalleryItemImage:preflight",
             model: galleryMutationFields,
             existingModel: galleryItem,
-            publicData: auth,
+            auth: auth,
             rowMode: "update",
             fallbackOwnerId: null,
         });
@@ -54,7 +52,7 @@ export default resolver.pipe(
         }
 
         // create the new file
-        const newFile = await mutationCore.ForkImageImpl(args.imageParams, ctx);
+        const newFile = await mutationCore.ForkImageImpl(args.imageParams, authWithUser);
 
         const newDisplayParams: ImageEditParams = {
             ...args.imageParams.editParams,
@@ -67,7 +65,7 @@ export default resolver.pipe(
             displayParams: JSON.stringify(newDisplayParams),
         }
 
-        await mutationCore.updateImpl(db3.xFrontpageGalleryItem, galleryItem.id, fields, ctx);
+        await mutationCore.updateImpl(db3.xFrontpageGalleryItem, galleryItem.id, fields, auth);
 
         return {
             newFile: { publicId: db3.xFile.parseIdentity(newFile.publicId) },

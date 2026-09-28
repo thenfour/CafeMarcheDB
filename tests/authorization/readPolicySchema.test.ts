@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
+import { testServerAuthorization } from "tests/support/serverAuthorization"
 
 vi.mock("db", async () => {
   const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client")
@@ -88,7 +89,7 @@ describe("schema-wide DB3 read-policy contracts", () => {
     (_tableId, table) => {
       const where = table.CalculateWhereClause({
         filterModel: emptyFilter,
-        publicData: actorPublicData,
+        auth: actorPublicData,
       })
       const deletedColumn = table.SqlSpecialColumns.isDeleted!
 
@@ -102,7 +103,7 @@ describe("schema-wide DB3 read-policy contracts", () => {
     (_tableId, table) => {
       const where = table.CalculateWhereClause({
         filterModel: emptyFilter,
-        publicData: actorPublicData,
+        auth: actorPublicData,
       })
       const visibilityColumn = table.SqlSpecialColumns.visiblePermission!
       const ownerColumn = table.SqlSpecialColumns.ownerUser!
@@ -128,7 +129,7 @@ describe("schema-wide DB3 read-policy contracts", () => {
     (_tableId, table) => {
       const where = table.CalculateWhereClause({
         filterModel: { ...emptyFilter, pks: [1] },
-        publicData: actorPublicData,
+        auth: actorPublicData,
       })
       const visibilityColumn = table.SqlSpecialColumns.visiblePermission!
       const ownerColumn = table.SqlSpecialColumns.ownerUser!
@@ -152,16 +153,16 @@ describe("schema-wide DB3 read-policy contracts", () => {
       }],
     })
     const publicAuthorization = createAuthorizationSchemaData(null)
-    const publicData = { ...publicAuthorization, effectivePermissions: new ServerPermissionSet(
+    const publicData = testServerAuthorization(null, new ServerPermissionSet(
       publicAuthorization.effectivePermissions.names.map((name, index) => ({
         id: name === Permission.visibility_public ? publicVisibilityId : 920_000 + index, name,
       })),
-    ) }
+    ))
 
     for (const table of visibilityTables) {
       const where = table.CalculateWhereClause({
         filterModel: emptyFilter,
-        publicData,
+        auth: publicData,
       })
       const visibilityColumn = table.SqlSpecialColumns.visiblePermission!
       const ownerColumn = table.SqlSpecialColumns.ownerUser!
@@ -184,11 +185,11 @@ describe("schema-wide DB3 read-policy contracts", () => {
       const publicData = createAuthorizationSchemaData(sysadmin)
       const restrictedWhere = table.CalculateWhereClause({
         filterModel: emptyFilter,
-        publicData,
+        auth: publicData,
       })
       const recoveryWhere = table.CalculateWhereClause({
         filterModel: emptyFilter,
-        publicData,
+        auth: publicData,
         includeDeleted: true,
       })
       const hiddenRow = makePolicyRow(table)
@@ -213,7 +214,7 @@ describe("read-policy composition boundaries", () => {
   it("ANDs trusted business predicates with DB3 policy predicates", async () => {
     const where = await GetAuthorizedTableReadWhere({
       table: db3.xEvent,
-      currentUser: actor as any,
+      auth: actorPublicData,
       where: { id: { in: [11] } },
     })
 
@@ -240,7 +241,7 @@ describe("read-policy composition boundaries", () => {
   it.each(visibilityTables.map(table => [table.tableID, table] as const))(
     "%s groups the raw-SQL permission/owner OR before composing adjacent predicates",
     (_tableId, table) => {
-      const policySql = table.SqlGetVisFilterExpression(actor as any, "P")
+      const policySql = table.SqlGetVisFilterExpression({ auth: actorPublicData, tableAlias: "P" })
       const composedSql = SqlCombineAndExpression(["(P.id = 123)", policySql])
       const visibilityColumn = table.SqlSpecialColumns.visiblePermission!.fkidMember!
 

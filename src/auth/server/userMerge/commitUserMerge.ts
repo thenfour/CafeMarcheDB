@@ -1,6 +1,6 @@
 import type { Ctx } from "@blitzjs/next";
 import { Prisma, type PrismaClient } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import type { z } from "zod";
 import type { CommitUserMergeInput } from "../../userMergeSchemas";
 import { authorizeMergeActor } from "./mergeEligibility";
@@ -8,6 +8,7 @@ import { prepareUserMerge } from "./prepareUserMerge";
 import { UserMergeError } from "./publicResponse";
 import type { UserPublicId } from "shared/publicId";
 import { xUser } from "src/core/db3/shared/schema/user";
+import { loadAuthorization } from "../serverAuthorization";
 
 export const MERGE_REVIEW_CHANGED = "The accounts changed since this report was prepared. Refresh the report before merging.";
 
@@ -66,7 +67,9 @@ export async function commitUserMerge(db: PrismaClient, ctx: Ctx, input: z.infer
                     policyVersion: preview.policyVersion,
                     sections: preview.sections,
                 },
-                options: { dontCalculateChanges: true }, ctx, db: tx,
+                options: { dontCalculateChanges: true },
+                auth: await loadAuthorization(ctx.session),
+                db: tx,
             });
             return { mainUserId: xUser.parseIdentity(context.main.publicId) };
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 30_000, maxWait: 10_000 });

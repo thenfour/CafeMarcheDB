@@ -2,11 +2,12 @@ import { SecurePassword } from "@blitzjs/auth/secure-password";
 import type { Ctx } from "@blitzjs/next";
 import { assert } from "blitz";
 import db, { Prisma } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { generatePublicId } from "src/server/publicId";
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { SignInMethodSchema } from "../signInMethodSchemas";
 import { addSignInMethod, SignInMethodConflictError, signInMethodWhere } from "./signInMethods";
+import { loadAuthorization } from "./serverAuthorization";
 
 export interface CreateSignupUserArgs {
     email: string;
@@ -65,7 +66,7 @@ export const createSignupUser = async (args: CreateSignupUserArgs, ctx: Ctx) => 
                 roleId: user.roleId,
                 authenticationMethod: args.googleId ? "google" : "password",
             },
-            ctx,
+            auth: await loadAuthorization(ctx.session),
             db: tx,
         });
 

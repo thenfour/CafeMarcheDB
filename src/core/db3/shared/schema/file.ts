@@ -79,13 +79,13 @@ export const xFileAuthMap_FileObjects_AdminEdit = db3.defineAuthMap({
 // - never modified
 const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeFieldInput<TAnyModel>): boolean => {
     if (args.rowMode === "view") {
-        return args.publicData.effectivePermissions.includesName(Permission.view_files);
+        return args.auth.hasPermission(Permission.view_files);
     }
     if (args.rowMode === "new") {
         // for now, "trusted code" is assumed.
         // this is safe because this function is called by the server before mutation occurs.
         // unit test coverage verifies this
-        return args.publicData.effectivePermissions.includesName(Permission.upload_files);
+        return args.auth.hasPermission(Permission.upload_files);
     }
     return false; // by default, server-owned fields are not authorized for mutation
 };

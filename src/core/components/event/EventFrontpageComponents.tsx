@@ -1,5 +1,5 @@
 import { formatEventDateRangeTranslations } from "shared/dateTimePresentation";
-import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 
 import * as db3 from "@db3/db3";
 import { FormControlLabel, Switch } from "@mui/material";
@@ -256,7 +256,7 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
     const confirm = useConfirm();
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
 
 
     const handleChange = (valueEn: string | null, valueNl: string | null, valueFr: string | null) => {
@@ -283,7 +283,7 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
     const valueFr = props.event[props.fieldSpec.fieldNameFr] || "";
 
     const canEdit = db3.xEvent.authorizeColumnForEdit({
-        publicData,
+        auth: auth,
         model: props.event,
         columnName: props.fieldSpec.fieldNameEn, // assume same perms for all languages
         fallbackOwnerId: null,
@@ -357,7 +357,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     const [previewLang, setPreviewLang] = React.useState<EnNlFr>("en");
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const confirm = useConfirm();
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
 
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
@@ -386,7 +386,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     }, previewLang);
 
     const canEdit_frontpageVisible = db3.xEvent.authorizeColumnForEdit({
-        publicData,
+        auth: auth,
         columnName: "frontpageVisible",
         model: props.event,
         fallbackOwnerId: null,

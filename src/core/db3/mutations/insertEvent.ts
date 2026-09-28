@@ -1,4 +1,4 @@
-import { cmauthorize, type CMAuthenticatedCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthCtxWithUser } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import { assert } from "blitz";
 import db, { Prisma } from "db";
@@ -11,14 +11,14 @@ import { TinsertEventArgs } from "../shared/apiTypes";
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     cmauthorize(Permission.login),
-    async (args: TinsertEventArgs, ctx: CMAuthenticatedCtx) => {
+    async (args: TinsertEventArgs, ctx: CMAuthCtxWithUser) => {
 
         return db.$transaction(async tx => {
-            const publicData = ctx.auth;
+            const auth = ctx.auth;
             const resolvedEventFields = await resolvePublicForeignIds(
                 db3.xEvent,
                 args.event,
-                publicData,
+                auth,
                 tx,
             );
 
@@ -41,7 +41,7 @@ export default resolver.pipe(
             };
 
             // create the root event,
-            const newEvent = await mutationCore.insertImpl(db3.xEvent, eventFields, ctx, tx) as Prisma.EventGetPayload<{}>;
+            const newEvent = await mutationCore.insertImpl(db3.xEvent, eventFields, ctx.auth, tx) as Prisma.EventGetPayload<{}>;
 
             const segmentFields: Omit<Prisma.EventSegmentUncheckedCreateInput, "publicId"> = {
                 name: args.segment.name || "Set 1",
@@ -53,7 +53,7 @@ export default resolver.pipe(
             };
 
             // create the initial segment.
-            const segment = await mutationCore.insertImpl(db3.xEventSegment, segmentFields, ctx, tx) as db3.EventSegmentPayloadMinimum;
+            const segment = await mutationCore.insertImpl(db3.xEventSegment, segmentFields, ctx.auth, tx) as db3.EventSegmentPayloadMinimum;
 
             // create song lists
             if (args.songList) {
@@ -65,18 +65,18 @@ export default resolver.pipe(
                     name: "Setlist",
                     sortOrder: 0,
                 };
-                const songList = await mutationCore.insertImpl(db3.xEventSongList, songListFields, ctx, tx) as db3.EventSongListPayload;
+                const songList = await mutationCore.insertImpl(db3.xEventSongList, songListFields, ctx.auth, tx) as db3.EventSongListPayload;
                 // add songs.
                 for (let i = 0; i < args.songList.length; ++i) {
                     const s = args.songList[i]!;
                     const songFields: Partial<db3.EventSongListSongPayload> = {
                         eventSongListId: songList.id,
                         // TODO: don't resolve each individually. resolve the  whole song list at once and use a map.
-                        songId: await resolvePublicId(db3.xSong, s.songId, publicData, tx),
+                        songId: await resolvePublicId(db3.xSong, s.songId, auth, tx),
                         sortOrder: i,
                         subtitle: s.comment || "",
                     };
-                    await mutationCore.insertImpl(db3.xEventSongListSong, songFields, ctx, tx);
+                    await mutationCore.insertImpl(db3.xEventSongListSong, songFields, ctx.auth, tx);
                 }
             }
 
@@ -87,21 +87,21 @@ export default resolver.pipe(
                     //args.responses.forEach(async (r) => {
                     const responseFields: Partial<db3.EventSegmentUserResponsePayload> = {
                         eventSegmentId: segment.id,
-                        attendanceId: await resolvePublicId(db3.xEventAttendance, r.attendanceId, publicData, tx),
-                        userId: await resolvePublicId(db3.xUser, r.userId, publicData, tx),
+                        attendanceId: await resolvePublicId(db3.xEventAttendance, r.attendanceId, auth, tx),
+                        userId: await resolvePublicId(db3.xUser, r.userId, auth, tx),
                     };
-                    await mutationCore.insertImpl(db3.xEventSegmentUserResponse, responseFields, ctx, tx);
+                    await mutationCore.insertImpl(db3.xEventSegmentUserResponse, responseFields, ctx.auth, tx);
                 };
             }
 
             const eventSelection = await db3.xEvent.CalculateSelectionArgs(
-                publicData,
+                auth,
                 { items: [] },
                 false,
                 db3.eventEditorView.getSelectionArgs,
             );
             const segmentSelection = await db3.xEventSegment.CalculateSelectionArgs(
-                publicData,
+                auth,
                 { items: [] },
                 false,
                 db3.eventSegmentEditorView.getSelectionArgs,
@@ -119,9 +119,9 @@ export default resolver.pipe(
 
             return {
                 event: db3.eventEditorView.parseDto(authorizeAndProjectDB3ViewModel(
-                    db3.xEvent, selectedEvent, publicData, "insertEvent:event")),
+                    db3.xEvent, selectedEvent, auth, "insertEvent:event")),
                 segment: db3.eventSegmentEditorView.parseDto(authorizeAndProjectDB3ViewModel(
-                    db3.xEventSegment, selectedSegment, publicData, "insertEvent:segment")),
+                    db3.xEventSegment, selectedSegment, auth, "insertEvent:segment")),
             };
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120_000 });
     }

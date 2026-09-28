@@ -13,7 +13,7 @@ import {
     type UserTagPublicId,
 } from "shared/publicId";
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
-import { getCurrentUserCore } from "../server/db3mutationCore";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 import { xEvent, xEventSegment, xEventAttendance, xEventStatus, xEventType } from "../shared/schema/event";
 import { xInstrument } from "../shared/schema/instrument";
@@ -65,13 +65,13 @@ export default resolver.pipe(
     resolver.zod(ZGetUserEventAttendanceArgrs),
     async (args, ctx: AuthenticatedCtx): Promise<UserEventAttendanceQueryResult> => {
         try {
-            const currentUser = await getCurrentUserCore(ctx);
+            const currentUser = (await loadAuthorization(ctx.session)).user;
             if (!currentUser) throw new Error("Current user was not found.");
             const target = await db.user.findUnique({ where: { publicId: args.userId }, select: { id: true } });
             if (!target) return { events: [] };
             const eventPolicyWhere = await GetAuthorizedTableReadWhere({
                 table: xEvent,
-                currentUser,
+                auth: await loadAuthorization(ctx.session),
             });
 
             // Find the earliest event that this user responded to:

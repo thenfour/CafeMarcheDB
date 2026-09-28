@@ -1,6 +1,6 @@
 // based off the structure/logic of getEventFilterInfo
 
-import { cmauthorize, type CMCtx } from "@/src/auth/server/cmResolver";
+import { cmauthorize, type CMAuthCtx } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { MysqlEscape } from "shared/mysqlUtils";
@@ -26,7 +26,7 @@ interface TArgs {
 
 export default resolver.pipe(
     cmauthorize(Permission.view_songs),
-    async (args: TArgs, ctx: CMCtx): Promise<GetSongFilterInfoRet> => {
+    async (args: TArgs, ctx: CMAuthCtx): Promise<GetSongFilterInfoRet> => {
         try {
             const authorization = ctx.auth;
             const u = ctx.auth.user;
@@ -72,7 +72,7 @@ export default resolver.pipe(
             const songFilterExpression = songFilterExpressions.length > 0 ? `(${songFilterExpressions.join(" and ")})` : "";
 
             const AND: string[] = [];
-            AND.push(db3.xSong.SqlGetVisFilterExpression(u, "Song"));
+            AND.push(db3.xSong.SqlGetVisFilterExpression({ auth: ctx.auth, tableAlias: "Song" }));
 
             if (!IsNullOrWhitespace(songFilterExpression)) {
                 AND.push(songFilterExpression);

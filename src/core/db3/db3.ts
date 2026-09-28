@@ -1,7 +1,6 @@
 export * from "./shared/schema/prismArgs"
 
 export * from "./shared/db3core"
-export * from "./shared/db3Authorization"
 export * from "./shared/columnTypes/xTableColumnTypes"
 export * from "./shared/db3schema"
 export * from "./shared/core/db3Hydration"

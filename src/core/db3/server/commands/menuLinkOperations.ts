@@ -10,7 +10,7 @@ export const menuLinkReorderCommandHandler = defineCommandHandler(
     async (dto, context) => {
         await executePublicIdReorder({
             table: xMenuLink,
-            authorization: context.authorization,
+            auth: context.authorization,
             scopePublicIds: dto.scopeRowIds,
             movingPublicId: dto.movingItemId,
             newPositionPublicId: dto.newPositionItemId,

@@ -1,5 +1,5 @@
 import { Stopwatch, TAnyModel } from "@/shared/rootroot";
-import { getCurrentUserCore } from "@/src/core/db3/server/db3mutationCore";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
@@ -19,7 +19,8 @@ async function getFeatureReportFacetsAndCountsForSet(args: TArgs, ctx: Authentic
   if (!args.filterSpec.selectedBucket) {
     return null;
   }
-  const currentUser = await getCurrentUserCore(ctx);
+  const auth = await loadAuthorization(ctx.session);
+  const currentUser = auth.user;
   if (!currentUser) {
     return null;
   }
@@ -29,7 +30,7 @@ async function getFeatureReportFacetsAndCountsForSet(args: TArgs, ctx: Authentic
   const sw = new Stopwatch();
 
   const doProcessor = async <T,>(facetKey: string, processor: FacetProcessor<T>) => {
-    const query = processor.getGroupedQuery(filterSql, currentUser);
+    const query = processor.getGroupedQuery(filterSql, auth);
     const rawRows = await db.$queryRaw(Prisma.raw(query)) as TAnyModel[];
     const processedRows = rawRows.map((row) => processor.postProcessRow(row, filterSql, currentUser)).filter((row) => row !== null);
     return processedRows;

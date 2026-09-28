@@ -12,7 +12,7 @@ import { queryTable, queryHydratedView } from "src/core/db3/server/db3QueryCore"
 import { authorizeAndProjectDB3ViewModel } from "src/core/db3/server/db3PublicIds";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import type { DB3ReadSelectionArgs } from "src/core/db3/shared/core/db3ReadSelection";
-import { loadAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { Permission } from "shared/permissions";
 import { eventPublicId, segmentPublicId } from "../support/eventResponseFixtures";
 import { selectPrismaTestRow } from "../support/prismaSelection";

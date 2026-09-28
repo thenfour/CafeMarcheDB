@@ -2,11 +2,11 @@ import { AuthenticationError, NotFoundError } from "blitz";
 import { Prisma } from "db";
 import type { Ctx } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { UserWithRolesArgs, type UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
 import type { SignInMethodInput } from "../signInMethodSchemas";
-import { loadAuthorization } from "./requestAuthorization";
+import { loadAuthorization } from "./serverAuthorization";
 import { db3Server } from "src/core/db3/server/db3Server";
 import { xUserSignInMethod } from "src/core/db3/shared/schema/userSignInMethod";
 import type { UserPublicId } from "shared/publicId";
@@ -145,6 +145,6 @@ export const recordSignInMethodChange = async (
         // Keep identifiers and credentials out of the general activity log.
         newValues: { signInMethodPublicId: xUserSignInMethod.parseIdentity(method.publicId), signInMethodType: method.type, signInMethodAction: action },
         options: { dontCalculateChanges: true },
-        ctx, db,
+        auth: await (await loadAuthorization(ctx.session)).refresh(db), db,
     });
 };

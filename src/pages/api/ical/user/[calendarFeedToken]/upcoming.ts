@@ -11,7 +11,7 @@ import {
 } from "src/auth/server/calendarFeedSubscription";
 import { api } from "src/blitz-server";
 import { CalExportCore } from "src/core/db3/server/ical";
-import { recordAction } from "src/core/db3/server/recordActionServer";
+import { createActionRecord } from "src/core/db3/server/recordActionServer";
 
 const redactedCalendarFeedRoute = "/api/ical/user/[calendarFeedToken]/upcoming";
 
@@ -29,11 +29,12 @@ export default api(async (req, res, ctx: Ctx) => {
             currentUser: accessingUser,
         });
 
-        await recordAction({
+        await createActionRecord({
             feature: ActivityFeature.global_ical_digest,
             uri: redactedCalendarFeedRoute,
             userId: accessingUser?.id,
-        }, ctx);
+            isClient: false,
+        });
 
         res.setHeader("Content-Type", "text/calendar; charset=utf-8");
         res.setHeader("Content-Disposition", "inline; filename=CM_UpcomingAgenda.ics");

@@ -20,6 +20,7 @@ import { Permission } from "shared/permissions";
 import { getCalendarWindow } from "shared/dateTimePolicy";
 import * as db3 from "src/core/db3/db3";
 import { GetSearchResultsCore } from "src/core/db3/server/searchServerCore";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { GetSearchResultsInput, DiscreteCriterionFilterType, ZGetSearchResultsInput } from "src/core/db3/shared/apiTypes";
 import { createAuthorizationPersona, createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
@@ -56,7 +57,7 @@ describe("search recovery capability", () => {
             tableID: "Event", quickFilter: "",
             calendarWindow: getCalendarWindow({ startDate: "2026-07-11", endDateExclusive: "2026-07-12" }, "Asia/Tokyo"),
             discreteCriteria: [{ db3Column: "status", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] }],
-        }), createAuthorizationTestContext(actor) as AuthenticatedCtx);
+        }), await loadAuthorization(createAuthorizationTestContext(actor).session));
         expect(statements.length).toBeGreaterThanOrEqual(3);
         for (const statement of statements) {
             expect(statement).toContain("FROM EventSegment CS");
@@ -69,7 +70,7 @@ describe("search recovery capability", () => {
     it("rejects calendar windows on other search tables before SQL", async () => {
         await expect(GetSearchResultsCore(query({
             calendarWindow: getCalendarWindow({ startDate: "2026-07-11", endDateExclusive: "2026-07-12" }, "UTC"),
-        }), createAuthorizationTestContext(actor) as AuthenticatedCtx)).rejects.toThrow("only supported for event searches");
+        }), await loadAuthorization(createAuthorizationTestContext(actor).session))).rejects.toThrow("only supported for event searches");
         expect(rawQuery).not.toHaveBeenCalled();
     });
 
@@ -93,7 +94,7 @@ describe("search recovery capability", () => {
             if (/limit\s+0,20/i.test(statement)) return ids.map(id => ({ id }));
             return [];
         });
-        const result = await GetSearchResultsCore(query({ includeDeleted }), createAuthorizationTestContext(actor) as AuthenticatedCtx);
+        const result = await GetSearchResultsCore(query({ includeDeleted }), await loadAuthorization(createAuthorizationTestContext(actor).session));
         expect(result.results.map(row => row.publicId)).toEqual(ids.map(id => id === activeUser.id ? activeUser.publicId : deletedUser.publicId));
         expect(result.results.every(row => !("id" in row))).toBe(true);
         expect(result.rowCount).toBe(ids.length);
@@ -113,7 +114,7 @@ describe("search recovery capability", () => {
             return [];
         });
         const result = await GetSearchResultsCore(query({ includeDeleted: true, offset: 1, take: 1 }),
-            createAuthorizationTestContext(actor) as AuthenticatedCtx);
+            await loadAuthorization(createAuthorizationTestContext(actor).session));
         expect(result.results).toEqual([expect.objectContaining({ publicId: deletedUser.publicId, isDeleted: true })]);
         expect(result.rowCount).toBe(2);
     });
@@ -123,7 +124,7 @@ describe("search recovery capability", () => {
             id: actor.id, permissions: permissions.filter(p => p !== Permission.recover_users),
         });
         authorizationTestDb.reset({ user: [ordinary, deletedUser] });
-        await expect(GetSearchResultsCore(query({ includeDeleted: true }), createAuthorizationTestContext(actor) as AuthenticatedCtx))
+        await expect(GetSearchResultsCore(query({ includeDeleted: true }), await loadAuthorization(createAuthorizationTestContext(actor).session)))
             .rejects.toMatchObject({ statusCode: 403 });
         expect(db.$queryRaw).not.toHaveBeenCalled();
     });
@@ -132,7 +133,7 @@ describe("search recovery capability", () => {
         const sysadmin = createAuthorizationTestUser("sysadmin", { id: actor.id });
         authorizationTestDb.reset({ user: [sysadmin] });
         await expect(GetSearchResultsCore(query({ tableID, includeDeleted: true }),
-            createAuthorizationTestContext(sysadmin) as AuthenticatedCtx)).rejects.toMatchObject({ statusCode: 403 });
+            await loadAuthorization(createAuthorizationTestContext(sysadmin).session))).rejects.toMatchObject({ statusCode: 403 });
         expect(db.$queryRaw).not.toHaveBeenCalled();
     });
 
@@ -154,7 +155,7 @@ describe("search recovery capability", () => {
             return [{ id: event.id }];
         });
         const result = await GetSearchResultsCore(query({ tableID: "Event", discreteCriteria: [] }),
-            createAuthorizationTestContext(actor) as AuthenticatedCtx);
+            await loadAuthorization(createAuthorizationTestContext(actor).session));
         expect(result.results).toEqual([expect.objectContaining({ publicId: event.publicId })]);
         expect(result.results[0]).not.toHaveProperty("id");
         expect(result).not.toHaveProperty("customData");

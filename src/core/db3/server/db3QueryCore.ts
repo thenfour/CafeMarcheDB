@@ -1,19 +1,18 @@
-import type { DB3ServerAuthorization } from "./db3ServerAuthorization";
-import { AuthenticatedCtx, AuthorizationError, paginate } from "blitz";
+import type { TAnyModel } from "@/shared/rootroot";
+import { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
+import { AuthorizationError, paginate } from "blitz";
 import { randomUUID } from "crypto";
 import db from "db";
 import { sleep } from "shared/utils";
-import { loadAuthorization, type CMAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import { MAX_DB3_PAGE_SIZE } from "../shared/apiTypes";
-import type { TAnyModel } from "@/shared/rootroot";
-import { db3Server } from "./db3Server";
 import {
     authorizeAndProjectDB3ViewModel,
     projectDB3ModelPublicIds,
     resolvePublicQueryParameters,
 } from "./db3PublicIds";
+import { db3Server } from "./db3Server";
 
 export class DB3QueryAuthorizationError extends AuthorizationError {
     constructor() {
@@ -25,7 +24,7 @@ export class DB3QueryAuthorizationError extends AuthorizationError {
 
 async function prepareTableQuery(
     input: db3.LegacyQueryInputBase,
-    authorization: CMAuthorization,
+    auth: CMServerAuthorization,
     database: TransactionalPrismaClient,
     executionOptions: QueryTableExecutionOptions = {},
 ) {
@@ -34,14 +33,13 @@ async function prepareTableQuery(
     if (view && view.tableID !== table.tableID) {
         throw new Error(`DB3 view '${view.viewID}' does not belong to table '${table.tableID}'.`);
     }
-    const publicData = authorization;
     const includeDeleted = input.includeDeleted === true;
 
-    if (!table.authorizeTableForView(publicData) || !table.authorizeIncludeDeleted(publicData, includeDeleted)) {
+    if (!table.authorizeTableForView(auth) || !table.authorizeIncludeDeleted(auth, includeDeleted)) {
         throw new DB3QueryAuthorizationError();
     }
     const authorizeField = (columnName: string) => {
-        if (!table.authorizeColumnForView({ model: null, publicData, columnName })) {
+        if (!table.authorizeColumnForView({ model: null, auth, columnName })) {
             throw new DB3QueryAuthorizationError();
         }
     };
@@ -50,12 +48,12 @@ async function prepareTableQuery(
     if (input.filter.pks) authorizeField(table.pkMember);
     if (input.filter.publicIds) authorizeField(table.publicIdMember!);
     Object.keys(input.filter.tableParams || {}).forEach(parameterName => {
-        if (!table.authorizeQueryParameter(parameterName, publicData)) throw new DB3QueryAuthorizationError();
+        if (!table.authorizeQueryParameter(parameterName, auth)) throw new DB3QueryAuthorizationError();
     });
     const resolvedTableParams = await resolvePublicQueryParameters(
         table,
         input.filter.tableParams || {},
-        publicData,
+        auth,
         database,
     );
     const resolvedFilter = {
@@ -63,19 +61,19 @@ async function prepareTableQuery(
         tableParams: resolvedTableParams,
     };
     const tableWhere = table.CalculateWhereClause({
-        publicData,
+        auth,
         includeDeleted,
         filterModel: resolvedFilter,
     });
     const viewWhere = view?.getWhereClause({
         filter: resolvedFilter,
-        authorization: publicData,
+        auth,
     });
     const where = tableWhere && viewWhere
         ? { AND: [tableWhere, viewWhere] }
         : tableWhere || viewWhere;
     const selectionArgs = await table.CalculateSelectionArgs(
-        publicData,
+        auth,
         resolvedFilter,
         includeDeleted,
         view?.getSelectionArgs,
@@ -84,7 +82,7 @@ async function prepareTableQuery(
         selectionArgs ?? {},
         executionOptions.orderedPrimaryKeys ? [table.pkMember] : [],
     );
-    return { table, view, publicData, includeDeleted, where, selectionArgs: readSelection.selection, readSelection };
+    return { table, view, auth, includeDeleted, where, selectionArgs: readSelection.selection, readSelection };
 }
 
 function sanitizeQueryRows(items: TAnyModel[], query: Awaited<ReturnType<typeof prepareTableQuery>>, contextDesc: string): TAnyModel[] {
@@ -93,7 +91,7 @@ function sanitizeQueryRows(items: TAnyModel[], query: Awaited<ReturnType<typeof 
             .map(model => authorizeAndProjectDB3ViewModel(
                 query.table,
                 model,
-                query.publicData,
+                query.auth,
                 contextDesc,
                 query.includeDeleted,
             ))
@@ -105,7 +103,7 @@ function sanitizeQueryRows(items: TAnyModel[], query: Awaited<ReturnType<typeof 
         db3Server.table(query.table).assertReadAuthorizationInput(model, contextDesc);
         return query.table.authorizeAndSanitize({
             contextDesc,
-            publicData: query.publicData,
+            auth: query.auth,
             includeDeleted: query.includeDeleted,
             rowMode: "view",
             model,
@@ -115,7 +113,7 @@ function sanitizeQueryRows(items: TAnyModel[], query: Awaited<ReturnType<typeof 
         .filter(result => result.rowIsAuthorized)
         .map(result => {
             const projected = query.readSelection.stripSupportFields(
-                projectDB3ModelPublicIds(query.table, result.authorizedModel, query.publicData),
+                projectDB3ModelPublicIds(query.table, result.authorizedModel, query.auth),
             );
             return projected;
 
@@ -178,12 +176,12 @@ function orderRawRowsByPrimaryKey<T extends TAnyModel>(
 
 export async function queryTable(
     input: db3.QueryRequestInput,
-    authorization: CMAuthorization,
+    auth: CMServerAuthorization,
     database: TransactionalPrismaClient = db,
     executionOptions: QueryTableExecutionOptions = {},
 ) {
     const startTimestamp = Date.now();
-    const query = await prepareTableQuery(input, authorization, database, executionOptions);
+    const query = await prepareTableQuery(input, auth, database, executionOptions);
     const trustedPrimaryKeyWhere = executionOptions.trustedNaturalPrimaryKeys
         ? { [query.table.pkMember]: { in: executionOptions.trustedNaturalPrimaryKeys } }
         : undefined;
@@ -240,13 +238,13 @@ export function authorizeAndProjectViewDto<
 >(
     view: TView,
     model: TModel,
-    publicData: DB3ServerAuthorization,
+    auth: CMServerAuthorization,
     contextDesc: string,
 ): db3.DtoOf<TView> | null {
     const projected = authorizeAndProjectDB3ViewModel(
         view.entity,
         model,
-        publicData,
+        auth,
         contextDesc,
     );
     if (!projected) return null;
@@ -260,18 +258,18 @@ export function authorizeAndHydrateViewModel<
 >(
     view: TView,
     model: TModel,
-    publicData: DB3ServerAuthorization,
+    auth: CMServerAuthorization,
     references: db3.DB3ReferenceProvider<db3.ReferenceContractOf<NoInfer<TView>>>,
     contextDesc: string,
 ): db3.ClientOf<TView> | null {
-    const dto = authorizeAndProjectViewDto(view, model, publicData, contextDesc);
+    const dto = authorizeAndProjectViewDto(view, model, auth, contextDesc);
     return dto === null ? null : db3.hydrateView(view, dto, references);
 }
 
 /** Named-view query returning authorized, validated transport DTOs. */
 export async function queryView<TView extends db3.AnyDB3View>(
     input: QueryViewInput<TView>,
-    authorization: CMAuthorization,
+    auth: CMServerAuthorization,
     database: TransactionalPrismaClient = db,
     executionOptions: QueryTableExecutionOptions = {},
 ): Promise<QueryViewResult<TView>> {
@@ -288,7 +286,7 @@ export async function queryView<TView extends db3.AnyDB3View>(
             tableName: view.tableName,
             viewID: view.viewID,
         },
-    }, authorization, database, executionOptions);
+    }, auth, database, executionOptions);
 
     // queryTable resolved the exact view instance above and parseDto validated
     // every returned item, so its untyped transport array has this view's DTO type.
@@ -302,25 +300,26 @@ export async function queryView<TView extends db3.AnyDB3View>(
 /** Query and hydrate when a server consumer needs the view's client shape. */
 export async function queryHydratedView<TView extends db3.AnyDB3View>(
     input: QueryViewInput<TView>,
-    authorization: CMAuthorization,
+    auth: CMServerAuthorization,
     references: db3.DB3ReferenceProvider<db3.ReferenceContractOf<NoInfer<TView>>>,
     database: TransactionalPrismaClient = db,
     executionOptions: QueryTableExecutionOptions = {},
 ): Promise<QueryHydratedViewResult<TView>> {
-    const result = await queryView(input, authorization, database, executionOptions);
+    const result = await queryView(input, auth, database, executionOptions);
     return {
         ...result,
         items: result.items.map(dto => db3.hydrateView(input.view, dto, references)),
     };
 }
 
-export const DB3QueryCore = async (request: db3.QueryRequestInput, ctx: AuthenticatedCtx) => (
-    queryTable(request, await loadAuthorization(ctx.session))
-);
+// just replace by queryTable.
+// export const DB3QueryCore = async (request: db3.QueryRequestInput, auth: CMServerAuthorization) => (
+//     queryTable(request, await loadAuthorization(ctx.session))
+// );
 
-export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInput, ctx: AuthenticatedCtx) {
+export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInput, auth: CMServerAuthorization) {
     const startTimestamp = Date.now();
-    const query = await prepareTableQuery(input, await loadAuthorization(ctx.session), db);
+    const query = await prepareTableQuery(input, auth, db);
     const delegate = db[query.table.tableName];
     const { items, ...pagination } = await paginate({
         skip: input.skip,

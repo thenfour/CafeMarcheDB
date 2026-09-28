@@ -12,7 +12,7 @@ import deactivateUser from "src/auth/mutations/deactivateUser";
 import getUserManagementCapabilities from "src/auth/queries/getUserManagementCapabilities";
 import { canManageUser } from "src/auth/server/userManagementPolicy";
 import { loadAuthorizedPageEntity } from "src/auth/server/serverPageAuthorization";
-import { loadAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import getUserExtraInfo from "src/core/db3/queries/getUserExtraInfo";
 import db3queries from "src/core/db3/queries/db3queries";
 import db3mutations from "tests/authorization/db3MutationTestResolver";
@@ -57,7 +57,7 @@ describe("user recovery", () => {
         });
         authorizationTestDb.reset({ user: [actor, target], change: [] });
         await expect(invokeResolver(reactivateUser, { userId: target.publicId }, createAuthorizationTestContext(admin)))
-            .rejects.toThrow("Not authorized to reactivate");
+            .rejects.toThrow("Not authorized for recover_users");
         expect(authorizationTestDb.snapshot("user").find(row => row.id === target.id)?.isDeleted).toBe(true);
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });

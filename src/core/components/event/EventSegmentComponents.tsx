@@ -1,5 +1,5 @@
 import { EventDateRangeText } from "../DateTime/EventDateRangeText";
-import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
@@ -123,13 +123,13 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const currentUser = useCurrentUser()[0]!;
 
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
     const blankObject: EventSegmentEditorClient = db3.xEventSegment.createNew(currentUser);
     blankObject.name = props.initialName;
     blankObject.eventId = event.publicId;
 
     const authorized = db3.xEventSegment.authorizeRowBeforeInsert({
-        publicData,
+        auth: auth,
     });
 
     const handleSave = (obj: EventSegmentEditorClient, commands: EventSegmentEditorCommands) => {
@@ -171,7 +171,7 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
     const [editOpen, setEditOpen] = React.useState<boolean>(false);
     //const user = useCurrentUser()[0]!;
     const dashboardContext = useDashboardContext();
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
 
     const handleDelete = (commands: EventSegmentEditorCommands) => {
         commands.delete(props.segment.publicId).then(() => {
@@ -203,7 +203,7 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
     };
 
     const editAuthorized = db3.xEventSegment.authorizeRowForEdit({
-        publicData,
+        auth: auth,
         model: props.segment,
     });
 
@@ -290,7 +290,7 @@ export interface EditSingleSegmentDateButtonProps {
 export const EditSingleSegmentDateButton = (props: EditSingleSegmentDateButtonProps) => {
     const [editOpen, setEditOpen] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
 
 
     const handleSave = (
@@ -312,7 +312,7 @@ export const EditSingleSegmentDateButton = (props: EditSingleSegmentDateButtonPr
     };
 
     const editAuthorized = db3.xEventSegment.authorizeRowForEdit({
-        publicData,
+        auth: auth,
         model: props.segment,
     });
     if (!editAuthorized || props.readonly) return null;

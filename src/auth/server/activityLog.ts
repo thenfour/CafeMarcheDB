@@ -1,10 +1,10 @@
 import db from "db";
-import type { Ctx } from "@blitzjs/next";
+import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
+import { CalculateChanges } from "../../../shared/associationUtils";
+import { CoalesceBool } from "../../../shared/utils";
+import { IAuthorization } from "../shared/cmAuthorization";
 // Use server-only dynamic import to avoid bundling Node's crypto in client builds
 const { randomUUID } = require("crypto") as typeof import("crypto");
-import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { CoalesceBool } from "./utils";
-import { CalculateChanges } from "./associationUtils";
 
 // CHANGES /////////////////////////////////////////////////////////////////////////////////////////////////////////
 export enum ChangeAction {
@@ -38,7 +38,9 @@ export type RegisterChangeArgs = {
     pkid: number,
     oldValues?: any,
     newValues?: any,
-    ctx: Ctx,
+    auth: IAuthorization,
+
+    //ctx: Ctx,
     // Normally the actor comes from the current session. Session-transition
     // operations can supply the original actor explicitly so attribution is
     // not lost when the session identity changes.
@@ -115,14 +117,14 @@ export async function RegisterChange(args: RegisterChangeArgs) {
         await transactionalDb.change.create({
             data: {
                 operationId: args.changeContext.operationId,
-                sessionHandle: args.ctx?.session?.$handle || null,
+                sessionHandle: args.auth.sessionHandle || null,
                 changedAt: args.changeContext.changedAt,
                 context: args.changeContext.contextDescription,
                 table: args.table,
                 recordId: args.pkid,
                 action: args.action,
                 userId: args.actorUserId === undefined
-                    ? args.ctx?.session?.userId || null
+                    ? args.auth.userId ?? null
                     : args.actorUserId,
                 oldValues: JSON.stringify(redactAuditValues(oldValues)),
                 newValues: JSON.stringify(redactAuditValues(newValues)),

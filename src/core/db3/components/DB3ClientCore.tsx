@@ -1,6 +1,7 @@
 'use client';
 
-import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
+import type { CMClientAuthorization } from "src/auth/shared/cmAuthorization";
 
 // so originally this started as a general API (hence the "capabilities" bitfield). but it's really just geared towards datagrids.
 // for a more conventional "client side API" look at clientAPI.tsx et al.
@@ -418,14 +419,14 @@ export const omitUnauthorizedMutationFields = (args: {
     existingModel: TAnyModel;
     mode: "new" | "update";
 
-    publicData: db3.DB3Authorization;
+    auth: CMClientAuthorization;
 }): TAnyModel => {
     const authorization = args.schema.authorizeAndSanitize({
         contextDesc: "DB3 client mutation preparation",
         model: args.model,
         existingModel: args.existingModel,
         rowMode: args.mode,
-        publicData: args.publicData,
+        auth: args.auth,
         fallbackOwnerId: null,
     });
 
@@ -501,7 +502,7 @@ export class xTableRenderClient<
     };
 
     refetch: () => void;
-    publicData: db3.DB3Authorization;
+    auth: CMClientAuthorization;
 
     get schema() {
         return this.tableSpec.args.table;
@@ -514,10 +515,10 @@ export class xTableRenderClient<
         return this.tableSpec.getColumn(name);
     }
 
-    constructor(args: xTableClientArgs<TView>, publicData: db3.DB3Authorization) {
+    constructor(args: xTableClientArgs<TView>, auth: CMClientAuthorization) {
         this.tableSpec = args.tableSpec;
         this.args = args;
-        this.publicData = publicData;
+        this.auth = auth;
 
         this.queryResultInfo = {
             executionTimeMillis: 0,
@@ -685,7 +686,7 @@ export class xTableRenderClient<
             model: dbModel,
             existingModel: row,
             mode,
-            publicData: this.publicData,
+            auth: this.auth,
         });
 
         // The typed xTable field map defines the same-key encoded result. The
@@ -706,8 +707,8 @@ export class xTableRenderClient<
 export const useTableRenderContext = <TView extends db3.AnyDB3View,>(
     args: xTableClientArgs<TView>,
 ): xTableRenderClient<TView> => {
-    const publicData = useDB3Authorization();
-    return new xTableRenderClient(args, publicData);
+    const auth = useClientAuth();
+    return new xTableRenderClient(args, auth);
 };
 
 export type xLegacyTableRenderClient<TRow extends TAnyModel = TAnyModel> =
@@ -717,8 +718,8 @@ export type xLegacyTableRenderClient<TRow extends TAnyModel = TAnyModel> =
 export const useLegacyTableRenderContext = <TRow extends TAnyModel = TAnyModel,>(
     args: xTableClientArgs<undefined>,
 ): xLegacyTableRenderClient<TRow> => {
-    const publicData = useDB3Authorization();
-    return new xTableRenderClient<undefined, TRow>(args, publicData);
+    const auth = useClientAuth();
+    return new xTableRenderClient<undefined, TRow>(args, auth);
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

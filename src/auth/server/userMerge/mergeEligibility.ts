@@ -2,11 +2,11 @@ import type { Ctx } from "@blitzjs/next";
 import { AuthorizationError, NotFoundError } from "blitz";
 import { Permission } from "shared/permissions";
 import type { MergeIdentity, UserMergeParticipants } from "../../userMergeSchemas";
-import { loadAuthorization } from "../requestAuthorization";
 import { canManageUser } from "../userManagementPolicy";
 import { makeUserManagementActor, makeUserManagementTarget } from "../userManagementState";
 import type { MergeContext, MergeDatabase, MergeUser } from "./types";
 import { xRole, xUser } from "@/src/core/db3/db3";
+import { loadAuthorization } from "../serverAuthorization";
 
 export async function authorizeMergeActor(db: MergeDatabase, ctx: Ctx) {
     // Disallow impersonated users from performing a merge. a bit arbitrary...
@@ -15,7 +15,7 @@ export async function authorizeMergeActor(db: MergeDatabase, ctx: Ctx) {
     }
     const auth = await (await loadAuthorization(ctx.session)).refresh(db);
     auth.requirePermission(Permission.merge_users);
-    return makeUserManagementActor(auth.requireUser(), auth.effectivePermissions);
+    return makeUserManagementActor(auth.requireUser().user, auth);
 }
 
 // also does auth check

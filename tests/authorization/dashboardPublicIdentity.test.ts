@@ -19,7 +19,7 @@ import * as db3 from "src/core/db3/db3";
 import type { CMDBTableFilterModel } from "src/core/db3/shared/apiTypes";
 import { queryView } from "src/core/db3/server/db3QueryCore";
 import { validateDB3QueryRequest } from "src/core/db3/server/db3RequestValidation";
-import { loadAuthorization } from "src/auth/server/requestAuthorization";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { PermissionSet } from "src/auth/shared/PermissionSet";
 import { Permission } from "shared/permissions";
 import type { EventPublicId } from "shared/publicId";

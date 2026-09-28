@@ -2,8 +2,8 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import { Permission } from "shared/permissions";
 import { PermissionSet } from "src/auth/shared/PermissionSet";
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
-import { createDB3Authorization } from "src/core/db3/shared/db3Authorization";
-import type { DB3ServerAuthorization } from "src/core/db3/server/db3ServerAuthorization";
+import { CMClientAuthorization } from "src/auth/shared/cmAuthorization";
+import { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 
 describe("PermissionSet", () => {
     it("accepts names without a database catalog and rejects malformed grants", () => {
@@ -18,8 +18,8 @@ describe("PermissionSet", () => {
         expect(permissions.includesName("10")).toBe(false);
         expect(permissions).not.toHaveProperty("ids");
         expect(permissions).not.toHaveProperty("includesId");
-        const clientAuthorization = createDB3Authorization(null, permissions);
-        expectTypeOf(clientAuthorization).not.toMatchTypeOf<DB3ServerAuthorization>();
+        const clientAuthorization = new CMClientAuthorization(null, permissions);
+        expectTypeOf(clientAuthorization).not.toMatchTypeOf<CMServerAuthorization>();
     });
 
     it("detects revoked grants as well as added grants without depending on order", () => {
@@ -41,6 +41,21 @@ describe("PermissionSet", () => {
 });
 
 describe("ServerPermissionSet", () => {
+    it("uses matrix grants directly and checks user presence separately", () => {
+        const permissions = new ServerPermissionSet([
+            { id: 10, name: Permission.login },
+            { id: 11, name: Permission.never_grant },
+        ]);
+        const auth = new CMServerAuthorization(null, permissions);
+
+        expect(auth.hasPermission(Permission.login)).toBe(true);
+        expect(auth.hasPermission(Permission.never_grant)).toBe(true);
+        expect(() => auth.requirePermission(Permission.login)).not.toThrow();
+        expect(() => auth.requireUser()).toThrow("An active user is required");
+        expect(new CMClientAuthorization(null, new PermissionSet(permissions.names))
+            .hasPermission(Permission.never_grant)).toBe(true);
+    });
+
     it("keeps database identities only in the server capability", () => {
         const permissions = new ServerPermissionSet([
             { id: 10, name: Permission.login }, { id: 20, name: Permission.public },
@@ -51,7 +66,7 @@ describe("ServerPermissionSet", () => {
         expect(permissions.includesId(30)).toBe(false);
         expect(permissions.names).toEqual([Permission.login, Permission.public]);
         expect(permissions.hasAll(new PermissionSet([Permission.login]))).toBe(true);
-        expectTypeOf(createDB3Authorization(null, permissions)).toEqualTypeOf<DB3ServerAuthorization>();
+        expectTypeOf(new CMServerAuthorization(null, permissions)).toEqualTypeOf<CMServerAuthorization>();
     });
 
     it("requires real database identities, not optional or placeholder IDs", () => {

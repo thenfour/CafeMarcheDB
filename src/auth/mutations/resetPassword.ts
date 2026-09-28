@@ -3,10 +3,11 @@ import { SecurePassword } from "@blitzjs/auth/secure-password";
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { ResetPassword } from "../schemas";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { createPublicDataFromDatabase } from "../server/effectivePermissions";
 import { revokeUserSignInState } from "../server/signInMethods";
+import { loadAuthorization } from "../server/serverAuthorization";
 
 export class ResetPasswordError extends Error {
   name = "ResetPasswordError";
@@ -33,7 +34,7 @@ export default resolver.pipe(
         changeContext: CreateChangeContext("resetPasswordMutation"),
         table: "User", pkid: target.id,
         oldValues: {}, newValues: { passwordReset: true },
-        ctx, db: tx, options: { dontCalculateChanges: true },
+        auth: await loadAuthorization(ctx.session), db: tx, options: { dontCalculateChanges: true },
       });
       return updated;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });

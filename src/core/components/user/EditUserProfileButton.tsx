@@ -21,7 +21,7 @@ export const EditUserProfileButton = ({ readonly, tableClient, user, onOK }: Edi
     });
     const canEdit = tableClient.schema.authorizeRowForEdit({
         model: user,
-        publicData: tableClient.publicData,
+        auth: tableClient.auth,
     });
 
     return <>{canEdit && <EditFieldsDialogButton

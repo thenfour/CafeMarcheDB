@@ -1,5 +1,17 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { parsePublicId } from "shared/publicId";
+function wikiAuth(userId: number) {
+    const userPublicId = parsePublicId<"User">(`TestUser${String(userId).padStart(8, "0")}`);
+    const auth = {
+        user: { id: userId, publicId: userPublicId },
+        userId,
+        userPublicId,
+        hasPermission: () => true,
+        requirePermission: () => undefined,
+        requireUser: () => auth,
+    };
+    return auth;
+}
 vi.mock("db", async () => {
     const actual = await vi.importActual<any>("@prisma/client");
     return { ...actual, default: {
@@ -11,17 +23,13 @@ vi.mock("db", async () => {
 vi.mock("@blitzjs/rpc", () => ({ resolver: {
     pipe: (...steps: any[]) => steps[steps.length - 1], authorize: vi.fn(), zod: vi.fn(),
 }}));
-vi.mock("src/core/db3/server/db3mutationCore", () => ({ getCurrentUserCore: async (ctx: any) => ({ id: ctx.session.userId, publicId: `TestUser${String(ctx.session.userId).padStart(8, "0")}` }) }));
 vi.mock("src/core/db3/server/db3ReadPolicy", () => ({ GetAuthorizedTableReadWhere: async (args: any) => args.where ?? {} }));
-vi.mock("src/core/db3/shared/db3Authorization", () => ({
-    createDB3Authorization: () => ({}),
-}));
-vi.mock("src/auth/server/requestAuthorization", () => ({ loadAuthorization: async () => ({}) }));
+vi.mock("src/auth/server/serverAuthorization", () => ({ loadAuthorization: async (session: { userId: number }) => wikiAuth(session.userId) }));
 vi.mock("src/core/db3/server/db3QueryCore", () => ({
     authorizeAndProjectViewDto: (_view: unknown, row: unknown) => row,
 }));
 vi.mock("src/core/db3/shared/db3Helpers", () => ({ GetDefaultVisibilityPermission: async () => ({ id: 1 }) }));
-vi.mock("shared/activityLog", () => ({ ChangeAction: { insert: "insert" }, CreateChangeContext: vi.fn(), RegisterChange: vi.fn() }));
+vi.mock("src/auth/server/activityLog", () => ({ ChangeAction: { insert: "insert", update: "update" }, CreateChangeContext: vi.fn(), RegisterChange: vi.fn() }));
 import db, { Prisma } from "db";
 import acquire from "src/core/wiki/mutations/acquireLockOnWikiPage";
 import save from "src/core/wiki/mutations/updateWikiPage";
@@ -29,7 +37,7 @@ import renew from "src/core/wiki/mutations/wikiRenewYourLock";
 import release from "src/core/wiki/mutations/wikiReleaseYourLock";
 import { GetWikiPageUpdatability, WikiPageApiPayload } from "src/core/wiki/shared/wikiUtils";
 const mockDb = db as any;
-const ctx = { session: { userId: 1 } } as any;
+const ctx = { session: { userId: 1 }, auth: wikiAuth(1) } as any;
 const now = new Date("2026-09-15T12:00:00Z");
 const permissionPublicId = parsePublicId<"Permission">("WikiPermission01");
 const pagePublicId = parsePublicId<"WikiPage">("TestWikiPage0001");
@@ -59,7 +67,7 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); });
 describe("wiki lease and content protection", () => {
     it("keeps a lease despite missing presence pings", () => {
-        expect(GetWikiPageUpdatability({ currentPage: page(), currentUserId: parsePublicId<"User">("TestUser00000002"),
+        expect(GetWikiPageUpdatability({ currentPage: page(), currentUserPublicId: parsePublicId<"User">("TestUser00000002"),
             userClientLockId: "editor-b", baseRevisionId: revisionPublicId, baseContentVersion: 5 }).isLockConflict).toBe(true);
     });
     it("rejects stale content even when the revision ID is unchanged", async () => {

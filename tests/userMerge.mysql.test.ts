@@ -4,7 +4,7 @@ import { SecurePassword } from "@blitzjs/auth/secure-password";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
-import * as activityLog from "shared/activityLog";
+import * as activityLog from "@/src/auth/server/activityLog";
 import { prepareUserMerge } from "src/auth/server/userMerge/prepareUserMerge";
 import { commitUserMerge, MERGE_REVIEW_CHANGED } from "src/auth/server/userMerge/commitUserMerge";
 import { findSignInUser } from "src/auth/server/signInMethods";
@@ -30,19 +30,23 @@ async function clearDisposableDatabase() {
 }
 
 async function seedAccounts() {
-    await db.permission.createMany({ data: Object.values(Permission).map((name, index) => ({
-        id: index + 1,
-        publicId: parsePublicId<"Permission">(`MergePerm${(index + 1).toString().padStart(7, "0")}`),
-        name,
-    })) });
+    await db.permission.createMany({
+        data: Object.values(Permission).map((name, index) => ({
+            id: index + 1,
+            publicId: parsePublicId<"Permission">(`MergePerm${(index + 1).toString().padStart(7, "0")}`),
+            name,
+        }))
+    });
     const permissions = await db.permission.findMany();
     await db.role.create({
         data: {
             id: 1, publicId: parsePublicId<"Role">("MergeRole0000001"), name: "Sysadmin", isSysAdminRole: true,
-            permissions: { create: permissions.filter(permission => permission.name !== Permission.never_grant).map((permission, index) => ({
-                publicId: parsePublicId<"RolePermission">(`MergeRP${(index + 1).toString().padStart(9, "0")}`),
-                permissionId: permission.id,
-            })) },
+            permissions: {
+                create: permissions.filter(permission => permission.name !== Permission.never_grant).map((permission, index) => ({
+                    publicId: parsePublicId<"RolePermission">(`MergeRP${(index + 1).toString().padStart(9, "0")}`),
+                    permissionId: permission.id,
+                }))
+            },
         }
     });
     await db.role.create({
@@ -102,29 +106,37 @@ async function seedContent() {
         ]
     });
     await db.userSetting.createMany({ data: [{ userId: 10, name: "calendar.showDeclinedEvents", value: false }, { userId: 20, name: "calendar.showDeclinedEvents", value: true }] });
-    await db.userTag.createMany({ data: [
-        { id: 1, publicId: "MergeUserTag0001", text: "Shared", description: "" },
-        { id: 2, publicId: "MergeUserTag0002", text: "Retiring only", description: "" },
-    ] });
-    await db.userTagAssignment.createMany({ data: [
-        { publicId: "MergeUsrAsgn0001", userId: 10, userTagId: 1 },
-        { publicId: "MergeUsrAsgn0002", userId: 20, userTagId: 1 },
-        { publicId: "MergeUsrAsgn0003", userId: 20, userTagId: 2 },
-    ] });
+    await db.userTag.createMany({
+        data: [
+            { id: 1, publicId: "MergeUserTag0001", text: "Shared", description: "" },
+            { id: 2, publicId: "MergeUserTag0002", text: "Retiring only", description: "" },
+        ]
+    });
+    await db.userTagAssignment.createMany({
+        data: [
+            { publicId: "MergeUsrAsgn0001", userId: 10, userTagId: 1 },
+            { publicId: "MergeUsrAsgn0002", userId: 20, userTagId: 1 },
+            { publicId: "MergeUsrAsgn0003", userId: 20, userTagId: 2 },
+        ]
+    });
     await db.instrumentFunctionalGroup.create({ data: { id: 1, publicId: "merge_test_group", name: "Group", description: "", sortOrder: 0 } });
-    await db.instrument.createMany({ data: [1, 2].map(id => ({
-        id,
-        publicId: `mergeinst${String(id).padStart(7, "0")}`,
-        name: `Instrument ${id}`,
-        description: "",
-        sortOrder: id,
-        functionalGroupId: 1,
-    })) });
-    await db.userInstrument.createMany({ data: [
-        { publicId: "MergeUsrInst0001", userId: 10, instrumentId: 1, isPrimary: true },
-        { publicId: "MergeUsrInst0002", userId: 20, instrumentId: 1 },
-        { publicId: "MergeUsrInst0003", userId: 20, instrumentId: 2, isPrimary: true },
-    ] });
+    await db.instrument.createMany({
+        data: [1, 2].map(id => ({
+            id,
+            publicId: `mergeinst${String(id).padStart(7, "0")}`,
+            name: `Instrument ${id}`,
+            description: "",
+            sortOrder: id,
+            functionalGroupId: 1,
+        }))
+    });
+    await db.userInstrument.createMany({
+        data: [
+            { publicId: "MergeUsrInst0001", userId: 10, instrumentId: 1, isPrimary: true },
+            { publicId: "MergeUsrInst0002", userId: 20, instrumentId: 1 },
+            { publicId: "MergeUsrInst0003", userId: 20, instrumentId: 2, isPrimary: true },
+        ]
+    });
     await db.change.create({ data: { action: "update", context: "historical", operationId: "original", table: "Song", recordId: 1, userId: 20 } });
 }
 

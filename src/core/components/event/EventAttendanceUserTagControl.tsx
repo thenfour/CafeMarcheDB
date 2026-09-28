@@ -1,7 +1,7 @@
 import React from "react";
 import * as db3 from "src/core/db3/db3";
 import { API } from "../../db3/clientAPI";
-import { useDB3Authorization } from "../../db3/components/useDB3Authorization";
+import { useClientAuth } from "../../db3/components/useClientAuth";
 import { CMStandardDBChip } from "../CMChip";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
@@ -22,9 +22,9 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
     const { showMessage } = React.useContext(SnackbarContext);
     const dashboard = useDashboardContext();
     const recordFeature = useFeatureRecorder();
-    const publicData = useDB3Authorization();
+    const auth = useClientAuth();
     const authorizedForEdit = db3.xEvent.authorizeColumnForEdit({
-        publicData, model: event, columnName: "expectedAttendanceUserTag",
+        auth: auth, model: event, columnName: "expectedAttendanceUserTag",
         fallbackOwnerId: null,
         fallbackOwnerPublicId: event.createdByUser?.publicId ?? null,
     });

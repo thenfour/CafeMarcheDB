@@ -31,7 +31,7 @@ export default resolver.pipe(
 
         if (!target) throw new NotFoundError();
         if (target.principal.isDeleted
-            && !actor.effectivePermissions.includesName(Permission.recover_users)) {
+            && !actor.auth.hasPermission(Permission.recover_users)) {
             // target user is deleted.
             // deleted users are only known through Permission.recover_users
             throw new AuthorizationError();

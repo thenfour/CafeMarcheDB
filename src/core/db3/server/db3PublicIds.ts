@@ -1,6 +1,6 @@
-import type { DB3ServerAuthorization } from "./db3ServerAuthorization";
 // server
 import type { TAnyModel } from "@/shared/rootroot";
+import { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
 import { isPublicId } from "shared/publicId";
 import * as db3 from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
@@ -25,14 +25,14 @@ export class DB3PublicIdError extends Error {
 export async function resolvePublicIds(
     table: db3.xTable,
     publicIds: readonly unknown[],
-    publicData: DB3ServerAuthorization,
+    auth: CMServerAuthorization,
     database: TransactionalPrismaClient,
     includeDeleted = false,
 ): Promise<number[]> {
     if (!table.publicIdMember || publicIds.some(publicId => !isPublicId(publicId))) {
         throw new DB3PublicIdError(`Invalid public ID for ${table.tableID}.`);
     }
-    if (!table.authorizeTableForView(publicData)) {
+    if (!table.authorizeTableForView(auth)) {
         throw new DB3PublicIdError(`${table.tableID} was not found.`);
     }
     const uniquePublicIds = [...new Set(publicIds.filter(isPublicId))];
@@ -40,7 +40,7 @@ export async function resolvePublicIds(
 
     const where = table.CalculateWhereClause({
         filterModel: { publicIds: uniquePublicIds },
-        publicData,
+        auth,
         includeDeleted,
     });
     const rows = await database[table.tableName].findMany({
@@ -67,14 +67,14 @@ export async function resolvePublicIds(
 export async function resolvePublicId(
     table: db3.xTable,
     publicId: string,
-    publicData: DB3ServerAuthorization,
+    auth: CMServerAuthorization,
     database: TransactionalPrismaClient,
     includeDeleted = false,
 ): Promise<number> {
     return (await resolvePublicIds(
         table,
         [publicId],
-        publicData,
+        auth,
         database,
         includeDeleted,
     ))[0]!;
@@ -83,7 +83,7 @@ export async function resolvePublicId(
 export async function resolvePublicQueryParameters(
     table: db3.xTable,
     params: Record<string, unknown>,
-    publicData: DB3ServerAuthorization,
+    auth: CMServerAuthorization,
     database: TransactionalPrismaClient,
 ): Promise<Record<string, unknown>> {
     const resolved = { ...params };
@@ -99,7 +99,7 @@ export async function resolvePublicQueryParameters(
             resolved[parameterName] = await resolvePublicId(
                 targetTable,
                 value as string, // Runtime validation derives this shape from the target table.
-                publicData,
+                auth,
                 database,
             );
             continue;
@@ -112,7 +112,7 @@ export async function resolvePublicQueryParameters(
         resolved[parameterName] = await resolvePublicIds(
             targetTable,
             value,
-            publicData,
+            auth,
             database,
         );
     }
@@ -126,7 +126,7 @@ export async function resolvePublicQueryParameters(
 export async function resolvePublicForeignIds(
     table: db3.xTable,
     model: TAnyModel,
-    publicData: DB3ServerAuthorization,
+    auth: CMServerAuthorization,
     database: TransactionalPrismaClient,
 ): Promise<TAnyModel> {
     const ret = { ...model };
@@ -146,7 +146,7 @@ export async function resolvePublicForeignIds(
             ret[field.member] = await resolvePublicIds(
                 foreignTable,
                 identities,
-                publicData,
+                auth,
                 database,
             );
             continue;
@@ -166,7 +166,7 @@ export async function resolvePublicForeignIds(
         if (Object.prototype.hasOwnProperty.call(ret, field.fkidMember)) {
             const value = ret[field.fkidMember];
             if (value !== null && value !== undefined) {
-                ret[field.fkidMember] = await resolvePublicId(foreignTable, value, publicData, database);
+                ret[field.fkidMember] = await resolvePublicId(foreignTable, value, auth, database);
             }
         }
 
@@ -179,7 +179,7 @@ export async function resolvePublicForeignIds(
             const value = ret[field.member];
             if (value !== null && value !== undefined) {
                 const publicId = value[foreignTable.publicIdMember];
-                ret[field.fkidMember] = await resolvePublicId(foreignTable, publicId, publicData, database);
+                ret[field.fkidMember] = await resolvePublicId(foreignTable, publicId, auth, database);
                 delete ret[field.member];
             }
         }
@@ -191,7 +191,7 @@ export async function resolvePublicForeignIds(
 export function projectDB3ModelPublicIds(
     table: db3.xTable,
     model: TAnyModel,
-    publicData?: DB3ServerAuthorization,
+    auth: CMServerAuthorization,
 ): TAnyModel {
     const ret = { ...model };
 
@@ -207,7 +207,7 @@ export function projectDB3ModelPublicIds(
             const foreignModel = ret[field.member];
             if (foreignModel && typeof foreignModel === "object")// foreign object is present (`status`); recurse.
             {
-                ret[field.member] = projectDB3ModelPublicIds(foreignTable, foreignModel, publicData);
+                ret[field.member] = projectDB3ModelPublicIds(foreignTable, foreignModel, auth);
                 if (foreignTable.publicIdMember) {
                     // foreign refs also have a 2nd representation as the fkid (`statusId`)
                     ret[field.fkidMember] = foreignModel[foreignTable.publicIdMember];
@@ -230,7 +230,7 @@ export function projectDB3ModelPublicIds(
         if (field.fieldTableAssociation === "associationRecord" && Array.isArray(ret[field.member])) {
             const associationTable = (field as db3.TagsField<TAnyModel>).getAssociationTableShema();
             ret[field.member] = ret[field.member].map(association => (
-                projectDB3ModelPublicIds(associationTable, association, publicData)
+                projectDB3ModelPublicIds(associationTable, association, auth)
             ));
             continue;
         }
@@ -240,7 +240,7 @@ export function projectDB3ModelPublicIds(
         if (field instanceof db3.ForeignCollectionField && Array.isArray(ret[field.member])) {
             const foreignTable = db3.GetTableById(field.foreignTableID);
             ret[field.member] = ret[field.member].map(foreignModel => (
-                projectDB3ModelPublicIds(foreignTable, foreignModel, publicData)
+                projectDB3ModelPublicIds(foreignTable, foreignModel, auth)
             ));
         }
     }
@@ -255,7 +255,7 @@ export function projectDB3ModelPublicIds(
 export function authorizeAndProjectDB3ViewModel(
     table: db3.xTable,
     model: TAnyModel,
-    publicData: DB3ServerAuthorization,
+    auth: CMServerAuthorization,
     contextDesc: string,
     includeDeleted = false,
 ): TAnyModel | null {
@@ -267,7 +267,7 @@ export function authorizeAndProjectDB3ViewModel(
         db3Server.table(currentTable).assertReadAuthorizationInput(currentModel, `${contextDesc}:${path}`);
         const result = currentTable.authorizeAndSanitize({
             contextDesc: `${contextDesc}:${path}`,
-            publicData,
+            auth,
             includeDeleted,
             rowMode: "view",
             model: currentModel,
@@ -320,7 +320,7 @@ export function authorizeAndProjectDB3ViewModel(
 
     const authorizedModel = authorizeRecursively(table, model, table.tableID);
     return authorizedModel
-        ? projectDB3ModelPublicIds(table, authorizedModel, publicData)
+        ? projectDB3ModelPublicIds(table, authorizedModel, auth)
         : null;
 }
 
@@ -358,7 +358,7 @@ export function tableUsesPublicIdsInTransport(table: db3.xTable, ancestors = new
 export function sanitizeDB3ModelForTransport(
     table: db3.xTable,
     model: TAnyModel | null,
-    publicData: DB3ServerAuthorization,
+    auth: CMServerAuthorization,
     contextDesc: string,
 ): TAnyModel {
     if (!model) {
@@ -367,7 +367,7 @@ export function sanitizeDB3ModelForTransport(
 
     const result = table.authorizeAndSanitize({
         contextDesc,
-        publicData,
+        auth,
         rowMode: "view",
         model,
         fallbackOwnerId: null,
@@ -375,5 +375,5 @@ export function sanitizeDB3ModelForTransport(
     if (!result.rowIsAuthorized) {
         throw new DB3PublicIdError(`Not authorized to view ${table.tableID}.`);
     }
-    return projectDB3ModelPublicIds(table, result.authorizedModel, publicData);
+    return projectDB3ModelPublicIds(table, result.authorizedModel, auth);
 }

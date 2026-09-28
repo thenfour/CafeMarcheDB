@@ -1,6 +1,6 @@
 import type { SessionContext } from "@blitzjs/auth";
 import { findBackstageRouteByPattern } from "../shared/backstageRoutes";
-import { loadAuthorization } from "./requestAuthorization";
+import { loadAuthorization } from "./serverAuthorization";
 
 export async function authorizePageRequest(
     pathname: string,

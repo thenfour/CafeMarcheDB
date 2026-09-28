@@ -1,12 +1,10 @@
-//import { resolver as blitzResolver } from "@blitzjs/rpc";
 import type { AuthenticatedCtx, Ctx } from "blitz";
 import { Permission } from "shared/permissions";
-import type { UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
-import { loadAuthorization, type CMAuthorization } from "./requestAuthorization";
+import { loadAuthorization, type CMServerAuthorization, type CMServerAuthorizationWithUser } from "./serverAuthorization";
 
-export type CMCtx = Ctx & { readonly auth: CMAuthorization };
-export type CMAuthenticatedCtx = AuthenticatedCtx & {
-    readonly auth: CMAuthorization & { readonly user: UserWithRolesPayload };
+export type CMAuthCtx = Ctx & { readonly auth: CMServerAuthorization };
+export type CMAuthCtxWithUser = AuthenticatedCtx & {
+    readonly auth: CMServerAuthorizationWithUser;
 };
 
 interface ContextResult<TInput, TContext> {
@@ -15,23 +13,46 @@ interface ContextResult<TInput, TContext> {
     readonly ctx: TContext;
 }
 
-export function cmauthorize(permission: typeof Permission.login): <TInput>(input: TInput, ctx: Ctx) => ContextResult<TInput, CMAuthenticatedCtx>;
-export function cmauthorize(permission: Permission): <TInput>(input: TInput, ctx: Ctx) => ContextResult<TInput, CMCtx>;
-export function cmauthorize(permission: Permission) {
+type RequireUser = {
+    readonly requireUser: true;
+}
+type DontRequireUser = {
+    readonly requireUser?: false;
+}
+
+type CmauthorizeArgsCommon = {
+    readonly permission: Permission;
+}
+
+type CmauthorizeArgsRequiringUser = CmauthorizeArgsCommon & RequireUser;
+type CmauthorizeArgsNotRequiringUser = CmauthorizeArgsCommon & DontRequireUser;
+type CmauthorizeArgs = CmauthorizeArgsCommon & (RequireUser | DontRequireUser);
+
+
+export function cmauthorize(args: CmauthorizeArgsRequiringUser): <TInput>(input: TInput, ctx: Ctx) => ContextResult<TInput, CMAuthCtxWithUser>;
+export function cmauthorize(args: CmauthorizeArgsNotRequiringUser): <TInput>(input: TInput, ctx: Ctx) => ContextResult<TInput, CMAuthCtx>;
+export function cmauthorize(permission: Permission): <TInput>(input: TInput, ctx: Ctx) => ContextResult<TInput, CMAuthCtx>;
+export function cmauthorize(argsOrPermission: CmauthorizeArgs | Permission) {
     const middleware = async <TInput>(input: TInput, ctx: Ctx) => {
         const auth = await loadAuthorization(ctx.session);
-        auth.requirePermission(permission);
-        const nextContext = { ...ctx, auth };
-        if (permission === Permission.login) {
-            // requirePermission verified the active user and login grant.
-            return { __blitz: true as const, value: input, ctx: nextContext as CMAuthenticatedCtx };
+
+        if (typeof argsOrPermission === "object") {
+            var permission = argsOrPermission.permission;
+            var requireUser = argsOrPermission.requireUser ?? false;
+        } else {
+            var permission = argsOrPermission;
+            var requireUser = false;
         }
-        return { __blitz: true as const, value: input, ctx: nextContext };
+
+        auth.requirePermission(permission);
+
+        if (requireUser) {
+            const authenticatedAuth = auth.requireUser();
+            return { __blitz: true as const, value: input, ctx: { ...ctx, auth: authenticatedAuth } };
+        }
+        return { __blitz: true as const, value: input, ctx: { ...ctx, auth } };
     };
     // Blitz 2 awaits middleware before reading __blitz, but its pipe types
     // describe context changes only for synchronous middleware.
-    return middleware as unknown as <TInput>(input: TInput, ctx: Ctx) => ContextResult<TInput, CMCtx>;
+    return middleware as unknown as <TInput>(input: TInput, ctx: Ctx) => ContextResult<TInput, CMAuthCtx>;
 }
-
-// this is fun but not necessary and import resolution is awkward. just use cmauthorize()
-// export const resolver = { ...blitzResolver, cmauthorize };

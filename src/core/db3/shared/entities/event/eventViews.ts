@@ -792,8 +792,8 @@ const eventSearchViewContract = deriveViewContract(
     },
 );
 
-export const eventSearchSelection = ({ authorization }: DB3ViewSelectionContext) => {
-    const actorUserId = authorization.userId ?? -1;
+export const eventSearchSelection = ({ auth }: DB3ViewSelectionContext) => {
+    const actorUserId = auth.userId ?? -1;
     // Start from the compiled selection so projection-only relations added by
     // the contract remain present while the request supplies actor-scoped
     // predicates.
