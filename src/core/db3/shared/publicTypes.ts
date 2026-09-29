@@ -1,5 +1,8 @@
 import { ImageEditParams } from "./fileTypes";
-import type { EventPublicId, FrontpageGalleryItemPublicId } from "shared/publicId";
+import type { EventPublicId, FilePublicId, FrontpageGalleryItemPublicId } from "shared/publicId";
+
+// these are the OUTPUT types
+// which are  very close to the database payloads
 
 export interface PublicAgendaItemSpec {
     date?: string | null;
@@ -11,10 +14,13 @@ export interface PublicAgendaItemSpec {
     tags?: string | null;
 
     id: EventPublicId;
-    startsAt: Date | null;
+
+    // sortable date; null = TBD
+    startsAt: number | null;
 };
 export interface PublicGalleryItemSpec {
-    id: FrontpageGalleryItemPublicId;
+    galleryItemId: FrontpageGalleryItemPublicId;
+    fileId: FilePublicId;
     sortOrder: number;
     caption: string | null;
     imageFileUri: string;

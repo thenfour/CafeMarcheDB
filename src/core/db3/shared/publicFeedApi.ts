@@ -1,42 +1,45 @@
 import { EnNlFr, LangSelectString } from "@/shared/lang";
-import type { FrontpageGalleryItemPublicId } from "shared/publicId";
+import { ServerApi } from "@/src/server/serverApi";
 import * as db3 from "../db3";
-import { sortEvents } from "./apiTypes";
+import { sortEventsRaw } from "./apiTypes";
 import { PublicAgendaItemSpec, PublicFeedResponseSpec, PublicGalleryItemSpec } from "./publicTypes";
 import { SharedAPI } from "./sharedAPI";
 
-// null-or-whitespace values in EN will not show the field
-// null-or-whitespace values in NL and FR fallback to english
-type AgendaItemSource = Pick<db3.EventFrontpageClient,
-    | "publicId"
-    | "dateRange"
-    | "frontpageDate"
-    | "frontpageDate_nl"
-    | "frontpageDate_fr"
-    | "frontpageTime"
-    | "frontpageTime_nl"
-    | "frontpageTime_fr"
-    | "frontpageDetails"
-    | "frontpageDetails_nl"
-    | "frontpageDetails_fr"
-    | "frontpageLocation"
-    | "frontpageLocation_nl"
-    | "frontpageLocation_fr"
-    | "frontpageLocationURI"
-    | "frontpageLocationURI_nl"
-    | "frontpageLocationURI_fr"
-    | "frontpageTags"
-    | "frontpageTags_nl"
-    | "frontpageTags_fr"
-    | "frontpageTitle"
-    | "frontpageTitle_nl"
-    | "frontpageTitle_fr"
+// this is called by both server & client code.
+// server has things like database IDs
+// client has public IDs and public foreign payloads.
+// Q: why can't we just use the client shape? because we haven't migrated the server code to query the view in a hydrated way.
+type AgendaItem = Pick<db3.EventFrontpageDBPayload,
+    "publicId" |
+    "startsAt" |
+    "frontpageDate" |
+    "frontpageDate_nl" |
+    "frontpageDate_fr" |
+    "frontpageTime" |
+    "frontpageTime_nl" |
+    "frontpageTime_fr" |
+    "frontpageDetails" |
+    "frontpageDetails_nl" |
+    "frontpageDetails_fr" |
+    "frontpageLocation" |
+    "frontpageLocation_nl" |
+    "frontpageLocation_fr" |
+    "frontpageLocationURI" |
+    "frontpageLocationURI_nl" |
+    "frontpageLocationURI_fr" |
+    "frontpageTags" |
+    "frontpageTags_nl" |
+    "frontpageTags_fr" |
+    "frontpageTitle" |
+    "frontpageTitle_nl" |
+    "frontpageTitle_fr"
 >;
 
-export function getAgendaItem(event: AgendaItemSource, lang: EnNlFr): PublicAgendaItemSpec {
+
+export function getAgendaItem(event: AgendaItem, lang: EnNlFr): PublicAgendaItemSpec {
     const ret: PublicAgendaItemSpec = {
-        id: event.publicId,
-        startsAt: event.dateRange?.getStartDateTime() || null,
+        id: db3.xEvent.parseIdentity(event.publicId), // useful for debugging / "which event is this"
+        startsAt: event.startsAt?.valueOf() || null,
         date: LangSelectString(lang, event.frontpageDate, event.frontpageDate_nl, event.frontpageDate_fr) || "",
         time: LangSelectString(lang, event.frontpageTime, event.frontpageTime_nl, event.frontpageTime_fr) || "",
         detailsMarkdown: LangSelectString(lang, event.frontpageDetails, event.frontpageDetails_nl, event.frontpageDetails_fr) || "",
@@ -48,24 +51,14 @@ export function getAgendaItem(event: AgendaItemSource, lang: EnNlFr): PublicAgen
     return ret;
 }
 
-type GalleryItemSource = {
-    publicId: FrontpageGalleryItemPublicId;
-    sortOrder: number;
-    caption: string;
-    displayParams: string;
-    file: {
-        storedLeafName: string;
-        customData: string | null;
-        mimeType: string | null;
-    };
-};
-
-function convertGalleryItem(item: GalleryItemSource): PublicGalleryItemSpec {
+function convertGalleryItem(item: db3.FrontpageGalleryFeedDBPayload, lang: EnNlFr): PublicGalleryItemSpec {
+    const fileUrl = ServerApi.getAbsoluteUri(SharedAPI.files.getURIForFile(item.file));
     return {
-        id: item.publicId,
+        galleryItemId: db3.xFrontpageGalleryItem.parseIdentity(item.publicId),
+        fileId: db3.xFile.parseIdentity(item.file.publicId),
         sortOrder: item.sortOrder,
-        caption: item.caption,
-        imageFileUri: SharedAPI.files.getURIForFile(item.file),
+        caption: LangSelectString(lang, item.caption, item.caption_nl, item.caption_fr) || "",
+        imageFileUri: fileUrl,
         storedLeafName: item.file.storedLeafName,
         editParams: SharedAPI.files.getGalleryItemDisplayParams(item),
         customData: item.file.customData,
@@ -74,12 +67,18 @@ function convertGalleryItem(item: GalleryItemSource): PublicGalleryItemSpec {
     };
 };
 
-export function MakePublicFeedResponseSpec(events: db3.EventFrontpageClient[], lang: EnNlFr, gallery: GalleryItemSource[]): PublicFeedResponseSpec {
+export function MakePublicFeedResponseSpec(
+    events: db3.EventFrontpageDBPayload[],
+    lang: EnNlFr,
+    gallery: db3.FrontpageGalleryFeedDBPayload[]):
+    PublicFeedResponseSpec //
+{
     const agenda: PublicAgendaItemSpec[] = events.map(e => getAgendaItem(e, lang));
-    const sortedAgenda = sortEvents(agenda);
-    const publicGallery: PublicGalleryItemSpec[] = gallery.map(g => convertGalleryItem(g));
-    // sort by sortorder
+    const sortedAgenda = sortEventsRaw(agenda);
+
+    const publicGallery: PublicGalleryItemSpec[] = gallery.map(g => convertGalleryItem(g, lang));
     publicGallery.sort((a, b) => a.sortOrder - b.sortOrder);
+
     return {
         agenda: sortedAgenda,
         gallery: publicGallery,

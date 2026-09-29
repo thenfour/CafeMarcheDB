@@ -814,93 +814,6 @@ export const eventSearchSelection = ({ auth }: DB3ViewSelectionContext) => {
     });
 };
 
-const eventFrontpageRequestedSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
-    select: {
-        publicId: true,
-        name: true,
-        typeId: true,
-        locationDescription: true,
-        locationURL: true,
-        statusId: true,
-        relevanceClassOverride: true,
-        startsAt: true,
-        durationMillis: true,
-        isAllDay: true,
-        visiblePermissionId: true,
-        frontpageVisible: true,
-        frontpageDate: true,
-        frontpageTime: true,
-        frontpageDetails: true,
-        frontpageTitle: true,
-        frontpageLocation: true,
-        frontpageLocationURI: true,
-        frontpageTags: true,
-        frontpageDate_nl: true,
-        frontpageTime_nl: true,
-        frontpageDetails_nl: true,
-        frontpageTitle_nl: true,
-        frontpageLocation_nl: true,
-        frontpageLocationURI_nl: true,
-        frontpageTags_nl: true,
-        frontpageDate_fr: true,
-        frontpageTime_fr: true,
-        frontpageDetails_fr: true,
-        frontpageTitle_fr: true,
-        frontpageLocation_fr: true,
-        frontpageLocationURI_fr: true,
-        frontpageTags_fr: true,
-        type: {
-            select: {
-                publicId: true,
-                isDeleted: true,
-                description: true,
-                color: true,
-                sortOrder: true,
-                iconName: true,
-                text: true,
-                significance: true,
-            },
-        },
-        status: {
-            select: {
-                publicId: true,
-                isDeleted: true,
-                description: true,
-                color: true,
-                sortOrder: true,
-                iconName: true,
-                label: true,
-                significance: true,
-            },
-        },
-        tags: {
-            orderBy: EventTagAssignmentNaturalOrderBy,
-            select: {
-                publicId: true,
-                eventTagId: true,
-                eventTag: {
-                    select: {
-                        publicId: true,
-                        description: true,
-                        color: true,
-                        sortOrder: true,
-                        visibleOnFrontpage: true,
-                        text: true,
-                        significance: true,
-                    },
-                },
-            },
-        },
-    },
-});
-
-const eventFrontpageViewContract = deriveViewContract(
-    xEvent,
-    eventFrontpageRequestedSelection,
-);
-
-export const eventFrontpageSelection = eventFrontpageViewContract.prismaSelection;
-
 export const eventSearchView = defineView({
     viewID: "Event_Search",
     entity: xEvent,
@@ -915,19 +828,6 @@ export const eventSearchView = defineView({
             segments: segments?.map(segment => hydrateEventDateRange(segment)),
         };
     },
-});
-
-export const eventFrontpageView = defineView({
-    viewID: "Event_Frontpage",
-    entity: xEvent,
-    selection: eventFrontpageSelection,
-    dtoSchema: eventFrontpageViewContract.dtoSchema,
-    // The public API deliberately supplies an empty reference provider. All
-    // consumer relations are embedded; the optional visiblePermissionId stays
-    // normalized when that table is not registered.
-    hydrate: (dto, references) => hydrateEventDateRange(
-        eventFrontpageViewContract.hydrate(dto, references),
-    ),
 });
 
 const eventWikiPageContextTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
@@ -1000,8 +900,6 @@ export type EventCalendarClient = ClientOf<typeof eventCalendarView>;
 
 //type aoeu = EventSearchClient["status"];
 
-export type EventFrontpageDto = DtoOf<typeof eventFrontpageView>;
-export type EventFrontpageClient = ClientOf<typeof eventFrontpageView>;
 export type EventWikiPageContextClient = ClientOf<typeof eventWikiPageContextView>;
 export type EventWikiPageContextDto = DtoOf<typeof eventWikiPageContextView>;
 //type aoeus = EventFrontpageClient;

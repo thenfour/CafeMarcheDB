@@ -155,38 +155,6 @@ export const frontpageGalleryItemEditorView = defineCrudView({
     ),
 });
 
-const frontpageGalleryFeedSelection = Prisma.validator<Prisma.FrontpageGalleryItemDefaultArgs>()({
-    select: {
-        publicId: true,
-        sortOrder: true,
-        caption: true,
-        displayParams: true,
-        file: {
-            select: {
-                publicId: true,
-                storedLeafName: true,
-                customData: true,
-                mimeType: true,
-            },
-        },
-    },
-});
-
-const frontpageGalleryFeedContract = deriveViewContract(
-    xFrontpageGalleryItem,
-    frontpageGalleryFeedSelection,
-);
-
-export const frontpageGalleryFeedView = defineView({
-    viewID: "FrontpageGalleryItem_Feed",
-    entity: xFrontpageGalleryItem,
-    selection: frontpageGalleryFeedContract.prismaSelection,
-    dtoSchema: frontpageGalleryFeedContract.dtoSchema,
-    hydrate: frontpageGalleryFeedContract.hydrate,
-});
-
-export type FrontpageGalleryFeedDto = DtoOf<typeof frontpageGalleryFeedView>;
-
 const fileDetailRelatedFileTransportSelection = {
     select: {
         publicId: true,

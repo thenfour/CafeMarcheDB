@@ -20,11 +20,11 @@ type ReadyEventFrontpageClient = db3.EventFrontpageClient & {
 const isEventFrontpageReady = (
     event: db3.EventFrontpageClient,
 ): event is ReadyEventFrontpageClient => (
-    event.dateRange !== undefined
-    // && event.name !== undefined
+    event.startsAt !== undefined
+    && event.name !== undefined
     // && event.locationDescription !== undefined
     // && event.tags !== undefined
-    // && event.frontpageVisible !== undefined
+    && event.frontpageVisible !== undefined
     // && event.frontpageDate !== undefined
     // && event.frontpageTime !== undefined
     // && event.frontpageDetails !== undefined

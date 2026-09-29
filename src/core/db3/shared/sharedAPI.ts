@@ -113,13 +113,9 @@ class FilesSharedAPI {
     // always returns valid
     getGalleryItemDisplayParams = (f: {
         displayParams: string
-    } & (
-            // q: why can the publicid be expressed as either?
-            { publicId: FrontpageGalleryItemPublicId }
-            | { id: FrontpageGalleryItemPublicId }
-        )): ImageEditParams => {
+    }): ImageEditParams => {
         const ret = parsePayloadJSON<ImageEditParams>(f.displayParams, MakeDefaultImageEditParams, (e) => {
-            console.log(`failed to parse gallery item display params for gallery item ${"publicId" in f ? f.publicId : f.id}, val:${f.displayParams}`);
+            console.log(`failed to parse gallery item display params for gallery item`);
         });
         // validate since this is coming from db.
         if (!ret.cropBegin) ret.cropBegin = { x: 0, y: 0 };

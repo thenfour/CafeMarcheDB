@@ -381,8 +381,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
 
     const agendaItem: PublicAgendaItemSpec = getAgendaItem({
         ...props.event,
-        dateRange: props.dateRange,
-        //startsAt: props.dateRange.getSpec().startsAtDateTime,
+        frontpageDetails: props.event.frontpageDetails || "",
     }, previewLang);
 
     const canEdit_frontpageVisible = db3.xEvent.authorizeColumnForEdit({

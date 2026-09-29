@@ -18,6 +18,7 @@ import { galleryPublicId } from "../support/galleryFixtures";
 import { createAuthorizationPersona, createAuthorizationTestUser, testPublicRolePermissions } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { invokeResolver } from "./support/resolverHarness";
+import { filePublicId } from "../support/fileFixtures";
 
 const galleryRow = (id: number, sortOrder: number, isDeleted = false) => ({
     id,
@@ -48,29 +49,40 @@ describe("FrontpageGalleryItem public identity", () => {
     });
 
     it("projects a public feed item without its natural key", () => {
-        const dto = db3.frontpageGalleryFeedView.parseDto({
-            id: 20,
-            publicId: galleryPublicId(20),
-            sortOrder: 2,
-            caption: "Concert",
-            displayParams: "{}",
-            file: {
-                publicId: "File000000000020",
-                storedLeafName: "concert.jpg",
-                customData: null,
-                mimeType: "image/jpeg",
-            },
-        });
-        expect(dto).not.toHaveProperty("id");
-        expectTypeOf(dto.publicId).toEqualTypeOf<FrontpageGalleryItemPublicId>();
-        const feed = MakePublicFeedResponseSpec([], "en", [{
-            publicId: galleryPublicId(20),
-            sortOrder: 2,
-            caption: "Concert",
-            displayParams: "{}",
-            file: { storedLeafName: "concert.jpg", customData: null, mimeType: "image/jpeg" },
-        }]);
-        expect(feed.gallery[0]?.id).toBe(galleryPublicId(20));
+
+
+        const previous = process.env.CMDB_BASE_URL;
+        process.env.CMDB_BASE_URL = "https://test";
+        try {
+            const dto = db3.frontpageGalleryFeedView.parseDto({
+                id: 20,
+                publicId: galleryPublicId(20),
+                sortOrder: 2,
+                caption: "Concert",
+                displayParams: "{}",
+                file: {
+                    publicId: "File000000000020",
+                    storedLeafName: "concert.jpg",
+                    customData: null,
+                    mimeType: "image/jpeg",
+                },
+            });
+            expect(dto).not.toHaveProperty("id");
+            expectTypeOf(dto.publicId).toEqualTypeOf<FrontpageGalleryItemPublicId>();
+            const feed = MakePublicFeedResponseSpec([], "en", [{
+                publicId: galleryPublicId(20),
+                sortOrder: 2,
+                caption: "Concert",
+                caption_nl: "Concert",
+                caption_fr: "Concert",
+                displayParams: "{}",
+                file: { publicId: filePublicId(21), storedLeafName: "concert.jpg", customData: null, mimeType: "image/jpeg" },
+            }]);
+            expect(feed.gallery[0]?.galleryItemId).toBe(galleryPublicId(20));
+        } finally {
+            if (previous === undefined) delete process.env.CMDB_BASE_URL;
+            else process.env.CMDB_BASE_URL = previous;
+        }
     });
 
     it("rejects numeric and incomplete reorder scopes", () => {

@@ -1,4 +1,6 @@
 // server
+// http://192.168.1.2:10455/api/public
+// http://192.168.1.2:10455/api/public?lang=fr
 
 import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
 // provide json feed of content for public homepage consumption.
@@ -11,14 +13,19 @@ import { CMDBTableFilterModel } from "@/src/core/db3/shared/apiTypes";
 import { MakePublicFeedResponseSpec } from "@/src/core/db3/shared/publicFeedApi";
 import { Ctx } from "blitz";
 import { NextApiRequest, NextApiResponse } from "next";
-import { EnNlFr } from "shared/lang";
+import { EnNlFr, ParseLanguageCode } from "shared/lang";
 import { api } from "src/blitz-server";
 import * as db3 from "src/core/db3/db3";
 
 async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
     const authorization = await loadAuthorization(ctx.session);
-    const langParam = req.query.lang;
-    const lang: EnNlFr = (langParam === "nl" ? "nl" : langParam === "fr" ? "fr" : "en");
+
+    let langParam = req.query.lang;
+    if (Array.isArray(langParam)) {
+        // if multiple lang parameters are provided, take the first one
+        langParam = langParam[0];
+    }
+    const lang: EnNlFr = ParseLanguageCode(langParam);
 
     const eventsFilterModel: CMDBTableFilterModel = {
         items: [
@@ -42,7 +49,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
     },
         authorization);
 
-
     const galleryCall = queryTable({
         filter: { items: [] },
         cmdbQueryContext: "publicDataFeed",
@@ -60,37 +66,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
         galleryCall,
     ]);
 
-    // empty reference store. hydration on eventFrontpageView shall not use references; all data should come from the prisma selection.
-    const referenceStore = new db3.DB3ReferenceStore();
+    const eventItems = eventsResultRaw.items as db3.EventFrontpageDBPayload[];
+    const galleryItems = galleryResultRaw.items as db3.FrontpageGalleryFeedDBPayload[];
 
-    const hydrated = eventsResultRaw.items.map(event => db3.eventFrontpageView.hydrate(
-        db3.eventFrontpageView.parseDto(event),
-        referenceStore,
-    ));
-
-    const galleryResult = galleryResultRaw.items.map(item => db3.frontpageGalleryFeedView.hydrate(
-        db3.frontpageGalleryFeedView.parseDto(item),
-        referenceStore,
-    )).flatMap(item => {
-        const file = item.file;
-        if (item.sortOrder === undefined || item.caption === undefined
-            || item.displayParams === undefined || !file
-            || file.storedLeafName === undefined || file.customData === undefined
-            || file.mimeType === undefined) return [];
-        return [{
-            publicId: item.publicId,
-            sortOrder: item.sortOrder,
-            caption: item.caption,
-            displayParams: item.displayParams,
-            file: {
-                storedLeafName: file.storedLeafName,
-                customData: file.customData,
-                mimeType: file.mimeType,
-            },
-        }];
-    });
-
-    const payload = MakePublicFeedResponseSpec(hydrated, lang, galleryResult);
+    const payload = MakePublicFeedResponseSpec(eventItems, lang, galleryItems);
 
     res.status(200).json(payload);
 }

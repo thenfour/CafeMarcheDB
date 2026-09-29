@@ -16,7 +16,7 @@ const gSettings = {
     landscapeNaturalWidth: 1500, // horiz
 };
 
-export const generateHomepageId = (n: string, instanceKey: string, postId: PublicGalleryItemSpec["id"]) => `${n}_${instanceKey}_${postId}`;
+export const generateHomepageId = (n: string, instanceKey: string, postId: PublicGalleryItemSpec["fileId"]) => `${n}_${instanceKey}_${postId}`;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -33,7 +33,7 @@ export interface HomepagePhotoPatternProps {
 
 export const HomepagePhotoPattern = ({ post, ...props }: HomepagePhotoPatternProps) => {
 
-    const id = (name: string) => generateHomepageId(name, props.instanceKey, post.id);// `${n}_${props.instanceKey}_${post.id}`;
+    const id = (name: string) => generateHomepageId(name, props.instanceKey, post.fileId);// `${n}_${props.instanceKey}_${post.id}`;
 
     const info = SharedAPI.files.getPublicGalleryImageInfo(post);
 
@@ -62,7 +62,7 @@ export const HomepagePhotoPattern = ({ post, ...props }: HomepagePhotoPatternPro
 // the point is to show what the final image would look like if you baked it.
 export const HomepagePhotoMaskPattern = ({ post, ...props }: HomepagePhotoPatternProps) => {
 
-    const id = (name: string) => generateHomepageId(name, props.instanceKey, post.id);// `${n}_${props.instanceKey}_${post.id}`;
+    const id = (name: string) => generateHomepageId(name, props.instanceKey, post.fileId);// `${n}_${props.instanceKey}_${post.id}`;
     const info = SharedAPI.files.getPublicGalleryImageInfo(post);
 
     /*
@@ -201,11 +201,11 @@ class Gallery {
         const nextPostID = this.bringIndexIntoRange(this.selectedIdx + 1);
         const nextPost = posts[nextPostID]!;
 
-        const thisPostImage = document.getElementById(`galleryPatternImage_${this.instanceKey}_${post.id}`);
+        const thisPostImage = document.getElementById(`galleryPatternImage_${this.instanceKey}_${post.fileId}`);
         if (thisPostImage) {
             thisPostImage.setAttribute('href', post.imageFileUri)
         }
-        const nextPostImage = document.getElementById(`galleryPatternImage_${this.instanceKey}_${nextPost.id}`);
+        const nextPostImage = document.getElementById(`galleryPatternImage_${this.instanceKey}_${nextPost.fileId}`);
         if (nextPostImage) {
             nextPostImage.setAttribute('href', nextPost.imageFileUri);
         }
@@ -214,7 +214,7 @@ class Gallery {
         const b = this.ab ? this.mainSVGRefs.galleryPhoto1Ref : this.mainSVGRefs.galleryPhoto2Ref;
         if (!a || !b) return; // error actually.
 
-        a.setAttribute("fill", `url(#galleryPattern_${this.instanceKey}_${post.id})`);
+        a.setAttribute("fill", `url(#galleryPattern_${this.instanceKey}_${post.fileId})`);
 
         if (this.photoSelectorRef) {
             this.photoSelectorRef.style.setProperty("--count", `${posts.length}`);
@@ -384,7 +384,7 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
             <defs>
                 {
                     props.content.gallery.map((post, idx) => <HomepagePhotoPattern
-                        key={post.id}
+                        key={post.fileId}
                         instanceKey={props.instanceKey}
                         post={post as any} // TODO: hackhack asany
                         editable={props.editable}
@@ -393,7 +393,7 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
                 }
                 {
                     props.content.gallery.map((post, idx) => <HomepagePhotoMaskPattern
-                        key={post.id}
+                        key={post.fileId}
                         instanceKey={props.instanceKey}
                         post={post as any} // TODO: hackhack asany
                         editable={props.editable}
@@ -734,7 +734,7 @@ export const HomepageMain = ({ content, className, fullPage, editable, lang, onL
                     {editable && (
                         <svg width="100%" height="500">
                             <rect width="100%" height="100%" fill="black"></rect>
-                            <rect width="100%" height="100%" fill={`url(#galleryPatternMask_${instanceKey}_${content.gallery[0]?.id})`}></rect>
+                            <rect width="100%" height="100%" fill={`url(#galleryPatternMask_${instanceKey}_${content.gallery[0]?.fileId})`}></rect>
                         </svg>
                     )}
                 </div>
