@@ -71,6 +71,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
 
     const payload = MakePublicFeedResponseSpec(eventItems, lang, galleryItems);
 
+    // CORS
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
+    //res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
     res.status(200).json(payload);
 }
 

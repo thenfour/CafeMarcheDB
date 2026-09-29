@@ -130,6 +130,7 @@ const FilterControlsTester = () => {
 
 
 const AutoAssignInstrumentTester = () => {
+    const dashboardContext = useDashboardContext();
     const [text, setText] = React.useState<string>(`PaperSpaceships03-Accordion.pdf
     PaperSpaceships03-Alto Horn.pdf
     PaperSpaceships03-Baritone Sax.pdf
@@ -170,11 +171,11 @@ const AutoAssignInstrumentTester = () => {
     });
     const tableClient = DB3Client.useTableRenderContext({
         tableSpec,
+        referenceProvider: dashboardContext.referenceStore,
         requestedCaps: DB3Client.xTableClientCaps.Query,
     });
     const allInstruments = tableClient.items;
     type InstrumentPayload = ClientOf<typeof db3.instrumentDashboardView>;
-
 
     const lines = text.split('\n').filter(l => !IsNullOrWhitespace(l));
     const results: { leaf: string, instruments: InstrumentPayload[] }[] = [];
