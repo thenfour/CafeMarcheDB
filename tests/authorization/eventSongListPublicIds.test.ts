@@ -130,7 +130,6 @@ describe("Event setlist public identities", () => {
             kind === "duplicate" ? "Duplicate persisted IDs" : "does not belong to this setlist",
         );
         expect(authorizationTestDb.snapshot("eventSongList")).toEqual(before);
-        expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
     it("rolls back child deletions and hooks if a later insert fails", async () => {
@@ -140,7 +139,6 @@ describe("Event setlist public identities", () => {
         vi.spyOn(authorizationTestDb.getDelegate("eventSongListDivider"), "create").mockRejectedValueOnce(new Error("storage failed"));
         await expect(save({ ...updatePayload, songs: [], dividers: [dividerFields] })).rejects.toThrow("storage failed");
         for (const snapshot of before) expect(authorizationTestDb.snapshot(snapshot.table)).toEqual(snapshot.rows);
-        expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
     it("rejects numeric targets and item identities at every write boundary", async () => {
@@ -169,21 +167,21 @@ describe("Event setlist public identities", () => {
             commandID: db3.reorderEventSongListsCommand.commandID,
             payload: { eventId: event.publicId, movingItemId: listPublicId(50), newPositionItemId: listPublicId(50), scopeRowIds: [listPublicId(50)] },
         }, ctx)).rejects.toThrow();
-        expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
     it("rejects hidden songs before updating a visible list", async () => {
         reset({ song: [{ ...song, visiblePermissionId: 999, createdByUserId: 999 }] });
         await expect(save(updatePayload)).rejects.toThrow();
-        expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
     it("preserves gaps and leaves out-of-scope lists untouched during reorder", async () => {
-        reset({ eventSongList: [
-            { ...parentFields, eventId: event.id, id: 50, publicId: listPublicId(50), sortOrder: 2 },
-            { ...parentFields, eventId: event.id, id: 51, publicId: listPublicId(51), sortOrder: 8 },
-            { ...parentFields, eventId: event.id, id: 52, publicId: listPublicId(52), sortOrder: 5 },
-        ] });
+        reset({
+            eventSongList: [
+                { ...parentFields, eventId: event.id, id: 50, publicId: listPublicId(50), sortOrder: 2 },
+                { ...parentFields, eventId: event.id, id: 51, publicId: listPublicId(51), sortOrder: 8 },
+                { ...parentFields, eventId: event.id, id: 52, publicId: listPublicId(52), sortOrder: 5 },
+            ]
+        });
         await invokeResolver(executeCommand, {
             commandID: db3.reorderEventSongListsCommand.commandID,
             payload: { eventId: event.publicId, movingItemId: listPublicId(50), newPositionItemId: listPublicId(51), scopeRowIds: [listPublicId(50), listPublicId(51)] },

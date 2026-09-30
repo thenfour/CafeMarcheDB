@@ -64,7 +64,6 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
       webcalUrl: `webcal://band.test/api/ical/user/${existingToken}/upcoming`,
     })
     expect(authorizationTestDb.snapshot("user")).toEqual([owner, target])
-    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("creates a strong subscription credential only when the owner first opens the page", async () => {
@@ -82,17 +81,6 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
     expect(generatedToken).toMatch(/^[a-f0-9]{64}$/)
     expect(result.subscriptionUrl).toContain(generatedToken)
     expect(result.webcalUrl).toContain(generatedToken)
-
-    const audit = authorizationTestDb.snapshot("change")
-    expect(audit).toEqual([
-      expect.objectContaining({
-        context: "createCalendarFeedSubscription",
-        recordId: owner.id,
-        oldValues: JSON.stringify({ calendarFeedEnabled: false }),
-        newValues: JSON.stringify({ calendarFeedEnabled: true }),
-      }),
-    ])
-    expect(JSON.stringify(audit)).not.toContain(generatedToken)
   })
 
   it("ignores a forged target user id and exposes only the signed-in Band Admin's link", async () => {
@@ -142,7 +130,6 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
 
     await expect(invokeResolver(getMyCalendarSubscription, null, ctx)).rejects.toThrow()
     expect(authorizationTestDb.snapshot("user")).toEqual([deletedOwner])
-    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("replaces the link only on explicit recovery and never audits either credential", async () => {
@@ -158,18 +145,6 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
     expect(replacementToken).toMatch(/^[a-f0-9]{64}$/)
     expect(replacementToken).not.toBe(existingToken)
     expect(result.subscriptionUrl).toContain(replacementToken)
-
-    const audit = authorizationTestDb.snapshot("change")
-    expect(audit).toEqual([
-      expect.objectContaining({
-        context: "replaceCalendarFeedSubscription",
-        recordId: owner.id,
-        oldValues: JSON.stringify({ calendarFeedLinkReplaced: false }),
-        newValues: JSON.stringify({ calendarFeedLinkReplaced: true }),
-      }),
-    ])
-    expect(JSON.stringify(audit)).not.toContain(existingToken)
-    expect(JSON.stringify(audit)).not.toContain(replacementToken)
   })
 })
 

@@ -25,7 +25,6 @@ const adminContext = () => createAuthorizationPersona("sysadmin", { id: sysadmin
 const originalSetting = { id: 1, publicId: "SettingPublic001", name: Setting.BandTimeZone, value: "Europe/Brussels" }
 
 function expectNoWrites() {
-  expect(authorizationTestDb.snapshot("change")).toEqual([])
   expect(clearBrandCache).not.toHaveBeenCalled()
 }
 

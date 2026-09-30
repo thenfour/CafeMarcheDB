@@ -867,14 +867,14 @@ One thing is certain: band-owned custom links would be rooted at the band's root
    -  [x] decouple homepage
    -  [x] make homepage SPA
    -  [x] test url rewriting - yes middleware can do this.
--  M2: prereqs
-   -  [ ] remove Change, InstrumentTag features
+-  M2: prereqs, foundation
+   -  [x] remove Change, InstrumentTag features
    -  [ ] initial database model for translations & multitenancy
    -  [ ] user settings, global settings table. it needs a real table over `userId`, `settingKey`.
           and should be cleaned up with correct registry and internal API. But because
           many of these settings are actually chrome strings, do at the same time
           as adding some basic locale db tables
--  M3: ground work for localization & multi-tenancy (establish a bunch of tech debt and loose ends)
+-  M3: blocking out
    -  [ ] band settings registry (think of a couple settings to use as a POC - timezone...)
    -  [ ] initial `useLocale` and `useBand` contexts (with small handful of POCs)
    -  [ ] implement rewrite strategy

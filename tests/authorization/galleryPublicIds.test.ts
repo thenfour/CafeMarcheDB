@@ -141,7 +141,6 @@ describe("FrontpageGalleryItem public identity", () => {
                 scopeRowIds: [galleryPublicId(20), galleryPublicId(21)],
             },
         }, ctx)).rejects.toThrow();
-        expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
     it("accepts public telemetry identity and resolves its storage foreign key", async () => {

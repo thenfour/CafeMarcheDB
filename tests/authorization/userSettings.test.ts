@@ -55,10 +55,6 @@ describe("own user settings", () => {
             { id: 1, userId: other.id, name: settingName, value: false },
             { id: 2, userId: owner.id, name: settingName, value: true },
         ]);
-        expect(authorizationTestDb.snapshot("change")).toEqual([
-            expect.objectContaining({ table: "UserSetting", userId: owner.id, action: "insert" }),
-            expect.objectContaining({ table: "UserSetting", userId: owner.id, action: "update" }),
-        ]);
     });
 
     it("does not overwrite unsubmitted preferences", async () => {
@@ -90,7 +86,6 @@ describe("own user settings", () => {
         if (kind === "missing") await authorizationTestDb.user!.delete({ where: { id: owner.id } });
         await expect(invokeResolver(updateMyUserSettings, { [settingName]: false }, ctx)).rejects.toThrow();
         expect(authorizationTestDb.snapshot("userSetting")).toHaveLength(1);
-        expect(authorizationTestDb.snapshot("change")).toHaveLength(0);
     });
 
     it("rejects forged ownership and invalid patches before any writes", async () => {
@@ -103,6 +98,5 @@ describe("own user settings", () => {
             await expect(invokeResolver(updateMyUserSettings, patch as never, ctx)).rejects.toThrow();
         }
         expect(authorizationTestDb.snapshot("userSetting")).toHaveLength(1);
-        expect(authorizationTestDb.snapshot("change")).toHaveLength(0);
     });
 });

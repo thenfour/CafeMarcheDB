@@ -216,10 +216,6 @@ describe("Sysadmin sign-in maintenance", () => {
         expect(authorizationTestDb.snapshot("user").find(row => row.id === target.id)?.email).toBe(target.email);
         expect(authorizationTestDb.snapshot("session")).toEqual([{ id: 2, userId: admin.id }]);
         expect(authorizationTestDb.snapshot("token")).toEqual([]);
-        expect(authorizationTestDb.snapshot("change")).toHaveLength(1);
-        expect(JSON.stringify(authorizationTestDb.snapshot("change"))).not.toMatch(/third@|original-password/);
-        expect(JSON.stringify(authorizationTestDb.snapshot("change"))).toContain(result.publicId);
-        expect(JSON.stringify(authorizationTestDb.snapshot("change"))).not.toContain('"signInMethodId"');
     });
 
     it("rejects ownership conflicts even when the owner is inactive", async () => {
@@ -245,7 +241,6 @@ describe("Sysadmin sign-in maintenance", () => {
         await expect(invokeResolver(removeUserSignInMethod, request, adminContext())).rejects.toThrow();
         expect(authorizationTestDb.snapshot("userSignInMethod")).toEqual(methods);
         expect(authorizationTestDb.snapshot("session")).toHaveLength(2);
-        expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
     it("gives missing and wrong-owner public identities the same not-found result", async () => {
@@ -314,7 +309,6 @@ describe("Sysadmin sign-in maintenance", () => {
                 userId: target.publicId, method: { type: "google", identifier: "NewSubject" },
             }, adminContext())).rejects.toThrow("already assigned");
             expect(create).toHaveBeenCalledTimes(1);
-            expect(authorizationTestDb.snapshot("change")).toEqual([]);
         } finally {
             create.mockRestore();
         }
