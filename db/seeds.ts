@@ -64,20 +64,6 @@ const SeedTable = async <
  */
 const main = async () => {
 
-  const instrumentTagSeed: Prisma.InstrumentTagUncheckedCreateInput[] = [
-    {
-      "publicId": generatePublicId<"InstrumentTag">(),
-      "text": "Needs power",
-      "description": "",
-      "sortOrder": 0,
-      "color": null,
-      "significance": "NeedsPower"
-    }
-  ];
-
-  await SeedTable("instrumentTag", gState.prisma.instrumentTag, instrumentTagSeed);
-
-
   const songTagSeed: Prisma.SongTagUncheckedCreateInput[] = [
     {
       "publicId": generatePublicId<"SongTag">(),

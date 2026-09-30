@@ -29,7 +29,6 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     await db.eventSegment.deleteMany({ where: { eventId: { in: eventIds } } })
     await db.event.deleteMany({ where: { id: { in: eventIds } } })
     await db.setting.deleteMany()
-    await db.change.deleteMany()
     await db.setting.create({ data: { publicId: generatePublicId<"Setting">(), name: Setting.BandTimeZone, value: "Europe/Brussels" } })
     const segment = (allDay: boolean) => ({
       publicId: generatePublicId(), name: "Segment", description: "", isAllDay: allDay,
@@ -46,7 +45,6 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
       await db.eventSegment.deleteMany({ where: { eventId: { in: eventIds } } })
       await db.event.deleteMany({ where: { id: { in: eventIds } } })
       await db.setting.deleteMany()
-      await db.change.deleteMany()
     }
     await db.$disconnect()
   })
@@ -74,7 +72,6 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     expect(after[2]!.revision).toBe(before[2]!.revision)
     expect((await segments()).filter(segment => !segment.isAllDay)).toEqual(authored.filter(segment => !segment.isAllDay))
     expect((await segments()).filter(segment => segment.isAllDay).map(segment => segment.startsAt!.toISOString())).toEqual(["2026-07-10T07:00:00.000Z", "2026-07-10T07:00:00.000Z"])
-    expect(await db.change.count()).toBe(1)
   })
 
   it("clearing the setting restores default bounds", async () => {
@@ -132,7 +129,6 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     expect((await db.setting.findFirst())!.value).toBe("Europe/Brussels")
     expect(await events()).toEqual(before)
     expect(await segments()).toEqual(segmentsBefore)
-    expect(await db.change.count()).toBe(0)
   })
 
   it("previews and repairs stale derived fields without changing authored values", async () => {

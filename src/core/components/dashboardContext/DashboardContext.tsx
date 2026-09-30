@@ -262,10 +262,6 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         dashboardData.fileTag,
         tag => db3.xFileTag.getIdentity(tag),
     );
-    valueRef.current.instrumentTag = new TableAccessor(
-        dashboardData.instrumentTag,
-        tag => tag.publicId,
-    );
     valueRef.current.referenceStore = dashboardData.referenceStore;
     valueRef.current.instrumentFunctionalGroup = new TableAccessor(
         dashboardData.instrumentFunctionalGroup,

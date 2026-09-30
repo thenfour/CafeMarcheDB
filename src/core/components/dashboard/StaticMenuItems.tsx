@@ -164,11 +164,6 @@ export const gMenuSections: MenuSection[] = [
             },
             {
                 links: [
-                    backstageLink("instrumentTags", { renderIcon: () => gIconMap.Tag() }),
-                ]
-            },
-            {
-                links: [
                     backstageLink("settings", { renderIcon: () => <SettingsIcon /> }),
 
                 ]

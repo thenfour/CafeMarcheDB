@@ -5,7 +5,7 @@ import { ServerStartInfo } from "@/shared/serverStateBase";
 import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
 import { Prisma } from "db";
-import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, FileTagPublicId, InstrumentFunctionalGroupPublicId, InstrumentTagPublicId, SongCreditTypePublicId, SongTagPublicId, UserTagPublicId, WikiPageTagPublicId } from "shared/publicId";
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, FileTagPublicId, InstrumentFunctionalGroupPublicId, SongCreditTypePublicId, SongTagPublicId, UserTagPublicId, WikiPageTagPublicId } from "shared/publicId";
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
 import { resolveUserSettings, UserSettings } from "shared/userSettings";
 
@@ -21,10 +21,6 @@ export abstract class DashboardContextDataBase {
     fileTag: TableAccessor<db3.ClientOf<typeof db3.fileTagDashboardView>, FileTagPublicId>;
     songTag: TableAccessor<db3.ClientOf<typeof db3.songTagDashboardView>, SongTagPublicId>;
     songCreditType: TableAccessor<db3.ClientOf<typeof db3.songCreditTypeDashboardView>, SongCreditTypePublicId>;
-    instrumentTag: TableAccessor<
-        db3.ClientOf<typeof db3.instrumentTagDashboardView>,
-        InstrumentTagPublicId
-    >;
 
     wikiPageTag: TableAccessor<db3.CompleteWikiPageTagDashboardClient, WikiPageTagPublicId>;
 

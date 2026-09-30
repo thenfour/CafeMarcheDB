@@ -25,7 +25,7 @@ const MainContent = () => {
 
 const UserInstrumentsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Instrument Tags">
+        <DashboardLayout title="User Instruments">
             <MainContent />
         </DashboardLayout>
     );

@@ -174,21 +174,6 @@ describe("inherited field read authorization", () => {
       auth: publicData,
       columnName: "id",
     })).toBe(false)
-    expect(db3.xChange.authorizeColumnForView({
-      model: null,
-      auth: publicData,
-      columnName: "id",
-    })).toBe(false)
-  })
-
-  it("keeps inherited fields unavailable when the concrete row is denied", () => {
-    const publicData = authorization(Permission.always_grant, Permission.public)
-
-    expect(db3.xChange.authorizeColumnForView({
-      model: { id: 41, table: "User", recordId: 99 },
-      auth: publicData,
-      columnName: "id",
-    })).toBe(false)
   })
 
   it("treats event-status scalar metadata as part of an authorized row", () => {

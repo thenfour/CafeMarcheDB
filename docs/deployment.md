@@ -11,8 +11,8 @@ Pushing a branch or tag does not start this workflow or deploy anything.
 
 ```json
 {
-  "version": "3.0.0",
-  "cmdb": { "product": "cafemarche" }
+   "version": "3.0.0",
+   "cmdb": { "product": "cafemarche" }
 }
 ```
 
@@ -80,10 +80,10 @@ The application build executes in the container, so those actions do not need
 to run their own modern Node binaries against glibc 2.17.
 The builder checks its actual runtime before building.
 
-- Deployment requires the same Node major, at least the build's Node patch and
-- glibc versions,
-- matching architecture,
-- and the pinned Yarn version.
+-  Deployment requires the same Node major, at least the build's Node patch and
+-  glibc versions,
+-  matching architecture,
+-  and the pinned Yarn version.
 
 A future runtime upgrade requires an intentional update of the profile and builder.
 

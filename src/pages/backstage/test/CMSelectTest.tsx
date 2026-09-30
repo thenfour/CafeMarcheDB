@@ -41,7 +41,7 @@ export const SelectionExamples = () => {
     }, []);
     const [instrument, setInstrument] = React.useState<db3.InstrumentClientPayload | null>(null);
     const [instruments, setInstruments] = React.useState<db3.InstrumentClientPayload[]>([]);
-    const [tags, setTags] = React.useState<db3.InstrumentTagEditorClient[]>([]);
+    const [tags, setTags] = React.useState<db3.SongTagClientPayload[]>([]);
     const [group, setGroup] = React.useState<db3.InstrumentFunctionalGroupClientPayload | null>(null);
     const [user, setUser] = React.useState<db3.UserPayloadMinimum | null>(null);
     const [displayStyle, setDisplayStyle] = React.useState(CMSelectDisplayStyle.SelectedWithDialog);
@@ -100,8 +100,8 @@ export const SelectionExamples = () => {
             <Example title="Several instruments" description="The DB3 multi-select uses the same picker and draft behavior." value={instruments.map(item => item.name)}>
                 <DB3MultiSelect {...shared} schema={db3.xInstrument} value={instruments} onChange={setInstruments} dialogTitle="Choose instruments" />
             </Example>
-            <Example title="Instrument tags" description="Search and create a tag when the schema and your permissions allow it. New tags are saved immediately." value={tags.map(item => item.text)}>
-                <DB3MultiSelect {...shared} schema={db3.xInstrumentTag} view={db3.instrumentTagEditorView} value={tags} onChange={setTags} allowInsertFromString dialogTitle="Choose instrument tags" />
+            <Example title="Song tags" description="Search and create a tag when the schema and your permissions allow it. New tags are saved immediately." value={tags.map(item => item.text)}>
+                <DB3MultiSelect {...shared} schema={db3.xSongTag} view={db3.songTagEditorView} value={tags} onChange={setTags} allowInsertFromString dialogTitle="Choose song tags" />
             </Example>
             <Example title="Instrument group" description="Creation is also available to single-choice fields when permitted." value={group?.name || null}>
                 <DB3SingleSelect {...shared} schema={db3.xInstrumentFunctionalGroup} view={db3.instrumentFunctionalGroupEditorView} value={group} onChange={setGroup} nullBehavior={CMSelectNullBehavior.AllowNull} allowInsertFromString dialogTitle="Choose an instrument group" />

@@ -11,8 +11,6 @@ export type PublicId<TTable extends string = string> = string & {
 
 export type InstrumentFunctionalGroupPublicId = PublicId<"InstrumentFunctionalGroup">;
 export type InstrumentPublicId = PublicId<"Instrument">;
-export type InstrumentTagPublicId = PublicId<"InstrumentTag">;
-export type InstrumentTagAssociationPublicId = PublicId<"InstrumentTagAssociation">;
 export type SongTagPublicId = PublicId<"SongTag">;
 export type SongPublicId = PublicId<"Song">;
 export type SongTagAssociationPublicId = PublicId<"SongTagAssociation">;

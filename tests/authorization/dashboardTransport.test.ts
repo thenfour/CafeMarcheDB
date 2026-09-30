@@ -33,18 +33,10 @@ const group = {
     id: 10, publicId: db3.xInstrumentFunctionalGroup.parseIdentity("DashboardGroup01"),
     name: "Brass", description: "", sortOrder: 1, color: "orange",
 };
-const tag = {
-    id: 11, publicId: db3.xInstrumentTag.parseIdentity("DashboardTag0001"),
-    text: "Horn", description: "", sortOrder: 1, color: "blue", significance: null,
-};
 const instrument = {
     id: 12, publicId: db3.xInstrument.parseIdentity("DashboardInstr01"),
     name: "Trumpet", description: "", sortOrder: 1, autoAssignFileLeafRegex: null,
     functionalGroupId: group.id, functionalGroup: group,
-    instrumentTags: [{
-        id: 13, publicId: db3.xInstrumentTagAssociation.parseIdentity("DashboardAssoc01"),
-        tagId: tag.id, tag,
-    }],
 };
 const menuLink = {
     id: 14, publicId: db3.xMenuLink.parseIdentity("DashboardMenu001"), sortOrder: 1, realm: "General", applicationPage: null, groupName: "Resources",
@@ -56,7 +48,7 @@ const menuLink = {
 
 beforeEach(() => authorizationTestDb.reset({
     user: [user], role: [role], permission: [permission],
-    instrumentFunctionalGroup: [group], instrumentTag: [tag], instrument: [instrument],
+    instrumentFunctionalGroup: [group], instrument: [instrument],
     menuLink: [menuLink],
 }));
 afterEach(() => { vi.restoreAllMocks(); });
@@ -71,16 +63,13 @@ describe("dashboard transport boundary", () => {
         expect(groupHydrate).not.toHaveBeenCalled();
         expect(instrumentHydrate).not.toHaveBeenCalled();
         expect(dto.instrumentFunctionalGroup[0]!.color).toBe("orange");
-        expect(dto.instrumentTag[0]!.color).toBe("blue");
         expect(dto.role[0]!.color).toBe("blue");
         expect(dto.permission[0]!.color).toBe("green");
         expect(dto.instrument[0]).toMatchObject({
             functionalGroupId: group.publicId,
-            instrumentTags: [{ publicId: instrument.instrumentTags[0]!.publicId, tagId: tag.publicId }],
         });
         expect(dto.instrument[0]).not.toHaveProperty("id");
         expect(dto.instrument[0]).not.toHaveProperty("functionalGroup");
-        expect(dto.instrument[0]!.instrumentTags[0]).not.toHaveProperty("tag");
         expect(dto.dynMenuLinks[0]).not.toHaveProperty("visiblePermission");
         expect(dto).not.toHaveProperty("referenceStore");
         expect(db3.instrumentDashboardView.parseDto(dto.instrument[0])).toEqual(dto.instrument[0]);
@@ -93,7 +82,6 @@ describe("dashboard transport boundary", () => {
         expect(instrumentHydrate).toHaveBeenCalledOnce();
         expect(client.instrumentFunctionalGroup[0]!.color).toEqual(gGeneralPaletteList.findEntry("orange"));
         expect(client.instrument[0]!.functionalGroup).toBe(client.instrumentFunctionalGroup[0]);
-        expect(client.instrument[0]!.instrumentTags[0]!.tag).toBe(client.instrumentTag[0]);
         expect(client.dynMenuLinks[0]!.visiblePermission).toBe(client.permission[0]);
         expect(client.referenceStore.get(db3.xInstrument, instrument.publicId)).toBe(client.instrument[0]);
         // Hydration must not mutate the cached RPC payload.
@@ -105,11 +93,10 @@ describe("dashboard transport boundary", () => {
         const dto = await invokeResolver(getDashboardData, {}, createAuthorizationTestContext(user));
         const first = db3.hydrateDashboardData(dto);
         const refreshed = db3.hydrateDashboardData({
-            ...dto, instrument: [], instrumentFunctionalGroup: [], instrumentTag: [],
+            ...dto, instrument: [], instrumentFunctionalGroup: [],
         });
         expect(refreshed.referenceStore).not.toBe(first.referenceStore);
         expect(refreshed.referenceStore.get(db3.xInstrument, instrument.publicId)).toBeUndefined();
-        expect(refreshed.referenceStore.get(db3.xInstrumentTag, tag.publicId)).toBeUndefined();
         expect(() => db3.hydrateDashboardData({ ...dto, instrumentFunctionalGroup: [] }))
             .toThrow(/not available/);
     });

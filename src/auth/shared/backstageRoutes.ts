@@ -60,7 +60,6 @@ const routes = [
     { key: "editFileTags", pattern: "/backstage/editFileTags", caption: "File Tags", permission: Permission.admin_files },
     { key: "editWikiPageTags", pattern: "/backstage/editWikiPageTags", caption: "Wiki Page Tags", permission: Permission.admin_wiki_pages },
     { key: "editUserTags", pattern: "/backstage/editUserTags", caption: "User Tags", permission: Permission.sysadmin },
-    { key: "instrumentTags", pattern: "/backstage/instrumentTags", caption: "Instrument Tags", permission: Permission.admin_instruments },
     { key: "instruments", pattern: "/backstage/instruments", caption: "Instruments", permission: Permission.admin_instruments },
     { key: "instrumentFunctionalGroups", pattern: "/backstage/instrumentFunctionalGroups", caption: "Functional Groups", permission: Permission.admin_instruments },
     { key: "instrument", pattern: "/backstage/instrument/[slug]", caption: "Instrument", permission: Permission.login },
@@ -82,7 +81,6 @@ const routes = [
     { key: "calendarPreview", pattern: "/backstage/calendarPreview", caption: "iCal Preview", permission: Permission.sysadmin },
     { key: "gallery", pattern: "/backstage/gallery", caption: "Component Gallery", permission: Permission.sysadmin },
     { key: "colorEditor", pattern: "/backstage/colorEditor2", caption: "Color Editor", permission: Permission.sysadmin },
-    { key: "adminLogs", pattern: "/backstage/adminLogs", caption: "Admin Logs", permission: Permission.sysadmin },
     { key: "test", pattern: "/backstage/test", caption: "Tests", permission: Permission.sysadmin },
 
     { key: "testIndex", pattern: "/backstage/test/test", caption: "Tests", permission: Permission.sysadmin },

@@ -5,21 +5,17 @@
 // another example of the imbalanced relationship:
 // the "name" of an association model will be the tag. not the local object.
 
+import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import type {
     InstrumentFunctionalGroupPublicId,
     InstrumentPublicId,
-    InstrumentTagAssociationPublicId,
-    InstrumentTagPublicId,
 } from "shared/publicId";
-import { z } from "zod";
-import { CMDBTableFilterModel } from "../apiTypes";
-import { ColorField, ConstEnumStringField, foreignRef, GenericIntegerField, GhostField, MakePKfield, MakePublicIdField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
-import * as db3 from "../db3core";
-import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance } from "./prismArgs";
 import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
-import { gGeneralPaletteList } from "@/src/core/components/color/palette";
+import { ColorField, foreignRef, GenericIntegerField, GhostField, MakePKfield, MakePublicIdField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
+import * as db3 from "../db3core";
+import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload } from "./prismArgs";
 
 // Instrument management has one administrative surface and one capability.
 export const xInstrumentAuthMap_R_EAdmins = db3.defineAuthMap({
@@ -91,106 +87,6 @@ export const xInstrumentFunctionalGroup = db3.defineTable({
 });
 
 
-export const xInstrumentTag = db3.defineTable({
-    prismaModel: db3.prismaModel<Prisma.InstrumentTagDelegate>(),
-    getIdentity: (entity: { publicId: InstrumentTagPublicId }) => entity.publicId,
-    getSelectionArgs: (): Prisma.InstrumentTagDefaultArgs => {
-        return InstrumentTagArgs;
-    },
-    tableName: "InstrumentTag",
-    deletePolicy: "hard",
-    tableAuthMap: xInstrumentTableAuthMap,
-    naturalOrderBy: InstrumentTagNaturalOrderBy,
-    createInsertModelFromString: (input: string): Partial<InstrumentTagPayload> => {
-        return {
-            text: input,
-            description: "auto-created",
-            sortOrder: 0,
-            color: null,
-            significance: null,
-        };
-    },
-    getRowInfo: (row: InstrumentTagPayload) => ({
-        pk: row.publicId,
-        name: row.text,
-        description: row.description,
-        color: gGeneralPaletteList.findEntry(row.color),
-        ownerUserId: null,
-    }),
-    fields: db3.makeColumnSet({
-        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
-        publicId: () => MakePublicIdField<InstrumentTagPublicId>(),
-        text: columnName => MakeTitleField(columnName, { authMap: xInstrumentAuthMap_R_EAdmins }),
-        description: columnName => new GenericStringField({
-            columnName,
-            allowNull: false,
-            format: "markdown",
-            authMap: xInstrumentAuthMap_R_EAdmins,
-        }),
-        sortOrder: columnName => new GenericIntegerField({
-            columnName,
-            allowNull: false,
-            allowSearchingThisField: false,
-            authMap: xInstrumentAuthMap_R_EAdmins,
-        }),
-        color: columnName => new ColorField({
-            columnName,
-            allowNull: true,
-            palette: gGeneralPaletteList,
-            authMap: xInstrumentAuthMap_R_EAdmins,
-        }),
-        significance: columnName => new ConstEnumStringField({
-            columnName,
-            allowNull: true,
-            defaultValue: null,
-            options: InstrumentTagSignificance,
-            authMap: xInstrumentAuthMap_R_EAdmins,
-        }),
-        instruments: memberName => new GhostField({
-            memberName,
-            authMap: xInstrumentAuthMap_R_EAdmins,
-        }),
-    })
-});
-
-////////////////////////////////////////////////////////////////
-
-// this is mostly only in order to define the tags field in xInstruments.
-export const xInstrumentTagAssociation = db3.defineTable({
-    prismaModel: db3.prismaModel<Prisma.InstrumentTagAssociationDelegate>(),
-    getIdentity: (entity: { publicId: InstrumentTagAssociationPublicId }) => entity.publicId,
-    tableName: "InstrumentTagAssociation",
-    deletePolicy: "hard",
-    getSelectionArgs: (): Prisma.InstrumentTagAssociationDefaultArgs => {
-        return InstrumentTagAssociationArgs;
-    },
-    tableAuthMap: xInstrumentTableAuthMap,
-    naturalOrderBy: InstrumentTagAssociationNaturalOrderBy,
-    getRowInfo: (row: InstrumentTagAssociationPayload) => ({
-        pk: row.publicId,
-        name: row.tag?.text || "",
-        description: row.tag?.description || "",
-        color: gGeneralPaletteList.findEntry(row.tag?.color || ""),
-        ownerUserId: null,
-    }),
-    fields: db3.makeColumnSet({
-        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
-        publicId: () => MakePublicIdField<InstrumentTagAssociationPublicId>(),
-        instrumentId: memberName => new GhostField({
-            memberName,
-            readTransportSchema: z.number().int(),
-            authMap: xInstrumentAuthMap_R_EAdmins,
-        }),
-        // do not add the `instrument` column here; this is used only as an association FROM the instrument table; excluding it
-        // 1. enforces this purpose (minor)
-        // 2. avoids a circular reference to xInstrument (major)
-        tag: foreignRef(() => xInstrumentTag, {
-            fkidMember: "tagId",
-            authMap: xInstrumentAuthMap_R_EAdmins,
-        }),
-    })
-});
-
 ////////////////////////////////////////////////////////////////
 
 export const xInstrument = db3.defineTable({
@@ -244,31 +140,12 @@ export const xInstrument = db3.defineTable({
                 }
             }),
         }),
-        instrumentTags: tagsRef("InstrumentTagAssociation", "InstrumentTag", {
-            associationForeignObjectMember: "tag",
-            associationLocalObjectMember: "instrument",
-            authMap: xInstrumentAuthMap_R_EAdmins,
-            getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
-                instrumentTags: {
-                    some: {
-                        tag: {
-                            text: {
-                                contains: query
-                            }
-                        }
-                    }
-                }
-            }),
-            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
-        }),
     })
 });
 
 declare module "../db3core" {
     interface DB3TableTypeRegistry {
         Instrument: typeof xInstrument;
-        InstrumentTag: typeof xInstrumentTag;
-        InstrumentTagAssociation: typeof xInstrumentTagAssociation;
     }
 }
 

@@ -1,33 +1,31 @@
-import { Prisma } from "db";
 import type { ColorPaletteEntry } from "@/src/core/components/color/palette";
+import { Prisma } from "db";
 import type {
+    EventAttendancePublicId,
     EventPublicId,
     EventSegmentPublicId,
-    EventUserResponsePublicId,
     EventSegmentUserResponsePublicId,
-    EventAttendancePublicId,
-    FilePublicId,
-    FileTagPublicId,
     EventStatusPublicId,
     EventTagAssignmentPublicId,
     EventTagPublicId,
     EventTypePublicId,
+    EventUserResponsePublicId,
+    FilePublicId,
+    FileTagPublicId,
     InstrumentFunctionalGroupPublicId,
     InstrumentPublicId,
-    InstrumentTagAssociationPublicId,
-    InstrumentTagPublicId,
-    SongTagAssociationPublicId,
-    SongTagPublicId,
-    SongPublicId,
-    WikiPageTagAssignmentPublicId,
-    WikiPageTagPublicId,
-    UserTagAssignmentPublicId,
-    UserTagPublicId,
-    UserInstrumentPublicId,
-    UserPublicId,
     PermissionPublicId,
     RolePermissionPublicId,
     RolePublicId,
+    SongPublicId,
+    SongTagAssociationPublicId,
+    SongTagPublicId,
+    UserInstrumentPublicId,
+    UserPublicId,
+    UserTagAssignmentPublicId,
+    UserTagPublicId,
+    WikiPageTagAssignmentPublicId,
+    WikiPageTagPublicId,
 } from "shared/publicId";
 //import * as db3 from "../db3core"; // circular
 import { AuxUserArgs } from "types";
@@ -165,14 +163,6 @@ export const SongTagSignificance = {
     Street: "Street",
     Majoretteketet: "Majoretteketet",
 } as const satisfies Record<string, string>;
-
-// https://stackoverflow.com/questions/76518631/typescript-return-the-enum-values-in-parameter-using-a-generic-enum-type-method
-// interesting that const objects are preferred over enums. but yea for populating datagrid single select options i agree.
-export const InstrumentTagSignificance = {
-    NeedsPower: "NeedsPower",
-} as const satisfies Record<string, string>;
-
-
 
 
 ////////////////////////////////////////////////////////////////
@@ -352,32 +342,9 @@ export const SongNaturalOrderBy: Prisma.SongOrderByWithRelationInput[] = [
 
 
 
-export const InstrumentTagAssociationArgs = Prisma.validator<Prisma.InstrumentTagAssociationArgs>()({
-    include: {
-        instrument: true,
-        tag: true,
-    }
-});
-
-export type InstrumentTagAssociationPayload = Prisma.InstrumentTagAssociationGetPayload<typeof InstrumentTagAssociationArgs>;
-
-export const InstrumentTagAssociationNaturalOrderBy: Prisma.InstrumentTagAssociationOrderByWithRelationInput[] = [
-    { tag: { sortOrder: 'asc' } },
-    { tag: { text: 'asc' } },
-    { tag: { id: 'asc' } },
-];
-
-
-
 export const InstrumentArgs = Prisma.validator<Prisma.InstrumentArgs>()({
     include: {
         functionalGroup: true,
-        instrumentTags: {
-            include: {
-                tag: true,
-            },
-            orderBy: InstrumentTagAssociationNaturalOrderBy
-        }
     }
 });
 
@@ -774,31 +741,13 @@ export type InstrumentFunctionalGroupClientPayload = Omit<
     color: ColorPaletteEntry | null;
 };
 
-export type InstrumentTagClientPayload = Omit<
-    Prisma.InstrumentTagGetPayload<{}>,
-    "id" | "publicId" | "color"
-> & {
-    publicId: InstrumentTagPublicId;
-    color: ColorPaletteEntry | null;
-};
-
-export type InstrumentTagAssociationClientPayload = Omit<
-    Prisma.InstrumentTagAssociationGetPayload<{ include: { tag: true } }>,
-    "id" | "publicId" | "instrumentId" | "tagId" | "tag"
-> & {
-    publicId: InstrumentTagAssociationPublicId;
-    tagId: InstrumentTagPublicId;
-    tag: InstrumentTagClientPayload;
-};
-
 export type InstrumentClientPayload = Omit<
     InstrumentPayload,
-    "id" | "publicId" | "functionalGroupId" | "functionalGroup" | "instrumentTags"
+    "id" | "publicId" | "functionalGroupId" | "functionalGroup"
 > & {
     publicId: InstrumentPublicId;
     functionalGroupId: InstrumentFunctionalGroupPublicId;
     functionalGroup: InstrumentFunctionalGroupClientPayload;
-    instrumentTags: InstrumentTagAssociationClientPayload[];
 };
 
 // Some shared calculation code is also used by server-side/scenario data that
@@ -1445,19 +1394,6 @@ export const FileNaturalOrderBy: Prisma.FileOrderByWithRelationInput[] = [
 
 
 ////////////////////////////////////////////////////////////////
-export const InstrumentTagArgs = Prisma.validator<Prisma.InstrumentTagArgs>()({
-    include: {
-        instruments: true,
-    }
-});
-
-export type InstrumentTagPayload = Prisma.InstrumentTagGetPayload<typeof InstrumentTagArgs>;
-
-export const InstrumentTagNaturalOrderBy: Prisma.InstrumentTagOrderByWithRelationInput[] = [
-    { sortOrder: 'asc' },
-    { text: 'asc' },
-    { id: 'asc' },
-];
 export const EventStatusArgs = Prisma.validator<Prisma.EventStatusArgs>()({
     include: {
         // including only in order to get a count.
@@ -1559,67 +1495,6 @@ export const FrontpageGalleryItemNaturalOrderBy: Prisma.FrontpageGalleryItemOrde
 
 
 
-
-
-
-export const ChangeArgs = Prisma.validator<Prisma.ChangeDefaultArgs>()({
-    include: {
-        user: true,
-    }
-});
-
-export type ChangePayload = Prisma.ChangeGetPayload<typeof ChangeArgs>;
-
-export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
-    { changedAt: 'desc' },
-];
-
-
-
-
-
-
-
-
-
-
-////////////////////////////////////////////////////////////////
-
-
-// generates 4 columns to link up this relationship:
-// local tags field
-// foreign tags field
-// export interface DefineManyToManyRelationshipArgs<TLocalPayload, TAssociationPayload, TForeignPayload> {
-//     // LOCAL
-//     localTableID: string; // "event"
-//     localColumnName: string; // "tags"
-
-//     local_getQuickFilterWhereClause?: (query: string) => TAnyModel; // basically this prevents the need to subclass and implement.
-//     local_getCustomFilterWhereClause?: (query: CMDBTableFilterModel) => TAnyModel;
-//     local_doesItemExactlyMatchText?: (item: TAssociationPayload, filterText: string) => boolean;
-
-//     // ASSOCIATION
-//     associationTableID: string; // "eventTagAssociation"
-//     associationLocalIDMember: string; // "eventID"
-//     associationLocalObjectMember: string; // "event"
-//     associationForeignIDMember: string; // eventTagID
-//     associationForeignObjectMember: string; // eventTag
-//     // when we get a list of tag options, they're foreign models (tags).
-//     // but we need our list to be association objects (itemTagAssocitaion)
-//     createMockAssociation?: (row: TAnyModel, item: TAnyModel) => TAssociationPayload;
-
-//     // FOREIGN
-//     foreignTableID: string; // "eventTag"
-//     foreignColumnName: string; // "events"
-
-//     foreign_getQuickFilterWhereClause?: (query: string) => TAnyModel; // basically this prevents the need to subclass and implement.
-//     foreign_getCustomFilterWhereClause?: (query: CMDBTableFilterModel) => TAnyModel;
-//     foreign_doesItemExactlyMatchText?: (item: TAssociationPayload, filterText: string) => boolean;
-// };
-
-// export const DefineManyToManyRelationship = <TLocalPayload, TAssociationPayload, TForeignPayload>(args: DefineManyToManyRelationshipArgs<TLocalPayload, TAssociationPayload, TForeignPayload>) => {
-
-// };
 
 export type DashboardDynMenuLink = Prisma.MenuLinkGetPayload<{ include: { createdByUser, visiblePermission } }>;
 

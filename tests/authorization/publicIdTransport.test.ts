@@ -75,7 +75,7 @@ const sanitizeGroup = (publicData: CMServerAuthorization) => {
 };
 
 const sanitizeTag = (publicData: CMServerAuthorization) => {
-    const result = db3.xInstrumentTag.authorizeAndSanitize({
+    const result = db3.xSongTag.authorizeAndSanitize({
         contextDesc: "public-id-transport-test",
         model: tag,
         rowMode: "view",
@@ -83,7 +83,7 @@ const sanitizeTag = (publicData: CMServerAuthorization) => {
         auth: publicData,
     });
     expect(result.rowIsAuthorized).toBe(true);
-    return projectDB3ModelPublicIds(db3.xInstrumentTag, result.authorizedModel, publicData);
+    return projectDB3ModelPublicIds(db3.xSongTag, result.authorizedModel, publicData);
 };
 
 describe("instrument catalog public-ID transport", () => {

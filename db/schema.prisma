@@ -182,7 +182,6 @@ model User {
   tags     UserTagAssignment[]
   tokens   Token[]
   sessions Session[]
-  changes  Change[] // yea don't include this in queries
 
   cssClass String?
 
@@ -267,30 +266,6 @@ model Setting {
   value    String @db.MediumText // json value et al
 
   @@index([name])
-}
-
-model Change {
-  id Int @id @default(autoincrement())
-
-  action String // create, update, delete
-
-  context     String @db.VarChar(768) // depends on action / context / whatever
-  operationId String // a GUID that groups together all changes that were performed in 1 logical update (for example updating permission relations is many ops, or multiple changing fields)
-
-  table    String
-  recordId Int
-
-  changedAt     DateTime @default(now())
-  userId        Int?
-  sessionHandle String?
-  oldValues     String?  @db.MediumText // for create, empty. for update, JSON of fields. for delete, all column values.
-  newValues     String?  @db.MediumText // for create & update, JSON of fields. for delete, empty.
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade) // this is one reason not to allow hard deletion of users. any activity of that user should be retained.
-
-  @@index([table])
-  @@index([recordId])
-  @@index([userId])
 }
 
 model Session {
@@ -465,8 +440,7 @@ model Instrument {
   autoAssignFileLeafRegex String? @db.VarChar(768)
 
   functionalGroupId Int
-  functionalGroup   InstrumentFunctionalGroup  @relation(fields: [functionalGroupId], references: [id], onDelete: Cascade) // if you want to delete a functional group, you need to manually reassign
-  instrumentTags    InstrumentTagAssociation[]
+  functionalGroup   InstrumentFunctionalGroup @relation(fields: [functionalGroupId], references: [id], onDelete: Cascade) // if you want to delete a functional group, you need to manually reassign
 
   fileTags           FileInstrumentTag[]
   users              UserInstrument[]
@@ -477,33 +451,6 @@ model Instrument {
   @@index([name])
   @@index([sortOrder])
   @@index([functionalGroupId])
-}
-
-model InstrumentTag {
-  id           Int                        @id @default(autoincrement())
-  publicId     String                     @unique @db.Char(16)
-  text         String                     @db.VarChar(768)
-  description  String                     @db.MediumText
-  sortOrder    Int                        @default(0)
-  color        String?
-  significance String? // "uses electricity" for example?
-  instruments  InstrumentTagAssociation[]
-
-  @@index([text])
-  @@index([sortOrder])
-  @@index([significance])
-}
-
-// association table
-model InstrumentTagAssociation {
-  id           Int           @id @default(autoincrement())
-  publicId     String        @unique @db.Char(16)
-  instrumentId Int
-  instrument   Instrument    @relation(fields: [instrumentId], references: [id], onDelete: Cascade) // cascade delete association
-  tagId        Int
-  tag          InstrumentTag @relation(fields: [tagId], references: [id], onDelete: Cascade) // cascade delete association
-
-  @@unique([instrumentId, tagId]) // 
 }
 
 model UserInstrument {

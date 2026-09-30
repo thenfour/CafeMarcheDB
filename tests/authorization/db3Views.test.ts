@@ -29,8 +29,8 @@ import { selectPrismaTestRow } from "../support/prismaSelection";
 import type { DB3ReadSelectionArgs } from "@db3/shared/core/db3ReadSelection";
 
 const groupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
-const tagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn02");
-const tagAssociationPublicId = parsePublicId<"InstrumentTagAssociation">("AbCdEfGhIjKlMn03");
+const tagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn02");
+const tagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn03");
 const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn04");
 const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn05");
 const instrumentPublicId = parsePublicId<"Instrument">("AbCdEfGhIjKlMn06");
@@ -163,9 +163,9 @@ describe("DB3 named views", () => {
             cmdbQueryContext: "dashboard-view-authorization-test",
             orderBy: undefined,
         }, new CMServerAuthorization(null, new ServerPermissionSet([
-                { id: 1, name: Permission.always_grant },
-                { id: 2, name: Permission.public },
-            ])), db3.createDashboardReferenceStore(), database);
+            { id: 1, name: Permission.always_grant },
+            { id: 2, name: Permission.public },
+        ])), db3.createDashboardReferenceStore(), database);
 
         expect(result.items).toEqual([{ publicId: attendancePublicId(7) }]);
         expect(db3.isCompleteEventAttendanceDashboardClient(result.items[0]!)).toBe(false);
@@ -675,7 +675,6 @@ describe("DB3 named views", () => {
         const references = db3.createDashboardReferenceStore();
         db3.registerDashboardReferences(references, {
             instrumentFunctionalGroup: [hydratedGroup],
-            instrumentTag: [tag],
         });
 
         const dto = db3.instrumentDashboardView.parseDto({
@@ -695,18 +694,11 @@ describe("DB3 named views", () => {
         expect(hydrated.functionalGroup).toEqual(
             references.require(db3.xInstrumentFunctionalGroup, group.publicId, "test"),
         );
-        expect(hydrated.instrumentTags[0]!.tag).toEqual(
-            references.require(db3.xInstrumentTag, tag.publicId, "test"),
-        );
         expectTypeOf(hydrated).toEqualTypeOf<db3.InstrumentDashboardClient>();
         expectTypeOf<db3.DbPayloadOf<typeof db3.instrumentDashboardView>>()
             .toMatchTypeOf<{
                 publicId: string;
                 functionalGroupId: number;
-                instrumentTags: {
-                    publicId: string;
-                    tagId: number;
-                }[];
             }>();
     });
 

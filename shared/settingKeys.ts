@@ -68,7 +68,6 @@ export enum Setting {
     info_text = "info_text",
     InstrumentFunctionalGroupList_markdown = "InstrumentFunctionalGroupList_markdown",
     instrumentList_markdown = "instrumentList_markdown",
-    instrumentTagList_markdown = "instrumentTagList_markdown",
     profile_markdown = "profile_markdown",
     rolePermissionsMatrixPage_markdown = "rolePermissionsMatrixPage_markdown",
     RolesAdminPage_markdown = "RolesAdminPage_markdown",

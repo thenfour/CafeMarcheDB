@@ -26,7 +26,6 @@ const InstrumentListContent = () => {
                 cellWidth: 200,
                 selectionView: db3.instrumentFunctionalGroupEditorView,
             }),
-            instrumentTags: columnName => new DB3Client.TagsFieldClient<db3.InstrumentEditorTagAssociation>({ columnName, cellWidth: 220, allowDeleteFromCell: false, selectionView: db3.instrumentTagEditorView }),
         },
     });
 

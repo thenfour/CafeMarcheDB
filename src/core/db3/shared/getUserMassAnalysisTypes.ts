@@ -26,7 +26,6 @@ export type UserMassAnalysisSystemCounts = {
     actions: number;
     sessions: number;
     tokens: number;
-    changes: number;
 };
 
 export type UserMassAnalysisUserInfo = {
@@ -111,7 +110,6 @@ export const getSystemCountsRows = (
         { key: "actions", label: "Actions", value: counts.actions, compareValue: compareCounts?.actions },
         { key: "sessions", label: "Sessions", value: counts.sessions, compareValue: compareCounts?.sessions },
         { key: "tokens", label: "Tokens", value: counts.tokens, compareValue: compareCounts?.tokens },
-        { key: "changes", label: "Changes", value: counts.changes, compareValue: compareCounts?.changes },
     ];
 
 export const getSummaryRows = (

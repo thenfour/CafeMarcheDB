@@ -50,7 +50,6 @@ export default resolver.pipe(
             actions,
             sessions,
             tokens,
-            changes,
         ] = await Promise.all([
             // Content creation counts
             db.song.count({ where: { createdByUserId: userId } }),
@@ -75,7 +74,6 @@ export default resolver.pipe(
             db.action.count({ where: { userId: userId } }),
             db.session.count({ where: { userId: userId } }),
             db.token.count({ where: { userId: userId } }),
-            db.change.count({ where: { userId: userId } }),
         ]);
 
         // Calculate activity metrics
@@ -170,7 +168,6 @@ export default resolver.pipe(
                 actions,
                 sessions,
                 tokens,
-                changes,
             },
             activityMetrics: {
                 accountAgeInDays,

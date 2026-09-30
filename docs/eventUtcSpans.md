@@ -14,19 +14,22 @@ Native Date carriers exist only at external calendar widget and iCalendar
 serialization boundaries.
 
 ```ts
-range.hitTestDateTime(new Date());
-range.getBounds(); // { start, end }, both real UTC instants
+range.hitTestDateTime(new Date())
+range.getBounds() // { start, end }, both real UTC instants
 
-createAllDayRange({
-    startDate: "2026-03-29",
-    endDateExclusive: "2026-03-30",
-}, "Europe/Brussels"); // 23 elapsed hours
+createAllDayRange(
+   {
+      startDate: "2026-03-29",
+      endDateExclusive: "2026-03-30",
+   },
+   "Europe/Brussels"
+) // 23 elapsed hours
 
 formatEventDateRange(range, {
-    viewerTimeZone: "Asia/Tokyo",
-    bandTimeZone: "Europe/Brussels",
-    locale: "en",
-});
+   viewerTimeZone: "Asia/Tokyo",
+   bandTimeZone: "Europe/Brussels",
+   locale: "en",
+})
 ```
 
 Shared event editors resolve dates and clocks in the band zone before saving.

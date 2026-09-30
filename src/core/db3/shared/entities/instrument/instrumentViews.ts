@@ -10,11 +10,7 @@ import {
 import {
     xInstrument,
     xInstrumentFunctionalGroup,
-    xInstrumentTag,
 } from "../../schema/instrument";
-import {
-    InstrumentTagAssociationNaturalOrderBy,
-} from "../../schema/prismArgs";
 
 // functional group -------------------------------------
 const instrumentFunctionalGroupSelection = Prisma.validator<Prisma.InstrumentFunctionalGroupDefaultArgs>()({
@@ -49,28 +45,6 @@ export const instrumentFunctionalGroupEditorView = defineCrudView({
     selection: instrumentFunctionalGroupViewContract.prismaSelection,
 });
 
-// tag -------------------------------------
-const instrumentTagSelection = Prisma.validator<Prisma.InstrumentTagDefaultArgs>()({
-    select: {
-        publicId: true,
-        text: true,
-        description: true,
-        sortOrder: true,
-        color: true,
-        significance: true,
-    },
-});
-
-const instrumentTagViewContract = deriveViewContract(xInstrumentTag, instrumentTagSelection);
-export const instrumentTagEditorView = defineCrudView({
-    viewID: "InstrumentTag_Editor",
-    entity: xInstrumentTag,
-    operations: { create: true, update: true, delete: true },
-    dtoSchema: instrumentTagViewContract.dtoSchema,
-    hydrate: instrumentTagViewContract.hydrate,
-    selection: instrumentTagViewContract.prismaSelection,
-});
-
 // instrument -------------------------------------
 const instrumentEditorTransportSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
     select: {
@@ -80,14 +54,6 @@ const instrumentEditorTransportSelection = Prisma.validator<Prisma.InstrumentDef
         autoAssignFileLeafRegex: true,
         sortOrder: true,
         functionalGroupId: true,
-        instrumentTags: {
-            select: {
-                publicId: true,
-                tagId: true,
-                // tag: gets grafted via reference provider
-            },
-            orderBy: InstrumentTagAssociationNaturalOrderBy,
-        },
     },
 });
 
@@ -110,10 +76,8 @@ export const instrumentEditorView = defineCrudView({
 });
 
 export type InstrumentFunctionalGroupListItem = ClientOf<typeof instrumentFunctionalGroupListView>;
-export type InstrumentTagEditorClient = ClientOf<typeof instrumentTagEditorView>;
 export type InstrumentEditorClient = ClientOf<typeof instrumentEditorView>;
 export type InstrumentEditorFunctionalGroup = InstrumentEditorClient["functionalGroup"];
-export type InstrumentEditorTagAssociation = InstrumentEditorClient["instrumentTags"][number];
 export type InstrumentFunctionalGroupDashboardDto = DtoOf<typeof instrumentFunctionalGroupDashboardView>;
 export type InstrumentDashboardDto = DtoOf<typeof instrumentDashboardView>;
 export type InstrumentDashboardClient = ClientOf<typeof instrumentDashboardView>;

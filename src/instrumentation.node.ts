@@ -285,8 +285,6 @@ export async function registerNodeInstrumentation() {
     // public id corrections    
     await CorrectPublicIds(db.instrumentFunctionalGroup, "InstrumentFunctionalGroup");
     await CorrectPublicIds(db.instrument, "Instrument");
-    await CorrectPublicIds(db.instrumentTag, "InstrumentTag");
-    await CorrectPublicIds(db.instrumentTagAssociation, "InstrumentTagAssociation");
     await CorrectPublicIds(db.songTag, "SongTag");
     await CorrectPublicIds(db.songTagAssociation, "SongTagAssociation");
     await CorrectPublicIds(db.song, "Song");

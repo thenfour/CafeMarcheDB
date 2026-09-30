@@ -17,7 +17,6 @@ export interface DashboardDataDto {
     eventAttendance: DtoOf<typeof dashboard.eventAttendanceDashboardView>[];
     fileTag: DtoOf<typeof dashboard.fileTagDashboardView>[];
     instrumentFunctionalGroup: DtoOf<typeof dashboard.instrumentFunctionalGroupDashboardView>[];
-    instrumentTag: DtoOf<typeof dashboard.instrumentTagDashboardView>[];
     songTag: DtoOf<typeof dashboard.songTagDashboardView>[];
     songCreditType: DtoOf<typeof dashboard.songCreditTypeDashboardView>[];
     instrument: DtoOf<typeof dashboard.instrumentDashboardView>[];
@@ -55,7 +54,6 @@ export function hydrateDashboardData(dto: DashboardDataDto) {
             .filter(dashboard.isCompleteEventAttendanceDashboardClient),
         fileTag: hydrate(dashboard.fileTagDashboardView, dto.fileTag),
         instrumentFunctionalGroup: hydrate(dashboard.instrumentFunctionalGroupDashboardView, dto.instrumentFunctionalGroup),
-        instrumentTag: hydrate(dashboard.instrumentTagDashboardView, dto.instrumentTag),
         songTag: hydrate(dashboard.songTagDashboardView, dto.songTag),
         songCreditType: hydrate(dashboard.songCreditTypeDashboardView, dto.songCreditType),
     };

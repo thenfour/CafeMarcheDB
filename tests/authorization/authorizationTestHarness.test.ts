@@ -448,23 +448,6 @@ describe("BA-A002 generic DB3 query authorization", () => {
     expect(customFilter).not.toHaveBeenCalled()
   })
 
-  it("does not let a primary key qualify a row from a protected table", () => {
-    const { schemaAuthorization: publicData } = createAuthorizationPersona("public")
-    const result = db3.xChange.authorizeAndSanitize({
-      contextDesc: "BA-A002 protected-row regression",
-      auth: publicData,
-      rowMode: "view",
-      model: { id: 41, table: "User", recordId: activeTarget.id },
-      fallbackOwnerId: null,
-    })
-
-    expect(result.rowIsAuthorized).toBe(false)
-    expect(result.authorizedModel).toEqual({})
-    expect(result.unauthorizedModel).toEqual(
-      expect.objectContaining({ id: 41 }),
-    )
-  })
-
   it("returns IDs only for rows inside the server-enforced visibility scope", async () => {
     const publicPermissionId = 700
     const loggedInPermissionId = 701

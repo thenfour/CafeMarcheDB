@@ -22,7 +22,6 @@ import {
 import {
     xInstrument,
     xInstrumentFunctionalGroup,
-    xInstrumentTag,
 } from "../schema/instrument";
 import { PermissionForVisibilityArgs } from "../schema/prismArgs";
 import {
@@ -152,17 +151,6 @@ const dashboardInstrumentFunctionalGroupSelection = Prisma.validator<
     },
 });
 
-const dashboardInstrumentTagSelection = Prisma.validator<Prisma.InstrumentTagDefaultArgs>()({
-    select: {
-        publicId: true,
-        text: true,
-        description: true,
-        sortOrder: true,
-        color: true,
-        significance: true,
-    },
-});
-
 const dashboardSongTagSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()({
     select: {
         publicId: true,
@@ -196,12 +184,6 @@ const dashboardInstrumentTransportSelection = Prisma.validator<Prisma.Instrument
         autoAssignFileLeafRegex: true,
         sortOrder: true,
         functionalGroupId: true,
-        instrumentTags: {
-            select: {
-                publicId: true,
-                tagId: true,
-            },
-        },
     },
 });
 
@@ -248,10 +230,6 @@ export const dashboardInstrumentFunctionalGroupResource = deriveViewContract(
     xInstrumentFunctionalGroup,
     dashboardInstrumentFunctionalGroupSelection,
 );
-export const dashboardInstrumentTagResource = deriveViewContract(
-    xInstrumentTag,
-    dashboardInstrumentTagSelection,
-);
 export const dashboardSongTagResource = deriveViewContract(
     xSongTag,
     dashboardSongTagSelection,
@@ -272,7 +250,6 @@ export const dashboardLeafReferenceContract = defineReferenceContract({
     instrumentFunctionalGroup: reference(xInstrumentFunctionalGroup)<
         ReturnType<typeof dashboardInstrumentFunctionalGroupResource.hydrate>
     >(),
-    instrumentTag: reference(xInstrumentTag)<ReturnType<typeof dashboardInstrumentTagResource.hydrate>>(),
     songTag: reference(xSongTag)<ReturnType<typeof dashboardSongTagResource.hydrate>>(),
     songCreditType: reference(xSongCreditType)<ReturnType<typeof dashboardSongCreditTypeResource.hydrate>>(),
 });
@@ -380,15 +357,6 @@ export const instrumentFunctionalGroupDashboardView = defineView({
     hydrate: dashboardInstrumentFunctionalGroupResource.hydrate,
 });
 
-export const instrumentTagDashboardView = defineView({
-    viewID: "InstrumentTag_Dashboard",
-    entity: xInstrumentTag,
-    selection: dashboardInstrumentTagResource.prismaSelection,
-    dtoSchema: dashboardInstrumentTagResource.dtoSchema,
-    references: dashboardInstrumentTagResource.referenceContract,
-    hydrate: dashboardInstrumentTagResource.hydrate,
-});
-
 export const songTagDashboardView = defineView({
     viewID: "SongTag_Dashboard",
     entity: xSongTag,
@@ -413,14 +381,7 @@ export const instrumentDashboardView = defineView({
     selection: dashboardInstrumentResource.prismaSelection,
     dtoSchema: dashboardInstrumentResource.dtoSchema,
     references: dashboardInstrumentResource.referenceContract,
-    hydrate: (dto, references) => {
-        const hydrated = dashboardInstrumentResource.hydrate(dto, references);
-        return {
-            ...hydrated,
-            instrumentTags: [...hydrated.instrumentTags]
-                .sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
-        };
-    },
+    hydrate: dashboardInstrumentResource.hydrate,
 });
 
 export type PermissionDashboardClient = ClientOf<typeof permissionDashboardView>;
@@ -455,7 +416,6 @@ export type FileTagDashboardClient = ClientOf<typeof fileTagDashboardView>;
 export type InstrumentFunctionalGroupDashboardClient = ClientOf<
     typeof instrumentFunctionalGroupDashboardView
 >;
-export type InstrumentTagDashboardClient = ClientOf<typeof instrumentTagDashboardView>;
 export type SongTagDashboardClient = ClientOf<typeof songTagDashboardView>;
 export type SongCreditTypeDashboardClient = ClientOf<typeof songCreditTypeDashboardView>;
 
@@ -510,7 +470,6 @@ export interface DashboardReferenceInput {
     eventAttendance?: readonly ClientOf<typeof eventAttendanceDashboardView>[];
     fileTag?: readonly ClientOf<typeof fileTagDashboardView>[];
     instrumentFunctionalGroup?: readonly ClientOf<typeof instrumentFunctionalGroupDashboardView>[];
-    instrumentTag?: readonly ClientOf<typeof instrumentTagDashboardView>[];
     songTag?: readonly ClientOf<typeof songTagDashboardView>[];
     songCreditType?: readonly ClientOf<typeof songCreditTypeDashboardView>[];
     instrument?: readonly ClientOf<typeof instrumentDashboardView>[];
@@ -551,9 +510,6 @@ export function registerDashboardReferences(
             xInstrumentFunctionalGroup,
             input.instrumentFunctionalGroup,
         );
-    }
-    if (input.instrumentTag) {
-        store.register(xInstrumentTag, input.instrumentTag);
     }
     if (input.songTag) {
         store.register(xSongTag, input.songTag);

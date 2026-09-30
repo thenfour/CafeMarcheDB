@@ -6,11 +6,11 @@ import { useDashboardContext } from "@/src/core/components/dashboardContext/Dash
 import { collectDeviceInfo } from "@/src/core/components/featureReports/activityTracking";
 import { AutoAssignInstrumentPartition } from "@/src/core/db3/shared/autoAssignInstrumentPartition";
 import { BlitzPage } from "@blitzjs/next";
-import { useQuery } from "@blitzjs/rpc";
 import { Divider } from "@mui/material";
 import * as mime from 'mime';
 import React from "react";
 import { arraysContainSameValues } from "shared/arrayUtils";
+import type { EventTagPublicId, EventTypePublicId, SongTagPublicId } from "shared/publicId";
 import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
 import { slugify, unslugify } from "shared/rootroot";
 import { Timing } from "shared/time";
@@ -27,9 +27,7 @@ import { RenderMuiIcon } from "src/core/db3/components/IconMap";
 import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import { ClientOf } from "src/core/db3/db3";
-import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 import { ChipFilterGroup, FilterControls } from "../../core/components/search/FilterControl";
-import type { EventTagPublicId, EventTypePublicId, SongTagPublicId } from "shared/publicId";
 
 interface FilterSpec {
     qfText: string;
@@ -166,7 +164,6 @@ const AutoAssignInstrumentTester = () => {
                 cellWidth: 200,
                 selectionView: db3.instrumentFunctionalGroupEditorView,
             }),
-            instrumentTags: DB3Client.foreignRefFieldGen({ selectionView: db3.instrumentTagEditorView }),
         },
     });
     const tableClient = DB3Client.useTableRenderContext({
@@ -278,26 +275,6 @@ const EventCalendarTester = () => {
 };
 
 
-const ActivityLogValueViewerTester = () => {
-    const [value, setValue] = React.useState<string>("");
-    const [tableName, setTableName] = React.useState<string>("");
-    const [filterSourceData, filterSourceDataOther] = useQuery(getDistinctChangeFilterValues, {});
-
-    let obj: any = undefined;
-    try {
-        obj = JSON.parse(value);
-    } catch (e) { }
-
-    return <div>
-        <CMTextField value={tableName} onChange={(e, v) => setTableName(v)} autoFocus={false} label="Table name" />
-        <CMTextField value={value} onChange={(e, v) => setValue(v)} autoFocus={false} label="Value" multiline={true} />
-        <div style={{ width: 350, border: "2px solid #0004" }}>
-            <DB3Client.ActivityLogValueViewer tableName={tableName} value={obj} cacheData={filterSourceData} />
-        </div>
-    </div>;
-};
-
-
 const AutoCompleteSongEventTester = () => {
     const [result, setResult] = React.useState<QuickSearchItemMatch | null>(null);
     return <AssociationSelect value={result} onChange={(v) => setResult(v)} allowedItemTypes={QuickSearchItemTypeSets.Everything!} />;
@@ -382,8 +359,6 @@ const MainContent = () => {
         <InternalUriTester />
 
         <AutoCompleteSongEventTester />
-
-        <ActivityLogValueViewerTester />
 
         <EventCalendarTester />
 
