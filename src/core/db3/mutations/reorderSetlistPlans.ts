@@ -1,4 +1,3 @@
-import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { cmauthorize } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
@@ -59,18 +58,18 @@ export default resolver.pipe(
                 },
                 error: () => new DB3MutationAuthorizationError(table.tableName, ["sortOrder"]),
             });
-            if (changes.length) {
-                await RegisterChange({
-                    action: ChangeAction.update,
-                    changeContext: CreateChangeContext(`reorder:${table.tableName}`),
-                    table: table.tableName,
-                    pkid: 0,
-                    oldValues: changes.map(change => ({ publicId: change.item.publicId, sortOrder: change.oldSortOrder })),
-                    newValues: changes.map(change => ({ publicId: change.item.publicId, sortOrder: change.newSortOrder })),
-                    auth: ctx.auth,
-                    db: tx,
-                });
-            }
+            // if (changes.length) {
+            //     await RegisterChange({
+            //         action: ChangeAction.update,
+            //         changeContext: CreateChangeContext(`reorder:${table.tableName}`),
+            //         table: table.tableName,
+            //         pkid: 0,
+            //         oldValues: changes.map(change => ({ publicId: change.item.publicId, sortOrder: change.oldSortOrder })),
+            //         newValues: changes.map(change => ({ publicId: change.item.publicId, sortOrder: change.newSortOrder })),
+            //         auth: ctx.auth,
+            //         db: tx,
+            //     });
+            // }
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     },
 );

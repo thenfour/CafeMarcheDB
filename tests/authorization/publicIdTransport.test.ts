@@ -11,8 +11,6 @@ import { parsePublicId } from "shared/publicId";
 import { userPublicId } from "../support/userFixtures";
 
 const publicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
-const tagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn02");
-const tagAssociationPublicId = parsePublicId<"InstrumentTagAssociation">("AbCdEfGhIjKlMn03");
 const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn04");
 const otherSongTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn05");
 const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn06");
@@ -44,16 +42,6 @@ const group = {
     color: "orange",
     sortOrder: 1,
 };
-const tag = {
-    id: 20,
-    publicId: tagPublicId,
-    text: "Acoustic",
-    description: "Does not require amplification",
-    color: null,
-    significance: null,
-    sortOrder: 1,
-};
-
 const authorization = (...permissions: Permission[]): CMServerAuthorization => testServerAuthorization(
     { id: 100 },
     new ServerPermissionSet([
@@ -74,18 +62,6 @@ const sanitizeGroup = (publicData: CMServerAuthorization) => {
     return projectDB3ModelPublicIds(db3.xInstrumentFunctionalGroup, result.authorizedModel, publicData);
 };
 
-const sanitizeTag = (publicData: CMServerAuthorization) => {
-    const result = db3.xSongTag.authorizeAndSanitize({
-        contextDesc: "public-id-transport-test",
-        model: tag,
-        rowMode: "view",
-        fallbackOwnerId: null,
-        auth: publicData,
-    });
-    expect(result.rowIsAuthorized).toBe(true);
-    return projectDB3ModelPublicIds(db3.xSongTag, result.authorizedModel, publicData);
-};
-
 describe("instrument catalog public-ID transport", () => {
     it("uses publicId as canonical client identity for every role", () => {
         const expected = {
@@ -97,17 +73,6 @@ describe("instrument catalog public-ID transport", () => {
         };
         expect(sanitizeGroup(authorization(Permission.login))).toEqual(expected);
         expect(sanitizeGroup(authorization(Permission.login, Permission.sysadmin))).toEqual(expected);
-
-        const expectedTag = {
-            publicId: tagPublicId,
-            text: tag.text,
-            description: tag.description,
-            color: tag.color,
-            significance: tag.significance,
-            sortOrder: tag.sortOrder,
-        };
-        expect(sanitizeTag(authorization(Permission.login))).toEqual(expectedTag);
-        expect(sanitizeTag(authorization(Permission.login, Permission.sysadmin))).toEqual(expectedTag);
     });
 
     it("projects converted foreign keys through direct, association, and nested relation payloads", () => {
@@ -120,13 +85,6 @@ describe("instrument catalog public-ID transport", () => {
             sortOrder: 1,
             functionalGroupId: group.id,
             functionalGroup: group,
-            instrumentTags: [{
-                id: 70,
-                publicId: tagAssociationPublicId,
-                instrumentId,
-                tagId: tag.id,
-                tag,
-            }],
         };
         const publicData = authorization(Permission.login);
 
@@ -136,13 +94,6 @@ describe("instrument catalog public-ID transport", () => {
         expect(projectedInstrument.functionalGroupId).toBe(publicId);
         expect(projectedInstrument.functionalGroup).toMatchObject({ publicId, name: "Brass" });
         expect(projectedInstrument.functionalGroup).not.toHaveProperty("id");
-        expect(projectedInstrument.instrumentTags[0]).toMatchObject({
-            publicId: tagAssociationPublicId,
-            tagId: tagPublicId,
-            tag: { publicId: tagPublicId, text: "Acoustic" },
-        });
-        expect(projectedInstrument.instrumentTags[0]).not.toHaveProperty("id");
-        expect(projectedInstrument.instrumentTags[0].tag).not.toHaveProperty("id");
 
         const projectedFile = projectDB3ModelPublicIds(db3.xFile, {
             id: 90,
@@ -361,19 +312,6 @@ describe("instrument catalog public-ID transport", () => {
             cmdbQueryContext: "public-id-test",
         })).not.toThrow();
         expect(() => validateDB3QueryRequest({
-            table: { tableID: "InstrumentTag", tableName: "InstrumentTag" },
-            filter: { items: [], publicIds: [tagPublicId] },
-            cmdbQueryContext: "public-id-test",
-        })).not.toThrow();
-        expect(() => validateDB3QueryRequest({
-            table: {
-                tableID: "InstrumentTagAssociation",
-                tableName: "InstrumentTagAssociation",
-            },
-            filter: { items: [], publicIds: [tagAssociationPublicId] },
-            cmdbQueryContext: "public-id-test",
-        })).not.toThrow();
-        expect(() => validateDB3QueryRequest({
             table: { tableID: "Instrument", tableName: "Instrument" },
             filter: { items: [], publicIds: [instrumentPublicId] },
             cmdbQueryContext: "public-id-test",
@@ -439,36 +377,6 @@ describe("instrument catalog public-ID transport", () => {
             mutationType: "insert",
             insertModel: { name: "Winds", publicId },
         })).toThrow("field 'publicId' is server-generated");
-
-        expect(() => validateDB3MutationRequest({
-            tableID: "InstrumentTag",
-            tableName: "InstrumentTag",
-            mutationType: "update",
-            updatePublicId: tagPublicId,
-            updateModel: { text: "Unplugged" },
-        })).not.toThrow();
-        expect(() => validateDB3MutationRequest({
-            tableID: "InstrumentTag",
-            tableName: "InstrumentTag",
-            mutationType: "update",
-            updateId: tag.id,
-            updateModel: { text: "Unplugged" },
-        })).toThrow("updates require updatePublicId");
-
-        expect(() => validateDB3MutationRequest({
-            tableID: "InstrumentTagAssociation",
-            tableName: "InstrumentTagAssociation",
-            mutationType: "update",
-            updatePublicId: tagAssociationPublicId,
-            updateModel: { tagId: tagPublicId },
-        })).not.toThrow();
-        expect(() => validateDB3MutationRequest({
-            tableID: "InstrumentTagAssociation",
-            tableName: "InstrumentTagAssociation",
-            mutationType: "update",
-            updateId: 70,
-            updateModel: { tagId: tagPublicId },
-        })).toThrow("updates require updatePublicId");
 
         expect(() => validateDB3MutationRequest({
             tableID: "Instrument",

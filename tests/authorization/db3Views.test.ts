@@ -29,8 +29,6 @@ import { selectPrismaTestRow } from "../support/prismaSelection";
 import type { DB3ReadSelectionArgs } from "@db3/shared/core/db3ReadSelection";
 
 const groupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
-const tagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn02");
-const tagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn03");
 const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn04");
 const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn05");
 const instrumentPublicId = parsePublicId<"Instrument">("AbCdEfGhIjKlMn06");
@@ -64,16 +62,6 @@ const hydratedGroup = {
     ...group,
     color: gGeneralPaletteList.findEntry("orange"),
 };
-const tag = {
-    id: 12,
-    publicId: tagPublicId,
-    text: "Horn",
-    description: "Horn-like instruments",
-    color: null,
-    sortOrder: 2,
-    significance: null,
-};
-
 describe("DB3 named views", () => {
     it("returns DTOs by default and hydrates only when explicitly requested", async () => {
         const row = {
@@ -439,12 +427,6 @@ describe("DB3 named views", () => {
             sortOrder: 1,
             functionalGroupId: 54,
             functionalGroup: { publicId: groupPublicId },
-            instrumentTags: [{
-                id: 70,
-                publicId: tagAssociationPublicId,
-                tagId: tag.id,
-                tag: { publicId: tagPublicId },
-            }],
         }]);
         const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
@@ -471,19 +453,11 @@ describe("DB3 named views", () => {
             autoAssignFileLeafRegex: null,
             sortOrder: 1,
             functionalGroupId: groupPublicId,
-            instrumentTags: [{ publicId: tagAssociationPublicId, tagId: tagPublicId }],
         }]);
         expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
             select: expect.objectContaining({
                 functionalGroupId: true,
                 functionalGroup: { select: { publicId: true } },
-                instrumentTags: expect.objectContaining({
-                    select: {
-                        publicId: true,
-                        tagId: true,
-                        tag: { select: { publicId: true } },
-                    },
-                }),
             }),
         }));
     });
@@ -684,10 +658,6 @@ describe("DB3 named views", () => {
             autoAssignFileLeafRegex: null,
             sortOrder: 1,
             functionalGroupId: groupPublicId,
-            instrumentTags: [{
-                publicId: tagAssociationPublicId,
-                tagId: tagPublicId,
-            }],
         });
         const hydrated = db3.hydrateView(db3.instrumentDashboardView, dto, references);
 
@@ -788,7 +758,6 @@ describe("DB3 named views", () => {
             sortOrder: 1,
             functionalGroupId: groupPublicId,
             functionalGroup: hydratedGroup,
-            instrumentTags: [],
         };
         db3.registerDashboardReferences(references, {
             permission: [permission],
@@ -892,7 +861,6 @@ describe("DB3 named views", () => {
             sortOrder: 1,
             functionalGroupId: groupPublicId,
             functionalGroup: hydratedGroup,
-            instrumentTags: [],
         };
         db3.registerDashboardReferences(references, {
             permission: [permission],
@@ -1438,7 +1406,6 @@ describe("DB3 named views", () => {
             sortOrder: 1,
             functionalGroupId: groupPublicId,
             functionalGroup: hydratedGroup,
-            instrumentTags: [],
         };
         db3.registerDashboardReferences(references, {
             permission: [permission],
@@ -2018,9 +1985,6 @@ describe("DB3 named views", () => {
 
     it("reports the exact missing reference path", () => {
         const references = db3.createDashboardReferenceStore();
-        db3.registerDashboardReferences(references, {
-            instrumentFunctionalGroup: [hydratedGroup],
-        });
         const dto = db3.instrumentDashboardView.parseDto({
             publicId: instrumentPublicId,
             name: "Trumpet",
@@ -2028,13 +1992,9 @@ describe("DB3 named views", () => {
             autoAssignFileLeafRegex: null,
             sortOrder: 1,
             functionalGroupId: groupPublicId,
-            instrumentTags: [{
-                publicId: tagAssociationPublicId,
-                tagId: tagPublicId,
-            }],
         });
 
         expect(() => db3.hydrateView(db3.instrumentDashboardView, dto, references))
-            .toThrow(`Instrument(${instrumentPublicId}).instrumentTags[0].tagId`);
+            .toThrow(`Instrument(${instrumentPublicId}).functionalGroupId`);
     });
 });

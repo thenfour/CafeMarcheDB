@@ -1,4 +1,3 @@
-import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { cmauthorize, type CMAuthCtx } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
@@ -65,16 +64,16 @@ export default resolver.pipe(
                 model: { id: target.eventId },
                 db: tx
             });
-            await RegisterChange({
-                action: ChangeAction.update,
-                changeContext: CreateChangeContext("copyEventSegmentResponses"),
-                table: db3.xEventSegmentUserResponse.tableName,
-                pkid: toId!,
-                oldValues: auditResponses(oldValues),
-                newValues: auditResponses(sourceValues),
-                auth: ctx.auth,
-                db: tx,
-            });
+            // await RegisterChange({
+            //     action: ChangeAction.update,
+            //     changeContext: CreateChangeContext("copyEventSegmentResponses"),
+            //     table: db3.xEventSegmentUserResponse.tableName,
+            //     pkid: toId!,
+            //     oldValues: auditResponses(oldValues),
+            //     newValues: auditResponses(sourceValues),
+            //     auth: ctx.auth,
+            //     db: tx,
+            // });
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
         return null;
     },

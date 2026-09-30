@@ -1,10 +1,5 @@
 import { isBandTimeZoneSetting, reanchorAllDayEvents } from "src/server/dateTime";
 import type { CMServerAuthorization } from "./serverAuthorization";
-import {
-    ChangeAction,
-    type ChangeContext,
-    RegisterChange,
-} from "@/src/auth/server/activityLog";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import type { Prisma } from "db";
 import { db3Server } from "src/core/db3/server/db3Server";
@@ -30,7 +25,7 @@ export function validateSettingValue(name: string | undefined, value: string | n
 export const writeSettingValue = async (args: {
     db: TransactionalPrismaClient;
     auth: CMServerAuthorization;
-    changeContext: ChangeContext;
+    //changeContext: ChangeContext;
     name: string;
     value: string | null | undefined;
 }): Promise<SettingValue | null> => {
@@ -51,15 +46,15 @@ export const writeSettingValue = async (args: {
     if (args.value === null || args.value === undefined || args.value === "") {
         if (!oldValue) return null;
         await args.db.setting.delete({ where: { id: oldValue.id } });
-        await RegisterChange({
-            action: ChangeAction.delete,
-            changeContext: args.changeContext,
-            table: "setting",
-            pkid: oldValue.id,
-            oldValues: oldValue,
-            auth: args.auth,
-            db: args.db,
-        });
+        // await RegisterChange({
+        //     action: ChangeAction.delete,
+        //     changeContext: args.changeContext,
+        //     table: "setting",
+        //     pkid: oldValue.id,
+        //     oldValues: oldValue,
+        //     auth: args.auth,
+        //     db: args.db,
+        // });
         await refreshBounds();
         return null;
     }
@@ -70,16 +65,16 @@ export const writeSettingValue = async (args: {
             where: { id: oldValue.id },
             data: { value: args.value },
         });
-        await RegisterChange({
-            action: ChangeAction.update,
-            changeContext: args.changeContext,
-            table: "setting",
-            pkid: oldValue.id,
-            oldValues: oldValue,
-            newValues: newValue,
-            auth: args.auth,
-            db: args.db,
-        });
+        // await RegisterChange({
+        //     action: ChangeAction.update,
+        //     changeContext: args.changeContext,
+        //     table: "setting",
+        //     pkid: oldValue.id,
+        //     oldValues: oldValue,
+        //     newValues: newValue,
+        //     auth: args.auth,
+        //     db: args.db,
+        // });
         await refreshBounds();
         return newValue;
     }
@@ -90,15 +85,15 @@ export const writeSettingValue = async (args: {
         settingDelegate.create({
             data: { publicId, name: args.name, value },
         }));
-    await RegisterChange({
-        action: ChangeAction.insert,
-        changeContext: args.changeContext,
-        table: "setting",
-        pkid: newValue.id,
-        newValues: newValue,
-        auth: args.auth,
-        db: args.db,
-    });
+    // await RegisterChange({
+    //     action: ChangeAction.insert,
+    //     changeContext: args.changeContext,
+    //     table: "setting",
+    //     pkid: newValue.id,
+    //     newValues: newValue,
+    //     auth: args.auth,
+    //     db: args.db,
+    // });
     await refreshBounds();
     return newValue;
 };

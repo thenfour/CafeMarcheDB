@@ -53,7 +53,7 @@ export const scenarioInstruments: db3.InstrumentPayload[] = ["Trumpet", "Saxopho
     id: index + 1,
     publicId: `sceninst${String(index + 1).padStart(8, "0")}`,
     name, sortOrder: index, description: name, autoAssignFileLeafRegex: null,
-    functionalGroupId: 1, instrumentTags: [],
+    functionalGroupId: 1,
     functionalGroup: { id: 1, publicId: "scenario_group01", name: "Band", sortOrder: 0, description: "Scenario instruments", color: "blue" },
 }));
 
@@ -75,7 +75,6 @@ export const scenarioClientInstruments: db3.InstrumentClientPayload[] = scenario
         sortOrder: instrument.functionalGroup.sortOrder,
         color: gGeneralPaletteList.findEntry(instrument.functionalGroup.color),
     },
-    instrumentTags: [],
 }));
 
 export const createAttendanceScenario = (): AttendanceScenario => ({

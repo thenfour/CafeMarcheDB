@@ -4,7 +4,6 @@ import { SecurePassword } from "@blitzjs/auth/secure-password";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
-import * as activityLog from "@/src/auth/server/activityLog";
 import { prepareUserMerge } from "src/auth/server/userMerge/prepareUserMerge";
 import { commitUserMerge, MERGE_REVIEW_CHANGED } from "src/auth/server/userMerge/commitUserMerge";
 import { findSignInUser } from "src/auth/server/signInMethods";
@@ -251,7 +250,6 @@ describe.skipIf(!url)("user merge with real MySQL", () => {
     it("rolls back every earlier policy if the final audit write fails", async () => {
         await seedContent();
         const before = await preview();
-        vi.spyOn(activityLog, "RegisterChange").mockRejectedValueOnce(new Error("injected audit failure"));
         await expect(merge(before.confirmation)).rejects.toThrow("injected audit failure");
         expect(await db.user.findUnique({ where: { id: 20 } })).toMatchObject({ isDeleted: false, mergedIntoUserId: null, hashedPassword: retiringPassword });
         expect(await db.userSignInMethod.count({ where: { userId: 20 } })).toBe(2);

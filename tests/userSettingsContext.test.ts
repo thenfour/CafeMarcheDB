@@ -42,7 +42,7 @@ const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_R
 const dashboardData = (showDeclinedEvents: boolean) => ({
     ...Object.fromEntries([
         "permission", "effectivePermissionNames", "userTag", "wikiPageTag", "role",
-        "eventType", "eventStatus", "eventTag", "eventAttendance", "fileTag", "instrumentTag", "instrumentFunctionalGroup",
+        "eventType", "eventStatus", "eventTag", "eventAttendance", "fileTag", "instrumentFunctionalGroup",
         "songTag", "songCreditType", "relevantEventIds", "dynMenuLinks", "instrument",
     ].map(name => [name, []])),
     bandTimeZone: "Europe/Brussels",

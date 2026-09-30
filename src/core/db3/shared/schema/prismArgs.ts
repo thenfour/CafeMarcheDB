@@ -772,7 +772,6 @@ export type InstrumentWithFunctionalGroupClientPayload = Omit<
 
 type DashboardInstrumentDbPayload = Prisma.InstrumentGetPayload<{
     include: {
-        instrumentTags: true;
         functionalGroup: true;
     };
 }>;

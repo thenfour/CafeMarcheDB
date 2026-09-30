@@ -4,7 +4,6 @@ import { readFileSync } from "node:fs"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 import { testServerAuthorization } from "tests/support/serverAuthorization"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
-import { CreateChangeContext } from "@/src/auth/server/activityLog"
 import { Setting } from "shared/settingKeys"
 import { writeSettingValue } from "src/auth/server/settingWrite"
 import { CallMutateEventHooks } from "src/core/db3/server/db3mutationCore"
@@ -52,8 +51,10 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
   const events = () => db.event.findMany({ where: { id: { in: eventIds } }, orderBy: { id: "asc" } })
   const segments = () => db.eventSegment.findMany({ where: { eventId: { in: eventIds } }, orderBy: { id: "asc" } })
   const changeZone = (value: string | null) => db.$transaction(tx => writeSettingValue({
-    db: tx, auth: testAuth,
-    changeContext: CreateChangeContext("band-policy-test"), name: Setting.BandTimeZone, value
+    db: tx,
+    auth: testAuth,
+    name: Setting.BandTimeZone,
+    value
   }), transactionOptions)
 
   it("reanchors all-day segments and exact mixed bounds while preserving timed segments", async () => {
@@ -121,8 +122,10 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
         }
       })
       await writeSettingValue({
-        db: failingDb, auth: testAuth, changeContext: CreateChangeContext("rollback-test"),
-        name: Setting.BandTimeZone, value: "Asia/Tokyo"
+        db: failingDb,
+        auth: testAuth,
+        name: Setting.BandTimeZone,
+        value: "Asia/Tokyo"
       })
     }, transactionOptions)).rejects.toThrow("Injected aggregate failure")
     expect(writes).toBe(2)

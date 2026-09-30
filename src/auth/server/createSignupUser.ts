@@ -2,7 +2,6 @@ import { SecurePassword } from "@blitzjs/auth/secure-password";
 import type { Ctx } from "@blitzjs/next";
 import { assert } from "blitz";
 import db, { Prisma } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { generatePublicId } from "src/server/publicId";
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { SignInMethodSchema } from "../signInMethodSchemas";
@@ -65,21 +64,21 @@ export const createSignupUser = async (args: CreateSignupUserArgs, ctx: Ctx) => 
             await addSignInMethod(tx, user.id, googleMethod, emailMethod.identifier);
         }
 
-        await RegisterChange({
-            action: ChangeAction.insert,
-            changeContext: CreateChangeContext("signupMutation"),
-            table: "User",
-            pkid: user.id,
-            newValues: {
-                name: user.name,
-                email: user.email,
-                isSysAdmin: false,
-                roleId: user.roleId,
-                authenticationMethod: args.googleId ? "google" : "password",
-            },
-            auth: await loadAuthorization(ctx.session),
-            db: tx,
-        });
+        // await RegisterChange({
+        //     action: ChangeAction.insert,
+        //     changeContext: CreateChangeContext("signupMutation"),
+        //     table: "User",
+        //     pkid: user.id,
+        //     newValues: {
+        //         name: user.name,
+        //         email: user.email,
+        //         isSysAdmin: false,
+        //         roleId: user.roleId,
+        //         authenticationMethod: args.googleId ? "google" : "password",
+        //     },
+        //     auth: await loadAuthorization(ctx.session),
+        //     db: tx,
+        // });
 
         return user;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });

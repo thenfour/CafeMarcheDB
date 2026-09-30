@@ -1,7 +1,6 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { PrismaClient } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
 import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
@@ -49,19 +48,17 @@ export default resolver.pipe(
     resolver.authorize(Permission.admin_wiki_pages),
     resolver.zod(z.object({})),
     async (args, ctx: AuthenticatedCtx): Promise<void> => {
-        const changeContext = CreateChangeContext("rebuildWikiPageRevisionStats");
-
         await db.$transaction(async (dbt) => {
             await core(dbt as any);
         });
 
-        await RegisterChange({
-            action: ChangeAction.delete,
-            auth: await loadAuthorization(ctx.session),
-            changeContext,
-            pkid: -1,
-            table: "WikiPageRevision",
-        });
+        // await RegisterChange({
+        //     action: ChangeAction.delete,
+        //     auth: await loadAuthorization(ctx.session),
+        //     changeContext,
+        //     pkid: -1,
+        //     table: "WikiPageRevision",
+        // });
     } // async fn
 ); // pipe
 

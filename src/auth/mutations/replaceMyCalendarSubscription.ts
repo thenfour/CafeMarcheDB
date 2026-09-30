@@ -1,11 +1,6 @@
 import { resolver } from "@blitzjs/rpc";
 import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
-import {
-    ChangeAction,
-    CreateChangeContext,
-    RegisterChange,
-} from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import { loadAuthorization } from "../server/serverAuthorization";
 import {
@@ -30,16 +25,16 @@ export default resolver.pipe(
                 where: { id: userId },
                 data: { calendarFeedToken },
             });
-            await RegisterChange({
-                action: ChangeAction.update,
-                changeContext: CreateChangeContext("replaceCalendarFeedSubscription"),
-                table: "User",
-                pkid: userId,
-                oldValues: { calendarFeedLinkReplaced: false },
-                newValues: { calendarFeedLinkReplaced: true },
-                auth: await loadAuthorization(ctx.session),
-                db: tx,
-            });
+            // await RegisterChange({
+            //     action: ChangeAction.update,
+            //     changeContext: CreateChangeContext("replaceCalendarFeedSubscription"),
+            //     table: "User",
+            //     pkid: userId,
+            //     oldValues: { calendarFeedLinkReplaced: false },
+            //     newValues: { calendarFeedLinkReplaced: true },
+            //     auth: await loadAuthorization(ctx.session),
+            //     db: tx,
+            // });
 
             return getCalendarFeedSubscriptionInfo(calendarFeedToken);
         },

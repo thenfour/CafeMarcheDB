@@ -14,22 +14,25 @@ function wikiAuth(userId: number) {
 }
 vi.mock("db", async () => {
     const actual = await vi.importActual<any>("@prisma/client");
-    return { ...actual, default: {
-        $transaction: vi.fn(),
-        wikiPage: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
-        wikiPageRevision: { findMany: vi.fn(), findFirst: vi.fn(), findUniqueOrThrow: vi.fn(), create: vi.fn(), update: vi.fn() },
-    }};
+    return {
+        ...actual, default: {
+            $transaction: vi.fn(),
+            wikiPage: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+            wikiPageRevision: { findMany: vi.fn(), findFirst: vi.fn(), findUniqueOrThrow: vi.fn(), create: vi.fn(), update: vi.fn() },
+        }
+    };
 });
-vi.mock("@blitzjs/rpc", () => ({ resolver: {
-    pipe: (...steps: any[]) => steps[steps.length - 1], authorize: vi.fn(), zod: vi.fn(),
-}}));
+vi.mock("@blitzjs/rpc", () => ({
+    resolver: {
+        pipe: (...steps: any[]) => steps[steps.length - 1], authorize: vi.fn(), zod: vi.fn(),
+    }
+}));
 vi.mock("src/core/db3/server/db3ReadPolicy", () => ({ GetAuthorizedTableReadWhere: async (args: any) => args.where ?? {} }));
 vi.mock("src/auth/server/serverAuthorization", () => ({ loadAuthorization: async (session: { userId: number }) => wikiAuth(session.userId) }));
 vi.mock("src/core/db3/server/db3QueryCore", () => ({
     authorizeAndProjectViewDto: (_view: unknown, row: unknown) => row,
 }));
 vi.mock("src/core/db3/shared/db3Helpers", () => ({ GetDefaultVisibilityPermission: async () => ({ id: 1 }) }));
-vi.mock("src/auth/server/activityLog", () => ({ ChangeAction: { insert: "insert", update: "update" }, CreateChangeContext: vi.fn(), RegisterChange: vi.fn() }));
 import db, { Prisma } from "db";
 import acquire from "src/core/wiki/mutations/acquireLockOnWikiPage";
 import save from "src/core/wiki/mutations/updateWikiPage";
@@ -56,10 +59,13 @@ beforeEach(() => {
     vi.useFakeTimers(); vi.setSystemTime(now);
     mockDb.$transaction.mockImplementation(async (work: any) => work(mockDb));
     mockDb.wikiPage.findFirst.mockResolvedValue(pageRow());
-    mockDb.wikiPage.update.mockImplementation(async ({ data }: any) => ({ ...page({ ...data,
-        contentVersion: data.contentVersion ? 6 : 5,
-        lockedByUser: { publicId: parsePublicId<"User">("TestUser00000001"), name: "Editor" },
-    }), id: 1 }));
+    mockDb.wikiPage.update.mockImplementation(async ({ data }: any) => ({
+        ...page({
+            ...data,
+            contentVersion: data.contentVersion ? 6 : 5,
+            lockedByUser: { publicId: parsePublicId<"User">("TestUser00000001"), name: "Editor" },
+        }), id: 1
+    }));
     mockDb.wikiPageRevision.findMany.mockResolvedValue([]);
     mockDb.wikiPageRevision.create.mockResolvedValue({ id: 10 });
     mockDb.wikiPageRevision.findUniqueOrThrow.mockResolvedValue({ id: 9 });
@@ -67,8 +73,10 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); });
 describe("wiki lease and content protection", () => {
     it("keeps a lease despite missing presence pings", () => {
-        expect(GetWikiPageUpdatability({ currentPage: page(), currentUserPublicId: parsePublicId<"User">("TestUser00000002"),
-            userClientLockId: "editor-b", baseRevisionId: revisionPublicId, baseContentVersion: 5 }).isLockConflict).toBe(true);
+        expect(GetWikiPageUpdatability({
+            currentPage: page(), currentUserPublicId: parsePublicId<"User">("TestUser00000002"),
+            userClientLockId: "editor-b", baseRevisionId: revisionPublicId, baseContentVersion: 5
+        }).isLockConflict).toBe(true);
     });
     it("rejects stale content even when the revision ID is unchanged", async () => {
         const result = await save({ ...args, baseContentVersion: 4 }, ctx);

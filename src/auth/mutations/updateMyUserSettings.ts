@@ -1,7 +1,6 @@
 import { resolver } from "@blitzjs/rpc";
 import { cmauthorize } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import { UserSettingsPatchSchema } from "shared/userSettings";
 import { loadUserSettings } from "../server/userSettings";
@@ -13,7 +12,6 @@ export default resolver.pipe(
         const auth = await ctx.auth.refresh(tx);
         auth.requirePermission(Permission.login);
         const user = auth.requireUser();
-        const changeContext = CreateChangeContext("updateMyUserSettings");
 
         for (const [name, value] of Object.entries(patch)) {
             if (value === undefined) continue;
@@ -24,16 +22,16 @@ export default resolver.pipe(
             const saved = existing
                 ? await tx.userSetting.update({ where: { id: existing.id }, data: { value } })
                 : await tx.userSetting.create({ data });
-            await RegisterChange({
-                action: existing ? ChangeAction.update : ChangeAction.insert,
-                changeContext,
-                table: "UserSetting",
-                pkid: saved.id,
-                oldValues: existing ? { name, value: existing.value } : undefined,
-                newValues: { name, value },
-                auth,
-                db: tx,
-            });
+            // await RegisterChange({
+            //     action: existing ? ChangeAction.update : ChangeAction.insert,
+            //     changeContext,
+            //     table: "UserSetting",
+            //     pkid: saved.id,
+            //     oldValues: existing ? { name, value: existing.value } : undefined,
+            //     newValues: { name, value },
+            //     auth,
+            //     db: tx,
+            // });
         }
 
         return loadUserSettings(user.userId, tx);

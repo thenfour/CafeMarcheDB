@@ -117,9 +117,6 @@ const instrumentFunctionalGroupCrudHandlers = defineEntityCrudCommandHandlers(
     instrumentFunctionalGroupCrud,
 );
 const functionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
-const instrumentTagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn02");
-const otherInstrumentTagPublicId = parsePublicId<"InstrumentTag">("AbCdEfGhIjKlMn03");
-const instrumentTagAssociationPublicId = parsePublicId<"InstrumentTagAssociation">("AbCdEfGhIjKlMn04");
 const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn05");
 const otherSongTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn06");
 const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn07");

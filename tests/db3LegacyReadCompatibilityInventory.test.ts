@@ -56,9 +56,6 @@ const compatibilitySites: Record<string, InventoryEntry[]> = {
     "src/core/db3/components/db3DataGrid.tsx": [
         { api: "useLegacyTableRenderContext", category: "generic-infrastructure", count: 1 },
     ],
-    "src/pages/backstage/adminLogs.tsx": [
-        { api: "defineLegacyTableClientSpec", category: "table-only-query", count: 1 },
-    ],
     "src/pages/backstage/eventImport.tsx": [
         { api: "defineLegacyTableClientSpec", category: "render-only-editor", count: 2 },
         { api: "useLegacyTableRenderContext", category: "render-only-editor", count: 2 },

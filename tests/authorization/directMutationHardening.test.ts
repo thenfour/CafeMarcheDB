@@ -187,7 +187,7 @@ describe("DB3 command boundary", () => {
     expect(authorizationTestDb.snapshot("rolePermission")).toEqual([])
   })
 
-  it("updates an Instrument public reference and tag set through generated CRUD", async () => {
+  it("updates an Instrument public reference through generated CRUD", async () => {
     const permissions = [Permission.login, Permission.admin_instruments]
     const actor = createAuthorizationTestUser("normal", { id: 96, permissions })
     const originalGroup = {
@@ -215,37 +215,11 @@ describe("DB3 command boundary", () => {
       sortOrder: 1,
       functionalGroupId: originalGroup.id,
       functionalGroup: originalGroup,
-      instrumentTags: [],
-    }
-    const acousticTag = {
-      id: 20,
-      publicId: "AcousticTag00001",
-      text: "Acoustic",
-      description: "",
-      sortOrder: 1,
-      color: null,
-      significance: null,
-    }
-    const electricTag = {
-      id: 21,
-      publicId: "ElectricTag00001",
-      text: "Electric",
-      description: "",
-      sortOrder: 2,
-      color: null,
-      significance: "electricity",
     }
     authorizationTestDb.reset({
       user: [actor],
       instrumentFunctionalGroup: [originalGroup, nextGroup],
       instrument: [instrument],
-      instrumentTag: [acousticTag, electricTag],
-      instrumentTagAssociation: [{
-        id: 70,
-        publicId: "OriginalAssoc001",
-        instrumentId: instrument.id,
-        tagId: acousticTag.id,
-      }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
@@ -257,7 +231,6 @@ describe("DB3 command boundary", () => {
         patch: {
           name: "Cornet",
           functionalGroupId: nextGroup.publicId,
-          instrumentTags: [electricTag.publicId],
         },
       },
     }, ctx)).resolves.toEqual({ identity: instrument.publicId })
@@ -269,12 +242,6 @@ describe("DB3 command boundary", () => {
         functionalGroupId: nextGroup.id,
       }),
     ])
-    const associations = authorizationTestDb.snapshot("instrumentTagAssociation")
-    expect(associations).toEqual([
-      expect.objectContaining({ instrumentId: instrument.id, tagId: electricTag.id }),
-    ])
-    expect(isPublicId(associations[0]!.publicId)).toBe(true)
-    expect(associations[0]!.publicId).not.toBe("OriginalAssoc001")
   })
 
   it("updates and soft-deletes a Song through generated CRUD", async () => {

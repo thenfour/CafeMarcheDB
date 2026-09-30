@@ -365,7 +365,6 @@ describe("BA-A002 generic DB3 query authorization", () => {
   beforeEach(() => {
     authorizationTestDb.reset({
       user: [sysadmin, normal, activeTarget, deletedTarget],
-      change: [{ id: 1, table: "User", recordId: activeTarget.id }],
       event: [],
       role: [],
     })
@@ -373,25 +372,25 @@ describe("BA-A002 generic DB3 query authorization", () => {
   })
 
   it("rejects an unauthorized table before its Prisma query executes", async () => {
-    const findMany = vi.spyOn(authorizationTestDb.getDelegate("change"), "findMany")
+    const findMany = vi.spyOn(authorizationTestDb.getDelegate("userSignInMethod"), "findMany")
     const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
 
-    await expect(invokeResolver(db3Query, forgeDb3Query("Change"), ctx)).rejects.toThrow(
+    await expect(invokeResolver(db3Query, forgeDb3Query("UserSignInMethod"), ctx)).rejects.toThrow(
       "Not authorized to perform this query.",
     )
     expect(findMany).not.toHaveBeenCalled()
   })
 
   it("rejects an unauthorized paginated table before querying or counting", async () => {
-    const changeDelegate = authorizationTestDb.getDelegate("change")
-    const findMany = vi.spyOn(changeDelegate, "findMany")
-    const count = vi.spyOn(changeDelegate, "count")
+    const methodDelegate = authorizationTestDb.getDelegate("userSignInMethod")
+    const findMany = vi.spyOn(methodDelegate, "findMany")
+    const count = vi.spyOn(methodDelegate, "count")
     const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
 
     await expect(
       invokeResolver(
         db3PaginatedQuery,
-        { ...forgeDb3Query("Change"), skip: 0, take: 50 },
+        { ...forgeDb3Query("UserSignInMethod"), skip: 0, take: 50 },
         ctx,
       ),
     ).rejects.toThrow("Not authorized to perform this query.")

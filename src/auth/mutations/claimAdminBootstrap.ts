@@ -1,7 +1,6 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthorizationError } from "blitz";
 import db, { Prisma } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import {
     UserWithRolesArgs,
@@ -17,8 +16,8 @@ import {
     hasAdminBootstrapTokenBeenClaimed,
     recordAdminBootstrapTokenClaim,
 } from "../server/adminBootstrapClaims";
-import { createPublicDataFromDatabase } from "../server/effectivePermissions";
 import { cmauthorize } from "../server/cmResolver";
+import { createPublicDataFromDatabase } from "../server/effectivePermissions";
 
 export const ClaimAdminBootstrapInput = z.object({
     secret: z.string().min(kMinimumAdminBootstrapSecretLength).max(4096),
@@ -101,16 +100,16 @@ export default resolver.pipe(
 
                 await tx.session.deleteMany({ where: { userId: user.id } });
 
-                await RegisterChange({
-                    action: ChangeAction.update,
-                    changeContext: CreateChangeContext("claimAdminBootstrap"),
-                    table: "User",
-                    pkid: user.id,
-                    oldValues: { isSysAdmin: false },
-                    newValues: { isSysAdmin: true },
-                    auth: ctx.auth,
-                    db: tx,
-                });
+                // await RegisterChange({
+                //     action: ChangeAction.update,
+                //     changeContext: CreateChangeContext("claimAdminBootstrap"),
+                //     table: "User",
+                //     pkid: user.id,
+                //     oldValues: { isSysAdmin: false },
+                //     newValues: { isSysAdmin: true },
+                //     auth: ctx.auth,
+                //     db: tx,
+                // });
 
                 return updatedUser;
             }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });

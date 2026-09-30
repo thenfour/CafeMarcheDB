@@ -1,6 +1,5 @@
 import { wikiTransaction } from "../server/wikiTransaction";
 // updateWikiPage
-import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { CMAuthCtxWithUser, cmauthorize } from "@/src/auth/server/cmResolver";
 import { CMServerAuthorizationWithUser } from "@/src/auth/server/serverAuthorization";
 import { resolver } from "@blitzjs/rpc";
@@ -177,7 +176,6 @@ export default resolver.pipe(
     resolver.zod(ZTUpdateWikiPageArgs),
     async (args: TUpdateWikiPageArgs, ctx: CMAuthCtxWithUser): Promise<GetWikiPageUpdatabilityResult> => {
 
-        const changeContext = CreateChangeContext("updateWikiPage");
         const authWithUser = ctx.auth.requireUser();
 
         return await wikiTransaction(async (dbt) => {
@@ -225,15 +223,15 @@ export default resolver.pipe(
                     where: { publicId: result.currentPage!.currentRevision!.publicId },
                     select: { id: true },
                 });
-                await RegisterChange({
-                    db: dbt,
-                    action: ChangeAction.insert,
-                    auth: ctx.auth,
-                    changeContext,
-                    pkid: revision.id,
-                    table: "wikiPageRevision",
-                    newValues: result.currentPage!.currentRevision!,
-                });
+                // await RegisterChange({
+                //     db: dbt,
+                //     action: ChangeAction.insert,
+                //     auth: ctx.auth,
+                //     changeContext,
+                //     pkid: revision.id,
+                //     table: "wikiPageRevision",
+                //     newValues: result.currentPage!.currentRevision!,
+                // });
             }
             return result;
         });

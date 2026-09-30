@@ -1,7 +1,6 @@
 import { resolver } from "@blitzjs/rpc";
 import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import { cmauthorize } from "../server/cmResolver";
 import { z } from "zod";
@@ -24,16 +23,16 @@ export default resolver.pipe(
         await tx.user.update({ where: { id: target.principal.id }, data: { isDeleted: false } });
         // Restoration never revives old login sessions.
         await revokeUserSignInState(tx, target.principal.id);
-        await RegisterChange({
-            action: ChangeAction.update,
-            changeContext: CreateChangeContext("reactivateUser"),
-            table: "User",
-            pkid: target.principal.id,
-            oldValues: { isDeleted: true },
-            newValues: { isDeleted: false },
-            auth: ctx.auth,
-            db: tx,
-        });
+        // await RegisterChange({
+        //     action: ChangeAction.update,
+        //     changeContext: CreateChangeContext("reactivateUser"),
+        //     table: "User",
+        //     pkid: target.principal.id,
+        //     oldValues: { isDeleted: true },
+        //     newValues: { isDeleted: false },
+        //     auth: ctx.auth,
+        //     db: tx,
+        // });
         return { userId };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }),
 );

@@ -1,28 +1,23 @@
 import { resolver } from "@blitzjs/rpc";
 import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
-import {
-    ChangeAction,
-    CreateChangeContext,
-    RegisterChange,
-} from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
-import { cmauthorize } from "../server/cmResolver";
-import { z } from "zod";
 import { isPublicId, type RolePublicId } from "shared/publicId";
+import { z } from "zod";
+import { UserPublicIdSchema } from "../schemas";
+import { cmauthorize } from "../server/cmResolver";
 import {
     requireCanManageUser,
     requireContinuityAcknowledgement,
 } from "../server/userManagementPolicy";
 import {
     findUserManagementActor,
-    findUserManagementTargetByPublicId,
     findUserManagementRole,
+    findUserManagementTargetByPublicId,
     getUserManagementContinuityWarnings,
     makePermissionSetFromRole,
 } from "../server/userManagementState";
 import { PermissionSet } from "../shared/PermissionSet";
-import { UserPublicIdSchema } from "../schemas";
 
 export const AssignUserRoleInput = z.object({
     userId: UserPublicIdSchema,
@@ -82,16 +77,17 @@ export default resolver.pipe(
                 where: { id: target.principal.id },
                 data: { roleId: desiredRoleDatabaseId },
             });
-            await RegisterChange({
-                action: ChangeAction.update,
-                changeContext: CreateChangeContext("assignUserRole"),
-                table: "User",
-                pkid: target.principal.id,
-                oldValues: { roleId: target.principal.roleId },
-                newValues: { roleId: desiredRoleDatabaseId },
-                auth: ctx.auth,
-                db: tx,
-            });
+
+            // await RegisterChange({
+            //     action: ChangeAction.update,
+            //     changeContext: CreateChangeContext("assignUserRole"),
+            //     table: "User",
+            //     pkid: target.principal.id,
+            //     oldValues: { roleId: target.principal.roleId },
+            //     newValues: { roleId: desiredRoleDatabaseId },
+            //     auth: ctx.auth,
+            //     db: tx,
+            // });
 
             return { userId, roleId, continuityWarnings };
         },
