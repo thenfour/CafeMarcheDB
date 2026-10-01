@@ -11,7 +11,7 @@ This recalculates all-day events UTC representations based off band timezone,
 after the introduction of the band timezone feature.
 
 Legacy all-day representation is indicated by the `eventSegment.dateTimeVersion`
-where
+where:
 
 1 = legacy all-day representation (all-day means starting at midnight UTC)
 2 = new all-day representation (all-day means starting at midnight in the band's timezone)
@@ -21,6 +21,11 @@ Changing from 1 to 2 means shifting the all-day event's start time from midnight
 Rewrites
 - EventSegment date fields
 - Event date fields
+
+Consequence of not running this is that all-day events may not line up with the
+canonical representation (re-setting to the same time would change it...)
+
+Running this on an already-migrated database is a NOP due to the dateTimeVersion field.
 
 usage:
 

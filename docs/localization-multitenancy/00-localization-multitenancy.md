@@ -17,6 +17,10 @@ plan towards prod. not every detailed decision needs to be made, but we need to 
 enough in place to know the architecture so we can establish the right base / concepts
 and not paint ourselves into a corner.
 
+# some things
+
+-  🟣 terminology: not "tenant"; use "band".
+
 # localization design
 
 -  ✅ deduction / `useLocale`
@@ -444,19 +448,24 @@ Concepts/rationale:
    -  `UserSignInMethod`
    -  `AdminBootstrapClaim`
 -  Analytics/diagnostics
-   -  🔵`Action` = receives a bandID; feature reports are global so will be able to inspect usage by band
+   -  🔵`Action` = receives a bandID; feature reports are global so will be able
+      to inspect usage by band
    -  ❌`Change` = probably decommission.
 -  UserTag
-   -  🔴`UserTag` - bands to get own sets (needed for invitations - board / majorette / diri...)
+   -  🔴`UserTag` - bands to get own sets (needed for invitations - board /
+      majorette / diri...)
    -  `UserTagAssignment`
 -  Settings
    -  `UserSetting`
-   -  🟡`Setting` - global settings? ❓do we need user-band settings (different calendar settings per band)
+   -  🟡`Setting` - global settings? ❓do we need user-band settings (different
+      calendar settings per band)
 -  Songs
    -  🔵`Song`
-   -  🟡`SongCreditType` - ideal: band gets own set. But it's overkill unless requested; V1=keep global.
+   -  🟡`SongCreditType` - ideal: band gets own set. But it's overkill unless
+      requested; V1=keep global.
    -  `SongCredit`
-   -  🔴`SongTag` - bands to get own sets. Needed for things like majorettes / song list annotations.
+   -  🔴`SongTag` - bands to get own sets. Needed for things like majorettes / song
+      list annotations.
    -  `SongTagAssociation`
 -  Instruments
    -  🔴`Instrument` - bands to get own sets
@@ -465,20 +474,23 @@ Concepts/rationale:
    -  ❌ `InstrumentTagAssociation`
    -  🔵`UserInstrument` - users have different instrument sets per band
 -  Event
--  🔵`Event`
--  `EventSegment`
--  🟡`EventType` - platform sets. why? because event type drives behaviors; band vocab is expressed through tags.
-   for example "CM weekend" doesn't need to be an event type -- it should be "residency" or so with its special
-   formatting, and let the event TAG specify CM Weekend.
--  🟡`EventStatus` - not necessary. if bands already get own tags & types, status is not necessary because status drives app features.
--  🔴`EventTag` - bands to get own sets
--  `EventTagAssignment`
--  `EventSongList`
--  `EventSongListSong`
--  `EventSongListDivider`
--  🟡`EventAttendance` - bands to get own sets; platform opinion: yes & no only.
--  `EventUserResponse`
--  `EventSegmentUserResponse`
+   -  🔵`Event`
+   -  `EventSegment`
+   -  🟡`EventType` - platform sets. why? because event type drives behaviors;
+      band vocab is expressed through tags.
+      for example "CM weekend" doesn't need to be an event type -- it should be
+      "residency" or so with its special
+      formatting, and let the event TAG specify CM Weekend.
+   -  🟡`EventStatus` - not necessary. if bands already get own tags & types,
+      status is not necessary because status drives app features.
+   -  🔴`EventTag` - bands to get own sets
+   -  `EventTagAssignment`
+   -  `EventSongList`
+   -  `EventSongListSong`
+   -  `EventSongListDivider`
+   -  🟡`EventAttendance` - bands to get own sets; platform opinion: yes & no only.
+   -  `EventUserResponse`
+   -  `EventSegmentUserResponse`
 -  Files
    -  🔴`FileTag` - bands to get own sets
    -  `FileTagAssignment`
@@ -935,8 +947,14 @@ model BandSetting {
 -  M2: prereqs, foundation
    -  [x] remove Change, InstrumentTag features
    -  [ ] initial database model for translations & multitenancy
-      -  [ ] create new tables
-      -  [ ] rename existing tables (oh boy)
+      -  [x] generate a plan
+      -  [ ] new band & locale tables
+      -  [ ] settings
+      -  [ ] rename remaining tables
+   -  assess tag significances... for example `DefaultInvitation` -- these should
+      probably be decommissioned because tags are now becoming "no behavior depends on them".
+      the ONLY significance that seems to matter is the partitions vs. recordings, and
+      basically i wonder if this should therefore be changed. can be done after.
    -  [ ] user settings, global settings table. it needs a real table over `userId`, `settingKey`.
           and should be cleaned up with correct registry and internal API. But because
           many of these settings are actually chrome strings, do at the same time
