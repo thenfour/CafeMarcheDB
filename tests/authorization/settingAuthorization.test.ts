@@ -18,11 +18,9 @@ import db3Mutation from "tests/authorization/db3MutationTestResolver"
 import db3Query from "@db3/queries/db3queries"
 import db3PaginatedQuery from "@db3/queries/db3paginatedQueries"
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls"
-import updateBulkSettings from "src/auth/mutations/updateBulkSettings"
-import updateSetting from "src/auth/mutations/updateSetting"
-import updateSiteBrandingSettings from "src/auth/mutations/updateSiteBrandingSettings"
-import getSetting from "src/auth/queries/getSetting"
-import getSiteBrandingSettings from "src/auth/queries/getSiteBrandingSettings"
+import updateSetting from "@/src/setting/server/mutations/updateSetting"
+import getSetting from "@/src/setting/server/queries/getSetting"
+import getSiteBrandingSettings from "@/src/setting/server/queries/getSiteBrandingSettings"
 import { clearBrandCache } from "src/server/brand"
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy"
 import { Permission, getPermissionDefinition } from "shared/permissions"
@@ -39,6 +37,8 @@ import {
 } from "./support/authorizationFixtures"
 import { forgeDb3Query, forgeDb3PublicUpdate } from "./support/db3RequestBuilders"
 import { invokeResolver } from "./support/resolverHarness"
+import updateSiteBrandingSettings from "@/src/setting/server/mutations/updateSiteBrandingSettings"
+import updateBulkSettings from "@/src/setting/server/mutations/updateBulkSettings"
 
 const brandingPermissionSet = [
   Permission.login,

@@ -164,7 +164,12 @@ export const getEventSegmentDateTimeRange = (segment: Prisma.EventSegmentGetPayl
 }
 
 export const getEventDateTimeRangeFromSegments = (
-    segments: { startsAt: Date | null; durationMillis: bigint; isAllDay: boolean; statusId: number | null }[],
+    segments: {
+        startsAt: Date | null;
+        durationMillis: bigint;
+        isAllDay: boolean;
+        statusId: number | null,
+    }[],
     cancelledStatusIds: number[],
 ) => {
     const ranges = segments
@@ -174,23 +179,20 @@ export const getEventDateTimeRangeFromSegments = (
 };
 
 
-// Aggregates enclose the exact UTC bounds of every uncancelled segment.
-export function getEventDateBoundsFromSegments(
+// wraps getEventDateTimeRangeFromSegments,
+// returning database columns to update.
+export function getEventDateRangeUpdateColumnsFromSegments(
     segments: Parameters<typeof getEventDateTimeRangeFromSegments>[0], cancelledStatusIds: number[],
 ) {
     const range = getEventDateTimeRangeFromSegments(segments, cancelledStatusIds);
     const spec = range.getSpec();
     return {
-        startsAt: spec.startsAtDateTime, durationMillis: spec.durationMillis, isAllDay: spec.isAllDay,
+        startsAt: spec.startsAtDateTime,
+        durationMillis: spec.durationMillis,
+        isAllDay: spec.isAllDay,
         endDateTime: range.getBounds()?.end ?? null
     };
 }
-
-// export const getEventSegmentTiming = (segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay } }>, now: Date) => {
-//     const r = getEventSegmentDateTimeRange(segment);
-//     return r.hitTestDateTime(now);
-// }
-
 
 export const getEventSegmentMinDate = (event: EventPayload): Date | null => {
     return DateTimeRange.union(event.segments.map(getEventSegmentDateTimeRange)).getStartDateTime();

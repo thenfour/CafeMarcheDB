@@ -16,28 +16,23 @@ export function middleware(request: NextRequest) {
 
     //console.log(`MW path: ${path}`);
 
-    if (path !== "/xyz") {
-        return NextResponse.next();
+    if (path === "/settings") {
+        const destination = request.nextUrl.clone();
+        // the destination must also be a page (/pages/...) -- cannot just be embedded somewhere in the repo.
+        destination.pathname = `/backstage/events`;
+
+        // Remove any value supplied by the browser.
+        const headers = new Headers(request.headers);
+        //headers.delete("x-cmdb-portal-path");
+
+        headers.set("x-cmdb-portal-path", path);
+
+        return NextResponse.rewrite(destination, { request: { headers } });
+
     }
 
-    const destination = request.nextUrl.clone();
-    destination.pathname = `/backstage/events`;
 
-    // Remove any value supplied by the browser.
-    const headers = new Headers(request.headers);
-    //headers.delete("x-cmdb-portal-path");
-
-    headers.set("x-cmdb-portal-path", path);
-
-    // const latestEvent = await db.event.findMany({
-    //     take: 1,
-    //     orderBy: {
-    //         createdAt: "desc"
-    //     }
-    // });
-    // headers.set("x-cmdb-xz", `${latestEvent[0]?.id}`);
-
-    return NextResponse.rewrite(destination, { request: { headers } });
+    return NextResponse.next();
 
     //   const match = /^\/(fr-BE|nl-BE|en-GB)\/b\/([A-Za-z0-9_-]+)(\/.*)?$/.exec(path)
 

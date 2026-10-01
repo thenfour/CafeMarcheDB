@@ -7,6 +7,21 @@ const { migrateEventUtcSpans } = require("../src/server/migrateEventUtcSpans");
 
 /*
 
+This recalculates all-day events UTC representations based off band timezone,
+after the introduction of the band timezone feature.
+
+Legacy all-day representation is indicated by the `eventSegment.dateTimeVersion`
+where
+
+1 = legacy all-day representation (all-day means starting at midnight UTC)
+2 = new all-day representation (all-day means starting at midnight in the band's timezone)
+
+Changing from 1 to 2 means shifting the all-day event's start time from midnight UTC to midnight in the band's timezone.
+
+Rewrites
+- EventSegment date fields
+- Event date fields
+
 usage:
 
 node scripts/migrate-event-utc-spans.cjs
@@ -14,6 +29,7 @@ node scripts/migrate-event-utc-spans.cjs
 options:
   --apply    Actually apply the migration. Without this flag, the script will only simulate the migration.
 
+ 
 */
 
 async function main() {

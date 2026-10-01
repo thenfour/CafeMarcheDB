@@ -4,8 +4,8 @@ import type { CMAuthCtx } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { clearBrandCache } from "src/server/brand";
-import { UpdateBulkSettingsSchema } from "../schemas";
-import { writeSettingValue } from "../server/settingWrite";
+import { writeSettingValue } from "../settingWrite";
+import { UpdateBulkSettingsSchema } from "@/src/setting/shared/settingsSchemas";
 
 export default resolver.pipe(
     resolver.zod(UpdateBulkSettingsSchema),

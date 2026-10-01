@@ -7,7 +7,7 @@ import * as db3 from "@db3/db3";
 import { Prisma } from "db";
 import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, FileTagPublicId, InstrumentFunctionalGroupPublicId, SongCreditTypePublicId, SongTagPublicId, UserTagPublicId, WikiPageTagPublicId } from "shared/publicId";
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
-import { resolveUserSettings, UserSettings } from "shared/userSettings";
+import { resolveUserSettings, UserSettings } from "@/src/setting/shared/userSettings";
 
 export abstract class DashboardContextDataBase {
     referenceStore = db3.createDashboardReferenceStore();

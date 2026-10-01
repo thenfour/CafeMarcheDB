@@ -9,7 +9,7 @@ import { EventCalendarInput, GetEventCalendarInput } from "./icalUtils";
 import { Setting } from "@/shared/settingKeys";
 import { isAttendanceGoing } from "shared/eventAttendance";
 import { isUserInvitedToEvent } from "shared/eventInvitation";
-import { loadUserSettings } from "src/auth/server/userSettings";
+import { loadUserSettings } from "@/src/setting/server/userSettings";
 import { shouldIncludeEventInCalendarFeed } from "../shared/calendarAttendance";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 import type { EventStatusPublicId } from "shared/publicId";

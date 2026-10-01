@@ -1,8 +1,8 @@
 import { setQueryData, useMutation } from "@blitzjs/rpc";
 import { Checkbox, FormControl, FormControlLabel, FormHelperText } from "@mui/material";
 import React from "react";
-import type { UserSettingsPatch } from "shared/userSettings";
-import updateMyUserSettings from "src/auth/mutations/updateMyUserSettings";
+import type { UserSettingsPatch } from "@/src/setting/shared/userSettings";
+import updateMyUserSettings from "@/src/setting/server/mutations/updateMyUserSettings";
 import getDashboardData from "src/auth/queries/getDashboardData";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { useSnackbar } from "../SnackbarContext";

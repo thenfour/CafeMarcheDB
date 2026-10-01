@@ -4,9 +4,9 @@ import type { CMAuthCtx } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { clearBrandCache } from "src/server/brand";
-import { UpdateSettingSchema } from "../schemas";
-import { writeSettingValue } from "../server/settingWrite";
+import { writeSettingValue } from "../settingWrite";
 import { settingEditorView } from "src/core/db3/shared/entities/setting/settingViews";
+import { UpdateSettingSchema } from "../../shared/settingsSchemas";
 
 // Generic setting administration is a platform operation. Delegated feature
 // settings use narrow, typed mutations such as updateSiteBrandingSettings.

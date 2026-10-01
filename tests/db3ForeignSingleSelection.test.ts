@@ -42,7 +42,7 @@ vi.mock("src/auth/queries/getSetting", () => ({ default: vi.fn() }));
 vi.mock("src/core/db3/queries/db3queries", () => ({ default: vi.fn() }));
 
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import getSetting from "src/auth/queries/getSetting";
+import getSetting from "@/src/setting/server/queries/getSetting";
 import { ForeignSingleFieldClient, ForeignSingleFieldInput, ForeignSingleFieldInputProps, SelectSingleForeignDialog } from "src/core/db3/components/db3ForeignSingleFieldClient";
 import { useCrudViewCreate } from "src/core/db3/components/useCrudViewCreate";
 

@@ -36,12 +36,6 @@ export const Signup = z.object({
   name: UserNameSchema,
 })
 
-// export const InsertUserSchema = z.object({
-//   email: UserEmailSchema,
-//   name: UserNameSchema,
-//   roleId: z.number().nullable().optional(),
-// })
-
 export const Login = z.object({
   email: UserEmailSchema,
   password: z.string().min(1, { message: "Password is required" }),
@@ -68,67 +62,9 @@ export const ChangePassword = z.object({
   newPassword: password,
 })
 
-// model Role {
-// export const CreateRole = z.object({
-//   name: z.string().min(1),
-//   description: z.string().optional(),
-// });
-
-// export const UpdateRole = z.object({
-//   id: z.number(),
-//   name: z.string().min(1),
-//   description: z.string().optional(),
-// });
-
-// export const DeleteRole = z.object({
-//   id: z.number(),
-// });
-
-// export const CreatePermission = z.object({
-//   name: z.string().min(1),
-//   description: z.string(),
-// });
-
-// export const UpdatePermission = z.object({
-//   id: z.number(),
-//   name: z.string().min(1),
-//   description: z.string(),
-//   sortOrder: z.number(),
-//   roles: z.object({
-//     roleId: z.number(),
-//     permissionId: z.number(),
-//   }).array(),
-// });
-
 export const DeletePermission = z.object({
   id: z.number(),
 });
-
-// export const RegisterActivitySchema = z.object({
-//   action: z.string(), // x = column = role
-//   data: z.unknown(),
-// });
-
-// SETTING
-export const SettingNameSchema = z.string().min(1);
-export const SettingValueSchema = z.string(); // allow empty strings
-
-export const GetSettingSchema = z.object({
-  name: z.string().min(1)
-}); // by name
-
-
-export const UpdateSettingSchema = z.object({
-  name: SettingNameSchema,
-  value: z.string().nullable(),
-});
-
-export const CreateSettingSchema = z.object({
-  name: SettingNameSchema,
-  value: z.string(),
-});
-
-export const UpdateBulkSettingsSchema = z.array(UpdateSettingSchema);
 
 
 export const ZGetUserEventAttendanceArgrs = z.object({

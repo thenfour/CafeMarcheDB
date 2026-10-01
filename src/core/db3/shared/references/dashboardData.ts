@@ -1,5 +1,5 @@
 import type { ServerStartInfo } from "shared/serverStateBase";
-import type { UserSettings } from "shared/userSettings";
+import type { UserSettings } from "@/src/setting/shared/userSettings";
 import type { EventPublicId } from "shared/publicId";
 import { hydrateView, type AnyDB3View, type ClientOf, type DtoOf } from "../core/db3View";
 import { menuLinkListView } from "../entities/menuLink/menuLinkViews";

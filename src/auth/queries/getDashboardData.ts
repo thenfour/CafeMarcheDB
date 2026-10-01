@@ -38,7 +38,7 @@ import {
     loadAuthorization,
     type CMServerAuthorization
 } from "../server/serverAuthorization";
-import { loadUserSettings } from "../server/userSettings";
+import { loadUserSettings } from "../../setting/server/userSettings";
 
 // does not choke when auth doesn't allow it; returns empty.
 async function queryOptionalDashboardView<TView extends AnyDB3View>(

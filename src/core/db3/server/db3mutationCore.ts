@@ -5,7 +5,7 @@ import { isBandTimeZoneSetting, reanchorAllDayEvents } from "src/server/dateTime
 
 import { TAnyModel } from "@/shared/rootroot";
 import { CMServerAuthorization, CMServerAuthorizationWithUser } from "@/src/auth/server/serverAuthorization";
-import { validateSettingValue } from "@/src/auth/server/settingWrite";
+import { validateSettingValue } from "@/src/setting/server/settingWrite";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 import { clearBrandCache } from "@/src/server/brand";
 import { AuthorizationError, assert } from "blitz";
@@ -99,10 +99,13 @@ export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: 
         }
     });
 
-    const cancelledStatusIds = (await transactionalDb.eventStatus.findMany({ select: { id: true }, where: { significance: db3.EventStatusSignificance.Cancelled } })).map(x => x.id);
+    const cancelledStatusIds = (await transactionalDb.eventStatus.findMany({
+        select: { id: true },
+        where: { significance: db3.EventStatusSignificance.Cancelled }
+    })).map(x => x.id);
 
     const bandTimeZone = await loadBandTimeZone(transactionalDb);
-    const dateUpdates = db3.getEventDateBoundsFromSegments(segments, cancelledStatusIds);
+    const dateUpdates = db3.getEventDateRangeUpdateColumnsFromSegments(segments, cancelledStatusIds);
 
     let existingEvent = ((await transactionalDb.event.findFirst({
         where: {

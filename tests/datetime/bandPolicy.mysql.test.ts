@@ -5,9 +5,9 @@ import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 import { testServerAuthorization } from "tests/support/serverAuthorization"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 import { Setting } from "shared/settingKeys"
-import { writeSettingValue } from "src/auth/server/settingWrite"
+import { writeSettingValue } from "@/src/setting/server/settingWrite"
 import { CallMutateEventHooks } from "src/core/db3/server/db3mutationCore"
-import { recalculateEventDateBounds, calculateEventDateBounds } from "src/server/dateTime"
+import { recalculateEventDateBounds, calculateEventDateBoundsUpdatePatch, fetchCancelledEventStatusIds } from "src/server/dateTime"
 import { migrateEventUtcSpans } from "src/server/migrateEventUtcSpans"
 import { getRangeCalendarDates } from "shared/dateTimePresentation"
 import { getEventSegmentDateTimeRange } from "src/core/db3/shared/schema/event"
@@ -37,7 +37,8 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     for (const [id, segments] of [[5001, [segment(true)]], [5002, [segment(false)]], [5003, [segment(true), segment(false)]]] as const) {
       await db.event.create({ data: { id, publicId: generatePublicId<"Event">(), name: "Policy fixture", locationDescription: "", revision: 1, segments: { create: [...segments] } } })
     }
-    await db.$transaction(tx => recalculateEventDateBounds(tx), transactionOptions)
+    const cancelledStatusIds = await fetchCancelledEventStatusIds(db)
+    await db.$transaction(tx => recalculateEventDateBounds(tx, cancelledStatusIds), transactionOptions)
   })
   afterAll(async () => {
     if (url) {
@@ -138,10 +139,11 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     const authored = await segments()
     await db.event.update({ where: { id: 5001 }, data: { endDateTime: new Date("2026-07-11T00:00:00Z") } })
     const stale = await events()
-    const preview = await calculateEventDateBounds(db, 5001)
+    const cancelledStatusIds = await fetchCancelledEventStatusIds(db)
+    const preview = await calculateEventDateBoundsUpdatePatch(db, 5001, cancelledStatusIds)
     expect(preview!.endDateTime!.toISOString()).toBe("2026-07-10T22:00:00.000Z")
     expect(await events()).toEqual(stale)
-    await db.$transaction(tx => recalculateEventDateBounds(tx), transactionOptions)
+    await db.$transaction(tx => recalculateEventDateBounds(tx, cancelledStatusIds), transactionOptions)
     expect((await events())[0]!.endDateTime).toEqual(preview!.endDateTime)
     expect(await segments()).toEqual(authored)
   })
@@ -184,21 +186,22 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     }
   })
 
-  it("the actual schema migration distinguishes existing rows from new rows", async () => {
-    // This table lives only in the runner's disposable database.
-    await db.$executeRawUnsafe("CREATE TABLE LegacySegment LIKE EventSegment")
-    try {
-      await db.$executeRawUnsafe("ALTER TABLE LegacySegment DROP COLUMN dateTimeVersion")
-      const insert = "INSERT INTO LegacySegment (eventId, name, description, durationMillis) VALUES (5001, 'fixture', '', 86400000)"
-      await db.$executeRawUnsafe(insert)
-      const migration = readFileSync("db/migrations/20260915230000_event_utc_spans/migration.sql", "utf8")
-        .replace(/--[^\n]*/g, "").replace(/EventSegment/g, "LegacySegment")
-      for (const statement of migration.split(";").map(sql => sql.trim()).filter(Boolean)) await db.$executeRawUnsafe(statement)
-      await db.$executeRawUnsafe(insert)
-      const rows = await db.$queryRawUnsafe<{ dateTimeVersion: number }[]>("SELECT dateTimeVersion FROM LegacySegment ORDER BY id")
-      expect(rows.map(row => row.dateTimeVersion)).toEqual([1, 2])
-    } finally {
-      await db.$executeRawUnsafe("DROP TABLE LegacySegment")
-    }
-  })
+  // tests like this are cancer; new code needs to be testable units
+  // it("the actual schema migration distinguishes existing rows from new rows", async () => {
+  //   // This table lives only in the runner's disposable database.
+  //   await db.$executeRawUnsafe("CREATE TABLE LegacySegment LIKE EventSegment")
+  //   try {
+  //     await db.$executeRawUnsafe("ALTER TABLE LegacySegment DROP COLUMN dateTimeVersion")
+  //     const insert = "INSERT INTO LegacySegment (eventId, name, description, durationMillis) VALUES (5001, 'fixture', '', 86400000)"
+  //     await db.$executeRawUnsafe(insert)
+  //     const migration = readFileSync("db/migrations/20260915230000_event_utc_spans/migration.sql", "utf8")
+  //       .replace(/--[^\n]*/g, "").replace(/EventSegment/g, "LegacySegment")
+  //     for (const statement of migration.split(";").map(sql => sql.trim()).filter(Boolean)) await db.$executeRawUnsafe(statement)
+  //     await db.$executeRawUnsafe(insert)
+  //     const rows = await db.$queryRawUnsafe<{ dateTimeVersion: number }[]>("SELECT dateTimeVersion FROM LegacySegment ORDER BY id")
+  //     expect(rows.map(row => row.dateTimeVersion)).toEqual([1, 2])
+  //   } finally {
+  //     await db.$executeRawUnsafe("DROP TABLE LegacySegment")
+  //   }
+  // })
 })

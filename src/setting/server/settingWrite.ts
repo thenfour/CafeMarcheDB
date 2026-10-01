@@ -1,5 +1,5 @@
 import { isBandTimeZoneSetting, reanchorAllDayEvents } from "src/server/dateTime";
-import type { CMServerAuthorization } from "./serverAuthorization";
+import type { CMServerAuthorization } from "../../auth/server/serverAuthorization";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import type { Prisma } from "db";
 import { db3Server } from "src/core/db3/server/db3Server";

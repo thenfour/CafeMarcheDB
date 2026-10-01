@@ -2,6 +2,13 @@
 -  🔵 or 🟡 = small migration needed
 -  🔴 = bigger migration needed
 -  🟣 = decision that suggests a task / design
+-  ❌ = rejected / thinking out-loud
+
+---
+
+todo:
+
+-  ❓❓❓ self-references.
 
 ---
 
@@ -26,36 +33,82 @@ and not paint ourselves into a corner.
    -  same with wiki
 -  ✅ical support: which locale do we deliver in? users will need to get a setting for this.
    -  see `createCalendar` -- we hardcode `language: "EN",`.
--  ❓efficient delivery/resolution/transport
+-  ✅efficient delivery/resolution/transport: initially we will just deliver the whole catalog.
+   will need to take metrics to decide if & what action is needed to optimize.
 -  ❓editor
    -  ❓inspection of string resolution, fallbacks
    -  should be usable for db maintenance quick lookups / text search
    -  ❓export / import
    -  ❓who has access? is this page per-band or global?
 -  ❓content storage & expression
-   -  ✅database content (instruments, attendance options, tags)
-   -  ❓built-in site chrome (menu links, page content)
-   -  ❓branding (page titles, ...)
+   -  ✅database content (instruments, attendance options, tags) - db string registry for dynamic strings
+   -  ✅built-in site chrome (menu links, page content) - also in the db.
+   -  ✅branding (page titles, ...) - also in the db.
    -  ❓big calendar currently hardcodes nl-BE
    -  ❓zod validation errors often are hard-coded like `password: z.string().min(1, { message: "Password is required" }),`
 
 ## multi-tenancy and inheritance
 
 Different tenants will want to put different content for example in page headers etc.
-It suggests that the db table will have clustered key over
+It suggests a db model with unique over
 
 -  `stringKey`
 -  `localeId`
 -  `bandId`
 
-this has an impact on the string editor too: it should be usable globally, and
-per-band
+But that's not possible because `bandId`
+[can't be null](https://www.prisma.io/docs/orm/v7/reference/prisma-schema-reference#unique-1).
+So it seems like we need 2 tables for static strings:
+
+```prisma
+model Locale {
+   id         Int
+   publicId   String @unique @db.Char(16)
+   nameString DynamicLocalizedString, // its name is also a localized string in the dynamic string table
+   langCode   String @db.VarChar(8)
+   regionCode String @db.VarChar(8)
+}
+
+model StaticLocalizedString {
+   // while you may not ever need to see publicId on the client, better to just
+   // use publicId from the get go. small overhead to take care of something inevitable.
+   publicId  String @unique @db.Char(16)
+   stringKey String // sync static registry.
+   localeId  Int
+   locale       Locale @relation(...)
+
+   // put BOTH here in order to provide an indexable string + a long (non-indexed) string.
+   // this does NOT determine whether it's markdown / plaintext / other formats.
+   indexedValue String? @db.VarChar(768)
+   blobValue    String? @db.MediumText
+
+   @@unique([stringKey, localeId])
+}
+
+model BandStaticLocalizedString {
+   publicId  String @unique @db.Char(16)
+   stringKey String // sync static registry.
+   localeId  Int
+   locale       Locale @relation(...)
+   bandId    Int
+
+   @@unique([stringKey, localeId, bandId])
+}
+```
+
+Chrome string lookups will search both and use override app logic.
+
+This has an impact on the string editor too: it should be usable globally, and
+per-band.
+
+Dynamic string keys (tags, localized per-band db content) will need separate table,
+to catalog the strings and associate values with them.
 
 ## content storage
 
-**Store all strings in 1 database table**
+🟣Store all strings in a small number of database tables
 
--  avoids table explosion and creating multiple tables for every new table
+-  avoids table explosion and creating multiple tables for every new table or column
 -  if the editor is going to operate on all strings the same way, and the logic is going
    to be unified for all locales/strings/domains, then simpler to make a single db
    table than relations everywhere.
@@ -65,59 +118,51 @@ per-band
 This avoids creating "string domain providers" for every individual table; it all
 comes from a single source.
 
-Rationale: if we make chrome string (non-db-relational) lookups efficient, then
-there's little reason to try and optimize database string joins.
+**Existing string fields**
 
--  model `localizedString`
-   -  `stringKey` (pk cluster)
-   -  `localeId` (pk cluster)
-   -  `bandId` (pk cluster)
-   -  `value` varchar
-   -  NO `format` enum (markdown, literal, react-intl) -- this is in the string registry, not the text content.
--  model `locale`
-   -  `langCode` - `fr`, `nl`, `en` et al
-   -  `regionCode` - `BE`, `FR`, `US`
-   -  `ietfCode` - `fr-BE` etc.
--  model `band`
--  model `bandLocale`
+❌Tempting to keep existing string fields as a kind of visual aide for diagnostics or so,
+but it places a burden. All those strings need to be migrated to their respective
+localized string tables. They can also drift from the real text should it change
+(because we won't create a frontend for changing it), and new items won't have it.
 
-**drop existing string fields?**
+```prisma
+// as-is:
+model SongTag {
+   name        String
+   description String
+}
 
-manual maintenance would be helped a lot by this. question is: does it add impact
-on creating new items? it would actually be _worse_ if they give a false sense
-of correctness and have actually drifted away from the real string.
+// to-be:
+model SongTag {
+   nameId        Int
+   // to fetch values, you need to traverse DynamicLocalizedString -> DynamicLocalizedStringValue
+   name          DynamicLocalizedString @relation(...)
+   descriptionId Int
+   description   DynamicLocalizedString @relation(...)
+}
+```
 
-A small advantage is that it makes automatic hydration simpler, because the db
-model actually has the localized string fields so Prisma is aware of their existence.
+We will conceptually fork `GenericStringField` with a new `LocalizedStringField`
+which will handle a lot of the machinery:
 
-That means just replacing `GenericStringField` types with a new `LocalizedStringField`
-and existing views continue to work and automatically get translated.
-
-❓
+-  SQL generation over relations
+-  Querying
+-  Hydration can invoke resolution logic.
 
 ## code API
 
 **database models with localized names/descriptions**
 
-for example dashboard data. all the strings in there get processed almost each request.
-it may even be a hydrate moment. likely string resolution comes with a payload
-for inspection et al.
-
-this wolud be nice. basically, db3 `xTable` fields can now be localized strings,
-which hydrate by looking up the string value.
+db3 `xTable` fields can now be localized strings (`LocalizedStringField`),
+which hydrate by invoking the logic to transform into a single `string`.
 
 ```ts
-// { id }
-const tags = await fetchTags(...);
-// { id, name, description }
-// where name, description are probably structs like,
-// { value: string, definition: {...}, resolutionLog }
-const tagsWithStrings = hydrateLocalizedStrings(tags);
-
 // or more realistically;
 const args = Prisma.validator<EventStatus>()({
     select: {
         id: true,
+        name: true, // same select syntax as before; previously fetched a string, now fetches an object.
+        description: true,
     }
 });
 
@@ -130,127 +175,30 @@ const items = queryView(...view);
 
 ```
 
-That's kinda what you'd want to see, however name & description don't resolve
-to actual prisma columns. Some options:
-
-1. always resolve strings; define them elsewhere on the `xTable`. i don't like that;
-   would be impossible to fetch the model without the string lookup
-2. hydrate outside using a separate resolver. it sure does seem like xTable fields
-   are an opportunity to do this automatically and i want to avoid very verbose
-   calls. It feels very natural that this should be part of the hydrated view.
-3. resolve strings hydration wrapper or so; this is clean in the sense that it
-   slips into the hydration pipeline. You still need to specify where those strings
-   live / how they're fetched or how the keys are resolved. This needs to be on
-   xTable, so it should be better internal to the view.
-4. a separate way to specify how strings are hydrated. It's way too tempting to make
-   a xTable field type for localized strings, but it doesn't apply to Prisma; it
-   applies to the hydrated output.
-
-It suggests a prisma select-like syntax that allows inclusion of strings.
-
-```ts
-// doing something like this doesn't feel practical, because it means variations of all
-// db model payloads.
-type InstrumentGroupWithStrings = Prisma.InstrumentGroup & { name: boolean; description: boolean }
-type InstrumentWithStrings = Prisma.Instrument & { name: boolean; description: boolean }
-const args = Prisma.validator<InstrumentWithStrings>()({
-   select: {
-      id: true,
-      name: true, // not on database model
-      description: true, // not on database model
-      group: {
-         // this nesting is not possible in a trivial way
-         select: {
-            id: true,
-            name: true, // not on database model
-            description: true, // not on database model
-         },
-      },
-   },
-})
-
-// that mixes prisma & db3 stuff anyway; it would make more sense to create our own
-// replacement for prisma.validator that does exactly the same thing but over xTable's
-// fields instead of prisma's shape.
-
-// this works.
-const instrument = db3.validator<typeof xInstrument>()({
-   select: {
-      id: true,
-   },
-})
-
-// and deriveViewContract from that output.
-```
-
-It suggests a simple pragmatic solution:
-
-Put an unused column in the actual db model. `LocalizedStringField` on the xTable.
-that will let us use native `Prisma.validator` and use all existing traversal
-mechanisms; the localization code gets confined to `LocalizedStringField`; no
-special cases for hydration needed.
-
-An issue with this is that we miss the opportunity to query efficiently. Instead
-of adding plumbing to every query, which might be awkward to batch, it would be
-more ideal to use relations.
-
-```ts
-const instrument = db3.validator<typeof xInstrument>()({
-   select: {
-      id: true,
-      icon: true,
-      name: {
-         select: {
-            value,
-         },
-      },
-      description: {
-         select: {
-            value,
-         },
-      },
-   },
-})
-
-// which could easily use a helper to make the repetetive syntax more manageable:
-const instrument = db3.validator<typeof xInstrument>()({
-   select: {
-      id: true,
-      icon: true,
-      name: kSelectLocalizedStringValue,
-      description: kSelectLocalizedStringValue,
-   },
-})
-```
-
-Hydration now needs to only resolve the strings.
-
 **raw string access**
 
 ```ts
-const loc = useLocale({}) // must be able to parameterize; the editor will need that
-const str = loc.getString("common.button.ok") // gets the string, no params
-const str = loc.getString({ key: "common.button.ok", params: [x, y, z] }) // with params
-const str = loc.getStringDetail("common.button.ok") // returns a detailed struct with inspection info.
+// must be able to fetch a specific locale as well; the editor will need that, or unit tests.
+const loc = useLocale({})
 
-// but getString() may require a network fetch, so unfortunately we may need to:
-const str = await loc.getString("common.button.ok")
+// gets the string, no params
+// NB: synchronous!
+// NB: this fetches by static string key, not dynamic strings.
+const str = loc.getString("common.button.ok")
+const str = loc.getString({ key: "common.button.ok", params: [x, y, z] }) // with params
+const str = loc.getString("common.button.ok", [x, y, z]) // this might be worth supporting if the pattern is common.
+const str = loc.getStringDetail("common.button.ok") // returns a detailed struct with inspection info.
 
 // i am thinking to be explicit about how the string is used as well, so there's less
 // risk of mismatching markdown & raw.
-const md = await loc.getMarkdown("common.generalConfirm.description") // type error if that string is not a markdown string.
-const str = await loc.getMarkdown("common.generalConfirm.ok") // type error if that string is not a plain string.
+//
+// type error if that string is not a markdown string in the registry.
+const md = await loc.getMarkdown("common.generalConfirm.description")
+// type error if that string is not a plain string.
+const str = await loc.getMarkdown("common.generalConfirm.ok")
 ```
 
 **react**
-
-The idea is something like, a compact fetching syntax
-
-```jsx
-return <div>{loc.getString("common.button.ok")}</div>
-
-return <div title={loc.getString("common.button.ok")}></div>
-```
 
 Plus some components:
 
@@ -259,10 +207,11 @@ return <LocString id="common.button.ok" /> // type error if wrong format
 
 return <LocMarkdown id="common.welcomeMessage" />
 
-// while tempting to support adhoc string resolution for debugging/development, such as:
+// ❌while tempting to support adhoc string definitions, such as:
 return <LocMarkdown pattern="hello my name is {name}" params={{ name: "james" }} />
-// the registry probably contains more metadata and it's not likely a good idea to try
-// and fake it like this.
+// it turns this component into a gateway to the registry, untyped, and overall
+// faking something which weakens the design. Avoid; if a unit test needs it
+// then use API not react components.
 ```
 
 **`useLocale()`**
@@ -293,15 +242,11 @@ Would be great to deliver a resolved string batch for a single transfer, and
 quick client-side lookups. Or better: send it along from `gSSP`. But it's not really
 possible to know which strings are needed.
 
-Some semi-intelligent caching could be employed. Send the client a package with:
+This is an optimization question; i anticipate site chrome will actually be small
+so just:
 
--  in the user's locale:
-   -  the band's overrides
-   -  some slice of the global catalog
-
-❓
-
-## efficient string resolution: SERVER
+-  keep the cached revision in session data
+-  when necessary, deliver a resolved **complete** version
 
 ## editing UX for site chrome
 
@@ -334,15 +279,16 @@ There are mulitple dimensions of prioritization:
    -  band
    -  global
 -  locale requested
-   -  user's language
-   -  fallback language
-   -  any language with a translation
+   -  language specified explicitly in URL
+   -  user's `navigator` language
+   -  system fallback language
+   -  any language with a translation (last-resort)
 -  lang-region match strength
    -  `fr-FR` may not be available. but if `fr-BE` is available, serve it
       rather than a fallback `en-US`
 
 There may be different prio for different string namespaces. Site chrome may allow
-falling back to global; band-specific entities probably should not.❓
+falling back to global; band-specific entities probably should not.
 
 Though, maybe that should be done in a structural way. For exmaple if a band overrides
 `songTag.name`, should it fall back to a global translation?
@@ -351,12 +297,13 @@ Though, maybe that should be done in a structural way. For exmaple if a band ove
 -  if no, then it sounds like this `songTag` should just be owned by the band
    _and not have a global translation_; no special case needed.
 
-And yes falling back to "available translation" is good. Whether band or locale
+Let's not do special rules per string. If a band overrides a translation, never fall back to global.
+The band did that to change meaning; letting a global fallback through would be a
+conflict.
+
+Falling back to "available translation" is good. Whether band or locale
 wins is probably debatable (show band-specific french to a dutch speaker, or show
 the global dutch string?)
-
-It may make sense to have like a fence where if your band has overridden the string,
-we won't fall back to global anymore.
 
 1. requested lang-region at band scope
 2. requested lang at band scope
@@ -376,9 +323,9 @@ we won't fall back to global anymore.
 -  `events.attendance.comment.dialog.title`
 -  `multi.word.tokens.areCamelCase`
 
-**object IDs will likely be in keys**
+**object IDs will NOT be in keys**
 
-So tokens should support the full `base64url` charset.
+Database entity strings have dynamic (synthesized if needed) keys if needed.
 
 **interpolation** format:
 
@@ -388,17 +335,32 @@ So tokens should support the full `base64url` charset.
    which would be more for UI elements and messages in dialogs; markdown never contains
    substitutions.
 
-**string references**
+❓❓❓ self-references. Like, `Are you sure you want to {common.actions.cancel}`?
+because that requires another level of resolution. Need to look deeper into this
+format.
 
-❓site chrome. what will that look like? what will song tags look like?
+**Static registry**
+
+Static / site chrome strings are in a static typed registry.
+
+```ts
+const staticStrings = declareStaticStringRegistry({
+   "common.actions.save": staticString("Save", "plaintext", Indexed),
+   "common.actions.cancel": staticString("Cancel", "plaintext", Indexed),
+   "events.editor.intro": staticString("xyz", "markdown", NonIndexed),
+})
+```
 
 **custom/dynamic string keys**
 
-When adding new song tags, how does the new key appear in the editor? Does the old
-`SongTag` table now get a string key in its `name` column, or are the string keys
-calculated like `SongTag.[publicid].Name`.
+Dynamic strings like
+tags are dynamically "registered" in `DynamicTranslatedStrings` which acts like
+a dynamic registry. DB entities reference in a normal relational way.
 
-Likely we indeed have fixed namespaces for db objects. `songTag.[publicid].name`
+These records will likely mimic exactly those of the static registry.
+
+Certainly there will need to be some kind of modular provider system no matter what,
+to be able to present strings.
 
 # multi-tenancy design
 
@@ -422,9 +384,10 @@ Likely we indeed have fixed namespaces for db objects. `songTag.[publicid].name`
 
 ## permissions / roles
 
-think Discord. users don't have a single role; they have a role per band. All `effectivePermissions`
-lookups need to consider this. We might have users have 2 roles: a global role,
-and per-band role. Without a band context you only see the global role.
+-  🟣 Users will have 1 global role, and per-band roles.
+-  🟣 Permissions remain like they are now: a single static registry, assigned in matrix.
+
+Examples
 
 -  **Global roles**
    -  technical admin (sysadmin)
@@ -436,23 +399,29 @@ and per-band role. Without a band context you only see the global role.
    -  normal users / members
    -  ❓limited users -- do we still support this? it will depend on sign up process.
 
----
+So global roles will replace the mechanics of the current system, but band roles
+replace most of the roles that exist today.
 
--  ✅bands should be able to create and manager their own roles. but not permissions; those are fixed.
--  ✅the concept of "is delegable permission" remains the same, within the band.
--  So in total, users can belong to many roles (one per band, one global)
--  Suggests the need for the following db models:
+Yes we will therefore have multiple matrices.
 
-```
-model Permission (as-is)
+```prisma
+model Permission {
+   // as is
+}
 
-model GlobalRole
-model GlobalRolePermission
+model GlobalRole {
+   // like today's Role
+}
+
+model GlobalRolePermission {
+   // like today's role permission association
+}
+
 // user model has roleId which is the global role.
 
-model BandRole
-model BandRolePermission
-model UserBandRole
+model BandRole {}
+model BandRolePermission {}
+model UserBandRole {}
 ```
 
 ## entity scoping (tags / instrument sets...)
@@ -482,7 +451,7 @@ Concepts/rationale:
    -  `UserTagAssignment`
 -  Settings
    -  `UserSetting`
-   -  `Setting` - global settings? ❓do we need user-band settings (different calendar settings per band)
+   -  🟡`Setting` - global settings? ❓do we need user-band settings (different calendar settings per band)
 -  Songs
    -  🔵`Song`
    -  🟡`SongCreditType` - ideal: band gets own set. But it's overkill unless requested; V1=keep global.
@@ -544,18 +513,18 @@ In order to put into perspective what these options mean.
 
 Band-owned is unambiguous.
 
-But pre-configured choices is not certain and i need to consider the UX for configuring,
+❌But pre-configured choices is not certain and i need to consider the UX for configuring,
 seeting, defaults, what server-wide behaviors are important. For example, file tags
 have things like `recordings` or `partitions` which are used by respective tabs.
 If we allow a band to have their own tags, they need to make sure they continue to
 have these 2 special globally-understood ones that drive behavior.
 
-One option is to retire the "tag significance" in order to allow tags to be truly
+❌One option is to retire the "tag significance" in order to allow tags to be truly
 visual markers or search filters, and not drive fundamental behavior. But i don't like
 having to add that extra effort, which comes with its own concerns (how would you
 then designate partition vs. recording? it means a 2nd tag-like system?)
 
-Another thing is: V1 versus long-term. It's good to consider the possibilities,
+❌Another thing is: V1 versus long-term. It's good to consider the possibilities,
 and leave space for growth, but not commit to the ideal design right off the bat.
 So for example, role-perm matrices may not need to be band-configurable initially.
 
@@ -588,7 +557,7 @@ for tags / instruments etc. Basically, "which tags do we show in the selector".
 -  global catalog: opt-in? opt-out? show all?
 -  band catalog: items among global catalog, or keep separate
 
-One simple way is to consider global & band catalogs separately. No inheritance,
+❌One simple way is to consider global & band catalogs separately. No inheritance,
 and existing design is basically untouched.
 
 -  model `GlobalUserTag` (id, name...) -- replaces existing `UserTag`
@@ -630,7 +599,7 @@ It can also work for instruments & instrument groups, importantly.
 
 ### Tags & localization scenario
 
-Finally, together with localization - the one where we use related tables - we get:
+❌Finally, together with localization - the one where we use related tables - we get:
 
 -  model `GlobalUserTag` (id, color, sortOrder)
 -  model `BandUserTag` (id, bandId, nullable globalUserTagId, ...)
@@ -640,14 +609,14 @@ Finally, together with localization - the one where we use related tables - we g
 -  model `BandUserTagName` (id, value, locale)
 -  model `BandUserTagDescription` (id, value, locale)
 
-That uses separate name & description tables, so the code is sensible and doesn't need to be
+❌That uses separate name & description tables, so the code is sensible and doesn't need to be
 customized for every entity. And resolves issues where name has a translation but
 description doesn't.
 
-That's pretty disgusting really - a table for every string column. Could be reduced
+❌That's pretty disgusting really - a table for every string column. Could be reduced
 by adding complexity.
 
-But could be eliminated if we use a single string source. like
+🟣But could be eliminated if we use a single string source. like
 
 ```prisma
 model SongTag {
@@ -655,21 +624,21 @@ model SongTag {
    publicId String @unique @db.Char(16)
 
    nameStringId Int
-   nameString   LocalizedString @relation(fields: [nameStringId], references: [id], onDelete: Cascade)
+   nameString   DynamicLocalizedString @relation(fields: [nameStringId], references: [id], onDelete: Cascade)
 
    descriptionStringId Int
-   descriptionString   LocalizedString @relation(fields: [nameStringId], references: [id], onDelete: Cascade)
+   descriptionString   DynamicLocalizedString @relation(fields: [nameStringId], references: [id], onDelete: Cascade)
 
    ...
 }
 
 // for database-housed strings (not in a fixed keyed registry like site chrome)
 // strings need their own id. this should mirror the string registry layout.
-model LocalizedString {
+model DynamicLocalizedString {
    id, key, defaultValue, format, descriptionMarkdown
 }
 
-model LocalizedStringValue {
+model DynamicLocalizedStringValue {
    id                    Int
    stringId              Int // fk
    stringKey             String
@@ -682,7 +651,7 @@ model LocalizedStringValue {
 
 ### 🔴 `Instrument` & 🔴 `InstrumentFunctionalGroup` - bands to get own sets
 
-Inst groups are a bit tricky because it's a detail and groups will be confused
+_groups_ are a bit tricky because it's a detail and groups will be confused
 having to configure that up-front. When setting up a band make it clear that you
 can select an instrument set, and can change later if you need.
 
@@ -760,7 +729,8 @@ like "my bands" page or "switch to band...", create band...
 
 -  `http://cafemarche.be/backstage` -- this would just be the app rooted at /backstage. not rooted at root with some configured root url.
 
-No locale provided = select a locale and reroute there
+No locale provided is supported; route rewriting makes this trivial; `useLocale`
+will do the resolution automatically.
 
 -  `http://backstage.slashkick.be/`
 -  `http://backstage.slashkick.be/nl-BE`
@@ -769,8 +739,8 @@ No locale provided = select a locale and reroute there
 -  `http://platform.be/nl-BE/b/iF6l5a5gSDsfzClY`
 -  `http://platform.be/nl-BE/b/iF6l5a5gSDsfzClY/event/s2pYvV00rwg101bN/ceremony-at-the-pavilion-limited-tickets/info`
 
-Middleware can handle most of this. Middleware can intercept requests and rewrite
-to a different internal route, modify headers etc. So the middleware can pass the requested
+Middleware can handle delegating/rewriting to a different internal route,
+modify headers etc. So the middleware can pass the requested
 bandid / locale to the internally selected route.
 
 Middleware cannot run database queries. So if decisions about "default locale" are
@@ -793,52 +763,48 @@ Sharing URLs should probably use this page.
 We should likely migrate existing Next `router` usage to a home-built wrapper with
 methods expressing these policies.
 
+🟣 `useCmdbRouter()` to wrap `useRouter()`
+
 ## band mgmt features
 
--  ❓
+Once the above is actually mechanically in place, features to build out actual
+management over them...
+
 -  create band
 -  my bands / your global profile
 -  band switcher
 -  band mgmt overview (decommission, branding...)
-
-let's take examples to get this conversation started
-
--  tag mgmt
--  menu items
--  site chrome
+-  ❓ (to be seen)
+-  site chrome / band settings / band locales / band localization editor
 
 ## global mgmt features
 
--  ❓basically, site admins. much can probably be lifted out of existing backstage.
+-  ❓server admin stuff.
+-  to be seen how `backstageRoutes` maps to band-owned vs. global.
 
-## public features
+## public global features
 
 Pages like pricing etc should likely be in CMDB, even though it feels like we're recreating
 the earlier mistake of placing the Café Marché homepage in the app. But here, the
 landing page is really part of the app functionality, including login/signup,
 direct quick access to your profile/etc.
 
--  tour/features
 -  signup / login
+-  tour/features
 -  pricing
--  portal
+-  your portal / your user settings...
 -  legal / privacy / contact / about
-
----
-
-So the landing page will❓
-
--  account
 
 ## Sign-up process
 
 -  actual signup would be largely the same as now.
 -  but you would not be a member of any band. you would need to be invited or create a band.
--  this emphasizes the need for❓
 
 **joining a band**
 
-❓
+-  creating a band
+-  invitations
+-  requesting? that's how CMDB works but the platform probably shouldn't work like that.
 
 ## Custom URLs
 
@@ -861,6 +827,105 @@ are just a bit less useful than before.
 
 One thing is certain: band-owned custom links would be rooted at the band's root.
 
+🟣 Conclusion: leave mostly as-is. Custom URLs will be band-owned, and rooted at
+the band's portal root.
+
+🟣 Conclusion: there will be no locale routing logic for custom URLs. they will resolve
+but no logic taking action over the specified locale.
+
+# Differences between site hosting modes
+
+-  routing differences: elide the `/b/<bandid>` altogether
+-  any time we display your list of bands, or specify which band, elision.
+-  sign-up / login process probably takes you directly to the band homepage
+-  ❓...much will be discovered along the way
+
+# Settings
+
+While i'm here let's plan the settings system. Likely this is going to be
+delivered similar to localized strings. Need to consider authorization, where
+config lives, hierarchy, etc.
+
+```jsx
+
+// the registries themselves also have registry-level auth maps.
+const serverSettingsRegistry = defineSettingsRegistry({
+    // where String can be an object providing zod schema, validation, serialization/etc.
+    // this uses default auth which is restricted.
+    "intl.defaultLocale" = defineSetting(String, "en-US"),
+    // use authmaps similar to xTable to define per-setting auth for read/write
+    "routing.hostingMode" = defineSetting(String, "en-US", settingAuthMapSysadmins),
+});
+
+const Component = () =>
+{
+   const settings = useSettings() // readonly properties over the static registry.
+
+   // settings.meta.band.someString.datatype / etc
+
+   // settings.global.hostingMode
+
+   return <div>{settings.band.someString}</div>
+}
+```
+
+### Datatypes
+
+-  i guess we should just support JSON-serializable scalar values?
+   -  string
+   -  number
+   -  Date
+   -  i would not support
+
+### Example hierarchy
+
+-  Server settings
+   -  hosting mode (though this must be in `.env`)
+   -  how some controls are presented (inline vs. dialog etc)
+-  Band Settings
+   -  branding decisions like cal event prefix, titles, colors
+   -  timezone
+-  User settings
+   -  ❓ even though i don't have any now, i could imagine this will be a thing
+      with multi-tenancy. Add only when fonud necessary; 3 registries are enough.
+-  User-band settings
+   -  calendar subscription options
+
+So far none of these show a hierarchical relation, and that's for the best. Users
+want to be able to see settings in a list, not in multiple dimensions.
+
+Contain and centralize logic such that this is not an issue to add later.
+
+Band settings may get fallbacks/defaults, but not hierarchical in the "on/off/inherit"
+sense.
+
+### Authorization
+
+Gate per setting; effectively a `visiblePermissionId` on every setting.
+
+```prisma
+model ServerSetting {
+   key   String @id
+   value String // json-serialize all values here
+}
+
+model BandUserSetting {
+   key   String
+   bandUserId ...
+   value String // json-serialize all values here
+
+   @@id([key, bandUserId])
+}
+
+model BandSetting {
+   key   String
+   bandId ...
+   value String // json-serialize all values here
+
+   @@id([key, bandId])
+}
+```
+
 # linear plan
 
 -  M1: homepage decoupling
@@ -870,6 +935,8 @@ One thing is certain: band-owned custom links would be rooted at the band's root
 -  M2: prereqs, foundation
    -  [x] remove Change, InstrumentTag features
    -  [ ] initial database model for translations & multitenancy
+      -  [ ] create new tables
+      -  [ ] rename existing tables (oh boy)
    -  [ ] user settings, global settings table. it needs a real table over `userId`, `settingKey`.
           and should be cleaned up with correct registry and internal API. But because
           many of these settings are actually chrome strings, do at the same time

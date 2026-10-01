@@ -1,3 +1,6 @@
+// wrapper which runs all tests,
+// including both Node and jsdom test environments
+
 const fs = require("node:fs")
 const path = require("node:path")
 const { spawnSync } = require("node:child_process")
@@ -71,7 +74,7 @@ const nodeTestFiles = []
 
 for (const file of selectedTestFiles) {
   const source = fs.readFileSync(file, "utf8").replace(/^\uFEFF/, "")
-  ;(source.startsWith(jsdomDirective) ? jsdomTestFiles : nodeTestFiles).push(file)
+    ; (source.startsWith(jsdomDirective) ? jsdomTestFiles : nodeTestFiles).push(file)
 }
 
 function runVitest(files, label) {

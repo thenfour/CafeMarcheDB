@@ -9,7 +9,7 @@ import {
     type SiteBrandingSettings,
 } from "shared/siteBranding";
 import { clearBrandCache } from "src/server/brand";
-import { writeSettingValue } from "../server/settingWrite";
+import { writeSettingValue } from "../settingWrite";
 
 export default resolver.pipe(
     resolver.zod(SiteBrandingSettingsSchema),

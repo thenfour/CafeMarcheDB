@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => {
-    const { authorizationTestDb } = await import("./support/inMemoryPrisma");
+    const { authorizationTestDb } = await import("../../../tests/authorization/support/inMemoryPrisma");
     return {
         ...await vi.importActual<typeof import("@prisma/client")>("@prisma/client"),
         default: new Proxy(authorizationTestDb, {
@@ -11,12 +11,12 @@ vi.mock("db", async () => {
     };
 });
 
-import updateMyUserSettings from "src/auth/mutations/updateMyUserSettings";
+import updateMyUserSettings from "@/src/setting/server/mutations/updateMyUserSettings";
 import getDashboardData from "src/auth/queries/getDashboardData";
-import { loadUserSettings } from "src/auth/server/userSettings";
-import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures";
-import { authorizationTestDb } from "./support/inMemoryPrisma";
-import { invokeResolver } from "./support/resolverHarness";
+import { loadUserSettings } from "@/src/setting/server/userSettings";
+import { createAuthorizationPersona, createAuthorizationTestUser } from "../../../tests/authorization/support/authorizationFixtures";
+import { authorizationTestDb } from "../../../tests/authorization/support/inMemoryPrisma";
+import { invokeResolver } from "../../../tests/authorization/support/resolverHarness";
 
 const owner = createAuthorizationTestUser("normal", { id: 10 });
 const other = createAuthorizationTestUser("normal", { id: 20 });

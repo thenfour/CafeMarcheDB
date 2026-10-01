@@ -25,7 +25,7 @@ import { DefaultDbBrandConfig } from "shared/brandConfigBase";
 import { useBrand } from "shared/brandConfig";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import getDashboardData from "src/auth/queries/getDashboardData";
-import updateMyUserSettings from "src/auth/mutations/updateMyUserSettings";
+import updateMyUserSettings from "@/src/setting/server/mutations/updateMyUserSettings";
 import { DashboardContextProvider, useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import { CalendarUserSettingsControl } from "src/core/components/user/UserSettingsControls";
 import { useSnackbar } from "src/core/components/SnackbarContext";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isAttendanceGoing, isAttendanceNotGoing } from "shared/eventAttendance";
-import { resolveUserSettings, UserSettingsPatchSchema } from "shared/userSettings";
+import { resolveUserSettings, UserSettingsPatchSchema } from "@/src/setting/shared/userSettings";
 
 describe("attendance classification", () => {
     it.each([0, 33, 49, 50, 51, 66, 100])("classifies strength %s at the strict going boundary", strength => {

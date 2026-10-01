@@ -1,7 +1,6 @@
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
-import { GetSettingSchema } from "../schemas";
-
+import { GetSettingSchema } from "../../shared/settingsSchemas";
 
 export default resolver.pipe(
     resolver.zod(GetSettingSchema),

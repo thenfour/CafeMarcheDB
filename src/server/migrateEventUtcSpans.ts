@@ -1,7 +1,7 @@
 import { EventStatusSignificance } from "src/core/db3/shared/schema/prismArgs";
 import { createAllDayRange, DateTimeRange } from "shared/time";
 import { addCalendarDays } from "shared/dateTimePolicy";
-import { getEventDateBoundsFromSegments } from "src/core/db3/shared/schema/event";
+import { getEventDateRangeUpdateColumnsFromSegments } from "src/core/db3/shared/schema/event";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { loadBandTimeZone } from "./bandTimeZone";
 
@@ -53,7 +53,7 @@ export async function migrateEventUtcSpans(client: TransactionalPrismaClient, ap
     const events = await client.event.findMany({ orderBy: { id: "asc" } });
     const aggregates: object[] = [];
     for (const event of events) {
-        const after = getEventDateBoundsFromSegments(converted.filter(segment => segment.eventId === event.id), cancelled.map(status => status.id));
+        const after = getEventDateRangeUpdateColumnsFromSegments(converted.filter(segment => segment.eventId === event.id), cancelled.map(status => status.id));
         if (event.startsAt?.valueOf() === after.startsAt?.valueOf() && Number(event.durationMillis) === after.durationMillis
             && event.endDateTime?.valueOf() === after.endDateTime?.valueOf() && event.isAllDay === after.isAllDay) continue;
         aggregates.push({

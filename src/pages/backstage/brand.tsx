@@ -1,10 +1,9 @@
 import { DefaultDbBrandConfig, HostingMode } from "@/shared/brandConfigBase";
 import { BandTimeZoneSchema } from "@/shared/dateTimePolicy";
 import type { SiteBrandingSettings } from "@/shared/siteBranding";
-import updateSetting from "@/src/auth/mutations/updateSetting";
-import updateSiteBrandingSettings from "@/src/auth/mutations/updateSiteBrandingSettings";
-import getSetting from "@/src/auth/queries/getSetting";
-import getSiteBrandingSettings from "@/src/auth/queries/getSiteBrandingSettings";
+import updateSetting from "@/src/setting/server/mutations/updateSetting";
+import getSetting from "@/src/setting/server/queries/getSetting";
+import getSiteBrandingSettings from "@/src/setting/server/queries/getSiteBrandingSettings";
 import { CMSinglePageSurfaceCard } from "@/src/core/components/CMCoreComponents";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
@@ -19,6 +18,7 @@ import { Autocomplete, Box, Button, MenuItem, TextField, Typography } from "@mui
 import React from "react";
 import { Permission } from "shared/permissions";
 import { Setting } from "shared/settingKeys";
+import updateSiteBrandingSettings from "@/src/setting/server/mutations/updateSiteBrandingSettings";
 
 type BrandingField = {
     key: keyof SiteBrandingSettings;

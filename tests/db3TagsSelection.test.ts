@@ -42,7 +42,7 @@ vi.mock("src/auth/queries/getSetting", () => ({ default: vi.fn() }));
 vi.mock("src/core/db3/queries/db3queries", () => ({ default: vi.fn() }));
 
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import getSetting from "src/auth/queries/getSetting";
+import getSetting from "@/src/setting/server/queries/getSetting";
 import { TagsFieldClient, TagsFieldInput } from "src/core/db3/components/DB3ClientTagsField";
 import { useCrudViewCreate } from "src/core/db3/components/useCrudViewCreate";
 

@@ -1,5 +1,5 @@
 import db from "db";
-import { resolveUserSettings } from "shared/userSettings";
+import { resolveUserSettings } from "@/src/setting/shared/userSettings";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 
 export const loadUserSettings = async (

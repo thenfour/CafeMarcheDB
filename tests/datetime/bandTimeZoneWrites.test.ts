@@ -9,8 +9,7 @@ vi.mock("db", async () => {
 vi.mock("src/server/brand", () => ({ clearBrandCache: vi.fn() }))
 
 import db3Mutation from "tests/authorization/db3MutationTestResolver"
-import updateBulkSettings from "src/auth/mutations/updateBulkSettings"
-import updateSetting from "src/auth/mutations/updateSetting"
+import updateSetting from "@/src/setting/server/mutations/updateSetting"
 import { clearBrandCache } from "src/server/brand"
 import { Permission } from "shared/permissions"
 import { Setting } from "shared/settingKeys"
@@ -19,6 +18,7 @@ import { createAuthorizationPersona, createAuthorizationTestUser } from "../auth
 import { forgeDb3Insert, forgeDb3PublicUpdate } from "../authorization/support/db3RequestBuilders"
 import { invokeResolver } from "../authorization/support/resolverHarness"
 import { loadBandTimeZone } from "@/src/server/bandTimeZone"
+import updateBulkSettings from "@/src/setting/server/mutations/updateBulkSettings"
 
 const sysadmin = createAuthorizationTestUser("sysadmin", { id: 710 })
 const adminContext = () => createAuthorizationPersona("sysadmin", { id: sysadmin.id }).ctx

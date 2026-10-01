@@ -1,9 +1,9 @@
 import { CMButton, CMButtonGroup } from "@/src/core/components/CMCoreComponents2";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import updateBulkSettings from "@/src/setting/server/mutations/updateBulkSettings";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import React from "react";
-import updateBulkSettings from "src/auth/mutations/updateBulkSettings";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";

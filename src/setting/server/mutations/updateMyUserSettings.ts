@@ -2,8 +2,8 @@ import { resolver } from "@blitzjs/rpc";
 import { cmauthorize } from "@/src/auth/server/cmResolver";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { UserSettingsPatchSchema } from "shared/userSettings";
-import { loadUserSettings } from "../server/userSettings";
+import { UserSettingsPatchSchema } from "@/src/setting/shared/userSettings";
+import { loadUserSettings } from "../userSettings";
 
 export default resolver.pipe(
     resolver.zod(UserSettingsPatchSchema),

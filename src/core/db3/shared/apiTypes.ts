@@ -1,6 +1,6 @@
 import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 
-import { Prisma } from "db";
+import db, { Prisma, PrismaClient } from "db";
 import { z } from "zod";
 import { isPublicId, type EventPublicId, type EventSegmentPublicId, type EventAttendancePublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type FilePublicId, type InstrumentPublicId, type PermissionPublicId, type SongPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId, type UserPublicId } from "shared/publicId";
 
@@ -12,7 +12,10 @@ export const MAX_DB3_PAGE_SIZE = 1000;
 
 // this really loves to break the typescript compiler... safest to just use "any"
 //export type TransactionalPrismaClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
-export type TransactionalPrismaClient = any;
+//export type TransactionalPrismaClient = any;
+//export type TransactionalPrismaClient = Pick<PrismaClient, "event">;
+export type TransactionalPrismaClient = typeof db | any;
+
 //export type TransactionalPrismaClient = PrismaClient;
 
 export interface CMDBTableFilterItem { // from MUI GridFilterItem
