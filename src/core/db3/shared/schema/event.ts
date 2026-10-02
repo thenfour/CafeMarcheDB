@@ -36,7 +36,7 @@ import {
     EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
     type EventSegmentUserResponsePayload, EventSongListArgs, EventSongListDividerArgs, type EventSongListDividerPayload, EventSongListDividerTextStyle, EventSongListNaturalOrderBy, type EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy,
     type EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, type EventStatusPayload, EventStatusSignificance, EventTagArgs, EventTagAssignmentArgs,
-    EventTagAssignmentNaturalOrderBy, type EventTagAssignmentPayload, EventTagNaturalOrderBy, type EventTagPayload, EventTagSignificance,
+    EventTagAssignmentNaturalOrderBy, type EventTagAssignmentPayload, EventTagNaturalOrderBy, type EventTagPayload,
     EventTypeArgs, EventTypeNaturalOrderBy, type EventTypePayload, EventTypeSignificance, EventUserResponseArgs, EventUserResponseNaturalOrderBy,
     type EventUserResponsePayload,
     type InstrumentClientOrDbPayload,
@@ -323,7 +323,6 @@ export const xEventTag = db3.defineTable({
         description: () => MakeDescriptionField({ authMap: xEventChipsAuthMap, }),
         sortOrder: makeEventChipSortOrderField,
         color: () => MakeColorField({ authMap: xEventChipsAuthMap, }),
-        significance: columnName => MakeSignificanceField(columnName, EventTagSignificance, { authMap: xEventChipsAuthMap, }),
 
         events: memberName => new GhostField({ memberName, authMap: xEventAuthMap_R_EOwn_EManagers }),
     })

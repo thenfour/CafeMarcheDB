@@ -131,11 +131,6 @@ export enum EventStatusSignificance {
     FinalConfirmation = "FinalConfirmation",
 };// as const satisfies Record<string, string>;
 
-export const EventTagSignificance = {
-    Majoretteketet: "Majoretteketet",
-    TownHall: "TownHall",
-} as const satisfies Record<string, string>;
-
 export const FileTagSignificance = {
     Partition: "Partition",
     Recording: "Recording",
@@ -145,23 +140,6 @@ export const FileTagSignificance = {
 export const UserTagSignificance = {
     General: "General",
     DefaultInvitation: "DefaultInvitation",
-} as const satisfies Record<string, string>;
-
-export const RoleSignificance = {
-    General: "General",
-} as const satisfies Record<string, string>;
-
-export const SongCreditTypeSignificance = {
-    Composer: "Composer",
-    Arranger: "Arranger",
-} as const satisfies Record<string, string>;
-
-export const SongTagSignificance = {
-    Improvisation: "Improvisation",
-    VocalSolo: "VocalSolo",
-    ByHeart: "ByHeart",
-    Street: "Street",
-    Majoretteketet: "Majoretteketet",
 } as const satisfies Record<string, string>;
 
 

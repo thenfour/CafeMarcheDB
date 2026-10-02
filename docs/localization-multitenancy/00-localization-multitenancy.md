@@ -366,6 +366,15 @@ These records will likely mimic exactly those of the static registry.
 Certainly there will need to be some kind of modular provider system no matter what,
 to be able to present strings.
 
+**Band strings like BandSongTag**
+
+`BandSongTag` is an override of a global `SongTag`, or a custom band songtag. Bands
+can effectively rename global stuff with their own localized text.
+
+Their "registry entry" is _also_ in `DynamicLocalizedString`; there's no need for
+a separate band identity registry because they take the same shape. Band translations
+are stored separately in `BandDynamicLocalizedStringValue`.
+
 # multi-tenancy design
 
 -  ✅root pages -- likely we should avoid the mistake we made by embedding CM homepage in the app;
@@ -423,9 +432,11 @@ model GlobalRolePermission {
 
 // user model has roleId which is the global role.
 
-model BandRole {}
-model BandRolePermission {}
-model UserBandRole {}
+model BandRole {
+   model BandRolePermission {}
+   model BandUser {
+   // membership selects one nullable bandRoleId
+}
 ```
 
 ## entity scoping (tags / instrument sets...)
@@ -457,8 +468,8 @@ Concepts/rationale:
    -  `UserTagAssignment`
 -  Settings
    -  `UserSetting`
-   -  🟡`Setting` - global settings? ❓do we need user-band settings (different
-      calendar settings per band)
+   -  🟡`Setting` -> `GlobalSetting` and `BandSetting`, according to the key registry
+   -  ✨`BandUserSetting` - membership preferences such as calendar locale
 -  Songs
    -  🔵`Song`
    -  🟡`SongCreditType` - ideal: band gets own set. But it's overkill unless
@@ -596,7 +607,7 @@ into 1. whether that applies overrides or not is not really an architectural bre
 -  model `BandUserTag` (id, bandId, nullable globalUserTagId, ...) -- overrides,
    including flags like `hidden` (opt-out), style overrides, or if `globalUserTagId` is
    null, then totally custom.
--  model `BandGlobalUserTagAssignment` (id, bandId, globalUserTagId) -- replaces existing `UserTagAssignment`
+-  model `BandUserTagAssignment` (id, bandId, bandUserId, bandUserTagId) -- replaces existing `UserTagAssignment`
 
 The tags available to a band are the union of the global catalog and the `banduserTag`
 catalog, where related ones get inheritance.
@@ -636,10 +647,10 @@ model SongTag {
    publicId String @unique @db.Char(16)
 
    nameStringId Int
-   nameString   DynamicLocalizedString @relation(fields: [nameStringId], references: [id], onDelete: Cascade)
+   nameString   DynamicLocalizedString @relation(fields: [nameStringId], references: [id], onDelete: Restrict)
 
    descriptionStringId Int
-   descriptionString   DynamicLocalizedString @relation(fields: [nameStringId], references: [id], onDelete: Cascade)
+   descriptionString   DynamicLocalizedString @relation(fields: [descriptionStringId], references: [id], onDelete: Restrict)
 
    ...
 }
@@ -709,14 +720,14 @@ to-be:
 -  model `BandInstrumentFunctionalGroup`
 -  model `GlobalInstrument`
 -  model `BandInstrument` - overrides global instrument; relates to BAND fn group
--  model `UserBandInstrument`
+-  model `BandUserInstrument`
 
-And again: `UserBandInstrument` can be custom or override. Including the functional group.
+And again: `BandInstrument` can be custom or override. Including the functional group.
 But that column can't just be `nullable globalInstrumentFunctionalGroupId`, it
 needs to point to `BandInstrumentFunctionalGroup`.
 
 So similar to a user being assigned a tag creates a `BandUserTag` record, creating
-a new `UserBandInstrument` can cascade: `BandInstrument` is created, and it must
+a new `BandUserInstrument` can cascade: `BandInstrument` is created, and it must
 relate to `BandInstrumentFunctionalGroup`, so these records will get created
 with no overrides.
 
@@ -945,20 +956,25 @@ model BandSetting {
    -  [x] make homepage SPA
    -  [x] test url rewriting - yes middleware can do this.
 -  M2: prereqs, foundation
-   -  [x] remove InstrumentTag features; retain Change audit history
-   -  [ ] initial database model for translations & multitenancy
+   -  [x] remove Change, InstrumentTag features
+   -  [x] initial database model for translations & multitenancy
       -  [x] generate a plan
-      -  [ ] new band & locale tables
-      -  [ ] settings
-      -  [ ] rename remaining tables
+      -  [x] complete and review target `schema.prisma` (see `01-schema.md`)
+      -  [x] new band & locale tables
+      -  [x] settings
+      -  [x] rename remaining tables
+   -  [ ] migration.
+      -  [x] grab prod db backup & git rev - 094a783a94b95ed4ec15089e9372763b7d59f66c
+      -  [ ] establish script for db backup restore / dev install
+      -  [ ] test the site up until localization/multiband; make it repeatable.
+      -  [ ] write migration.
    -  assess tag significances... for example `DefaultInvitation` -- these should
       probably be decommissioned because tags are now becoming "no behavior depends on them".
       the ONLY significance that seems to matter is the partitions vs. recordings, and
       basically i wonder if this should therefore be changed. can be done after.
-   -  [ ] user settings, global settings table. it needs a real table over `userId`, `settingKey`.
-          and should be cleaned up with correct registry and internal API. But because
-          many of these settings are actually chrome strings, do at the same time
-          as adding some basic locale db tables
+      -  remove `SongTag.significance`.
+      -  remove eventtag significance
+      -  remove event segmentbehavior
 -  M3: blocking out
    -  [ ] band settings registry (think of a couple settings to use as a POC - timezone...)
    -  [ ] initial `useLocale` and `useBand` contexts (with small handful of POCs)
@@ -967,6 +983,7 @@ model BandSetting {
 -  M3: localization POC
    -  [ ] remove `i18n` config in `next.config.js`
    -  [ ] fix hardcoded <Html lang="en">
+   -  evaluate whether the various captions in Attendance are accurate across locales (`personalPastCaptionId` etc)
    -  demonstrate:
       -  routing
       -  site chrome

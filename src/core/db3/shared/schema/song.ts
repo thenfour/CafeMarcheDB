@@ -15,7 +15,7 @@ import { CMDBTableFilterModel } from "../apiTypes";
 import { ColorField, ConstEnumStringField, ForeignCollectionField, foreignRef, foreignRefByTableId, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance } from "./prismArgs";
+import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
@@ -116,13 +116,6 @@ export const xSongTag = db3.defineTable({
             columnName,
             allowNull: true,
             format: "plain",
-            authMap: xSongAuthMap_R_EOwn_EManagers,
-        }),
-        significance: columnName => new ConstEnumStringField({
-            columnName,
-            allowNull: true,
-            defaultValue: null,
-            options: SongTagSignificance,
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         songs: memberName => new GhostField({ memberName, authMap: xSongAuthMap_R_EOwn_EManagers, }),
@@ -345,7 +338,6 @@ export const xSongCreditType = db3.defineTable({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<SongCreditTypePublicId>(),
         text: columnName => MakeTitleField(columnName, { authMap: xSongAuthMap_R_EManagers }),
-        significance: columnName => MakeSignificanceField(columnName, SongCreditTypeSignificance, { authMap: xSongAuthMap_R_EManagers, }),
         description: columnName => new GenericStringField({
             columnName,
             allowNull: false,

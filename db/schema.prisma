@@ -1,8 +1,105 @@
-// why VarChar(768) ? because it's the largest indexable unicode string type.
-// https://stackoverflow.com/questions/72937232/error-1071-42000-specified-key-was-too-long-max-key-length-is-3072-bytes
+// VarChar(768) fits a single utf8mb4 index. Composite indexes need room for every key.
+// Registry keys use 191 chars; band-scoped slugs use 767 chars plus the 4-byte bandId.
+// https://dev.mysql.com/doc/refman/8.0/en/innodb-limits.html
 
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// PATTERNS
+
+// 🌐localized string
+// nameId        Int
+// name          DynamicLocalizedString @relation("BandRoleName", fields: [nameId], references: [id])
+// descriptionId Int
+// description   DynamicLocalizedString @relation("BandRoleDescription", fields: [descriptionId], references: [id])
+
+// // 🟫softdelete
+// isDeleted Boolean @default(false)
+
+// // ®️recordkeeping
+// createdAt       DateTime  @default(now())
+// createdByUserId Int?
+// createdByUser   User?     @relation("<name>", fields: [createdByUserId], references: [id], onDelete: SetNull)
+// updatedAt       DateTime @updatedAt
+// updatedByUserId Int?
+// updatedByUser   User?     @relation("<name>", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+// // 👁️visibility:
+// visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
+// visiblePermission   Permission? @relation("<name>", fields: [visiblePermissionId], references: [id], onDelete: SetNull)
+
+// // Ⓜ️metadata (sort, color, icon)
+// sortOrder Int @default(0)
+// color        String? @db.VarChar(768)
+// iconName     String? @db.VarChar(768)
+//
+//
+//
+// SIGNIFICANCE
+// significance String?
+// These values are used to attach behavior to things, like event statuses are
+// user-configurable, but the system treats cancelled events differently than otherwise,
+// so EventStatusSignificance.Cancelled exists.
+//
+// In general, avoid significance. They are useful as a kind of patch-point for experiments
+// or introducing features without needing db migrations.
+// But they are sometimes messy.
+//
+// Ideally use an enum (see enum SignInMethodType), but mostly we use a free string,
+// because it's more flexible/extensible.
+
+// NAMING / CASING
+// types in PascalCase
+// - enums
+// - models
+// fields in camelCase
+// - column names (userId)
+// - foreign objects (user)
+// - foreign sets (userTagAssignments)
+//
+// foreign sets:
+// - plural
+// - descriptive and specific in the context of the model it belongs to
+//   - good: `userTagsCreated` (on User), `bandName` (on DynamicLocalizedString)
+//
+// relation naming doesn't have a strict convention, but it should.
+// - similar to foreign set naming, but specific also OUTSIDE of the model scope.
+// - simplest rule is to concatenate the 2 foreign set field names (ish) with an underscore.
+// - but may need adjustment so it's clear and unambiguous.
+// - Both fields in singular form
+//   - good: `UserTagAssignment_CreatedByUser` (on User + UserTagAssignment)
+//   - good: `BandName_DynamicLocalizedString` (on UserTagAssignment)
+
+// model User {
+//   id Int @id @default(autoincrement())
+
+//   createdUserTags           UserTag[]
+//   createdUserTagAssignments UserTagAssignment[] @relation("createdUserTagAssignment")
+//   userTagAssignments        UserTagAssignment[] @relation("userTagAssignment")
+// }
+
+// model UserTag {
+//   id              Int   @id @default(autoincrement())
+//   createdByUserId Int?
+//   createdByUser   User? @relation("<name>", fields: [createdByUserId], references: [id], onDelete: SetNull)
+// }
+
+// model UserTagAssignment {
+//   id Int @id @default(autoincrement())
+
+//   userId Int
+//   user   User @relation("userTagAssignment", fields: [userId], references: [id])
+
+//   tagId Int
+//   tag   UserTag @relation("<name>", fields: [tagId], references: [id])
+
+//   createdByUserId Int?
+//   createdByUser   User? @relation("createdUserTagAssignment", fields: [createdByUserId], references: [id], onDelete: SetNull)
+// }
+
+// onDelete behavior:
+// - SetNull
+// - Cascade: required comment to explain why this is safe. typically small associations are cascaded
 
 datasource db {
   provider = "mysql"
@@ -14,73 +111,435 @@ generator client {
   previewFeatures = []
 }
 
-// --------------------------------------
-model Role {
-  id                Int              @id @default(autoincrement())
-  publicId          String           @unique @db.Char(16)
-  name              String           @unique @db.VarChar(768)
-  isRoleForNewUsers Boolean          @default(false)
-  isPublicRole      Boolean          @default(false)
-  isSysAdminRole    Boolean          @default(false)
-  description       String?          @db.MediumText
-  sortOrder         Int              @default(0)
-  color             String?          @db.VarChar(768)
-  significance      String? // 
-  permissions       RolePermission[]
-  User              User[]
-
-  @@index([significance])
-  @@index([name])
+enum LocalizedStringFormat {
+  PlainText
+  Markdown
 }
 
+// LSMB_TODO: create this new table ------------------------------------------------------
+model Locale {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
+
+  // its name is also a localized string in the dynamic string table
+  nameId Int
+  name   DynamicLocalizedString @relation("Locale_name", fields: [nameId], references: [id])
+
+  langCode   String @db.VarChar(8)
+  regionCode String @db.VarChar(8)
+  ietfTag    String @unique @db.VarChar(16) // e.g., "en-US"
+
+  // 🟫softdelete
+  isDeleted Boolean @default(false)
+
+  // ®️recordkeeping
+  createdAt       DateTime @default(now())
+  createdByUserId Int?
+  createdByUser   User?    @relation("Locale_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("Locale_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  // 👁️visibility: theoretically this could be useful for unpublished work but ... not for v1.
+
+  // Ⓜ️metadata (sort, color, icon)
+  sortOrder Int @default(0)
+
+  staticLocalizedStringValues      StaticLocalizedStringValue[]      @relation("StaticLocalizedStringValue_locale")
+  dynamicLocalizedStringValues     DynamicLocalizedStringValue[]     @relation("DynamicLocalizedStringValue_locale")
+  bandLocales                      BandLocale[]                      @relation("BandLocale_locale")
+  bandStaticLocalizedStringValues  BandStaticLocalizedStringValue[]  @relation("BandStaticLocalizedStringValue_locale")
+  bandDynamicLocalizedStringValues BandDynamicLocalizedStringValue[] @relation("BandDynamicLocalizedStringValue_locale")
+  actions                          Action[]                          @relation("Action_localeContext")
+}
+
+// LSMB_TODO: create this new table ------------------------------------------------------
+model StaticLocalizedStringValue {
+  id        Int    @id @default(autoincrement()) // even though key+localeId is unique, singular pks are useful and probably required by db3.
+  // while you may not ever need to see publicId on the client, better to just
+  // use publicId from the get go. small overhead to take care of something inevitable.
+  publicId  String @unique @db.Char(16)
+  stringKey String @db.VarChar(191) // sync'd with static registry.
+
+  localeId Int
+  locale   Locale @relation("StaticLocalizedStringValue_locale", fields: [localeId], references: [id])
+
+  // put BOTH here in order to provide an indexable string + a long (non-indexed) string.
+  // this does NOT determine whether it's markdown / plaintext / other formats.
+  indexedValue String? @db.VarChar(768)
+  blobValue    String? @db.MediumText
+
+  // ®️recordkeeping
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("StaticLocalizedStringValue_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([stringKey, localeId])
+  @@index([indexedValue])
+}
+
+// LSMB_TODO: create this new table ------------------------------------------------------
+model DynamicLocalizedString {
+  id        Int                   @id @default(autoincrement())
+  publicId  String                @unique @db.Char(16)
+  // Static string metadata lives in the code registry; dynamic strings carry their format here.
+  format    LocalizedStringFormat @default(PlainText)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  locales                                       Locale[]                          @relation("Locale_name")
+  values                                        DynamicLocalizedStringValue[]     @relation("DynamicLocalizedStringValue_string")
+  bands                                         Band[]                            @relation("Band_name")
+  bandValues                                    BandDynamicLocalizedStringValue[] @relation("BandDynamicLocalizedStringValue_string")
+  globalRolesByName                             GlobalRole[]                      @relation("GlobalRole_name")
+  globalRolesByDescription                      GlobalRole[]                      @relation("GlobalRole_description")
+  bandRolesByName                               BandRole[]                        @relation("BandRole_name")
+  bandRolesByDescription                        BandRole[]                        @relation("BandRole_description")
+  permissions                                   Permission[]                      @relation("Permission_description")
+  globalUserTagsByName                          GlobalUserTag[]                   @relation("GlobalUserTag_name")
+  globalUserTagsByDescription                   GlobalUserTag[]                   @relation("GlobalUserTag_description")
+  bandUserTagsByName                            BandUserTag[]                     @relation("BandUserTag_name")
+  bandUserTagsByDescription                     BandUserTag[]                     @relation("BandUserTag_description")
+  songCreditTypesByName                         SongCreditType[]                  @relation("SongCreditType_name")
+  songCreditTypesByDescription                  SongCreditType[]                  @relation("SongCreditType_description")
+  globalSongTagsByName                          GlobalSongTag[]                   @relation("GlobalSongTag_name")
+  globalSongTagsByDescription                   GlobalSongTag[]                   @relation("GlobalSongTag_description")
+  bandSongTagsByName                            BandSongTag[]                     @relation("BandSongTag_name")
+  bandSongTagsByDescription                     BandSongTag[]                     @relation("BandSongTag_description")
+  globalInstrumentFunctionalGroupsByName        GlobalInstrumentFunctionalGroup[] @relation("GlobalInstrumentFunctionalGroup_name")
+  globalInstrumentFunctionalGroupsByDescription GlobalInstrumentFunctionalGroup[] @relation("GlobalInstrumentFunctionalGroup_description")
+  bandInstrumentFunctionalGroupsByName          BandInstrumentFunctionalGroup[]   @relation("BandInstrumentFunctionalGroup_name")
+  bandInstrumentFunctionalGroupsByDescription   BandInstrumentFunctionalGroup[]   @relation("BandInstrumentFunctionalGroup_description")
+  globalInstrumentsByName                       GlobalInstrument[]                @relation("GlobalInstrument_name")
+  globalInstrumentsByDescription                GlobalInstrument[]                @relation("GlobalInstrument_description")
+  bandInstrumentsByName                         BandInstrument[]                  @relation("BandInstrument_name")
+  bandInstrumentsByDescription                  BandInstrument[]                  @relation("BandInstrument_description")
+  eventTypesByName                              EventType[]                       @relation("EventType_name")
+  eventTypesByDescription                       EventType[]                       @relation("EventType_description")
+  eventStatusesByName                           EventStatus[]                     @relation("EventStatus_name")
+  eventStatusesByDescription                    EventStatus[]                     @relation("EventStatus_description")
+  globalEventTagsByName                         GlobalEventTag[]                  @relation("GlobalEventTag_name")
+  globalEventTagsByDescription                  GlobalEventTag[]                  @relation("GlobalEventTag_description")
+  bandEventTagsByName                           BandEventTag[]                    @relation("BandEventTag_name")
+  bandEventTagsByDescription                    BandEventTag[]                    @relation("BandEventTag_description")
+  eventAttendancesByButtonCaption               EventAttendance[]                 @relation("EventAttendance_buttonCaption")
+  eventAttendancesByPersonalCaption             EventAttendance[]                 @relation("EventAttendance_personalCaption")
+  eventAttendancesByPastCaption                 EventAttendance[]                 @relation("EventAttendance_pastCaption")
+  eventAttendancesByPersonalPastCaption         EventAttendance[]                 @relation("EventAttendance_personalPastCaption")
+  eventAttendancesByDescription                 EventAttendance[]                 @relation("EventAttendance_description")
+  globalFileTagsByName                          GlobalFileTag[]                   @relation("GlobalFileTag_name")
+  globalFileTagsByDescription                   GlobalFileTag[]                   @relation("GlobalFileTag_description")
+  bandFileTagsByName                            BandFileTag[]                     @relation("BandFileTag_name")
+  bandFileTagsByDescription                     BandFileTag[]                     @relation("BandFileTag_description")
+  menuLinks                                     MenuLink[]                        @relation("MenuLink_caption")
+  globalWikiPageTagsByName                      GlobalWikiPageTag[]               @relation("GlobalWikiPageTag_name")
+  globalWikiPageTagsByDescription               GlobalWikiPageTag[]               @relation("GlobalWikiPageTag_description")
+  bandWikiPageTagsByName                        BandWikiPageTag[]                 @relation("BandWikiPageTag_name")
+  bandWikiPageTagsByDescription                 BandWikiPageTag[]                 @relation("BandWikiPageTag_description")
+}
+
+// LSMB_TODO: create this new table ------------------------------------------------------
+model DynamicLocalizedStringValue {
+  id       Int    @id @default(autoincrement())
+  // probably needed for the editor.
+  publicId String @unique @db.Char(16)
+
+  localeId Int
+  locale   Locale @relation("DynamicLocalizedStringValue_locale", fields: [localeId], references: [id])
+
+  // put BOTH here in order to provide an indexable string + a long (non-indexed) string.
+  // this does NOT determine whether it's markdown / plaintext / other formats.
+  indexedValue String? @db.VarChar(768)
+  blobValue    String? @db.MediumText
+
+  stringId Int
+  string   DynamicLocalizedString @relation("DynamicLocalizedStringValue_string", fields: [stringId], references: [id])
+
+  // ®️recordkeeping
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("DynamicLocalizedStringValue_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([localeId, stringId])
+  @@index([indexedValue])
+}
+
+// LSMB_TODO: create this new table ------------------------------------------------------
+model Band {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
+
+  // it's likely that the band name should not be localized, however don't restrict that.
+  nameId Int
+  name   DynamicLocalizedString @relation("Band_name", fields: [nameId], references: [id])
+
+  // 🟫softdelete
+  isDeleted Boolean @default(false)
+
+  // ®️recordkeeping
+  createdAt       DateTime @default(now())
+  createdByUserId Int?
+  createdByUser   User?    @relation("Band_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("Band_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  // 👁️visibility: theoretically this could be useful for unpublished work but ... not for v1.
+
+  // Ⓜ️metadata (sort, color, icon)
+  // users may want their own personal list or favorites etc, but that would be elsewhere and not today.
+
+  locales                          BandLocale[]                      @relation("BandLocale_band")
+  bandStaticLocalizedStringValues  BandStaticLocalizedStringValue[]  @relation("BandStaticLocalizedStringValue_band")
+  bandDynamicLocalizedStringValues BandDynamicLocalizedStringValue[] @relation("BandDynamicLocalizedStringValue_band")
+  actions                          Action[]                          @relation("Action_band")
+  bandUserTags                     BandUserTag[]                     @relation("BandUserTag_band")
+  bandUsers                        BandUser[]                        @relation("BandUser_band")
+  bandSettings                     BandSetting[]                     @relation("BandSetting_band")
+  songs                            Song[]                            @relation("Song_band")
+  bandInstrumentFunctionalGroups   BandInstrumentFunctionalGroup[]   @relation("BandInstrumentFunctionalGroup_band")
+  bandInstruments                  BandInstrument[]                  @relation("BandInstrument_band")
+  events                           Event[]                           @relation("Event_band")
+  bandEventTags                    BandEventTag[]                    @relation("BandEventTag_band")
+  bandFileTags                     BandFileTag[]                     @relation("BandFileTag_band")
+  files                            File[]                            @relation("File_band")
+  customLinks                      CustomLink[]                      @relation("CustomLink_band")
+  wikiPages                        WikiPage[]                        @relation("WikiPage_band")
+  menuLinks                        MenuLink[]                        @relation("MenuLink_band")
+  setlistPlanGroups                SetlistPlanGroup[]                @relation("SetlistPlanGroup_band")
+  setlistPlans                     SetlistPlan[]                     @relation("SetlistPlan_band")
+  bandWikiPageTags                 BandWikiPageTag[]                 @relation("BandWikiPageTag_band")
+  BandSongTag                      BandSongTag[]                     @relation("BandSongTag_band")
+}
+
+// LSMB_TODO: create this new table ------------------------------------------------------
+model BandLocale {
+  id       Int    @id @default(autoincrement())
+  bandId   Int
+  band     Band   @relation("BandLocale_band", fields: [bandId], references: [id])
+  localeId Int
+  locale   Locale @relation("BandLocale_locale", fields: [localeId], references: [id])
+
+  // ®️recordkeeping
+  createdAt       DateTime @default(now())
+  createdByUserId Int?
+  createdByUser   User?    @relation("BandLocale_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("BandLocale_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  // Ⓜ️metadata (sort, color, icon)
+  // there is a valid question about how to order locales in a dropdown.
+  // - manually, by sort order (for example to denote a primary locale)
+  // - by name in locale's language
+  // - by name in the current language
+  sortOrder Int @default(0)
+
+  @@unique([bandId, localeId])
+}
+
+// LSMB_TODO: create this new table ------------------------------------------------------
+model BandStaticLocalizedStringValue {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
+
+  bandId Int
+  band   Band @relation("BandStaticLocalizedStringValue_band", fields: [bandId], references: [id])
+
+  localeId Int
+  locale   Locale @relation("BandStaticLocalizedStringValue_locale", fields: [localeId], references: [id])
+
+  stringKey String @db.VarChar(191)
+
+  // put BOTH here in order to provide an indexable string + a long (non-indexed) string.
+  // this does NOT determine whether it's markdown / plaintext / other formats.
+  indexedValue String? @db.VarChar(768)
+  blobValue    String? @db.MediumText
+
+  // 🟫softdelete : no
+  // ®️recordkeeping: only update.
+  // 👁️visibility: n/a
+  // Ⓜ️metadata: n/a
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("BandStaticLocalizedStringValue_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([stringKey, localeId, bandId])
+  @@index([indexedValue])
+}
+
+// LSMB_TODO: create this new table ------------------------------------------------------
+model BandDynamicLocalizedStringValue {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
+
+  bandId   Int
+  band     Band   @relation("BandDynamicLocalizedStringValue_band", fields: [bandId], references: [id])
+  localeId Int
+  locale   Locale @relation("BandDynamicLocalizedStringValue_locale", fields: [localeId], references: [id])
+
+  stringId Int
+  string   DynamicLocalizedString @relation("BandDynamicLocalizedStringValue_string", fields: [stringId], references: [id])
+
+  // put BOTH here in order to provide an indexable string + a long (non-indexed) string.
+  // this does NOT determine whether it's markdown / plaintext / other formats.
+  indexedValue String? @db.VarChar(768)
+  blobValue    String? @db.MediumText
+
+  // 🟫softdelete: no
+  // ®️recordkeeping: only update.
+  // 👁️visibility: n/a
+  // Ⓜ️metadata: n/a
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("BandDynamicLocalizedStringValue_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([stringId, localeId, bandId])
+  @@index([indexedValue])
+}
+
+// --------------------------------------
+// LSMB_TODO: rename to GlobalRole ------------------------------------------------------
+// Role -> GlobalRole
+model GlobalRole {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
+
+  nameId        Int
+  name          DynamicLocalizedString  @relation("GlobalRole_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId Int?
+  description   DynamicLocalizedString? @relation("GlobalRole_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+
+  isRoleForNewUsers Boolean @default(false)
+  isPublicRole      Boolean @default(false)
+  isSysAdminRole    Boolean @default(false)
+  sortOrder         Int     @default(0)
+  color             String? @db.VarChar(768)
+
+  // LSMB: removed significance
+
+  isDeleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  permissions GlobalRolePermission[] @relation("GlobalRolePermission_globalRole")
+  users       User[]                 @relation("User_globalRole")
+}
+
+// LSMB_TODO: create this new table ------------------------------------------------------
+// this is not "per-band roles", it's a list of roles that bands can assign to members.
+model BandRole {
+  id                Int                     @id @default(autoincrement())
+  publicId          String                  @unique @db.Char(16)
+  nameId            Int
+  name              DynamicLocalizedString  @relation("BandRole_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId     Int?
+  description       DynamicLocalizedString? @relation("BandRole_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+  // These designations apply within each band; definitions and permissions are global.
+  isRoleForNewUsers Boolean                 @default(false)
+  isPublicRole      Boolean                 @default(false)
+  isDeleted         Boolean                 @default(false)
+  sortOrder         Int                     @default(0)
+  color             String?                 @db.VarChar(768)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  bandRolePermissions BandRolePermission[] @relation("BandRolePermission_bandRole")
+  bandUsers           BandUser[]           @relation("BandUser_bandRole")
+}
+
+// global permissions
 model Permission {
   id           Int     @id @default(autoincrement())
   publicId     String  @unique @db.Char(16)
-  name         String  @unique @db.VarChar(768)
+  name         String  @unique @db.VarChar(768) // these are keys in the registry; not localized.
   isVisibility Boolean @default(false)
-  description  String? @db.MediumText
+
+  descriptionId Int?
+  description   DynamicLocalizedString? @relation("Permission_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+
   sortOrder    Int     @default(0)
-  significance String? // 
+  significance String? //
   color        String? @db.VarChar(768)
   iconName     String? @db.VarChar(768)
 
-  roles                              RolePermission[]
-  visibilityForSongs                 Song[]
-  visibilityForEvents                Event[]
-  visibilityForFiles                 File[]
-  visibilityForFrontpageGalleryItems FrontpageGalleryItem[]
-  visibilityForWikiPages             WikiPage[]
-  visibilityForMenuLinks             MenuLink[]
-  visibilityForSetlistPlans          SetlistPlan[]
+  isDeleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  globalRoles                        GlobalRolePermission[] @relation("GlobalRolePermission_permission")
+  bandRolePermissions                BandRolePermission[]   @relation("BandRolePermission_permission")
+  visibilityForSongs                 Song[]                 @relation("Song_visiblePermission")
+  visibilityForEvents                Event[]                @relation("Event_visiblePermission")
+  visibilityForFiles                 File[]                 @relation("File_visiblePermission")
+  visibilityForFrontpageGalleryItems FrontpageGalleryItem[] @relation("FrontpageGalleryItem_visiblePermission")
+  visibilityForWikiPages             WikiPage[]             @relation("WikiPage_visiblePermission")
+  visibilityForMenuLinks             MenuLink[]             @relation("MenuLink_visiblePermission")
+  visibilityForSetlistPlans          SetlistPlan[]          @relation("SetlistPlan_visiblePermission")
 
   @@index([name])
   @@index([significance])
   @@index([sortOrder])
 }
 
-model RolePermission {
-  id           Int        @id @default(autoincrement())
-  publicId     String     @unique @db.Char(16)
-  roleId       Int
-  permissionId Int
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade) // cascade delete association
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade) // cascade delete association
+// LSMB_TODO: rename RolePermission > GlobalRolePermission ------------------------------------------------------
+model GlobalRolePermission {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
 
-  // you could also cluster the keys but this is just simpler
-  //   @@id([roleId, permissionId])
-  @@unique([roleId, permissionId]) // 
+  permissionId Int
+  permission   Permission @relation("GlobalRolePermission_permission", fields: [permissionId], references: [id], onDelete: Cascade) // cascade delete association
+
+  // LSMB: rename roleId -> globalRoleId
+  globalRoleId Int
+  globalRole   GlobalRole @relation("GlobalRolePermission_globalRole", fields: [globalRoleId], references: [id], onDelete: Cascade) // cascade delete association
+
+  // LSMB: adding these
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("GlobalRolePermission_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([globalRoleId, permissionId]) //
+}
+
+// LSMB_TODO: create this new table ------------------------------------------------------
+model BandRolePermission {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
+
+  permissionId Int
+  permission   Permission @relation("BandRolePermission_permission", fields: [permissionId], references: [id], onDelete: Cascade) // cascade delete association
+
+  bandRoleId Int
+  bandRole   BandRole @relation("BandRolePermission_bandRole", fields: [bandRoleId], references: [id], onDelete: Cascade) // Removing a role removes its permission assignments.
+
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("BandRolePermission_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([bandRoleId, permissionId]) //
 }
 
 model Action {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  user      User?    @relation(fields: [userId], references: [id])
+  user      User?    @relation("Action_user", fields: [userId], references: [id])
   userId    Int?
-  uri       String?  @db.VarChar(192) // if applicable
+
+  // LSMB_TODO: new relations ------------------------------------------------------
+  band            Band?   @relation("Action_band", fields: [bandId], references: [id], onDelete: SetNull)
+  bandId          Int?
+  // which locale is the application presenting in (useCmdbLocale() result...)
+  localeContext   Locale? @relation("Action_localeContext", fields: [localeContextId], references: [id], onDelete: SetNull)
+  localeContextId Int?
+
+  uri       String? @db.VarChar(192) // if applicable
   isClient  Boolean
-  feature   String   @db.VarChar(64) // of enum ActivityFeature
-  queryText String?  @db.VarChar(64) // if applicable
-  context   String?  @db.VarChar(256) // free string trying to describe client context triggering the action.
+  feature   String  @db.VarChar(64) // of enum ActivityFeature
+  queryText String? @db.VarChar(64) // if applicable
+  context   String? @db.VarChar(256) // free string trying to describe client context triggering the action.
 
   pointerType  String? @db.VarChar(16) // lowercase.
   screenWidth  Int?
@@ -94,65 +553,111 @@ model Action {
   timezone        String? @db.VarChar(48) // lowercase. e.g. "europe/brussels"
 
   fileId         Int?
-  file           File?            @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  file           File?            @relation("Action_file", fields: [fileId], references: [id], onDelete: SetNull)
   eventId        Int?
-  event          Event?           @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  event          Event?           @relation("Action_event", fields: [eventId], references: [id], onDelete: SetNull)
   songId         Int?
-  song           Song?            @relation(fields: [songId], references: [id], onDelete: SetNull)
+  song           Song?            @relation("Action_song", fields: [songId], references: [id], onDelete: SetNull)
   wikiPageId     Int?
-  wikiPage       WikiPage?        @relation(fields: [wikiPageId], references: [id], onDelete: SetNull)
+  wikiPage       WikiPage?        @relation("Action_wikiPage", fields: [wikiPageId], references: [id], onDelete: SetNull)
   eventSegmentId Int?
-  eventSegment   EventSegment?    @relation(fields: [eventSegmentId], references: [id], onDelete: SetNull)
+  eventSegment   EventSegment?    @relation("Action_eventSegment", fields: [eventSegmentId], references: [id], onDelete: SetNull)
   attendanceId   Int?
-  attendance     EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetNull)
+  attendance     EventAttendance? @relation("Action_attendance", fields: [attendanceId], references: [id], onDelete: SetNull)
 
   customLinkId           Int?
-  customLink             CustomLink?           @relation(fields: [customLinkId], references: [id], onDelete: SetNull)
+  customLink             CustomLink?           @relation("Action_customLink", fields: [customLinkId], references: [id], onDelete: SetNull)
   eventSongListId        Int?
-  eventSongList          EventSongList?        @relation(fields: [eventSongListId], references: [id], onDelete: SetNull)
+  eventSongList          EventSongList?        @relation("Action_eventSongList", fields: [eventSongListId], references: [id], onDelete: SetNull)
   frontpageGalleryItemId Int?
-  frontpageGalleryItem   FrontpageGalleryItem? @relation(fields: [frontpageGalleryItemId], references: [id], onDelete: SetNull)
+  frontpageGalleryItem   FrontpageGalleryItem? @relation("Action_frontpageGalleryItem", fields: [frontpageGalleryItemId], references: [id], onDelete: SetNull)
   menuLinkId             Int?
-  menuLink               MenuLink?             @relation(fields: [menuLinkId], references: [id], onDelete: SetNull)
+  menuLink               MenuLink?             @relation("Action_menuLink", fields: [menuLinkId], references: [id], onDelete: SetNull)
   setlistPlanId          Int?
-  setlistPlan            SetlistPlan?          @relation(fields: [setlistPlanId], references: [id], onDelete: SetNull)
+  setlistPlan            SetlistPlan?          @relation("Action_setlistPlan", fields: [setlistPlanId], references: [id], onDelete: SetNull)
   songCreditTypeId       Int?
-  songCreditType         SongCreditType?       @relation(fields: [songCreditTypeId], references: [id], onDelete: SetNull)
-  instrumentId           Int?
-  instrument             Instrument?           @relation(fields: [instrumentId], references: [id], onDelete: SetNull)
+  songCreditType         SongCreditType?       @relation("Action_songCreditType", fields: [songCreditTypeId], references: [id], onDelete: SetNull)
+  bandInstrumentId       Int?
+  bandInstrument         BandInstrument?       @relation("Action_bandInstrument", fields: [bandInstrumentId], references: [id], onDelete: SetNull)
 
-  @@index([feature, createdAt, userId, context, pointerType, deviceClass, browserName, operatingSystem, language, locale, timezone])
+  @@index([feature, createdAt, userId, bandId, localeContextId, context, pointerType, deviceClass, browserName, operatingSystem, language, locale, timezone])
 }
 
 // effectively this creates "groups" that you can belong to. or indeed just tags... makes sense anyway.
 // initial reason for this is attendance groups.
 // copied from FileTag
-model UserTag {
-  id                        Int                 @id @default(autoincrement())
-  publicId                  String              @unique @db.Char(16)
-  text                      String              @db.VarChar(768)
-  description               String              @db.MediumText
-  color                     String?
-  significance              String? // 
-  sortOrder                 Int                 @default(0)
-  cssClass                  String?
-  userAssignments           UserTagAssignment[]
-  eventsExpectingAttendance Event[]
+// LSMB_TODO: rename UserTag -> GlobalUserTag ------------------------------------------------------
+model GlobalUserTag {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
 
-  @@index([text])
+  // LSMB: names and descriptions now use localized string identities.
+  nameId        Int
+  name          DynamicLocalizedString @relation("GlobalUserTag_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId Int
+  description   DynamicLocalizedString @relation("GlobalUserTag_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+
+  color        String?
+  significance String? //
+  sortOrder    Int     @default(0)
+  cssClass     String?
+
+  bandUserTags BandUserTag[] @relation("BandUserTag_globalUserTag")
+
+  @@index([nameId])
   @@index([sortOrder])
 }
 
-// copied from FileTagAssignment
-model UserTagAssignment {
-  id        Int     @id @default(autoincrement())
-  publicId  String  @unique @db.Char(16)
-  userId    Int
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userTagId Int
-  userTag   UserTag @relation(fields: [userTagId], references: [id], onDelete: Cascade)
+// LSMB_TODO: create this new table ------------------------------------------------------
+// example of overriding a global OR creating band-specific custom tags in 1 table.
+model BandUserTag {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
 
-  @@unique([userId, userTagId])
+  // provides opt-out / opt-in possibility
+  isHidden Boolean @default(false)
+
+  nameId        Int?
+  name          DynamicLocalizedString? @relation("BandUserTag_name", fields: [nameId], references: [id], onDelete: Restrict) // Clear overrides explicitly; deleting a string must not change meaning.
+  descriptionId Int?
+  description   DynamicLocalizedString? @relation("BandUserTag_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+
+  globalUserTagId Int?
+  globalUserTag   GlobalUserTag? @relation("BandUserTag_globalUserTag", fields: [globalUserTagId], references: [id], onDelete: Restrict) // deleting the global tag should invoke app logic to propagate its properties to band-specific, THEN delete when no more refs exist.
+
+  color        String?
+  significance String? //
+  sortOrder    Int?
+  cssClass     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bandId Int
+  band   Band @relation("BandUserTag_band", fields: [bandId], references: [id], onDelete: Restrict) // Bands are soft-deleted; remove content explicitly before a hard delete.
+
+  bandUserTagAssignments BandUserTagAssignment[] @relation("BandUserTagAssignment_bandUserTag")
+  events                 Event[]                 @relation("Event_expectedAttendanceUserTag")
+
+  @@unique([bandId, globalUserTagId])
+  @@unique([id, bandId])
+  @@index([bandId])
+}
+
+// copied from FileTagAssignment
+// LSMB_TODO: rename UserTagAssignment -> BandUserTagAssignment
+model BandUserTagAssignment {
+  id         Int    @id @default(autoincrement())
+  publicId   String @unique @db.Char(16)
+  bandUserId Int
+
+  // LSMB: resolve the original tag and user through the band's catalog and membership.
+  bandUserTagId Int
+  bandUserTag   BandUserTag @relation("BandUserTagAssignment_bandUserTag", fields: [bandUserTagId], references: [id], onDelete: Cascade)
+
+  bandUser BandUser @relation("BandUserTagAssignment_bandUser", fields: [bandUserId], references: [id], onDelete: Cascade) // Removing a membership removes its associations.
+
+  @@unique([bandUserId, bandUserTagId])
 }
 
 model User {
@@ -163,52 +668,67 @@ model User {
   isDeleted  Boolean @default(false)
 
   mergedIntoUserId Int?
-  mergedIntoUser   User?     @relation("MergedUsers", fields: [mergedIntoUserId], references: [id], onDelete: Restrict)
-  mergedUsers      User[]    @relation("MergedUsers")
+  mergedIntoUser   User?     @relation("User_mergedIntoUser", fields: [mergedIntoUserId], references: [id], onDelete: Restrict)
   mergedAt         DateTime?
 
-  email             String             @db.VarChar(768) // contact/display address; authentication uses signInMethods
-  phone             String?            @db.VarChar(768)
-  hashedPassword    String?
-  signInMethods     UserSignInMethod[]
-  settings          UserSetting[]
-  createdAt         DateTime           @default(now())
-  calendarFeedToken String?            @map("accessToken") @db.VarChar(768) // private bearer credential scoped only to the user's read-only calendar feed.
-  uid               String?            @default(uuid()) // used for unique identification but is NOT secret like the calendar feed token.
+  email String  @db.VarChar(768) // contact/display address; authentication uses signInMethods
+  phone String? @db.VarChar(768)
 
-  roleId Int? // nullable for new users a role should be assigned by an admin. null = public
-  role   Role? @relation(fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
+  hashedPassword String?
 
-  tags     UserTagAssignment[]
-  tokens   Token[]
-  sessions Session[]
-  changes  Change[] // yea don't include this in queries
+  createdAt         DateTime @default(now())
+  calendarFeedToken String?  @map("accessToken") @db.VarChar(768) // private bearer credential scoped only to the user's read-only calendar feed.
+  uid               String?  @default(uuid()) // used for unique identification but is NOT secret like the calendar feed token.
+
+  // LSMB_TODO: migrate role to globalRole
+  // roleId Int? // nullable for new users a role should be assigned by an admin. null = public
+  // role   Role? @relation("<name>", fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
+  globalRole   GlobalRole? @relation("User_globalRole", fields: [globalRoleId], references: [id], onDelete: SetNull)
+  globalRoleId Int?
 
   cssClass String?
 
-  taggedFiles                    FileUserTag[]
-  uploadedFiles                  File[]
-  eventSegmentResponses          EventSegmentUserResponse[] @relation("EventSegmentUserResponseUser")
-  eventSegmentResponsesUpdatedBy EventSegmentUserResponse[] @relation("EventSegmentUserResponseUpdatedBy")
-  eventSegmentResponsesCreatedBy EventSegmentUserResponse[] @relation("EventSegmentUserResponseCreatedBy")
-  eventResponses                 EventUserResponse[]
-  songCredits                    SongCredit[]
-  instruments                    UserInstrument[]
-  createdCustomLinks             CustomLink[]
-  createdMenuLinks               MenuLink[]
-  createdWikiPageRevisions       WikiPageRevision[]
-
-  creatorForSongs                Song[]
-  creatorForEvents               Event[]                @relation("EventCreatedBy")
-  updatedForEvents               Event[]                @relation("EventUpdatedBy")
-  creatorForFrontpageGalleryItem FrontpageGalleryItem[]
-  creatorForWikiPages            WikiPage[]             @relation("WikiPageCreatedBy")
-
-  setlistPlans      SetlistPlan[]
-  setlistPlanGroups SetlistPlanGroup[]
-  lockedWikiPages   WikiPage[]
-
-  actions Action[]
+  localesByCreatedByUser           Locale[]                          @relation("Locale_createdByUser")
+  localesByUpdatedByUser           Locale[]                          @relation("Locale_updatedByUser")
+  staticLocalizedStringValues      StaticLocalizedStringValue[]      @relation("StaticLocalizedStringValue_updatedByUser")
+  dynamicLocalizedStringValues     DynamicLocalizedStringValue[]     @relation("DynamicLocalizedStringValue_updatedByUser")
+  bandsByCreatedByUser             Band[]                            @relation("Band_createdByUser")
+  bandsByUpdatedByUser             Band[]                            @relation("Band_updatedByUser")
+  bandLocalesByCreatedByUser       BandLocale[]                      @relation("BandLocale_createdByUser")
+  bandLocalesByUpdatedByUser       BandLocale[]                      @relation("BandLocale_updatedByUser")
+  bandStaticLocalizedStringValues  BandStaticLocalizedStringValue[]  @relation("BandStaticLocalizedStringValue_updatedByUser")
+  bandDynamicLocalizedStringValues BandDynamicLocalizedStringValue[] @relation("BandDynamicLocalizedStringValue_updatedByUser")
+  globalRolePermissions            GlobalRolePermission[]            @relation("GlobalRolePermission_updatedByUser")
+  bandRolePermissions              BandRolePermission[]              @relation("BandRolePermission_updatedByUser")
+  actions                          Action[]                          @relation("Action_user")
+  mergedUsers                      User[]                            @relation("User_mergedIntoUser")
+  bandUsersByUser                  BandUser[]                        @relation("BandUser_user")
+  bandUsersByCreatedByUser         BandUser[]                        @relation("BandUser_createdByUser")
+  bandUsersByUpdatedByUser         BandUser[]                        @relation("BandUser_updatedByUser")
+  signInMethods                    UserSignInMethod[]                @relation("UserSignInMethod_user")
+  userSettingsByUser               UserSetting[]                     @relation("UserSetting_user")
+  userSettingsByUpdatedByUser      UserSetting[]                     @relation("UserSetting_updatedByUser")
+  globalSettings                   GlobalSetting[]                   @relation("GlobalSetting_updatedByUser")
+  bandSettings                     BandSetting[]                     @relation("BandSetting_updatedByUser")
+  sessions                         Session[]                         @relation("Session_user")
+  tokens                           Token[]                           @relation("Token_user")
+  songsByUpdatedByUser             Song[]                            @relation("Song_updatedByUser")
+  songsByCreatedByUser             Song[]                            @relation("Song_createdByUser")
+  songCredits                      SongCredit[]                      @relation("SongCredit_user")
+  creatorForEvents                 Event[]                           @relation("Event_createdByUser")
+  updatedForEvents                 Event[]                           @relation("Event_updatedByUser")
+  eventSegmentResponsesCreatedBy   EventSegmentUserResponse[]        @relation("EventSegmentUserResponse_createdByUser")
+  eventSegmentResponsesUpdatedBy   EventSegmentUserResponse[]        @relation("EventSegmentUserResponse_updatedByUser")
+  uploadedFiles                    File[]                            @relation("File_uploadedByUser")
+  creatorForFrontpageGalleryItem   FrontpageGalleryItem[]            @relation("FrontpageGalleryItem_createdByUser")
+  createdCustomLinks               CustomLink[]                      @relation("CustomLink_createdByUser")
+  lockedWikiPages                  WikiPage[]                        @relation("WikiPage_lockedByUser")
+  creatorForWikiPages              WikiPage[]                        @relation("WikiPage_createdByUser")
+  createdWikiPageRevisions         WikiPageRevision[]                @relation("WikiPageRevision_createdByUser")
+  createdMenuLinks                 MenuLink[]                        @relation("MenuLink_createdByUser")
+  setlistPlanGroups                SetlistPlanGroup[]                @relation("SetlistPlanGroup_createdByUser")
+  setlistPlans                     SetlistPlan[]                     @relation("SetlistPlan_createdByUser")
+  bandUserSettings                 BandUserSetting[]                 @relation("BandUserSetting_updatedByUser")
 
   @@unique([calendarFeedToken], map: "User_accessToken_key")
   @@unique([uid])
@@ -216,6 +736,43 @@ model User {
   @@index([isDeleted])
   @@index([email])
   @@index([phone])
+}
+
+// LSMB_TODO: new table
+// describes user-band membership.
+model BandUser {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
+
+  userId Int
+  user   User @relation("BandUser_user", fields: [userId], references: [id], onDelete: Restrict) // Membership history is removed explicitly before hard-deleting an account.
+
+  bandId Int
+  band   Band @relation("BandUser_band", fields: [bandId], references: [id], onDelete: Restrict) // Bands and memberships use soft deletion.
+
+  bandRoleId Int?
+  bandRole   BandRole? @relation("BandUser_bandRole", fields: [bandRoleId], references: [id], onDelete: SetNull)
+  isDeleted  Boolean   @default(false) // Retain past membership and contributions.
+
+  // ®️recordkeeping:
+  createdAt       DateTime @default(now())
+  createdByUserId Int?
+  createdByUser   User?    @relation("BandUser_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("BandUser_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  // 👁️visibility:
+  // Ⓜ️metadata: unnecessary.
+
+  bandUserTagAssignments    BandUserTagAssignment[]    @relation("BandUserTagAssignment_bandUser")
+  bandUserInstruments       BandUserInstrument[]       @relation("BandUserInstrument_bandUser")
+  eventUserResponses        EventUserResponse[]        @relation("EventUserResponse_bandUser")
+  eventSegmentUserResponses EventSegmentUserResponse[] @relation("EventSegmentUserResponse_bandUser")
+  fileUserTags              FileUserTag[]              @relation("FileUserTag_bandUser")
+  bandUserSettings          BandUserSetting[]          @relation("BandUserSetting_bandUser")
+
+  @@unique([bandId, userId])
 }
 
 enum SignInMethodType {
@@ -233,7 +790,7 @@ model UserSignInMethod {
   identifier String           @db.VarChar(320)
   displayId  String?          @db.VarChar(320) // for google, the last verified address returned for this Google subject. for others: a display-friendly name.
   createdAt  DateTime         @default(now())
-  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User             @relation("UserSignInMethod_user", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([type, identifier])
   @@index([userId])
@@ -251,46 +808,73 @@ model AdminBootstrapClaim {
 }
 
 model UserSetting {
-  id     Int    @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+  // public ID not needed because userId + name = key and so far API hasn't demanded it.
+
   userId Int
-  name   String @db.VarChar(191)
+  name   String @db.VarChar(191) // todo: why 191?
   value  Json
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation("UserSetting_user", fields: [userId], references: [id], onDelete: Cascade) // when user deletes, its settings lose meaning
+
+  // LSMB: add this.
+  // ®️recordkeeping
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("UserSetting_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
 
   @@unique([userId, name])
 }
 
-model Setting {
+// LSMB_TODO: rename Setting -> GlobalSetting
+// todo: migrate values
+model GlobalSetting {
   id       Int    @id @default(autoincrement())
   publicId String @unique @db.Char(16)
   name     String @unique @default("") @db.VarChar(768)
   value    String @db.MediumText // json value et al
 
+  // LSMB: add this.
+  // ®️recordkeeping
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("GlobalSetting_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
   @@index([name])
 }
 
-model Change {
-  id Int @id @default(autoincrement())
+// LSMB_TODO: new model
+model BandSetting {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
 
-  action String // create, update, delete
+  bandId Int
+  band   Band @relation("BandSetting_band", fields: [bandId], references: [id], onDelete: Cascade) // when band deletes, its settings lose meaning
 
-  context     String @db.VarChar(768) // depends on action / context / whatever
-  operationId String // a GUID that groups together all changes that were performed in 1 logical update (for example updating permission relations is many ops, or multiple changing fields)
+  name  String @db.VarChar(191)
+  value String @db.MediumText // json value et al
 
-  table    String
-  recordId Int
+  // LSMB: add this.
+  // ®️recordkeeping
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("BandSetting_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
 
-  changedAt     DateTime @default(now())
-  userId        Int?
-  sessionHandle String?
-  oldValues     String?  @db.MediumText // for create, empty. for update, JSON of fields. for delete, all column values.
-  newValues     String?  @db.MediumText // for create & update, JSON of fields. for delete, empty.
+  @@unique([bandId, name])
+  @@index([name])
+}
 
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade) // this is one reason not to allow hard deletion of users. any activity of that user should be retained.
+// Per-membership preferences, including calendar locale.
+model BandUserSetting {
+  id              Int      @id @default(autoincrement())
+  bandUserId      Int
+  bandUser        BandUser @relation("BandUserSetting_bandUser", fields: [bandUserId], references: [id], onDelete: Cascade) // Settings have no meaning without their membership.
+  name            String   @db.VarChar(191)
+  value           Json
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("BandUserSetting_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
 
-  @@index([table])
-  @@index([recordId])
-  @@index([userId])
+  @@unique([bandUserId, name])
 }
 
 model Session {
@@ -302,7 +886,7 @@ model Session {
   publicData         String?   @db.MediumText
   privateData        String?   @db.MediumText
 
-  user   User? @relation(fields: [userId], references: [id])
+  user   User? @relation("Session_user", fields: [userId], references: [id])
   userId Int?
 }
 
@@ -315,25 +899,18 @@ model Token {
   expiresAt   DateTime
   sentTo      String   @db.VarChar(768)
 
-  user   User @relation(fields: [userId], references: [id])
+  user   User @relation("Token_user", fields: [userId], references: [id])
   userId Int
 
   @@unique([hashedToken, type])
 }
 
-// NOTE: It's highly recommended to use an enum for the token type
-//       but enums only work in Postgres.
-//       See: https://blitzjs.com/docs/database-overview#switch-to-postgre-sql
-// enum TokenType {
-//   RESET_PASSWORD
-// }
-
 model Song {
   id             Int    @id @default(autoincrement())
   publicId       String @unique @db.Char(16)
-  name           String @db.VarChar(768)
-  aliases        String @default("") @db.VarChar(768)
-  description    String @db.MediumText
+  name           String @db.VarChar(768) // multilingual; not localized.
+  aliases        String @default("") @db.VarChar(768) // multilingual; not localized.
+  description    String @db.MediumText // multilingual; not localized.
   startBPM       Int?
   endBPM         Int?
   introducedYear Int? // purposely fuzzy
@@ -343,151 +920,289 @@ model Song {
   lengthSeconds Int? // length. this is approximate, and could vary wildly esp. considering variations.
   // so what about variations like roger variete, or tango long/short versions? do we relate them? or score stuff? i think don't bother; maybe there can be related songs or something but not yet.
 
-  createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
-  createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  // LSMB: add band ownership and update metadata.
+  bandId          Int
+  band            Band     @relation("Song_band", fields: [bandId], references: [id], onDelete: Restrict) // Remove content explicitly before hard-deleting its band.
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("Song_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  createdByUserId Int? // required in order to know visibility when visiblePermissionId is NULL
+  createdByUser   User? @relation("Song_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
+  visiblePermission   Permission? @relation("Song_visiblePermission", fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
   // Pinned recording - the canonical recording for this song
   pinnedRecordingId Int?
-  pinnedRecording   File? @relation("pinnedRecordings", fields: [pinnedRecordingId], references: [id], onDelete: SetNull)
+  pinnedRecording   File?                    @relation("Song_pinnedRecording", fields: [pinnedRecordingId], references: [id], onDelete: SetNull)
+  actions           Action[]                 @relation("Action_song")
+  credits           SongCredit[]             @relation("SongCredit_song")
+  tags              BandSongTagAssociation[] @relation("BandSongTagAssociation_song")
+  songLists         EventSongListSong[]      @relation("EventSongListSong_song")
+  taggedFiles       FileSongTag[]            @relation("FileSongTag_song")
 
-  taggedFiles FileSongTag[]
-  tags        SongTagAssociation[]
-  credits     SongCredit[]
-  songLists   EventSongListSong[]
-  actions     Action[]
-
+  @@unique([id, bandId])
   @@index([name])
   @@index([aliases])
   @@index([isDeleted])
   @@index([visiblePermissionId])
+  @@index([bandId])
 }
 
 // composer / arranger / whatever
 model SongCreditType {
-  id           Int     @id @default(autoincrement())
-  publicId     String  @unique @db.Char(16)
-  text         String
-  description  String  @db.MediumText
-  color        String?
-  sortOrder    Int     @default(0)
-  significance String? // SongCreditTypeSignificance
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
 
-  songCredits SongCredit[]
-  actions     Action[]
+  // LSMB: 🌐localizing string, renaming text -> name
+  nameId        Int
+  name          DynamicLocalizedString @relation("SongCreditType_name", fields: [nameId], references: [id])
+  descriptionId Int
+  description   DynamicLocalizedString @relation("SongCreditType_description", fields: [descriptionId], references: [id])
 
-  @@index([text])
-  @@index([significance])
+  color     String?
+  sortOrder Int     @default(0)
+
+  // LSMB: removed significance for SongCreditType
+
+  actions     Action[]     @relation("Action_songCreditType")
+  songCredits SongCredit[] @relation("SongCredit_type")
+
   @@index([sortOrder])
 }
 
 model SongCredit {
   id       Int    @id @default(autoincrement())
   publicId String @unique @db.Char(16)
-  // some authors may not be users; can specify in comments
-  userId   Int?
-  user     User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // nullable: some authors may not be users; can specify in comments
+  // this is USER, not band-user membership. it's debatable but this seems simpler.
+  userId Int?
+  user   User? @relation("SongCredit_user", fields: [userId], references: [id], onDelete: SetNull)
 
   songId Int
-  song   Song @relation(fields: [songId], references: [id], onDelete: Cascade)
+  song   Song @relation("SongCredit_song", fields: [songId], references: [id], onDelete: Cascade)
 
   year    String @default("") @db.VarChar(768)
-  comment String @db.MediumText // markdown
+  comment String @db.MediumText // markdown; multilingual; not localized
 
   typeId Int
-  type   SongCreditType @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  type   SongCreditType @relation("SongCredit_type", fields: [typeId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([songId])
   @@index([typeId])
 }
 
-model SongTag {
-  id                Int                  @id @default(autoincrement())
-  publicId          String               @unique @db.Char(16)
-  text              String               @db.VarChar(768)
-  description       String               @db.MediumText
-  color             String?
-  significance      String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
-  sortOrder         Int                  @default(0)
-  group             String?              @db.VarChar(768) // used to group tags together in the UI, e.g. "genre", "style", "mood", etc. ungrouped tags will be grouped by sort order
+// LSMB: rename SongTag -> GlobalSongTag
+model GlobalSongTag {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
+
+  color String?
+
+  // LSMB: 🌐localizing string, renaming text -> name
+  nameId        Int
+  name          DynamicLocalizedString @relation("GlobalSongTag_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId Int
+  description   DynamicLocalizedString @relation("GlobalSongTag_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+
+  // LSMB: removed significance.
+
+  sortOrder Int @default(0)
+
+  // used in setlists
+  group             String? @db.VarChar(768) // used to group tags together in the UI, e.g. "genre", "style", "mood", etc. ungrouped tags will be grouped by sort order
   indicator         String? // a little overlay char or so, batons/pompoms...
   indicatorCssClass String?
-  songs             SongTagAssociation[]
 
-  @@index([text])
-  @@index([significance])
+  bandSongTags BandSongTag[] @relation("BandSongTag_globalSongTag")
+
   @@index([sortOrder])
 }
 
-model SongTagAssociation {
+// LSMB: new table
+// these are band-overrides on a GlobalSongTag, or custom tags.
+model BandSongTag {
   id       Int     @id @default(autoincrement())
   publicId String  @unique @db.Char(16)
-  songId   Int
-  song     Song    @relation(fields: [songId], references: [id], onDelete: Cascade)
-  tagId    Int
-  tag      SongTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  color    String?
+  isHidden Boolean @default(false)
 
-  @@unique([tagId, songId])
+  globalSongTagId Int?
+  globalSongTag   GlobalSongTag? @relation("BandSongTag_globalSongTag", fields: [globalSongTagId], references: [id], onDelete: Restrict) // do not set null; app logic must propagate global -> band
+
+  // LSMB: 🌐localizing string, renaming text -> name
+  nameId        Int?
+  name          DynamicLocalizedString? @relation("BandSongTag_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId Int?
+  description   DynamicLocalizedString? @relation("BandSongTag_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+
+  sortOrder         Int?
+  group             String? @db.VarChar(768) // used to group tags together in the UI, e.g. "genre", "style", "mood", etc. ungrouped tags will be grouped by sort order
+  indicator         String? // a little overlay char or so, batons/pompoms...
+  indicatorCssClass String?
+
+  bandId Int
+  band   Band @relation("BandSongTag_band", fields: [bandId], references: [id], onDelete: Restrict) // Bands are soft-deleted; remove content explicitly before a hard delete.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  songs BandSongTagAssociation[] @relation("BandSongTagAssociation_tag")
+
+  @@unique([bandId, globalSongTagId])
+  @@unique([id, bandId])
+  @@index([sortOrder])
+  @@index([bandId])
 }
 
-// we could benefit from instrument grouping if they serve some identical purpose.
+// LSMB: rename SongTagAssociation -> BandSongTagAssociation
+model BandSongTagAssociation {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
+  songId   Int
+  song     Song   @relation("BandSongTagAssociation_song", fields: [songId], references: [id], onDelete: Cascade)
+
+  // LSMB: renaming tagId -> bandSongTagId
+  bandSongTagId Int
+  tag           BandSongTag @relation("BandSongTagAssociation_tag", fields: [bandSongTagId], references: [id], onDelete: Cascade)
+
+  @@unique([bandSongTagId, songId])
+}
+
+// instrument grouping by function
 // for example sousaphone, bass guitar, double bass, serve the same function at events.
 // flute, clarinet, sax would all be separate functional groups. so it may be nearly 1:1 with instruments.
 // users will associate with instruments like "electric bass" but then when we look at event attendance we see the bass function fulfilled.
 // this directly addresses the issue on the google sheet where i can't tell if we have enough drummers
-// that's one use in particular that justifies grouping. are there other such uses?
+// that's one use in particular that justifies grouping
 
-// functional groups are admin-managed.
-// individual instruments are user-managed.
-model InstrumentFunctionalGroup {
-  id          Int          @id @default(autoincrement())
-  publicId    String       @unique @db.Char(16)
-  name        String       @unique
-  description String       @db.MediumText
-  sortOrder   Int
-  color       String?
-  instruments Instrument[]
+// LSMB: rename InstrumentFunctionalGroup -> GlobalInstrumentFunctionalGroup
+model GlobalInstrumentFunctionalGroup {
+  id        Int     @id @default(autoincrement())
+  publicId  String  @unique @db.Char(16)
+  sortOrder Int
+  color     String?
 
-  @@index([name])
+  // LSMB: 🌐localizing strings
+  nameId                         Int
+  name                           DynamicLocalizedString          @relation("GlobalInstrumentFunctionalGroup_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId                  Int
+  description                    DynamicLocalizedString          @relation("GlobalInstrumentFunctionalGroup_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+  bandInstrumentFunctionalGroups BandInstrumentFunctionalGroup[] @relation("BandInstrumentFunctionalGroup_globalFunctionalGroup")
+  instruments                    GlobalInstrument[]              @relation("GlobalInstrument_functionalGroup")
+
   @@index([sortOrder])
 }
 
-model Instrument {
-  id          Int    @id @default(autoincrement())
-  publicId    String @unique @db.Char(16)
-  name        String @unique @db.VarChar(768)
-  description String @db.MediumText
-  sortOrder   Int
+model BandInstrumentFunctionalGroup {
+  id        Int     @id @default(autoincrement())
+  publicId  String  @unique @db.Char(16)
+  sortOrder Int?
+  color     String?
+  isHidden  Boolean @default(false)
+
+  // LSMB: 🌐localizing strings
+  nameId        Int?
+  name          DynamicLocalizedString? @relation("BandInstrumentFunctionalGroup_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId Int?
+  description   DynamicLocalizedString? @relation("BandInstrumentFunctionalGroup_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+
+  bandId Int
+  band   Band @relation("BandInstrumentFunctionalGroup_band", fields: [bandId], references: [id], onDelete: Restrict) // Bands are soft-deleted; remove content explicitly before a hard delete.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  globalFunctionalGroupId Int?
+  globalFunctionalGroup   GlobalInstrumentFunctionalGroup? @relation("BandInstrumentFunctionalGroup_globalFunctionalGroup", fields: [globalFunctionalGroupId], references: [id], onDelete: Restrict)
+  instruments             BandInstrument[]                 @relation("BandInstrument_functionalGroup")
+
+  @@unique([bandId, globalFunctionalGroupId])
+  @@unique([id, bandId])
+  @@index([sortOrder])
+  @@index([bandId])
+}
+
+// LSMB: rename Instrument -> GlobalInstrument
+model GlobalInstrument {
+  id        Int    @id @default(autoincrement())
+  publicId  String @unique @db.Char(16)
+  sortOrder Int
+
+  // LSMB: 🌐localizing strings
+  nameId        Int
+  name          DynamicLocalizedString @relation("GlobalInstrument_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId Int
+  description   DynamicLocalizedString @relation("GlobalInstrument_description", fields: [descriptionId], references: [id], onDelete: Restrict)
 
   // when uploading files to songs, this regex will test if a filename matches this instrument. the directory & extension have been stripped already.
   autoAssignFileLeafRegex String? @db.VarChar(768)
 
   functionalGroupId Int
-  functionalGroup   InstrumentFunctionalGroup @relation(fields: [functionalGroupId], references: [id], onDelete: Cascade) // if you want to delete a functional group, you need to manually reassign
+  functionalGroup   GlobalInstrumentFunctionalGroup @relation("GlobalInstrument_functionalGroup", fields: [functionalGroupId], references: [id], onDelete: Restrict) // Reassign instruments before deleting a functional group.
 
-  fileTags           FileInstrumentTag[]
-  users              UserInstrument[]
-  eventUserResponses EventUserResponse[]
+  bandInstruments BandInstrument[] @relation("BandInstrument_globalInstrument")
 
-  actions Action[]
-
-  @@index([name])
   @@index([sortOrder])
   @@index([functionalGroupId])
 }
 
-model UserInstrument {
-  id           Int        @id @default(autoincrement())
-  publicId     String     @unique @db.Char(16)
-  instrumentId Int
-  instrument   Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade) // cascade delete association
-  isPrimary    Boolean    @default(false)
-  userId       Int
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade) // cascade delete association
+// LSMB: new table
+model BandInstrument {
+  id        Int     @id @default(autoincrement())
+  publicId  String  @unique @db.Char(16)
+  sortOrder Int?
+  isHidden  Boolean @default(false)
 
-  @@index([userId])
+  // LSMB: 🌐localizing strings
+  nameId        Int?
+  name          DynamicLocalizedString? @relation("BandInstrument_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId Int?
+  description   DynamicLocalizedString? @relation("BandInstrument_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+
+  bandId Int
+  band   Band @relation("BandInstrument_band", fields: [bandId], references: [id], onDelete: Restrict) // Bands are soft-deleted; remove content explicitly before a hard delete.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  globalInstrumentId      Int?
+  globalInstrument        GlobalInstrument?             @relation("BandInstrument_globalInstrument", fields: [globalInstrumentId], references: [id], onDelete: Restrict)
+  functionalGroupId       Int
+  functionalGroup         BandInstrumentFunctionalGroup @relation("BandInstrument_functionalGroup", fields: [functionalGroupId, bandId], references: [id, bandId], onDelete: Restrict)
+  autoAssignFileLeafRegex String?                       @db.VarChar(768) // Null inherits the global instrument's matcher.
+
+  actions             Action[]             @relation("Action_bandInstrument")
+  bandUserInstruments BandUserInstrument[] @relation("BandUserInstrument_bandInstrument")
+  eventUserResponses  EventUserResponse[]  @relation("EventUserResponse_bandInstrument")
+  fileInstrumentTags  FileInstrumentTag[]  @relation("FileInstrumentTag_bandInstrument")
+
+  @@unique([bandId, globalInstrumentId])
+  @@unique([id, bandId])
+  @@index([sortOrder])
+  @@index([bandId])
+}
+
+// LSMB: rename UserInstrument -> BandUserInstrument
+model BandUserInstrument {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
+
+  // LSMB: renaming columns
+  bandInstrumentId Int
+  bandInstrument   BandInstrument @relation("BandUserInstrument_bandInstrument", fields: [bandInstrumentId], references: [id], onDelete: Cascade) // associations delete
+
+  isPrimary Boolean @default(false)
+
+  bandUserId Int
+
+  bandUser BandUser @relation("BandUserInstrument_bandUser", fields: [bandUserId], references: [id], onDelete: Cascade) // Removing a membership removes its associations.
+
+  @@unique([bandUserId, bandInstrumentId])
+  @@index([bandUserId])
 }
 
 // concerts vs. rehearsals? i originally thought these would be tags, but should it just be a dropdown?
@@ -502,33 +1217,34 @@ model UserInstrument {
 // they get separate data for the different types. but that's not really the case because this Events table is quite general for events;
 // nothing here is specific to any type of event. should that be the case it can be attached somehow.
 model Event {
-  publicId          String  @unique @db.Char(16)
-  id                Int     @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
+  id       Int    @id @default(autoincrement())
+
+  bandId Int
+  band   Band @relation("Event_band", fields: [bandId], references: [id], onDelete: Restrict) // Remove content explicitly before hard-deleting its band.
+
   revision          Int
   calendarInputHash String? @db.VarChar(200) // ical input payload, to know if revision should be updated.
-  name              String  @db.VarChar(768)
+  name              String  @db.VarChar(768) // multilingual; no translations
 
   // description is now migrated to wiki
 
   typeId Int?
-  type   EventType? @relation(fields: [typeId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
+  type   EventType? @relation("Event_type", fields: [typeId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
 
-  locationDescription String       @default("") @db.VarChar(768)
-  locationURL         String       @default("") @db.VarChar(768)
+  locationDescription String       @default("") @db.VarChar(768) // multilingual; no translations
+  locationURL         String       @default("") @db.VarChar(768) // multilingual; no translations
   isDeleted           Boolean      @default(false)
   // "status" seems kinda more like business logic than a db field. it depends on approvals and spits out either unconfirmed or confirmed.
   // so ideally status is calculated based off approvals & other things. but that locks us into designing for ideal scenarios where everyone is diligent.
   // more practical to just have an enum status.
   statusId            Int?
-  status              EventStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
+  status              EventStatus? @relation("Event_status", fields: [statusId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
 
   relevanceClassOverride Int? // enum EventRelevanceClass
 
   descriptionWikiPageId Int?
-  descriptionWikiPage   WikiPage? @relation(fields: [descriptionWikiPageId], references: [id], onDelete: SetNull, name: "eventDescriptionWikiPage")
-
-  // sets vs. options vs . ???
-  segmentBehavior String?
+  descriptionWikiPage   WikiPage? @relation("Event_descriptionWikiPage", fields: [descriptionWikiPageId], references: [id], onDelete: SetNull)
 
   // don't do this because it's redundant with status. bring it back only if there's a true need.
   // isCancelled Boolean   @default(false) // used as an input for calculating status
@@ -550,17 +1266,16 @@ model Event {
 
   createdAt       DateTime @default(now())
   createdByUserId Int? // required in order to know visibility when visiblePermissionId is NULL
-  createdByUser   User?    @relation("EventCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-
+  createdByUser   User?    @relation("Event_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
   updatedAt       DateTime @default(now()) @updatedAt
   updatedByUserId Int? // required in order to know visibility when visiblePermissionId is NULL
-  updatedByUser   User?    @relation("EventUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  updatedByUser   User?    @relation("Event_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
 
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
+  visiblePermission   Permission? @relation("Event_visiblePermission", fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
   expectedAttendanceUserTagId Int?
-  expectedAttendanceUserTag   UserTag? @relation(fields: [expectedAttendanceUserTagId], references: [id], onDelete: SetNull)
+  expectedAttendanceUserTag   BandUserTag? @relation("Event_expectedAttendanceUserTag", fields: [expectedAttendanceUserTagId], references: [id], onDelete: SetNull)
 
   frontpageVisible     Boolean @default(false)
   frontpageDate        String  @default("") @db.VarChar(300) // e.g. "Zaterdag 11 november"
@@ -587,15 +1302,16 @@ model Event {
   frontpageLocationURI_nl String? @db.VarChar(300) // null = use normal
   frontpageTags_nl        String? @db.VarChar(300) // null, use normal
 
-  fileTags  FileEventTag[]
-  tags      EventTagAssignment[]
-  segments  EventSegment[]
-  songLists EventSongList[]
-  responses EventUserResponse[]
-  actions   Action[]
+  actions   Action[]             @relation("Action_event")
+  segments  EventSegment[]       @relation("EventSegment_event")
+  tags      EventTagAssignment[] @relation("EventTagAssignment_event")
+  songLists EventSongList[]      @relation("EventSongList_event")
+  responses EventUserResponse[]  @relation("EventUserResponse_event")
+  fileTags  FileEventTag[]       @relation("FileEventTag_event")
 
   @@unique([uid])
   @@unique([descriptionWikiPageId])
+  @@unique([id, bandId])
   @@index([name])
   @@index([typeId])
   @@index([isDeleted])
@@ -604,6 +1320,7 @@ model Event {
   @@index([endDateTime])
   @@index([visiblePermissionId])
   @@index([frontpageVisible])
+  @@index([bandId])
 }
 
 // events have multiple segments, for example the CM weekend can be broken into saturday, sunday, monday
@@ -612,15 +1329,15 @@ model EventSegment {
   publicId String @unique @db.Char(16)
   id       Int    @id @default(autoincrement())
   eventId  Int
-  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade) // events are soft-delete.
+  event    Event  @relation("EventSegment_event", fields: [eventId], references: [id], onDelete: Cascade) // events are soft-delete.
 
-  name        String  @db.VarChar(768)
-  description String  @db.MediumText // short description, like 
+  name        String  @db.VarChar(768) // multilingual
+  description String  @db.MediumText // markdown, multilingual.
   uid         String? @default(uuid()) // used for unique identification but is NOT secret like a calendar feed token.
 
   // segments have their own status as well, this is mostly used in the case where you're using an event like a doodle, and segments can be cancelled.
   statusId Int?
-  status   EventStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull)
+  status   EventStatus? @relation("EventSegment_status", fields: [statusId], references: [id], onDelete: SetNull)
 
   // conform to DateTimeRangeSpec
   startsAt       DateTime? // date null means TBD
@@ -634,14 +1351,14 @@ model EventSegment {
   //     span of the event which represents "all day" from the perspective of the band's
   //     timezone.
   //     this:
-  //     - let's everyone see the same objectvie time range for the event
+  //     - lets everyone see the same objective time range for the event
   //     - places the event in the band's timezone instead of UTC, which will feel more natural.
   //       for example a band located in New York used to have all-day events' bounds
   //       changing in the middle of the day, NYC-time. that boundary is now placed better.
   dateTimeVersion Int @default(2)
 
-  responses EventSegmentUserResponse[]
-  actions   Action[]
+  actions   Action[]                   @relation("Action_eventSegment")
+  responses EventSegmentUserResponse[] @relation("EventSegmentUserResponse_eventSegment")
 
   @@index([name])
   @@index([statusId])
@@ -650,88 +1367,134 @@ model EventSegment {
 }
 
 model EventType {
-  id           Int     @id @default(autoincrement())
-  publicId     String  @unique @db.Char(16)
-  text         String  @db.VarChar(768)
-  description  String  @db.MediumText
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
+
+  // LSMB: 🌐localizing strings
+  // renaming text -> name
+  nameId        Int
+  name          DynamicLocalizedString @relation("EventType_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId Int
+  description   DynamicLocalizedString @relation("EventType_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+
   color        String?
   sortOrder    Int     @default(0)
   significance String?
   iconName     String?
   isDeleted    Boolean @default(false)
-  events       Event[]
 
-  @@index([text])
+  events Event[] @relation("Event_type")
+
   @@index([sortOrder])
   @@index([significance])
   @@index([isDeleted])
 }
 
 model EventStatus {
-  id           Int     @id @default(autoincrement())
-  publicId     String  @unique @db.Char(16)
-  label        String  @db.VarChar(768)
-  description  String  @db.MediumText
-  color        String?
-  sortOrder    Int     @default(0)
-  significance String?
-  iconName     String?
-  isDeleted    Boolean @default(false)
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
 
-  events        Event[]
-  eventSegments EventSegment[]
+  // LSMB: 🌐localizing strings
+  // renaming label -> name
+  nameId        Int
+  name          DynamicLocalizedString @relation("EventStatus_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId Int
+  description   DynamicLocalizedString @relation("EventStatus_description", fields: [descriptionId], references: [id], onDelete: Restrict)
 
-  @@index([label])
+  color     String?
+  sortOrder Int     @default(0)
+  iconName  String?
+  isDeleted Boolean @default(false)
+
+  significance String? // Cancellation and confirmation still drive platform behavior.
+
+  events        Event[]        @relation("Event_status")
+  eventSegments EventSegment[] @relation("EventSegment_status")
+
   @@index([sortOrder])
-  @@index([significance])
   @@index([isDeleted])
+  @@index([significance])
 }
 
-model EventTag {
-  id                 Int                  @id @default(autoincrement())
-  publicId           String               @unique @db.Char(16)
-  text               String               @db.VarChar(768)
-  description        String               @db.MediumText
+// LSMB: rename EventTag -> GlobalEventTag
+model GlobalEventTag {
+  id                 Int     @id @default(autoincrement())
+  publicId           String  @unique @db.Char(16)
   color              String?
-  significance       String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
-  sortOrder          Int                  @default(0)
-  visibleOnFrontpage Boolean              @default(false)
-  events             EventTagAssignment[]
+  sortOrder          Int     @default(0)
+  visibleOnFrontpage Boolean @default(false) // TODO: obsolete this; CM-specific.
 
-  @@index([text])
-  @@index([significance])
+  // LSMB: 🌐localizing strings
+  // renaming text -> name
+  nameId        Int
+  name          DynamicLocalizedString @relation("GlobalEventTag_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId Int
+  description   DynamicLocalizedString @relation("GlobalEventTag_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+  bandEventTags BandEventTag[]         @relation("BandEventTag_globalEventTag")
+
   @@index([sortOrder])
   @@index([visibleOnFrontpage])
 }
 
-model EventTagAssignment {
-  id         Int      @id @default(autoincrement())
-  publicId   String   @unique @db.Char(16)
-  eventId    Int
-  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade) // events are soft-delete.
-  eventTagId Int
-  eventTag   EventTag @relation(fields: [eventTagId], references: [id], onDelete: Cascade) // delete tag = delete the associations.
+// LSMB: new table
+// overrides per-band
+model BandEventTag {
+  id        Int     @id @default(autoincrement())
+  publicId  String  @unique @db.Char(16)
+  color     String?
+  sortOrder Int?
+  isHidden  Boolean @default(false)
 
-  @@unique([eventId, eventTagId]) // 
+  globalEventTagId Int?
+  globalEventTag   GlobalEventTag? @relation("BandEventTag_globalEventTag", fields: [globalEventTagId], references: [id], onDelete: Restrict) // do not set null; app logic should propagate properties and remove reference.
+
+  // LSMB: 🌐localizing strings
+  // renaming text -> name
+  nameId        Int?
+  name          DynamicLocalizedString? @relation("BandEventTag_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId Int?
+  description   DynamicLocalizedString? @relation("BandEventTag_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+
+  bandId Int
+  band   Band @relation("BandEventTag_band", fields: [bandId], references: [id], onDelete: Restrict) // Bands are soft-deleted; remove content explicitly before a hard delete.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events EventTagAssignment[] @relation("EventTagAssignment_eventTag")
+
+  @@unique([bandId, globalEventTagId])
+  @@unique([id, bandId])
+  @@index([bandId])
+}
+
+model EventTagAssignment {
+  id             Int          @id @default(autoincrement())
+  publicId       String       @unique @db.Char(16)
+  eventId        Int
+  event          Event        @relation("EventTagAssignment_event", fields: [eventId], references: [id], onDelete: Cascade) // events are soft-delete.
+  bandEventTagId Int
+  eventTag       BandEventTag @relation("EventTagAssignment_eventTag", fields: [bandEventTagId], references: [id], onDelete: Cascade) // delete tag = delete the associations.
+
+  @@unique([eventId, bandEventTagId]) //
 }
 
 model EventSongList {
   publicId    String @unique @db.Char(16)
   id          Int    @id @default(autoincrement())
   sortOrder   Int    @default(0)
-  name        String @db.VarChar(768)
-  description String @db.MediumText
+  name        String @db.VarChar(768) // multilingual
+  description String @db.MediumText // multilingual; markdown
 
   eventId Int
-  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade) // when event is deleted, song lists go too.
-
-  songs    EventSongListSong[]
-  dividers EventSongListDivider[]
+  event   Event @relation("EventSongList_event", fields: [eventId], references: [id], onDelete: Cascade) // when event is deleted, song lists go too.
 
   isOrdered        Boolean @default(true)
   isActuallyPlayed Boolean @default(true)
 
-  actions Action[]
+  actions  Action[]               @relation("Action_eventSongList")
+  songs    EventSongListSong[]    @relation("EventSongListSong_eventSongList")
+  dividers EventSongListDivider[] @relation("EventSongListDivider_eventSongList")
 
   @@index([sortOrder])
   @@index([name])
@@ -745,10 +1508,10 @@ model EventSongListSong {
   sortOrder Int     @default(0)
 
   songId Int
-  song   Song @relation(fields: [songId], references: [id], onDelete: Cascade) // when you delete a song, it will disappear from all lists
+  song   Song @relation("EventSongListSong_song", fields: [songId], references: [id], onDelete: Cascade) // when you delete a song, it will disappear from all lists
 
   eventSongListId Int
-  eventSongList   EventSongList @relation(fields: [eventSongListId], references: [id], onDelete: Cascade) // when you delete a song list, delete songs in it.
+  eventSongList   EventSongList @relation("EventSongListSong_eventSongList", fields: [eventSongListId], references: [id], onDelete: Cascade) // when you delete a song list, delete songs in it.
 
   @@index([songId])
   @@index([sortOrder])
@@ -769,7 +1532,7 @@ model EventSongListDivider {
   textStyle String? // EventSongListDividerTextStyle
 
   eventSongListId Int
-  eventSongList   EventSongList @relation(fields: [eventSongListId], references: [id], onDelete: Cascade) // when you delete a song list, delete songs in it.
+  eventSongList   EventSongList @relation("EventSongListDivider_eventSongList", fields: [eventSongListId], references: [id], onDelete: Cascade) // when you delete a song list, delete songs in it.
 
   @@index([sortOrder])
   @@index([eventSongListId])
@@ -781,20 +1544,29 @@ model EventAttendance {
   id        Int    @id @default(autoincrement())
   sortOrder Int    @default(0)
 
-  text             String  @db.VarChar(768) // generic button text ("yes", "probably")
-  personalText     String  @default("") // more personal text explanation ("you are going", "you are probably going")
-  pastText         String  @default("") // "went"
-  pastPersonalText String  @default("") // "you went"
-  isActive         Boolean @default(true) // is it offered to users as an option?
+  isActive Boolean @default(true) // is it offered to users as an option?
 
-  description String  @db.MediumText // explanation
-  color       String?
-  iconName    String?
-  strength    Int // Going means strength > 50; shared/eventAttendance.ts owns this classification.
-  isDeleted   Boolean @default(false)
+  // LSMB: 🌐localizing strings
+  // renaming from text, personalText, pastText, pastPersonalText
+  buttonCaptionId       Int //  button text ("yes", "probably")
+  buttonCaption         DynamicLocalizedString @relation("EventAttendance_buttonCaption", fields: [buttonCaptionId], references: [id], onDelete: Restrict)
+  personalCaptionId     Int // button text with your own answer ("you are going", "you are probably going")
+  personalCaption       DynamicLocalizedString @relation("EventAttendance_personalCaption", fields: [personalCaptionId], references: [id], onDelete: Restrict)
+  pastCaptionId         Int // impersonal, past (they : "went") -- theoretically used on the "edit someone else's attendance" dialog.
+  pastCaption           DynamicLocalizedString @relation("EventAttendance_pastCaption", fields: [pastCaptionId], references: [id], onDelete: Restrict)
+  personalPastCaptionId Int // personal but in the past ("you went")
+  personalPastCaption   DynamicLocalizedString @relation("EventAttendance_personalPastCaption", fields: [personalPastCaptionId], references: [id], onDelete: Restrict)
 
-  responses EventSegmentUserResponse[]
-  actions   Action[]
+  descriptionId Int
+  description   DynamicLocalizedString @relation("EventAttendance_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+
+  color     String?
+  iconName  String?
+  strength  Int // Going means strength > 50; shared/eventAttendance.ts owns this classification.
+  isDeleted Boolean @default(false)
+
+  actions   Action[]                   @relation("Action_attendance")
+  responses EventSegmentUserResponse[] @relation("EventSegmentUserResponse_attendance")
 
   @@index([sortOrder])
   @@index([strength])
@@ -804,71 +1576,118 @@ model EventAttendance {
 model EventUserResponse {
   publicId String @unique @db.Char(16)
   id       Int    @id @default(autoincrement())
-  userId   Int
   eventId  Int
 
   revision Int     @default(1)
   uid      String? @default(uuid())
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  bandUserId Int
+  bandUser   BandUser @relation("EventUserResponse_bandUser", fields: [bandUserId], references: [id], onDelete: Cascade)
+
+  event Event @relation("EventUserResponse_event", fields: [eventId], references: [id], onDelete: Cascade)
 
   // NB: #162 your user tag overrides this. this flag is only used to invite people who don't have the tag.
-  isInvited    Boolean?
-  userComment  String?     @db.MediumText
-  instrumentId Int? // specify the specific instrument
-  instrument   Instrument? @relation(fields: [instrumentId], references: [id], onDelete: SetNull) // delete instrument, set to null
+  isInvited   Boolean?
+  userComment String?  @db.MediumText // multilingual, markdown
 
-  @@unique([userId, eventId]) // 
+  // LSMB: rename instrumentId -> bandInstrumentId
+  bandInstrumentId Int? // specify the specific instrument
+  bandInstrument   BandInstrument? @relation("EventUserResponse_bandInstrument", fields: [bandInstrumentId], references: [id], onDelete: SetNull) // delete instrument, set to null
+
+  @@unique([bandUserId, eventId]) //
 }
 
 model EventSegmentUserResponse {
   publicId String @unique @db.Char(16)
   id       Int    @id @default(autoincrement())
-  userId   Int
-  user     User   @relation("EventSegmentUserResponseUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  bandUserId Int
+  bandUser   BandUser @relation("EventSegmentUserResponse_bandUser", fields: [bandUserId], references: [id], onDelete: Restrict) // Soft-deleted membership retains historical responses.
 
   eventSegmentId Int
-  eventSegment   EventSegment @relation(fields: [eventSegmentId], references: [id], onDelete: Cascade)
+  eventSegment   EventSegment @relation("EventSegmentUserResponse_eventSegment", fields: [eventSegmentId], references: [id], onDelete: Cascade)
 
   attendanceId Int?
-  attendance   EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetNull)
+  attendance   EventAttendance? @relation("EventSegmentUserResponse_attendance", fields: [attendanceId], references: [id], onDelete: SetNull)
 
-  createdAt       DateTime? @default(now())
+  createdAt       DateTime @default(now())
   createdByUserId Int?
-  createdByUser   User?     @relation("EventSegmentUserResponseCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  updatedAt       DateTime? @default(now()) @updatedAt
+  createdByUser   User?    @relation("EventSegmentUserResponse_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedAt       DateTime @default(now()) @updatedAt
   updatedByUserId Int?
-  updatedByUser   User?     @relation("EventSegmentUserResponseUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  updatedByUser   User?    @relation("EventSegmentUserResponse_updatedByUser", fields: [updatedByUserId], references: [id], onDelete: SetNull)
 
-  @@unique([userId, eventSegmentId]) // 
+  @@unique([bandUserId, eventSegmentId]) //
 }
 
 // tech rider, partition, invoice, contract, event media, other, what is the usage?
-model FileTag {
-  id              Int                 @id @default(autoincrement())
-  publicId        String              @unique @db.Char(16)
-  text            String              @db.VarChar(768)
-  description     String              @db.MediumText
-  color           String?
-  significance    String? // 
-  sortOrder       Int                 @default(0)
-  fileAssignments FileTagAssignment[]
+// LSMB: rename FileTag -> GlobalFileTag
+model GlobalFileTag {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
 
-  @@index([text])
+  // LSMB: 🌐localizing strings
+  // renaming text -> name
+  nameId        Int
+  name          DynamicLocalizedString @relation("GlobalFileTag_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId Int
+  description   DynamicLocalizedString @relation("GlobalFileTag_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+
+  color        String?
+  significance String? //
+  sortOrder    Int     @default(0)
+
+  bandFileTags BandFileTag[] @relation("BandFileTag_globalFileTag")
+
   @@index([significance])
   @@index([sortOrder])
 }
 
-model FileTagAssignment {
-  id        Int     @id @default(autoincrement())
-  publicId  String  @unique @db.Char(16)
-  fileId    Int
-  file      File    @relation(fields: [fileId], references: [id], onDelete: Cascade) // files are soft-delete.
-  fileTagId Int
-  fileTag   FileTag @relation(fields: [fileTagId], references: [id], onDelete: Cascade) // delete tag = delete the associations.
+// LSMB: new table
+model BandFileTag {
+  id       Int     @id @default(autoincrement())
+  publicId String  @unique @db.Char(16)
+  isHidden Boolean @default(false)
 
-  @@unique([fileId, fileTagId]) // 
+  globalFileTagId Int?
+  globalFileTag   GlobalFileTag? @relation("BandFileTag_globalFileTag", fields: [globalFileTagId], references: [id], onDelete: Restrict) // do not set null; app logic should propagate properties and remove reference.
+
+  // LSMB: 🌐localizing strings
+  // renaming text -> name
+  nameId        Int?
+  name          DynamicLocalizedString? @relation("BandFileTag_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId Int?
+  description   DynamicLocalizedString? @relation("BandFileTag_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+
+  color     String?
+  sortOrder Int?
+
+  bandId Int
+  band   Band @relation("BandFileTag_band", fields: [bandId], references: [id], onDelete: Restrict) // Bands are soft-deleted; remove content explicitly before a hard delete.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fileAssignments BandFileTagAssignment[] @relation("BandFileTagAssignment_fileTag")
+
+  @@unique([bandId, globalFileTagId])
+  @@unique([id, bandId])
+  @@index([sortOrder])
+  @@index([bandId])
+}
+
+// LSMB: rename FileTagAssignment -> BandFileTagAssignment
+model BandFileTagAssignment {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @db.Char(16)
+  fileId   Int
+  file     File   @relation("BandFileTagAssignment_file", fields: [fileId], references: [id], onDelete: Cascade) // association deletion
+
+  // LSMB: rename fileTagId -> bandFileTagId
+  bandFileTagId Int
+  bandFileTag   BandFileTag @relation("BandFileTagAssignment_fileTag", fields: [bandFileTagId], references: [id], onDelete: Cascade) // delete tag = delete the associations.
+
+  @@unique([fileId, bandFileTagId]) //
 }
 
 // files can also just be floating uploads for example dropped into a markdown field
@@ -891,9 +1710,9 @@ model File {
 
   uploadedAt          DateTime
   uploadedByUserId    Int?
-  uploadedByUser      User?       @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  uploadedByUser      User?       @relation("File_uploadedByUser", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
   visiblePermissionId Int?
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
+  visiblePermission   Permission? @relation("File_visiblePermission", fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
   mimeType   String?
   customData String? @db.MediumText // JSON of FileCustomData that will depend how i feel like using it based on mimetype. links to thumbnails, metadata, pdf series of thumbnails, whatev.
@@ -901,28 +1720,29 @@ model File {
   // a file (which should be a child) which serves as a preview. for example if the audio file is some huge .wav, this can be a lower-quality download-friendly MP3 version
   // or for huge photos, this is a low-bandwidth small preview.
   previewFileId Int?
-  previewFile   File? @relation("previewFiles", fields: [previewFileId], references: [id], onDelete: SetNull)
+  previewFile   File? @relation("File_previewFile", fields: [previewFileId], references: [id], onDelete: SetNull)
 
   // if this file was generated from another file, this forms that relationship.
   parentFileId Int?
-  parentFile   File? @relation("fileHierarchy", fields: [parentFileId], references: [id], onDelete: SetNull)
+  parentFile   File? @relation("File_parentFile", fields: [parentFileId], references: [id], onDelete: SetNull)
 
-  tags                  FileTagAssignment[]
-  taggedUsers           FileUserTag[]
-  taggedSongs           FileSongTag[]
-  taggedEvents          FileEventTag[]
-  taggedInstruments     FileInstrumentTag[]
-  taggedWikiPages       FileWikiPageTag[]
-  frontpageGalleryItems FrontpageGalleryItem[]
+  bandId Int
+  band   Band @relation("File_band", fields: [bandId], references: [id], onDelete: Restrict) // Bands are soft-deleted; remove content explicitly before a hard delete.
 
-  previewForFile File[]       @relation("previewFiles")
-  childFiles     File[]       @relation("fileHierarchy")
-  actions        Action[]
-  customLinks    CustomLink[]
+  actions               Action[]                @relation("Action_file")
+  pinnedForSongs        Song[]                  @relation("Song_pinnedRecording") // Songs with this file as their canonical recording.
+  tags                  BandFileTagAssignment[] @relation("BandFileTagAssignment_file")
+  previewForFile        File[]                  @relation("File_previewFile")
+  childFiles            File[]                  @relation("File_parentFile")
+  taggedUsers           FileUserTag[]           @relation("FileUserTag_file")
+  taggedSongs           FileSongTag[]           @relation("FileSongTag_file")
+  taggedEvents          FileEventTag[]          @relation("FileEventTag_file")
+  taggedInstruments     FileInstrumentTag[]     @relation("FileInstrumentTag_file")
+  taggedWikiPages       FileWikiPageTag[]       @relation("FileWikiPageTag_file")
+  frontpageGalleryItems FrontpageGalleryItem[]  @relation("FrontpageGalleryItem_file")
+  customLinks           CustomLink[]            @relation("CustomLink_file")
 
-  // Songs that have this file as their pinned recording
-  pinnedForSongs Song[] @relation("pinnedRecordings")
-
+  @@unique([id, bandId])
   @@index([fileLeafName])
   @@index([storedLeafName])
   @@index([isDeleted])
@@ -930,30 +1750,32 @@ model File {
   @@index([mimeType])
   @@index([previewFileId])
   @@index([parentFileId])
+  @@index([bandId])
 }
 
 model FileUserTag {
-  id       Int    @id @default(autoincrement())
-  publicId String @unique @db.Char(16)
-  fileId   Int
-  file     File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId   Int
+  id         Int    @id @default(autoincrement())
+  publicId   String @unique @db.Char(16)
+  fileId     Int
+  file       File   @relation("FileUserTag_file", fields: [fileId], references: [id], onDelete: Cascade)
+  bandUserId Int
 
-  @@unique([fileId, userId]) // 
+  bandUser BandUser @relation("FileUserTag_bandUser", fields: [bandUserId], references: [id], onDelete: Cascade) // Removing a membership removes its associations.
+
+  @@unique([fileId, bandUserId]) // user cannot be tagged multiple times on the same file
   @@index([fileId])
-  @@index([userId])
+  @@index([bandUserId])
 }
 
 model FileSongTag {
   id       Int    @id @default(autoincrement())
   publicId String @unique @db.Char(16)
   fileId   Int
-  file     File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  song     Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  file     File   @relation("FileSongTag_file", fields: [fileId], references: [id], onDelete: Cascade)
+  song     Song   @relation("FileSongTag_song", fields: [songId], references: [id], onDelete: Cascade)
   songId   Int
 
-  @@unique([fileId, songId]) // 
+  @@unique([fileId, songId]) //
   @@index([fileId])
   @@index([songId])
 }
@@ -962,42 +1784,43 @@ model FileEventTag {
   id       Int    @id @default(autoincrement())
   publicId String @unique @db.Char(16)
   fileId   Int
-  file     File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  file     File   @relation("FileEventTag_file", fields: [fileId], references: [id], onDelete: Cascade)
+  event    Event  @relation("FileEventTag_event", fields: [eventId], references: [id], onDelete: Cascade)
   eventId  Int
 
-  @@unique([fileId, eventId]) // 
+  @@unique([fileId, eventId]) //
   @@index([fileId])
   @@index([eventId])
 }
 
 // this is hm. i suppose this is correct, but tagging instrument groups may be more accurate in some scenarios?
 model FileInstrumentTag {
-  id           Int        @id @default(autoincrement())
-  publicId     String     @unique @db.Char(16)
-  fileId       Int
-  file         File       @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  instrument   Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
-  instrumentId Int
+  id               Int            @id @default(autoincrement())
+  publicId         String         @unique @db.Char(16)
+  fileId           Int
+  file             File           @relation("FileInstrumentTag_file", fields: [fileId], references: [id], onDelete: Cascade)
+  bandInstrument   BandInstrument @relation("FileInstrumentTag_bandInstrument", fields: [bandInstrumentId], references: [id], onDelete: Cascade) // Deleting an instrument removes its file associations.
+  bandInstrumentId Int
 
-  @@unique([fileId, instrumentId]) // 
+  @@unique([fileId, bandInstrumentId]) //
   @@index([fileId])
-  @@index([instrumentId])
+  @@index([bandInstrumentId])
 }
 
 model FileWikiPageTag {
   id         Int      @id @default(autoincrement())
   publicId   String   @unique @db.Char(16)
   fileId     Int
-  file       File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  wikiPage   WikiPage @relation(fields: [wikiPageId], references: [id], onDelete: Cascade)
+  file       File     @relation("FileWikiPageTag_file", fields: [fileId], references: [id], onDelete: Cascade)
+  wikiPage   WikiPage @relation("FileWikiPageTag_wikiPage", fields: [wikiPageId], references: [id], onDelete: Cascade)
   wikiPageId Int
 
-  @@unique([fileId, wikiPageId]) // 
+  @@unique([fileId, wikiPageId]) //
   @@index([fileId])
   @@index([wikiPageId])
 }
 
+// specific to café marché; does not participate in general behaviors like localization
 model FrontpageGalleryItem {
   id            Int     @id @default(autoincrement())
   publicId      String  @unique @db.Char(16)
@@ -1007,15 +1830,14 @@ model FrontpageGalleryItem {
   caption_fr    String? @db.MediumText // markdown
   sortOrder     Int     @default(0)
   fileId        Int
-  file          File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  file          File    @relation("FrontpageGalleryItem_file", fields: [fileId], references: [id], onDelete: Cascade)
   displayParams String  @db.MediumText // JSON of GalleryImageDisplayParams
 
   createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
-  createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdByUser       User?       @relation("FrontpageGalleryItem_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
   visiblePermissionId Int?
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
-
-  actions Action[]
+  visiblePermission   Permission? @relation("FrontpageGalleryItem_visiblePermission", fields: [visiblePermissionId], references: [id], onDelete: SetNull)
+  actions             Action[]    @relation("Action_frontpageGalleryItem")
 
   @@index([isDeleted])
   @@index([sortOrder])
@@ -1026,26 +1848,30 @@ model FrontpageGalleryItem {
 model CustomLink {
   id                  Int     @id @default(autoincrement())
   publicId            String  @unique @db.Char(16)
-  name                String  @db.VarChar(768)
-  description         String  @db.MediumText
-  slug                String  @db.VarChar(768)
+  name                String  @db.VarChar(768) // multilingual; not localized.
+  description         String  @db.MediumText // markdown, multilingual; not localized.
+  slug                String  @db.VarChar(767)
   destinationURL      String? @db.VarChar(768)
   redirectType        String // potentially various options like temporary / permanent redirect etc.
   fileId              Int?
-  file                File?   @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  file                File?   @relation("CustomLink_file", fields: [fileId], references: [id], onDelete: SetNull)
   forwardQuery        Boolean @default(false) // forward the query string?
   intermediateMessage String? @db.MediumText // for intermediate page type, this is the message users will see.
 
   createdByUserId Int?
-  createdByUser   User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdByUser   User?    @relation("CustomLink_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdAt       DateTime @default(now())
 
-  visits  CustomLinkVisit[]
-  actions Action[]
+  bandId Int
+  band   Band @relation("CustomLink_band", fields: [bandId], references: [id], onDelete: Restrict) // Bands are soft-deleted; remove content explicitly before a hard delete.
 
-  @@unique([slug])
+  actions Action[]          @relation("Action_customLink")
+  visits  CustomLinkVisit[] @relation("CustomLinkVisit_customLink")
+
+  @@unique([bandId, slug])
   @@index([name])
   @@index([fileId])
+  @@index([bandId])
 }
 
 model CustomLinkVisit {
@@ -1057,63 +1883,65 @@ model CustomLinkVisit {
   referrerURL  String?  @db.MediumText
   URI          String?  @db.MediumText
 
-  customLink CustomLink @relation(fields: [customLinkId], references: [id], onDelete: Cascade)
+  customLink CustomLink @relation("CustomLinkVisit_customLink", fields: [customLinkId], references: [id], onDelete: Cascade)
 }
 
 model WikiPage {
   id        Int     @id @default(autoincrement())
   publicId  String  @unique @db.Char(16)
-  slug      String  @db.VarChar(768) // slugified name. actual display name can be changed in Revision
+  slug      String  @db.VarChar(767) // slugified name. actual display name can be changed in Revision
   namespace String? @db.VarChar(768) // the namespace part of the slug; for example "EventDescription"
 
   contentVersion    Int               @default(0) // Increments on every content save, including consolidated revisions.
   currentRevisionId Int?
-  currentRevision   WikiPageRevision? @relation(name: "CurrentRevision", fields: [currentRevisionId], references: [id], onDelete: SetNull)
+  currentRevision   WikiPageRevision? @relation("WikiPage_currentRevision", fields: [currentRevisionId], references: [id], onDelete: SetNull)
 
   visiblePermissionId Int?
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
-
-  revisions WikiPageRevision[] @relation(name: "AllRevisions")
+  visiblePermission   Permission? @relation("WikiPage_visiblePermission", fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
   lockedByUserId Int?
-  lockedByUser   User?     @relation(fields: [lockedByUserId], references: [id], onDelete: SetNull)
+  lockedByUser   User?     @relation("WikiPage_lockedByUser", fields: [lockedByUserId], references: [id], onDelete: SetNull)
   lockAcquiredAt DateTime?
   lockExpiresAt  DateTime?
-  lockId         String? // users can open a pagk more than once; this is associated to the specific rendering tree of this editing page.
+  lockId         String? // users can open a page more than once; this is associated to the specific rendering tree of this editing page.
   lastEditPingAt DateTime? // Last editing activity or successful save; informational only.
 
   createdByUserId Int?
-  createdByUser   User?     @relation(name: "WikiPageCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdByUser   User?     @relation("WikiPage_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdAt       DateTime? @default(now())
 
-  events  Event?   @relation("eventDescriptionWikiPage")
-  actions Action[]
+  bandId Int
+  band   Band @relation("WikiPage_band", fields: [bandId], references: [id], onDelete: Restrict) // Bands are soft-deleted; remove content explicitly before a hard delete.
 
-  taggedFiles FileWikiPageTag[]
-  tags        WikiPageTagAssignment[]
+  actions     Action[]                @relation("Action_wikiPage")
+  events      Event?                  @relation("Event_descriptionWikiPage")
+  taggedFiles FileWikiPageTag[]       @relation("FileWikiPageTag_wikiPage")
+  revisions   WikiPageRevision[]      @relation("WikiPageRevision_wikiPage")
+  tags        WikiPageTagAssignment[] @relation("WikiPageTagAssignment_wikiPage")
 
-  @@unique([slug])
+  @@unique([bandId, slug])
   @@unique([currentRevisionId])
+  @@unique([id, bandId])
   @@index([visiblePermissionId])
   @@index([namespace])
   @@index([currentRevisionId])
   @@index([lockedByUserId])
+  @@index([bandId])
 }
 
 model WikiPageRevision {
   id       Int    @id @default(autoincrement())
   publicId String @unique @db.Char(16)
 
-  wikiPageId    Int
-  wikiPage      WikiPage  @relation(name: "AllRevisions", fields: [wikiPageId], references: [id], onDelete: Cascade)
-  pageAsCurrent WikiPage? @relation(name: "CurrentRevision")
+  wikiPageId Int
+  wikiPage   WikiPage @relation("WikiPageRevision_wikiPage", fields: [wikiPageId], references: [id], onDelete: Cascade)
 
   name             String  @db.VarChar(768)
   content          String  @db.MediumText
   consolidationKey String? // used to group revisions together
 
   createdByUserId Int?
-  createdByUser   User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdByUser   User?    @relation("WikiPageRevision_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdAt       DateTime @default(now())
 
   linesAdded    Int?
@@ -1126,38 +1954,67 @@ model WikiPageRevision {
   sizeChars     Int?
   prevSizeChars Int?
 
+  pageAsCurrent WikiPage? @relation("WikiPage_currentRevision")
+
   @@unique([consolidationKey])
   @@index([name])
   @@index([consolidationKey])
   @@index([wikiPageId])
 }
 
-model WikiPageTag {
-  id           Int                     @id @default(autoincrement())
-  publicId     String                  @unique @db.Char(16)
-  text         String                  @db.VarChar(768)
-  description  String                  @db.MediumText
-  color        String?
-  significance String? // for special behavioral tags
-  sortOrder    Int                     @default(0)
-  wikiPages    WikiPageTagAssignment[]
+model GlobalWikiPageTag {
+  id            Int                    @id @default(autoincrement())
+  publicId      String                 @unique @db.Char(16)
+  nameId        Int
+  name          DynamicLocalizedString @relation("GlobalWikiPageTag_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId Int
+  description   DynamicLocalizedString @relation("GlobalWikiPageTag_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+  color         String?
+  sortOrder     Int                    @default(0)
 
-  @@index([text])
-  @@index([significance])
+  bandWikiPageTags BandWikiPageTag[] @relation("BandWikiPageTag_globalWikiPageTag")
+
   @@index([sortOrder])
 }
 
-model WikiPageTagAssignment {
-  id         Int         @id @default(autoincrement())
-  publicId   String      @unique @db.Char(16)
-  wikiPageId Int
-  wikiPage   WikiPage    @relation(fields: [wikiPageId], references: [id], onDelete: Cascade)
-  tagId      Int
-  tag        WikiPageTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+model BandWikiPageTag {
+  id                  Int                     @id @default(autoincrement())
+  publicId            String                  @unique @db.Char(16)
+  globalWikiPageTagId Int?
+  globalWikiPageTag   GlobalWikiPageTag?      @relation("BandWikiPageTag_globalWikiPageTag", fields: [globalWikiPageTagId], references: [id], onDelete: Restrict)
+  nameId              Int?
+  name                DynamicLocalizedString? @relation("BandWikiPageTag_name", fields: [nameId], references: [id], onDelete: Restrict)
+  descriptionId       Int?
+  description         DynamicLocalizedString? @relation("BandWikiPageTag_description", fields: [descriptionId], references: [id], onDelete: Restrict)
+  color               String?
+  sortOrder           Int?
+  isHidden            Boolean                 @default(false)
 
-  @@unique([wikiPageId, tagId])
+  bandId Int
+  band   Band @relation("BandWikiPageTag_band", fields: [bandId], references: [id], onDelete: Restrict) // Bands are soft-deleted; remove content explicitly before a hard delete.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  wikiPageTagAssignments WikiPageTagAssignment[] @relation("WikiPageTagAssignment_tag")
+
+  @@unique([bandId, globalWikiPageTagId])
+  @@unique([id, bandId])
+  @@index([sortOrder])
+  @@index([bandId])
+}
+
+model WikiPageTagAssignment {
+  id                Int             @id @default(autoincrement())
+  publicId          String          @unique @db.Char(16)
+  wikiPageId        Int
+  wikiPage          WikiPage        @relation("WikiPageTagAssignment_wikiPage", fields: [wikiPageId], references: [id], onDelete: Cascade)
+  bandWikiPageTagId Int
+  tag               BandWikiPageTag @relation("WikiPageTagAssignment_tag", fields: [bandWikiPageTagId], references: [id], onDelete: Cascade)
+
+  @@unique([wikiPageId, bandWikiPageTagId])
   @@index([wikiPageId])
-  @@index([tagId])
+  @@index([bandWikiPageTagId])
 }
 
 model MenuLink {
@@ -1180,21 +2037,26 @@ model MenuLink {
   externalURI String? @db.MediumText
   wikiSlug    String? @db.VarChar(768)
 
-  iconName String? @db.VarChar(768)
-  caption  String  @db.VarChar(768)
+  iconName  String?                @db.VarChar(768)
+  captionId Int
+  caption   DynamicLocalizedString @relation("MenuLink_caption", fields: [captionId], references: [id], onDelete: Restrict)
 
   visiblePermissionId Int?
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
+  visiblePermission   Permission? @relation("MenuLink_visiblePermission", fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
   createdByUserId Int?
-  createdByUser   User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdByUser   User?    @relation("MenuLink_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdAt       DateTime @default(now())
 
-  actions Action[]
+  bandId Int
+  band   Band @relation("MenuLink_band", fields: [bandId], references: [id], onDelete: Restrict) // Bands are soft-deleted; remove content explicitly before a hard delete.
 
-  @@index([caption])
+  actions Action[] @relation("Action_menuLink")
+
+  @@index([captionId])
   @@index([realm])
   @@index([visiblePermissionId])
+  @@index([bandId])
 }
 
 model SetlistPlanGroup {
@@ -1205,13 +2067,20 @@ model SetlistPlanGroup {
   color       String? @db.VarChar(768)
   sortOrder   Int     @default(0)
 
-  createdByUserId Int
-  createdByUser   User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  createdByUserId Int?
+  createdByUser   User?    @relation("SetlistPlanGroup_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull) // Keep band content when its author is removed.
   createdAt       DateTime @default(now())
 
-  setlistPlans SetlistPlan[]
+  bandId Int
+  band   Band @relation("SetlistPlanGroup_band", fields: [bandId], references: [id], onDelete: Restrict) // Bands are soft-deleted; remove content explicitly before a hard delete.
 
+  updatedAt DateTime @updatedAt
+
+  setlistPlans SetlistPlan[] @relation("SetlistPlan_group")
+
+  @@unique([id, bandId])
   @@index([name])
+  @@index([bandId])
 }
 
 model SetlistPlan {
@@ -1222,19 +2091,25 @@ model SetlistPlan {
   sortOrder   Int    @default(0)
 
   groupId Int?
-  group   SetlistPlanGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  group   SetlistPlanGroup? @relation("SetlistPlan_group", fields: [groupId], references: [id], onDelete: SetNull)
 
-  createdByUserId Int
-  createdByUser   User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  createdByUserId Int?
+  createdByUser   User?    @relation("SetlistPlan_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull) // Keep band content when its author is removed.
   createdAt       DateTime @default(now())
 
   payloadJson String @db.MediumText
 
   isDeleted           Boolean     @default(false)
   visiblePermissionId Int?
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
+  visiblePermission   Permission? @relation("SetlistPlan_visiblePermission", fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
-  actions Action[]
+  bandId Int
+  band   Band @relation("SetlistPlan_band", fields: [bandId], references: [id], onDelete: Restrict) // Bands are soft-deleted; remove content explicitly before a hard delete.
+
+  updatedAt DateTime @updatedAt
+
+  actions Action[] @relation("Action_setlistPlan")
 
   @@index([name])
+  @@index([bandId])
 }

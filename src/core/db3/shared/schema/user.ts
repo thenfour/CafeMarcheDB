@@ -20,7 +20,7 @@ import { CMDBTableFilterModel, PermissionSignificance } from "../apiTypes";
 import { BoolField, ForeignCollectionField, foreignRef, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
+import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserWithInstrumentsArgs } from "./prismArgs";
 import { xInstrument } from "./instrument";
 
 // Basic profile data is self-service for the account owner and readable for
@@ -413,7 +413,6 @@ export const xRole = db3.defineTable({
         }),
         sortOrder: () => MakeSortOrderField({ authMap: xRoleAdministrationFieldAuthMap }),
         color: () => MakeColorField({ authMap: xRoleAdministrationFieldAuthMap }),
-        significance: columnName => MakeSignificanceField(columnName, RoleSignificance, { authMap: xRoleAdministrationFieldAuthMap }),
         permissions: tagsRef("RolePermission", "Permission", {
             associationForeignObjectMember: "permission",
             associationLocalObjectMember: "role",
@@ -552,7 +551,6 @@ const userTagBaseArgs = db3.defineTableDesc({
             format: "raw",
             authMap: xUserTaxonomyDefinitionAuthMap,
         }),
-        significance: columnName => MakeSignificanceField(columnName, UserTagSignificance, { authMap: xUserTaxonomyDefinitionAuthMap }),
         userAssignments: memberName => new ForeignCollectionField({
             memberName,
             foreignTableID: "UserTagAssignment",
