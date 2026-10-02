@@ -965,7 +965,7 @@ model BandSetting {
       -  [x] rename remaining tables
    -  [ ] migration.
       -  [x] grab prod db backup & git rev - 094a783a94b95ed4ec15089e9372763b7d59f66c
-      -  [ ] establish script for db backup restore / dev install
+      -  [x] establish script for db backup restore / dev install -- well, easy: just run the .sql.
       -  [ ] test the site up until localization/multiband; make it repeatable.
       -  [ ] write migration.
    -  assess tag significances... for example `DefaultInvitation` -- these should
