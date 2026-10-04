@@ -30,7 +30,7 @@ import * as DB3Client from "../DB3Client";
 import * as db3 from '../db3';
 import { gIconMap } from './IconMap';
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
-import { z } from "zod";
+import { gridSortModelFromPrismaOrderBy } from "./db3GridSort";
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 50 as number;
@@ -117,50 +117,6 @@ type DB3ReadOnlyGridProps = DB3EditGridBaseProps & {
 export type DB3EditGridProps<TView extends db3.AnyDB3CrudView = db3.AnyDB3CrudView> =
     DB3CrudEditGridProps<TView> | DB3ReadOnlyGridProps;
 
-// default sort model should be determined by the table spec.
-// but those are prisma orderby clauses... make  a crude attempt to convert.
-// for example,
-// export const CustomLinkNaturalOrderBy: Prisma.CustomLinkOrderByWithRelationInput[] = [
-//     { createdAt: 'desc' },
-// ];
-
-// order by clause can also be nested; we should ignore them.
-const PrismaOrderByBasicSchema = z.array(
-    z.record(
-        z.string(),
-        z.any(),
-    )
-);
-
-function gridSortModelFromPrismaOrderBy(tableSpec: DB3Client.xTableClientSpec<any>): GridSortModel {
-    const prismaOrderBy = tableSpec.args.table.naturalOrderBy;
-    if (!prismaOrderBy) {
-        console.warn("No natural order by specified in table spec.");
-        return [];  // no better we can do; this doesn't sort the table.
-    }
-
-    // assume the simplest example as above; bail if it doesn't match the table structure.
-    const parseResult = PrismaOrderByBasicSchema.safeParse(prismaOrderBy);
-    if (!parseResult.success) {
-        console.log("Failed to parse natural order by from table spec.", parseResult.error, prismaOrderBy);
-        return [];
-    }
-
-    // find the first matching order by clause that works for us.
-    for (const order of parseResult.data) {
-        const field = Object.keys(order)[0];
-        if ((!field)) continue;
-        const direction = order[field];
-        if (direction !== "asc" && direction !== "desc") continue;
-        if (field && direction && tableSpec.args.table.columns.some(col => col.member === field)) {
-            return [{ field, sort: direction }];
-        }
-    }
-
-    console.warn("Natural order by did not produce a valid grid sort model.");
-    return [];  // fallback if no suitable order by clause is found.
-}
-
 function useDB3EditGridQueryState(
     tableSpec: DB3Client.xTableClientSpec<any>,
     props: Pick<
@@ -168,6 +124,7 @@ function useDB3EditGridQueryState(
         "defaultSortModel" | "includeDeleted"
     >,
 ) {
+    const auth = useClientAuth();
     const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
         page: 0,
         pageSize: gPageSizeDefault,
@@ -177,13 +134,12 @@ function useDB3EditGridQueryState(
     const [sortModel, setSortModel] = React.useState<GridSortModel>(() => {
         if (props.defaultSortModel) return props.defaultSortModel;
         if (tableSpec.args.table.naturalOrderBy) {
-            return gridSortModelFromPrismaOrderBy(tableSpec);
+            return gridSortModelFromPrismaOrderBy(tableSpec.args.table, auth);
         }
         return [];
     });
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
 
-    const auth = useClientAuth();
     const canRecoverDeletedRows = tableSpec.args.table.authorizeIncludeDeleted(auth, true);
     const includeDeleted = props.includeDeleted ?? canRecoverDeletedRows;
     return {
