@@ -51,7 +51,7 @@ export function mergeIdentity(user: MergeUser): MergeIdentity {
         name: user.name,
         email: user.email,
         createdAt: user.createdAt,
-        roleId: user.role ? xRole.parseIdentity(user.role) : null,
+        roleId: user.role ? xRole.parseIdentity(user.role.publicId) : null,
         isDeleted: user.isDeleted,
         isSysAdmin: user.isSysAdmin,
     };

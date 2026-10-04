@@ -39,6 +39,7 @@ function matchesScalar(actual: unknown, expected: unknown): boolean {
     const expression = expected as Record<string, unknown>
     if ("equals" in expression) return actual === expression.equals
     if ("in" in expression) return (expression.in as unknown[]).includes(actual)
+    if ("notIn" in expression) return Array.isArray(expression.notIn) && !expression.notIn.includes(actual)
     if ("not" in expression) return !matchesScalar(actual, expression.not)
     if ("contains" in expression) {
       return typeof actual === "string" && actual.includes(String(expression.contains))

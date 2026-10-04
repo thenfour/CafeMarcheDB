@@ -1,5 +1,5 @@
 import { invoke, useMutation, useQuery } from "@blitzjs/rpc";
-import { Alert, Button } from "@mui/material";
+import { Alert } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
 import mergeUsers from "src/auth/mutations/mergeUsers";
@@ -9,7 +9,7 @@ import type { MergeIdentity, UserMergePreview } from "src/auth/userMergeSchemas"
 import getUserMassAnalysis from "../../db3/queries/getUserMassAnalysis";
 import { UserMassAnalysisResult } from "../../db3/shared/getUserMassAnalysisTypes";
 import { CMDialog } from "../CMDialog";
-import { CMUserMgmtButton } from "../CMCoreComponents2";
+import { CMButton, CMUserMgmtButton } from "../CMCoreComponents2";
 import { CMTable } from "../CMTable";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
@@ -115,8 +115,8 @@ function MergeUsersDialog({ user, onClose }: { user: { publicId: UserPublicId; n
     const [preview, setPreview] = React.useState<UserMergePreview | null>(null);
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
-    const [userMassAnalysis, { refetch: refetchUser }] = useQuery(getUserMassAnalysis, { userId: user.publicId });
-    const [otherUserMassAnalysis, { refetch: refetchOther }] = useQuery(getUserMassAnalysis, { userId: other?.publicId ?? user.publicId }, { enabled: !!other });
+    const [userMassAnalysis] = useQuery(getUserMassAnalysis, { userId: user.publicId });
+    const [otherUserMassAnalysis] = useQuery(getUserMassAnalysis, { userId: other?.publicId ?? user.publicId }, { enabled: !!other });
 
     // The selector reloads when its provider changes. RPC context rerenders must
     // keep the same provider until the profile being excluded actually changes.
@@ -163,8 +163,12 @@ function MergeUsersDialog({ user, onClose }: { user: { publicId: UserPublicId; n
         } finally { setPending(false); }
     };
 
-    const mainUserMassAnalysis = mainIsProfile ? userMassAnalysis : otherUserMassAnalysis;
-    const otherUserMassAnalysisToShow = mainIsProfile ? otherUserMassAnalysis : userMassAnalysis;
+    // Disabled queries can return cached profile data, and changing accounts can
+    // retain previous data. Only show analysis for the selected other account.
+    const selectedOtherAnalysis = other && otherUserMassAnalysis?.userInfo.publicId === other.publicId
+        ? otherUserMassAnalysis : null;
+    const mainUserMassAnalysis = mainIsProfile ? userMassAnalysis : selectedOtherAnalysis;
+    const otherUserMassAnalysisToShow = mainIsProfile ? selectedOtherAnalysis : userMassAnalysis;
 
     return <CMDialog
         open
@@ -173,51 +177,57 @@ function MergeUsersDialog({ user, onClose }: { user: { publicId: UserPublicId; n
         maxWidth="md"
         title="Merge users"
         actions={<>
-            <Button disabled={pending} onClick={onClose}>Cancel</Button>
+            <CMButton disabled={pending} onClick={onClose}>Cancel</CMButton>
             {preview
-                ? <Button disabled={pending || !preview.canCommit} onClick={commit}>
+                ? <CMButton disabled={pending || !preview.canCommit} onClick={commit}>
                     Accept report and merge accounts
-                </Button>
-                : <Button disabled={pending || !other} onClick={showPreview}>
+                </CMButton>
+                : <CMButton disabled={pending || !other} onClick={showPreview}>
                     Preview merge
-                </Button>}
+                </CMButton>}
         </>}
     >
-            <p>Select a second account, choose which one remains main and which one will be retired.
-                The report will explain the merge outcomes and policies; merging accepts all of them.</p>
+        <p>Select a second account, choose which one remains main and which one will be retired.
+            The report will explain the merge outcomes and policies; merging accepts all of them.</p>
 
-            <CMSingleSelect<MergeIdentity>
-                value={other} nullBehavior={CMSelectNullBehavior.AllowNull} readonly={pending}
-                onChange={value => { setOther(value); setPreview(null); setError(null); }}
-                getOptions={getCandidates}
-                getOptionInfo={item => ({ id: item.publicId })}
-                renderOption={item => <MergeUserListItem user={item} />}
-                displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
-                dialogTitle="Select the other account"
-                editButtonChildren="Select another user"
-                allowQuickFilter
-            />
+        <CMSingleSelect<MergeIdentity>
+            value={other} nullBehavior={CMSelectNullBehavior.AllowNull} readonly={pending}
+            onChange={value => {
+                setOther(value);
+                if (!value) setMainIsProfile(true);
+                setPreview(null);
+                setError(null);
+            }}
+            getOptions={getCandidates}
+            // The picker searches this label; it cannot extract text from MergeUserListItem.
+            getOptionInfo={item => ({ id: item.publicId, name: `${item.name} ${item.email} ${item.publicId}` })}
+            renderOption={item => <MergeUserListItem user={item} />}
+            displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
+            dialogTitle="Select the other account"
+            editButtonChildren="Select another user"
+            allowQuickFilter
+        />
 
-            {/* display 2 side-by-side cards indicating the main and the other account  clearly, with a brief mass analysis summary */}
-            <div style={{ display: "flex", gap: "16px", marginBottom: "16px" }}>
-                {mainUserMassAnalysis && <UserMassAnalysisSummaryCard
-                    analysis={mainUserMassAnalysis}
-                    caption={<>Account to keep ✅</>}
-                    description={<>This account will remain as the main account, and takes priority when merging.</>}
-                />}
-                {otherUserMassAnalysisToShow && <UserMassAnalysisSummaryCard
-                    analysis={otherUserMassAnalysisToShow}
-                    caption={<>Account to retire ❌</>}
-                    description={<>This account will be retired after the merge.</>} />}
-            </div>
+        {/* display 2 side-by-side cards indicating the main and the other account  clearly, with a brief mass analysis summary */}
+        <div style={{ display: "flex", gap: "16px", marginBottom: "16px" }}>
+            {mainUserMassAnalysis && <UserMassAnalysisSummaryCard
+                analysis={mainUserMassAnalysis}
+                caption={<>Account to keep ✅</>}
+                description={<>This account will remain as the main account, and takes priority when merging.</>}
+            />}
+            {otherUserMassAnalysisToShow && <UserMassAnalysisSummaryCard
+                analysis={otherUserMassAnalysisToShow}
+                caption={<>Account to retire ❌</>}
+                description={<>This account will be retired after the merge.</>} />}
+        </div>
 
-            <Button disabled={pending} onClick={() => { setMainIsProfile(!mainIsProfile); setPreview(null); setError(null); }}>
-                Swap Main and Retiring
-            </Button>
+        <CMButton disabled={pending || !other} onClick={() => { setMainIsProfile(!mainIsProfile); setPreview(null); setError(null); }}>
+            Swap Main and Retiring
+        </CMButton>
 
-            {error && <Alert severity="error">{error}</Alert>}
-            {pending && <p role="status">{preview ? "Merging accounts..." : "Preparing report..."}</p>}
-            {preview && <UserMergeReport preview={preview} />}
+        {error && <Alert severity="error">{error}</Alert>}
+        {pending && <p role="status">{preview ? "Merging accounts..." : "Preparing report..."}</p>}
+        {preview && <UserMergeReport preview={preview} />}
     </CMDialog>;
 }
 

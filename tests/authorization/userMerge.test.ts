@@ -47,6 +47,59 @@ describe("merge authorization and lifecycle", () => {
         await expect(invokeResolver(searchUserMergeCandidates, { query: "", excludeUserId: member.publicId }, ctx)).rejects.toThrow("merge_users");
     });
 
+    it("loads candidates with public user and role IDs, excluding the actor, profile and merged users", async () => {
+        const merged = createAuthorizationTestUser("normal", { id: 30 });
+        authorizationTestDb.reset({ user: [
+            { ...admin, mergedIntoUserId: null },
+            { ...member, mergedIntoUserId: null },
+            { ...retiring, mergedIntoUserId: null, hashedPassword: "private hash" },
+            { ...merged, mergedIntoUserId: member.id },
+        ] });
+        const candidates = await invokeResolver(searchUserMergeCandidates,
+            { query: "", excludeUserId: member.publicId }, createAuthorizationTestContext(admin));
+        expect(candidates).toEqual([{
+            publicId: retiring.publicId,
+            name: retiring.name,
+            email: retiring.email,
+            createdAt: retiring.createdAt,
+            roleId: retiring.role!.publicId,
+            isDeleted: false,
+            isSysAdmin: false,
+        }]);
+    });
+
+    it.each([retiring.name, retiring.email, retiring.publicId, "no matching account"])("searches merge candidates for %s", async query => {
+        authorizationTestDb.reset({ user: [admin, member, retiring].map(user => ({ ...user, mergedIntoUserId: null })) });
+        const candidates = await invokeResolver(searchUserMergeCandidates,
+            { query, excludeUserId: member.publicId }, createAuthorizationTestContext(admin));
+        expect(candidates.map(candidate => candidate.publicId)).toEqual(query === "no matching account" ? [] : [retiring.publicId]);
+    });
+
+    it.each([
+        ["Lisa", true],
+        ["  SMET   lisa  ", true],
+        ["lisa example.test", true],
+        ["lisa missing", false],
+    ])("matches all search words across name and email for %s", async (query, matches) => {
+        const lisa = { ...retiring, name: "lisa de smet", email: "lisa@example.test" };
+        authorizationTestDb.reset({ user: [admin, member, lisa].map(user => ({ ...user, mergedIntoUserId: null })) });
+        const candidates = await invokeResolver(searchUserMergeCandidates,
+            { query, excludeUserId: member.publicId }, createAuthorizationTestContext(admin));
+        expect(candidates.map(candidate => candidate.publicId)).toEqual(matches ? [lisa.publicId] : []);
+    });
+
+    it("loads candidates without an assigned role", async () => {
+        authorizationTestDb.reset({ user: [
+            { ...admin, mergedIntoUserId: null },
+            { ...member, mergedIntoUserId: null },
+            { ...retiring, roleId: null, role: null, mergedIntoUserId: null },
+        ] });
+        const candidates = await invokeResolver(searchUserMergeCandidates,
+            { query: "", excludeUserId: member.publicId }, createAuthorizationTestContext(admin));
+        expect(candidates).toHaveLength(1);
+        expect(candidates[0]).toMatchObject({ publicId: retiring.publicId, roleId: null });
+    });
+
     it("rejects merges from an impersonated session", async () => {
         const ctx = createAuthorizationTestContext(admin);
         ctx.session.$publicData.impersonatingFromUserId = 55;
