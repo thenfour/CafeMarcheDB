@@ -583,6 +583,30 @@ model Action {
   @@index([feature, createdAt, userId, bandId, localeContextId, context, pointerType, deviceClass, browserName, operatingSystem, language, locale, timezone])
 }
 
+model Change {
+  id Int @id @default(autoincrement())
+
+  action String // create, update, delete
+
+  context     String @db.VarChar(768) // depends on action / context / whatever
+  operationId String // a GUID that groups together all changes that were performed in 1 logical update (for example updating permission relations is many ops, or multiple changing fields)
+
+  table    String
+  recordId Int
+
+  changedAt     DateTime @default(now())
+  userId        Int?
+  sessionHandle String?
+  oldValues     String?  @db.MediumText // for create, empty. for update, JSON of fields. for delete, all column values.
+  newValues     String?  @db.MediumText // for create & update, JSON of fields. for delete, empty.
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade) // this is one reason not to allow hard deletion of users. any activity of that user should be retained.
+
+  @@index([table])
+  @@index([recordId])
+  @@index([userId])
+}
+
 // effectively this creates "groups" that you can belong to. or indeed just tags... makes sense anyway.
 // initial reason for this is attendance groups.
 // copied from FileTag
@@ -679,6 +703,8 @@ model User {
   createdAt         DateTime @default(now())
   calendarFeedToken String?  @map("accessToken") @db.VarChar(768) // private bearer credential scoped only to the user's read-only calendar feed.
   uid               String?  @default(uuid()) // used for unique identification but is NOT secret like the calendar feed token.
+
+  changes Change[]
 
   // LSMB_TODO: migrate role to globalRole
   // roleId Int? // nullable for new users a role should be assigned by an admin. null = public
