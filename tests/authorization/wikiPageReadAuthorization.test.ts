@@ -35,6 +35,7 @@ const args = {
     baseContentVersion: 0,
     lockId: null,
 };
+const creationPaths = [args.canonicalWikiPath, "EventDescription/TestEvent0000001"];
 const makePage = (visiblePermissionId: number | null = membersPermission.id, createdByUserId: number | null = null) => ({
     id: 84,
     publicId: parsePublicId<"WikiPage">("Announcements001"),
@@ -121,18 +122,32 @@ describe("wiki page reads and creation authorization", () => {
         expect(result.wikiPage?.currentRevision?.content).toBe("Existing announcements");
     });
 
-    it("creates and locks a genuinely missing page with default Members visibility", async () => {
+    it.each(creationPaths)("creates and locks %s with default Members visibility and an owner", async canonicalWikiPath => {
         authorizationTestDb.getDelegate("wikiPage").reset([]);
-        const missing = await invokeResolver(getWikiPage, args, context());
-        expect(missing.isExisting).toBe(false);
 
         const result = await invokeResolver(acquireLockOnWikiPage, {
-            ...args, lockId: "announcements-editor",
+            ...args, canonicalWikiPath, lockId: "announcements-editor",
         }, context());
 
         expect(result.isLockedInThisContext).toBe(true);
+        expect(result.currentPage?.slug).toBe(canonicalWikiPath);
         expect(result.currentPage?.visiblePermissionId).toBe(membersPermission.publicId);
         expect(result.currentPage?.currentRevision).toBeNull();
-        expect(authorizationTestDb.snapshot("wikiPage")).toHaveLength(1);
+        expect(authorizationTestDb.snapshot("wikiPage")).toEqual([
+            expect.objectContaining({ visiblePermissionId: membersPermission.id, createdByUserId: actor.id }),
+        ]);
+    });
+
+    it.each(creationPaths)("rejects creating %s when default Members visibility is missing", async canonicalWikiPath => {
+        authorizationTestDb.getDelegate("wikiPage").reset([]);
+        authorizationTestDb.getDelegate("permission").reset([]);
+        const create = vi.spyOn(authorizationTestDb.getDelegate("wikiPage"), "create");
+
+        await expect(invokeResolver(acquireLockOnWikiPage, {
+            ...args, canonicalWikiPath, lockId: "announcements-editor",
+        }, context())).rejects.toThrow("Default Members visibility permission is not configured.");
+
+        expect(create).not.toHaveBeenCalled();
+        expect(authorizationTestDb.snapshot("wikiPage")).toEqual([]);
     });
 });

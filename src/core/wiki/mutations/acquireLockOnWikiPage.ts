@@ -72,12 +72,13 @@ export default resolver.pipe(
 
                 const wikiPath = wikiParseCanonicalWikiPath(args.canonicalWikiPath);
                 const visPerm = await GetDefaultVisibilityPermission(dbt);
+                if (!visPerm) throw new Error("Default Members visibility permission is not configured.");
                 const createdPage = await dbt.wikiPage.create({
                     data: {
                         publicId: generatePublicId<"WikiPage">(),
                         slug: args.canonicalWikiPath,
                         namespace: wikiPath.namespace,
-                        visiblePermissionId: visPerm?.id || null,
+                        visiblePermissionId: visPerm.id,
                         createdByUserId: currentUser.id,
                     },
                     ...wikiPageApiSelection,
