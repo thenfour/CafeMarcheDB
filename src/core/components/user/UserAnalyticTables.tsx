@@ -374,7 +374,7 @@ export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProp
         qr.participationCounts.userTags;
 
     const totalSystemItems = qr.systemCounts.actions + qr.systemCounts.sessions +
-        qr.systemCounts.tokens;
+        qr.systemCounts.tokens + qr.systemCounts.changes;
 
     return <div className="UserMassAnalysisTabContent">
         <AdminInspectObject src={qr} label="mass analysis" />

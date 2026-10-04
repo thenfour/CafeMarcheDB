@@ -87,6 +87,15 @@ describe("BA-U005 administrator bootstrap", () => {
       }),
     ])
     expect(authorizationTestDb.snapshot("user")[0]).not.toHaveProperty("googleId", "attacker-controlled-google-id")
+    const signupChange = authorizationTestDb.snapshot("change")[0]!
+    expect(signupChange).toEqual(expect.objectContaining({ table: "User" }))
+    expect(JSON.parse(signupChange.newValues as string)).toEqual({
+      name: "Recovery user",
+      email: bootstrapEmail,
+      isSysAdmin: false,
+      roleId: 10,
+      authenticationMethod: "password",
+    })
     expect(createSession).toHaveBeenCalledOnce()
   })
 
@@ -165,6 +174,7 @@ describe("BA-U005 administrator bootstrap", () => {
 
     expect(authorizationTestDb.snapshot("user")[0]).toEqual(expect.objectContaining({ isSysAdmin: false }))
     expect(authorizationTestDb.snapshot("adminBootstrapClaim")).toEqual([])
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("refuses a deleted matching database account", async () => {
@@ -221,6 +231,15 @@ describe("BA-U005 administrator bootstrap", () => {
       }),
     ])
     expect(JSON.stringify(authorizationTestDb.snapshot("adminBootstrapClaim"))).not.toContain(bootstrapSecret)
+    expect(authorizationTestDb.snapshot("change")).toEqual([
+      expect.objectContaining({
+        table: "User",
+        recordId: actor.id,
+        context: "claimAdminBootstrap",
+        oldValues: JSON.stringify({ isSysAdmin: false }),
+        newValues: JSON.stringify({ isSysAdmin: true }),
+      }),
+    ])
     expect(createSession).toHaveBeenCalledWith(expect.objectContaining({
       userId: actor.id,
       isSysAdmin: true,
@@ -251,5 +270,6 @@ describe("BA-U005 administrator bootstrap", () => {
 
     expect(authorizationTestDb.snapshot("user")[0]).toEqual(expect.objectContaining({ isSysAdmin: false }))
     expect(authorizationTestDb.snapshot("adminBootstrapClaim")).toHaveLength(1)
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 })

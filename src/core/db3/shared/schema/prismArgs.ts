@@ -1500,3 +1500,15 @@ export type DashboardDynMenuLink = Prisma.MenuLinkGetPayload<{ include: { create
 export interface ObjectWithVisiblePermission {
     visiblePermissionId: PermissionPublicId | null;
 };
+
+export const ChangeArgs = Prisma.validator<Prisma.ChangeDefaultArgs>()({
+    include: {
+        user: true,
+    }
+});
+
+export type ChangePayload = Prisma.ChangeGetPayload<typeof ChangeArgs>;
+
+export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
+    { changedAt: 'desc' },
+];

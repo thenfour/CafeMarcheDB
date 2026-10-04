@@ -450,7 +450,7 @@ Concepts/rationale:
 -  Analytics/diagnostics
    -  🔵`Action` = receives a bandID; feature reports are global so will be able
       to inspect usage by band
-   -  ❌`Change` = probably decommission.
+   -  `Change` = retain audit and change history; define band scope with multitenancy.
 -  UserTag
    -  🔴`UserTag` - bands to get own sets (needed for invitations - board /
       majorette / diri...)
@@ -945,7 +945,7 @@ model BandSetting {
    -  [x] make homepage SPA
    -  [x] test url rewriting - yes middleware can do this.
 -  M2: prereqs, foundation
-   -  [x] remove Change, InstrumentTag features
+   -  [x] remove InstrumentTag features; retain Change audit history
    -  [ ] initial database model for translations & multitenancy
       -  [x] generate a plan
       -  [ ] new band & locale tables

@@ -1,13 +1,18 @@
 import { resolver } from "@blitzjs/rpc";
 import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
+import {
+    ChangeAction,
+    CreateChangeContext,
+    RegisterChange,
+} from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
+import { loadAuthorization } from "../server/serverAuthorization";
 import {
     generateCalendarFeedToken,
     getCalendarFeedSubscriptionInfo,
     requireCalendarFeedOwnerSession,
 } from "../server/calendarFeedSubscription";
-import { loadAuthorization } from "../server/serverAuthorization";
 
 export default resolver.pipe(
     resolver.authorize(Permission.login),
@@ -32,18 +37,18 @@ export default resolver.pipe(
                 });
                 if (!user?.calendarFeedToken) throw new NotFoundError();
 
-                //if (update.count === 1) {
-                // await RegisterChange({
-                //     action: ChangeAction.update,
-                //     changeContext: CreateChangeContext("createCalendarFeedSubscription"),
-                //     table: "User",
-                //     pkid: userId,
-                //     oldValues: { calendarFeedEnabled: false },
-                //     newValues: { calendarFeedEnabled: true },
-                //     auth: await loadAuthorization(ctx.session),
-                //     db: tx,
-                // });
-                //}
+                if (update.count === 1) {
+                    await RegisterChange({
+                        action: ChangeAction.update,
+                        changeContext: CreateChangeContext("createCalendarFeedSubscription"),
+                        table: "User",
+                        pkid: userId,
+                        oldValues: { calendarFeedEnabled: false },
+                        newValues: { calendarFeedEnabled: true },
+                        auth: await loadAuthorization(ctx.session),
+                        db: tx,
+                    });
+                }
             }
 
             return getCalendarFeedSubscriptionInfo(user.calendarFeedToken);

@@ -1,4 +1,5 @@
 import type { Ctx } from "@blitzjs/next";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { loadAuthorization } from "./serverAuthorization";
 
 type ImpersonationAuditEvent = "start" | "stop";
@@ -18,19 +19,19 @@ export const registerImpersonationAudit = async ({
 }: RegisterImpersonationAuditArgs): Promise<void> => {
     const impersonatedByUserId = event === "start" ? originalActorUserId : null;
 
-    // await RegisterChange({
-    //     action: ChangeAction.update,
-    //     changeContext: CreateChangeContext(
-    //         event === "start" ? "impersonateUserMutation" : "stopImpersonatingMutation",
-    //     ),
-    //     table: "User",
-    //     pkid: targetUserId,
-    //     oldValues: {
-    //         impersonatedByUserId: event === "start" ? null : originalActorUserId,
-    //     },
-    //     newValues: { impersonatedByUserId },
-    //     auth: await loadAuthorization(ctx.session),
-    //     actorUserId: originalActorUserId,
-    //     options: { dontCalculateChanges: true },
-    // });
+    await RegisterChange({
+        action: ChangeAction.update,
+        changeContext: CreateChangeContext(
+            event === "start" ? "impersonateUserMutation" : "stopImpersonatingMutation",
+        ),
+        table: "User",
+        pkid: targetUserId,
+        oldValues: {
+            impersonatedByUserId: event === "start" ? null : originalActorUserId,
+        },
+        newValues: { impersonatedByUserId },
+        auth: await loadAuthorization(ctx.session),
+        actorUserId: originalActorUserId,
+        options: { dontCalculateChanges: true },
+    });
 };

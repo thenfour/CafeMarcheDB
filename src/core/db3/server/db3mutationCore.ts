@@ -1,3 +1,4 @@
+import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 //'use server' - https://stackoverflow.com/questions/76957592/error-only-async-functions-are-allowed-to-be-exported-in-a-use-server-file
 
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
@@ -271,6 +272,8 @@ export const CallMutateEventHooks = async (args: {
 
 export interface UpdateAssociationsArgs {
     auth: CMServerAuthorization;
+    changeContext: ChangeContext;
+
 
     localTable: db3.xTable;
     column: db3.TagsField<TAnyModel>;
@@ -285,7 +288,7 @@ export interface UpdateAssociationsArgs {
 
 // creates/deletes associations. does not update any other data in associations table; this is only for making/breaking associations.
 // this is specifically for arrays of tag IDs. if the association has more to it than just associating two PKs, then you'll need something more sophisticated.
-export const UpdateAssociations = async ({ auth, ...args }: UpdateAssociationsArgs) => {
+export const UpdateAssociations = async ({ changeContext, auth, ...args }: UpdateAssociationsArgs) => {
     const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
     const associationTable = args.column.getAssociationTableShema();
     const associationTableName = associationTable.tableName;
@@ -348,15 +351,15 @@ export const UpdateAssociations = async ({ auth, ...args }: UpdateAssociationsAr
     // register those deletions
     for (let i = 0; i < cp.delete.length; ++i) {
         const oldValues = currentAssociations.find(a => a[args.column.associationForeignIDMember] === cp.delete[i])!;
-        // await RegisterChange({
-        //     action: ChangeAction.delete,
-        //     changeContext,
-        //     table: associationTableName,
-        //     pkid: oldValues.id,
-        //     oldValues,
-        //     auth,
-        //     db: transactionalDb,
-        // });
+        await RegisterChange({
+            action: ChangeAction.delete,
+            changeContext,
+            table: associationTableName,
+            pkid: oldValues.id,
+            oldValues,
+            auth,
+            db: transactionalDb,
+        });
     }
 
     // create new associations
@@ -376,15 +379,15 @@ export const UpdateAssociations = async ({ auth, ...args }: UpdateAssociationsAr
         );
         changedAssociations.push(newAssoc);
 
-        // await RegisterChange({
-        //     action: ChangeAction.insert,
-        //     changeContext,
-        //     table: associationTableName,
-        //     pkid: newAssoc.id,
-        //     newValues: newAssoc,
-        //     auth,
-        //     db: transactionalDb,
-        // });
+        await RegisterChange({
+            action: ChangeAction.insert,
+            changeContext,
+            table: associationTableName,
+            pkid: newAssoc.id,
+            newValues: newAssoc,
+            auth,
+            db: transactionalDb,
+        });
     }
 
     if (changedAssociations.length > 0) {
@@ -403,8 +406,8 @@ export const UpdateAssociations = async ({ auth, ...args }: UpdateAssociationsAr
 // DELETE ////////////////////////////////////////////////
 export const deleteImpl = async (table: db3.xTable, id: number, auth: CMServerAuthorization, deleteType: "softWhenPossible" | "hard", transactionalDb: TransactionalPrismaClient = db as any): Promise<boolean> => {
     try {
-        // const contextDesc = `delete:${table.tableName}`;
-        // const changeContext = CreateChangeContext(contextDesc);
+        const contextDesc = `delete:${table.tableName}`;
+        const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = transactionalDb[table.tableName]; // the prisma interface
         if (!table.authorizeTableForEdit(auth)) {
             throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
@@ -440,6 +443,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, auth: CMServerAu
         for (const column of table.columns) {
             if (column.fieldTableAssociation !== "associationRecord") continue;
             await UpdateAssociations({
+                changeContext,
                 auth,
                 localId: id,
                 localModel: oldValues,
@@ -472,15 +476,15 @@ export const deleteImpl = async (table: db3.xTable, id: number, auth: CMServerAu
         //     await RecalcEventDateRangeAndIncrementRevision(eventIdToRecalc);
         // }
 
-        // await RegisterChange({
-        //     action: ChangeAction.delete,
-        //     changeContext,
-        //     table: table.tableName,
-        //     pkid: id,
-        //     oldValues: oldValues,
-        //     auth,
-        //     db: transactionalDb,
-        // });
+        await RegisterChange({
+            action: ChangeAction.delete,
+            changeContext,
+            table: table.tableName,
+            pkid: id,
+            oldValues: oldValues,
+            auth,
+            db: transactionalDb,
+        });
         return true;
     } catch (e) {
         console.error(e);
@@ -492,6 +496,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, auth: CMServerAu
 export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAnyModel, auth: CMServerAuthorization, transactionalDb: TransactionalPrismaClient = db as any): Promise<TReturnPayload> => {
     try {
         const contextDesc = `insert:${table.tableName}`;
+        const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = transactionalDb[table.tableName]; // the prisma interface
         if (!table.authorizeRowBeforeInsert({ auth })) {
             throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
@@ -550,21 +555,22 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             //await requireUnmergedMutationUsers(transactionalDb, table, { ...authorizedLocalFields, ...authorizedAssociationFields });
             obj = await createDB3Row(table, dbTableClient, authorizedLocalFields);
 
-            // await RegisterChange({
-            //     action: ChangeAction.insert,
-            //     changeContext,
-            //     table: table.tableName,
-            //     pkid: obj[table.pkMember],
-            //     newValues: authorizedLocalFields,
-            //     auth,
-            //     db: transactionalDb,
-            // });
+            await RegisterChange({
+                action: ChangeAction.insert,
+                changeContext,
+                table: table.tableName,
+                pkid: obj[table.pkMember],
+                newValues: authorizedLocalFields,
+                auth,
+                db: transactionalDb,
+            });
         }
         // now update any associations
         for (const column of table.columns) {
             if (column.fieldTableAssociation !== "associationRecord") continue;
             if (!Object.prototype.hasOwnProperty.call(authorizedAssociationFields, column.member)) continue;
             await UpdateAssociations({
+                changeContext,
                 auth,
                 localId: obj[table.pkMember],
                 localModel: obj,
@@ -598,6 +604,7 @@ interface UpdateImplResult<T> {
 export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, auth: CMServerAuthorization, transactionalDb: TransactionalPrismaClient = db as any): Promise<UpdateImplResult<TAnyModel>> => {
     try {
         const contextDesc = `update:${table.tableName}`;
+        const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = transactionalDb[table.tableName]; // the prisma interface
         if (!table.authorizeTableForEdit(auth)) {
             throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
@@ -687,16 +694,16 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             const d = ObjectDiff(oldValues, obj);
             if (d.areDifferent) {
                 didChangesOccur = true;
-                // await RegisterChange({
-                //     action: ChangeAction.update,
-                //     changeContext,
-                //     table: table.tableName,
-                //     pkid,
-                //     oldValues,
-                //     newValues: obj,
-                //     auth,
-                //     db: transactionalDb,
-                // });
+                await RegisterChange({
+                    action: ChangeAction.update,
+                    changeContext,
+                    table: table.tableName,
+                    pkid,
+                    oldValues,
+                    newValues: obj,
+                    auth,
+                    db: transactionalDb,
+                });
             }
         }
 
@@ -705,6 +712,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             if (column.fieldTableAssociation !== "associationRecord") continue;
             if (!Object.prototype.hasOwnProperty.call(authorizedAssociationFields, column.member)) continue;
             const didAssociationsChange = await UpdateAssociations({
+                changeContext,
                 auth,
                 localId: pkid,
                 localModel: fullOldObj,

@@ -46,10 +46,10 @@ const assignments: Array<{
   designation: RoleDesignationValue
   flag: RoleFlag
 }> = [
-    { designation: RoleDesignation.newUsers, flag: "isRoleForNewUsers" },
-    { designation: RoleDesignation.public, flag: "isPublicRole" },
-    { designation: RoleDesignation.sysadmin, flag: "isSysAdminRole" },
-  ]
+  { designation: RoleDesignation.newUsers, flag: "isRoleForNewUsers" },
+  { designation: RoleDesignation.public, flag: "isPublicRole" },
+  { designation: RoleDesignation.sysadmin, flag: "isSysAdminRole" },
+]
 
 describe("BA-U005 built-in role designations", () => {
   const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
@@ -86,6 +86,33 @@ describe("BA-U005 built-in role designations", () => {
     expect(resultingRoles.filter(role => role[flag])).toEqual([
       expect.objectContaining({ id: 12 }),
     ])
+
+    const changes = authorizationTestDb.snapshot("change")
+    expect(changes).toHaveLength(3)
+    expect(new Set(changes.map(change => change.operationId)).size).toBe(1)
+    expect(changes).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        table: "Role",
+        recordId: 10,
+        context: "setRoleDesignation",
+        oldValues: JSON.stringify({ [flag]: true }),
+        newValues: JSON.stringify({ [flag]: false }),
+      }),
+      expect.objectContaining({
+        table: "Role",
+        recordId: 11,
+        context: "setRoleDesignation",
+        oldValues: JSON.stringify({ [flag]: true }),
+        newValues: JSON.stringify({ [flag]: false }),
+      }),
+      expect.objectContaining({
+        table: "Role",
+        recordId: 12,
+        context: "setRoleDesignation",
+        oldValues: JSON.stringify({ [flag]: false }),
+        newValues: JSON.stringify({ [flag]: true }),
+      }),
+    ]))
   })
 
   it.each(assignments)("repairs a missing $designation assignment", async ({ designation, flag }) => {
@@ -107,6 +134,7 @@ describe("BA-U005 built-in role designations", () => {
     expect(authorizationTestDb.snapshot("role").filter(role => role[flag])).toEqual([
       expect.objectContaining({ id: 11 }),
     ])
+    expect(authorizationTestDb.snapshot("change")).toHaveLength(1)
   })
 
   it("does not audit or write an already-valid assignment", async () => {
@@ -125,6 +153,7 @@ describe("BA-U005 built-in role designations", () => {
     }, ctx)
 
     expect(update).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("accepts a freshly verified Sysadmin permission without requiring the user flag", async () => {
@@ -150,6 +179,7 @@ describe("BA-U005 built-in role designations", () => {
     }, ctx)).resolves.toEqual({ designation: RoleDesignation.public, roleId: selectedRole.publicId })
 
     expect(findRoles).toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("rejects an unknown selected role without changing assignments", async () => {
@@ -163,6 +193,7 @@ describe("BA-U005 built-in role designations", () => {
     }, ctx)).rejects.toThrow()
 
     expect(authorizationTestDb.snapshot("role")).toEqual(roles)
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("rejects designating a Sysadmin role that cannot administer the platform", async () => {

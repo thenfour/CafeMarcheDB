@@ -2,6 +2,7 @@ import { AuthenticationError, NotFoundError } from "blitz";
 import { Prisma } from "db";
 import type { Ctx } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { UserWithRolesArgs, type UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
 import type { SignInMethodInput } from "../signInMethodSchemas";
@@ -153,14 +154,14 @@ export const recordSignInMethodChange = async (
     method: { publicId: string; type: string }, action: "added" | "removed",
 ) => {
     await revokeUserSignInState(db, userId);
-    // await RegisterChange({
-    //     action: ChangeAction.update,
-    //     changeContext: CreateChangeContext("manageUserSignInMethods"),
-    //     table: "User", pkid: userId,
-    //     oldValues: {},
-    //     // Keep identifiers and credentials out of the general activity log.
-    //     newValues: { signInMethodPublicId: xUserSignInMethod.parseIdentity(method.publicId), signInMethodType: method.type, signInMethodAction: action },
-    //     options: { dontCalculateChanges: true },
-    //     auth: await (await loadAuthorization(ctx.session)).refresh(db), db,
-    // });
+    await RegisterChange({
+        action: ChangeAction.update,
+        changeContext: CreateChangeContext("manageUserSignInMethods"),
+        table: "User", pkid: userId,
+        oldValues: {},
+        // Keep identifiers and credentials out of the general activity log.
+        newValues: { signInMethodPublicId: xUserSignInMethod.parseIdentity(method.publicId), signInMethodType: method.type, signInMethodAction: action },
+        options: { dontCalculateChanges: true },
+        auth: await (await loadAuthorization(ctx.session)).refresh(db), db,
+    });
 };

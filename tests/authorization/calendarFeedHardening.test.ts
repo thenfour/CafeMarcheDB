@@ -25,6 +25,13 @@ import {
 } from "src/core/db3/shared/schema/prismArgs"
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads"
 import {
+  AUDIT_REDACTED_VALUE,
+  ChangeAction,
+  CreateChangeContext,
+  RegisterChange,
+  redactAuditValues,
+} from "@/src/auth/server/activityLog"
+import {
   createAuthorizationPersona,
   createAuthorizationTestUser,
 } from "./support/authorizationFixtures"
@@ -64,6 +71,7 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
       webcalUrl: `webcal://band.test/api/ical/user/${existingToken}/upcoming`,
     })
     expect(authorizationTestDb.snapshot("user")).toEqual([owner, target])
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("creates a strong subscription credential only when the owner first opens the page", async () => {
@@ -81,6 +89,17 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
     expect(generatedToken).toMatch(/^[a-f0-9]{64}$/)
     expect(result.subscriptionUrl).toContain(generatedToken)
     expect(result.webcalUrl).toContain(generatedToken)
+
+    const audit = authorizationTestDb.snapshot("change")
+    expect(audit).toEqual([
+      expect.objectContaining({
+        context: "createCalendarFeedSubscription",
+        recordId: owner.id,
+        oldValues: JSON.stringify({ calendarFeedEnabled: false }),
+        newValues: JSON.stringify({ calendarFeedEnabled: true }),
+      }),
+    ])
+    expect(JSON.stringify(audit)).not.toContain(generatedToken)
   })
 
   it("ignores a forged target user id and exposes only the signed-in Band Admin's link", async () => {
@@ -130,6 +149,7 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
 
     await expect(invokeResolver(getMyCalendarSubscription, null, ctx)).rejects.toThrow()
     expect(authorizationTestDb.snapshot("user")).toEqual([deletedOwner])
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("replaces the link only on explicit recovery and never audits either credential", async () => {
@@ -145,6 +165,18 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
     expect(replacementToken).toMatch(/^[a-f0-9]{64}$/)
     expect(replacementToken).not.toBe(existingToken)
     expect(result.subscriptionUrl).toContain(replacementToken)
+
+    const audit = authorizationTestDb.snapshot("change")
+    expect(audit).toEqual([
+      expect.objectContaining({
+        context: "replaceCalendarFeedSubscription",
+        recordId: owner.id,
+        oldValues: JSON.stringify({ calendarFeedLinkReplaced: false }),
+        newValues: JSON.stringify({ calendarFeedLinkReplaced: true }),
+      }),
+    ])
+    expect(JSON.stringify(audit)).not.toContain(existingToken)
+    expect(JSON.stringify(audit)).not.toContain(replacementToken)
   })
 })
 
@@ -214,6 +246,54 @@ describe("BA-S001 credential containment", () => {
       expect(args.select).not.toHaveProperty("accessToken")
       expect(args.select).not.toHaveProperty("hashedPassword")
     }
+  })
+
+  it("recursively redacts credentials and hashes while retaining non-secret audit markers", () => {
+    const nullPrototype = Object.assign(Object.create(null), {
+      apiToken: "nested-token",
+      harmless: true,
+    })
+    const result = redactAuditValues({
+      hashedPassword: "password-hash",
+      passwordReset: true,
+      calendarFeedToken: existingToken,
+      nested: [{ oauthSecretHash: "secret-hash" }, nullPrototype],
+      occurredAt: new Date("2026-01-01T00:00:00.000Z"),
+    })
+
+    expect(result).toEqual({
+      hashedPassword: AUDIT_REDACTED_VALUE,
+      passwordReset: true,
+      calendarFeedToken: AUDIT_REDACTED_VALUE,
+      nested: [
+        { oauthSecretHash: AUDIT_REDACTED_VALUE },
+        { apiToken: AUDIT_REDACTED_VALUE, harmless: true },
+      ],
+      occurredAt: new Date("2026-01-01T00:00:00.000Z"),
+    })
+  })
+
+  it("applies recursive redaction immediately before an audit record is persisted", async () => {
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: 1 })
+
+    await RegisterChange({
+      action: ChangeAction.update,
+      changeContext: CreateChangeContext("credentialRedactionTest"),
+      table: "User",
+      pkid: 10,
+      oldValues: { hashedPassword: "old-password-hash", calendarFeedToken: existingToken },
+      newValues: { hashedPassword: "new-password-hash", calendarFeedToken: otherToken },
+      auth: await loadAuthorization(ctx.session),
+      options: { dontCalculateChanges: true },
+      db: authorizationTestDb as never,
+    })
+
+    const serializedAudit = JSON.stringify(authorizationTestDb.snapshot("change"))
+    expect(serializedAudit).not.toContain("old-password-hash")
+    expect(serializedAudit).not.toContain("new-password-hash")
+    expect(serializedAudit).not.toContain(existingToken)
+    expect(serializedAudit).not.toContain(otherToken)
+    expect(serializedAudit).toContain(AUDIT_REDACTED_VALUE)
   })
 
   it("redacts calendar bearer credentials from telemetry paths", () => {

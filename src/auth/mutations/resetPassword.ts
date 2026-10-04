@@ -3,6 +3,7 @@ import { SecurePassword } from "@blitzjs/auth/secure-password";
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { ResetPassword } from "../schemas";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { createPublicDataFromDatabase } from "../server/effectivePermissions";
 import { revokeUserSignInState } from "../server/signInMethods";
@@ -28,13 +29,13 @@ export default resolver.pipe(
         ...UserWithRolesArgs, where: { id: target.id }, data: { hashedPassword },
       });
       await revokeUserSignInState(tx, target.id);
-      // await RegisterChange({
-      //   action: ChangeAction.update,
-      //   changeContext: CreateChangeContext("resetPasswordMutation"),
-      //   table: "User", pkid: target.id,
-      //   oldValues: {}, newValues: { passwordReset: true },
-      //   auth: await loadAuthorization(ctx.session), db: tx, options: { dontCalculateChanges: true },
-      // });
+      await RegisterChange({
+        action: ChangeAction.update,
+        changeContext: CreateChangeContext("resetPasswordMutation"),
+        table: "User", pkid: target.id,
+        oldValues: {}, newValues: { passwordReset: true },
+        auth: await loadAuthorization(ctx.session), db: tx, options: { dontCalculateChanges: true },
+      });
       return updated;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     // Preserve the existing automatic sign-in after a successful password reset.

@@ -58,7 +58,7 @@ const analysis = (user: { publicId: UserPublicId; name: string }): UserMassAnaly
     contentCounts: { createdSongs: 0, createdEvents: 0, createdWikiPages: 0, createdGalleryItems: 0,
         uploadedFiles: 0, createdMenuLinks: 0, createdCustomLinks: 0, songCredits: 0, setlistPlans: 0, wikiPageRevisions: 0 },
     participationCounts: { eventResponses: 0, eventSegmentResponses: 0, taggedFiles: 0, instruments: 0, userTags: 0 },
-    systemCounts: { actions: 0, sessions: 0, tokens: 0 },
+    systemCounts: { actions: 0, sessions: 0, tokens: 0, changes: 0 },
     activityMetrics: { accountAgeInDays: 0, hasEverLoggedIn: false, lastActivityDate: null, daysSinceLastActivity: null },
     riskAssessment: { riskLevel: "low", safeToDelete: true, warnings: [], blockers: [] },
 });

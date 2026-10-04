@@ -164,6 +164,7 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
     }, ctx)).rejects.toThrow()
 
     expect(authorizationTestDb.snapshot("setting")).toEqual(initialSettings)
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
     expect(clearBrandCache).not.toHaveBeenCalled()
   })
 
@@ -239,6 +240,7 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
     }, ctx)).rejects.toThrow()
 
     expect(authorizationTestDb.snapshot("setting")).toEqual([])
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
     expect(clearBrandCache).not.toHaveBeenCalled()
   })
 

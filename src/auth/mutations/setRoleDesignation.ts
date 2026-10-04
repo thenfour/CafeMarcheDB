@@ -1,5 +1,10 @@
 import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
+import {
+    ChangeAction,
+    CreateChangeContext,
+    RegisterChange,
+} from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import {
     RoleDesignation,
@@ -48,7 +53,7 @@ export default resolver.pipe(
             }
 
             const field = designationFields[designation];
-            //const changeContext = CreateChangeContext("setRoleDesignation");
+            const changeContext = CreateChangeContext("setRoleDesignation");
             const rolesToClear = roles.filter(role => role.id !== selectedRole.id && role[field]);
 
             for (const role of rolesToClear) {
@@ -56,16 +61,16 @@ export default resolver.pipe(
                     where: { id: role.id },
                     data: { [field]: false },
                 });
-                // await RegisterChange({
-                //     action: ChangeAction.update,
-                //     changeContext,
-                //     table: "Role",
-                //     pkid: role.id,
-                //     oldValues: { [field]: true },
-                //     newValues: { [field]: false },
-                //     auth,
-                //     db: tx,
-                // });
+                await RegisterChange({
+                    action: ChangeAction.update,
+                    changeContext,
+                    table: "Role",
+                    pkid: role.id,
+                    oldValues: { [field]: true },
+                    newValues: { [field]: false },
+                    auth,
+                    db: tx,
+                });
             }
 
             if (!selectedRole[field]) {
@@ -73,16 +78,16 @@ export default resolver.pipe(
                     where: { id: selectedRole.id },
                     data: { [field]: true },
                 });
-                // await RegisterChange({
-                //     action: ChangeAction.update,
-                //     changeContext,
-                //     table: "Role",
-                //     pkid: selectedRole.id,
-                //     oldValues: { [field]: false },
-                //     newValues: { [field]: true },
-                //     auth,
-                //     db: tx,
-                // });
+                await RegisterChange({
+                    action: ChangeAction.update,
+                    changeContext,
+                    table: "Role",
+                    pkid: selectedRole.id,
+                    oldValues: { [field]: false },
+                    newValues: { [field]: true },
+                    auth,
+                    db: tx,
+                });
             }
 
             const assignmentCount = await tx.role.count({ where: { [field]: true } });

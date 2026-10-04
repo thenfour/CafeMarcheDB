@@ -1,6 +1,7 @@
 import { cmauthorize, type CMAuthCtx } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import * as db3 from "../db3";
@@ -29,18 +30,18 @@ export default resolver.pipe(
                 where: { eventSegmentId }
             });
             await CallMutateEventHooks({ tableNameOrSpecialMutationKey: "mutation:cleareventsegmentresponses", model: { id: segment.eventId }, db: tx });
-            // await RegisterChange({
-            //     action: ChangeAction.delete,
-            //     changeContext: CreateChangeContext("clearEventSegmentResponses"),
-            //     table: db3.xEventSegmentUserResponse.tableName,
-            //     pkid: eventSegmentId,
-            //     // Historical Change values retain natural foreign keys.
-            //     oldValues: oldValues.filter(row => row.attendanceId !== null)
-            //         .map(row => ({ userId: row.userId, attendanceId: row.attendanceId })),
-            //     newValues: undefined,
-            //     auth: ctx.auth,
-            //     db: tx,
-            // });
+            await RegisterChange({
+                action: ChangeAction.delete,
+                changeContext: CreateChangeContext("clearEventSegmentResponses"),
+                table: db3.xEventSegmentUserResponse.tableName,
+                pkid: eventSegmentId,
+                // Historical Change values retain natural foreign keys.
+                oldValues: oldValues.filter(row => row.attendanceId !== null)
+                    .map(row => ({ userId: row.userId, attendanceId: row.attendanceId })),
+                newValues: undefined,
+                auth: ctx.auth,
+                db: tx,
+            });
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
         return null;
     },

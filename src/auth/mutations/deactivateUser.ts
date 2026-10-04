@@ -1,11 +1,14 @@
 import { resolver } from "@blitzjs/rpc";
 import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
+import {
+    ChangeAction,
+    CreateChangeContext,
+    RegisterChange,
+} from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { UserPublicIdSchema } from "../schemas";
-import { cmauthorize } from "../server/cmResolver";
-import { revokeUserSignInState } from "../server/signInMethods";
 import {
     requireCanManageUser,
     requireContinuityAcknowledgement,
@@ -15,7 +18,9 @@ import {
     findUserManagementTargetByPublicId,
     getUserManagementContinuityWarnings,
 } from "../server/userManagementState";
+import { revokeUserSignInState } from "../server/signInMethods";
 import { PermissionSet } from "../shared/PermissionSet";
+import { cmauthorize } from "../server/cmResolver";
 
 export const DeactivateUserInput = z.object({
     userId: UserPublicIdSchema,
@@ -50,16 +55,16 @@ export default resolver.pipe(
                 data: { isDeleted: true },
             });
             await revokeUserSignInState(tx, target.principal.id);
-            // await RegisterChange({
-            //     action: ChangeAction.update,
-            //     changeContext: CreateChangeContext("deactivateUser"),
-            //     table: "User",
-            //     pkid: target.principal.id,
-            //     oldValues: { isDeleted: false },
-            //     newValues: { isDeleted: true },
-            //     auth: ctx.auth,
-            //     db: tx,
-            // });
+            await RegisterChange({
+                action: ChangeAction.update,
+                changeContext: CreateChangeContext("deactivateUser"),
+                table: "User",
+                pkid: target.principal.id,
+                oldValues: { isDeleted: false },
+                newValues: { isDeleted: true },
+                auth: ctx.auth,
+                db: tx,
+            });
 
             return { userId, continuityWarnings };
         },

@@ -41,41 +41,31 @@ import { invokeResolver } from "./support/resolverHarness";
 
 let forbidOuterWrites = false;
 const permissions = [Permission.login, Permission.manage_events, Permission.admin_events, Permission.view_events_nonpublic,
-Permission.respond_to_events, Permission.change_others_event_responses];
+    Permission.respond_to_events, Permission.change_others_event_responses];
 const actor = createAuthorizationTestUser("normal", { id: 93, permissions });
 let { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions });
-const event = {
-    id: 100, publicId: eventPublicId(100), name: "Concert", locationDescription: "", locationURL: "", isDeleted: false,
-    createdByUserId: null, visiblePermissionId: 920_002, revision: 1, calendarInputHash: "old", startsAt: null
-};
-const segment = (id: number, eventId = event.id) => ({
-    id, publicId: segmentPublicId(id), eventId, name: `Set ${id}`,
+const event = { id: 100, publicId: eventPublicId(100), name: "Concert", locationDescription: "", locationURL: "", isDeleted: false,
+    createdByUserId: null, visiblePermissionId: 920_002, revision: 1, calendarInputHash: "old", startsAt: null };
+const segment = (id: number, eventId = event.id) => ({ id, publicId: segmentPublicId(id), eventId, name: `Set ${id}`,
     description: "", startsAt: null, durationMillis: BigInt(0), isAllDay: false, statusId: null,
-    dateTimeVersion: 1, uid: `calendar-segment-${id}`
-});
-const response = (id: number, segmentId: number, userId: number) => ({
-    id, publicId: segmentResponsePublicId(id),
+    dateTimeVersion: 1, uid: `calendar-segment-${id}` });
+const response = (id: number, segmentId: number, userId: number) => ({ id, publicId: segmentResponsePublicId(id),
     eventSegmentId: segmentId, userId, attendanceId: 2, createdAt: new Date("2026-01-01"), updatedAt: new Date("2026-01-01"),
-    createdByUserId: actor.id, updatedByUserId: actor.id
-});
-const eventResponse = {
-    id: 301, publicId: eventResponsePublicId(301), eventId: event.id, userId: actor.id,
-    instrumentId: null, userComment: "hello", isInvited: true, revision: 1
-};
+    createdByUserId: actor.id, updatedByUserId: actor.id });
+const eventResponse = { id: 301, publicId: eventResponsePublicId(301), eventId: event.id, userId: actor.id,
+    instrumentId: null, userComment: "hello", isInvited: true, revision: 1 };
 function reset(overrides: Parameters<typeof authorizationTestDb.reset>[0] = {}) {
     ctx = createAuthorizationPersona("normal", { id: actor.id, permissions }).ctx;
-    authorizationTestDb.reset({
-        user: [actor], event: [event], eventSegment: [segment(1), segment(2)],
+    authorizationTestDb.reset({ user: [actor], event: [event], eventSegment: [segment(1), segment(2)],
         eventSegmentUserResponse: [response(11, 1, actor.id), response(12, 1, 94), response(21, 2, 95)],
         eventUserResponse: [eventResponse], eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
-        eventStatus: [], setting: [], change: [], action: [], ...overrides
-    });
+        eventStatus: [], setting: [], change: [], action: [], ...overrides });
 }
 const copy = () => invokeResolver(copyResponses, { fromEventSegmentId: segmentPublicId(1), toEventSegmentId: segmentPublicId(2) }, ctx);
 const clear = () => invokeResolver(clearResponses, { eventSegmentId: segmentPublicId(2) }, ctx);
 const operations = db3.eventSegmentEditorView.crud.operations;
 const command = (commandID: string, payload: unknown) => invokeResolver(executeCommand, { commandID, payload }, ctx);
-const snapshots = () => ["event", "eventSegment", "eventSegmentUserResponse", "eventUserResponse"]
+const snapshots = () => ["event", "eventSegment", "eventSegmentUserResponse", "eventUserResponse", "change"]
     .map(table => authorizationTestDb.snapshot(table));
 
 describe("Event segment and response public identities", () => {
@@ -91,6 +81,9 @@ describe("Event segment and response public identities", () => {
             .toEqual({ identity: created.identity });
         expect(await command(operations.delete.command.commandID, { identity: created.identity })).toEqual({ identity: created.identity });
         expect(authorizationTestDb.snapshot("eventSegment")).toHaveLength(2);
+        expect(authorizationTestDb.snapshot("change")).toEqual(expect.arrayContaining([
+            expect.objectContaining({ table: "EventSegment", recordId: 3 }),
+        ]));
     });
 
     it("projects the standalone segment and both response views", async () => {
@@ -137,8 +130,7 @@ describe("Event segment and response public identities", () => {
         const badKey = kind === "numeric" ? "2" : kind === "malformed" ? "bad" : segmentPublicId(kind === "unknown" ? 999 : 2);
         const before = snapshots();
         const create = vi.spyOn(authorizationTestDb.getDelegate("eventSegmentUserResponse"), "create");
-        await expect(invokeResolver(updateAttendance, {
-            eventId: event.publicId, userId: actor.publicId, comment: "Must not save",
+        await expect(invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.publicId, comment: "Must not save",
             segmentResponses: { [segmentPublicId(1)]: { attendanceId: null }, [badKey]: { attendanceId: null } },
         }, ctx)).rejects.toThrow();
         expect(create).not.toHaveBeenCalled();
@@ -147,10 +139,8 @@ describe("Event segment and response public identities", () => {
 
     it("assigns public IDs when creating both response kinds", async () => {
         reset({ eventUserResponse: [], eventSegmentUserResponse: [] });
-        await invokeResolver(updateAttendance, {
-            eventId: event.publicId, userId: actor.publicId, comment: "New response",
-            segmentResponses: { [segmentPublicId(1)]: { attendanceId: attendancePublicId(2) } }
-        }, ctx);
+        await invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.publicId, comment: "New response",
+            segmentResponses: { [segmentPublicId(1)]: { attendanceId: attendancePublicId(2) } } }, ctx);
         for (const table of ["eventUserResponse", "eventSegmentUserResponse"]) {
             expect(isPublicId(authorizationTestDb.snapshot(table)[0]!.publicId)).toBe(true);
         }
@@ -168,6 +158,9 @@ describe("Event segment and response public identities", () => {
         expect(target.some(row => row.publicId === segmentResponsePublicId(21))).toBe(false);
         await clear();
         expect(authorizationTestDb.snapshot("eventSegmentUserResponse")).toEqual([response(11, 1, actor.id), response(12, 1, 94)]);
+        expect(authorizationTestDb.snapshot("change")).toEqual(expect.arrayContaining([
+            expect.objectContaining({ table: "EventSegmentUserResponse", recordId: 2 }),
+        ]));
     });
 
     it("rejects self-copy, cross-event copy, unknown targets, and revoked admin permission", async () => {
@@ -182,6 +175,22 @@ describe("Event segment and response public identities", () => {
         ctx = createAuthorizationPersona("normal", { id: actor.id, permissions: [Permission.login] }).ctx;
         await expect(copy()).rejects.toThrow();
         await expect(clear()).rejects.toThrow();
+        expect(authorizationTestDb.snapshot("change")).toEqual([]);
+    });
+
+    it.each(["copy-create", "copy-hook", "copy-audit", "clear-hook", "clear-audit"])("rolls back %s failure", async point => {
+        forbidOuterWrites = true;
+        const before = snapshots();
+        if (point.endsWith("create")) {
+            const delegate = authorizationTestDb.getDelegate("eventSegmentUserResponse");
+            const create = delegate.create.bind(delegate);
+            vi.spyOn(delegate, "create").mockImplementationOnce(create).mockRejectedValueOnce(new Error("Injected failure"));
+        } else {
+            const delegate = authorizationTestDb.getDelegate(point.endsWith("hook") ? "event" : "change");
+            vi.spyOn(delegate, point.endsWith("hook") ? "update" : "create").mockRejectedValueOnce(new Error("Injected failure"));
+        }
+        await expect(point.startsWith("copy") ? copy() : clear()).rejects.toThrow("Injected failure");
+        expect(snapshots()).toEqual(before);
     });
 
     it("resolves telemetry to natural keys and projects public report references", async () => {
@@ -189,8 +198,7 @@ describe("Event segment and response public identities", () => {
         expect(() => ZTRecordActionArgs.parse({ ...input, eventSegmentId: 1 })).toThrow();
         await createActionRecord(input);
         expect(authorizationTestDb.snapshot("action")[0]?.eventSegmentId).toBe(1);
-        const evidence = {
-            id: 900, createdAt: new Date(), feature: input.feature, isClient: true,
+        const evidence = { id: 900, createdAt: new Date(), feature: input.feature, isClient: true,
             uri: null, queryText: null, context: null, pointerType: null, screenWidth: null, screenHeight: null,
             deviceClass: null, browserName: null, operatingSystem: null, language: null, locale: null, timezone: null,
             user: null, userId: null, instrument: null, instrumentId: null, event: null, eventId: null,
@@ -198,8 +206,7 @@ describe("Event segment and response public identities", () => {
             eventSegment: { ...segment(1), event: { publicId: event.publicId } }, eventSegmentId: 1, attendance: null, attendanceId: null,
             customLink: null, customLinkId: null, frontpageGalleryItem: null, frontpageGalleryItemId: null,
             menuLink: null, menuLinkId: null, setlistPlan: null, setlistPlanId: null, songCreditType: null,
-            songCreditTypeId: null, eventSongList: null, eventSongListId: null
-        };
+            songCreditTypeId: null, eventSongList: null, eventSongListId: null };
         for (const report of [projectFeatureReportDetailItem(evidence), projectGeneralActivityReportDetailItem(evidence, null)]) {
             expect(report.eventSegmentId).toBe(segmentPublicId(1));
             expect(report.eventSegment).toMatchObject({ publicId: segmentPublicId(1), eventId: event.publicId });

@@ -908,6 +908,7 @@ describe("public-ID reorder authorization", () => {
     }, ctx)).rejects.toThrow("Not authorized to mutate MenuLink fields: sortOrder")
 
     expect(update).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("reorders only the caller-supplied scope and preserves out-of-scope slots", async () => {
@@ -990,10 +991,10 @@ describe("public-ID reorder authorization", () => {
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.reorderEventSongListsCommand.commandID,
       payload: {
-        movingItemId: listPublicId(1),
-        newPositionItemId: listPublicId(2),
-        scopeRowIds: [listPublicId(1), listPublicId(2)],
-        eventId: eventPublicId(100),
+      movingItemId: listPublicId(1),
+      newPositionItemId: listPublicId(2),
+      scopeRowIds: [listPublicId(1), listPublicId(2)],
+      eventId: eventPublicId(100),
       },
     }, ctx)).rejects.toThrow("Setlist reorder scope was not found in this event")
 
@@ -1022,10 +1023,10 @@ describe("public-ID reorder authorization", () => {
     await invokeResolver(executeDB3CommandMutation, {
       commandID: db3.reorderEventSongListsCommand.commandID,
       payload: {
-        movingItemId: listPublicId(1),
-        newPositionItemId: listPublicId(2),
-        scopeRowIds: [listPublicId(1), listPublicId(2)],
-        eventId: eventPublicId(100),
+      movingItemId: listPublicId(1),
+      newPositionItemId: listPublicId(2),
+      scopeRowIds: [listPublicId(1), listPublicId(2)],
+      eventId: eventPublicId(100),
       },
     }, ctx)
 
@@ -1033,6 +1034,10 @@ describe("public-ID reorder authorization", () => {
       expect.objectContaining({ id: 1, sortOrder: 1 }),
       expect.objectContaining({ id: 2, sortOrder: 0 }),
       expect.objectContaining({ id: 3, sortOrder: 7 }),
+    ])
+    expect(authorizationTestDb.snapshot("change")).toEqual([
+      expect.objectContaining({ table: "EventSongList", action: "update" }),
+      expect.objectContaining({ table: "EventSongList", action: "update" }),
     ])
   })
 
@@ -1057,16 +1062,19 @@ describe("public-ID reorder authorization", () => {
     await invokeResolver(executeDB3CommandMutation, {
       commandID: db3.reorderEventSongListsCommand.commandID,
       payload: {
-        movingItemId: listPublicId(650),
-        newPositionItemId: listPublicId(651),
-        scopeRowIds: [listPublicId(650), listPublicId(651)],
-        eventId: eventPublicId(647),
+      movingItemId: listPublicId(650),
+      newPositionItemId: listPublicId(651),
+      scopeRowIds: [listPublicId(650), listPublicId(651)],
+      eventId: eventPublicId(647),
       },
     }, ctx)
 
     expect(authorizationTestDb.snapshot("eventSongList")).toEqual([
       expect.objectContaining({ id: 650, sortOrder: 1 }),
       expect.objectContaining({ id: 651, sortOrder: 0 }),
+    ])
+    expect(authorizationTestDb.snapshot("change")).toEqual([
+      expect.objectContaining({ table: "EventSongList", action: "update" }),
     ])
   })
 })
@@ -1133,6 +1141,13 @@ describe("BA-S003 event song-list deletion", () => {
 
     expect(authorizationTestDb.snapshot("eventSongList")).toEqual([])
     expect(authorizationTestDb.snapshot("eventSongListSong")).toEqual([])
+    expect(authorizationTestDb.snapshot("change")).toEqual([
+      expect.objectContaining({
+        table: "EventSongList",
+        recordId: 20,
+        action: "delete",
+      }),
+    ])
   })
 })
 

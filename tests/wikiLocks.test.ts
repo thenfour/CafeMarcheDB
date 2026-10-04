@@ -33,6 +33,7 @@ vi.mock("src/core/db3/server/db3QueryCore", () => ({
     authorizeAndProjectViewDto: (_view: unknown, row: unknown) => row,
 }));
 vi.mock("src/core/db3/shared/db3Helpers", () => ({ GetDefaultVisibilityPermission: async () => ({ id: 1 }) }));
+vi.mock("src/auth/server/activityLog", () => ({ ChangeAction: { insert: "insert", update: "update" }, CreateChangeContext: vi.fn(), RegisterChange: vi.fn() }));
 import db, { Prisma } from "db";
 import acquire from "src/core/wiki/mutations/acquireLockOnWikiPage";
 import save from "src/core/wiki/mutations/updateWikiPage";

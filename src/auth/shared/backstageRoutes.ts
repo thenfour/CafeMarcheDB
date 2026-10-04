@@ -81,6 +81,7 @@ const routes = [
     { key: "calendarPreview", pattern: "/backstage/calendarPreview", caption: "iCal Preview", permission: Permission.sysadmin },
     { key: "gallery", pattern: "/backstage/gallery", caption: "Component Gallery", permission: Permission.sysadmin },
     { key: "colorEditor", pattern: "/backstage/colorEditor2", caption: "Color Editor", permission: Permission.sysadmin },
+    { key: "adminLogs", pattern: "/backstage/adminLogs", caption: "Admin Logs", permission: Permission.sysadmin },
     { key: "test", pattern: "/backstage/test", caption: "Tests", permission: Permission.sysadmin },
 
     { key: "testIndex", pattern: "/backstage/test/test", caption: "Tests", permission: Permission.sysadmin },

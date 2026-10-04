@@ -182,6 +182,7 @@ model User {
   tags     UserTagAssignment[]
   tokens   Token[]
   sessions Session[]
+  changes  Change[] // yea don't include this in queries
 
   cssClass String?
 
@@ -266,6 +267,30 @@ model Setting {
   value    String @db.MediumText // json value et al
 
   @@index([name])
+}
+
+model Change {
+  id Int @id @default(autoincrement())
+
+  action String // create, update, delete
+
+  context     String @db.VarChar(768) // depends on action / context / whatever
+  operationId String // a GUID that groups together all changes that were performed in 1 logical update (for example updating permission relations is many ops, or multiple changing fields)
+
+  table    String
+  recordId Int
+
+  changedAt     DateTime @default(now())
+  userId        Int?
+  sessionHandle String?
+  oldValues     String?  @db.MediumText // for create, empty. for update, JSON of fields. for delete, all column values.
+  newValues     String?  @db.MediumText // for create & update, JSON of fields. for delete, empty.
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade) // this is one reason not to allow hard deletion of users. any activity of that user should be retained.
+
+  @@index([table])
+  @@index([recordId])
+  @@index([userId])
 }
 
 model Session {

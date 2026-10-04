@@ -56,6 +56,7 @@ describe("role permission changes preserve authenticated sessions", () => {
         ), createAuthorizationTestContext(actor));
         expect(authorizationTestDb.snapshot("rolePermission")).toEqual([]);
         expect(authorizationTestDb.snapshot("session")).toEqual(sessions);
+        expect(authorizationTestDb.snapshot("change")).toHaveLength(2);
     });
 });
 

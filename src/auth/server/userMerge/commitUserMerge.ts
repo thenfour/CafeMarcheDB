@@ -1,5 +1,6 @@
 import type { Ctx } from "@blitzjs/next";
 import { Prisma, type PrismaClient } from "db";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import type { z } from "zod";
 import type { CommitUserMergeInput } from "../../userMergeSchemas";
 import { authorizeMergeActor } from "./mergeEligibility";
@@ -54,22 +55,22 @@ export async function commitUserMerge(db: PrismaClient, ctx: Ctx, input: z.infer
                 },
             });
 
-            // await RegisterChange({
-            //     action: ChangeAction.update,
-            //     changeContext: CreateChangeContext("mergeUsers"),
-            //     table: "User",
-            //     pkid: context.retiringUserId,
-            //     oldValues: {},
-            //     newValues: {
-            //         mainUserId: context.main.publicId,
-            //         retiringUserId: context.retiring.publicId,
-            //         policyVersion: preview.policyVersion,
-            //         sections: preview.sections,
-            //     },
-            //     options: { dontCalculateChanges: true },
-            //     auth: await loadAuthorization(ctx.session),
-            //     db: tx,
-            // });
+            await RegisterChange({
+                action: ChangeAction.update,
+                changeContext: CreateChangeContext("mergeUsers"),
+                table: "User",
+                pkid: context.retiringUserId,
+                oldValues: {},
+                newValues: {
+                    mainUserId: context.main.publicId,
+                    retiringUserId: context.retiring.publicId,
+                    policyVersion: preview.policyVersion,
+                    sections: preview.sections,
+                },
+                options: { dontCalculateChanges: true },
+                auth: await loadAuthorization(ctx.session),
+                db: tx,
+            });
             return { mainUserId: xUser.parseIdentity(context.main.publicId) };
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 30_000, maxWait: 10_000 });
     } catch (error) {

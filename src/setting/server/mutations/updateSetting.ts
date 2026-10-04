@@ -1,3 +1,4 @@
+import { CreateChangeContext } from "@/src/auth/server/activityLog";
 import { resolver } from "@blitzjs/rpc"
 import { cmauthorize } from "@/src/auth/server/cmResolver";
 import type { CMAuthCtx } from "@/src/auth/server/cmResolver";
@@ -20,6 +21,7 @@ export default resolver.pipe(
             return writeSettingValue({
                 db: tx,
                 auth,
+                changeContext: CreateChangeContext("updateSetting"),
                 name: args.name,
                 value: args.value,
             });

@@ -1,4 +1,5 @@
 delete from Action;
+delete from Change;
 delete from CustomLink;
 delete from CustomLinkVisit;
 delete from Event;

@@ -1,6 +1,6 @@
+import { CreateChangeContext } from "@/src/auth/server/activityLog";
 import { generatePublicId } from "src/server/publicId";
 import { Prisma, PrismaClient } from "@prisma/client"
-import { readFileSync } from "node:fs"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 import { testServerAuthorization } from "tests/support/serverAuthorization"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
@@ -28,6 +28,7 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     await db.eventSegment.deleteMany({ where: { eventId: { in: eventIds } } })
     await db.event.deleteMany({ where: { id: { in: eventIds } } })
     await db.setting.deleteMany()
+    await db.change.deleteMany()
     await db.setting.create({ data: { publicId: generatePublicId<"Setting">(), name: Setting.BandTimeZone, value: "Europe/Brussels" } })
     const segment = (allDay: boolean) => ({
       publicId: generatePublicId(), name: "Segment", description: "", isAllDay: allDay,
@@ -45,6 +46,7 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
       await db.eventSegment.deleteMany({ where: { eventId: { in: eventIds } } })
       await db.event.deleteMany({ where: { id: { in: eventIds } } })
       await db.setting.deleteMany()
+      await db.change.deleteMany()
     }
     await db.$disconnect()
   })
@@ -52,10 +54,8 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
   const events = () => db.event.findMany({ where: { id: { in: eventIds } }, orderBy: { id: "asc" } })
   const segments = () => db.eventSegment.findMany({ where: { eventId: { in: eventIds } }, orderBy: { id: "asc" } })
   const changeZone = (value: string | null) => db.$transaction(tx => writeSettingValue({
-    db: tx,
-    auth: testAuth,
-    name: Setting.BandTimeZone,
-    value
+    db: tx, auth: testAuth,
+    changeContext: CreateChangeContext("band-policy-test"), name: Setting.BandTimeZone, value
   }), transactionOptions)
 
   it("reanchors all-day segments and exact mixed bounds while preserving timed segments", async () => {
@@ -74,6 +74,7 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     expect(after[2]!.revision).toBe(before[2]!.revision)
     expect((await segments()).filter(segment => !segment.isAllDay)).toEqual(authored.filter(segment => !segment.isAllDay))
     expect((await segments()).filter(segment => segment.isAllDay).map(segment => segment.startsAt!.toISOString())).toEqual(["2026-07-10T07:00:00.000Z", "2026-07-10T07:00:00.000Z"])
+    expect(await db.change.count()).toBe(1)
   })
 
   it("clearing the setting restores default bounds", async () => {
@@ -123,16 +124,15 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
         }
       })
       await writeSettingValue({
-        db: failingDb,
-        auth: testAuth,
-        name: Setting.BandTimeZone,
-        value: "Asia/Tokyo"
+        db: failingDb, auth: testAuth, changeContext: CreateChangeContext("rollback-test"),
+        name: Setting.BandTimeZone, value: "Asia/Tokyo"
       })
     }, transactionOptions)).rejects.toThrow("Injected aggregate failure")
     expect(writes).toBe(2)
     expect((await db.setting.findFirst())!.value).toBe("Europe/Brussels")
     expect(await events()).toEqual(before)
     expect(await segments()).toEqual(segmentsBefore)
+    expect(await db.change.count()).toBe(0)
   })
 
   it("previews and repairs stale derived fields without changing authored values", async () => {

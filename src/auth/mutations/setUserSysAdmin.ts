@@ -1,6 +1,11 @@
 import { resolver } from "@blitzjs/rpc";
 import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
+import {
+    ChangeAction,
+    CreateChangeContext,
+    RegisterChange,
+} from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import { cmauthorize } from "../server/cmResolver";
 import { z } from "zod";
@@ -34,16 +39,16 @@ export default resolver.pipe(
                 where: { id: target.principal.id },
                 data: { isSysAdmin },
             });
-            // await RegisterChange({
-            //     action: ChangeAction.update,
-            //     changeContext: CreateChangeContext("setUserSysAdmin"),
-            //     table: "User",
-            //     pkid: target.principal.id,
-            //     oldValues: { isSysAdmin: target.principal.isSysAdmin },
-            //     newValues: { isSysAdmin },
-            //     auth: ctx.auth,
-            //     db: tx,
-            // });
+            await RegisterChange({
+                action: ChangeAction.update,
+                changeContext: CreateChangeContext("setUserSysAdmin"),
+                table: "User",
+                pkid: target.principal.id,
+                oldValues: { isSysAdmin: target.principal.isSysAdmin },
+                newValues: { isSysAdmin },
+                auth: ctx.auth,
+                db: tx,
+            });
 
             return { userId, isSysAdmin };
         },

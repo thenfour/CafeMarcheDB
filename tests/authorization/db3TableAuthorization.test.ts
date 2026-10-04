@@ -14,6 +14,7 @@ import { UpdateAssociations } from "@db3/server/db3mutationCore"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 import { Permission } from "shared/permissions"
 import { parsePublicId } from "shared/publicId"
+import { CreateChangeContext } from "@/src/auth/server/activityLog"
 import { loadAuthorization } from "src/auth/server/serverAuthorization"
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
@@ -98,6 +99,7 @@ describe("metadata and association mutation entry points", () => {
     const joinLookup = vi.spyOn(authorizationTestDb.getDelegate("rolePermission"), "findMany")
     await expect(UpdateAssociations({
       auth: await loadAuthorization(createAuthorizationTestContext(manager).session),
+      changeContext: CreateChangeContext("association-authorization-test"),
       localTable: db3.xPermission,
       column: db3.xPermission.getColumn("roles") as db3.TagsField<any>,
       localId: 300,
@@ -169,6 +171,21 @@ describe("inherited field read authorization", () => {
     })).toBe(true)
     expect(db3.xEventStatus.authorizeColumnForView({
       model: null,
+      auth: publicData,
+      columnName: "id",
+    })).toBe(false)
+    expect(db3.xChange.authorizeColumnForView({
+      model: null,
+      auth: publicData,
+      columnName: "id",
+    })).toBe(false)
+  })
+
+  it("keeps inherited fields unavailable when the concrete row is denied", () => {
+    const publicData = authorization(Permission.always_grant, Permission.public)
+
+    expect(db3.xChange.authorizeColumnForView({
+      model: { id: 41, table: "User", recordId: 99 },
       auth: publicData,
       columnName: "id",
     })).toBe(false)

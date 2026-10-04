@@ -37,8 +37,8 @@ vi.mock("src/core/components/SnackbarContext", async () => {
     const React = await vi.importActual<typeof import("react")>("react");
     return { SnackbarContext: React.createContext({ showMessage: vi.fn() }) };
 });
-vi.mock("src/auth/mutations/updateSetting", () => ({ default: vi.fn() }));
-vi.mock("src/auth/queries/getSetting", () => ({ default: vi.fn() }));
+vi.mock("@/src/setting/server/mutations/updateSetting", () => ({ default: vi.fn() }));
+vi.mock("@/src/setting/server/queries/getSetting", () => ({ default: vi.fn() }));
 vi.mock("src/core/db3/queries/db3queries", () => ({ default: vi.fn() }));
 
 import { useMutation, useQuery } from "@blitzjs/rpc";

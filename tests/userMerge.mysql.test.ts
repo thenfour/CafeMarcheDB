@@ -4,6 +4,7 @@ import { SecurePassword } from "@blitzjs/auth/secure-password";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
+import * as activityLog from "@/src/auth/server/activityLog";
 import { prepareUserMerge } from "src/auth/server/userMerge/prepareUserMerge";
 import { commitUserMerge, MERGE_REVIEW_CHANGED } from "src/auth/server/userMerge/commitUserMerge";
 import { findSignInUser } from "src/auth/server/signInMethods";
@@ -136,6 +137,7 @@ async function seedContent() {
             { publicId: "MergeUsrInst0003", userId: 20, instrumentId: 2, isPrimary: true },
         ]
     });
+    await db.change.create({ data: { action: "update", context: "historical", operationId: "original", table: "Song", recordId: 1, userId: 20 } });
 }
 
 async function preview() { return (await prepareUserMerge(db, adminContext(), pair)).preview; }
@@ -186,7 +188,13 @@ describe.skipIf(!url)("user merge with real MySQL", () => {
         expect(await db.userTagAssignment.findMany()).toMatchObject([{ userId: 10, userTagId: 1 }]);
         expect(await db.userSetting.findMany()).toMatchObject([{ userId: 10, value: false }]);
         expect(await db.song.findUnique({ where: { id: 1 } })).toMatchObject({ createdByUserId: 10 });
+        const audit = await db.change.findFirstOrThrow({ where: { context: "mergeUsers" } });
+        expect(audit.userId).toBe(1);
+        expect(JSON.parse(audit.newValues!).sections).toEqual(before.sections);
+        expect(audit.newValues).not.toContain("private");
+        expect(await db.change.findFirst({ where: { context: "historical" } })).toMatchObject({ userId: 20 });
         await expect(merge(before.confirmation)).resolves.toEqual({ mainUserId: userPublicId(10) });
+        expect(await db.change.count({ where: { context: "mergeUsers" } })).toBe(1);
         //await expect(requireUnmergedUserReferences(db, [20])).rejects.toThrow("merged");
     });
 
@@ -250,6 +258,7 @@ describe.skipIf(!url)("user merge with real MySQL", () => {
     it("rolls back every earlier policy if the final audit write fails", async () => {
         await seedContent();
         const before = await preview();
+        vi.spyOn(activityLog, "RegisterChange").mockRejectedValueOnce(new Error("injected audit failure"));
         await expect(merge(before.confirmation)).rejects.toThrow("injected audit failure");
         expect(await db.user.findUnique({ where: { id: 20 } })).toMatchObject({ isDeleted: false, mergedIntoUserId: null, hashedPassword: retiringPassword });
         expect(await db.userSignInMethod.count({ where: { userId: 20 } })).toBe(2);
@@ -257,12 +266,14 @@ describe.skipIf(!url)("user merge with real MySQL", () => {
         expect(await db.songCredit.count()).toBe(3);
         expect(await db.session.count()).toBe(2);
         expect(await db.token.count()).toBe(2);
+        expect(await db.change.count({ where: { context: "mergeUsers" } })).toBe(0);
     });
 
     it("allows only one effect from concurrent commits and makes a retry idempotent", async () => {
         const report = await preview();
         const results = await Promise.allSettled([merge(report.confirmation), merge(report.confirmation)]);
         expect(results.some(result => result.status === "fulfilled")).toBe(true);
+        expect(await db.change.count({ where: { context: "mergeUsers" } })).toBe(1);
         await expect(merge(report.confirmation)).resolves.toEqual({ mainUserId: userPublicId(10) });
     });
 });

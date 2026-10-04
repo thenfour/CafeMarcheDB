@@ -120,6 +120,7 @@ describe("wiki revision deletion authorization", () => {
     await expect(invokeResolver(deleteWikiRevision, { revisionId: currentRevisionPublicId }, ctx))
       .rejects.toThrow("The current wiki page revision cannot be deleted.")
     expect(authorizationTestDb.snapshot("wikiPageRevision")).toHaveLength(2)
+    expect(authorizationTestDb.snapshot("change")).toHaveLength(0)
   })
 
   it("deletes a historical revision through DB3 and records the change", async () => {
@@ -129,5 +130,8 @@ describe("wiki revision deletion authorization", () => {
 
     expect(authorizationTestDb.snapshot("wikiPageRevision").map(row => row.publicId))
       .toEqual([currentRevisionPublicId])
+    expect(authorizationTestDb.snapshot("change")).toEqual([
+      expect.objectContaining({ table: "WikiPageRevision", recordId: 401, action: "delete" }),
+    ])
   })
 })

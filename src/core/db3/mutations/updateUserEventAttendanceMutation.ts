@@ -2,6 +2,7 @@ import { cmauthorize, type CMAuthCtxWithUser } from "@/src/auth/server/cmResolve
 import { resolver } from "@blitzjs/rpc";
 import { AuthorizationError, NotFoundError } from "blitz";
 import db, { Prisma } from "db";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
@@ -49,6 +50,7 @@ export default resolver.pipe(
                 publicId: db3.xEventSegment.parseIdentity(publicId),
                 attendanceId: response!.attendanceId,
             }));
+        const changeContext = CreateChangeContext("updateUserEventAttendance");
         await db.$transaction(async transactionalDb => {
             const eventId = await resolvePublicId(db3.xEvent, args.eventId, auth, transactionalDb);
             const instrumentId = args.instrumentId == null
@@ -114,16 +116,16 @@ export default resolver.pipe(
                             updatedByUserId: currentUser.id,
                         },
                     });
-                    // await RegisterChange({
-                    //     action: ChangeAction.update,
-                    //     changeContext,
-                    //     table: db3.xEventSegmentUserResponse.tableName,
-                    //     pkid: existing.id,
-                    //     oldValues: existing,
-                    //     newValues: updated,
-                    //     auth: ctx.auth,
-                    //     db: transactionalDb,
-                    // });
+                    await RegisterChange({
+                        action: ChangeAction.update,
+                        changeContext,
+                        table: db3.xEventSegmentUserResponse.tableName,
+                        pkid: existing.id,
+                        oldValues: existing,
+                        newValues: updated,
+                        auth: ctx.auth,
+                        db: transactionalDb,
+                    });
                     await mutationCore.CallMutateEventHooks({
                         tableNameOrSpecialMutationKey: db3.xEventSegmentUserResponse.tableName,
                         model: updated,
@@ -146,15 +148,15 @@ export default resolver.pipe(
 
                                 }
                             }));
-                    // await RegisterChange({
-                    //     action: ChangeAction.insert,
-                    //     changeContext,
-                    //     table: db3.xEventSegmentUserResponse.tableName,
-                    //     pkid: inserted.id,
-                    //     newValues: inserted,
-                    //     auth: ctx.auth,
-                    //     db: transactionalDb,
-                    // });
+                    await RegisterChange({
+                        action: ChangeAction.insert,
+                        changeContext,
+                        table: db3.xEventSegmentUserResponse.tableName,
+                        pkid: inserted.id,
+                        newValues: inserted,
+                        auth: ctx.auth,
+                        db: transactionalDb,
+                    });
                     await mutationCore.CallMutateEventHooks({
                         tableNameOrSpecialMutationKey: db3.xEventSegmentUserResponse.tableName,
                         model: inserted,
@@ -190,16 +192,16 @@ export default resolver.pipe(
                         where: { id: existingEventResponse.id },
                         data: desired,
                     });
-                    // await RegisterChange({
-                    //     action: ChangeAction.update,
-                    //     changeContext,
-                    //     table: db3.xEventUserResponse.tableName,
-                    //     pkid: existingEventResponse.id,
-                    //     oldValues: existingEventResponse,
-                    //     newValues: updated,
-                    //     auth: ctx.auth,
-                    //     db: transactionalDb,
-                    // });
+                    await RegisterChange({
+                        action: ChangeAction.update,
+                        changeContext,
+                        table: db3.xEventUserResponse.tableName,
+                        pkid: existingEventResponse.id,
+                        oldValues: existingEventResponse,
+                        newValues: updated,
+                        auth: ctx.auth,
+                        db: transactionalDb,
+                    });
                 }
             } else {
                 const fields: Omit<Prisma.EventUserResponseUncheckedCreateInput, "publicId"> = {
@@ -218,15 +220,15 @@ export default resolver.pipe(
                                 publicId
                             }
                         }));
-                // await RegisterChange({
-                //     action: ChangeAction.insert,
-                //     changeContext,
-                //     table: db3.xEventUserResponse.tableName,
-                //     pkid: inserted.id,
-                //     newValues: inserted,
-                //     auth: ctx.auth,
-                //     db: transactionalDb,
-                // });
+                await RegisterChange({
+                    action: ChangeAction.insert,
+                    changeContext,
+                    table: db3.xEventUserResponse.tableName,
+                    pkid: inserted.id,
+                    newValues: inserted,
+                    auth: ctx.auth,
+                    db: transactionalDb,
+                });
             }
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 

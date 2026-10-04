@@ -159,6 +159,11 @@ describe("generic DB3 resolver harness", () => {
         expect.objectContaining({ id: target.id, name: "After mutation" }),
       ]),
     )
+    expect(authorizationTestDb.snapshot("change")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ table: "User", recordId: target.id, action: "update" }),
+      ]),
+    )
   })
 })
 
@@ -360,6 +365,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
   beforeEach(() => {
     authorizationTestDb.reset({
       user: [sysadmin, normal, activeTarget, deletedTarget],
+      change: [{ id: 1, table: "User", recordId: activeTarget.id }],
       event: [],
       role: [],
     })
@@ -367,25 +373,25 @@ describe("BA-A002 generic DB3 query authorization", () => {
   })
 
   it("rejects an unauthorized table before its Prisma query executes", async () => {
-    const findMany = vi.spyOn(authorizationTestDb.getDelegate("userSignInMethod"), "findMany")
+    const findMany = vi.spyOn(authorizationTestDb.getDelegate("change"), "findMany")
     const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
 
-    await expect(invokeResolver(db3Query, forgeDb3Query("UserSignInMethod"), ctx)).rejects.toThrow(
+    await expect(invokeResolver(db3Query, forgeDb3Query("Change"), ctx)).rejects.toThrow(
       "Not authorized to perform this query.",
     )
     expect(findMany).not.toHaveBeenCalled()
   })
 
   it("rejects an unauthorized paginated table before querying or counting", async () => {
-    const methodDelegate = authorizationTestDb.getDelegate("userSignInMethod")
-    const findMany = vi.spyOn(methodDelegate, "findMany")
-    const count = vi.spyOn(methodDelegate, "count")
+    const changeDelegate = authorizationTestDb.getDelegate("change")
+    const findMany = vi.spyOn(changeDelegate, "findMany")
+    const count = vi.spyOn(changeDelegate, "count")
     const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
 
     await expect(
       invokeResolver(
         db3PaginatedQuery,
-        { ...forgeDb3Query("UserSignInMethod"), skip: 0, take: 50 },
+        { ...forgeDb3Query("Change"), skip: 0, take: 50 },
         ctx,
       ),
     ).rejects.toThrow("Not authorized to perform this query.")
@@ -440,6 +446,23 @@ describe("BA-A002 generic DB3 query authorization", () => {
 
     expect(quickFilter).not.toHaveBeenCalled()
     expect(customFilter).not.toHaveBeenCalled()
+  })
+
+  it("does not let a primary key qualify a row from a protected table", () => {
+    const { schemaAuthorization: publicData } = createAuthorizationPersona("public")
+    const result = db3.xChange.authorizeAndSanitize({
+      contextDesc: "BA-A002 protected-row regression",
+      auth: publicData,
+      rowMode: "view",
+      model: { id: 41, table: "User", recordId: activeTarget.id },
+      fallbackOwnerId: null,
+    })
+
+    expect(result.rowIsAuthorized).toBe(false)
+    expect(result.authorizedModel).toEqual({})
+    expect(result.unauthorizedModel).toEqual(
+      expect.objectContaining({ id: 41 }),
+    )
   })
 
   it("returns IDs only for rows inside the server-enforced visibility scope", async () => {
@@ -846,6 +869,7 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
         }),
       ]),
     )
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it.each(["limited", "normal", "editor", "moderator", "bandAdmin"] as const)(
@@ -891,6 +915,7 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
     ).rejects.toThrow("Not authorized to mutate User fields")
 
     expect(create).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("enforces table authorization before insert", async () => {
@@ -911,6 +936,7 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
     ).rejects.toThrow("Not authorized to mutate User fields")
 
     expect(create).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("allows a Sysadmin maintenance insert from the sanitized model", async () => {
@@ -929,6 +955,11 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
       name: "Authorized insert",
       email: "authorized@test.invalid",
     }))
+    expect(authorizationTestDb.snapshot("change")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ table: "User", action: "insert" }),
+      ]),
+    )
   })
 
   it("persists an authorized update from the sanitized model", async () => {
@@ -947,6 +978,11 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
       name: "Authorized mutation",
       isSysAdmin: false,
     }))
+    expect(authorizationTestDb.snapshot("change")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ table: "User", recordId: target.id, action: "update" }),
+      ]),
+    )
   })
 })
 
@@ -1356,6 +1392,10 @@ describe("BA-U002 delegated user administration", () => {
       expect.objectContaining({ userId: bandAdmin.id }),
       expect.objectContaining({ userId: peer.id }),
     ])
+    const change = authorizationTestDb.snapshot("change")[0]!
+    expect(change).toEqual(expect.objectContaining({ table: "User", recordId: peer.id }))
+    expect(change.oldValues).toBe(JSON.stringify({ roleId: peerRole.id }))
+    expect(change.newValues).toBe(JSON.stringify({ roleId: ordinaryRole.id }))
   })
 
   it.each([
@@ -1398,6 +1438,7 @@ describe("BA-U002 delegated user administration", () => {
     }, ctx)).rejects.toThrow(
       "CONTINUITY_ACKNOWLEDGEMENT_REQUIRED:deactivate_users,assign_user_roles",
     )
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
 
     await invokeResolver(assignUserRole, {
       userId: selfInPeerRole.publicId,
@@ -1632,6 +1673,7 @@ describe("BA-U003 password-reset hardening", () => {
         sentTo: target.email,
       }))
       expect(storedTokens[0]!.hashedToken).not.toBe(rawToken)
+      expect(authorizationTestDb.snapshot("change")).toEqual([])
     } finally {
       if (previousBaseUrl === undefined) {
         delete process.env.CMDB_BASE_URL
@@ -1665,6 +1707,20 @@ describe("BA-U003 password-reset hardening", () => {
       passwordConfirmation: newPassword,
     }, ctx)
 
+    const changes = authorizationTestDb.snapshot("change")
+    expect(changes).toHaveLength(1)
+    expect(changes[0]).toEqual(expect.objectContaining({
+      table: "User",
+      context: "resetPasswordMutation",
+      oldValues: "{}",
+      newValues: JSON.stringify({ passwordReset: true }),
+    }))
+
+    const serializedAudit = JSON.stringify(changes)
+    expect(serializedAudit).not.toContain(rawToken)
+    expect(serializedAudit).not.toContain(newPassword)
+    expect(serializedAudit).not.toContain(target.hashedPassword)
+    expect(serializedAudit).not.toContain(target.calendarFeedToken)
     expect(authorizationTestDb.snapshot("token")).toEqual([])
     expect(authorizationTestDb.snapshot("session")).toEqual([])
   })
@@ -1699,7 +1755,18 @@ describe("BA-U004 impersonation hardening", () => {
       isSysAdmin: false,
     }))
 
-    expect(JSON.stringify({ result })).not.toContain(target.calendarFeedToken)
+    const changes = authorizationTestDb.snapshot("change")
+    expect(changes).toHaveLength(1)
+    expect(changes[0]).toEqual(expect.objectContaining({
+      table: "User",
+      recordId: target.id,
+      action: "update",
+      context: "impersonateUserMutation",
+      userId: sysadmin.id,
+      oldValues: JSON.stringify({ impersonatedByUserId: null }),
+      newValues: JSON.stringify({ impersonatedByUserId: sysadmin.id }),
+    }))
+    expect(JSON.stringify({ result, changes })).not.toContain(target.calendarFeedToken)
   })
 
   it("accepts a freshly verified role-carried impersonation grant", async () => {
@@ -1723,6 +1790,7 @@ describe("BA-U004 impersonation hardening", () => {
 
     expect(userFind).toHaveBeenCalled()
     expect(createSession).toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).not.toEqual([])
   })
 
   it.each([
@@ -1743,6 +1811,7 @@ describe("BA-U004 impersonation hardening", () => {
     ).resolves.toEqual({ userId: protectedTarget.publicId })
 
     expect(createSession).toHaveBeenCalledTimes(1)
+    expect(authorizationTestDb.snapshot("change")).not.toEqual([])
   })
 
   it.each([
@@ -1758,6 +1827,7 @@ describe("BA-U004 impersonation hardening", () => {
     ).rejects.toThrow("Not authorized to impersonate this user")
 
     expect(createSession).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("restores the original actor and attributes the stop event to that actor", async () => {
@@ -1780,7 +1850,18 @@ describe("BA-U004 impersonation hardening", () => {
       isSysAdmin: true,
     }))
 
-    expect(JSON.stringify({ result })).not.toContain(originalActor.calendarFeedToken)
+    const changes = authorizationTestDb.snapshot("change")
+    expect(changes).toHaveLength(1)
+    expect(changes[0]).toEqual(expect.objectContaining({
+      table: "User",
+      recordId: target.id,
+      action: "update",
+      context: "stopImpersonatingMutation",
+      userId: originalActor.id,
+      oldValues: JSON.stringify({ impersonatedByUserId: originalActor.id }),
+      newValues: JSON.stringify({ impersonatedByUserId: null }),
+    }))
+    expect(JSON.stringify({ result, changes })).not.toContain(originalActor.calendarFeedToken)
   })
 
   it("does not create a session or audit event when no impersonation is active", async () => {
@@ -1792,6 +1873,7 @@ describe("BA-U004 impersonation hardening", () => {
     ).rejects.toThrow("Not impersonating anyone")
 
     expect(createSession).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 })
 
@@ -2001,6 +2083,12 @@ describe("BA-A004 association authorization", () => {
       ctx,
     )
     expect(authorizationTestDb.snapshot("userInstrument")).toEqual([])
+    expect(authorizationTestDb.snapshot("change")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ table: "UserInstrument", action: "insert" }),
+        expect.objectContaining({ table: "UserInstrument", action: "delete" }),
+      ]),
+    )
   })
 
   it("authorizes and awaits associations supplied during an actual-Sysadmin insert", async () => {
@@ -2210,6 +2298,11 @@ describe("BA-A005 delete authorization", () => {
     )
 
     expect(authorizationTestDb.snapshot("eventTag")).toEqual([])
+    expect(authorizationTestDb.snapshot("change")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ table: "EventTag", recordId: eventTag.id, action: "delete" }),
+      ]),
+    )
   })
 
   it("authorizes a hard delete against the persisted target row", async () => {

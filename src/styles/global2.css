@@ -2120,6 +2120,42 @@ can't use flex-spacer here because that expanded area should also be clickable. 
     color: var(--primary-color);
 }
 
+
+.JSONStringColumnClient.viewer {
+    background-color: white;
+    padding: 0 5px;
+    margin: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: flex;
+    align-items: flex-start;
+    position: relative;
+    font-family: var(--ff-mono);
+    flex-direction: column;
+}
+
+.JSONStringColumnClient .toolbar {
+    opacity: 35%;
+}
+
+.JSONStringColumnClient .toolbar:hover {
+    opacity: 100%;
+}
+
+.adminLogJSONValue {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/*
+.JSONStringColumnClient .debugInspectorOpen {
+    position: absolute;
+    top: 0;
+    right: 0;
+} */
+
 pre.serverStartInfo {
     color: #aaa;
 }

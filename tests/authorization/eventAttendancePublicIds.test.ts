@@ -28,7 +28,7 @@ import { forgeDb3Query } from "./support/db3RequestBuilders";
 import { invokeResolver } from "./support/resolverHarness";
 
 const permissions = [Permission.login, Permission.admin_events, Permission.manage_events,
-Permission.view_events_nonpublic, Permission.respond_to_events, Permission.change_others_event_responses, Permission.edit_public_homepage, Permission.visibility_members];
+    Permission.view_events_nonpublic, Permission.respond_to_events, Permission.change_others_event_responses, Permission.edit_public_homepage, Permission.visibility_members];
 const actor = createAuthorizationTestUser("normal", { id: 93, permissions });
 let { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions });
 const statusId = parsePublicId<"EventStatus">("AttendStatus0001");
@@ -86,6 +86,9 @@ describe("EventAttendance public identities", () => {
         expect(await command(operations.delete.command.commandID, { identity: attendance.publicId }))
             .toEqual({ identity: attendance.publicId });
         expect(authorizationTestDb.snapshot("eventAttendance")[0]).toMatchObject({ id: 2, text: "Attending", isDeleted: true });
+        expect(authorizationTestDb.snapshot("change")).toEqual(expect.arrayContaining([
+            expect.objectContaining({ table: "EventAttendance", recordId: 2 }),
+        ]));
     });
 
     it("rejects numeric query and command identities", async () => {
@@ -94,6 +97,7 @@ describe("EventAttendance public identities", () => {
         }), ctx)).rejects.toThrow();
         await expect(command(operations.update.command.commandID, { identity: 2, patch: { text: "Forged" } })).rejects.toThrow();
         await expect(command(operations.delete.command.commandID, { identity: 2 })).rejects.toThrow();
+        expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
     it("retains admin and recovery permissions with public targets", async () => {
@@ -101,6 +105,7 @@ describe("EventAttendance public identities", () => {
         await expect(command(operations.update.command.commandID, { identity: attendance.publicId, patch: { text: "Forged" } })).rejects.toThrow();
         reset({ eventAttendance: [{ ...attendance, isDeleted: true }] });
         await expect(command(operations.update.command.commandID, { identity: attendance.publicId, patch: { isDeleted: false } })).rejects.toThrow();
+        expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
     it("projects attendance references in named Event graphs", async () => {
@@ -122,6 +127,7 @@ describe("EventAttendance public identities", () => {
     it("treats the current public choice idempotently and allows clearing it", async () => {
         reset({ eventUserResponse: [{ id: 202, publicId: eventResponsePublicId(202), eventId: event.id, userId: actor.id, revision: 1, userComment: "" }] });
         expect(await changeResponse(attendance.publicId)).toMatchObject({ segmentResponses: { [segment.publicId]: { attendanceId: attendance.publicId } } });
+        expect(authorizationTestDb.snapshot("change")).toEqual([]);
         await changeResponse(null);
         expect(authorizationTestDb.snapshot("eventSegmentUserResponse")[0]?.attendanceId).toBeNull();
         await changeResponse(attendance.publicId);
@@ -131,8 +137,7 @@ describe("EventAttendance public identities", () => {
     it("resolves a shared choice once for several segments", async () => {
         reset({ eventSegment: [segment, { ...segment, id: 102, publicId: segmentPublicId(102) }], eventSegmentUserResponse: [] });
         const lookup = vi.spyOn(authorizationTestDb.getDelegate("eventAttendance"), "findMany");
-        await invokeResolver(updateAttendance, {
-            eventId: event.publicId, userId: actor.publicId,
+        await invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.publicId,
             segmentResponses: { [segment.publicId]: { attendanceId: attendance.publicId }, [segmentPublicId(102)]: { attendanceId: attendance.publicId } },
         }, ctx);
         expect(lookup).toHaveBeenCalledTimes(1);
@@ -154,6 +159,7 @@ describe("EventAttendance public identities", () => {
         } as unknown as TupdateUserEventAttendanceMutationArgs, ctx)).rejects.toThrow();
         expect(create).not.toHaveBeenCalled();
         expect(authorizationTestDb.snapshot("eventUserResponse")).toEqual([]);
+        expect(authorizationTestDb.snapshot("change")).toEqual([]);
     });
 
     it("projects user attendance report references", async () => {
@@ -176,10 +182,8 @@ describe("EventAttendance public identities", () => {
 
     it("resolves initial event response choices and rolls back event creation for invalid choices", async () => {
         const input: TinsertEventArgs = {
-            event: {
-                name: "New concert", locationDescription: "", typeId: null, statusId: null,
-                tags: [], expectedAttendanceUserTagId: null, visiblePermissionId: null
-            },
+            event: { name: "New concert", locationDescription: "", typeId: null, statusId: null,
+                tags: [], expectedAttendanceUserTagId: null, visiblePermissionId: null },
             segment: { name: "First set", description: "", startsAt: null, durationMillis: 0, isAllDay: true },
             responses: [{ userId: actor.publicId, attendanceId: attendance.publicId }],
         };
@@ -188,7 +192,7 @@ describe("EventAttendance public identities", () => {
         expect(created.segment).not.toHaveProperty("id");
         expect(authorizationTestDb.snapshot("eventSegmentUserResponse").every(row => isPublicId(row.publicId))).toBe(true);
         expect(authorizationTestDb.snapshot("eventSegmentUserResponse")[1]?.attendanceId).toBe(2);
-        const before = ["event", "eventSegment", "eventSegmentUserResponse"].map(table => ({ table, rows: authorizationTestDb.snapshot(table) }));
+        const before = ["event", "eventSegment", "eventSegmentUserResponse", "change"].map(table => ({ table, rows: authorizationTestDb.snapshot(table) }));
         for (const invalid of [2, attendancePublicId(999)]) {
             // This asserts that a forged numeric choice fails the server boundary too.
             await expect(invokeResolver(insertEvent, { ...input, responses: [{ userId: actor.publicId, attendanceId: invalid }] } as unknown as TinsertEventArgs, ctx)).rejects.toThrow();
@@ -198,11 +202,10 @@ describe("EventAttendance public identities", () => {
 
     it("returns public response choices from import preview", async () => {
         const admin = createAuthorizationTestUser("sysadmin", { id: 94 });
-        reset({
-            user: [admin, { ...actor, name: "carl" }],
+        reset({ user: [admin, { ...actor, name: "carl" }],
             eventStatus: [{ id: 8, publicId: statusId, isDeleted: false, significance: db3.EventStatusSignificance.FinalConfirmation }],
             eventAttendance: [attendance,
-                { ...attendance, id: 3, publicId: attendancePublicId(3), strength: 0 }],
+            { ...attendance, id: 3, publicId: attendancePublicId(3), strength: 0 }],
         });
         const { ctx: adminCtx } = createAuthorizationPersona("sysadmin", { id: admin.id });
         const result = await invokeResolver(getImportEventData, { config: "", text: "Gig\ncarl" }, adminCtx);

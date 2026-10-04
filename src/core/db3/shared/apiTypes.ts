@@ -1,6 +1,6 @@
 import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 
-import db, { Prisma, PrismaClient } from "db";
+import db, { Prisma } from "db";
 import { z } from "zod";
 import { isPublicId, type EventPublicId, type EventSegmentPublicId, type EventAttendancePublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type FilePublicId, type InstrumentPublicId, type PermissionPublicId, type SongPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId, type UserPublicId } from "shared/publicId";
 
