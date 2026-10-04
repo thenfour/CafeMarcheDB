@@ -95,6 +95,12 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 type Relation = { table: string; local: string; foreign: string; many?: boolean }
 // Dynamic table names mirror Prisma; only relations exercised by these integration tests are listed.
 const testRelations: Record<string, Record<string, Relation>> = {
+  wikiPage: {
+    createdByUser: { table: "user", local: "createdByUserId", foreign: "id" },
+    visiblePermission: { table: "permission", local: "visiblePermissionId", foreign: "id" },
+    lockedByUser: { table: "user", local: "lockedByUserId", foreign: "id" },
+    currentRevision: { table: "wikiPageRevision", local: "currentRevisionId", foreign: "id" },
+  },
   event: {
     createdByUser: { table: "user", local: "createdByUserId", foreign: "id" },
     visiblePermission: { table: "permission", local: "visiblePermissionId", foreign: "id" },
@@ -319,6 +325,9 @@ class AuthorizationTestDatabase {
       delegate = new InMemoryDelegate(
         prismaDelegateName === "user"
           ? { isDeleted: false }
+          : prismaDelegateName === "wikiPage"
+            ? { contentVersion: 0, currentRevisionId: null, lockId: null, lockedByUserId: null,
+                lockAcquiredAt: null, lockExpiresAt: null, lastEditPingAt: null }
           : prismaDelegateName === "event"
             ? { isDeleted: false, startsAt: null, durationMillis: BigInt(0), isAllDay: true }
             : prismaDelegateName === "setlistPlan"

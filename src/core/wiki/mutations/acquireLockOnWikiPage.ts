@@ -3,7 +3,7 @@ import { wikiTransaction } from "../server/wikiTransaction";
 // acquireLockOnWikiPage
 
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
+import { AuthenticatedCtx, AuthorizationError } from "blitz";
 import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
 import * as db3 from "src/core/db3/db3";
@@ -63,6 +63,13 @@ export default resolver.pipe(
             // page must be created in order to store lock info.
             let currentPageNaturalId = currentPageRow?.id;
             if (!currentPage) {
+                // A hidden page still owns its slug; it must never enter creation.
+                const existingPage = currentPageRow ?? await dbt.wikiPage.findUnique({
+                    where: { slug: args.canonicalWikiPath },
+                    select: { id: true },
+                });
+                if (existingPage) throw new AuthorizationError();
+
                 const wikiPath = wikiParseCanonicalWikiPath(args.canonicalWikiPath);
                 const visPerm = await GetDefaultVisibilityPermission(dbt);
                 const createdPage = await dbt.wikiPage.create({
