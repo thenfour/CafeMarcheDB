@@ -20,7 +20,7 @@ import { freezeRegistry } from "./registryHelpers";
 // - event.status.SelectStyle -> global.ui.event.status.selectStyle
 // - event.type.SelectStyle -> global.ui.event.type.selectStyle
 
-// - eventSegmentUserResponse.attendance.SelectStyle
+// - eventSegmentUserResponse.attendance.SelectStyle -> global.ui.event.attendance.selectStyle
 // - EventSegment.status.SelectStyle --> merge with global.ui.event.status.selectStyle
 // - Event.tags.SelectStyle
 
@@ -62,6 +62,10 @@ export const kGlobalSettingsRegistry = freezeRegistry({
         defaultValue: "inline",
         schema: SelectStyleSchema,
     }),
+    "global.ui.event.attendance.selectStyle": enumSetting({
+        defaultValue: "inline",
+        schema: SelectStyleSchema,
+    }),
     "global.ui.event.tags.selectStyle": enumSetting({
         defaultValue: "inline",
         schema: SelectStyleSchema,
@@ -96,5 +100,5 @@ export type GlobalSettingKey = keyof typeof kGlobalSettingsRegistry;
 // - CustomLinkRedirectTypeDescriptionMarkdown_Temporary
 // - MarkdownHelpPage
 // - EventSegment
-// - Event.workflow.SelectStyle --> obsolete
+// - Event.workflowDef.SelectStyle --> obsolete
 
