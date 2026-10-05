@@ -3,8 +3,10 @@
 The reviewed `schema.prisma` is the destination. The executable migration is
 `db/migrations/20261004130808_696_lsmb/migration.sql`; its accepted policies,
 rehearsal results, and recovery procedure are in [03-sql-migration.md](03-sql-migration.md).
-Application consumer changes and cutover remain a separate task. Prisma's default
-diff for these renames/localized fields would drop data.
+Application consumer changes and cutover follow
+[04-implementation-plan.md](04-implementation-plan.md). That plan separates
+migrated-app recovery from complete routing, management, and localized editing.
+Prisma's default diff for these renames/localized fields would drop data.
 
 ## Preparation and order
 
@@ -39,7 +41,8 @@ diff for these renames/localized fields would drop data.
    SQL, seeds, authorization, user merge policies, RPC/API parameters, file
    serving/uploads, wiki/Custom Link resolution, calendars, and serialized plan
    references. Resolve band context on the server and enforce all optional
-   same-band references listed in `01-schema.md`.
+   same-band references listed in `01-schema.md`. Follow phases 1–4 of the
+   implementation plan, with authorization/isolation checks throughout.
 9. Validate backfills before requiring new columns and creating destination FKs.
    Switch to the new generated client and application together. Remove old
    string/role fields and obsolete runtime constants only after preservation

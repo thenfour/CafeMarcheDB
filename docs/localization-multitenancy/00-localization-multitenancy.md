@@ -1,3 +1,17 @@
+# Localization and multiband design
+
+The accepted execution checklist is
+[04-implementation-plan.md](04-implementation-plan.md), updated 2026-10-05.
+The SQL migration is implemented and rehearsed; see
+[03-sql-migration.md](03-sql-migration.md). Application recovery and production
+cutover remain ahead.
+
+This document records design rationale and earlier exploration. Its illustrative
+APIs/models are not additional schema guarantees. Use `db/schema.prisma` for the
+actual target model, the SQL runbook for migration rules, and the execution plan
+for phase order and completion criteria. Checkmarks in the design notes indicate
+settled direction rather than implemented application behavior.
+
 -  use ❓✅ [x] [-] [#] etc
 -  🔵 or 🟡 = small migration needed
 -  🔴 = bigger migration needed
@@ -397,47 +411,18 @@ are stored separately in `BandDynamicLocalizedStringValue`.
 
 ## permissions / roles
 
--  🟣 Users will have 1 global role, and per-band roles.
--  🟣 Permissions remain like they are now: a single static registry, assigned in matrix.
-
-Examples
-
--  **Global roles**
-   -  technical admin (sysadmin)
-   -  content admin (correcting things cross-site)
-   -  normal user (no special elevation)
--  **Band roles**
-   -  band admin (like discord server admin) -- ability to manage users, site configuration, role/permission granting
-   -  moderators / editors (currently separate roles but doesn't matter; these can be configured per-band)
-   -  normal users / members
-   -  ❓limited users -- do we still support this? it will depend on sign up process.
-
-So global roles will replace the mechanics of the current system, but band roles
-replace most of the roles that exist today.
-
-Yes we will therefore have multiple matrices.
-
-```prisma
-model Permission {
-   // as is
-}
-
-model GlobalRole {
-   // like today's Role
-}
-
-model GlobalRolePermission {
-   // like today's role permission association
-}
-
-// user model has roleId which is the global role.
-
-model BandRole {
-   model BandRolePermission {}
-   model BandUser {
-   // membership selects one nullable bandRoleId
-}
-```
+- `User.globalRoleId` selects a nullable global role; `BandUser.bandRoleId`
+  selects a nullable membership role. Only the designated sysadmin role becomes
+  global in the data migration; all other existing roles become band roles.
+- Permissions remain in one static registry. `GlobalRolePermission` and
+  `BandRolePermission` retain the existing grants for their migrated roles.
+- Both role definitions and permission matrices are platform-owned in V1.
+  `BandRole` has no `bandId`; a band assigns an existing role to a membership
+  rather than defining its own permission matrix.
+- Phase 1 of [04-implementation-plan.md](04-implementation-plan.md) separates
+  platform and active-band authorization, including public/pending behavior and
+  shared-account versus membership management. New capabilities and approved
+  grants belong in a follow-up migration, not the completed data migration.
 
 ## entity scoping (tags / instrument sets...)
 
@@ -951,49 +936,25 @@ model BandSetting {
 
 # linear plan
 
--  M1: homepage decoupling
-   -  [x] decouple homepage
-   -  [x] make homepage SPA
-   -  [x] test url rewriting - yes middleware can do this.
--  M2: prereqs, foundation
-   -  [x] remove Change, InstrumentTag features
-   -  [x] initial database model for translations & multitenancy
-      -  [x] generate a plan
-      -  [x] complete and review target `schema.prisma` (see `01-schema.md`)
-      -  [x] new band & locale tables
-      -  [x] settings
-      -  [x] rename remaining tables
-   -  [ ] migration.
-      -  [x] grab prod db backup & git rev - 094a783a94b95ed4ec15089e9372763b7d59f66c
-      -  [x] establish script for db backup restore / dev install -- well, easy: just run the .sql.
-      -  [x] test the site up until localization/multiband; make it repeatable.
-      -  [ ] write migration.
-   -  assess tag significances... for example `DefaultInvitation` -- these should
-      probably be decommissioned because tags are now becoming "no behavior depends on them".
-      the ONLY significance that seems to matter is the partitions vs. recordings, and
-      basically i wonder if this should therefore be changed. can be done after.
-      -  remove `SongTag.significance`.
-      -  remove eventtag significance
-      -  remove event segmentbehavior
--  M3: blocking out
-   -  [ ] all uses of TagsFieldInput need to specify their SelectStyle key
-   -  [ ] band settings registry (think of a couple settings to use as a POC - timezone...)
-   -  [ ] dashboardContext effectively becomes `useBandContext`
-   -  [ ] introduce `usePlatformContext` if needed
-   -  [ ] initial `useLocale` and `useBand` contexts (with small handful of POCs)
-   -  [ ] implement route rewrite strategy
-   -  [ ] all RPC/API need a bandId parameter
--  M3: localization POC
-   -  [ ] remove `i18n` config in `next.config.js`
-   -  [ ] fix hardcoded <Html lang="en">
-   -  evaluate whether the various captions in Attendance are accurate across locales (`personalPastCaptionId` etc)
-   -  demonstrate:
-      -  routing
-      -  site chrome
-      -  basic editor
--  M5: full localization support
-   -  [ ] feature & db design
--  M4: actual multitenant support
-   -  [ ] remove homepage from cmdb (but leave the components for preview) -- do this only when replacing with platform landing page.
-   -  [ ] feature & db design
-   -  [ ] curate global catalogs (tags, instruments, ensembles)
+This summary replaces the earlier milestone sketch. Track individual tasks and
+validation in [04-implementation-plan.md](04-implementation-plan.md).
+
+- [x] Homepage decoupling and standalone homepage SPA.
+- [x] Target schema, four settings registries, and static string registry established.
+- [x] Data-preserving SQL migration implemented and rehearsed on disposable
+  databases; see [03-sql-migration.md](03-sql-migration.md).
+- [ ] Phase 1: trusted context, scoped authorization, new permissions, bootstrap.
+- [ ] Phase 2: typed localization and four-hive settings lookups/writes.
+- [ ] Phase 3: localized DB3 fields, xTables/views, and a complete band instrument
+  vertical slice before expanding the patterns.
+- [ ] Phase 4: application recovery, explicit localized column labels, temporary
+  read-only `LocalizedMarkdown`, and migrated-data/isolation acceptance.
+- [ ] Milestone A: the migrated application builds and core workflows work.
+- [ ] Phase 5: portal routing, band lifecycle, and platform/band management.
+- [ ] Phase 6: scoped localized editing, restored deferred features, locale
+  presentation, and agreed translation coverage.
+- [ ] Milestone B: localization and multiband complete, with final acceptance and
+  no unaccounted temporary restrictions.
+
+Full routing UX follows application recovery, but trusted band context and
+isolation precede it. A browser-supplied band ID is never sufficient authorization.

@@ -5,6 +5,10 @@ schema to the current `db/schema.prisma`, preserving existing data through
 explicit renames and backfills. It runs independently of application startup,
 client generation, and the application build.
 
+The application recovery and completion checklist is
+[04-implementation-plan.md](04-implementation-plan.md). SQL rehearsal is complete;
+application readiness and production cutover are separate acceptance steps.
+
 ## Accepted migration rules
 
 - Create band ID `1`, named `Café Marché`, and locales `en-US`, `fr-BE`, and

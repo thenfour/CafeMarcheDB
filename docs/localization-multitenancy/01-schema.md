@@ -2,17 +2,20 @@
 
 ## Reviewed target schema
 
-`db/schema.prisma` now describes the complete target model. This is a schema
-design change: the existing application client, DB3 descriptors, authorization,
-seeds, and migrations still use the current single-band database. Do not run
-`prisma db push` against existing application data or generate its replacement
-client until the coordinated migration is implemented. See [02-data-migration.md](02-data-migration.md).
+`db/schema.prisma` describes the target model. The data-preserving migration is
+implemented and rehearsed; see [03-sql-migration.md](03-sql-migration.md).
+The application client, DB3 descriptors, authorization, seeds, and other runtime
+consumers still need coordinated adaptation. Follow
+[04-implementation-plan.md](04-implementation-plan.md) for that work. Do not run
+`prisma db push` against existing application data; production must switch the
+application/client and migrated database together.
 
 The target schema can be checked independently with `yarn prisma validate`.
-`node scripts/test-localization-mysql.cjs` loads the local development connection,
-creates a disposable database, installs the target schema, generates a temporary
-client, and runs constraint tests through the repository test runner. It removes
-the temporary database and client without replacing the application's client.
+The earlier schema constraint harness is archived at
+`scripts/archived/test-localization-mysql.cjs`. Its original constraint tests
+describe an earlier model and need review before reuse. Current SQL rehearsal
+evidence is recorded in the migration runbook; application isolation tests belong
+to the implementation plan.
 
 ### Ownership and references
 
@@ -24,16 +27,18 @@ the temporary database and client without replacing the application's client.
   are platform-owned in V1. Band role definitions have no `bandId`.
 - User tag assignments, instrument assignments, and file-user associations
   reference `BandUser`. Authorship, uploads, locks, and song credits reference
-  the person. Event responses retain `userId` and also require the matching
-  membership through a composite foreign key.
+  the person. Event responses replace `userId` with `bandUserId`; their event or
+  segment must belong to the membership's band, checked by server mutation code.
 - Songs, events, files, wiki pages, custom links, menu links, setlist plans,
   setlist groups, and band catalog entries have required band ownership.
   Hard deletion of a band is restricted until its content is removed explicitly.
   An author disappearing clears the author reference on plans and credits.
-- Event segments and song lists repeat their parent's `bandId` to support
-  database constraints. Required tag/file/song associations share one `bandId`
-  in both foreign keys, so a cross-band association cannot be inserted.
-  Instrument functional groups are likewise constrained to the instrument's band.
+- Event segments and song lists inherit band ownership through their parent
+  event. The current foreign keys establish record identity but do not enforce
+  all same-band associations. Required tag/file/song links and instrument/group
+  links need explicit same-band validation in server mutations as well as
+  ownership-aware reads. Existing composite unique keys alone do not imply that
+  a relation uses a composite foreign key.
 - Revisions, dividers, visits, and gallery items inherit ownership through
   their page, list, link, or file. They do not need an independent band selection.
 - Optional references retain `SetNull`: pinned recordings; file previews and
@@ -94,8 +99,9 @@ The settings registry must provide per-key authorization and serialization.
 
 The server must enforce singleton role designations, prohibit granting a deleted
 role/permission or using a deactivated membership, select default/enabled locales,
-and authorize band/string ownership. SQL foreign keys establish identity and
-band consistency; they do not establish caller permissions or soft-delete policy.
+and authorize band/string ownership. SQL foreign keys enforce the relationships
+declared in the current schema; server code must establish
+same-band consistency, caller permissions, and soft-delete policy.
 Setlist `payloadJson` and menu `wikiSlug` also need band-aware reference resolution.
 
 ## Key🟢
