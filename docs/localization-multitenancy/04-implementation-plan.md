@@ -28,11 +28,62 @@ Trusted band context and isolation belong before milestone A. The initial
 deployment can select Café Marché through server configuration while the full
 portal routing and management experience is developed later.
 
-The earlier design rationale remains in
-[00-localization-multitenancy.md](00-localization-multitenancy.md), and the model
-summary is in [01-schema.md](01-schema.md). Use the actual schema for constraints
-and the SQL runbook for migration behavior; earlier illustrative models are not
+Follow the settled localization and multiband policies in
+[00-localization-multitenancy.md](00-localization-multitenancy.md); this checklist
+turns those policies into implementation and acceptance work. The model summary
+is in [01-schema.md](01-schema.md). Use the actual schema for constraints and the
+SQL runbook for migration behavior; earlier illustrative models are not
 additional database guarantees.
+
+## Localization contracts
+
+Keep three responsibilities explicit:
+
+- **Locale preferences:** preserve the explicit route locale and browser language
+  preferences, in that priority order, with the system fallback (`en-US`).
+  Server request language hints supply the browser preference for initial server
+  rendering. Normalize these inputs centrally and retain the requested tags;
+  selecting one database-supported locale in advance can discard information.
+- **String resolution:** choose a translation separately for each static key or
+  dynamic string identity, using the preferences, relevant locale availability,
+  band context, and that string's available values. Different strings in one
+  response can resolve to different locales. Static chrome, dynamic strings, and
+  inherited catalog fields share the same policy.
+- **Formatting:** select a clearly named `formattingLocale` for dates, numbers,
+  and similar presentation, honoring an explicit route preference before browser
+  preferences and the fallback. Formatter support and database translation
+  availability are separate concerns; formatting does not require a matching
+  stored translation or `Locale` row. This value does not select string values.
+
+Implement the design's
+[string lookup priority / fallbacks](00-localization-multitenancy.md#string-lookup-priority--fallbacks)
+for each string:
+
+1. Requested language-region at band scope.
+2. Requested language at band scope.
+3. `en-US` at band scope.
+4. Any translation at band scope.
+5. Requested language-region at global scope, only when the band has no overrides.
+6. Requested language at global scope.
+7. `en-US` at global scope.
+8. Any translation at global scope.
+
+Any band override for this string prevents global fallback, including registered
+English defaults that would restore the global meaning. Empty text counts as a
+translation. Choose language-match and last-resort ties deterministically, and
+return the selected locale, scope, and fallback reason for inspection. Avoid
+special fallback rules per namespace or entity type.
+
+The design lists route, browser, and system preferences, but its eight-step
+summary does not expand the browser step when an explicit route locale lacks a
+matching translation. Specify and test that expansion in phase 2 before coding
+the selection policy; do not inherit an accidental order from existing helpers.
+
+Phase 1's `resolveRequestLocale()` and `DashboardContext.locale` are provisional
+single-locale scaffolding. They are not the string-resolution foundation or
+evidence that these contracts are implemented. Phase 2 replaces that dashboard
+contract with preserved preferences and a separate `formattingLocale`; reuse
+normalization or matching helpers only where their semantics fit the design.
 
 ## Phase 1: context, authorization, and bootstrap
 
@@ -48,20 +99,20 @@ not establish application readiness or complete isolation of legacy consumers.
 - [x] Inventory affected authorization operations and identify whether each
   changes a platform resource, a shared person, or a band resource/membership.
 - [x] Establish server authorization containing the authenticated person,
-  resolved band when applicable, membership, and applicable grants. Resolve
-  presentation locale separately and compose both at request/dashboard boundaries.
+  resolved band when applicable, membership, and applicable grants.
   Resolve a requested band on the server; client IDs and rewrite headers are
   selection hints, not authorization.
 - [x] Initially resolve Café Marché through server configuration. Support
   platform operations with no band and public band access with no membership.
 - [x] Load global-role grants and active-band role grants with explicit scope.
   Grants from another band's membership must not authorize an operation here.
-- [x] Keep band, locale, membership, and effective band grants in the request/tab
+- [x] Keep band, membership, and effective band grants in the request/tab
   dashboard context. Shared session PublicData carries only band-independent
   grants and account/session state. Cover concurrent contexts sharing one session.
-- [x] Keep locale selection and locale availability independent of authorization
+- [x] Keep locale selection and availability independent of authorization
   loading, refresh, and caching. Language changes reuse the same authorization
-  snapshot; the locale resolver enforces enabled active presentation locales.
+  snapshot. The completed separation does not establish preference collection,
+  per-string fallback, or formatting behavior; those remain phase 2 work.
 - [x] Define public, pending/roleless, and nonmember behavior explicitly. Preserve
   existing intended access without treating account creation as band membership.
   Deactivated memberships and deleted/merged people must not regain access.
@@ -88,21 +139,41 @@ inactive-account cases. The context is usable by later DB3 and settings work.
 **Outcome:** clients and servers resolve strings and settings through shared,
 typed, authorized APIs.
 
-- [ ] Use the shared request-locale resolver to implement string resolution for static keys
-  and dynamic string identities. Preserve the agreed scope-first fallback order:
-  band exact locale, band language match, band `en-US`, other band translation;
-  then the corresponding global candidates only when no band translations exist.
-  Choose ties deterministically. Empty text is a translation, not absence.
+- [ ] Define typed locale-preference inputs and centralized semantic routines
+  for normalization, preference priority, scope selection, and translation
+  matching. Preserve route and browser preferences instead of first reducing
+  them to `resolveRequestLocale()`'s single enabled locale. Keep the selection
+  policy pure and testable; database access and React hooks supply its inputs.
+  Wire browser/server language inputs now and accept a route hint through the
+  contract; full portal route extraction follows in phase 5.
+- [ ] Centralize relevant-locale queries for platform and band contexts. Define
+  and test how enabled/deleted locale availability constrains translation
+  candidates while preserving the rule that band overrides block global fallback.
+- [ ] Implement per-string resolution for static keys and dynamic identities
+  using the localization contracts above. Specify route/browser candidate order,
+  deterministic ties, blank/missing values, and resolution provenance.
+- [ ] Provide explicit locale/scope lookup with fallbacks disabled for editors
+  and tests. Missing translations must remain distinguishable from intentional
+  empty text and inherited display values.
+- [ ] Implement `formattingLocale` separately from string resolution, using the
+  shared preferences and formatter support. Replace the generic dashboard
+  `locale`/raw-browser `userLocale` presentation contract and route date/number
+  consumers through this policy. Deliver the initial preference/formatting context
+  to the client so server and client presentation agree.
 - [ ] Supply registered English defaults for static chrome without stored
   translations. Preserve intentional blank values and band override precedence;
   record the chosen source in resolution details.
 - [ ] Resolve inherited catalog fields through the same mechanism. Preserve null
   versus empty text and the distinction between custom band content and global
   content. Provide resolution details for tests and the later inspection editor.
-- [ ] Derive plain-text and Markdown key types from registry formats. Keep
-  interpolation parameters typed; Markdown strings do not interpolate parameters.
-- [ ] Deliver the initial complete UI catalog with the resolved band/locale
-  context. Client getters are synchronous only after that catalog is loaded.
+- [ ] Derive plain-text and Markdown key types from registry formats. Use the
+  agreed ICU MessageFormat interpolation for plain-text messages with typed
+  parameters; Markdown strings do not interpolate parameters. Provide typed
+  string/Markdown getters and React components backed by registered keys,
+  without ad hoc inline string definitions.
+- [ ] Deliver the initial complete resolved UI catalog with the band and locale
+  preferences used to resolve it. Client getters are synchronous only after that
+  catalog is loaded.
   Missing/unloaded keys have explicit development/loading behavior rather than
   hidden network requests or silent empty-string stubs.
 - [ ] Batch dynamic values with authorized entity reads. Share the resolver
@@ -119,13 +190,18 @@ typed, authorized APIs.
   Keep the hives independent rather than adding an implicit inheritance chain.
 - [ ] Adapt server settings consumers, including branding and band timezone,
   alongside client hooks. Preserve existing timezone/date reanchoring behavior.
-- [ ] Partition delivery/cache data by relevant band, locale, and authorization
-  context. Refresh after string/settings/grant/membership changes and prevent
-  stale data or grants from surviving a band switch.
+- [ ] Partition resolved catalogs and localized query caches by band, the full
+  ordered locale preferences, relevant locale availability, and applicable
+  authorization/revisions. A single formatting locale is not a sufficient cache
+  key. Refresh after string/settings/availability/grant/membership changes and
+  prevent stale data or grants from surviving a band switch.
 
-**Completion:** focused tests cover scope precedence, locale matching, blank and
-missing values, settings defaults/types/reset, authorization, and invalidation.
-The APIs work without depending on a component to fetch each individual string.
+**Completion:** focused tests cover route/browser preferences, scope precedence,
+language-region matching, deterministic ties, blank/missing values, explicit
+lookup without fallbacks, formatting, settings defaults/types/reset,
+authorization, and invalidation. The APIs work without depending on a component
+to fetch each individual string. Matching and fallback policies are centralized
+and readable independently of database, dashboard, and React orchestration.
 
 ## Phase 3: DB3 fields, xTables, and views
 
@@ -163,7 +239,7 @@ and views use those contracts, with cross-band reference rejection covered.
 
 - [ ] Restore authentication/session consumers, dashboard/context delivery, and
   navigation first. Adapt the existing dashboard facade incrementally to expose
-  platform, band, and locale context.
+  platform/band authorization, locale preferences, and `formattingLocale`.
 - [ ] Restore catalogs and membership workflows, then events/invitations/
   attendance, then songs, files, wiki, menus, setlist plans, search, calendars,
   exports, telemetry, and background operations. Validate each functional wave.
@@ -201,12 +277,17 @@ portal URLs and membership workflows.
 - [ ] Implement the portal resolver and shared URL/router API for standalone
   hosting and platform `/[locale]/b/<publicBandId>/...` routes. Preserve supported
   URLs without a locale and the intended single-band root or `/backstage` shape.
+- [ ] Feed the explicit route locale into phase 2's preference contract for both
+  string lookup and formatting. Keep URLs without a locale directly supported,
+  using browser preferences without redirecting to a chosen locale; prefer those
+  URLs for sharing. Add a language switcher that navigates to the equivalent page.
 - [ ] Adapt existing pages through the rewrite strategy without duplicating page
   implementations. Validate host/path/band/locale on the server; middleware alone
   does not authorize requests.
 - [ ] Replace Next's static i18n assumptions, locale-dependent links, redirects,
-  and document language with application locale context. Ensure server rendering
-  and client navigation agree, including initial locale selection.
+  and document language with application preference/formatting contracts and
+  actual resolved content language where applicable. Ensure server rendering and
+  client navigation agree without inventing a second string-fallback algorithm.
 - [ ] Exercise SSR, RPC/API, files, feeds, Custom Links, notifications, and
   exported links under each portal shape. Preserve Custom Links' agreed band-root
   ownership without adding locale-specific redirect behavior.
@@ -216,8 +297,10 @@ portal URLs and membership workflows.
 - [ ] Provide the appropriate platform administration surfaces for global
   catalogs, locales, settings, and role/permission definitions. A newly signed-up
   person with no memberships must have a usable account flow.
-- [ ] Verify switching band or locale refreshes context, catalogs, grants,
-  settings, and links without retaining another band's state.
+- [ ] Verify band changes refresh authorization, preferences, catalogs, settings,
+  formatting, and links without retaining another band's state. Locale changes
+  refresh localized data and presentation while reusing authorization for the
+  same band/person.
 
 **Completion:** two bands are usable through all supported portal shapes, with
 working lifecycle/administration and isolation across page and non-page paths.
@@ -231,6 +314,9 @@ for this infrastructure milestone.
 - [ ] Add a shared localized-string editing/inspection surface for static chrome
   and dynamic entity strings, with explicit locale and global/band scope,
   inherited values, resolution provenance, override/reset controls, and search.
+- [ ] Restore the site-chrome editing mode with a single-string editor and a link
+  to the main inspection surface. Use explicit lookup without fallbacks to edit
+  stored values while showing the resolved/inherited display value separately.
 - [ ] Authorize the specific string/scope on the server and invalidate affected
   catalogs after writes. Keep editing format-aware and share machinery across
   chrome, tags, attendance captions, and other localized fields.
@@ -274,6 +360,14 @@ anonymous, pending, active member, band administrator, platform administrator,
 outsider, and inactive/merged cases. Verify reads, writes, references, search,
 sorting, cached results, and switches stay within the authorized scope.
 
+Localization acceptance must demonstrate that a Dutch viewer receives a band's
+French override even when a global Dutch translation exists; a string without
+band overrides can resolve to Dutch on the same page. Cover French region
+fallback, route preference over browser preference, intentional blank overrides,
+last-resort ties, and explicit lookup with fallbacks disabled. Cover preference
+lists with the same `formattingLocale` but different string results to prevent
+catalog cache collisions. Verify formatting without a matching stored translation.
+
 Keep focused tests with each behavioral change. Follow [docs/testing.md](../testing.md):
 `yarn test <test paths> --reporter=dot`, and use `yarn test --reporter=dot` for
 milestone/final suite checks. A build passing alone does not establish usable
@@ -283,7 +377,9 @@ workflows or isolation.
 
 Phase 1 foundations are implemented and checked; see
 [05-authorization-foundation.md](05-authorization-foundation.md). Start phase 2
-with shared locale/string resolution and authorized typed settings lookup
-contracts. Phase 3 follows with the band-instrument vertical slice, then broader
-domain and application recovery. The application remains unbuildable until those
-consumer adaptations are complete.
+with preserved locale preferences, the documented per-string selection policy,
+separate formatting, and authorized typed settings lookup contracts. The existing
+single-locale resolver is not a prerequisite for string selection. Phase 3 follows
+with the band-instrument vertical slice, then broader domain and application
+recovery. The application remains unbuildable until those consumer adaptations
+are complete.

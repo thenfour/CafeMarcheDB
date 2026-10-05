@@ -29,16 +29,19 @@ unset and no bands at all, the default resolves platform context so a fresh
 installation can create its first account before creating a band. An existing
 but deleted band does not trigger this fallback.
 
-`src/locale/server/requestLocale.ts` owns presentation-locale selection.
+`src/locale/server/requestLocale.ts` provides provisional single-locale selection.
 `resolveRequestLocale(database, bandId, requested?)` accepts a trusted resolved
 band ID, or `null` for platform presentation. It considers the band's enabled
 active locales, or all active platform locales, ordered by `Locale.sortOrder`
-then identity. `BandLocale` has no separate ordering column. Matching chooses an
+then identity; it does not use `BandLocale.sortOrder`. Matching chooses an
 exact locale, then a matching language, then `en-US`, then the first candidate.
 Malformed hints and missing active candidates fail presentation resolution.
 Authorization does not query locales and remains usable when locale data is
-missing or its query fails. Phase 2 will use this resolver for strings; translation
-fallback and catalog delivery remain unimplemented.
+missing or its query fails. Translation fallback and catalog delivery remain
+unimplemented. This scalar selection is not the foundation for string lookup:
+phase 2 preserves route/browser preferences, resolves each string with the design's
+scope-first policy, and selects a separate `formattingLocale`. See the
+[localization contracts](04-implementation-plan.md#localization-contracts).
 
 `loadAuthorization(session, selection)` caches a database snapshot within that
 request's session context, separately for each scope and session identity.
@@ -55,6 +58,10 @@ membership identities and effective permission names. It has no locale field.
 `getDashboardData` composes this as `DashboardDataDto.authorization` alongside
 the separately resolved `DashboardDataDto.locale`. The React provider exposes
 them as `DashboardContext.authorizationContext` and `DashboardContext.locale`.
+The dashboard currently supplies no requested-locale hint to the resolver, and
+date presentation still uses the raw browser `userLocale`. These fields are
+provisional; explicit route/browser negotiation and formatting adoption are
+phase 2/5 work, not completed phase-1 behavior.
 Each tab receives its own response and uses that response's grants for client
 hints. Numeric database identities and the
 server authorization object do not cross this boundary. The existing configured
@@ -228,7 +235,9 @@ original data-migration evidence remains in [03-sql-migration.md](03-sql-migrati
 
 ## Next step
 
-Proceed to phase 2: reuse the independent locale resolver, implement string-resolution
-provenance and scope-first fallback, then provide authorized typed lookups for
-the four settings hives. Those APIs should consume this trusted context before
-phase 3 adapts the band-instrument vertical slice and the other domain writers.
+Proceed to phase 2: preserve ordered locale preferences, implement per-string
+scope-first fallback and provenance, select formatting independently, and provide
+authorized typed lookups for the four settings hives. Reuse existing matching
+helpers only where their semantics fit; do not reduce string-resolution inputs
+to the existing scalar locale. Those APIs should consume this trusted context
+before phase 3 adapts the band-instrument vertical slice and other domain writers.

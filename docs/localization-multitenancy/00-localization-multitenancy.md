@@ -333,6 +333,9 @@ the global dutch string?)
 7. fallback locale (en-US) at global scope
 8. any locale at global scope
 
+One thing is very important: the logic must be centralized in a way that's testable,
+readible, maintainable, and can be easily tweaked.
+
 ## string keys
 
 **namespace-like structure**; think vs code settings
@@ -412,18 +415,18 @@ are stored separately in `BandDynamicLocalizedStringValue`.
 
 ## permissions / roles
 
-- `User.globalRoleId` selects a nullable global role; `BandUser.bandRoleId`
-  selects a nullable membership role. Only the designated sysadmin role becomes
-  global in the data migration; all other existing roles become band roles.
-- Permissions remain in one static registry. `GlobalRolePermission` and
-  `BandRolePermission` retain the existing grants for their migrated roles.
-- Both role definitions and permission matrices are platform-owned in V1.
-  `BandRole` has no `bandId`; a band assigns an existing role to a membership
-  rather than defining its own permission matrix.
-- Phase 1 of [04-implementation-plan.md](04-implementation-plan.md) separates
-  platform and active-band authorization, including public/pending behavior and
-  shared-account versus membership management. New capabilities and approved
-  grants belong in a follow-up migration, not the completed data migration.
+-  `User.globalRoleId` selects a nullable global role; `BandUser.bandRoleId`
+   selects a nullable membership role. Only the designated sysadmin role becomes
+   global in the data migration; all other existing roles become band roles.
+-  Permissions remain in one static registry. `GlobalRolePermission` and
+   `BandRolePermission` retain the existing grants for their migrated roles.
+-  Both role definitions and permission matrices are platform-owned in V1.
+   `BandRole` has no `bandId`; a band assigns an existing role to a membership
+   rather than defining its own permission matrix.
+-  Phase 1 of [04-implementation-plan.md](04-implementation-plan.md) separates
+   platform and active-band authorization, including public/pending behavior and
+   shared-account versus membership management. New capabilities and approved
+   grants belong in a follow-up migration, not the completed data migration.
 
 ## entity scoping (tags / instrument sets...)
 
@@ -940,22 +943,22 @@ model BandSetting {
 This summary replaces the earlier milestone sketch. Track individual tasks and
 validation in [04-implementation-plan.md](04-implementation-plan.md).
 
-- [x] Homepage decoupling and standalone homepage SPA.
-- [x] Target schema, four settings registries, and static string registry established.
-- [x] Data-preserving SQL migration implemented and rehearsed on disposable
-  databases; see [03-sql-migration.md](03-sql-migration.md).
-- [ ] Phase 1: trusted context, scoped authorization, new permissions, bootstrap.
-- [ ] Phase 2: typed localization and four-hive settings lookups/writes.
-- [ ] Phase 3: localized DB3 fields, xTables/views, and a complete band instrument
-  vertical slice before expanding the patterns.
-- [ ] Phase 4: application recovery, explicit localized column labels, temporary
-  read-only `LocalizedMarkdown`, and migrated-data/isolation acceptance.
-- [ ] Milestone A: the migrated application builds and core workflows work.
-- [ ] Phase 5: portal routing, band lifecycle, and platform/band management.
-- [ ] Phase 6: scoped localized editing, restored deferred features, locale
-  presentation, and agreed translation coverage.
-- [ ] Milestone B: localization and multiband complete, with final acceptance and
-  no unaccounted temporary restrictions.
+-  [x] Homepage decoupling and standalone homepage SPA.
+-  [x] Target schema, four settings registries, and static string registry established.
+-  [x] Data-preserving SQL migration implemented and rehearsed on disposable
+       databases; see [03-sql-migration.md](03-sql-migration.md).
+-  [ ] Phase 1: trusted context, scoped authorization, new permissions, bootstrap.
+-  [ ] Phase 2: typed localization and four-hive settings lookups/writes.
+-  [ ] Phase 3: localized DB3 fields, xTables/views, and a complete band instrument
+       vertical slice before expanding the patterns.
+-  [ ] Phase 4: application recovery, explicit localized column labels, temporary
+       read-only `LocalizedMarkdown`, and migrated-data/isolation acceptance.
+-  [ ] Milestone A: the migrated application builds and core workflows work.
+-  [ ] Phase 5: portal routing, band lifecycle, and platform/band management.
+-  [ ] Phase 6: scoped localized editing, restored deferred features, locale
+       presentation, and agreed translation coverage.
+-  [ ] Milestone B: localization and multiband complete, with final acceptance and
+       no unaccounted temporary restrictions.
 
 Full routing UX follows application recovery, but trusted band context and
 isolation precede it. A browser-supplied band ID is never sufficient authorization.
