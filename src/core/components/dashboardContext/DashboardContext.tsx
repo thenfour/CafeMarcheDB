@@ -55,14 +55,6 @@ export class DashboardContextData extends DashboardContextDataBase {
         return this.effectivePermissions.includesName(p);
     }
 
-    // isAuthorizedPermissionId(pid: number | null) {
-    //     const pobj = this.permission.getById(pid);
-    //     if (!pobj) {
-    //         return false;
-    //     }
-    //     return this.isAuthorized(pobj.name);
-    // }
-
     isAuthorizedForVisibility(visibilityPermissionId: PermissionPublicId | null, ownerUserId: number | null) {
         if (visibilityPermissionId == null) {
             return ownerUserId === null || ownerUserId === this.currentUser?.id;
@@ -276,10 +268,13 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.serverStartupState = dashboardData.serverStartupState;
     valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
     valueRef.current.bandTimeZone = dashboardData.bandTimeZone;
-    valueRef.current.userSettings = dashboardData.userSettings;
+
+    valueRef.current.settings = dashboardData.settings;
+
     valueRef.current.brand = brand;
     valueRef.current.localTimeZone = localTimeZone();
 
+    // LSMB todo: move to locale
     // todo: we can break this into lang + region, and expose user local vs. resolved app locale.
     valueRef.current.userLocale = typeof navigator === "undefined" ? "en" : navigator.language;
 

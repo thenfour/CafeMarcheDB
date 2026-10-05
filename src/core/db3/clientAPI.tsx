@@ -7,12 +7,10 @@ import { useSession } from "@blitzjs/auth";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import * as db3 from "@db3/db3";
 import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
-import { SettingKey } from "shared/settingKeys";
 import { shouldShowAdminControls } from "shared/adminControls";
 import { CoerceToNumberOr, gQueryOptions } from "shared/utils";
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
 import updateSettingMutation from "@/src/setting/server/mutations/updateSetting";
-import getSetting from "@/src/setting/server/queries/getSetting";
 import insertEvent from "./mutations/insertEvent";
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
 import updateGalleryItemImage from "./mutations/updateGalleryItemImage";
@@ -159,26 +157,26 @@ class OtherAPI {
     };
 };
 
-class SettingsAPI {
+// class SettingsAPI {
 
-    useSetting = (settingName: SettingKey) => {
-        const [value, { refetch }] = useQuery(getSetting, { name: settingName }, gQueryOptions.default);
-        return value;
-    }
+//     useSetting = (settingName: SettingKey) => {
+//         const [value, { refetch }] = useQuery(getSetting, { name: settingName }, gQueryOptions.default);
+//         return value;
+//     }
 
-    useNumberSetting = (settingName: SettingKey, defaultVal: number) => {
-        const [value, { refetch }] = useQuery(getSetting, { name: settingName }, gQueryOptions.default);
-        return CoerceToNumberOr(value, defaultVal);
-    }
+//     useNumberSetting = (settingName: SettingKey, defaultVal: number) => {
+//         const [value, { refetch }] = useQuery(getSetting, { name: settingName }, gQueryOptions.default);
+//         return CoerceToNumberOr(value, defaultVal);
+//     }
 
-    useMutableSetting = (settingName: SettingKey): [value: string | null, mutateFn: (args: { name: string, value: string | null }) => Promise<any>] => {
-        const [value, { refetch }] = useQuery(getSetting, { name: settingName }, gQueryOptions.default);
-        const [mutateFn] = useMutation(updateSettingMutation);
-        return [value, mutateFn];
-    }
+//     useMutableSetting = (settingName: SettingKey): [value: string | null, mutateFn: (args: { name: string, value: string | null }) => Promise<any>] => {
+//         const [value, { refetch }] = useQuery(getSetting, { name: settingName }, gQueryOptions.default);
+//         const [mutateFn] = useMutation(updateSettingMutation);
+//         return [value, mutateFn];
+//     }
 
-    updateSetting = CreateAPIMutationFunction(updateSettingMutation);
-};
+//     updateSetting = CreateAPIMutationFunction(updateSettingMutation);
+// };
 
 // todo: this should be in context
 export const API = {
@@ -187,5 +185,5 @@ export const API = {
     users: gUsersAPI,
     files: gFilesAPI,
     other: new OtherAPI(),
-    settings: new SettingsAPI(),
+    //settings: new SettingsAPI(),
 };

@@ -10,7 +10,7 @@ import React, { Suspense } from "react";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { CalendarUserSettingsControl } from "src/core/components/user/UserSettingsControls";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -76,7 +76,7 @@ const MainContent = () => {
     };
 
     return <>
-        <SettingMarkdown setting="profile_markdown"></SettingMarkdown>
+        <LocalizedMarkdown setting="profile_markdown"></LocalizedMarkdown>
         <CMSinglePageSurfaceCard className="surface2">
             <div className="header">
                 <h1>
@@ -85,7 +85,7 @@ const MainContent = () => {
             </div>
 
             <div className="content">
-                <SettingMarkdown setting="profile_description_markdown" />
+                <LocalizedMarkdown setting="profile_description_markdown" />
 
                 <NameValuePair isReadOnly={false} name="Your instruments" value={<OwnInstrumentsControl />} />
 

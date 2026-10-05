@@ -3,7 +3,7 @@ import { CMButton } from "@/src/core/components/CMCoreComponents2";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
 import { useRouter } from "next/router";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { SongClientColumns } from "src/core/components/song/SongComponents";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -46,7 +46,7 @@ const MainContent = () => {
     });
 
     return <>
-        <SettingMarkdown setting="editSongs_markdown"></SettingMarkdown>
+        <LocalizedMarkdown setting="editSongs_markdown"></LocalizedMarkdown>
         <DB3EditGrid
             tableSpec={songTableSpec}
             view={db3.songEditorView}

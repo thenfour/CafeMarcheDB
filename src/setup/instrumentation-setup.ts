@@ -1,7 +1,7 @@
 import { DefaultDbBrandConfig } from "@/shared/brandConfigBase";
 import { DefaultRolePermissionAssignments, DefaultRoles } from "@/shared/defaultRolePermissionAssignments";
 import { getPermissionDatabaseMetadata, gPermissionRegistry } from "@/shared/permissions";
-import { Setting } from "@/shared/settingKeys";
+import { Setting } from "@/src/setting/shared/settingKeys";
 import { assertValidSysadminRole } from "@/src/auth/server/sessionInvalidation";
 import db, { Prisma } from "db";
 import { SeedTable } from "./setupUtils";

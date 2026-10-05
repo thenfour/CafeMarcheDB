@@ -7,7 +7,7 @@ import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/Dash
 import { AttendanceChange, AttendanceControlView } from "./event/AttendanceControlView";
 import { CalcEventAttendance, type AttendanceEventMetadata } from "./event/EventComponentsBase";
 import { ActivityFeature } from "./featureReports/activityTracking";
-import { SettingMarkdown } from "./SettingMarkdown";
+import { LocalizedMarkdown } from "../../setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "./SnackbarContext";
 
 type CreatedUpdatedObj = {
@@ -94,7 +94,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
             onSave,
             allowUploads: true,
             datePresentation: dashboardContext.eventDatePresentation,
-            commentDialogTitle: <SettingMarkdown setting="EventAttendanceCommentDialog_TitleMarkdown" />,
-            commentDialogDescription: <SettingMarkdown setting="EventAttendanceCommentDialog_DescriptionMarkdown" />,
+            commentDialogTitle: <LocalizedMarkdown setting="EventAttendanceCommentDialog_TitleMarkdown" />,
+            commentDialogDescription: <LocalizedMarkdown setting="EventAttendanceCommentDialog_DescriptionMarkdown" />,
         }} />;
 };

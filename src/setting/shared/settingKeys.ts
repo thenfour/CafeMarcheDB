@@ -1,0 +1,107 @@
+// this is the old setting keys file.
+// some of these are obsolete, some  move to localized strings, some move to
+// the new settings hives.
+
+// Client-safe export of Setting keys (no server imports here)
+// Use this in any code that runs in the browser to avoid bundling server-only modules.
+
+// export enum Setting {
+//     // event dialog text
+//     // EditEventDialogDescription = "EditEventDialogDescription",
+//     // NewEventSegmentDialogTitle = "NewEventSegmentDialogTitle",
+//     // EditEventSegmentDialogTitle = "EditEventSegmentDialogTitle",
+//     // NewEventSegmentDialogDescription = "NewEventSegmentDialogDescription",
+//     // EditEventSegmentDialogDescription = "EditEventSegmentDialogDescription",
+//     // NewEventDialogDescription = "NewEventDialogDescription",
+//     // EditSongDialogDescription = "EditSongDialogDescription",
+//     // IconEditCellDialogDescription = "IconEditCellDialogDescription",
+//     // VisibilityControlSelectDialogDescription = "VisibilityControlSelectDialogDescription",
+//     // EventInviteUsersDialogDescriptionMarkdown = "EventInviteUsersDialogDescriptionMarkdown",
+//     // EventAttendanceEditDialog_TitleMarkdown = "EventAttendanceEditDialog_TitleMarkdown",
+//     // EventAttendanceEditDialog_DescriptionMarkdown = "EventAttendanceEditDialog_DescriptionMarkdown",
+//     // EditEventSongListDialogDescription = "EditEventSongListDialogDescription",
+//     // EditEventSongListDialogTitle = "EditEventSongListDialogTitle",
+//     // EventAttendanceCommentDialog_TitleMarkdown = "EventAttendanceCommentDialog_TitleMarkdown",
+//     // EventAttendanceCommentDialog_DescriptionMarkdown = "EventAttendanceCommentDialog_DescriptionMarkdown",
+
+//     // // brand
+//     // Dashboard_HostingMode = "Dashboard_HostingMode", // CafeMarche or GenericSingleTenant
+//     // Dashboard_SiteTitle = "Dashboard_SiteTitle",
+//     // Dashboard_SiteTitlePrefix = "Dashboard_SiteTitlePrefix",
+//     // Dashboard_SiteFaviconUrl = "Dashboard_SiteFaviconUrl",
+//     // Dashboard_SiteLogoUrl = "Dashboard_SiteLogoUrl",
+//     // BandTimeZone = "BandTimeZone",
+//     // // theme
+//     // Dashboard_Theme_PrimaryMain = "Dashboard_Theme_PrimaryMain",
+//     // Dashboard_Theme_SecondaryMain = "Dashboard_Theme_SecondaryMain",
+//     // Dashboard_Theme_BackgroundDefault = "Dashboard_Theme_BackgroundDefault",
+//     // Dashboard_Theme_BackgroundPaper = "Dashboard_Theme_BackgroundPaper",
+//     // Dashboard_Theme_TextPrimary = "Dashboard_Theme_TextPrimary",
+//     // Dashboard_Theme_ContrastText = "Dashboard_Theme_ContrastText",
+//     // // iCal
+//     // Ical_CalendarName = "Ical_CalendarName",
+//     // Ical_CalendarCompany = "Ical_CalendarCompany",
+//     // Ical_CalendarProduct = "Ical_CalendarProduct",
+//     // Ical_CalendarEventPrefix = "Ical_CalendarEventPrefix",
+
+//     // // mostly pages or sections of pages...
+//     // HomeDescription = "HomeDescription",
+//     // event_description_mockup_markdown = "event_description_mockup_markdown",
+//     // EditEventAttendancesPage_markdown = "EditEventAttendancesPage_markdown",
+//     // editEvents_markdown = "editEvents_markdown",
+//     // EditEventSegmentsPage_markdown = "EditEventSegmentsPage_markdown",
+//     // EventSegmentUserResponsePage_markdown = "EventSegmentUserResponsePage_markdown",
+//     // EditEventSongListsPage_markdown = "EditEventSongListsPage_markdown",
+//     // EditEventSongListSongsPage_markdown = "EditEventSongListSongsPage_markdown",
+//     // EditEventStatusesPage_markdown = "EditEventStatusesPage_markdown",
+//     // EditEventTagsPage_markdown = "EditEventTagsPage_markdown",
+//     // EditEventTypesPage_markdown = "EditEventTypesPage_markdown",
+//     // EventUserResponsePage_markdown = "EventUserResponsePage_markdown",
+//     // EditFilesPage_markdown = "EditFilesPage_markdown",
+//     // EditFileTagsPage_markdown = "EditFileTagsPage_markdown",
+//     // EditFrontpageGalleryItemsPage_markdown = "EditFrontpageGalleryItemsPage_markdown",
+//     // EditSongCreditsPage_markdown = "EditSongCreditsPage_markdown",
+//     // editSongCreditTypes_markdown = "editSongCreditTypes_markdown",
+//     // editSongs_markdown = "editSongs_markdown",
+//     // editSongTags_markdown = "editSongTags_markdown",
+//     // editWikiPageTags_markdown = "editWikiPageTags_markdown",
+//     // EditUserTagsPage_markdown = "EditUserTagsPage_markdown",
+//     // events_markdown = "events_markdown",
+//     // frontpage_gallery_markdown = "frontpage_gallery_markdown",
+//     // files_markdown = "files_markdown",
+//     // info_text = "info_text",
+//     // InstrumentFunctionalGroupList_markdown = "InstrumentFunctionalGroupList_markdown",
+//     // instrumentList_markdown = "instrumentList_markdown",
+//     // profile_markdown = "profile_markdown",
+//     // rolePermissionsMatrixPage_markdown = "rolePermissionsMatrixPage_markdown",
+//     // RolesAdminPage_markdown = "RolesAdminPage_markdown",
+//     // settings_markdown = "settings_markdown",
+//     // songs_markdown = "songs_markdown",
+//     // usersearch_markdown = "usersearch_markdown",
+//     // AdminLogsPage_markdown = "AdminLogsPage_markdown",
+//     // UserInstrumentsPage_markdown = "UserInstrumentsPage_markdown",
+//     // EventSongListTabDescription = "EventSongListTabDescription",
+//     // EventAttendanceDetailMarkdown = "EventAttendanceDetailMarkdown",
+//     // EventCompletenessTabMarkdown = "EventCompletenessTabMarkdown",
+//     // FrontpageAgendaPage_markdown = "FrontpageAgendaPage_markdown",
+//     // BackstageFrontpageMarkdown = "BackstageFrontpageMarkdown",
+//     // BackstageFrontpageHeaderMarkdown = "BackstageFrontpageHeaderMarkdown",
+//     // DashboardStats_SongsMarkdown = "DashboardStats_SongsMarkdown",
+//     // DashboardStats_EventsMarkdown = "DashboardStats_EventsMarkdown",
+//     // CustomLinksPageMarkdown = "CustomLinksPageMarkdown",
+//     // MenuLinksPageMarkdown = "MenuLinksPageMarkdown",
+//     // GlobalWikiPage_Markdown = "GlobalWikiPage_Markdown",
+//     // SongHistoryTabDescription = "SongHistoryTabDescription",
+//     // StatsPage_markdown = "StatsPage_markdown",
+//     // profile_description_markdown = "profile_description_markdown",
+//     // EditFileDialogDescription = "EditFileDialogDescription",
+//     // QrCodeForThisPageDescriptionMarkdown = "QrCodeForThisPageDescriptionMarkdown",
+
+//     // not markdown....
+//     // BackstageFrontpageEventMaxAgeDays = "BackstageFrontpageEventMaxAgeDays",
+//     // BackstageFrontpageCurrentSongMaxAgeDays = "BackstageFrontpageCurrentSongMaxAgeDays",
+//     // textPalette = "textPalette",
+//     //maxImageDimension = "maxImageDimension",
+// }
+
+// export type SettingKey = keyof typeof Setting;

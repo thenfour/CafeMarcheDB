@@ -8,7 +8,7 @@ import {
     RoleDesignation,
     type RoleDesignationValue,
 } from "src/auth/roleDesignations";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -112,7 +112,7 @@ const MainContent = () => {
     });
 
     return <>
-        <SettingMarkdown setting="RolesAdminPage_markdown"></SettingMarkdown>
+        <LocalizedMarkdown setting="RolesAdminPage_markdown"></LocalizedMarkdown>
         <BuiltInRoleAssignments />
         <DB3EditGrid tableSpec={RoleClientSchema} view={db3.roleEditorView} />
     </>;

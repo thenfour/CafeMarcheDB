@@ -1,6 +1,6 @@
 import { DbBrandConfig, DefaultDbBrandConfig } from "@/shared/brandConfigBase";
 import { validateDbBrandConfig } from "@/shared/brandingValidation";
-import { Setting } from "@/shared/settingKeys";
+import { Setting } from "@/src/setting/shared/settingKeys";
 import db from "db";
 
 type CacheEntry = { value: DbBrandConfig; expiresAt: number };

@@ -8,7 +8,7 @@ import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { EventListItem } from "src/core/components/event/EventComponents";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
@@ -56,104 +56,104 @@ const makeStaticFilters = (
         .map(status => status.publicId);
 
     return [
-    {
-        label: "All",
-        helpText: "Searching all events",
-        orderByColumn: EventOrderByColumnOptions.startsAt,
-        orderByDirection: "desc",
-        typeFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
-        typeFilterOptions: [],
-        typeFilterEnabled: false,
-        tagFilterBehavior: DiscreteCriterionFilterType.hasAllOf,
-        tagFilterOptions: [],
-        tagFilterEnabled: false,
-        statusFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
-        statusFilterOptions: [],
-        statusFilterEnabled: false,
-        dateFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
-        dateFilterOptions: [],
-        dateFilterEnabled: false,
-    },
-    {
-        label: "Relevant",
-        helpText: "Searching all events no more than 1 week old",
-        "orderByColumn": "startsAt",
-        "orderByDirection": "asc",
-        "statusFilterEnabled": false,
-        "statusFilterBehavior": DiscreteCriterionFilterType.hasNone,
-        "statusFilterOptions": [],
-        "typeFilterEnabled": false,
-        "typeFilterBehavior": DiscreteCriterionFilterType.hasSomeOf,
-        "typeFilterOptions": [],
-        "tagFilterEnabled": false,
-        "tagFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
-        "tagFilterOptions": [],
-        "dateFilterEnabled": true,
-        "dateFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
-        "dateFilterOptions": [
-            10002
-        ]
-    },
-    {
-        label: "Hide rehearsals",
-        helpText: "",
-        "orderByColumn": "startsAt",
-        "orderByDirection": "asc",
-        "statusFilterEnabled": false,
-        "statusFilterBehavior": DiscreteCriterionFilterType.hasNone,
-        "statusFilterOptions": [],
-        "typeFilterEnabled": true,
-        "typeFilterBehavior": DiscreteCriterionFilterType.doesntHaveAnyOf,
-        "typeFilterOptions": rehearsalTypeIds,
-        "tagFilterEnabled": false,
-        "tagFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
-        "tagFilterOptions": [],
-        "dateFilterEnabled": true,
-        "dateFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
-        "dateFilterOptions": [
-            10002
-        ]
-    },
-    {
-        label: "Rehearsals since 60 days",
-        helpText: "Searching rehearsals more recent than 60 days",
-        "orderByColumn": "startsAt",
-        "orderByDirection": "desc",
-        "statusFilterEnabled": false,
-        "statusFilterBehavior": DiscreteCriterionFilterType.hasNone,
-        "statusFilterOptions": [],
-        "typeFilterEnabled": true,
-        "typeFilterBehavior": DiscreteCriterionFilterType.hasSomeOf,
-        "typeFilterOptions": rehearsalTypeIds,
-        "tagFilterEnabled": false,
-        "tagFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
-        "tagFilterOptions": [],
-        "dateFilterEnabled": true,
-        "dateFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
-        "dateFilterOptions": [
-            10003
-        ]
-    },
-    {
-        "label": "Past concerts",
-        "helpText": "",
-        "orderByColumn": "startsAt",
-        "orderByDirection": "desc",
-        "statusFilterEnabled": true,
-        "statusFilterBehavior": DiscreteCriterionFilterType.hasSomeOf,
-        "statusFilterOptions": confirmedStatusIds,
-        "typeFilterEnabled": true,
-        "typeFilterBehavior": DiscreteCriterionFilterType.hasSomeOf,
-        "typeFilterOptions": concertTypeIds,
-        "tagFilterEnabled": false,
-        "tagFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
-        "tagFilterOptions": [],
-        "dateFilterEnabled": true,
-        "dateFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
-        "dateFilterOptions": [
-            10000
-        ]
-    },
+        {
+            label: "All",
+            helpText: "Searching all events",
+            orderByColumn: EventOrderByColumnOptions.startsAt,
+            orderByDirection: "desc",
+            typeFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
+            typeFilterOptions: [],
+            typeFilterEnabled: false,
+            tagFilterBehavior: DiscreteCriterionFilterType.hasAllOf,
+            tagFilterOptions: [],
+            tagFilterEnabled: false,
+            statusFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
+            statusFilterOptions: [],
+            statusFilterEnabled: false,
+            dateFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
+            dateFilterOptions: [],
+            dateFilterEnabled: false,
+        },
+        {
+            label: "Relevant",
+            helpText: "Searching all events no more than 1 week old",
+            "orderByColumn": "startsAt",
+            "orderByDirection": "asc",
+            "statusFilterEnabled": false,
+            "statusFilterBehavior": DiscreteCriterionFilterType.hasNone,
+            "statusFilterOptions": [],
+            "typeFilterEnabled": false,
+            "typeFilterBehavior": DiscreteCriterionFilterType.hasSomeOf,
+            "typeFilterOptions": [],
+            "tagFilterEnabled": false,
+            "tagFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
+            "tagFilterOptions": [],
+            "dateFilterEnabled": true,
+            "dateFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
+            "dateFilterOptions": [
+                10002
+            ]
+        },
+        {
+            label: "Hide rehearsals",
+            helpText: "",
+            "orderByColumn": "startsAt",
+            "orderByDirection": "asc",
+            "statusFilterEnabled": false,
+            "statusFilterBehavior": DiscreteCriterionFilterType.hasNone,
+            "statusFilterOptions": [],
+            "typeFilterEnabled": true,
+            "typeFilterBehavior": DiscreteCriterionFilterType.doesntHaveAnyOf,
+            "typeFilterOptions": rehearsalTypeIds,
+            "tagFilterEnabled": false,
+            "tagFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
+            "tagFilterOptions": [],
+            "dateFilterEnabled": true,
+            "dateFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
+            "dateFilterOptions": [
+                10002
+            ]
+        },
+        {
+            label: "Rehearsals since 60 days",
+            helpText: "Searching rehearsals more recent than 60 days",
+            "orderByColumn": "startsAt",
+            "orderByDirection": "desc",
+            "statusFilterEnabled": false,
+            "statusFilterBehavior": DiscreteCriterionFilterType.hasNone,
+            "statusFilterOptions": [],
+            "typeFilterEnabled": true,
+            "typeFilterBehavior": DiscreteCriterionFilterType.hasSomeOf,
+            "typeFilterOptions": rehearsalTypeIds,
+            "tagFilterEnabled": false,
+            "tagFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
+            "tagFilterOptions": [],
+            "dateFilterEnabled": true,
+            "dateFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
+            "dateFilterOptions": [
+                10003
+            ]
+        },
+        {
+            "label": "Past concerts",
+            "helpText": "",
+            "orderByColumn": "startsAt",
+            "orderByDirection": "desc",
+            "statusFilterEnabled": true,
+            "statusFilterBehavior": DiscreteCriterionFilterType.hasSomeOf,
+            "statusFilterOptions": confirmedStatusIds,
+            "typeFilterEnabled": true,
+            "typeFilterBehavior": DiscreteCriterionFilterType.hasSomeOf,
+            "typeFilterOptions": concertTypeIds,
+            "tagFilterEnabled": false,
+            "tagFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
+            "tagFilterOptions": [],
+            "dateFilterEnabled": true,
+            "dateFilterBehavior": DiscreteCriterionFilterType.hasAllOf,
+            "dateFilterOptions": [
+                10000
+            ]
+        },
     ];
 };
 
@@ -343,7 +343,7 @@ const SearchEventsPage: BlitzPage = (props) => {
             <AppContextMarker name="Event search page">
                 <div className="eventsMainContent searchPage">
                     <Suspense>
-                        <SettingMarkdown setting="events_markdown"></SettingMarkdown>
+                        <LocalizedMarkdown setting="events_markdown"></LocalizedMarkdown>
                     </Suspense>
                     <NewEventButton />
 

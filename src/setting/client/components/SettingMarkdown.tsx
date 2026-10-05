@@ -5,23 +5,24 @@ import React from "react";
 import { Permission } from "shared/permissions";
 import { gQueryOptions } from "shared/utils";
 import updateSettingMutation from "@/src/setting/server/mutations/updateSetting";
-import getSetting from "@/src/setting/server/queries/getSetting";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { CMSmallButton } from "./CMCoreComponents2";
-import { Markdown3Editor } from "./markdown/MarkdownControl3";
-import { Markdown } from "./markdown/Markdown";
-import { SettingKey } from "shared/settingKeys";
-import { useDashboardContext } from "./dashboardContext/DashboardContext";
+import { CMSmallButton } from "../../../core/components/CMCoreComponents2";
+import { Markdown3Editor } from "../../../core/components/markdown/MarkdownControl3";
+import { Markdown } from "../../../core/components/markdown/Markdown";
+//import { SettingKey } from "@/src/setting/shared/settingKeys";
+import { useDashboardContext } from "../../../core/components/dashboardContext/DashboardContext";
+import { LocalizedMarkdownKey, StaticLocalizedStringKey } from "@/src/locale/staticLocalizedStringRegistry";
+import { useLocale } from "@/src/locale/useLocale";
 //import { API } from "../db3/clientAPI";
 
-export const GenerateDefaultDescriptionSettingName = (tableName: string, columnName: string) => `${tableName}.${columnName}.DescriptionMarkdown` as SettingKey;
-export const GenerateForeignSingleSelectStyleSettingName = (tableName: string, columnName: string) => `${tableName}.${columnName}.SelectStyle` as SettingKey;
+// export const GenerateDefaultDescriptionSettingName = (tableName: string, columnName: string) => `${tableName}.${columnName}.DescriptionMarkdown` as SettingKey;
+// export const GenerateForeignSingleSelectStyleSettingName = (tableName: string, columnName: string) => `${tableName}.${columnName}.SelectStyle` as SettingKey;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // intended only for admin-editable GUI content (not site content but chrome application content)
 interface SettingMarkdownEditorProps {
-    setting: SettingKey;
+    setting: StaticLocalizedStringKey;
     onClose: () => void;
     initialValue: string;
     refetch: () => void;
@@ -70,22 +71,27 @@ const SettingMarkdownEditor = (props: SettingMarkdownEditorProps) => {
     </>;
 };
 
-interface SettingMarkdownProps {
-    setting: SettingKey;
+interface LocalizedMarkdownProps {
+    setting: LocalizedMarkdownKey;
     fallbackWhen?: "null" | "emptyString" | "nullOrEmptyString"; // default is "null".
 
     // undefined means no fallback will be applied.
     fallbackMarkdown?: string | null;
 };
 
-export const SettingMarkdown = (props: SettingMarkdownProps) => {
+// Legacy; settings are being migrated to localized strings.
+export const LocalizedMarkdown = (props: LocalizedMarkdownProps) => {
     const [editing, setEditing] = React.useState<boolean>(false);
     const dashboardContext = useDashboardContext();
     const showAdminControls = dashboardContext.isShowingAdminControls;
 
     const editable = dashboardContext.isAuthorized(Permission.sysadmin) && showAdminControls;
 
-    let [initialValue, { refetch }] = useQuery(getSetting, { name: props.setting }, gQueryOptions.default);
+    const l = useLocale();
+
+    let initialValue: string | null = l.getMarkdownString(props.setting);
+
+    //let [initialValue, { refetch }] = useQuery(getSetting, { name: props.setting }, gQueryOptions.default);
 
     const fallbackWhen = props.fallbackWhen || "null";
     const fallbackMarkdown = props.fallbackMarkdown;
@@ -111,7 +117,7 @@ export const SettingMarkdown = (props: SettingMarkdownProps) => {
             onClose={() => setEditing(false)}
             setting={props.setting}
             initialValue={initialValue || ""}
-            refetch={refetch}
+            refetch={l.refetch}
         /> : <Markdown markdown={initialValue} />}
     </div>;
 };

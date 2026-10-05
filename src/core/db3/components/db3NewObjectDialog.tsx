@@ -4,12 +4,12 @@ import {
     FormControl
 } from "@mui/material";
 import React, { Suspense } from "react";
-import type { SettingKey } from "shared/settingKeys";
+import type { SettingKey } from "@/src/setting/shared/settingKeys";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMDialog } from "src/core/components/CMDialog";
 import { AdminInspectObject, CMButton, CMButtonGroup, CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 import * as db3 from "../db3";
 import { MarkdownStringColumnClient } from "./DB3ClientBasicFields";
@@ -96,7 +96,7 @@ function DB3NewObjectDialogWithClient<TView extends ViewBase>({
                     <CMButton onClick={handleOK} disabled={grayed}>OK</CMButton>
                 </>}
             >
-                {props.descriptionSettingName && <SettingMarkdown setting={props.descriptionSettingName} />}
+                {props.descriptionSettingName && <LocalizedMarkdown setting={props.descriptionSettingName} />}
 
                 <FormControl>
                     {

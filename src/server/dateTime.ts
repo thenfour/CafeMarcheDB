@@ -1,5 +1,5 @@
 import { getRangeCalendarDates } from "../../shared/dateTimePresentation";
-import { Setting } from "../../shared/settingKeys";
+import { Setting } from "../setting/shared/settingKeys";
 import { createAllDayRange } from "../../shared/time";
 import { EventStatusSignificance, getEventSegmentDateTimeRange } from "../core/db3/db3";
 import { TransactionalPrismaClient } from "../core/db3/shared/apiTypes";

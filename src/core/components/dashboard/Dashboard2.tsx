@@ -1,4 +1,3 @@
-import { Setting } from "@/shared/settingKeys";
 import { shouldShowAdminControls } from "@/shared/adminControls";
 import { IsNullOrWhitespace } from "@/shared/utils";
 import { useSession } from "@blitzjs/auth";
@@ -31,7 +30,7 @@ import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerC
 import { MessageBoxProvider } from "../MessageBoxContext";
 import { QrCodeDialog } from "../QrCode";
 import { MainSiteSearch } from "../search/MainSiteSearch";
-import { SettingMarkdown } from "../SettingMarkdown";
+import { LocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
 import {
     SideMenu
 } from "./MenuStructure";
@@ -168,7 +167,7 @@ const AppBarPageQrDialog = ({ open, onClose }: { open: boolean, onClose: () => v
             onClose={onClose}
             content={QrHelpers.url(dashboardContext.getAbsoluteUri(router.asPath))}
             title="QR code for this page"
-            description={<SettingMarkdown setting={Setting.QrCodeForThisPageDescriptionMarkdown} />}
+            description={<LocalizedMarkdown setting={"QrCodeForThisPageDescriptionMarkdown"} />}
         />
     </AppContextMarker>;
 };

@@ -23,18 +23,18 @@ import * as DB3ClientCore from "./DB3ClientCore";
 import { IconEditCell } from "./IconSelectDialog";
 // NB: do not use API.* here due to circular dependencies
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { type CMDBTableFilterModel } from "../shared/apiTypes";
 import { RenderMuiIcon } from "./IconMap";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
-import type { SettingKey } from "shared/settingKeys";
 import { GenericStringField } from "../shared/columnTypes/genericString";
 import { ColorSwatch } from "../../components/color/ColorSwatch";
 import type { ColorPaletteEntry } from "../../components/color/palette";
 import { ColorPick } from "../../components/color/ColorPick";
 import { gNullValue, TAnyModel } from "@/shared/rootroot";
 import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
+import { LocalizedMarkdownKey, LocalizedPlainStringKey } from "@/src/locale/staticLocalizedStringRegistry";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs<TColumnName extends string = string> {
@@ -47,13 +47,13 @@ export class PKColumnClient<TColumnName extends string = string>
         super({
             columnName: args.columnName,
             editable: false,
-            headerName: args.columnName,
             visible: true,
             width: 90, // ids don't need to be this wide, but it helps keep the column clean when hovering
             className: undefined,
-            fieldCaption: "id",
+            headerNameKey: "general.fieldCaptions.id",
+            fieldCaptionKey: "general.fieldCaptions.id",
+            fieldDescriptionKey: null,
             isAutoFocusable: false,
-            fieldDescriptionSettingName: undefined,
             GridColProps: {
                 type: "number",
             }
@@ -83,13 +83,13 @@ export class PublicIdColumnClient
         super({
             columnName: "publicId",
             editable: false,
-            headerName: "Public ID",
             visible: true,
             width: 170,
             className: undefined,
-            fieldCaption: "Public ID",
             isAutoFocusable: false,
-            fieldDescriptionSettingName: undefined,
+            headerNameKey: "general.fieldCaptions.id",
+            fieldCaptionKey: "general.fieldCaptions.id",
+            fieldDescriptionKey: null,
             GridColProps: {
                 type: "string",
                 sortable: false,
@@ -117,8 +117,8 @@ export interface GenericStringColumnArgs<TColumnName extends string = string> {
     columnName: TColumnName;
     cellWidth?: number;
     className?: string;
-    fieldCaption?: string;
-    fieldDescriptionSettingName?: SettingKey;
+    fieldCaptionKey: LocalizedPlainStringKey;
+    fieldDescriptionKey: LocalizedMarkdownKey | null;
     renderCell?: undefined | ((params: GridRenderCellParams) => React.ReactNode);
 };
 
@@ -131,13 +131,13 @@ export class GenericStringColumnClient<TColumnName extends string = string>
         super({
             columnName: args.columnName,
             editable: true,
-            headerName: args.columnName,
             width: args.cellWidth ?? 150,
             visible: true,
             className: args.className,
             isAutoFocusable: false, // on mobile this causes on screen keyboard display and zoom which is disruptive because this field may not be that important. case in point: setlist name.
-            fieldCaption: args.fieldCaption,
-            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
+            headerNameKey: args.fieldCaptionKey,
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
         });
         this.renderCell = args.renderCell;
     }
@@ -695,7 +695,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
                 </CMChipContainer>
                 {selectedDescriptionSettingMarkdownKey && <div className="description">
                     <Suspense>
-                        <SettingMarkdown setting={selectedDescriptionSettingMarkdownKey as any} />
+                        <LocalizedMarkdown setting={selectedDescriptionSettingMarkdownKey as any} />
                     </Suspense>
                 </div>}
             </div>

@@ -877,7 +877,7 @@ model BandSetting {
   band   Band @relation("BandSetting_band", fields: [bandId], references: [id], onDelete: Cascade) // when band deletes, its settings lose meaning
 
   name  String @db.VarChar(191)
-  value String @db.MediumText // json value et al
+  value String @db.MediumText // json value et al (including null which serializes as "null")
 
   // LSMB: add this.
   // ®️recordkeeping
@@ -1303,6 +1303,9 @@ model Event {
   expectedAttendanceUserTagId Int?
   expectedAttendanceUserTag   BandUserTag? @relation("Event_expectedAttendanceUserTag", fields: [expectedAttendanceUserTagId], references: [id], onDelete: SetNull)
 
+  // NOTE regarding localization:
+  // these fields are specific to a client and unrelated to backstage functionality.
+  // leave them like this; don't migrate to Localization tables.
   frontpageVisible     Boolean @default(false)
   frontpageDate        String  @default("") @db.VarChar(300) // e.g. "Zaterdag 11 november"
   frontpageTime        String  @default("") @db.VarChar(300) // e.g. 14u
@@ -1848,16 +1851,21 @@ model FileWikiPageTag {
 
 // specific to café marché; does not participate in general behaviors like localization
 model FrontpageGalleryItem {
-  id            Int     @id @default(autoincrement())
-  publicId      String  @unique @db.Char(16)
-  isDeleted     Boolean @default(false) //  soft delete. when hidden, users won't see them.
-  caption       String  @db.MediumText // markdown
-  caption_nl    String? @db.MediumText // markdown
-  caption_fr    String? @db.MediumText // markdown
-  sortOrder     Int     @default(0)
+  id        Int     @id @default(autoincrement())
+  publicId  String  @unique @db.Char(16)
+  isDeleted Boolean @default(false) //  soft delete. when hidden, users won't see them.
+
+  // NOTE regarding localization:
+  // these fields are specific to a client and unrelated to backstage functionality.
+  // leave them like this; don't migrate to Localization tables.
+  caption    String  @db.MediumText // markdown
+  caption_nl String? @db.MediumText // markdown
+  caption_fr String? @db.MediumText // markdown
+
+  sortOrder     Int    @default(0)
   fileId        Int
-  file          File    @relation("FrontpageGalleryItem_file", fields: [fileId], references: [id], onDelete: Cascade)
-  displayParams String  @db.MediumText // JSON of GalleryImageDisplayParams
+  file          File   @relation("FrontpageGalleryItem_file", fields: [fileId], references: [id], onDelete: Cascade)
+  displayParams String @db.MediumText // JSON of GalleryImageDisplayParams
 
   createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
   createdByUser       User?       @relation("FrontpageGalleryItem_createdByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)

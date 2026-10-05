@@ -17,6 +17,7 @@ import {
     type ValidateAndParseArgs, type ValidateAndParseResult,
     xTable
 } from "../db3core";
+import { GlobalSettingKey } from "@/src/setting/shared/globalSettingsRegistry";
 
 
 ////////////////////////////////////////////////////////////////
@@ -172,6 +173,7 @@ class TagsFieldImpl<
     localTableSpec: xTable;
     readonly associationTableID: TAssociationTableID;
     readonly foreignTableID: TForeignTableID;
+    readonly selectStyleSettingKey: GlobalSettingKey;
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
     getCustomFilterWhereClause__: (query: CMDBTableFilterModel) => TAnyModel | boolean;
 

@@ -966,7 +966,7 @@ model BandSetting {
    -  [ ] migration.
       -  [x] grab prod db backup & git rev - 094a783a94b95ed4ec15089e9372763b7d59f66c
       -  [x] establish script for db backup restore / dev install -- well, easy: just run the .sql.
-      -  [ ] test the site up until localization/multiband; make it repeatable.
+      -  [x] test the site up until localization/multiband; make it repeatable.
       -  [ ] write migration.
    -  assess tag significances... for example `DefaultInvitation` -- these should
       probably be decommissioned because tags are now becoming "no behavior depends on them".
@@ -976,9 +976,12 @@ model BandSetting {
       -  remove eventtag significance
       -  remove event segmentbehavior
 -  M3: blocking out
+   -  [ ] all uses of TagsFieldInput need to specify their SelectStyle key
    -  [ ] band settings registry (think of a couple settings to use as a POC - timezone...)
+   -  [ ] dashboardContext effectively becomes `useBandContext`
+   -  [ ] introduce `usePlatformContext` if needed
    -  [ ] initial `useLocale` and `useBand` contexts (with small handful of POCs)
-   -  [ ] implement rewrite strategy
+   -  [ ] implement route rewrite strategy
    -  [ ] all RPC/API need a bandId parameter
 -  M3: localization POC
    -  [ ] remove `i18n` config in `next.config.js`

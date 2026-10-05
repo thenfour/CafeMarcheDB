@@ -17,17 +17,17 @@ import type { CMClientAuthorization } from "src/auth/shared/cmAuthorization";
 import { type RestPaginatedResult, type RestQueryResult, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import React from "react";
 //import * as db3 from "../db3";
+import { TAnyModel } from "@/shared/rootroot";
+import { LocalizedMarkdownKey, LocalizedPlainStringKey } from "@/src/locale/staticLocalizedStringRegistry";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import type { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import { assert } from "blitz";
 import { Coalesce, HasFlag, gQueryOptions } from "shared/utils";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
-import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import db3queries from "../queries/db3queries";
 import type { CMDBTableFilterModel } from "../shared/apiTypes";
-import type { SettingKey } from "shared/settingKeys";
-import { TAnyModel } from "@/shared/rootroot";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -56,14 +56,17 @@ export interface RenderViewerArgs<T> {
 export interface IColumnClientArgs<TColumnName extends string = string> {
     // NB: keep IColumnClient in sync with these fields.
     columnName: TColumnName;
-    headerName: string;
     editable: boolean;
     visible: boolean;
     width: number;
     isAutoFocusable: boolean;
 
-    fieldCaption: string | undefined;
-    fieldDescriptionSettingName: string | null | undefined;
+    // so what's the diff between these 2 fields?
+    headerNameKey: LocalizedPlainStringKey;
+    fieldCaptionKey: LocalizedPlainStringKey;
+
+    fieldDescriptionKey: LocalizedMarkdownKey | null;
+
     className: string | undefined;
 
     GridColProps?: Partial<GridColDef>;
@@ -80,13 +83,14 @@ export abstract class IColumnClient<
     readonly __columnValueType?: TValue;
     /** Type-only marker for the values this UI column contributes to a write. */
     readonly __mutationPatchType?: TMutationPatch;
-    headerName: string;
+
     editable: boolean;
     visible: boolean;
     width: number;
 
-    fieldCaption: string | undefined;
-    fieldDescriptionSettingName: SettingKey | null | undefined;
+    headerName: string;
+    fieldCaptionKey: LocalizedPlainStringKey;
+    fieldDescriptionKey: LocalizedMarkdownKey | null;
     className: string | undefined;
 
     isAutoFocusable: boolean;
@@ -128,11 +132,11 @@ export abstract class IColumnClient<
 
     // child classes call this when you want default rendering.
     defaultRenderer = ({ value, className, isReadOnly, validationResult }: { value: React.ReactNode, className?: string, isReadOnly: boolean, validationResult: undefined | db3.ValidateAndComputeDiffResult }) => {
-        const defaultDescriptionSettingName = GenerateDefaultDescriptionSettingName(this.schemaTable.tableName, this.columnName);
+        //const defaultDescriptionSettingName = GenerateDefaultDescriptionSettingName(this.schemaTable.tableName, this.columnName);
         return <NameValuePair
-            key={this.columnName} // not 100% accurate but probably 99.99%
-            name={this.fieldCaption || this.columnName}
-            description={<SettingMarkdown setting={this.fieldDescriptionSettingName || defaultDescriptionSettingName} />}
+            key={this.columnName}
+            name={this.fieldCaptionKey || this.columnName}
+            description={this.fieldDescriptionKey ? <LocalizedMarkdown setting={this.fieldDescriptionKey} /> : undefined}
             value={value}
             fieldName={this.columnName}
             isReadOnly={isReadOnly}

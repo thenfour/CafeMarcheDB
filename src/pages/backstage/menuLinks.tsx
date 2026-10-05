@@ -2,12 +2,12 @@ import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { MenuLinkList } from "@/src/core/components/dashboard/MenuLinkComponents";
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 
 
 const MyContent = () => {
     return <div>
-        <SettingMarkdown setting="MenuLinksPageMarkdown" />
+        <LocalizedMarkdown setting="MenuLinksPageMarkdown" />
         <MenuLinkList />
     </div>;
 };

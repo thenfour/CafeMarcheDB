@@ -1,6 +1,6 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -10,8 +10,8 @@ const MainContent = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.eventTypeEditorView,
         columns: {
-        publicId: DB3Client.publicIdFieldGen(),
-        isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
+            publicId: DB3Client.publicIdFieldGen(),
+            isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
             text: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
             description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
             color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 300 }),
@@ -22,7 +22,7 @@ const MainContent = () => {
     });
 
     return <>
-        <SettingMarkdown setting="EditEventTypesPage_markdown"></SettingMarkdown>
+        <LocalizedMarkdown setting="EditEventTypesPage_markdown"></LocalizedMarkdown>
         <DB3EditGrid tableSpec={tableSpec} view={db3.eventTypeEditorView} />
     </>;
 };

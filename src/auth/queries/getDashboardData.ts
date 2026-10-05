@@ -1,6 +1,6 @@
+
 import { BigintToNumberNullable } from "@/shared/utils";
 import { EventRelevanceClassValue, GetRelevantEvents, gEventRelevanceClass, kMaxRelevantEventsToQuery } from "@/src/core/db3/shared/eventRelevance";
-import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 import { resolver } from "@blitzjs/rpc";
 import type { Ctx } from "blitz";
 import db, { Prisma } from "db";
@@ -9,9 +9,6 @@ import type { EventPublicId } from "shared/publicId";
 import { Stopwatch } from "shared/rootroot";
 import { getClientServerState } from "shared/serverStateBase";
 import {
-    type AnyDB3View,
-    type DashboardDataDto,
-    type DtoOf,
     eventAttendanceDashboardView,
     eventStatusDashboardView,
     EventStatusSignificance,
@@ -28,6 +25,9 @@ import {
     userTagDashboardView,
     wikiPageTagDashboardView,
     xEvent,
+    type AnyDB3View,
+    type DashboardDataDto,
+    type DtoOf,
 } from "src/core/db3/db3";
 import {
     DB3QueryAuthorizationError,
@@ -38,7 +38,6 @@ import {
     loadAuthorization,
     type CMServerAuthorization
 } from "../server/serverAuthorization";
-import { loadUserSettings } from "../../setting/server/userSettings";
 
 // does not choke when auth doesn't allow it; returns empty.
 async function queryOptionalDashboardView<TView extends AnyDB3View>(
@@ -197,9 +196,6 @@ export default resolver.pipe(
                 )
             ));
 
-            const bandTimeZoneCall = loadBandTimeZone(db);
-            const userSettingsCall = loadUserSettings(currentUser?.id ?? null);
-
             const [
                 permission,
                 eventType,
@@ -233,8 +229,6 @@ export default resolver.pipe(
             ]);
 
             const relevantEventIds = await relevantEventsCall;
-            const bandTimeZone = await bandTimeZoneCall;
-            const userSettings = await userSettingsCall;
 
             const clientServerState = getClientServerState(effectivePermissions.includesName(Permission.sysadmin));
             const ret = {
@@ -255,7 +249,6 @@ export default resolver.pipe(
                 serverBaseUri: clientServerState.baseUri,
                 serverStartupState: clientServerState.diagnostics,
                 relevantEventIds,
-                bandTimeZone,
                 userSettings,
                 effectivePermissionNames: effectivePermissions.names,
             };

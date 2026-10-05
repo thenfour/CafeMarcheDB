@@ -39,7 +39,7 @@ import { MediaPlayerTrack } from './mediaPlayer/MediaPlayerTypes';
 import { SongPlayButton } from './mediaPlayer/SongPlayButton';
 import { useMessageBox } from './MessageBoxContext';
 import { MetronomeButton } from './Metronome';
-import { SettingMarkdown } from './SettingMarkdown';
+import { LocalizedMarkdown } from '../../setting/client/components/SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 import { SongTagIndicatorContainer } from './SongTagIndicatorContainer';
 import type { PortableSongList } from "../db3/shared/entities/eventSongList/eventSongListClipboard";
@@ -1407,7 +1407,7 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
             maxWidth="md"
             title={<>
                 <div>Edit setlist</div>
-                <SettingMarkdown setting='EditEventSongListDialogTitle' />
+                <LocalizedMarkdown setting='EditEventSongListDialogTitle' />
                 <div style={{ display: "flex" }}>
                     {preview ? (<CMButton onClick={() => setPreview(false)} startIcon={<ArrowBack />}>Continue editing</CMButton>)
                         : (<CMButton onClick={() => setPreview(true)} startIcon={gIconMap.Visibility()}>Preview</CMButton>)}
@@ -1427,7 +1427,7 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
             </>}
         >
             <CMDialogContentText>
-                <SettingMarkdown setting='EditEventSongListDialogDescription' />
+                <LocalizedMarkdown setting='EditEventSongListDialogDescription' />
                 <AdminInspectObject src={props.initialValue} label="initial value" />
                 <AdminInspectObject src={value} label="value" />
                 <AdminInspectObject src={stats} label="stats" />
@@ -1655,7 +1655,7 @@ export const EventSongListTabContent = ({ event, readonly, refetch }: { event: E
     });
 
     return <div className="EventSongListTabContent">
-        <SettingMarkdown setting='EventSongListTabDescription' />
+        <LocalizedMarkdown setting='EventSongListTabDescription' />
         {insertAuthorized && !readonly && <CMButton className='addNewSongListButton' onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</CMButton>}
         {newOpen && !readonly && insertAuthorized && (
             <AppContextMarker name="EventSongListNewEditor">

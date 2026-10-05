@@ -40,7 +40,7 @@ import { EventSongListTabContent } from '../EventSongListComponents';
 import { ActivityFeature } from '../featureReports/activityTracking';
 import { Markdown } from '../markdown/Markdown';
 import { SearchItemBigCardLink } from '../SearchItemBigCardLink';
-import { SettingMarkdown } from '../SettingMarkdown';
+import { LocalizedMarkdown } from '../../../setting/client/components/SettingMarkdown';
 import { FilesTabContent } from '../SongFileComponents';
 import { CMTab, CMTabPanel } from '../TabPanel';
 import { UserChip } from '../user/userChip';
@@ -263,7 +263,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         open
         onClose={props.onCancel}
         title={<>
-            <SettingMarkdown setting="EventAttendanceEditDialog_TitleMarkdown" />
+            <LocalizedMarkdown setting="EventAttendanceEditDialog_TitleMarkdown" />
             <AdminInspectObject src={eventResponseValue} label="event response" />
             <AdminInspectObject src={eventSegmentResponseValues} label="segment responses" />
         </>}
@@ -273,7 +273,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         </>}
     >
         <CMDialogContentText>
-            <SettingMarkdown setting="EventAttendanceEditDialog_DescriptionMarkdown" />
+            <LocalizedMarkdown setting="EventAttendanceEditDialog_DescriptionMarkdown" />
         </CMDialogContentText>
 
         <div className="NameValuePairList">
@@ -587,7 +587,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                             }}
                             buttonChildren={<>{gIconMap.Add()} Invite someone</>}
                             title={"Invite users"}
-                            description={<SettingMarkdown setting='EventInviteUsersDialogDescriptionMarkdown' />}
+                            description={<LocalizedMarkdown setting='EventInviteUsersDialogDescriptionMarkdown' />}
                         />}
                     </td>
                     {segStats.map(seg => {
@@ -942,7 +942,7 @@ export const EventDetailContainer = ({ eventData, tableClient, editCommands, ref
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
                     tableSpec={tableClient.tableSpec}
                     tableRenderClient={tableClient}
-                    dialogDescription={<SettingMarkdown setting='EditEventDialogDescription' />}
+                    dialogDescription={<LocalizedMarkdown setting="EditEventDialogDescriptionMarkdown" />}
                     onCancel={() => { }}
                     onOK={(obj: EventDetailEvent, _tableClient: EventDetailTableClient, api: EditFieldsDialogButtonApi) => {
                         void recordFeature({
@@ -1097,7 +1097,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryTitle="by instrument"
         >
             <AppContextMarker name="by instrument tab">
-                <SettingMarkdown setting='EventCompletenessTabMarkdown' />
+                <LocalizedMarkdown setting='EventCompletenessTabMarkdown' />
                 <EventCompletenessTabContent eventData={eventData} userMap={userMap} readonly={props.readonly} refetch={refetch} />
             </AppContextMarker>
         </CMTab>
@@ -1109,7 +1109,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summarySubtitle={segmentResponseCountStr}
         >
             <AppContextMarker name="attendance tab">
-                <SettingMarkdown setting='EventAttendanceDetailMarkdown' />
+                <LocalizedMarkdown setting='EventAttendanceDetailMarkdown' />
                 <EventAttendanceDetail eventData={eventData} tableClient={tableClient} refetch={refetch} readonly={props.readonly} userMap={userMap} />
             </AppContextMarker>
         </CMTab>

@@ -802,9 +802,9 @@ export interface SortModel {
 
 export interface RowInfo {
     pk: number | string;
-    name: string;
-    tooltip?: string | undefined;
-    description?: string | undefined;
+    name: string; // LSMB: todo: localize
+    tooltip?: string | undefined; // LSMB: todo: localize
+    description?: string | undefined; // LSMB: todo: localize
     color?: ColorPaletteEntry | null | undefined;
     iconName?: string | null | undefined;
 

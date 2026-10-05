@@ -1,17 +1,18 @@
 import { DbBrandConfig } from "@/shared/brandConfigBase";
 import { isAbsoluteUri, slugify, TableAccessor } from "@/shared/rootroot";
-import type { EventAttendancePublicId, EventPublicId, FilePublicId, InstrumentPublicId, PermissionPublicId, RolePublicId, SongPublicId, UserPublicId } from "shared/publicId";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
 import { Prisma } from "db";
-import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, FileTagPublicId, InstrumentFunctionalGroupPublicId, SongCreditTypePublicId, SongTagPublicId, UserTagPublicId, WikiPageTagPublicId } from "shared/publicId";
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
-import { resolveUserSettings, UserSettings } from "@/src/setting/shared/userSettings";
+import type { EventAttendancePublicId, EventPublicId, EventStatusPublicId, EventTagPublicId, EventTypePublicId, FilePublicId, FileTagPublicId, InstrumentFunctionalGroupPublicId, InstrumentPublicId, PermissionPublicId, RolePublicId, SongCreditTypePublicId, SongPublicId, SongTagPublicId, UserPublicId, UserTagPublicId, WikiPageTagPublicId } from "shared/publicId";
+import { SettingsDto } from "../../db3/shared/schema/settings";
 
 export abstract class DashboardContextDataBase {
     referenceStore = db3.createDashboardReferenceStore();
-    userSettings: UserSettings = resolveUserSettings();
+
+    settings: SettingsDto;
+
     bandTimeZone: string = DEFAULT_BAND_TIME_ZONE;
     userTag: TableAccessor<db3.UserTagDashboardClient, UserTagPublicId>;
     eventType: TableAccessor<db3.ClientOf<typeof db3.eventTypeDashboardView>, EventTypePublicId>;
@@ -47,6 +48,7 @@ export abstract class DashboardContextDataBase {
         locale: string;
     }
 
+    // LSMB todo: move this to cmdbrouter
     getAbsoluteUri = (relativePath: string): string => {
         // if relativePath is already absolute, return it as-is.
         if (isAbsoluteUri(relativePath)) {
@@ -55,6 +57,7 @@ export abstract class DashboardContextDataBase {
         return concatenateUrlParts(this.serverBaseUri, relativePath);
     };
 
+    // LSMB todo: move this to cmdbrouter
     routingApi = {
         getURIForEvent: (event: { publicId: EventPublicId; name?: string }, tabSlug?: string) => {
             const parts: string[] = [event.publicId];

@@ -4,7 +4,7 @@ import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CustomLinkList } from "src/core/components/CustomLinksComponents";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 
 
 
@@ -17,7 +17,7 @@ const MyContent = () => {
     }
 
     return <div>
-        <SettingMarkdown setting="CustomLinksPageMarkdown" />
+        <LocalizedMarkdown setting="CustomLinksPageMarkdown" />
         <CustomLinkList />
     </div>;
 };

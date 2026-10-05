@@ -1,5 +1,5 @@
 import db from "db";
-import { Setting } from "../../shared/settingKeys";
+import { Setting } from "../setting/shared/settingKeys";
 import { TransactionalPrismaClient } from "../core/db3/shared/apiTypes";
 import { resolveBandTimeZone } from "@/shared/dateTimePolicy";
 

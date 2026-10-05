@@ -5,7 +5,7 @@ import { getEnumValues } from 'shared/utils';
 import getSongActivityReport from '../../db3/queries/getSongActivityReport';
 import { GetSongActivityReportFilterSpec, GetSongActivityReportFilterSpecTimingFilter, GetSongActivityReportRet, GetSongActivityReportRetEvent } from '../../db3/shared/apiTypes';
 import { ActivityVis, ActivityVisBucket } from '../ActivityVis';
-import { SettingMarkdown } from '../SettingMarkdown';
+import { LocalizedMarkdown } from '../../../setting/client/components/SettingMarkdown';
 
 import * as db3 from '../../db3/db3';
 import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from '../search/FilterControl';
@@ -193,7 +193,7 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
 export const SongHistory = (props: SongHistoryProps) => {
 
     return <div>
-        <SettingMarkdown setting='SongHistoryTabDescription' />
+        <LocalizedMarkdown setting='SongHistoryTabDescription' />
         <Suspense>
             <SongHistoryInner {...props} />
         </Suspense>

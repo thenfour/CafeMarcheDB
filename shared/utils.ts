@@ -335,8 +335,8 @@ export const gQueryOptions = {
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,
         refetchOnMount: true,
-    }
-};
+    },
+} as const;
 
 
 export const sleep = (ms: number, seed?: any) => new Promise((resolve) => setTimeout(() => {

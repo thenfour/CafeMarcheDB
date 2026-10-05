@@ -17,7 +17,7 @@ import { useMutation, useQuery } from "@blitzjs/rpc";
 import { Autocomplete, Box, Button, MenuItem, TextField, Typography } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
-import { Setting } from "shared/settingKeys";
+import { Setting } from "@/src/setting/shared/settingKeys";
 import updateSiteBrandingSettings from "@/src/setting/server/mutations/updateSiteBrandingSettings";
 
 type BrandingField = {

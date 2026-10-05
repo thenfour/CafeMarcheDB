@@ -6,7 +6,7 @@ import * as db3 from "src/core/db3/db3";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { CMSelectDisplayStyle, SelectionField } from "./select/SelectionField";
 import { CMSelectNullBehavior, makeLocalSelectionSource, withNullSelection } from "./select/selectionSource";
-import { SettingMarkdown } from "./SettingMarkdown";
+import { LocalizedMarkdown } from "../../setting/client/components/SettingMarkdown";
 import { StandardVariationSpec } from "./color/palette";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
 
@@ -91,7 +91,7 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
     return <SelectionField className="VisibilityControl" source={source} value={[heavyValue ?? null]}
         readonly={props.readonly} displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
         dialogTitle={props.selectDialogTitle || "Who can see this"}
-        dialogDescription={<SettingMarkdown setting="VisibilityControlSelectDialogDescription" />}
+        dialogDescription={<LocalizedMarkdown setting="VisibilityControlSelectDialogDescription" />}
         onChange={values => props.onChange(values[0]!)} />;
 };
 

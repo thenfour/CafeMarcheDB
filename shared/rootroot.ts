@@ -182,6 +182,21 @@ export declare const exactType: <T, U>(
 
 export const AssertEqualTypes = <T, U>() => (true as IfEquals<T, U>);
 
+
+interface DeepReadonlyArray<T> extends ReadonlyArray<DeepReadonly<T>> { }
+type DeepReadonlyObject<T> = {
+    readonly [P in keyof T]: DeepReadonly<T[P]>;
+};
+
+type DeepReadonly<T> = T extends (infer R)[]
+    ? DeepReadonlyArray<R>
+    : T extends Function
+    ? T
+    : T extends object
+    ? DeepReadonlyObject<T>
+    : T;
+
+
 export function calculateMatchStrength(text: string, keyword: string): number {
     // Return 0 for empty or whitespace-only keywords.
     if (!keyword.trim()) return 0;

@@ -6,7 +6,7 @@ import { queryHydratedView } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
 import { MakeICalEventUid } from "../shared/apiTypes";
 import { EventCalendarInput, GetEventCalendarInput } from "./icalUtils";
-import { Setting } from "@/shared/settingKeys";
+import { Setting } from "@/src/setting/shared/settingKeys";
 import { isAttendanceGoing } from "shared/eventAttendance";
 import { isUserInvitedToEvent } from "shared/eventInvitation";
 import { loadUserSettings } from "@/src/setting/server/userSettings";

@@ -11,7 +11,7 @@ import { ActivityVis, ActivityVisBucket } from "src/core/components/ActivityVis"
 import { CMChip } from "src/core/components/CMChip";
 import { CMSinglePageSurfaceCard, EventTextLink } from "src/core/components/CMCoreComponents";
 import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from "src/core/components/search/FilterControl";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { EventAPI, EventStatusSignificance, EventTypeSignificance } from "src/core/db3/db3";
 import getGlobalStats from "src/core/db3/queries/getGlobalStats";
 import { GetGlobalStatsFilterSpec, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance, GetSongActivityReportFilterSpecTimingFilter } from "src/core/db3/shared/apiTypes";
@@ -292,7 +292,7 @@ const MainContent = () => {
     return <>
         <CMSinglePageSurfaceCard>
             <div className="content">
-                <SettingMarkdown setting="StatsPage_markdown"></SettingMarkdown>
+                <LocalizedMarkdown setting="StatsPage_markdown"></LocalizedMarkdown>
                 <Suspense>
                     <StatsPageInner />
                 </Suspense>

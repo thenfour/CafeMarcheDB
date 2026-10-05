@@ -10,7 +10,7 @@ vi.mock("db", () => ({
 
 import db from "db"
 import { HostingMode } from "shared/brandConfigBase"
-import { Setting } from "shared/settingKeys"
+import { Setting } from "@/src/setting/shared/settingKeys"
 import { clearBrandCache, loadDbBrandConfig } from "src/server/brand"
 
 const findMany = vi.mocked(db.setting.findMany)

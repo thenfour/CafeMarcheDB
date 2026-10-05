@@ -6,7 +6,7 @@ vi.mock("db", async () => {
   return { ...prisma, default: authorizationTestDb }
 })
 
-import { Setting } from "shared/settingKeys"
+import { Setting } from "@/src/setting/shared/settingKeys"
 import getDashboardData from "src/auth/queries/getDashboardData"
 import { authorizationTestDb } from "../authorization/support/inMemoryPrisma"
 import { createAuthorizationPersona } from "../authorization/support/authorizationFixtures"

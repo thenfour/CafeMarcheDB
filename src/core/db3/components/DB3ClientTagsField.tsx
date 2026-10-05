@@ -5,17 +5,15 @@ import React from "react";
 //import * as DB3Client from "../DB3Client";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import { SplitQuickFilter } from 'shared/quickFilter';
-import type { SettingKey } from 'shared/settingKeys';
 import { gQueryOptions } from "shared/utils";
 import updateSetting from '@/src/setting/server/mutations/updateSetting';
-import getSetting from '@/src/setting/server/queries/getSetting';
 import { CMChip, CMChipContainer } from 'src/core/components/CMChip';
 import { useIsShowingAdminControls } from 'src/core/components/CMCoreComponents2';
 import { SelectionPicker } from 'src/core/components/select/SelectionPicker';
 import { SelectionEditButton, SelectionFieldFrame } from 'src/core/components/select/SelectionField';
 import { SelectionSource } from 'src/core/components/select/selectionSource';
 import { SelectionValueList } from 'src/core/components/select/SelectionOptions';
-import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from 'src/core/components/SettingMarkdown';
+import { LocalizedMarkdown } from '@/src/setting/client/components/SettingMarkdown';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
 import db3queries from "../queries/db3queries";
@@ -26,6 +24,8 @@ import { type ColorVariationSpec, StandardVariationSpec } from '../../components
 import { TAnyModel } from '@/shared/rootroot';
 import { useDashboardContext } from '../../components/dashboardContext/DashboardContext';
 import { type CrudViewCreateToken, useCrudViewCreate } from './useCrudViewCreate';
+import { LocalizedMarkdownKey, LocalizedPlainStringKey } from "@/src/locale/staticLocalizedStringRegistry";
+import { useGlobalSettings } from "@/src/setting/client/useSettings";
 
 
 const gMaxVisibleTags = 6;
@@ -58,12 +58,12 @@ export interface DB3SelectTagsDialogProps<TAssociation extends TAnyModel> {
     spec: TagsFieldClient<TAssociation>;
     onChange: (value: TAssociation[]) => void;
     onClose: () => void;
-    caption?: string;
-    descriptionSettingName?: SettingKey;
+    caption?: LocalizedPlainStringKey;
+    descriptionKey?: LocalizedMarkdownKey;
 };
 
 function DB3SelectTagsDialogInner<TAssociation extends TAnyModel>(props: DB3SelectTagsDialogProps<TAssociation>) {
-    const descriptionSettingName = props.descriptionSettingName || props.spec.fieldDescriptionSettingName;
+    const descriptionSettingName = props.descriptionKey || props.spec.fieldDescriptionKey;
     const source: SelectionSource<TAssociation> = {
         getKey: item => item[props.spec.associationForeignIDMember],
         getLabel: props.spec.getSelectionLabel,
@@ -90,7 +90,7 @@ function DB3SelectTagsDialogInner<TAssociation extends TAnyModel>(props: DB3Sele
     };
     return <SelectionPicker source={source} multiple value={props.initialValue}
         title={props.caption || `Select ${props.spec.selectionCaption}`}
-        description={descriptionSettingName ? <SettingMarkdown setting={descriptionSettingName} /> : undefined}
+        description={descriptionSettingName ? <LocalizedMarkdown setting={descriptionSettingName} /> : undefined}
         onCancel={props.onClose} onAccept={value => { props.onChange(value); props.onClose(); }} />;
 }
 
@@ -109,7 +109,7 @@ export interface TagsFieldInputProps<TAssociation extends TAnyModel> {
     // for creating new associations
     row: TAnyModel;
 
-    selectStyle: "inline" | "dialog";
+    //selectStyle: "inline" | "dialog";
 };
 
 
@@ -155,10 +155,11 @@ export const ChipsFieldInlineValues = <TAssociation extends TAnyModel,>(props: T
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // general use "edit cell" for tags
 export const TagsFieldInput = <TAssociation extends TAnyModel,>(props: TagsFieldInputProps<TAssociation>) => {
-    const [setSetting] = useMutation(updateSetting);
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    //const [setSetting] = useMutation(updateSetting);
+    //const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
-    const isShowingAdminControls = useIsShowingAdminControls();
+    const globalSettings = useGlobalSettings();
+    //const isShowingAdminControls = useIsShowingAdminControls();
     //const [oldValue, setOldValue] = React.useState<TAssociation[]>([]);
     // React.useEffect(() => {
     //     setOldValue(props.value);
@@ -187,27 +188,28 @@ export const TagsFieldInput = <TAssociation extends TAnyModel,>(props: TagsField
         };
     });
 
-    const selectStyleSetting = GenerateForeignSingleSelectStyleSettingName(props.spec.schemaTable.tableName, props.spec.columnName);
-    const [selectStyleSettingValue] = useQuery(getSetting, { name: selectStyleSetting });//  API.settings.useSetting(selectStyleSetting);
-    const selectStyle = (selectStyleSettingValue || props.selectStyle) as ("inline" | "dialog");
-    const newProps = { ...props };
-    newProps.selectStyle = selectStyle;
+    //const selectStyleSetting = GenerateForeignSingleSelectStyleSettingName(props.spec.schemaTable.tableName, props.spec.columnName);
+    //const [selectStyleSettingValue] = useQuery(getSetting, { name: selectStyleSetting });//  API.settings.useSetting(selectStyleSetting);
+    //const selectStyle = (selectStyleSettingValue || props.selectStyle) as ("inline" | "dialog");
+    const selectStyle = globalSettings.getValue(props.spec.typedSchemaColumn.selectStyleSettingKey);//props.selectStyle;
+    const newProps = { ...props, selectStyle };
+    //newProps.selectStyle = selectStyle;
 
-    const handleChangeSetting = (newVal: ("inline" | "dialog" | null)) => {
-        setSetting({ name: selectStyleSetting, value: newVal }).then((x) => {
-            showSnackbar({ children: "Saved", severity: 'success' });
-        }).catch((err => {
-            console.log(err);
-            showSnackbar({ children: "Error", severity: 'error' });
-        }));
-    };
+    // const handleChangeSetting = (newVal: ("inline" | "dialog" | null)) => {
+    //     setSetting({ name: selectStyleSetting, value: newVal }).then((x) => {
+    //         showSnackbar({ children: "Saved", severity: 'success' });
+    //     }).catch((err => {
+    //         console.log(err);
+    //         showSnackbar({ children: "Error", severity: 'error' });
+    //     }));
+    // };
 
     return <Box className="tagsFieldView" sx={{ minWidth: 0, py: 0.5 }}>
-        {isShowingAdminControls && <CMChipContainer className="adminControlFrame">
+        {/* {isShowingAdminControls && <CMChipContainer className="adminControlFrame">
             <CMChip size="small" onClick={() => handleChangeSetting("inline")} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyle === "inline" }}>inline</CMChip>
             <CMChip size="small" onClick={() => handleChangeSetting("dialog")} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyle === "dialog" }}>dialog</CMChip>
             <CMChip size="small" onClick={() => handleChangeSetting(null)} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyleSettingValue === null }}>default</CMChip>
-        </CMChipContainer>}
+        </CMChipContainer>} */}
 
         {selectStyle === "dialog" ? <SelectionValueList
             value={correctedValue}
@@ -317,9 +319,9 @@ export interface TagsFieldClientArgs<TAssociation> {
     // Renders option content; the dialog supplies the list item and selection control.
     renderAsListItem?: (props: React.HTMLAttributes<HTMLLIElement>, value: TAssociation, selected: boolean) => React.ReactNode;
     className?: string;
-    fieldCaption?: string;
-    fieldDescriptionSettingName?: SettingKey;
-    selectStyle?: "inline" | "dialog",
+    fieldCaptionKey: LocalizedPlainStringKey;
+    fieldDescriptionKey: LocalizedMarkdownKey | null;
+    //selectStyle?: "inline" | "dialog",
     overrideRowInfo?: (value: TAssociation, rowInfo: db3.RowInfo) => db3.RowInfo,
 };
 
@@ -329,10 +331,10 @@ export class TagsFieldClient<TAssociation extends TAnyModel> extends IColumnClie
     args: TagsFieldClientArgs<TAssociation>;
 
     ApplyClientToPostClient = undefined;
-    selectStyle: "inline" | "dialog";
+    //selectStyle: "inline" | "dialog";
 
     get selectionCaption(): string {
-        return this.fieldCaption || this.columnName.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/_/g, " ").toLowerCase();
+        return this.fieldCaptionKey;// || this.columnName.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/_/g, " ").toLowerCase();
     }
 
     getSelectionLabel = (value: TAssociation): string => {
@@ -358,17 +360,17 @@ export class TagsFieldClient<TAssociation extends TAnyModel> extends IColumnClie
     constructor(args: TagsFieldClientArgs<TAssociation>) {
         super({
             columnName: args.columnName,
-            headerName: args.columnName,
             editable: true,
             width: args.cellWidth ?? 150,
             isAutoFocusable: false,
             visible: true,
             className: args.className,
-            fieldCaption: args.fieldCaption,
-            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
+            headerNameKey: args.fieldCaptionKey, // so what's the diff between these 2 fields?
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
         });
         this.args = args;
-        this.selectStyle = args.selectStyle || "dialog";
+        //this.selectStyle = args.selectStyle || "dialog";
         if (this.args.allowDeleteFromCell === undefined) this.args.allowDeleteFromCell = true;
     }
 
@@ -416,7 +418,7 @@ export class TagsFieldClient<TAssociation extends TAnyModel> extends IColumnClie
                 const value: TAssociation[] = params.value;
                 return <TagsFieldInput
                     //validationError={vr.result === "success" ? null : vr.errorMessage || null}
-                    selectStyle={this.selectStyle}
+                    //selectStyle={this.selectStyle}
                     spec={this}
                     value={value}
                     row={params.row as TAnyModel}
@@ -439,7 +441,7 @@ export class TagsFieldClient<TAssociation extends TAnyModel> extends IColumnClie
                     key={params.key}
                     spec={this}
                     //validationError={validationValue}
-                    selectStyle={this.selectStyle}
+                    //selectStyle={this.selectStyle}
                     row={params.row as TAnyModel}
                     value={params.value as TAssociation[]}
                     onChange={(value: TAssociation[]) => {

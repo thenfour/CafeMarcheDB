@@ -6,7 +6,7 @@ import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
 import { SortDirection } from "shared/rootroot";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { userSearchConfig } from "src/core/hooks/searchConfigs";
@@ -267,7 +267,7 @@ const UserSearchPage: BlitzPage = (props) => {
         <DashboardLayout title="Users">
             <div className="eventsMainContent searchPage">
                 <Suspense>
-                    <SettingMarkdown setting="usersearch_markdown"></SettingMarkdown>
+                    <LocalizedMarkdown setting="usersearch_markdown"></LocalizedMarkdown>
                 </Suspense>
                 <UserListOuter />
             </div>

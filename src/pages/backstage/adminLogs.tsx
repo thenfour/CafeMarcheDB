@@ -10,7 +10,7 @@ import { IsNullOrWhitespace, getHashedColor } from "shared/utils";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -128,7 +128,7 @@ const MainContent = () => {
     const visibleFilteredUsers = filterSourceData.users.filter(n => !userPassesFilter(n) && existsInArray(users, n, AdHocUsersEqual));
 
     return <>
-        <SettingMarkdown setting="AdminLogsPage_markdown"></SettingMarkdown>
+        <LocalizedMarkdown setting="AdminLogsPage_markdown"></LocalizedMarkdown>
         <NameValuePair
             isReadOnly={false}
             name={"Table"}

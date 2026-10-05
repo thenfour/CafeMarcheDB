@@ -8,7 +8,7 @@ import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data
 import { assert } from "blitz";
 import React from "react";
 import { SplitQuickFilter } from "shared/quickFilter";
-import type { SettingKey } from "shared/settingKeys";
+import type { SettingKey } from "@/src/setting/shared/settingKeys";
 import { Coalesce, gQueryOptions, parseIntOrNull } from "shared/utils";
 import updateSetting from "@/src/setting/server/mutations/updateSetting";
 import getSetting from "@/src/setting/server/queries/getSetting";
@@ -19,7 +19,7 @@ import { SelectionEditButton, SelectionFieldFrame } from "src/core/components/se
 import { CMSelectNullBehavior, SelectionSource, singleSelectionValue, withNullSelection } from "src/core/components/select/selectionSource";
 import { SelectionValue } from "src/core/components/select/SelectionOptions";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
-import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { GenerateForeignSingleSelectStyleSettingName, LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
 import db3queries from "../queries/db3queries";
@@ -586,7 +586,7 @@ export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props
         value={singleSelectionValue(props.value, nullBehavior)}
         closeOnSelect={props.closeOnSelect}
         title={props.caption || `Select ${props.spec.selectionCaption}`}
-        description={descriptionSettingName ? <SettingMarkdown setting={descriptionSettingName} /> : undefined}
+        description={descriptionSettingName ? <LocalizedMarkdown setting={descriptionSettingName} /> : undefined}
         onCancel={props.onCancel} onAccept={values => props.onOK(values[0]!)}
     />;
 }

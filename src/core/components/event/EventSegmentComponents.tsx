@@ -21,7 +21,7 @@ import copyEventSegmentResponses from "../../db3/mutations/copyEventSegmentRespo
 import { useConfirm } from "../ConfirmationDialog";
 import { type EventDetailEvent, type EventDetailTableClient, EventTableClientColumns } from "./EventComponentsBase";
 import { Markdown } from "../markdown/Markdown";
-import { SettingMarkdown } from "../SettingMarkdown";
+import { LocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
 import { toSorted } from "shared/arrayUtils";
 import { EventStatusValue } from "../event/EventChips";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
@@ -106,8 +106,8 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
         tableRenderClient={tableRenderClient}
         // title={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogTitle" : "EditEventSegmentDialogTitle"} />}
         // description={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogDescription" : "EditEventSegmentDialogDescription"} />}
-        title={<SettingMarkdown setting={`${props.markdownSettingPrefix}DialogTitle` as any} />}
-        description={<SettingMarkdown setting={`${props.markdownSettingPrefix}DialogDescription` as any} />}
+        title={<LocalizedMarkdown setting={`${props.markdownSettingPrefix}DialogTitle` as any} />}
+        description={<LocalizedMarkdown setting={`${props.markdownSettingPrefix}DialogDescription` as any} />}
     />;
 };
 

@@ -1,6 +1,6 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -19,7 +19,7 @@ const InstrumentFunctionalGroupListContent = () => {
     });
 
     return <>
-        <SettingMarkdown setting="InstrumentFunctionalGroupList_markdown"></SettingMarkdown>
+        <LocalizedMarkdown setting="InstrumentFunctionalGroupList_markdown"></LocalizedMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
             view={db3.instrumentFunctionalGroupEditorView}

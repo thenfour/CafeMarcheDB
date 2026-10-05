@@ -21,7 +21,7 @@ import { CMLink } from '../CMLink';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from '../EditFieldsDialog';
 import { MetronomeButton } from '../Metronome';
 import { SearchableNameColumnClient } from '../SearchableNameColumnClient';
-import { SettingMarkdown } from '../SettingMarkdown';
+import { LocalizedMarkdown } from '../../../setting/client/components/SettingMarkdown';
 import { FilesTabContent } from '../SongFileComponents';
 import { CMTab, CMTabPanel } from '../TabPanel';
 import { VisibilityValue } from '../VisibilityControl';
@@ -458,7 +458,7 @@ export const SongDetailContainer = ({ songData, tableClient, editCommands, ...pr
 
                 {tableClient && editCommands && <EditFieldsDialogButton
                     dialogTitle='Edit song'
-                    dialogDescription={<SettingMarkdown setting='EditSongDialogDescription' />}
+                    dialogDescription={<LocalizedMarkdown setting='EditSongDialogDescription' />}
                     readonly={props.readonly}
                     initialValue={song}
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}

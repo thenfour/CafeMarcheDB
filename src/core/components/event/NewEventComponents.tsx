@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -145,31 +145,30 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             <CMButton onClick={handleSaveClick} startIcon={gIconMap.Save()} enabled={!grayed}>OK</CMButton>
         </>}
     >
-            <SettingMarkdown setting="NewEventDialogDescription" />
+        <LocalizedMarkdown setting="NewEventDialogDescriptionMarkdown" />
 
-            <div className="NameValuePairList">
-                <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {
-                    const newValue = {
-                        ...eventValue,
-                        visiblePermission: newVisiblePermission,
-                        visiblePermissionId: newVisiblePermission
-                            ? db3.xPermission.getIdentity(newVisiblePermission)
-                            : null,
-                    };
-                    setEventValue(newValue);
-                }} />
+        <div className="NameValuePairList">
+            <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {
+                const newValue = {
+                    ...eventValue,
+                    visiblePermission: newVisiblePermission,
+                    visiblePermissionId: newVisiblePermission
+                        ? db3.xPermission.getIdentity(newVisiblePermission)
+                        : null,
+                };
+                setEventValue(newValue);
+            }} />
 
-                {renderColumn(eventTableSpec, "name", eventValue, eventValidationResult, eventAPI, true)}
-                {renderColumn(eventTableSpec, "locationDescription", eventValue, eventValidationResult, eventAPI, false)}
-                {/* {renderColumn(eventTableSpec, "slug", eventValue, eventValidationResult, eventAPI, false)} */}
-                {renderColumn(eventTableSpec, "type", eventValue, eventValidationResult, eventAPI, false)}
-                {renderColumn(eventTableSpec, "status", eventValue, eventValidationResult, eventAPI, false)}
-                {renderColumn(eventTableSpec, "tags", eventValue, eventValidationResult, eventAPI, false)}
-                {renderColumn(eventTableSpec, "expectedAttendanceUserTag", eventValue, eventValidationResult, eventAPI, false)}
+            {renderColumn(eventTableSpec, "name", eventValue, eventValidationResult, eventAPI, true)}
+            {renderColumn(eventTableSpec, "locationDescription", eventValue, eventValidationResult, eventAPI, false)}
+            {renderColumn(eventTableSpec, "type", eventValue, eventValidationResult, eventAPI, false)}
+            {renderColumn(eventTableSpec, "status", eventValue, eventValidationResult, eventAPI, false)}
+            {renderColumn(eventTableSpec, "tags", eventValue, eventValidationResult, eventAPI, false)}
+            {renderColumn(eventTableSpec, "expectedAttendanceUserTag", eventValue, eventValidationResult, eventAPI, false)}
 
-                {renderColumn(segmentTableSpec, "startsAt", segmentValue, segmentValidationResult, segmentAPI, false)}
+            {renderColumn(segmentTableSpec, "startsAt", segmentValue, segmentValidationResult, segmentAPI, false)}
 
-            </div>
+        </div>
     </CMDialog>;
 };
 

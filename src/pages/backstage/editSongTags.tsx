@@ -1,7 +1,7 @@
 
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -25,7 +25,7 @@ const songTagsTableSpec = DB3Client.defineTableClientSpec({
 
 const MainContent = () => {
     return <>
-        <SettingMarkdown setting="editSongTags_markdown"></SettingMarkdown>
+        <LocalizedMarkdown setting="editSongTags_markdown"></LocalizedMarkdown>
         <DB3EditGrid tableSpec={songTagsTableSpec} view={db3.songTagEditorView} />
     </>;
 };

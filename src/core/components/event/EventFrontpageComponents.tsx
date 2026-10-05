@@ -20,7 +20,7 @@ import { useConfirm } from "../ConfirmationDialog";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { AgendaItem } from '../frontpage/homepageComponents';
-import { SettingMarkdown } from "../SettingMarkdown";
+import { LocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
 import type { EventDetailEvent } from "./EventComponentsBase";
 
 
@@ -307,7 +307,7 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
                     valueFr={valueFr || ""}
                     dialogTitle={props.fieldSpec.fieldLabel}
                     readOnly={readonly}
-                    dialogDescription={<SettingMarkdown setting={`EventFrontpageEditDialog_${props.fieldSpec.fieldLabel}` as any} />}
+                    dialogDescription={<LocalizedMarkdown setting={`EventFrontpageEditDialog_${props.fieldSpec.fieldLabel}` as any} />}
                     selectButtonLabel='edit'
                     onChange={handleChange}
                 />

@@ -3,10 +3,10 @@ import db from "db";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import type { WikiPagePublicId } from "shared/publicId";
-import { SettingKey } from "shared/settingKeys";
+import { SettingKey } from "@/src/setting/shared/settingKeys";
 import { gSSP } from "src/blitz-server";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { WikiPageControl } from "src/core/components/wiki/WikiComponents";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
@@ -23,8 +23,8 @@ const WikiPageComponent = ({ wikiPath, wikiPageId }: { wikiPath: WikiPath, wikiP
     });
 
     return <>
-        <SettingMarkdown setting="GlobalWikiPage_Markdown"></SettingMarkdown>
-        <SettingMarkdown setting={`WikiPage_${wikiPath.canonicalWikiPath}_Markdown` as SettingKey}></SettingMarkdown>
+        <LocalizedMarkdown setting="GlobalWikiPage_Markdown"></LocalizedMarkdown>
+        <LocalizedMarkdown setting={`WikiPage_${wikiPath.canonicalWikiPath}_Markdown` as SettingKey}></LocalizedMarkdown>
         <WikiPageControl wikiPath={wikiPath} />
     </>;
 };

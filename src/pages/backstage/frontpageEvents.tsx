@@ -8,7 +8,7 @@ import { gQueryOptions } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { EventSearchItemContainer } from "src/core/components/event/EventComponents";
 import { EventFrontpageTabContent } from "src/core/components/event/EventFrontpageComponents";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 
@@ -108,7 +108,7 @@ const EventsList = () => {
 const MainContent = () => {
     return <div>
         <Suspense>
-            <SettingMarkdown setting="FrontpageAgendaPage_markdown"></SettingMarkdown>
+            <LocalizedMarkdown setting="FrontpageAgendaPage_markdown"></LocalizedMarkdown>
         </Suspense>
 
         <Suspense>

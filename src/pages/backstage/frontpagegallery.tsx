@@ -24,7 +24,7 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
 import { CMButton, CMButtonGroup, KeyValueTable } from "src/core/components/CMCoreComponents2";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
 import { CMDBUploadFile } from "src/core/components/file/CMDBUploadFile";
@@ -658,7 +658,7 @@ const MainContent = () => {
     };
 
     return <>
-        <SettingMarkdown setting="frontpage_gallery_markdown"></SettingMarkdown>
+        <LocalizedMarkdown setting="frontpage_gallery_markdown"></LocalizedMarkdown>
         <NewGalleryItemComponent client={client} />
 
         <ReactSmoothDndContainer

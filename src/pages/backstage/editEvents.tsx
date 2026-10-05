@@ -2,7 +2,7 @@ import { CMButton } from "@/src/core/components/CMCoreComponents2";
 import { BlitzPage } from "@blitzjs/next";
 import DashboardLayout from "@components/dashboard/DashboardLayout";
 import { EventTableClientColumns } from "@components/event/EventComponentsBase";
-import { SettingMarkdown } from "@components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "@db3/components/db3DataGrid";
 import * as db3 from "@db3/db3";
 import * as DB3Client from "@db3/DB3Client";
@@ -57,7 +57,7 @@ const MainContent = () => {
     });
 
     return <>
-        <SettingMarkdown setting="editEvents_markdown"></SettingMarkdown>
+        <LocalizedMarkdown setting="editEvents_markdown"></LocalizedMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
             view={db3.eventEditorView}

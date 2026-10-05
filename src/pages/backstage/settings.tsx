@@ -5,7 +5,7 @@ import { BlitzPage } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import React from "react";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
@@ -73,7 +73,7 @@ const SettingsContent = () => {
     return <>
         <CMSinglePageSurfaceCard>
             <div className="content">
-                <SettingMarkdown setting="settings_markdown"></SettingMarkdown>
+                <LocalizedMarkdown setting="settings_markdown"></LocalizedMarkdown>
                 <SettingsControls></SettingsControls>
                 <DB3EditGrid tableSpec={tableSpec} view={db3.settingEditorView} />
             </div>

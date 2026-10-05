@@ -7,7 +7,7 @@ import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/Das
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { CMSelectDisplayStyle, SelectionField } from "../select/SelectionField";
 import { CMSelectNullBehavior, makeLocalSelectionSource, withNullSelection } from "../select/selectionSource";
-import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from "../SettingMarkdown";
+import { LocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "../SnackbarContext";
 import type { EventPublicId, UserPublicId } from "shared/publicId";
 
@@ -52,6 +52,6 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
     return <SelectionField className={`eventStatusControl ${event.expectedAttendanceUserTag?.significance}`} source={source}
         value={[event.expectedAttendanceUserTag]} readonly={readonly || !authorizedForEdit} displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
         dialogTitle="Expected attendance group"
-        dialogDescription={<SettingMarkdown setting={GenerateDefaultDescriptionSettingName("event", "expectedAttendanceUserTag")} />}
+        dialogDescription={<LocalizedMarkdown setting={"event.expectedAttendanceUserTag.DescriptionMarkdown"} />}
         onChange={values => handleChange(values[0]!)} />;
 };

@@ -4,7 +4,7 @@ import { BlitzPage } from "@blitzjs/next";
 import PageviewIcon from '@mui/icons-material/Pageview';
 import { GridActionsCellItem } from "@mui/x-data-grid";
 import { useRouter } from "next/router";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -30,7 +30,7 @@ const InstrumentListContent = () => {
     });
 
     return <>
-        <SettingMarkdown setting="instrumentList_markdown"></SettingMarkdown>
+        <LocalizedMarkdown setting="instrumentList_markdown"></LocalizedMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
             view={db3.instrumentEditorView}

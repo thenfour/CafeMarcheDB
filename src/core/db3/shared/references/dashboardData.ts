@@ -1,8 +1,8 @@
-import type { ServerStartInfo } from "shared/serverStateBase";
-import type { UserSettings } from "@/src/setting/shared/userSettings";
 import type { EventPublicId } from "shared/publicId";
+import type { ServerStartInfo } from "shared/serverStateBase";
 import { hydrateView, type AnyDB3View, type ClientOf, type DtoOf } from "../core/db3View";
 import { menuLinkListView } from "../entities/menuLink/menuLinkViews";
+import { SettingsDto } from "../schema/settings";
 import * as dashboard from "./dashboardReferences";
 
 /** RPC payload: field codecs and reference expansion have not run yet. */
@@ -25,7 +25,9 @@ export interface DashboardDataDto {
     serverStartupState: ServerStartInfo | null;
     relevantEventIds: EventPublicId[];
     bandTimeZone: string;
-    userSettings: UserSettings;
+
+    settings: SettingsDto;
+
     effectivePermissionNames: string[];
 }
 

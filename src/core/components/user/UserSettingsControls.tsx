@@ -1,28 +1,27 @@
 import { setQueryData, useMutation } from "@blitzjs/rpc";
 import { Checkbox, FormControl, FormControlLabel, FormHelperText } from "@mui/material";
 import React from "react";
-import type { UserSettingsPatch } from "@/src/setting/shared/userSettings";
-import updateMyUserSettings from "@/src/setting/server/mutations/updateMyUserSettings";
 import getDashboardData from "src/auth/queries/getDashboardData";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { useSnackbar } from "../SnackbarContext";
+import { useUserSettings } from "@/src/setting/client/useSettings";
 
 export const CalendarUserSettingsControl = () => {
     const dashboardContext = useDashboardContext();
-    const [updateSettings] = useMutation(updateMyUserSettings);
+    const userSettings = useUserSettings();
     const [saving, setSaving] = React.useState(false);
     const snackbar = useSnackbar();
     const descriptionId = React.useId();
     const invitationDescriptionId = React.useId();
 
-    const save = async (patch: UserSettingsPatch) => {
+    const save = async (proc: () => Promise<void>) => {
         setSaving(true);
         try {
-            const userSettings = await updateSettings(patch);
-            await setQueryData(getDashboardData, {}, previous => previous ? {
-                ...previous,
-                userSettings,
-            } : previous, { refetch: false });
+            await proc();
+            // await setQueryData(getDashboardData, {}, previous => previous ? {
+            //     ...previous,
+            //     userSettings,
+            // } : previous, { refetch: false });
             snackbar.showSuccess("Calendar preference saved");
         } catch {
             snackbar.showError("Could not save your calendar preference. Please try again.");
@@ -31,14 +30,17 @@ export const CalendarUserSettingsControl = () => {
         }
     };
 
-    return <FormControl disabled={saving || !dashboardContext.currentUser}>
+    return <FormControl disabled={saving}>
         <FormControlLabel
             label="Show declined events in my calendar feed"
             control={<Checkbox
-                checked={dashboardContext.userSettings["calendar.showDeclinedEvents"]}
+                checked={userSettings.getValue("calendar.showDeclinedEvents")}
                 name="calendar.showDeclinedEvents"
+                disabled={!userSettings.getCapabilities("calendar.showDeclinedEvents", dashboardContext.authorization).canEdit}
                 inputProps={{ "aria-describedby": descriptionId }}
-                onChange={(_, checked) => { void save({ "calendar.showDeclinedEvents": checked }); }}
+                onChange={(_, checked) => {
+                    void save(() => userSettings.setValue("calendar.showDeclinedEvents", checked));
+                }}
             />}
         />
         <FormHelperText id={descriptionId}>
@@ -47,10 +49,11 @@ export const CalendarUserSettingsControl = () => {
         <FormControlLabel
             label="Show events I'm not invited to in my calendar feed"
             control={<Checkbox
-                checked={dashboardContext.userSettings["calendar.showUninvitedEvents"]}
+                checked={userSettings.getValue("calendar.showUninvitedEvents")}
                 name="calendar.showUninvitedEvents"
+                disabled={!userSettings.getCapabilities("calendar.showUninvitedEvents", dashboardContext.authorization).canEdit}
                 inputProps={{ "aria-describedby": invitationDescriptionId }}
-                onChange={(_, checked) => { void save({ "calendar.showUninvitedEvents": checked }); }}
+                onChange={(_, checked) => { void save(() => userSettings.setValue("calendar.showUninvitedEvents", checked)); }}
             />}
         />
         <FormHelperText id={invitationDescriptionId}>
