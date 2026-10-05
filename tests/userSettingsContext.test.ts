@@ -41,10 +41,12 @@ const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_R
 
 const dashboardData = (showDeclinedEvents: boolean) => ({
     ...Object.fromEntries([
-        "permission", "effectivePermissionNames", "userTag", "wikiPageTag", "role",
+        "permission", "userTag", "wikiPageTag", "role",
         "eventType", "eventStatus", "eventTag", "eventAttendance", "fileTag", "instrumentFunctionalGroup",
         "songTag", "songCreditType", "relevantEventIds", "dynMenuLinks", "instrument",
     ].map(name => [name, []])),
+    authorization: { userPublicId: null, bandPublicId: null, bandUserPublicId: null, effectivePermissionNames: [] },
+    locale: "en-US",
     bandTimeZone: "Europe/Brussels",
     userSettings: { "calendar.showDeclinedEvents": showDeclinedEvents, "calendar.showUninvitedEvents": true },
 });

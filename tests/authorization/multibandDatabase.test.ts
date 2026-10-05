@@ -4,6 +4,7 @@ import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
 import { platformScope } from "src/auth/server/authorizationContext";
+import { resolveRequestLocale } from "src/locale/server/requestLocale";
 import { generatePublicId } from "src/server/publicId";
 import { initializeAccessControl } from "src/setup/accessControl";
 
@@ -107,6 +108,14 @@ describe.skipIf(!testUrl)("access-control foundations on the target database", (
                 expect(secondAuth.hasPermission(Permission.manage_band_settings)).toBe(false);
                 expect(firstAuth.hasPermission(Permission.manage_global_users)).toBe(false);
                 expect(() => firstAuth.requireBandResource(second.id)).toThrow("another band");
+
+                const french = await transaction.locale.findUniqueOrThrow({ where: { ietfTag: "fr-BE" } });
+                await transaction.bandLocale.create({ data: { bandId: first.id, localeId: french.id } });
+                expect((await resolveRequestLocale(transaction, first.id, "fr-FR")).ietfTag).toBe("fr-BE");
+                expect((await resolveRequestLocale(transaction, second.id, "fr-FR")).ietfTag).toBe("en-US");
+                await transaction.bandLocale.deleteMany({ where: { bandId: first.id } });
+                await expect(resolveRequestLocale(transaction, first.id)).rejects.toThrow("No active locale");
+                expect((await firstAuth.refresh(transaction)).hasPermission(Permission.manage_band_settings)).toBe(true);
 
                 await transaction.bandUser.update({ where: { id: firstAuth.requireMembership().id }, data: { isDeleted: true } });
                 const offboarded = await firstAuth.refresh(transaction);

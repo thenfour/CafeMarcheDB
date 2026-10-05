@@ -1,8 +1,16 @@
 import { AuthenticationError } from "blitz";
 import { Permission } from "@/shared/permissions";
-import { parsePublicId, type UserPublicId } from "@/shared/publicId";
+import { parsePublicId, type BandPublicId, type BandUserPublicId, type UserPublicId } from "@/shared/publicId";
 import type { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
 import { PermissionSet } from "./PermissionSet";
+
+/** Public identities and display grants for one tab's resolved context. */
+export interface ScopedAuthorizationData {
+    readonly userPublicId: UserPublicId | null;
+    readonly bandPublicId: BandPublicId | null;
+    readonly bandUserPublicId: BandUserPublicId | null;
+    readonly effectivePermissionNames: string[];
+}
 
 // The shared surface supports client hints and server checks. Database reads
 // require CMServerAuthorization so they can use trusted permission IDs.

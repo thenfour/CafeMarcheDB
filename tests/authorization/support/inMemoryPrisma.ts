@@ -109,6 +109,9 @@ const testRelations: Record<string, Record<string, Relation>> = {
   bandLocale: {
     locale: { table: "locale", local: "localeId", foreign: "id" },
   },
+  locale: {
+    bandLocales: { table: "bandLocale", local: "id", foreign: "localeId", many: true },
+  },
   globalRole: {
     permissions: { table: "globalRolePermission", local: "id", foreign: "globalRoleId", many: true },
   },

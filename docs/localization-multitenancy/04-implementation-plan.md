@@ -47,14 +47,21 @@ not establish application readiness or complete isolation of legacy consumers.
 
 - [x] Inventory affected authorization operations and identify whether each
   changes a platform resource, a shared person, or a band resource/membership.
-- [x] Establish a shared server context containing the authenticated person,
-  resolved band when applicable, membership, applicable grants, and locale.
+- [x] Establish server authorization containing the authenticated person,
+  resolved band when applicable, membership, and applicable grants. Resolve
+  presentation locale separately and compose both at request/dashboard boundaries.
   Resolve a requested band on the server; client IDs and rewrite headers are
   selection hints, not authorization.
 - [x] Initially resolve Café Marché through server configuration. Support
   platform operations with no band and public band access with no membership.
 - [x] Load global-role grants and active-band role grants with explicit scope.
   Grants from another band's membership must not authorize an operation here.
+- [x] Keep band, locale, membership, and effective band grants in the request/tab
+  dashboard context. Shared session PublicData carries only band-independent
+  grants and account/session state. Cover concurrent contexts sharing one session.
+- [x] Keep locale selection and locale availability independent of authorization
+  loading, refresh, and caching. Language changes reuse the same authorization
+  snapshot; the locale resolver enforces enabled active presentation locales.
 - [x] Define public, pending/roleless, and nonmember behavior explicitly. Preserve
   existing intended access without treating account creation as band membership.
   Deactivated memberships and deleted/merged people must not regain access.
@@ -81,7 +88,7 @@ inactive-account cases. The context is usable by later DB3 and settings work.
 **Outcome:** clients and servers resolve strings and settings through shared,
 typed, authorized APIs.
 
-- [ ] Implement shared locale matching and string resolution for static keys
+- [ ] Use the shared request-locale resolver to implement string resolution for static keys
   and dynamic string identities. Preserve the agreed scope-first fallback order:
   band exact locale, band language match, band `en-US`, other band translation;
   then the corresponding global candidates only when no band translations exist.
@@ -257,6 +264,7 @@ owner/restoration phase for any additional gap.
 | Full portal routing and band management | Phases 1–4 use trusted server context with the initial Café Marché selection. Isolation is enforced throughout. | Phase 5 completes routing and lifecycle surfaces. |
 | Band administrators using old global-account writers | Implemented in phase 1: shared-account changes require platform grants. Separate membership writers and old role/merge consumers still need adaptation. | Phases 3–4 supply BandUser role/offboarding/recovery operations and the appropriate views. |
 | Legacy random demo seeds | Implemented in phase 1: the seed entry point now initializes real access-control foundations. Old catalog/demo generators reference removed models. | Phases 3–4 adapt useful catalog/demo seed content with its domains. |
+| Legacy synchronous band-permission guards | Implemented in the phase-1 correction: `resolver.authorize` rejects band capabilities; only request-scoped authorization can check them. | Phases 3–4 replace remaining band guards with `cmauthorize` and enforce resource ownership. |
 
 ## Acceptance across phases
 

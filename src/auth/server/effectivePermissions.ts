@@ -5,8 +5,7 @@ import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { CreatePublicData, type CreatePublicDataArgs, type PublicDataType } from "types";
 import { ServerPermissionSet, type DatabasePermissionIdentity } from "./ServerPermissionSet";
 import {
-    membershipSelection, resolveAuthorizationContext, configuredBandScope,
-    type AuthorizationDatabase, type AuthorizationMembership, type AuthorizationScopeSelection,
+    membershipSelection, type AuthorizationDatabase, type AuthorizationMembership,
 } from "./authorizationContext";
 
 export type PermissionPrincipal = Readonly<{
@@ -27,6 +26,8 @@ export interface EffectivePermissionContext {
     readonly effectivePermissions: ServerPermissionSet;
     readonly globalPermissions: ServerPermissionSet;
     readonly bandPermissions: ServerPermissionSet;
+    /** Band-independent display grants for the shared session. */
+    readonly sessionPermissions: ServerPermissionSet;
     readonly membership: AuthorizationMembership | null;
 }
 
@@ -100,10 +101,21 @@ export async function loadEffectivePermissionContext(
     });
     const globalPermissions = new ServerPermissionSet([...global, ...accountPermissions]);
     const bandPermissions = new ServerPermissionSet(band);
+    // Public/account grants from the shared public definition are independent
+    // of membership. Grants from a selected member role stay in its context.
+    const publicPermissionIds = new Set(bandRoles.filter(role => role.isPublicRole)
+        .flatMap(role => role.bandRolePermissions.map(grant => grant.permission.id)));
+    const sessionPermissions = new ServerPermissionSet([
+        ...global.filter(permission => getPermissionDefinition(permission.name).scope !== "band"),
+        ...accountPermissions,
+        ...band.filter(permission => publicPermissionIds.has(permission.id)
+            && getPermissionDefinition(permission.name).scope !== "band"),
+    ]);
     return {
         effectivePermissions: new ServerPermissionSet([...global, ...accountPermissions, ...band]),
         globalPermissions,
         bandPermissions,
+        sessionPermissions,
         membership: activeMembership,
     };
 }
@@ -119,18 +131,12 @@ export async function loadEffectivePermissions(
 export const createPublicDataFromDatabase = async (
     database: AuthorizationDatabase,
     args: Omit<CreatePublicDataArgs, "permissions">,
-    selection: AuthorizationScopeSelection = configuredBandScope,
 ): Promise<PublicDataType> => {
     const user = args.user ? await database.user.findFirst({
         ...UserWithRolesArgs,
         where: { id: args.user.id, isDeleted: false, mergedIntoUserId: null },
     }) : null;
     if (args.user && !user) throw new AuthenticationError();
-    const context = await resolveAuthorizationContext(database, selection);
-    const permissions = await loadEffectivePermissions(database, user, context.band?.id ?? null);
-    return CreatePublicData({
-        ...args, user, permissions: permissions.names,
-        authorizationBandPublicId: context.band ? context.band.publicId : null,
-        authorizationLocale: context.locale.ietfTag,
-    });
+    const { sessionPermissions } = await loadEffectivePermissionContext(database, user, null);
+    return CreatePublicData({ ...args, user, permissions: sessionPermissions.names });
 };

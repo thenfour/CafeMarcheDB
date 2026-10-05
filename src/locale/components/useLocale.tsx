@@ -1,6 +1,6 @@
 
 import React from "react";
-import { StaticLocalizedStringKey } from "./staticLocalizedStringRegistry";
+import { StaticLocalizedStringKey } from "../shared/staticLocalizedStringRegistry";
 
 // // gets the string, no params
 // // NB: synchronous!

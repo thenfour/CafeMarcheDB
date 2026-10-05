@@ -20,7 +20,7 @@ import { DbBrandConfig, DefaultDbBrandConfig } from '@/shared/brandConfigBase';
 import { useBrand } from '@/shared/brandConfig';
 import { DashboardContextDataBase } from './dashboardContextTypes';
 import { PermissionSet } from '@/src/auth/shared/PermissionSet';
-import { CMClientAuthorization } from '@/src/auth/shared/cmAuthorization';
+import { CMClientAuthorization, type ScopedAuthorizationData } from '@/src/auth/shared/cmAuthorization';
 import { isAttendanceGoing } from 'shared/eventAttendance';
 import { partition } from "@/shared/arrayUtils";
 import { EventStatusPublicId, PermissionPublicId } from "@/shared/publicId";
@@ -45,6 +45,8 @@ export class DashboardContextData extends DashboardContextDataBase {
     refetchDashboardData: (() => void) = () => { };
     effectivePermissions: PermissionSet = new PermissionSet([]);
     authorization: CMClientAuthorization = new CMClientAuthorization(null, new PermissionSet([]));
+    authorizationContext: ScopedAuthorizationData | null = null;
+    locale: string | null = null;
 
     constructor() {
         super();
@@ -224,7 +226,21 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.refetchDashboardData = refetch;
     valueRef.current.permission = new TableAccessor(dashboardData.permission);
 
-    valueRef.current.effectivePermissions = new PermissionSet(dashboardData.effectivePermissionNames);
+    valueRef.current.authorizationContext = dashboardData.authorization;
+    valueRef.current.effectivePermissions = new PermissionSet(dashboardData.authorization.effectivePermissionNames);
+
+    // LSMB todo: move to locale
+    // NOTE the difference between userLocale (client-selected, and probably should be removed),
+    // and `locale`, which is selected by the server.
+    // `locale` can differ from userLocale when the user has selected an explicit locale (e.g. via route `/fr-BE/etc..`).
+    // actual string resolution does consider much more than just a single locale. see 00-localization-multitenancy.md
+    // for the documented rules, which are a full negotiation between client locale, explicit selection,
+    // supported locales, available locales, PER translation.
+    // so this single `locale` value has much less value than  it advertises.
+    // it's really meant to be "the locale to use for date/number formatting, that  kind of thing". It
+    // is NOT a guarantee that the site is going to be in that language.
+    valueRef.current.userLocale = typeof navigator === "undefined" ? "en" : navigator.language;
+    valueRef.current.locale = dashboardData.locale;
 
     valueRef.current.authorization = new CMClientAuthorization(currentUser, valueRef.current.effectivePermissions);
 
@@ -273,10 +289,6 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
 
     valueRef.current.brand = brand;
     valueRef.current.localTimeZone = localTimeZone();
-
-    // LSMB todo: move to locale
-    // todo: we can break this into lang + region, and expose user local vs. resolved app locale.
-    valueRef.current.userLocale = typeof navigator === "undefined" ? "en" : navigator.language;
 
     valueRef.current.eventDatePresentation = {
         bandTimeZone: valueRef.current.bandTimeZone,

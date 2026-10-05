@@ -34,6 +34,7 @@ import {
     queryView,
 } from "src/core/db3/server/db3QueryCore";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
+import { localeDatabase, resolveRequestLocale } from "src/locale/server/requestLocale";
 import {
     loadAuthorization,
     type CMServerAuthorization
@@ -179,8 +180,8 @@ export default resolver.pipe(
             const sw = new Stopwatch();
 
             const authorization = await loadAuthorization(ctx.session);
+            const locale = await resolveRequestLocale(localeDatabase, authorization.band?.id ?? null);
             const currentUser = authorization.user;
-            const effectivePermissions = authorization.effectivePermissions;
 
             // Existing events retain the meaning of a status after that status
             // is retired, so relevance calculations use every referenced row.
@@ -230,7 +231,7 @@ export default resolver.pipe(
 
             const relevantEventIds = await relevantEventsCall;
 
-            const clientServerState = getClientServerState(effectivePermissions.includesName(Permission.sysadmin));
+            const clientServerState = getClientServerState(authorization.hasPermission(Permission.sysadmin));
             const ret = {
                 userTag,
                 permission,
@@ -250,7 +251,8 @@ export default resolver.pipe(
                 serverStartupState: clientServerState.diagnostics,
                 relevantEventIds,
                 userSettings,
-                effectivePermissionNames: effectivePermissions.names,
+                authorization: authorization.toClientContext(),
+                locale: locale.ietfTag,
             };
             if (process.env.NODE_ENV === "development") {
                 sw.loghelper("total", ret);

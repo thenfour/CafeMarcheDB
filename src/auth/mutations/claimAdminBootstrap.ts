@@ -126,7 +126,7 @@ export default resolver.pipe(
             throw error;
         }
 
-        await ctx.session.$create(await createPublicDataFromDatabase(authorizationDatabase, { user: promotedUser }, platformScope));
+        await ctx.session.$create(await createPublicDataFromDatabase(authorizationDatabase, { user: promotedUser }));
         return { userId: promotedUser.id, isSysAdmin: true };
     },
 );

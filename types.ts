@@ -1,7 +1,7 @@
 import { SimpleRolesIsAuthorized } from "@blitzjs/auth";
 import { Ctx } from "@blitzjs/next";
 import { Prisma } from "db";
-import { isPermission, Permission } from "shared/permissions";
+import { getPermissionDefinition, isPermission, Permission } from "shared/permissions";
 import { UserWithRolesPayload } from "./src/core/db3/shared/schema/userPayloads";
 //import { UserWithRolesPayload } from "./src/core/db3/db3";
 //import { UserWithRolesPayload } from "src/core/db3/db3"; // circular dep
@@ -22,9 +22,8 @@ export type PublicDataType = {
   userId: number,
   impersonatingFromUserId?: number | null,
   isSysAdmin: boolean,
+  // shared grants only. scoped (e.g. band) grants are delivered in dashboard context where it's possible to have multiple tabs open with different contexts.
   permissionNames: string[],
-  authorizationBandPublicId?: string | null;
-  authorizationLocale?: string;
 
   showAdminControls: boolean; // show things like editing chrome content (SettingMarkdown etc)
   GOOGLE_ANALYTICS_ID_BACKSTAGE: string | undefined;
@@ -38,11 +37,14 @@ interface CMDBResolverAuthorizeArgs {
 };
 
 export function CMDBResolverAuthorize(args: CMDBResolverAuthorizeArgs) {
-  // Blitz's synchronous callback reads the grants refreshed at request entry.
+  // Blitz's synchronous callback reads only shared grants. Band guards must
+  // use cmauthorize and the resolved request context, never a session cookie.
   const permission = args.args[0];
   if (!isPermission(permission)) throw new Error(`Unknown resolver permission: ${permission}`);
   if (permission === Permission.never_grant) return false;
-  if (permission === Permission.login && !args.ctx.session.userId) return false;
+  const scope = getPermissionDefinition(permission).scope;
+  if (scope === "band") return false;
+  if (scope === "account" && !args.ctx.session.userId) return false;
   return args.ctx.session.$publicData.permissionNames?.includes(permission) ?? false;
 }
 
@@ -58,8 +60,6 @@ export interface CreatePublicDataArgs {
   impersonatingFromUserId?: number;
   showAdminControls?: boolean; // client-side option
   permissions: string[];
-  authorizationBandPublicId?: string | null;
-  authorizationLocale?: string;
 }
 
 export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
@@ -69,8 +69,6 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
       userId: 0, // numeric & falsy
       isSysAdmin: false,
       permissionNames: [...new Set(args.permissions)],
-      authorizationBandPublicId: args.authorizationBandPublicId,
-      authorizationLocale: args.authorizationLocale,
       impersonatingFromUserId: args.impersonatingFromUserId,
       showAdminControls: false,
       GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
@@ -81,8 +79,6 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
     userId: args.user.id,
     isSysAdmin: args.user.isSysAdmin,
     permissionNames: [...new Set(args.permissions)],
-    authorizationBandPublicId: args.authorizationBandPublicId,
-    authorizationLocale: args.authorizationLocale,
     impersonatingFromUserId: args.impersonatingFromUserId,
     showAdminControls: args.showAdminControls || false,
     GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,

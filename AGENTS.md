@@ -24,6 +24,11 @@ See `docs/testing.md` for the rationale and full conventions.
   justifying why stronger typing was either chosen, or impossible.
 - Comments should use brief, simple English, sometimes with illustrative examples.
 - Prefer `import` at the top of file; avoid inline `import()` syntax unless absolutely necessary.
+- Prefer clean new-looking code rather than legacy fallbacks.
+- Keep each function at one level of abstraction. Orchestration should read
+  like a story using semantic operations; isolate sub-routines and semantic code chunks
+  behind clearly named helpers.
+- Extract helpers around meaningful concepts, with clear inputs and outputs.
 
 ## Task scope
 

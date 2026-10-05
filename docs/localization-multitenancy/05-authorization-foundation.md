@@ -9,15 +9,18 @@ and UI consumers still need phases 3–4.
 
 `src/auth/server/serverAuthorization.ts` loads the person from the database and
 returns `CMServerAuthorization` with the effective permissions, separately
-attributed global and band permissions, resolved band, active membership, and
-locale. Session public data is display state; it does not authorize the server.
+attributed global and band permissions, resolved band, and active membership.
+Presentation locale is resolved separately. Shared session PublicData contains
+person/session-wide state and band-independent display grants. It contains no selected band, membership,
+presentation locale, or band grants. Server band operations use the resolved
+request context, never session display grants.
 
 `src/auth/server/authorizationContext.ts` defines three selection forms:
 
 | Selection | Resolution |
 | --- | --- |
-| `platformScope` | No band or membership. Only active global locales participate. |
-| `{ kind: "band", bandPublicId, locale? }` | Resolve an active band by public ID, then that person's membership and the band's enabled active locales. |
+| `platformScope` | No band or membership. |
+| `{ kind: "band", bandPublicId }` | Resolve an active band by public ID, then that person's membership. |
 | `configuredBandScope` (default) | Resolve `CMDB_DEFAULT_BAND_ID`, initially `1`, the Café Marché identity created by the data migration. |
 
 `CMDB_DEFAULT_BAND_ID` is server configuration and must be a positive safe
@@ -26,25 +29,57 @@ unset and no bands at all, the default resolves platform context so a fresh
 installation can create its first account before creating a band. An existing
 but deleted band does not trigger this fallback.
 
-The optional requested locale is a selection hint. Resolution chooses an enabled
-active exact locale, then a matching language, then `en-US`, then the first
-configured candidate, with stable ordering. No available locale fails closed.
-Phase 2 will share this selection with the string resolver; this phase does not
-implement translation fallback or catalog delivery.
+`src/locale/server/requestLocale.ts` owns presentation-locale selection.
+`resolveRequestLocale(database, bandId, requested?)` accepts a trusted resolved
+band ID, or `null` for platform presentation. It considers the band's enabled
+active locales, or all active platform locales, ordered by `Locale.sortOrder`
+then identity. `BandLocale` has no separate ordering column. Matching chooses an
+exact locale, then a matching language, then `en-US`, then the first candidate.
+Malformed hints and missing active candidates fail presentation resolution.
+Authorization does not query locales and remains usable when locale data is
+missing or its query fails. Phase 2 will use this resolver for strings; translation
+fallback and catalog delivery remain unimplemented.
 
 `loadAuthorization(session, selection)` caches a database snapshot within that
-request's session context, separately for each scope/locale and session identity.
-Switching A → B → A also replaces browser display grants. `refresh(database?)`
-reloads person, grants, membership, and locale in the same scope, optionally inside
-the mutation transaction. Non-session callers use `loadAuthorizationForUser`;
-only the supplied person ID is trusted, and account/role state is read afresh.
-Session creation also rereads the person before publishing initial grants.
+request's session context, separately for each scope and session identity.
+Switching A → B → A preserves the independent snapshots and does not write a
+selected band/locale into the shared session. `refresh(database?)` reloads person,
+grants, and membership in the same scope, optionally inside the mutation
+transaction. Non-session callers use `loadAuthorizationForUser`; only the supplied
+person ID is trusted, and account/role state is read afresh. Session creation
+rereads the person and publishes only band-independent grants, without resolving
+a band or presentation locale.
+
+`CMServerAuthorization.toClientContext()` returns public person, band and
+membership identities and effective permission names. It has no locale field.
+`getDashboardData` composes this as `DashboardDataDto.authorization` alongside
+the separately resolved `DashboardDataDto.locale`. The React provider exposes
+them as `DashboardContext.authorizationContext` and `DashboardContext.locale`.
+Each tab receives its own response and uses that response's grants for client
+hints. Numeric database identities and the
+server authorization object do not cross this boundary. The existing configured
+band adapter still applies until explicit portal routing is wired in phase 5;
+the legacy dashboard catalogs/settings still need phases 2–4 for a working app.
+
+The shared session's `permissionNames` contains non-band grants from global roles,
+the account baseline, and public/account grants from the shared public-role
+definition. Even public/account grants originating only in a selected membership
+role remain in that tab's context. A request in another band therefore cannot
+overwrite a tab's context or populate the shared session with its role grants.
+Retired fields in an intermediate session cookie are ignored; unrelated session
+metadata is preserved.
 
 `cmauthorize` accepts an optional `scope`. Domain adapters must use the resolved
 band when querying and writing, call `requireBandResource` for loaded ownership,
 and use `requireMembership` for member-only operations. Possessing a capability
 alone does not prove a supplied entity belongs to the selected band. Central
 DB3 filtering and same-band reference validation remain phase 3 work.
+
+Legacy synchronous `resolver.authorize` reads only shared session grants. It
+rejects band capabilities, including when an older session cookie contains them.
+Remaining band guards must switch to `cmauthorize`/request authorization in
+phases 3–4. This restriction keeps those consumers from trusting another tab's
+stale band grants during recovery.
 
 ## Grant and account rules
 
@@ -82,7 +117,7 @@ safe across bands.
 | Operation family / current entry points | Scope and capability | Current implementation / remaining adaptation |
 | --- | --- | --- |
 | Signup and bootstrap (`signup`, `createSignupUser`, `claimAdminBootstrap`, `getAdminBootstrapStatus`) | Shared person / platform; bootstrap requires active account and the existing secret protocol. | Signup creates a global account without a membership. Bootstrap selects GlobalRole, retains one-time claim/transaction/audit behavior, and leaves memberships untouched. |
-| Login, password reset, OAuth, impersonation start/stop | Shared identity; initial display context uses the configured band. | Session grants use the new loader and fresh account state. Deleted/merged sign-in targets are excluded. Existing dedicated sensitive-operation gates remain. |
+| Login, password reset, OAuth, impersonation start/stop | Shared identity; session creation is independent of band/locale selection. | Sessions publish only shared grants from fresh account state. Page/API context still uses the configured band adapter until routing is adapted. Deleted/merged sign-in targets are excluded. Existing dedicated sensitive-operation gates remain. |
 | Self-service profile and user preferences | Shared person / account. | Account `login` remains independent of band membership. Settings APIs and descriptor adaptation follow in phases 2–4. |
 | Shared person edits and global-role/account changes (`assignUserRole`, `deactivateUser`, `reactivateUser`, merge, User fields) | Platform: `manage_global_users`; merge also retains `merge_users`. Sensitive credentials/impersonation retain their existing protected gates. | Policy and non-owner User field writes now require platform grants. The old role delegates, aggregate merge relations, descriptors, and UI still require phases 3–4. Band permissions must not modify the shared account. |
 | Band membership role assignment, offboarding/recovery, tags, instruments, member presentation | Band: existing `assign_user_roles`, `deactivate_users`, `recover_users`, `manage_users`, `manage_user_taxonomy`. | New-member/deleted-member grant semantics are implemented. Separate BandUser commands, views, delegation/continuity checks, and same-band references follow in phases 3–4. |
@@ -160,13 +195,23 @@ SQL rehearsal remains the evidence for the migrated serialized references.
   behavior, edited English descriptions, and retained matrices/history.
 
 ```powershell
-yarn test tests/authorization/multibandAuthorization.test.ts tests/authorization/multibandDatabase.test.ts tests/authorization/permissionRegistry.test.ts tests/authorization/permissionSet.test.ts --reporter=dot
+yarn test tests/requestLocale.test.ts tests/authorization/multibandAuthorization.test.ts tests/authorization/multibandDatabase.test.ts tests/authorization/permissionRegistry.test.ts tests/authorization/permissionSet.test.ts --reporter=dot
 ```
 
-- All 43 focused checks passed,
+- All 61 focused checks passed after the locale/authorization separation,
   including 3 real-database checks. Native database tests require
   `CMDB_PHASE1_TEST_DATABASE_URL` pointing to a private loopback database on port
   32693/32694 with name starting `lsmb_phase1_`; otherwise those three skip.
+- Regression checks use distinct request contexts with a shared session handle
+  and cookie state. Concurrent requests retain separate bands, locales, membership
+  IDs, and client permissions without shared-session writes. Offboarding one band
+  preserves the other tab's snapshot and shared account grants. Additional checks
+  cover member-role grant provenance, session creation without a band/locale,
+  rejection of cookie-based band guards, authorization without locale data,
+  independent locale matching, and reuse of authorization across language changes.
+  The native relation fixture also checks enabled-locale filtering and authorization
+  refresh after removing a band's enabled locales.
+  This is server/transport coverage, not a browser/portal acceptance rehearsal.
 - Populated main-schema fixture → localization SQL → follow-up SQL passed on
   MariaDB 10.11.9: all original grant rows/IDs retained; seven global and two band
   grants added; new descriptions have Markdown/en-US storage; other-language
@@ -183,7 +228,7 @@ original data-migration evidence remains in [03-sql-migration.md](03-sql-migrati
 
 ## Next step
 
-Proceed to phase 2: share locale selection, implement string-resolution
+Proceed to phase 2: reuse the independent locale resolver, implement string-resolution
 provenance and scope-first fallback, then provide authorized typed lookups for
 the four settings hives. Those APIs should consume this trusted context before
 phase 3 adapts the band-instrument vertical slice and the other domain writers.

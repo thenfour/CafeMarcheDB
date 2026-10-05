@@ -1,5 +1,6 @@
 import type { EventPublicId } from "shared/publicId";
 import type { ServerStartInfo } from "shared/serverStateBase";
+import type { ScopedAuthorizationData } from "src/auth/shared/cmAuthorization";
 import { hydrateView, type AnyDB3View, type ClientOf, type DtoOf } from "../core/db3View";
 import { menuLinkListView } from "../entities/menuLink/menuLinkViews";
 import { SettingsDto } from "../schema/settings";
@@ -7,6 +8,8 @@ import * as dashboard from "./dashboardReferences";
 
 /** RPC payload: field codecs and reference expansion have not run yet. */
 export interface DashboardDataDto {
+    authorization: ScopedAuthorizationData;
+    locale: string;
     permission: DtoOf<typeof dashboard.permissionDashboardView>[];
     userTag: DtoOf<typeof dashboard.userTagDashboardView>[];
     role: DtoOf<typeof dashboard.roleDashboardView>[];
@@ -27,8 +30,6 @@ export interface DashboardDataDto {
     bandTimeZone: string;
 
     settings: SettingsDto;
-
-    effectivePermissionNames: string[];
 }
 
 /** Hydrate one complete snapshot; old or revoked references cannot survive a refresh. */

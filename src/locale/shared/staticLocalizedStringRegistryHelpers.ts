@@ -1,5 +1,5 @@
+import { registryEntry, RegistryEntryWithoutKey } from "@/src/setting/shared/registryHelpers";
 import { z } from "zod";
-import { RegistryEntryWithoutKey, registryEntry } from "../setting/shared/registryHelpers";
 
 type StaticStringParamDef = {
     key: string;

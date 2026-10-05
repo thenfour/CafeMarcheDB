@@ -4,13 +4,13 @@ import type { SessionContext } from "@blitzjs/auth";
 import { AuthenticationError, AuthorizationError } from "blitz";
 import { UserWithRolesArgs, type UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
 import type { PublicDataType } from "types";
-import type { IAuthorization } from "../shared/cmAuthorization";
+import type { IAuthorization, ScopedAuthorizationData } from "../shared/cmAuthorization";
 import { PermissionSet } from "../shared/PermissionSet";
 import { loadEffectivePermissionContext, type EffectivePermissionContext } from "./effectivePermissions";
 import { ServerPermissionSet } from "./ServerPermissionSet";
 import {
     authorizationDatabase, authorizationScopeKey, configuredBandScope, resolveAuthorizationContext,
-    type AuthorizationBand, type AuthorizationDatabase, type AuthorizationLocale,
+    type AuthorizationBand, type AuthorizationDatabase,
     type AuthorizationMembership, type AuthorizationScopeSelection, type ResolvedAuthorizationContext,
 } from "./authorizationContext";
 
@@ -18,11 +18,11 @@ const loadFreshPrincipal = (
     database: AuthorizationDatabase,
     userId: number | null | undefined,
 ): Promise<UserWithRolesPayload | null> => userId
-    ? database.user.findFirst({
-        ...UserWithRolesArgs,
-        where: { id: userId, isDeleted: false, mergedIntoUserId: null },
-    })
-    : Promise.resolve(null);
+        ? database.user.findFirst({
+            ...UserWithRolesArgs,
+            where: { id: userId, isDeleted: false, mergedIntoUserId: null },
+        })
+        : Promise.resolve(null);
 
 interface AuthorizationDetails extends ResolvedAuthorizationContext, EffectivePermissionContext {
     readonly selection: AuthorizationScopeSelection;
@@ -36,9 +36,9 @@ export class CMServerAuthorization implements IAuthorization {
     readonly effectivePermissions: ServerPermissionSet;
     readonly globalPermissions: ServerPermissionSet;
     readonly bandPermissions: ServerPermissionSet;
+    readonly sessionPermissions: ServerPermissionSet;
     readonly band: AuthorizationBand | null;
     readonly membership: AuthorizationMembership | null;
-    readonly locale: AuthorizationLocale | null;
 
     constructor(
         user: UserWithRolesPayload | null,
@@ -56,9 +56,9 @@ export class CMServerAuthorization implements IAuthorization {
         this.sessionHandle = sessionHandle;
         this.globalPermissions = details?.globalPermissions ?? new ServerPermissionSet([]);
         this.bandPermissions = details?.bandPermissions ?? new ServerPermissionSet([]);
+        this.sessionPermissions = details?.sessionPermissions ?? new ServerPermissionSet([]);
         this.band = details?.band ?? null;
         this.membership = details?.membership ?? null;
-        this.locale = details?.locale ?? null;
         if (this.membership && (this.membership.userId !== this.userId
             || this.membership.bandId !== this.band?.id || this.membership.isDeleted)) {
             throw new Error("Membership does not match the active person and band.");
@@ -89,6 +89,15 @@ export class CMServerAuthorization implements IAuthorization {
         this.requireUser();
         if (!this.membership) throw new AuthorizationError("An active membership is required.");
         return this.membership;
+    }
+
+    toClientContext(): ScopedAuthorizationData {
+        return {
+            userPublicId: this.userPublicId,
+            bandPublicId: this.band ? parsePublicId<"Band">(this.band.publicId) : null,
+            bandUserPublicId: this.membership ? parsePublicId<"BandUser">(this.membership.publicId) : null,
+            effectivePermissionNames: this.effectivePermissions.names,
+        };
     }
 
     requireUser(): CMServerAuthorizationWithUser {
@@ -142,21 +151,18 @@ type SessionAuthorizationEntry = {
 };
 const serverAuthorizations = new WeakMap<SessionContext, Map<string, SessionAuthorizationEntry>>();
 
-async function synchronizeSession(session: SessionContext, auth: CMServerAuthorization): Promise<void> {
+async function synchronizeSharedSession(session: SessionContext, auth: CMServerAuthorization): Promise<void> {
     if (session.userId && !auth.user) await session.$revoke();
     const previous = session.$publicData;
     const current = {
-        permissionNames: auth.effectivePermissions.names,
-        authorizationBandPublicId: auth.band?.publicId ?? null,
-        authorizationLocale: auth.locale?.ietfTag,
+        permissionNames: auth.sessionPermissions.names,
         isSysAdmin: auth.user?.isSysAdmin ?? false,
         showAdminControls: !!auth.user?.isSysAdmin && !!previous.showAdminControls,
         GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
         GOOGLE_ANALYTICS_ID_PUBLIC: process.env.GOOGLE_ANALYTICS_ID_PUBLIC,
     } satisfies Partial<Omit<PublicDataType, "userId">>;
-    if (!auth.effectivePermissions.hasSameNames(previous.permissionNames ?? [])
-        || previous.authorizationBandPublicId !== current.authorizationBandPublicId
-        || previous.authorizationLocale !== current.authorizationLocale
+
+    if (!auth.sessionPermissions.hasSameNames(previous.permissionNames ?? [])
         || previous.isSysAdmin !== current.isSysAdmin
         || previous.showAdminControls !== current.showAdminControls
         || previous.GOOGLE_ANALYTICS_ID_BACKSTAGE !== current.GOOGLE_ANALYTICS_ID_BACKSTAGE
@@ -181,16 +187,12 @@ export async function loadAuthorization(
         };
         entries.set(key, entry);
     }
-    const auth = await entry.authorization;
-    // Returning a cached scope after visiting another scope must also replace
-    // the browser's display grants; server guards use the snapshot itself.
-    await synchronizeSession(session, auth);
-    return auth;
+    return entry.authorization;
 }
 
 async function loadSessionSnapshot(session: SessionContext, selection: AuthorizationScopeSelection): Promise<CMServerAuthorization> {
     const auth = await loadSnapshot(authorizationDatabase, session.userId, session.$handle, selection);
-    await synchronizeSession(session, auth);
+    await synchronizeSharedSession(session, auth);
     return auth;
 }
 

@@ -30,8 +30,8 @@
 // - NewEventSegmentDialogTitle
 
 import { z } from "zod";
-import { freezeRegistry } from "../setting/shared/registryHelpers";
 import { markdownStaticString, plainStaticString } from "./staticLocalizedStringRegistryHelpers";
+import { freezeRegistry } from "@/src/setting/shared/registryHelpers";
 
 //     // // mostly pages or sections of pages...
 //     // HomeDescription = "HomeDescription",

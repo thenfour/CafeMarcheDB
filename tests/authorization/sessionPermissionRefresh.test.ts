@@ -200,7 +200,7 @@ describe("authorization refresh on every request", () => {
         await loadAuthorization(ctx.session);
         await expect(invokeResolver(getDashboardData, {}, ctx)).resolves.toMatchObject({
             relevantEventIds: [],
-            effectivePermissionNames: expect.not.arrayContaining([Permission.login]),
+            authorization: { effectivePermissionNames: expect.not.arrayContaining([Permission.login]) },
             permission: [{
                 publicId: parsePublicId<"Permission">("DashboardPerm001"),
                 name: Permission.visibility_public,

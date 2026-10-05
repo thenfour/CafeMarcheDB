@@ -82,7 +82,7 @@ describe.each(["normal", "sysadmin"] as const)("dashboard public identities for 
         })));
         const dto = await invokeResolver(getDashboardData, {}, ctx);
         expect(dto).not.toHaveProperty("effectivePermissionIds");
-        expect(new PermissionSet(dto.effectivePermissionNames).includesName(Permission.login)).toBe(true);
+        expect(new PermissionSet(dto.authorization.effectivePermissionNames).includesName(Permission.login)).toBe(true);
         expectTypeOf(dto.relevantEventIds).toEqualTypeOf<EventPublicId[]>();
         expect(dto.relevantEventIds).toEqual([event.publicId, upcoming.publicId]);
         expect(relevanceQuery.mock.calls[0]![0].sql).toMatch(/SELECT\s+e\.publicId,/);
