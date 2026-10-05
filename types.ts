@@ -23,6 +23,8 @@ export type PublicDataType = {
   impersonatingFromUserId?: number | null,
   isSysAdmin: boolean,
   permissionNames: string[],
+  authorizationBandPublicId?: string | null;
+  authorizationLocale?: string;
 
   showAdminControls: boolean; // show things like editing chrome content (SettingMarkdown etc)
   GOOGLE_ANALYTICS_ID_BACKSTAGE: string | undefined;
@@ -56,6 +58,8 @@ export interface CreatePublicDataArgs {
   impersonatingFromUserId?: number;
   showAdminControls?: boolean; // client-side option
   permissions: string[];
+  authorizationBandPublicId?: string | null;
+  authorizationLocale?: string;
 }
 
 export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
@@ -65,6 +69,8 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
       userId: 0, // numeric & falsy
       isSysAdmin: false,
       permissionNames: [...new Set(args.permissions)],
+      authorizationBandPublicId: args.authorizationBandPublicId,
+      authorizationLocale: args.authorizationLocale,
       impersonatingFromUserId: args.impersonatingFromUserId,
       showAdminControls: false,
       GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
@@ -75,6 +81,8 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
     userId: args.user.id,
     isSysAdmin: args.user.isSysAdmin,
     permissionNames: [...new Set(args.permissions)],
+    authorizationBandPublicId: args.authorizationBandPublicId,
+    authorizationLocale: args.authorizationLocale,
     impersonatingFromUserId: args.impersonatingFromUserId,
     showAdminControls: args.showAdminControls || false,
     GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,

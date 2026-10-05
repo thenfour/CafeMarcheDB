@@ -1,4 +1,4 @@
-import { Prisma } from "db";
+import { Prisma } from "@prisma/client";
 
 
 export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
@@ -11,9 +11,10 @@ export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
         email: true,
         phone: true,
         createdAt: true,
-        roleId: true,
+        globalRoleId: true,
+        mergedIntoUserId: true,
         cssClass: true,
-        role: {
+        globalRole: {
             include: {
                 permissions: {
                     include: {

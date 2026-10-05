@@ -1,55 +1,32 @@
-import { PrismaClient } from "@/db";
-import { db3Server } from "@db3/server/db3Server";
-import { xRolePermissionAssociation } from "@db3/shared/schema/user";
-import { Permission } from "shared/permissions";
-import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
+import type { Prisma } from "@prisma/client";
+import { Permission } from "../../../shared/permissions";
+import { generatePublicId } from "../../server/publicId";
 
-const rolePermissionServer = db3Server.table(xRolePermissionAssociation);
+type SysadminRoleDatabase = Pick<Prisma.TransactionClient, "globalRole" | "permission" | "globalRolePermission">;
 
-export const assertIsPrismaClient = (db: unknown): asserts db is PrismaClient => {
-    // no check necessary; the type assertion is sufficient.
-};
-
-export const assertValidSysadminRole = async (
-    db: TransactionalPrismaClient,
-): Promise<void> => {
-    const db2 = db as PrismaClient;
-    const roles = await db2.role.findMany({
-        where: { isSysAdminRole: true },
-        select: {
-            id: true,
-            name: true,
-            permissions: {
-                select: {
-                    permission: { select: { name: true, id: true, } },
-                },
-            },
-        },
+export const assertValidSysadminRole = async (database: SysadminRoleDatabase): Promise<void> => {
+    const roles = await database.globalRole.findMany({
+        where: { isSysAdminRole: true, isDeleted: false },
+        select: { id: true, permissions: { select: { permissionId: true } } },
     });
-
     if (roles.length !== 1) {
-        throw new Error(`Expected exactly one designated Sysadmin role; found ${roles.length}.`);
+        throw new Error(`Expected exactly one active designated Sysadmin role; found ${roles.length}.`);
     }
-
     const role = roles[0]!;
-
-    // for missing permissions, need this list.
-    const allPermissions = await db2.permission.findMany();
-
-    const requiredPerms = [Permission.sysadmin, Permission.login]
-        .map(permName => allPermissions.find(p => p.name === permName))
-        .filter(Boolean) as typeof allPermissions;
-
-    // remove perms already assigned to the role.
-    const permsToAdd = requiredPerms
-        .filter(perm => !role.permissions.some(entry => entry.permission.id === perm.id));
-
-    if (permsToAdd.length > 0) {
-        await db2.rolePermission.createMany({
-            data: permsToAdd.map(perm => ({
-                publicId: rolePermissionServer.generatePublicId(),
-                roleId: role.id,
-                permissionId: perm.id,
+    const requiredNames = [Permission.sysadmin, Permission.login];
+    const required = await database.permission.findMany({
+        where: { name: { in: requiredNames }, isDeleted: false },
+        select: { id: true, name: true },
+    });
+    if (required.length !== requiredNames.length) {
+        throw new Error("Active sysadmin and login permission definitions are required.");
+    }
+    const missing = required.filter(permission => !role.permissions.some(grant => grant.permissionId === permission.id));
+    if (missing.length) {
+        await database.globalRolePermission.createMany({
+            data: missing.map(permission => ({
+                publicId: generatePublicId<"GlobalRolePermission">(),
+                globalRoleId: role.id, permissionId: permission.id,
             })),
         });
     }

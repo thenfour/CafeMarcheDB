@@ -1,5 +1,5 @@
 
-export const PermissionScopes = ["public", "account", "site", "platform"] as const
+export const PermissionScopes = ["public", "account", "band", "platform"] as const
 
 export type PermissionScope = (typeof PermissionScopes)[number]
 
@@ -12,7 +12,8 @@ export type PermissionPresentation = Readonly<{
 export type PermissionDefinition = Readonly<{
   key: string
 
-  // todo: explain permission scope
+  // Band grants apply only in the resolved band. Platform grants come from
+  // global roles; authenticated account grants never create membership.
   scope: PermissionScope
   description: string
   sortOrder: number
@@ -99,16 +100,28 @@ const permissionRegistry = [
   ),
 
   definePermission(
+    "manage_band_settings",
+    "band",
+    "Manage configuration for the active band.",
+    100
+  ),
+  definePermission(
+    "manage_band_localization",
+    "band",
+    "Manage localized content and overrides for the active band.",
+    103
+  ),
+  definePermission(
     "manage_site_branding",
     //"site-content",
-    "site",
+    "band",
     "Manage the site title, imagery, theme, et al.",
     105
   ),
   definePermission(
     "edit_public_homepage",
     //"site-content",
-    "site",
+    "band",
     "Edit public homepage content and gallery presentation.",
     110
   ),
@@ -134,7 +147,7 @@ const permissionRegistry = [
   definePermission(
     "visibility_members",
     //"visibility",
-    "site",
+    "band",
     "Visibility restricted to trusted site members.",
     220,
     visibilityPresentation("gold", "Security", "Visibility_Members")
@@ -142,7 +155,7 @@ const permissionRegistry = [
   definePermission(
     "visibility_editors",
     //"visibility",
-    "site",
+    "band",
     "Visibility restricted to site editors.",
     230,
     visibilityPresentation("orange", "Lock", "Visibility_Editors")
@@ -151,17 +164,17 @@ const permissionRegistry = [
   definePermission(
     "admin_events",
     //"events",
-    "site",
-    "Manage event types, statuses, tags, and other event configuration.",
+    "band",
+    "Manage event tags and configuration for the active band.",
     300
   ),
   definePermission("manage_events",
     //"events", 
-    "site", "Create, edit, and remove events.", 310),
+    "band", "Create, edit, and remove events.", 310),
   definePermission(
     "recover_events",
     //"events",
-    "site",
+    "band",
     "View otherwise-visible deleted events and event configuration, and restore them.",
     315
   ),
@@ -175,23 +188,23 @@ const permissionRegistry = [
   definePermission(
     "view_events_nonpublic",
     //"events",
-    "site",
+    "band",
     "View non-public event details such as attendance and internal descriptions.",
     330
   ),
   definePermission("view_events_reports", //"events",
-    "site", "View event reports.", 340),
+    "band", "View event reports.", 340),
   definePermission(
     "respond_to_events",
     //"events",
-    "site",
+    "band",
     "Respond to event attendance requests.",
     350
   ),
   definePermission(
     "change_others_event_responses",
     //"events",
-    "site",
+    "band",
     "Change another user's event response.",
     360
   ),
@@ -199,42 +212,42 @@ const permissionRegistry = [
   definePermission(
     "admin_songs",
     //"songs",
-    "site",
-    "Manage song tags, credit types, and other song configuration.",
+    "band",
+    "Manage song tags and configuration for the active band.",
     400
   ),
   definePermission("manage_songs", //"songs",
-    "site", "Create, edit, and remove songs.", 410),
+    "band", "Create, edit, and remove songs.", 410),
   definePermission(
     "recover_songs",
     //"songs",
-    "site",
+    "band",
     "View otherwise-visible deleted songs and restore them.",
     415
   ),
   definePermission("view_songs", //"songs",
-    "site", "View songs.", 420),
+    "band", "View songs.", 420),
   definePermission("pin_song_recordings", //"songs",
-    "site", "Pin recordings to songs.", 430),
+    "band", "Pin recordings to songs.", 430),
 
   definePermission(
     "admin_files",
     //"files",
-    "site",
+    "band",
     "Manage file names, tags, and other file configuration.",
     500
   ),
   definePermission("manage_files", //"files",
-    "site", "Edit and remove files.", 510),
+    "band", "Edit and remove files.", 510),
   definePermission(
     "recover_files",
     //"files",
-    "site",
+    "band",
     "View otherwise-visible deleted files and restore them.",
     515
   ),
   definePermission("upload_files", //"files",
-    "site", "Upload files.", 520),
+    "band", "Upload files.", 520),
   definePermission(
     "view_files",
     //"files",
@@ -245,7 +258,7 @@ const permissionRegistry = [
   definePermission(
     "access_file_landing_page",
     //"files",
-    "site",
+    "band",
     "Access the file landing page.",
     540
   ),
@@ -253,22 +266,22 @@ const permissionRegistry = [
   definePermission(
     "admin_instruments",
     //"instruments",
-    "site",
-    "Manage instrument definitions and functional groups.",
+    "band",
+    "Manage band instruments and functional groups.",
     600
   ),
   definePermission(
     "manage_user_taxonomy",
     //"users",
-    "site",
-    "Manage user tag definitions and user presentation metadata.",
+    "band",
+    "Manage band member tag definitions and presentation.",
     700
   ),
   definePermission(
     "deactivate_users",
     //"users",
-    "site",
-    "Deactivate ordinary user accounts and revoke their sessions.",
+    "band",
+    "Deactivate memberships in the active band.",
     705,
     {
       isContinuitySensitive: true,
@@ -276,13 +289,13 @@ const permissionRegistry = [
   ),
   definePermission(
     "recover_users",
-    "site",
-    "View deactivated user accounts and reactivate accounts within the actor's delegation authority.",
+    "band",
+    "View and reactivate memberships within the active band.",
     706
   ),
   definePermission(
     "merge_users",
-    "site",
+    "platform",
     "Merge eligible user accounts and view aggregate merge data across the organization.",
     707,
     protectedPermission
@@ -290,8 +303,8 @@ const permissionRegistry = [
   definePermission(
     "assign_user_roles",
     //"users",
-    "site",
-    "Assign preconfigured roles within the actor's delegable permission envelope.",
+    "band",
+    "Assign preconfigured band roles within the actor's delegable permission envelope.",
     710,
     {
       isContinuitySensitive: true,
@@ -300,74 +313,109 @@ const permissionRegistry = [
   definePermission(
     "manage_users",
     //"users",
-    "site",
-    "Manage ordinary user profile data and assign existing tags and instruments.",
+    "band",
+    "Manage membership data and assign existing band tags and instruments.",
     720
   ),
   definePermission("search_users", //"users",
-    "site", "Search the user directory.", 730),
+    "band", "Search the user directory.", 730),
   definePermission(
     "view_users_basic_info",
     //"users",
-    "site",
+    "band",
     "View the user landing page and basic member information.",
     740
   ),
   definePermission(
     "view_user_contact_info",
-    "site",
+    "band",
     "View other users' contact information such as email addresses and phone numbers.",
     750
   ),
 
   definePermission("view_custom_links",// "custom-links",
-    "site", "View custom links.", 800),
+    "band", "View custom links.", 800),
   definePermission(
     "manage_custom_links",
     //"custom-links",
-    "site",
+    "band",
     "Create, edit, and remove custom links.",
     810
   ),
 
   definePermission("view_wiki_pages",// "wiki",
-    "site", "View wiki pages.", 900),
+    "band", "View wiki pages.", 900),
   definePermission("edit_wiki_pages",// "wiki",
-    "site", "Create and edit wiki pages.", 910),
+    "band", "Create and edit wiki pages.", 910),
   definePermission(
     "admin_wiki_pages",
     //"wiki",
-    "site",
+    "band",
     "Perform wiki administration such as unlocking pages and managing revisions.",
     920
   ),
   definePermission("search_wiki_pages",// "wiki",
-    "site", "Search wiki pages.", 930),
+    "band", "Search wiki pages.", 930),
   definePermission(
     "view_wiki_page_revisions",
     //"wiki",
-    "site",
+    "band",
     "View wiki page revision history.",
     940
   ),
 
   definePermission("customize_menu", //"menu", 
-    "site", "Customize site navigation menus.", 1100),
+    "band", "Customize site navigation menus.", 1100),
   definePermission(
     "setlist_planner_access",
     //"setlists",
-    "site",
+    "band",
     "Access the setlist planner.",
     1200
   ),
   definePermission("view_feature_reports", //"reports",
-    "site", "View feature-usage reports.", 1300),
+    "band", "View feature-usage reports.", 1300),
   definePermission(
     "practice_tools_use",
     //"practice-tools",
     "public",
     "Use public practice tools.",
     1400
+  ),
+  definePermission(
+    "manage_bands",
+    "platform",
+    "Administer bands across the platform.",
+    8800,
+    protectedPermission
+  ),
+  definePermission(
+    "manage_global_catalogs",
+    "platform",
+    "Manage shared catalogs and behavior definitions across all bands.",
+    8810,
+    protectedPermission
+  ),
+  definePermission(
+    "manage_global_settings",
+    "platform",
+    "Manage platform configuration.",
+    8820,
+    protectedPermission
+  ),
+  definePermission(
+    "manage_global_localization",
+    "platform",
+    "Manage global locales and localized string defaults.",
+    8830,
+    protectedPermission
+  ),
+  definePermission(
+    "manage_global_users",
+    "platform",
+    "Administer shared accounts and global role assignments.",
+    8840,
+    protectedPermission
   ),
   definePermission(
     "impersonate_user",
@@ -404,6 +452,7 @@ export type Permission = (typeof permissionRegistry)[number]["key"]
 type PermissionConstants = Readonly<{ [K in Permission]: K }>
 
 // Preserve Permission.foo call sites while deriving every value from the registry.
+// Object.fromEntries loses literal mapped keys; the registry supplies every pair.
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- intentional value/type API
 export const Permission = Object.freeze(
   Object.fromEntries(permissionRegistry.map((definition) => [definition.key, definition.key]))
@@ -427,19 +476,19 @@ export const gContinuitySensitivePermissions: ReadonlySet<Permission> = new Set(
     .map((definition) => definition.key)
 )
 
-const permissionDefinitionByKey = new Map<Permission, PermissionDefinition>(
+const permissionDefinitionByKey = new Map<string, PermissionDefinition>(
   permissionRegistry.map((definition) => [definition.key, definition])
 )
 
 export const isPermission = (value: string): value is Permission =>
-  permissionDefinitionByKey.has(value as Permission)
+  permissionDefinitionByKey.has(value)
 
 // asPermission accepts a string, asserts that it's a valid permission, narrows the type to Permission if true.
 export const asPermission = (value: string): Permission => {
   if (!isPermission(value)) {
     throw new Error(`Invalid permission: ${value}`);
   }
-  return value as Permission;
+  return value;
 }
 
 export const getPermissionDefinition = (permission: Permission): PermissionDefinition =>

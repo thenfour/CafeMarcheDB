@@ -1,3 +1,4 @@
+import { authorizationDatabase } from "../server/authorizationContext";
 import { SecurePassword } from "@blitzjs/auth/secure-password"
 import { resolver } from "@blitzjs/rpc"
 import { AuthenticationError } from "blitz"
@@ -31,7 +32,7 @@ export default resolver.pipe(
     // This throws an error if credentials are invalid
     const user = await authenticateUser(email, password)
 
-    await ctx.session.$create(await createPublicDataFromDatabase(db, { user }));
+    await ctx.session.$create(await createPublicDataFromDatabase(authorizationDatabase, { user }));
 
     return user
   }

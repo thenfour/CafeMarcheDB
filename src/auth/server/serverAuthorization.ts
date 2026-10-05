@@ -1,53 +1,72 @@
-import { getPermissionDefinition, isPermission, Permission } from "@/shared/permissions";
-import { parsePublicId, UserPublicId } from "@/shared/publicId";
+import { getPermissionDefinition, isPermission, Permission } from "shared/permissions";
+import { parsePublicId, type UserPublicId } from "shared/publicId";
 import type { SessionContext } from "@blitzjs/auth";
 import { AuthenticationError, AuthorizationError } from "blitz";
-import db from "db";
-import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { UserWithRolesArgs, type UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
 import type { PublicDataType } from "types";
-import { IAuthorization } from "../shared/cmAuthorization";
+import type { IAuthorization } from "../shared/cmAuthorization";
 import { PermissionSet } from "../shared/PermissionSet";
-import { loadEffectivePermissions } from "./effectivePermissions";
+import { loadEffectivePermissionContext, type EffectivePermissionContext } from "./effectivePermissions";
 import { ServerPermissionSet } from "./ServerPermissionSet";
+import {
+    authorizationDatabase, authorizationScopeKey, configuredBandScope, resolveAuthorizationContext,
+    type AuthorizationBand, type AuthorizationDatabase, type AuthorizationLocale,
+    type AuthorizationMembership, type AuthorizationScopeSelection, type ResolvedAuthorizationContext,
+} from "./authorizationContext";
 
 const loadFreshPrincipal = (
-    database: TransactionalPrismaClient,
+    database: AuthorizationDatabase,
     userId: number | null | undefined,
 ): Promise<UserWithRolesPayload | null> => userId
-        ? database.user.findFirst({
-            ...UserWithRolesArgs,
-            where: { id: userId, isDeleted: false },
-        })
-        : Promise.resolve(null);
+    ? database.user.findFirst({
+        ...UserWithRolesArgs,
+        where: { id: userId, isDeleted: false, mergedIntoUserId: null },
+    })
+    : Promise.resolve(null);
 
+interface AuthorizationDetails extends ResolvedAuthorizationContext, EffectivePermissionContext {
+    readonly selection: AuthorizationScopeSelection;
+}
 
 export class CMServerAuthorization implements IAuthorization {
     readonly user: UserWithRolesPayload | null;
     readonly userId: number | null;
     readonly userPublicId: UserPublicId | null;
     readonly sessionHandle: string | null;
-
     readonly effectivePermissions: ServerPermissionSet;
+    readonly globalPermissions: ServerPermissionSet;
+    readonly bandPermissions: ServerPermissionSet;
+    readonly band: AuthorizationBand | null;
+    readonly membership: AuthorizationMembership | null;
+    readonly locale: AuthorizationLocale | null;
 
     constructor(
         user: UserWithRolesPayload | null,
         effectivePermissions: ServerPermissionSet,
         sessionHandle: string | null = null,
+        private readonly details?: AuthorizationDetails,
     ) {
         if (!(effectivePermissions instanceof ServerPermissionSet)) {
             throw new Error("Server effective permissions are required.");
         }
         this.user = user;
         this.userId = user?.id ?? null;
-        // don't use xUser.parseIdentity, because it creates a dependency cycle
         this.userPublicId = user?.publicId ? parsePublicId<"User">(user.publicId) : null;
         this.effectivePermissions = effectivePermissions;
         this.sessionHandle = sessionHandle;
+        this.globalPermissions = details?.globalPermissions ?? new ServerPermissionSet([]);
+        this.bandPermissions = details?.bandPermissions ?? new ServerPermissionSet([]);
+        this.band = details?.band ?? null;
+        this.membership = details?.membership ?? null;
+        this.locale = details?.locale ?? null;
+        if (this.membership && (this.membership.userId !== this.userId
+            || this.membership.bandId !== this.band?.id || this.membership.isDeleted)) {
+            throw new Error("Membership does not match the active person and band.");
+        }
     }
 
     hasPermission(permission: Permission): boolean {
-        return this.effectivePermissions.includesName(permission);
+        return permission !== Permission.never_grant && this.effectivePermissions.includesName(permission);
     }
 
     requirePermission(permission: Permission): void {
@@ -57,97 +76,130 @@ export class CMServerAuthorization implements IAuthorization {
         }
     }
 
+    requireBand(): AuthorizationBand {
+        if (!this.band) throw new AuthorizationError("A band context is required.");
+        return this.band;
+    }
+
+    requireBandResource(bandId: number): void {
+        if (this.requireBand().id !== bandId) throw new AuthorizationError("The resource belongs to another band.");
+    }
+
+    requireMembership(): AuthorizationMembership {
+        this.requireUser();
+        if (!this.membership) throw new AuthorizationError("An active membership is required.");
+        return this.membership;
+    }
+
     requireUser(): CMServerAuthorizationWithUser {
         if (!this.user) throw new AuthenticationError("An active user is required.");
-        return new CMServerAuthorizationWithUser(this.user, this.effectivePermissions, this.sessionHandle);
+        return new CMServerAuthorizationWithUser(this.user, this.effectivePermissions, this.sessionHandle, this.details);
     }
 
     hasAllDelegable(other: Readonly<PermissionSet>): boolean {
         return other.names.every(name => isPermission(name)
-            && getPermissionDefinition(name).isDelegable
-            && this.hasPermission(name));
+            && getPermissionDefinition(name).isDelegable && this.hasPermission(name));
     }
 
-    async refresh(database: TransactionalPrismaClient = db): Promise<CMServerAuthorization> {
-        const user = await loadFreshPrincipal(database, this.userId);
-        return new CMServerAuthorization(user, await loadEffectivePermissions(database, user), this.sessionHandle);
+    async refresh(database: AuthorizationDatabase = authorizationDatabase): Promise<CMServerAuthorization> {
+        return loadSnapshot(database, this.userId, this.sessionHandle, this.details?.selection ?? configuredBandScope);
     }
 }
 
-// same thing but with non-null user.
 export class CMServerAuthorizationWithUser extends CMServerAuthorization {
     declare readonly user: UserWithRolesPayload;
     declare readonly userId: number;
     declare readonly userPublicId: UserPublicId;
+
     constructor(
         user: UserWithRolesPayload,
         effectivePermissions: ServerPermissionSet,
         sessionHandle: string | null = null,
+        details?: AuthorizationDetails,
     ) {
-        super(user, effectivePermissions, sessionHandle);
+        super(user, effectivePermissions, sessionHandle, details);
     }
 }
 
+async function loadSnapshot(
+    database: AuthorizationDatabase,
+    userId: number | null | undefined,
+    sessionHandle: string | null,
+    selection: AuthorizationScopeSelection,
+): Promise<CMServerAuthorization> {
+    const user = await loadFreshPrincipal(database, userId);
+    const context = await resolveAuthorizationContext(database, selection);
+    const permissions = await loadEffectivePermissionContext(database, user, context.band?.id ?? null);
+    return new CMServerAuthorization(user, permissions.effectivePermissions, sessionHandle, {
+        ...context, ...permissions, selection,
+    });
+}
 
+type SessionAuthorizationEntry = {
+    readonly userId: number | null | undefined;
+    readonly handle: string | null;
+    readonly authorization: Promise<CMServerAuthorization>;
+};
+const serverAuthorizations = new WeakMap<SessionContext, Map<string, SessionAuthorizationEntry>>();
 
-
-
-const serverAuthorizations = new WeakMap<SessionContext, {
-    userId: number | null;
-    handle: string | null; // session.$handle
-    authorization: Promise<CMServerAuthorization>;
-}>();
-
-async function loadSessionAuthorization(session: SessionContext): Promise<CMServerAuthorization> {
-    const user = await loadFreshPrincipal(db, session.userId);
-    if (session.userId && !user) {
-        // A missing or deactivated account loses its login. Ordinary changes to
-        // grants or roles only replace authorization, preserving the session.
-        await session.$revoke();
-    }
-
-    const effectivePermissions = await loadEffectivePermissions(db, user);
+async function synchronizeSession(session: SessionContext, auth: CMServerAuthorization): Promise<void> {
+    if (session.userId && !auth.user) await session.$revoke();
     const previous = session.$publicData;
     const current = {
-        permissionNames: effectivePermissions.names,
-        isSysAdmin: user?.isSysAdmin ?? false,
-        showAdminControls: !!user?.isSysAdmin && !!previous.showAdminControls,
+        permissionNames: auth.effectivePermissions.names,
+        authorizationBandPublicId: auth.band?.publicId ?? null,
+        authorizationLocale: auth.locale?.ietfTag,
+        isSysAdmin: auth.user?.isSysAdmin ?? false,
+        showAdminControls: !!auth.user?.isSysAdmin && !!previous.showAdminControls,
         GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
         GOOGLE_ANALYTICS_ID_PUBLIC: process.env.GOOGLE_ANALYTICS_ID_PUBLIC,
     } satisfies Partial<Omit<PublicDataType, "userId">>;
-
-    if (!effectivePermissions.hasSameNames(previous.permissionNames ?? [])
+    if (!auth.effectivePermissions.hasSameNames(previous.permissionNames ?? [])
+        || previous.authorizationBandPublicId !== current.authorizationBandPublicId
+        || previous.authorizationLocale !== current.authorizationLocale
         || previous.isSysAdmin !== current.isSysAdmin
         || previous.showAdminControls !== current.showAdminControls
         || previous.GOOGLE_ANALYTICS_ID_BACKSTAGE !== current.GOOGLE_ANALYTICS_ID_BACKSTAGE
         || previous.GOOGLE_ANALYTICS_ID_PUBLIC !== current.GOOGLE_ANALYTICS_ID_PUBLIC) {
-        // Use Blitz's public-data API to synchronize the current request and
-        // browser. Unchanged authorization causes no session write or cookies.
         await session.$setPublicData(current);
     }
-
-    return new CMServerAuthorization(user, effectivePermissions, session.$handle);
 }
 
-export function loadAuthorization(session: SessionContext): Promise<CMServerAuthorization> {
-    const previous = serverAuthorizations.get(session);
-    if (previous && previous.userId === session.userId && previous.handle === session.$handle) {
-        return previous.authorization; // existing.
-    }
-
-    const entry = {
-        userId: session.userId,
-        handle: session.$handle,
-        authorization: loadSessionAuthorization(session),
-    };
-    serverAuthorizations.set(session, entry);
-    return entry.authorization;
-}
-
-// Non-session entry points (for example calendar subscriptions) resolve the same effective grants as ordinary requests.
-export async function loadAuthorizationForUser(
-    user: UserWithRolesPayload | null,
-    database: TransactionalPrismaClient = db,
+export async function loadAuthorization(
+    session: SessionContext,
+    selection: AuthorizationScopeSelection = configuredBandScope,
 ): Promise<CMServerAuthorization> {
-    return new CMServerAuthorization(user, await loadEffectivePermissions(database, user));
+    const key = authorizationScopeKey(selection);
+    const entries = serverAuthorizations.get(session) ?? new Map<string, SessionAuthorizationEntry>();
+    serverAuthorizations.set(session, entries);
+    let entry = entries.get(key);
+    if (!entry || entry.userId !== session.userId || entry.handle !== session.$handle) {
+        entry = {
+            userId: session.userId,
+            handle: session.$handle,
+            authorization: loadSessionSnapshot(session, selection),
+        };
+        entries.set(key, entry);
+    }
+    const auth = await entry.authorization;
+    // Returning a cached scope after visiting another scope must also replace
+    // the browser's display grants; server guards use the snapshot itself.
+    await synchronizeSession(session, auth);
+    return auth;
+}
+
+async function loadSessionSnapshot(session: SessionContext, selection: AuthorizationScopeSelection): Promise<CMServerAuthorization> {
+    const auth = await loadSnapshot(authorizationDatabase, session.userId, session.$handle, selection);
+    await synchronizeSession(session, auth);
+    return auth;
+}
+
+// Feed and other non-session callers supply person identity; refresh roles and
+// account state from the database rather than trusting a previously loaded DTO.
+export async function loadAuthorizationForUser(
+    user: Pick<UserWithRolesPayload, "id"> | null,
+    database: AuthorizationDatabase = authorizationDatabase,
+    selection: AuthorizationScopeSelection = configuredBandScope,
+): Promise<CMServerAuthorization> {
+    return loadSnapshot(database, user?.id ?? null, null, selection);
 }

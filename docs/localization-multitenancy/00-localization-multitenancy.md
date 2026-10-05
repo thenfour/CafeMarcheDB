@@ -3,8 +3,9 @@
 The accepted execution checklist is
 [04-implementation-plan.md](04-implementation-plan.md), updated 2026-10-05.
 The SQL migration is implemented and rehearsed; see
-[03-sql-migration.md](03-sql-migration.md). Application recovery and production
-cutover remain ahead.
+[03-sql-migration.md](03-sql-migration.md). Phase 1's trusted context and access-control
+foundation is implemented; see [05-authorization-foundation.md](05-authorization-foundation.md).
+Application recovery and production cutover remain ahead.
 
 This document records design rationale and earlier exploration. Its illustrative
 APIs/models are not additional schema guarantees. Use `db/schema.prisma` for the

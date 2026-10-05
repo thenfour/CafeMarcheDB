@@ -4,9 +4,11 @@
 
 `db/schema.prisma` describes the target model. The data-preserving migration is
 implemented and rehearsed; see [03-sql-migration.md](03-sql-migration.md).
-The application client, DB3 descriptors, authorization, seeds, and other runtime
-consumers still need coordinated adaptation. Follow
-[04-implementation-plan.md](04-implementation-plan.md) for that work. Do not run
+The target client has been generated and phase 1's context, authorization,
+signup/bootstrap and access-control seeds are implemented; see
+[05-authorization-foundation.md](05-authorization-foundation.md). DB3 descriptors,
+domain operations, other seed content, and runtime consumers still need coordinated
+adaptation. Follow [04-implementation-plan.md](04-implementation-plan.md) for that work. Do not run
 `prisma db push` against existing application data; production must switch the
 application/client and migrated database together.
 

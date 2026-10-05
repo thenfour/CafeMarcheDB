@@ -1,6 +1,7 @@
 import type { AuthenticatedCtx, Ctx } from "blitz";
 import { Permission } from "shared/permissions";
 import { loadAuthorization, type CMServerAuthorization, type CMServerAuthorizationWithUser } from "./serverAuthorization";
+import type { AuthorizationScopeSelection } from "./authorizationContext";
 
 export type CMAuthCtx = Ctx & { readonly auth: CMServerAuthorization };
 export type CMAuthCtxWithUser = AuthenticatedCtx & {
@@ -22,6 +23,7 @@ type DontRequireUser = {
 
 type CmauthorizeArgsCommon = {
     readonly permission: Permission;
+    readonly scope?: AuthorizationScopeSelection;
 }
 
 type CmauthorizeArgsRequiringUser = CmauthorizeArgsCommon & RequireUser;
@@ -34,7 +36,7 @@ export function cmauthorize(args: CmauthorizeArgsNotRequiringUser): <TInput>(inp
 export function cmauthorize(permission: Permission): <TInput>(input: TInput, ctx: Ctx) => ContextResult<TInput, CMAuthCtx>;
 export function cmauthorize(argsOrPermission: CmauthorizeArgs | Permission) {
     const middleware = async <TInput>(input: TInput, ctx: Ctx) => {
-        const auth = await loadAuthorization(ctx.session);
+        const auth = await loadAuthorization(ctx.session, typeof argsOrPermission === "object" ? argsOrPermission.scope : undefined);
 
         let permission: Permission;
         let requireUser: boolean;

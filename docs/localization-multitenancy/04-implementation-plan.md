@@ -39,31 +39,37 @@ additional database guarantees.
 **Outcome:** server operations can identify their platform or band scope and
 authorize against the new person/membership/role model.
 
-- [ ] Inventory affected authorization operations and identify whether each
+**Implemented 2026-10-05.** Contracts, operation/scope inventory, permission/grant
+choices, seed behavior, and validation are recorded in
+[05-authorization-foundation.md](05-authorization-foundation.md). Domain queries,
+writers, descriptors, and UI adaptation remain phases 3–4; the foundation does
+not establish application readiness or complete isolation of legacy consumers.
+
+- [x] Inventory affected authorization operations and identify whether each
   changes a platform resource, a shared person, or a band resource/membership.
-- [ ] Establish a shared server context containing the authenticated person,
+- [x] Establish a shared server context containing the authenticated person,
   resolved band when applicable, membership, applicable grants, and locale.
   Resolve a requested band on the server; client IDs and rewrite headers are
   selection hints, not authorization.
-- [ ] Initially resolve Café Marché through server configuration. Support
+- [x] Initially resolve Café Marché through server configuration. Support
   platform operations with no band and public band access with no membership.
-- [ ] Load global-role grants and active-band role grants with explicit scope.
+- [x] Load global-role grants and active-band role grants with explicit scope.
   Grants from another band's membership must not authorize an operation here.
-- [ ] Define public, pending/roleless, and nonmember behavior explicitly. Preserve
+- [x] Define public, pending/roleless, and nonmember behavior explicitly. Preserve
   existing intended access without treating account creation as band membership.
   Deactivated memberships and deleted/merged people must not regain access.
-- [ ] Adapt signup, session authorization refresh, bootstrap, seeds, and startup
+- [x] Adapt signup, session authorization refresh, bootstrap, seeds, and startup
   initialization. Retire startup backfills already performed by the SQL migration.
   Keep `isSysAdmin` handling consistent with the server authorization contract.
-- [ ] Select the small set of additional permissions needed for known operations:
+- [x] Select the small set of additional permissions needed for known operations:
   platform catalogs/settings/localization and band settings/localization/management.
   Reuse existing capabilities where their meaning still fits. Review user
   management, role assignment, deactivation, recovery, and merge particularly
   carefully because the person is shared while membership is band-owned.
-- [ ] Add new permissions and selected grants in a follow-up migration and fresh
+- [x] Add new permissions and selected grants in a follow-up migration and fresh
   install seeds. Keep the completed data migration's original matrices unchanged.
   Global and band role definitions/matrices remain platform-owned in V1.
-- [ ] Establish focused authorization fixtures with two bands, a shared person
+- [x] Establish focused authorization fixtures with two bands, a shared person
   with different roles, an outsider, public access, and inactive memberships.
 
 **Completion:** focused context/auth/bootstrap checks pass on the target model;
@@ -241,14 +247,16 @@ recorded coverage, and no unaccounted temporary disablements remain.
 
 ## Temporary restrictions
 
-These are planned recovery restrictions, not claims that the current code has
-already been changed. Add an owner/restoration phase for any additional gap.
+Rows identify whether a restriction is implemented or still planned. Add an
+owner/restoration phase for any additional gap.
 
 | Feature | Recovery behavior | Restoration |
 | --- | --- | --- |
 | `LocalizedMarkdown` inline editing | Phase 4 keeps rendering and removes the legacy editor/write path. | Phase 6 supplies scoped localized editing. |
 | Full translation editor | Phase 3 provides the minimal dynamic writer needed for ordinary creation/name editing. | Phase 6 supplies locale/scope selection, inspection, and override/reset UX. |
 | Full portal routing and band management | Phases 1–4 use trusted server context with the initial Café Marché selection. Isolation is enforced throughout. | Phase 5 completes routing and lifecycle surfaces. |
+| Band administrators using old global-account writers | Implemented in phase 1: shared-account changes require platform grants. Separate membership writers and old role/merge consumers still need adaptation. | Phases 3–4 supply BandUser role/offboarding/recovery operations and the appropriate views. |
+| Legacy random demo seeds | Implemented in phase 1: the seed entry point now initializes real access-control foundations. Old catalog/demo generators reference removed models. | Phases 3–4 adapt useful catalog/demo seed content with its domains. |
 
 ## Acceptance across phases
 
@@ -265,8 +273,9 @@ workflows or isolation.
 
 ## Next execution step
 
-Start phase 1 with the operation/scope inventory and trusted context/permission
-contracts, then adapt effective permissions, bootstrap/seeds, and session/signup
-integration. Record the selected new permission keys and grant choices here when
-implemented. Phase 2 follows with the lookup contracts, then phase 3's band
-instrument vertical slice. Broader application recovery follows those foundations.
+Phase 1 foundations are implemented and checked; see
+[05-authorization-foundation.md](05-authorization-foundation.md). Start phase 2
+with shared locale/string resolution and authorized typed settings lookup
+contracts. Phase 3 follows with the band-instrument vertical slice, then broader
+domain and application recovery. The application remains unbuildable until those
+consumer adaptations are complete.

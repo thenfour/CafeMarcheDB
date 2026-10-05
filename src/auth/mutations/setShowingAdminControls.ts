@@ -1,9 +1,9 @@
 // src/auth/mutations/impersonateUser.ts
 import { cmauthorize } from "@/src/auth/server/cmResolver"
 import { resolver } from "@blitzjs/rpc"
-import db from "db"
 import { Permission } from "shared/permissions"
 import * as z from "zod"
+import { platformScope } from "../server/authorizationContext"
 
 export const SetShowingAdminControlsInput = z.object({
     showAdminControls: z.boolean().optional(),
@@ -12,9 +12,9 @@ export const SetShowingAdminControlsInput = z.object({
 
 export default resolver.pipe(
     resolver.zod(SetShowingAdminControlsInput),
-    cmauthorize(Permission.sysadmin),
+    cmauthorize({ permission: Permission.sysadmin, scope: platformScope }),
     async (args, ctx) => {
-        (await ctx.auth.refresh(db)).requirePermission(Permission.sysadmin);
+        (await ctx.auth.refresh()).requirePermission(Permission.sysadmin);
         await ctx.session.$setPublicData({
             showAdminControls: args.toggle ? (!ctx.session.$publicData.showAdminControls) : args.showAdminControls,
         });

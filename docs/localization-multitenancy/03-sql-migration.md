@@ -9,6 +9,11 @@ The application recovery and completion checklist is
 [04-implementation-plan.md](04-implementation-plan.md). SQL rehearsal is complete;
 application readiness and production cutover are separate acceptance steps.
 
+The rules and grant counts below describe the data-preserving localization
+migration. Phase 1 adds capabilities in a separate follow-up migration; see
+[05-authorization-foundation.md](05-authorization-foundation.md) for its SQL,
+grant choices, and separate validation evidence.
+
 ## Accepted migration rules
 
 - Create band ID `1`, named `Café Marché`, and locales `en-US`, `fr-BE`, and

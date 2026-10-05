@@ -79,6 +79,10 @@ export function matchesWhere(row: TestRow, where: Record<string, unknown> | unde
       const clauses = Array.isArray(expected) ? expected : [expected]
       return clauses.every((clause) => !matchesWhere(row, clause as Record<string, unknown>))
     }
+    // Prisma compound unique selectors describe several scalar columns.
+    if (field === "bandId_userId" || field === "localeId_stringId") {
+      return isRecord(expected) && matchesWhere(row, expected)
+    }
     return matchesScalar(row[field], expected)
   })
 }
@@ -96,6 +100,27 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 type Relation = { table: string; local: string; foreign: string; many?: boolean }
 // Dynamic table names mirror Prisma; only relations exercised by these integration tests are listed.
 const testRelations: Record<string, Record<string, Relation>> = {
+  user: {
+    globalRole: { table: "globalRole", local: "globalRoleId", foreign: "id" },
+  },
+  band: {
+    locales: { table: "bandLocale", local: "id", foreign: "bandId", many: true },
+  },
+  bandLocale: {
+    locale: { table: "locale", local: "localeId", foreign: "id" },
+  },
+  globalRole: {
+    permissions: { table: "globalRolePermission", local: "id", foreign: "globalRoleId", many: true },
+  },
+  globalRolePermission: {
+    permission: { table: "permission", local: "permissionId", foreign: "id" },
+  },
+  bandRole: {
+    bandRolePermissions: { table: "bandRolePermission", local: "id", foreign: "bandRoleId", many: true },
+  },
+  bandRolePermission: {
+    permission: { table: "permission", local: "permissionId", foreign: "id" },
+  },
   wikiPage: {
     createdByUser: { table: "user", local: "createdByUserId", foreign: "id" },
     visiblePermission: { table: "permission", local: "visiblePermissionId", foreign: "id" },
@@ -226,6 +251,11 @@ export class InMemoryDelegate {
     return clone(this.readRelations(clone(this.rows[index]), args))
   }
 
+  async createMany(args: { data: Array<Omit<TestRow, "id"> & Partial<Pick<TestRow, "id">>> }) {
+    for (const data of args.data) await this.create({ data })
+    return { count: args.data.length }
+  }
+
   async updateMany(args: { where?: Record<string, unknown>; data: Record<string, unknown> }) {
     let count = 0
     this.rows = this.rows.map((row) => {
@@ -325,7 +355,7 @@ class AuthorizationTestDatabase {
       // Signup relies on User.isDeleted's database default to create active users.
       delegate = new InMemoryDelegate(
         prismaDelegateName === "user"
-          ? { isDeleted: false }
+          ? { isDeleted: false, mergedIntoUserId: null, globalRoleId: null, isSysAdmin: false }
           : prismaDelegateName === "wikiPage"
             ? { contentVersion: 0, currentRevisionId: null, lockId: null, lockedByUserId: null,
                 lockAcquiredAt: null, lockExpiresAt: null, lastEditPingAt: null }

@@ -38,7 +38,7 @@ type RoleWithPermissionIdentities = {
 };
 
 type UserManagementPrincipalPayload = UserManagementPrincipal & {
-    role?: RoleWithPermissionIdentities | null;
+    globalRole?: RoleWithPermissionIdentities | null;
     mergedIntoUserId?: number | null;
 };
 
@@ -55,7 +55,7 @@ export const makeUserManagementTarget = (
     principal: UserManagementPrincipalPayload,
 ): UserManagementTarget => ({
     principal,
-    rolePermissions: makePermissionSetFromRole(principal.role),
+    rolePermissions: makePermissionSetFromRole(principal.globalRole),
 });
 
 export const findUserManagementTarget = async (

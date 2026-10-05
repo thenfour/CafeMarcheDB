@@ -44,6 +44,7 @@ export const findSignInUser = async (
         where: {
             id: binding.userId,
             isDeleted: opts.allowInactive ? undefined : false,
+            mergedIntoUserId: opts.allowInactive ? undefined : null,
         },
     }) : null;
 };
@@ -85,6 +86,7 @@ export const findSignInUserByEmailForDevAndFirstTimeInstalls = async (
         where: {
             id: binding.userId,
             isDeleted: opts.allowInactive ? undefined : false,
+            mergedIntoUserId: opts.allowInactive ? undefined : null,
         },
     });
 };

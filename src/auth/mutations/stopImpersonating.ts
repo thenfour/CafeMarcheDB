@@ -1,3 +1,4 @@
+import { authorizationDatabase } from "../server/authorizationContext";
 // src/auth/mutations/stopImpersonating.ts
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
@@ -26,7 +27,7 @@ export default resolver.pipe(
             targetUserId,
         })
 
-        await ctx.session.$create(await createPublicDataFromDatabase(db, { user }));
+        await ctx.session.$create(await createPublicDataFromDatabase(authorizationDatabase, { user }));
 
         return { userId: user.id }
     }

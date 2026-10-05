@@ -1,6 +1,5 @@
 import { SecurePassword } from "@blitzjs/auth/secure-password";
 import type { Ctx } from "@blitzjs/next";
-import { assert } from "blitz";
 import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 import { generatePublicId } from "src/server/publicId";
@@ -8,6 +7,7 @@ import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { SignInMethodSchema } from "../signInMethodSchemas";
 import { addSignInMethod, SignInMethodConflictError, signInMethodWhere } from "./signInMethods";
 import { loadAuthorization } from "./serverAuthorization";
+import { platformScope } from "./authorizationContext";
 
 export interface CreateSignupUserArgs {
     email: string;
@@ -25,16 +25,6 @@ export const createSignupUser = async (args: CreateSignupUserArgs, ctx: Ctx) => 
     const hashedPassword = await SecurePassword.hash(args.password.trim());
 
     return db.$transaction(async tx => {
-        const defaultRoles = await tx.role.findMany({
-            where: { isRoleForNewUsers: true },
-            select: { id: true },
-            take: 2,
-        });
-        assert(
-            defaultRoles.length === 1,
-            `Expected exactly one role for new users; found ${defaultRoles.length}.`,
-        );
-
         const methodsDesired = [emailMethod, ...(googleMethod ? [googleMethod] : [])];
 
         // as we are creating a new user, only pass if there are no signin conflicts with
@@ -52,7 +42,7 @@ export const createSignupUser = async (args: CreateSignupUserArgs, ctx: Ctx) => 
             email: emailMethod.identifier,
             hashedPassword,
             isSysAdmin: false,
-            roleId: defaultRoles[0]!.id,
+            globalRoleId: null,
         };
         const user = await tx.user.create({
             data,
@@ -74,10 +64,10 @@ export const createSignupUser = async (args: CreateSignupUserArgs, ctx: Ctx) => 
                 name: user.name,
                 email: user.email,
                 isSysAdmin: false,
-                roleId: user.roleId,
+                globalRoleId: user.globalRoleId,
                 authenticationMethod: args.googleId ? "google" : "password",
             },
-            auth: await loadAuthorization(ctx.session),
+            auth: await loadAuthorization(ctx.session, platformScope),
             db: tx,
         });
 

@@ -1,3 +1,4 @@
+import { authorizationDatabase } from "../server/authorizationContext";
 // src/auth/mutations/impersonateUser.ts
 import { cmauthorize } from "@/src/auth/server/cmResolver"
 import { resolver } from "@blitzjs/rpc"
@@ -23,7 +24,7 @@ export default resolver.pipe(
 
         // Re-read the actor and effective grants so revocation takes effect
         // before this sensitive operation.
-        const freshAuth = await ctx.auth.refresh(db)
+        const freshAuth = await ctx.auth.refresh(authorizationDatabase)
         freshAuth.requirePermission(Permission.impersonate_user)
         const actor = freshAuth.requireUser()
 
@@ -46,7 +47,7 @@ export default resolver.pipe(
             targetUserId: user.id,
         })
 
-        await ctx.session.$create(await createPublicDataFromDatabase(db, {
+        await ctx.session.$create(await createPublicDataFromDatabase(authorizationDatabase, {
             user,
             impersonatingFromUserId: originalActorUserId,
         }));

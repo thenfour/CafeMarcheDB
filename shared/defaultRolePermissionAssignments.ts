@@ -6,7 +6,6 @@ export interface DefaultRoleDefinition {
     isSysAdminRole: boolean;
     sortOrder: number;
     color: string | null;
-    significance: string | null;
 }
 
 export const DefaultRoles: ReadonlyArray<DefaultRoleDefinition> =
@@ -18,18 +17,16 @@ export const DefaultRoles: ReadonlyArray<DefaultRoleDefinition> =
             "isPublicRole": true,
             "isSysAdminRole": false,
             "sortOrder": 0,
-            "color": "citron",
-            "significance": null
+            "color": "citron"
         },
         {
             "name": "Limited Users",
-            "description": "logged-in users with no rights",
+            "description": "band members awaiting a role",
             "isRoleForNewUsers": true,
             "isPublicRole": false,
             "isSysAdminRole": false,
             "sortOrder": 10,
-            "color": "green",
-            "significance": null
+            "color": "green"
         },
         {
             "name": "Normal Users",
@@ -38,8 +35,7 @@ export const DefaultRoles: ReadonlyArray<DefaultRoleDefinition> =
             "isPublicRole": false,
             "isSysAdminRole": false,
             "sortOrder": 40,
-            "color": "blue",
-            "significance": null
+            "color": "blue"
         },
         {
             "name": "Editors",
@@ -48,8 +44,7 @@ export const DefaultRoles: ReadonlyArray<DefaultRoleDefinition> =
             "isPublicRole": false,
             "isSysAdminRole": false,
             "sortOrder": 60,
-            "color": "gold",
-            "significance": null
+            "color": "gold"
         },
         {
             "name": "Moderators",
@@ -58,8 +53,7 @@ export const DefaultRoles: ReadonlyArray<DefaultRoleDefinition> =
             "isPublicRole": false,
             "isSysAdminRole": false,
             "sortOrder": 80,
-            "color": "purple",
-            "significance": null
+            "color": "purple"
         },
         {
             "name": "Band Admin",
@@ -68,8 +62,7 @@ export const DefaultRoles: ReadonlyArray<DefaultRoleDefinition> =
             "isPublicRole": false,
             "isSysAdminRole": false,
             "sortOrder": 90,
-            "color": "purple",
-            "significance": null
+            "color": "purple"
         },
         {
             "name": "Admin",
@@ -78,15 +71,14 @@ export const DefaultRoles: ReadonlyArray<DefaultRoleDefinition> =
             "isPublicRole": false,
             "isSysAdminRole": true,
             "sortOrder": 100,
-            "color": "black",
-            "significance": null
+            "color": "black"
         }
     ];
 
 // used by seeding, and by runtime permission seeds.
 // use the role permission matrix page, copy as json and paste below to manage this.
 
-export const DefaultRolePermissionAssignments: ReadonlyArray<[string, string]> =
+const previousRolePermissionAssignments: ReadonlyArray<[string, string]> =
     [
         ["Admin", "access_file_landing_page"],
         ["Admin", "admin_events"],
@@ -280,3 +272,19 @@ export const DefaultRolePermissionAssignments: ReadonlyArray<[string, string]> =
         ["Public", "view_wiki_pages"],
     ]
     ;
+
+// These additions are also applied by the follow-up localization permission
+// migration. Existing branding administrators retain access to the new writers.
+export const MultibandBandPermissions = ["manage_band_settings", "manage_band_localization"] as const;
+export const MultibandPlatformPermissions = [
+    "manage_bands", "manage_global_catalogs", "manage_global_settings",
+    "manage_global_localization", "manage_global_users",
+] as const;
+
+export const DefaultRolePermissionAssignments: ReadonlyArray<[string, string]> = [
+    ...previousRolePermissionAssignments,
+    ...[...MultibandPlatformPermissions, ...MultibandBandPermissions].map<[string, string]>(permission => ["Admin", permission]),
+    ...previousRolePermissionAssignments.filter(([, permission]) => permission === "manage_site_branding")
+        .filter(([role]) => role !== "Admin")
+        .flatMap(([role]) => MultibandBandPermissions.map<[string, string]>(permission => [role, permission])),
+];

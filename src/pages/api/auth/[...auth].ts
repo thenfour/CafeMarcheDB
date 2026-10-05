@@ -1,8 +1,8 @@
+import { authorizationDatabase } from "@/src/auth/server/authorizationContext";
 // src/pages/api/auth/[...auth].ts
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { ServerApi } from "@/src/server/serverApi";
 import { passportAuth } from "@blitzjs/auth";
-import db from "db";
 import { resolveGoogleSignIn } from "src/auth/server/googleSignIn";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { api } from "src/blitz-server";
@@ -34,7 +34,7 @@ export default api(
                 uri: undefined,
                 isClient: false,
               });
-              done(null, { publicData: await createPublicDataFromDatabase(db, { user }) });
+              done(null, { publicData: await createPublicDataFromDatabase(authorizationDatabase, { user }) });
             } catch (err) {
               done(null, false);
             }

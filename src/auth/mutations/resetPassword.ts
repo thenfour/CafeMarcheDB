@@ -1,3 +1,4 @@
+import { authorizationDatabase } from "../server/authorizationContext";
 import { hash256 } from "@blitzjs/auth";
 import { SecurePassword } from "@blitzjs/auth/secure-password";
 import { resolver } from "@blitzjs/rpc";
@@ -39,7 +40,7 @@ export default resolver.pipe(
       return updated;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     // Preserve the existing automatic sign-in after a successful password reset.
-    await ctx.session.$create(await createPublicDataFromDatabase(db, { user }));
+    await ctx.session.$create(await createPublicDataFromDatabase(authorizationDatabase, { user }));
     return true;
   },
 );

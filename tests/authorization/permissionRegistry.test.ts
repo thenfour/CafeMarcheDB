@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest"
 import { loadEffectivePermissions } from "src/auth/server/effectivePermissions"
+import { authorizationTestDb } from "./support/inMemoryPrisma"
+import type { AuthorizationDatabase } from "src/auth/server/authorizationContext"
 import {
+  asPermission,
   getPermissionDefinition,
   getPermissionDatabaseMetadata,
   gContinuitySensitivePermissions,
@@ -29,7 +32,7 @@ describe("canonical permission registry", () => {
     for (const definition of gPermissionRegistry) {
       expect(definition.key).toMatch(/^[a-z][a-z0-9_]*$/)
       expect(definition.description.trim().length).toBeGreaterThan(0)
-      expect(getPermissionDefinition(definition.key as Permission)).toBe(definition)
+      expect(getPermissionDefinition(asPermission(definition.key))).toBe(definition)
       expect(isPermission(definition.key)).toBe(true)
 
       if (definition.isProtected) {
@@ -50,6 +53,11 @@ describe("canonical permission registry", () => {
   it("derives protected and continuity policy from metadata", () => {
     expect([...gProtectedPermissions]).toEqual([
       Permission.merge_users,
+      Permission.manage_bands,
+      Permission.manage_global_catalogs,
+      Permission.manage_global_settings,
+      Permission.manage_global_localization,
+      Permission.manage_global_users,
       Permission.impersonate_user,
       Permission.sysadmin,
       Permission.never_grant,
@@ -72,10 +80,10 @@ describe("canonical permission registry", () => {
       })
   })
 
-  it("defines delegated role assignment as a site continuity capability", () => {
+  it("defines delegated role assignment as a band continuity capability", () => {
     expect(getPermissionDefinition(Permission.assign_user_roles)).toEqual(
       expect.objectContaining({
-        scope: "site",
+        scope: "band",
         isDelegable: true,
         isProtected: false,
         isContinuitySensitive: true,
@@ -85,20 +93,15 @@ describe("canonical permission registry", () => {
 
   it("ignores unknown persisted permissions without granting or crashing", async () => {
     const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined)
-    const database = {
-      role: {
-        findMany: async () => [{
-          isPublicRole: true,
-          isSysAdminRole: false,
-          permissions: [
-            { permissionId: 1, permission: { id: 1, name: Permission.public } },
-            { permissionId: 2, permission: { id: 2, name: "retired_permission" } },
-          ],
-        }],
-      },
-    }
-
-    const permissions = await loadEffectivePermissions(database as any, null)
+    authorizationTestDb.reset({
+      bandRole: [{ id: 10, isPublicRole: true, isDeleted: false, bandRolePermissions: [
+        { id: 1, permission: { id: 1, name: Permission.public, isDeleted: false } },
+        { id: 2, permission: { id: 2, name: "retired_permission", isDeleted: false } },
+      ] }],
+    }, { includeAuthorizationRoles: false })
+    // The in-memory delegates implement the Prisma queries used by this loader.
+    const database = authorizationTestDb as unknown as AuthorizationDatabase
+    const permissions = await loadEffectivePermissions(database, null)
     expect(permissions.ids).toEqual([1])
     expect(permissions.names).toEqual([Permission.public])
     expect(warning).toHaveBeenCalledWith("Ignoring unknown persisted permissions: retired_permission")

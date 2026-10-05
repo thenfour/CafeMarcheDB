@@ -19,6 +19,7 @@ import {
 } from "../server/adminBootstrapClaims";
 import { createPublicDataFromDatabase } from "../server/effectivePermissions";
 import { cmauthorize } from "../server/cmResolver";
+import { authorizationDatabase, platformScope } from "../server/authorizationContext";
 
 export const ClaimAdminBootstrapInput = z.object({
     secret: z.string().min(kMinimumAdminBootstrapSecretLength).max(4096),
@@ -38,7 +39,7 @@ const failClaim = (): never => {
 
 export default resolver.pipe(
     resolver.zod(ClaimAdminBootstrapInput),
-    cmauthorize({ permission: Permission.login, requireUser: true }),
+    cmauthorize({ permission: Permission.login, requireUser: true, scope: platformScope }),
     async ({ secret }, ctx) => {
         const configuration = getAdminBootstrapConfiguration();
         if (!configuration) throw new AdminBootstrapClaimError();
@@ -55,7 +56,7 @@ export default resolver.pipe(
                     //failClaim(); // User not found, cannot claim admin bootstrap.
                     throw new AdminBootstrapClaimError(); // throw in outer code so IDE knows user is not null
                 }
-                if (user.isDeleted) failClaim(); // User is deleted, cannot claim admin bootstrap.
+                if (user.isDeleted || user.mergedIntoUserId !== null) failClaim();
                 if (user.isSysAdmin) failClaim(); // User is already a sysadmin, cannot claim admin bootstrap.
 
                 if (!adminBootstrapSecretMatches(secret, verifiedConfiguration)) {
@@ -79,8 +80,8 @@ export default resolver.pipe(
                 );
                 if (!recordedClaim) failClaim();
 
-                const sysadminRoles = await tx.role.findMany({
-                    where: { isSysAdminRole: true },
+                const sysadminRoles = await tx.globalRole.findMany({
+                    where: { isSysAdminRole: true, isDeleted: false },
                     select: {
                         id: true,
                     },
@@ -95,7 +96,7 @@ export default resolver.pipe(
                     where: { id: user.id },
                     data: {
                         isSysAdmin: true,
-                        roleId: sysadminRoleId,
+                        globalRoleId: sysadminRoleId,
                     },
                 });
 
@@ -125,7 +126,7 @@ export default resolver.pipe(
             throw error;
         }
 
-        await ctx.session.$create(await createPublicDataFromDatabase(db, { user: promotedUser }));
+        await ctx.session.$create(await createPublicDataFromDatabase(authorizationDatabase, { user: promotedUser }, platformScope));
         return { userId: promotedUser.id, isSysAdmin: true };
     },
 );

@@ -41,7 +41,7 @@ describe("PermissionSet", () => {
 });
 
 describe("ServerPermissionSet", () => {
-    it("uses matrix grants directly and checks user presence separately", () => {
+    it("rejects never_grant and checks user presence separately", () => {
         const permissions = new ServerPermissionSet([
             { id: 10, name: Permission.login },
             { id: 11, name: Permission.never_grant },
@@ -49,11 +49,12 @@ describe("ServerPermissionSet", () => {
         const auth = new CMServerAuthorization(null, permissions);
 
         expect(auth.hasPermission(Permission.login)).toBe(true);
-        expect(auth.hasPermission(Permission.never_grant)).toBe(true);
+        expect(auth.hasPermission(Permission.never_grant)).toBe(false);
+        expect(() => auth.requirePermission(Permission.never_grant)).toThrow();
         expect(() => auth.requirePermission(Permission.login)).not.toThrow();
         expect(() => auth.requireUser()).toThrow("An active user is required");
         expect(new CMClientAuthorization(null, new PermissionSet(permissions.names))
-            .hasPermission(Permission.never_grant)).toBe(true);
+            .hasPermission(Permission.never_grant)).toBe(false);
     });
 
     it("keeps database identities only in the server capability", () => {

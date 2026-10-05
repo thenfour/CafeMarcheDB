@@ -29,11 +29,11 @@ export const xUserBasicProfileAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
     PostQuery: Permission.view_users_basic_info,
     PreMutateAsOwner: Permission.login,
-    PreMutate: Permission.manage_users,
-    PreInsert: Permission.manage_users,
+    PreMutate: Permission.manage_global_users,
+    PreInsert: Permission.manage_global_users,
 });
 
-// Tags and other manager-owned profile fields remain readable as basic profile
+// Band membership fields remain readable as basic profile
 // data, but owning the account does not grant write access.
 export const xUserBasicProfileManagerWriteAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
@@ -43,14 +43,14 @@ export const xUserBasicProfileManagerWriteAuthMap = db3.defineAuthMap({
     PreInsert: Permission.manage_users,
 });
 
-// User presentation metadata follows basic-profile visibility while taxonomy
-// managers retain its distinct write authority.
+// The old User presentation field belongs to the shared person. Band taxonomy
+// writers will use BandUser fields when the descriptors are adapted.
 export const xUserPresentationMetadataAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
     PostQuery: Permission.view_users_basic_info,
-    PreMutateAsOwner: Permission.manage_user_taxonomy,
-    PreMutate: Permission.manage_user_taxonomy,
-    PreInsert: Permission.manage_user_taxonomy,
+    PreMutateAsOwner: Permission.manage_global_users,
+    PreMutate: Permission.manage_global_users,
+    PreInsert: Permission.manage_global_users,
 });
 
 // Taxonomy definitions must be available when an authenticated user views or
@@ -69,8 +69,8 @@ const xUserContactInfoAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
     PostQuery: Permission.view_user_contact_info,
     PreMutateAsOwner: Permission.login,
-    PreMutate: Permission.manage_users,
-    PreInsert: Permission.manage_users,
+    PreMutate: Permission.manage_global_users,
+    PreInsert: Permission.manage_global_users,
 });
 
 const xUserEmailAuthMap = db3.defineAuthMap({

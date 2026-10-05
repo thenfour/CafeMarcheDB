@@ -1,5 +1,5 @@
 import { AuthenticationError } from "blitz";
-import type { Permission } from "@/shared/permissions";
+import { Permission } from "@/shared/permissions";
 import { parsePublicId, type UserPublicId } from "@/shared/publicId";
 import type { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
 import { PermissionSet } from "./PermissionSet";
@@ -36,7 +36,7 @@ export class CMClientAuthorization implements IAuthorization {
     }
 
     hasPermission(permission: Permission): boolean {
-        return this.effectivePermissions.includesName(permission);
+        return permission !== Permission.never_grant && this.effectivePermissions.includesName(permission);
     }
 
     requirePermission(permission: Permission): void {
