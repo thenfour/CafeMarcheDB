@@ -98,6 +98,7 @@ export function SelectionPicker<T>(props: SelectionPickerProps<T>) {
         <SelectionQueryStatus query={query} />
         {createError && <Alert severity="error" sx={{ m: 2 }}>{createError}</Alert>}
         {allowCreate && <Box sx={{ px: 3, py: 2 }}>
+            {query.creationControls}
             <CMButton type="button" startIcon={<AddIcon />} onClick={() => { void create(); }} disabled={creating}>{creating ? "Creating..." : `Create '${filterText.trim()}'`}</CMButton>
             {/* <Typography variant="caption" display="block" color="text.secondary">New options are created immediately.</Typography> */}
         </Box>}

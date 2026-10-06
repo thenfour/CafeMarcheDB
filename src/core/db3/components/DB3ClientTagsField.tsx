@@ -1,14 +1,16 @@
+'use client';
+
+import { useDB3CreateFromString } from "./useDB3CreateFromString";
+import { useDB3QueryContext } from "./useDB3Context";
 import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 import { Box, Button } from "@mui/material";
 import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import React from "react";
 //import * as DB3Client from "../DB3Client";
-import { useMutation, useQuery } from "@blitzjs/rpc";
+import { useQuery } from "@blitzjs/rpc";
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { gQueryOptions } from "shared/utils";
-import updateSetting from '@/src/setting/server/mutations/updateSetting';
 import { CMChip, CMChipContainer } from 'src/core/components/CMChip';
-import { useIsShowingAdminControls } from 'src/core/components/CMCoreComponents2';
 import { SelectionPicker } from 'src/core/components/select/SelectionPicker';
 import { SelectionEditButton, SelectionFieldFrame } from 'src/core/components/select/SelectionField';
 import { SelectionSource } from 'src/core/components/select/selectionSource';
@@ -24,7 +26,7 @@ import { type ColorVariationSpec, StandardVariationSpec } from '../../components
 import { TAnyModel } from '@/shared/rootroot';
 import { useDashboardContext } from '../../components/dashboardContext/DashboardContext';
 import { type CrudViewCreateToken, useCrudViewCreate } from './useCrudViewCreate';
-import { LocalizedMarkdownKey, LocalizedPlainStringKey } from "@/src/locale/staticLocalizedStringRegistry";
+import { LocalizedMarkdownKey, LocalizedPlainStringKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
 import { useGlobalSettings } from "@/src/setting/client/useSettings";
 
 
@@ -79,7 +81,9 @@ function DB3SelectTagsDialogInner<TAssociation extends TAnyModel>(props: DB3Sele
                 && !!query.crudCreate
                 && foreignSchema.authorizeRowBeforeInsert({ auth: auth });
             return {
-                ...query, items: query.options,
+                ...query,
+                creationControls: query.createFromString.controls,
+                items: query.options,
                 createOption: canCreate ? async text => {
                     const item = await query.doInsertFromString({ row: props.row, userInput: text });
                     showMessage({ children: "New option created", severity: "success" });
@@ -191,7 +195,8 @@ export const TagsFieldInput = <TAssociation extends TAnyModel,>(props: TagsField
     //const selectStyleSetting = GenerateForeignSingleSelectStyleSettingName(props.spec.schemaTable.tableName, props.spec.columnName);
     //const [selectStyleSettingValue] = useQuery(getSetting, { name: selectStyleSetting });//  API.settings.useSetting(selectStyleSetting);
     //const selectStyle = (selectStyleSettingValue || props.selectStyle) as ("inline" | "dialog");
-    const selectStyle = globalSettings.getValue(props.spec.typedSchemaColumn.selectStyleSettingKey);//props.selectStyle;
+    const styleKey = props.spec.typedSchemaColumn.selectStyleSettingKey;
+    const selectStyle = styleKey ? globalSettings.getValue(styleKey) : props.selectStyle;
     const newProps = { ...props, selectStyle };
     //newProps.selectStyle = selectStyle;
 
@@ -334,7 +339,7 @@ export class TagsFieldClient<TAssociation extends TAnyModel> extends IColumnClie
     //selectStyle: "inline" | "dialog";
 
     get selectionCaption(): string {
-        return this.fieldCaptionKey;// || this.columnName.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/_/g, " ").toLowerCase();
+        return this.headerName;
     }
 
     getSelectionLabel = (value: TAssociation): string => {
@@ -497,6 +502,7 @@ export interface TagsCreateFromStringArgs {
 export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
     args: TagsFieldRenderContextArgs<TAssociation>;
     crudCreate?: CrudViewCreateToken<db3.AnyDB3CrudView>;
+    createFromString: ReturnType<typeof useDB3CreateFromString>;
 
     options: TAssociation[];
     refetch: () => void;
@@ -524,9 +530,12 @@ export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
         }
         const dashboard = useDashboardContext();
         this.crudCreate = useCrudViewCreate(creationView);
+        this.createFromString = useDB3CreateFromString(foreignSchema);
 
         // returns the foreign items.
+        const queryContext = useDB3QueryContext();
         const [result, queryStatus] = useQuery(db3queries, {
+            ...queryContext,
             table: {
                 tableID: foreignSchema.tableID,
                 tableName: foreignSchema.tableName,
@@ -565,7 +574,7 @@ export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
         // create the tag, and return the mocked up association.
         const foreignTableSpec = this.args.spec.typedSchemaColumn.getForeignTableShema();
         console.assert(!!foreignTableSpec.createInsertModelFromString);
-        const insertModel = foreignTableSpec.createInsertModelFromString!(args.userInput);
+        const insertModel = this.createFromString.createModel(args.userInput);
         if (!this.crudCreate) {
             throw new Error(
                 `Tags field '${this.args.spec.columnName}' requires a selectionView to create options.`,
@@ -579,4 +588,3 @@ export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
 export const useTagsFieldRenderContext = <TAssociation extends TAnyModel,>(args: TagsFieldRenderContextArgs<TAssociation>) => {
     return new TagsFieldRenderContext<TAssociation>(args);
 };
-

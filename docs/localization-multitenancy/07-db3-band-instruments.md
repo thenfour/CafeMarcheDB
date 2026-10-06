@@ -1,11 +1,12 @@
 # DB3 band-instrument vertical slice
 
-The initial implementation was completed 2026-10-06 as the first execution step
-of phase 3 in [04-implementation-plan.md](04-implementation-plan.md). Review found
-that its behavior works but its query, validation, view, form, and write paths
-duplicate or bypass too much of DB3. **The slice has not met design acceptance.**
-Rework it before extending the approach to another catalog. Phase 3 remains in
-progress; the application is still unbuildable.
+The instrument/group redesign and the second-catalog reuse proof were implemented
+2026-10-06 as a bounded part of phase 3 in
+[04-implementation-plan.md](04-implementation-plan.md). The reviewed bespoke
+query, validation, view, form, and CRUD paths have been replaced with shared DB3
+facilities. The short-term design criteria below are implemented and covered by
+focused checks. Remaining descriptors and consumers still need migration;
+**phase 3 remains in progress and the application is still unbuildable**.
 
 ## Agreed design direction
 
@@ -107,46 +108,194 @@ without resolving an entire catalog just to check one public identity.
 
 ## Design acceptance criteria
 
-These are the short-term gate for the instrument/group redesign, before adding
-another catalog. Retain the initial slice's public-ID, ownership, visibility,
+These are the short-term gate for the instrument/group redesign. The shared
+implementation also supports the BandSongTag reuse proof described below. Retain the initial slice's public-ID, ownership, visibility,
 inheritance, translation-writing, audit, and cache-invalidation behavior recorded
 below.
 
-- [ ] Native DB3 quicksearch, autocomplete, field filters, sorting, count/page,
+- [x] Native DB3 quicksearch, autocomplete, field filters, sorting, count/page,
   reference hydration, grids, selection dialogs, and ordinary create/edit forms
   use the shared catalog contracts. Create-from-picker works where the entity
   permits it; richer instrument creation may still require its group workflow.
-- [ ] Equivalent ordinary and resolved localized string values produce equivalent
+- [x] Equivalent ordinary and resolved localized string values produce equivalent
   matches and pages under the same DB3 filters. Cover multiple tokens across
   fields, case/accents/patterns, blank/missing values, ordering ties, full counts,
   and pagination after resolution. Hidden translations do not affect matching.
-- [ ] Full ordered preference lists, enabled locale changes, and band overrides
+- [x] Full ordered preference lists, enabled locale changes, and band overrides
   affect queries and display consistently. Contexts with the same
   `formattingLocale` but different resolved values cannot share incorrect caches.
-- [ ] All scalar/localized/inherited field values use DB3 validation and
+- [x] All scalar/localized/inherited field values use DB3 validation and
   conversion. Ordinary CRUD and custom domain commands share those rules and
   write facilities. Unrelated edits do not materialize inherited/fallback values.
-- [ ] Typed Prisma args derive the view and DTO contract through the preferred
+- [x] Typed Prisma args derive the view and DTO contract through the preferred
   shared syntax. Column/filter/reference names are checked against declarations;
   no separate catalog sanitization or unchecked field-switch implementation
   remains.
-- [ ] Generic DB3 entry points contain no instrument-specific exceptions.
+- [x] Generic DB3 entry points contain no instrument-specific exceptions.
   Ownership and selected-band admission use shared declared policies; legacy
   domains remain rejected until their ownership enforcement is adapted.
-- [ ] Shared execution establishes fresh authorization and transaction policy.
+- [x] Shared execution establishes fresh authorization and transaction policy.
   Two-band reads, references, revoked grants, writes, and rollback remain covered;
   page/RPC callers have no silent isolation or authorization-refresh obligations.
-- [ ] The common behavior lives in DB3 and shared localization/persistence
+- [x] The common behavior lives in DB3 and shared localization/persistence
   helpers. Catalog declarations and genuine domain operations explain the
   remaining custom code. Passing tests or registering bespoke callbacks alone
   does not satisfy this criterion.
 
-After this gate, add **one other catalog**, preferably a simple tag catalog, to
-prove reuse. Its work should primarily be table/field/view/label declarations,
-client wiring, genuine domain rules, and relevant behavioral coverage. It must
-reuse the query, validation, persistence, and UI machinery without another family
-of equivalent readers, matchers, validators, forms, or endpoints. Address shared
-gaps revealed by that catalog before broader phase-3 adaptation.
+**Second-catalog proof implemented:** BandSongTag uses table/field/view/label
+and native-grid declarations, plus relevant behavioral coverage. It adds no
+reader, matcher, validator, form stack, or endpoint. Broader catalog and consumer
+adaptation follows this bounded proof.
+
+## Shared DB3 redesign and reuse proof (2026-10-06)
+
+### Declarations and field contracts
+
+`bandCatalogFields` declares common ownership, name/description identities,
+inherited sort order, and visibility fields. Each catalog declares its Prisma
+model, public identity, typed `bandScope` members/source relation/source foreign
+key, management permission, and `queryStrategy: "resolved"`. Prisma args feed
+`deriveViewContract` and `defineCrudView`; the preferred declaration syntax now
+supports fetched dependencies and field-owned read companions.
+
+`LocalizedStringField` delegates string predicates and text validation to the
+ordinary DB3 string field. Its client value separates display text/provenance
+from an optional explicit locale edit. No edit means no translation write.
+`InheritedField` wraps an existing scalar field and keeps effective value, raw
+override, and inherited value separate. Its codec encodes only the override;
+its validation and native renderer delegate to the original color, integer, or
+string field. These contracts prevent unrelated saves from materializing a
+fallback translation or inherited scalar.
+
+`deriveFieldWriteSchema` exposes the same field transport/conversion/validation
+outside forms. Color palette validation and signed-integer validation stay on
+their existing fields. Regex validation is a shared string-field format. Ordinary
+CRUD schemas derive from the fields; instrument contracts have no duplicate
+sort-order, color, text, or regex validators.
+
+### Read execution and query behavior
+
+Generic DB3 reads use declared ownership/visibility policies and the existing
+selection planner, row/column authorization, public-ID projection, DTO parsing,
+reference store, and hydration. The planner adds field dependencies and strips
+query-only support values from narrow DTOs. Default ordering and quicksearch
+therefore work even when a view selects only public identity.
+
+The shared server path loads structurally eligible rows, batch-resolves authorized
+field values, applies ordinary projection/authorization, then evaluates the
+existing DB3-generated token/filter clauses in memory. It sorts, counts, and
+pages the effective values before parsing the requested DTO. Token composition
+remains AND across tokens and OR across eligible fields. LIKE retains `%`, `_`,
+and escapes; comparisons distinguish trailing ordinary spaces, tabs, and SQL
+NULL under NOT. Native MariaDB comparisons cover representative case, accent,
+ligature, combining-character, Turkish-I, pattern, padding, and NULL cases.
+Locale-aware sorting intentionally follows `formattingLocale` with numeric
+ordering and stable public-ID ties, rather than storage collation.
+
+The matcher implements the supported DB3 predicate subset and rejects unsupported
+operators. Its native comparison matrix establishes those tested cases against
+MariaDB 10.11.9's `utf8mb4_unicode_ci`; it is not a general implementation of all
+MySQL collations or every Unicode collation version. Large SQL search pipelines
+remain separate and cannot inject their ordering/natural keys into this backend.
+
+`executeDB3Read` owns RepeatableRead and authorization refresh on the root Prisma
+client. Rows, translations, availability, and grants share that snapshot. Pages
+and RPCs pass the root client. Internal transaction owners explicitly bind a
+RepeatableRead/Serializable `DB3ReadContext`; raw transactions are rejected at
+this boundary. The legacy dynamic query delegate seam remains during recovery,
+while the new execution/composition helpers express snapshot ownership in their
+types. Detail reads constrain the public identity before loading/resolution.
+
+Hidden groups suppress instruments in ordinary reads. Administration reads can
+include hidden references only with the target catalog's management grant.
+Shared mutation identity lookup permits administrators to edit/restore hidden
+entries, while new foreign references still require ordinary visibility.
+Legacy descriptors remain rejected in selected-band queries and row services.
+
+`bandInstrumentRead.ts`, the name-only catalog matcher, and all instrument-table
+switches in generic read/command entry points have been removed. The remaining
+instrument catalog bundle collects authorized global opt-in choices and group
+references; it does not implement a separate entity query backend.
+
+### Writes and native UI
+
+Generated DB3 create/update commands perform ordinary group/instrument CRUD.
+The shared field writer joins normal DB3 persistence and audits in the command's
+transaction. `BandInstrument_OptIn` contains only global group/instrument opt-in;
+its instrument operation composes the common opt-in row service to ensure its
+required group exists. Source identity and ownership are server supplied.
+
+Catalog pages use native DB3 grids, create/edit dialogs, foreign selection,
+reference hydration, and shared localized/inherited field controls. The native
+picker can create functional groups through generated CRUD with a visible,
+enabled writing-language selector. Instruments still require their group input.
+Localized edits never copy another language's displayed fallback into a draft.
+Failed create writes retain the native dialog/draft and allow retry.
+
+All native query adapters carry selected band, route locale, the entire ordered
+browser list, and the presentation refresh identity. Different resolved-string
+contexts cannot share an incorrect formatting-locale-only cache key. Catalog
+writes invalidate dependent query caches without remounting an unsaved parent
+form during picker creation. Settings, availability, membership, and grant
+writers retain presentation-context invalidation through the phase-2 API.
+
+BandSongTag and its existing editor page use these same fields, derived CRUD
+view, native controls, query/persistence pipeline, and cache context. Its native
+fixture covers shared opt-in/inheritance as well as generated CRUD; a separate
+global tag-choice/opt-in UI is not added by this proof.
+
+### Validation and remaining work
+
+The focused command covers the catalog/native UI paths, shared DB3 contracts,
+commands/selection, scoped authorization, and localization/settings:
+
+```powershell
+yarn test tests/bandInstrumentCatalog.test.ts tests/bandInstrumentCatalog.mysql.test.ts tests/bandSongTagCatalog.mysql.test.ts tests/bandInstrumentEditor.test.tsx tests/db3MemoryQuery.test.ts tests/db3MemoryQuery.mysql.test.ts tests/db3ReadExecution.test.ts tests/db3CrudSelection.test.ts tests/db3ViewContract.test.ts tests/db3Commands.test.ts tests/authorization/db3Views.test.ts tests/authorization/db3GridSort.test.ts tests/authorization/multibandAuthorization.test.ts tests/authorization/permissionRegistry.test.ts tests/authorization/publicIdTransport.test.ts tests/localizationResolution.test.ts tests/localizationSettings.test.ts tests/localizationSettings.mysql.test.ts tests/userSettingsContext.test.tsx tests/domainSelection.test.ts tests/db3ForeignSingleSelection.test.ts tests/db3TagsSelection.test.ts tests/selectionPicker.test.ts tests/testEnvironment.test.ts --reporter=dot
+```
+
+Native tests require `CMDB_PHASE2_TEST_DATABASE_URL` pointing to a private,
+disposable database; this run used a fresh MariaDB 10.11.9 schema.
+
+- Focused checks: **267 tests across 24 files**, including **18 native database
+  tests** across four files. The final count includes the parent-draft cache
+  invalidation regression. Visibility/public-ID checks were also rerun after
+  hidden-entry restoration was corrected.
+- The three-row tag fixture matched two rows across resolved text/scalar fields
+  and returned one-row pages in **3-4 ms per page** in the focused run. This is a
+  tiny correctness-fixture observation, not a production benchmark. Measure
+  real catalog sizes/cost before optimizing or applying this backend to large
+  tables. The static localization fixture measured **121 keys / 19,034 UTF-8
+  bytes**.
+- The complete suite's Node batch has **344 failing tests across 36 files**;
+  an isolated checkout of committed baseline `c4df4fe0` has exactly the same
+  failing test groups. The current batch passed 1,177 tests versus 1,164 at that
+  baseline. The runner stops before its DOM batch; the relevant DOM tests are
+  covered by the focused run. Legacy calendar, authorization/bootstrap, wiki,
+  merge, and event fixtures/consumers still require migration.
+- `yarn tsc --noEmit --pretty false --incremental false` still reports **693
+  diagnostics**, versus **709** at the starting baseline. New catalog/shared
+  modules and adapted catalog pages have no diagnostics. Nonincremental mode
+  avoids an existing incremental-compiler overload diagnostic crash.
+- ESLint on changed/new code and `git diff --check` pass.
+
+Obsolete tests of the removed name-only matcher were replaced with common
+predicate/native comparison coverage. Bespoke-editor tests were replaced with
+native field/form/picker tests. Stale selector test mocks/imports were adapted
+to the registered settings/context APIs. No valuable selection coverage was
+removed. Trivial shared defects fixed during this work include integer parsing
+returning the original string, palette writes accepting invalid colors, raw
+registry keys used as selection captions, and native create dialogs closing
+before failed writes finished.
+
+Continue phase 3 with dashboard/reference and member-instrument consumers,
+remaining catalogs/global catalog writers, membership/content descriptors,
+and registered settings editors. Full application recovery, global tag opt-in
+UI, translation inventory/inspection, and portal UX remain in their planned
+phases. No application database or migrated association was replaced for tests;
+the private validation server was stopped and the baseline checkout removed.
+Automatic approval review rejected deletion of the server's temporary data
+directory with "blocked by policy", so those files remain in the system Temp
+folder.
 
 ## Initial implementation and evidence (2026-10-06)
 

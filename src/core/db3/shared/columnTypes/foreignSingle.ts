@@ -193,10 +193,13 @@ export class ForeignSingleField<
 
     getOverallWhereClause = (): TAnyModel | boolean => false;
 
-    getRowVisibilityWhereClause = (auth: CMServerAuthorization, includeDeleted: boolean): TAnyModel | undefined => {
+    getRowVisibilityWhereClause = (auth: CMServerAuthorization, includeDeleted: boolean, includeHidden = false): TAnyModel | undefined => {
         if (!this.requireVisibleTarget) return undefined;
-        const where = this.getForeignTableSchema().CalculateWhereClause({
-            auth: auth, includeDeleted, filterModel: { items: [] },
+        const target = this.getForeignTableSchema();
+        // A parent administration view may include hidden references only with the target's own management grant.
+        const targetIncludesHidden = includeHidden && !!target.bandScope?.hiddenMember && auth.hasPermission(target.bandScope.managePermission);
+        const where = target.CalculateWhereClause({
+            auth, includeDeleted, filterModel: { items: [], tableParams: targetIncludesHidden ? { includeHidden: true } : {} },
         });
         return { [this.member]: { is: where || {} } };
     };
@@ -550,4 +553,3 @@ export const foreignRefByTableId = <
             TAllowNull
         >;
     };
-

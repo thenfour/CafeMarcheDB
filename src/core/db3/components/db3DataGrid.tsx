@@ -406,17 +406,12 @@ function DB3EditGridImpl<
         );
     };
 
-    const onAddOK = (obj) => {
-        if (!crud) throw new Error("Writable DB3 grids require command-backed CRUD operations.");
-
-        crud.create(obj).then((_newRow) => {
-            showSnackbar({ children: "insert successful", severity: 'success' });
-        }).catch(err => {
-            console.log(err);
-            showSnackbar({ children: "insert error", severity: 'error' });
-            tableClient.refetch();
-            throw err;
-        });
+    const onAddOK = async (obj: TRow) => {
+        if (!crud) {
+            throw new Error("Writable DB3 grids require command-backed CRUD operations.");
+        }
+        await crud.create(obj);
+        showSnackbar({ children: "insert successful", severity: 'success' });
         setShowingNewDialog(false);
     };
 
@@ -611,5 +606,3 @@ function DB3EditGridImpl<
     </>
     );
 };
-
-

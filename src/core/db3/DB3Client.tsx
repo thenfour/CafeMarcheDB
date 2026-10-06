@@ -12,3 +12,5 @@ export * from './components/useCrudTableRenderContext';
 export * from './components/useCrudViewCommands';
 export * from './components/useCrudViewCreate';
 
+
+export * from './components/DB3CatalogFields';

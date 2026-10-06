@@ -50,6 +50,7 @@ function DB3NewObjectDialogWithClient<TView extends ViewBase>({
     const [validationResult, setValidationResult] = React.useState<db3.ValidateAndComputeDiffResult>(db3.EmptyValidateAndComputeDiffResult); // don't allow null for syntax simplicity
     const auth = useClientAuth();
     const [grayed, setGrayed] = React.useState<boolean>(false);
+    const [error, setError] = React.useState<string | null>(null);
 
     // validate on change
     React.useEffect(() => {
@@ -66,7 +67,14 @@ function DB3NewObjectDialogWithClient<TView extends ViewBase>({
             return;
         }
         setGrayed(true);
-        onOK(obj, tableClient);
+        setError(null);
+        try {
+            await onOK(obj, tableClient);
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : String(reason));
+        } finally {
+            setGrayed(false);
+        }
     };
 
     const api: DB3ClientCore.NewDialogAPI = {
@@ -96,6 +104,7 @@ function DB3NewObjectDialogWithClient<TView extends ViewBase>({
                     <CMButton onClick={handleOK} disabled={grayed}>OK</CMButton>
                 </>}
             >
+                {error && <Alert severity="error">{error}</Alert>}
                 {props.descriptionSettingName && <LocalizedMarkdown setting={props.descriptionSettingName} />}
 
                 <FormControl>
@@ -358,4 +367,3 @@ export const DB3RowViewer = (props: DB3RowViewerProps) => {
         </React.Fragment>)}
     </div>;
 };
-

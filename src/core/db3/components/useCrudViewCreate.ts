@@ -3,6 +3,7 @@ import { invoke } from "@blitzjs/rpc";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import * as db3 from "../db3";
 import db3queries from "../queries/db3queries";
+import { useDB3QueryContext, type DB3QueryContextInput } from "./useDB3Context";
 import { useDB3Command } from "./useDB3Command";
 
 export class DB3CreatedRowNotReadableError extends Error {
@@ -23,6 +24,7 @@ export async function fetchCreatedCrudViewRow<TView extends db3.AnyDB3CrudView>(
     view: TView,
     identity: db3.DB3IdentityOf<db3.TableOf<NoInfer<TView>>>,
     references: db3.DB3ReferenceProvider<db3.ReferenceContractOf<NoInfer<TView>>>,
+    queryContext: DB3QueryContextInput = {},
 ): Promise<db3.ClientOf<TView>> {
     const schema = view.entity;
     const filter = schema.publicIdMember
@@ -35,6 +37,7 @@ export async function fetchCreatedCrudViewRow<TView extends db3.AnyDB3CrudView>(
             }],
         };
     const result = await invoke(db3queries, {
+        ...queryContext,
         table: {
             tableID: schema.tableID,
             tableName: schema.tableName,
@@ -70,8 +73,10 @@ export function useCrudViewCreate<TView extends db3.AnyDB3CrudView>(
 ): CrudViewCreateToken<TView> | undefined {
     const command = useDB3Command(view?.crud.operations.create?.command);
     const dashboard = useDashboardContext();
-    if (!view || !command) return undefined;
-
+    const queryContext = useDB3QueryContext();
+    if (!view || !command) {
+        return undefined;
+    }
     return {
         create: async values => {
             const result = await command.invoke(values);
@@ -80,6 +85,7 @@ export function useCrudViewCreate<TView extends db3.AnyDB3CrudView>(
                 view,
                 result.identity as db3.DB3IdentityOf<db3.TableOf<TView>>,
                 dashboard.referenceStore,
+                queryContext,
             );
         },
     };

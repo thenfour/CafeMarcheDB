@@ -1,17 +1,20 @@
 'use client';
 
+import { useDB3CreateFromString } from "./useDB3CreateFromString";
+
+import { useDB3QueryContext } from "./useDB3Context";
+import { useGlobalSettings } from "src/setting/client/useSettings";
+import type { GlobalSettingKey } from "src/setting/shared/globalSettingsRegistry";
 import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 
-import { useMutation, useQuery } from "@blitzjs/rpc";
+import { useQuery } from "@blitzjs/rpc";
 import { Box } from "@mui/material";
 import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { assert } from "blitz";
 import React from "react";
 import { SplitQuickFilter } from "shared/quickFilter";
-import type { SettingKey } from "@/src/setting/shared/settingKeys";
+import type { LocalizedPlainStringKey, LocalizedMarkdownKey } from "src/locale/shared/staticLocalizedStringRegistry";
 import { Coalesce, gQueryOptions, parseIntOrNull } from "shared/utils";
-import updateSetting from "@/src/setting/server/mutations/updateSetting";
-import getSetting from "@/src/setting/server/queries/getSetting";
 import { CMChip, CMChipContainer, type CMChipSizeOptions } from "src/core/components/CMChip";
 import { useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
 import { SelectionPicker } from "src/core/components/select/SelectionPicker";
@@ -19,7 +22,7 @@ import { SelectionEditButton, SelectionFieldFrame } from "src/core/components/se
 import { CMSelectNullBehavior, SelectionSource, singleSelectionValue, withNullSelection } from "src/core/components/select/selectionSource";
 import { SelectionValue } from "src/core/components/select/SelectionOptions";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
-import { GenerateForeignSingleSelectStyleSettingName, LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
 import db3queries from "../queries/db3queries";
@@ -136,13 +139,13 @@ export const ForeignSingleFieldInput = <TForeign extends TAnyModel,>(props: Fore
 
     const isShowingAdminControls = useIsShowingAdminControls();
 
-    const [setSetting] = useMutation(updateSetting);
+    const settings = useGlobalSettings();
 
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
-    const selectStyleSetting = GenerateForeignSingleSelectStyleSettingName(props.tableName, props.columnName);
-    const [selectStyleSettingValue] = useQuery(getSetting, { name: selectStyleSetting });//  API.settings.useSetting(selectStyleSetting);
-    const selectStyle = (selectStyleSettingValue || props.selectStyle) as ("inline" | "dialog");
+    const selectStyleSettingKey = props.foreignSpec.args.selectStyleSettingKey;
+    // Style preferences use declared hive keys; the retired per-field Setting endpoint no longer exists.
+    const selectStyle = selectStyleSettingKey ? settings.getValue(selectStyleSettingKey) : props.selectStyle;
     const newProps = { ...props };
     newProps.selectStyle = selectStyle;
 
@@ -156,12 +159,12 @@ export const ForeignSingleFieldInput = <TForeign extends TAnyModel,>(props: Fore
     assert(!!props.foreignSpec.typedSchemaColumn, "schema is not connected to the table spec. you probably need to initiate the client render context");
 
     const handleChangeSetting = (newVal: ("inline" | "dialog" | null)) => {
-        setSetting({ name: selectStyleSetting, value: newVal }).then((x) => {
-            showSnackbar({ children: "Saved", severity: 'success' });
-        }).catch((err => {
-            console.log(err);
-            showSnackbar({ children: "Error", severity: 'error' });
-        }));
+        if (!selectStyleSettingKey) {
+            return;
+        }
+        const save = newVal === null ? settings.reset(selectStyleSettingKey) : settings.setValue(selectStyleSettingKey, newVal);
+        void save.then(() => showSnackbar({ children: "Saved", severity: "success" }))
+            .catch(() => showSnackbar({ children: "Error", severity: "error" }));
     };
 
     const defaultCaption = props.value == null ? "Select" : "Edit";
@@ -173,10 +176,10 @@ export const ForeignSingleFieldInput = <TForeign extends TAnyModel,>(props: Fore
     >{openDialogCaption}</SelectionEditButton>;
 
     return <Box>
-        {isShowingAdminControls && <CMChipContainer className="adminControlFrame">
+        {isShowingAdminControls && selectStyleSettingKey && settings.getCapabilities(selectStyleSettingKey).canEdit && <CMChipContainer className="adminControlFrame">
             <CMChip size="small" onClick={() => handleChangeSetting("inline")} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyle === "inline" }}>inline</CMChip>
             <CMChip size="small" onClick={() => handleChangeSetting("dialog")} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyle === "dialog" }}>dialog</CMChip>
-            <CMChip size="small" onClick={() => handleChangeSetting(null)} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyleSettingValue === null }}>default</CMChip>
+            <CMChip size="small" onClick={() => handleChangeSetting(null)} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: true }}>default</CMChip>
         </CMChipContainer>}
         <SelectionFieldFrame>
             {chip}
@@ -211,6 +214,8 @@ export interface ForeignSingleFieldNullItemInfo {
 
 export interface ForeignSingleFieldClientArgs<TForeign extends TAnyModel> {
     columnName: string;
+    fieldCaptionKey?: LocalizedPlainStringKey;
+    fieldDescriptionKey?: LocalizedMarkdownKey | null;
     cellWidth?: number;
     // the db3 view used for populating selection dialogs
     selectionView?: db3.AnyDB3View;
@@ -223,9 +228,10 @@ export interface ForeignSingleFieldClientArgs<TForeign extends TAnyModel> {
     visible?: boolean;
     className?: string;
     fieldCaption?: string;
-    fieldDescriptionSettingName?: SettingKey;
+    fieldDescriptionSettingName?: LocalizedMarkdownKey;
 
     selectStyle?: "inline" | "dialog";
+    selectStyleSettingKey?: Extract<GlobalSettingKey, `global.ui.${string}.selectStyle`>;
     inlineSelectMoreButtonText?: React.ReactNode;
     nullItemInfo?: ForeignSingleFieldNullItemInfo; // for displaying a null item, which of course has no db info... especially useful for visiblePermissionId where a null value represents "private visibility" so displaying "NULL" or "--" is especially bad.
     size?: CMChipSizeOptions;
@@ -243,7 +249,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
     size: CMChipSizeOptions;
 
     get selectionCaption(): string {
-        return this.fieldCaption || this.columnName.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/_/g, " ").toLowerCase();
+        return this.headerName || this.columnName.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/_/g, " ").toLowerCase();
     }
 
     getSelectionLabel = (value: TForeign | null): string => value == null
@@ -253,14 +259,14 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
     constructor(args: ForeignSingleFieldClientArgs<TForeign>) {
         super({
             columnName: args.columnName,
-            headerName: args.columnName,
+            headerNameKey: args.fieldCaptionKey ?? "catalog.select",
             editable: true,
             width: args.cellWidth ?? 150,
             isAutoFocusable: false,
             visible: Coalesce(args.visible, true),
             className: args.className,
-            fieldCaption: args.fieldCaption,
-            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
+            fieldCaptionKey: args.fieldCaptionKey ?? "catalog.select",
+            fieldDescriptionKey: args.fieldDescriptionKey ?? null,
         });
 
         this.args = args;
@@ -342,7 +348,8 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
                 };
 
             const queryInput: db3.QueryRequestInput = {
-                table: this.typedSchemaColumn.getForeignTableSchema(),
+                ...tableClient.args.queryContext,
+                table: { tableID: foreignTable.tableID, tableName: foreignTable.tableName, viewID: this.args.selectionView?.viewID },
                 orderBy: undefined,
                 filter,
                 cmdbQueryContext: `ForeignSingleFieldClient querying table ${this.typedSchemaColumn.getForeignTableSchema().tableName} for table.column ${this.schemaTable.tableName}.${this.columnName}`
@@ -353,7 +360,10 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
                 console.error(`table params ${JSON.stringify(tableClient.args.filterModel?.tableParams)} object not found for ${this.typedSchemaColumn.fkidMember!}. Maybe data obsolete? Maybe you manually typed in the query?`);
             }
             else {
-                this.fixedValue = items[0] as any;
+                // The selected named view establishes the foreign client contract.
+                this.fixedValue = this.args.selectionView
+                    ? db3.hydrateView(this.args.selectionView, this.args.selectionView.parseDto(items[0]), tableClient.args.referenceProvider ?? new db3.DB3ReferenceStore(db3.emptyReferenceContract)) as TForeign
+                    : items[0] as TForeign;
                 //items_ = items;
                 //this.rowCount = items.length;
                 //this.refetch = refetch;
@@ -461,6 +471,7 @@ export interface ForeignSingleFieldRenderContextArgs<TForeign extends TAnyModel>
 export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
     args: ForeignSingleFieldRenderContextArgs<TForeign>;
     crudCreate?: CrudViewCreateToken<db3.AnyDB3CrudView>;
+    createFromString: ReturnType<typeof useDB3CreateFromString>;
 
     items: TForeign[];
     refetch: () => void;
@@ -488,8 +499,11 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
         }
         const dashboard = useDashboardContext();
         this.crudCreate = useCrudViewCreate(creationView);
+        this.createFromString = useDB3CreateFromString(foreignSchema);
 
+        const queryContext = useDB3QueryContext();
         const [result, queryStatus] = useQuery(db3queries, {
+            ...queryContext,
             table: {
                 tableID: foreignSchema.tableID,
                 tableName: foreignSchema.tableName,
@@ -522,7 +536,7 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
 
     doInsertFromString = async (userInput: string): Promise<TForeign> => {
         console.assert(!!this.args.spec.typedSchemaColumn.getForeignTableSchema().createInsertModelFromString);
-        const insertModel = this.args.spec.typedSchemaColumn.getForeignTableSchema().createInsertModelFromString!(userInput);
+        const insertModel = this.createFromString.createModel(userInput);
         if (!this.crudCreate) {
             throw new Error(
                 `Foreign field '${this.args.spec.columnName}' requires a selectionView to create options.`,
@@ -549,14 +563,14 @@ export interface SelectSingleForeignDialogProps<TForeign extends TAnyModel> {
     closeOnSelect: boolean;
     allowNull?: boolean;
     caption?: string;
-    descriptionSettingName?: SettingKey;
+    descriptionSettingName?: LocalizedMarkdownKey;
 };
 
 export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props: SelectSingleForeignDialogProps<TForeign>) {
     const foreignSchema = props.spec.typedSchemaColumn.getForeignTableSchema();
     const allowNull = props.spec.typedSchemaColumn.allowNull && (props.allowNull ?? true);
     const nullBehavior = allowNull ? CMSelectNullBehavior.AllowNull : CMSelectNullBehavior.NonNullable;
-    const descriptionSettingName = props.descriptionSettingName || props.spec.fieldDescriptionSettingName;
+    const descriptionSettingName = props.descriptionSettingName || props.spec.fieldDescriptionKey;
     const source: SelectionSource<TForeign> = {
         getKey: item => item[foreignSchema.clientIdMember],
         getLabel: props.spec.getSelectionLabel,
@@ -568,11 +582,11 @@ export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props
             const auth = useClientAuth();
             const { showMessage } = React.useContext(SnackbarContext);
             const canCreate = props.spec.typedSchemaColumn.allowInsertFromString
-                && !!foreignSchema.createInsertModelFromString
+                && query.createFromString.canCreate
                 && !!query.crudCreate
                 && foreignSchema.authorizeRowBeforeInsert({ auth: auth });
             return {
-                ...query,
+                ...query, creationControls: query.createFromString.controls,
                 createOption: canCreate ? async text => {
                     const item = await query.doInsertFromString(text);
                     showMessage({ children: "New option created", severity: "success" });

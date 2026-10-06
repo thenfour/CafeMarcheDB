@@ -73,6 +73,7 @@ function createContext(seed?: {
             },
         } as any,
         rowServices: {
+            optIn: vi.fn(),
             insert,
             update,
             delete: deleteRow,

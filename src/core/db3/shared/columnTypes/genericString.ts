@@ -13,7 +13,7 @@ import {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // for validation and client UI behavior.
-export type StringFieldFormatOptions = "plain" | "email" | "markdown" | "title" | "raw" | "uri" | "customLinkSlug";
+export type StringFieldFormatOptions = "plain" | "email" | "markdown" | "title" | "raw" | "uri" | "customLinkSlug" | "regex";
 
 export type GenericStringFieldArgs<
     TAllowNull extends boolean,
@@ -25,16 +25,19 @@ export type GenericStringFieldArgs<
     caseSensitive?: boolean;
     allowQuickFilter?: boolean;
     allowDiscreteCriteria?: boolean;
+    maxLength?: number;
     specialFunction?: SqlSpecialColumnFunction | undefined;
 } & TAuthSpec;
 
 export class GenericStringField<
     const TAllowNull extends boolean = boolean,
     const TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+    // Read-only specializations keep string reads/predicates while disappearing from prepared CRUD types.
+    TClientWritable extends boolean = true,
 > extends FieldBase<
     string,
     undefined,
-    true,
+    TClientWritable,
     DB3MaybeNull<string, TAllowNull>,
     DB3MaybeNull<string, TAllowNull>,
     DB3ReadPresenceForAuthSpec<TAuthSpec>
@@ -42,6 +45,7 @@ export class GenericStringField<
     caseSensitive: boolean;
     allowNull: boolean;
     minLength: number;
+    maxLength: number | undefined;
     doTrim: boolean;
     format: StringFieldFormatOptions;
     allowQuickFilter: boolean;
@@ -61,6 +65,7 @@ export class GenericStringField<
 
         this.format = args.format;
         this.allowNull = args.allowNull;
+        this.maxLength = args.maxLength;
         this.allowQuickFilter = CoerceToBoolean(args.allowQuickFilter, args.format !== "markdown");
         this.allowDiscreteCriteria = CoerceToBoolean(args.allowDiscreteCriteria, false);
 
@@ -91,6 +96,7 @@ export class GenericStringField<
                 this.caseSensitive = args.caseSensitive || false;
                 break;
             case "raw":
+            case "regex":
                 this.minLength = 0;
                 this.doTrim = false;
                 this.caseSensitive = true;
@@ -138,6 +144,16 @@ export class GenericStringField<
         }
         if (value.length < this.minLength) {
             return ErrorValidateAndParseResult("minimum length not satisfied", objValue);
+        }
+        if (this.maxLength !== undefined && value.length > this.maxLength) {
+            return ErrorValidateAndParseResult("maximum length exceeded", objValue);
+        }
+        if (this.format === "regex") {
+            try {
+                new RegExp(value);
+            } catch {
+                return ErrorValidateAndParseResult("The value must be a valid regular expression.", objValue);
+            }
         }
         if (this.format === "email") {
             // https://stackoverflow.com/questions/46155/how-can-i-validate-an-email-address-in-javascript

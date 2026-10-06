@@ -52,6 +52,22 @@ describe("command-backed DB3 selection creation", () => {
         );
     });
 
+    it("preserves selected band, complete language preferences and refresh identity during catalog read-back", async () => {
+        const context = { bandPublicId: parsePublicId<"Band">("Band000000000001"), routeLocale: "en-US",
+            browserLanguages: ["fr-BE", "nl-BE"], clientRequestId: "refresh-2" };
+        const resolution = { value: "Brass", localeTag: "fr-BE", scope: "band", source: "stored", reason: "exact", requestedTag: "fr-BE" };
+        vi.mocked(invoke).mockResolvedValue({ items: [db3.bandInstrumentGroupView.parseDto({
+            publicId, name: "Brass", description: "", nameResolution: resolution, descriptionResolution: resolution,
+            nameStringPublicId: "String0000000001", descriptionStringPublicId: null,
+            color: "blue", colorOverride: null, colorInheritedValue: "blue", sortOrder: 2, sortOrderOverride: null, sortOrderInheritedValue: 2,
+            isHidden: false, globalFunctionalGroup: "GlobalGroup00001", globalPublicId: "GlobalGroup00001",
+        })] });
+        const created = await fetchCreatedCrudViewRow(db3.bandInstrumentGroupView, publicId, new db3.DB3ReferenceStore(), context);
+        expect(created.name.value).toBe("Brass");
+        expect(created.color.override).toBeNull();
+        expect(vi.mocked(invoke)).toHaveBeenCalledWith(expect.anything(), expect.objectContaining(context));
+    });
+
     it("rejects a created row that the authorized CRUD view cannot read", async () => {
         vi.mocked(invoke).mockResolvedValue({ items: [] } as any);
 

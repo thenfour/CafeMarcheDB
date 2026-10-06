@@ -47,6 +47,7 @@ const QueryBaseShape = {
     bandPublicId: BandPublicIdSchema.nullish(),
     routeLocale: z.string().max(128).nullish(),
     browserLanguages: z.array(z.string().max(128)).max(32).optional(),
+    clientRequestId: z.string().max(128).optional(),
     table: z.object({
         tableID: Identifier,
         tableName: Identifier,

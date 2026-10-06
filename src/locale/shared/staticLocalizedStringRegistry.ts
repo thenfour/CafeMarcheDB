@@ -2,6 +2,7 @@ import { z } from "zod";
 import { markdownStaticString, plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 import { freezeRegistry } from "@/src/setting/shared/registryHelpers";
 import { instrumentStrings } from "./instrumentStrings";
+import { catalogStrings } from "./catalogStrings";
 
 function defaultMarkdownStaticString() {
     return markdownStaticString({
@@ -21,6 +22,7 @@ function defaultPlainStringStaticString() {
 
 export const kStaticLocalizedStringRegistry = freezeRegistry({
     ...instrumentStrings,
+    ...catalogStrings,
     "common.action.ok": plainStaticString({
         defaultValue: "OK",
         description: "Label for an OK button",

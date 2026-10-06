@@ -16,6 +16,7 @@ export type SongPublicId = PublicId<"Song">;
 export type SongTagAssociationPublicId = PublicId<"SongTagAssociation">;
 export type SongCreditTypePublicId = PublicId<"SongCreditType">;
 export type SongCreditPublicId = PublicId<"SongCredit">;
+export type DynamicLocalizedStringPublicId = PublicId<"DynamicLocalizedString">;
 export type FileTagPublicId = PublicId<"FileTag">;
 export type FilePublicId = PublicId<"File">;
 export type FrontpageGalleryItemPublicId = PublicId<"FrontpageGalleryItem">;

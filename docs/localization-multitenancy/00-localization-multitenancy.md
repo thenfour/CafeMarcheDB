@@ -983,8 +983,8 @@ validation in [04-implementation-plan.md](04-implementation-plan.md).
 -  [x] Phase 1: trusted context, scoped authorization, new permissions, bootstrap.
 -  [x] Phase 2: typed localization and four-hive settings lookups/writes.
 -  [ ] Phase 3: localized DB3 fields and shared in-memory catalog queries;
-       validate the instrument/group design and prove reuse with one other
-       catalog before expanding to the remaining xTables/views.
+       instruments/groups and the BandSongTag reuse proof now use this shared
+       design; adapt remaining catalogs, consumers, and xTables/views next.
 -  [ ] Phase 4: application recovery, explicit localized column labels, temporary
        read-only `LocalizedMarkdown`, and migrated-data/isolation acceptance.
 -  [ ] Milestone A: the migrated application builds and core workflows work.

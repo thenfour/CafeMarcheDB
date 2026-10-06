@@ -9,7 +9,7 @@ import type {
     CommandDtoOf,
     CommandResultOf,
     DB3CommandRequest,
-    DB3IdentityOf
+    DB3IdentityOf, DB3AuthSpec
 } from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import {
@@ -22,7 +22,7 @@ import {
 import { resolvePublicForeignIds, resolvePublicId } from "./db3PublicIds";
 import { CMServerAuthorization, loadAuthorization } from "@/src/auth/server/serverAuthorization";
 import type { BandPublicId } from "shared/publicId";
-import { bandInstrumentCommand } from "../shared/entities/instrument/bandInstrumentContracts";
+import { CatalogSourceField } from "../shared/columnTypes/inherited";
 
 export class DB3CommandError extends Error {
     constructor(message: string) {
@@ -32,7 +32,9 @@ export class DB3CommandError extends Error {
 }
 
 // db3 services available for command handlers.
+// Row services span registered Prisma models; each entity owns field conversion and row authorization.
 export interface DB3CommandRowService {
+    optIn<TEntity extends AnyDB3Table>(entity: TEntity, sourcePublicId: string, values?: TAnyModel): Promise<TAnyModel>;
 
     // wraps insertImpl
     insert<TEntity extends AnyDB3Table>(
@@ -103,20 +105,53 @@ async function resolveEntityIdentity<TEntity extends AnyDB3Table>(
     authorization: CMServerAuthorization,
     transactionalDb: TransactionalPrismaClient,
 ): Promise<number | string> {
-    if (!entity.publicIdMember) return identity;
+    if (!entity.publicIdMember) {
+        return identity;
+    }
     if (typeof identity !== "string") {
         throw new DB3CommandError(`Expected a public ID for ${entity.tableID}.`);
     }
-    return resolvePublicId(entity, identity, authorization, transactionalDb, true);
+    // Administrators can edit or restore hidden entries; new references still resolve through ordinary visibility.
+    const includeHidden = !!entity.bandScope?.hiddenMember && authorization.hasPermission(entity.bandScope.managePermission);
+    return resolvePublicId(entity, identity, authorization, transactionalDb, true, { includeHidden });
+}
+
+function requireRowServiceScope(entity: AnyDB3Table, authorization: CMServerAuthorization): void {
+    if (authorization.band && !entity.bandScope) {
+        throw new DB3MutationAuthorizationError(entity.tableName, ["scope"]);
+    }
+    if (entity.bandScope) {
+        authorization.requireBand();
+    }
 }
 
 // creates wrappers around the internal `*Impl` functions; more consistent and type-aware.
-function createCommandRowServices(
+export function createCommandRowServices(
     authorization: CMServerAuthorization,
     transactionalDb: TransactionalPrismaClient,
 ): DB3CommandRowService {
     return {
+        optIn: async (entity, sourcePublicId, values = {}) => {
+            requireRowServiceScope(entity, authorization);
+            const scope = entity.bandScope;
+            const sourceField = entity.columns.find((field): field is CatalogSourceField<DB3AuthSpec> => field instanceof CatalogSourceField);
+            if (!scope?.inheritedSourceMember || !sourceField) {
+                throw new DB3CommandError("The entity does not declare a global catalog source.");
+            }
+            authorization.requirePermission(scope.managePermission);
+            const source = await transactionalDb[sourceField.sourceTable].findUniqueOrThrow({ where: { publicId: sourcePublicId } });
+            const existing = await transactionalDb[entity.tableName].findFirst({
+                where: { [scope.member]: authorization.requireBand().id, [scope.inheritedSourceMember]: source.id },
+            });
+            if (existing) {
+                return existing;
+            }
+            const resolvedValues = await resolvePublicForeignIds(entity, values, authorization, transactionalDb);
+            // The source was loaded by public identity above; ordinary CRUD cannot supply this server-owned dependency.
+            return insertImpl<TAnyModel>(entity, resolvedValues, authorization, transactionalDb, { inheritedSourceId: source.id });
+        },
         insert: async (entity, values) => {
+            requireRowServiceScope(entity, authorization);
             const resolvedValues = await resolvePublicForeignIds(
                 entity,
                 values,
@@ -127,6 +162,7 @@ function createCommandRowServices(
         },
 
         update: async (entity, identity, values) => {
+            requireRowServiceScope(entity, authorization);
             const resolvedIdentity = await resolveEntityIdentity(
                 entity,
                 identity,
@@ -152,6 +188,7 @@ function createCommandRowServices(
         },
 
         delete: async (entity, identity, deleteType = "softWhenPossible") => {
+            requireRowServiceScope(entity, authorization);
             const resolvedIdentity = await resolveEntityIdentity(
                 entity,
                 identity,
@@ -165,6 +202,7 @@ function createCommandRowServices(
         },
 
         requireVisible: async (entity, identity) => {
+            requireRowServiceScope(entity, authorization);
             if (!entity.authorizeTableForView(authorization)) {
                 throw new DB3MutationAuthorizationError(entity.tableName, [entity.pkMember]);
             }
@@ -195,6 +233,7 @@ function createCommandRowServices(
         },
 
         afterMutation: async (entity, model) => {
+            requireRowServiceScope(entity, authorization);
             await CallMutateEventHooks({
                 tableNameOrSpecialMutationKey: entity.tableName,
                 model,
@@ -218,10 +257,8 @@ export async function executeDB3Command(
         );
     }
     const authorization = await (await loadAuthorization(ctx.session, bandPublicId)).refresh(transactionalDb);
-    // Legacy handlers lack ownership checks and cannot execute with selected-band grants.
-    // LSMB todo: acceptance depends on this going away and being generalized. generic commands should
-    // avoid table-specific exceptions/branching.
-    if (authorization.band && handler.command.commandID !== bandInstrumentCommand.commandID) {
+    // Domain admission is declared by ownership-aware tables, independently of command names.
+    if (authorization.band && !handler.command.entity.bandScope) {
         throw new AuthorizationError("This command has not migrated to band-scoped execution.");
     }
     const dto = handler.command.parseDto(request.payload);

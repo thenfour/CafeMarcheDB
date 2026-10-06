@@ -34,7 +34,7 @@ import type { ColorPaletteEntry } from "../../components/color/palette";
 import { ColorPick } from "../../components/color/ColorPick";
 import { gNullValue, TAnyModel } from "@/shared/rootroot";
 import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
-import { LocalizedMarkdownKey, LocalizedPlainStringKey } from "@/src/locale/staticLocalizedStringRegistry";
+import { LocalizedMarkdownKey, LocalizedPlainStringKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs<TColumnName extends string = string> {
@@ -152,7 +152,8 @@ export class GenericStringColumnClient<TColumnName extends string = string>
             this.typedSchemaColumn.format === "email" ||
             this.typedSchemaColumn.format === "title" ||
             this.typedSchemaColumn.format === "customLinkSlug" ||
-            this.typedSchemaColumn.format === "uri"
+            this.typedSchemaColumn.format === "uri" ||
+            this.typedSchemaColumn.format === "regex"
             , `GenericStringColumnClient[${tableClient.tableSpec.args.table.tableID}.${this.schemaColumn.member}] has an unsupported type: ${this.typedSchemaColumn.format}`);
 
         this.GridColProps = {
@@ -473,7 +474,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
                 return <div className='MuiDataGrid-cellContent'><Checkbox checked={params.value} disabled /></div>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
-                return <FormControlLabel className='CMFormControlLabel' label={this.schemaColumn.member} control={
+                return <FormControlLabel className='CMFormControlLabel' label={this.headerName} control={
                     <Checkbox
                         checked={params.value}
                         onChange={(e, value) => {
@@ -496,7 +497,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
     // TODO: use defaultRenderer. the problem with a bool field is that the checkbox itself is very small, so the clickable label is really important.
     // so, TODO: add click-to-focus support to <NameValuePair>
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
-        return <FormControlLabel className='CMFormControlLabel' label={this.fieldCaption || this.schemaColumn.member} control={
+        return <FormControlLabel className='CMFormControlLabel' label={this.headerName} control={
             <Checkbox
                 checked={!!params.value}
                 onChange={(e, val) => {

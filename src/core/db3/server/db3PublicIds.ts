@@ -28,6 +28,7 @@ export async function resolvePublicIds(
     auth: CMServerAuthorization,
     database: TransactionalPrismaClient,
     includeDeleted = false,
+    visibility: { readonly includeHidden?: boolean } = {},
 ): Promise<number[]> {
     if (!table.publicIdMember || publicIds.some(publicId => !isPublicId(publicId))) {
         throw new DB3PublicIdError(`Invalid public ID for ${table.tableID}.`);
@@ -39,7 +40,7 @@ export async function resolvePublicIds(
     if (uniquePublicIds.length === 0) return [];
 
     const where = table.CalculateWhereClause({
-        filterModel: { publicIds: uniquePublicIds },
+        filterModel: { publicIds: uniquePublicIds, tableParams: visibility.includeHidden ? { includeHidden: true } : {} },
         auth,
         includeDeleted,
     });
@@ -70,6 +71,7 @@ export async function resolvePublicId(
     auth: CMServerAuthorization,
     database: TransactionalPrismaClient,
     includeDeleted = false,
+    visibility: { readonly includeHidden?: boolean } = {},
 ): Promise<number> {
     return (await resolvePublicIds(
         table,
@@ -77,6 +79,7 @@ export async function resolvePublicId(
         auth,
         database,
         includeDeleted,
+        visibility,
     ))[0]!;
 }
 

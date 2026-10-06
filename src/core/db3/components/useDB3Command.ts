@@ -1,3 +1,5 @@
+import { useDB3QueryContext } from "./useDB3Context";
+import { queryClient } from "src/blitz-client";
 import { useMutation } from "@blitzjs/rpc";
 import executeDB3CommandMutation from "../mutations/executeDB3Command";
 import type {
@@ -22,7 +24,10 @@ export function useDB3Command<TCommand extends AnyDB3Command>(
     command: TCommand | undefined,
 ): DB3CommandToken<TCommand> | undefined {
     const [mutate] = useMutation(executeDB3CommandMutation);
-    if (!command) return undefined;
+    const queryContext = useDB3QueryContext();
+    if (!command) {
+        return undefined;
+    }
     return {
         invalidation: command.invalidation,
         invoke: async input => {
@@ -30,7 +35,9 @@ export function useDB3Command<TCommand extends AnyDB3Command>(
             const result = await mutate({
                 commandID: command.commandID,
                 payload,
+                bandPublicId: queryContext.bandPublicId,
             });
+            // todo: find a well-designed way to invalidate relevant queries
             return command.parseResult(result) as CommandResultOf<TCommand>;
         },
     };

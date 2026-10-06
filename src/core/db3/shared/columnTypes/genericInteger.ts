@@ -96,17 +96,25 @@ export class GenericIntegerField<
         }
         // val should be coerced into number, convert to integer.
         if (typeof value === 'string') {
-            const s = (value as string).trim();
-            if (this.allowNull && s === '') {
-                return SuccessfulValidateAndParseResult(objValue);
+            const s = value.trim();
+            if (s === '') {
+                if (this.allowNull) {
+                    objValue[this.member] = null;
+                    return SuccessfulValidateAndParseResult(objValue);
+                }
+                return ErrorValidateAndParseResult("field is required", objValue);
             }
-            const i = parseInt(s, 10);
+            const i = Number(s);
             if (isNaN(i)) {
                 return ErrorValidateAndParseResult("Input string was not convertible to integer", objValue);
             }
             value = i;
         }
-        // todo here check other constraints like min/max whatever
+        // Prisma Int uses signed 32-bit storage; reject fractions and out-of-range values before persistence.
+        if (typeof value !== "number" || !Number.isInteger(value) || value < -2_147_483_648 || value > 2_147_483_647) {
+            return ErrorValidateAndParseResult("Expected a signed 32-bit integer", objValue);
+        }
+        objValue[this.member] = value;
         return SuccessfulValidateAndParseResult(objValue);
     };
 

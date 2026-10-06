@@ -20,7 +20,7 @@ vi.mock("src/core/db3/components/DB3ClientCore", () => ({
     IColumnClient: class { constructor(args: object) { Object.assign(this, args); } },
 }));
 vi.mock("src/core/db3/components/useCrudViewCreate", () => ({ useCrudViewCreate: vi.fn() }));
-vi.mock("src/core/db3/components/useDB3Authorization", () => ({ useDB3Authorization: () => ({}) }));
+vi.mock("src/core/db3/components/useClientAuth", () => ({ useClientAuth: () => ({}) }));
 vi.mock("src/core/db3/components/IconMap", () => ({ RenderMuiIcon: () => null }));
 vi.mock("src/core/components/CMCoreComponents2", () => ({
     useIsShowingAdminControls: () => false,
@@ -29,20 +29,26 @@ vi.mock("src/core/components/CMCoreComponents2", () => ({
     }, children),
 }));
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ referenceStore: {}, refreshCachedData: vi.fn() }) }));
-vi.mock("src/core/components/SettingMarkdown", () => ({
-    GenerateForeignSingleSelectStyleSettingName: () => "selection-style",
-    SettingMarkdown: () => null,
-}));
+vi.mock("src/setting/client/components/SettingMarkdown", () => ({ LocalizedMarkdown: () => null }));
 vi.mock("src/core/components/SnackbarContext", async () => {
     const React = await vi.importActual<typeof import("react")>("react");
     return { SnackbarContext: React.createContext({ showMessage: vi.fn() }) };
 });
 vi.mock("@/src/setting/server/mutations/updateSetting", () => ({ default: vi.fn() }));
-vi.mock("@/src/setting/server/queries/getSetting", () => ({ default: vi.fn() }));
 vi.mock("src/core/db3/queries/db3queries", () => ({ default: vi.fn() }));
 
+vi.mock("src/core/db3/components/useDB3Context", () => ({ useDB3QueryContext: () => ({
+    bandPublicId: "Band000000000001", routeLocale: "en-US", browserLanguages: ["fr-BE", "nl-BE"], clientRequestId: "refresh-selection",
+}) }));
+vi.mock("src/core/db3/components/useDB3CreateFromString", () => ({ useDB3CreateFromString: (table: { createInsertModelFromString?: (text: string) => unknown }) => ({
+    canCreate: !!table.createInsertModelFromString, createModel: table.createInsertModelFromString, controls: undefined,
+}) }));
+vi.mock("src/setting/client/useSettings", () => ({ useGlobalSettings: () => ({
+    getValue: () => selectStyleSetting ?? "dialog", getCapabilities: () => ({ canEdit: false }),
+}) }));
+
+
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import getSetting from "@/src/setting/server/queries/getSetting";
 import { ForeignSingleFieldClient, ForeignSingleFieldInput, ForeignSingleFieldInputProps, SelectSingleForeignDialog } from "src/core/db3/components/db3ForeignSingleFieldClient";
 import { useCrudViewCreate } from "src/core/db3/components/useCrudViewCreate";
 
@@ -69,8 +75,7 @@ beforeEach(() => {
     // These hook mocks implement only the token/tuple surface exercised here.
     vi.mocked(useCrudViewCreate).mockReturnValue({ create: createOption } as any);
     vi.mocked(useMutation).mockReturnValue([vi.fn()] as any);
-    vi.mocked(useQuery).mockImplementation((query, args: any) => {
-        if (query === getSetting) return [selectStyleSetting, { refetch }] as any;
+    vi.mocked(useQuery).mockImplementation((_query, args: any) => {
         const filter = args.filter.quickFilterValues.join(" ").toLowerCase();
         return [queryState.isLoading ? undefined : { items: options.filter(o => o.name.toLowerCase().includes(filter)) }, { ...queryState, refetch }] as any;
     });
@@ -91,13 +96,14 @@ beforeEach(() => {
         crud: { operations: { create: { kind: "create", command: {} } } },
     };
     spec = new ForeignSingleFieldClient<Instrument>({
-        columnName: "instrument", fieldCaption: "Instrument", cellWidth: 150,
+        columnName: "instrument", fieldCaptionKey: "catalog.name", selectStyleSettingKey: "global.ui.visiblePermission.selectStyle", cellWidth: 150,
         // This intentionally minimal descriptor supplies only the view members
         // exercised by the selector test.
         selectionView: selectionView as any,
         renderAsChip: args => React.createElement("span", { className: "custom-chip", onClick: args.onClick }, args.value?.name || spec.args.nullItemInfo?.label || "None"),
     });
     // Creation permission belongs to the referenced table, not this parent row.
+    spec.headerName = "Instrument";
     spec.schemaTable = { tableName: "User", authorizeRowBeforeInsert: () => false } as any;
     spec.schemaColumn = {
         member: "instrument", allowNull: true, allowInsertFromString: true,

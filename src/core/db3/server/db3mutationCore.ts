@@ -21,6 +21,7 @@ import { FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata } from 
 import { UserWithRolesArgs } from "../shared/schema/userPayloads";
 import { SharedAPI } from "../shared/sharedAPI";
 import { queryTable } from "./db3QueryCore";
+import { prepareDB3FieldWrites } from "./db3FieldWrites";
 import { db3Server } from "./db3Server";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
 
@@ -38,8 +39,16 @@ export class DB3MutationAuthorizationError extends AuthorizationError {
     }
 }
 
-// !! LSMB TODO: do not  hardcode these table names. find a way to determine programatically
-// which tables should invoke this. a flag on xTable probably.
+function requireMutationScope(table: db3.xTable, auth: CMServerAuthorization): void {
+    if (auth.band && !table.bandScope) {
+        throw new DB3MutationAuthorizationError(table.tableName, ["scope"]);
+    }
+    if (table.bandScope) {
+        auth.requireBand();
+    }
+}
+
+// Settings persistence requires its registered scoped API.
 function requireNonSettingMutation(tableName: string): void {
     if (["setting", "globalsetting", "bandsetting", "usersetting", "bandusersetting"].includes(tableName.toLowerCase())) {
         throw new AuthorizationError("Settings must use the registered, scoped settings API.");
@@ -401,6 +410,7 @@ export const UpdateAssociations = async ({ changeContext, auth, ...args }: Updat
 // DELETE ////////////////////////////////////////////////
 export const deleteImpl = async (table: db3.xTable, id: number, auth: CMServerAuthorization, deleteType: "softWhenPossible" | "hard", transactionalDb: TransactionalPrismaClient = db as any): Promise<boolean> => {
     requireNonSettingMutation(table.tableName);
+    requireMutationScope(table, auth);
     try {
         const contextDesc = `delete:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
@@ -489,8 +499,11 @@ export const deleteImpl = async (table: db3.xTable, id: number, auth: CMServerAu
 };
 
 // INSERT ////////////////////////////////////////////////
-export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAnyModel, auth: CMServerAuthorization, transactionalDb: TransactionalPrismaClient = db as any): Promise<TReturnPayload> => {
+export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAnyModel, auth: CMServerAuthorization,
+    transactionalDb: TransactionalPrismaClient = db as any, dependencies?: { readonly inheritedSourceId: number },
+): Promise<TReturnPayload> => {
     requireNonSettingMutation(table.tableName);
+    requireMutationScope(table, auth);
     try {
         const contextDesc = `insert:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
@@ -535,7 +548,8 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
                 = db3.separateMutationValues({ table, fields: authorizedMutationFields }));
         }
 
-        if (Object.keys(proposedModel).length > 0) {
+        if (Object.keys(proposedModel).length > 0 || dependencies || table.bandScope) {
+            // Server-owned band/source fields can create a row with only database defaults.
             // createdBy and updatedBy.
             if (table.SqlSpecialColumns.createdByUser) {
                 authorizedLocalFields[table.SqlSpecialColumns.createdByUser.fkidMember!] = auth.userId;
@@ -547,6 +561,18 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
 
 
             //await requireUnmergedMutationUsers(transactionalDb, table, { ...authorizedLocalFields, ...authorizedAssociationFields });
+            authorizedLocalFields = await prepareDB3FieldWrites(table, authorizedLocalFields, null, auth, transactionalDb);
+            if (dependencies) {
+                if (!table.bandScope?.inheritedSourceMember) {
+                    throw new Error("The table does not declare an inherited source identity.");
+                }
+                authorizedLocalFields[table.bandScope.inheritedSourceMember] = dependencies.inheritedSourceId;
+                for (const field of table.columns) {
+                    if (field.inheritsValue && !Object.prototype.hasOwnProperty.call(fields, field.member)) {
+                        authorizedLocalFields[field.member] = null;
+                    }
+                }
+            }
             obj = await createDB3Row(table, dbTableClient, authorizedLocalFields);
 
             await RegisterChange({
@@ -597,6 +623,7 @@ interface UpdateImplResult<T> {
 };
 export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, auth: CMServerAuthorization, transactionalDb: TransactionalPrismaClient = db as any): Promise<UpdateImplResult<TAnyModel>> => {
     requireNonSettingMutation(table.tableName);
+    requireMutationScope(table, auth);
     try {
         const contextDesc = `update:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
@@ -630,6 +657,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             where: { [table.pkMember]: pkid },
         });
         if (!fullOldObj) throw new Error(`${table.tableName} ${pkid} was not found.`);
+        if (table.bandScope) auth.requireBandResource(fullOldObj[table.bandScope.member]);
 
         const isDeletedColumn = table.SqlSpecialColumns.isDeleted;
         if (isDeletedColumn && fullOldObj[isDeletedColumn.member] === true) {
@@ -666,6 +694,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         }
 
         if (Object.keys(authorizedLocalFields).length > 0) {
+            authorizedLocalFields = await prepareDB3FieldWrites(table, authorizedLocalFields, fullOldObj, auth, transactionalDb);
             const oldValues = getIntersectingFields(authorizedLocalFields, fullOldObj);
             obj = oldValues;
 

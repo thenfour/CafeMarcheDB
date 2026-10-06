@@ -17,6 +17,7 @@ import type {
     DB3SchemaMutationModel,
 } from "../db3core";
 import type { TagsField } from "../columnTypes/tags";
+import { withDB3FieldValidation } from "./db3FieldValidation";
 import {
     defineView,
     type DB3View,
@@ -88,6 +89,9 @@ function createPreparedMutationSchema<
     const shape: z.ZodRawShape = {};
     const dtoMembers = new Set(Object.keys(dtoSchema.shape));
     for (const field of entity.columns) {
+        if ("catalogSource" in field) {
+            continue;
+        }
         if (!dtoMembers.has(field.member)
             && (!field.fkidMember || !dtoMembers.has(field.fkidMember))) {
             continue;
@@ -101,23 +105,8 @@ function createPreparedMutationSchema<
                 // The runtime discriminator above is the TagsField contract.
                 (field as TagsField<TAnyModel>).getForeignTableShema().identitySchema,
             )
-            : field.codec?.writeSchema ?? zod.unknown();
-        shape[member] = transportSchema.superRefine((value, context) => {
-            // Prepared mutation values have already passed through
-            // ApplyClientToDb. Convert them back to the table's client shape
-            // before invoking the field's client-value validator.
-            const clientModel = entity.getClientModel({ [member]: value }, mode);
-            const validation = field.ValidateAndParse({
-                row: clientModel,
-                mode,
-            });
-            if (validation.result === "error") {
-                context.addIssue({
-                    code: zod.ZodIssueCode.custom,
-                    message: validation.errorMessage || `Invalid value for ${member}.`,
-                });
-            }
-        }).optional();
+            : field.writeTransportSchema ?? field.codec?.writeSchema ?? zod.unknown();
+        shape[member] = withDB3FieldValidation(field, transportSchema, mode).optional();
     }
     const schema = zod.object(shape).strict();
     // Runtime field discovery cannot retain the keyed xTable map through

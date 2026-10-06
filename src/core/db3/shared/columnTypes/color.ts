@@ -61,7 +61,7 @@ export class ColorField<
     > = {
             decode: value => this.palette.findEntry(value),
             encode: value => value?.id || null,
-            writeSchema: z.string().nullable(),
+            writeSchema: z.string().nullable().refine(value => value === null || !!this.palette.findEntry(value), "Not found in palette."),
         };
 
     constructor(args: ColorFieldArgs<TAllowNull, TAuthSpec>) {

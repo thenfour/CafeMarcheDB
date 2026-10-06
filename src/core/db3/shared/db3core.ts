@@ -148,6 +148,8 @@ export type DB3QueryOrderBy<TTable extends AnyDB3Table> = {
 /** A trusted query bound to the table that owns a named view. */
 export interface QueryInputBase<TView extends AnyDB3View> extends LocalePreferenceInput {
     bandPublicId?: BandPublicId | null;
+    // Cache refresh identity only; never used to authorize queries.
+    clientRequestId?: string;
     table: {
         tableName: TView["tableName"];
         tableID: TView["tableID"];
@@ -169,6 +171,8 @@ export interface QueryInputBase<TView extends AnyDB3View> extends LocalePreferen
 // it represents non-view-based queries
 export interface LegacyQueryInputBase extends LocalePreferenceInput {
     bandPublicId?: BandPublicId | null;
+    // Cache refresh identity only; never used to authorize queries.
+    clientRequestId?: string;
     table: {
         // xTable provides these; pass in an xtable.
         tableName: string;
@@ -571,7 +575,7 @@ export interface DB3FieldCodec<
 > {
     readonly decode: (value: TReadTransportValue) => TClientValue;
     readonly encode: (value: TClientValue) => TWriteTransportValue;
-    readonly writeSchema: z.ZodType<TWriteTransportValue>;
+    readonly writeSchema: z.ZodType<TWriteTransportValue, z.ZodTypeDef, unknown>;
 }
 
 export type AnyDB3FieldCodec = DB3FieldCodec<any, any, any>;
@@ -656,6 +660,12 @@ export abstract class FieldBase<
      */
     readonly readTransportSchema?: z.ZodType<TReadTransportValue>;
 
+    /** Extra read values belong to the same authorization field, e.g. translation provenance. */
+    readonly readCompanionSchemas?: z.ZodRawShape;
+    readonly inheritsValue?: true;
+    readonly writeTransportSchema?: z.ZodTypeAny;
+    getReadSupportMembers = (): readonly string[] => [];
+
     /** Type-only marker used when deriving prepared command values. */
     readonly __clientWritable?: TClientWritable;
 
@@ -707,7 +717,8 @@ export abstract class FieldBase<
         if (this._matchesMemberForAuthorization) {
             return this._matchesMemberForAuthorization(memberName);
         }
-        return (memberName.toLowerCase() === this.member.toLowerCase());
+        return memberName.toLowerCase() === this.member.toLowerCase()
+            || Object.prototype.hasOwnProperty.call(this.readCompanionSchemas ?? {}, memberName);
     };
 
     getPrismaMemberDescriptors = (): readonly DB3FieldPrismaMember[] => [{
@@ -739,7 +750,7 @@ export abstract class FieldBase<
         return this.getReadTransportSchema().parse(value);
     };
 
-    hydrateReadTransportValue = (value: TReadTransportValue): TReadConsumerValue => {
+    hydrateReadTransportValue = (value: TReadTransportValue, _row?: Readonly<Record<string, unknown>>): TReadConsumerValue => {
         this.getReadTransportSchema();
         if (value === undefined) {
             throw new Error(`DB3 field '${this.member}' cannot hydrate an absent read transport value.`);
@@ -796,7 +807,7 @@ export abstract class FieldBase<
     abstract ApplyIncludeFiltering: (include: TAnyModel, auth: CMServerAuthorization, includeDeleted: boolean) => void | Promise<void>;
 
     // Relations may require their target to be readable for this row to appear.
-    getRowVisibilityWhereClause = (_auth: CMServerAuthorization, _includeDeleted: boolean): TAnyModel | undefined => undefined;
+    getRowVisibilityWhereClause = (_auth: CMServerAuthorization, _includeDeleted: boolean, _includeHidden = false): TAnyModel | undefined => undefined;
 };
 
 export interface SortModel {
@@ -820,6 +831,7 @@ export type SqlSpecialColumnFunctionMap = {
 };
 
 export interface CalculateWhereClauseArgs {
+    structuralOnly?: boolean;
     includeDeleted?: boolean;
     filterModel: CMDBTableFilterModel;
 
@@ -872,6 +884,23 @@ type DB3IdentityForAccessor<
     ? TIdentity
     : DB3Identity;
 
+// tables like instruments, songTags, et al, relate directly to other tables
+// between global scope & band scope for inheritance. this is that metadata.
+// bandScope: {
+//     member: "bandId",
+//     inheritedFrom: "globalInstrument",
+//     inheritedSourceMember: "globalInstrumentId",
+//     hiddenMember: "isHidden",
+//     managePermission: Permission.admin_instruments,
+// },
+export interface DB3BandScope {
+    readonly member: string;
+    readonly inheritedFrom?: string; // the object key from which this band-scoped value inherits -- row[inheritedFrom] is an object with the globally scoped payload.
+    readonly inheritedSourceMember?: string;
+    readonly hiddenMember?: string; // the column name for opt-in/out behavior
+    readonly managePermission: Permission;
+}
+
 export interface TableDesc {
     tableName: string;
     tableUniqueName?: string; // DB tables have multiple variations (event vs. event verbose / permission vs. permission for visibility / et al). therefore tableName is not sufficient. use this instead.
@@ -889,12 +918,18 @@ export interface TableDesc {
     getIdentity?: DB3IdentityAccessor;
 
     getSelectionArgs: (filterModel: CMDBTableFilterModel, authorization: CMServerAuthorization) => TAnyModel,
-    createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
+    createInsertModelFromString?: (input: string, context?: DB3CreateFromStringContext) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
     doesItemExactlyMatchText?: (row: TAnyModel, filterText: string) => boolean,
     naturalOrderBy?: TAnyModel;
     getParameterizedWhereClause?: (params: TAnyModel, auth: CMServerAuthorization) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
     queryParameters?: DB3QueryParameterMap; // runtime contract for untrusted generic DB3 requests
+    bandScope?: DB3BandScope;
+
+    // Some tables require fields to be resolved in code (e.g. choosing a localized string)
+    // that has impact in several places where queries happen, so indicate it here.
+    // "resolved"  and unknown are the only 2 recognized query strategies atm.
+    queryStrategy?: "resolved";
 
     // for things like attendance options, where options can go stale and become "inactive", allow table schemas to filter items out.
     activeAsSelectable?: (params: TAnyModel) => boolean;
@@ -1137,6 +1172,10 @@ export type DB3SchemaMutationModel<
     DB3EncodedFieldValue<TFields[K], TSource[K]>;
 }>;
 
+export interface DB3CreateFromStringContext {
+    readonly localeTag: string;
+}
+
 export type DB3DeletePolicy = "disabled" | "hard" | "softOnly";
 
 // we don't care about createinput, because updateinput is the same thing with optional fields so it's a bit too redundant.
@@ -1169,10 +1208,13 @@ export class xTable<
     getParameterizedWhereClause?: (params: TAnyModel, auth: CMServerAuthorization) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
     queryParameters?: DB3QueryParameterMap;
 
+    bandScope?: DB3BandScope;
+    queryStrategy?: "resolved";
+
     activeAsSelectable?: (params: TAnyModel) => boolean;
 
     tableAuthMap: DB3AuthTablePermissionMap;
-    createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
+    createInsertModelFromString?: (input: string, context?: DB3CreateFromStringContext) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
     doesItemExactlyMatchText: (row: TAnyModel, filterText: string) => boolean;
     SqlSpecialColumns: SqlSpecialColumnFunctionMap;
@@ -1439,6 +1481,9 @@ export class xTable<
             Object.entries(args.model).forEach(e => {
                 const col = this.columns.find(c => c.matchesMemberForAuthorization(e[0]));
                 if (!col) {
+                    if (args.rowMode === "view" && this.columns.some(field => field.getReadSupportMembers().includes(e[0]))) {
+                        return;
+                    }
                     console.log(`unknown column: ${e[0]}, tableID:${this.tableID}`);
                     debugger;
                     ret.unknownColumnCount++;
@@ -1543,9 +1588,11 @@ export class xTable<
     // include these, then we can't actually perform authorization so we throw an error.
     getReadAuthorizationMembers = (): readonly string[] => {
         const { ownerUser, visiblePermission, isDeleted } = this.SqlSpecialColumns;
-        return [ownerUser, visiblePermission, isDeleted]
+        const members = [ownerUser, visiblePermission, isDeleted]
             .filter((column): column is AnyDB3Field => column !== undefined)
             .map(column => column.fkidMember || column.member);
+        if (this.bandScope) members.push(this.bandScope.member);
+        return members;
     };
 
     private isRowVisibleToActor = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T, CMServerAuthorization>): boolean => {
@@ -1592,6 +1639,10 @@ export class xTable<
     };
 
     authorizeRowForView = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T, CMServerAuthorization>) => {
+        if (this.bandScope && args.model
+            && args.model[this.bandScope.member] !== args.auth.requireBand().id) {
+            return false;
+        }
         const rowInfo = args.model ? this.getRowInfo(args.model) : null;
         const ownerUserId = this.getOwnerUserId(args.model, rowInfo?.ownerUserId, null);
         const isOwner = ownerUserId != null
@@ -1794,20 +1845,9 @@ export class xTable<
         await Promise.all(this.columns.map(col => col.ApplyIncludeFiltering(include, auth, includeDeleted)));
     };
 
-    CalculateWhereClause = (
-        { filterModel, auth, includeDeleted = false }: CalculateWhereClauseArgs,
-    ): Prisma.Args<TDelegate, "findMany">["where"] => {
+    /** The same field predicates feed Prisma and the resolved-value backend. */
+    getUserFilterWhereClauses = (filterModel: CMDBTableFilterModel, auth: CMServerAuthorization): TAnyModel[] => {
         const and: TAnyModel[] = [];
-
-        const rowAuthorizationWhere = this.getRowAuthorizationWhereClause(auth);
-        if (rowAuthorizationWhere === null) {
-            // Relations should resolve to an empty set instead of causing an
-            // otherwise-authorized parent query to fail. Primary queries are
-            // rejected by the server preflight before reaching this point.
-            and.push({ [this.pkMember]: { in: [] } });
-        } else if (rowAuthorizationWhere) {
-            and.push(rowAuthorizationWhere);
-        }
 
         // QUICK FILTER
         if (filterModel && filterModel.quickFilterValues) { // quick filtering
@@ -1836,6 +1876,32 @@ export class xTable<
                 return { [i.field]: { [i.operator]: i.value } }
             });
             and.push(...filterItems);
+        }
+
+        return and;
+    };
+
+    CalculateWhereClause = (
+        { filterModel, auth, includeDeleted = false, structuralOnly = false }: CalculateWhereClauseArgs,
+    ): Prisma.Args<TDelegate, "findMany">["where"] => {
+        const and: TAnyModel[] = [];
+        if (this.bandScope) {
+            and.push({ [this.bandScope.member]: auth.requireBand().id });
+            if (filterModel.tableParams?.includeHidden === true) {
+                auth.requirePermission(this.bandScope.managePermission);
+            }
+            if (this.bandScope.hiddenMember && filterModel.tableParams?.includeHidden !== true) {
+                and.push({ [this.bandScope.hiddenMember]: false });
+            }
+        }
+        const rowAuthorizationWhere = this.getRowAuthorizationWhereClause(auth);
+        if (rowAuthorizationWhere === null) {
+            and.push({ [this.pkMember]: { in: [] } });
+        } else if (rowAuthorizationWhere) {
+            and.push(rowAuthorizationWhere);
+        }
+        if (!structuralOnly) {
+            and.push(...this.getUserFilterWhereClauses(filterModel, auth));
         }
 
         if (this.getParameterizedWhereClause) {
@@ -1876,7 +1942,7 @@ export class xTable<
         const overallWhere = this.GetOverallWhereClauseExpression();
         and.push(...overallWhere);
         for (const field of this.columns) {
-            const relationWhere = field.getRowVisibilityWhereClause(auth, includeDeleted);
+            const relationWhere = field.getRowVisibilityWhereClause(auth, includeDeleted, filterModel.tableParams?.includeHidden === true);
             if (relationWhere) and.push(relationWhere);
         }
 
@@ -2016,6 +2082,19 @@ export class xTable<
 
 };
 
+type PrismaScalarMember<TDelegate> = Extract<keyof NonNullable<Prisma.Result<TDelegate, {}, "findFirst">>, string>;
+type PrismaRelationMember<TDelegate> = Extract<keyof NonNullable<Prisma.Args<TDelegate, "findMany">["include"]>, string>;
+type TypedBandScope<TDelegate> = Omit<DB3BandScope, "member" | "hiddenMember" | "inheritedFrom" | "inheritedSourceMember"> & {
+    member: PrismaScalarMember<TDelegate>;
+    hiddenMember?: PrismaScalarMember<TDelegate>;
+    inheritedFrom?: PrismaRelationMember<TDelegate>;
+    inheritedSourceMember?: PrismaScalarMember<TDelegate>;
+};
+type InvalidStringIdentityFields<TFields, TDelegate> = {
+    [K in keyof TFields]: TFields[K] extends { readonly stringIdentityMember: infer TMember }
+    ? TMember extends PrismaScalarMember<TDelegate> ? never : K : never
+}[keyof TFields];
+
 export type DB3TypedTableDesc<
     TFields extends DB3FieldMap,
     TDelegate,
@@ -2024,14 +2103,16 @@ export type DB3TypedTableDesc<
     TTableUniqueName extends string | undefined = undefined,
     TQueryParameters extends DB3QueryParameterMap | undefined = undefined,
 > =
-    Omit<TableDesc, "columns" | "getIdentity" | "tableName" | "tableUniqueName" | "queryParameters"> & {
+    Omit<TableDesc, "columns" | "getIdentity" | "tableName" | "tableUniqueName" | "queryParameters" | "bandScope"> & {
         readonly tableName: TTableName;
         readonly tableUniqueName?: TTableUniqueName;
         readonly queryParameters?: TQueryParameters;
         readonly fields: TFields;
         readonly prismaModel: DB3PrismaModel<TDelegate>;
         readonly getIdentity?: TIdentityAccessor;
-    };
+        readonly bandScope?: TypedBandScope<TDelegate>;
+    } & ([InvalidStringIdentityFields<TFields, TDelegate>] extends [never] ? unknown
+        : { readonly __invalidStringIdentityFields: InvalidStringIdentityFields<TFields, TDelegate> });
 
 /** Preserves a reusable typed table descriptor before one or more tables use it. */
 export function defineTableDesc<

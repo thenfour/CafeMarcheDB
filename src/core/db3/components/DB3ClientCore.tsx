@@ -1,5 +1,7 @@
 'use client';
 
+import { useDB3QueryContext, type DB3QueryContextInput } from "./useDB3Context";
+import { useLocale } from "src/locale/components/useLocale";
 import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 import type { CMClientAuthorization } from "src/auth/shared/cmAuthorization";
 
@@ -18,7 +20,7 @@ import { type RestPaginatedResult, type RestQueryResult, usePaginatedQuery, useQ
 import React from "react";
 //import * as db3 from "../db3";
 import { TAnyModel } from "@/shared/rootroot";
-import { LocalizedMarkdownKey, LocalizedPlainStringKey } from "@/src/locale/staticLocalizedStringRegistry";
+import { LocalizedMarkdownKey, LocalizedPlainStringKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
 import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import type { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import { assert } from "blitz";
@@ -89,6 +91,7 @@ export abstract class IColumnClient<
     width: number;
 
     headerName: string;
+    headerNameKey: LocalizedPlainStringKey;
     fieldCaptionKey: LocalizedPlainStringKey;
     fieldDescriptionKey: LocalizedMarkdownKey | null;
     className: string | undefined;
@@ -135,7 +138,7 @@ export abstract class IColumnClient<
         //const defaultDescriptionSettingName = GenerateDefaultDescriptionSettingName(this.schemaTable.tableName, this.columnName);
         return <NameValuePair
             key={this.columnName}
-            name={this.fieldCaptionKey || this.columnName}
+            name={this.headerName}
             description={this.fieldDescriptionKey ? <LocalizedMarkdown setting={this.fieldDescriptionKey} /> : undefined}
             value={value}
             fieldName={this.columnName}
@@ -472,6 +475,7 @@ export type PreparedTableMutationOf<TView extends db3.AnyDB3View | undefined> =
 export interface xTableClientArgs<TView extends db3.AnyDB3View | undefined = undefined> {
     tableSpec: xTableClientSpec<TView>,
     referenceProvider?: db3.DB3ReferenceProvider,
+    queryContext?: DB3QueryContextInput; // Hooks supply presentation inputs; query-free clients need none.
 
     requestedCaps: xTableClientCaps,
 
@@ -531,6 +535,7 @@ export class xTableRenderClient<
         };
 
 
+        const queryContext = args.queryContext ?? {};
         const orderBy = CalculateOrderBy(args.sortModel);
 
         const skip = !!args.paginationModel ? (args.paginationModel.pageSize * args.paginationModel.page) : undefined;
@@ -550,6 +555,7 @@ export class xTableRenderClient<
                 throw new Error("Paginated DB3 queries require a pagination model.");
             }
             const paginatedQueryInput: db3.PaginatedQueryRequestInput = {
+                ...queryContext,
                 table: {
                     tableID: this.args.tableSpec.args.table.tableID,
                     tableName: this.args.tableSpec.args.table.tableName,
@@ -592,6 +598,7 @@ export class xTableRenderClient<
             console.assert(skip === 0 || skip === undefined);
 
             const queryInput: db3.QueryRequestInput = {
+                ...queryContext,
                 table: {
                     tableID: this.args.tableSpec.args.table.tableID,
                     tableName: this.args.tableSpec.args.table.tableName,
@@ -712,7 +719,14 @@ export const useTableRenderContext = <TView extends db3.AnyDB3View,>(
     args: xTableClientArgs<TView>,
 ): xTableRenderClient<TView> => {
     const auth = useClientAuth();
-    return new xTableRenderClient(args, auth);
+    const locale = useLocale();
+    args.tableSpec.args.columns.forEach(column => {
+        if (column.headerNameKey) {
+            column.headerName = locale.getPlainString(column.headerNameKey);
+        }
+    });
+    const queryContext = useDB3QueryContext();
+    return new xTableRenderClient({ ...args, queryContext }, auth);
 };
 
 export type xLegacyTableRenderClient<TRow extends TAnyModel = TAnyModel> =
@@ -723,7 +737,8 @@ export const useLegacyTableRenderContext = <TRow extends TAnyModel = TAnyModel,>
     args: xTableClientArgs<undefined>,
 ): xLegacyTableRenderClient<TRow> => {
     const auth = useClientAuth();
-    return new xTableRenderClient<undefined, TRow>(args, auth);
+    const queryContext = useDB3QueryContext();
+    return new xTableRenderClient<undefined, TRow>({ ...args, queryContext }, auth);
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -754,7 +769,9 @@ export function fetchUnsuspended<T>(args: FetchAsyncArgs<T>): FetchAsyncResult<T
             `DB3 view '${args.view.viewID}' does not belong to table '${args.schema.tableID}'.`,
         );
     }
+    const queryContext = useDB3QueryContext();
     const queryInput: db3.QueryRequestInput = {
+        ...queryContext,
         table: {
             tableID: args.schema.tableID,
             tableName: args.schema.tableName,
@@ -808,4 +825,3 @@ export function fetchUnsuspended<T>(args: FetchAsyncArgs<T>): FetchAsyncResult<T
 
 
 // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-

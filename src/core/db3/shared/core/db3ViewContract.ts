@@ -1,5 +1,7 @@
 import type { TAnyModel } from "@/shared/rootroot";
 import type { Prisma } from "db";
+import type { StringResolution } from "src/locale/shared/stringResolution";
+import type { DynamicLocalizedStringPublicId, PublicId } from "shared/publicId";
 import { z } from "zod";
 import {
     type DB3FieldsOf,
@@ -177,6 +179,25 @@ type DB3RequiredRootKeys<
 
 type Simplify<TValue> = { [TKey in keyof TValue]: TValue[TKey] };
 
+type LocalizedKeys<TFields, TKeys extends string> = {
+    [K in Extract<TKeys, keyof TFields>]: TFields[K] extends { readonly localized: true } ? K : never
+}[Extract<TKeys, keyof TFields>];
+type InheritedKeys<TFields, TKeys extends string> = {
+    [K in Extract<TKeys, keyof TFields>]: TFields[K] extends { readonly inheritsValue: true } ? K : never
+}[Extract<TKeys, keyof TFields>];
+type SourceKeys<TFields, TKeys extends string> = {
+    [K in Extract<TKeys, keyof TFields>]: TFields[K] extends { readonly catalogSource: true } ? K : never
+}[Extract<TKeys, keyof TFields>];
+type ReadCompanions<TFields, TKeys extends string> = {
+    [K in LocalizedKeys<TFields, TKeys> as `${K}Resolution`]: StringResolution
+} & {
+    [K in LocalizedKeys<TFields, TKeys> as `${K}StringPublicId`]: DynamicLocalizedStringPublicId | null
+} & {
+    [K in InheritedKeys<TFields, TKeys> as `${K}Override`]: DB3ReadTransportValueOf<TFields[K]> | null
+} & {
+    [K in InheritedKeys<TFields, TKeys> as `${K}InheritedValue`]: DB3ReadTransportValueOf<TFields[K]> | null
+} & (SourceKeys<TFields, TKeys> extends never ? {} : { globalPublicId: string | null });
+
 /** The statically known DTO output for an entity and explicit Prisma selection. */
 export type DB3DtoForSelection<
     TEntity extends AnyDB3Table,
@@ -189,7 +210,8 @@ export type DB3DtoForSelection<
 } & {
     [TKey in Exclude<TSelectedKey, TRequiredKey>]?:
     DB3RootMemberValue<TEntity, TSelection, TKey>;
-}>;
+} & ReadCompanions<DB3FieldsOf<TEntity>, Extract<TSelectedKey, TRequiredKey>>
+    & Partial<ReadCompanions<DB3FieldsOf<TEntity>, Exclude<TSelectedKey, TRequiredKey>>>>;
 
 /** A runtime Zod object whose inferred output is the selection-derived DTO. */
 export type DB3DerivedDtoSchema<
@@ -715,6 +737,12 @@ function compileSelect(
                     }
                 }
                 shape[member] = presence.schema;
+                for (const [companion, schema] of Object.entries(ownership.field.readCompanionSchemas ?? {})) {
+                    if (Object.prototype.hasOwnProperty.call(shape, companion)) {
+                        throw selectionError(entity, selectionPath, `Duplicate field companion '${companion}'.`);
+                    }
+                    shape[companion] = applyReadPresence(ownership.field, schema).schema;
+                }
                 members.push({
                     kind: "value",
                     ownershipKind: ownership.kind,
@@ -847,7 +875,7 @@ function hydrateCompiledMembers(
 
         if (member.kind === "value") {
             if (member.ownershipKind === "field") {
-                clientModel[member.member] = member.field.hydrateReadTransportValue(value);
+                clientModel[member.member] = member.field.hydrateReadTransportValue(value, dto);
             } else if (member.referenceDependency) {
                 const dependency = member.referenceDependency;
                 if (value === null) {

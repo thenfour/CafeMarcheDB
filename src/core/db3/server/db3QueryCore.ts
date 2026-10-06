@@ -13,7 +13,10 @@ import {
     resolvePublicQueryParameters,
 } from "./db3PublicIds";
 import { db3Server } from "./db3Server";
-import { isBandInstrumentTable, readBandInstrumentView } from "./bandInstrumentRead";
+import { executeDB3Read } from "./db3ReadExecution";
+import { resolveDB3ReadRows } from "./db3ResolvedFields";
+import { queryDB3Memory } from "../shared/core/db3MemoryQuery";
+import { collectLocalePreferences, selectFormattingLocale } from "src/locale/shared/localePreferences";
 
 export class DB3QueryAuthorizationError extends AuthorizationError {
     constructor() {
@@ -34,6 +37,18 @@ async function prepareTableQuery(
     if (view && view.tableID !== table.tableID) {
         throw new Error(`DB3 view '${view.viewID}' does not belong to table '${table.tableID}'.`);
     }
+    if (input.table.tableName !== table.tableName) {
+        throw new Error("The table name does not match its registered identity.");
+    }
+    if (auth.band && !table.bandScope) {
+        throw new DB3QueryAuthorizationError();
+    }
+    if (input.bandPublicId != null && input.bandPublicId !== auth.requireBand().publicId) {
+        throw new DB3QueryAuthorizationError();
+    }
+    if (table.queryStrategy === "resolved" && !view) {
+        throw new Error("Resolved DB3 reads require a named view.");
+    }
     const includeDeleted = input.includeDeleted === true;
 
     if (!table.authorizeTableForView(auth) || !table.authorizeIncludeDeleted(auth, includeDeleted)) {
@@ -45,11 +60,15 @@ async function prepareTableQuery(
         }
     };
     input.filter.items?.forEach(item => authorizeField(item.field));
-    if (input.orderBy) authorizeField(Object.keys(input.orderBy)[0]!);
+    if (input.orderBy) {
+        Object.keys(input.orderBy).forEach(authorizeField);
+    }
     if (input.filter.pks) authorizeField(table.pkMember);
     if (input.filter.publicIds) authorizeField(table.publicIdMember!);
     Object.keys(input.filter.tableParams || {}).forEach(parameterName => {
-        if (!table.authorizeQueryParameter(parameterName, auth)) throw new DB3QueryAuthorizationError();
+        if (!table.authorizeQueryParameter(parameterName, auth)) {
+            throw new DB3QueryAuthorizationError();
+        }
     });
     const resolvedTableParams = await resolvePublicQueryParameters(
         table,
@@ -65,6 +84,7 @@ async function prepareTableQuery(
         auth,
         includeDeleted,
         filterModel: resolvedFilter,
+        structuralOnly: table.queryStrategy === "resolved",
     });
     const viewWhere = view?.getWhereClause({
         filter: resolvedFilter,
@@ -79,9 +99,14 @@ async function prepareTableQuery(
         includeDeleted,
         view?.getSelectionArgs,
     );
+    // Small resolved catalogs fetch authorized field dependencies even for a narrow transport view.
+    // Filtering and natural ordering must not depend on which columns the caller chose to display.
+    const querySupportMembers = table.queryStrategy === "resolved" ? table.columns
+        .filter(field => table.authorizeColumnForView({ model: null, auth, columnName: field.member }))
+        .flatMap(field => field.getPrismaMemberDescriptors().map(descriptor => descriptor.member)) : [];
     const readSelection = db3Server.table(table).prepareReadSelection(
         selectionArgs ?? {},
-        executionOptions.orderedPrimaryKeys ? [table.pkMember] : [],
+        [...querySupportMembers, ...(executionOptions.orderedPrimaryKeys ? [table.pkMember] : [])],
     );
     return { table, view, auth, includeDeleted, where, selectionArgs: readSelection.selection, readSelection };
 }
@@ -185,7 +210,7 @@ function orderRawRowsByPrimaryKey<T extends TAnyModel>(
     });
 }
 
-export async function queryTable(
+async function queryTableInContext(
     input: db3.QueryRequestInput,
     auth: CMServerAuthorization,
     database: TransactionalPrismaClient = db,
@@ -193,23 +218,14 @@ export async function queryTable(
 ): Promise<DB3TableQueryResult> {
     const startTimestamp = Date.now();
 
-    // LSMB todo: table-specific logic does not belong here; acceptance of the full effort depends on this going away in favor of generalized code.
-    if (isBandInstrumentTable(input.table.tableID)) {
-        if (executionOptions.orderedPrimaryKeys || executionOptions.trustedNaturalPrimaryKeys) {
-            throw new Error("Catalog reads require resolved-field ordering and public identities.");
-        }
-        const result = await readBandInstrumentView(database, auth, input, 0, input.take);
-        return {
-            items: result.items,
-            executionTimeMillis: Date.now() - startTimestamp,
-            resultId: randomUUID(),
-        };
-    }
-    // Legacy descriptors lack ownership checks. Admit band grants as each domain is migrated.
-    if (auth.band) {
-        throw new DB3QueryAuthorizationError();
-    }
     const query = await prepareTableQuery(input, auth, database, executionOptions);
+    if (query.table.queryStrategy === "resolved") {
+        if (executionOptions.orderedPrimaryKeys || executionOptions.trustedNaturalPrimaryKeys) {
+            throw new Error("Resolved DB3 reads use field ordering and public identities.");
+        }
+        const result = await queryResolvedRowsInMemory(input, query, database, 0, input.take);
+        return { items: result.items, executionTimeMillis: Date.now() - startTimestamp, resultId: randomUUID() };
+    }
     const trustedPrimaryKeyWhere = executionOptions.trustedNaturalPrimaryKeys
         ? { [query.table.pkMember]: { in: executionOptions.trustedNaturalPrimaryKeys } }
         : undefined;
@@ -233,6 +249,33 @@ export async function queryTable(
         executionTimeMillis: Date.now() - startTimestamp,
         resultId: randomUUID(),
     };
+}
+
+/** Shared execution owns snapshot consistency and fresh grants for band-scoped reads. */
+export async function queryTable(input: db3.QueryRequestInput, auth: CMServerAuthorization,
+    database: TransactionalPrismaClient = db, executionOptions: QueryTableExecutionOptions = {},
+): Promise<DB3TableQueryResult> {
+    const table = db3.GetTableById(input.table.tableID);
+    return table.bandScope
+        ? executeDB3Read(database, auth, context => queryTableInContext(input, context.authorization, context.database, executionOptions))
+        : queryTableInContext(input, auth, database, executionOptions);
+}
+
+// if you've brought a table in memory to perform dynamic resolution of queryable fields
+// (e.g. SongTag table needs its localized strings resolved in code)
+// and want to  query over that...
+async function queryResolvedRowsInMemory(input: db3.LegacyQueryInputBase, query: Awaited<ReturnType<typeof prepareTableQuery>>,
+    database: TransactionalPrismaClient, skip: number, take?: number,
+) {
+    const rawRows = await database[query.table.tableName].findMany({ where: query.where, ...query.selectionArgs });
+    const resolved = await resolveDB3ReadRows(query.table, rawRows, database, query.auth, input);
+    // Authorize before matching, so protected fields cannot affect matches, counts, or order.
+    const authorized = resolved.map(row => authorizeAndProjectDB3ViewModel(
+        query.table, row, query.auth, `resolvedQuery:${query.table.tableName}`, query.includeDeleted,
+    )).filter((row): row is TAnyModel => row !== null);
+    const result = queryDB3Memory(query.table, authorized, input.filter, query.auth,
+        input.orderBy, selectFormattingLocale(collectLocalePreferences(input)), skip, take);
+    return { ...result, items: result.items.map(row => query.view!.parseDto(query.readSelection.stripSupportFields(row))) };
 }
 
 export type QueryViewInput<TView extends db3.AnyDB3View> = Omit<
@@ -273,7 +316,9 @@ export function authorizeAndProjectViewDto<
         auth,
         contextDesc,
     );
-    if (!projected) return null;
+    if (!projected) {
+        return null;
+    }
     return view.parseDto(projected);
 }
 
@@ -343,26 +388,20 @@ export async function queryHydratedView<TView extends db3.AnyDB3View>(
 //     queryTable(request, await loadAuthorization(ctx.session))
 // );
 
-export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInput, auth: CMServerAuthorization,
+async function paginatedQueryInContext(input: db3.PaginatedQueryRequestInput, auth: CMServerAuthorization,
     database: TransactionalPrismaClient = db,
 ): Promise<DB3TableQueryResult & { count: number; hasMore: boolean; nextPage: { skip: number; take: number } | null }> {
     const startTimestamp = Date.now();
 
-    // LSMB todo: table-specific logic does not belong here; acceptance of the full effort depends on this going away in favor of generalized code.
-    if (isBandInstrumentTable(input.table.tableID)) {
-        const result = await readBandInstrumentView(database, auth, input, input.skip, input.take);
+    const query = await prepareTableQuery(input, auth, database);
+    if (query.table.queryStrategy === "resolved") {
+        const result = await queryResolvedRowsInMemory(input, query, database, input.skip, input.take);
         const hasMore = input.skip + result.items.length < result.count;
         return {
             ...result, hasMore, nextPage: hasMore ? { skip: input.skip + input.take, take: input.take } : null,
             executionTimeMillis: Date.now() - startTimestamp, resultId: randomUUID()
         };
     }
-
-    if (auth.band) {
-        throw new DB3QueryAuthorizationError();
-    }
-
-    const query = await prepareTableQuery(input, auth, database);
     const delegate = database[query.table.tableName];
     const { items, ...pagination } = await paginate({
         skip: input.skip,
@@ -383,4 +422,13 @@ export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInpu
         executionTimeMillis: Date.now() - startTimestamp,
         resultId: randomUUID(),
     };
+}
+
+export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInput, auth: CMServerAuthorization,
+    database: TransactionalPrismaClient = db,
+): Promise<DB3TableQueryResult & { count: number; hasMore: boolean; nextPage: { skip: number; take: number } | null }> {
+    const table = db3.GetTableById(input.table.tableID);
+    return table.bandScope
+        ? executeDB3Read(database, auth, context => paginatedQueryInContext(input, context.authorization, context.database))
+        : paginatedQueryInContext(input, auth, database);
 }

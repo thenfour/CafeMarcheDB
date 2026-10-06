@@ -17,6 +17,7 @@ export interface SelectionQuery<T> {
     hasMatches?: boolean;
     refetch: () => void;
     createOption?: (text: string) => Promise<T>;
+    creationControls?: React.ReactNode;
 }
 
 // Query hooks stay in the adapter. The picker owns interaction, never database rules.

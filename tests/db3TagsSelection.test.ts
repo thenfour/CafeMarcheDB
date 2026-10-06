@@ -19,7 +19,7 @@ vi.mock("src/core/db3/db3", async () => {
 vi.mock("src/core/db3/components/DB3ClientCore", () => ({
     IColumnClient: class { constructor(args: object) { Object.assign(this, args); } },
 }));
-vi.mock("src/core/db3/components/useDB3Authorization", () => ({ useDB3Authorization: () => ({}) }));
+vi.mock("src/core/db3/components/useClientAuth", () => ({ useClientAuth: () => ({}) }));
 vi.mock("src/core/db3/components/IconMap", () => ({ RenderMuiIcon: () => null }));
 vi.mock("src/core/components/CMCoreComponents2", () => ({
     useIsShowingAdminControls: () => false,
@@ -29,20 +29,24 @@ vi.mock("src/core/components/CMCoreComponents2", () => ({
 }));
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ referenceStore: {}, refreshCachedData: vi.fn() }) }));
 vi.mock("src/core/db3/components/useCrudViewCreate", () => ({ useCrudViewCreate: vi.fn() }));
-vi.mock("src/core/components/SettingMarkdown", () => ({
-    GenerateForeignSingleSelectStyleSettingName: () => "selection-style",
-    SettingMarkdown: () => null,
-}));
+vi.mock("src/setting/client/components/SettingMarkdown", () => ({ LocalizedMarkdown: () => null }));
 vi.mock("src/core/components/SnackbarContext", async () => {
     const React = await vi.importActual<typeof import("react")>("react");
     return { SnackbarContext: React.createContext({ showMessage: vi.fn() }) };
 });
 vi.mock("@/src/setting/server/mutations/updateSetting", () => ({ default: vi.fn() }));
-vi.mock("@/src/setting/server/queries/getSetting", () => ({ default: vi.fn() }));
 vi.mock("src/core/db3/queries/db3queries", () => ({ default: vi.fn() }));
 
+vi.mock("src/core/db3/components/useDB3Context", () => ({ useDB3QueryContext: () => ({
+    bandPublicId: "Band000000000001", routeLocale: "en-US", browserLanguages: ["fr-BE", "nl-BE"], clientRequestId: "refresh-selection",
+}) }));
+vi.mock("src/core/db3/components/useDB3CreateFromString", () => ({ useDB3CreateFromString: (table: { createInsertModelFromString?: (text: string) => unknown }) => ({
+    canCreate: !!table.createInsertModelFromString, createModel: table.createInsertModelFromString, controls: undefined,
+}) }));
+vi.mock("src/setting/client/useSettings", () => ({ useGlobalSettings: () => ({ getValue: () => "dialog" }) }));
+
+
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import getSetting from "@/src/setting/server/queries/getSetting";
 import { TagsFieldClient, TagsFieldInput } from "src/core/db3/components/DB3ClientTagsField";
 import { useCrudViewCreate } from "src/core/db3/components/useCrudViewCreate";
 
@@ -70,8 +74,7 @@ beforeEach(() => {
     // These hook mocks implement only the token/tuple surface exercised here.
     vi.mocked(useCrudViewCreate).mockReturnValue({ create: createOption } as any);
     vi.mocked(useMutation).mockReturnValue([vi.fn()] as any);
-    vi.mocked(useQuery).mockImplementation((query, args: any) => {
-        if (query === getSetting) return [null, { refetch }] as any;
+    vi.mocked(useQuery).mockImplementation((_query, args: any) => {
         const filter = args.filter.quickFilterValues.join(" ").toLowerCase();
         return [queryState.isLoading ? undefined : { items: options.filter(o => o.name.toLowerCase().includes(filter)) }, { ...queryState, refetch }] as any;
     });
@@ -90,12 +93,13 @@ beforeEach(() => {
         crud: { operations: { create: { kind: "create", command: {} } } },
     };
     spec = new TagsFieldClient<Association>({
-        columnName: "taggedInstruments", fieldCaption: "Instruments", cellWidth: 150, allowDeleteFromCell: false,
+        columnName: "taggedInstruments", fieldCaptionKey: "catalog.name", fieldDescriptionKey: null, cellWidth: 150, allowDeleteFromCell: false,
         // This intentionally minimal descriptor supplies only the view members
         // exercised by the selector test.
         selectionView: selectionView as any,
         renderAsChip: args => React.createElement("span", { className: "custom-chip", onClick: args.onClick }, args.value?.instrument.name),
     });
+    spec.headerName = "Instruments";
     spec.schemaTable = { tableName: "File", authorizeRowBeforeInsert: () => insertAuthorized } as any;
     spec.schemaColumn = {
         member: "taggedInstruments", allowInsertFromString: true,
