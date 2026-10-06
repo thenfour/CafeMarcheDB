@@ -237,8 +237,10 @@ identity during phases 3–5; missing identity does not select a nominal band.
 
 ## Next execution step
 
-Start phase 3 with the representative band-instrument vertical slice: global
-opt-in/inheritance, custom instruments, localized names, functional groups,
-authorized list/detail reads, forms, and transactional mutations. Apply these
-shared localization and settings contracts there before adapting the remaining
-DB3 domains.
+Phase 3's representative band-instrument vertical slice is now implemented; see
+[07-db3-band-instruments.md](07-db3-band-instruments.md) for global
+opt-in/inheritance, custom instruments, localized fields, authorized list/detail
+reads, forms, transactional writes, and validation. Continue phase 3 with the
+remaining dashboard/reference, catalog, membership/content, and registered
+settings-editor consumers. Application recovery and complete portal routing
+remain phases 4–5.

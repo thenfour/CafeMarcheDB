@@ -10,7 +10,6 @@ const roleEditorArgs = Prisma.validator<Prisma.RoleDefaultArgs>()({
         description: true,
         sortOrder: true,
         color: true,
-        significance: true,
         permissions: {
             select: {
                 publicId: true,

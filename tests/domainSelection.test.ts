@@ -29,7 +29,7 @@ vi.mock("src/core/db3/components/useCrudViewCreate", () => ({ useCrudViewCreate:
 vi.mock("src/core/db3/components/useDB3Authorization", () => ({ useDB3Authorization: () => ({}) }));
 vi.mock("src/core/db3/components/IconMap", () => ({ RenderMuiIcon: (icon: string) => icon ? React.createElement("svg", { "data-icon": icon, "aria-hidden": true }) : null, gIconMap: { Lock: () => null, Add: () => null } }));
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: vi.fn(), useFeatureRecorder: vi.fn() }));
-vi.mock("src/core/components/SettingMarkdown", () => ({ SettingMarkdown: () => null, GenerateDefaultDescriptionSettingName: () => "description" }));
+vi.mock("src/setting/client/components/SettingMarkdown", () => ({ LocalizedMarkdown: () => null }));
 vi.mock("src/core/components/CMLink", () => ({ CMLink: () => null }));
 vi.mock("src/core/db3/queries/getUser", () => ({ default: vi.fn() }));
 vi.mock("@blitzjs/rpc", () => ({ useQuery: vi.fn() }));
@@ -50,8 +50,8 @@ const permissions = [
     { publicId: parsePublicId<"Permission">("PermissionMng001"), name: "Manage events", isVisibility: false },
 ];
 const tags: db3.UserTagDisplay[] = [
-    { publicId: parsePublicId<"UserTag">("UserTagPublic001"), text: "Performers", description: "", color: null, significance: null, sortOrder: 1, cssClass: null },
-    { publicId: parsePublicId<"UserTag">("UserTagPublic002"), text: "Volunteers", description: "", color: null, significance: null, sortOrder: 2, cssClass: null },
+    { publicId: parsePublicId<"UserTag">("UserTagPublic001"), text: "Performers", description: "", color: null, sortOrder: 1, cssClass: null },
+    { publicId: parsePublicId<"UserTag">("UserTagPublic002"), text: "Volunteers", description: "", color: null, sortOrder: 2, cssClass: null },
 ];
 const users = [
     { publicId: userPublicId(1), name: "Alex Martin" },

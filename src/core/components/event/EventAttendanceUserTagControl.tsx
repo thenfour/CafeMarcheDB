@@ -49,7 +49,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
         renderValue: tag => <CMStandardDBChip model={tag} />,
     }), CMSelectNullBehavior.AllowNull, () => "No tags are invited");
 
-    return <SelectionField className={`eventStatusControl ${event.expectedAttendanceUserTag?.significance}`} source={source}
+    return <SelectionField className={`eventStatusControl ${event.expectedAttendanceUserTag?.cssClass ?? ""}`} source={source}
         value={[event.expectedAttendanceUserTag]} readonly={readonly || !authorizedForEdit} displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
         dialogTitle="Expected attendance group"
         dialogDescription={<LocalizedMarkdown setting={"event.expectedAttendanceUserTag.DescriptionMarkdown"} />}

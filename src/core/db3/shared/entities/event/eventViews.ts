@@ -108,7 +108,6 @@ export const eventTagEditorSelection = Prisma.validator<Prisma.EventTagDefaultAr
         color: true,
         sortOrder: true,
         text: true,
-        significance: true,
         visibleOnFrontpage: true,
     },
 });
@@ -419,7 +418,6 @@ const eventDetailTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
                 color: true,
                 sortOrder: true,
                 cssClass: true,
-                significance: true,
                 userAssignments: {
                     select: {
                         publicId: true,

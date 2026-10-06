@@ -32,10 +32,8 @@ import {
   type WikiPageTagAssignmentPublicId,
   type WikiPageTagPublicId,
 } from "shared/publicId"
-import type { DateTimeRange } from "shared/time"
 import { compileDB3Selection } from "src/core/db3/shared/core/db3ViewContract"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
-import { eventPublicId } from "./support/eventResponseFixtures"
 
 const eventTypePublicId = parsePublicId<"EventType">("AbCdEfGhIjKlMn11")
 const eventStatusPublicId = parsePublicId<"EventStatus">("AbCdEfGhIjKlMn12")
@@ -798,7 +796,6 @@ describe("Event lookup editor derived-view rollout", () => {
       color: string | null
       sortOrder: number
       text: string
-      significance: string | null
       visibleOnFrontpage: boolean
     }>()
     expectTypeOf<Client["color"]>().toEqualTypeOf<ColorPaletteEntry | null>()
@@ -812,7 +809,6 @@ describe("Event lookup editor derived-view rollout", () => {
       color: "orange",
       sortOrder: 1,
       text: "Public",
-      significance: null,
       visibleOnFrontpage: true,
     }
     expect(db3.eventTagEditorView.hydrate(
@@ -911,7 +907,6 @@ describe("Wiki page tag derived-view migration", () => {
       text: "Policy",
       description: "Policy page",
       color: null,
-      significance: null,
       sortOrder: 1,
     }
     db3.registerDashboardReferences(references, { wikiPageTag: [tag] })

@@ -218,7 +218,13 @@ and readable independently of database, dashboard, and React orchestration.
 
 **Outcome:** DB3 supports the target model through reusable read/write contracts.
 
-- [ ] Complete one representative vertical slice first: band instruments,
+**In progress, 2026-10-06.** The representative band-instrument slice is
+implemented; its contracts, restrictions, and validation are recorded in
+[07-db3-band-instruments.md](07-db3-band-instruments.md). The remaining catalogs,
+membership/content descriptors, settings editors, and their consumers still need
+adaptation. This does not complete phase 3 or establish application readiness.
+
+- [x] Complete one representative vertical slice first: band instruments,
   including global opt-in/inheritance, custom instruments, localized names,
   functional groups, authorized list/detail reads, forms, and mutations.
 - [ ] Implement localized-field handling in the existing DB3 field, query,
@@ -229,7 +235,7 @@ and readable independently of database, dashboard, and React orchestration.
 - [ ] Enforce band constraints centrally for reads and writes, including
   inherited ownership. Validate referenced records against the same band inside
   the mutation transaction; the current schema does not enforce every such link.
-- [ ] Add a minimal transactional dynamic-string writer so ordinary entity
+- [x] Add a minimal transactional dynamic-string writer so ordinary entity
   creation and name editing work before the full translation editor exists.
   Enforce format, ownership, and exactly one value storage column.
 - [ ] Apply the established patterns to other catalogs, shared global catalogs,
@@ -358,8 +364,10 @@ owner/restoration phase for any additional gap.
 | --- | --- | --- |
 | `LocalizedMarkdown` inline editing | Implemented in phase 2: resolved rendering remains; the obsolete inline editor/write path is removed. | Phase 6 supplies scoped localized editing. |
 | Generic DB3 settings writes | Implemented in phase 2: mutations reject all settings hives to preserve registry validation and per-key authorization. | Phase 3 adapts generic editors to the registered command API. |
-| Full translation editor | Phase 3 provides the minimal dynamic writer needed for ordinary creation/name editing. | Phase 6 supplies locale/scope selection, inspection, and override/reset UX. |
-| Full portal routing and band management | Phases 1–4 use trusted server context with the initial Café Marché selection. Isolation is enforced throughout. | Phase 5 completes routing and lifecycle surfaces. |
+| Full translation editor | Implemented for instruments in phase 3: transactional band string writes and explicit locale/field inheritance controls. Translation inventory and inspection remain deferred. | Phase 6 supplies the shared static/dynamic editing and inspection surface. |
+| Full portal routing and band management | Recovery requests select a band explicitly with `?bandPublicId=<publicId>` and may supply `routeLocale`. Server authorization validates the selection; omitting it never selects a default band. | Phase 5 completes host/path routing, links, switching, and lifecycle surfaces. |
+| Legacy DB3 operations with selected-band grants | Implemented in phase 3: generic reads and commands reject selected-band execution except the migrated instrument catalog views/command. Legacy handlers do not yet enforce band ownership. | Phases 3–4 migrate each domain before admitting its band-scoped operations. |
+| Global instrument administration and instrument consumers outside the catalog pages | Band opt-in/custom editing is implemented. Global catalog writers, dashboard/member selectors, file/event associations, and catalog seeds still use obsolete contracts. | Continue phase 3 descriptors and phase 4 workflow recovery; no compatibility delegates were added. |
 | Band administrators using old global-account writers | Implemented in phase 1: shared-account changes require platform grants. Separate membership writers and old role/merge consumers still need adaptation. | Phases 3–4 supply BandUser role/offboarding/recovery operations and the appropriate views. |
 | Legacy random demo seeds | Implemented in phase 1: the seed entry point now initializes real access-control foundations. Old catalog/demo generators reference removed models. | Phases 3–4 adapt useful catalog/demo seed content with its domains. |
 | Legacy synchronous band-permission guards | Implemented in the phase-1 correction: `resolver.authorize` rejects band capabilities; only request-scoped authorization can check them. | Phases 3–4 replace remaining band guards with `cmauthorize` and enforce resource ownership. |
@@ -389,7 +397,10 @@ workflows or isolation.
 
 Phases 1–2 are implemented and checked; see
 [05-authorization-foundation.md](05-authorization-foundation.md) and
-[06-localization-settings.md](06-localization-settings.md). Start phase 3 with the
-band-instrument vertical slice, using the shared resolver and authorized typed
-settings contracts. Broader domain and application recovery follow. The
+[06-localization-settings.md](06-localization-settings.md). Phase 3's
+[band-instrument vertical slice](07-db3-band-instruments.md) is implemented.
+Continue with the dashboard/reference and member-instrument contracts, then apply
+the established localized-field, same-band reference, and transactional command
+patterns to the remaining catalogs, membership/content views, and registered
+settings editors. Broader application recovery follows in phase 4. The
 application remains unbuildable until those consumer adaptations are complete.

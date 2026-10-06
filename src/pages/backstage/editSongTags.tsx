@@ -15,7 +15,6 @@ const songTagsTableSpec = DB3Client.defineTableClientSpec({
         description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
         color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 300 }),
         sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
-        significance: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 200 }),
         group: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
         indicator: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
         indicatorCssClass: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),

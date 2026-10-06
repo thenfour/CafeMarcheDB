@@ -7,6 +7,7 @@ import { eventSongListSaveCommandHandler } from "./commands/eventSongListSaveCom
 import { rolePermissionSetCommandHandler } from "./commands/rolePermissionSetCommand";
 import { galleryReorderCommandHandler } from "./commands/galleryOperations";
 import { menuLinkReorderCommandHandler } from "./commands/menuLinkOperations";
+import { bandInstrumentCommandHandler } from "./commands/bandInstrumentCommand";
 
 const commandHandlers = new Map<string, AnyDB3CommandHandler>();
 
@@ -25,6 +26,7 @@ export function registerDB3CommandHandlers(handlers: AnyDB3CommandHandler[]): vo
 // A: because unit tests rely on these being created in ways that the above fails to do;
 // simplest is to just make those registrations here.
 registerDB3CommandHandlers([
+    bandInstrumentCommandHandler,
     eventSongListSaveCommandHandler,
     eventSongListDeleteCommandHandler,
     eventSongListReorderCommandHandler,

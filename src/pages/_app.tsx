@@ -25,6 +25,7 @@ import { isConnectivityError } from "src/core/connectivity/connectionHealth";
 import { useQueryErrorResetBoundary } from "@blitzjs/rpc";
 import { PresentationProvider } from "src/locale/components/PresentationProvider";
 import type { PresentationData } from "src/locale/shared/presentationContext";
+import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
 
 // Client-side cache, shared for the whole session of the user in the browser.
 const clientSideEmotionCache = createEmotionCache();
@@ -217,6 +218,7 @@ export function MyApp({
 // withBlitz preserves this hook; define it here so its Next types stay visible.
 MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<SharedPageProps>> => {
   const { req, res, pathname } = appCtx.ctx;
+  const presentationInput = pagePresentationInput(appCtx.ctx.query, req?.headers["accept-language"]);
   if (req) {
     if (!res) throw new Error("Server page request is missing its response.");
 
@@ -226,7 +228,7 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
     const { authorizePageRequest } = await import("@/src/auth/server/pageRequestAuthorization");
     const session = await getSessionForRequest(req, res);
     try {
-      await authorizePageRequest(pathname, session);
+      await authorizePageRequest(pathname, session, presentationInput.bandPublicId ?? undefined);
     } catch (error) {
       // Redirect unauthenticated users to the backstage login page.
       if (!(error instanceof AuthenticationError)) throw error;
@@ -250,13 +252,11 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
     const { loadPresentationData } = await import("src/locale/server/presentation");
     const { loadAuthorization } = await import("src/auth/server/serverAuthorization");
     const { getSessionForRequest } = await import("src/blitz-server");
-    const { parseAcceptLanguage } = await import("src/locale/shared/localePreferences");
-    const auth = await loadAuthorization(await getSessionForRequest(req, res!));
+    const sessionContext = await getSessionForRequest(req, res!);
+    const auth = await loadAuthorization(sessionContext, presentationInput.bandPublicId);
     const presentation = await loadPresentationData(
       auth,
-      {
-        browserLanguages: parseAcceptLanguage(req.headers["accept-language"])
-      }
+      presentationInput
     );
     const brand = await loadDbBrandConfig(req.headers.host, auth.band?.id ?? null);
     appProps.pageProps = {

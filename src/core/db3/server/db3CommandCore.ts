@@ -1,7 +1,7 @@
 // server-side db3 command execution core
 
 import type { TAnyModel } from "@/shared/rootroot";
-import type { AuthenticatedCtx } from "blitz";
+import { AuthorizationError, type AuthenticatedCtx } from "blitz";
 import db from "db";
 import type {
     AnyDB3Command,
@@ -21,6 +21,8 @@ import {
 } from "./db3mutationCore";
 import { resolvePublicForeignIds, resolvePublicId } from "./db3PublicIds";
 import { CMServerAuthorization, loadAuthorization } from "@/src/auth/server/serverAuthorization";
+import type { BandPublicId } from "shared/publicId";
+import { bandInstrumentCommand } from "../shared/entities/instrument/bandInstrumentContracts";
 
 export class DB3CommandError extends Error {
     constructor(message: string) {
@@ -208,13 +210,20 @@ export async function executeDB3Command(
     handler: AnyDB3CommandHandler,
     ctx: AuthenticatedCtx,
     transactionalDb: TransactionalPrismaClient = db as any,
+    bandPublicId?: BandPublicId | null,
 ): Promise<unknown> {
     if (request.commandID !== handler.command.commandID) {
         throw new DB3CommandError(
             `Command handler '${handler.command.commandID}' cannot execute '${request.commandID}'.`,
         );
     }
-    const authorization = await (await loadAuthorization(ctx.session)).refresh(transactionalDb);
+    const authorization = await (await loadAuthorization(ctx.session, bandPublicId)).refresh(transactionalDb);
+    // Legacy handlers lack ownership checks and cannot execute with selected-band grants.
+    // LSMB todo: acceptance depends on this going away and being generalized. generic commands should
+    // avoid table-specific exceptions/branching.
+    if (authorization.band && handler.command.commandID !== bandInstrumentCommand.commandID) {
+        throw new AuthorizationError("This command has not migrated to band-scoped execution.");
+    }
     const dto = handler.command.parseDto(request.payload);
     const rowServices = createCommandRowServices(authorization, transactionalDb);
     const result = await handler.execute(dto, {

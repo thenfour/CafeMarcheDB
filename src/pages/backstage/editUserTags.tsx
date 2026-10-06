@@ -15,7 +15,6 @@ const tableSpec = DB3Client.defineTableClientSpec({
         color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 300 }),
         cssClass: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 }),
         sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
-        significance: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 120 }),
     },
 });
 

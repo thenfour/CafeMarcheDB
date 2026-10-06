@@ -11,7 +11,6 @@ const UserTagArgs = Prisma.validator<Prisma.UserTagDefaultArgs>()({
         description: true,
         color: true,
         sortOrder: true,
-        significance: true,
         cssClass: true,
     },
 });

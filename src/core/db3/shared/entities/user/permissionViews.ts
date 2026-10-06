@@ -52,7 +52,6 @@ const permissionRoleMatrixSelection = Prisma.validator<Prisma.PermissionDefaultA
                         description: true,
                         sortOrder: true,
                         color: true,
-                        significance: true,
                     },
                 },
             },

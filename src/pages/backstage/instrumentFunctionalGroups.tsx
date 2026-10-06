@@ -1,38 +1,14 @@
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { BlitzPage } from "@blitzjs/next";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
-import * as db3 from "src/core/db3/db3";
-
-
-const InstrumentFunctionalGroupListContent = () => {
-    const tableSpec = DB3Client.defineTableClientSpec({
-        view: db3.instrumentFunctionalGroupEditorView,
-        columns: {
-            publicId: DB3Client.publicIdFieldGen(),
-            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
-            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 300 }),
-            color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 300 }),
-            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
-        },
-    });
-
-    return <>
-        <LocalizedMarkdown setting="InstrumentFunctionalGroupList_markdown"></LocalizedMarkdown>
-        <DB3EditGrid
-            tableSpec={tableSpec}
-            view={db3.instrumentFunctionalGroupEditorView}
-        />
-    </>;
-};
+import type { BlitzPage } from "@blitzjs/next";
+import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
+import { BandInstrumentCatalog } from "src/core/db3/components/BandInstrumentCatalog";
+import { useLocale } from "src/locale/components/useLocale";
+import { LocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 
 const InstrumentFunctionalGroupListPage: BlitzPage = () => {
-    return (
-        <DashboardLayout title="InstrumentGroups">
-            <InstrumentFunctionalGroupListContent />
-        </DashboardLayout>
-    );
+    const locale = useLocale();
+    return <DashboardLayout title={locale.getPlainString("instrument.groupsTitle")}>
+        <LocalizedMarkdown setting="InstrumentFunctionalGroupList_markdown" />
+        <BandInstrumentCatalog mode="group" />
+    </DashboardLayout>;
 };
-
 export default InstrumentFunctionalGroupListPage;

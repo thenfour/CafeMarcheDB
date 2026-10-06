@@ -116,7 +116,6 @@ const eventFrontpageRequestedSelection = Prisma.validator<Prisma.EventDefaultArg
                         sortOrder: true,
                         visibleOnFrontpage: true,
                         text: true,
-                        significance: true,
                     },
                 },
             },

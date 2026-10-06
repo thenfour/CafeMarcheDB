@@ -5,10 +5,14 @@ import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { executeDB3Command } from "../server/db3CommandCore";
 import { getDB3CommandHandler } from "../server/db3CommandRegistry";
+import { BandPublicIdSchema } from "src/locale/shared/presentationInput";
 
 const DB3CommandRequestSchema = z.object({
     commandID: z.string().min(1).max(128).regex(/^[A-Za-z][A-Za-z0-9_]*$/),
     payload: z.unknown(),
+    // db3 commands are low level op; Why does it accept a band id?
+    // because bandId participates in authorization profile.
+    bandPublicId: BandPublicIdSchema.nullish(),
 }).strict();
 
 export type ExecuteDB3CommandRequest = z.infer<typeof DB3CommandRequestSchema>;
@@ -22,7 +26,7 @@ export default resolver.pipe(
             transactionalDb => executeDB3Command({
                 commandID: request.commandID,
                 payload: request.payload,
-            }, handler, ctx, transactionalDb),
+            }, handler, ctx, transactionalDb, request.bandPublicId),
             {
                 isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
                 timeout: 120_000,

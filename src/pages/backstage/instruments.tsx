@@ -1,61 +1,14 @@
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
-import { BlitzPage } from "@blitzjs/next";
-import PageviewIcon from '@mui/icons-material/Pageview';
-import { GridActionsCellItem } from "@mui/x-data-grid";
-import { useRouter } from "next/router";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
-import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
-
-const InstrumentListContent = () => {
-    const router = useRouter();
-    const dashboardContext = useDashboardContext();
-
-    const tableSpec = DB3Client.defineTableClientSpec({
-        view: db3.instrumentEditorView,
-        columns: {
-            publicId: DB3Client.publicIdFieldGen(),
-            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
-            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
-            autoAssignFileLeafRegex: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200, fieldCaption: "Regex" }),
-            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
-            functionalGroup: columnName => new DB3Client.ForeignSingleFieldClient<db3.InstrumentEditorFunctionalGroup>({
-                columnName,
-                cellWidth: 200,
-                selectionView: db3.instrumentFunctionalGroupEditorView,
-            }),
-        },
-    });
-
-    return <>
-        <LocalizedMarkdown setting="instrumentList_markdown"></LocalizedMarkdown>
-        <DB3EditGrid
-            tableSpec={tableSpec}
-            view={db3.instrumentEditorView}
-            referenceProvider={dashboardContext.referenceStore}
-            renderExtraActions={(args) => (
-                <GridActionsCellItem
-                    icon={<PageviewIcon />}
-                    key="view"
-                    label="View"
-                    color="inherit"
-                    onClick={() => {
-                        void router.push(`/backstage/instrument/${args.row.publicId}`);
-                    }}
-                />
-            )}
-        />
-    </>;
-};
+import type { BlitzPage } from "@blitzjs/next";
+import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
+import { BandInstrumentCatalog } from "src/core/db3/components/BandInstrumentCatalog";
+import { useLocale } from "src/locale/components/useLocale";
+import { LocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 
 const InstrumentListPage: BlitzPage = () => {
-    return (
-        <DashboardLayout title="Instrument admin">
-            <InstrumentListContent />
-        </DashboardLayout>
-    );
+    const locale = useLocale();
+    return <DashboardLayout title={locale.getPlainString("instrument.title")}>
+        <LocalizedMarkdown setting="instrumentList_markdown" />
+        <BandInstrumentCatalog />
+    </DashboardLayout>;
 };
-
 export default InstrumentListPage;

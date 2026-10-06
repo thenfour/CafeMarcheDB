@@ -10,7 +10,6 @@ export const wikiPageTagEditorSelection = Prisma.validator<Prisma.WikiPageTagDef
         description: true,
         color: true,
         sortOrder: true,
-        significance: true,
     },
 });
 

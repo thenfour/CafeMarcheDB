@@ -13,6 +13,7 @@ import {
     resolvePublicQueryParameters,
 } from "./db3PublicIds";
 import { db3Server } from "./db3Server";
+import { isBandInstrumentTable, readBandInstrumentView } from "./bandInstrumentRead";
 
 export class DB3QueryAuthorizationError extends AuthorizationError {
     constructor() {
@@ -152,6 +153,13 @@ export interface QueryTableExecutionOptions {
     trustedNaturalPrimaryKeys?: readonly number[];
 }
 
+// This registry-level boundary returns heterogeneous tables. Named queryView callers recover their validated DTO type.
+interface DB3TableQueryResult {
+    items: TAnyModel[];
+    executionTimeMillis: number;
+    resultId: string;
+}
+
 // takes an ordered list of pks, and an unordered list of items;
 // returns items ordered according to the orderedPrimaryKeys array
 function orderRawRowsByPrimaryKey<T extends TAnyModel>(
@@ -182,8 +190,25 @@ export async function queryTable(
     auth: CMServerAuthorization,
     database: TransactionalPrismaClient = db,
     executionOptions: QueryTableExecutionOptions = {},
-) {
+): Promise<DB3TableQueryResult> {
     const startTimestamp = Date.now();
+
+    // LSMB todo: table-specific logic does not belong here; acceptance of the full effort depends on this going away in favor of generalized code.
+    if (isBandInstrumentTable(input.table.tableID)) {
+        if (executionOptions.orderedPrimaryKeys || executionOptions.trustedNaturalPrimaryKeys) {
+            throw new Error("Catalog reads require resolved-field ordering and public identities.");
+        }
+        const result = await readBandInstrumentView(database, auth, input, 0, input.take);
+        return {
+            items: result.items,
+            executionTimeMillis: Date.now() - startTimestamp,
+            resultId: randomUUID(),
+        };
+    }
+    // Legacy descriptors lack ownership checks. Admit band grants as each domain is migrated.
+    if (auth.band) {
+        throw new DB3QueryAuthorizationError();
+    }
     const query = await prepareTableQuery(input, auth, database, executionOptions);
     const trustedPrimaryKeyWhere = executionOptions.trustedNaturalPrimaryKeys
         ? { [query.table.pkMember]: { in: executionOptions.trustedNaturalPrimaryKeys } }
@@ -205,8 +230,6 @@ export async function queryTable(
     if (input.delayMS) await sleep(input.delayMS);
     return {
         items: sanitizeQueryRows(orderedItems, query, `query:${query.table.tableName}`),
-        //where,
-        //selectionArgs: query.selectionArgs,
         executionTimeMillis: Date.now() - startTimestamp,
         resultId: randomUUID(),
     };
@@ -320,10 +343,27 @@ export async function queryHydratedView<TView extends db3.AnyDB3View>(
 //     queryTable(request, await loadAuthorization(ctx.session))
 // );
 
-export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInput, auth: CMServerAuthorization) {
+export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInput, auth: CMServerAuthorization,
+    database: TransactionalPrismaClient = db,
+): Promise<DB3TableQueryResult & { count: number; hasMore: boolean; nextPage: { skip: number; take: number } | null }> {
     const startTimestamp = Date.now();
-    const query = await prepareTableQuery(input, auth, db);
-    const delegate = db[query.table.tableName];
+
+    // LSMB todo: table-specific logic does not belong here; acceptance of the full effort depends on this going away in favor of generalized code.
+    if (isBandInstrumentTable(input.table.tableID)) {
+        const result = await readBandInstrumentView(database, auth, input, input.skip, input.take);
+        const hasMore = input.skip + result.items.length < result.count;
+        return {
+            ...result, hasMore, nextPage: hasMore ? { skip: input.skip + input.take, take: input.take } : null,
+            executionTimeMillis: Date.now() - startTimestamp, resultId: randomUUID()
+        };
+    }
+
+    if (auth.band) {
+        throw new DB3QueryAuthorizationError();
+    }
+
+    const query = await prepareTableQuery(input, auth, database);
+    const delegate = database[query.table.tableName];
     const { items, ...pagination } = await paginate({
         skip: input.skip,
         take: input.take,
@@ -340,8 +380,6 @@ export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInpu
     return {
         items: sanitizeQueryRows(items as TAnyModel[], query, `paginatedQuery:${query.table.tableName}`),
         ...pagination,
-        //where: query.where,
-        //selectionArgs: query.selectionArgs,
         executionTimeMillis: Date.now() - startTimestamp,
         resultId: randomUUID(),
     };

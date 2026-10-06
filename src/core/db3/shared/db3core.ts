@@ -18,6 +18,8 @@ import {
 } from "./apiTypes";
 import type { AnyDB3View, TableOf } from "./core/db3View";
 import type { UserWithRolesPayload } from "./schema/userPayloads";
+import type { BandPublicId } from "shared/publicId";
+import type { LocalePreferenceInput } from "src/locale/shared/localePreferences";
 
 export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "foreignObject" | "calculated";
 
@@ -144,7 +146,8 @@ export type DB3QueryOrderBy<TTable extends AnyDB3Table> = {
 }[DB3QueryScalarFieldNames<TTable>];
 
 /** A trusted query bound to the table that owns a named view. */
-export interface QueryInputBase<TView extends AnyDB3View> {
+export interface QueryInputBase<TView extends AnyDB3View> extends LocalePreferenceInput {
+    bandPublicId?: BandPublicId | null;
     table: {
         tableName: TView["tableName"];
         tableID: TView["tableID"];
@@ -164,7 +167,8 @@ export interface QueryInputBase<TView extends AnyDB3View> {
 ///////////////////////////////////////////////////////////////
 // it's not just untyped, it's truly legacy because
 // it represents non-view-based queries
-export interface LegacyQueryInputBase {
+export interface LegacyQueryInputBase extends LocalePreferenceInput {
+    bandPublicId?: BandPublicId | null;
     table: {
         // xTable provides these; pass in an xtable.
         tableName: string;

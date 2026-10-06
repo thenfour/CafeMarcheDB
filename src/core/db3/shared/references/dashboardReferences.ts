@@ -55,7 +55,6 @@ const dashboardUserTagSelection = Prisma.validator<Prisma.UserTagDefaultArgs>()(
         text: true,
         description: true,
         color: true,
-        significance: true,
         sortOrder: true,
         cssClass: true,
     },
@@ -71,7 +70,6 @@ const dashboardRoleSelection = Prisma.validator<Prisma.RoleDefaultArgs>()({
         description: true,
         sortOrder: true,
         color: true,
-        significance: true,
     },
 });
 
@@ -81,7 +79,6 @@ const dashboardWikiPageTagSelection = Prisma.validator<Prisma.WikiPageTagDefault
         text: true,
         description: true,
         color: true,
-        significance: true,
         sortOrder: true,
     },
 });
@@ -106,7 +103,6 @@ const dashboardEventTagSelection = Prisma.validator<Prisma.EventTagDefaultArgs>(
         color: true,
         sortOrder: true,
         text: true,
-        significance: true,
         visibleOnFrontpage: true,
     },
 });
@@ -158,7 +154,6 @@ const dashboardSongTagSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()(
         description: true,
         sortOrder: true,
         color: true,
-        significance: true,
         indicator: true,
         indicatorCssClass: true,
         group: true,
@@ -172,7 +167,6 @@ const dashboardSongCreditTypeSelection = Prisma.validator<Prisma.SongCreditTypeD
         description: true,
         color: true,
         sortOrder: true,
-        significance: true,
     },
 });
 
@@ -444,8 +438,7 @@ export function isCompleteRoleDashboardClient(
         && value.isSysAdminRole !== undefined
         && value.description !== undefined
         && value.sortOrder !== undefined
-        && value.color !== undefined
-        && value.significance !== undefined;
+        && value.color !== undefined;
 }
 
 export function isCompleteWikiPageTagDashboardClient(
@@ -454,7 +447,6 @@ export function isCompleteWikiPageTagDashboardClient(
     return value.text !== undefined
         && value.description !== undefined
         && value.color !== undefined
-        && value.significance !== undefined
         && value.sortOrder !== undefined;
 }
 

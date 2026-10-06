@@ -18,7 +18,6 @@ export const songTagEditorSelection = Prisma.validator<Prisma.SongTagDefaultArgs
         description: true,
         color: true,
         sortOrder: true,
-        significance: true,
         group: true,
         indicator: true,
         indicatorCssClass: true,
@@ -34,7 +33,6 @@ export const songCreditTypeEditorSelection = Prisma.validator<Prisma.SongCreditT
         description: true,
         color: true,
         sortOrder: true,
-        significance: true,
     },
 });
 

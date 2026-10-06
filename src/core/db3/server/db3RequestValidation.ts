@@ -2,6 +2,7 @@ import { z } from "zod";
 import * as db3 from "../db3";
 import { isPublicId } from "shared/publicId";
 import { MAX_DB3_PAGE_SIZE } from "../shared/apiTypes";
+import { BandPublicIdSchema } from "src/locale/shared/presentationInput";
 
 const MAX_FILTER_ITEMS = 100;
 const MAX_FILTER_VALUES = 1000;
@@ -43,6 +44,9 @@ const OrderBySchema = z.record(z.enum(["asc", "desc"]))
     .refine(value => Object.keys(value).length === 1, "Exactly one order field is required");
 
 const QueryBaseShape = {
+    bandPublicId: BandPublicIdSchema.nullish(),
+    routeLocale: z.string().max(128).nullish(),
+    browserLanguages: z.array(z.string().max(128)).max(32).optional(),
     table: z.object({
         tableID: Identifier,
         tableName: Identifier,
