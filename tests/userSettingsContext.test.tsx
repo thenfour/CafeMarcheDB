@@ -14,7 +14,7 @@ import { resolveString } from "src/locale/shared/stringResolution";
 import type { PresentationData } from "src/locale/shared/presentationContext";
 import type { PresentationInput } from "src/locale/shared/presentationInput";
 import type { LocalizationCatalog } from "src/locale/shared/localizationCatalog";
-import { parsePublicId } from "shared/publicId";
+import { parsePublicId, type BandPublicId } from "shared/publicId";
 import { CalendarUserSettingsControl } from "src/core/components/user/UserSettingsControls";
 import { queryClient } from "src/blitz-client";
 
@@ -32,21 +32,23 @@ let serverText: string;
 let declined: boolean;
 const mutate = vi.fn();
 const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT");
+const firstBand = parsePublicId<"Band">("Band000000000001");
+const secondBand = parsePublicId<"Band">("Band000000000002");
 
 function dataFor(input: PresentationInput): PresentationData {
     const preferences = collectLocalePreferences(input);
-    const band = input.selection?.kind === "band" ? input.selection.bandPublicId : "Band000000000001";
+    const band = input.bandPublicId ?? null;
     const availability = { global: ["en-US", "fr-BE", "nl-BE"], band: ["en-US", "fr-BE", "nl-BE"] };
     // Every registry key is resolved here, as in the server's catalog builder.
     const strings = Object.fromEntries(Object.entries(kStaticLocalizedStringRegistry).map(([key, entry]) => [key,
-        resolveString({ preferences, availability, globalValues: [], bandValues: key === "common.action.ok"
-            ? [{ localeTag: "en-US", value: `${serverText}/${band}` }] : [], registeredDefault: entry.defaultValue }),
+        resolveString({ preferences, availability, globalValues: key === "common.action.ok"
+            ? [{ localeTag: "en-US", value: `${serverText}/${band ?? "platform"}` }] : [], bandValues: [], registeredDefault: entry.defaultValue }),
     ])) as LocalizationCatalog["strings"];
     return {
-        input, authorization: { bandPublicId: parsePublicId<"Band">(band), userPublicId: sessionUserId ? parsePublicId<"User">("User000000000042") : null,
+        input, authorization: { bandPublicId: band, userPublicId: sessionUserId ? parsePublicId<"User">("User000000000042") : null,
             bandUserPublicId: null, effectivePermissionNames: [] },
         localization: { bandPublicId: band, preferences, availability, strings, formattingLocale: selectFormattingLocale(preferences), cacheKey: "fixture", payloadBytes: 1 },
-        settings: { global: {}, band: { "siteCustomization.title": { value: band, source: "stored", capabilities: { canView: true, canEdit: true } } },
+        settings: { global: {}, band: band ? { "siteCustomization.title": { value: band, source: "stored", capabilities: { canView: true, canEdit: true } } } : {},
             user: { "calendar.showDeclinedEvents": { value: declined, source: "stored", capabilities: { canView: true, canEdit: true } },
                 "calendar.showUninvitedEvents": { value: true, source: "default", capabilities: { canView: true, canEdit: true } } }, bandUser: {} },
     };
@@ -74,7 +76,7 @@ afterEach(async () => {
 
 function Probe() {
     const locale = useLocale(), settings = useBandSettings();
-    return <span>{locale.getPlainString("common.action.ok")}|{locale.formattingLocale}|{settings.getValue("siteCustomization.title")}</span>;
+    return <span>{locale.getPlainString("common.action.ok")}|{locale.formattingLocale}|{settings.getCapabilities("siteCustomization.title").canView ? settings.getValue("siteCustomization.title") : "platform"}</span>;
 }
 
 describe("presentation and settings delivery", () => {
@@ -88,24 +90,29 @@ describe("presentation and settings delivery", () => {
         expect(container.textContent).toContain("nl-BE");
         expect(useQuery).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ browserLanguages: ["nl-BE", "en-US"] }), expect.anything());
     });
-    it("drops old scope and account snapshots on switches", async () => {
-        const render = (bandPublicId: string) => root.render(<PresentationProvider selection={{ kind: "band", bandPublicId }}><Probe /></PresentationProvider>);
-        await act(async () => render("Band000000000001"));
+    it("drops old band and account snapshots on switches", async () => {
+        const initial = dataFor({ bandPublicId: firstBand, browserLanguages: ["en-US"] });
+        const render = (bandPublicId: BandPublicId | null) => root.render(<PresentationProvider initial={initial} bandPublicId={bandPublicId}><Probe /></PresentationProvider>);
+        await act(async () => render(firstBand));
         expect(container.textContent).toContain("Band000000000001");
-        await act(async () => render("Band000000000002"));
+        await act(async () => render(secondBand));
         expect(container.textContent).not.toContain("Band000000000001");
         const oldRequests = vi.mocked(useQuery).mock.calls.map(call => call[1].clientRequestId);
         sessionUserId = 43;
-        await act(async () => render("Band000000000002"));
+        await act(async () => render(secondBand));
         expect(vi.mocked(useQuery).mock.lastCall?.[1].clientRequestId).not.toBe(oldRequests[oldRequests.length - 1]);
+        await act(async () => render(null));
+        expect(container.textContent).toContain("platform");
+        expect(container.textContent).not.toContain("Band000000000002");
+        expect(vi.mocked(useQuery).mock.lastCall?.[1].bandPublicId).toBeNull();
     });
     it("refreshes when returning to the SSR band instead of resurrecting its old snapshot", async () => {
-        const initial = dataFor({ selection: { kind: "band", bandPublicId: "Band000000000001" }, browserLanguages: ["en-US"] });
-        const render = (bandPublicId: string) => root.render(<PresentationProvider initial={initial} selection={{ kind: "band", bandPublicId }}><Probe /></PresentationProvider>);
-        await act(async () => render("Band000000000001"));
+        const initial = dataFor({ bandPublicId: firstBand, browserLanguages: ["en-US"] });
+        const render = (bandPublicId: BandPublicId | null) => root.render(<PresentationProvider initial={initial} bandPublicId={bandPublicId}><Probe /></PresentationProvider>);
+        await act(async () => render(firstBand));
         serverText = "Fresh after switch";
-        await act(async () => render("Band000000000002"));
-        await act(async () => render("Band000000000001"));
+        await act(async () => render(null));
+        await act(async () => render(firstBand));
         expect(container.textContent).toContain("Fresh after switch");
     });
     it("invalidates initial catalogs and settings after writes and remote/focus changes", async () => {
@@ -122,22 +129,24 @@ describe("presentation and settings delivery", () => {
         await act(async () => window.dispatchEvent(new Event("focus")));
         expect(container.textContent).toContain("Fresh grants");
     });
-    it("uses scoped validated commands and refreshes every mounted calendar preference control", async () => {
+    it("sends the band ID with validated commands and refreshes every mounted calendar preference control", async () => {
         mutate.mockImplementation(async input => { declined = input.operation.value; });
-        await act(async () => root.render(<PresentationProvider selection={{ kind: "band", bandPublicId: "Band000000000001" }}>
+        const initial = dataFor({ bandPublicId: firstBand, browserLanguages: ["en-US"] });
+        await act(async () => root.render(<PresentationProvider initial={initial}>
             <CalendarUserSettingsControl /><CalendarUserSettingsControl />
         </PresentationProvider>));
         const inputs = () => [...container.querySelectorAll<HTMLInputElement>('input[name="calendar.showDeclinedEvents"]')];
         expect(inputs().map(input => input.checked)).toEqual([true, true]);
         await act(async () => inputs()[0]!.click());
         expect(mutate).toHaveBeenCalledWith({ hive: "user", key: "calendar.showDeclinedEvents", operation: { kind: "set", value: false },
-            selection: { kind: "band", bandPublicId: "Band000000000001" } });
+            bandPublicId: firstBand });
         expect(inputs().map(input => input.checked)).toEqual([false, false]);
     });
     it("keeps stored values after failed mutations and makes reset explicit", async () => {
         let actions: ReturnType<typeof useUserSettings> | undefined;
         function Actions() { actions = useUserSettings(); return <span>{String(actions.getValue("calendar.showDeclinedEvents"))}</span>; }
-        await act(async () => root.render(<PresentationProvider><Actions /></PresentationProvider>));
+        const initial = dataFor({ browserLanguages: ["en-US"] });
+        await act(async () => root.render(<PresentationProvider initial={initial}><Actions /></PresentationProvider>));
         mutate.mockRejectedValueOnce(new Error("Denied"));
         await expect(actions!.setValue("calendar.showDeclinedEvents", false)).rejects.toThrow("Denied");
         expect(container.textContent).toBe("true");
@@ -146,19 +155,19 @@ describe("presentation and settings delivery", () => {
         await act(async () => actions!.reset("calendar.showDeclinedEvents"));
         expect(mutate).toHaveBeenLastCalledWith(expect.objectContaining({ operation: { kind: "reset" } }));
     });
-    it("never shows old strings or settings while a new scope is loading", async () => {
-        const initial = dataFor({ browserLanguages: ["en-US"] });
+    it("never shows old strings or settings while a new band is loading", async () => {
+        const initial = dataFor({ bandPublicId: firstBand, browserLanguages: ["en-US"] });
         await act(async () => root.render(<PresentationProvider initial={initial}><Probe /></PresentationProvider>));
         let release: () => void = () => {};
         const pending = new Promise<void>(resolve => { release = resolve; });
         let loading = true;
-        // A pending query suspends the new scope exactly as Blitz's query hook does.
+        // A pending query suspends the new band exactly as Blitz's query hook does.
         vi.mocked(useQuery).mockImplementation((_query, input) => {
             if (loading) throw pending;
             // Only data/refetch are needed; React Query's unused state is omitted in this test double.
             return [dataFor(input), { refetch: vi.fn() }] as unknown as ReturnType<typeof useQuery>;
         });
-        await act(async () => root.render(<PresentationProvider initial={initial} selection={{ kind: "band", bandPublicId: "Band000000000002" }}><Probe /></PresentationProvider>));
+        await act(async () => root.render(<PresentationProvider initial={initial} bandPublicId={secondBand}><Probe /></PresentationProvider>));
         expect(container.textContent).not.toContain("Band000000000001");
         expect(container.textContent).toContain("Loading");
         loading = false;

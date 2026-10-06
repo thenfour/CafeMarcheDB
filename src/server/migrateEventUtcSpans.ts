@@ -20,9 +20,9 @@ export function convertLegacyAllDay(start: Date, nominalDuration: number, timeZo
 }
 
 /** Caller owns a serializable transaction. Dry-run calculates every resulting aggregate too. */
-export async function migrateEventUtcSpans(client: TransactionalPrismaClient, apply: boolean) {
-    const timeZone = await loadBandTimeZone(client);
-    const segments = await client.eventSegment.findMany({ orderBy: { id: "asc" } });
+export async function migrateEventUtcSpans(client: TransactionalPrismaClient, bandId: number, apply: boolean) {
+    const timeZone = await loadBandTimeZone(client, bandId);
+    const segments = await client.eventSegment.findMany({ where: { event: { bandId } }, orderBy: { id: "asc" } });
     const cancelled = await client.eventStatus.findMany({ where: { significance: EventStatusSignificance.Cancelled }, select: { id: true } });
     const changes: object[] = [];
     const converted = segments.map(segment => {
@@ -50,7 +50,7 @@ export async function migrateEventUtcSpans(client: TransactionalPrismaClient, ap
             });
         }
     }
-    const events = await client.event.findMany({ orderBy: { id: "asc" } });
+    const events = await client.event.findMany({ where: { bandId }, orderBy: { id: "asc" } });
     const aggregates: object[] = [];
     for (const event of events) {
         const after = getEventDateRangeUpdateColumnsFromSegments(converted.filter(segment => segment.eventId === event.id), cancelled.map(status => status.id));
@@ -68,5 +68,5 @@ export async function migrateEventUtcSpans(client: TransactionalPrismaClient, ap
         });
         if (apply) await client.event.update({ where: { id: event.id }, data: after });
     }
-    return { mode: apply ? "applied" : "dry-run", timeZone, inspectedSegments: segments.length, changes, aggregates };
+    return { mode: apply ? "applied" : "dry-run", bandId, timeZone, inspectedSegments: segments.length, changes, aggregates };
 }

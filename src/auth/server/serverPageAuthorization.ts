@@ -5,17 +5,18 @@ import { gSSP } from "src/blitz-server";
 import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
 import type { xTable } from "src/core/db3/shared/db3core";
 import { loadAuthorization } from "./serverAuthorization";
+import type { BandPublicId } from "shared/publicId";
 
-export async function isAuthorizedForServerPage(ctx: Ctx, permission: Permission): Promise<boolean> {
-    const auth = await loadAuthorization(ctx.session);
+export async function isAuthorizedForServerPage(ctx: Ctx, permission: Permission, bandPublicId?: BandPublicId): Promise<boolean> {
+    const auth = await loadAuthorization(ctx.session, bandPublicId);
     if (!auth.hasPermission(permission)) {
         return false;
     }
     return true;
 }
 
-export const makeServerSidePermissionGuard = (permission: Permission) => gSSP(async ({ ctx }) => {
-    if (!await isAuthorizedForServerPage(ctx, permission)) {
+export const makeServerSidePermissionGuard = (permission: Permission, bandPublicId?: BandPublicId) => gSSP(async ({ ctx }) => {
+    if (!await isAuthorizedForServerPage(ctx, permission, bandPublicId)) {
         return { notFound: true };
     }
     return { props: {} };
@@ -24,6 +25,7 @@ export const makeServerSidePermissionGuard = (permission: Permission) => gSSP(as
 interface LoadAuthorizedPageEntityArgsBase<T> {
     ctx: Ctx;
     permission: Permission;
+    bandPublicId?: BandPublicId;
     table: xTable;
     includeDeleted?: boolean;
     load: (where: TAnyModel) => Promise<T | null>;
@@ -56,7 +58,7 @@ export async function loadAuthorizedPageEntity<T>(args: LoadAuthorizedPageEntity
         load,
     } = args;
 
-    const auth = await loadAuthorization(ctx.session);
+    const auth = await loadAuthorization(ctx.session, args.bandPublicId);
     if (!auth.hasPermission(permission)) {
         return null;
     }

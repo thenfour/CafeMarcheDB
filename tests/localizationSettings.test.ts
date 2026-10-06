@@ -4,12 +4,11 @@ import { Permission, gPermissionRegistry } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { CreateChangeContext } from "src/auth/server/activityLog";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
-import { platformScope } from "src/auth/server/authorizationContext";
 import { createLocaleApi } from "src/locale/shared/localizationCatalog";
 import { presentationContextKey } from "src/locale/shared/presentationContext";
 import { loadLocalizationCatalog, lookupStaticTranslation, resolveAuthorizedDynamicStrings } from "src/locale/server/localization";
 import { loadSettingsSnapshot, writeSettings } from "src/setting/server/settings";
-import { decodeSettingStorage, readSettingSnapshot, SettingCommandSchema, type SettingCommand } from "src/setting/shared/settingsContract";
+import { validateSettingValue, readSettingSnapshot, SettingCommandSchema, type SettingCommand } from "src/setting/shared/settingsContract";
 import { loadBandTimeZone } from "src/server/bandTimeZone";
 import { authorizationTestDb } from "./authorization/support/inMemoryPrisma";
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./authorization/support/authorizationFixtures";
@@ -29,8 +28,8 @@ vi.mock("src/server/brand", () => ({ clearBrandCache: vi.fn() }));
 const database = authorizationTestDb as unknown as Prisma.TransactionClient;
 const user = { id: 42, publicId: "User000000000042", globalRoleId: null, isDeleted: false, mergedIntoUserId: null, isSysAdmin: false };
 const outsider = { ...user, id: 43, publicId: "User000000000043" };
-const bandA = { kind: "band", bandPublicId: parsePublicId<"Band">("Band000000000001") } as const;
-const bandB = { kind: "band", bandPublicId: parsePublicId<"Band">("Band000000000002") } as const;
+const bandA = parsePublicId<"Band">("Band000000000001");
+const bandB = parsePublicId<"Band">("Band000000000002");
 const permissionId = (key: Permission) => gPermissionRegistry.findIndex(entry => entry.key === key) + 1;
 const valueRow = (id: number, localeId: number, indexedValue: string, extra: { stringKey?: string; stringId?: number; bandId?: number } = {}) =>
     ({ id, publicId: `Value${String(id).padStart(11, "0")}`, localeId, indexedValue, blobValue: null, updatedAt: new Date(0), ...extra });
@@ -54,13 +53,13 @@ beforeEach(() => authorizationTestDb.reset({
     bandStaticLocalizedStringValue: [valueRow(2, 2, "Band French", { bandId: 1, stringKey: key })],
     dynamicLocalizedStringValue: [valueRow(3, 3, "Dynamic Dutch", { stringId: 1 }), valueRow(4, 1, "Other", { stringId: 2 })],
     bandDynamicLocalizedStringValue: [valueRow(5, 2, "Dynamic French", { bandId: 1, stringId: 1 })],
-    bandSetting: [{ id: 1, publicId: "Setting000000001", bandId: 2, name: "siteCustomization.title", value: JSON.stringify("Other band") }],
+    bandSetting: [{ id: 1, publicId: "Setting000000001", bandId: 2, name: "siteCustomization.title", value: "Other band" }],
     userSetting: [{ id: 1, userId: 43, name: "calendar.showDeclinedEvents", value: false }],
     bandUserSetting: [{ id: 1, bandUserId: 2, name: "calendar.locale", value: "nl-BE" }],
 }));
 
-async function writeCommands(commands: SettingCommand[], selection: typeof bandA | typeof bandB = bandA, principal = user) {
-    const auth = await loadAuthorizationForUser(principal, database, selection);
+async function writeCommands(commands: SettingCommand[], bandPublicId: typeof bandA = bandA, principal = user) {
+    const auth = await loadAuthorizationForUser(principal, database, bandPublicId);
     return authorizationTestDb.transaction(() => writeSettings(database, auth, commands, CreateChangeContext("phase2-test")));
 }
 
@@ -138,7 +137,7 @@ describe("four independent settings hives", () => {
         let settings = await loadSettingsSnapshot(database, auth);
         expect(readSettingSnapshot(settings, "band", "siteCustomization.title")).toBe("");
         expect(readSettingSnapshot(settings, "user", "calendar.showDeclinedEvents")).toBe(false);
-        expect(authorizationTestDb.snapshot("bandSetting").find(row => row.bandId === 1)?.value).toBe('""');
+        expect(authorizationTestDb.snapshot("bandSetting").find(row => row.bandId === 1)?.value).toBe("");
         expect(authorizationTestDb.snapshot("userSetting").find(row => row.userId === 42)?.value).toBe(false);
         await writeCommands([command("band", "siteCustomization.title", ""), command("user", "calendar.showDeclinedEvents", false)]);
         expect(authorizationTestDb.snapshot("change")).toHaveLength(2);
@@ -170,15 +169,16 @@ describe("four independent settings hives", () => {
     it("writes global settings only with a freshly verified platform grant", async () => {
         await authorizationTestDb.getDelegate("user").update({ where: { id: 42 }, data: { globalRoleId: 30 } });
         await writeCommands([command("global", "global.ui.event.tags.selectStyle", "dialog")]);
-        expect(authorizationTestDb.snapshot("globalSetting")[0]?.value).toBe('"dialog"');
-        const auth = await loadAuthorizationForUser(user, database, platformScope);
+        expect(authorizationTestDb.snapshot("globalSetting")[0]?.value).toBe("dialog");
+        const auth = await loadAuthorizationForUser(user, database);
         expect(readSettingSnapshot(await loadSettingsSnapshot(database, auth), "global", "global.ui.event.tags.selectStyle")).toBe("dialog");
     });
-    it("normalizes text JSON once and retains native JSON types", () => {
-        expect(decodeSettingStorage("band", "siteCustomization.title", '"123"')).toBe("123");
-        expect(decodeSettingStorage("user", "calendar.showDeclinedEvents", false)).toBe(false);
-        expect(() => decodeSettingStorage("user", "calendar.showDeclinedEvents", "false")).toThrow();
-        expect(() => decodeSettingStorage("band", "siteCustomization.title", "invalid json")).toThrow();
+    it("validates native JSON without decoding strings", () => {
+        expect(validateSettingValue("band", "siteCustomization.title", "123")).toBe("123");
+        expect(validateSettingValue("user", "calendar.showDeclinedEvents", false)).toBe(false);
+        expect(() => validateSettingValue("user", "calendar.showDeclinedEvents", "false")).toThrow();
+        expect(validateSettingValue("band", "siteCustomization.title", "false")).toBe("false");
+        expect(() => validateSettingValue("band", "siteCustomization.title", false)).toThrow();
         expect(SettingCommandSchema.safeParse({ ...command("user", "calendar.showDeclinedEvents", false), userId: 43 }).success).toBe(false);
     });
     it("reanchors only the active band's all-day events and resets to its registry default", async () => {
@@ -198,23 +198,36 @@ describe("four independent settings hives", () => {
 });
 
 describe("RPC settings boundaries", () => {
-    it("selects bands on the server and validates caller-supplied scope", async () => {
+    it("resolves the supplied band ID and validates its grants", async () => {
         // The harness uses a complete account fixture only to construct session identity.
         const ctx = createAuthorizationTestContext(createAuthorizationTestUser("normal", { id: user.id }));
-        await invokeResolver(updateSetting, { ...command("band", "siteCustomization.title", "My band"), selection: bandA }, ctx);
-        await expect(invokeResolver(updateSetting, { ...command("band", "siteCustomization.title", "Other"), selection: bandB }, ctx)).rejects.toThrow();
-        await expect(invokeResolver(updateBulkSettings, { commands: [command("user", "calendar.showDeclinedEvents", "false")], selection: bandA }, ctx)).rejects.toThrow();
-        const response = await invokeResolver(getPresentationData, { selection: bandA, routeLocale: "de-DE", browserLanguages: ["nl-BE"] }, ctx);
+        await invokeResolver(updateSetting, { ...command("band", "siteCustomization.title", "My band"), bandPublicId: bandA }, ctx);
+        await expect(invokeResolver(updateSetting, { ...command("band", "siteCustomization.title", "Other"), bandPublicId: bandB }, ctx)).rejects.toThrow();
+        await expect(invokeResolver(updateBulkSettings, { commands: [command("user", "calendar.showDeclinedEvents", "false")], bandPublicId: bandA }, ctx)).rejects.toThrow();
+        const response = await invokeResolver(getPresentationData, { bandPublicId: bandA, routeLocale: "de-DE", browserLanguages: ["nl-BE"] }, ctx);
         expect(response.localization.formattingLocale).toBe("de-DE");
         expect(response.settings.band["siteCustomization.title"]?.value).toBe("My band");
-        expect(response.authorization.bandPublicId).toBe(bandA.bandPublicId);
+        expect(response.authorization.bandPublicId).toBe(bandA);
         expect(response.authorization).not.toHaveProperty("bandId");
+    });
+    it("loads global and account data without a band and rejects band writes without an ID", async () => {
+        const ctx = createAuthorizationTestContext(createAuthorizationTestUser("normal", { id: user.id }));
+        const response = await invokeResolver(getPresentationData, {}, ctx);
+        expect(response.authorization.bandPublicId).toBeNull();
+        expect(response.settings.band).toEqual({});
+        expect(response.settings.bandUser).toEqual({});
+        expect(response.settings.user["calendar.showDeclinedEvents"]?.value).toBe(true);
+        await invokeResolver(updateSetting, command("user", "calendar.showDeclinedEvents", false), ctx);
+        await expect(invokeResolver(updateSetting, command("band", "siteCustomization.title", "Missing band"), ctx)).rejects.toThrow();
+        await expect(invokeResolver(getPresentationData, { bandPublicId: "invalid" }, ctx)).rejects.toThrow();
+        const retiredInput = { browserLanguages: ["en-US"], selection: { kind: "platform" } };
+        await expect(invokeResolver(getPresentationData, retiredInput, ctx)).rejects.toThrow();
     });
     it("refreshes authorization inside the transaction after membership revocation", async () => {
         const ctx = createAuthorizationTestContext(createAuthorizationTestUser("normal", { id: user.id }));
-        await invokeResolver(updateSetting, { ...command("band", "siteCustomization.title", "Before"), selection: bandA }, ctx);
+        await invokeResolver(updateSetting, { ...command("band", "siteCustomization.title", "Before"), bandPublicId: bandA }, ctx);
         await authorizationTestDb.getDelegate("bandUser").update({ where: { id: 1 }, data: { isDeleted: true } });
-        await expect(invokeResolver(updateSetting, { ...command("band", "siteCustomization.title", "Denied"), selection: bandA }, ctx)).rejects.toThrow();
-        expect(authorizationTestDb.snapshot("bandSetting").find(row => row.bandId === 1)?.value).toBe('"Before"');
+        await expect(invokeResolver(updateSetting, { ...command("band", "siteCustomization.title", "Denied"), bandPublicId: bandA }, ctx)).rejects.toThrow();
+        expect(authorizationTestDb.snapshot("bandSetting").find(row => row.bandId === 1)?.value).toBe("Before");
     });
 });

@@ -4,6 +4,7 @@ require("tsconfig-paths/register");
 const db = require("../db").default;
 const { Prisma } = require("@prisma/client");
 const { migrateEventUtcSpans } = require("../src/server/migrateEventUtcSpans");
+const { parsePublicId } = require("../shared/publicId");
 
 /*
 
@@ -29,7 +30,7 @@ Running this on an already-migrated database is a NOP due to the dateTimeVersion
 
 usage:
 
-node scripts/migrate-event-utc-spans.cjs
+node scripts/migrate-event-utc-spans.cjs --band=<public-id>
 
 options:
   --apply    Actually apply the migration. Without this flag, the script will only simulate the migration.
@@ -39,10 +40,16 @@ options:
 
 async function main() {
     const args = process.argv.slice(2);
-    if (args.length > 1 || args.some(arg => arg !== "--apply")) {
-        throw new Error("Usage: node scripts/migrate-event-utc-spans.cjs [--apply]");
+    const bandArgs = args.filter(arg => arg.startsWith("--band="));
+    if (bandArgs.length !== 1 || args.filter(arg => arg === "--apply").length > 1
+        || args.some(arg => arg !== "--apply" && !arg.startsWith("--band="))) {
+        throw new Error("Usage: node scripts/migrate-event-utc-spans.cjs --band=<public-id> [--apply]");
     }
-    const result = await db.$transaction(tx => migrateEventUtcSpans(tx, args.includes("--apply")),
+    const bandPublicId = parsePublicId(bandArgs[0].slice("--band=".length));
+    const result = await db.$transaction(async tx => {
+        const band = await tx.band.findFirstOrThrow({ where: { publicId: bandPublicId, isDeleted: false } });
+        return migrateEventUtcSpans(tx, band.id, args.includes("--apply"));
+    },
         {
             isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120_000,
         });

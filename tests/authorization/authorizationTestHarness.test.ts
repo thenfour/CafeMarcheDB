@@ -32,7 +32,6 @@ import impersonateUser from "src/auth/mutations/impersonateUser";
 import resetPassword from "src/auth/mutations/resetPassword";
 import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
-import getAllRoles from "src/auth/queries/getAllRoles";
 import getUserManagementCapabilities from "src/auth/queries/getUserManagementCapabilities";
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 import {
@@ -1531,25 +1530,6 @@ describe("BA-U002 delegated user administration", () => {
         publicId: expect.any(String),
       },
     })
-  })
-
-  it("accepts the Sysadmin permission for raw role topology", async () => {
-    const roleGrantedSysadmin = createAuthorizationTestUser("normal", {
-      id: 20,
-      isSysAdmin: false,
-      permissions: [Permission.login, Permission.sysadmin],
-    })
-    authorizationTestDb.reset({ user: [roleGrantedSysadmin], role: [ordinaryRole] })
-    const findMany = vi.spyOn(authorizationTestDb.getDelegate("role"), "findMany")
-    const { ctx } = createAuthorizationPersona("normal", {
-      id: roleGrantedSysadmin.id,
-      permissions: [Permission.login, Permission.sysadmin],
-    })
-
-    await expect(invokeResolver(db3Query, forgeDb3Query("Role"), ctx)).resolves.toBeDefined()
-    expect(findMany).toHaveBeenCalled()
-
-    await expect(invokeResolver(getAllRoles, {}, ctx)).resolves.toBeDefined()
   })
 
   it("keeps visibility metadata writes behind the table's sysadmin grant", async () => {

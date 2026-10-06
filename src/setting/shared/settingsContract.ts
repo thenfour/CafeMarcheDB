@@ -87,8 +87,6 @@ export interface SettingCommand {
     };
 }
 
-export function decodeSettingStorage(hive: SettingsHive, key: string, stored: string | Prisma.JsonValue): Prisma.JsonValue {
-    // this is the result of an inconsistent schema. the actual fix here is to fix the schema!
-    const raw = hive === "global" || hive === "band" ? JSON.parse(String(stored)) : stored;
-    return getSettingDefinition(hive, key).schema.parse(raw);
+export function validateSettingValue(hive: SettingsHive, key: string, value: Prisma.JsonValue): Prisma.JsonValue {
+    return getSettingDefinition(hive, key).schema.parse(value);
 }

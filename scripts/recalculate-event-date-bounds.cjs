@@ -22,7 +22,6 @@ require("tsconfig-paths/register");
 const db = require("../db").default;
 const { Prisma } = require("@prisma/client");
 const { calculateEventDateBoundsUpdatePatch, fetchCancelledEventStatusIds } = require("../src/server/dateTime");
-const { loadBandTimeZone } = require("../src/server/bandTimeZone");
 
 const serialize = value => JSON.stringify(value, (_key, item) => typeof item === "bigint" ? item.toString() : item);
 
@@ -31,7 +30,6 @@ async function main() {
     if (args.some(arg => arg !== "--apply") || args.length > 1) throw new Error("Usage: node scripts/recalculate-event-date-bounds.cjs [--apply]");
     const apply = args.includes("--apply");
     const result = await db.$transaction(async tx => {
-        const timeZone = await loadBandTimeZone(tx);
         const events = await tx.event.findMany({
             orderBy: { id: "asc" },
             select: {
@@ -73,7 +71,7 @@ async function main() {
                 });
             }
         }
-        return { mode: apply ? "applied" : "dry-run", timeZone, inspected: events.length, changed: changes.length, changes };
+        return { mode: apply ? "applied" : "dry-run", inspected: events.length, changed: changes.length, changes };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120_000 });
     console.log(serialize(result));
 }

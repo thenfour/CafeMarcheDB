@@ -1,10 +1,9 @@
-import { PrismaClient, type Prisma } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { parsePublicId } from "shared/publicId";
 import { createAllDayRange } from "shared/time";
 import { CreateChangeContext } from "src/auth/server/activityLog";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
-import { platformScope } from "src/auth/server/authorizationContext";
 import { initializeAccessControl } from "src/setup/accessControl";
 import { generatePublicId } from "src/server/publicId";
 import { loadBandTimeZone } from "src/server/bandTimeZone";
@@ -16,17 +15,34 @@ import { settingsMysqlTestUrl, withSettingsMysqlFixture, type SettingsMysqlFixtu
 const testUrl = settingsMysqlTestUrl;
 
 describe.skipIf(!testUrl)("phase-2 foundations on MariaDB/MySQL", () => {
-    const database = new PrismaClient({ datasources: { db: { url: testUrl } } });
+    const database = new PrismaClient(testUrl ? { datasources: { db: { url: testUrl } } } : undefined);
     beforeAll(() => initializeAccessControl(database), 30_000);
     afterAll(() => database.$disconnect());
 
     const withFixture = (work: (tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture) => Promise<void>) =>
         withSettingsMysqlFixture(database, work);
 
+    it("round-trips the same native JSON values in every hive", () => withFixture(async (tx, fixture) => {
+        const band = fixture.bands[0]!;
+        const membership = await tx.bandUser.findUniqueOrThrow({ where: { bandId_userId: { bandId: band.id, userId: fixture.user.id } } });
+        const values: Array<Prisma.InputJsonValue | null> = ["", "false", false, 0, null, { nested: ["text", 1, false, null] }, [true, "123"]];
+        for (const [index, value] of values.entries()) {
+            const name = `native-json-${index}`;
+            const json = value ?? Prisma.JsonNull;
+            const rows = await Promise.all([
+                tx.globalSetting.create({ data: { publicId: generatePublicId(), name, value: json } }),
+                tx.bandSetting.create({ data: { publicId: generatePublicId(), bandId: band.id, name, value: json } }),
+                tx.userSetting.create({ data: { userId: fixture.user.id, name, value: json } }),
+                tx.bandUserSetting.create({ data: { bandUserId: membership.id, name, value: json } }),
+            ]);
+            expect(rows.map(row => row.value)).toEqual([value, value, value, value]);
+        }
+    }));
+
     it("resolves complete static catalogs and authorized dynamic batches with locale availability", () => withFixture(async (tx, fixture) => {
         const first = fixture.bands[0]!, second = fixture.bands[1]!;
-        const auth = await loadAuthorizationForUser(fixture.user, tx, { kind: "band", bandPublicId: parsePublicId<"Band">(first.publicId) });
-        const other = await loadAuthorizationForUser(fixture.user, tx, { kind: "band", bandPublicId: parsePublicId<"Band">(second.publicId) });
+        const auth = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(first.publicId));
+        const other = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(second.publicId));
         const stringKey = "common.action.ok";
         await tx.staticLocalizedStringValue.create({ data: { publicId: generatePublicId(), stringKey, localeId: fixture.dutchId, indexedValue: "Global Dutch" } });
         await tx.bandStaticLocalizedStringValue.create({ data: { publicId: generatePublicId(), stringKey, localeId: fixture.frenchId, bandId: first.id, indexedValue: "Band French" } });
@@ -52,8 +68,8 @@ describe.skipIf(!testUrl)("phase-2 foundations on MariaDB/MySQL", () => {
 
     it("persists all four hives with correct JSON types, scope and reset", () => withFixture(async (tx, fixture) => {
         const band = fixture.bands[0]!;
-        const auth = await loadAuthorizationForUser(fixture.user, tx, { kind: "band", bandPublicId: parsePublicId<"Band">(band.publicId) });
-        const platform = await loadAuthorizationForUser(fixture.admin, tx, platformScope);
+        const auth = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(band.publicId));
+        const platform = await loadAuthorizationForUser(fixture.admin, tx);
         await writeSettings(tx, auth, [
             { hive: "band", key: "siteCustomization.title", operation: { kind: "set", value: "" } },
             { hive: "user", key: "calendar.showDeclinedEvents", operation: { kind: "set", value: false } },
@@ -66,7 +82,7 @@ describe.skipIf(!testUrl)("phase-2 foundations on MariaDB/MySQL", () => {
         expect(readSettingSnapshot(settings, "bandUser", "calendar.locale")).toBe("fr-BE");
         expect(readSettingSnapshot(settings, "global", "global.ui.event.tags.selectStyle")).toBe("dialog");
         expect((await tx.userSetting.findUniqueOrThrow({ where: { userId_name: { userId: fixture.user.id, name: "calendar.showDeclinedEvents" } } })).value).toBe(false);
-        expect((await tx.bandSetting.findUniqueOrThrow({ where: { bandId_name: { bandId: band.id, name: "siteCustomization.title" } } })).value).toBe('""');
+        expect((await tx.bandSetting.findUniqueOrThrow({ where: { bandId_name: { bandId: band.id, name: "siteCustomization.title" } } })).value).toBe("");
         const auditCount = await tx.change.count({ where: { userId: fixture.user.id } });
         await writeSettings(tx, auth, [{ hive: "user", key: "calendar.showDeclinedEvents", operation: { kind: "set", value: false } }], CreateChangeContext("unchanged"));
         expect(await tx.change.count({ where: { userId: fixture.user.id } })).toBe(auditCount);
@@ -77,7 +93,7 @@ describe.skipIf(!testUrl)("phase-2 foundations on MariaDB/MySQL", () => {
 
     it("rejects other-band grants and an invalid batch without partial changes", () => withFixture(async (tx, fixture) => {
         const second = fixture.bands[1]!;
-        const auth = await loadAuthorizationForUser(fixture.user, tx, { kind: "band", bandPublicId: parsePublicId<"Band">(second.publicId) });
+        const auth = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(second.publicId));
         await expect(writeSettings(tx, auth, [{ hive: "band", key: "siteCustomization.title", operation: { kind: "set", value: "Denied" } }], CreateChangeContext("denied"))).rejects.toThrow();
         await expect(writeSettings(tx, auth, [
             { hive: "user", key: "calendar.showDeclinedEvents", operation: { kind: "set", value: false } },
@@ -93,7 +109,7 @@ describe.skipIf(!testUrl)("phase-2 foundations on MariaDB/MySQL", () => {
 
     it("reanchors only the selected band's all-day spans and derived bounds", () => withFixture(async (tx, fixture) => {
         const first = fixture.bands[0]!, second = fixture.bands[1]!;
-        const auth = await loadAuthorizationForUser(fixture.user, tx, { kind: "band", bandPublicId: parsePublicId<"Band">(first.publicId) });
+        const auth = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(first.publicId));
         const spec = createAllDayRange({ startDate: "2026-10-25", endDateExclusive: "2026-10-26" }, "Europe/Brussels").getSpec();
         const events: Array<{ id: number }> = [];
         for (const band of [first, second]) events.push(await tx.event.create({ data: {

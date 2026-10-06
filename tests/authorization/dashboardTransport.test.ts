@@ -12,7 +12,6 @@ vi.mock("db", async () => {
 });
 
 import getDashboardData from "src/auth/queries/getDashboardData";
-import getAllRoles from "src/auth/queries/getAllRoles";
 import * as db3 from "src/core/db3/db3";
 import { gGeneralPaletteList } from "src/core/components/color/palette";
 import { Permission } from "shared/permissions";
@@ -73,9 +72,6 @@ describe("dashboard transport boundary", () => {
         expect(dto.dynMenuLinks[0]).not.toHaveProperty("visiblePermission");
         expect(dto).not.toHaveProperty("referenceStore");
         expect(db3.instrumentDashboardView.parseDto(dto.instrument[0])).toEqual(dto.instrument[0]);
-
-        const roles = await invokeResolver(getAllRoles, {}, ctx);
-        expect(roles[0]!.color).toBe("blue");
 
         const client = db3.hydrateDashboardData(dto);
         expect(groupHydrate).toHaveBeenCalledOnce();

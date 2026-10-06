@@ -36,7 +36,7 @@ import {
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { localizationDatabase, loadLocalizationCatalog } from "src/locale/server/localization";
 import { loadSettingsSnapshot, settingsDatabase } from "src/setting/server/settings";
-import { PresentationInputSchema, selectionFromPresentationInput } from "src/locale/shared/presentationInput";
+import { PresentationInputSchema } from "src/locale/shared/presentationInput";
 import { readSettingSnapshot } from "src/setting/shared/settingsContract";
 import {
     loadAuthorization,
@@ -183,7 +183,7 @@ export default resolver.pipe(
         try {
             const sw = new Stopwatch();
 
-            const authorization = await loadAuthorization(ctx.session, selectionFromPresentationInput(args.selection));
+            const authorization = await loadAuthorization(ctx.session, args.bandPublicId);
             const [localization, settings] = await Promise.all([
                 loadLocalizationCatalog(localizationDatabase, authorization, args),
                 loadSettingsSnapshot(settingsDatabase, authorization),

@@ -13,7 +13,7 @@ export interface PresentationData {
 /** Entire preference lists partition caches, even when formatting resolves to the same locale. */
 export function presentationContextKey(input: PresentationInput): string {
     return JSON.stringify({
-        selection: input.selection ?? { kind: "configured-band" },
+        bandPublicId: input.bandPublicId ?? null,
         routeLocale: input.routeLocale ?? null,
         browserLanguages: input.browserLanguages ?? [],
     });

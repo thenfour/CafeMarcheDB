@@ -1,8 +1,7 @@
 import { DbBrandConfig, DefaultDbBrandConfig, HostingMode } from "shared/brandConfigBase";
 import { validateDbBrandConfig } from "shared/brandingValidation";
 import { kBandSettingsRegistry } from "src/setting/shared/bandSettingsRegistry";
-import { decodeSettingStorage } from "src/setting/shared/settingsContract";
-import { authorizationDatabase, configuredBandScope, resolveAuthorizationContext } from "src/auth/server/authorizationContext";
+import { validateSettingValue } from "src/setting/shared/settingsContract";
 import db from "db";
 
 type CacheEntry = { value: DbBrandConfig; expiresAt: number };
@@ -12,8 +11,7 @@ const normalizeHost = (host?: string | null): string => host?.toLowerCase() ?? "
 
 // Only a trusted resolved ID can select a band's branding. Host/path resolution follows in phase 5.
 export async function loadDbBrandConfig(hostHeader?: string | null, bandId?: number | null): Promise<DbBrandConfig> {
-    const selectedBandId = bandId === undefined
-        ? (await resolveAuthorizationContext(authorizationDatabase, configuredBandScope)).band?.id ?? null : bandId;
+    const selectedBandId = bandId ?? null;
     const cacheKey = `${selectedBandId ?? "platform"}/${normalizeHost(hostHeader)}`;
     const hit = cache.get(cacheKey);
     if (hit && hit.expiresAt > Date.now()) return hit.value;
@@ -22,7 +20,7 @@ export async function loadDbBrandConfig(hostHeader?: string | null, bandId?: num
         const byName = new Map(rows.map(row => [row.name, row.value]));
 
         const read = (key: keyof typeof kBandSettingsRegistry): string => byName.has(key)
-            ? String(decodeSettingStorage("band", key, byName.get(key)!)) : kBandSettingsRegistry[key].defaultValue;
+            ? String(validateSettingValue("band", key, byName.get(key)!)) : kBandSettingsRegistry[key].defaultValue;
 
         const defaultTheme = DefaultDbBrandConfig.theme!;
         const value = validateDbBrandConfig({

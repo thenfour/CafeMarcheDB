@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { gPermissionRegistry, Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { CMDBResolverAuthorize } from "types";
@@ -17,7 +17,6 @@ vi.mock("db", async () => {
 
 import { loadAuthorization, loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
 import { resolveRequestLocale } from "src/locale/server/requestLocale";
-import { configuredBandScope, platformScope } from "src/auth/server/authorizationContext";
 import { assertValidSysadminRole } from "src/auth/server/sessionInvalidation";
 import { createPublicDataFromDatabase } from "src/auth/server/effectivePermissions";
 import { canManageUser } from "src/auth/server/userManagementPolicy";
@@ -30,8 +29,8 @@ import { invokeResolver } from "./support/resolverHarness";
 const database = authorizationTestDb as unknown as Prisma.TransactionClient;
 
 const publicId = (prefix: string, id: number): string => `${prefix}${String(id).padStart(16 - prefix.length, "0")}`;
-const bandA = { kind: "band", bandPublicId: parsePublicId<"Band">(publicId("Band", 1)) } as const;
-const bandB = { kind: "band", bandPublicId: parsePublicId<"Band">(publicId("Band", 2)) } as const;
+const bandA = parsePublicId<"Band">(publicId("Band", 1));
+const bandB = parsePublicId<"Band">(publicId("Band", 2));
 const account = { id: 42, publicId: publicId("User", 42), name: "Shared person", email: "shared@test.invalid",
     phone: null, createdAt: new Date(), cssClass: null, isDeleted: false, mergedIntoUserId: null,
     globalRoleId: null, isSysAdmin: false };
@@ -78,8 +77,7 @@ const sessionForAccount = () => {
 };
 
 describe("trusted platform and band authorization", () => {
-    beforeEach(() => { vi.stubEnv("CMDB_DEFAULT_BAND_ID", "1"); resetFixture(); });
-    afterEach(() => { vi.unstubAllEnvs(); });
+    beforeEach(resetFixture);
 
     it("uses only the active band's membership and preserves it in authenticated context", async () => {
         const session = sessionForAccount();
@@ -101,7 +99,7 @@ describe("trusted platform and band authorization", () => {
     });
 
     it("keeps two tabs in different bands and locales independent while they share a session", async () => {
-        const user = (await loadAuthorizationForUser({ id: 42 }, database, platformScope)).requireUser().user;
+        const user = (await loadAuthorizationForUser({ id: 42 }, database)).requireUser().user;
         const session = sessionForAccount();
         Object.assign(session.$publicData, await createPublicDataFromDatabase(database, { user }));
         const sharedData = { ...session.$publicData, permissionNames: [...(session.$publicData.permissionNames ?? [])] };
@@ -122,10 +120,10 @@ describe("trusted platform and band authorization", () => {
         const firstTab = { authorization: first.toClientContext(), locale: firstLocale.ietfTag };
         const secondTab = { authorization: second.toClientContext(), locale: secondLocale.ietfTag };
         expect(firstTab).toMatchObject({ locale: "fr-BE", authorization: {
-            bandPublicId: bandA.bandPublicId, bandUserPublicId: publicId("BandUser", 1),
+            bandPublicId: bandA, bandUserPublicId: publicId("BandUser", 1),
         } });
         expect(secondTab).toMatchObject({ locale: "nl-BE", authorization: {
-            bandPublicId: bandB.bandPublicId, bandUserPublicId: publicId("BandUser", 2),
+            bandPublicId: bandB, bandUserPublicId: publicId("BandUser", 2),
         } });
         const firstClient = new CMClientAuthorization(user, new PermissionSet(firstTab.authorization.effectivePermissionNames));
         const secondClient = new CMClientAuthorization(user, new PermissionSet(secondTab.authorization.effectivePermissionNames));
@@ -165,7 +163,7 @@ describe("trusted platform and band authorization", () => {
     it("rejects cookie-based band guards despite stale scope data", async () => {
         const session = sessionForAccount();
         Object.assign(session.$publicData, {
-            authorizationBandPublicId: bandA.bandPublicId, authorizationLocale: "fr-BE",
+            authorizationBandPublicId: bandA, authorizationLocale: "fr-BE",
             permissionNames: [Permission.manage_events, Permission.view_songs, Permission.login],
             impersonatingFromUserId: 99,
         });
@@ -181,12 +179,17 @@ describe("trusted platform and band authorization", () => {
     });
 
     it("keeps platform context free of membership grants", async () => {
-        const auth = await loadAuthorization(sessionForAccount(), platformScope);
+        const session = sessionForAccount();
+        const lookup = vi.spyOn(authorizationTestDb.getDelegate("band"), "findFirst");
+        const auth = await loadAuthorization(session);
+        expect(await loadAuthorization(session, null)).toBe(auth);
         expect(auth.band).toBeNull();
         expect(auth.membership).toBeNull();
         expect(auth.hasPermission(Permission.login)).toBe(true);
         expect(auth.hasPermission(Permission.manage_events)).toBe(false);
         expect(() => auth.requireBand()).toThrow("band context");
+        expect((await auth.refresh(database)).band).toBeNull();
+        expect(lookup).not.toHaveBeenCalled();
     });
 
     it("loads public band access without promoting an anonymous visitor to membership", async () => {
@@ -244,14 +247,17 @@ describe("trusted platform and band authorization", () => {
         expect(first.sessionPermissions.includesName(Permission.manage_events)).toBe(false);
         await authorizationTestDb.getDelegate("globalRolePermission").deleteMany({ where: { permissionId: permissionId(Permission.sysadmin) } });
         expect((await loadAuthorization(sessionForAccount(), bandB)).hasPermission(Permission.sysadmin)).toBe(false);
-        expect((await loadAuthorization(sessionForAccount(), platformScope)).hasPermission(Permission.manage_events)).toBe(false);
+        expect((await loadAuthorization(sessionForAccount())).hasPermission(Permission.manage_events)).toBe(false);
     });
 
     it("honors an assigned global role without requiring the Sysadmin display flag", async () => {
         await authorizationTestDb.getDelegate("user").update({ where: { id: 42 }, data: { globalRoleId: 30 } });
-        const auth = await loadAuthorization(sessionForAccount(), platformScope);
+        const auth = await loadAuthorization(sessionForAccount());
         expect(auth.user?.isSysAdmin).toBe(false);
         expect(auth.hasPermission(Permission.manage_global_users)).toBe(true);
+        for (const bandPublicId of [bandA, bandB]) {
+            expect((await loadAuthorization(sessionForAccount(), bandPublicId)).hasPermission(Permission.manage_global_users)).toBe(true);
+        }
     });
 
     it.each(["isDeleted", "mergedIntoUserId"])("revokes inactive shared accounts (%s)", async field => {
@@ -294,11 +300,12 @@ describe("trusted platform and band authorization", () => {
         expect((await loadAuthorization(session, bandA)).hasPermission(Permission.manage_events)).toBe(true);
     });
 
-    it("rejects unavailable bands, invalid configuration, and database errors", async () => {
+    it("rejects unavailable bands and database errors", async () => {
+        const original = await loadAuthorization(sessionForAccount(), bandB);
         await authorizationTestDb.getDelegate("band").update({ where: { id: 2 }, data: { isDeleted: true } });
         await expect(loadAuthorization(sessionForAccount(), bandB)).rejects.toThrow("unavailable");
-        vi.stubEnv("CMDB_DEFAULT_BAND_ID", "0");
-        await expect(loadAuthorization(sessionForAccount(), configuredBandScope)).rejects.toThrow("positive integer");
+        await expect(original.refresh(database)).rejects.toThrow("unavailable");
+        await expect(loadAuthorization(sessionForAccount(), parsePublicId<"Band">(publicId("Band", 99)))).rejects.toThrow("unavailable");
         vi.spyOn(authorizationTestDb.getDelegate("globalRole"), "findMany").mockRejectedValue(new Error("database unavailable"));
         await expect(loadAuthorization(sessionForAccount(), bandA)).rejects.toThrow("database unavailable");
     });
@@ -322,10 +329,9 @@ describe("trusted platform and band authorization", () => {
     });
 
     it("creates band-independent session data without resolving a band or locale", async () => {
-        const user = (await loadAuthorizationForUser({ id: 42 }, database, platformScope)).requireUser().user;
+        const user = (await loadAuthorizationForUser({ id: 42 }, database)).requireUser().user;
         await authorizationTestDb.getDelegate("band").deleteMany();
         await authorizationTestDb.getDelegate("locale").deleteMany();
-        vi.stubEnv("CMDB_DEFAULT_BAND_ID", "invalid");
         const publicData = await createPublicDataFromDatabase(database, { user });
         expect(publicData.permissionNames).toContain(Permission.login);
         expect(publicData.permissionNames).not.toContain(Permission.manage_events);
@@ -341,7 +347,7 @@ describe("trusted platform and band authorization", () => {
             expect(canManageUser({ actor: bandActor, target, action })).toBe(false);
         }
         await authorizationTestDb.getDelegate("user").update({ where: { id: 42 }, data: { isSysAdmin: true } });
-        const platformAuth = await loadAuthorization(sessionForAccount(), platformScope);
+        const platformAuth = await loadAuthorization(sessionForAccount());
         const platformActor = { principal: platformAuth.user, auth: platformAuth };
         expect(canManageUser({ actor: platformActor, target, action: "deactivate" })).toBe(true);
         expect(canManageUser({ actor: platformActor, target: {
@@ -371,19 +377,18 @@ describe("trusted platform and band authorization", () => {
         await expect(resolveRequestLocale(database, auth.requireBand().id)).rejects.toThrow("No active locale");
     });
 
-    it.each([platformScope, bandA])("does not query locales during authorization ($kind)", async scope => {
+    it.each([undefined, bandA])("does not query locales during authorization (%s)", async bandPublicId => {
         await authorizationTestDb.getDelegate("locale").deleteMany();
         const lookup = vi.spyOn(authorizationTestDb.getDelegate("locale"), "findMany")
             .mockRejectedValue(new Error("locale database unavailable"));
-        const auth = await loadAuthorization(sessionForAccount(), scope);
+        const auth = await loadAuthorization(sessionForAccount(), bandPublicId);
         expect(auth.hasPermission(Permission.login)).toBe(true);
         expect((await auth.refresh(database)).hasPermission(Permission.login)).toBe(true);
-        expect((await loadAuthorizationForUser({ id: 42 }, database, scope)).hasPermission(Permission.login)).toBe(true);
+        expect((await loadAuthorizationForUser({ id: 42 }, database, bandPublicId)).hasPermission(Permission.login)).toBe(true);
         expect(lookup).not.toHaveBeenCalled();
     });
 
     it("allows an empty fresh platform to bootstrap before its first band exists", async () => {
-        delete process.env.CMDB_DEFAULT_BAND_ID;
         await authorizationTestDb.getDelegate("band").deleteMany();
         const auth = await loadAuthorization(sessionForAccount());
         expect(auth.band).toBeNull();

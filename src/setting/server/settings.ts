@@ -6,7 +6,7 @@ import { ChangeAction, RegisterChange, type ChangeContext } from "src/auth/serve
 import { generatePublicId } from "src/server/publicId";
 import { reanchorAllDayEvents } from "src/server/dateTime";
 import {
-    decodeSettingStorage, getSettingCapabilities, getSettingDefinition, settingsRegistries,
+    validateSettingValue, getSettingCapabilities, getSettingDefinition, settingsRegistries,
     type SettingCommand, type SettingsAccessContext, type SettingsHive, type SettingsHiveSnapshot, type SettingsSnapshot
 } from "../shared/settingsContract";
 
@@ -32,14 +32,14 @@ export async function loadSettingsSnapshot(database: SettingsDatabase, auth: CMS
     ]);
     const access = settingsAccessContext(auth);
 
-    function resolveHive(hive: SettingsHive, rows: readonly { name: string; value: string | Prisma.JsonValue }[]): SettingsHiveSnapshot {
+    function resolveHive(hive: SettingsHive, rows: readonly { name: string; value: Prisma.JsonValue }[]): SettingsHiveSnapshot {
         return Object.fromEntries(Object.keys(settingsRegistries[hive]).flatMap(key => {
             const capabilities = getSettingCapabilities(hive, key, access);
             if (!capabilities.canView) {
                 return [];
             }
             const row = rows.find(row => row.name === key);
-            const value = row ? decodeSettingStorage(hive, key, row.value) : getSettingDefinition(hive, key).defaultValue;
+            const value = row ? validateSettingValue(hive, key, row.value) : getSettingDefinition(hive, key).defaultValue;
             return [[
                 key,
                 {
@@ -69,7 +69,7 @@ function requireSettingWrite(auth: CMServerAuthorization, command: SettingComman
 type SettingRow = {
     id: number;
     name: string;
-    value: string | Prisma.JsonValue;
+    value: Prisma.JsonValue;
 };
 
 function toNestedJsonInput(value: Prisma.JsonValue | undefined): Prisma.InputJsonValue | null {
@@ -92,10 +92,10 @@ async function persistSetting(database: SettingsDatabase, auth: CMServerAuthoriz
         case "global": {
             const oldRow = await database.globalSetting.findUnique({ where: { name } });
             if (resetting) { if (oldRow) await database.globalSetting.delete({ where: { id: oldRow.id } }); return { oldRow, newRow: null }; }
-            if (oldRow?.value === text) return { oldRow, newRow: oldRow };
+            if (oldRow && JSON.stringify(oldRow.value) === text) return { oldRow, newRow: oldRow };
             const newRow = await database.globalSetting.upsert({
                 where: { name },
-                create: { publicId: generatePublicId<"GlobalSetting">(), name, value: text, updatedByUserId }, update: { value: text, updatedByUserId }
+                create: { publicId: generatePublicId<"GlobalSetting">(), name, value: json, updatedByUserId }, update: { value: json, updatedByUserId }
             });
             return { oldRow, newRow };
         }
@@ -104,10 +104,10 @@ async function persistSetting(database: SettingsDatabase, auth: CMServerAuthoriz
             const where = { bandId_name: { bandId, name } };
             const oldRow = await database.bandSetting.findUnique({ where });
             if (resetting) { if (oldRow) await database.bandSetting.delete({ where: { id: oldRow.id } }); return { oldRow, newRow: null }; }
-            if (oldRow?.value === text) return { oldRow, newRow: oldRow };
+            if (oldRow && JSON.stringify(oldRow.value) === text) return { oldRow, newRow: oldRow };
             const newRow = await database.bandSetting.upsert({
                 where,
-                create: { publicId: generatePublicId<"BandSetting">(), bandId, name, value: text, updatedByUserId }, update: { value: text, updatedByUserId }
+                create: { publicId: generatePublicId<"BandSetting">(), bandId, name, value: json, updatedByUserId }, update: { value: json, updatedByUserId }
             });
             return { oldRow, newRow };
         }
@@ -163,8 +163,8 @@ export async function writeSettings(database: Prisma.TransactionClient, auth: CM
 
         // TODO: consider putting this in persistSetting, so it acts more like the previous mutation hook.
         if (command.hive === "band" && command.key === "dateTime.bandTimeZone") {
-            const oldZone = oldRow ? decodeSettingStorage("band", command.key, oldRow.value) : getSettingDefinition("band", command.key).defaultValue;
-            const newZone = newRow ? decodeSettingStorage("band", command.key, newRow.value) : getSettingDefinition("band", command.key).defaultValue;
+            const oldZone = oldRow ? validateSettingValue("band", command.key, oldRow.value) : getSettingDefinition("band", command.key).defaultValue;
+            const newZone = newRow ? validateSettingValue("band", command.key, newRow.value) : getSettingDefinition("band", command.key).defaultValue;
             await reanchorAllDayEvents(database, String(oldZone), String(newZone), auth.requireBand().id);
         }
     }

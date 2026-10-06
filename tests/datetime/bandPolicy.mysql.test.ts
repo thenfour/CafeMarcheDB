@@ -1,5 +1,5 @@
 import { PrismaClient, type Prisma } from "@prisma/client";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { parsePublicId } from "shared/publicId";
 import { getRangeCalendarDates } from "shared/dateTimePresentation";
 import { DateTimeRange } from "shared/time";
@@ -12,19 +12,18 @@ import { calculateEventDateBoundsUpdatePatch, fetchCancelledEventStatusIds, reca
 import { writeSettings } from "src/setting/server/settings";
 import { settingsMysqlTestUrl, withSettingsMysqlFixture, type SettingsMysqlFixture } from "../support/settingsMysqlFixture";
 
-const database = new PrismaClient({ datasources: { db: { url: settingsMysqlTestUrl } } });
+const database = new PrismaClient(settingsMysqlTestUrl ? { datasources: { db: { url: settingsMysqlTestUrl } } } : undefined);
 const day = 86_400_000;
 
 describe.skipIf(!settingsMysqlTestUrl)("band timezone transactions on MariaDB/MySQL", () => {
     beforeAll(() => initializeAccessControl(database), 30_000);
     afterAll(() => database.$disconnect());
-    afterEach(() => { vi.unstubAllEnvs(); });
 
     async function withEvents(work: (tx: Prisma.TransactionClient, auth: CMServerAuthorization, bandId: number,
         eventIds: number[], fixture: SettingsMysqlFixture) => Promise<void>) {
         await withSettingsMysqlFixture(database, async (tx, fixture) => {
             const band = fixture.bands[0]!;
-            const auth = await loadAuthorizationForUser(fixture.user, tx, { kind: "band", bandPublicId: parsePublicId<"Band">(band.publicId) });
+            const auth = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(band.publicId));
             const segment = (isAllDay: boolean) => ({
                 publicId: generatePublicId(), name: "Segment", description: "", isAllDay,
                 startsAt: new Date(isAllDay ? "2026-07-09T22:00:00Z" : "2026-07-10T22:30:12.345Z"),
@@ -118,16 +117,21 @@ describe.skipIf(!settingsMysqlTestUrl)("band timezone transactions on MariaDB/My
         }
     }));
 
-    it("previews, converts, and safely reruns the versioned UTC-storage migration", () => withEvents(async (tx, _auth, bandId, ids) => {
-        vi.stubEnv("CMDB_DEFAULT_BAND_ID", String(bandId));
+    it("previews, converts, and safely reruns the UTC migration for only the selected band", () => withEvents(async (tx, _auth, bandId, ids, fixture) => {
+        const other = await tx.event.create({ data: { publicId: generatePublicId(), bandId: fixture.bands[1]!.id,
+            uid: generatePublicId(), name: "Other band's legacy event", revision: 1, segments: { create: {
+                publicId: generatePublicId(), name: "Legacy segment", description: "", isAllDay: true,
+                dateTimeVersion: 1, startsAt: new Date("2026-03-29T00:00:00Z"), durationMillis: BigInt(day),
+            } } }, include: { segments: true } });
         await tx.eventSegment.updateMany({ where: { eventId: { in: ids } }, data: { dateTimeVersion: 1 } });
         await tx.eventSegment.updateMany({ where: { eventId: { in: ids }, isAllDay: true },
             data: { startsAt: new Date("2026-03-29T00:00:00Z"), durationMillis: BigInt(day) } });
         const before = await segments(tx, ids);
-        const preview = await migrateEventUtcSpans(tx, false);
+        const preview = await migrateEventUtcSpans(tx, bandId, false);
         expect(preview.changes).toHaveLength(4);
         expect(await segments(tx, ids)).toEqual(before);
-        const applied = await migrateEventUtcSpans(tx, true);
+        const applied = await migrateEventUtcSpans(tx, bandId, true);
+        expect(await tx.event.findUniqueOrThrow({ where: { id: other.id }, include: { segments: true } })).toEqual(other);
         expect(applied.changes).toEqual(preview.changes);
         const after = await segments(tx, ids);
         expect(after.every(segment => segment.dateTimeVersion === 2)).toBe(true);
@@ -135,7 +139,7 @@ describe.skipIf(!settingsMysqlTestUrl)("band timezone transactions on MariaDB/My
             expect(segment.startsAt!.toISOString()).toBe("2026-03-28T23:00:00.000Z");
             expect(segment.durationMillis).toBe(BigInt(23 * 3_600_000));
         }
-        const again = await migrateEventUtcSpans(tx, true);
+        const again = await migrateEventUtcSpans(tx, bandId, true);
         expect(again.changes).toEqual([]);
         expect(again.aggregates).toEqual([]);
         expect(await segments(tx, ids)).toEqual(after);

@@ -11,7 +11,7 @@ function validRows(overrides: Partial<Record<keyof typeof kBandSettingsRegistry,
     const values = { "siteCustomization.title": "Example Band", "siteCustomization.titlePrefix": "EB: ",
         "siteCustomization.faviconUrl": "/example.png", "siteCustomization.themeColors.primaryMain": "#123456", ...overrides };
     return Object.entries(values).map(([name, value], index) => ({
-        id: index + 1, publicId: `Setting${String(index + 1).padStart(9, "0")}`, name, value: JSON.stringify(value),
+        id: index + 1, publicId: `Setting${String(index + 1).padStart(9, "0")}`, name, value,
         bandId: 1, updatedAt: new Date(), updatedByUserId: null,
     }));
 }
@@ -19,7 +19,7 @@ function validRows(overrides: Partial<Record<keyof typeof kBandSettingsRegistry,
 beforeEach(() => { mocks.findMany.mockReset(); clearBrandCache(); });
 
 describe("band brand loading", () => {
-    it("decodes migrated JSON text and combines missing keys with registry defaults", async () => {
+    it("reads native JSON strings and combines missing keys with registry defaults", async () => {
         mocks.findMany.mockResolvedValueOnce(validRows());
         await expect(loadDbBrandConfig("brand-load.example", 1)).resolves.toMatchObject({
             hostingMode: HostingMode.GenericSingleTenant, siteTitle: "Example Band", siteTitlePrefix: "EB: ",

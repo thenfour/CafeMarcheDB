@@ -5,6 +5,7 @@ import { calendarWindowSql } from "./calendarWindowSql";
 
 import { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
+import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
 import { AuthorizationError } from "blitz";
 import db, { Prisma } from "db";
 import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUtils";
@@ -253,7 +254,7 @@ async function getSearchResults(args: GetSearchResultsInput, auth: CMServerAutho
         const authorizedSearchArgs = { ...args, discreteCriteria: resolvedDiscreteCriteria };
 
         const sortElements = processSearchSortModel(table, authorizedSearchArgs);
-        const bandTimeZone = await loadBandTimeZone(database);
+        const bandTimeZone = auth.band ? await loadBandTimeZone(database, auth.band.id) : DEFAULT_BAND_TIME_ZONE;
         const calendarPredicate = args.calendarWindow ? calendarWindowSql(args.calendarWindow, bandTimeZone) : null;
 
         const filterResult = calculateFilterQuery(authorizedSearchArgs, null, sortElements, auth, calendarPredicate);

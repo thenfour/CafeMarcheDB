@@ -16,11 +16,11 @@ function useSettingsHive<H extends SettingsHive>(hive: H) {
             return presentation.data?.settings[hive][key]?.capabilities ?? { canView: false, canEdit: false };
         },
         async setValue<K extends SettingsKey<H>>(key: K, value: SettingsValue<H, K>) {
-            await mutate({ hive, key, operation: { kind: "set", value }, selection: presentation.selection });
+            await mutate({ hive, key, operation: { kind: "set", value }, bandPublicId: presentation.bandPublicId });
             await presentation.invalidate();
         },
         async reset<K extends SettingsKey<H>>(key: K) {
-            await mutate({ hive, key, operation: { kind: "reset" }, selection: presentation.selection });
+            await mutate({ hive, key, operation: { kind: "reset" }, bandPublicId: presentation.bandPublicId });
             await presentation.invalidate();
         },
         refetch: presentation.invalidate,

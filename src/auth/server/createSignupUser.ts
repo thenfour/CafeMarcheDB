@@ -7,7 +7,6 @@ import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { SignInMethodSchema } from "../signInMethodSchemas";
 import { addSignInMethod, SignInMethodConflictError, signInMethodWhere } from "./signInMethods";
 import { loadAuthorization } from "./serverAuthorization";
-import { platformScope } from "./authorizationContext";
 
 export interface CreateSignupUserArgs {
     email: string;
@@ -67,7 +66,7 @@ export const createSignupUser = async (args: CreateSignupUserArgs, ctx: Ctx) => 
                 globalRoleId: user.globalRoleId,
                 authenticationMethod: args.googleId ? "google" : "password",
             },
-            auth: await loadAuthorization(ctx.session, platformScope),
+            auth: await loadAuthorization(ctx.session),
             db: tx,
         });
 

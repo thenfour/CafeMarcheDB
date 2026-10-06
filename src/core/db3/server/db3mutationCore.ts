@@ -109,15 +109,16 @@ export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: 
         where: { significance: db3.EventStatusSignificance.Cancelled }
     })).map(x => x.id);
 
-    const bandTimeZone = await loadBandTimeZone(transactionalDb);
     const dateUpdates = db3.getEventDateRangeUpdateColumnsFromSegments(segments, cancelledStatusIds);
 
-    let existingEvent = ((await transactionalDb.event.findFirst({
+    const existingEvent = await transactionalDb.event.findFirst({
         where: {
             id: args.eventId,
         },
         ...EventForCalArgs,
-    })) || {}) as Partial<EventForCal>;
+    });
+    if (!existingEvent) return;
+    const bandTimeZone = await loadBandTimeZone(transactionalDb, existingEvent.bandId);
 
     Object.assign(existingEvent, args.updatingEventModel);
     Object.assign(existingEvent, dateUpdates);

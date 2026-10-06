@@ -3,7 +3,6 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
-import { platformScope } from "src/auth/server/authorizationContext";
 import { resolveRequestLocale } from "src/locale/server/requestLocale";
 import { generatePublicId } from "src/server/publicId";
 import { initializeAccessControl } from "src/setup/accessControl";
@@ -18,7 +17,7 @@ if (testUrl) {
 }
 
 describe.skipIf(!testUrl)("access-control foundations on the target database", () => {
-    const database = new PrismaClient({ datasources: { db: { url: testUrl } } });
+    const database = new PrismaClient(testUrl ? { datasources: { db: { url: testUrl } } } : undefined);
     beforeAll(async () => { await initializeAccessControl(database); }, 30_000);
     afterAll(async () => { await database.$disconnect(); });
 
@@ -100,10 +99,10 @@ describe.skipIf(!testUrl)("access-control foundations on the target database", (
                     bands.push(band);
                 }
                 const first = bands[0]!, second = bands[1]!;
-                const firstScope = { kind: "band", bandPublicId: parsePublicId<"Band">(first.publicId) } as const;
-                const secondScope = { kind: "band", bandPublicId: parsePublicId<"Band">(second.publicId) } as const;
-                const firstAuth = await loadAuthorizationForUser(user, transaction, firstScope);
-                const secondAuth = await loadAuthorizationForUser(user, transaction, secondScope);
+                const firstBandPublicId = parsePublicId<"Band">(first.publicId);
+                const secondBandPublicId = parsePublicId<"Band">(second.publicId);
+                const firstAuth = await loadAuthorizationForUser(user, transaction, firstBandPublicId);
+                const secondAuth = await loadAuthorizationForUser(user, transaction, secondBandPublicId);
                 expect(firstAuth.hasPermission(Permission.manage_band_settings)).toBe(true);
                 expect(secondAuth.hasPermission(Permission.manage_band_settings)).toBe(false);
                 expect(firstAuth.hasPermission(Permission.manage_global_users)).toBe(false);
@@ -123,7 +122,7 @@ describe.skipIf(!testUrl)("access-control foundations on the target database", (
                 expect(offboarded.hasPermission(Permission.manage_band_settings)).toBe(false);
                 expect(offboarded.hasPermission(Permission.login)).toBe(true);
                 expect((await secondAuth.refresh(transaction)).requireMembership().bandId).toBe(second.id);
-                expect((await loadAuthorizationForUser(user, transaction, platformScope)).hasPermission(Permission.manage_events)).toBe(false);
+                expect((await loadAuthorizationForUser(user, transaction)).hasPermission(Permission.manage_events)).toBe(false);
                 throw rollback;
             }, { timeout: 30_000 });
         } catch (error) {

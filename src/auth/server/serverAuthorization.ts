@@ -1,5 +1,5 @@
 import { getPermissionDefinition, isPermission, Permission } from "shared/permissions";
-import { parsePublicId, type UserPublicId } from "shared/publicId";
+import { parsePublicId, type BandPublicId, type UserPublicId } from "shared/publicId";
 import type { SessionContext } from "@blitzjs/auth";
 import { AuthenticationError, AuthorizationError } from "blitz";
 import { UserWithRolesArgs, type UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
@@ -9,9 +9,9 @@ import { PermissionSet } from "../shared/PermissionSet";
 import { loadEffectivePermissionContext, type EffectivePermissionContext } from "./effectivePermissions";
 import { ServerPermissionSet } from "./ServerPermissionSet";
 import {
-    authorizationDatabase, authorizationScopeKey, configuredBandScope, resolveAuthorizationContext,
+    authorizationDatabase, resolveAuthorizationContext,
     type AuthorizationBand, type AuthorizationDatabase,
-    type AuthorizationMembership, type AuthorizationScopeSelection, type ResolvedAuthorizationContext,
+    type AuthorizationMembership, type ResolvedAuthorizationContext,
 } from "./authorizationContext";
 
 const loadFreshPrincipal = (
@@ -24,9 +24,7 @@ const loadFreshPrincipal = (
         })
         : Promise.resolve(null);
 
-interface AuthorizationDetails extends ResolvedAuthorizationContext, EffectivePermissionContext {
-    readonly selection: AuthorizationScopeSelection;
-}
+type AuthorizationDetails = ResolvedAuthorizationContext & EffectivePermissionContext;
 
 export class CMServerAuthorization implements IAuthorization {
     readonly user: UserWithRolesPayload | null;
@@ -111,7 +109,7 @@ export class CMServerAuthorization implements IAuthorization {
     }
 
     async refresh(database: AuthorizationDatabase = authorizationDatabase): Promise<CMServerAuthorization> {
-        return loadSnapshot(database, this.userId, this.sessionHandle, this.details?.selection ?? configuredBandScope);
+        return loadSnapshot(database, this.userId, this.sessionHandle, this.band ? parsePublicId<"Band">(this.band.publicId) : null);
     }
 }
 
@@ -134,13 +132,13 @@ async function loadSnapshot(
     database: AuthorizationDatabase,
     userId: number | null | undefined,
     sessionHandle: string | null,
-    selection: AuthorizationScopeSelection,
+    bandPublicId?: BandPublicId | null,
 ): Promise<CMServerAuthorization> {
     const user = await loadFreshPrincipal(database, userId);
-    const context = await resolveAuthorizationContext(database, selection);
+    const context = await resolveAuthorizationContext(database, bandPublicId);
     const permissions = await loadEffectivePermissionContext(database, user, context.band?.id ?? null);
     return new CMServerAuthorization(user, permissions.effectivePermissions, sessionHandle, {
-        ...context, ...permissions, selection,
+        ...context, ...permissions,
     });
 }
 
@@ -149,7 +147,7 @@ type SessionAuthorizationEntry = {
     readonly handle: string | null;
     readonly authorization: Promise<CMServerAuthorization>;
 };
-const serverAuthorizations = new WeakMap<SessionContext, Map<string, SessionAuthorizationEntry>>();
+const serverAuthorizations = new WeakMap<SessionContext, Map<BandPublicId | null, SessionAuthorizationEntry>>();
 
 async function synchronizeSharedSession(session: SessionContext, auth: CMServerAuthorization): Promise<void> {
     if (session.userId && !auth.user) await session.$revoke();
@@ -173,25 +171,25 @@ async function synchronizeSharedSession(session: SessionContext, auth: CMServerA
 
 export async function loadAuthorization(
     session: SessionContext,
-    selection: AuthorizationScopeSelection = configuredBandScope,
+    bandPublicId?: BandPublicId | null,
 ): Promise<CMServerAuthorization> {
-    const key = authorizationScopeKey(selection);
-    const entries = serverAuthorizations.get(session) ?? new Map<string, SessionAuthorizationEntry>();
+    const key = bandPublicId == null ? null : parsePublicId<"Band">(bandPublicId);
+    const entries = serverAuthorizations.get(session) ?? new Map<BandPublicId | null, SessionAuthorizationEntry>();
     serverAuthorizations.set(session, entries);
     let entry = entries.get(key);
     if (!entry || entry.userId !== session.userId || entry.handle !== session.$handle) {
         entry = {
             userId: session.userId,
             handle: session.$handle,
-            authorization: loadSessionSnapshot(session, selection),
+            authorization: loadSessionSnapshot(session, key),
         };
         entries.set(key, entry);
     }
     return entry.authorization;
 }
 
-async function loadSessionSnapshot(session: SessionContext, selection: AuthorizationScopeSelection): Promise<CMServerAuthorization> {
-    const auth = await loadSnapshot(authorizationDatabase, session.userId, session.$handle, selection);
+async function loadSessionSnapshot(session: SessionContext, bandPublicId: BandPublicId | null): Promise<CMServerAuthorization> {
+    const auth = await loadSnapshot(authorizationDatabase, session.userId, session.$handle, bandPublicId);
     await synchronizeSharedSession(session, auth);
     return auth;
 }
@@ -201,7 +199,7 @@ async function loadSessionSnapshot(session: SessionContext, selection: Authoriza
 export async function loadAuthorizationForUser(
     user: Pick<UserWithRolesPayload, "id"> | null,
     database: AuthorizationDatabase = authorizationDatabase,
-    selection: AuthorizationScopeSelection = configuredBandScope,
+    bandPublicId?: BandPublicId | null,
 ): Promise<CMServerAuthorization> {
-    return loadSnapshot(database, user?.id ?? null, null, selection);
+    return loadSnapshot(database, user?.id ?? null, null, bandPublicId);
 }

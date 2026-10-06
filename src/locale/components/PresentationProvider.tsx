@@ -3,17 +3,18 @@ import React from "react";
 import { useSession } from "@blitzjs/auth";
 import { queryClient } from "src/blitz-client";
 import getPresentationData from "../queries/getPresentationData";
-import type { PresentationInput, PresentationSelection } from "../shared/presentationInput";
+import type { PresentationInput } from "../shared/presentationInput";
+import type { BandPublicId } from "shared/publicId";
 import { presentationContextKey, type PresentationData } from "../shared/presentationContext";
 
 interface PresentationContextValue {
     readonly data: PresentationData | null;
-    readonly selection: PresentationSelection | undefined; // todo: remove selection.
+    readonly bandPublicId: BandPublicId | null | undefined;
     readonly invalidate: () => Promise<void>;
 }
 const PresentationContext = React.createContext<PresentationContextValue>({
     data: null,
-    selection: undefined,
+    bandPublicId: undefined,
     invalidate: async () => { },
 });
 export const usePresentation = () => React.useContext(PresentationContext);
@@ -39,16 +40,16 @@ function LoadedPresentation({ input, children }: React.PropsWithChildren<{ input
     });
     const value = React.useMemo(() => ({
         data,
-        selection: input.selection,
+        bandPublicId: input.bandPublicId,
         invalidate: invalidatePresentation,
     }),
-        [data, input.selection]);
+        [data, input.bandPublicId]);
     return <PresentationContext.Provider value={value}>{children}</PresentationContext.Provider>;
 }
 
-export function PresentationProvider({ initial, selection, routeLocale, children }: React.PropsWithChildren<{
+export function PresentationProvider({ initial, bandPublicId, routeLocale, children }: React.PropsWithChildren<{
     initial: PresentationData;
-    selection?: PresentationSelection;
+    bandPublicId?: BandPublicId | null;
     routeLocale?: string | null;
 }>) {
     const session = useSession();
@@ -60,7 +61,7 @@ export function PresentationProvider({ initial, selection, routeLocale, children
         return () => window.removeEventListener("languagechange", update);
     }, []);
     const input: PresentationInput = {
-        selection: selection ?? initial?.input.selection,
+        bandPublicId: bandPublicId === undefined ? initial?.input.bandPublicId : bandPublicId,
         routeLocale: routeLocale === undefined ? initial?.input.routeLocale : routeLocale,
         browserLanguages: [...(browserLanguages ?? initial?.input.browserLanguages ?? [])]
     };
@@ -87,9 +88,9 @@ export function PresentationProvider({ initial, selection, routeLocale, children
         initialEligible.current = false;
     }
     const canUseInitial = initial && initialEligible.current;
-    // During a scope/identity change the new tree suspends, so old text/grants cannot remain visible.
+    // During a band/account change the new tree suspends, so old text/grants cannot remain visible.
     return canUseInitial
-        ? <PresentationContext.Provider value={{ data: initial, selection: input.selection, invalidate: invalidatePresentation }}>{children}</PresentationContext.Provider>
+        ? <PresentationContext.Provider value={{ data: initial, bandPublicId: input.bandPublicId, invalidate: invalidatePresentation }}>{children}</PresentationContext.Provider>
         : <React.Suspense fallback={<span role="status">Loading language and settings…</span>}>
             <LoadedPresentation key={clientRequestId} input={{ ...input, clientRequestId }}>{children}</LoadedPresentation>
         </React.Suspense>;

@@ -1,7 +1,7 @@
 # Localization and band migration SQL
 
 `db/migrations/20261004130808_696_lsmb/migration.sql` migrates the `main`
-schema to the current `db/schema.prisma`, preserving existing data through
+schema to the initial localization schema, preserving existing data through
 explicit renames and backfills. It runs independently of application startup,
 client generation, and the application build.
 
@@ -12,7 +12,10 @@ application readiness and production cutover are separate acceptance steps.
 The rules and grant counts below describe the data-preserving localization
 migration. Phase 1 adds capabilities in a separate follow-up migration; see
 [05-authorization-foundation.md](05-authorization-foundation.md) for its SQL,
-grant choices, and separate validation evidence.
+grant choices, and separate validation evidence. That latest existing migration
+also corrects `GlobalSetting.value` and `BandSetting.value` to native JSON, matching
+`UserSetting` and `BandUserSetting`. Apply both migrations to reach the current
+schema; the correction preserves the earlier migration's JSON documents.
 
 ## Accepted migration rules
 

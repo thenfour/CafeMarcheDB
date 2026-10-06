@@ -21,19 +21,16 @@ person/session-wide state and band-independent display grants. It contains no se
 presentation locale, or band grants. Server band operations use the resolved
 request context, never session display grants.
 
-`src/auth/server/authorizationContext.ts` defines three selection forms:
+`loadAuthorization(session, bandPublicId?)` always loads global/account grants.
+With a band public ID it also resolves the active band and the person's active
+membership, adding the applicable band grants. An omitted or null ID produces
+global/account authorization without querying bands. A supplied missing/deleted
+band fails. There is no auth scope selector, environment-selected band, or
+hard-coded database identity.
 
-| Selection | Resolution |
-| --- | --- |
-| `platformScope` | No band or membership. |
-| `{ kind: "band", bandPublicId }` | Resolve an active band by public ID, then that person's membership. |
-| `configuredBandScope` (default) | Resolve `CMDB_DEFAULT_BAND_ID`, initially `1`, the Café Marché identity created by the data migration. |
-
-`CMDB_DEFAULT_BAND_ID` is server configuration and must be a positive safe
-integer. An explicitly selected missing/deleted band fails. With the variable
-unset and no bands at all, the default resolves platform context so a fresh
-installation can create its first account before creating a band. An existing
-but deleted band does not trigger this fallback.
+Single-band and multiband hosting use this same backend contract. Portal or
+request boundaries supply the nominal band's public ID when a band operation is
+requested; hosting mode affects UX, not authorization or database behavior.
 
 `src/locale/server/requestLocale.ts` provides provisional single-locale selection.
 `resolveRequestLocale(database, bandId, requested?)` accepts a trusted resolved
@@ -49,11 +46,11 @@ phase 2 preserves route/browser preferences, resolves each string with the desig
 scope-first policy, and selects a separate `formattingLocale`. See the
 [localization contracts](04-implementation-plan.md#localization-contracts).
 
-`loadAuthorization(session, selection)` caches a database snapshot within that
-request's session context, separately for each scope and session identity.
+`loadAuthorization(session, bandPublicId?)` caches a database snapshot within that
+request's session context, separately for each band public ID (or null) and session identity.
 Switching A → B → A preserves the independent snapshots and does not write a
 selected band/locale into the shared session. `refresh(database?)` reloads person,
-grants, and membership in the same scope, optionally inside the mutation
+grants, and membership for the same band, or stays global, optionally inside the mutation
 transaction. Non-session callers use `loadAuthorizationForUser`; only the supplied
 person ID is trusted, and account/role state is read afresh. Session creation
 rereads the person and publishes only band-independent grants, without resolving
@@ -70,9 +67,10 @@ provisional; explicit route/browser negotiation and formatting adoption are
 phase 2/5 work, not completed phase-1 behavior.
 Each tab receives its own response and uses that response's grants for client
 hints. Numeric database identities and the
-server authorization object do not cross this boundary. The existing configured
-band adapter still applies until explicit portal routing is wired in phase 5;
-the legacy dashboard catalogs/settings still need phases 2–4 for a working app.
+server authorization object do not cross this boundary. Explicit band identity
+must be wired through remaining domain and portal entry points in phases 3–5;
+calls without it load global/account data. The legacy dashboard catalogs and
+domain descriptors still need phases 3–4 for a working app.
 
 The shared session's `permissionNames` contains non-band grants from global roles,
 the account baseline, and public/account grants from the shared public-role
@@ -82,7 +80,7 @@ overwrite a tab's context or populate the shared session with its role grants.
 Retired fields in an intermediate session cookie are ignored; unrelated session
 metadata is preserved.
 
-`cmauthorize` accepts an optional `scope`. Domain adapters must use the resolved
+`cmauthorize` accepts an optional `bandPublicId`. Domain adapters must use the resolved
 band when querying and writing, call `requireBandResource` for loaded ownership,
 and use `requireMembership` for member-only operations. Possessing a capability
 alone does not prove a supplied entity belongs to the selected band. Central
@@ -124,13 +122,13 @@ band ownership field; memberships choose from those shared definitions.
 ## Operation and scope inventory
 
 This table distinguishes the foundation that is implemented from consumers that
-still need adaptation. The default context adapter does not make old queries
-safe across bands.
+still need adaptation. Band operations require a supplied band public ID at
+their request boundary; global/account operations omit it.
 
 | Operation family / current entry points | Scope and capability | Current implementation / remaining adaptation |
 | --- | --- | --- |
 | Signup and bootstrap (`signup`, `createSignupUser`, `claimAdminBootstrap`, `getAdminBootstrapStatus`) | Shared person / platform; bootstrap requires active account and the existing secret protocol. | Signup creates a global account without a membership. Bootstrap selects GlobalRole, retains one-time claim/transaction/audit behavior, and leaves memberships untouched. |
-| Login, password reset, OAuth, impersonation start/stop | Shared identity; session creation is independent of band/locale selection. | Sessions publish only shared grants from fresh account state. Page/API context still uses the configured band adapter until routing is adapted. Deleted/merged sign-in targets are excluded. Existing dedicated sensitive-operation gates remain. |
+| Login, password reset, OAuth, impersonation start/stop | Shared identity; session creation is independent of band/locale selection. | Sessions publish only shared grants from fresh account state. Page/API boundaries supply a band public ID when applicable. Deleted/merged sign-in targets are excluded. Existing dedicated sensitive-operation gates remain. |
 | Self-service profile and user preferences | Shared person / account. | Account `login` remains independent of band membership. Settings APIs and descriptor adaptation follow in phases 2–4. |
 | Shared person edits and global-role/account changes (`assignUserRole`, `deactivateUser`, `reactivateUser`, merge, User fields) | Platform: `manage_global_users`; merge also retains `merge_users`. Sensitive credentials/impersonation retain their existing protected gates. | Policy and non-owner User field writes now require platform grants. The old role delegates, aggregate merge relations, descriptors, and UI still require phases 3–4. Band permissions must not modify the shared account. |
 | Band membership role assignment, offboarding/recovery, tags, instruments, member presentation | Band: existing `assign_user_roles`, `deactivate_users`, `recover_users`, `manage_users`, `manage_user_taxonomy`. | New-member/deleted-member grant semantics are implemented. Separate BandUser commands, views, delegation/continuity checks, and same-band references follow in phases 3–4. |
@@ -139,8 +137,8 @@ safe across bands.
 | Band catalog opt-ins, custom items and overrides | Band: existing domain `admin_*` capabilities. | Capability meanings clarified. Ownership, inheritance, localized fields, and writers follow in phase 3. |
 | Global/band settings and localization | Platform: `manage_global_settings` / `manage_global_localization`; band: `manage_band_settings` / `manage_band_localization`. | Capabilities and grants added. Phase 2 supplies typed APIs and per-key authorization; phase 6 supplies full editing. |
 | Band lifecycle and administration | Platform: `manage_bands`; membership operations also use their band capabilities. | Platform capability added. Lifecycle policies, commands, and portal surfaces follow in phase 5. |
-| Events, songs, files, wiki, menus, links, plans, search and reports | Resolved band, using existing domain capabilities and loaded ownership. | Default authorization context is available. DB3/domain ownership constraints and removed field/delegate adaptations remain phases 3–4. |
-| API/RPC, page guards, upload/download, feeds, telemetry and jobs | Explicit platform or band as appropriate; non-session identity refreshed from the database. | Existing loader callers inherit the configured-band adapter. Explicit portal selection, feed/file ownership and all remaining consumer boundaries must be audited during phases 3–5. |
+| Events, songs, files, wiki, menus, links, plans, search and reports | Resolved band, using existing domain capabilities and loaded ownership. | Authorization accepts a band public ID. DB3/domain ownership constraints and removed field/delegate adaptations remain phases 3–4. |
+| API/RPC, page guards, upload/download, feeds, telemetry and jobs | Supply a band public ID when needed; non-session identity refreshed from the database. | Calls without an ID load global/account authorization. Explicit portal selection, feed/file ownership and all remaining consumer boundaries must be audited during phases 3–5. |
 
 ## Added permissions and SQL
 

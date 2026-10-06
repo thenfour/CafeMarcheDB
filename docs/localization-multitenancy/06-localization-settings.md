@@ -37,8 +37,9 @@ use the same resolver: a null local string identity inherits; an empty custom
 identity remains custom and untranslated. It cannot silently inherit global
 content.
 
-Privileged `getStaticTranslation` reads an explicit key, locale, and global/band
-scope without fallbacks, including stored values excluded from presentation.
+Privileged server helper `lookupStaticTranslation` reads an explicit key, locale,
+and global/band scope without fallbacks, including stored values excluded from
+presentation. Its standalone RPC is deferred until the editor requires it.
 The server also exposes batch resolution and exact lookup for dynamic strings
 whose identities came from an authorized entity read. There is no public endpoint
 that accepts arbitrary dynamic string IDs. Phase 3 must wire those helpers into
@@ -60,7 +61,10 @@ explicit loading/error behavior; they do not silently return empty strings.
 catalog and settings snapshot inside one repeatable-read transaction. The initial
 presentation is delivered through `_app` for SSR and through `getPresentationData`
 for client changes. Dashboard delivery uses the same catalog/settings contracts.
-Language preferences do not select authorization scope or grants.
+The transport's optional `bandPublicId` adds band authorization to global/account
+authorization. Omission or null loads global/account data; no band is inferred.
+Language preferences do not select the band or grants. Remaining portal entry
+points must supply the selected band's public ID during phases 3–5.
 
 The catalog currently contains **83 registered keys**. The native two-band fixture
 measured **13,170 UTF-8 bytes** for the catalog, including resolution details and
@@ -87,8 +91,8 @@ There is no implicit inheritance between hives.
 
 | Hive | Owner selected on the server | Default capability | Storage |
 | --- | --- | --- | --- |
-| `global` | Platform | Public registered reads; `manage_global_settings` writes | Serialized JSON in text |
-| `band` | Authorized selected band | Public registered reads; `manage_band_settings` writes | Serialized JSON in text |
+| `global` | Platform | Public registered reads; `manage_global_settings` writes | Native Prisma JSON |
+| `band` | Authorized selected band | Public registered reads; `manage_band_settings` writes | Native Prisma JSON |
 | `user` | Current active person | Authenticated self reads/writes | Native Prisma JSON |
 | `bandUser` | Current active membership in the selected band | Membership self reads/writes | Native Prisma JSON |
 
@@ -100,14 +104,18 @@ Unknown registry keys cannot be delivered or written; unrelated existing rows
 remain intact. `calendar.locale` is a membership preference with canonical tag
 validation and an `en-US` default; it does not require a locale row.
 
-The server decodes text JSON once and validates native JSON without interpreting
-strings as another JSON document. Missing rows use registry defaults. Valid blank
+All four `value` columns use Prisma `Json`; the server validates values directly
+without interpreting strings as another JSON document. The latest existing
+authorization-foundation migration converts the two former text columns to JSON,
+preserving the documents encoded by the preceding data migration. Missing rows
+use registry defaults. Valid blank
 strings and `false` survive. Zero and null are not reset signals: a future
 registry that permits them must preserve them too. Invalid stored types fail
 validation instead of becoming defaults. Reset explicitly deletes the owned row.
 
-Single and bulk mutations accept strict registered commands and a band-selection
-hint. Client-supplied owner IDs are rejected. Authorization is refreshed inside
+Single and bulk mutations accept strict registered commands and optional
+`bandPublicId`. Band and membership writes require it. Person and membership
+owner IDs come from authorization; client-supplied owner IDs are rejected. Authorization is refreshed inside
 the serializable mutation transaction, and the entire batch is validated before
 any writes. Audit records and timezone-derived event updates share that
 transaction. Repeating an unchanged value leaves its row revision and audit
@@ -125,9 +133,10 @@ Café Marché must configure `CMDB_HOSTING_MODE=CafeMarche`; other hosting modes
 the existing default branding. Removed logo/text-color schema fields are not
 restored. Blank title values remain intentional.
 
-Timezone reads are fresh and band-scoped. Configured-band resolution now uses
-the caller's database/transaction as well, fixing a transaction-boundary error
-found while preserving the UTC-storage rehearsal. Changing or resetting a band's timezone
+Timezone reads require an explicit numeric band ID from trusted authorization or
+a loaded event, and use the caller's database/transaction. The versioned UTC
+conversion command requires `--band=<public-id>` and only converts that band.
+Changing or resetting a band's timezone
 reanchors that band's all-day segments and recalculates its event bounds in the
 same transaction, including DST-length changes. Timed segments and other bands
 are excluded. Calendar settings consumption uses the four-hive snapshot and
@@ -163,7 +172,7 @@ yarn test tests/localizationResolution.test.ts tests/localizationSettings.test.t
 Native command, against a private disposable database only:
 
 ```powershell
-yarn test tests/localizationSettings.mysql.test.ts tests/datetime/bandPolicy.mysql.test.ts --reporter=dot
+yarn test tests/localizationSettings.mysql.test.ts tests/datetime/bandPolicy.mysql.test.ts tests/settingsStorageMigration.mysql.test.ts --reporter=dot
 ```
 
 The native fixture requires `CMDB_PHASE2_TEST_DATABASE_URL`, rejects ordinary
@@ -191,6 +200,40 @@ Results:
 Application builds, the full repository suite, and interactive application
 acceptance remain phase 4 work; passing focused tests does not establish a usable
 migrated application.
+
+## Cleanup validation, 2026-10-06
+
+Auth scope selection was removed in favor of optional `bandPublicId`. Omitting it
+or passing null never queries bands; supplying it loads that band's grants in
+addition to global/account grants. Refresh retains the same band identity, or
+stays global. The UI drops old band data when switching to global presentation
+and refreshes when returning to the initial band.
+
+Both former text setting columns now use native JSON. The correction is in
+`20261005120000_696_authorization_foundation/migration.sql`; no new migration was
+added. Native checks execute that full amended SQL against old text columns and
+verify preserved blank/numeric-looking strings, booleans, zero, null, arrays, and
+objects. A second check round-trips the same native values through all four hives.
+
+- **170 focused tests passed across 13 files.** Obsolete configured-band tests
+  were replaced with omitted/null/explicit-band coverage.
+- **12 native tests passed across three files.** The UTC conversion now requires
+  `--band=<public-id>` and excludes other bands. The aggregate-only repair no
+  longer reads an unnecessary band timezone.
+- Prisma schema validation and client generation passed. Both maintenance
+  scripts pass Node syntax checks.
+- ESLint passed for all **41 changed/new code files**, and `git diff --check`
+  passed.
+- Typecheck still fails with **717 diagnostics**, compared with **736** before
+  this cleanup. No diagnostic file/code occurrences were added. The auth,
+  localization, settings foundations and focused tests have no diagnostics;
+  touched legacy domain/page consumers still have existing migration errors.
+- Skipped native suites now construct Prisma without an undefined datasource
+  override, fixing a test harness error encountered during validation.
+
+The disposable native database was removed and its private server shut down.
+Remaining domain consumers and portal boundaries still need explicit band
+identity during phases 3–5; missing identity does not select a nominal band.
 
 ## Next execution step
 

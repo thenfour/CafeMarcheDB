@@ -6,7 +6,6 @@ import {
 } from "../server/adminBootstrap";
 import { hasAdminBootstrapTokenBeenClaimed } from "../server/adminBootstrapClaims";
 import { cmauthorize } from "../server/cmResolver";
-import { platformScope } from "../server/authorizationContext";
 
 export interface AdminBootstrapStatus {
     isEligible: boolean;
@@ -23,7 +22,7 @@ const unavailableStatus: AdminBootstrapStatus = {
 };
 
 export default resolver.pipe(
-    cmauthorize({ permission: Permission.login, requireUser: true, scope: platformScope }),
+    cmauthorize({ permission: Permission.login, requireUser: true }),
     async (_, ctx): Promise<AdminBootstrapStatus> => {
 
         const user = await db.user.findFirst({

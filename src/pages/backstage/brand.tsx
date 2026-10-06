@@ -214,7 +214,11 @@ const BrandForm = () => {
         if (!bandTimeZoneValidation.success) return;
         setIsSaving(true);
         try {
-            const saved = await updateBranding({ ...values, bandTimeZone: bandTimeZoneValidation.data });
+            const saved = await updateBranding({
+                ...values,
+                bandTimeZone: bandTimeZoneValidation.data,
+                bandPublicId: dashboardContext.authorizationContext?.bandPublicId,
+            });
             setValues(saved);
             await dashboardContext.refetchDashboardData();
             showMessage({

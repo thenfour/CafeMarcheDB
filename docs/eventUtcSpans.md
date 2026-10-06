@@ -60,20 +60,22 @@ must be converted together. Existing cached event aggregates must also change.
    window. Take a restorable database backup.
 2. Deploy the new code and run the normal Prisma migrations, including
    `20260915230000_event_utc_spans`. Regenerate the Prisma client.
-3. Keep the application stopped and review the preview:
+3. Keep the application stopped and review the preview for each band, using its
+   public ID:
 
    ```sh
-   node scripts/migrate-event-utc-spans.cjs
+   node scripts/migrate-event-utc-spans.cjs --band=<public-id>
    ```
 
 4. Apply the reviewed conversion:
 
    ```sh
-   node scripts/migrate-event-utc-spans.cjs --apply
+   node scripts/migrate-event-utc-spans.cjs --band=<public-id> --apply
    ```
 
-5. Run the preview again. `changes` and `aggregates` must both be empty before
-   starting the new application.
+5. Run each band's preview again. `changes` and `aggregates` must both be empty
+   before starting the new application. The command converts only the selected
+   band using its timezone; it does not infer a band from hosting configuration.
 
 The schema migration marks existing segments as version 1 and gives newly
 created segments version 2. The converter explicitly handles version 1; it never

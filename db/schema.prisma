@@ -857,7 +857,7 @@ model GlobalSetting {
   id       Int    @id @default(autoincrement())
   publicId String @unique @db.Char(16)
   name     String @unique @default("") @db.VarChar(768)
-  value    String @db.MediumText // json value et al
+  value    Json
 
   // LSMB: add this.
   // ®️recordkeeping
@@ -877,7 +877,7 @@ model BandSetting {
   band   Band @relation("BandSetting_band", fields: [bandId], references: [id], onDelete: Cascade) // when band deletes, its settings lose meaning
 
   name  String @db.VarChar(191)
-  value String @db.MediumText // json value et al (including null which serializes as "null")
+  value Json
 
   // LSMB: add this.
   // ®️recordkeeping

@@ -184,7 +184,7 @@ export default resolver.pipe(
         //const currentUser = (await loadAuthorization(ctx.session)).user;
         //if (!currentUser) throw new Error("Current user was not found.");
         ctx.auth.requireUser();
-        const bandTimeZone = await loadBandTimeZone(db);
+        const bandTimeZone = await loadBandTimeZone(db, ctx.auth.requireBand().id);
         const today = CalendarDate.fromInstant({ value: new Date(), timeZone: bandTimeZone });
         const todayRange = createAllDayRange({ startDate: today.date, endDateExclusive: today.addDays(1).date }, bandTimeZone);
         // start with defaults.

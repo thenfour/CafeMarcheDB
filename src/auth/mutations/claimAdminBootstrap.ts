@@ -19,7 +19,7 @@ import {
 } from "../server/adminBootstrapClaims";
 import { createPublicDataFromDatabase } from "../server/effectivePermissions";
 import { cmauthorize } from "../server/cmResolver";
-import { authorizationDatabase, platformScope } from "../server/authorizationContext";
+import { authorizationDatabase } from "../server/authorizationContext";
 
 export const ClaimAdminBootstrapInput = z.object({
     secret: z.string().min(kMinimumAdminBootstrapSecretLength).max(4096),
@@ -39,7 +39,7 @@ const failClaim = (): never => {
 
 export default resolver.pipe(
     resolver.zod(ClaimAdminBootstrapInput),
-    cmauthorize({ permission: Permission.login, requireUser: true, scope: platformScope }),
+    cmauthorize({ permission: Permission.login, requireUser: true }),
     async ({ secret }, ctx) => {
         const configuration = getAdminBootstrapConfiguration();
         if (!configuration) throw new AdminBootstrapClaimError();

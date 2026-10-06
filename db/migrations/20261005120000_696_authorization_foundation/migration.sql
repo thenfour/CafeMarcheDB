@@ -111,3 +111,8 @@ COMMIT;
 
 DROP TEMPORARY TABLE `_LsmbAuthorizationPermissions`;
 DROP TEMPORARY TABLE `_LsmbAuthorizationContext`;
+
+-- All four settings hives store typed JSON. The preceding migration already
+-- encoded legacy global/band text as JSON strings; keep those documents intact.
+ALTER TABLE `GlobalSetting` MODIFY `value` JSON NOT NULL;
+ALTER TABLE `BandSetting` MODIFY `value` JSON NOT NULL;

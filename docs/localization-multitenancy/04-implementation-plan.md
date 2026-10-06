@@ -25,9 +25,10 @@ There are two delivery milestones:
 | A: migrated application works | Phases 1–4 complete. Core Café Marché workflows work on the migrated model, the app builds, authorization and band isolation are enforced, and temporary restrictions are recorded. |
 | B: localization and multiband complete | Phases 5–6 complete as well. Routing, band lifecycle and management, scoped localized editing, and locale presentation work together. Deferred features are restored or explicitly accepted for retirement. |
 
-Trusted band context and isolation belong before milestone A. The initial
-deployment can select Café Marché through server configuration while the full
-portal routing and management experience is developed later.
+Trusted band context and isolation belong before milestone A. Band request
+boundaries must supply a public band identity. Single-band and multiband hosting
+share authorization, database, and platform administration; only UX decisions
+differ. There is no implicit backend default band.
 
 Follow the settled localization and multiband policies in
 [00-localization-multitenancy.md](00-localization-multitenancy.md); this checklist
@@ -104,8 +105,9 @@ not establish application readiness or complete isolation of legacy consumers.
   resolved band when applicable, membership, and applicable grants.
   Resolve a requested band on the server; client IDs and rewrite headers are
   selection hints, not authorization.
-- [x] Initially resolve Café Marché through server configuration. Support
-  platform operations with no band and public band access with no membership.
+- [x] Accept an optional band public ID: always load global/account authorization,
+  and add band authorization when supplied. Support platform operations with no
+  band and public band access with no membership; omit inferred/default bands.
 - [x] Load global-role grants and active-band role grants with explicit scope.
   Grants from another band's membership must not authorize an operation here.
 - [x] Keep band, membership, and effective band grants in the request/tab
@@ -190,9 +192,10 @@ buildable application or completed portal routing.
 - [x] Implement all four settings hives: `GlobalSetting`, `BandSetting`,
   `UserSetting`, and `BandUserSetting`, with registry defaults, typed values,
   per-key read/write capabilities, and validated server mutations.
-- [x] Normalize storage at the server boundary: global/band values are serialized
-  JSON in text columns; user/membership values are native Prisma JSON. Decode
-  each once and preserve the migrated types documented in the SQL runbook.
+- [x] Use native Prisma JSON for all four settings value columns. Validate stored
+  values directly and preserve the migrated types documented in the SQL runbook.
+  Correct the latest existing migration instead of introducing another migration
+  for this uninstalled schema.
 - [x] Make reset explicit. Missing rows use registry defaults; valid empty
   strings, `false`, zero, and any registry-supported null value must survive.
   Keep the hives independent rather than adding an implicit inheritance chain.

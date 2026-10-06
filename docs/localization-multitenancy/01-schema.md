@@ -97,7 +97,9 @@ to the implementation plan.
 `GlobalSetting`, `BandSetting`, `UserSetting`, and `BandUserSetting` provide
 separate scopes. Band/membership setting names are unique within their scope,
 not across bands. Membership settings can hold calendar locale preferences.
-The settings registry must provide per-key authorization and serialization.
+All four value columns use native Prisma `Json`. The settings registry provides
+per-key authorization, defaults, and value validation; strings remain strings
+without a second JSON decode.
 
 The server must enforce singleton role designations, prohibit granting a deleted
 role/permission or using a deactivated membership, select default/enabled locales,
