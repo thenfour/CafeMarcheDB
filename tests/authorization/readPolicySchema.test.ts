@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
-import { testServerAuthorization } from "tests/support/serverAuthorization"
+import { testBandAuthorization, testServerAuthorization } from "tests/support/serverAuthorization"
 
 vi.mock("db", async () => {
   const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client")
@@ -225,7 +225,7 @@ describe("read-policy composition boundaries", () => {
 
   it("awaits visibility filtering for protected relation includes", async () => {
     const selection = await db3.xSong.CalculateSelectionArgs(
-      createAuthorizationSchemaData(actor),
+      testBandAuthorization(actor, actorPublicData.effectivePermissions),
       emptyFilter,
       false,
       db3.songSearchView.getSelectionArgs,

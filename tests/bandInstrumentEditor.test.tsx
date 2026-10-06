@@ -8,7 +8,7 @@ import { PermissionSet } from "src/auth/shared/PermissionSet";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { kStaticLocalizedStringRegistry, type LocalizedPlainStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
-import { bandInstrumentGroupTableSpec } from "src/core/db3/components/BandInstrumentCatalog";
+import { BandInstrumentCatalog, bandInstrumentGroupTableSpec } from "src/core/db3/components/BandInstrumentCatalog";
 import { bandInstrumentGroupView, type BandInstrumentGroupDto } from "src/core/db3/shared/entities/instrument/bandInstrumentContracts";
 import { useTableRenderContext, xTableClientCaps } from "src/core/db3/components/DB3ClientCore";
 import { DB3ReferenceStore } from "src/core/db3/shared/core/db3Hydration";
@@ -17,9 +17,16 @@ import { useDB3CreateFromString } from "src/core/db3/components/useDB3CreateFrom
 import { useDB3Command } from "src/core/db3/components/useDB3Command";
 import { queryClient } from "src/blitz-client";
 import { invalidatePresentation } from "src/locale/components/PresentationProvider";
+import { useQuery } from "@blitzjs/rpc";
+import { TableAccessor } from "shared/rootroot";
+import { InstrumentChip, InstrumentFunctionalGroupChip } from "src/core/components/CMCoreComponents";
+import { SongTagIndicatorContainer } from "src/core/components/SongTagIndicatorContainer";
+import { groupReferenceFixture, instrumentReferenceFixture, songTagReferenceFixture } from "./support/catalogReferenceFixtures";
+import { createDashboardReferenceStore, registerDashboardReferences } from "src/core/db3/shared/references/dashboardReferences";
 
 vi.mock("@blitzjs/rpc", async () => ({ ...await vi.importActual<typeof import("@blitzjs/rpc")>("@blitzjs/rpc"),
     useMutation: () => [mutation],
+    useQuery: vi.fn(),
 }));
 
 vi.mock("src/core/db3/components/useClientAuth", () => ({ useClientAuth: () => authorization }));
@@ -32,6 +39,15 @@ vi.mock("src/auth/hooks/useCurrentUser", () => ({ useCurrentUser: () => [authori
 vi.mock("src/core/db3/mutations/executeDB3Command", () => ({ default: vi.fn() }));
 vi.mock("src/core/db3/queries/getBandInstrumentCatalog", () => ({ default: vi.fn() }));
 vi.mock("src/blitz-client", () => ({ queryClient: { invalidateQueries: vi.fn() } }));
+vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => dashboard }));
+
+const displayGroup = groupReferenceFixture(parsePublicId<"InstrumentFunctionalGroup">("DisplayGroup0001"));
+const displayInstrument = instrumentReferenceFixture(parsePublicId<"Instrument">("DisplayInstr0001"), displayGroup);
+const displayTag = { ...songTagReferenceFixture(parsePublicId<"SongTag">("DisplayTag000001")), indicator: "M" };
+const dashboardStore = createDashboardReferenceStore();
+registerDashboardReferences(dashboardStore, { instrumentFunctionalGroup: [displayGroup], instrument: [displayInstrument], songTag: [displayTag] });
+const dashboard = { referenceStore: dashboardStore, instrument: new TableAccessor([displayInstrument]),
+    instrumentFunctionalGroup: new TableAccessor([displayGroup]), songTag: new TableAccessor([displayTag]), refreshCachedData: vi.fn() };
 
 const authorization = new CMClientAuthorization({ id: 1, publicId: parsePublicId<"User">("User000000000001") },
     new PermissionSet([Permission.login, Permission.always_grant, Permission.admin_instruments]));
@@ -52,6 +68,7 @@ beforeEach(() => {
     container = document.createElement("div"); document.body.appendChild(container); root = createRoot(container);
     save.mockClear(); close.mockClear();
     mutation.mockClear(); vi.mocked(queryClient.invalidateQueries).mockClear(); vi.mocked(invalidatePresentation).mockClear();
+    vi.mocked(useQuery).mockClear();
 });
 afterEach(async () => {
     await act(async () => root.unmount());
@@ -105,6 +122,18 @@ async function chooseLocale(selector: Element, localeTag: string) {
 }
 
 describe("native DB3 localized catalog editors", () => {
+    it("renders detail, instrument/group chips, and tag indicators from shared dashboard references without queries", async () => {
+        await act(async () => root.render(<>
+            <BandInstrumentCatalog detailPublicId={displayInstrument.publicId} />
+            <InstrumentChip value={displayInstrument.publicId} />
+            <InstrumentFunctionalGroupChip value={displayGroup.publicId} />
+            <SongTagIndicatorContainer tagIds={[displayTag.publicId]} allPossibleTags={[displayTag.publicId]} />
+        </>));
+        expect(container.querySelector("h1")?.textContent).toBe("Trumpet");
+        expect(container.textContent).toContain("Brass");
+        expect(container.querySelector(".songTagIndicator")?.textContent).toBe("M");
+        expect(useQuery).not.toHaveBeenCalled();
+    });
     it("prepares ordinary writes without materializing any inherited or localized display value", async () => {
         await render();
         await submit();
@@ -164,7 +193,7 @@ describe("native DB3 localized catalog editors", () => {
         await submit("Create");
         expect(save).toHaveBeenCalledWith({ name: { kind: "set", stringPublicId: null, localeTag: "fr-BE", value: "New group" } });
     });
-    it("refreshes dependent catalog reads without remounting the picker's unsaved parent", async () => {
+    it("leaves query refresh to the caller and preserves the picker's unsaved parent", async () => {
         function ParentDraft() {
             const command = useDB3Command(bandInstrumentGroupView.crud.operations.create!.command);
             const [draft, setDraft] = React.useState("Unsaved instrument");
@@ -174,7 +203,7 @@ describe("native DB3 localized catalog editors", () => {
         await act(async () => root.render(<ParentDraft />));
         await submit("Create");
         expect(mutation).toHaveBeenCalledWith(expect.objectContaining({ bandPublicId: "Band000000000001" }));
-        expect(queryClient.invalidateQueries).toHaveBeenCalledOnce();
+        expect(queryClient.invalidateQueries).not.toHaveBeenCalled();
         expect(invalidatePresentation).not.toHaveBeenCalled();
         expect(document.querySelector<HTMLInputElement>('[aria-label="Parent draft"]')?.value).toBe("Unsaved instrument");
     });

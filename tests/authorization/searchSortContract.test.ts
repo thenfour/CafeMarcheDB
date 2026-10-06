@@ -1,4 +1,4 @@
-import { testServerAuthorization } from "tests/support/serverAuthorization";
+import { testBandAuthorization } from "tests/support/serverAuthorization";
 import { describe, expect, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { processSearchSortModel, resolveSearchDiscreteCriteria } from "@db3/server/searchServerCore";
@@ -33,7 +33,7 @@ describe("search sort contract", () => {
             { id: 21, publicId: secondPublicId },
         ]);
         // The search authorization path only needs an authenticated user ID here.
-        const publicData = testServerAuthorization({ id: 100 } as any, new ServerPermissionSet([
+        const publicData = testBandAuthorization({ id: 100 }, new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
             { id: 3, name: Permission.view_songs },
@@ -48,7 +48,7 @@ describe("search sort contract", () => {
             db3.xSong,
             [criterion],
             publicData,
-            { SongTag: { findMany } } as any, // Focused delegate double for the identity target.
+            { bandSongTag: { findMany } } as any, // Focused delegate double for the identity target.
         );
 
         expect(findMany).toHaveBeenCalledOnce();
@@ -81,7 +81,7 @@ describe("search sort contract", () => {
                 options: ["stale-client-selection"],
             }],
             publicData,
-            { SongTag: { findMany } } as any, // No lookup should occur for an optionless behavior.
+            { bandSongTag: { findMany } } as any, // No lookup should occur for an optionless behavior.
         );
         expect(optionless[0]?.options).toEqual([]);
         expect(findMany).toHaveBeenCalledOnce();
@@ -91,7 +91,7 @@ describe("search sort contract", () => {
         const publicId = parsePublicId<"WikiPageTag">("WikiTagPublic001");
         const findMany = vi.fn(async () => [{ id: 31, publicId }]);
         // The focused authorization path only reads the authenticated user ID.
-        const publicData = testServerAuthorization({ id: 100 } as any, new ServerPermissionSet([
+        const publicData = testBandAuthorization({ id: 100 }, new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
             { id: 3, name: Permission.view_wiki_pages },

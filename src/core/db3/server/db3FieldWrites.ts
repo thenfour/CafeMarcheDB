@@ -1,6 +1,5 @@
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { writeBandDynamicString, type DynamicStringWriterDatabase } from "src/locale/server/dynamicStringWriter";
-import { LocalizedStringField } from "../shared/columnTypes/localizedString";
 import type { xTable } from "../shared/db3core";
 
 // Field discovery spans registered Prisma models; this boundary validates each heterogeneous field value.
@@ -12,20 +11,20 @@ export async function prepareDB3FieldWrites(table: xTable, values: MutationValue
 ): Promise<MutationValues> {
     const result = { ...values };
     for (const field of table.columns) {
-        if (!(field instanceof LocalizedStringField) || !Object.prototype.hasOwnProperty.call(values, field.member)) {
+        if (!Object.prototype.hasOwnProperty.call(values, field.member)) {
             continue;
         }
-        const edit = field.writeTransportSchema.parse(values[field.member]);
-        if (edit.kind === "inherit" && (!table.bandScope?.inheritedSourceMember || !existing?.[table.bandScope.inheritedSourceMember])) {
-            throw new Error("Custom entries have no global value to inherit.");
+        const write = await field.applyTransactionalWrite({
+            value: values[field.member], existingRow: existing,
+            hasInheritedSource: !!(table.bandScope?.inheritedSourceMember && existing?.[table.bandScope.inheritedSourceMember]),
+            writeLocalizedString: (ownedId, format, edit) => writeBandDynamicString(database, auth, ownedId, format, edit),
+        });
+        if (write) {
+            Object.assign(result, write.values);
+            for (const member of write.removeMembers) {
+                delete result[member];
+            }
         }
-        const currentId = existing?.[field.stringIdentityMember] ?? null;
-        if (currentId !== null && (typeof currentId !== "number" || !Number.isSafeInteger(currentId))) {
-            throw new Error(`Invalid owned string identity for '${field.member}'.`);
-        }
-        result[field.stringIdentityMember] = await writeBandDynamicString(database, auth, currentId,
-            field.stringFormat, edit);
-        delete result[field.member];
     }
     if (table.bandScope && existing === null) {
         result[table.bandScope.member] = auth.requireBand().id;

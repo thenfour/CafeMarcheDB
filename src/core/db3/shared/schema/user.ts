@@ -768,7 +768,7 @@ const userBaseArgs = db3.defineTableDesc({
                 ]
             }),
         }),
-        instruments: tagsRef("UserInstrument", "Instrument", {
+        instruments: tagsRef("UserInstrument", "BandInstrument", {
             associationForeignObjectMember: "instrument",
             associationLocalObjectMember: "user",
             authMap: xUserBasicProfileAuthMap,

@@ -1,4 +1,5 @@
-import { testServerAuthorization } from "tests/support/serverAuthorization";
+import { groupReferenceFixture, instrumentDtoFixture, instrumentReferenceFixture, songTagReferenceFixture } from "../support/catalogReferenceFixtures";
+import { testBandAuthorization, testServerAuthorization } from "tests/support/serverAuthorization";
 import { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
@@ -58,10 +59,19 @@ const group = {
     color: "orange",
     sortOrder: 1,
 };
-const hydratedGroup = {
-    ...group,
-    color: gGeneralPaletteList.findEntry("orange"),
-};
+const hydratedGroup = groupReferenceFixture(groupPublicId);
+
+// Scalar query/projection mechanics are independent of the localized band catalog.
+const scalarSelection = Prisma.validator<Prisma.SetlistPlanGroupDefaultArgs>()({
+    select: { publicId: true, name: true, description: true, color: true, sortOrder: true },
+});
+const scalarContract = db3.deriveViewContract(db3.xSetlistPlanGroup, scalarSelection);
+const scalarListView = db3.defineView({
+    viewID: "SetlistPlanGroup_TestList", entity: db3.xSetlistPlanGroup,
+    selection: scalarContract.prismaSelection, dtoSchema: scalarContract.dtoSchema, hydrate: scalarContract.hydrate,
+});
+const scalarRow = { ...group, publicId: db3.xSetlistPlanGroup.parseIdentity(groupPublicId) };
+
 describe("DB3 named views", () => {
     it("returns DTOs by default and hydrates only when explicitly requested", async () => {
         const row = {
@@ -295,30 +305,30 @@ describe("DB3 named views", () => {
     it("validates view ownership as part of the query contract", () => {
         const request = validateDB3QueryRequest({
             table: {
-                tableID: "InstrumentFunctionalGroup",
-                tableName: "InstrumentFunctionalGroup",
-                viewID: db3.instrumentFunctionalGroupListView.viewID,
+                tableID: "SetlistPlanGroup",
+                tableName: "SetlistPlanGroup",
+                viewID: scalarListView.viewID,
             },
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "db3-view-test",
         });
-        expect(request.table.viewID).toBe(db3.instrumentFunctionalGroupListView.viewID);
+        expect(request.table.viewID).toBe(scalarListView.viewID);
 
         expect(() => validateDB3QueryRequest({
             table: {
-                tableID: "Instrument",
-                tableName: "Instrument",
-                viewID: db3.instrumentFunctionalGroupListView.viewID,
+                tableID: db3.xInstrument.tableID,
+                tableName: db3.xInstrument.tableName,
+                viewID: scalarListView.viewID,
             },
             filter: { items: [] },
             cmdbQueryContext: "db3-view-test",
-        })).toThrow("does not belong to table 'Instrument'");
+        })).toThrow("does not belong to table 'BandInstrument'");
 
         expect(() => validateDB3QueryRequest({
             table: {
-                tableID: "Instrument",
-                tableName: "Instrument",
+                tableID: db3.xInstrument.tableID,
+                tableName: db3.xInstrument.tableName,
                 viewID: "Missing_View",
             },
             filter: { items: [] },
@@ -327,139 +337,92 @@ describe("DB3 named views", () => {
     });
 
     it("parses the authorized DTO shape and never exposes a database ID", async () => {
-        const findMany = vi.fn(async () => [{ id: 54, ...group }]);
+        const findMany = vi.fn(async () => [{ id: 54, createdByUserId: 100, ...scalarRow }]);
         const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
-            { id: 2, name: Permission.login },
+            { id: 2, name: Permission.setlist_planner_access },
             { id: 3, name: Permission.sysadmin },
         ]);
 
         const result = await queryTable({
             table: {
-                tableID: "InstrumentFunctionalGroup",
-                tableName: "InstrumentFunctionalGroup",
-                viewID: db3.instrumentFunctionalGroupListView.viewID,
+                tableID: "SetlistPlanGroup",
+                tableName: "SetlistPlanGroup",
+                viewID: scalarListView.viewID,
             },
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "db3-view-test",
         }, new CMServerAuthorization({ id: 100 } as any, effectivePermissions), {
-            InstrumentFunctionalGroup: { findMany },
+            SetlistPlanGroup: { findMany },
         } as any);
 
-        expect(result.items).toEqual([group]);
+        expect(result.items).toEqual([scalarRow]);
         expect(result.items[0]).not.toHaveProperty("id");
         expect(findMany).toHaveBeenCalledOnce();
 
-        expect(() => db3.instrumentFunctionalGroupListView.parseDto({
-            publicId: groupPublicId,
-        })).toThrow();
-        expectTypeOf<db3.DtoOf<typeof db3.instrumentFunctionalGroupListView>["name"]>()
-            .toEqualTypeOf<string>();
+        expect(() => scalarListView.parseDto({ publicId: "invalid" })).toThrow();
+        expectTypeOf<db3.DtoOf<typeof scalarListView>["name"]>()
+            .toEqualTypeOf<string | undefined>();
     });
 
     it("applies the same view boundary to a single row returned by a mutation", () => {
         const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
-            { id: 2, name: Permission.login },
+            { id: 2, name: Permission.setlist_planner_access },
             { id: 3, name: Permission.sysadmin },
         ]);
         const dto = authorizeAndProjectViewDto(
-            db3.instrumentFunctionalGroupListView,
-            { id: 54, ...group },
+            scalarListView,
+            { id: 54, createdByUserId: 100, ...scalarRow },
             testServerAuthorization({ id: 100 }, effectivePermissions),
             "db3-single-view-dto-test",
         );
-        expect(dto).toEqual(group);
+        expect(dto).toEqual(scalarRow);
         expect(dto).not.toHaveProperty("id");
-        expectTypeOf(dto).toEqualTypeOf<db3.DtoOf<typeof db3.instrumentFunctionalGroupListView> | null>();
+        expectTypeOf(dto).toEqualTypeOf<db3.DtoOf<typeof scalarListView> | null>();
 
         const result = authorizeAndHydrateViewModel(
-            db3.instrumentFunctionalGroupListView,
-            { id: 54, ...group },
+            scalarListView,
+            { id: 54, createdByUserId: 100, ...scalarRow },
             testServerAuthorization({ id: 100 }, effectivePermissions),
             db3.createDashboardReferenceStore(),
             "db3-single-view-model-test",
         );
 
-        expect(result).toEqual(hydratedGroup);
+        expect(result).toEqual({ ...scalarRow, color: gGeneralPaletteList.findEntry("orange") });
         expect(result).not.toHaveProperty("id");
     });
 
     it("preserves a server-computed page order before a view removes database IDs", async () => {
-        const secondPublicId = parsePublicId<"InstrumentFunctionalGroup">("BcDeFgHiJkLmNo12");
+        const secondPublicId = parsePublicId<"SetlistPlanGroup">("BcDeFgHiJkLmNo12");
         const findMany = vi.fn(async (args: DB3ReadSelectionArgs) => [
-            { id: 1, ...group },
-            { id: 2, ...group, publicId: secondPublicId, name: "Woodwind" },
+            { id: 1, createdByUserId: 100, ...scalarRow },
+            { id: 2, createdByUserId: 100, ...scalarRow, publicId: secondPublicId, name: "Woodwind" },
         ].map(row => selectPrismaTestRow(row, args)));
         const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
-            { id: 2, name: Permission.login },
+            { id: 2, name: Permission.setlist_planner_access },
             { id: 3, name: Permission.sysadmin },
         ]);
 
         const result = await queryTable({
             table: {
-                tableID: "InstrumentFunctionalGroup",
-                tableName: "InstrumentFunctionalGroup",
-                viewID: db3.instrumentFunctionalGroupListView.viewID,
+                tableID: "SetlistPlanGroup",
+                tableName: "SetlistPlanGroup",
+                viewID: scalarListView.viewID,
             },
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "db3-view-ordered-test",
         }, new CMServerAuthorization({ id: 100 } as any, effectivePermissions), {
-            InstrumentFunctionalGroup: { findMany },
+            SetlistPlanGroup: { findMany },
         } as any, {
             orderedPrimaryKeys: [2, 1],
         });
 
         expect(result.items.map(item => item.publicId)).toEqual([secondPublicId, groupPublicId]);
         expect(result.items.every(item => !("id" in item))).toBe(true);
-    });
-
-    it("returns the normalized Instrument editor DTO for reference-store hydration", async () => {
-        const findMany = vi.fn(async () => [{
-            id: 7,
-            publicId: instrumentPublicId,
-            name: "Trumpet",
-            description: "",
-            autoAssignFileLeafRegex: null,
-            sortOrder: 1,
-            functionalGroupId: 54,
-            functionalGroup: { publicId: groupPublicId },
-        }]);
-        const effectivePermissions = new ServerPermissionSet([
-            { id: 1, name: Permission.always_grant },
-            { id: 2, name: Permission.login },
-        ]);
-
-        const result = await queryTable({
-            table: {
-                tableID: "Instrument",
-                tableName: "Instrument",
-                viewID: db3.instrumentEditorView.viewID,
-            },
-            orderBy: undefined,
-            filter: { items: [] },
-            cmdbQueryContext: "instrument-editor-view-test",
-        }, new CMServerAuthorization({ id: 100 } as any, effectivePermissions), {
-            Instrument: { findMany },
-        } as any);
-
-        expect(result.items).toEqual([{
-            publicId: instrumentPublicId,
-            name: "Trumpet",
-            description: "",
-            autoAssignFileLeafRegex: null,
-            sortOrder: 1,
-            functionalGroupId: groupPublicId,
-        }]);
-        expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
-            select: expect.objectContaining({
-                functionalGroupId: true,
-                functionalGroup: { select: { publicId: true } },
-            }),
-        }));
     });
 
     it("queries the finite Custom Link and Menu Link collection views", async () => {
@@ -651,14 +614,7 @@ describe("DB3 named views", () => {
             instrumentFunctionalGroup: [hydratedGroup],
         });
 
-        const dto = db3.instrumentDashboardView.parseDto({
-            publicId: instrumentPublicId,
-            name: "Trumpet",
-            description: "",
-            autoAssignFileLeafRegex: null,
-            sortOrder: 1,
-            functionalGroupId: groupPublicId,
-        });
+        const dto = instrumentDtoFixture(instrumentPublicId, groupPublicId);
         const hydrated = db3.hydrateView(db3.instrumentDashboardView, dto, references);
 
         expect(hydrated.functionalGroup).toEqual(
@@ -685,7 +641,7 @@ describe("DB3 named views", () => {
             color: null,
             iconName: null,
         };
-        const songTag = { publicId: songTagPublicId, text: "March", description: "", color: null, sortOrder: 1, significance: null, group: null, indicator: null, indicatorCssClass: null };
+        const songTag = songTagReferenceFixture(songTagPublicId);
         const fileTag = { publicId: fileTagPublicId, text: "Partition", description: "", color: null, sortOrder: 1, significance: db3.FileTagSignificance.Partition };
         db3.registerDashboardReferences(references, {
             permission: [permission],
@@ -750,15 +706,7 @@ describe("DB3 named views", () => {
             sortOrder: 1,
             significance: db3.FileTagSignificance.Partition,
         };
-        const instrument = {
-            publicId: instrumentPublicId,
-            name: "Trumpet",
-            description: "",
-            autoAssignFileLeafRegex: null,
-            sortOrder: 1,
-            functionalGroupId: groupPublicId,
-            functionalGroup: hydratedGroup,
-        };
+        const instrument = instrumentReferenceFixture(instrumentPublicId, hydratedGroup);
         db3.registerDashboardReferences(references, {
             permission: [permission],
             fileTag: [fileTag],
@@ -853,15 +801,7 @@ describe("DB3 named views", () => {
             sortOrder: 1,
             significance: db3.FileTagSignificance.Partition,
         };
-        const instrument = {
-            publicId: instrumentPublicId,
-            name: "Trumpet",
-            description: "",
-            autoAssignFileLeafRegex: null,
-            sortOrder: 1,
-            functionalGroupId: groupPublicId,
-            functionalGroup: hydratedGroup,
-        };
+        const instrument = instrumentReferenceFixture(instrumentPublicId, hydratedGroup);
         db3.registerDashboardReferences(references, {
             permission: [permission],
             fileTag: [fileTag],
@@ -1280,7 +1220,7 @@ describe("DB3 named views", () => {
     });
 
     it("projects the Song search DTO through nested field authorization", async () => {
-        const findMany = vi.fn(async () => [{
+        const rows = [{
             id: 7,
             publicId: songPublicId(7),
             name: "A song",
@@ -1298,7 +1238,7 @@ describe("DB3 named views", () => {
                 songId: 7,
                 song: { publicId: songPublicId(7), createdByUserId: 100, visiblePermissionId: null, isDeleted: false },
                 tagId: 20,
-                tag: { publicId: songTagPublicId },
+                tag: { publicId: songTagPublicId, bandId: 1 },
             }],
             taggedFiles: [{
                 id: 80,
@@ -1330,7 +1270,7 @@ describe("DB3 named views", () => {
                 comment: "",
                 user: { id: 100, publicId: userPublicId(100), name: "Composer", isDeleted: false },
             }],
-        }]);
+        }];
         const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.public },
@@ -1340,18 +1280,11 @@ describe("DB3 named views", () => {
             { id: 6, name: Permission.view_files },
         ]);
 
-        const result = await queryTable({
-            table: {
-                tableID: db3.xSong.tableID,
-                tableName: db3.xSong.tableName,
-                viewID: db3.songSearchView.viewID,
-            },
-            orderBy: undefined,
-            filter: { items: [] },
-            cmdbQueryContext: "song-search-view-test",
-        }, new CMServerAuthorization({ id: 100 } as any, effectivePermissions), {
-            Song: { findMany },
-        } as any);
+        const authorization = testBandAuthorization({ id: 100 }, effectivePermissions);
+        const projected = rows.map(row => authorizeAndProjectDB3ViewModel(
+            db3.songSearchView.entity, row, authorization, "nested view projection",
+        )).filter(row => row !== null);
+        const result = { items: projected.map(row => db3.songSearchView.parseDto(row)) };
 
         expect(result.items).toHaveLength(1);
         expect(result.items[0]).toMatchObject({
@@ -1396,17 +1329,9 @@ describe("DB3 named views", () => {
             color: null,
             iconName: null,
         };
-        const songTag = { publicId: songTagPublicId, text: "March", description: "", color: null, sortOrder: 1, significance: null, group: null, indicator: null, indicatorCssClass: null };
+        const songTag = songTagReferenceFixture(songTagPublicId);
         const fileTag = { publicId: fileTagPublicId, text: "Partition", description: "", color: null, sortOrder: 1, significance: db3.FileTagSignificance.Partition };
-        const instrument = {
-            publicId: instrumentPublicId,
-            name: "Trumpet",
-            description: "",
-            autoAssignFileLeafRegex: null,
-            sortOrder: 1,
-            functionalGroupId: groupPublicId,
-            functionalGroup: hydratedGroup,
-        };
+        const instrument = instrumentReferenceFixture(instrumentPublicId, hydratedGroup);
         db3.registerDashboardReferences(references, {
             permission: [permission],
             songTag: [songTag],
@@ -1477,7 +1402,7 @@ describe("DB3 named views", () => {
 
     it("projects the Song detail DTO recursively without leaking authorization support fields", async () => {
         const uploadedAt = new Date("2026-01-02T12:00:00Z");
-        const findMany = vi.fn(async () => [{
+        const rows = [{
             id: 7,
             publicId: songPublicId(7),
             name: "A song",
@@ -1498,7 +1423,7 @@ describe("DB3 named views", () => {
                 songId: 7,
                 song: { publicId: songPublicId(7), createdByUserId: 100, visiblePermissionId: 3, isDeleted: false },
                 tagId: 20,
-                tag: { publicId: songTagPublicId },
+                tag: { publicId: songTagPublicId, bandId: 1 },
             }],
             taggedFiles: [{
                 id: 80,
@@ -1548,7 +1473,7 @@ describe("DB3 named views", () => {
                 },
             }],
             credits: [],
-        }]);
+        }];
         const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.login },
@@ -1558,18 +1483,11 @@ describe("DB3 named views", () => {
             { id: 6, name: Permission.public },
         ]);
 
-        const result = await queryTable({
-            table: {
-                tableID: db3.xSong.tableID,
-                tableName: db3.xSong.tableName,
-                viewID: db3.songDetailView.viewID,
-            },
-            orderBy: undefined,
-            filter: { items: [], tableParams: { songId: songPublicId(7) } },
-            cmdbQueryContext: "song-detail-view-test",
-        }, new CMServerAuthorization({ id: 100 } as any, effectivePermissions), {
-            Song: { findMany },
-        } as any);
+        const authorization = testBandAuthorization({ id: 100 }, effectivePermissions);
+        const projected = rows.map(row => authorizeAndProjectDB3ViewModel(
+            db3.songDetailView.entity, row, authorization, "nested view projection",
+        )).filter(row => row !== null);
+        const result = { items: projected.map(row => db3.songDetailView.parseDto(row)) };
 
         expect(result.items).toHaveLength(1);
         expect(result.items[0]).toMatchObject({
@@ -1600,7 +1518,6 @@ describe("DB3 named views", () => {
         expect(result.items[0]?.taggedFiles?.[0]?.file).not.toHaveProperty("isDeleted");
         expect(result.items[0]?.taggedFiles?.[0]?.file?.taggedSongs?.[0]?.song)
             .not.toHaveProperty("createdByUserId");
-        expect(findMany).toHaveBeenCalledTimes(2); // Public-ID resolution precedes the detail query.
     });
 
     it("hydrates EventSongList persistence collections into one client value object", () => {
@@ -1868,8 +1785,8 @@ describe("DB3 named views", () => {
         expect(incompleteSong.content).toBeUndefined();
     });
 
-    it("queries the EventSongList detail view with recursive authorization and no ID ordering", async () => {
-        const findMany = vi.fn(async (_query: any) => [{
+    it("projects the EventSongList detail graph with recursive authorization and declares its relation ordering", async () => {
+        const rows = [{
             publicId: listPublicId(50),
             name: "Concert set",
             description: "Main set",
@@ -1902,12 +1819,12 @@ describe("DB3 named views", () => {
                         songId: 7,
                         song: { publicId: songPublicId(7), createdByUserId: 42, visiblePermissionId: null, isDeleted: false },
                         tagId: 9,
-                        tag: { publicId: songTagPublicId },
+                        tag: { publicId: songTagPublicId, bandId: 1 },
                     }],
                 },
             }],
             dividers: [],
-        }]);
+        }];
         const permissionNames = [
             Permission.always_grant,
             Permission.public,
@@ -1920,19 +1837,11 @@ describe("DB3 named views", () => {
             name,
         })));
 
-        const result = await queryTable({
-            table: {
-                tableID: db3.xEventSongList.tableID,
-                tableName: db3.xEventSongList.tableName,
-                viewID: db3.eventSongListDetailView.viewID,
-            },
-            orderBy: undefined,
-            filter: { items: [], tableParams: { eventId: eventPublicId(5) } },
-            cmdbQueryContext: "event-song-list-detail-view-test",
-        }, new CMServerAuthorization({ id: 42 } as any, effectivePermissions), {
-            EventSongList: { findMany },
-            Event: { findMany: vi.fn(async () => [{ id: 5, publicId: eventPublicId(5) }]) },
-        } as any);
+        const authorization = testBandAuthorization({ id: 42 }, effectivePermissions);
+        const projected = rows.map(row => authorizeAndProjectDB3ViewModel(
+            db3.eventSongListDetailView.entity, row, authorization, "nested view projection",
+        )).filter(row => row !== null);
+        const result = { items: projected.map(row => db3.eventSongListDetailView.parseDto(row)) };
 
         expect(result.items[0]).toMatchObject({
             publicId: listPublicId(50),
@@ -1940,15 +1849,18 @@ describe("DB3 named views", () => {
             dividers: [],
         });
         expect(result.items[0]?.songs?.[0]?.song).not.toHaveProperty("createdByUserId");
-        const query = findMany.mock.calls[0]![0];
-        expect(query.orderBy).toEqual([{ sortOrder: "asc" }]);
+        const query = await db3.xEventSongList.CalculateSelectionArgs(authorization, { items: [] }, false, db3.eventSongListDetailView.getSelectionArgs);
+        expect(db3.xEventSongList.naturalOrderBy).toEqual([{ sortOrder: "asc" }]);
+        if (!query) {
+            throw new Error("Missing event-song-list selection.");
+        }
         expect(query.select.songs.orderBy).toEqual({ sortOrder: "asc" });
         expect(query.select.songs.where).toBeDefined();
         expect(query.select.dividers.orderBy).toEqual({ sortOrder: "asc" });
     });
 
     it("returns an explicitly incomplete EventSongList DTO when fields are unauthorized", async () => {
-        const findMany = vi.fn(async () => [{
+        const rows = [{
             publicId: listPublicId(50),
             name: "Restricted set",
             description: "Restricted",
@@ -1959,24 +1871,17 @@ describe("DB3 named views", () => {
             isActuallyPlayed: false,
             songs: [],
             dividers: [],
-        }]);
+        }];
         const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.public },
         ]);
 
-        const result = await queryTable({
-            table: {
-                tableID: db3.xEventSongList.tableID,
-                tableName: db3.xEventSongList.tableName,
-                viewID: db3.eventSongListDetailView.viewID,
-            },
-            orderBy: undefined,
-            filter: { items: [] },
-            cmdbQueryContext: "restricted-event-song-list-detail-view-test",
-        }, new CMServerAuthorization(null, effectivePermissions), {
-            EventSongList: { findMany },
-        } as any);
+        const authorization = testBandAuthorization(null, effectivePermissions);
+        const projected = rows.map(row => authorizeAndProjectDB3ViewModel(
+            db3.eventSongListDetailView.entity, row, authorization, "nested view projection",
+        )).filter(row => row !== null);
+        const result = { items: projected.map(row => db3.eventSongListDetailView.parseDto(row)) };
 
         expect(result.items).toEqual([{ publicId: listPublicId(50) }]);
         const dto = db3.eventSongListDetailView.parseDto(result.items[0]);
@@ -1985,16 +1890,9 @@ describe("DB3 named views", () => {
 
     it("reports the exact missing reference path", () => {
         const references = db3.createDashboardReferenceStore();
-        const dto = db3.instrumentDashboardView.parseDto({
-            publicId: instrumentPublicId,
-            name: "Trumpet",
-            description: "",
-            autoAssignFileLeafRegex: null,
-            sortOrder: 1,
-            functionalGroupId: groupPublicId,
-        });
+        const dto = instrumentDtoFixture(instrumentPublicId, groupPublicId);
 
         expect(() => db3.hydrateView(db3.instrumentDashboardView, dto, references))
-            .toThrow(`Instrument(${instrumentPublicId}).functionalGroupId`);
+            .toThrow(`BandInstrument(${instrumentPublicId}).functionalGroupId`);
     });
 });

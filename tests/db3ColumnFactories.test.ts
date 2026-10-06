@@ -8,24 +8,24 @@ import {
     makeClientColumnSet,
 } from "src/core/db3/components/DB3ClientCore";
 import * as db3 from "src/core/db3/db3";
-import type { InstrumentFunctionalGroupPublicId } from "shared/publicId";
+import type { SetlistPlanGroupPublicId } from "shared/publicId";
 import { GhostField } from "@/src/core/db3/shared/columnTypes/xTableColumnTypes";
 import { makeColumnSet } from "src/core/db3/shared/db3core";
 import { useCrudTableRenderContext } from "src/core/db3/components/useCrudTableRenderContext";
 
 const allowField = () => true;
 
-const instrumentFunctionalGroupPilotSpec = defineTableClientSpec({
-    view: db3.instrumentFunctionalGroupEditorView,
+const setlistPlanGroupPilotSpec = defineTableClientSpec({
+    view: db3.setlistPlanGroupEditorView,
     columns: {
         color: columnName => new ColorColumnClient({ columnName, cellWidth: 200 }),
     },
 });
 
-function useInstrumentFunctionalGroupPilotClient() {
+function useSetlistPlanGroupPilotClient() {
     return useCrudTableRenderContext({
-        view: db3.instrumentFunctionalGroupEditorView,
-        tableSpec: instrumentFunctionalGroupPilotSpec,
+        view: db3.setlistPlanGroupEditorView,
+        tableSpec: setlistPlanGroupPilotSpec,
     });
 }
 
@@ -91,7 +91,7 @@ describe("DB3 keyed column factories", () => {
     });
 
     it("propagates a view's hydrated row, encoded mutation, and public identity types", () => {
-        type TPilotClient = ReturnType<typeof useInstrumentFunctionalGroupPilotClient>;
+        type TPilotClient = ReturnType<typeof useSetlistPlanGroupPilotClient>;
         type TPilotRow = TPilotClient["items"][number];
         type TPreparedMutation = ReturnType<TPilotClient["prepareMutation"]>;
 
@@ -100,13 +100,13 @@ describe("DB3 keyed column factories", () => {
         expectTypeOf<TPreparedMutation["color"]>()
             .toEqualTypeOf<string | null | undefined>();
         expectTypeOf<Parameters<TPilotClient["crud"]["delete"]>[0]>()
-            .toEqualTypeOf<InstrumentFunctionalGroupPublicId>();
+            .toEqualTypeOf<SetlistPlanGroupPublicId>();
 
         if (false) {
             const prepared = {} as TPreparedMutation;
             // @ts-expect-error Public identity travels separately from prepared values.
             prepared.publicId;
         }
-        expect(instrumentFunctionalGroupPilotSpec.args.legacyMutationProjection).toBe(false);
+        expect(setlistPlanGroupPilotSpec.args.legacyMutationProjection).toBe(false);
     });
 });

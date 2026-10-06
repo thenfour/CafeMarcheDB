@@ -4,16 +4,16 @@ import React from "react";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { Markdown } from "src/core/components/markdown/Markdown";
+import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import { useLocale } from "src/locale/components/useLocale";
-import { invalidatePresentation, usePresentation } from "src/locale/components/PresentationProvider";
+import { usePresentation } from "src/locale/components/PresentationProvider";
 import executeDB3Command from "../mutations/executeDB3Command";
 import getBandInstrumentCatalog from "../queries/getBandInstrumentCatalog";
 import db3queries from "../queries/db3queries";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import {
-    bandInstrumentCommand, bandInstrumentReferences, bandInstrumentView, bandInstrumentGroupView, xBandInstrumentFunctionalGroup,
+    bandInstrumentCommand, bandInstrumentView, bandInstrumentGroupView,
 } from "../shared/entities/instrument/bandInstrumentContracts";
-import { DB3ReferenceStore } from "../shared/core/db3Hydration";
 import { defineTableClientSpec } from "./DB3ClientCore";
 import { GenericStringColumnClient, GenericIntegerColumnClient, ColorColumnClient, BoolColumnClient } from "./DB3ClientBasicFields";
 import { LocalizedStringColumnClient, InheritedColumnClient, catalogColumn } from "./DB3CatalogFields";
@@ -49,19 +49,18 @@ export const bandInstrumentTableSpec = defineTableClientSpec({
 
 function LoadedCatalog({ mode }: { readonly mode: "instrument" | "group" }) {
     const locale = useLocale();
+    const dashboard = useDashboardContext();
     const presentation = usePresentation();
     const context = useDB3QueryContext();
     const canManage = presentation.data?.authorization.effectivePermissionNames.includes(Permission.admin_instruments) ?? false;
     const [includeHidden, setIncludeHidden] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
-    const [data] = useQuery(getBandInstrumentCatalog, {
+    const [data, { refetch }] = useQuery(getBandInstrumentCatalog, {
         bandPublicId: parsePublicId<"Band">(context.bandPublicId!),
-        routeLocale: context.routeLocale, browserLanguages: context.browserLanguages, includeHidden
+        routeLocale: context.routeLocale, browserLanguages: context.browserLanguages
     },
         { cacheTime: 0, staleTime: 0, keepPreviousData: false });
     const [mutate] = useMutation(executeDB3Command);
-    const store = new DB3ReferenceStore(bandInstrumentReferences);
-    store.register(xBandInstrumentFunctionalGroup, data.groups);
     const optIn = async (publicId: string) => {
         setError(null);
         try {
@@ -69,8 +68,8 @@ function LoadedCatalog({ mode }: { readonly mode: "instrument" | "group" }) {
                 commandID: bandInstrumentCommand.commandID, bandPublicId: context.bandPublicId,
                 payload: bandInstrumentCommand.serialize({ kind: mode === "instrument" ? "optInInstrument" : "optInGroup", globalPublicId: parsePublicId(publicId) })
             });
-            await Promise.all([invalidatePresentation(), invalidateQuery(getBandInstrumentCatalog),
-            invalidateQuery(db3queries), invalidateQuery(db3paginatedQueries)]);
+            await Promise.all([dashboard.refreshCachedData(), refetch(),
+                invalidateQuery(db3queries), invalidateQuery(db3paginatedQueries)]);
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : String(reason));
         }
@@ -86,27 +85,17 @@ function LoadedCatalog({ mode }: { readonly mode: "instrument" | "group" }) {
             </TextField>
         </>}
         {mode === "instrument" ? <DB3EditGrid key={`instrument/${includeHidden}`} view={bandInstrumentView} tableSpec={bandInstrumentTableSpec}
-            referenceProvider={store} tableParams={{ includeHidden }} readOnly={!canManage} />
+            referenceProvider={dashboard.referenceStore} tableParams={{ includeHidden }} readOnly={!canManage} />
             : <DB3EditGrid key={`group/${includeHidden}`} view={bandInstrumentGroupView} tableSpec={bandInstrumentGroupTableSpec}
-                tableParams={{ includeHidden }} readOnly={!canManage} />}
+                referenceProvider={dashboard.referenceStore} tableParams={{ includeHidden }} readOnly={!canManage} />}
     </Stack>;
 }
 
 function LoadedDetail({ publicId }: { readonly publicId: string }) {
     const locale = useLocale();
-    const context = useDB3QueryContext();
-    const [result] = useQuery(db3queries, {
-        ...context,
-        table: { tableID: bandInstrumentView.tableID, tableName: bandInstrumentView.tableName, viewID: bandInstrumentView.viewID },
-        filter: { publicIds: [publicId] }, take: 1, cmdbQueryContext: "instrument detail"
-    });
-    const instrument = result.items[0] ? bandInstrumentView.parseDto(result.items[0]) : undefined;
-    const [groups] = useQuery(db3queries, {
-        ...context,
-        table: { tableID: bandInstrumentGroupView.tableID, tableName: bandInstrumentGroupView.tableName, viewID: bandInstrumentGroupView.viewID },
-        filter: { publicIds: instrument ? [instrument.functionalGroupId] : [] }, take: 1, cmdbQueryContext: "instrument detail group"
-    });
-    const group = groups.items[0] ? bandInstrumentGroupView.parseDto(groups.items[0]) : undefined;
+    const dashboard = useDashboardContext();
+    const instrument = dashboard.instrument.getById(parsePublicId<"Instrument">(publicId));
+    const group = instrument?.functionalGroup;
     return instrument ? <>
         <h1 lang={instrument.nameResolution.localeTag ?? undefined}>{instrument.name ?? locale.getPlainString("instrument.missing")}</h1>
         <p lang={group?.nameResolution.localeTag ?? undefined}>{group?.name ?? locale.getPlainString("instrument.missing")}</p>

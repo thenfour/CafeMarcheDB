@@ -3,12 +3,37 @@ import { defineAuthMap, DB3FieldReadAuth, makeColumnSet } from "../db3core";
 import type { DB3AuthTablePermissionMap, DB3AuthSpec } from "../db3core";
 import { BoolField } from "./boolean";
 import { GenericIntegerField, MakeSortOrderField } from "./genericInteger";
-import { inheritedField, serverOwnedField } from "./inherited";
-import { LocalizedStringField } from "./localizedString";
+import { inheritedField, serverOwnedField, isInheritedFieldValue, type InheritedFieldValue } from "./inherited";
+import { LocalizedStringField, isLocalizedFieldValue, type LocalizedFieldValue } from "./localizedString";
 import { MakePKfield } from "./xTableColumnTypes";
 import type { DB3CreateFromStringContext } from "../db3core";
 import type { ColorPaletteList } from "src/core/components/color/palette";
-import { isInheritedFieldValue } from "./inherited";
+
+type CatalogDisplayValue<TValue> = TValue extends LocalizedFieldValue ? string | null
+    : TValue extends InheritedFieldValue<infer TEffective> ? TEffective : TValue;
+type CatalogDisplayModel<TModel> = {
+    [TMember in keyof TModel]: CatalogDisplayValue<TModel[TMember]>;
+} & { name: string; description: string; sortOrder: number };
+
+
+// hydration function for "catalog" style models.
+export function catalogDisplayModel<TModel extends {
+    readonly name: LocalizedFieldValue;
+    readonly description: LocalizedFieldValue;
+    readonly sortOrder: InheritedFieldValue<number | null>;
+}>(row: TModel): CatalogDisplayModel<TModel> {
+    const values = Object.fromEntries(Object.entries(row).map(([member, value]) =>
+        [
+            member,
+            isLocalizedFieldValue(value) || isInheritedFieldValue(value) ? value.value : value
+        ]));
+    // The field-value guards preserve every member and implement the mapped display type above.
+    return {
+        ...values, name: row.name.value ?? "",
+        description: row.description.value ?? "",
+        sortOrder: row.sortOrder.value ?? 0
+    } as CatalogDisplayModel<TModel>;
+}
 
 // for catalog fields' getRowInfo (like songTag), this pulls out the effective palette color from the field,
 // supports inherited values (bandSongTag -> globalSongTag)

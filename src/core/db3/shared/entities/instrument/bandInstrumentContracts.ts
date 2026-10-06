@@ -4,7 +4,7 @@ import { Permission } from "shared/permissions";
 import { isPublicId, parsePublicId } from "shared/publicId";
 import { BandPublicIdSchema } from "src/locale/shared/presentationInput";
 import { localizedText } from "../../columnTypes/localizedString";
-import { bandCatalogAuth, bandCatalogFields, bandCatalogCreateFromString, catalogColor } from "../../columnTypes/bandCatalog";
+import { bandCatalogAuth, bandCatalogFields, bandCatalogCreateFromString, catalogColor, catalogDisplayModel } from "../../columnTypes/bandCatalog";
 import { GenericStringField } from "../../columnTypes/genericString";
 import { MakeColorField } from "../../columnTypes/color";
 import { inheritedField, CatalogSourceField } from "../../columnTypes/inherited";
@@ -114,36 +114,52 @@ export const xBandInstrument = defineTable({
         }),
     },
 });
-const groupContract = deriveViewContract(xBandInstrumentFunctionalGroup, groupSelection);
+export const bandInstrumentGroupContract = deriveViewContract(xBandInstrumentFunctionalGroup, groupSelection);
 export const bandInstrumentGroupView = defineCrudView({
     viewID: "BandInstrumentFunctionalGroup_Catalog",
     entity: xBandInstrumentFunctionalGroup,
     operations: { create: true, update: true },
-    selection: groupContract.prismaSelection,
-    dtoSchema: groupContract.dtoSchema,
-    hydrate: groupContract.hydrate,
+    selection: bandInstrumentGroupContract.prismaSelection,
+    dtoSchema: bandInstrumentGroupContract.dtoSchema,
+    hydrate: bandInstrumentGroupContract.hydrate,
 });
+export const bandInstrumentGroupDisplayContract = {
+    ...bandInstrumentGroupContract,
+    hydrate: (...args: Parameters<typeof bandInstrumentGroupContract.hydrate>) =>
+        catalogDisplayModel(bandInstrumentGroupContract.hydrate(...args)),
+};
 export const bandInstrumentReferences = defineReferenceContract({
-    functionalGroup: reference(xBandInstrumentFunctionalGroup)<DtoOf<typeof bandInstrumentGroupView>>(),
+    instrumentFunctionalGroup: reference(xBandInstrumentFunctionalGroup)<ReturnType<typeof bandInstrumentGroupDisplayContract.hydrate>>(),
 });
-const instrumentContract = deriveViewContract(xBandInstrument, instrumentSelection, { references: bandInstrumentReferences });
+export const bandInstrumentContract = deriveViewContract(xBandInstrument, instrumentSelection, { references: bandInstrumentReferences });
+export const bandInstrumentDisplayContract = {
+    ...bandInstrumentContract,
+    hydrate: (...args: Parameters<typeof bandInstrumentContract.hydrate>) =>
+        catalogDisplayModel(bandInstrumentContract.hydrate(...args)),
+};
 export const bandInstrumentView = defineCrudView({
     viewID: "BandInstrument_Catalog",
     entity: xBandInstrument,
-    references: instrumentContract.referenceContract,
+    references: bandInstrumentContract.referenceContract,
     operations: { create: true, update: true },
-    selection: instrumentContract.prismaSelection,
-    dtoSchema: instrumentContract.dtoSchema,
-    hydrate: instrumentContract.hydrate,
+    selection: bandInstrumentContract.prismaSelection,
+    dtoSchema: bandInstrumentContract.dtoSchema,
+    hydrate: bandInstrumentContract.hydrate,
 });
 export type BandInstrumentDto = DtoOf<typeof bandInstrumentView>;
 export type BandInstrumentGroupDto = DtoOf<typeof bandInstrumentGroupView>;
+
+declare module "../../db3core" {
+    interface DB3TableTypeRegistry {
+        BandInstrument: typeof xBandInstrument;
+        BandInstrumentFunctionalGroup: typeof xBandInstrumentFunctionalGroup;
+    }
+}
 
 export const BandInstrumentQuerySchema = z.object({
     bandPublicId: BandPublicIdSchema,
     routeLocale: z.string().max(128).nullish(),
     browserLanguages: z.array(z.string().max(128)).max(32).optional(),
-    includeHidden: z.boolean().optional(),
 }).strict();
 export type BandInstrumentQuery = z.infer<typeof BandInstrumentQuerySchema>;
 

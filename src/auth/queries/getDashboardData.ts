@@ -15,13 +15,10 @@ import {
     eventTagDashboardView,
     eventTypeDashboardView,
     fileTagDashboardView,
-    instrumentDashboardView,
-    instrumentFunctionalGroupDashboardView,
     menuLinkListView,
     permissionDashboardView,
     roleDashboardView,
     songCreditTypeDashboardView,
-    songTagDashboardView,
     userTagDashboardView,
     wikiPageTagDashboardView,
     xEvent,
@@ -33,6 +30,7 @@ import {
     DB3QueryAuthorizationError,
     queryView,
 } from "src/core/db3/server/db3QueryCore";
+import { loadDashboardCatalogs } from "src/core/db3/server/db3DashboardCatalogs";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { localizationDatabase, loadLocalizationCatalog } from "src/locale/server/localization";
 import { loadSettingsSnapshot, settingsDatabase } from "src/setting/server/settings";
@@ -188,7 +186,6 @@ export default resolver.pipe(
                 loadLocalizationCatalog(localizationDatabase, authorization, args),
                 loadSettingsSnapshot(settingsDatabase, authorization),
             ]);
-            const currentUser = authorization.user;
 
             // Existing events retain the meaning of a status after that status
             // is retired, so relevance calculations use every referenced row.
@@ -211,14 +208,13 @@ export default resolver.pipe(
                 eventTag,
                 eventAttendance,
                 fileTag,
-                instrumentFunctionalGroup,
-                songTag,
                 songCreditType,
                 userTag,
                 role,
                 wikiPageTag,
-                instrument,
                 dynMenuLinks,
+                catalogs,
+                relevantEventIds,
             ] = await Promise.all([
                 queryOptionalDashboardView(permissionDashboardView, authorization),
                 queryOptionalDashboardView(eventTypeDashboardView, authorization),
@@ -226,17 +222,16 @@ export default resolver.pipe(
                 queryOptionalDashboardView(eventTagDashboardView, authorization),
                 queryOptionalDashboardView(eventAttendanceDashboardView, authorization),
                 queryOptionalDashboardView(fileTagDashboardView, authorization),
-                queryOptionalDashboardView(instrumentFunctionalGroupDashboardView, authorization),
-                queryOptionalDashboardView(songTagDashboardView, authorization),
                 queryOptionalDashboardView(songCreditTypeDashboardView, authorization),
                 queryOptionalDashboardView(userTagDashboardView, authorization),
                 queryOptionalDashboardView(roleDashboardView, authorization),
                 queryOptionalDashboardView(wikiPageTagDashboardView, authorization),
-                queryOptionalDashboardView(instrumentDashboardView, authorization),
                 queryOptionalDashboardView(menuLinkListView, authorization),
+                loadDashboardCatalogs(db, authorization, args),
+                relevantEventsCall,
             ]);
 
-            const relevantEventIds = await relevantEventsCall;
+            const { instrument, instrumentFunctionalGroup, songTag } = catalogs;
 
             const clientServerState = getClientServerState(authorization.hasPermission(Permission.sysadmin));
             const ret = {

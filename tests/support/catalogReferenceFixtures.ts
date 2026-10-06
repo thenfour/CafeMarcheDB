@@ -1,0 +1,46 @@
+import type { InstrumentPublicId, InstrumentFunctionalGroupPublicId, SongTagPublicId } from "shared/publicId";
+import type { StringResolution } from "src/locale/shared/stringResolution";
+import { hydrateView } from "src/core/db3/shared/core/db3View";
+import { instrumentDashboardView, instrumentFunctionalGroupDashboardView, songTagDashboardView,
+    createDashboardReferenceStore, registerDashboardReferences } from "src/core/db3/shared/references/dashboardReferences";
+
+function resolution(value: string): StringResolution {
+    return { value, localeTag: "en-US", scope: "band", source: "stored", reason: "exact", requestedTag: "en-US" };
+}
+
+function commonFields(name: string, description: string, sortOrder: number) {
+    return { name, description, sortOrder, nameResolution: resolution(name), descriptionResolution: resolution(description),
+        nameStringPublicId: null, descriptionStringPublicId: null, sortOrderOverride: sortOrder,
+        sortOrderInheritedValue: null, isHidden: false, globalPublicId: null };
+}
+
+export function groupReferenceFixture(publicId: InstrumentFunctionalGroupPublicId) {
+    const dto = instrumentFunctionalGroupDashboardView.parseDto({
+        ...commonFields("Brass", "Brass instruments", 1), publicId,
+        color: "orange", colorOverride: "orange", colorInheritedValue: null, globalFunctionalGroup: null,
+    });
+    return hydrateView(instrumentFunctionalGroupDashboardView, dto, createDashboardReferenceStore());
+}
+
+export function instrumentDtoFixture(publicId: InstrumentPublicId, functionalGroupId: InstrumentFunctionalGroupPublicId) {
+    return instrumentDashboardView.parseDto({
+        ...commonFields("Trumpet", "", 1), publicId, functionalGroupId, globalInstrument: null,
+        autoAssignFileLeafRegex: null, autoAssignFileLeafRegexOverride: null, autoAssignFileLeafRegexInheritedValue: null,
+    });
+}
+
+export function instrumentReferenceFixture(publicId: InstrumentPublicId, group: ReturnType<typeof groupReferenceFixture>) {
+    const references = createDashboardReferenceStore();
+    registerDashboardReferences(references, { instrumentFunctionalGroup: [group] });
+    return hydrateView(instrumentDashboardView, instrumentDtoFixture(publicId, group.publicId), references);
+}
+
+export function songTagReferenceFixture(publicId: SongTagPublicId) {
+    const dto = songTagDashboardView.parseDto({
+        ...commonFields("March", "", 1), publicId, color: null, colorOverride: null, colorInheritedValue: null,
+        globalSongTag: null, group: null, groupOverride: null, groupInheritedValue: null,
+        indicator: null, indicatorOverride: null, indicatorInheritedValue: null,
+        indicatorCssClass: null, indicatorCssClassOverride: null, indicatorCssClassInheritedValue: null,
+    });
+    return hydrateView(songTagDashboardView, dto, createDashboardReferenceStore());
+}

@@ -10,7 +10,7 @@ import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 import { Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
-import type { EventPublicId, EventStatusPublicId, EventTypePublicId, InstrumentPublicId } from "shared/publicId";
+import type { EventPublicId, EventStatusPublicId, EventTypePublicId, InstrumentPublicId, InstrumentFunctionalGroupPublicId } from "shared/publicId";
 import { RenderMuiIcon } from "../db3/components/IconMap";
 import { CMChip, CMChipBorderOption, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
 import { CMLink } from "./CMLink";
@@ -152,7 +152,7 @@ export function TabA11yProps(tabPanelID: string, index: number) {
 
 
 export interface InstrumentChipProps {
-    value: InstrumentPublicId | db3.InstrumentClientOrDbPayload | db3.InstrumentPayloadMinimum;
+    value: InstrumentPublicId | { readonly publicId: InstrumentPublicId };
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
@@ -164,34 +164,24 @@ export interface InstrumentChipProps {
 export const InstrumentChip = (props: InstrumentChipProps) => {
     const dashboardContext = useDashboardContext();
 
-    const instrument = typeof props.value === "string"
-        ? dashboardContext.instrument.getById(props.value)
-        : props.value;
-
-    // here we use `=== "string"` to check if it's a publicId or id. not really very clean.
-    // even though we're using InstrumentClientOrDbPayload, where functionalGroupId can be either number or string,
-    // this code is on the client and should always be a string.
-    if (typeof instrument?.functionalGroupId !== "string") {
-        throw new Error(`Expected functionalGroupId to be a string for instrument ${instrument?.name}`);
-    }
-    const clientFunctionalGroupId = instrument.functionalGroupId;
-    const functionalGroup = dashboardContext.instrumentFunctionalGroup.getById(clientFunctionalGroupId);
+    const identity = typeof props.value === "string" ? props.value : props.value.publicId;
+    const instrument = dashboardContext.instrument.getById(identity);
 
     return <CMChip
         variation={props.variation}
         size={props.size}
         onClick={props.onClick}
         className={props.className}
-        color={functionalGroup?.color}
+        color={instrument?.functionalGroup.color}
         shape={props.shape}
         border={props.border}
     >
-        {instrument?.name || "<null>"}
+        {instrument?.name ?? "<restricted>"}
     </CMChip>
 }
 
 export interface InstrumentFunctionalGroupChipProps {
-    value: Pick<db3.InstrumentFunctionalGroupListItem, "name" | "color">;
+    value: InstrumentFunctionalGroupPublicId | { readonly publicId: InstrumentFunctionalGroupPublicId };
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
@@ -201,16 +191,19 @@ export interface InstrumentFunctionalGroupChipProps {
 };
 
 export const InstrumentFunctionalGroupChip = (props: InstrumentFunctionalGroupChipProps) => {
+    const dashboard = useDashboardContext();
+    const identity = typeof props.value === "string" ? props.value : props.value.publicId;
+    const group = dashboard.instrumentFunctionalGroup.getById(identity);
     return <CMChip
         variation={props.variation}
         size={props.size}
         onClick={props.onClick}
         className={props.className}
-        color={props.value.color}
+        color={group?.color}
         shape={props.shape}
         border={props.border}
     >
-        {props.value.name || "<restricted>"}
+        {group?.name ?? "<restricted>"}
     </CMChip>
 }
 
@@ -404,4 +397,3 @@ export const EventTextLink = (props: {
         </CMChip>
     </CMLink>;
 };
-

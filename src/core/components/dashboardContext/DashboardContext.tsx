@@ -44,7 +44,7 @@ export class DashboardContextData extends DashboardContextDataBase {
 
 
     session: ClientSession | null;
-    refetchDashboardData: (() => void) = () => { };
+    refetchDashboardData: () => Promise<unknown> = async () => { };
     effectivePermissions: PermissionSet = new PermissionSet([]);
     authorization: CMClientAuthorization = new CMClientAuthorization(null, new PermissionSet([]));
     authorizationContext: ScopedAuthorizationData | null = null;
@@ -142,7 +142,7 @@ export class DashboardContextData extends DashboardContextDataBase {
         return partition(segments, isCancelled);
     }
 
-    sortInstruments<Tinst extends { sortOrder: number, functionalGroupId: db3.InstrumentFunctionalGroupClientPayload["publicId"] }>(instruments: Tinst[]): Tinst[] {
+    sortInstruments<Tinst extends { sortOrder?: number, functionalGroupId: db3.InstrumentFunctionalGroupClientPayload["publicId"] }>(instruments: Tinst[]): Tinst[] {
         // sort first by functional group, then by instrument sort order.
         const ret = [...instruments];
         ret.sort((a, b) => {
@@ -170,8 +170,8 @@ export class DashboardContextData extends DashboardContextDataBase {
     }
 
     // Method to refresh dashboard data when needed (e.g., after creating new tags)
-    refreshCachedData(): void {
-        this.refetchDashboardData();
+    async refreshCachedData(): Promise<void> {
+        await this.refetchDashboardData();
     }
 
     brand: DbBrandConfig = DefaultDbBrandConfig;

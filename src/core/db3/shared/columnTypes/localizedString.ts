@@ -7,6 +7,7 @@ import {
     type DB3AuthSpec, type DB3FieldCodec, type DB3ReadPresenceForAuthSpec, type DB3RowMode,
     FieldBase, ErrorValidateAndParseResult, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs,
+    type DB3TransactionalFieldWriteContext,
 } from "../db3core";
 import { GenericStringField } from "./genericString";
 
@@ -58,6 +59,19 @@ export class LocalizedStringField<const TAuth extends DB3AuthSpec, const TIdenti
         writeSchema: LocalizedFieldEditSchema.optional(),
     };
     getReadSupportMembers = () => [this.stringIdentityMember];
+
+    applyTransactionalWrite = async (context: DB3TransactionalFieldWriteContext) => {
+        const edit = this.writeTransportSchema.parse(context.value);
+        if (edit.kind === "inherit" && !context.hasInheritedSource) {
+            throw new Error("Custom entries have no global value to inherit.");
+        }
+        const currentId = context.existingRow?.[this.stringIdentityMember] ?? null;
+        if (currentId !== null && (typeof currentId !== "number" || !Number.isSafeInteger(currentId))) {
+            throw new Error(`Invalid owned string identity for '${this.member}'.`);
+        }
+        const stringId = await context.writeLocalizedString(currentId, this.stringFormat, edit);
+        return { values: { [this.stringIdentityMember]: stringId }, removeMembers: [this.member] };
+    };
 
     constructor(args: TAuth & { columnName: string; stringIdentityMember: TIdentityMember; stringFormat: LocalizedStringFormat }) {
         const textField = new GenericStringField({ ...args, allowNull: true,

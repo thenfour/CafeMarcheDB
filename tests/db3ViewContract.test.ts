@@ -32,6 +32,7 @@ import {
   type WikiPageTagAssignmentPublicId,
   type WikiPageTagPublicId,
 } from "shared/publicId"
+import type { InheritedFieldValue } from "src/core/db3/shared/columnTypes/inherited"
 import { compileDB3Selection } from "src/core/db3/shared/core/db3ViewContract"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 
@@ -1063,10 +1064,10 @@ describe("Song derived-view migration", () => {
     type NestedCreditTypeClient = NonNullable<CreditClient["type"]>
 
     expectTypeOf<TagDto["publicId"]>().toEqualTypeOf<SongTagPublicId>()
-    expectTypeOf<TagDto["text"]>().toEqualTypeOf<string>()
+    expectTypeOf<TagDto["name"]>().toEqualTypeOf<string | null>()
     expectTypeOf<TagDto["color"]>().toEqualTypeOf<string | null>()
     expectTypeOf<TagClient["color"]>()
-      .toEqualTypeOf<ColorPaletteEntry | null>()
+      .toEqualTypeOf<InheritedFieldValue<ColorPaletteEntry | null>>()
     expectTypeOf<CreditTypeDto["color"]>()
       .toEqualTypeOf<string | null>()
     expectTypeOf<CreditTypeDto["publicId"]>()
@@ -1095,7 +1096,7 @@ describe("Song derived-view migration", () => {
 
     expect(db3.songTagEditorView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
-    )).toBe(db3.songTagEditorSelection)
+    )).toMatchObject(db3.songTagEditorSelection)
     expect(db3.songCreditTypeEditorView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
     )).toBe(db3.songCreditTypeEditorSelection)
@@ -1123,7 +1124,7 @@ describe("Song derived-view migration", () => {
     expectTypeOf<TagDto["color"]>()
       .toEqualTypeOf<string | null>()
     expectTypeOf<TagClient["color"]>()
-      .toEqualTypeOf<ColorPaletteEntry | null>()
+      .toEqualTypeOf<InheritedFieldValue<ColorPaletteEntry | null>>()
     expect(db3.songEditorView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
     )).toMatchObject(db3.songEditorSelection)

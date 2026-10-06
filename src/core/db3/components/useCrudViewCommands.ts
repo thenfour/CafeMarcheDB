@@ -46,7 +46,7 @@ export function useCrudViewCommands<
 
     const refresh = async () => {
         await args.tableClient.refetch();
-        dashboardContext.refreshCachedData();
+        await dashboardContext.refreshCachedData();
     };
 
     return {

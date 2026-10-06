@@ -222,7 +222,9 @@ and readable independently of database, dashboard, and React orchestration.
 shared DB3 localized/inherited fields, derived CRUD views, generic resolved
 queries, snapshot execution, and native grids/forms/pickers. BandSongTag proves
 reuse through declarations and the same machinery, with no additional endpoint
-family. [07-db3-band-instruments.md](07-db3-band-instruments.md#shared-db3-redesign-and-reuse-proof-2026-10-06)
+family. The dashboard follow-up uses strategy-based read execution, field-owned
+transactional writes, and shared dashboard references for all three catalogs.
+[07-db3-band-instruments.md](07-db3-band-instruments.md#shared-db3-redesign-and-reuse-proof-2026-10-06)
 records the current boundaries and validation. The bounded design gate is
 implemented; remaining descriptors/consumers and application recovery are incomplete.
 
@@ -246,7 +248,8 @@ SQL/Prisma optimization is deferred, not a prerequisite for this slice.
   and color fields. Expose that validation for custom commands without copying
   constraints into catalog-specific schemas. Ordinary writes use shared CRUD;
   richer opt-in operations compose the same validation,
-  authorization, persistence, auditing, and invalidation facilities.
+  authorization, persistence, and auditing facilities. Existing CRUD consumers
+  refresh dashboard references; automatic command-wide invalidation is deferred.
 - [x] Define typed Prisma args, derive view contracts with `deriveViewContract`,
   and pass them to `defineView`/`defineCrudView`. Extend shared support for
   localized/inherited dependencies and DTOs wherever this syntax needs it.
@@ -258,12 +261,22 @@ SQL/Prisma optimization is deferred, not a prerequisite for this slice.
   execution. Callers must not need to know a catalog's isolation level or remember
   a refresh sequence. Generic DB3 entry points use declared table/field metadata
   rather than instrument-specific exceptions or unchecked column-name switches.
+- [x] Select coherent multi-read execution through `queryStrategy: "resolved"`,
+  independently of `bandScope`. Ownership does not imply transaction policy.
 - [x] Add a minimal transactional dynamic-string writer so ordinary entity
   creation and name editing work before the full translation editor exists.
   Enforce format, ownership, and exactly one value storage column.
 - [x] Integrate that writer with shared field validation and ordinary CRUD
   persistence. Localized/inherited client values encode only explicit edits
   and raw overrides, preserving unrelated-save behavior.
+- [x] Dispatch transactional field persistence through a `FieldBase` hook.
+  Localized fields own edit validation and foreign-key preparation; shared
+  server execution supplies the transaction-bound writer without field-type checks.
+- [x] Deliver instruments, functional groups, and song tags through the existing
+  dashboard request/reference store. Reuse field-derived views and display
+  hydration, register dependencies before instruments, and replace references
+  on band/locale changes. Catalog editors, details, and chips use this provider;
+  workflow-specific global opt-in choices remain local.
 - [x] Meet the [instrument/group design acceptance criteria](07-db3-band-instruments.md#design-acceptance-criteria),
   including native DB3 UI operations and matching/count/page parity against
   equivalent ordinary string values. Preserve two-band and inheritance coverage.
@@ -401,7 +414,7 @@ owner/restoration phase for any additional gap.
 | Full translation editor | Shared DB3 localized/inherited fields now supply ordinary transactional catalog editing and explicit writing-language controls. Translation inventory and inspection remain deferred. | Phase 3 integrates ordinary localized editing; phase 6 supplies the shared static/dynamic editing and inspection surface. |
 | Full portal routing and band management | Recovery requests select a band explicitly with `?bandPublicId=<publicId>` and may supply `routeLocale`. Server authorization validates the selection; omitting it never selects a default band. | Phase 5 completes host/path routing, links, switching, and lifecycle surfaces. |
 | Legacy DB3 operations with selected-band grants | Selected-band execution uses declared DB3 ownership policies. Generic queries and composed row services reject unadapted legacy descriptors; instrument-specific exceptions have been removed. | Phase 3 replaces exceptions with shared declared policies without weakening the ownership gate. Phases 3–4 admit other domains only after migration. |
-| Global instrument administration and instrument consumers outside the catalog pages | Native instrument/group CRUD and richer opt-in use the shared DB3 catalog design, also proven by song tags. Global catalog writers, dashboard/member selectors, file/event associations, and catalog seeds still use obsolete contracts. | Continue phase 3 consumer/descriptor adaptation and phase 4 recovery; no compatibility delegates were added. |
+| Global instrument administration and remaining instrument consumers | Native instrument/group CRUD, richer opt-in, and song tags use the shared DB3 catalog design. Dashboard catalog references and chips now use canonical band entities. Global catalog writers, member selectors, file/event associations, and catalog seeds still use obsolete contracts. | Continue phase 3 consumer/descriptor adaptation and phase 4 recovery; no compatibility delegates were added. |
 | Band administrators using old global-account writers | Implemented in phase 1: shared-account changes require platform grants. Separate membership writers and old role/merge consumers still need adaptation. | Phases 3–4 supply BandUser role/offboarding/recovery operations and the appropriate views. |
 | Legacy random demo seeds | Implemented in phase 1: the seed entry point now initializes real access-control foundations. Old catalog/demo generators reference removed models. | Phases 3–4 adapt useful catalog/demo seed content with its domains. |
 | Legacy synchronous band-permission guards | Implemented in the phase-1 correction: `resolver.authorize` rejects band capabilities; only request-scoped authorization can check them. | Phases 3–4 replace remaining band guards with `cmauthorize` and enforce resource ownership. |
@@ -434,9 +447,10 @@ Phases 1 and 2 are implemented and checked; see
 [06-localization-settings.md](06-localization-settings.md). Phase 3's
 [instrument/group redesign and BandSongTag proof](07-db3-band-instruments.md#shared-db3-redesign-and-reuse-proof-2026-10-06)
 now use the settled resolved-text policy and shared in-memory V1 backend.
-Continue with dashboard/reference and member-instrument consumers, remaining
+Their dashboard references, client details/chips, and native editor reference
+providers are migrated. Continue with member-instrument consumers, remaining
 catalog/global-catalog declarations, membership/content views, and registered
 settings editors. Broader application recovery follows in phase 4. The current
-693 TypeScript diagnostics and baseline-equivalent legacy test failures are
+674 TypeScript diagnostics and baseline-equivalent legacy test failures are
 recorded with that slice's validation; the application remains unbuildable until
 those consumer adaptations are complete.

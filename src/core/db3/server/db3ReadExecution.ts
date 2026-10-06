@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 
 const snapshot = Symbol("DB3 database snapshot");
@@ -7,8 +7,13 @@ export interface DB3ReadContext {
     readonly database: Prisma.TransactionClient;
     readonly authorization: CMServerAuthorization;
 }
-export type DB3ReadDatabase = PrismaClient | DB3ReadContext;
 export type DB3SnapshotIsolation = "RepeatableRead" | "Serializable";
+/** Only the interactive transaction capability is needed from the root Prisma/Blitz client. */
+export interface DB3ReadRootDatabase {
+    $transaction<T>(read: (database: Prisma.TransactionClient) => Promise<T>,
+        options: { isolationLevel: DB3SnapshotIsolation }): Promise<T>;
+}
+export type DB3ReadDatabase = DB3ReadRootDatabase | DB3ReadContext;
 function isReadContext(database: DB3ReadDatabase): database is DB3ReadContext {
     // Prisma proxies report some absent symbols as present; only our explicit brand identifies a context.
     return Reflect.get(database, snapshot) === true;

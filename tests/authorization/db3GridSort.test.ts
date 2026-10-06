@@ -52,8 +52,9 @@ describe("DB3 grid default sorting", () => {
     });
 
     it("preserves readable natural sorting for delegated song administrators", () => {
-        expect(gridSortModelFromPrismaOrderBy(db3.xSongTag, bandAdmin))
+        expect(gridSortModelFromPrismaOrderBy(db3.xSongCreditType, bandAdmin))
             .toEqual([{ field: "sortOrder", sort: "asc" }]);
+        expect(gridSortModelFromPrismaOrderBy(db3.xBandSongTag, bandAdmin)).toEqual([]);
     });
 
     it("rejects an editor query when song viewing is not granted", async () => {

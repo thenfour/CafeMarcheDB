@@ -141,7 +141,7 @@ const SongListOuter = () => {
                 return {
                     ...x,
                     color: tag.color,
-                    label: tag.text,
+                    label: tag.name,
                     shape: "rounded",
                     tooltip: tag.description,
                 };

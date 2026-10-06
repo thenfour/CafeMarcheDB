@@ -15,7 +15,7 @@ import {
     isPublicId,
     parsePublicId,
     type EventStatusPublicId,
-    type InstrumentFunctionalGroupPublicId,
+    type SetlistPlanGroupPublicId,
 } from "shared/publicId";
 import { z } from "zod";
 
@@ -93,13 +93,13 @@ const parentFields = {
     sortOrder: 3,
 };
 
-const InstrumentFunctionalGroupPublicIdSchema = z.custom<InstrumentFunctionalGroupPublicId>(
-    (value): value is InstrumentFunctionalGroupPublicId => isPublicId(value),
-    "Expected an InstrumentFunctionalGroup public ID.",
+const SetlistPlanGroupPublicIdSchema = z.custom<SetlistPlanGroupPublicId>(
+    (value): value is SetlistPlanGroupPublicId => isPublicId(value),
+    "Expected an SetlistPlanGroup public ID.",
 );
-const instrumentFunctionalGroupCrud = db3.defineEntityCrudCommands({
-    entity: db3.xInstrumentFunctionalGroup,
-    identitySchema: InstrumentFunctionalGroupPublicIdSchema,
+const setlistPlanGroupCrud = db3.defineEntityCrudCommands({
+    entity: db3.xSetlistPlanGroup,
+    identitySchema: SetlistPlanGroupPublicIdSchema,
     operations: { create: true, update: true, delete: true },
     createSchema: z.object({
         name: z.string().min(1),
@@ -114,22 +114,22 @@ const instrumentFunctionalGroupCrud = db3.defineEntityCrudCommands({
         color: z.string().nullable(),
     }),
 });
-const instrumentFunctionalGroupCrudHandlers = defineEntityCrudCommandHandlers(
-    instrumentFunctionalGroupCrud,
+const setlistPlanGroupCrudHandlers = defineEntityCrudCommandHandlers(
+    setlistPlanGroupCrud,
 );
-const functionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
+const setlistGroupPublicId = parsePublicId<"SetlistPlanGroup">("AbCdEfGhIjKlMn01");
 const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn05");
 const otherSongTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn06");
 const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn07");
 const instrumentPublicId = parsePublicId<"Instrument">("AbCdEfGhIjKlMn08");
 const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("AbCdEfGhIjKlMn09");
-const otherFunctionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn02");
+const otherSetlistGroupPublicId = parsePublicId<"SetlistPlanGroup">("AbCdEfGhIjKlMn02");
 const publicIdentityAssociationCommand = db3.defineAssociationCommand({
-    commandID: "InstrumentFunctionalGroup_RelationshipTest",
-    localEntity: db3.xInstrumentFunctionalGroup,
-    foreignEntity: db3.xInstrumentFunctionalGroup,
-    localIdentitySchema: InstrumentFunctionalGroupPublicIdSchema,
-    foreignIdentitySchema: InstrumentFunctionalGroupPublicIdSchema,
+    commandID: "SetlistPlanGroup_RelationshipTest",
+    localEntity: db3.xSetlistPlanGroup,
+    foreignEntity: db3.xSetlistPlanGroup,
+    localIdentitySchema: SetlistPlanGroupPublicIdSchema,
+    foreignIdentitySchema: SetlistPlanGroupPublicIdSchema,
 });
 
 describe("DB3 commands", () => {
@@ -150,16 +150,16 @@ describe("DB3 commands", () => {
     });
 
     it("defines strict generated CRUD DTOs with present-keys-only patch semantics", () => {
-        expectTypeOf<db3.CommandClientInputOf<typeof instrumentFunctionalGroupCrud.operations.create.command>>()
+        expectTypeOf<db3.CommandClientInputOf<typeof setlistPlanGroupCrud.operations.create.command>>()
             .toEqualTypeOf<{
                 name: string;
                 description: string;
                 sortOrder: number;
                 color: string | null;
             }>();
-        expectTypeOf<db3.CommandClientInputOf<typeof instrumentFunctionalGroupCrud.operations.update.command>>()
+        expectTypeOf<db3.CommandClientInputOf<typeof setlistPlanGroupCrud.operations.update.command>>()
             .toEqualTypeOf<{
-                identity: InstrumentFunctionalGroupPublicId;
+                identity: SetlistPlanGroupPublicId;
                 patch: {
                     name?: string;
                     description?: string;
@@ -167,55 +167,55 @@ describe("DB3 commands", () => {
                     color?: string | null;
                 };
             }>();
-        expectTypeOf<db3.CommandResultOf<typeof instrumentFunctionalGroupCrud.operations.delete.command>>()
-            .toEqualTypeOf<{ identity: InstrumentFunctionalGroupPublicId }>();
-        expect(instrumentFunctionalGroupCrud.operations.create.command.commandID)
-            .toBe("InstrumentFunctionalGroup_Create");
-        expect(instrumentFunctionalGroupCrud.operations.update.command.commandID)
-            .toBe("InstrumentFunctionalGroup_Update");
-        expect(instrumentFunctionalGroupCrud.operations.delete.command.commandID)
-            .toBe("InstrumentFunctionalGroup_Delete");
-        expect(instrumentFunctionalGroupCrud.operations.delete.deleteType).toBe("hard");
-        expect(instrumentFunctionalGroupCrud.operations.update.command.parseDto({
-            identity: functionalGroupPublicId,
+        expectTypeOf<db3.CommandResultOf<typeof setlistPlanGroupCrud.operations.delete.command>>()
+            .toEqualTypeOf<{ identity: SetlistPlanGroupPublicId }>();
+        expect(setlistPlanGroupCrud.operations.create.command.commandID)
+            .toBe("SetlistPlanGroup_Create");
+        expect(setlistPlanGroupCrud.operations.update.command.commandID)
+            .toBe("SetlistPlanGroup_Update");
+        expect(setlistPlanGroupCrud.operations.delete.command.commandID)
+            .toBe("SetlistPlanGroup_Delete");
+        expect(setlistPlanGroupCrud.operations.delete.deleteType).toBe("hard");
+        expect(setlistPlanGroupCrud.operations.update.command.parseDto({
+            identity: setlistGroupPublicId,
             patch: { color: null },
         })).toEqual({
-            identity: functionalGroupPublicId,
+            identity: setlistGroupPublicId,
             patch: { color: null },
         });
-        expect(() => instrumentFunctionalGroupCrud.operations.create.command.parseDto({
+        expect(() => setlistPlanGroupCrud.operations.create.command.parseDto({
             name: "Brass",
             description: "",
             sortOrder: 0,
             color: null,
-            publicId: functionalGroupPublicId,
+            publicId: setlistGroupPublicId,
         })).toThrow();
         expect(() => db3.defineEntityCrudCommands({
-            entity: db3.xInstrumentFunctionalGroup,
-            identitySchema: InstrumentFunctionalGroupPublicIdSchema,
+            entity: db3.xSetlistPlanGroup,
+            identitySchema: SetlistPlanGroupPublicIdSchema,
             operations: { create: true, update: true, delete: true },
-            createSchema: z.object({ publicId: InstrumentFunctionalGroupPublicIdSchema }),
+            createSchema: z.object({ publicId: SetlistPlanGroupPublicIdSchema }),
             updateFieldsSchema: z.object({ name: z.string() }),
         })).toThrow("must not declare server-owned identity fields: publicId");
-        expect(() => instrumentFunctionalGroupCrud.operations.update.command.parseDto({
-            identity: functionalGroupPublicId,
+        expect(() => setlistPlanGroupCrud.operations.update.command.parseDto({
+            identity: setlistGroupPublicId,
             patch: {},
         })).toThrow("Update patch must contain at least one field");
-        expect(() => instrumentFunctionalGroupCrud.operations.update.command.parseDto({
-            identity: functionalGroupPublicId,
+        expect(() => setlistPlanGroupCrud.operations.update.command.parseDto({
+            identity: setlistGroupPublicId,
             patch: { name: undefined },
         })).toThrow("Patch fields cannot be undefined");
-        expect(() => instrumentFunctionalGroupCrud.operations.update.command.parseDto({
+        expect(() => setlistPlanGroupCrud.operations.update.command.parseDto({
             identity: 42,
             patch: { name: "Brass" },
         })).toThrow();
-        expect(() => instrumentFunctionalGroupCrud.operations.delete.command.parseDto({
-            identity: functionalGroupPublicId,
+        expect(() => setlistPlanGroupCrud.operations.delete.command.parseDto({
+            identity: setlistGroupPublicId,
             deleteType: "hard",
         })).toThrow();
-        expect(instrumentFunctionalGroupCrud.operations.create.command.invalidation).toEqual({
+        expect(setlistPlanGroupCrud.operations.create.command.invalidation).toEqual({
             mode: "caller",
-            entityIDs: [db3.xInstrumentFunctionalGroup.tableID],
+            entityIDs: [db3.xSetlistPlanGroup.tableID],
         });
     });
 
@@ -223,50 +223,50 @@ describe("DB3 commands", () => {
         const { context, insert, update, deleteRow } = createContext();
         insert.mockResolvedValueOnce({
             id: 12,
-            publicId: functionalGroupPublicId,
+            publicId: setlistGroupPublicId,
             name: "Brass",
         });
 
-        await expect(instrumentFunctionalGroupCrudHandlers.create!.execute({
+        await expect(setlistPlanGroupCrudHandlers.create!.execute({
             name: "Brass",
             description: "",
             sortOrder: 0,
             color: null,
-        }, context)).resolves.toEqual({ identity: functionalGroupPublicId });
-        expect(insert).toHaveBeenLastCalledWith(db3.xInstrumentFunctionalGroup, {
+        }, context)).resolves.toEqual({ identity: setlistGroupPublicId });
+        expect(insert).toHaveBeenLastCalledWith(db3.xSetlistPlanGroup, {
             name: "Brass",
             description: "",
             sortOrder: 0,
             color: null,
         });
 
-        await expect(instrumentFunctionalGroupCrudHandlers.update!.execute({
-            identity: functionalGroupPublicId,
+        await expect(setlistPlanGroupCrudHandlers.update!.execute({
+            identity: setlistGroupPublicId,
             patch: { name: "Winds" },
-        }, context)).resolves.toEqual({ identity: functionalGroupPublicId });
+        }, context)).resolves.toEqual({ identity: setlistGroupPublicId });
         expect(update).toHaveBeenLastCalledWith(
-            db3.xInstrumentFunctionalGroup,
-            functionalGroupPublicId,
+            db3.xSetlistPlanGroup,
+            setlistGroupPublicId,
             { name: "Winds" },
         );
 
-        await expect(instrumentFunctionalGroupCrudHandlers.delete!.execute({
-            identity: functionalGroupPublicId,
-        }, context)).resolves.toEqual({ identity: functionalGroupPublicId });
+        await expect(setlistPlanGroupCrudHandlers.delete!.execute({
+            identity: setlistGroupPublicId,
+        }, context)).resolves.toEqual({ identity: setlistGroupPublicId });
         expect(deleteRow).toHaveBeenLastCalledWith(
-            db3.xInstrumentFunctionalGroup,
-            functionalGroupPublicId,
+            db3.xSetlistPlanGroup,
+            setlistGroupPublicId,
             "hard",
         );
-        expect(instrumentFunctionalGroupCrudHandlers.all).toHaveLength(3);
+        expect(setlistPlanGroupCrudHandlers.all).toHaveLength(3);
 
         insert.mockResolvedValueOnce({ id: 13, name: "Missing public identity" });
-        await expect(instrumentFunctionalGroupCrudHandlers.create!.execute({
+        await expect(setlistPlanGroupCrudHandlers.create!.execute({
             name: "Strings",
             description: "",
             sortOrder: 1,
             color: null,
-        }, context)).rejects.toThrow("Expected an InstrumentFunctionalGroup public ID");
+        }, context)).rejects.toThrow("Expected an SetlistPlanGroup public ID");
     });
 
     it("defines a strict association command that serializes rich rows to identities", () => {
@@ -297,26 +297,26 @@ describe("DB3 commands", () => {
 
     it("keeps the generic association contract on public client identities", () => {
         const payload = publicIdentityAssociationCommand.serialize({
-            local: { publicId: functionalGroupPublicId } as any,
-            foreign: { publicId: otherFunctionalGroupPublicId } as any,
+            local: { publicId: setlistGroupPublicId } as any,
+            foreign: { publicId: otherSetlistGroupPublicId } as any,
             isAssociated: false,
         });
 
         expect(payload).toEqual({
-            localIdentity: functionalGroupPublicId,
-            foreignIdentity: otherFunctionalGroupPublicId,
+            localIdentity: setlistGroupPublicId,
+            foreignIdentity: otherSetlistGroupPublicId,
             isAssociated: false,
         });
         expect(publicIdentityAssociationCommand.parseDto(payload)).toEqual(payload);
         expect(() => publicIdentityAssociationCommand.parseDto({
             ...payload,
             localIdentity: 42,
-        })).toThrow("Expected an InstrumentFunctionalGroup public ID");
+        })).toThrow("Expected an SetlistPlanGroup public ID");
     });
 
-    it("composes and registers CRUD from the InstrumentFunctionalGroup editor view", async () => {
-        const view = db3.instrumentFunctionalGroupEditorView;
-        expect(view.entity).toBe(db3.xInstrumentFunctionalGroup);
+    it("composes and registers CRUD from the SetlistPlanGroup editor view", async () => {
+        const view = db3.setlistPlanGroupEditorView;
+        expect(view.entity).toBe(db3.xSetlistPlanGroup);
         expect(db3.getDB3CrudViewForCommand(view.crud.operations.create.command.commandID)).toBe(view);
         expect(view.crud.operations.create.command.parseDto({
             name: "Brass",
@@ -331,20 +331,20 @@ describe("DB3 commands", () => {
         });
         expect(() => view.crud.operations.create.command.parseDto({
             name: "Brass",
-            publicId: functionalGroupPublicId,
+            publicId: setlistGroupPublicId,
         })).toThrow();
         expect(() => view.crud.operations.create.command.parseDto({
             name: "Brass",
-            instruments: [],
+            plans: [],
         })).toThrow();
         expect(() => view.crud.operations.create.command.parseDto({ name: 42 }))
             .toThrow("field is of unknown type");
         expect(() => view.crud.operations.update.command.parseDto({
-            identity: functionalGroupPublicId,
+            identity: setlistGroupPublicId,
             patch: { sortOrder: "not a number" },
         })).toThrow("Input string was not convertible to integer");
         expect(() => view.crud.operations.update.command.parseDto({
-            identity: functionalGroupPublicId,
+            identity: setlistGroupPublicId,
             patch: { unknownField: true },
         })).toThrow();
 
@@ -353,13 +353,13 @@ describe("DB3 commands", () => {
         const { context, insert } = createContext();
         insert.mockResolvedValueOnce({
             id: 15,
-            publicId: functionalGroupPublicId,
+            publicId: setlistGroupPublicId,
             name: "Brass",
         });
         await expect(createHandler.execute({ name: "Brass" }, context))
-            .resolves.toEqual({ identity: functionalGroupPublicId });
+            .resolves.toEqual({ identity: setlistGroupPublicId });
         expect(insert).toHaveBeenCalledWith(
-            db3.xInstrumentFunctionalGroup,
+            db3.xSetlistPlanGroup,
             { name: "Brass" },
         );
     });
@@ -468,7 +468,11 @@ describe("DB3 commands", () => {
                 publicId: instrumentPublicId,
                 name: "Trumpet",
                 description: "",
-                functionalGroup: { publicId: "abcdefghijklmnop", color: "brass" },
+                nameResolution: { value: "Trumpet", localeTag: "en-US", scope: "band", source: "stored", reason: "exact", requestedTag: "en-US" },
+                nameStringPublicId: null,
+                descriptionResolution: { value: "", localeTag: "en-US", scope: "band", source: "stored", reason: "exact", requestedTag: "en-US" },
+                descriptionStringPublicId: null,
+                functionalGroup: { publicId: "abcdefghijklmnop", color: "orange", colorOverride: "orange", colorInheritedValue: null },
             },
             isPrimary: true,
         })).toMatchObject({
@@ -522,13 +526,13 @@ describe("DB3 commands", () => {
     });
 
     it("preserves xTable client-value transforms across CRUD reads and writes", () => {
-        const view = db3.instrumentFunctionalGroupEditorView;
-        const colorField = db3.xInstrumentFunctionalGroup.getColumn("color")!;
-        const typedColorField: typeof db3.xInstrumentFunctionalGroup.fields.color = colorField;
+        const view = db3.setlistPlanGroupEditorView;
+        const colorField = db3.xSetlistPlanGroup.getColumn("color")!;
+        const typedColorField: typeof db3.xSetlistPlanGroup.fields.color = colorField;
 
-        expect(typedColorField).toBe(db3.xInstrumentFunctionalGroup.fields.color);
+        expect(typedColorField).toBe(db3.xSetlistPlanGroup.fields.color);
         expectTypeOf<db3.ClientOf<typeof view>["publicId"]>()
-            .toEqualTypeOf<InstrumentFunctionalGroupPublicId>();
+            .toEqualTypeOf<SetlistPlanGroupPublicId>();
         expectTypeOf<db3.ClientOf<typeof view>["color"]>()
             .toEqualTypeOf<ColorPaletteEntry | null>();
         type TCreateInput = db3.CommandClientInputOf<
@@ -543,12 +547,14 @@ describe("DB3 commands", () => {
             .toEqualTypeOf<string | null | undefined>();
         if (false) {
             // @ts-expect-error Typed xTable keys reject members outside its field map.
-            db3.xInstrumentFunctionalGroup.getColumn("notAColumn");
+            db3.xSetlistPlanGroup.getColumn("notAColumn");
         }
 
         for (const colorId of ["red", "light_red"] as const) {
             const dto = view.parseDto({
-                publicId: functionalGroupPublicId,
+                publicId: setlistGroupPublicId,
+                createdByUserId: userPublicId(6),
+                createdAt: new Date("2026-09-21T12:00:00.000Z"),
                 name: "Brass",
                 description: "",
                 sortOrder: 1,
@@ -566,7 +572,7 @@ describe("DB3 commands", () => {
                 mode: "update",
             }).result).toBe("success");
 
-            const prepared = db3.xInstrumentFunctionalGroup.clientToDbModel(
+            const prepared = db3.xSetlistPlanGroup.clientToDbModel(
                 { color: hydrated.color },
                 "update",
             );
@@ -574,10 +580,10 @@ describe("DB3 commands", () => {
             expect(prepared.color).toBe(colorId);
             expect(colorField.codec.encode(hydrated.color ?? null)).toBe(colorId);
             expect(view.crud.operations.update.command.parseDto({
-                identity: functionalGroupPublicId,
+                identity: setlistGroupPublicId,
                 patch: { color: prepared.color },
             })).toEqual({
-                identity: functionalGroupPublicId,
+                identity: setlistGroupPublicId,
                 patch: { color: colorId },
             });
         }

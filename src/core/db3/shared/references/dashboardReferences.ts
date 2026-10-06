@@ -20,14 +20,16 @@ import {
     xFileTag,
 } from "../schema/file";
 import {
-    xInstrument,
-    xInstrumentFunctionalGroup,
-} from "../schema/instrument";
+    xBandInstrument,
+    xBandInstrumentFunctionalGroup,
+    bandInstrumentGroupDisplayContract,
+    bandInstrumentDisplayContract,
+} from "../entities/instrument/bandInstrumentContracts";
 import { PermissionForVisibilityArgs } from "../schema/prismArgs";
 import {
     xSongCreditType,
-    xSongTag,
 } from "../schema/song";
+import { xBandSongTag, bandSongTagDisplayContract } from "../entities/song/bandSongTagViews";
 import { xPermission, xRole, xUserTag } from "../schema/user";
 import { xWikiPageTag } from "../schema/wikiPageTag";
 
@@ -135,31 +137,6 @@ const dashboardFileTagSelection = Prisma.validator<Prisma.FileTagDefaultArgs>()(
     },
 });
 
-const dashboardInstrumentFunctionalGroupSelection = Prisma.validator<
-    Prisma.InstrumentFunctionalGroupDefaultArgs
->()({
-    select: {
-        publicId: true,
-        name: true,
-        description: true,
-        sortOrder: true,
-        color: true,
-    },
-});
-
-const dashboardSongTagSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()({
-    select: {
-        publicId: true,
-        text: true,
-        description: true,
-        sortOrder: true,
-        color: true,
-        indicator: true,
-        indicatorCssClass: true,
-        group: true,
-    },
-});
-
 const dashboardSongCreditTypeSelection = Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
     select: {
         publicId: true,
@@ -167,17 +144,6 @@ const dashboardSongCreditTypeSelection = Prisma.validator<Prisma.SongCreditTypeD
         description: true,
         color: true,
         sortOrder: true,
-    },
-});
-
-const dashboardInstrumentTransportSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
-    select: {
-        publicId: true,
-        name: true,
-        description: true,
-        autoAssignFileLeafRegex: true,
-        sortOrder: true,
-        functionalGroupId: true,
     },
 });
 
@@ -220,14 +186,8 @@ export const dashboardFileTagResource = deriveViewContract(
     xFileTag,
     dashboardFileTagSelection,
 );
-export const dashboardInstrumentFunctionalGroupResource = deriveViewContract(
-    xInstrumentFunctionalGroup,
-    dashboardInstrumentFunctionalGroupSelection,
-);
-export const dashboardSongTagResource = deriveViewContract(
-    xSongTag,
-    dashboardSongTagSelection,
-);
+export const dashboardInstrumentFunctionalGroupResource = bandInstrumentGroupDisplayContract;
+export const dashboardSongTagResource = bandSongTagDisplayContract;
 export const dashboardSongCreditTypeResource = deriveViewContract(
     xSongCreditType,
     dashboardSongCreditTypeSelection,
@@ -241,24 +201,18 @@ export const dashboardLeafReferenceContract = defineReferenceContract({
     eventTag: reference(xEventTag)<ReturnType<typeof dashboardEventTagResource.hydrate>>(),
     eventAttendance: reference(xEventAttendance)<ReturnType<typeof dashboardEventAttendanceResource.hydrate>>(),
     fileTag: reference(xFileTag)<ReturnType<typeof dashboardFileTagResource.hydrate>>(),
-    instrumentFunctionalGroup: reference(xInstrumentFunctionalGroup)<
+    instrumentFunctionalGroup: reference(xBandInstrumentFunctionalGroup)<
         ReturnType<typeof dashboardInstrumentFunctionalGroupResource.hydrate>
     >(),
-    songTag: reference(xSongTag)<ReturnType<typeof dashboardSongTagResource.hydrate>>(),
+    songTag: reference(xBandSongTag)<ReturnType<typeof dashboardSongTagResource.hydrate>>(),
     songCreditType: reference(xSongCreditType)<ReturnType<typeof dashboardSongCreditTypeResource.hydrate>>(),
 });
 
-export const dashboardInstrumentResource = deriveViewContract(
-    xInstrument,
-    dashboardInstrumentTransportSelection,
-    {
-        references: dashboardLeafReferenceContract,
-    },
-);
+export const dashboardInstrumentResource = bandInstrumentDisplayContract;
 
 export const dashboardReferenceContract = defineReferenceContract({
     ...dashboardLeafReferenceContract.definitions,
-    instrument: reference(xInstrument)<ReturnType<typeof dashboardInstrumentResource.hydrate>>(),
+    instrument: reference(xBandInstrument)<ReturnType<typeof dashboardInstrumentResource.hydrate>>(),
 });
 
 export const permissionDashboardView = defineView({
@@ -344,7 +298,7 @@ export const fileTagDashboardView = defineView({
 
 export const instrumentFunctionalGroupDashboardView = defineView({
     viewID: "InstrumentFunctionalGroup_Dashboard",
-    entity: xInstrumentFunctionalGroup,
+    entity: xBandInstrumentFunctionalGroup,
     selection: dashboardInstrumentFunctionalGroupResource.prismaSelection,
     dtoSchema: dashboardInstrumentFunctionalGroupResource.dtoSchema,
     references: dashboardInstrumentFunctionalGroupResource.referenceContract,
@@ -353,7 +307,7 @@ export const instrumentFunctionalGroupDashboardView = defineView({
 
 export const songTagDashboardView = defineView({
     viewID: "SongTag_Dashboard",
-    entity: xSongTag,
+    entity: xBandSongTag,
     selection: dashboardSongTagResource.prismaSelection,
     dtoSchema: dashboardSongTagResource.dtoSchema,
     references: dashboardSongTagResource.referenceContract,
@@ -371,7 +325,7 @@ export const songCreditTypeDashboardView = defineView({
 
 export const instrumentDashboardView = defineView({
     viewID: "Instrument_Dashboard",
-    entity: xInstrument,
+    entity: xBandInstrument,
     selection: dashboardInstrumentResource.prismaSelection,
     dtoSchema: dashboardInstrumentResource.dtoSchema,
     references: dashboardInstrumentResource.referenceContract,
@@ -499,17 +453,17 @@ export function registerDashboardReferences(
     }
     if (input.instrumentFunctionalGroup) {
         store.register(
-            xInstrumentFunctionalGroup,
+            xBandInstrumentFunctionalGroup,
             input.instrumentFunctionalGroup,
         );
     }
     if (input.songTag) {
-        store.register(xSongTag, input.songTag);
+        store.register(xBandSongTag, input.songTag);
     }
     if (input.songCreditType) {
         store.register(xSongCreditType, input.songCreditType);
     }
     if (input.instrument) {
-        store.register(xInstrument, input.instrument);
+        store.register(xBandInstrument, input.instrument);
     }
 }

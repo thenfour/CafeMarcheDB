@@ -251,7 +251,7 @@ const ActivityLogSongListEventChip = ({ songListId, cacheData }: { songListId: n
 const ActivityLogSongTag = ({ songTagId, cacheData }: { songTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
     const found = isPublicId(songTagId)
-        ? dashboardContext.songTag.getById(db3.xSongTag.parseIdentity(songTagId))
+        ? dashboardContext.songTag.getById(db3.xBandSongTag.parseIdentity(songTagId))
         : undefined;
     if (!found) {
         // Historical log entries may contain a natural ID. Do not render it
@@ -260,7 +260,7 @@ const ActivityLogSongTag = ({ songTagId, cacheData }: { songTagId: number | stri
     }
     return <ActivityLogChip
     >
-        {found.text}
+        {found.name}
     </ActivityLogChip>;
 };
 

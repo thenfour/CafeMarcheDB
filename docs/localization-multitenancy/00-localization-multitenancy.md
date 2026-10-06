@@ -369,6 +369,19 @@ and a second-catalog reuse check before broader rollout. See the
 [phase-3 plan](04-implementation-plan.md#phase-3-db3-fields-xtables-and-views) and
 [design acceptance criteria](07-db3-band-instruments.md#design-acceptance-criteria).
 
+**Agreed follow-up:** coherent multi-read execution follows the resolved query
+strategy, independently of band ownership. Transactional field preparation is a
+`FieldBase` operation overridden by localized fields; shared server execution
+supplies the transaction-bound persistence service. Field-specific validation
+and transformations stay on the field.
+
+Instruments, functional groups, and song tags use the dashboard's existing
+reference store and arrive through `getDashboardData`. Derived display hydration
+supplies effective values to shared chips/details and editor reference providers.
+Only richer workflow data such as global opt-in choices needs a local request.
+CRUD consumers refresh dashboard references explicitly; automatic invalidation
+in `useDB3Command` is deferred for this working V1.
+
 ## string keys
 
 **namespace-like structure**; think vs code settings

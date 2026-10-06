@@ -80,7 +80,7 @@ export function useCrudViewCreate<TView extends db3.AnyDB3CrudView>(
     return {
         create: async values => {
             const result = await command.invoke(values);
-            dashboard.refreshCachedData();
+            await dashboard.refreshCachedData();
             return fetchCreatedCrudViewRow(
                 view,
                 result.identity as db3.DB3IdentityOf<db3.TableOf<TView>>,

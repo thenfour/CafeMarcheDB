@@ -102,7 +102,7 @@ const FilterControlsTester = () => {
             selectedIds={spec.selectedSongTagIds}
             items={dashboardContext.songTag.map(t => ({
                 id: t.publicId,
-                label: t.text,
+                label: t.name,
                 color: t.color,
             }))}
             onChange={(newSel) => setSpec({ ...spec, selectedSongTagIds: newSel })}

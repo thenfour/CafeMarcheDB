@@ -1,5 +1,4 @@
 import { useDB3QueryContext } from "./useDB3Context";
-import { queryClient } from "src/blitz-client";
 import { useMutation } from "@blitzjs/rpc";
 import executeDB3CommandMutation from "../mutations/executeDB3Command";
 import type {

@@ -24,14 +24,14 @@ export const SongTagIndicatorContainer = ({ tagIds, allPossibleTags }: {
     // Get all possible tags that have indicators
     const allTags = allPossibleTags
         .map(tagId => dashboardContext.songTag.getById(tagId))
-        .filter(t => !!t && !IsNullOrWhitespace(t.indicator)) as db3.SongTagClientPayload[]; // Filtering removes undefined dashboard references.
+        .filter((tag): tag is db3.SongTagDashboardClient => !!tag && !IsNullOrWhitespace(tag.indicator));
 
     // Create a set of current song's tag IDs for quick lookup
     const currentTagIds = new Set(tagIds);
-    const getGroupKey = (tag: db3.SongTagClientPayload) => tag.group || `_5e25847d_${tag.sortOrder.toString()}`;
+    const getGroupKey = (tag: db3.SongTagDashboardClient) => tag.group || `_5e25847d_${tag.sortOrder?.toString() ?? "0"}`;
 
     // Group tags
-    const groupedTags = new Map<string, db3.SongTagClientPayload[]>();
+    const groupedTags = new Map<string, db3.SongTagDashboardClient[]>();
     allTags.forEach(tag => {
         const groupKey = getGroupKey(tag);
         if (!groupedTags.has(groupKey)) {
@@ -43,7 +43,7 @@ export const SongTagIndicatorContainer = ({ tagIds, allPossibleTags }: {
     // Get unique sort orders and sort them
     const sortedGroups = Array
         .from(groupedTags.keys())
-        .sort((a, b) => groupedTags.get(a)![0]!.sortOrder - groupedTags.get(b)![0]!.sortOrder);
+        .sort((a, b) => (groupedTags.get(a)![0]!.sortOrder ?? 0) - (groupedTags.get(b)![0]!.sortOrder ?? 0));
 
     if (!sortedGroups.length) return null;
 
@@ -60,9 +60,9 @@ export const SongTagIndicatorContainer = ({ tagIds, allPossibleTags }: {
             visibleTagsForThisSortOrder.forEach(tag => {
                 const style = GetStyleVariablesForColor({ color: tag.color, ...StandardVariationSpec.Strong });
                 renderElements.push(
-                    <Tooltip title={tag.text} key={keyCounter++} disableInteractive>
+                    <Tooltip title={tag.name ?? ""} key={keyCounter++} disableInteractive>
                         <div
-                            className={`songTagIndicator ${tag.indicatorCssClass} ${style.cssClass}`}
+                            className={`songTagIndicator ${tag.indicatorCssClass ?? ""} ${style.cssClass}`}
                             style={style.style}
                         >
                             {tag.indicator}
@@ -75,7 +75,7 @@ export const SongTagIndicatorContainer = ({ tagIds, allPossibleTags }: {
             const firstTag = tagsForThisSortOrder[0]!; // We know this exists since we put it in the map
             renderElements.push(
                 <div
-                    className={`songTagIndicator ${firstTag.indicatorCssClass}`}
+                    className={`songTagIndicator ${firstTag.indicatorCssClass ?? ""}`}
                     key={keyCounter++}
                     style={{
                         visibility: 'hidden'

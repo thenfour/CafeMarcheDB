@@ -81,7 +81,7 @@ describe("DB3 table identity authority", () => {
         })).toThrow();
 
         expect(db3.xUserWithInstrument.fields.instruments.getForeignTableShema().tableID)
-            .toBe("Instrument");
+            .toBe(db3.xBandInstrument.tableID);
         expect(db3.xUserWithInstrument.fields.instruments.getForeignIdentity(instrumentPublicId))
             .toBe(instrumentPublicId);
         const user = { id: 12, publicId: userPublicId(12), instruments: [] };

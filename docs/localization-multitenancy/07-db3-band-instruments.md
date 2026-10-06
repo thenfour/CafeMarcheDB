@@ -87,9 +87,10 @@ public-ID typing, reference support, and resolution provenance.
 Ordinary create/update behavior uses shared DB3 CRUD facilities. A custom domain
 command may compose those facilities for opt-in, inheritance changes, or other
 richer operations. Such commands reuse field validation/conversion,
-authorization, transactional persistence, auditing, and invalidation rather than
-reimplementing them. The minimal dynamic-string writer remains shared and must
-integrate with these field and persistence contracts.
+authorization, transactional persistence, and auditing. Existing consumers
+refresh dependent data explicitly; automatic command invalidation is deferred.
+The minimal dynamic-string writer remains shared and must integrate with these
+field and persistence contracts.
 
 Queries likewise use normal DB3 authorization, sanitization, reference, and
 hydration contracts. Replace `bandInstrumentRead.ts`'s separate field allowlists
@@ -109,9 +110,10 @@ without resolving an entire catalog just to check one public identity.
 ## Design acceptance criteria
 
 These are the short-term gate for the instrument/group redesign. The shared
-implementation also supports the BandSongTag reuse proof described below. Retain the initial slice's public-ID, ownership, visibility,
-inheritance, translation-writing, audit, and cache-invalidation behavior recorded
-below.
+implementation also supports the BandSongTag reuse proof described below.
+Retain public-ID, ownership, visibility, inheritance, translation-writing, and
+audit behavior. Refresh query and dashboard references from their consumers;
+automatic invalidation policy is deferred for V1.
 
 - [x] Native DB3 quicksearch, autocomplete, field filters, sorting, count/page,
   reference hydration, grids, selection dialogs, and ordinary create/edit forms
@@ -137,6 +139,12 @@ below.
 - [x] Shared execution establishes fresh authorization and transaction policy.
   Two-band reads, references, revoked grants, writes, and rollback remain covered;
   page/RPC callers have no silent isolation or authorization-refresh obligations.
+- [x] Resolved query strategy selects coherent reads independently of ownership.
+  Transactional field preparation dispatches through a field hook; localized
+  transformations and validation remain on the localized field.
+- [x] Instruments, functional groups, and song tags use the dashboard reference
+  store. Existing dashboard delivery and field-derived contracts support native
+  editor references, details, and chips without duplicate client stores/queries.
 - [x] The common behavior lives in DB3 and shared localization/persistence
   helpers. Catalog declarations and genuine domain operations explain the
   remaining custom code. Passing tests or registering bespoke callbacks alone
@@ -198,13 +206,16 @@ MariaDB 10.11.9's `utf8mb4_unicode_ci`; it is not a general implementation of al
 MySQL collations or every Unicode collation version. Large SQL search pipelines
 remain separate and cannot inject their ordering/natural keys into this backend.
 
-`executeDB3Read` owns RepeatableRead and authorization refresh on the root Prisma
-client. Rows, translations, availability, and grants share that snapshot. Pages
-and RPCs pass the root client. Internal transaction owners explicitly bind a
+`queryStrategy: "resolved"` selects `executeDB3Read` in both generic query entry
+points. Resolved queries assemble fields across independent reads; `bandScope`
+declares ownership and does not decide transaction policy. `executeDB3Read` owns
+RepeatableRead and authorization refresh on the root Prisma client. Rows,
+translations, availability, and grants share that snapshot. Pages and RPCs pass
+the root client. Internal transaction owners explicitly bind a
 RepeatableRead/Serializable `DB3ReadContext`; raw transactions are rejected at
 this boundary. The legacy dynamic query delegate seam remains during recovery,
 while the new execution/composition helpers express snapshot ownership in their
-types. Detail reads constrain the public identity before loading/resolution.
+types. Server detail reads constrain the public identity before loading/resolution.
 
 Hidden groups suppress instruments in ordinary reads. Administration reads can
 include hidden references only with the target catalog's management grant.
@@ -214,8 +225,9 @@ Legacy descriptors remain rejected in selected-band queries and row services.
 
 `bandInstrumentRead.ts`, the name-only catalog matcher, and all instrument-table
 switches in generic read/command entry points have been removed. The remaining
-instrument catalog bundle collects authorized global opt-in choices and group
-references; it does not implement a separate entity query backend.
+instrument catalog request supplies authorized global opt-in choices only.
+Ordinary instruments, functional groups, and song tags arrive through the
+existing dashboard request and reference store.
 
 ### Writes and native UI
 
@@ -224,6 +236,13 @@ The shared field writer joins normal DB3 persistence and audits in the command's
 transaction. `BandInstrument_OptIn` contains only global group/instrument opt-in;
 its instrument operation composes the common opt-in row service to ensure its
 required group exists. Source identity and ownership are server supplied.
+
+`prepareDB3FieldWrites` dispatches `FieldBase.applyTransactionalWrite` for supplied
+field values. `LocalizedStringField` owns the explicit-edit validation, inherited
+source check, owned string identity, and foreign-key patch. The server supplies
+a dynamic-string writer bound to the authorized mutation transaction. The generic
+orchestrator has no localized-field type switch. This asynchronous persistence
+hook complements the existing client edit codec and field validation.
 
 Catalog pages use native DB3 grids, create/edit dialogs, foreign selection,
 reference hydration, and shared localized/inherited field controls. The native
@@ -235,14 +254,40 @@ Failed create writes retain the native dialog/draft and allow retry.
 All native query adapters carry selected band, route locale, the entire ordered
 browser list, and the presentation refresh identity. Different resolved-string
 contexts cannot share an incorrect formatting-locale-only cache key. Catalog
-writes invalidate dependent query caches without remounting an unsaved parent
-form during picker creation. Settings, availability, membership, and grant
-writers retain presentation-context invalidation through the phase-2 API.
+writes refresh their query and dashboard references from existing CRUD consumers;
+`useDB3Command` has no automatic band-scope invalidation. Global opt-in refreshes
+its choices, dashboard references, and native query caches. Picker creation does
+not remount an unsaved parent form. Broader invalidation policy is deferred.
+Settings, availability, membership, and grant writers retain presentation-context
+invalidation through the phase-2 API.
 
 BandSongTag and its existing editor page use these same fields, derived CRUD
 view, native controls, query/persistence pipeline, and cache context. Its native
 fixture covers shared opt-in/inheritance as well as generated CRUD; a separate
 global tag-choice/opt-in UI is not added by this proof.
+
+### Shared dashboard references
+
+`getDashboardData` now delivers instruments, functional groups, and song tags
+from their canonical band entities. `loadDashboardCatalogs` composes the existing
+derived views in one read snapshot, using the full ordered locale preferences
+and refreshed grants. Hidden entries are included only with the corresponding
+catalog management grant. There are no duplicate global/band descriptors or
+parallel dashboard catalog DTO schemas.
+
+Derived display hydration exposes effective names, palette colors, and scalar
+sort orders while preserving resolution and override companions. Editor views
+retain rich localized/inherited values for explicit edits. Both use the same
+field-derived transport contract. The existing dashboard hydration pipeline
+registers groups and tags before instruments and builds a new reference store
+for every snapshot, clearing old band and locale references on refresh.
+
+The instrument/group and song-tag editors use `dashboard.referenceStore`.
+Instrument details, instrument/group chips, and song-tag indicators read these
+shared references synchronously. The instrument page has no private reference
+store or extra entity/detail queries; only its global opt-in choices remain
+workflow-local. Ordinary CRUD awaits the existing dashboard refresh so new
+references are available to dependent controls.
 
 ### Validation and remaining work
 
@@ -250,52 +295,63 @@ The focused command covers the catalog/native UI paths, shared DB3 contracts,
 commands/selection, scoped authorization, and localization/settings:
 
 ```powershell
-yarn test tests/bandInstrumentCatalog.test.ts tests/bandInstrumentCatalog.mysql.test.ts tests/bandSongTagCatalog.mysql.test.ts tests/bandInstrumentEditor.test.tsx tests/db3MemoryQuery.test.ts tests/db3MemoryQuery.mysql.test.ts tests/db3ReadExecution.test.ts tests/db3CrudSelection.test.ts tests/db3ViewContract.test.ts tests/db3Commands.test.ts tests/authorization/db3Views.test.ts tests/authorization/db3GridSort.test.ts tests/authorization/multibandAuthorization.test.ts tests/authorization/permissionRegistry.test.ts tests/authorization/publicIdTransport.test.ts tests/localizationResolution.test.ts tests/localizationSettings.test.ts tests/localizationSettings.mysql.test.ts tests/userSettingsContext.test.tsx tests/domainSelection.test.ts tests/db3ForeignSingleSelection.test.ts tests/db3TagsSelection.test.ts tests/selectionPicker.test.ts tests/testEnvironment.test.ts --reporter=dot
+yarn test tests/bandInstrumentCatalog.test.ts tests/bandInstrumentCatalog.mysql.test.ts tests/bandSongTagCatalog.mysql.test.ts tests/bandInstrumentEditor.test.tsx tests/db3MemoryQuery.test.ts tests/db3MemoryQuery.mysql.test.ts tests/db3ReadExecution.test.ts tests/db3CrudSelection.test.ts tests/db3ViewContract.test.ts tests/db3Commands.test.ts tests/authorization/db3Views.test.ts tests/authorization/db3GridSort.test.ts tests/authorization/multibandAuthorization.test.ts tests/authorization/permissionRegistry.test.ts tests/authorization/publicIdTransport.test.ts tests/localizationResolution.test.ts tests/localizationSettings.test.ts tests/localizationSettings.mysql.test.ts tests/userSettingsContext.test.tsx tests/domainSelection.test.ts tests/db3ForeignSingleSelection.test.ts tests/db3TagsSelection.test.ts tests/selectionPicker.test.ts tests/testEnvironment.test.ts tests/db3DashboardCatalogs.mysql.test.ts tests/db3FieldWrites.test.ts tests/db3ColumnFactories.test.ts tests/db3Identity.test.ts tests/authorization/searchSortContract.test.ts --reporter=dot
 ```
 
 Native tests require `CMDB_PHASE2_TEST_DATABASE_URL` pointing to a private,
-disposable database; this run used a fresh MariaDB 10.11.9 schema.
+disposable database; validation used the private MariaDB 10.11.9 fixture schema.
 
-- Focused checks: **267 tests across 24 files**, including **18 native database
-  tests** across four files. The final count includes the parent-draft cache
-  invalidation regression. Visibility/public-ID checks were also rerun after
-  hidden-entry restoration was corrected.
-- The three-row tag fixture matched two rows across resolved text/scalar fields
-  and returned one-row pages in **3-4 ms per page** in the focused run. This is a
+- Focused checks: **287 tests across 29 files**, including **21 native database
+  tests** across five files. Follow-up coverage proves strategy-based transaction
+  selection, polymorphic field writes, dashboard hydration/store sharing,
+  band/locale replacement, refreshed hidden-entry grants, and synchronous UI
+  references without an extra query. Parent-draft preservation remains covered.
+- In the earlier redesign run, the three-row tag fixture matched two rows across
+  resolved text/scalar fields and returned one-row pages in **3-4 ms per page**. This is a
   tiny correctness-fixture observation, not a production benchmark. Measure
   real catalog sizes/cost before optimizing or applying this backend to large
   tables. The static localization fixture measured **121 keys / 19,034 UTF-8
   bytes**.
 - The complete suite's Node batch has **344 failing tests across 36 files**;
-  an isolated checkout of committed baseline `c4df4fe0` has exactly the same
-  failing test groups. The current batch passed 1,177 tests versus 1,164 at that
-  baseline. The runner stops before its DOM batch; the relevant DOM tests are
+  starting baseline `e7d5b79d` has exactly the same failing test groups. The
+  follow-up batch passed 1,155 tests versus 1,152 at that baseline, with native
+  database tests skipped in both full-suite comparisons. The runner stops before
+  its DOM batch; the relevant DOM and native database tests are
   covered by the focused run. Legacy calendar, authorization/bootstrap, wiki,
   merge, and event fixtures/consumers still require migration.
-- `yarn tsc --noEmit --pretty false --incremental false` still reports **693
-  diagnostics**, versus **709** at the starting baseline. New catalog/shared
-  modules and adapted catalog pages have no diagnostics. Nonincremental mode
-  avoids an existing incremental-compiler overload diagnostic crash.
+- `yarn tsc --noEmit --pretty false --incremental false` still reports **674
+  diagnostics**, versus **693** at starting baseline `e7d5b79d`. The new dashboard
+  loader, field hook, display hydration, and adapted catalog pages have no
+  diagnostics. Legacy association/file/song descriptors remain incomplete;
+  canonical band types also change some diagnostics in those consumers.
+  Nonincremental mode avoids an existing incremental-compiler overload
+  diagnostic crash.
 - ESLint on changed/new code and `git diff --check` pass.
 
 Obsolete tests of the removed name-only matcher were replaced with common
 predicate/native comparison coverage. Bespoke-editor tests were replaced with
 native field/form/picker tests. Stale selector test mocks/imports were adapted
 to the registered settings/context APIs. No valuable selection coverage was
-removed. Trivial shared defects fixed during this work include integer parsing
+removed. Trivial shared defects fixed during the earlier redesign include integer parsing
 returning the original string, palette writes accepting invalid colors, raw
 registry keys used as selection captions, and native create dialogs closing
 before failed writes finished.
 
-Continue phase 3 with dashboard/reference and member-instrument consumers,
-remaining catalogs/global catalog writers, membership/content descriptors,
-and registered settings editors. Full application recovery, global tag opt-in
+The dashboard follow-up also replaced obsolete global-catalog fixtures with
+field-derived band reference fixtures. Generic scalar CRUD/codec tests use an
+existing scalar entity. The redundant old instrument query test is superseded
+by the native dashboard/query/reference pipeline coverage; nested legacy-domain
+projection tests continue to test authorization and DTO transport directly.
+
+Dashboard catalog/reference migration is implemented. Continue phase 3 with
+member-instrument consumers, remaining catalogs/global catalog writers,
+membership/content descriptors, and registered settings editors. Full application recovery, global tag opt-in
 UI, translation inventory/inspection, and portal UX remain in their planned
 phases. No application database or migrated association was replaced for tests;
-the private validation server was stopped and the baseline checkout removed.
-Automatic approval review rejected deletion of the server's temporary data
-directory with "blocked by policy", so those files remain in the system Temp
-folder.
+the private validation server was stopped. The earlier redesign's baseline
+checkout was removed. Its automatic approval review rejected deletion of the
+server's temporary data directory with "blocked by policy", so those files
+remain in the system Temp folder.
 
 ## Initial implementation and evidence (2026-10-06)
 
@@ -467,10 +523,9 @@ the complete suite, and interactive migrated-application acceptance remain phase
 
 ## Next execution step
 
-Rework the instrument/group slice using the settled query policy and shared DB3
-contracts, then meet the design acceptance criteria above. Add one other catalog
-as the reuse proof before adapting dashboard/reference and member-instrument
-consumers, the remaining catalogs, membership/content views, global catalog
-administration, and registered settings editors. Remove obsolete domain
-contracts as their consumers migrate. Complete those adaptations and phase 4
-acceptance before declaring milestone A.
+The shared instrument/group design, BandSongTag reuse proof, and dashboard catalog
+references are implemented. Continue with member-instrument consumers, the
+remaining catalogs, membership/content views, global catalog administration,
+and registered settings editors. Remove obsolete domain contracts as their
+consumers migrate. Complete those adaptations and phase 4 acceptance before
+declaring milestone A.

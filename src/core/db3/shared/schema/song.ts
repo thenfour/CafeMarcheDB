@@ -12,12 +12,15 @@ import type {
     SongPublicId,
 } from "shared/publicId";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { ColorField, ConstEnumStringField, ForeignCollectionField, foreignRef, foreignRefByTableId, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { ColorField, ForeignCollectionField, foreignRef, foreignRefByTableId, GenericIntegerField, GhostField, MakeIsDeletedField, MakePKfield, MakePublicIdField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload } from "./prismArgs";
+import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
+import { xBandSongTag as xSongTag } from "../entities/song/bandSongTagViews";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
+
+export { xSongTag };
 
 
 export const xSongAuthMap_R_EOwn_EManagers = db3.defineAuthMap({
@@ -62,65 +65,6 @@ export const xSongTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
     Edit: Permission.admin_songs,
     Insert: Permission.admin_songs,
 };
-
-
-export const xSongTag = db3.defineTable({
-    prismaModel: db3.prismaModel<Prisma.SongTagDelegate>(),
-    getIdentity: (tag: { publicId: SongTagPublicId }) => tag.publicId,
-    getSelectionArgs: (): Prisma.SongTagDefaultArgs => {
-        return SongTagArgs;
-    },
-    tableName: "SongTag",
-    deletePolicy: "hard",
-    tableAuthMap: xSongTableAuthMap_R_EAdmins,
-    naturalOrderBy: SongTagNaturalOrderBy,
-    createInsertModelFromString: (input: string): Partial<SongTagPayload> => {
-        return {
-            text: input,
-            description: "auto-created",
-            sortOrder: 0,
-            color: null,
-            significance: null,
-            indicator: null,
-            indicatorCssClass: null,
-        };
-    },
-    getRowInfo: (row: SongTagPayload) => ({
-        pk: row.publicId,
-        name: row.text,
-        description: row.description,
-        color: gGeneralPaletteList.findEntry(row.color),
-        ownerUserId: null,
-    }),
-    fields: db3.makeColumnSet({
-        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
-        publicId: () => MakePublicIdField<SongTagPublicId>(),
-        text: columnName => MakeTitleField(columnName, { authMap: xSongAuthMap_R_EOwn_EManagers }),
-        description: () => MakeDescriptionField({ authMap: xSongAuthMap_R_EOwn_EManagers }),
-        sortOrder: () => MakeSortOrderField({ authMap: xSongAuthMap_R_EOwn_EManagers, }),
-        color: () => MakeColorField({ authMap: xSongAuthMap_R_EOwn_EManagers }),
-
-        indicator: columnName => new GenericStringField({
-            columnName,
-            allowNull: true,
-            format: "plain",
-            authMap: xSongAuthMap_R_EOwn_EManagers,
-        }),
-        group: columnName => new GenericStringField({
-            columnName,
-            allowNull: true,
-            format: "plain",
-            authMap: xSongAuthMap_R_EOwn_EManagers,
-        }),
-        indicatorCssClass: columnName => new GenericStringField({
-            columnName,
-            allowNull: true,
-            format: "plain",
-            authMap: xSongAuthMap_R_EOwn_EManagers,
-        }),
-        songs: memberName => new GhostField({ memberName, authMap: xSongAuthMap_R_EOwn_EManagers, }),
-    })
-});
 
 
 ////////////////////////////////////////////////////////////////
@@ -185,7 +129,7 @@ const xSongArgs_Base = db3.defineTableDesc({
         songIds: { kind: "entityIdentityArray", targetTableID: "Song", authorizeAs: "publicId", nullable: true },
         songTagIds: {
             kind: "entityIdentityArray",
-            targetTableID: "SongTag",
+            targetTableID: "BandSongTag",
             authorizeAs: "tags",
             nullable: true,
         },
@@ -261,7 +205,7 @@ const xSongArgs_Base = db3.defineTableDesc({
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
 
-        tags: tagsRef("SongTagAssociation", "SongTag", {
+        tags: tagsRef("SongTagAssociation", "BandSongTag", {
             associationForeignObjectMember: "tag",
             associationLocalObjectMember: "song",
             authMap: xSongAuthMap_R_EOwn_EManagers,
@@ -443,7 +387,6 @@ export const xSongCredit = db3.defineTable({
 declare module "../db3core" {
     interface DB3TableTypeRegistry {
         Song: typeof xSong;
-        SongTag: typeof xSongTag;
         SongTagAssociation: typeof xSongTagAssociation;
         SongCreditType: typeof xSongCreditType;
         SongCredit: typeof xSongCredit;

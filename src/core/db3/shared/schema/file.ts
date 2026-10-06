@@ -586,7 +586,7 @@ const xFileBaseArgs = {
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedEvents
 
-        taggedInstruments: tagsRef("FileInstrumentTag", "Instrument", {
+        taggedInstruments: tagsRef("FileInstrumentTag", "BandInstrument", {
             associationForeignObjectMember: "instrument",
             associationLocalObjectMember: "file",
             authMap: xFileAuthMap_FileObjects,

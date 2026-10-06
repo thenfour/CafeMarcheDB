@@ -20,6 +20,21 @@ import type { AnyDB3View, TableOf } from "./core/db3View";
 import type { UserWithRolesPayload } from "./schema/userPayloads";
 import type { BandPublicId } from "shared/publicId";
 import type { LocalePreferenceInput } from "src/locale/shared/localePreferences";
+import type { LocalizedStringFormat } from "@prisma/client";
+import type { LocalizedFieldEditSchema } from "src/locale/shared/dynamicStringWrite";
+
+// Registered fields span different row shapes; each hook validates its own members.
+export interface DB3TransactionalFieldWriteContext {
+    readonly value: unknown;
+    readonly existingRow: Readonly<Record<string, unknown>> | null;
+    readonly hasInheritedSource: boolean;
+    readonly writeLocalizedString: (ownedStringId: number | null, format: LocalizedStringFormat,
+        edit: z.infer<typeof LocalizedFieldEditSchema>) => Promise<number | null>;
+}
+export interface DB3TransactionalFieldWriteResult {
+    readonly values: Readonly<Record<string, unknown>>;
+    readonly removeMembers: readonly string[];
+}
 
 export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "foreignObject" | "calculated";
 
@@ -666,6 +681,9 @@ export abstract class FieldBase<
     readonly writeTransportSchema?: z.ZodTypeAny;
     getReadSupportMembers = (): readonly string[] => [];
 
+    /** Persist related field values using services bound to the authorized mutation transaction. */
+    applyTransactionalWrite = async (_context: DB3TransactionalFieldWriteContext): Promise<DB3TransactionalFieldWriteResult | undefined> => undefined;
+
     /** Type-only marker used when deriving prepared command values. */
     readonly __clientWritable?: TClientWritable;
 
@@ -926,9 +944,8 @@ export interface TableDesc {
     queryParameters?: DB3QueryParameterMap; // runtime contract for untrusted generic DB3 requests
     bandScope?: DB3BandScope;
 
-    // Some tables require fields to be resolved in code (e.g. choosing a localized string)
-    // that has impact in several places where queries happen, so indicate it here.
-    // "resolved"  and unknown are the only 2 recognized query strategies atm.
+    // Resolved queries assemble fields across independent reads before filtering/paging.
+    // DB3 owns a coherent snapshot for this strategy, independently of band ownership.
     queryStrategy?: "resolved";
 
     // for things like attendance options, where options can go stale and become "inactive", allow table schemas to filter items out.

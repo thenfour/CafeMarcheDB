@@ -8,6 +8,7 @@ import { GenericStringColumnClient, GenericIntegerColumnClient, ColorColumnClien
 import { LocalizedStringColumnClient, InheritedColumnClient, catalogColumn } from "src/core/db3/components/DB3CatalogFields";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
+import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 
 export const bandSongTagTableSpec = defineTableClientSpec({
     view: bandSongTagView,
@@ -23,11 +24,13 @@ export const bandSongTagTableSpec = defineTableClientSpec({
     },
 });
 const MainContent = () => {
+    const dashboard = useDashboardContext();
     const presentation = usePresentation();
     const locale = useLocale();
     return presentation.bandPublicId ? <DB3EditGrid
         tableSpec={bandSongTagTableSpec}
         view={bandSongTagView}
+        referenceProvider={dashboard.referenceStore}
     />
         : <Alert severity="info">{locale.getPlainString("catalog.selectBand")}</Alert>;
 };

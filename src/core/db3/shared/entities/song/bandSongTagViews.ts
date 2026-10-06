@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { Permission } from "shared/permissions";
 import { SongTagPublicId, type PublicId } from "shared/publicId";
-import { bandCatalogAuth, bandCatalogFields, bandCatalogCreateFromString, catalogColor } from "../../columnTypes/bandCatalog";
+import { bandCatalogAuth, bandCatalogFields, bandCatalogCreateFromString, catalogColor, catalogDisplayModel } from "../../columnTypes/bandCatalog";
 import { MakeColorField } from "../../columnTypes/color";
 import { CatalogSourceField, inheritedField } from "../../columnTypes/inherited";
 import { GenericStringField } from "../../columnTypes/genericString";
@@ -13,7 +13,7 @@ import { deriveViewContract } from "../../core/db3ViewContract";
 
 const { authMap, sourceAuthMap, tableAuthMap } = bandCatalogAuth(Permission.admin_songs);
 const colorField = inheritedField(MakeColorField({ authMap }));
-const selection = Prisma.validator<Prisma.BandSongTagDefaultArgs>()({
+export const bandSongTagSelection = Prisma.validator<Prisma.BandSongTagDefaultArgs>()({
     select: {
         publicId: true,
         name: true,
@@ -43,7 +43,7 @@ export const xBandSongTag = defineTable({
         managePermission: Permission.admin_songs,
     },
     naturalOrderBy: { sortOrder: "asc", name: "asc" },
-    getSelectionArgs: () => selection,
+    getSelectionArgs: () => bandSongTagSelection,
     createInsertModelFromString: bandCatalogCreateFromString,
     queryParameters: { includeHidden: { kind: "boolean", authorizeAs: "isHidden" } },
     getRowInfo: row => ({
@@ -65,13 +65,24 @@ export const xBandSongTag = defineTable({
     },
 });
 
-const contract = deriveViewContract(xBandSongTag, selection);
+export const bandSongTagContract = deriveViewContract(xBandSongTag, bandSongTagSelection);
+export const bandSongTagDisplayContract = {
+    ...bandSongTagContract,
+    hydrate: (...args: Parameters<typeof bandSongTagContract.hydrate>) =>
+        catalogDisplayModel(bandSongTagContract.hydrate(...args)),
+};
 
 export const bandSongTagView = defineCrudView({
     viewID: "BandSongTag_Catalog",
     entity: xBandSongTag,
     operations: { create: true, update: true },
-    selection: contract.prismaSelection,
-    dtoSchema: contract.dtoSchema,
-    hydrate: contract.hydrate,
+    selection: bandSongTagContract.prismaSelection,
+    dtoSchema: bandSongTagContract.dtoSchema,
+    hydrate: bandSongTagContract.hydrate,
 });
+
+declare module "../../db3core" {
+    interface DB3TableTypeRegistry {
+        BandSongTag: typeof xBandSongTag;
+    }
+}

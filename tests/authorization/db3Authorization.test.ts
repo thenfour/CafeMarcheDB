@@ -1,4 +1,4 @@
-import { testServerAuthorization } from "tests/support/serverAuthorization";
+import { testBandAuthorization, testServerAuthorization } from "tests/support/serverAuthorization";
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("db", async () => {
@@ -260,7 +260,7 @@ describe("explicit DB3 authorization", () => {
   it("requires song read permission even when the parent event is readable", async () => {
     const resolved = await loadAuthorizationForUser(null)
     const selection = await db3.xEvent.CalculateSelectionArgs(
-      testServerAuthorization(null, resolved.effectivePermissions), { items: [] }, false,
+      testBandAuthorization(null, resolved.effectivePermissions), { items: [] }, false,
       db3.eventCalendarView.getSelectionArgs,
     )
     const entry = { id: 1, eventSongList: visibleListParent, song: makeSong(1, { visiblePermissionId: 920_002 }) }

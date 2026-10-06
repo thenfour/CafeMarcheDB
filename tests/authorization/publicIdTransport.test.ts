@@ -1,8 +1,7 @@
-import { testServerAuthorization } from "tests/support/serverAuthorization";
+import { testBandAuthorization, testServerAuthorization } from "tests/support/serverAuthorization";
 import { describe, expect, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
-import { projectDB3ModelPublicIds, resolvePublicForeignIds, resolvePublicIds } from "@db3/server/db3PublicIds";
-import { queryTable } from "@db3/server/db3QueryCore";
+import { projectDB3ModelPublicIds, resolvePublicForeignIds, resolvePublicIds, resolvePublicQueryParameters } from "@db3/server/db3PublicIds";
 import { validateDB3MutationRequest, validateDB3QueryRequest } from "@db3/server/db3RequestValidation";
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 import { CMServerAuthorization } from "src/auth/server/serverAuthorization";
@@ -51,12 +50,13 @@ const authorization = (...permissions: Permission[]): CMServerAuthorization => t
 );
 
 const sanitizeGroup = (publicData: CMServerAuthorization) => {
+    const scoped = testBandAuthorization({ id: publicData.userId! }, publicData.effectivePermissions);
     const result = db3.xInstrumentFunctionalGroup.authorizeAndSanitize({
         contextDesc: "public-id-transport-test",
-        model: group,
+        model: { ...group, bandId: 1 },
         rowMode: "view",
         fallbackOwnerId: null,
-        auth: publicData,
+        auth: scoped,
     });
     expect(result.rowIsAuthorized).toBe(true);
     return projectDB3ModelPublicIds(db3.xInstrumentFunctionalGroup, result.authorizedModel, publicData);
@@ -307,12 +307,12 @@ describe("instrument catalog public-ID transport", () => {
 
     it("accepts only public targets for converted-table queries and mutations", () => {
         expect(() => validateDB3QueryRequest({
-            table: { tableID: "InstrumentFunctionalGroup", tableName: "InstrumentFunctionalGroup" },
+            table: { tableID: db3.xBandInstrumentFunctionalGroup.tableID, tableName: db3.xBandInstrumentFunctionalGroup.tableName },
             filter: { items: [], publicIds: [publicId] },
             cmdbQueryContext: "public-id-test",
         })).not.toThrow();
         expect(() => validateDB3QueryRequest({
-            table: { tableID: "Instrument", tableName: "Instrument" },
+            table: { tableID: db3.xBandInstrument.tableID, tableName: db3.xBandInstrument.tableName },
             filter: { items: [], publicIds: [instrumentPublicId] },
             cmdbQueryContext: "public-id-test",
         })).not.toThrow();
@@ -358,47 +358,47 @@ describe("instrument catalog public-ID transport", () => {
         })).toThrow("Expected string, received number");
 
         expect(() => validateDB3MutationRequest({
-            tableID: "InstrumentFunctionalGroup",
-            tableName: "InstrumentFunctionalGroup",
+            tableID: db3.xBandInstrumentFunctionalGroup.tableID,
+            tableName: db3.xBandInstrumentFunctionalGroup.tableName,
             mutationType: "update",
             updatePublicId: publicId,
-            updateModel: { name: "Winds" },
+            updateModel: { name: { kind: "set", localeTag: "en-US", stringPublicId: null, value: "Winds" } },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
-            tableID: "InstrumentFunctionalGroup",
-            tableName: "InstrumentFunctionalGroup",
+            tableID: db3.xBandInstrumentFunctionalGroup.tableID,
+            tableName: db3.xBandInstrumentFunctionalGroup.tableName,
             mutationType: "update",
             updateId: group.id,
-            updateModel: { name: "Winds" },
+            updateModel: { name: { kind: "set", localeTag: "en-US", stringPublicId: null, value: "Winds" } },
         })).toThrow("updates require updatePublicId");
         expect(() => validateDB3MutationRequest({
-            tableID: "InstrumentFunctionalGroup",
-            tableName: "InstrumentFunctionalGroup",
+            tableID: db3.xBandInstrumentFunctionalGroup.tableID,
+            tableName: db3.xBandInstrumentFunctionalGroup.tableName,
             mutationType: "insert",
-            insertModel: { name: "Winds", publicId },
+            insertModel: { name: { kind: "set", localeTag: "en-US", stringPublicId: null, value: "Winds" }, publicId },
         })).toThrow("field 'publicId' is server-generated");
 
         expect(() => validateDB3MutationRequest({
-            tableID: "Instrument",
-            tableName: "Instrument",
+            tableID: db3.xBandInstrument.tableID,
+            tableName: db3.xBandInstrument.tableName,
             mutationType: "update",
             updatePublicId: instrumentPublicId,
             updateModel: { functionalGroupId: publicId },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
-            tableID: "Instrument",
-            tableName: "Instrument",
+            tableID: db3.xBandInstrument.tableID,
+            tableName: db3.xBandInstrument.tableName,
             mutationType: "update",
             updateId: instrumentId,
             updateModel: { functionalGroupId: publicId },
         })).toThrow("updates require updatePublicId");
 
         expect(() => validateDB3MutationRequest({
-            tableID: "SongTag",
-            tableName: "SongTag",
+            tableID: db3.xBandSongTag.tableID,
+            tableName: db3.xBandSongTag.tableName,
             mutationType: "update",
             updatePublicId: songTagPublicId,
-            updateModel: { text: "Processional" },
+            updateModel: { name: { kind: "set", localeTag: "en-US", stringPublicId: null, value: "Processional" } },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
             tableID: "SongTagAssociation",
@@ -554,44 +554,28 @@ describe("instrument catalog public-ID transport", () => {
         expect(findMany).toHaveBeenCalledOnce();
     });
 
-    it("resolves identity-bearing query parameters once before building the Prisma where clause", async () => {
+    it("resolves identity-bearing query parameters in one batch before constructing the where clause", async () => {
         const tagFindMany = vi.fn(async () => [
-            { id: 94, publicId: songTagPublicId },
-            { id: 95, publicId: otherSongTagPublicId },
+            { id: 94, publicId: songTagPublicId }, { id: 95, publicId: otherSongTagPublicId },
         ]);
-        const songFindMany = vi.fn(async () => []);
         const effectivePermissions = new ServerPermissionSet([
-            { id: 1, name: Permission.always_grant },
-            { id: 2, name: Permission.login },
-            { id: 3, name: Permission.view_songs },
+            { id: 1, name: Permission.always_grant }, { id: 2, name: Permission.login }, { id: 3, name: Permission.view_songs },
         ]);
-
-        const result = await queryTable({
-            table: { tableID: "Song", tableName: "Song" },
-            filter: {
-                items: [],
-                tableParams: { songTagIds: [songTagPublicId, otherSongTagPublicId] },
-            },
-            orderBy: undefined,
-            cmdbQueryContext: "song-tag-query-parameter-resolution-test",
-        }, new CMServerAuthorization(
-            // This focused query needs only the actor identity.
-            { id: 100 } as any, effectivePermissions,
-        ), {
-            SongTag: { findMany: tagFindMany },
-            Song: { findMany: songFindMany },
-        } as any); // Focused delegate doubles intentionally implement only the queried models.
-
+        const auth = testBandAuthorization({ id: 100 }, effectivePermissions);
+        // This target-resolution fixture implements only the band tag delegate.
+        const database = { bandSongTag: { findMany: tagFindMany } } as unknown as Parameters<typeof resolvePublicQueryParameters>[3];
+        const params = await resolvePublicQueryParameters(db3.xSong, { songTagIds: [songTagPublicId, otherSongTagPublicId] }, auth, database);
+        expect(params.songTagIds).toEqual([94, 95]);
+        expect(db3.xSong.CalculateWhereClause({ auth, filterModel: { items: [], tableParams: params } })).toBeDefined();
         expect(tagFindMany).toHaveBeenCalledOnce();
-        expect(songFindMany).toHaveBeenCalledOnce();
     });
 
     it("defines batch resolution behavior without exposing target existence", async () => {
         const findMany = vi.fn(async () => [{ id: 94, publicId: songTagPublicId }]);
         const database = {
-            SongTag: { findMany },
+            bandSongTag: { findMany },
         } as any; // Focused delegate double for the identity target.
-        const readable = authorization(Permission.view_songs);
+        const readable = testBandAuthorization({ id: 100 }, new ServerPermissionSet([{ id: 1, name: Permission.login }]));
 
         await expect(resolvePublicIds(
             db3.xSongTag,
@@ -613,13 +597,13 @@ describe("instrument catalog public-ID transport", () => {
             [otherSongTagPublicId],
             readable,
             database,
-        )).rejects.toThrow("SongTag was not found.");
+        )).rejects.toThrow("BandSongTag was not found.");
         await expect(resolvePublicIds(
             db3.xSongTag,
             [otherSongTagPublicId],
-            authorization(Permission.login),
+            testBandAuthorization({ id: 100 }, new ServerPermissionSet([])),
             database,
-        )).rejects.toThrow("SongTag was not found.");
+        )).rejects.toThrow("BandSongTag was not found.");
         expect(findMany).toHaveBeenCalledTimes(2);
 
         await expect(resolvePublicIds(
@@ -627,6 +611,6 @@ describe("instrument catalog public-ID transport", () => {
             ["not-a-public-id"],
             readable,
             database,
-        )).rejects.toThrow("Invalid public ID for SongTag.");
+        )).rejects.toThrow("Invalid public ID for BandSongTag.");
     });
 });

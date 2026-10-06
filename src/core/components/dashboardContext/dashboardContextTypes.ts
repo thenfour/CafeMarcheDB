@@ -129,8 +129,7 @@ export abstract class DashboardContextDataBase {
     abstract partitionEventSegmentsByCancellation<
         Tseg extends { statusId: EventStatusPublicId | null },
     >(segments: Tseg[]): [Tseg[], Tseg[]];
-    abstract sortInstruments<Tinst extends { sortOrder: number, functionalGroupId: InstrumentFunctionalGroupPublicId }>(instruments: Tinst[]): Tinst[];
+    abstract sortInstruments<Tinst extends { sortOrder?: number, functionalGroupId: InstrumentFunctionalGroupPublicId }>(instruments: Tinst[]): Tinst[];
     abstract isAttendanceIdGoing(attendanceId: EventAttendancePublicId | null): boolean;
     abstract getVisibilityPermissions(): db3.ClientOf<typeof db3.permissionDashboardView>[];
 }
-

@@ -7,24 +7,14 @@ import {
     fileCardSelection,
     fileCardTransportSelection,
 } from "../file/fileViews";
-import { xSongCredit, xSongCreditType, xSong, xSongTag } from "../../schema/song";
+import { xSongCredit, xSongCreditType, xSong } from "../../schema/song";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
 import { graft } from "../common/viewCommon";
+import { bandSongTagSelection as songTagEditorSelection } from "./bandSongTagViews";
 
-export const songTagEditorSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()({
-    select: {
-        publicId: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        group: true,
-        indicator: true,
-        indicatorCssClass: true,
-    },
-});
-
-const songTagEditorContract = deriveViewContract(xSongTag, songTagEditorSelection);
+// Catalog editors and dashboard references share the band-owned definition.
+export { bandSongTagView as songTagEditorView } from "./bandSongTagViews";
+export { songTagEditorSelection };
 
 export const songCreditTypeEditorSelection = Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
     select: {
@@ -127,15 +117,6 @@ export const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
 });
 
 const songEditorContract = deriveViewContract(xSong, songEditorSelection);
-
-export const songTagEditorView = defineCrudView({
-    viewID: "SongTag_Editor",
-    entity: xSongTag,
-    operations: { create: true, update: true, delete: true },
-    selection: songTagEditorContract.prismaSelection,
-    dtoSchema: songTagEditorContract.dtoSchema,
-    hydrate: songTagEditorContract.hydrate,
-});
 
 export const songCreditTypeEditorView = defineCrudView({
     viewID: "SongCreditType_Editor",
