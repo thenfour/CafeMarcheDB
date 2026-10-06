@@ -524,9 +524,11 @@ the complete suite, and interactive migrated-application acceptance remain phase
 ## Next execution step
 
 The shared instrument/group design, BandSongTag reuse proof, dashboard catalog
-references, and [membership instrument editing](08-band-user-instruments.md)
-are implemented. Continue with remaining member-profile/taxonomy, event/default
+references, [membership instrument editing](08-band-user-instruments.md), and
+[member tags](09-band-user-tags.md) are implemented. Continue with remaining
+member-profile/search and role consumers, event/default
 instrument and merge consumers, the remaining catalogs, membership/content views,
-global catalog administration, and registered settings editors. Remove obsolete domain contracts as their
+global catalog administration, and registered settings editors. Remove obsolete
+domain contracts as their
 consumers migrate. Complete those adaptations and phase 4 acceptance before
 declaring milestone A.

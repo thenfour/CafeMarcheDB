@@ -59,7 +59,7 @@ const routes = [
     { key: "editSongCreditTypes", pattern: "/backstage/editSongCreditTypes", caption: "Song Credit Types", permission: Permission.sysadmin },
     { key: "editFileTags", pattern: "/backstage/editFileTags", caption: "File Tags", permission: Permission.admin_files },
     { key: "editWikiPageTags", pattern: "/backstage/editWikiPageTags", caption: "Wiki Page Tags", permission: Permission.admin_wiki_pages },
-    { key: "editUserTags", pattern: "/backstage/editUserTags", caption: "User Tags", permission: Permission.sysadmin },
+    { key: "editUserTags", pattern: "/backstage/editUserTags", caption: "Member Tag Catalog", permission: Permission.manage_user_taxonomy },
     { key: "instruments", pattern: "/backstage/instruments", caption: "Instruments", permission: Permission.admin_instruments },
     { key: "instrumentFunctionalGroups", pattern: "/backstage/instrumentFunctionalGroups", caption: "Functional Groups", permission: Permission.admin_instruments },
     { key: "instrument", pattern: "/backstage/instrument/[slug]", caption: "Instrument", permission: Permission.login },
@@ -69,6 +69,7 @@ const routes = [
     { key: "editSongs", pattern: "/backstage/editSongs", caption: "Songs", permission: Permission.sysadmin },
     { key: "editSongCredits", pattern: "/backstage/editSongCredits", caption: "Song Credits", permission: Permission.sysadmin },
     { key: "userInstruments", pattern: "/backstage/userInstruments", caption: "Member Instruments", permission: Permission.manage_users },
+    { key: "userTags", pattern: "/backstage/userTags", caption: "Member Tags", permission: Permission.manage_users },
     { key: "editFiles", pattern: "/backstage/editFiles", caption: "Files", permission: Permission.sysadmin },
     { key: "editFrontpageGalleryItems", pattern: "/backstage/editFrontpageGalleryItems", caption: "Front page gallery", permission: Permission.sysadmin },
 

@@ -5,6 +5,7 @@ import { createRoot, Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parsePublicId } from "shared/publicId";
 import { userPublicId } from "./support/userFixtures";
+import { userTagReferenceFixture } from "./support/catalogReferenceFixtures";
 
 vi.mock("src/core/db3/db3", async () => {
     const { z } = await import("zod");
@@ -16,7 +17,7 @@ vi.mock("src/core/db3/db3", async () => {
         xSongCreditType: { identitySchema: z.string().refine(isPublicId) },
         xUser: { getRowInfo: (user: any) => ({ pk: user.publicId, name: user.name }) },
         xEvent: { authorizeColumnForEdit: vi.fn() },
-        xUserTag: { getIdentity: (tag: any) => tag.publicId },
+        xBandUserTag: { getIdentity: (tag: { publicId: string }) => tag.publicId },
         xPermission: {
             getIdentity: (permission: any) => permission.publicId,
             isIdentity: (value: unknown) => typeof value === "string",
@@ -50,8 +51,8 @@ const permissions = [
     { publicId: parsePublicId<"Permission">("PermissionMng001"), name: "Manage events", isVisibility: false },
 ];
 const tags: db3.UserTagDisplay[] = [
-    { publicId: parsePublicId<"UserTag">("UserTagPublic001"), text: "Performers", description: "", color: null, sortOrder: 1, cssClass: null },
-    { publicId: parsePublicId<"UserTag">("UserTagPublic002"), text: "Volunteers", description: "", color: null, sortOrder: 2, cssClass: null },
+    userTagReferenceFixture(parsePublicId<"UserTag">("UserTagPublic001"), "Performers"),
+    userTagReferenceFixture(parsePublicId<"UserTag">("UserTagPublic002"), "Volunteers"),
 ];
 const users = [
     { publicId: userPublicId(1), name: "Alex Martin" },
@@ -78,7 +79,7 @@ beforeEach(() => {
     queryError = false;
     vi.mocked(useDashboardContext).mockReturnValue({
         permission: { items: permissions, getById: (id: string) => permissions.find(p => p.publicId === id) },
-        userTag: { items: tags }, isAuthorized: (name: string) => name !== "Hidden",
+        userTag: { items: tags, getById: (id: string) => tags.find(tag => tag.publicId === id) }, isAuthorized: (name: string) => name !== "Hidden",
         routingApi: { getURIForUser: () => "/user" },
         getVisibilityInfo: () => ({ className: "visibility", getStyleVariablesForColor: () => ({ cssClass: "", style: {} }) }),
     } as any);

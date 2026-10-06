@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parsePublicId } from "shared/publicId";
-import { bandUserInstrumentsCommand, bandUserInstrumentsView, xBandUser, xBandUserInstrument } from "src/core/db3/shared/entities/user/bandUserInstruments";
+import { bandUserInstrumentsCommand, bandUserInstrumentsView, xBandUserInstrument } from "src/core/db3/shared/entities/user/bandUserInstruments";
+import { xBandUser } from "src/core/db3/shared/entities/user/bandUser";
 import { prepareDB3ReadSelection } from "src/core/db3/shared/core/db3ReadSelection";
 import { getDB3CommandHandler } from "src/core/db3/server/db3CommandRegistry";
 import { testBandAuthorization } from "./support/serverAuthorization";

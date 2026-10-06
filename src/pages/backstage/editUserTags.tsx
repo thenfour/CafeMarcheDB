@@ -1,37 +1,41 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { BlitzPage } from "@blitzjs/next";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+import type { BlitzPage } from "@blitzjs/next";
+import { Alert } from "@mui/material";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
+import { bandUserTagView } from "src/core/db3/shared/entities/user/bandUserTagViews";
+import { defineTableClientSpec } from "src/core/db3/components/DB3ClientCore";
+import { GenericStringColumnClient, GenericIntegerColumnClient, ColorColumnClient, BoolColumnClient } from "src/core/db3/components/DB3ClientBasicFields";
+import { LocalizedStringColumnClient, InheritedColumnClient, catalogColumn } from "src/core/db3/components/DB3CatalogFields";
+import { usePresentation } from "src/locale/components/PresentationProvider";
+import { useLocale } from "src/locale/components/useLocale";
+import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
+import { LocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 
-
-const tableSpec = DB3Client.defineTableClientSpec({
-    view: db3.userTagEditorView,
+export const bandUserTagTableSpec = defineTableClientSpec({
+    view: bandUserTagView,
     columns: {
-        publicId: DB3Client.publicIdFieldGen(),
-        text: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
-        description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
-        color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 300 }),
-        cssClass: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 }),
-        sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
+        name: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.name" }),
+        description: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.description" }),
+        color: columnName => new InheritedColumnClient(new ColorColumnClient({ columnName, cellWidth: 250 }), { fieldCaptionKey: "catalog.color" }),
+        sortOrder: columnName => new InheritedColumnClient(new GenericIntegerColumnClient({ columnName, cellWidth: 80 }), { fieldCaptionKey: "catalog.sortOrder" }),
+        isHidden: columnName => catalogColumn(new BoolColumnClient({ columnName }), "catalog.hidden"),
+        cssClass: columnName => new InheritedColumnClient(new GenericStringColumnClient({ columnName, fieldCaptionKey: "catalog.cssClass", fieldDescriptionKey: null }), { fieldCaptionKey: "catalog.cssClass" }),
     },
 });
 
 const MainContent = () => {
+    const dashboard = useDashboardContext();
+    const presentation = usePresentation();
+    const locale = useLocale();
     return <>
-        <LocalizedMarkdown setting="EditUserTagsPage_markdown"></LocalizedMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} view={db3.userTagEditorView} />
+        <LocalizedMarkdown setting="EditUserTagsPage_markdown" />
+        {presentation.bandPublicId ? <DB3EditGrid tableSpec={bandUserTagTableSpec} view={bandUserTagView} referenceProvider={dashboard.referenceStore} />
+            : <Alert severity="info">{locale.getPlainString("catalog.selectBand")}</Alert>}
     </>;
 };
 
-
 const EditUserTagsPage: BlitzPage = () => {
-    return (
-        <DashboardLayout title="User Tags">
-            <MainContent />
-        </DashboardLayout>
-    )
-}
-
+    const locale = useLocale();
+    return <DashboardLayout title={locale.getPlainString("catalog.userTags")}><MainContent /></DashboardLayout>;
+};
 export default EditUserTagsPage;

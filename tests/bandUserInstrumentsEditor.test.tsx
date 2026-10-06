@@ -33,9 +33,9 @@ const member = bandUserInstrumentsView.parseDto({
     ],
 });
 const instruments = [
-    { publicId: parsePublicId<"Instrument">("Instrument000001"), name: "Trompette" },
-    { publicId: parsePublicId<"Instrument">("Instrument000002"), name: "Flûte" },
-    { publicId: parsePublicId<"Instrument">("Instrument000003"), name: "Clarinet" },
+    { publicId: parsePublicId<"Instrument">("Instrument000001"), name: "Trompette", isHidden: false, functionalGroup: { isHidden: false } },
+    { publicId: parsePublicId<"Instrument">("Instrument000002"), name: "Flûte", isHidden: false, functionalGroup: { isHidden: false } },
+    { publicId: parsePublicId<"Instrument">("Instrument000003"), name: "Clarinet", isHidden: false, functionalGroup: { isHidden: false } },
 ];
 const invoke = vi.fn(async (_input: unknown) => ({ membershipId: member.publicId }));
 let availableInstruments = instruments;
@@ -141,6 +141,16 @@ describe("band membership instrument editor", () => {
         await act(async () => added.click());
         await click("Apply");
         expect(invoke).toHaveBeenCalledWith({ kind: "replace", membershipId: member.publicId, instrumentIds: instruments.map(row => row.publicId) });
+    });
+
+    it.each(["instrument", "group"])("does not offer dashboard entries with a hidden %s as new assignments", async hiddenTarget => {
+        availableInstruments = instruments.map(instrument => ({ ...instrument,
+            isHidden: hiddenTarget === "instrument" && instrument.publicId === instruments[2]!.publicId,
+            functionalGroup: { isHidden: hiddenTarget === "group" && instrument.publicId === instruments[2]!.publicId },
+        }));
+        await renderEditor();
+        await click("Edit instruments");
+        expect(document.querySelector('input[aria-label="Clarinet"]')).toBeNull();
     });
 
     it("disables the picker and prevents repeat submissions while the save is pending", async () => {

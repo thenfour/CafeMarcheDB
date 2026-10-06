@@ -15,7 +15,7 @@ import type { InstrumentDashboardClient } from "src/core/db3/shared/entities/ins
 import { InstrumentChip } from "../CMCoreComponents";
 import { SelectionPicker } from "../select/SelectionPicker";
 import { makeLocalSelectionSource } from "../select/selectionSource";
-import { useSnackbar } from "../SnackbarContext";
+import { useMemberAssignmentSave } from "./useMemberAssignmentSave";
 
 interface InstrumentOption {
     readonly publicId: InstrumentPublicId;
@@ -24,9 +24,9 @@ interface InstrumentOption {
 }
 
 function instrumentSelectionOptions(member: BandUserInstrumentsDto,
-    catalog: readonly Pick<InstrumentDashboardClient, "publicId" | "name">[], unavailableLabel: string,
+    catalog: readonly Pick<InstrumentDashboardClient, "publicId" | "name" | "isHidden" | "functionalGroup">[], unavailableLabel: string,
 ) {
-    const visible: InstrumentOption[] = catalog.map(instrument => ({
+    const visible: InstrumentOption[] = catalog.filter(instrument => !instrument.isHidden && !instrument.functionalGroup.isHidden).map(instrument => ({
         publicId: instrument.publicId, label: instrument.name, available: true,
     }));
     const selected: InstrumentOption[] = member.bandUserInstruments.map(association => visible.find(option => option.publicId === association.bandInstrumentId)
@@ -46,43 +46,24 @@ export function BandUserInstrumentsEditor({ member, refetch }: {
     const dashboard = useDashboardContext();
     const presentation = usePresentation();
     const command = useDB3Command(bandUserInstrumentsCommand);
-    const snackbar = useSnackbar();
     const recordFeature = useFeatureRecorder();
     const [dialog, setDialog] = React.useState<"instruments" | "primary" | null>(null);
-    const [saving, setSaving] = React.useState(false);
-    const pending = React.useRef(false);
-    const [error, setError] = React.useState<string | null>(null);
     const { selected, options, primaryOption } = instrumentSelectionOptions(member, dashboard.instrument.items,
         locale.getPlainString("membership.instruments.unavailable"));
     const renderInstrument = (option: InstrumentOption) => option.available
         ? <InstrumentChip value={option.publicId} size="big" />
         : <Typography component="span">{option.label}</Typography>;
-    const save = async (edit: BandUserInstrumentsEdit) => {
-        if (pending.current) {
-            return;
-        }
-        pending.current = true;
-        setSaving(true);
-        setError(null);
-        let didSave = false;
-        try {
-            await command.invoke(edit);
-            didSave = true;
+    const { save, saving, error, isPending } = useMemberAssignmentSave<BandUserInstrumentsEdit>({
+        execute: command.invoke, refetch,
+        messages: { saved: "membership.instruments.saved", failed: "membership.instruments.failed", refreshFailed: "membership.instruments.refreshFailed" },
+        onCommitted: edit => {
+            setDialog(null);
             if (presentation.data?.authorization.bandUserPublicId === member.publicId) {
                 void recordFeature({ feature: edit.kind === "setPrimary"
                     ? ActivityFeature.profile_change_default_instrument : ActivityFeature.profile_change_instrument });
             }
-            setDialog(null);
-            await Promise.all([refetch(), dashboard.refreshCachedData()]);
-            snackbar.showMessage({ severity: "success", children: locale.getPlainString("membership.instruments.saved") });
-        } catch (reason) {
-            setError(locale.getPlainString(didSave ? "membership.instruments.refreshFailed" : "membership.instruments.failed"));
-            console.error(reason);
-        } finally {
-            pending.current = false;
-            setSaving(false);
-        }
-    };
+        },
+    });
     const canEdit = presentation.data?.authorization.bandUserPublicId === member.publicId
         || (presentation.data?.authorization.effectivePermissionNames.includes(Permission.manage_users) ?? false);
     return <Stack spacing={1} aria-busy={saving}>
@@ -114,7 +95,7 @@ export function BandUserInstrumentsEditor({ member, refetch }: {
                 {error && <Alert severity="error">{error}</Alert>}
             </Stack>}
             onCancel={() => {
-                if (!pending.current) {
+                if (!isPending()) {
                     setDialog(null);
                 }
             }}

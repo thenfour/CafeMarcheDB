@@ -19,7 +19,6 @@ import {
     permissionDashboardView,
     roleDashboardView,
     songCreditTypeDashboardView,
-    userTagDashboardView,
     wikiPageTagDashboardView,
     xEvent,
     type AnyDB3View,
@@ -209,7 +208,6 @@ export default resolver.pipe(
                 eventAttendance,
                 fileTag,
                 songCreditType,
-                userTag,
                 role,
                 wikiPageTag,
                 dynMenuLinks,
@@ -223,7 +221,6 @@ export default resolver.pipe(
                 queryOptionalDashboardView(eventAttendanceDashboardView, authorization),
                 queryOptionalDashboardView(fileTagDashboardView, authorization),
                 queryOptionalDashboardView(songCreditTypeDashboardView, authorization),
-                queryOptionalDashboardView(userTagDashboardView, authorization),
                 queryOptionalDashboardView(roleDashboardView, authorization),
                 queryOptionalDashboardView(wikiPageTagDashboardView, authorization),
                 queryOptionalDashboardView(menuLinkListView, authorization),
@@ -231,7 +228,7 @@ export default resolver.pipe(
                 relevantEventsCall,
             ]);
 
-            const { instrument, instrumentFunctionalGroup, songTag } = catalogs;
+            const { instrument, instrumentFunctionalGroup, songTag, userTag } = catalogs;
 
             const clientServerState = getClientServerState(authorization.hasPermission(Permission.sysadmin));
             const ret = {

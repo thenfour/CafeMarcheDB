@@ -30,7 +30,8 @@ import {
     xSongCreditType,
 } from "../schema/song";
 import { xBandSongTag, bandSongTagDisplayContract } from "../entities/song/bandSongTagViews";
-import { xPermission, xRole, xUserTag } from "../schema/user";
+import { xPermission, xRole } from "../schema/user";
+import { xBandUserTag, bandUserTagDisplayContract } from "../entities/user/bandUserTagViews";
 import { xWikiPageTag } from "../schema/wikiPageTag";
 
 // dashboard provider provides "hydrated" objects, not raw db rows
@@ -48,17 +49,6 @@ const dashboardEventTypeSelection = Prisma.validator<Prisma.EventTypeDefaultArgs
         iconName: true,
         text: true,
         significance: true,
-    },
-});
-
-const dashboardUserTagSelection = Prisma.validator<Prisma.UserTagDefaultArgs>()({
-    select: {
-        publicId: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        cssClass: true,
     },
 });
 
@@ -154,10 +144,7 @@ export const dashboardPermissionResource = deriveViewContract(
     xPermission,
     PermissionForVisibilityArgs,
 );
-export const dashboardUserTagResource = deriveViewContract(
-    xUserTag,
-    dashboardUserTagSelection,
-);
+export const dashboardUserTagResource = bandUserTagDisplayContract;
 export const dashboardRoleResource = deriveViewContract(
     xRole,
     dashboardRoleSelection,
@@ -194,6 +181,7 @@ export const dashboardSongCreditTypeResource = deriveViewContract(
 );
 
 export const dashboardLeafReferenceContract = defineReferenceContract({
+    userTag: reference(xBandUserTag)<ReturnType<typeof dashboardUserTagResource.hydrate>>(),
     permission: reference(xPermission)<ReturnType<typeof dashboardPermissionResource.hydrate>>(),
     wikiPageTag: reference(xWikiPageTag)<CompleteWikiPageTagDashboardClient>(),
     eventType: reference(xEventType)<ReturnType<typeof dashboardEventTypeResource.hydrate>>(),
@@ -225,8 +213,8 @@ export const permissionDashboardView = defineView({
 });
 
 export const userTagDashboardView = defineView({
-    viewID: "UserTag_Dashboard",
-    entity: xUserTag,
+    viewID: "BandUserTag_Dashboard",
+    entity: xBandUserTag,
     selection: dashboardUserTagResource.prismaSelection,
     dtoSchema: dashboardUserTagResource.dtoSchema,
     references: dashboardUserTagResource.referenceContract,
@@ -408,6 +396,7 @@ export type DashboardReferenceContract = typeof dashboardReferenceContract;
 export type DashboardReferenceStore = DB3ReferenceStore<DashboardReferenceContract>;
 
 export interface DashboardReferenceInput {
+    userTag?: readonly ClientOf<typeof userTagDashboardView>[];
     permission?: readonly ClientOf<typeof permissionDashboardView>[];
     wikiPageTag?: readonly CompleteWikiPageTagDashboardClient[];
     eventType?: readonly ClientOf<typeof eventTypeDashboardView>[];
@@ -430,6 +419,9 @@ export function registerDashboardReferences(
     store: DashboardReferenceStore,
     input: DashboardReferenceInput,
 ): void {
+    if (input.userTag) {
+        store.register(xBandUserTag, input.userTag);
+    }
     if (input.permission) {
         store.register(xPermission, input.permission);
     }

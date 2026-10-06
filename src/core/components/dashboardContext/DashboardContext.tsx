@@ -239,7 +239,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
 
     valueRef.current.authorization = new CMClientAuthorization(currentUser, valueRef.current.effectivePermissions);
 
-    valueRef.current.userTag = new TableAccessor(dashboardData.userTag);
+    valueRef.current.userTag = new TableAccessor(dashboardData.userTag, tag => tag.publicId);
     valueRef.current.wikiPageTag = new TableAccessor(
         dashboardData.wikiPageTag,
         tag => db3.xWikiPageTag.getIdentity(tag),

@@ -202,11 +202,11 @@ const UserListOuter = () => {
             column: "tags",
             chipTransformer: (x) => {
                 if (!x.id) return x;
-                const tag = dashboardContext.userTag.getById(db3.xUserTag.parseIdentity(x.id))!;
+                const tag = dashboardContext.userTag.getById(db3.xBandUserTag.parseIdentity(x.id))!;
                 return {
                     ...x,
                     color: tag.color || null,
-                    label: tag.text,
+                    label: tag.name,
                     shape: "rounded",
                     tooltip: tag.description,
                 };

@@ -10,4 +10,5 @@ export const catalogStrings = {
     "catalog.select": label("Option"),
     "catalog.selectBand": label("Select a band to view its catalog."),
     "catalog.songTags": label("Song tags"), "catalog.missing": label("Translation unavailable"),
+    "catalog.userTags": label("Member tags"), "catalog.cssClass": label("Style class"),
 };

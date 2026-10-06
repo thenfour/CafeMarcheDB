@@ -132,7 +132,10 @@ MariaDB 10.11.9 server and disposable target-schema database. They establish thi
 slice's contracts, not a migrated production-copy rehearsal or interactive
 application acceptance. Full suite/build/browser acceptance remains phase 4.
 
-Continue with the remaining member-profile/taxonomy, event/default-instrument,
+The next [member-tag catalog and assignment slice](09-band-user-tags.md) is now
+implemented, including shared active-membership and retained-reference helpers.
+Continue with remaining member-profile/search and role consumers, event/default
+instrument,
 and merge consumers, remaining catalogs/global administration, band content,
 and registered settings editors. Legacy `UserInstrument` descriptors and
 person-based payloads still used by those consumers remain rejected in selected

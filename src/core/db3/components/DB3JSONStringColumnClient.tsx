@@ -214,7 +214,7 @@ const ActivityLogRole = ({ roleId, cacheData }: { roleId: number | string | null
 
 const ActivityLogUserTag = ({ userTagId, cacheData }: { userTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
-    const found = db3.xUserTag.isIdentity(userTagId)
+    const found = db3.xBandUserTag.isIdentity(userTagId)
         ? dashboardContext.userTag.getById(userTagId)
         : undefined;
     if (!found) {
@@ -223,7 +223,7 @@ const ActivityLogUserTag = ({ userTagId, cacheData }: { userTagId: number | stri
     return <ActivityLogChip
         color={found.color}
     >
-        {found.text}
+        {found.name}
     </ActivityLogChip>;
 };
 

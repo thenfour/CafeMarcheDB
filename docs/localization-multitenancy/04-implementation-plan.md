@@ -234,6 +234,10 @@ membership views, transactional assignments/primary selection, and restored
 profile/member-management controls. Broader member-profile, taxonomy, event,
 and merge consumers remain incomplete.
 
+[09-band-user-tags.md](09-band-user-tags.md) completes the bounded member-tag
+catalog/dashboard and manager assignment slice. Member profile/search, role,
+event invitation/default-instrument, and merge consumers still need adaptation.
+
 **Settled query policy:** treat each localized field as an ordinary string field
 containing its resolved value for the request. Preserve existing DB3 token/filter
 semantics across quicksearch, autocomplete, and field filters. Use those same
@@ -293,6 +297,10 @@ SQL/Prisma optimization is deferred, not a prerequisite for this slice.
 - [x] Move profile/member instrument editing to active `BandUser` memberships.
   Reuse shared DB3 reads, association writes, field validation, audit and command
   execution; preserve hidden assignments and independent two-band primaries.
+- [x] Move the member-tag catalog/dashboard to `BandUserTag` and assignment
+  management to `BandUserTagAssignment`. Reuse the catalog and membership
+  machinery; keep taxonomy authority separate from manager assignments and
+  preserve existing invitation significance until its behavioral cleanup.
 - [ ] Apply the established patterns to other catalogs, shared global catalogs,
   people/memberships, band content, and the four settings hives. Generic settings
   editors must still use registry validation and per-key authorization.
@@ -457,9 +465,11 @@ Phases 1 and 2 are implemented and checked; see
 [instrument/group redesign and BandSongTag proof](07-db3-band-instruments.md#shared-db3-redesign-and-reuse-proof-2026-10-06)
 now use the settled resolved-text policy and shared in-memory V1 backend.
 Their dashboard references, client details/chips, and native editor reference
-providers are migrated. Continue with member-instrument consumers, remaining
-catalog/global-catalog declarations, membership/content views, and registered
-settings editors. Broader application recovery follows in phase 4. The current
-674 TypeScript diagnostics and baseline-equivalent legacy test failures are
-recorded with that slice's validation; the application remains unbuildable until
-those consumer adaptations are complete.
+providers are migrated, followed by [membership instruments](08-band-user-instruments.md)
+and [member-tag catalogs/assignments](09-band-user-tags.md). Continue with member
+profile/search and role consumers, event invitation/default-instrument and merge
+consumers, remaining catalogs/global administration, band content, and registered
+settings editors. Broader application recovery follows in phase 4. The latest
+slice records 665 TypeScript diagnostics and its focused validation; historical
+full-suite failures are recorded in the instrument slice. The application remains
+unbuildable until the remaining consumer adaptations are complete.

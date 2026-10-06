@@ -14,7 +14,7 @@ import type { EventPublicId, UserPublicId } from "shared/publicId";
 interface EventAttendanceUserTagControlEvent {
     publicId: EventPublicId;
     createdByUser: { publicId: UserPublicId } | null;
-    expectedAttendanceUserTag: db3.UserTagDisplay | null;
+    expectedAttendanceUserTag: Pick<db3.UserTagDisplay, "publicId" | "cssClass"> | null;
 }
 
 export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { event: EventAttendanceUserTagControlEvent; refetch: () => void; readonly: boolean }) => {
@@ -33,7 +33,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
         void recordFeature({ feature: ActivityFeature.event_change_invite_tag });
         mutationToken.invoke({
             eventId: event.publicId,
-            expectedAttendanceUserTagId: value ? db3.xUserTag.getIdentity(value) : null,
+            expectedAttendanceUserTagId: value ? db3.xBandUserTag.getIdentity(value) : null,
         }).then(() => {
             showMessage({ severity: "success", children: "Successfully updated event attendance tag" });
         }).catch(error => {
@@ -44,13 +44,14 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
 
     const source = withNullSelection(makeLocalSelectionSource<db3.UserTagDisplay>({
         items: dashboard.userTag.items,
-        getKey: tag => db3.xUserTag.getIdentity(tag),
-        getLabel: tag => tag.text,
+        getKey: tag => db3.xBandUserTag.getIdentity(tag),
+        getLabel: tag => tag.name,
         renderValue: tag => <CMStandardDBChip model={tag} />,
     }), CMSelectNullBehavior.AllowNull, () => "No tags are invited");
 
     return <SelectionField className={`eventStatusControl ${event.expectedAttendanceUserTag?.cssClass ?? ""}`} source={source}
-        value={[event.expectedAttendanceUserTag]} readonly={readonly || !authorizedForEdit} displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
+        value={[event.expectedAttendanceUserTag ? dashboard.userTag.getById(event.expectedAttendanceUserTag.publicId) ?? null : null]}
+        readonly={readonly || !authorizedForEdit} displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
         dialogTitle="Expected attendance group"
         dialogDescription={<LocalizedMarkdown setting={"event.expectedAttendanceUserTag.DescriptionMarkdown"} />}
         onChange={values => handleChange(values[0]!)} />;

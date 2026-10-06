@@ -227,6 +227,7 @@ export const gMenuSections: MenuSection[] = [
                     backstageLink("editSongs", { renderIcon: () => <MusicNoteIcon /> }),
                     backstageLink("editSongCredits", { renderIcon: () => <MusicNoteIcon /> }),
                     backstageLink("userInstruments", { renderIcon: () => <MusicNoteIcon /> }),
+                    backstageLink("userTags", { renderIcon: () => <PersonIcon /> }),
                     backstageLink("editEvents", { renderIcon: () => <CalendarMonthOutlinedIcon /> }),
                     backstageLink("editEventSegments", { renderIcon: () => <CalendarMonthOutlinedIcon /> }),
                     backstageLink("editFiles", { renderIcon: gIconMap.AttachFile }),

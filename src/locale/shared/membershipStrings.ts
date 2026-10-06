@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 
-const label = (defaultValue: string) => plainStaticString({ defaultValue, description: "Band member instrument label", schema: z.string() });
+const label = (defaultValue: string) => plainStaticString({ defaultValue, description: "Band member assignment label", schema: z.string() });
 export const membershipStrings = {
     "membership.instruments.title": label("Member instruments"),
     "membership.instruments.edit": label("Edit instruments"),
@@ -21,4 +21,14 @@ export const membershipStrings = {
     "membership.instruments.notFound": label("This membership is no longer available."),
     "membership.instruments.hidden": label("Unavailable instruments remain assigned until you remove them."),
     "membership.instruments.member": label("Member"),
+    "membership.tags.title": label("Member tags"),
+    "membership.tags.edit": label("Edit tags"),
+    "membership.tags.empty": label("No tags assigned."),
+    "membership.tags.unavailable": label("Unavailable tag"),
+    "membership.tags.saved": label("Tags updated"),
+    "membership.tags.failed": label("Could not update tags."),
+    "membership.tags.refreshFailed": label("Tags saved. Reload this page to show the latest values."),
+    "membership.tags.saving": label("Saving tags…"),
+    "membership.tags.noBand": label("Select a band to edit its member tags."),
+    "membership.tags.hidden": label("Unavailable tags remain assigned until you remove them. Tags can affect invitations in this band."),
 };
