@@ -1,12 +1,160 @@
 # DB3 band-instrument vertical slice
 
-Implemented 2026-10-06 as the first execution step of phase 3 in
-[04-implementation-plan.md](04-implementation-plan.md). This slice exercises the
-target model through authorized entity reads, localized DB3 fields, reference
-hydration, ordinary forms, and transactional commands. Phase 3 remains in
+The initial implementation was completed 2026-10-06 as the first execution step
+of phase 3 in [04-implementation-plan.md](04-implementation-plan.md). Review found
+that its behavior works but its query, validation, view, form, and write paths
+duplicate or bypass too much of DB3. **The slice has not met design acceptance.**
+Rework it before extending the approach to another catalog. Phase 3 remains in
 progress; the application is still unbuildable.
 
-## Read and presentation contracts
+## Agreed design direction
+
+The purpose of this slice is to prove that localized, per-band catalogs retain
+DB3's usual declaration-driven query and editing support. Shared DB3 extensions
+are expected where the new model needs them. Catalog-specific code remains
+appropriate for richer domain operations, such as opting in a global instrument
+and ensuring its functional group exists in the band.
+
+### Resolved text is the query value
+
+The search/order policy is settled: a localized field behaves as if its resolved
+text were its only string value. Resolve with the established rules, trusted
+band, full ordered route/browser preferences, and enabled locales. Band override
+precedence, intentional blank text, missing values, and string-identity
+inheritance use the existing shared resolver. `formattingLocale` remains separate
+from the preference list used to resolve each string.
+
+Quicksearch, autocomplete, field filters, ordering, counts, pagination, and
+presentation all use the same effective values. A translation the user will not
+see cannot produce a match; a global translation suppressed by a band override
+cannot produce one either. The returned entity presents the value that matched.
+Locale-aware ordering uses `formattingLocale` and a stable public-ID tie-breaker.
+
+DB3 retains responsibility for token parsing and filter composition. Localized
+fields participate through shared string-field matching and ordering operations,
+including tokens matching across different searchable fields. Avoid separate
+catalog matchers or reducing quicksearch to a name substring check. Preserve the
+existing plain-string behavior used by events, songs, and other entities. Verify
+case, accents, and pattern behavior against the existing database semantics; a
+new lowercase/substring implementation alone does not establish parity.
+
+### Shared server-side in-memory queries for V1
+
+These catalogs are expected to be small, so V1 prioritizes a simple in-memory
+backend within DB3. SQL/Prisma optimization is deferred; demonstrating a database
+query for the entire resolution policy is not a prerequisite. Future backends
+must preserve the same field and public query contracts.
+
+The shared server query path should:
+
+1. Establish the trusted band and fresh authorization in its database context.
+2. Load authorized band rows and the dependencies declared by their DB3 fields,
+   applying ownership, visibility, and applicable structural constraints.
+3. Batch-resolve localized/inherited values through the shared resolver.
+4. Apply existing DB3 token/filter composition and field-driven matching and
+   ordering to those effective values; count the full match, then paginate.
+5. Return the same values through the derived view contract, sanitization, and
+   reference/hydration facilities.
+
+Authorization governs eligible search fields as well as returned data. Do not
+apply database text filters or `skip`/`take` before resolution if that changes the
+match, count, or page. In-memory execution stays on the server. Measure catalog
+size and query cost as evidence for later optimization; this strategy does not
+require moving existing large nonlocalized tables to memory.
+
+`LocalizedStringField` declares its fetched dependencies and resolves its value,
+then uses shared string-field query operations. Add any missing in-memory field
+operations to DB3 itself. The backend must not switch on instrument table names
+or use an unchecked list of catalog column names to interpret filters.
+
+### Field validation, views, and writes stay in DB3
+
+DB3 fields remain the authority for validation and conversion. Reuse
+`MakeSortOrderField`, `ColorField`/`MakeColorField`, and other existing fields;
+improve their shared rules where necessary. `bandInstrumentContracts.ts` must
+not maintain copies of those constraints. Command transport schemas can validate
+operation kind, identity, and payload structure, while field values use derived
+or externally invoked DB3 validation. Inheritance handling delegates explicit
+values to the underlying field and keeps inherit/reset operations explicit.
+
+Prefer typed Prisma args, `deriveViewContract`, and `defineView`/`defineCrudView`.
+Improve the shared contract syntax and compilation for fetched dependencies,
+resolved values, inherited scalars, and DTO hydration where needed. Do not keep
+a parallel hand-written DTO/schema/hydration convention for catalogs. Preserve
+public-ID typing, reference support, and resolution provenance.
+
+Ordinary create/update behavior uses shared DB3 CRUD facilities. A custom domain
+command may compose those facilities for opt-in, inheritance changes, or other
+richer operations. Such commands reuse field validation/conversion,
+authorization, transactional persistence, auditing, and invalidation rather than
+reimplementing them. The minimal dynamic-string writer remains shared and must
+integrate with these field and persistence contracts.
+
+Queries likewise use normal DB3 authorization, sanitization, reference, and
+hydration contracts. Replace `bandInstrumentRead.ts`'s separate field allowlists
+and column-name switches with typed table/field metadata. Remove instrument-only
+branches such as `isBandInstrumentTable(...)` from generic query endpoints.
+Putting the same bespoke reader behind a registered callback is insufficient:
+the shared path must perform the common work and let fields supply their meaning.
+
+Shared server execution owns transaction policy and authorization refresh. Page
+and RPC callers must not need to request `RepeatableRead` or remember
+`auth.refresh(tx)` for a reader to be safe. Choose and document required isolation
+at that shared boundary, and tie authorization and database access to the same
+context. Internal transaction helpers must express that requirement in their
+types. Detail/existence reads should use the shared authorized query contract
+without resolving an entire catalog just to check one public identity.
+
+## Design acceptance criteria
+
+These are the short-term gate for the instrument/group redesign, before adding
+another catalog. Retain the initial slice's public-ID, ownership, visibility,
+inheritance, translation-writing, audit, and cache-invalidation behavior recorded
+below.
+
+- [ ] Native DB3 quicksearch, autocomplete, field filters, sorting, count/page,
+  reference hydration, grids, selection dialogs, and ordinary create/edit forms
+  use the shared catalog contracts. Create-from-picker works where the entity
+  permits it; richer instrument creation may still require its group workflow.
+- [ ] Equivalent ordinary and resolved localized string values produce equivalent
+  matches and pages under the same DB3 filters. Cover multiple tokens across
+  fields, case/accents/patterns, blank/missing values, ordering ties, full counts,
+  and pagination after resolution. Hidden translations do not affect matching.
+- [ ] Full ordered preference lists, enabled locale changes, and band overrides
+  affect queries and display consistently. Contexts with the same
+  `formattingLocale` but different resolved values cannot share incorrect caches.
+- [ ] All scalar/localized/inherited field values use DB3 validation and
+  conversion. Ordinary CRUD and custom domain commands share those rules and
+  write facilities. Unrelated edits do not materialize inherited/fallback values.
+- [ ] Typed Prisma args derive the view and DTO contract through the preferred
+  shared syntax. Column/filter/reference names are checked against declarations;
+  no separate catalog sanitization or unchecked field-switch implementation
+  remains.
+- [ ] Generic DB3 entry points contain no instrument-specific exceptions.
+  Ownership and selected-band admission use shared declared policies; legacy
+  domains remain rejected until their ownership enforcement is adapted.
+- [ ] Shared execution establishes fresh authorization and transaction policy.
+  Two-band reads, references, revoked grants, writes, and rollback remain covered;
+  page/RPC callers have no silent isolation or authorization-refresh obligations.
+- [ ] The common behavior lives in DB3 and shared localization/persistence
+  helpers. Catalog declarations and genuine domain operations explain the
+  remaining custom code. Passing tests or registering bespoke callbacks alone
+  does not satisfy this criterion.
+
+After this gate, add **one other catalog**, preferably a simple tag catalog, to
+prove reuse. Its work should primarily be table/field/view/label declarations,
+client wiring, genuine domain rules, and relevant behavioral coverage. It must
+reuse the query, validation, persistence, and UI machinery without another family
+of equivalent readers, matchers, validators, forms, or endpoints. Address shared
+gaps revealed by that catalog before broader phase-3 adaptation.
+
+## Initial implementation and evidence (2026-10-06)
+
+The following sections describe the initial implementation and its validation.
+They preserve behavioral requirements and historical evidence; its bespoke
+mechanisms and caller-owned transactions are subject to the redesign above.
+
+### Read and presentation contracts
 
 `LocalizedStringField` describes the stored string-identity member and its
 PlainText/Markdown format. `db3LocalizedFields.ts` selects a local identity or,
@@ -44,7 +192,7 @@ RPC and detail-page reads refresh authorization inside a repeatable-read
 transaction. Request band selection is validated on the server; DTOs and client
 permission snapshots do not authorize operations.
 
-## Write contracts
+### Write contracts
 
 The strict `BandInstrument_Edit` command supports custom group/instrument
 creation, global group/instrument opt-in, and band-entry updates. It requires
@@ -56,7 +204,9 @@ Instrument opt-in also opts in its required functional group. Repeating opt-in
 returns the existing public identity without duplicating records or audits.
 Custom entries have no global source. Null scalar overrides remain inherited;
 saving an unrelated field does not copy effective global values into overrides.
-There are no generic insert/update/delete grants on these tables.
+The initial implementation supplies no generic insert/update/delete grants on
+these tables; the redesign must express authorized ordinary writes through the
+shared DB3 facilities.
 
 The command loads each target and referenced functional group from the same
 band inside the transaction. It rejects other-band public IDs, forged current
@@ -77,7 +227,7 @@ Custom entries reject this reset because they have no global value to inherit.
 Detached identities/value rows are retained; orphan cleanup is outside this
 slice. Global data and membership associations remain intact.
 
-## Forms and recovery boundaries
+### Forms and recovery boundaries
 
 The instrument and functional-group catalog pages use registered localized
 labels and ordinary create/edit forms. Admins can opt in global entries, create
@@ -120,7 +270,11 @@ obsolete Markdown-component mock path was also corrected. No tests were removed.
 Two unused imports encountered during linting were removed from the existing
 view-contract tests.
 
-## Validation
+### Validation
+
+These results belong to the initial implementation, before the design review.
+They have not been rerun for this documentation update and do not establish the
+redesign's acceptance.
 
 Focused command:
 
@@ -164,8 +318,10 @@ the complete suite, and interactive migrated-application acceptance remain phase
 
 ## Next execution step
 
-Continue phase 3 with dashboard/reference and member-instrument adaptation, then
-apply these contracts to the remaining catalogs, membership/content views, global
-catalog administration, and registered settings editors. Remove obsolete domain
+Rework the instrument/group slice using the settled query policy and shared DB3
+contracts, then meet the design acceptance criteria above. Add one other catalog
+as the reuse proof before adapting dashboard/reference and member-instrument
+consumers, the remaining catalogs, membership/content views, global catalog
+administration, and registered settings editors. Remove obsolete domain
 contracts as their consumers migrate. Complete those adaptations and phase 4
 acceptance before declaring milestone A.

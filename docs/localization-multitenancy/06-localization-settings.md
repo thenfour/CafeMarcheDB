@@ -237,10 +237,12 @@ identity during phases 3–5; missing identity does not select a nominal band.
 
 ## Next execution step
 
-Phase 3's representative band-instrument vertical slice is now implemented; see
-[07-db3-band-instruments.md](07-db3-band-instruments.md) for global
-opt-in/inheritance, custom instruments, localized fields, authorized list/detail
-reads, forms, transactional writes, and validation. Continue phase 3 with the
-remaining dashboard/reference, catalog, membership/content, and registered
-settings-editor consumers. Application recovery and complete portal routing
-remain phases 4–5.
+Phase 3's initial instrument/group behavior is implemented, but its DB3 design
+still needs acceptance. Rework the slice to use shared field validation, derived
+view contracts, and shared read/write execution, building on phase 2's resolver
+and settings contracts. The agreed V1 query strategy resolves localized fields
+before shared server-side in-memory filtering, ordering, and pagination. See
+[07-db3-band-instruments.md](07-db3-band-instruments.md#agreed-design-direction).
+Prove reuse with one other catalog before adapting the remaining dashboard/
+reference, catalog, membership/content, and registered settings-editor consumers.
+Application recovery and complete portal routing remain phases 4–5.

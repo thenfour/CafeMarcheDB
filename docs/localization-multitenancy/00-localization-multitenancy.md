@@ -294,7 +294,7 @@ Considering "blank" is a valid value, there should be an on/off switch as well.
 
 ## string lookup priority / fallbacks
 
-There are mulitple dimensions of prioritization:
+There are multiple dimensions of prioritization:
 
 -  scope
    -  band
@@ -336,7 +336,38 @@ the global dutch string?)
 8. any locale at global scope
 
 One thing is very important: the logic must be centralized in a way that's testable,
-readible, maintainable, and can be easily tweaked.
+readable, maintainable, and can be easily tweaked.
+
+## localized catalog queries: agreed V1
+
+**Agreed 2026-10-06:** a localized field participates in DB3 queries as if its
+resolved text were its only string value. Use the established per-string
+resolution rules, trusted band, full ordered language preferences, and enabled
+locales. Search the value the user will see; other translations and global text
+suppressed by a band override do not contribute matches. Blank text remains a
+value, and missing text remains missing.
+
+Quicksearch, autocomplete, field filters, ordering, counts, pagination, and
+presentation must use that same resolved value. Preserve DB3's existing token
+and filter behavior through shared field operations. Locale-aware ordering uses
+`formattingLocale` with a stable public-ID tie-breaker; `formattingLocale` does
+not replace per-string resolution. Existing nonlocalized string behavior remains
+the reference for matching semantics.
+
+These per-band catalogs are expected to be small. V1 therefore uses shared
+**server-side in-memory** resolution, filtering, ordering, counting, and
+pagination. Load authorized band rows and their field dependencies, resolve
+them in a batch, then apply DB3 field operations before counting and slicing the
+result. Database ownership and visibility constraints still apply. SQL/Prisma
+optimization is deferred and must preserve the same field and query contracts.
+
+This belongs in DB3 fields and shared execution, so other catalogs receive its
+query, reference, form, and grid support through their declarations. Ordinary
+validation and CRUD must reuse DB3; custom commands remain appropriate for
+richer domain operations. The instrument/group slice needs design acceptance
+and a second-catalog reuse check before broader rollout. See the
+[phase-3 plan](04-implementation-plan.md#phase-3-db3-fields-xtables-and-views) and
+[design acceptance criteria](07-db3-band-instruments.md#design-acceptance-criteria).
 
 ## string keys
 
@@ -951,8 +982,9 @@ validation in [04-implementation-plan.md](04-implementation-plan.md).
        databases; see [03-sql-migration.md](03-sql-migration.md).
 -  [x] Phase 1: trusted context, scoped authorization, new permissions, bootstrap.
 -  [x] Phase 2: typed localization and four-hive settings lookups/writes.
--  [ ] Phase 3: localized DB3 fields, xTables/views, and a complete band instrument
-       vertical slice before expanding the patterns.
+-  [ ] Phase 3: localized DB3 fields and shared in-memory catalog queries;
+       validate the instrument/group design and prove reuse with one other
+       catalog before expanding to the remaining xTables/views.
 -  [ ] Phase 4: application recovery, explicit localized column labels, temporary
        read-only `LocalizedMarkdown`, and migrated-data/isolation acceptance.
 -  [ ] Milestone A: the migrated application builds and core workflows work.
