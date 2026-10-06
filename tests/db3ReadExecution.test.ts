@@ -10,6 +10,23 @@ import * as db3 from "src/core/db3/db3";
 afterEach(() => { vi.restoreAllMocks(); });
 
 describe("shared DB3 read execution", () => {
+    it("allows ordinary SQL membership reads to request a snapshot without resolving strings in memory", async () => {
+        const table = db3.xBandUser;
+        expect(table.queryStrategy).toBeUndefined();
+        expect(table.readConsistency).toBe("snapshot");
+        const marker = new Error("Entered the membership snapshot");
+        const execute = vi.spyOn(readExecution, "executeDB3Read").mockRejectedValue(marker);
+        const authorization = new CMServerAuthorization(null, new ServerPermissionSet([]));
+        const database = new PrismaClient();
+        for (const query of [queryTable, DB3PaginatedQueryCore]) {
+            const input: db3.PaginatedQueryRequestInput = {
+                table: { tableID: table.tableID, tableName: table.tableName },
+                filter: {}, cmdbQueryContext: "membership snapshot", orderBy: undefined, skip: 0, take: 1,
+            };
+            await expect(query(input, authorization, database)).rejects.toBe(marker);
+        }
+        expect(execute).toHaveBeenCalledTimes(2);
+    });
     it("owns isolation and refreshes grants in the exact transaction used by readers", async () => {
         const root = new PrismaClient();
         const transaction: Prisma.TransactionClient = new PrismaClient();

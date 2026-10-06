@@ -53,6 +53,8 @@ type TagsFieldValueArgs<
     TAssociationForeignObjectMember extends string,
     TForeignTableID extends DB3RegisteredTableID,
 > = {
+    // Existing tag fields filter by selectable targets. Membership history reads the authorized join rows instead.
+    readVisibility?: "target" | "association";
     columnName: string; // "instrumentType"
     associationTableID: TAssociationTableID;
     foreignTableID: TForeignTableID;
@@ -305,6 +307,8 @@ class TagsFieldImpl<
         return !!this.getForeignTableShema().createInsertModelFromString;
     }
 
+    readonly readVisibility: "target" | "association";
+
     constructor(args: TagsFieldArgs<
         TAssociation,
         TAssociationTableID,
@@ -321,6 +325,8 @@ class TagsFieldImpl<
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
         });
+        // Preserve selectable-target filtering for existing tag declarations.
+        this.readVisibility = args.readVisibility ?? "target";
 
         // // does default behavior of case-insensitive, trimmed compare.
         // const itemExactlyMatches_defaultImpl = (value: TAssociation, filterText: string): boolean => {
@@ -407,6 +413,10 @@ class TagsFieldImpl<
     getOverallWhereClause = (): TAnyModel | boolean => false;
 
     ApplyIncludeFiltering = async (include: TAnyModel, auth: CMServerAuthorization, includeDeleted: boolean) => {
+        if (this.readVisibility === "association") {
+            await ApplyIncludeFilteringToRelation(include, this.member, null, this.associationTableID, auth, includeDeleted);
+            return;
+        }
         await ApplyIncludeFilteringToRelation(include, this.member, this.associationForeignObjectMember, this.foreignTableID, auth, includeDeleted);
     };
 

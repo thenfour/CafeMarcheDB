@@ -28,7 +28,7 @@ export async function resolveDB3ReadRows(table: xTable, rows: readonly ReadRow[]
 ): Promise<ReadRow[]> {
     const fields = table.columns.filter(field => table.authorizeColumnForView({ model: null, auth, columnName: field.member }));
     for (const row of rows) {
-        if (table.bandScope) auth.requireBandResource(Number(row[table.bandScope.member]));
+        if (table.bandScope) auth.requireBandResource(Number(table.getBandId(row)));
     }
     const identities = rows.flatMap(row => [...getDB3LocalizedIdentities(table, row, sourceOf(table, row)).entries()]
         .filter(([member, identity]) => fields.some(field => field.member === member) && identity !== null)

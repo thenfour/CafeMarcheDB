@@ -20,6 +20,7 @@ export interface SelectionPickerProps<T> {
     value: T[];
     multiple?: boolean;
     closeOnSelect?: boolean;
+    busy?: boolean;
     onAccept: (value: T[]) => void;
     onCancel: () => void;
     title: React.ReactNode;
@@ -42,6 +43,9 @@ export function SelectionPicker<T>(props: SelectionPickerProps<T>) {
     const immediate = !props.multiple && props.closeOnSelect !== false;
 
     const select = (item: T) => {
+        if (props.busy) {
+            return;
+        }
         if (props.multiple) {
             setValue(previous => {
                 const key = source.getKey(item);
@@ -54,7 +58,7 @@ export function SelectionPicker<T>(props: SelectionPickerProps<T>) {
             if (immediate) props.onAccept([item]);
         }
     };
-    const allowCreate = !!query.createOption && !!filterText.trim() && !query.isFetching && !query.isLoading && !query.isError && !query.isPreviousData
+    const allowCreate = !props.busy && !!query.createOption && !!filterText.trim() && !query.isFetching && !query.isLoading && !query.isError && !query.isPreviousData
         && !query.items.some(item => source.matchesText?.(item, filterText.trim()));
     const create = async () => {
         if (!allowCreate || pending.current) return;
@@ -73,7 +77,7 @@ export function SelectionPicker<T>(props: SelectionPickerProps<T>) {
     const list = <List disablePadding aria-label="Available options" aria-busy={query.isFetching}>
         {!query.isError && query.items.map(item => {
             const selected = keys.has(source.getKey(item));
-            const rowProps = { label: source.getLabel(item), selected, disabled: creating || !!query.isPreviousData || !!query.isLoading };
+            const rowProps = { label: source.getLabel(item), selected, disabled: !!props.busy || creating || !!query.isPreviousData || !!query.isLoading };
             const content = source.renderOption ? source.renderOption(item, selected) : source.renderValue(item);
             return props.multiple ? <SelectionCheckboxRow key={source.getKey(item)} {...rowProps} onToggle={() => select(item)}>{content}</SelectionCheckboxRow>
                 : immediate ? <SelectionActionRow key={source.getKey(item)} {...rowProps} onSelect={() => select(item)}>{content}</SelectionActionRow>
@@ -84,11 +88,11 @@ export function SelectionPicker<T>(props: SelectionPickerProps<T>) {
         title={props.title}
         description={props.description || (props.multiple ? "Choose one or more options." : immediate ? "Choose an option to use it." : "Choose one option, then apply your change.")}
         filterText={filterText} onFilterTextChange={setFilterText} allowQuickFilter={props.allowQuickFilter}
-        onCancel={props.onCancel} busy={creating}
+        onCancel={props.onCancel} busy={creating || props.busy}
         onApply={immediate ? undefined : () => props.onAccept(value)}
         applyDisabled={!changed || (!props.multiple && value.length === 0)}
         summary={props.multiple ? <SelectionSummary count={value.length}>
-            <SelectionValueList value={value} getKey={source.getKey} getLabel={source.getLabel} renderValue={source.renderValue} disabled={creating}
+            <SelectionValueList value={value} getKey={source.getKey} getLabel={source.getLabel} renderValue={source.renderValue} disabled={creating || props.busy}
                 onRemove={item => setValue(previous => previous.filter(selected => source.getKey(selected) !== source.getKey(item)))} />
         </SelectionSummary> : <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1, minHeight: 44, maxHeight: 112, overflowY: "auto" }}>
             <Typography variant="body2" color="text.secondary">Selected:</Typography>

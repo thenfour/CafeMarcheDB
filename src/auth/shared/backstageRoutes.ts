@@ -68,7 +68,7 @@ const routes = [
     { key: "editEventSegments", pattern: "/backstage/editEventSegments", caption: "Event Segments", permission: Permission.admin_events },
     { key: "editSongs", pattern: "/backstage/editSongs", caption: "Songs", permission: Permission.sysadmin },
     { key: "editSongCredits", pattern: "/backstage/editSongCredits", caption: "Song Credits", permission: Permission.sysadmin },
-    { key: "userInstruments", pattern: "/backstage/userInstruments", caption: "User Instruments", permission: Permission.sysadmin },
+    { key: "userInstruments", pattern: "/backstage/userInstruments", caption: "Member Instruments", permission: Permission.manage_users },
     { key: "editFiles", pattern: "/backstage/editFiles", caption: "Files", permission: Permission.sysadmin },
     { key: "editFrontpageGalleryItems", pattern: "/backstage/editFrontpageGalleryItems", caption: "Front page gallery", permission: Permission.sysadmin },
 

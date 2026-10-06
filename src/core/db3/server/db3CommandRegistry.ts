@@ -8,6 +8,7 @@ import { rolePermissionSetCommandHandler } from "./commands/rolePermissionSetCom
 import { galleryReorderCommandHandler } from "./commands/galleryOperations";
 import { menuLinkReorderCommandHandler } from "./commands/menuLinkOperations";
 import { bandInstrumentCommandHandler } from "./commands/bandInstrumentCommand";
+import { bandUserInstrumentsCommandHandler } from "./commands/bandUserInstrumentsCommand";
 
 const commandHandlers = new Map<string, AnyDB3CommandHandler>();
 
@@ -27,6 +28,7 @@ export function registerDB3CommandHandlers(handlers: AnyDB3CommandHandler[]): vo
 // simplest is to just make those registrations here.
 registerDB3CommandHandlers([
     bandInstrumentCommandHandler,
+    bandUserInstrumentsCommandHandler,
     eventSongListSaveCommandHandler,
     eventSongListDeleteCommandHandler,
     eventSongListReorderCommandHandler,

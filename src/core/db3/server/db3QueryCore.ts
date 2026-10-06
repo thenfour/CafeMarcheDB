@@ -256,7 +256,7 @@ export async function queryTable(input: db3.QueryRequestInput, auth: CMServerAut
     database: TransactionalPrismaClient = db, executionOptions: QueryTableExecutionOptions = {},
 ): Promise<DB3TableQueryResult> {
     const table = db3.GetTableById(input.table.tableID);
-    return table.queryStrategy === "resolved"
+    return table.requiresReadSnapshot
         ? executeDB3Read(database, auth, context => queryTableInContext(input, context.authorization, context.database, executionOptions))
         : queryTableInContext(input, auth, database, executionOptions);
 }
@@ -428,7 +428,7 @@ export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInpu
     database: TransactionalPrismaClient = db,
 ): Promise<DB3TableQueryResult & { count: number; hasMore: boolean; nextPage: { skip: number; take: number } | null }> {
     const table = db3.GetTableById(input.table.tableID);
-    return table.queryStrategy === "resolved"
+    return table.requiresReadSnapshot
         ? executeDB3Read(database, auth, context => paginatedQueryInContext(input, context.authorization, context.database))
         : paginatedQueryInContext(input, auth, database);
 }

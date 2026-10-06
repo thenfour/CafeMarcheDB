@@ -194,22 +194,7 @@ export const xUserMinimum = db3.defineTable({
     }),
     tableAuthMap: xUserTableAuthMap_SysadminInsert,
 
-    // note: self-sign-up is not part of this; it doesn't use db3 auth.
-    // 
-    // col:              QueryOwn       Query                   MutateOwn       Mutate            insert***
-    // 			-----------------------------------------------------------------------------------------------------------------
-    // id             |  login          view_users_basic_info   #               #                 #             |   PK + table map
-    // name           |  login          view_users_basic_info   login           manage_users      sysadmin*     |   xUserBasicProfileAuthMap
-    // email          |  login          view_user_contact_info  sysadmin        sysadmin          sysadmin*     |   dedicated correction after insert
-    // phone          |  login          view_user_contact_info  login           manage_users      sysadmin*     |   xUserContactInfoAuthMap
-    // auth fields    |  #              #               #               #                 #             |   dedicated auth/calendar flows only
-
-    // isDeleted      |  manage_users   manage_users            sysadmin        sysadmin          sysadmin*     |   xUserOperationalMetadataAuthMap
-    // createdAt      |  manage_users   manage_users            #               #                 sysadmin*     |   xUserOperationalMetadataAuthMap
-    // role           |  manage_users   manage_users            sysadmin        sysadmin          sysadmin*     |   xUserOperationalMetadataAuthMap
-    // isSysAdmin     |  manage_users   manage_users            sysadmin        sysadmin          sysadmin*     |   xUserOperationalMetadataAuthMap
-
-    // * The table-level insert grant is sysadmin; self-sign-up uses its dedicated flow.
+    // note: self-sign-up is not part of this; that flow doesn't use db3 auth.
 
     getParameterizedWhereClause: (params: { userId?: number }): (Prisma.UserWhereInput[] | false) => {
         if (params.userId != null) {

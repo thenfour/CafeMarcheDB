@@ -1,13 +1,12 @@
 import { Permission } from "shared/permissions";
-import { defineAuthMap, DB3FieldReadAuth, makeColumnSet } from "../db3core";
-import type { DB3AuthTablePermissionMap, DB3AuthSpec } from "../db3core";
+import type { ColorPaletteList } from "src/core/components/color/palette";
+import type { DB3AuthSpec, DB3AuthTablePermissionMap, DB3CreateFromStringContext } from "../db3core";
+import { DB3FieldReadAuth, defineAuthMap, makeColumnSet } from "../db3core";
 import { BoolField } from "./boolean";
 import { GenericIntegerField, MakeSortOrderField } from "./genericInteger";
-import { inheritedField, serverOwnedField, isInheritedFieldValue, type InheritedFieldValue } from "./inherited";
+import { inheritedField, isInheritedFieldValue, serverOwnedField, type InheritedFieldValue } from "./inherited";
 import { LocalizedStringField, isLocalizedFieldValue, type LocalizedFieldValue } from "./localizedString";
 import { MakePKfield } from "./xTableColumnTypes";
-import type { DB3CreateFromStringContext } from "../db3core";
-import type { ColorPaletteList } from "src/core/components/color/palette";
 
 type CatalogDisplayValue<TValue> = TValue extends LocalizedFieldValue ? string | null
     : TValue extends InheritedFieldValue<infer TEffective> ? TEffective : TValue;

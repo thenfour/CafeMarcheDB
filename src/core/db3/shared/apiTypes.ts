@@ -144,10 +144,6 @@ export interface TupdateSongBasicFieldsArgs {
 
 
 
-export interface TupdateUserPrimaryInstrumentMutationArgs {
-    instrumentId: InstrumentPublicId;
-};
-
 export interface TinsertEventCommentArgs {
     eventId: EventPublicId;
     text: string;

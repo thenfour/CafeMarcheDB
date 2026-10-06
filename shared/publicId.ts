@@ -26,6 +26,7 @@ export type MenuLinkPublicId = PublicId<"MenuLink">;
 export type UserPublicId = PublicId<"User">;
 export type BandPublicId = PublicId<"Band">;
 export type BandUserPublicId = PublicId<"BandUser">;
+export type BandUserInstrumentPublicId = PublicId<"BandUserInstrument">;
 export type LocalePublicId = PublicId<"Locale">;
 export type GlobalRolePublicId = PublicId<"GlobalRole">;
 export type BandRolePublicId = PublicId<"BandRole">;

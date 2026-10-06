@@ -911,8 +911,24 @@ type DB3IdentityForAccessor<
 //     hiddenMember: "isHidden",
 //     managePermission: Permission.admin_instruments,
 // },
+//
+// or on xBandUserInstrument:
+//  bandScope: {
+//     member: "bandId",
+//     via: { // pass through the association
+//         relation: "bandUser",
+//         ownerUserMember: "userId",
+//     },
+//     managePermission: Permission.manage_users
+// },
+
 export interface DB3BandScope {
     readonly member: string;
+    // Association rows inherit their band and person ownership from this parent.
+    readonly via?: {
+        readonly relation: string;
+        readonly ownerUserMember: string;
+    };
     readonly inheritedFrom?: string; // the object key from which this band-scoped value inherits -- row[inheritedFrom] is an object with the globally scoped payload.
     readonly inheritedSourceMember?: string;
     readonly hiddenMember?: string; // the column name for opt-in/out behavior
@@ -947,6 +963,9 @@ export interface TableDesc {
     // Resolved queries assemble fields across independent reads before filtering/paging.
     // DB3 owns a coherent snapshot for this strategy, independently of band ownership.
     queryStrategy?: "resolved";
+
+    // SQL membership reads also need fresh grants and rows from one snapshot.
+    readConsistency?: "snapshot";
 
     // for things like attendance options, where options can go stale and become "inactive", allow table schemas to filter items out.
     activeAsSelectable?: (params: TAnyModel) => boolean;
@@ -1227,6 +1246,11 @@ export class xTable<
 
     bandScope?: DB3BandScope;
     queryStrategy?: "resolved";
+    readConsistency?: "snapshot";
+
+    get requiresReadSnapshot(): boolean {
+        return this.queryStrategy === "resolved" || this.readConsistency === "snapshot";
+    }
 
     activeAsSelectable?: (params: TAnyModel) => boolean;
 
@@ -1608,8 +1632,18 @@ export class xTable<
         const members = [ownerUser, visiblePermission, isDeleted]
             .filter((column): column is AnyDB3Field => column !== undefined)
             .map(column => column.fkidMember || column.member);
-        if (this.bandScope) members.push(this.bandScope.member);
+        if (this.bandScope) members.push(this.bandScope.via?.relation ?? this.bandScope.member);
         return members;
+    };
+
+    // Rows span different Prisma models; scope metadata names their ownership fields.
+    getBandId = (model: TAnyModel): unknown => {
+        const scope = this.bandScope;
+        if (!scope) {
+            return undefined;
+        }
+        const owner = scope.via ? model[scope.via.relation] : model;
+        return owner?.[scope.member];
     };
 
     private isRowVisibleToActor = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T, CMServerAuthorization>): boolean => {
@@ -1657,7 +1691,7 @@ export class xTable<
 
     authorizeRowForView = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T, CMServerAuthorization>) => {
         if (this.bandScope && args.model
-            && args.model[this.bandScope.member] !== args.auth.requireBand().id) {
+            && this.getBandId(args.model) !== args.auth.requireBand().id) {
             return false;
         }
         const rowInfo = args.model ? this.getRowInfo(args.model) : null;
@@ -1689,6 +1723,14 @@ export class xTable<
     ): number | null => {
         if (rowInfoOwnerUserId != null) return rowInfoOwnerUserId;
 
+        const parent = this.bandScope?.via;
+        if (model && parent) {
+            const ownerUserId = model[parent.relation]?.[parent.ownerUserMember];
+            if (typeof ownerUserId === "number") {
+                return ownerUserId;
+            }
+        }
+
         const ownerColumn = this.SqlSpecialColumns.ownerUser;
         if (model && ownerColumn) {
             const directOwnerId = model[ownerColumn.fkidMember || ownerColumn.member];
@@ -1707,6 +1749,10 @@ export class xTable<
         if (this.hasPermission(auth, this.tableAuthMap.View)) return undefined;
 
         const ownerColumn = this.SqlSpecialColumns.ownerUser;
+        const parent = this.bandScope?.via;
+        if ((auth.userId || 0) > 0 && parent && this.hasPermission(auth, this.tableAuthMap.ViewOwn)) {
+            return { [parent.relation]: { [parent.ownerUserMember]: auth.userId } };
+        }
         if ((auth.userId || 0) > 0
             && ownerColumn
             && this.hasPermission(auth, this.tableAuthMap.ViewOwn)) {
@@ -1903,7 +1949,8 @@ export class xTable<
     ): Prisma.Args<TDelegate, "findMany">["where"] => {
         const and: TAnyModel[] = [];
         if (this.bandScope) {
-            and.push({ [this.bandScope.member]: auth.requireBand().id });
+            const ownership = { [this.bandScope.member]: auth.requireBand().id };
+            and.push(this.bandScope.via ? { [this.bandScope.via.relation]: ownership } : ownership);
             if (filterModel.tableParams?.includeHidden === true) {
                 auth.requirePermission(this.bandScope.managePermission);
             }
@@ -2101,8 +2148,17 @@ export class xTable<
 
 type PrismaScalarMember<TDelegate> = Extract<keyof NonNullable<Prisma.Result<TDelegate, {}, "findFirst">>, string>;
 type PrismaRelationMember<TDelegate> = Extract<keyof NonNullable<Prisma.Args<TDelegate, "findMany">["include"]>, string>;
-type TypedBandScope<TDelegate> = Omit<DB3BandScope, "member" | "hiddenMember" | "inheritedFrom" | "inheritedSourceMember"> & {
-    member: PrismaScalarMember<TDelegate>;
+type PrismaRelatedRow<TDelegate, TRelation extends PrismaRelationMember<TDelegate>> =
+    NonNullable<Prisma.Result<TDelegate, { include: { [K in TRelation]: true } }, "findFirst">>[TRelation & keyof NonNullable<Prisma.Result<TDelegate, { include: { [K in TRelation]: true } }, "findFirst">>];
+type RelatedBandOwnership<TDelegate> = {
+    [K in PrismaRelationMember<TDelegate>]: {
+        member: Extract<keyof NonNullable<PrismaRelatedRow<TDelegate, K>>, string>;
+        via: { relation: K; ownerUserMember: Extract<keyof NonNullable<PrismaRelatedRow<TDelegate, K>>, string> };
+    }
+}[PrismaRelationMember<TDelegate>];
+type TypedBandScope<TDelegate> = Omit<DB3BandScope, "member" | "via" | "hiddenMember" | "inheritedFrom" | "inheritedSourceMember"> & ({
+    member: PrismaScalarMember<TDelegate>; via?: undefined;
+} | RelatedBandOwnership<TDelegate>) & {
     hiddenMember?: PrismaScalarMember<TDelegate>;
     inheritedFrom?: PrismaRelationMember<TDelegate>;
     inheritedSourceMember?: PrismaScalarMember<TDelegate>;

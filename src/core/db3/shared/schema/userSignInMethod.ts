@@ -1,19 +1,10 @@
 import { Prisma, SignInMethodType } from "db";
 import { Permission } from "shared/permissions";
 import type { UserSignInMethodPublicId } from "shared/publicId";
-import { ConstEnumStringField, foreignRefByTableId, MakeCreatedAtField, MakePKfield, MakePublicIdField } from "../columnTypes/xTableColumnTypes";
 import { GenericStringField } from "../columnTypes/genericString";
-import { DB3FieldReadAuth, defineAuthMap, defineTable, makeColumnSet, prismaModel } from "../db3core";
-
-// Maintenance writes must preserve credential ownership, revoke sessions, and
-// protect the last usable method. Only the dedicated auth operations may write.
-const readOnlyFields = defineAuthMap({
-    PostQuery: DB3FieldReadAuth.inheritRow,
-    PostQueryAsOwner: DB3FieldReadAuth.inheritRow,
-    PreMutate: Permission.never_grant,
-    PreMutateAsOwner: Permission.never_grant,
-    PreInsert: Permission.never_grant,
-});
+import { ConstEnumStringField, foreignRefByTableId, MakeCreatedAtField, MakePKfield, MakePublicIdField } from "../columnTypes/xTableColumnTypes";
+import { defineTable, makeColumnSet, prismaModel } from "../db3core";
+import { kReadOnlyAuthMap } from "../entities/common/entityCommon";
 
 export const xUserSignInMethod = defineTable({
     prismaModel: prismaModel<Prisma.UserSignInMethodDelegate>(),
@@ -43,17 +34,17 @@ export const xUserSignInMethod = defineTable({
     fields: makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<UserSignInMethodPublicId>(),
-        user: foreignRefByTableId("User", { fkidMember: "userId", authMap: readOnlyFields }),
+        user: foreignRefByTableId("User", { fkidMember: "userId", authMap: kReadOnlyAuthMap }),
         type: columnName => new ConstEnumStringField({
-            columnName, options: SignInMethodType, defaultValue: "email", allowNull: false, authMap: readOnlyFields,
+            columnName, options: SignInMethodType, defaultValue: "email", allowNull: false, authMap: kReadOnlyAuthMap,
         }),
         identifier: columnName => new GenericStringField({
-            columnName, allowNull: false, format: "raw", authMap: readOnlyFields,
+            columnName, allowNull: false, format: "raw", authMap: kReadOnlyAuthMap,
         }),
         displayId: columnName => new GenericStringField({ // typically an email but in theory can be anything.
-            columnName, allowNull: true, format: "raw", authMap: readOnlyFields,
+            columnName, allowNull: true, format: "raw", authMap: kReadOnlyAuthMap,
         }),
-        createdAt: () => MakeCreatedAtField({ authMap: readOnlyFields }),
+        createdAt: () => MakeCreatedAtField({ authMap: kReadOnlyAuthMap }),
     }),
 });
 

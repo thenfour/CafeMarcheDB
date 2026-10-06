@@ -228,6 +228,12 @@ transactional writes, and shared dashboard references for all three catalogs.
 records the current boundaries and validation. The bounded design gate is
 implemented; remaining descriptors/consumers and application recovery are incomplete.
 
+The next membership-instrument slice is implemented as well:
+[08-band-user-instruments.md](08-band-user-instruments.md) records scoped
+membership views, transactional assignments/primary selection, and restored
+profile/member-management controls. Broader member-profile, taxonomy, event,
+and merge consumers remain incomplete.
+
 **Settled query policy:** treat each localized field as an ordinary string field
 containing its resolved value for the request. Preserve existing DB3 token/filter
 semantics across quicksearch, autocomplete, and field filters. Use those same
@@ -284,6 +290,9 @@ SQL/Prisma optimization is deferred, not a prerequisite for this slice.
   It should require entity/view/label declarations and genuine domain rules,
   without another reader, matcher, validator, form stack, or endpoint family
   duplicating the instrument machinery. Resolve any shared gaps before expansion.
+- [x] Move profile/member instrument editing to active `BandUser` memberships.
+  Reuse shared DB3 reads, association writes, field validation, audit and command
+  execution; preserve hidden assignments and independent two-band primaries.
 - [ ] Apply the established patterns to other catalogs, shared global catalogs,
   people/memberships, band content, and the four settings hives. Generic settings
   editors must still use registry validation and per-key authorization.
