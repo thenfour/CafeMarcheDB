@@ -12,10 +12,11 @@ migration is implemented and rehearsed; its rules and evidence are in
 [03-sql-migration.md](03-sql-migration.md). That rehearsal establishes data
 preservation, not application readiness or a production deployment.
 
-The application is currently far from buildable under the target model. The
-localization and four settings registries/hooks are partly scaffolded, DB3 column
-definitions partly require localization keys, and runtime consumers still use
-the old roles, settings, catalogs, and field shapes.
+At plan acceptance, the application was far from buildable under the target
+model. Localization and the four settings registries/hooks were partly
+scaffolded, DB3 column definitions partly required localization keys, and runtime
+consumers still used the old roles, settings, catalogs, and field shapes. Phases
+1–2 are now implemented; remaining domain consumers still prevent a build.
 
 There are two delivery milestones:
 
@@ -74,10 +75,11 @@ translation. Choose language-match and last-resort ties deterministically, and
 return the selected locale, scope, and fallback reason for inspection. Avoid
 special fallback rules per namespace or entity type.
 
-The design lists route, browser, and system preferences, but its eight-step
-summary does not expand the browser step when an explicit route locale lacks a
-matching translation. Specify and test that expansion in phase 2 before coding
-the selection policy; do not inherit an accidental order from existing helpers.
+Phase 2 expands the preference order within the selected scope: route exact,
+route language match, then each browser preference's exact/language match in
+order, then `en-US` and a deterministic last resort. Language and last-resort
+ties use canonical tag order. See [06-localization-settings.md](06-localization-settings.md)
+for availability, defaults, provenance, and explicit lookup contracts.
 
 Phase 1's `resolveRequestLocale()` and `DashboardContext.locale` are provisional
 single-locale scaffolding. They are not the string-resolution foundation or
@@ -139,58 +141,64 @@ inactive-account cases. The context is usable by later DB3 and settings work.
 **Outcome:** clients and servers resolve strings and settings through shared,
 typed, authorized APIs.
 
-- [ ] Define typed locale-preference inputs and centralized semantic routines
+**Implemented 2026-10-06.** Contracts, transport, settings capabilities, cache
+refresh behavior, and validation are recorded in
+[06-localization-settings.md](06-localization-settings.md). Domain reads/DTOs
+consume the batch resolver in phase 3; the foundation does not establish a
+buildable application or completed portal routing.
+
+- [x] Define typed locale-preference inputs and centralized semantic routines
   for normalization, preference priority, scope selection, and translation
   matching. Preserve route and browser preferences instead of first reducing
   them to `resolveRequestLocale()`'s single enabled locale. Keep the selection
   policy pure and testable; database access and React hooks supply its inputs.
   Wire browser/server language inputs now and accept a route hint through the
   contract; full portal route extraction follows in phase 5.
-- [ ] Centralize relevant-locale queries for platform and band contexts. Define
+- [x] Centralize relevant-locale queries for platform and band contexts. Define
   and test how enabled/deleted locale availability constrains translation
   candidates while preserving the rule that band overrides block global fallback.
-- [ ] Implement per-string resolution for static keys and dynamic identities
+- [x] Implement per-string resolution for static keys and dynamic identities
   using the localization contracts above. Specify route/browser candidate order,
   deterministic ties, blank/missing values, and resolution provenance.
-- [ ] Provide explicit locale/scope lookup with fallbacks disabled for editors
+- [x] Provide explicit locale/scope lookup with fallbacks disabled for editors
   and tests. Missing translations must remain distinguishable from intentional
   empty text and inherited display values.
-- [ ] Implement `formattingLocale` separately from string resolution, using the
+- [x] Implement `formattingLocale` separately from string resolution, using the
   shared preferences and formatter support. Replace the generic dashboard
   `locale`/raw-browser `userLocale` presentation contract and route date/number
   consumers through this policy. Deliver the initial preference/formatting context
   to the client so server and client presentation agree.
-- [ ] Supply registered English defaults for static chrome without stored
+- [x] Supply registered English defaults for static chrome without stored
   translations. Preserve intentional blank values and band override precedence;
   record the chosen source in resolution details.
-- [ ] Resolve inherited catalog fields through the same mechanism. Preserve null
+- [x] Resolve inherited catalog fields through the same mechanism. Preserve null
   versus empty text and the distinction between custom band content and global
   content. Provide resolution details for tests and the later inspection editor.
-- [ ] Derive plain-text and Markdown key types from registry formats. Use the
+- [x] Derive plain-text and Markdown key types from registry formats. Use the
   agreed ICU MessageFormat interpolation for plain-text messages with typed
   parameters; Markdown strings do not interpolate parameters. Provide typed
   string/Markdown getters and React components backed by registered keys,
   without ad hoc inline string definitions.
-- [ ] Deliver the initial complete resolved UI catalog with the band and locale
+- [x] Deliver the initial complete resolved UI catalog with the band and locale
   preferences used to resolve it. Client getters are synchronous only after that
   catalog is loaded.
   Missing/unloaded keys have explicit development/loading behavior rather than
   hidden network requests or silent empty-string stubs.
-- [ ] Batch dynamic values with authorized entity reads. Share the resolver
+- [x] Batch dynamic values with authorized entity reads. Share the resolver
   between server rendering, DTO hydration, and client chrome; measure payloads
   before introducing catalog bundles or other delivery optimizations.
-- [ ] Implement all four settings hives: `GlobalSetting`, `BandSetting`,
+- [x] Implement all four settings hives: `GlobalSetting`, `BandSetting`,
   `UserSetting`, and `BandUserSetting`, with registry defaults, typed values,
   per-key read/write capabilities, and validated server mutations.
-- [ ] Normalize storage at the server boundary: global/band values are serialized
+- [x] Normalize storage at the server boundary: global/band values are serialized
   JSON in text columns; user/membership values are native Prisma JSON. Decode
   each once and preserve the migrated types documented in the SQL runbook.
-- [ ] Make reset explicit. Missing rows use registry defaults; valid empty
+- [x] Make reset explicit. Missing rows use registry defaults; valid empty
   strings, `false`, zero, and any registry-supported null value must survive.
   Keep the hives independent rather than adding an implicit inheritance chain.
-- [ ] Adapt server settings consumers, including branding and band timezone,
+- [x] Adapt server settings consumers, including branding and band timezone,
   alongside client hooks. Preserve existing timezone/date reanchoring behavior.
-- [ ] Partition resolved catalogs and localized query caches by band, the full
+- [x] Partition resolved catalogs and localized query caches by band, the full
   ordered locale preferences, relevant locale availability, and applicable
   authorization/revisions. A single formatting locale is not a sufficient cache
   key. Refresh after string/settings/availability/grant/membership changes and
@@ -345,7 +353,8 @@ owner/restoration phase for any additional gap.
 
 | Feature | Recovery behavior | Restoration |
 | --- | --- | --- |
-| `LocalizedMarkdown` inline editing | Phase 4 keeps rendering and removes the legacy editor/write path. | Phase 6 supplies scoped localized editing. |
+| `LocalizedMarkdown` inline editing | Implemented in phase 2: resolved rendering remains; the obsolete inline editor/write path is removed. | Phase 6 supplies scoped localized editing. |
+| Generic DB3 settings writes | Implemented in phase 2: mutations reject all settings hives to preserve registry validation and per-key authorization. | Phase 3 adapts generic editors to the registered command API. |
 | Full translation editor | Phase 3 provides the minimal dynamic writer needed for ordinary creation/name editing. | Phase 6 supplies locale/scope selection, inspection, and override/reset UX. |
 | Full portal routing and band management | Phases 1–4 use trusted server context with the initial Café Marché selection. Isolation is enforced throughout. | Phase 5 completes routing and lifecycle surfaces. |
 | Band administrators using old global-account writers | Implemented in phase 1: shared-account changes require platform grants. Separate membership writers and old role/merge consumers still need adaptation. | Phases 3–4 supply BandUser role/offboarding/recovery operations and the appropriate views. |
@@ -375,11 +384,9 @@ workflows or isolation.
 
 ## Next execution step
 
-Phase 1 foundations are implemented and checked; see
-[05-authorization-foundation.md](05-authorization-foundation.md). Start phase 2
-with preserved locale preferences, the documented per-string selection policy,
-separate formatting, and authorized typed settings lookup contracts. The existing
-single-locale resolver is not a prerequisite for string selection. Phase 3 follows
-with the band-instrument vertical slice, then broader domain and application
-recovery. The application remains unbuildable until those consumer adaptations
-are complete.
+Phases 1–2 are implemented and checked; see
+[05-authorization-foundation.md](05-authorization-foundation.md) and
+[06-localization-settings.md](06-localization-settings.md). Start phase 3 with the
+band-instrument vertical slice, using the shared resolver and authorized typed
+settings contracts. Broader domain and application recovery follow. The
+application remains unbuildable until those consumer adaptations are complete.

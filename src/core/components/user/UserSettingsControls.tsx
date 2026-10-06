@@ -1,13 +1,9 @@
-import { setQueryData, useMutation } from "@blitzjs/rpc";
 import { Checkbox, FormControl, FormControlLabel, FormHelperText } from "@mui/material";
 import React from "react";
-import getDashboardData from "src/auth/queries/getDashboardData";
-import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { useSnackbar } from "../SnackbarContext";
 import { useUserSettings } from "@/src/setting/client/useSettings";
 
 export const CalendarUserSettingsControl = () => {
-    const dashboardContext = useDashboardContext();
     const userSettings = useUserSettings();
     const [saving, setSaving] = React.useState(false);
     const snackbar = useSnackbar();
@@ -18,10 +14,6 @@ export const CalendarUserSettingsControl = () => {
         setSaving(true);
         try {
             await proc();
-            // await setQueryData(getDashboardData, {}, previous => previous ? {
-            //     ...previous,
-            //     userSettings,
-            // } : previous, { refetch: false });
             snackbar.showSuccess("Calendar preference saved");
         } catch {
             snackbar.showError("Could not save your calendar preference. Please try again.");
@@ -36,7 +28,7 @@ export const CalendarUserSettingsControl = () => {
             control={<Checkbox
                 checked={userSettings.getValue("calendar.showDeclinedEvents")}
                 name="calendar.showDeclinedEvents"
-                disabled={!userSettings.getCapabilities("calendar.showDeclinedEvents", dashboardContext.authorization).canEdit}
+                disabled={!userSettings.getCapabilities("calendar.showDeclinedEvents").canEdit}
                 inputProps={{ "aria-describedby": descriptionId }}
                 onChange={(_, checked) => {
                     void save(() => userSettings.setValue("calendar.showDeclinedEvents", checked));
@@ -51,7 +43,7 @@ export const CalendarUserSettingsControl = () => {
             control={<Checkbox
                 checked={userSettings.getValue("calendar.showUninvitedEvents")}
                 name="calendar.showUninvitedEvents"
-                disabled={!userSettings.getCapabilities("calendar.showUninvitedEvents", dashboardContext.authorization).canEdit}
+                disabled={!userSettings.getCapabilities("calendar.showUninvitedEvents").canEdit}
                 inputProps={{ "aria-describedby": invitationDescriptionId }}
                 onChange={(_, checked) => { void save(() => userSettings.setValue("calendar.showUninvitedEvents", checked)); }}
             />}

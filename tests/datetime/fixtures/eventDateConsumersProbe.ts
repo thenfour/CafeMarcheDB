@@ -12,11 +12,11 @@ import {
 const dashboardContext = new DashboardContextData()
 dashboardContext.bandTimeZone = "Europe/Brussels"
 dashboardContext.localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
-dashboardContext.userLocale = "en-US"
+dashboardContext.formattingLocale = "en-US"
 dashboardContext.eventDatePresentation = {
   bandTimeZone: dashboardContext.bandTimeZone,
   viewerTimeZone: dashboardContext.localTimeZone,
-  locale: dashboardContext.userLocale,
+  locale: dashboardContext.formattingLocale,
 }
 
 // Render the production component with an explicit reference time and locale.

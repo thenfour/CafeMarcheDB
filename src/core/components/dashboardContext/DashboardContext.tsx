@@ -24,6 +24,8 @@ import { CMClientAuthorization, type ScopedAuthorizationData } from '@/src/auth/
 import { isAttendanceGoing } from 'shared/eventAttendance';
 import { partition } from "@/shared/arrayUtils";
 import { EventStatusPublicId, PermissionPublicId } from "@/shared/publicId";
+import { usePresentation } from "src/locale/components/PresentationProvider";
+import { collectLocalePreferences, type LocalePreferences } from "src/locale/shared/localePreferences";
 
 type CmdbWindow = Window & {
     cmdbDashboardContext?: DashboardContextData;
@@ -46,7 +48,7 @@ export class DashboardContextData extends DashboardContextDataBase {
     effectivePermissions: PermissionSet = new PermissionSet([]);
     authorization: CMClientAuthorization = new CMClientAuthorization(null, new PermissionSet([]));
     authorizationContext: ScopedAuthorizationData | null = null;
-    locale: string | null = null;
+    localePreferences: LocalePreferences = collectLocalePreferences();
 
     constructor() {
         super();
@@ -175,7 +177,7 @@ export class DashboardContextData extends DashboardContextDataBase {
     brand: DbBrandConfig = DefaultDbBrandConfig;
 
     localTimeZone: string = localTimeZone();
-    userLocale: string = typeof navigator === "undefined" ? "en" : navigator.language;
+    formattingLocale: string = "en-US";
 
     eventDatePresentation: {
         bandTimeZone: string;
@@ -194,6 +196,7 @@ export const useDashboardContext = () => React.useContext(DashboardContext).data
 
 export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{}>) => {
     const valueRef = React.useRef(new DashboardContextData());
+    const presentation = usePresentation();
     const brand = useBrand();
 
     const [currentUser] = useCurrentUser();
@@ -221,26 +224,18 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         };
     }, [sess.permissionNames, setShowingAdminControlsMutation]);
 
-    const [dashboardDto, { refetch }] = useQuery(getDashboardData, {});
+    const [dashboardDto, { refetch }] = useQuery(getDashboardData, presentation.data?.input ?? {});
     const dashboardData = React.useMemo(() => db3.hydrateDashboardData(dashboardDto), [dashboardDto]);
     valueRef.current.refetchDashboardData = refetch;
     valueRef.current.permission = new TableAccessor(dashboardData.permission);
 
-    valueRef.current.authorizationContext = dashboardData.authorization;
-    valueRef.current.effectivePermissions = new PermissionSet(dashboardData.authorization.effectivePermissionNames);
+    const authorizationContext = presentation.data?.authorization ?? dashboardData.authorization;
+    valueRef.current.authorizationContext = authorizationContext;
+    valueRef.current.effectivePermissions = new PermissionSet(authorizationContext.effectivePermissionNames);
 
-    // LSMB todo: move to locale
-    // NOTE the difference between userLocale (client-selected, and probably should be removed),
-    // and `locale`, which is selected by the server.
-    // `locale` can differ from userLocale when the user has selected an explicit locale (e.g. via route `/fr-BE/etc..`).
-    // actual string resolution does consider much more than just a single locale. see 00-localization-multitenancy.md
-    // for the documented rules, which are a full negotiation between client locale, explicit selection,
-    // supported locales, available locales, PER translation.
-    // so this single `locale` value has much less value than  it advertises.
-    // it's really meant to be "the locale to use for date/number formatting, that  kind of thing". It
-    // is NOT a guarantee that the site is going to be in that language.
-    valueRef.current.userLocale = typeof navigator === "undefined" ? "en" : navigator.language;
-    valueRef.current.locale = dashboardData.locale;
+    const localization = presentation.data?.localization ?? dashboardData.localization;
+    valueRef.current.localePreferences = localization.preferences;
+    valueRef.current.formattingLocale = localization.formattingLocale;
 
     valueRef.current.authorization = new CMClientAuthorization(currentUser, valueRef.current.effectivePermissions);
 
@@ -285,7 +280,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
     valueRef.current.bandTimeZone = dashboardData.bandTimeZone;
 
-    valueRef.current.settings = dashboardData.settings;
+    valueRef.current.settings = presentation.data?.settings ?? dashboardData.settings;
 
     valueRef.current.brand = brand;
     valueRef.current.localTimeZone = localTimeZone();
@@ -293,7 +288,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.eventDatePresentation = {
         bandTimeZone: valueRef.current.bandTimeZone,
         viewerTimeZone: valueRef.current.localTimeZone,
-        locale: valueRef.current.userLocale,
+        locale: valueRef.current.formattingLocale,
     };
 
     // establish singleton for use by non-react code

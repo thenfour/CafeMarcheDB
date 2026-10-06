@@ -1,62 +1,49 @@
 import { z } from "zod";
-// import {
-//     BrandAssetUrlSchema,
-//     OptionalBrandColorSchema,
-//     RequiredBrandColorSchema,
-// } from "./brandingValidation";
-// import { BandTimeZoneSchema, resolveBandTimeZone } from "./dateTimePolicy";
+import { BandSettingsRegistryKey, kBandSettingsRegistry } from "src/setting/shared/bandSettingsRegistry";
 
-// Branding is a single delegated configuration capability even though its
-// values continue to use the general Setting storage. This strict schema is
-// the server boundary: platform settings such as Dashboard_HostingMode cannot
-// be smuggled into a branding update by supplying an arbitrary setting name.
-// export const SiteBrandingSettingsSchema = z.object({
-//     siteTitle: z.string(),
-//     siteTitlePrefix: z.string(),
-//     siteFaviconUrl: BrandAssetUrlSchema,
-//     siteLogoUrl: BrandAssetUrlSchema,
-//     bandTimeZone: BandTimeZoneSchema,
-//     calendarName: z.string(),
-//     calendarCompany: z.string(),
-//     calendarProduct: z.string(),
-//     calendarEventPrefix: z.string(),
-//     themePrimaryMain: RequiredBrandColorSchema,
-//     themeSecondaryMain: RequiredBrandColorSchema,
-//     themeBackgroundDefault: RequiredBrandColorSchema,
-//     themeBackgroundPaper: RequiredBrandColorSchema,
-//     themeTextPrimary: OptionalBrandColorSchema,
-//     themeContrastText: RequiredBrandColorSchema,
-// }).strict();
+// The form edits only registered band settings; shared platform settings are excluded.
+export const siteBrandingSettingByField = {
+    // todo: localize
+    siteTitle: "siteCustomization.title" satisfies BandSettingsRegistryKey,
+    siteTitlePrefix: "siteCustomization.titlePrefix" satisfies BandSettingsRegistryKey,
 
-// export type SiteBrandingSettings = z.infer<typeof SiteBrandingSettingsSchema>;
+    siteFaviconUrl: "siteCustomization.faviconUrl" satisfies BandSettingsRegistryKey,
+    bandTimeZone: "dateTime.bandTimeZone" satisfies BandSettingsRegistryKey,
 
-// export const siteBrandingSettingByField = {
-//     siteTitle: Setting.Dashboard_SiteTitle,
-//     siteTitlePrefix: Setting.Dashboard_SiteTitlePrefix,
-//     siteFaviconUrl: Setting.Dashboard_SiteFaviconUrl,
-//     siteLogoUrl: Setting.Dashboard_SiteLogoUrl,
-//     bandTimeZone: Setting.BandTimeZone,
-//     calendarName: Setting.Ical_CalendarName,
-//     calendarCompany: Setting.Ical_CalendarCompany,
-//     calendarProduct: Setting.Ical_CalendarProduct,
-//     calendarEventPrefix: Setting.Ical_CalendarEventPrefix,
-//     themePrimaryMain: Setting.Dashboard_Theme_PrimaryMain,
-//     themeSecondaryMain: Setting.Dashboard_Theme_SecondaryMain,
-//     themeBackgroundDefault: Setting.Dashboard_Theme_BackgroundDefault,
-//     themeBackgroundPaper: Setting.Dashboard_Theme_BackgroundPaper,
-//     themeTextPrimary: Setting.Dashboard_Theme_TextPrimary,
-//     themeContrastText: Setting.Dashboard_Theme_ContrastText,
-// } as const satisfies Record<keyof SiteBrandingSettings, Setting>;
+    // todo: localize
+    calendarName: "ical.calendarName" satisfies BandSettingsRegistryKey,
 
-// export const siteBrandingSettingNames = Object.values(siteBrandingSettingByField);
+    calendarCompany: "ical.calendarCompany" satisfies BandSettingsRegistryKey,
+    calendarProduct: "ical.calendarProduct" satisfies BandSettingsRegistryKey,
+    calendarEventPrefix: "ical.calendarEventPrefix" satisfies BandSettingsRegistryKey,
+    themePrimaryMain: "siteCustomization.themeColors.primaryMain" satisfies BandSettingsRegistryKey,
+    themeSecondaryMain: "siteCustomization.themeColors.secondaryMain" satisfies BandSettingsRegistryKey,
+    themeBackgroundDefault: "siteCustomization.themeColors.backgroundDefault" satisfies BandSettingsRegistryKey,
+    themeBackgroundPaper: "siteCustomization.themeColors.backgroundPaper" satisfies BandSettingsRegistryKey,
+    themeContrastText: "siteCustomization.themeColors.contrastText" satisfies BandSettingsRegistryKey,
+} as const;
 
-// export const siteBrandingSettingsFromValues = (
-//     values: ReadonlyMap<string, string>,
-// ): SiteBrandingSettings => Object.fromEntries(
-//     Object.entries(siteBrandingSettingByField).map(([field, settingName]) => [
-//         field,
-//         field === "bandTimeZone"
-//             ? resolveBandTimeZone(values.get(settingName))
-//             : values.get(settingName) ?? "",
-//     ]),
-// ) as SiteBrandingSettings;
+export const SiteBrandingSettingsSchema = z.object({
+    siteTitle: kBandSettingsRegistry[siteBrandingSettingByField.siteTitle].schema,
+    siteTitlePrefix: kBandSettingsRegistry[siteBrandingSettingByField.siteTitlePrefix].schema,
+    siteFaviconUrl: kBandSettingsRegistry[siteBrandingSettingByField.siteFaviconUrl].schema,
+    bandTimeZone: kBandSettingsRegistry[siteBrandingSettingByField.bandTimeZone].schema,
+    calendarName: kBandSettingsRegistry[siteBrandingSettingByField.calendarName].schema,
+    calendarCompany: kBandSettingsRegistry[siteBrandingSettingByField.calendarCompany].schema,
+    calendarProduct: kBandSettingsRegistry[siteBrandingSettingByField.calendarProduct].schema,
+    calendarEventPrefix: kBandSettingsRegistry[siteBrandingSettingByField.calendarEventPrefix].schema,
+    themePrimaryMain: kBandSettingsRegistry[siteBrandingSettingByField.themePrimaryMain].schema,
+    themeSecondaryMain: kBandSettingsRegistry[siteBrandingSettingByField.themeSecondaryMain].schema,
+    themeBackgroundDefault: kBandSettingsRegistry[siteBrandingSettingByField.themeBackgroundDefault].schema,
+    themeBackgroundPaper: kBandSettingsRegistry[siteBrandingSettingByField.themeBackgroundPaper].schema,
+    themeContrastText: kBandSettingsRegistry[siteBrandingSettingByField.themeContrastText].schema,
+}).strict();
+
+export type SiteBrandingSettings = z.infer<typeof SiteBrandingSettingsSchema>;
+//export const siteBrandingSettingNames = Object.values(siteBrandingSettingByField);
+
+// export function siteBrandingSettingsFromValues(values: ReadonlyMap<string, string>): SiteBrandingSettings //
+//  {
+//     return SiteBrandingSettingsSchema.parse(Object.fromEntries(Object.entries(siteBrandingSettingByField).map(([field, key]) =>
+//         [field, values.has(key) ? values.get(key) : kBandSettingsRegistry[key].defaultValue])));
+// }

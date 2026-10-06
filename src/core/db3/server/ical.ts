@@ -6,10 +6,10 @@ import { queryHydratedView } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
 import { MakeICalEventUid } from "../shared/apiTypes";
 import { EventCalendarInput, GetEventCalendarInput } from "./icalUtils";
-import { Setting } from "@/src/setting/shared/settingKeys";
 import { isAttendanceGoing } from "shared/eventAttendance";
 import { isUserInvitedToEvent } from "shared/eventInvitation";
-import { loadUserSettings } from "@/src/setting/server/userSettings";
+import { loadSettingsSnapshot } from "src/setting/server/settings";
+import { readSettingSnapshot, type SettingsSnapshot } from "src/setting/shared/settingsContract";
 import { shouldIncludeEventInCalendarFeed } from "../shared/calendarAttendance";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 import type { EventStatusPublicId } from "shared/publicId";
@@ -22,22 +22,18 @@ interface ICalSettings {
     eventNamePrefix: string;
 };
 
-async function GetICalSettings(): Promise<ICalSettings> {
-    const calendarName = await db.setting.findFirst({ where: { name: Setting.Ical_CalendarName } });
-    const calendarCompany = await db.setting.findFirst({ where: { name: Setting.Ical_CalendarCompany } });
-    const calendarProduct = await db.setting.findFirst({ where: { name: Setting.Ical_CalendarProduct } });
-    const eventNamePrefix = await db.setting.findFirst({ where: { name: Setting.Ical_CalendarEventPrefix } });
-
+function getICalSettings(settings: SettingsSnapshot): ICalSettings {
     return {
-        calendarName: calendarName?.value || "Café Marché Agenda",
-        calendarCompany: calendarCompany?.value || "Café Marché",
-        calendarProduct: calendarProduct?.value || "Backstage",
-        eventNamePrefix: eventNamePrefix?.value || "CM: ",
+        calendarName: readSettingSnapshot(settings, "band", "ical.calendarName"),
+        calendarCompany: readSettingSnapshot(settings, "band", "ical.calendarCompany"),
+        calendarProduct: readSettingSnapshot(settings, "band", "ical.calendarProduct"),
+        eventNamePrefix: readSettingSnapshot(settings, "band", "ical.calendarEventPrefix"),
     };
 };
 
 interface CreateCalendarArgs {
     icalSettings: ICalSettings;
+    localeTag?: string;
 };
 
 export const createCalendar = async (args: CreateCalendarArgs): Promise<ICalCalendar> => {
@@ -47,7 +43,7 @@ export const createCalendar = async (args: CreateCalendarArgs): Promise<ICalCale
         prodId: {
             company: args.icalSettings.calendarCompany,
             product: args.icalSettings.calendarProduct,
-            language: "EN",
+            language: new Intl.Locale(args.localeTag ?? "en-US").language.toUpperCase(),
         },
         //ttl: ,  seconds; let users decide.
         //scale: "", // ??? gregorian. calendar scale. don't use.
@@ -220,8 +216,9 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
     };
 
     const auth = await loadAuthorizationForUser(currentUser);
-    const { eventsRaw, bandTimeZone } = await db.$transaction(async tx => {
-        const bandTimeZone = await loadBandTimeZone(tx);
+    const { eventsRaw, bandTimeZone, settingsSnapshot } = await db.$transaction(async tx => {
+        const bandTimeZone = await loadBandTimeZone(tx, auth.requireBand().id);
+        const settingsSnapshot = await loadSettingsSnapshot(tx, auth);
         const eventsRaw = await queryHydratedView({
             view: db3.eventCalendarView,
             filter: {
@@ -230,17 +227,18 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
             cmdbQueryContext: `CalExportCore`,
             orderBy: undefined,
         }, auth, new db3.DB3ReferenceStore(), tx);
-        return { eventsRaw, bandTimeZone };
+        return { eventsRaw, bandTimeZone, settingsSnapshot };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 30_000 });
 
     // don't error if 0 events. this is a calendar-of-events and 0 events is valid.
 
     const events = eventsRaw.items;
 
-    const settings = await GetICalSettings();
+    const settings = getICalSettings(settingsSnapshot);
 
     const cal = await createCalendar({
         icalSettings: settings,
+        localeTag: auth.membership ? readSettingSnapshot(settingsSnapshot, "bandUser", "calendar.locale") : "en-US",
     });
 
     // These reference rows interpret existing event data; soft deletion makes
@@ -251,7 +249,6 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
         select: { publicId: true },
         where: { significance: db3.EventStatusSignificance.Cancelled },
     })).map(status => db3.xEventStatus.parseIdentity(status.publicId));
-    const userSettings = await loadUserSettings(currentUser.id);
     const attendanceById = new Map(eventAttendances.map(
         attendance => [
             db3.xEventAttendance.parseIdentity(attendance.publicId),
@@ -267,8 +264,8 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
         const defaultInviteeUserIds = new Set(event.expectedAttendanceUserTag?.userAssignments.map(assignment => assignment.userId));
         if (!shouldIncludeEventInCalendarFeed({
             userId: db3.xUser.parseIdentity(currentUser.publicId),
-            showDeclinedEvents: userSettings["calendar.showDeclinedEvents"],
-            showUninvitedEvents: userSettings["calendar.showUninvitedEvents"],
+            showDeclinedEvents: readSettingSnapshot(settingsSnapshot, "user", "calendar.showDeclinedEvents"),
+            showUninvitedEvents: readSettingSnapshot(settingsSnapshot, "user", "calendar.showUninvitedEvents"),
             isInvited: isUserInvitedToEvent({
                 userId: db3.xUser.parseIdentity(currentUser.publicId),
                 defaultInvitationUserIds: defaultInviteeUserIds,

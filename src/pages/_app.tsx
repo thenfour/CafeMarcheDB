@@ -23,6 +23,8 @@ import { DbBrandConfig, DefaultDbBrandConfig } from "@/shared/brandConfigBase";
 import { ConnectionHealthMonitor } from "src/core/connectivity/ConnectionHealthComponents";
 import { isConnectivityError } from "src/core/connectivity/connectionHealth";
 import { useQueryErrorResetBoundary } from "@blitzjs/rpc";
+import { PresentationProvider } from "src/locale/components/PresentationProvider";
+import type { PresentationData } from "src/locale/shared/presentationContext";
 
 // Client-side cache, shared for the whole session of the user in the browser.
 const clientSideEmotionCache = createEmotionCache();
@@ -31,6 +33,7 @@ const clientSideEmotionCache = createEmotionCache();
 
 interface SharedPageProps {
   brand?: DbBrandConfig;
+  presentation?: PresentationData;
 }
 
 export interface MyAppProps extends Omit<AppProps<SharedPageProps>, "Component"> {
@@ -188,7 +191,9 @@ function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pag
         <SnackbarProvider>
           <BrandContext.Provider value={brand}>
             <ErrorBoundary FallbackComponent={RootErrorFallback} onReset={queryErrorResetBoundary.reset}>
-              {getLayout(<Component {...pageProps} />)}
+              <PresentationProvider initial={pageProps.presentation}>
+                {getLayout(<Component {...pageProps} />)}
+              </PresentationProvider>
             </ErrorBoundary>
           </BrandContext.Provider>
         </SnackbarProvider>
@@ -238,12 +243,27 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
   // Authorize before invoking page loaders, including on requests we redirect.
   const appProps: AppInitialProps<SharedPageProps> = await NextApp.getInitialProps(appCtx);
   if (req) {
-
     // A request with no valid or last-known-good brand must fail instead of
     // rendering normal application content under the wrong site identity.
     const { loadDbBrandConfig } = await import("@/src/server/brand");
-    const brand = await loadDbBrandConfig(req.headers.host);
-    appProps.pageProps = { ...(appProps.pageProps || {}), brand };
+
+    const { loadPresentationData } = await import("src/locale/server/presentation");
+    const { loadAuthorization } = await import("src/auth/server/serverAuthorization");
+    const { getSessionForRequest } = await import("src/blitz-server");
+    const { parseAcceptLanguage } = await import("src/locale/shared/localePreferences");
+    const auth = await loadAuthorization(await getSessionForRequest(req, res!));
+    const presentation = await loadPresentationData(
+      auth,
+      {
+        browserLanguages: parseAcceptLanguage(req.headers["accept-language"])
+      }
+    );
+    const brand = await loadDbBrandConfig(req.headers.host, auth.band?.id ?? null);
+    appProps.pageProps = {
+      ...(appProps.pageProps || {}),
+      brand,
+      presentation,
+    };
   }
 
   return appProps;

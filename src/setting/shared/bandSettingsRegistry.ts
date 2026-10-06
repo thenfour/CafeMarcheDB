@@ -1,9 +1,10 @@
-import { Simplify } from "blitz";
 import { z } from "zod";
 import { stringSetting } from "./settingsHelpers";
 import { freezeRegistry } from "./registryHelpers";
-import { DEFAULT_BAND_TIME_ZONE } from "@/shared/dateTimePolicy";
-import { AssertEqualTypes } from "@/shared/rootroot";
+import { BandTimeZoneSchema, DEFAULT_BAND_TIME_ZONE } from "@/shared/dateTimePolicy";
+import { DefaultDbBrandConfig } from "shared/brandConfigBase";
+import { BrandAssetUrlSchema, OptionalBrandColorSchema } from "shared/brandingValidation";
+import { Permission } from "shared/permissions";
 
 // TO BAND-scoped SETTING ---------------------------------------------
 // - Dashboard_SiteTitle -> band.siteTitle
@@ -24,59 +25,60 @@ import { AssertEqualTypes } from "@/shared/rootroot";
 export const kBandSettingsRegistry = freezeRegistry({
     // site config / branding
     "siteCustomization.title": stringSetting({
-        defaultValue: "",
+        defaultValue: DefaultDbBrandConfig.siteTitle,
+        writePermission: Permission.manage_site_branding,
         schema: z.string().max(100),
         stringFormat: "plain",
     }),
     "siteCustomization.titlePrefix": stringSetting({
-        defaultValue: "",
+        defaultValue: DefaultDbBrandConfig.siteTitlePrefix,
+        writePermission: Permission.manage_site_branding,
         schema: z.string().max(8),
         stringFormat: "plain",
     }),
     "siteCustomization.faviconUrl": stringSetting({
-        defaultValue: "",
-        schema: z.string().max(500),
+        defaultValue: DefaultDbBrandConfig.siteFaviconUrl,
+        writePermission: Permission.manage_site_branding,
+        schema: BrandAssetUrlSchema,
         stringFormat: "plain",
     }),
     "siteCustomization.themeColors.primaryMain": stringSetting({
-        defaultValue: "",
-        // a CSS color spec. either #rrggbbaa or longer variants like
-        // device-cmyk(none none none none)
-        // or even valid, compound color calcs like
-        // color-mix(in cmyk longer hue, device-cmyk(none none none none) 100%, device-cmyk(none none none none) 100%)
-        schema: z.string().max(150),
+        defaultValue: DefaultDbBrandConfig.theme!.primaryMain!,
+        writePermission: Permission.manage_site_branding,
+        // Colors must be usable by MUI; an empty value selects the presentation default.
+        schema: OptionalBrandColorSchema,
         stringFormat: "plain",
     }),
     "siteCustomization.themeColors.secondaryMain": stringSetting({
-        defaultValue: "",
-        schema: z.string().max(150),
+        defaultValue: DefaultDbBrandConfig.theme!.secondaryMain!,
+        writePermission: Permission.manage_site_branding,
+        schema: OptionalBrandColorSchema,
         stringFormat: "plain",
     }),
     "siteCustomization.themeColors.backgroundDefault": stringSetting({
-        defaultValue: "",
-        schema: z.string().max(150),
+        defaultValue: DefaultDbBrandConfig.theme!.backgroundDefault!,
+        writePermission: Permission.manage_site_branding,
+        schema: OptionalBrandColorSchema,
         stringFormat: "plain",
     }),
     "siteCustomization.themeColors.backgroundPaper": stringSetting({
-        defaultValue: "",
-        schema: z.string().max(150),
+        defaultValue: DefaultDbBrandConfig.theme!.backgroundPaper!,
+        writePermission: Permission.manage_site_branding,
+        schema: OptionalBrandColorSchema,
         stringFormat: "plain",
     }),
     "siteCustomization.themeColors.contrastText": stringSetting({
-        defaultValue: "",
-        schema: z.string().max(150),
+        defaultValue: DefaultDbBrandConfig.theme!.contrastText!,
+        writePermission: Permission.manage_site_branding,
+        schema: OptionalBrandColorSchema,
         stringFormat: "plain",
     }),
 
     //    BandTimeZone = "BandTimeZone", -> band.dateTime.bandTimeZone
     "dateTime.bandTimeZone": stringSetting({
         defaultValue: DEFAULT_BAND_TIME_ZONE,
-        // https://stackoverflow.com/questions/38399465/how-to-get-list-of-all-timezones-in-javascript
-        // Intl.supportedValuesOf('timeZone').sort((a, b) => a.length - b.length).reverse()
-        // 0: "America/North_Dakota/New_Salem"
-        // 1: "America/Argentina/Rio_Gallegos"
-        // 2: "America/Argentina/Buenos_Aires"
-        schema: z.string().max(100),
+        // A timezone write reanchors only this band's all-day events in the same transaction.
+        schema: BandTimeZoneSchema,
         stringFormat: "plain",
     }),
 
@@ -86,26 +88,29 @@ export const kBandSettingsRegistry = freezeRegistry({
     // - Ical_CalendarEventPrefix -> band.ical.calendarEventPrefix
 
     "ical.calendarName": stringSetting({
+        writePermission: Permission.manage_site_branding,
         defaultValue: "",
         schema: z.string().max(100),
         stringFormat: "plain",
     }),
     "ical.calendarCompany": stringSetting({
+        writePermission: Permission.manage_site_branding,
         defaultValue: "",
         schema: z.string().max(100),
         stringFormat: "plain",
     }),
     "ical.calendarProduct": stringSetting({
+        writePermission: Permission.manage_site_branding,
         defaultValue: "",
         schema: z.string().max(100),
         stringFormat: "plain",
     }),
     "ical.calendarEventPrefix": stringSetting({
+        writePermission: Permission.manage_site_branding,
         defaultValue: "",
         schema: z.string().max(100),
         stringFormat: "plain",
     }),
 });
 
-// const cp = kBandSettingsRegistry["ical.calendarProduct"];
-// type cptype = Simplify<typeof cp>;
+export type BandSettingsRegistryKey = keyof typeof kBandSettingsRegistry;

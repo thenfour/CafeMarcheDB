@@ -1,4 +1,3 @@
-import { CMClientAuthorization } from "@/src/auth/shared/cmAuthorization";
 import { Simplify } from "blitz";
 import { z } from "zod";
 
@@ -77,8 +76,9 @@ export type RegistryCapabilities = {
 
 export interface IMutableRegistry<Hive extends RegistryEntries> {
 
-    getCapabilities: <TKey extends RegistryKey<Hive>>(key: TKey, auth: CMClientAuthorization) => RegistryCapabilities;
+    getCapabilities: <TKey extends RegistryKey<Hive>>(key: TKey) => RegistryCapabilities;
     getValue: <TKey extends RegistryKey<Hive>>(key: TKey) => RegistryValueOf<Hive, TKey>;
-    refetch: () => void;
+    refetch: () => Promise<void>;
     setValue: <TKey extends RegistryKey<Hive>>(key: TKey, value: RegistryValueOf<Hive, TKey>) => Promise<void>;
+    reset: <TKey extends RegistryKey<Hive>>(key: TKey) => Promise<void>;
 }

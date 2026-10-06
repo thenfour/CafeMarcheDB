@@ -40,7 +40,7 @@ export abstract class DashboardContextDataBase {
     serverStartupState: ServerStartInfo | null; // null if not available (non-admins)
 
     localTimeZone: string;
-    userLocale: string = typeof navigator === "undefined" ? "en" : navigator.language;
+    formattingLocale: string; // the locale used for formatting dates, numbers...
 
     eventDatePresentation: {
         bandTimeZone: string;

@@ -80,7 +80,7 @@ export function matchesWhere(row: TestRow, where: Record<string, unknown> | unde
       return clauses.every((clause) => !matchesWhere(row, clause as Record<string, unknown>))
     }
     // Prisma compound unique selectors describe several scalar columns.
-    if (field === "bandId_userId" || field === "localeId_stringId") {
+    if (["bandId_userId", "localeId_stringId", "bandId_name", "userId_name", "bandUserId_name"].includes(field)) {
       return isRecord(expected) && matchesWhere(row, expected)
     }
     return matchesScalar(row[field], expected)
@@ -112,6 +112,10 @@ const testRelations: Record<string, Record<string, Relation>> = {
   locale: {
     bandLocales: { table: "bandLocale", local: "id", foreign: "localeId", many: true },
   },
+  staticLocalizedStringValue: { locale: { table: "locale", local: "localeId", foreign: "id" } },
+  bandStaticLocalizedStringValue: { locale: { table: "locale", local: "localeId", foreign: "id" } },
+  dynamicLocalizedStringValue: { locale: { table: "locale", local: "localeId", foreign: "id" } },
+  bandDynamicLocalizedStringValue: { locale: { table: "locale", local: "localeId", foreign: "id" } },
   globalRole: {
     permissions: { table: "globalRolePermission", local: "id", foreign: "globalRoleId", many: true },
   },
@@ -252,6 +256,11 @@ export class InMemoryDelegate {
     if (index < 0) throw new Error(`In-memory row ${args.where.id} was not found`)
     this.rows[index] = this.normalizeWrite(requireTestRow({ ...this.rows[index], ...clone(args.data) }))
     return clone(this.readRelations(clone(this.rows[index]), args))
+  }
+
+  async upsert(args: { where: NonNullable<QueryArgs["where"]>; create: Omit<TestRow, "id">; update: Record<string, unknown> }) {
+    const row = await this.findUnique({ where: args.where });
+    return row ? this.update({ where: { id: row.id }, data: args.update }) : this.create({ data: args.create });
   }
 
   async createMany(args: { data: Array<Omit<TestRow, "id"> & Partial<Pick<TestRow, "id">>> }) {

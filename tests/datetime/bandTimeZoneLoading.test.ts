@@ -1,41 +1,57 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import type { Prisma } from "@prisma/client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
+import { loadBandTimeZone } from "src/server/bandTimeZone";
+import { loadSettingsSnapshot } from "src/setting/server/settings";
+import { readSettingSnapshot } from "src/setting/shared/settingsContract";
+import { parsePublicId } from "shared/publicId";
+import { authorizationTestDb } from "../authorization/support/inMemoryPrisma";
 
 vi.mock("db", async () => {
-  const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client")
-  const { authorizationTestDb } = await import("../authorization/support/inMemoryPrisma")
-  return { ...prisma, default: authorizationTestDb }
-})
+    const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client");
+    const { authorizationTestDb } = await import("../authorization/support/inMemoryPrisma");
+    return { ...prisma, default: authorizationTestDb };
+});
 
-import { Setting } from "@/src/setting/shared/settingKeys"
-import getDashboardData from "src/auth/queries/getDashboardData"
-import { authorizationTestDb } from "../authorization/support/inMemoryPrisma"
-import { createAuthorizationPersona } from "../authorization/support/authorizationFixtures"
-import { invokeResolver } from "../authorization/support/resolverHarness"
-import { loadBandTimeZone } from "@/src/server/bandTimeZone"
+// These fake delegates implement the standard Prisma reads used by the service.
+const database = authorizationTestDb as unknown as Prisma.TransactionClient;
+const row = (bandId: number, value: string) => ({ id: bandId, bandId, name: "dateTime.bandTimeZone", value: JSON.stringify(value) });
 
 describe("server band timezone configuration", () => {
-  beforeEach(() => authorizationTestDb.reset({ setting: [] }))
+    beforeEach(() => authorizationTestDb.reset({ band: [{ id: 1, publicId: "Band000000000001", isDeleted: false }] }));
+    afterEach(() => { vi.unstubAllEnvs(); });
 
-  it("uses Brussels without writing a setting when none is configured", async () => {
-    await expect(loadBandTimeZone()).resolves.toBe("Europe/Brussels")
-    expect(authorizationTestDb.snapshot("setting")).toEqual([])
-  })
+    it("uses Brussels without writing when the selected band has no setting", async () => {
+        expect(await loadBandTimeZone(database, 1)).toBe("Europe/Brussels");
+        expect(authorizationTestDb.snapshot("bandSetting")).toEqual([]);
+    });
 
-  it("observes a changed configured zone on the next read", async () => {
-    authorizationTestDb.reset({ setting: [{ id: 1, name: Setting.BandTimeZone, value: "Asia/Tokyo" }] })
-    await expect(loadBandTimeZone()).resolves.toBe("Asia/Tokyo")
-    authorizationTestDb.reset({ setting: [{ id: 1, name: Setting.BandTimeZone, value: "America/Los_Angeles" }] })
-    await expect(loadBandTimeZone()).resolves.toBe("America/Los_Angeles")
-  })
+    it("reads fresh settings independently for each band", async () => {
+        authorizationTestDb.getDelegate("bandSetting").reset([row(1, "Asia/Tokyo"), row(2, "America/Los_Angeles")]);
+        expect(await loadBandTimeZone(database, 1)).toBe("Asia/Tokyo");
+        expect(await loadBandTimeZone(database, 2)).toBe("America/Los_Angeles");
+        await authorizationTestDb.getDelegate("bandSetting").update({ where: { id: 1 }, data: { value: JSON.stringify("UTC") } });
+        expect(await loadBandTimeZone(database, 1)).toBe("UTC");
+    });
 
-  it("fails on invalid stored configuration instead of silently changing timezone", async () => {
-    authorizationTestDb.reset({ setting: [{ id: 1, name: Setting.BandTimeZone, value: "Moon/Base" }] })
-    await expect(loadBandTimeZone()).rejects.toThrow()
-  })
+    it("resolves the configured band using the supplied transaction's band delegate", async () => {
+        vi.stubEnv("CMDB_DEFAULT_BAND_ID", "1");
+        authorizationTestDb.getDelegate("bandSetting").reset([row(1, "Asia/Tokyo")]);
+        const findBand = vi.spyOn(authorizationTestDb.getDelegate("band"), "findFirst");
+        expect(await loadBandTimeZone(database)).toBe("Asia/Tokyo");
+        expect(findBand).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 1, isDeleted: false } }));
+    });
 
-  it("delivers the configured timezone through dashboard data without requiring branding edit permission", async () => {
-    authorizationTestDb.reset({ setting: [{ id: 1, name: Setting.BandTimeZone, value: "Asia/Tokyo" }] })
-    const { ctx } = createAuthorizationPersona("public")
-    await expect(invokeResolver(getDashboardData, {}, ctx)).resolves.toMatchObject({ bandTimeZone: "Asia/Tokyo" })
-  })
-})
+    it.each(["Moon/Base", "", "   "])("fails on invalid stored configuration %j", async value => {
+        authorizationTestDb.getDelegate("bandSetting").reset([row(1, value)]);
+        await expect(loadBandTimeZone(database, 1)).rejects.toThrow();
+    });
+
+    it("delivers the timezone in a public band snapshot without edit grants", async () => {
+        authorizationTestDb.getDelegate("bandSetting").reset([row(1, "Asia/Tokyo")]);
+        const auth = await loadAuthorizationForUser(null, database, { kind: "band", bandPublicId: parsePublicId<"Band">("Band000000000001") });
+        const snapshot = await loadSettingsSnapshot(database, auth);
+        expect(readSettingSnapshot(snapshot, "band", "dateTime.bandTimeZone")).toBe("Asia/Tokyo");
+        expect(snapshot.band["dateTime.bandTimeZone"]?.capabilities).toEqual({ canView: true, canEdit: false });
+    });
+});

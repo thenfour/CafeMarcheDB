@@ -34,7 +34,10 @@ import {
     queryView,
 } from "src/core/db3/server/db3QueryCore";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { localeDatabase, resolveRequestLocale } from "src/locale/server/requestLocale";
+import { localizationDatabase, loadLocalizationCatalog } from "src/locale/server/localization";
+import { loadSettingsSnapshot, settingsDatabase } from "src/setting/server/settings";
+import { PresentationInputSchema, selectionFromPresentationInput } from "src/locale/shared/presentationInput";
+import { readSettingSnapshot } from "src/setting/shared/settingsContract";
 import {
     loadAuthorization,
     type CMServerAuthorization
@@ -175,12 +178,16 @@ async function getTopRelevantEvents(
 
 
 export default resolver.pipe(
+    resolver.zod(PresentationInputSchema),
     async (args, ctx: Ctx): Promise<DashboardDataDto> => {
         try {
             const sw = new Stopwatch();
 
-            const authorization = await loadAuthorization(ctx.session);
-            const locale = await resolveRequestLocale(localeDatabase, authorization.band?.id ?? null);
+            const authorization = await loadAuthorization(ctx.session, selectionFromPresentationInput(args.selection));
+            const [localization, settings] = await Promise.all([
+                loadLocalizationCatalog(localizationDatabase, authorization, args),
+                loadSettingsSnapshot(settingsDatabase, authorization),
+            ]);
             const currentUser = authorization.user;
 
             // Existing events retain the meaning of a status after that status
@@ -250,9 +257,10 @@ export default resolver.pipe(
                 serverBaseUri: clientServerState.baseUri,
                 serverStartupState: clientServerState.diagnostics,
                 relevantEventIds,
-                userSettings,
+                settings,
+                bandTimeZone: authorization.band ? readSettingSnapshot(settings, "band", "dateTime.bandTimeZone") : "Europe/Brussels",
                 authorization: authorization.toClientContext(),
-                locale: locale.ietfTag,
+                localization,
             };
             if (process.env.NODE_ENV === "development") {
                 sw.loghelper("total", ret);

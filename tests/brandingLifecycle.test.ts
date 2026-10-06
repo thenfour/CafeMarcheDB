@@ -98,6 +98,10 @@ vi.mock("src/blitz-client", () => ({
     getMutationCache: () => ({ subscribe: () => () => undefined }),
   },
 }))
+vi.mock("src/locale/components/PresentationProvider", async () => {
+  const ReactModule = await vi.importActual<typeof import("react")>("react");
+  return { PresentationProvider: ({ children }: React.PropsWithChildren) => ReactModule.createElement(ReactModule.Fragment, null, children) };
+})
 vi.mock("src/core/components/SnackbarContext", async () => {
   const ReactModule = await vi.importActual<typeof import("react")>("react")
   return {

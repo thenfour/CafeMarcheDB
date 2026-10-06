@@ -5,6 +5,12 @@ foundation in [04-implementation-plan.md](04-implementation-plan.md). It does
 not establish application readiness: domain descriptors, queries, mutations,
 and UI consumers still need phases 3–4.
 
+Phase 2 is now implemented. Its preserved preference lists, per-string resolution,
+`formattingLocale`, and four-hive settings transport replace the provisional
+dashboard locale contract described below. See
+[06-localization-settings.md](06-localization-settings.md) for the current APIs.
+The scalar `resolveRequestLocale` module is no longer used by application delivery.
+
 ## Trusted context
 
 `src/auth/server/serverAuthorization.ts` loads the person from the database and
@@ -235,9 +241,6 @@ original data-migration evidence remains in [03-sql-migration.md](03-sql-migrati
 
 ## Next step
 
-Proceed to phase 2: preserve ordered locale preferences, implement per-string
-scope-first fallback and provenance, select formatting independently, and provide
-authorized typed lookups for the four settings hives. Reuse existing matching
-helpers only where their semantics fit; do not reduce string-resolution inputs
-to the existing scalar locale. Those APIs should consume this trusted context
-before phase 3 adapts the band-instrument vertical slice and other domain writers.
+Phase 2 is implemented; see [06-localization-settings.md](06-localization-settings.md).
+Proceed to phase 3's band-instrument vertical slice using trusted authorization,
+the shared resolver and settings APIs, before expanding domain writers and views.

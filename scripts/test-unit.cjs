@@ -13,7 +13,7 @@ function findTestFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
     const entryPath = path.join(directory, entry.name)
     if (entry.isDirectory()) return findTestFiles(entryPath)
-    return entry.name.endsWith(".test.ts") ? [entryPath] : []
+    return /\.test\.tsx?$/.test(entry.name) ? [entryPath] : []
   })
 }
 

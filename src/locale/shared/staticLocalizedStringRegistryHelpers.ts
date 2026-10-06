@@ -4,6 +4,7 @@ import { z } from "zod";
 type StaticStringParamDef = {
     key: string;
     description: string;
+    type: "string" | "number" | "date";
 };
 
 type LocalizedStringFormat = "plain" | "markdown";
@@ -20,8 +21,8 @@ export function staticString<const T extends StaticStringDef<z.ZodType<string>>>
     return registryEntry(definition);
 }
 
-export function markdownStaticString<const T extends Omit<StaticStringDef<z.ZodType<string>>, "format">>(
-    definition: T & RegistryEntryWithoutKey<T["schema"]>,
+export function markdownStaticString<const T extends Omit<StaticStringDef<z.ZodType<string>>, "format" | "parameters">>(
+    definition: T & RegistryEntryWithoutKey<T["schema"]> & { parameters?: never },
 ) {
     // Keep the caller's literal metadata when adding the fixed format.
     return staticString<T & { readonly format: "markdown" }>({ ...definition, format: "markdown" });

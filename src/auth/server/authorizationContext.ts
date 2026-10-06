@@ -53,7 +53,7 @@ export function authorizationScopeKey(selection: AuthorizationScopeSelection): s
 }
 
 export async function resolveAuthorizationContext(
-    database: AuthorizationDatabase,
+    database: Pick<AuthorizationDatabase, "band">,
     selection: AuthorizationScopeSelection,
 ): Promise<ResolvedAuthorizationContext> {
     if (selection.kind === "platform") {

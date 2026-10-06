@@ -63,6 +63,7 @@
     "formidable": "3.5.1",
     "html-to-text": "9.0.5",
     "ical-generator": "7.1.0",
+    "intl-messageformat": "10.7.18",
     "jsdom": "26.1.0",
     "markdown-it": "13.0.1",
     "mime": "3.0.0",

@@ -1,14 +1,15 @@
 import { z } from "zod";
 import { RegistryEntryWithoutKey, registryEntry } from "./registryHelpers";
+import type { Permission } from "shared/permissions";
 
 // ---- settings registry helpers...
-// while tempting to add auth maps per setting, it's just complex and (so far) unnecessary.
-// that would largely replicate auth stuff from db3 xtable, which is a pretty sophisticated system.
-// so basically if we need per-setting auth, use customauth in xtable.
-export type SettingDefinition<TZodSchema extends z.ZodTypeAny> = RegistryEntryWithoutKey<TZodSchema>;
+export type SettingDefinition<TZodSchema extends z.ZodTypeAny> = RegistryEntryWithoutKey<TZodSchema> & {
+    readonly readPermission?: Permission | null;
+    readonly writePermission?: Permission;
+};
 
 export type BooleanSettingDefinition = SettingDefinition<z.ZodBoolean>;
-export type StringSettingDefinition = SettingDefinition<z.ZodString> & {
+export type StringSettingDefinition = SettingDefinition<z.ZodType<string>> & {
     stringFormat: "plain" | "markdown";
 };
 

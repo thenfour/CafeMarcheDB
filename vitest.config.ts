@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
     environment: "node",
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/**/*.test.{ts,tsx}"],
     setupFiles: ["tests/setup.ts"],
     // Direct and watch-mode runs use one isolated worker. The full-suite wrapper
     // additionally gives every jsdom file a fresh process; see scripts/test-unit.cjs.

@@ -5,11 +5,12 @@ import { hydrateView, type AnyDB3View, type ClientOf, type DtoOf } from "../core
 import { menuLinkListView } from "../entities/menuLink/menuLinkViews";
 import { SettingsDto } from "../schema/settings";
 import * as dashboard from "./dashboardReferences";
+import type { LocalizationCatalog } from "src/locale/shared/localizationCatalog";
 
 /** RPC payload: field codecs and reference expansion have not run yet. */
 export interface DashboardDataDto {
     authorization: ScopedAuthorizationData;
-    locale: string;
+    localization: LocalizationCatalog;
     permission: DtoOf<typeof dashboard.permissionDashboardView>[];
     userTag: DtoOf<typeof dashboard.userTagDashboardView>[];
     role: DtoOf<typeof dashboard.roleDashboardView>[];

@@ -2,6 +2,7 @@
 import { z } from "zod";
 import { enumSetting, stringSetting } from "./settingsHelpers";
 import { freezeRegistry } from "./registryHelpers";
+import { Permission } from "shared/permissions";
 
 // registry = things that can change during runtime.
 // environment = things that require restart of app, which don't make sense to change at runtime.
@@ -32,12 +33,14 @@ const SelectStyleSchema = z.enum(["inline", "dialog"]);
 
 export const kGlobalSettingsRegistry = freezeRegistry({
     "global.dev.textPalette": stringSetting({
+        readPermission: Permission.sysadmin,
         defaultValue: "",
         schema: z.string(),
         stringFormat: "plain",
     }),
 
     "global.files.upload.maxImageDimension": stringSetting({
+        readPermission: Permission.manage_files,
         defaultValue: "",
         schema: z.string(),
         stringFormat: "plain",

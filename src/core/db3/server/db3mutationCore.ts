@@ -1,14 +1,10 @@
 import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
 //'use server' - https://stackoverflow.com/questions/76957592/error-only-async-functions-are-allowed-to-be-exported-in-a-use-server-file
 
-import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
-import { isBandTimeZoneSetting, reanchorAllDayEvents } from "src/server/dateTime";
 
 import { TAnyModel } from "@/shared/rootroot";
 import { CMServerAuthorization, CMServerAuthorizationWithUser } from "@/src/auth/server/serverAuthorization";
-import { validateSettingValue } from "@/src/setting/server/settingWrite";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
-import { clearBrandCache } from "@/src/server/brand";
 import { AuthorizationError, assert } from "blitz";
 import db, { Prisma } from "db";
 import * as mime from 'mime';
@@ -39,6 +35,14 @@ export class DB3MutationAuthorizationError extends AuthorizationError {
         super();
         this.message = `Not authorized to mutate ${tableName} fields: ${fieldNames.join(", ")}.`;
         this.name = "DB3MutationAuthorizationError";
+    }
+}
+
+// !! LSMB TODO: do not  hardcode these table names. find a way to determine programatically
+// which tables should invoke this. a flag on xTable probably.
+function requireNonSettingMutation(tableName: string): void {
+    if (["setting", "globalsetting", "bandsetting", "usersetting", "bandusersetting"].includes(tableName.toLowerCase())) {
+        throw new AuthorizationError("Settings must use the registered, scoped settings API.");
     }
 }
 
@@ -194,17 +198,7 @@ export const CallMutateEventHooks = async (args: {
             });
             return;
         case "setting":
-            // if you change the band time zone setting, we need to recalculate
-            // all-day event date bounds.
-            // Why? Because "all day" events mean "all day for the band's timezone" -- not GMT.
-            // so those specific events need their date bounds recalculated.
-            // another way to think of it is "all day" is a day-long time range in a specific timezone.
-            // when that timezone changes, the stored UTC representation changes.
-            if (isBandTimeZoneSetting(args.model.name) || isBandTimeZoneSetting(args.oldModel?.name)) {
-                await reanchorAllDayEvents(transactionalDb, (isBandTimeZoneSetting(args.oldModel?.name) ? args.oldModel?.value?.trim() || DEFAULT_BAND_TIME_ZONE : DEFAULT_BAND_TIME_ZONE), await loadBandTimeZone(transactionalDb));
-            }
-            clearBrandCache();
-            return;
+            throw new AuthorizationError("Settings must use the registered, scoped settings API.");
         case "event":
             eventIdToUpdate = args.model.id;
             await RecalcEventDateRangeAndIncrementRevision({
@@ -405,6 +399,7 @@ export const UpdateAssociations = async ({ changeContext, auth, ...args }: Updat
 
 // DELETE ////////////////////////////////////////////////
 export const deleteImpl = async (table: db3.xTable, id: number, auth: CMServerAuthorization, deleteType: "softWhenPossible" | "hard", transactionalDb: TransactionalPrismaClient = db as any): Promise<boolean> => {
+    requireNonSettingMutation(table.tableName);
     try {
         const contextDesc = `delete:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
@@ -494,6 +489,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, auth: CMServerAu
 
 // INSERT ////////////////////////////////////////////////
 export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAnyModel, auth: CMServerAuthorization, transactionalDb: TransactionalPrismaClient = db as any): Promise<TReturnPayload> => {
+    requireNonSettingMutation(table.tableName);
     try {
         const contextDesc = `insert:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
@@ -548,9 +544,6 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             }
             // createdAt and updatedAt are done automatically by prisma.
 
-            if (table.tableName === db3.xSetting.tableName) {
-                validateSettingValue(authorizedLocalFields.name, authorizedLocalFields.value);
-            }
 
             //await requireUnmergedMutationUsers(transactionalDb, table, { ...authorizedLocalFields, ...authorizedAssociationFields });
             obj = await createDB3Row(table, dbTableClient, authorizedLocalFields);
@@ -602,6 +595,7 @@ interface UpdateImplResult<T> {
     didChangesOccur: boolean,
 };
 export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, auth: CMServerAuthorization, transactionalDb: TransactionalPrismaClient = db as any): Promise<UpdateImplResult<TAnyModel>> => {
+    requireNonSettingMutation(table.tableName);
     try {
         const contextDesc = `update:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
@@ -671,11 +665,6 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         }
 
         if (Object.keys(authorizedLocalFields).length > 0) {
-            if (table.tableName === db3.xSetting.tableName) {
-                // A raw setting edit can change only its name or only its value.
-                const setting = { ...fullOldObj, ...authorizedLocalFields };
-                validateSettingValue(setting.name, setting.value);
-            }
             const oldValues = getIntersectingFields(authorizedLocalFields, fullOldObj);
             obj = oldValues;
 

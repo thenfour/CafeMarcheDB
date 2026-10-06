@@ -59,7 +59,7 @@ export const useEventsForDateRange = (dateRange: CalendarRange) => {
                         const dates = getRangeCalendarDates(range, eventPresentationTimeZone(range, {
                             viewerTimeZone: dateRange.start.timeZone,
                             bandTimeZone: dashboardContext.bandTimeZone,
-                            locale: dashboardContext.userLocale,
+                            locale: dashboardContext.formattingLocale,
                         }))!;
                         return [{
                             id: event.publicId, // Preserve the picker cell's data-event-id.

@@ -5,6 +5,8 @@ The accepted execution checklist is
 The SQL migration is implemented and rehearsed; see
 [03-sql-migration.md](03-sql-migration.md). Phase 1's trusted context and access-control
 foundation is implemented; see [05-authorization-foundation.md](05-authorization-foundation.md).
+Phase 2's localization and settings foundation is implemented; see
+[06-localization-settings.md](06-localization-settings.md).
 Application recovery and production cutover remain ahead.
 
 This document records design rationale and earlier exploration. Its illustrative
@@ -947,8 +949,8 @@ validation in [04-implementation-plan.md](04-implementation-plan.md).
 -  [x] Target schema, four settings registries, and static string registry established.
 -  [x] Data-preserving SQL migration implemented and rehearsed on disposable
        databases; see [03-sql-migration.md](03-sql-migration.md).
--  [ ] Phase 1: trusted context, scoped authorization, new permissions, bootstrap.
--  [ ] Phase 2: typed localization and four-hive settings lookups/writes.
+-  [x] Phase 1: trusted context, scoped authorization, new permissions, bootstrap.
+-  [x] Phase 2: typed localization and four-hive settings lookups/writes.
 -  [ ] Phase 3: localized DB3 fields, xTables/views, and a complete band instrument
        vertical slice before expanding the patterns.
 -  [ ] Phase 4: application recovery, explicit localized column labels, temporary

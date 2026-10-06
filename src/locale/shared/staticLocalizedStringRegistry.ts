@@ -1,90 +1,6 @@
-
-// TO LOCALIZED STRING ---------------------------------------------
-// - menuLink.visiblePermission.DescriptionMarkdown
-// - event.visiblePermission.DescriptionMarkdown
-// - Song.visiblePermission.DescriptionMarkdown
-// - File.visiblePermission.DescriptionMarkdown
-
-// - RolesAdminPage_markdown
-// - EditUserTagsPage_markdown
-// - editSongTags_markdown
-// - InstrumentFunctionalGroupList_markdown
-// - instrumentList_markdown
-// - DashboardStats_SongsMarkdown
-// - customLink.redirectType.DescriptionMarkdown
-// - CustomLinksPageMarkdown
-// - MenuLinksPageMarkdown
-// - menuLink.groupName.DescriptionMarkdown
-// - menuLink.caption.DescriptionMarkdown
-// - menuLink.iconName.DescriptionMarkdown
-// - menuLink.linkType.DescriptionMarkdown
-// - menuLink.externalURI.DescriptionMarkdown
-// - menuLink.wikiSlug.DescriptionMarkdown
-// - menuLink.groupCssClass.DescriptionMarkdown
-// - menuLink.itemCssClass.DescriptionMarkdown
-
-// - EditEventTagsPage_markdown
-// - EventSegment.description.DescriptionMarkdown
-// - Event.workflowDef.DescriptionMarkdown
-// - NewEventSegmentDialogDescription
-// - NewEventSegmentDialogTitle
-
 import { z } from "zod";
 import { markdownStaticString, plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 import { freezeRegistry } from "@/src/setting/shared/registryHelpers";
-
-//     // // mostly pages or sections of pages...
-//     // HomeDescription = "HomeDescription",
-//     // event_description_mockup_markdown = "event_description_mockup_markdown",
-//     // EditEventAttendancesPage_markdown = "EditEventAttendancesPage_markdown",
-//     // editEvents_markdown = "editEvents_markdown",
-//     // EditEventSegmentsPage_markdown = "EditEventSegmentsPage_markdown",
-//     // EventSegmentUserResponsePage_markdown = "EventSegmentUserResponsePage_markdown",
-//     // EditEventSongListsPage_markdown = "EditEventSongListsPage_markdown",
-//     // EditEventSongListSongsPage_markdown = "EditEventSongListSongsPage_markdown",
-//     // EditEventStatusesPage_markdown = "EditEventStatusesPage_markdown",
-//     // EditEventTagsPage_markdown = "EditEventTagsPage_markdown",
-//     // EditEventTypesPage_markdown = "EditEventTypesPage_markdown",
-//     // EventUserResponsePage_markdown = "EventUserResponsePage_markdown",
-//     // EditFilesPage_markdown = "EditFilesPage_markdown",
-//     // EditFileTagsPage_markdown = "EditFileTagsPage_markdown",
-//     // EditFrontpageGalleryItemsPage_markdown = "EditFrontpageGalleryItemsPage_markdown",
-//     // EditSongCreditsPage_markdown = "EditSongCreditsPage_markdown",
-//     // editSongCreditTypes_markdown = "editSongCreditTypes_markdown",
-//     // editSongs_markdown = "editSongs_markdown",
-//     // editSongTags_markdown = "editSongTags_markdown",
-//     // editWikiPageTags_markdown = "editWikiPageTags_markdown",
-//     // EditUserTagsPage_markdown = "EditUserTagsPage_markdown",
-//     // events_markdown = "events_markdown",
-//     // frontpage_gallery_markdown = "frontpage_gallery_markdown",
-//     // files_markdown = "files_markdown",
-//     // info_text = "info_text",
-//     // InstrumentFunctionalGroupList_markdown = "InstrumentFunctionalGroupList_markdown",
-//     // instrumentList_markdown = "instrumentList_markdown",
-//     // profile_markdown = "profile_markdown",
-//     // rolePermissionsMatrixPage_markdown = "rolePermissionsMatrixPage_markdown",
-//     // RolesAdminPage_markdown = "RolesAdminPage_markdown",
-//     // settings_markdown = "settings_markdown",
-//     // songs_markdown = "songs_markdown",
-//     // usersearch_markdown = "usersearch_markdown",
-//     // AdminLogsPage_markdown = "AdminLogsPage_markdown",
-//     // UserInstrumentsPage_markdown = "UserInstrumentsPage_markdown",
-//     // EventSongListTabDescription = "EventSongListTabDescription",
-//     // EventAttendanceDetailMarkdown = "EventAttendanceDetailMarkdown",
-//     // EventCompletenessTabMarkdown = "EventCompletenessTabMarkdown",
-//     // FrontpageAgendaPage_markdown = "FrontpageAgendaPage_markdown",
-//     // BackstageFrontpageMarkdown = "BackstageFrontpageMarkdown",
-//     // BackstageFrontpageHeaderMarkdown = "BackstageFrontpageHeaderMarkdown",
-//     // DashboardStats_SongsMarkdown = "DashboardStats_SongsMarkdown",
-//     // DashboardStats_EventsMarkdown = "DashboardStats_EventsMarkdown",
-//     // CustomLinksPageMarkdown = "CustomLinksPageMarkdown",
-//     // MenuLinksPageMarkdown = "MenuLinksPageMarkdown",
-//     // GlobalWikiPage_Markdown = "GlobalWikiPage_Markdown",
-//     // SongHistoryTabDescription = "SongHistoryTabDescription",
-//     // StatsPage_markdown = "StatsPage_markdown",
-//     // profile_description_markdown = "profile_description_markdown",
-//     // EditFileDialogDescription = "EditFileDialogDescription",
-//     // QrCodeForThisPageDescriptionMarkdown = "QrCodeForThisPageDescriptionMarkdown",
 
 function defaultMarkdownStaticString() {
     return markdownStaticString({
@@ -112,6 +28,12 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
         defaultValue: "Cancel",
         description: "Label for a Cancel button",
         schema: z.string(),
+    }),
+    "common.items.count": plainStaticString({
+        defaultValue: "{count, plural, one {# item} other {# items}}",
+        description: "Number of items in a collection",
+        schema: z.string(),
+        parameters: [{ key: "count", description: "Item count", type: "number" }],
     }),
     // TODO: find better names, fill in defaults & descriptions, use correct types, parameters...
     "InstrumentFunctionalGroupList_markdown": defaultMarkdownStaticString(),
@@ -176,7 +98,6 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
     "EditEventSongListDialogDescription": defaultMarkdownStaticString(),
     "EditSongDialogDescription": defaultMarkdownStaticString(),
     "VisibilityControlSelectDialogDescription": defaultMarkdownStaticString(),
-    // Production settings migrated to the Cafe Marche band's en-US overrides.
     "menuLink.visiblePermission.DescriptionMarkdown": defaultMarkdownStaticString(),
     "event.visiblePermission.DescriptionMarkdown": defaultMarkdownStaticString(),
     "Song.visiblePermission.DescriptionMarkdown": defaultMarkdownStaticString(),
@@ -197,8 +118,22 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
     "general.fieldCaptions.id": defaultPlainStringStaticString(),
 });
 
-// const c = kStaticLocalizedStringRegistry["common.action.cancel"];
-
 export type StaticLocalizedStringKey = keyof typeof kStaticLocalizedStringRegistry;
-export type LocalizedMarkdownKey = keyof typeof kStaticLocalizedStringRegistry; // todo: filtered by markdown
-export type LocalizedPlainStringKey = keyof typeof kStaticLocalizedStringRegistry; // todo: filtered by plain strings
+
+type KeysWithFormat<TFormat extends "plain" | "markdown"> = {
+    [K in StaticLocalizedStringKey]: typeof kStaticLocalizedStringRegistry[K]["format"] extends TFormat ? K : never;
+}[StaticLocalizedStringKey];
+
+export type LocalizedMarkdownKey = KeysWithFormat<"markdown">;
+export type LocalizedPlainStringKey = KeysWithFormat<"plain">;
+
+type ParameterValue<T> = T extends "number" ? number : T extends "date" ? Date : string;
+
+export type StaticStringParameters<K extends LocalizedPlainStringKey> =
+    typeof kStaticLocalizedStringRegistry[K] extends { readonly parameters: readonly (infer P)[] }
+    ? { [Parameter in P as Parameter extends { key: infer Name extends string } ? Name : never]:
+        ParameterValue<Parameter extends { type: infer T } ? T : never> }
+    : never;
+
+export type StaticStringArguments<K extends LocalizedPlainStringKey> =
+    [StaticStringParameters<K>] extends [never] ? [] : [parameters: StaticStringParameters<K>];
