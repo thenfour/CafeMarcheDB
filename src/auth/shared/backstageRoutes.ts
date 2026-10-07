@@ -46,7 +46,7 @@ const routes = [
     { key: "calendar", pattern: "/backstage/calendar", caption: "Calendar subscription", permission: Permission.view_events_nonpublic },
     { key: "setlistPlanner", pattern: "/backstage/setlistPlanner", caption: "Setlist Planner", permission: Permission.setlist_planner_access },
     { key: "stats", pattern: "/backstage/stats", caption: "Event Stats", permission: Permission.view_events_reports },
-    { key: "featureReports", pattern: "/backstage/featureReports", caption: "Feature Usage", permission: Permission.view_feature_reports },
+    { key: "featureReports", pattern: "/backstage/featureReports", caption: "Feature Usage", permission: Permission.view_feature_reports, unscopedPermission: Permission.login },
     { key: "practiceTools", pattern: "/backstage/practice-tools", caption: "Practice Tools", permission: Permission.practice_tools_use },
 
     { key: "frontpagegallery", pattern: "/backstage/frontpagegallery", caption: "Photo Gallery", permission: Permission.edit_public_homepage },

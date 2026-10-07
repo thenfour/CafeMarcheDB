@@ -19,6 +19,15 @@ The reference inventory and checksums protect that baseline; restoration still
 requires executable tests and browser evidence. No recovery gate is closed by
 preserving source alone.
 
+Activity reporting is now coherently unavailable: its page displays registered
+localized recovery text, and all five reporting RPCs (timeline, general detail,
+facets, detail and CSV) require login and then reject before database access.
+Legacy readers lacked selected-band ownership; their helpers and report-only
+assertions are preserved under `activity-reports`. Existing telemetry writes and
+unrelated domain assertions remain executable. The duplicate instrument identity
+export found during this slice was also repaired by naming the public-ID schema
+`BandInstrumentIdentity`, separately from the existing payload identity type.
+
 ## Restored boundary
 
 - Current-account loading returns shared identity/contact fields, with no role
@@ -198,6 +207,29 @@ preserving source alone.
 
 ## Verification
 
+The activity-report probe used a fresh private target-schema MariaDB database on
+`127.0.0.1:32695`. A signed-in report manager opened the recovery page in account
+context and in two authorized bands, including explicit route-locale input. All
+five real report RPCs rejected without returning report data, including after
+granting platform Sysadmin. Anonymous calls required login. The HTTP telemetry
+endpoint still persisted the actor and selected band. Returning to the dashboard
+and report page produced no page errors; the rendered recovery notice was visually
+checked. The helper dropped its database and stopped its development server/browser;
+the private MariaDB instance was shut down (`temp/a0-activity-reports-browser-result.json`).
+The page's account-context explanation requires login; selected-band requests retain
+the report capability check.
+
+Focused report/page-boundary, instrument/member-instrument, telemetry and
+preservation checks pass, including the native telemetry suite and isolated DOM
+tests. Focused ESLint, `yarn migration:verify` and `git diff --check` pass. Normal
+typecheck diagnostics decreased from 211 to 195. The normal build now stops at
+`FileListItem.tsx`, where legacy File tag assignments do not match the target
+payload contract. The full-suite attempt failed in its Node batch with 278 failed
+tests and ten failed suites, before running isolated DOM files. The six edited
+mixed public-identity files retain the same 35 failing cases as their before-change
+run; their report-only assertions are preserved, not counted as passing tests.
+This is an A0 isolation slice, not a passing build or A0/A1 acceptance.
+
 The response/participant browser probe used a fresh private target-schema database
 on `127.0.0.1:32695`. A signed-in person switched between two bands, including a
 roleless membership. Real response and segment RPCs returned separate membership,
@@ -209,7 +241,8 @@ kinds, and revoked grants blocked the next request. Dashboard switching and retu
 to platform rendered with no page errors. The helper removed its database and
 stopped the development server/browser (`temp/a0-event-responses-browser-result.json`).
 This proves development reader delivery; full event UI and built-app verification
-remain pending. The normal build now stops in the deferred activity report.
+remain pending. That checkpoint's activity-report build blocker is now isolated;
+the current blocker is the File tag-assignment payload described above.
 
 The event-tag browser probe used a fresh private target-schema database on
 `127.0.0.1:32695` and a delegated platform catalog manager with a band role. It

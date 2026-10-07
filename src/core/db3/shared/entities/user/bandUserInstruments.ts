@@ -7,7 +7,7 @@ import { defineView, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { defineTable, makeColumnSet, prismaModel } from "../../db3core";
 import { BoolField, foreignRef, MakePKfield, MakePublicIdField } from "../../columnTypes/xTableColumnTypes";
-import { xBandInstrument, InstrumentIdentity } from "../instrument/bandInstrumentContracts";
+import { xBandInstrument, BandInstrumentIdentity } from "../instrument/bandInstrumentContracts";
 import { xBandUser, activeBandMembershipWhere } from "./bandUser";
 import { kReadOnlyAuthMap } from "../common/entityCommon";
 
@@ -123,9 +123,9 @@ const MembershipIdentity = z.string().refine(isPublicId).transform(value => pars
 const commandSchema = z.discriminatedUnion("kind", [
     z.object({
         kind: z.literal("replace"), membershipId: MembershipIdentity,
-        instrumentIds: z.array(InstrumentIdentity).max(64).refine(ids => new Set(ids).size === ids.length, "Duplicate instruments"),
+        instrumentIds: z.array(BandInstrumentIdentity).max(64).refine(ids => new Set(ids).size === ids.length, "Duplicate instruments"),
     }).strict(),
-    z.object({ kind: z.literal("setPrimary"), membershipId: MembershipIdentity, instrumentId: InstrumentIdentity }).strict(),
+    z.object({ kind: z.literal("setPrimary"), membershipId: MembershipIdentity, instrumentId: BandInstrumentIdentity }).strict(),
 ]);
 
 export type BandUserInstrumentsEdit = z.infer<typeof commandSchema>;

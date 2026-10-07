@@ -93,14 +93,16 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** repair or isolate the remaining DB3 payload and
-descriptor roots, including person-level instrument/tag relationships, then
-isolate deferred pages and non-page entry points together. Generic settings
-storage is no longer registered with DB3; the settings and branding pages use
+**Next implementation slice:** repair or isolate the remaining File/song/wiki
+DB3 payload and descriptor roots, beginning with File tag assignments and their
+Prisma payloads, then isolate deferred pages and non-page entry points together.
+Generic settings storage is no longer registered with DB3; the settings and branding pages use
 the authorized registered-hive editor. Shared client field declarations and
 callers now use registered labels/help on both
-named and legacy render paths. The normal build gets past Custom Links and the earlier event component failure,
-then stops at the deferred activity report's localized Menu Link caption contract.
+named and legacy render paths. Activity-report pages, RPCs, implementation helpers
+and report-only specifications are now coherently isolated and preserved. Activity
+recording remains active. The normal compiler now gets past that report dependency
+and stops at the legacy File tag-assignment payload contract.
 Preserve the working bootstrap and migrated membership/catalog contracts.
 Platform role administration and membership recovery enhancements remain deferred.
 
@@ -259,7 +261,8 @@ implementation/test references and verification obligations for audited removals
 | Calendar subscriptions | Private feeds and subscription/preview callers require explicit band context and active membership. Preferences, invitation groups, historical attendance, UIDs/revisions, setlists and band locale/branding remain supported. The account credential is shared across its band URLs; replacing it invalidates every band subscription. | Re-subscribe existing unscoped URLs using the selected band; verify in the built app during A0/A1. Full subscription-page localization and general event UI recovery remain separate. |
 | Portal routing | Recovery uses explicit `?bandPublicId=<publicId>` and optional `routeLocale`; omission never selects a default band. | Full routing after A1; retain enough explicit selection for A0. |
 | Custom Links | Scoped editor CRUD, file selection/serving, all redirect modes and visits are active. Public URLs require explicit `bandPublicId`; missing, malformed/repeated and unavailable bands return 404. The narrow read-only File target does not enable unfinished general file APIs. | Verify in the built application during A0/A1; integrate URLs with band portal roots when full routing lands after A1. |
-| Telemetry and activity reports | Recording uses explicit presentation context, server-owned actor/internal IDs and band-scoped associations. The formatting locale is separate from raw device locale/language; unregistered/deleted locales remain null. Analytics readers still contain obsolete relations and are not established as usable. | Verify recording in the built app during A0; adapt report permissions, queries, facets and projections before restoring analytics. Calendar-feed recording uses the subscriber and band/locale from its authorized snapshot. |
+| Telemetry recording | Recording uses explicit presentation context, server-owned actor/internal IDs and band-scoped associations. The formatting locale is separate from raw device locale/language; unregistered/deleted locales remain null. | Verify recording in the built app during A0. Calendar-feed recording uses the subscriber and band/locale from its authorized snapshot. Activity-report recovery is tracked separately below. |
+| Activity-report delivery | `/backstage/featureReports` explains temporary unavailability. All five report RPCs require login and reject before database access, including CSV export. Report implementations and affected specifications are preserved; telemetry recording remains active. | Restore explicit report ownership/permissions, localized references, timelines, facets, filtering, detail and CSV behavior under `activity-reports`; reactivate specifications and verify two-band/browser isolation. |
 | Legacy DB3 domains | Selected-band queries/row services reject undeclared ownership policies. | Migrate required domains for A0/A1; keep other domains coherently unavailable. |
 | Dashboard content and search | Bootstrap includes migrated shared event catalogs but omits events, announcements, role metadata, custom menus and other deferred catalogs. Home explains the restriction; global search is removed from the shell. Legacy sidebar/direct routes and non-page entry points are not yet isolated. | Finish coherent route/endpoint/source isolation during A0; restore content required by core workflows during A1. |
 | Platform role administration | Legacy Role descriptors, views, commands and account role controls are removed. Assignment/designation RPCs reject before database access; `/backstage/roles` and `/backstage/rolePermissions` explain unavailability. Existing global/band role definitions still authorize requests; membership role assignment remains available. | Build GlobalRole/BandRole and permission editors after A1. |

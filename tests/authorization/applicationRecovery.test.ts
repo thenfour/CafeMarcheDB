@@ -23,7 +23,13 @@ import mergeUsers from "src/auth/mutations/mergeUsers";
 import previewUserMerge from "src/auth/queries/previewUserMerge";
 import searchUserMergeCandidates from "src/auth/queries/searchUserMergeCandidates";
 import getUserMassAnalysis from "@db3/queries/getUserMassAnalysis";
+import getDetail from "src/core/components/featureReports/queries/getDetail";
+import getDetailCsv from "src/core/components/featureReports/queries/getDetailCsv";
+import getFacetedBreakdown from "src/core/components/featureReports/queries/getFacetedBreakdown";
+import getGeneralFeatureDetail from "src/core/components/featureReports/queries/getGeneralFeatureDetail";
+import getGeneralFeatureReport from "src/core/components/featureReports/queries/getGeneralFeatureReport";
 import { ApplicationFeatureUnavailableError } from "src/core/shared/applicationRecovery";
+import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { invokeResolver } from "./support/resolverHarness";
@@ -47,6 +53,40 @@ const deferredEndpoints = [
     { name: "commit account merge", call: (ctx: RequestContext) => invokeResolver(mergeUsers, { participants, confirmation: "a".repeat(64) }, ctx) },
     { name: "analyze account dependencies", call: (ctx: RequestContext) => invokeResolver(getUserMassAnalysis, { userId }, ctx) },
 ];
+
+const deferredReportEndpoints = [
+    { name: "activity details", resolve: getDetail },
+    { name: "activity CSV export", resolve: getDetailCsv },
+    { name: "activity facets", resolve: getFacetedBreakdown },
+    { name: "general activity details", resolve: getGeneralFeatureDetail },
+    { name: "activity timeline", resolve: getGeneralFeatureReport },
+];
+
+describe("deferred activity report readers", () => {
+    it.each(deferredReportEndpoints)("rejects $name without reading account, report or reference data", async ({ resolve }) => {
+        const reportManager = createAuthorizationTestUser("normal", {
+            id: 12,
+            permissions: [Permission.login, Permission.view_feature_reports],
+        });
+        // Legacy, selected-band and malformed requests must all reach the same inert boundary.
+        const requests: unknown[] = [
+            { refreshTrigger: 0, filterSpec: { selectedBucket: "2026-10-07" } },
+            { bandPublicId: parsePublicId<"Band">("ReportBand000001"), routeLocale: "fr-BE" },
+            null,
+        ];
+        for (const actor of [member, reportManager, sysadmin]) {
+            for (const input of requests) {
+                await expect(invokeResolver(resolve, input, createAuthorizationTestContext(actor)))
+                    .rejects.toThrow(ApplicationFeatureUnavailableError);
+            }
+        }
+    });
+
+    it.each(deferredReportEndpoints)("requires login before reporting availability for $name", async ({ resolve }) => {
+        await expect(invokeResolver(resolve, {}, createAuthorizationTestContext(null)))
+            .rejects.toThrow("login");
+    });
+});
 
 describe("deferred shared-account operations", () => {
     it.each(deferredEndpoints)("rejects $name for members and platform administrators without database access", async ({ call }) => {

@@ -9,7 +9,7 @@ vi.mock("db", async () => {
 import * as db3 from "@db3/db3";
 import executeDB3CommandMutation from "@db3/mutations/executeDB3Command";
 import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
-import { projectFeatureReportDetailItem, projectGeneralActivityReportDetailItem } from "src/core/components/featureReports/activityReportTypes";
+
 import { createActionRecord } from "@db3/server/recordActionServer";
 import { MakePublicFeedResponseSpec } from "src/core/db3/shared/publicFeedApi";
 import { Permission } from "shared/permissions";
@@ -156,27 +156,47 @@ describe("FrontpageGalleryItem public identity", () => {
         expect(authorizationTestDb.snapshot("action")[0]?.frontpageGalleryItemId).toBe(20);
     });
 
-    it("projects gallery report references without natural row identity", () => {
-        const evidence = {
-            id: 900, createdAt: new Date(), feature: ActivityFeature.frontpagegallery_item_edit, isClient: true,
-            uri: null, queryText: null, context: null, pointerType: null,
-            screenWidth: null, screenHeight: null, deviceClass: null, browserName: null,
-            operatingSystem: null, language: null, locale: null, timezone: null,
-            user: null, userId: null, instrument: null, instrumentId: null, event: null,
-            eventId: null, song: null, songId: null, file: null, fileId: null,
-            wikiPage: null, wikiPageId: null, eventSegment: null, eventSegmentId: null,
-            attendance: null, attendanceId: null, customLink: null, customLinkId: null,
-            eventSongList: null, eventSongListId: null,
-            frontpageGalleryItem: { publicId: galleryPublicId(20) }, frontpageGalleryItemId: 20,
-            menuLink: null, menuLinkId: null, setlistPlan: null, setlistPlanId: null,
-            songCreditType: null, songCreditTypeId: null,
-        };
-        for (const report of [
-            projectFeatureReportDetailItem(evidence),
-            projectGeneralActivityReportDetailItem(evidence, null),
-        ]) {
-            expect(report.frontpageGalleryItemId).toBe(galleryPublicId(20));
-            expect(report.frontpageGalleryItem).toEqual({ publicId: galleryPublicId(20) });
-        }
-    });
+
 });
+
+// MIGRATION_RESTORE: activity-reports
+// Source: 9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/galleryPublicIds.test.ts:12-12
+// Reason: Legacy activity readers lack selected-band ownership and localized reference contracts, blocking application recovery.
+// Restore: Restore activity timelines, facets, filters, drill-down details and CSV export with fresh authorization, explicit band ownership, localized references and public identities; preserve anonymization and redaction.
+// Verification: Reactivate the preserved projection/filter specifications; test two bands, platform policy, grant revocation, anonymization, private references, CSV and browser report navigation/context switches.
+// SHA256: 3198b67481a9542898cda7eef5a49fb70a0968f2b3d5b2497e41a8a11413ed69
+// MIGRATION_REFERENCE_BEGIN
+// import { projectFeatureReportDetailItem, projectGeneralActivityReportDetailItem } from "src/core/components/featureReports/activityReportTypes";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: activity-reports
+// Source: 9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/galleryPublicIds.test.ts:159-181
+// Reason: Legacy activity readers lack selected-band ownership and localized reference contracts, blocking application recovery.
+// Restore: Restore activity timelines, facets, filters, drill-down details and CSV export with fresh authorization, explicit band ownership, localized references and public identities; preserve anonymization and redaction.
+// Verification: Reactivate the preserved projection/filter specifications; test two bands, platform policy, grant revocation, anonymization, private references, CSV and browser report navigation/context switches.
+// SHA256: 2b7497a6f5ebeb961564cdd221d214533b4151a88a3665fe121bff78644ae301
+// MIGRATION_REFERENCE_BEGIN
+//     it("projects gallery report references without natural row identity", () => {
+//         const evidence = {
+//             id: 900, createdAt: new Date(), feature: ActivityFeature.frontpagegallery_item_edit, isClient: true,
+//             uri: null, queryText: null, context: null, pointerType: null,
+//             screenWidth: null, screenHeight: null, deviceClass: null, browserName: null,
+//             operatingSystem: null, language: null, locale: null, timezone: null,
+//             user: null, userId: null, instrument: null, instrumentId: null, event: null,
+//             eventId: null, song: null, songId: null, file: null, fileId: null,
+//             wikiPage: null, wikiPageId: null, eventSegment: null, eventSegmentId: null,
+//             attendance: null, attendanceId: null, customLink: null, customLinkId: null,
+//             eventSongList: null, eventSongListId: null,
+//             frontpageGalleryItem: { publicId: galleryPublicId(20) }, frontpageGalleryItemId: 20,
+//             menuLink: null, menuLinkId: null, setlistPlan: null, setlistPlanId: null,
+//             songCreditType: null, songCreditTypeId: null,
+//         };
+//         for (const report of [
+//             projectFeatureReportDetailItem(evidence),
+//             projectGeneralActivityReportDetailItem(evidence, null),
+//         ]) {
+//             expect(report.frontpageGalleryItemId).toBe(galleryPublicId(20));
+//             expect(report.frontpageGalleryItem).toEqual({ publicId: galleryPublicId(20) });
+//         }
+//     });
+// MIGRATION_REFERENCE_END

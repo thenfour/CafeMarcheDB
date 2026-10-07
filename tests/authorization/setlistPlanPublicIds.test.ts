@@ -15,7 +15,7 @@ import reorderSetlistPlans from "@db3/mutations/reorderSetlistPlans";
 import { createActionRecord } from "@db3/server/recordActionServer";
 import { CreateNewSetlistPlan, ZSetlistPlan } from "@db3/shared/setlistPlanTypes";
 import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
-import { projectFeatureReportDetailItem, projectGeneralActivityReportDetailItem } from "src/core/components/featureReports/activityReportTypes";
+
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures";
@@ -137,29 +137,49 @@ describe("Setlist planning public identities", () => {
         expect(authorizationTestDb.snapshot("action")[0]?.setlistPlanId).toBe(30);
     });
 
-    it("projects the ledger plan reference without its natural ID", () => {
-        const evidence = {
-            id: 900, createdAt: new Date(), feature: ActivityFeature.setlist_plan_save, isClient: true,
-            uri: null, queryText: null, context: null, pointerType: null,
-            screenWidth: null, screenHeight: null, deviceClass: null, browserName: null,
-            operatingSystem: null, language: null, locale: null, timezone: null,
-            user: null, userId: null, instrument: null, instrumentId: null, event: null,
-            eventId: null, song: null, songId: null, file: null, fileId: null,
-            wikiPage: null, wikiPageId: null, eventSegment: null, eventSegmentId: null,
-            attendance: null, attendanceId: null, customLink: null, customLinkId: null,
-            eventSongList: null, eventSongListId: null,
-            frontpageGalleryItem: null, frontpageGalleryItemId: null,
-            menuLink: null, menuLinkId: null,
-            setlistPlan: { publicId: planId(30), name: "Plan 30" }, setlistPlanId: 30,
-            songCreditType: null, songCreditTypeId: null,
-        };
-        for (const report of [
-            projectFeatureReportDetailItem(evidence),
-            projectGeneralActivityReportDetailItem(evidence, null),
-        ]) {
-            expect(report.setlistPlanId).toBe(planId(30));
-            expect(report.setlistPlan).toEqual({ publicId: planId(30), name: "Plan 30" });
-            expect(JSON.stringify(report)).not.toContain('"setlistPlanId":30');
-        }
-    });
+
 });
+
+// MIGRATION_RESTORE: activity-reports
+// Source: 9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/setlistPlanPublicIds.test.ts:18-18
+// Reason: Legacy activity readers lack selected-band ownership and localized reference contracts, blocking application recovery.
+// Restore: Restore activity timelines, facets, filters, drill-down details and CSV export with fresh authorization, explicit band ownership, localized references and public identities; preserve anonymization and redaction.
+// Verification: Reactivate the preserved projection/filter specifications; test two bands, platform policy, grant revocation, anonymization, private references, CSV and browser report navigation/context switches.
+// SHA256: 3198b67481a9542898cda7eef5a49fb70a0968f2b3d5b2497e41a8a11413ed69
+// MIGRATION_REFERENCE_BEGIN
+// import { projectFeatureReportDetailItem, projectGeneralActivityReportDetailItem } from "src/core/components/featureReports/activityReportTypes";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: activity-reports
+// Source: 9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/setlistPlanPublicIds.test.ts:140-164
+// Reason: Legacy activity readers lack selected-band ownership and localized reference contracts, blocking application recovery.
+// Restore: Restore activity timelines, facets, filters, drill-down details and CSV export with fresh authorization, explicit band ownership, localized references and public identities; preserve anonymization and redaction.
+// Verification: Reactivate the preserved projection/filter specifications; test two bands, platform policy, grant revocation, anonymization, private references, CSV and browser report navigation/context switches.
+// SHA256: 76d6a51ba5d4ed5d0b01d6026513b428eaa08da5d9d8fd71ec402b1744da5b17
+// MIGRATION_REFERENCE_BEGIN
+//     it("projects the ledger plan reference without its natural ID", () => {
+//         const evidence = {
+//             id: 900, createdAt: new Date(), feature: ActivityFeature.setlist_plan_save, isClient: true,
+//             uri: null, queryText: null, context: null, pointerType: null,
+//             screenWidth: null, screenHeight: null, deviceClass: null, browserName: null,
+//             operatingSystem: null, language: null, locale: null, timezone: null,
+//             user: null, userId: null, instrument: null, instrumentId: null, event: null,
+//             eventId: null, song: null, songId: null, file: null, fileId: null,
+//             wikiPage: null, wikiPageId: null, eventSegment: null, eventSegmentId: null,
+//             attendance: null, attendanceId: null, customLink: null, customLinkId: null,
+//             eventSongList: null, eventSongListId: null,
+//             frontpageGalleryItem: null, frontpageGalleryItemId: null,
+//             menuLink: null, menuLinkId: null,
+//             setlistPlan: { publicId: planId(30), name: "Plan 30" }, setlistPlanId: 30,
+//             songCreditType: null, songCreditTypeId: null,
+//         };
+//         for (const report of [
+//             projectFeatureReportDetailItem(evidence),
+//             projectGeneralActivityReportDetailItem(evidence, null),
+//         ]) {
+//             expect(report.setlistPlanId).toBe(planId(30));
+//             expect(report.setlistPlan).toEqual({ publicId: planId(30), name: "Plan 30" });
+//             expect(JSON.stringify(report)).not.toContain('"setlistPlanId":30');
+//         }
+//     });
+// MIGRATION_REFERENCE_END

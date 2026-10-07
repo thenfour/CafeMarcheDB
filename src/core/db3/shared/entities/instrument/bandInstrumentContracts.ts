@@ -17,7 +17,7 @@ import { type DtoOf } from "../../core/db3View";
 import { defineReferenceContract, reference } from "../../core/db3Hydration";
 
 const PublicId = z.string().refine(isPublicId, "Expected a public ID");
-export const InstrumentIdentity = PublicId.transform(value => parsePublicId<"Instrument">(value));
+export const BandInstrumentIdentity = PublicId.transform(value => parsePublicId<"Instrument">(value));
 export const GroupIdentity = PublicId.transform(value => parsePublicId<"InstrumentFunctionalGroup">(value));
 
 const { authMap, sourceAuthMap, tableAuthMap } = bandCatalogAuth(Permission.admin_instruments);
@@ -76,7 +76,7 @@ export const xBandInstrument = defineTable({
     tableName: "bandInstrument",
     tableUniqueName: "BandInstrument",
     prismaModel: prismaModel<Prisma.BandInstrumentDelegate>(),
-    getIdentity: (row: { publicId: z.infer<typeof InstrumentIdentity> }) => row.publicId,
+    getIdentity: (row: { publicId: z.infer<typeof BandInstrumentIdentity> }) => row.publicId,
     deletePolicy: "disabled",
     tableAuthMap, queryStrategy: "resolved",
     bandScope: {
@@ -97,7 +97,7 @@ export const xBandInstrument = defineTable({
     }),
     fields: {
         ...bandCatalogFields({ authMap }),
-        publicId: MakePublicIdField<z.infer<typeof InstrumentIdentity>>(),
+        publicId: MakePublicIdField<z.infer<typeof BandInstrumentIdentity>>(),
         autoAssignFileLeafRegex: inheritedField(new GenericStringField({
             columnName: "autoAssignFileLeafRegex", allowNull: true,
             format: "regex", maxLength: 768, allowQuickFilter: false, authMap

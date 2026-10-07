@@ -18,7 +18,7 @@ import getImportEventData from "@db3/queries/getImportEventData";
 import { createActionRecord } from "@db3/server/recordActionServer";
 import attendanceApi from "src/pages/api/event/getUserAttendance";
 import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
-import { projectFeatureReportDetailItem, projectGeneralActivityReportDetailItem } from "src/core/components/featureReports/activityReportTypes";
+
 import { Permission } from "shared/permissions";
 import { isPublicId, parsePublicId, type EventAttendancePublicId } from "shared/publicId";
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
@@ -214,26 +214,52 @@ describe("EventAttendance public identities", () => {
         expect(result.responses).toEqual([expect.objectContaining({ userId: actor.publicId, attendanceId: attendance.publicId })]);
     });
 
-    it("stores telemetry references as numeric foreign keys and projects report and CSV references as public", async () => {
+    it("stores telemetry references as numeric foreign keys", async () => {
         const input = { feature: ActivityFeature.attendance_response, attendanceId: attendance.publicId };
         expect(() => ZTRecordActionArgs.parse(input)).not.toThrow();
         expect(() => ZTRecordActionArgs.parse({ ...input, attendanceId: 2 })).toThrow();
         await createActionRecord({ ...input, isClient: true }, { bandId: null, localeContextId: null });
         expect(authorizationTestDb.snapshot("action")[0]?.attendanceId).toBe(2);
-        const evidence = {
-            id: 900, createdAt: new Date(), feature: ActivityFeature.attendance_response, isClient: true,
-            uri: null, queryText: null, context: null, pointerType: null, screenWidth: null, screenHeight: null,
-            deviceClass: null, browserName: null, operatingSystem: null, language: null, locale: null, timezone: null,
-            user: null, userId: null, instrument: null, instrumentId: null, event: null, eventId: null,
-            song: null, songId: null, file: null, fileId: null, wikiPage: null, wikiPageId: null,
-            eventSegment: null, eventSegmentId: null, attendance, attendanceId: attendance.id,
-            customLink: null, customLinkId: null, frontpageGalleryItem: null, frontpageGalleryItemId: null,
-            menuLink: null, menuLinkId: null, setlistPlan: null, setlistPlanId: null, songCreditType: null,
-            songCreditTypeId: null, eventSongList: null, eventSongListId: null,
-        };
-        for (const report of [projectFeatureReportDetailItem(evidence), projectGeneralActivityReportDetailItem(evidence, null)]) {
-            expect(report).toMatchObject({ id: 900, attendanceId: attendance.publicId, attendance: { publicId: attendance.publicId } });
-            expect(report.attendance).not.toHaveProperty("id");
-        }
     });
 });
+
+// MIGRATION_RESTORE: activity-reports
+// Source: 9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/eventAttendancePublicIds.test.ts:21-21
+// Reason: Legacy activity readers lack selected-band ownership and localized reference contracts, blocking application recovery.
+// Restore: Restore activity timelines, facets, filters, drill-down details and CSV export with fresh authorization, explicit band ownership, localized references and public identities; preserve anonymization and redaction.
+// Verification: Reactivate the preserved projection/filter specifications; test two bands, platform policy, grant revocation, anonymization, private references, CSV and browser report navigation/context switches.
+// SHA256: 3198b67481a9542898cda7eef5a49fb70a0968f2b3d5b2497e41a8a11413ed69
+// MIGRATION_REFERENCE_BEGIN
+// import { projectFeatureReportDetailItem, projectGeneralActivityReportDetailItem } from "src/core/components/featureReports/activityReportTypes";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: activity-reports
+// Source: 9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/eventAttendancePublicIds.test.ts:217-238
+// Reason: Legacy activity readers lack selected-band ownership and localized reference contracts, blocking application recovery.
+// Restore: Restore activity timelines, facets, filters, drill-down details and CSV export with fresh authorization, explicit band ownership, localized references and public identities; preserve anonymization and redaction.
+// Verification: Reactivate the preserved projection/filter specifications; test two bands, platform policy, grant revocation, anonymization, private references, CSV and browser report navigation/context switches.
+// SHA256: 38ac312d02813d7f94ecadde37f741631d552c4425ab2e0075a4ec8c29f8311b
+// MIGRATION_REFERENCE_BEGIN
+//     it("stores telemetry references as numeric foreign keys and projects report and CSV references as public", async () => {
+//         const input = { feature: ActivityFeature.attendance_response, attendanceId: attendance.publicId };
+//         expect(() => ZTRecordActionArgs.parse(input)).not.toThrow();
+//         expect(() => ZTRecordActionArgs.parse({ ...input, attendanceId: 2 })).toThrow();
+//         await createActionRecord({ ...input, isClient: true }, { bandId: null, localeContextId: null });
+//         expect(authorizationTestDb.snapshot("action")[0]?.attendanceId).toBe(2);
+//         const evidence = {
+//             id: 900, createdAt: new Date(), feature: ActivityFeature.attendance_response, isClient: true,
+//             uri: null, queryText: null, context: null, pointerType: null, screenWidth: null, screenHeight: null,
+//             deviceClass: null, browserName: null, operatingSystem: null, language: null, locale: null, timezone: null,
+//             user: null, userId: null, instrument: null, instrumentId: null, event: null, eventId: null,
+//             song: null, songId: null, file: null, fileId: null, wikiPage: null, wikiPageId: null,
+//             eventSegment: null, eventSegmentId: null, attendance, attendanceId: attendance.id,
+//             customLink: null, customLinkId: null, frontpageGalleryItem: null, frontpageGalleryItemId: null,
+//             menuLink: null, menuLinkId: null, setlistPlan: null, setlistPlanId: null, songCreditType: null,
+//             songCreditTypeId: null, eventSongList: null, eventSongListId: null,
+//         };
+//         for (const report of [projectFeatureReportDetailItem(evidence), projectGeneralActivityReportDetailItem(evidence, null)]) {
+//             expect(report).toMatchObject({ id: 900, attendanceId: attendance.publicId, attendance: { publicId: attendance.publicId } });
+//             expect(report.attendance).not.toHaveProperty("id");
+//         }
+//     });
+// MIGRATION_REFERENCE_END

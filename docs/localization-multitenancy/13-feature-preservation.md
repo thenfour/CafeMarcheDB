@@ -41,6 +41,7 @@ running tests. Neither compiler exclusions nor TypeScript suppressions are used.
 | `account-analysis` | Authorized dependency counts, risk summaries and two-account comparisons. |
 | `dashboard-content` | Relevant events, calendar, announcements/wiki, custom navigation and the required reference catalogs. |
 | `global-search` | Shell search, authorized domain readers, keyboard behavior, selected-band links and cache isolation. |
+| `activity-reports` | Activity timelines, facets, filtering, detail and CSV exports with explicit band/platform authorization, localized references, public identities and anonymization/redaction. Telemetry recording remains executable. |
 | `markdown-editing` | Inline edit/cancel/save/save-and-close, authorization, feedback and refresh against explicit translation scope and locale. |
 | `settings-editors` | Existing settings/branding workflows through typed hives, including time-zone reanchoring and cache invalidation. Replaced storage APIs are historical references. |
 | `catalog-help` | Song-tag help Markdown alongside the migrated editor. Its rendering call is restored; browser verification remains pending. |
@@ -110,6 +111,13 @@ membership reference. Native, DOM and development-browser evidence verifies this
 reader slice and existing invitation precedence/unanswered-response behavior.
 No feature is newly deferred or closed: full event search/editing, invitation
 administration and member-profile recovery obligations remain pending.
+
+Activity-report isolation adds references from `9306d02d` for the page, five RPCs,
+report-only helpers and affected specifications. Mixed public-identity files retain
+their telemetry and domain tests; only the report assertions are preserved as
+inactive source. The dedicated report-redaction specification uses the checked
+deferred-test marker. The `activity-reports` obligation remains pending until
+the complete reporting workflow is restored and verified.
 
 The checker detects missing references and inconsistent closure records. Review
 must still establish that the recorded evidence proves parity and that a

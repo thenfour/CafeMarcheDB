@@ -12,7 +12,7 @@ import query from "@db3/queries/db3queries";
 import insertEvent from "@db3/mutations/insertEvent";
 import { createActionRecord } from "@db3/server/recordActionServer";
 import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
-import { projectFeatureReportDetailItem, projectGeneralActivityReportDetailItem } from "src/core/components/featureReports/activityReportTypes";
+
 import { Permission } from "shared/permissions";
 import { isPublicId } from "shared/publicId";
 import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
@@ -199,28 +199,48 @@ describe("Event setlist public identities", () => {
         await createActionRecord({ ...input, isClient: true }, { bandId: 1, localeContextId: null });
         expect(authorizationTestDb.snapshot("action")[0]?.eventSongListId).toBe(50);
     });
-    it("projects report and CSV setlist references without natural row identity", () => {
-        const evidence = {
-            id: 900, createdAt: new Date(), feature: ActivityFeature.setlist_edit, isClient: true,
-            uri: null, queryText: null, context: null, pointerType: null,
-            screenWidth: null, screenHeight: null, deviceClass: null, browserName: null,
-            operatingSystem: null, language: null, locale: null, timezone: null,
-            user: null, userId: null, instrument: null, instrumentId: null, event: null,
-            eventId: null, song: null, songId: null, file: null, fileId: null,
-            wikiPage: null, wikiPageId: null, eventSegment: null, eventSegmentId: null,
-            attendance: null, attendanceId: null, customLink: null, customLinkId: null,
-            frontpageGalleryItem: null, frontpageGalleryItemId: null,
-            menuLink: null, menuLinkId: null, setlistPlan: null, setlistPlanId: null,
-            songCreditType: null, songCreditTypeId: null, eventSongListId: 50,
-            eventSongList: { id: 50, publicId: listPublicId(50), name: "First set", eventId: 100, event: { publicId: event.publicId } },
-        };
-        const detail = projectFeatureReportDetailItem(evidence);
-        const general = projectGeneralActivityReportDetailItem(evidence, null);
-        for (const result of [detail, general]) {
-            expect(result.eventSongListId).toBe(listPublicId(50));
-            expect(result.eventSongList).toEqual({ publicId: listPublicId(50), name: "First set", eventId: event.publicId });
-            expect(result.id).toBe(900); // Action keeps its ledger identity.
-        }
-    });
+
 
 });
+
+// MIGRATION_RESTORE: activity-reports
+// Source: 9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/eventSongListPublicIds.test.ts:15-15
+// Reason: Legacy activity readers lack selected-band ownership and localized reference contracts, blocking application recovery.
+// Restore: Restore activity timelines, facets, filters, drill-down details and CSV export with fresh authorization, explicit band ownership, localized references and public identities; preserve anonymization and redaction.
+// Verification: Reactivate the preserved projection/filter specifications; test two bands, platform policy, grant revocation, anonymization, private references, CSV and browser report navigation/context switches.
+// SHA256: 3198b67481a9542898cda7eef5a49fb70a0968f2b3d5b2497e41a8a11413ed69
+// MIGRATION_REFERENCE_BEGIN
+// import { projectFeatureReportDetailItem, projectGeneralActivityReportDetailItem } from "src/core/components/featureReports/activityReportTypes";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: activity-reports
+// Source: 9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/eventSongListPublicIds.test.ts:202-224
+// Reason: Legacy activity readers lack selected-band ownership and localized reference contracts, blocking application recovery.
+// Restore: Restore activity timelines, facets, filters, drill-down details and CSV export with fresh authorization, explicit band ownership, localized references and public identities; preserve anonymization and redaction.
+// Verification: Reactivate the preserved projection/filter specifications; test two bands, platform policy, grant revocation, anonymization, private references, CSV and browser report navigation/context switches.
+// SHA256: c5e19376ccb8227fbd20222637bc4009bc65fcc9cda96bfe12c3d701ca33892e
+// MIGRATION_REFERENCE_BEGIN
+//     it("projects report and CSV setlist references without natural row identity", () => {
+//         const evidence = {
+//             id: 900, createdAt: new Date(), feature: ActivityFeature.setlist_edit, isClient: true,
+//             uri: null, queryText: null, context: null, pointerType: null,
+//             screenWidth: null, screenHeight: null, deviceClass: null, browserName: null,
+//             operatingSystem: null, language: null, locale: null, timezone: null,
+//             user: null, userId: null, instrument: null, instrumentId: null, event: null,
+//             eventId: null, song: null, songId: null, file: null, fileId: null,
+//             wikiPage: null, wikiPageId: null, eventSegment: null, eventSegmentId: null,
+//             attendance: null, attendanceId: null, customLink: null, customLinkId: null,
+//             frontpageGalleryItem: null, frontpageGalleryItemId: null,
+//             menuLink: null, menuLinkId: null, setlistPlan: null, setlistPlanId: null,
+//             songCreditType: null, songCreditTypeId: null, eventSongListId: 50,
+//             eventSongList: { id: 50, publicId: listPublicId(50), name: "First set", eventId: 100, event: { publicId: event.publicId } },
+//         };
+//         const detail = projectFeatureReportDetailItem(evidence);
+//         const general = projectGeneralActivityReportDetailItem(evidence, null);
+//         for (const result of [detail, general]) {
+//             expect(result.eventSongListId).toBe(listPublicId(50));
+//             expect(result.eventSongList).toEqual({ publicId: listPublicId(50), name: "First set", eventId: event.publicId });
+//             expect(result.id).toBe(900); // Action keeps its ledger identity.
+//         }
+//     });
+// MIGRATION_REFERENCE_END
