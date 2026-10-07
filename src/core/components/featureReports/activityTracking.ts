@@ -304,7 +304,7 @@ function detectBrowser(uaData?: /* NavigatorUAData */ any): Browsers | string | 
     if (/Edg/i.test(ua)) return Browsers.edge;
     if (/OPR|Opera/i.test(ua)) return Browsers.opera;
 
-    /* Brave: two signals – “Brave” in UA (desktop) or the `navigator.brave` hook */
+    /* Brave: two signals – "Brave" in UA (desktop) or the `navigator.brave` hook */
     if (/Brave/i.test(ua) ||
         (typeof navigator === 'object' && (navigator as any).brave)) return Browsers.brave;
 

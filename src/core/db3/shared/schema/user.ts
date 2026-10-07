@@ -214,6 +214,7 @@ export const xUserMinimum = db3.defineTable({
             columnName,
             allowNull: false,
             format: "title",
+            maxLength: 768,
             specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xUserBasicProfileAuthMap,
         }),
@@ -228,6 +229,7 @@ export const xUserMinimum = db3.defineTable({
             columnName,
             allowNull: true,
             format: "plain",
+            maxLength: 768,
             authMap: xUserContactInfoAuthMap,
         }),
         isSysAdmin: columnName => new BoolField({

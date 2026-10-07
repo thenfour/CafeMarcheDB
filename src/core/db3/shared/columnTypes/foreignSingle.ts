@@ -1,5 +1,6 @@
 
 import { TAnyModel } from "@/shared/rootroot";
+import type { SortDirection } from "shared/rootroot";
 import { assertIsNumberArray } from "shared/arrayUtils";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { z } from "zod";
@@ -32,6 +33,10 @@ type ForeignSingleFieldValueArgs<
     defaultValue?: TForeign | null;
     getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
     specialFunction?: SqlSpecialColumnFunction | undefined;
+
+    // The relation's read policy must cover this display member before exposing sorting.
+    // TODO: this needs to be a concern of the view, not the entity field def
+    sortBy?: Extract<keyof TForeign, string>;
 };
 
 type ForeignSingleFieldCommonArgs<
@@ -100,6 +105,7 @@ export class ForeignSingleField<
     allowNull: TAllowNull;
     readonly foreignKeyReadTransportSchema: z.ZodType<DB3IdentityOf<TTargetTable> | null>;
     defaultValue: TForeign | null;
+    readonly sortBy?: string;
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
 
     get foreignTableID(): string {
@@ -155,6 +161,7 @@ export class ForeignSingleField<
 
         //this.fkMember = args.fkMember;
         this.allowNull = args.allowNull;
+        this.sortBy = args.sortBy;
         // The database FK may be numeric while its read transport is a public
         // ID. Resolve the target's canonical identity field only when parsing,
         // preserving lazy/self-referential table initialization.
@@ -287,6 +294,17 @@ export class ForeignSingleField<
 
     SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
     SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
+
+    getPrismaOrderBy = (direction: SortDirection): TAnyModel => {
+        if (!this.sortBy) {
+            throw new Error(`Relation ${this.member} has no declared order member.`);
+        }
+        const target = this.getForeignTableSchema().getColumn(this.sortBy);
+        if (!target) {
+            throw new Error(`Unknown relation order member ${this.member}.${this.sortBy}.`);
+        }
+        return { [this.member]: target.getPrismaOrderBy(direction) };
+    };
     getDiscreteCriterionTargetTable = (): xTable => this.getForeignTableSchema();
 
     SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => {
@@ -462,6 +480,7 @@ export const foreignRef = <
         requireVisibleTarget: args.requireVisibleTarget,
         defaultValue: args.defaultValue,
         specialFunction: args.specialFunction,
+        sortBy: args.sortBy,
         getForeignTable,
         getQuickFilterWhereClause: args.getQuickFilterWhereClause ?? (() => false),
     };
@@ -533,6 +552,7 @@ export const foreignRefByTableId = <
             requireVisibleTarget: args.requireVisibleTarget,
             defaultValue: args.defaultValue,
             specialFunction: args.specialFunction,
+            sortBy: args.sortBy,
             foreignTableID,
             getQuickFilterWhereClause: args.getQuickFilterWhereClause ?? (() => false),
         };

@@ -1,8 +1,39 @@
 import { z } from "zod";
 import { plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 
-const label = (defaultValue: string) => plainStaticString({ defaultValue, description: "Band member assignment label", schema: z.string() });
+const label = (defaultValue: string) => plainStaticString({ defaultValue, description: "Band membership interface label", schema: z.string() });
 export const membershipStrings = {
+    "membership.profile.title": label("Member profile"),
+    "membership.profile.edit": label("Edit shared profile"),
+    "membership.profile.save": label("Save profile"),
+    "membership.profile.name": label("Name"),
+    "membership.profile.phone": label("Phone"),
+    "membership.profile.email": label("Email"),
+    "membership.profile.shared": label("Name and phone are shared across all this person's bands."),
+    "membership.profile.saved": label("Profile updated"),
+    "membership.profile.failed": label("Could not update the profile."),
+    "membership.profile.refreshFailed": label("Profile saved. Reload this page to show the latest values."),
+    "membership.profile.notFound": label("This person has no available membership in the selected band."),
+    "membership.directory.title": label("Members"),
+    "membership.directory.search": label("Search member names"),
+    "membership.directory.noBand": label("Select a band to view its members."),
+    "membership.directory.noAccess": label("You do not have access to the member directory in this band."),
+    "membership.directory.all": label("All"),
+    "membership.directory.order": label("Sort order"),
+    "membership.directory.nameAsc": label("Name A-Z"),
+    "membership.directory.nameDesc": label("Name Z-A"),
+    "membership.directory.joinedAt": plainStaticString({
+        defaultValue: "Joined this band: {joinedAt, date, medium}", description: "Member directory membership creation date", schema: z.string(),
+        parameters: [{ key: "joinedAt", description: "Membership creation date", type: "date" }],
+    }),
+    "membership.directory.joinedAsc": label("Oldest memberships"),
+    "membership.directory.joinedDesc": label("Newest memberships"),
+    "membership.directory.loading": label("Loading members…"),
+    "membership.directory.failed": label("Could not load members."),
+    "membership.directory.empty": label("No members match these filters."),
+    "membership.directory.previous": label("Previous"),
+    "membership.directory.next": label("Next"),
+    "membership.directory.refresh": label("Refresh"),
     "membership.instruments.title": label("Member instruments"),
     "membership.instruments.edit": label("Edit instruments"),
     "membership.instruments.select": label("Select instruments"),

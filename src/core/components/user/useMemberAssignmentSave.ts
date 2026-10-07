@@ -8,6 +8,7 @@ import { useSnackbar } from "../SnackbarContext";
 export function useMemberAssignmentSave<TEdit>(args: {
     readonly execute: (edit: TEdit) => Promise<unknown>;
     readonly refetch: () => Promise<unknown>;
+    readonly refreshRelatedData?: () => Promise<unknown>;
     readonly onCommitted: (edit: TEdit) => void;
     readonly messages: {
         readonly saved: LocalizedPlainStringKey;
@@ -33,7 +34,11 @@ export function useMemberAssignmentSave<TEdit>(args: {
             await args.execute(edit);
             didSave = true;
             args.onCommitted(edit);
-            await Promise.all([args.refetch(), dashboard.refreshCachedData()]);
+            await Promise.all([
+                args.refetch(),
+                dashboard.refreshCachedData(),
+                args.refreshRelatedData?.()
+            ]);
             snackbar.showMessage({ severity: "success", children: locale.getPlainString(args.messages.saved) });
         } catch (reason) {
             setError(locale.getPlainString(didSave ? args.messages.refreshFailed : args.messages.failed));

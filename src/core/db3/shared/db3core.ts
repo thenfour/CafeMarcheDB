@@ -728,6 +728,12 @@ export abstract class FieldBase<
     // return a SQL expression for sorting by this value ascending.
     abstract SqlGetSortableQueryElements: (api: SqlGetSortableQueryElementsAPI) => SortQueryElements | null;
 
+    // Fields own the Prisma shape too: a relation may sort by its display name.
+    // DB3 supports different Prisma models, so these shared fragments use TAnyModel.
+    // TODO: fields should provide the tools to configure ordering, but it should not produce 
+    // concrete ordering. That should be the responsibility of views. So we consider this a temporary measure.
+    getPrismaOrderBy = (direction: SortDirection): TAnyModel => ({ [this.member]: direction });
+
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     abstract ValidateAndParse: (args: ValidateAndParseArgs<FieldDataType>) => ValidateAndParseResult<FieldDataType | null | undefined>;// => {
 
@@ -1942,6 +1948,25 @@ export class xTable<
         }
 
         return and;
+    };
+
+    getPrismaOrderBy = (orderBy: Readonly<Record<string, SortDirection>> | undefined): TAnyModel | undefined => {
+        if (!orderBy) {
+            return this.naturalOrderBy;
+        }
+        const clauses = Object.entries(orderBy).map(([member, direction]) => {
+            const field = this.columns.find(column => column.member === member || column.fkidMember === member);
+            if (!field) {
+                throw new Error(`Unknown order field ${this.tableID}.${member}.`);
+            }
+            // A declared scalar FK still orders its stored value; the relation orders its display member.
+            return field.member === member ? field.getPrismaOrderBy(direction) : { [member]: direction };
+        });
+        // Equal display values need a stable identity order for adjacent pages.
+        if (!Object.prototype.hasOwnProperty.call(orderBy, this.clientIdMember)) {
+            clauses.push({ [this.clientIdMember]: "asc" });
+        }
+        return clauses.length === 1 ? clauses[0] : clauses;
     };
 
     CalculateWhereClause = (

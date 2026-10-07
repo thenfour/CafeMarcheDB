@@ -56,5 +56,6 @@ describe("backstage route authorization registry", () => {
         const permissionFor = (key: string) => backstageRouteRegistry.find(route => route.key === key)?.permission;
         expect(permissionFor("practiceTools")).toBe(Permission.practice_tools_use);
         expect(permissionFor("roles")).toBe(Permission.sysadmin);
+        expect(permissionFor("user")).toBe(Permission.login);
     });
 });

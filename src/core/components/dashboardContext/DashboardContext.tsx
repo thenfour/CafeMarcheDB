@@ -231,6 +231,9 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
 
     const authorizationContext = presentation.data?.authorization ?? dashboardData.authorization;
     valueRef.current.authorizationContext = authorizationContext;
+
+    // todo: move to a proper routing mechanism
+    valueRef.current.memberPresentation = presentation.data?.input ?? {};
     valueRef.current.effectivePermissions = new PermissionSet(authorizationContext.effectivePermissionNames);
 
     const localization = presentation.data?.localization ?? dashboardData.localization;

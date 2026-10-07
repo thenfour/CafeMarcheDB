@@ -38,7 +38,7 @@ const routes = [
     { key: "wiki", pattern: "/backstage/wiki/[...slug]", caption: "Wiki", permission: Permission.view_wiki_pages },
     { key: "wikiPageHistory", pattern: "/backstage/wikiPageHistory", caption: "Wiki revision history", permission: Permission.view_wiki_page_revisions },
     { key: "users", pattern: "/backstage/users", caption: "User search", permission: Permission.search_users },
-    { key: "user", pattern: "/backstage/user/[...id_slug_tab]", caption: "User", permission: Permission.view_users_basic_info },
+    { key: "user", pattern: "/backstage/user/[...id_slug_tab]", caption: "Member", permission: Permission.login },// login admits roleless members to their own profile.
     { key: "profile", pattern: "/backstage/profile", caption: "Your Profile", permission: Permission.login },
     { key: "calendar", pattern: "/backstage/calendar", caption: "Calendar subscription", permission: Permission.view_events_nonpublic },
     { key: "setlistPlanner", pattern: "/backstage/setlistPlanner", caption: "Setlist Planner", permission: Permission.setlist_planner_access },

@@ -231,7 +231,7 @@ async function queryTableInContext(
         : query.where || trustedPrimaryKeyWhere;
     const items = await database[query.table.tableName].findMany({
         where,
-        orderBy: input.orderBy || query.table.naturalOrderBy,
+        orderBy: query.table.getPrismaOrderBy(input.orderBy),
         take: input.take,
         ...query.selectionArgs,
     });
@@ -408,7 +408,7 @@ async function paginatedQueryInContext(input: db3.PaginatedQueryRequestInput, au
         query: paginateArgs => delegate.findMany({
             ...paginateArgs,
             where: query.where,
-            orderBy: input.orderBy || query.table.naturalOrderBy,
+            orderBy: query.table.getPrismaOrderBy(input.orderBy),
             ...query.selectionArgs,
         }),
     });

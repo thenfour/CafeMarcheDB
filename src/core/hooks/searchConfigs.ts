@@ -1,12 +1,10 @@
-import { defineLegacySearchConfig, defineViewSearchConfig } from 'src/core/hooks/useSearchableList';
+import { defineViewSearchConfig } from 'src/core/hooks/useSearchableList';
 import * as db3 from 'src/core/db3/db3';
 import { SongsFilterSpec } from '../components/song/SongClientBaseTypes';
 
 import { EventsFilterSpec } from '../components/event/EventClientBaseTypes';
 import { WikiPagesFilterSpec } from '../components/wiki/WikiClientBaseTypes';
-import { UsersFilterSpec } from '../components/user/UserClientBaseTypes';
 import { FilesFilterSpec } from '../components/file/FileClientBaseTypes';
-import { enrichUser } from '../db3/shared/schema/enrichedUserTypes';
 
 // Song search configuration
 export const songSearchConfig = defineViewSearchConfig({
@@ -50,37 +48,6 @@ export const eventSearchConfig = defineViewSearchConfig({
     }),
 
     errorMessage: 'Failed to load more events.',
-});
-
-// User search configuration
-export const userSearchConfig = defineLegacySearchConfig({
-    getQueryArgs: (filterSpec: UsersFilterSpec, offset: number, take: number) => ({
-        offset,
-        take,
-        tableID: db3.xUser.tableID,
-        includeDeleted: filterSpec.includeDeleted,
-        refreshSerial: filterSpec.refreshSerial,
-        sort: [{
-            db3Column: filterSpec.orderByColumn,
-            direction: filterSpec.orderByDirection,
-        }],
-        quickFilter: filterSpec.quickFilter,
-        discreteCriteria: [
-            filterSpec.tagFilter,
-            filterSpec.roleFilter,
-            filterSpec.instrumentFilter,
-        ],
-    }),
-
-    enrichItem: (rawItem: db3.UserClientPayload, dashboardContext) => enrichUser(
-        rawItem,
-        dashboardContext.role,
-        dashboardContext.userTag,
-        dashboardContext.instrument,
-    ),
-    getItemKey: item => item.publicId,
-
-    errorMessage: 'Failed to load more users.',
 });
 
 // File search configuration  

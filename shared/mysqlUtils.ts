@@ -204,7 +204,7 @@ function parseYearBucketUTC(bucket: string): MySqlDateRange {
     };
 }
 
-// 3b) ALL TIME  ─ single bucket that spans “forever”.
+// 3b) ALL TIME  ─ single bucket that spans "forever"
 // You may want to replace these sentinel dates with your real data limits.
 function parseAllTimeBucketUTC(): MySqlDateRange {
     return {

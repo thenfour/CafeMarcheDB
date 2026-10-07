@@ -7,6 +7,8 @@ import { Prisma } from "db";
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
 import type { EventAttendancePublicId, EventPublicId, EventStatusPublicId, EventTagPublicId, EventTypePublicId, FilePublicId, FileTagPublicId, InstrumentFunctionalGroupPublicId, InstrumentPublicId, PermissionPublicId, RolePublicId, SongCreditTypePublicId, SongPublicId, SongTagPublicId, UserPublicId, UserTagPublicId, WikiPageTagPublicId } from "shared/publicId";
 import { SettingsDto } from "../../db3/shared/schema/settings";
+import type { PresentationInput } from "src/locale/shared/presentationInput";
+import { withMemberPresentation } from "../user/bandMemberLinks";
 
 export abstract class DashboardContextDataBase {
     referenceStore = db3.createDashboardReferenceStore();
@@ -41,6 +43,12 @@ export abstract class DashboardContextDataBase {
 
     localTimeZone: string;
     formattingLocale: string; // the locale used for formatting dates, numbers...
+
+    // TODO: do not put such specific data here. 
+    // this is used for generating URLs with  query parameters; it should move to
+    // 1. general-purpose routing  logic
+    // 2. a correct routing API - when that work is ready to be implemented. for now we consider this an acceptable temporary solution.
+    memberPresentation: Pick<PresentationInput, "bandPublicId" | "routeLocale"> = {};
 
     eventDatePresentation: {
         bandTimeZone: string;
@@ -79,7 +87,7 @@ export abstract class DashboardContextDataBase {
             if (user.name) {
                 parts.push(slugify(user.name));
             }
-            return this.getAbsoluteUri(`/backstage/user/${parts.join("/")}`);
+            return this.getAbsoluteUri(withMemberPresentation(`/backstage/user/${parts.join("/")}`, this.memberPresentation));
         },
 
         getURIForFile: (value: Prisma.FileGetPayload<{ select: { storedLeafName: true, fileLeafName: true, externalURI: true } }>) => {

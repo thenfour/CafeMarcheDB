@@ -11,6 +11,7 @@ import { bandInstrumentCommandHandler } from "./commands/bandInstrumentCommand";
 import { bandUserInstrumentsCommandHandler } from "./commands/bandUserInstrumentsCommand";
 import { bandUserTagsCommandHandler } from "./commands/bandUserTagsCommand";
 import { bandUserRoleCommandHandler } from "./commands/bandUserRoleCommand";
+import { bandUserProfileCommandHandler } from "./commands/bandUserProfileCommand";
 
 const commandHandlers = new Map<string, AnyDB3CommandHandler>();
 
@@ -33,6 +34,7 @@ registerDB3CommandHandlers([
     bandUserInstrumentsCommandHandler,
     bandUserTagsCommandHandler,
     bandUserRoleCommandHandler,
+    bandUserProfileCommandHandler,
     eventSongListSaveCommandHandler,
     eventSongListDeleteCommandHandler,
     eventSongListReorderCommandHandler,

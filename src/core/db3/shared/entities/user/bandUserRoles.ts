@@ -7,7 +7,7 @@ import { deriveViewContract } from "../../core/db3ViewContract";
 import { xBandUser } from "./bandUser";
 import { xBandRole } from "./bandRoleViews";
 
-const selection = Prisma.validator<Prisma.BandUserDefaultArgs>()({
+export const bandUserRolesSelection = Prisma.validator<Prisma.BandUserDefaultArgs>()({
     select: {
         publicId: true,
         userId: true,
@@ -24,7 +24,7 @@ const selection = Prisma.validator<Prisma.BandUserDefaultArgs>()({
     },
 });
 
-const contract = deriveViewContract(xBandUser, selection);
+const contract = deriveViewContract(xBandUser, bandUserRolesSelection);
 
 export const bandUserRolesView = defineView({
     viewID: "BandUser_Roles",

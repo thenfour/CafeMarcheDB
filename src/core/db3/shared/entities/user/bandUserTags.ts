@@ -63,7 +63,7 @@ export const xBandUserTagAssignment = defineTable({
     }),
 });
 
-const selection = Prisma.validator<Prisma.BandUserDefaultArgs>()({
+export const bandUserTagsSelection = Prisma.validator<Prisma.BandUserDefaultArgs>()({
     select: {
         publicId: true,
         userId: true,
@@ -80,7 +80,7 @@ const selection = Prisma.validator<Prisma.BandUserDefaultArgs>()({
         },
     },
 });
-const contract = deriveViewContract(xBandUser, selection);
+const contract = deriveViewContract(xBandUser, bandUserTagsSelection);
 export const bandUserTagsView = defineView({
     viewID: "BandUser_Tags", entity: xBandUser,
     selection: contract.prismaSelection,

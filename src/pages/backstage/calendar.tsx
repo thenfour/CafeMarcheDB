@@ -167,7 +167,7 @@ const CalendarPageContent = () => {
                         <CMTab thisTabId={"other"} summaryIcon={<MoreHorizIcon />} summaryTitle="Other">
                             <h2>Instructions for another calendar app</h2>
                             <p>
-                                Look for “Add calendar subscription,” “From URL,” or “Internet calendar,” then
+                                Look for "Add calendar subscription," "From URL," or "Internet calendar," then
                                 paste your private calendar link.
                             </p>
                             {/* <Alert severity="info">

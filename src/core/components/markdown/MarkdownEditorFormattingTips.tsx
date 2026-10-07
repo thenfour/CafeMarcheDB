@@ -48,7 +48,7 @@ export const MarkdownEditorFormattingTips = (props: { in: boolean }) => {
                         <Pre>*italic text* or _italic text_</Pre>
                     </dd>
 
-                    <dt><span className='highlight'>Headings</span>: Prefix a line with hashes (1–6)</dt>
+                    <dt><span className='highlight'>Headings</span>: Prefix a line with hashes</dt>
                     <dd>
                         <Pre># Heading 1</Pre>
                         <Pre>## Heading 2</Pre>
@@ -93,13 +93,6 @@ export const MarkdownEditorFormattingTips = (props: { in: boolean }) => {
         <Collapse in={tipsTab === "Paragraph"}>
             <div className='toolbar toolBarRow formattingTipsContentRow'>
                 <dl>
-                    <dt><span className='highlight'>Headings</span>: Prefix a line with hashes (1–6)</dt>
-                    <dd>
-                        <Pre># Heading 1</Pre>
-                        <Pre>## Heading 2</Pre>
-                        <Pre>### Heading 3</Pre>
-                    </dd>
-
                     {/* Inline Code */}
                     <dt>
                         <span className="highlight">Code (Inline)</span>: Use single backticks

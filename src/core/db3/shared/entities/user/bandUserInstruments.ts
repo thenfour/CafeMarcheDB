@@ -11,7 +11,7 @@ import { xBandInstrument, InstrumentIdentity } from "../instrument/bandInstrumen
 import { xBandUser, activeBandMembershipWhere } from "./bandUser";
 import { kReadOnlyAuthMap } from "../common/entityCommon";
 
-const memberSelection = Prisma.validator<Prisma.BandUserDefaultArgs>()({
+export const bandUserInstrumentsSelection = Prisma.validator<Prisma.BandUserDefaultArgs>()({
     select: {
         publicId: true,
         userId: true,
@@ -104,7 +104,7 @@ declare module "../../db3core" {
 // ---------------------------------------------------------------------------
 // views
 
-const memberContract = deriveViewContract(xBandUser, memberSelection);
+const memberContract = deriveViewContract(xBandUser, bandUserInstrumentsSelection);
 export const bandUserInstrumentsView = defineView({
     viewID: "BandUser_Instruments",
     entity: xBandUser,

@@ -638,10 +638,6 @@ test cases:
             var(--hl-teal) calc(var(--band) * 6) calc(var(--band) * 7),
             var(--hl-coral) calc(var(--band) * 7) calc(var(--band) * 8));
 
-    /* optional: gentle slide to suggest “dynamic” */
-    /* background-size: calc(var(--band) * 5) calc(var(--band) * 5);
-    animation: stripes-move 4s linear infinite; */
-
 }
 
 .markdown h1,

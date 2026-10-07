@@ -7,6 +7,8 @@ import { ColorVariationSpec } from "../color/palette";
 import { Permission } from "@/shared/permissions";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import type { UserPublicId } from "shared/publicId";
+import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
+import { bandMemberHref } from "./bandMemberLinks";
 
 
 export interface UserChipBaseProps {
@@ -35,9 +37,12 @@ type QueriedUserChipProps = UserChipBaseProps & {
 
 const ValuedUserChip = (props: ValuedUserChipProps) => {
     const dashboardContext = useDashboardContext();
+    const context = useDB3QueryContext();
 
     const userId = props.value?.publicId || null;
-    const userURI = userId && dashboardContext.isAuthorized(Permission.view_users_basic_info) ? dashboardContext.routingApi.getURIForUser({ publicId: userId }) : undefined;
+    const canViewProfile = dashboardContext.isAuthorized(Permission.view_users_basic_info) || dashboardContext.currentUser?.publicId === userId;
+    const userURI = userId && context.bandPublicId && canViewProfile
+        ? bandMemberHref(userId, context) : undefined;
 
     const clickHandler = props.onClick;
 
@@ -58,30 +63,18 @@ const ValuedUserChip = (props: ValuedUserChipProps) => {
 }
 
 
-const QueriedUserChip: React.FC<QueriedUserChipProps> = (props) => {
-    if (props.userId === null) {
-        return <ValuedUserChip
-            value={null}
-            variation={props.variation}
-            size={props.size}
-            onClick={props.onClick}
-            className={props.className}
-            startAdornment={props.startAdornment}
-            endAdornment={props.endAdornment}
-            useHashedColor={props.useHashedColor}
-        />;
+function LoadedQueriedUserChip({ userId, ...props }: UserChipBaseProps & { readonly userId: UserPublicId; readonly color?: string | null }) {
+    const context = useDB3QueryContext();
+    const [user] = useQuery(getUser, { userId, ...context }, { staleTime: 0, cacheTime: 0, keepPreviousData: false });
+    return <ValuedUserChip {...props} value={user} />;
+}
+
+const QueriedUserChip: React.FC<QueriedUserChipProps> = ({ userId, ...props }) => {
+    const context = useDB3QueryContext();
+    if (userId === null || !context.bandPublicId) {
+        return <ValuedUserChip {...props} value={null} />;
     }
-    const [user, userX] = useQuery(getUser, { userId: props.userId });
-    return <ValuedUserChip
-        value={user}
-        variation={props.variation}
-        size={props.size}
-        onClick={props.onClick}
-        className={props.className}
-        startAdornment={props.startAdornment}
-        endAdornment={props.endAdornment}
-        useHashedColor={props.useHashedColor}
-    />;
+    return <LoadedQueriedUserChip key={`${context.bandPublicId}/${userId}/${context.clientRequestId ?? "initial"}`} {...props} userId={userId} />;
 };
 
 export const UserChip = (props: ValuedUserChipProps | QueriedUserChipProps) => {

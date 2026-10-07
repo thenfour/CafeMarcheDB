@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { Permission } from "shared/permissions";
 import type { BandUserPublicId } from "shared/publicId";
 import { defineAuthMap, defineTable, makeColumnSet, prismaModel, SqlSpecialColumnFunction } from "../../db3core";
-import { BoolField, foreignRef, MakePKfield, MakePublicIdField, tagsRef } from "../../columnTypes/xTableColumnTypes";
+import { BoolField, foreignRef, MakeCreatedAtField, MakePKfield, MakePublicIdField, tagsRef } from "../../columnTypes/xTableColumnTypes";
 import { GenericIntegerField } from "../../columnTypes/genericInteger";
 import { serverOwnedField } from "../../columnTypes/inherited";
 import { xUserMinimum } from "../../schema/user";
@@ -40,9 +40,35 @@ export const xBandUser = defineTable({
         EditOwn: Permission.login,
         Insert: Permission.never_grant,
     },
-    queryParameters: {},
-    getParameterizedWhereClause: (): Prisma.BandUserWhereInput[] => [activeBandMembershipWhere()],
-    naturalOrderBy: { publicId: "asc" },
+    queryParameters: {
+        personPublicId: {
+            kind: "string",
+            authorizeAs: "user",
+        },
+        tagId: { kind: "entityIdentity", targetTableID: "BandUserTag", authorizeAs: "bandUserTagAssignments" },
+        instrumentId: { kind: "entityIdentity", targetTableID: "BandInstrument", authorizeAs: "bandUserInstruments" },
+        roleId: { kind: "entityIdentity", targetTableID: "BandRole", authorizeAs: "bandRole", nullable: true },
+    },
+    getParameterizedWhereClause: (params: {
+        personPublicId?: string; tagId?: number; instrumentId?: number; roleId?: number | null;
+    }): Prisma.BandUserWhereInput[] => {
+        const clauses: Prisma.BandUserWhereInput[] = [activeBandMembershipWhere()];
+        if (params.personPublicId !== undefined) {
+            // Keep person URLs; the predicate still starts from authorized memberships.
+            clauses.push({ user: { publicId: xUserMinimum.parseIdentity(params.personPublicId) } });
+        }
+        if (params.tagId !== undefined) {
+            clauses.push({ bandUserTagAssignments: { some: { bandUserTagId: params.tagId } } });
+        }
+        if (params.instrumentId !== undefined) {
+            clauses.push({ bandUserInstruments: { some: { bandInstrumentId: params.instrumentId } } });
+        }
+        if (params.roleId !== undefined) {
+            clauses.push({ bandRoleId: params.roleId });
+        }
+        return clauses;
+    },
+    naturalOrderBy: [{ user: { name: "asc" } }, { publicId: "asc" }],
     getSelectionArgs: () => ({
         select: {
             publicId: true,
@@ -58,6 +84,11 @@ export const xBandUser = defineTable({
     fields: makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "never" }),
         publicId: () => MakePublicIdField<BandUserPublicId>(),
+        createdAt: () => MakeCreatedAtField({
+            authMap: defineAuthMap({
+                ...kReadOnlyAuthMap, PostQuery: Permission.manage_users, PostQueryAsOwner: Permission.manage_users,
+            })
+        }),
         isDeleted: columnName => new BoolField({
             columnName, allowNull: false, defaultValue: false,
             specialFunction: SqlSpecialColumnFunction.isDeleted, authMap: kReadOnlyAuthMap
@@ -74,6 +105,8 @@ export const xBandUser = defineTable({
         })),
         user: foreignRef(() => xUserMinimum, {
             fkidMember: "userId", specialFunction: SqlSpecialColumnFunction.ownerUser, authMap: kReadOnlyAuthMap,
+            sortBy: "name",
+            getQuickFilterWhereClause: (query): Prisma.BandUserWhereInput => ({ user: { name: { contains: query } } }),
         }),
         bandRole: foreignRef(() => xBandRole, {
             fkidMember: "bandRoleId",
