@@ -7,17 +7,17 @@ import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import type {
     PermissionPublicId,
+    BandUserPublicId,
     UserPublicId,
-    UserTagAssignmentPublicId,
     UserTagPublicId,
 } from "shared/publicId";
 import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
 import { PermissionSignificance } from "../apiTypes";
-import { BoolField, ForeignCollectionField, foreignRef, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
+import { BoolField, ForeignCollectionField, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
-import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload } from "./prismArgs";
+import { GenericStringField } from "../columnTypes/genericString";
+import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserSafeArgs } from "./prismArgs";
 import { LocalizedStringField, localizedText } from "../columnTypes/localizedString";
 
 // Basic profile data is self-service for the account owner and readable for
@@ -273,174 +273,15 @@ export const xPermissionBaseArgs = db3.defineTableDesc({
 export const xPermission = db3.defineTable(xPermissionBaseArgs);
 
 
-export interface UserTagTableParams {
-    userTagId?: UserTagPublicId;
-    ids?: UserTagPublicId[];
-};
-
-interface ResolvedUserTagTableParams {
-    userTagId?: number;
-    ids?: number[];
+export interface EventResponses_ExpectedUserTag {
+    publicId: UserTagPublicId;
+    bandUserTagAssignments: { bandUserId: BandUserPublicId }[];
 }
 
-const userTagBaseArgs = db3.defineTableDesc({
-    prismaModel: db3.prismaModel<Prisma.UserTagDelegate>(),
-    getIdentity: (tag: { publicId: UserTagPublicId }) => tag.publicId,
-    getSelectionArgs: (): Prisma.UserTagDefaultArgs => {
-        return UserTagArgs;
-    },
-    tableName: "UserTag",
-    deletePolicy: "hard",
-    queryParameters: {
-        userTagId: { kind: "entityIdentity", targetTableID: "UserTag", authorizeAs: "publicId" },
-        ids: { kind: "entityIdentityArray", targetTableID: "UserTag", authorizeAs: "publicId" },
-    } satisfies db3.DB3QueryParameterMap,
-    tableAuthMap: xUserTaxonomyTableAuthMap,
-    naturalOrderBy: UserTagNaturalOrderBy,
-    getParameterizedWhereClause: (params: ResolvedUserTagTableParams): (Prisma.UserTagWhereInput[] | false) => {
-        const ret: Prisma.UserTagWhereInput[] = [];
-
-        if (params.userTagId != null) {
-            ret.push({ id: params.userTagId, });
-        }
-        if (params.ids !== undefined) {
-            assertIsNumberArray(params.ids);
-            if (params.ids.length > 0) {
-                const t: Prisma.UserTagWhereInput = {
-                    id: { in: params.ids }
-                };
-                ret.push(t);
-            }
-        }
-        return ret;
-    },
-    createInsertModelFromString: (input: string): Partial<UserTagPayload> => {
-        return {
-            text: input,
-            description: "auto-created",
-            sortOrder: 0,
-            color: null,
-            significance: null,
-        };
-    },
-    getRowInfo: (row: UserTagPayload) => ({
-        pk: row.id,
-        name: row.text,
-        description: row.description,
-        color: gGeneralPaletteList.findEntry(row.color),
-        ownerUserId: null,
-    }),
-    fields: db3.makeColumnSet({
-        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
-        publicId: () => MakePublicIdField<UserTagPublicId>(),
-        text: columnName => MakeTitleField(columnName, { authMap: xUserTaxonomyDefinitionAuthMap }),
-        description: () => MakeDescriptionField({ authMap: xUserTaxonomyDefinitionAuthMap }),
-        sortOrder: () => MakeSortOrderField({ authMap: xUserTaxonomyDefinitionAuthMap }),
-        color: () => MakeColorField({ authMap: xUserTaxonomyDefinitionAuthMap }),
-        cssClass: columnName => new GenericStringField({
-            columnName,
-            allowNull: true,
-            format: "raw",
-            authMap: xUserTaxonomyDefinitionAuthMap,
-        }),
-        userAssignments: memberName => new ForeignCollectionField({
-            memberName,
-            foreignTableID: "UserTagAssignment",
-            authMap: xUserTaxonomyDefinitionAuthMap,
-        }),
-    })
-});
-
-export const xUserTag = db3.defineTable(userTagBaseArgs);
-
-
-
-
-
-
-type EventResponses_ExpectedUserTagDb = Prisma.UserTagGetPayload<{
-    select: {
-        publicId: true,
-        userAssignments: {
-            select: {
-                userId,
-            }
-        }
-    }
-}>;
-export type EventResponses_ExpectedUserTag = Omit<EventResponses_ExpectedUserTagDb, "userAssignments"> & {
-    userAssignments: { userId: UserPublicId }[];
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Deferred invitation views still resolve this relation during module initialization.
-// Keep their read metadata until the event payloads are isolated together; membership commands own all writes.
-export const xUserTagAssignment = db3.defineTable({
-    prismaModel: db3.prismaModel<Prisma.UserTagAssignmentDelegate>(),
-    getIdentity: (assignment: { publicId: UserTagAssignmentPublicId }) => assignment.publicId,
-    tableName: "UserTagAssignment",
-    deletePolicy: "disabled",
-    naturalOrderBy: UserTagAssignmentNaturalOrderBy,
-    tableAuthMap: {
-        ...xUserTableAuthMap,
-        EditOwn: Permission.never_grant,
-        Edit: Permission.never_grant,
-        Insert: Permission.never_grant,
-    },
-    getSelectionArgs: (): Prisma.UserTagAssignmentDefaultArgs => {
-        return UserTagAssignmentArgs;
-    },
-    getRowInfo: (row: UserTagAssignmentPayload) => {
-        return {
-            pk: row.publicId,
-            name: row.userTag?.text || "",
-            description: row.userTag?.description || "",
-            color: gGeneralPaletteList.findEntry(row.userTag?.color || null),
-            ownerUserId: row.userId,
-        };
-    }
-    ,
-    fields: db3.makeColumnSet({
-        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
-        publicId: () => MakePublicIdField<UserTagAssignmentPublicId>(),
-        userTag: foreignRef(() => xUserTag, {
-            fkidMember: "userTagId",
-            authMap: xUserBasicProfileManagerWriteAuthMap,
-        }),
-        user: foreignRef(() => xUser, {
-            fkidMember: "userId",
-            specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
-            authMap: xUserBasicProfileManagerWriteAuthMap,
-        }),
-    })
-});
-
-// register in the DB3 table type registry; this is separate from
-// the gAllTables array which erases types and should only be used for cross-network
-// lookups. This allows retaining type information even when looking up a table by
-// static string table id.
 declare module "../db3core" {
     interface DB3TableTypeRegistry {
         Permission: typeof xPermission;
         User: typeof xUser;
-        UserTag: typeof xUserTag;
-        UserTagAssignment: typeof xUserTagAssignment;
     }
 }
 

@@ -6,7 +6,7 @@ import { MakeColorField } from "../../columnTypes/color";
 import { CatalogSourceField, inheritedField } from "../../columnTypes/inherited";
 import { GenericStringField } from "../../columnTypes/genericString";
 import { localizedText } from "../../columnTypes/localizedString";
-import { MakePublicIdField } from "../../columnTypes/xTableColumnTypes";
+import { ForeignCollectionField, MakePublicIdField } from "../../columnTypes/xTableColumnTypes";
 import { defineTable, prismaModel, makeColumnSet } from "../../db3core";
 import { defineCrudView } from "../../core/db3CrudView";
 import { deriveViewContract } from "../../core/db3ViewContract";
@@ -34,7 +34,12 @@ export const xBandUserTag = defineTable({
     naturalOrderBy: { sortOrder: "asc", name: "asc" },
     getSelectionArgs: () => bandUserTagSelection,
     createInsertModelFromString: bandCatalogCreateFromString,
-    queryParameters: { includeHidden: { kind: "boolean", authorizeAs: "isHidden" } },
+    queryParameters: {
+        includeHidden: { kind: "boolean", authorizeAs: "isHidden" },
+        ids: { kind: "entityIdentityArray", targetTableID: "BandUserTag", authorizeAs: "publicId" },
+    },
+    getParameterizedWhereClause: (params: { ids?: number[] }): Prisma.BandUserTagWhereInput[] =>
+        params.ids === undefined ? [] : [{ id: { in: params.ids } }],
     getRowInfo: row => ({
         pk: row.publicId, name: localizedText(row.name) ?? "",
         description: localizedText(row.description) ?? undefined,
@@ -46,6 +51,9 @@ export const xBandUserTag = defineTable({
         color: colorField,
         globalUserTag: new CatalogSourceField({ columnName: "globalUserTag", sourceTable: "globalUserTag", authMap: sourceAuthMap }),
         ...makeColumnSet({
+            bandUserTagAssignments: memberName => new ForeignCollectionField({
+                memberName, foreignTableID: "BandUserTagAssignment", authMap: kReadOnlyAuthMap,
+            }),
             cssClass: columnName => inheritedField(new GenericStringField({ columnName, allowNull: true, format: "raw", maxLength: 191, authMap })),
             // Keep migrated invitation behavior intact until its separate behavioral cleanup.
             significance: columnName => inheritedField(new GenericStringField({

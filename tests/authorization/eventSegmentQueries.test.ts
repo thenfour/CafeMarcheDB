@@ -1,4 +1,5 @@
 import { eventPublicId, segmentPublicId } from "../support/eventResponseFixtures";
+import { testBandAuthorization } from "tests/support/serverAuthorization";
 import { Prisma } from "@prisma/client"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -97,12 +98,12 @@ describe("EventSegment generated UID", () => {
   it("recognizes all returned columns without unknown-column diagnostics", () => {
     const { schemaAuthorization } = createAuthorizationPersona("sysadmin")
     const result = db3.xEventSegment.authorizeAndSanitize({
-      contextDesc: "event-segment-grid-test", auth: schemaAuthorization,
-      rowMode: "view", model: segments[0]!, fallbackOwnerId: null,
+      contextDesc: "event-segment-grid-test", auth: testBandAuthorization(schemaAuthorization.user, schemaAuthorization.effectivePermissions),
+      rowMode: "view", model: { ...segments[0]!, event: { ...events[0]!, bandId: 1 } }, fallbackOwnerId: null,
     })
     expect(result.rowIsAuthorized).toBe(true)
     expect(result.unknownColumnCount).toBe(0)
-    expect(result.authorizedModel).toEqual(segments[0])
+    expect(result.authorizedModel).toMatchObject(segments[0]!)
   })
 
   it("keeps the generated UID protected from generic updates", async () => {

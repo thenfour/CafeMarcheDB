@@ -30,6 +30,15 @@ import { selectPrismaTestRow } from "../support/prismaSelection";
 import type { DB3ReadSelectionArgs } from "@db3/shared/core/db3ReadSelection";
 import { bindDB3ReadSnapshot } from "@db3/server/db3ReadExecution";
 
+
+// These projection tests supply one Event delegate; native tests verify real grant refresh.
+async function eventQuerySnapshot(auth: CMServerAuthorization, findMany: (args: unknown) => Promise<unknown[]>) {
+    vi.spyOn(auth, "refresh").mockResolvedValue(auth);
+    const database = { Event: { findMany } } as unknown as Prisma.TransactionClient; // Only this delegate is used by these projection tests.
+    return bindDB3ReadSnapshot(database, auth, { isolationLevel: "Serializable" });
+}
+const membershipPublicId = parsePublicId<"BandUser">("FixtureMember001");
+
 const groupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
 const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn04");
 const songTagAssociationPublicId = parsePublicId<"SongTagAssociation">("AbCdEfGhIjKlMn05");
@@ -229,6 +238,7 @@ describe("DB3 named views", () => {
             { id: 5, name: Permission.login },
         ]);
 
+        const authorization = testBandAuthorization({ id: 42 }, effectivePermissions);
         await queryTable({
             table: {
                 tableID: "Event",
@@ -238,9 +248,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "db3-view-where-composition-test",
-        }, testBandAuthorization({ id: 42 }, effectivePermissions), {
-            Event: { findMany },
-        } as any);
+        }, authorization, await eventQuerySnapshot(authorization, findMany));
 
         const prismaArgs = findMany.mock.calls[0]![0] as any;
         expect(prismaArgs.where.AND).toEqual(expect.arrayContaining([
@@ -494,12 +502,12 @@ describe("DB3 named views", () => {
     });
 
     it("represents authorization-stripped fields as absent optional DTO members", () => {
-        const publicData = testServerAuthorization(null, new ServerPermissionSet([
+        const publicData = testBandAuthorization(null, new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.public },
         ]));
         const authorized = authorizeAndProjectDB3ViewModel(db3.xEvent, {
-            id: 8,
+            id: 8, bandId: 1,
             publicId: eventPublicId(8),
             name: "Public concert",
             startsAt: null,
@@ -801,16 +809,16 @@ describe("DB3 named views", () => {
     });
 
     it("builds Event search selections from the authenticated actor, never client identity", () => {
-        const authorization = testServerAuthorization({ id: 42 }, new ServerPermissionSet([]));
+        const authorization = testBandAuthorization({ id: 42 }, new ServerPermissionSet([]));
         const selection = db3.eventSearchView.getSelectionArgs({
             filter: { items: [] },
             auth: authorization,
         });
 
-        expect(selection.select.responses.where).toEqual({ userId: 42 });
-        expect(selection.select.segments.select.responses.where).toEqual({ userId: 42 });
-        expect(selection.select.expectedAttendanceUserTag.select.userAssignments.where)
-            .toEqual({ userId: 42 });
+        expect(selection.select.responses.where).toEqual({ bandUserId: 1 });
+        expect(selection.select.segments.select.responses.where).toEqual({ bandUserId: 1 });
+        expect(selection.select.expectedAttendanceUserTag.select.bandUserTagAssignments.where)
+            .toEqual({ bandUserId: 1 });
     });
 
     it("hydrates Event search data into one typed client shape and preserves omitted collections", () => {
@@ -835,10 +843,10 @@ describe("DB3 named views", () => {
             typeId: eventType.publicId,
             statusId: eventStatus.publicId,
             tags: [{ publicId: eventTagAssignmentPublicId, bandEventTagId: eventTag.publicId }],
-            responses: [{ publicId: eventResponsePublicId(11), userId: userPublicId(42), instrumentId: null, isInvited: true, userComment: null }],
+            responses: [{ publicId: eventResponsePublicId(11), bandUserId: membershipPublicId, bandInstrumentId: null, isInvited: true, userComment: null }],
             expectedAttendanceUserTag: {
                 publicId: userTagPublicId,
-                userAssignments: [{ userId: userPublicId(42) }],
+                bandUserTagAssignments: [{ bandUserId: membershipPublicId }],
             },
         });
         const hydrated = db3.hydrateView(db3.eventSearchView, dto, references);
@@ -852,7 +860,7 @@ describe("DB3 named views", () => {
         expect(hydrated.tags?.[0]?.eventTag).toEqual(
             references.require(db3.xBandEventTag, eventTag.publicId, "test"),
         );
-        expect(hydrated.expectedAttendanceUserTag?.userAssignments?.[0]?.userId).toBe(userPublicId(42));
+        expect(hydrated.expectedAttendanceUserTag?.bandUserTagAssignments?.[0]?.bandUserId).toBe(membershipPublicId);
         expect(hydrated.dateRange).toBeInstanceOf(DateTimeRange);
         expect("startsAt" in hydrated).toBe(false);
         expect(hydrated.segments).toBeUndefined();
@@ -920,7 +928,7 @@ describe("DB3 named views", () => {
     it("applies nested Event view authorization before returning its DTO", async () => {
         const startsAt = new Date("2026-09-20T18:00:00Z");
         const findMany = vi.fn(async (_args: unknown) => [{
-            id: 1,
+            id: 1, bandId: 1,
             publicId: eventPublicId(1),
             revision: 1,
             name: "Actor-scoped event",
@@ -930,7 +938,6 @@ describe("DB3 named views", () => {
             statusId: null,
             relevanceClassOverride: null,
             descriptionWikiPageId: null,
-            segmentBehavior: null,
             startsAt,
             durationMillis: BigInt(3_600_000),
             isAllDay: false,
@@ -944,21 +951,25 @@ describe("DB3 named views", () => {
                 bandEventTagId: 4,
                 eventTag: { id: 4, publicId: eventTagPublicId, bandId: 1 },
             }],
-            responses: [{ id: 11, publicId: eventResponsePublicId(11), userId: 42, user: { id: 42, publicId: userPublicId(42), isDeleted: false }, instrumentId: null, isInvited: true, userComment: null }],
+            responses: [{ id: 11, publicId: eventResponsePublicId(11), bandUserId: 1, bandUser: { id: 1, publicId: membershipPublicId, bandId: 1, userId: 42 }, bandInstrumentId: null, isInvited: true, userComment: null }],
             segments: [{
-                id: 20, publicId: segmentPublicId(20),
+                id: 20, publicId: segmentPublicId(20), eventId: 1,
+                event: { publicId: eventPublicId(1), bandId: 1, createdByUserId: 42, visiblePermissionId: null, isDeleted: false },
                 name: "Main",
                 startsAt,
                 durationMillis: BigInt(3_600_000),
                 isAllDay: false,
                 statusId: null,
-                responses: [{ id: 21, publicId: segmentResponsePublicId(21), userId: 42, user: { id: 42, publicId: userPublicId(42), isDeleted: false }, attendanceId: null }],
+                responses: [{ id: 21, publicId: segmentResponsePublicId(21), bandUserId: 1, bandUser: { id: 1, publicId: membershipPublicId, bandId: 1, userId: 42 }, attendanceId: null }],
             }],
             songLists: [],
             expectedAttendanceUserTag: {
-                id: 5,
+                id: 5, bandId: 1,
                 publicId: userTagPublicId,
-                userAssignments: [{ id: 22, userId: 42, user: { id: 42, publicId: userPublicId(42), isDeleted: false } }],
+                bandUserTagAssignments: [{
+                    id: 22, bandUserId: 1, bandUser: { id: 1, publicId: membershipPublicId, bandId: 1, userId: 42, isDeleted: false },
+                    bandUserTagId: 5, bandUserTag: { publicId: userTagPublicId, bandId: 1 }
+                }],
             },
             descriptionWikiPage: {
                 id: 30,
@@ -987,6 +998,7 @@ describe("DB3 named views", () => {
             name,
         })));
 
+        const authorization = testBandAuthorization({ id: 42 }, effectivePermissions);
         const result = await queryTable({
             table: {
                 tableID: db3.xEvent.tableID,
@@ -996,18 +1008,16 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "event-search-view-test",
-        }, testBandAuthorization({ id: 42 }, effectivePermissions), {
-            Event: { findMany },
-        } as any);
+        }, authorization, await eventQuerySnapshot(authorization, findMany));
 
         expect(result.items).toEqual([expect.objectContaining({
             publicId: eventPublicId(1),
-            responses: [expect.objectContaining({ userId: userPublicId(42) })],
+            responses: [expect.objectContaining({ bandUserId: membershipPublicId })],
             segments: [expect.objectContaining({
-                responses: [expect.objectContaining({ userId: userPublicId(42) })],
+                responses: [expect.objectContaining({ bandUserId: membershipPublicId })],
             })],
             expectedAttendanceUserTag: expect.objectContaining({
-                userAssignments: [expect.objectContaining({ userId: userPublicId(42) })],
+                bandUserTagAssignments: [expect.objectContaining({ bandUserId: membershipPublicId })],
             }),
             descriptionWikiPage: {
                 publicId: wikiPagePublicId,
@@ -1020,16 +1030,16 @@ describe("DB3 named views", () => {
         expect(result.items[0]!.descriptionWikiPage).not.toHaveProperty("visiblePermissionId");
 
         const queryArgs = findMany.mock.calls[0]![0] as any;
-        expect(queryArgs.select.responses.where.AND[0]).toEqual({ userId: 42 });
-        expect(queryArgs.select.segments.select.responses.where.AND[0]).toEqual({ userId: 42 });
-        expect(queryArgs.select.expectedAttendanceUserTag.select.userAssignments.where.AND[0])
-            .toEqual({ userId: 42 });
+        expect(queryArgs.select.responses.where.AND[0]).toEqual({ bandUserId: 1 });
+        expect(queryArgs.select.segments.select.responses.where.AND[0]).toEqual({ bandUserId: 1 });
+        expect(queryArgs.select.expectedAttendanceUserTag.select.bandUserTagAssignments.where.AND[0])
+            .toEqual({ bandUserId: 1 });
     });
 
     it("queries Wiki Event context through the named view and projects classification identities", async () => {
         const startsAt = new Date("2026-09-20T18:00:00Z");
         const findMany = vi.fn(async () => [{
-            id: 17,
+            id: 17, bandId: 1,
             publicId: eventPublicId(17),
             name: "Wiki-linked event",
             createdByUserId: 42,
@@ -1044,9 +1054,9 @@ describe("DB3 named views", () => {
             endDateTime: new Date("2026-09-20T19:00:00Z"),
             isAllDay: false,
             durationMillis: BigInt(3_600_000),
-            segmentBehavior: "Sets",
             segments: [{
                 publicId: segmentPublicId(18),
+                event: { bandId: 1, createdByUserId: 42, visiblePermissionId: null, isDeleted: false },
                 name: "Main set",
                 statusId: 103,
                 status: { publicId: eventStatusPublicId, isDeleted: false },
@@ -1066,18 +1076,14 @@ describe("DB3 named views", () => {
             name,
         })));
 
+        const authorization = testBandAuthorization({ id: 42 }, effectivePermissions);
         const result = await queryView({
             view: db3.eventWikiPageContextView,
             filter: { items: [], tableParams: { eventId: eventPublicId(17) } },
             orderBy: undefined,
             take: 1,
             cmdbQueryContext: "wiki-event-context-view-test",
-        }, new CMServerAuthorization(
-            // This focused authorization fixture only needs the actor identity.
-            { id: 42 } as any, effectivePermissions,
-        ), {
-            Event: { findMany },
-        } as any); // The focused database double deliberately implements only the queried Event delegate.
+        }, authorization, await eventQuerySnapshot(authorization, findMany));
 
         expect(result.items).toEqual([{
             publicId: eventPublicId(17),
@@ -1089,7 +1095,6 @@ describe("DB3 named views", () => {
             endDateTime: new Date("2026-09-20T19:00:00Z"),
             isAllDay: false,
             durationMillis: BigInt(3_600_000),
-            segmentBehavior: "Sets",
             segments: [{
                 publicId: segmentPublicId(18),
                 name: "Main set",
@@ -1675,7 +1680,7 @@ describe("DB3 named views", () => {
             name: "Concert set",
             description: "Main set",
             eventId: 5,
-            event: { publicId: eventPublicId(5), createdByUserId: 42, visiblePermissionId: null, isDeleted: false },
+            event: { bandId: 1, publicId: eventPublicId(5), createdByUserId: 42, visiblePermissionId: null, isDeleted: false },
             sortOrder: 10,
             isOrdered: true,
             isActuallyPlayed: false,

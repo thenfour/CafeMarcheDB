@@ -36,7 +36,7 @@ export function eventParticipantFromMembership(member: EventParticipantDto | nul
     }
     return {
         // Person identity is used for profile links and the dedicated attendance API.
-        // Keep membership identity separate for event response joins as they migrate.
+        // Response and invitation joins use this selected-band membership identity.
         publicId: member.user.publicId,
         membershipId: member.publicId,
         name: member.user.name,

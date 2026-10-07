@@ -99,8 +99,8 @@ isolate deferred pages and non-page entry points together. Generic settings
 storage is no longer registered with DB3; the settings and branding pages use
 the authorized registered-hive editor. Shared client field declarations and
 callers now use registered labels/help on both
-named and legacy render paths. The normal build gets past Custom Links and stops
-at the deferred event-search payload contract.
+named and legacy render paths. The normal build gets past Custom Links and the earlier event component failure,
+then stops at the deferred activity report's localized Menu Link caption contract.
 Preserve the working bootstrap and migrated membership/catalog contracts.
 Platform role administration and membership recovery enhancements remain deferred.
 
@@ -115,9 +115,9 @@ Shared account selectors, the `User_Editor` view and its generated writes now
 contain person fields only. Membership views/commands retain instrument and tag
 assignments. The obsolete `UserInstrument` descriptor/editor/CRUD registrations
 and unreachable person-profile/directory renderers are disabled and preserved.
-Deferred invitation views still resolve the old tag-assignment read metadata at
-startup; its writes are disabled. Remove that dependency together with the remaining
-event response/invitation payload roots, including `UserWithInstrumentsArgs`.
+Response and invitation read metadata now use BandUser, BandInstrument and
+BandUserTagAssignment. The obsolete UserTag/UserTagAssignment descriptors and
+`UserWithInstrumentsArgs` are removed, with their original source preserved.
 The event participant reader now uses `BandUser_EventParticipant`, carrying
 separate person and membership identities, membership instruments/tags and
 authorized display metadata. Event detail's participant query and the dashboard's
@@ -127,7 +127,17 @@ source retained in the existing references. Empty person filters stay empty,
 roleless owners can read their own membership, and client requests carry the
 complete presentation context without retaining previous-band results. Native,
 DOM and signed-in development-browser RPC checks cover this reader; full event
-response/search payloads and invitation management remain unfinished.
+search/editing payloads and invitation management remain unfinished.
+The registered response readers require nonpublic-event access, selected-band
+ownership and visible, undeleted parent events. Their membership references
+retain historical identities without exposing person profiles. Attendance joins
+and actor-scoped search predicates use membership IDs; profile links and dedicated
+write inputs retain person IDs. Participant queries accept membership filters,
+including empty/unknown lists without widening the query. Native and signed-in
+development-browser checks cover both response kinds, invitation assignments,
+roleless owners, band switching and fresh grant revocation. Existing invitation
+precedence and unanswered-response behavior remain executable. This does not
+establish full event UI parity or close A0/A1.
 Platform account maintenance now uses a separate `PlatformUser_Editor` view and
 generated commands, authorized by `manage_global_users` without band selection.
 It searches and edits shared person data; security state is read-only, and email

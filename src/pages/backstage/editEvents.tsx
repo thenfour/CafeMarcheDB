@@ -41,7 +41,6 @@ const MainContent = () => {
             EventTableClientColumns.type,
             EventTableClientColumns.status,
             EventTableClientColumns.tags,
-            EventTableClientColumns.segmentBehavior,
             EventTableClientColumns.expectedAttendanceUserTag,
             EventTableClientColumns.createdByUser,
             EventTableClientColumns.visiblePermission,

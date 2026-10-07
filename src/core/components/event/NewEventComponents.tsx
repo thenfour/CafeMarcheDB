@@ -41,12 +41,10 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         table: db3.xEvent,
         columns: DB3Client.makeClientColumnSelection(
             EventTableClientColumns.name,
-            //EventTableClientColumns.slug,
             EventTableClientColumns.locationDescription,
             EventTableClientColumns.type,
             EventTableClientColumns.status,
             EventTableClientColumns.tags,
-            //EventTableClientColumns.segmentBehavior,
             EventTableClientColumns.expectedAttendanceUserTag,
             EventTableClientColumns.visiblePermission,
         ),

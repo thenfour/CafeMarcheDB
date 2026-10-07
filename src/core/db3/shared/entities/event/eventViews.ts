@@ -5,9 +5,11 @@ import { isPublicId, type EventPublicId, type EventStatusPublicId, type EventTag
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
+import { catalogDisplayModel } from "../../columnTypes/bandCatalog";
 import { EventTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { db3s, graft } from "../common/viewCommon";
 import { hydrateEventDateRange } from "./eventDateRange";
+import { bandUserTagContract, bandUserTagSelection } from "../user/bandUserTagViews";
 import { bandEventTagContract } from "./eventTagCatalogs";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
 import { fileCardSelection, fileCardTransportSelection } from "../file/fileViews";
@@ -75,8 +77,14 @@ export const eventSegmentEditorView = defineCrudView({
 const eventSegmentUserResponseContract = deriveViewContract(xEventSegmentUserResponse,
     Prisma.validator<Prisma.EventSegmentUserResponseDefaultArgs>()({
         select: {
-            publicId: true, eventSegmentId: true, userId: true, attendanceId: true,
-            createdAt: true, updatedAt: true, createdByUserId: true, updatedByUserId: true,
+            publicId: true,
+            eventSegmentId: true,
+            bandUserId: true,
+            attendanceId: true,
+            createdAt: true,
+            updatedAt: true,
+            createdByUserId: true,
+            updatedByUserId: true,
         }
     }));
 export const eventSegmentUserResponseView = defineView({
@@ -88,8 +96,13 @@ export const eventSegmentUserResponseView = defineView({
 const eventUserResponseContract = deriveViewContract(xEventUserResponse,
     Prisma.validator<Prisma.EventUserResponseDefaultArgs>()({
         select: {
-            publicId: true, eventId: true, userId: true, instrumentId: true,
-            userComment: true, isInvited: true, revision: true,
+            publicId: true,
+            eventId: true,
+            bandUserId: true,
+            bandInstrumentId: true,
+            userComment: true,
+            isInvited: true,
+            revision: true,
         }
     }));
 export const eventUserResponseView = defineView({
@@ -109,7 +122,6 @@ const EventEditorDtoSchema = z.object({
     name: z.string().optional(),
     locationDescription: z.string().optional(),
     locationURL: z.string().optional(),
-    segmentBehavior: z.string().nullable().optional(),
 
     ...db3s.dateRange(),
 
@@ -127,13 +139,7 @@ const EventEditorDtoSchema = z.object({
     })).optional(),
 
     expectedAttendanceUserTagId: z.custom<UserTagPublicId>(isPublicId).nullable().optional(),
-    expectedAttendanceUserTag: z.object({
-        publicId: z.custom<UserTagPublicId>(isPublicId),
-        text: z.string().optional(),
-        ...db3s.descriptionColorSortOrder(),
-        cssClass: z.string().nullable().optional(),
-        significance: z.string().nullable().optional(),
-    }).nullable().optional(),
+    expectedAttendanceUserTag: bandUserTagContract.dtoSchema.nullable().optional(),
 
     createdAt: z.date().optional(),
 
@@ -157,6 +163,7 @@ const eventEditorBaseSelection = ZodToPrismaSelection(EventEditorDtoSchema);
 const eventEditorSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
     select: {
         ...eventEditorBaseSelection.select,
+        expectedAttendanceUserTag: bandUserTagContract.prismaSelection,
         tags: {
             ...eventEditorBaseSelection.select.tags,
             select: {
@@ -195,7 +202,6 @@ const eventDetailTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
         visiblePermissionId: true,
         createdAt: true,
         createdByUser: { select: { publicId: true } },
-        segmentBehavior: true,
         expectedAttendanceUserTagId: true,
         frontpageVisible: true,
         frontpageDate: true,
@@ -254,7 +260,7 @@ const eventDetailTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
                     select: {
                         publicId: true,
                         eventSegmentId: true,
-                        userId: true,
+                        bandUserId: true,
                         attendanceId: true,
                         createdAt: true,
                         updatedAt: true,
@@ -267,8 +273,8 @@ const eventDetailTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
             select: {
                 publicId: true,
                 eventId: true,
-                userId: true,
-                instrumentId: true,
+                bandUserId: true,
+                bandInstrumentId: true,
                 userComment: true,
                 isInvited: true,
                 revision: true,
@@ -280,16 +286,11 @@ const eventDetailTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
         },
         expectedAttendanceUserTag: {
             select: {
-                publicId: true,
-                text: true,
-                description: true,
-                color: true,
-                sortOrder: true,
-                cssClass: true,
-                userAssignments: {
+                ...bandUserTagSelection.select,
+                bandUserTagAssignments: {
                     select: {
                         publicId: true,
-                        userId: true,
+                        bandUserId: true,
                     },
                 },
             },
@@ -391,7 +392,14 @@ const hydrateEventDetailDto = (
     ));
     // The transport selection and hydrated references above cover every
     // optional branch in this finite detail contract.
-    return event as DeepDefined<typeof event>;
+    const displayEvent = {
+        ...event,
+        expectedAttendanceUserTag: event.expectedAttendanceUserTag
+            ? catalogDisplayModel(event.expectedAttendanceUserTag)
+            : event.expectedAttendanceUserTag,
+    };
+    // The shape checks above cover the full detail transport before catalog display conversion.
+    return displayEvent as DeepDefined<typeof displayEvent>;
 };
 
 export const eventDetailSelection = eventDetailViewContract.prismaSelection;
@@ -434,7 +442,7 @@ const eventCalendarTransportSelection = Prisma.validator<Prisma.EventDefaultArgs
                 responses: {
                     select: {
                         publicId: true,
-                        userId: true,
+                        bandUserId: true,
                         attendanceId: true,
                     },
                 },
@@ -443,7 +451,7 @@ const eventCalendarTransportSelection = Prisma.validator<Prisma.EventDefaultArgs
         responses: {
             select: {
                 publicId: true,
-                userId: true,
+                bandUserId: true,
                 revision: true,
                 isInvited: true,
             },
@@ -455,10 +463,10 @@ const eventCalendarTransportSelection = Prisma.validator<Prisma.EventDefaultArgs
         expectedAttendanceUserTag: {
             select: {
                 publicId: true,
-                userAssignments: {
+                bandUserTagAssignments: {
                     select: {
                         publicId: true,
-                        userId: true,
+                        bandUserId: true,
                     },
                 },
             },
@@ -559,13 +567,12 @@ const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
         },
         revision: true,
         descriptionWikiPageId: true,
-        segmentBehavior: true,
         expectedAttendanceUserTagId: true,
         responses: {
             select: {
                 publicId: true,
-                userId: true,
-                instrumentId: true,
+                bandUserId: true,
+                bandInstrumentId: true,
                 isInvited: true,
                 userComment: true,
             },
@@ -582,7 +589,7 @@ const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
                 responses: {
                     select: {
                         publicId: true,
-                        userId: true,
+                        bandUserId: true,
                         attendanceId: true,
                     },
                 },
@@ -594,9 +601,9 @@ const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
         expectedAttendanceUserTag: {
             select: {
                 publicId: true,
-                userAssignments: {
+                bandUserTagAssignments: {
                     select: {
-                        userId: true,
+                        bandUserId: true,
                     },
                 },
             },
@@ -615,26 +622,26 @@ const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
     },
 });
 
-const makeEventSearchSelection = (actorUserId: number) => (
+const makeEventSearchSelection = (actorMembershipId: number) => (
     Prisma.validator<Prisma.EventDefaultArgs>()(
         graft(eventSearchTransportSelection, {
             select: {
                 createdByUserId: true,
                 isDeleted: true,
                 responses: {
-                    where: { userId: actorUserId },
+                    where: { bandUserId: actorMembershipId },
                 },
                 segments: {
                     select: {
                         responses: {
-                            where: { userId: actorUserId },
+                            where: { bandUserId: actorMembershipId },
                         },
                     },
                 },
                 expectedAttendanceUserTag: {
                     select: {
-                        userAssignments: {
-                            where: { userId: actorUserId },
+                        bandUserTagAssignments: {
+                            where: { bandUserId: actorMembershipId },
                         },
                     },
                 },
@@ -659,21 +666,21 @@ const eventSearchViewContract = deriveViewContract(
 );
 
 export const eventSearchSelection = ({ auth }: DB3ViewSelectionContext) => {
-    const actorUserId = auth.userId ?? -1;
+    const actorMembershipId = auth.membership?.id ?? -1;
     // Start from the compiled selection so projection-only relations added by
     // the contract remain present while the request supplies actor-scoped
     // predicates.
     return graft(eventSearchViewContract.prismaSelection, {
         select: {
-            responses: { where: { userId: actorUserId } },
+            responses: { where: { bandUserId: actorMembershipId } },
             segments: {
                 select: {
-                    responses: { where: { userId: actorUserId } },
+                    responses: { where: { bandUserId: actorMembershipId } },
                 },
             },
             expectedAttendanceUserTag: {
                 select: {
-                    userAssignments: { where: { userId: actorUserId } },
+                    bandUserTagAssignments: { where: { bandUserId: actorMembershipId } },
                 },
             },
         },
@@ -707,7 +714,6 @@ const eventWikiPageContextTransportSelection = Prisma.validator<Prisma.EventDefa
         endDateTime: true,
         isAllDay: true,
         durationMillis: true,
-        segmentBehavior: true,
         segments: {
             select: {
                 publicId: true,

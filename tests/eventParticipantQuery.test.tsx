@@ -30,8 +30,13 @@ let root: Root;
 let container: HTMLDivElement;
 
 function ParticipantProbe({ ids }: { readonly ids: readonly typeof personId[] }) {
-    participants = useEventParticipants(ids);
+    participants = useEventParticipants({ personPublicIds: ids });
     return <>{participants.map(participant => <span key={participant.membershipId}>{participant.membershipId}</span>)}</>;
+}
+
+function MembershipProbe({ ids }: { readonly ids: readonly EventParticipant["membershipId"][] }) {
+    participants = useEventParticipants({ membershipIds: ids });
+    return null;
 }
 
 beforeEach(() => {
@@ -79,5 +84,16 @@ describe("event participant query adapter", () => {
         expect(eventParticipantFromMembership(null)).toBeNull();
         const unreadable = eventParticipantView.parseDto({ ...first, user: { publicId: personId } });
         expect(eventParticipantFromMembership(unreadable)).toBeNull();
+    });
+
+    it("forwards response membership identities without replacing them with person identities", async () => {
+        await act(async () => root.render(<MembershipProbe ids={[first.publicId]} />));
+        expect(query.mock.calls.at(-1)?.[1]).toMatchObject({ filter: { tableParams: { membershipIds: [first.publicId] } } });
+        expect(participants[0]?.publicId).toBe(personId);
+        expect(participants[0]?.membershipId).toBe(first.publicId);
+        items = [];
+        await act(async () => root.render(<MembershipProbe ids={[]} />));
+        expect(query.mock.calls.at(-1)?.[1]).toMatchObject({ filter: { tableParams: { membershipIds: [] } } });
+        expect(participants).toEqual([]);
     });
 });

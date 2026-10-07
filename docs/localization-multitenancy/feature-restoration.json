@@ -983,6 +983,24 @@
       "featureId": "member-profile",
       "source": "15d112e042f38d63f5a18b105120cf1165df7845:tests/authorization/publicIdTransport.test.ts:469-486",
       "sha256": "013f9bc81869edb207ef61411bec78de64ccffa088b7c78427bd5cf2c186c68e"
+    },
+    {
+      "file": "src/core/db3/shared/entities/user/userTagViews.ts",
+      "featureId": "dashboard-content",
+      "source": "0daa91f9a97659ea53be501712e659ed776e8e38:src/core/db3/shared/entities/user/userTagViews.ts:1-58",
+      "sha256": "1d58fa1ef329715ad3aaeabae6763103b15cd60e3d12779a4d1a2c8a3b5c62ea"
+    },
+    {
+      "file": "src/core/db3/shared/schema/prismArgs.ts",
+      "featureId": "dashboard-content",
+      "source": "0daa91f9a97659ea53be501712e659ed776e8e38:src/core/db3/shared/schema/prismArgs.ts:975-1008",
+      "sha256": "e19853e8e72173b9190f56281d2db1fc04551a57575e88393557eb6e906a07a0"
+    },
+    {
+      "file": "src/core/db3/shared/schema/prismArgs.ts",
+      "featureId": "dashboard-content",
+      "source": "0daa91f9a97659ea53be501712e659ed776e8e38:src/core/db3/shared/schema/prismArgs.ts:302-355",
+      "sha256": "296b1acc382818fefe662b59baa8e8fbb739df7f3fd167b32e4d0fb85a7ff4e3"
     }
   ]
 }

@@ -1,10 +1,20 @@
 import { useQuery } from "@blitzjs/rpc";
-import type { UserPublicId } from "shared/publicId";
+import type { BandUserPublicId, UserPublicId } from "shared/publicId";
 import { useDB3QueryContext } from "../../db3/components/useDB3Context";
 import db3queries from "../../db3/queries/db3queries";
 import { eventParticipantFromMembership, eventParticipantView } from "../../db3/shared/entities/user/eventParticipant";
 
-export function useEventParticipants(personPublicIds: readonly UserPublicId[]) {
+type EventParticipantFilter =
+    | {
+        readonly personPublicIds: readonly UserPublicId[];
+        readonly membershipIds?: never
+    }
+    | {
+        readonly membershipIds: readonly BandUserPublicId[];
+        readonly personPublicIds?: never
+    };
+
+export function useEventParticipants(filter: EventParticipantFilter) {
     const context = useDB3QueryContext();
     const [result] = useQuery(db3queries, {
         ...context,
@@ -15,7 +25,7 @@ export function useEventParticipants(personPublicIds: readonly UserPublicId[]) {
         },
         filter: {
             tableParams: {
-                personPublicIds: [...personPublicIds]
+                ...filter,
             }
         },
         cmdbQueryContext: "event participants",

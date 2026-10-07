@@ -100,13 +100,16 @@ owner-update regression. The invitation tag-assignment read dependency remains
 temporary, with writes disabled. Profile/directory restoration obligations stay
 pending; this cleanup does not establish full workflow parity.
 
-The event participant reader now replaces the unused `xUserWithInstrument`
-descriptor with a named BandUser view and typed attendance participant model.
-The descriptor's original implementation remains in the existing shared-person
-references. Membership instruments, tags, primary defaults and display metadata
-have executable native/DOM coverage and development-browser RPC evidence.
-This adds no feature deferral or closure; full event response/invitation payload
-and member-profile recovery obligations remain pending.
+The response/invitation recovery removes the obsolete UserTag/UserTagAssignment
+metadata and `UserWithInstrumentsArgs`. Original descriptors and person selectors
+remain in the existing references; three additional references from `0daa91f9`
+preserve the invitation views and retired payload helpers. Response and invitation
+joins now use membership IDs, with separate person IDs for profile/write/audit
+contracts. Historical response identities remain readable through a narrow scoped
+membership reference. Native, DOM and development-browser evidence verifies this
+reader slice and existing invitation precedence/unanswered-response behavior.
+No feature is newly deferred or closed: full event search/editing, invitation
+administration and member-profile recovery obligations remain pending.
 
 The checker detects missing references and inconsistent closure records. Review
 must still establish that the recorded evidence proves parity and that a

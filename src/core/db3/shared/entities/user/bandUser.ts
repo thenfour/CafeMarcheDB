@@ -48,6 +48,7 @@ export const xBandUser = defineTable({
             authorizeAs: "user",
         },
         personPublicIds: { kind: "stringArray", authorizeAs: "user" },
+        membershipIds: { kind: "stringArray", authorizeAs: "publicId" },
         membershipStatus: { kind: "string", authorizeAs: "isDeleted" },
         tagId: { kind: "entityIdentity", targetTableID: "BandUserTag", authorizeAs: "bandUserTagAssignments" },
         instrumentId: { kind: "entityIdentity", targetTableID: "BandInstrument", authorizeAs: "bandUserInstruments" },
@@ -55,6 +56,7 @@ export const xBandUser = defineTable({
     },
     getParameterizedWhereClause: (params: {
         personPublicId?: string; personPublicIds?: string[];
+        membershipIds?: string[];
         tagId?: number; instrumentId?: number; roleId?: number | null; membershipStatus?: string;
     }, auth): Prisma.BandUserWhereInput[] => {
         const status = z.enum(["active", "inactive"]).parse(params.membershipStatus ?? "active");
@@ -72,6 +74,9 @@ export const xBandUser = defineTable({
         if (params.personPublicIds !== undefined) {
             // An empty participant list must not turn into a whole-band directory query.
             clauses.push({ user: { publicId: { in: params.personPublicIds.map(id => xUserMinimum.parseIdentity(id)) } } });
+        }
+        if (params.membershipIds !== undefined) {
+            clauses.push({ publicId: { in: params.membershipIds.map(id => xBandUser.parseIdentity(id)) } });
         }
         if (params.tagId !== undefined) {
             clauses.push({ bandUserTagAssignments: { some: { bandUserTagId: params.tagId } } });

@@ -1,6 +1,7 @@
 import type { ColorPaletteEntry } from "@/src/core/components/color/palette";
 import { Prisma } from "db";
 import type {
+    BandUserPublicId,
     EventAttendancePublicId,
     EventPublicId,
     EventSegmentPublicId,
@@ -18,10 +19,7 @@ import type {
     SongPublicId,
     SongTagAssociationPublicId,
     SongTagPublicId,
-    UserInstrumentPublicId,
     UserPublicId,
-    UserTagAssignmentPublicId,
-    UserTagPublicId,
     WikiPageTagAssignmentPublicId,
     WikiPageTagPublicId,
 } from "shared/publicId";
@@ -299,13 +297,6 @@ export const InstrumentMinimumArgs = Prisma.validator<Prisma.InstrumentArgs>()({
 
 export type InstrumentPayloadMinimum = Prisma.InstrumentGetPayload<typeof InstrumentMinimumArgs>;
 
-const UserInstrumentReferenceArgs = Prisma.validator<Prisma.UserInstrumentArgs>()({
-    include: {
-        // Projection needs the target's public ID to translate instrumentId,
-        // but event/user-map payloads do not need the full instrument record.
-        instrument: { select: { id: true, publicId: true } },
-    },
-});
 
 type PermissionForVisibilityDbPayload = Prisma.PermissionGetPayload<typeof PermissionForVisibilityArgs>;
 export type PermissionForVisibilityPayload = Omit<PermissionForVisibilityDbPayload, "publicId" | "description"> & {
@@ -315,42 +306,6 @@ export type PermissionForVisibilityPayload = Omit<PermissionForVisibilityDbPaylo
 
 export type PermissionClientPayload = Omit<Prisma.PermissionGetPayload<{}>, "id" | "publicId"> & {
     publicId: PermissionPublicId;
-};
-
-type UserInstrumentReferenceDbPayload = Prisma.UserInstrumentGetPayload<
-    typeof UserInstrumentReferenceArgs
->;
-
-type UserInstrumentReferenceClientPayload = Omit<
-    UserInstrumentReferenceDbPayload,
-    "id" | "publicId" | "userId" | "instrumentId" | "instrument"
-> & {
-    publicId: UserInstrumentPublicId;
-    userId: UserPublicId;
-    instrumentId: InstrumentPublicId;
-    instrument: { publicId: InstrumentPublicId };
-};
-
-const UserTagAssignmentReferenceArgs = Prisma.validator<Prisma.UserTagAssignmentArgs>()({
-    include: {
-        // As with instruments above, projection needs the public target even
-        // though event user maps consume only userTagId.
-        userTag: { select: { id: true, publicId: true } },
-    },
-});
-
-type UserTagAssignmentReferenceDbPayload = Prisma.UserTagAssignmentGetPayload<
-    typeof UserTagAssignmentReferenceArgs
->;
-
-type UserTagAssignmentReferenceClientPayload = Omit<
-    UserTagAssignmentReferenceDbPayload,
-    "id" | "publicId" | "userId" | "userTagId" | "userTag"
-> & {
-    publicId: UserTagAssignmentPublicId;
-    userId: UserPublicId;
-    userTagId: UserTagPublicId;
-    userTag: { publicId: UserTagPublicId };
 };
 
 export type UserPayload_Name = Prisma.UserGetPayload<{
@@ -423,33 +378,6 @@ export const UserForCalBackendArgs = Prisma.validator<Prisma.UserDefaultArgs>()(
 export type UserForCalBackendPayload = Prisma.UserGetPayload<typeof UserForCalBackendArgs>;
 
 
-export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
-    select: {
-        id: true,
-        publicId: true,
-        name: true,
-        isSysAdmin: true,
-        isDeleted: true,
-        email: true,
-        phone: true,
-        createdAt: true,
-        cssClass: true,
-
-        instruments: UserInstrumentReferenceArgs,
-        tags: UserTagAssignmentReferenceArgs,
-    }
-});
-
-export type UserWithInstrumentsDbPayload = Prisma.UserGetPayload<typeof UserWithInstrumentsArgs>;
-export type UserWithInstrumentsClientPayload = Omit<
-    UserWithInstrumentsDbPayload,
-    "id" | "publicId" | "instruments" | "tags"
-> & {
-    publicId: UserPublicId;
-    instruments: UserInstrumentReferenceClientPayload[];
-    tags: UserTagAssignmentReferenceClientPayload[];
-};
-export type UserWithInstrumentsPayload = UserWithInstrumentsClientPayload;
 
 
 export const UserNaturalOrderBy: Prisma.UserOrderByWithRelationInput[] = [
@@ -653,11 +581,7 @@ export type EventPayloadWithVisiblePermission = Prisma.EventGetPayload<{
 
 export const EventArgs = Prisma.validator<Prisma.EventArgs>()({
     include: {
-        visiblePermission: {
-            include: {
-                roles: true
-            }
-        },
+        visiblePermission: true,
         createdByUser: AuxUserArgs,
         status: true,
         tags: {
@@ -670,8 +594,8 @@ export const EventArgs = Prisma.validator<Prisma.EventArgs>()({
         type: true,
         responses: {
             include: {
-                instrument: true,
-                user: true,
+                bandInstrument: true,
+                bandUser: { include: { user: true } },
             }
         },
         segments: {
@@ -679,7 +603,7 @@ export const EventArgs = Prisma.validator<Prisma.EventArgs>()({
             include: {
                 responses: {
                     include: {
-                        user: true,
+                        bandUser: { include: { user: true } },
                     }
                 }
             },
@@ -717,8 +641,23 @@ export type EventTagAssignmentClientPayload = Omit<
 ////////////////////////////////////////////////////////////////
 export const EventUserResponseArgs = Prisma.validator<Prisma.EventUserResponseArgs>()({
     include: {
-        instrument: InstrumentArgs,
-        user: UserWithInstrumentsArgs,
+        bandInstrument: {
+            select: {
+                publicId: true
+            }
+        },
+        bandUser: {
+            select: {
+                publicId: true,
+                userId: true,
+                user: {
+                    select: {
+                        publicId: true,
+                        name: true
+                    }
+                }
+            }
+        },
     }
 });
 
@@ -738,8 +677,7 @@ export const EventSegmentUserResponseArgs = Prisma.validator<Prisma.EventSegment
     include: {
         attendance: true,
         eventSegment: true,
-        //instrument: InstrumentArgs,
-        user: UserWithInstrumentsArgs,
+        bandUser: { select: { publicId: true, userId: true, user: { select: { publicId: true, name: true } } } },
     }
 });
 
@@ -748,22 +686,22 @@ export type EventSegmentUserResponsePayload = Prisma.EventSegmentUserResponseGet
 }>;
 
 export type EventSegmentUserResponseClientPayload = Omit<
-    Prisma.EventSegmentUserResponseGetPayload<{}>, "id" | "publicId" | "eventSegmentId" | "attendanceId" | "userId" | "createdByUserId" | "updatedByUserId"
+    Prisma.EventSegmentUserResponseGetPayload<{}>, "id" | "publicId" | "eventSegmentId" | "attendanceId" | "bandUserId" | "createdByUserId" | "updatedByUserId"
 > & {
     publicId: EventSegmentUserResponsePublicId;
     eventSegmentId: EventSegmentPublicId;
     attendanceId: EventAttendancePublicId | null;
-    userId: UserPublicId;
+    bandUserId: BandUserPublicId;
     createdByUserId: UserPublicId | null;
     updatedByUserId: UserPublicId | null;
 };
 export type EventUserResponseClientPayload = Omit<
-    Prisma.EventUserResponseGetPayload<{}>, "id" | "publicId" | "eventId" | "instrumentId" | "userId"
+    Prisma.EventUserResponseGetPayload<{}>, "id" | "publicId" | "eventId" | "bandInstrumentId" | "bandUserId"
 > & {
     publicId: EventUserResponsePublicId;
     eventId: EventPublicId;
-    instrumentId: InstrumentPublicId | null;
-    userId: UserPublicId;
+    bandInstrumentId: InstrumentPublicId | null;
+    bandUserId: BandUserPublicId;
 };
 
 export const EventSegmentUserResponseNaturalOrderBy: Prisma.EventSegmentUserResponseOrderByWithRelationInput[] = [
@@ -967,48 +905,6 @@ export const FileTagAssignmentNaturalOrderBy: Prisma.FileTagAssignmentOrderByWit
     { fileTag: { text: 'asc' } },
     { fileTag: { id: 'asc' } },
 ];
-
-
-
-
-////////////////////////////////////////////////////////////////
-export const UserTagArgs = Prisma.validator<Prisma.UserTagArgs>()({
-    include: {
-        userAssignments: {
-            include: {
-                user: UserWithInstrumentsArgs
-            }
-        },
-    }
-});
-
-export type UserTagPayload = Prisma.UserTagGetPayload<typeof UserTagArgs>;
-
-export const UserTagNaturalOrderBy: Prisma.UserTagOrderByWithRelationInput[] = [
-    { sortOrder: 'asc' },
-    { text: 'asc' },
-    { id: 'asc' },
-];
-
-
-////////////////////////////////////////////////////////////////
-export const UserTagAssignmentArgs = Prisma.validator<Prisma.UserTagAssignmentArgs>()({
-    include: {
-        user: true,
-        userTag: true,
-    }
-});
-export type UserTagAssignmentPayload = Prisma.UserTagAssignmentGetPayload<typeof UserTagAssignmentArgs>;
-
-
-export const UserTagAssignmentNaturalOrderBy: Prisma.UserTagAssignmentOrderByWithRelationInput[] = [
-    { userTag: { sortOrder: 'asc' } },
-    { userTag: { text: 'asc' } },
-    { userTag: { id: 'asc' } },
-];
-
-
-
 
 
 
@@ -1219,14 +1115,6 @@ export const EventAttendanceNaturalOrderBy: Prisma.EventAttendanceOrderByWithRel
     { sortOrder: 'asc' },
     { id: 'asc' },
 ];
-
-
-////////////////////////////////////////////////////////////////
-
-export const EventSegmentBehavior = {
-    Sets: "Sets",
-    Options: "Options",
-} as const satisfies Record<string, string>;
 
 
 ////////////////////////////////////////////////////////////////
@@ -1727,4 +1615,112 @@ export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
 //         },
 //     },
 // });
+// MIGRATION_REFERENCE_END
+
+
+// MIGRATION_RESTORE: dashboard-content
+// Source: 0daa91f9a97659ea53be501712e659ed776e8e38:src/core/db3/shared/schema/prismArgs.ts:975-1008
+// Reason: Event response and invitation readers now use selected-band membership contracts.
+// Restore: Verify full event search and invitation editor behavior on the target schema.
+// Verification: Adapt the preserved event views and exercise complete event workflows in the built application.
+// SHA256: e19853e8e72173b9190f56281d2db1fc04551a57575e88393557eb6e906a07a0
+// MIGRATION_REFERENCE_BEGIN
+// export const UserTagArgs = Prisma.validator<Prisma.UserTagArgs>()({
+//     include: {
+//         userAssignments: {
+//             include: {
+//                 user: UserWithInstrumentsArgs
+//             }
+//         },
+//     }
+// });
+//
+// export type UserTagPayload = Prisma.UserTagGetPayload<typeof UserTagArgs>;
+//
+// export const UserTagNaturalOrderBy: Prisma.UserTagOrderByWithRelationInput[] = [
+//     { sortOrder: 'asc' },
+//     { text: 'asc' },
+//     { id: 'asc' },
+// ];
+//
+//
+// ////////////////////////////////////////////////////////////////
+// export const UserTagAssignmentArgs = Prisma.validator<Prisma.UserTagAssignmentArgs>()({
+//     include: {
+//         user: true,
+//         userTag: true,
+//     }
+// });
+// export type UserTagAssignmentPayload = Prisma.UserTagAssignmentGetPayload<typeof UserTagAssignmentArgs>;
+//
+//
+// export const UserTagAssignmentNaturalOrderBy: Prisma.UserTagAssignmentOrderByWithRelationInput[] = [
+//     { userTag: { sortOrder: 'asc' } },
+//     { userTag: { text: 'asc' } },
+//     { userTag: { id: 'asc' } },
+// ];
+// MIGRATION_REFERENCE_END
+
+
+// MIGRATION_RESTORE: dashboard-content
+// Source: 0daa91f9a97659ea53be501712e659ed776e8e38:src/core/db3/shared/schema/prismArgs.ts:302-355
+// Reason: Event response and invitation readers now use selected-band membership contracts.
+// Restore: Verify full event search and invitation editor behavior on the target schema.
+// Verification: Adapt the preserved event views and exercise complete event workflows in the built application.
+// SHA256: 296b1acc382818fefe662b59baa8e8fbb739df7f3fd167b32e4d0fb85a7ff4e3
+// MIGRATION_REFERENCE_BEGIN
+// const UserInstrumentReferenceArgs = Prisma.validator<Prisma.UserInstrumentArgs>()({
+//     include: {
+//         // Projection needs the target's public ID to translate instrumentId,
+//         // but event/user-map payloads do not need the full instrument record.
+//         instrument: { select: { id: true, publicId: true } },
+//     },
+// });
+//
+// type PermissionForVisibilityDbPayload = Prisma.PermissionGetPayload<typeof PermissionForVisibilityArgs>;
+// export type PermissionForVisibilityPayload = Omit<PermissionForVisibilityDbPayload, "publicId" | "description"> & {
+//     publicId: PermissionPublicId;
+//     description: string | null;
+// };
+//
+// export type PermissionClientPayload = Omit<Prisma.PermissionGetPayload<{}>, "id" | "publicId"> & {
+//     publicId: PermissionPublicId;
+// };
+//
+// type UserInstrumentReferenceDbPayload = Prisma.UserInstrumentGetPayload<
+//     typeof UserInstrumentReferenceArgs
+// >;
+//
+// type UserInstrumentReferenceClientPayload = Omit<
+//     UserInstrumentReferenceDbPayload,
+//     "id" | "publicId" | "userId" | "instrumentId" | "instrument"
+// > & {
+//     publicId: UserInstrumentPublicId;
+//     userId: UserPublicId;
+//     instrumentId: InstrumentPublicId;
+//     instrument: { publicId: InstrumentPublicId };
+// };
+//
+// const UserTagAssignmentReferenceArgs = Prisma.validator<Prisma.UserTagAssignmentArgs>()({
+//     include: {
+//         // As with instruments above, projection needs the public target even
+//         // though event user maps consume only userTagId.
+//         userTag: { select: { id: true, publicId: true } },
+//     },
+// });
+//
+// type UserTagAssignmentReferenceDbPayload = Prisma.UserTagAssignmentGetPayload<
+//     typeof UserTagAssignmentReferenceArgs
+// >;
+//
+// type UserTagAssignmentReferenceClientPayload = Omit<
+//     UserTagAssignmentReferenceDbPayload,
+//     "id" | "publicId" | "userId" | "userTagId" | "userTag"
+// > & {
+//     publicId: UserTagAssignmentPublicId;
+//     userId: UserPublicId;
+//     userTagId: UserTagPublicId;
+//     userTag: { publicId: UserTagPublicId };
+// };
+//
 // MIGRATION_REFERENCE_END

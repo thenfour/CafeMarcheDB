@@ -9,7 +9,7 @@ import { EventResponseInfo, fn_makeMockEventSegmentResponse, fn_makeMockEventUse
 import { DashboardContextData, useDashboardContext } from '../dashboardContext/DashboardContext';
 import { DashboardContextDataBase } from '../dashboardContext/dashboardContextTypes';
 import { calculateEventAttendance, EventAttendanceResult } from "./attendanceCalculation";
-import type { EventStatusPublicId, UserPublicId, UserTagPublicId } from 'shared/publicId';
+import type { BandUserPublicId, EventStatusPublicId, UserTagPublicId } from 'shared/publicId';
 
 
 export type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & {
@@ -91,19 +91,16 @@ export function CalculateEventDetailMetadata({ event, tabSlug, dashboardContext 
     // - users that appear in segment responses
     // - and finally, any users that are invited by default.
     // because of the last point, a fetch is absolutely required.
-    const invitees = event.expectedAttendanceUserTag?.userAssignments.map(a => a.userId) || [];
-
-    const userIdMap = new Set<UserPublicId>([
-        ...event.responses.map(r => r.userId),
-        ...event.segments.map(seg => seg.responses.map(r => r.userId)).flat(),
+    const invitees = event.expectedAttendanceUserTag?.bandUserTagAssignments.map(a => a.bandUserId) || [];
+    const membershipIds = new Set<BandUserPublicId>([
+        ...event.responses.map(r => r.bandUserId),
+        ...event.segments.flatMap(segment => segment.responses.map(r => r.bandUserId)),
         ...invitees,
     ]);
-    if (dashboardContext.currentUser?.publicId) {
-        // if current user is viewing, we should be able to generate event response data for them even if not responded or even invited.
-        userIdMap.add(dashboardContext.currentUser.publicId);
+    if (dashboardContext.currentMembership) {
+        membershipIds.add(dashboardContext.currentMembership.publicId);
     }
-
-    const userMap = useEventParticipants([...userIdMap]);
+    const userMap = useEventParticipants({ membershipIds: [...membershipIds] });
 
     const eventData = CalculateEventMetadata<
         EventDetailEvent,
@@ -122,7 +119,7 @@ export function CalculateEventDetailMetadata({ event, tabSlug, dashboardContext 
                 attendance: null,
                 eventSegmentId: segment.publicId,
                 publicId: null,
-                userId: user.publicId,
+                bandUserId: user.membershipId,
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 updatedByUser: null,
@@ -135,9 +132,9 @@ export function CalculateEventDetailMetadata({ event, tabSlug, dashboardContext 
                 revision: 0,
                 eventId: event.publicId,
                 publicId: null,
-                userId: user.publicId,
-                instrumentId: null,
-                instrument: null,
+                bandUserId: user.membershipId,
+                bandInstrumentId: null,
+                bandInstrument: null,
                 isInvited,
             }
         },
@@ -227,8 +224,8 @@ export type EventSearchMetadata = EventWithMetadata<
 const isEventUserResponseReady = (
     response: NonNullable<db3.EventSearchClient["responses"]>[number],
 ): response is typeof response & db3.EventResponses_MinimalEventUserResponse => (
-    response.userId !== undefined
-    && response.instrumentId !== undefined
+    response.bandUserId !== undefined
+    && response.bandInstrumentId !== undefined
     && response.isInvited !== undefined
     && response.userComment !== undefined
 );
@@ -236,7 +233,7 @@ const isEventUserResponseReady = (
 const isSegmentResponseReady = (
     response: NonNullable<NonNullable<db3.EventSearchClient["segments"]>[number]["responses"]>[number],
 ): response is typeof response & db3.EventResponses_MinimalEventSegmentUserResponse => (
-    response.userId !== undefined && response.attendanceId !== undefined
+    response.bandUserId !== undefined && response.attendanceId !== undefined
 );
 
 const isEventSegmentReady = (
@@ -270,16 +267,16 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
     const userMap: EventParticipantList = [currentUser];
     const attendanceTag = event.expectedAttendanceUserTag;
     if (attendanceTag && (
-        attendanceTag.userAssignments === undefined
-        || attendanceTag.userAssignments.some(assignment => assignment.userId === undefined)
+        attendanceTag.bandUserTagAssignments === undefined
+        || attendanceTag.bandUserTagAssignments.some(assignment => assignment.bandUserId === undefined)
     )) {
         return null;
     }
     const expectedAttendanceUserTag: db3.EventResponses_ExpectedUserTag | null = attendanceTag
         ? {
             publicId: attendanceTag.publicId,
-            userAssignments: attendanceTag.userAssignments!.map(assignment => ({
-                userId: assignment.userId!,
+            bandUserTagAssignments: attendanceTag.bandUserTagAssignments!.map(assignment => ({
+                bandUserId: assignment.bandUserId!,
             })),
         }
         : null;
@@ -317,7 +314,7 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
                 attendanceId: null,
                 eventSegmentId: segment.publicId,
                 publicId: null,
-                userId: user.publicId,
+                bandUserId: user.membershipId,
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 createdByUserId: null,
@@ -332,8 +329,8 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
                 uid: getUniqueNegativeID().toString(),
                 eventId: event.publicId,
                 publicId: null,
-                userId: user.publicId,
-                instrumentId: null,
+                bandUserId: user.membershipId,
+                bandInstrumentId: null,
                 isInvited,
                 createdAt: new Date(),
                 updatedAt: new Date(),
@@ -373,13 +370,12 @@ export const EventTableClientColumns = DB3Client.makeClientColumnSet({
         selectionView: db3.eventTypeEditorView,
     }),
     status: columnName => new DB3Client.ForeignSingleFieldClient<db3.EventStatusDashboardClient>({ fieldDescriptionKey: null, columnName, cellWidth: 150, fieldCaptionKey: "db3.fields.status", selectionView: db3.eventStatusEditorView }),
-    segmentBehavior: columnName => new DB3Client.ConstEnumStringFieldClient({ fieldDescriptionKey: null, columnName, cellWidth: 220, fieldCaptionKey: "db3.fields.segmentBehavior" }),
-    expectedAttendanceUserTag: columnName => new DB3Client.ForeignSingleFieldClient<db3.UserTagPayload>({
+    expectedAttendanceUserTag: columnName => new DB3Client.ForeignSingleFieldClient<db3.UserTagDashboardClient>({
         columnName,
         cellWidth: 150,
         fieldCaptionKey: "db3.fields.invitedMembers",
         fieldDescriptionKey: "event.expectedAttendanceUserTag.DescriptionMarkdown",
-        selectionView: db3.userTagEditorView,
+        selectionView: db3.bandUserTagView,
     }),
     tags: columnName => new DB3Client.TagsFieldClient<db3.EventTagAssignmentClientPayload & { eventTag: db3.EventTagDashboardClient }>({
         columnName,
@@ -391,7 +387,8 @@ export const EventTableClientColumns = DB3Client.makeClientColumnSet({
         selectionView: db3.bandEventTagView,
     }),
 
-    visiblePermission: DB3Client.foreignRefFieldGen({ fieldDescriptionKey: "event.visiblePermission.DescriptionMarkdown",
+    visiblePermission: DB3Client.foreignRefFieldGen({
+        fieldDescriptionKey: "event.visiblePermission.DescriptionMarkdown",
         selectionView: db3.permissionVisibilityView,
         fieldCaptionKey: "db3.fields.eventVisibility",
     }),

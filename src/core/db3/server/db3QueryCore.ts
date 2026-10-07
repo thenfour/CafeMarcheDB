@@ -100,7 +100,10 @@ async function prepareTableQuery(
     // Filtering and natural ordering must not depend on which columns the caller chose to display.
     const querySupportMembers = table.queryStrategy === "resolved" ? table.columns
         .filter(field => table.authorizeColumnForView({ model: null, auth, columnName: field.member }))
-        .flatMap(field => field.getPrismaMemberDescriptors().map(descriptor => descriptor.member)) : [];
+        .flatMap(field => field.getPrismaMemberDescriptors()
+            // Child collections belong to explicit views, not scalar catalog matching or ordering.
+            .filter(descriptor => descriptor.kind !== "relationCollection")
+            .map(descriptor => descriptor.member)) : [];
     const readSelection = db3Server.table(table).prepareReadSelection(
         selectionArgs ?? {},
         [...querySupportMembers, ...(executionOptions.orderedPrimaryKeys ? [table.pkMember] : [])],

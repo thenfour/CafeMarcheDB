@@ -303,7 +303,7 @@ export default resolver.pipe(
             let userTags: db3.DtoOf<typeof db3.userTagEventSearchView>[] = [];
 
             if (expectedAttendanceUserTagIds.size) {
-                const tableParams: db3.UserTagTableParams = {
+                const tableParams = {
                     ids: [...expectedAttendanceUserTagIds],
                 };
 

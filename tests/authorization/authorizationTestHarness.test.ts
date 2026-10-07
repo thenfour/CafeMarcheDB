@@ -1,4 +1,6 @@
 import { loadAuthorizationForUser } from "@/src/auth/server/serverAuthorization";
+import type { Prisma } from "@prisma/client";
+import { bindDB3ReadSnapshot } from "@db3/server/db3ReadExecution";
 import { hash256 } from "@blitzjs/auth";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { songPublicId } from "../support/songFixtures";
@@ -39,7 +41,7 @@ import {
 } from "src/auth/server/userManagementPolicy";
 import { makePermissionSetFromRole } from "src/auth/server/userManagementState";
 import db3Mutation from "tests/authorization/db3MutationTestResolver";
-import { testServerAuthorization } from "tests/support/serverAuthorization";
+import { testBandAuthorization, testServerAuthorization } from "tests/support/serverAuthorization";
 import { eventPublicId } from "../support/eventResponseFixtures";
 import {
   asUserManagementActor,
@@ -419,10 +421,14 @@ describe("BA-A002 generic DB3 query authorization", () => {
     },
   ])("rejects a protected $name field before querying", async ({ request }) => {
     const findMany = vi.spyOn(authorizationTestDb.getDelegate("event"), "findMany")
-    const { ctx } = createAuthorizationPersona("public")
+    const { schemaAuthorization } = createAuthorizationPersona("public")
+    const auth = testBandAuthorization(null, schemaAuthorization.effectivePermissions)
+    vi.spyOn(auth, "refresh").mockResolvedValue(auth)
+    // This test rejects fields before querying; native readers verify actual authorization refresh.
+    const snapshot = await bindDB3ReadSnapshot(authorizationTestDb as unknown as Prisma.TransactionClient, auth, { isolationLevel: "Serializable" })
 
     await expect(
-      invokeResolver(db3Query, forgeDb3Query("Event", request), ctx),
+      queryTable(forgeDb3Query("Event", request), auth, snapshot),
     ).rejects.toThrow("Not authorized to perform this query.")
     expect(findMany).not.toHaveBeenCalled()
   })

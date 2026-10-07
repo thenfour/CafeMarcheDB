@@ -27,6 +27,7 @@ import {
   type SongCreditTypePublicId,
   type SongTagPublicId,
   type SongPublicId,
+  type BandUserPublicId,
   type UserTagPublicId,
   type UserPublicId,
   type WikiPageTagAssignmentPublicId,
@@ -332,27 +333,27 @@ describe("DB3 scalar selection compiler", () => {
   })
 
   it("allows an explicitly typed primitive ghost member", () => {
-    const selection = Prisma.validator<Prisma.UserTagDefaultArgs>()({
+    const selection = Prisma.validator<Prisma.BandUserTagDefaultArgs>()({
       select: {
-        userAssignments: {
-          select: { userId: true },
+        bandUserTagAssignments: {
+          select: { bandUserId: true },
         },
       },
     })
 
-    const compiled = compileDB3Selection(db3.xUserTag, selection)
+    const compiled = compileDB3Selection(db3.xBandUserTag, selection)
     type Dto = z.infer<typeof compiled.dtoSchema>
 
-    expectTypeOf<Dto["userAssignments"]>().toEqualTypeOf<{
-      userId?: UserPublicId
+    expectTypeOf<Dto["bandUserTagAssignments"]>().toEqualTypeOf<{
+      bandUserId?: BandUserPublicId
     }[] | undefined>()
-    expect(compiled.dtoSchema.parse({ userAssignments: [{ userId: parsePublicId<"User">("TestUser00000012") }] }))
-      .toEqual({ userAssignments: [{ userId: parsePublicId<"User">("TestUser00000012") }] })
+    expect(compiled.dtoSchema.parse({ bandUserTagAssignments: [{ bandUserId: parsePublicId<"BandUser">("TestUser00000012") }] }))
+      .toEqual({ bandUserTagAssignments: [{ bandUserId: parsePublicId<"BandUser">("TestUser00000012") }] })
     expect(compiled.dtoSchema.safeParse({
-      userAssignments: [{ userId: "12" }],
+      bandUserTagAssignments: [{ bandUserId: "12" }],
     }).success).toBe(false)
     expect(compiled.dtoSchema.safeParse({
-      userAssignments: [{ userId: null }],
+      bandUserTagAssignments: [{ bandUserId: null }],
     }).success).toBe(false)
   })
 
@@ -415,6 +416,7 @@ describe("DB3 scalar selection compiler", () => {
       select: {
         statusId: true,
         status: { select: { publicId: true, isDeleted: true } },
+        bandId: true,
         createdByUserId: true,
         visiblePermissionId: true,
         isDeleted: true,
@@ -711,52 +713,19 @@ describe("Event lookup editor derived-view rollout", () => {
   })
 })
 
-describe("UserTag Event search derived-view migration", () => {
-  it("uses public identity in administration and dashboard catalogs", () => {
-    type TagDto = db3.DtoOf<typeof db3.userTagEditorView>
-    type DashboardTag = db3.UserTagDashboardClient
-
-    expectTypeOf<TagDto["publicId"]>().toEqualTypeOf<UserTagPublicId>()
-    expectTypeOf<DashboardTag["publicId"]>().toEqualTypeOf<UserTagPublicId>()
-    expectTypeOf<Extract<keyof TagDto, "id">>().toEqualTypeOf<never>()
-    expect(db3.xUserTag.getIdentity({ publicId: userTagPublicId })).toBe(userTagPublicId)
-  })
-
-  it("keeps the relation shape on a named view over canonical xUserTag", () => {
+describe("band invitation tag derived-view migration", () => {
+  it("uses membership identities independently of shared person identities", () => {
     type Dto = db3.DtoOf<typeof db3.userTagEventSearchView>
-    type Client = db3.ClientOf<typeof db3.userTagEventSearchView>
-
     expectTypeOf<Dto["publicId"]>().toEqualTypeOf<UserTagPublicId>()
-    expectTypeOf<Dto["userAssignments"]>().toEqualTypeOf<{
-      userId?: UserPublicId
+    expectTypeOf<Dto["bandUserTagAssignments"]>().toEqualTypeOf<{
+      bandUserId?: BandUserPublicId
     }[] | undefined>()
-    expectTypeOf<Client["publicId"]>().toEqualTypeOf<UserTagPublicId>()
-    expectTypeOf<Client["text"]>().toEqualTypeOf<string>()
-    expectTypeOf<Client["userAssignments"]>().toEqualTypeOf<{
-      userId?: UserPublicId
-    }[] | undefined>()
-    expect(db3.userTagEventSearchView.entity).toBe(db3.xUserTag)
-    expect(db3.userTagEventSearchView.getSelectionArgs(
-      {} as db3.DB3ViewSelectionContext,
-    )).toEqual(expect.objectContaining({
-      select: expect.objectContaining({
-        userAssignments: expect.objectContaining({
-          select: expect.objectContaining({
-            user: { select: { id: true, isDeleted: true, publicId: true } },
-          })
-        }),
-      })
-    }))
-
-    const dto: Dto = {
-      publicId: userTagPublicId,
-      text: "Members",
-      userAssignments: [{ userId: parsePublicId<"User">("TestUser00000042") }],
-    }
-    expect(db3.userTagEventSearchView.hydrate(
-      dto,
-      new db3.DB3ReferenceStore(),
-    )).toEqual(dto)
+    expect(db3.userTagEventSearchView.entity).toBe(db3.xBandUserTag)
+    const dto: Dto = { publicId: userTagPublicId,
+      bandUserTagAssignments: [{ bandUserId: parsePublicId<"BandUser">("TestMember000042") }] }
+    expect(db3.userTagEventSearchView.hydrate(dto, new db3.DB3ReferenceStore())).toEqual(dto)
+    expect(Object.values(db3.gAllTables).some(table => table.tableID === "UserTag" || table.tableID === "UserTagAssignment"))
+      .toBe(false)
   })
 })
 

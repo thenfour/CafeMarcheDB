@@ -7,6 +7,7 @@ import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { authorizeAndProjectDB3ViewModel, resolvePublicForeignIds, resolvePublicId } from "../server/db3PublicIds";
 import { TinsertEventArgs } from "../shared/apiTypes";
+import { findAttendanceMember } from "../server/eventAttendancePolicy";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
@@ -84,11 +85,14 @@ export default resolver.pipe(
             if (args.responses) {
                 for (let i = 0; i < args.responses.length; ++i) {
                     const r = args.responses[i]!;
+                    // lsmb todo: this may not be optimal; should batch create.
+                    const member = await findAttendanceMember(tx, auth.requireBand().id, r.userId);
+                    assert(member, "An imported response requires an active membership in the selected band.");
                     //args.responses.forEach(async (r) => {
                     const responseFields: Partial<db3.EventSegmentUserResponsePayload> = {
                         eventSegmentId: segment.id,
                         attendanceId: await resolvePublicId(db3.xEventAttendance, r.attendanceId, auth, tx),
-                        userId: await resolvePublicId(db3.xUser, r.userId, auth, tx),
+                        bandUserId: member.id,
                     };
                     await mutationCore.insertImpl(db3.xEventSegmentUserResponse, responseFields, ctx.auth, tx);
                 };

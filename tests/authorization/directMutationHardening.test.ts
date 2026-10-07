@@ -334,7 +334,6 @@ describe("DB3 command boundary", () => {
       durationMillis: BigInt(0),
       isAllDay: false,
       statusId: null,
-      segmentBehavior: null,
     })
     authorizationTestDb.reset({
       user: [actor],
@@ -355,7 +354,6 @@ describe("DB3 command boundary", () => {
         identity: event.publicId,
         patch: {
           locationDescription: "Main hall",
-          segmentBehavior: "Sets",
           tags: [eventTag.publicId],
         },
       },
@@ -365,7 +363,6 @@ describe("DB3 command boundary", () => {
       expect.objectContaining({
         id: event.id,
         locationDescription: "Main hall",
-        segmentBehavior: "Sets",
       }),
     ])
     expect(authorizationTestDb.snapshot("eventTagAssignment")).toEqual([
@@ -845,10 +842,10 @@ describe("public-ID reorder authorization", () => {
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.reorderEventSongListsCommand.commandID,
       payload: {
-      movingItemId: listPublicId(1),
-      newPositionItemId: listPublicId(2),
-      scopeRowIds: [listPublicId(1), listPublicId(2)],
-      eventId: eventPublicId(100),
+        movingItemId: listPublicId(1),
+        newPositionItemId: listPublicId(2),
+        scopeRowIds: [listPublicId(1), listPublicId(2)],
+        eventId: eventPublicId(100),
       },
     }, ctx)).rejects.toThrow("Setlist reorder scope was not found in this event")
 
@@ -877,10 +874,10 @@ describe("public-ID reorder authorization", () => {
     await invokeResolver(executeDB3CommandMutation, {
       commandID: db3.reorderEventSongListsCommand.commandID,
       payload: {
-      movingItemId: listPublicId(1),
-      newPositionItemId: listPublicId(2),
-      scopeRowIds: [listPublicId(1), listPublicId(2)],
-      eventId: eventPublicId(100),
+        movingItemId: listPublicId(1),
+        newPositionItemId: listPublicId(2),
+        scopeRowIds: [listPublicId(1), listPublicId(2)],
+        eventId: eventPublicId(100),
       },
     }, ctx)
 
@@ -916,10 +913,10 @@ describe("public-ID reorder authorization", () => {
     await invokeResolver(executeDB3CommandMutation, {
       commandID: db3.reorderEventSongListsCommand.commandID,
       payload: {
-      movingItemId: listPublicId(650),
-      newPositionItemId: listPublicId(651),
-      scopeRowIds: [listPublicId(650), listPublicId(651)],
-      eventId: eventPublicId(647),
+        movingItemId: listPublicId(650),
+        newPositionItemId: listPublicId(651),
+        scopeRowIds: [listPublicId(650), listPublicId(651)],
+        eventId: eventPublicId(647),
       },
     }, ctx)
 
@@ -1026,7 +1023,8 @@ describe("BA-S003 event attendance ownership", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
+    await invokeResolver(updateUserEventAttendance, {
+      bandPublicId: attendanceBandPublicId,
       userId: actor.publicId,
       eventId: eventPublicId(100),
       comment: "I will be there",
@@ -1058,7 +1056,8 @@ describe("BA-S003 event attendance ownership", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
     const eventLookup = vi.spyOn(authorizationTestDb.getDelegate("event"), "findFirst")
 
-    await expect(invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
+    await expect(invokeResolver(updateUserEventAttendance, {
+      bandPublicId: attendanceBandPublicId,
       userId: target.publicId,
       eventId: eventPublicId(100),
       comment: "Forged",
@@ -1081,7 +1080,8 @@ describe("BA-S003 event attendance ownership", () => {
     })
     const eventLookup = vi.spyOn(authorizationTestDb.getDelegate("event"), "findFirst")
 
-    await expect(invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
+    await expect(invokeResolver(updateUserEventAttendance, {
+      bandPublicId: attendanceBandPublicId,
       userId: target.publicId,
       eventId: eventPublicId(100),
       comment: "Stale grant",
@@ -1120,7 +1120,8 @@ describe("BA-S003 event attendance ownership", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
+    await invokeResolver(updateUserEventAttendance, {
+      bandPublicId: attendanceBandPublicId,
       userId: target.publicId,
       eventId: eventPublicId(100),
       comment: "Updated by delegate",
@@ -1145,7 +1146,8 @@ describe("BA-S003 event attendance ownership", () => {
     authorizationTestDb.reset({ user: [actor], event: [makeEvent()], change: [] })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await expect(invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
+    await expect(invokeResolver(updateUserEventAttendance, {
+      bandPublicId: attendanceBandPublicId,
       userId: actor.publicId,
       eventId: eventPublicId(100),
       isInvited: true,
@@ -1167,7 +1169,8 @@ describe("BA-S003 event attendance ownership", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
+    await invokeResolver(updateUserEventAttendance, {
+      bandPublicId: attendanceBandPublicId,
       userId: target.publicId,
       eventId: eventPublicId(100),
       isInvited: true,
@@ -1196,7 +1199,8 @@ describe("BA-S003 event attendance ownership", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await expect(invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
+    await expect(invokeResolver(updateUserEventAttendance, {
+      bandPublicId: attendanceBandPublicId,
       userId: actor.publicId,
       eventId: eventPublicId(100),
       segmentResponses: { [segmentPublicId(102)]: { attendanceId: attendancePublicId(2) } },
@@ -1213,7 +1217,8 @@ describe("BA-S003 event attendance ownership", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
     const eventLookup = vi.spyOn(authorizationTestDb.getDelegate("event"), "findFirst")
 
-    await expect(invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
+    await expect(invokeResolver(updateUserEventAttendance, {
+      bandPublicId: attendanceBandPublicId,
       userId: actor.publicId,
       eventId: eventPublicId(100),
       segmentResponses: { "101suffix": { attendanceId: attendancePublicId(2) } },

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { testBandAuthorization } from "tests/support/serverAuthorization";
 
 vi.mock("db", async () => {
     const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client");
@@ -22,11 +23,11 @@ import { authorizationTestDb } from "./support/inMemoryPrisma";
 afterEach(() => { vi.restoreAllMocks(); });
 
 const event = {
-    id: 100, publicId: eventPublicId(100), name: "Rehearsal", revision: 1,
+    id: 100, bandId: 1, publicId: eventPublicId(100), name: "Rehearsal", revision: 1,
     createdAt: new Date("2026-09-25T12:00:00Z"), createdByUserId: 93,
     isDeleted: false, visiblePermissionId: null,
     locationDescription: "", locationURL: "", typeId: null, statusId: null,
-    relevanceClassOverride: null, segmentBehavior: "Sets", expectedAttendanceUserTagId: null,
+    relevanceClassOverride: null, expectedAttendanceUserTagId: null,
     startsAt: new Date("2026-09-26T12:00:00Z"), durationMillis: BigInt(3_600_000), isAllDay: false,
     frontpageVisible: false, frontpageDate: "", frontpageTime: "", frontpageDetails: "",
     frontpageTitle: null, frontpageLocation: null, frontpageLocationURI: null, frontpageTags: null,
@@ -119,16 +120,30 @@ describe("DB3 read execution dependencies", () => {
         const before = structuredClone(include);
         const plan = db3Server.table(db3.xEvent).prepareReadSelection(include, ["id"]);
         expect(plan.selection).not.toHaveProperty("select");
-        expect(plan.selection).toMatchObject({ include: { segments: { select: { event: { select: {
-            publicId: true, createdByUserId: true, visiblePermissionId: true, isDeleted: true,
-        } } } } } });
+        expect(plan.selection).toMatchObject({
+            include: {
+                segments: {
+                    select: {
+                        event: {
+                            select: {
+                                publicId: true, createdByUserId: true, visiblePermissionId: true, isDeleted: true,
+                            }
+                        }
+                    }
+                }
+            }
+        });
         expect(include).toEqual(before);
         expect(plan.stripSupportFields({ ...event, segments: [{ ...segment, event }] })).toMatchObject({
             id: event.id, segments: [{ event: { publicId: event.publicId } }],
         });
-        const normalized = plan.stripSupportFields({ segments: [{ event: {
-            publicId: event.publicId, createdByUserId: 93, visiblePermissionId: null, isDeleted: false,
-        } }] });
+        const normalized = plan.stripSupportFields({
+            segments: [{
+                event: {
+                    publicId: event.publicId, createdByUserId: 93, visiblePermissionId: null, isDeleted: false,
+                }
+            }]
+        });
         expect(normalized).toStrictEqual({ segments: [{ event: { publicId: event.publicId } }] });
         expect(plan.stripSupportFields({ segments: [{ event: null }] })).toStrictEqual({ segments: [{ event: null }] });
         expect(plan.stripSupportFields({ segments: [] })).toStrictEqual({ segments: [] });
@@ -176,7 +191,8 @@ describe("DB3 read execution dependencies", () => {
         });
         const parent = { ...event, createdByUserId: visibility === "private" ? 999 : 93, isDeleted: visibility === "deleted" };
         const fetched = selectPrismaTestRow({ ...segment, event: parent }, derived.prismaSelection);
-        const projected = authorizeAndProjectDB3ViewModel(db3.xEventSegment, fetched, schemaAuthorization, "parent-policy-test");
+        const authorization = testBandAuthorization({ id: 93 }, schemaAuthorization.effectivePermissions);
+        const projected = authorizeAndProjectDB3ViewModel(db3.xEventSegment, fetched, authorization, "parent-policy-test");
         const dto = derived.dtoSchema.parse(projected);
         expect(dto).toEqual(visibility === "visible"
             ? { publicId: segment.publicId, eventId: event.publicId }

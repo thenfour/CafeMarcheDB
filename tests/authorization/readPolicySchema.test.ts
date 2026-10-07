@@ -230,7 +230,7 @@ describe("read-policy composition boundaries", () => {
   it("ANDs trusted business predicates with DB3 policy predicates", async () => {
     const where = await GetAuthorizedTableReadWhere({
       table: db3.xEvent,
-      auth: actorPublicData,
+      auth: testBandAuthorization(actor, actorPublicData.effectivePermissions),
       where: { id: { in: [11] } },
     })
 

@@ -109,7 +109,6 @@ export const db3FieldStrings = {
     "db3.fields.publicTitle": fieldLabel("Public title"),
     "db3.fields.recordId": fieldLabel("Record ID"),
     "db3.fields.sectionName": fieldLabel("Section name"),
-    "db3.fields.segmentBehavior": fieldLabel("Behavior of segments"),
     "db3.fields.significance": fieldLabel("Purpose"),
     "db3.fields.slug": fieldLabel("Slug"),
     "db3.fields.song": fieldLabel("Song"),

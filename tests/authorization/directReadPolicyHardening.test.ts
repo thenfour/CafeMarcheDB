@@ -273,7 +273,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
   })
 
   it("scopes public user-tag assignments to active users", async () => {
-    const userTagPublicId = "UserTagPublic061"
+    const userTagPublicId = parsePublicId<"UserTag">("UserTagPublic061")
     authorizationTestDb.getDelegate("userTag").reset([{
       id: 61,
       publicId: userTagPublicId,
@@ -284,7 +284,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     const findMany = vi.spyOn(authorizationTestDb.getDelegate("userTag"), "findMany")
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(getUserTagWithAssignments, { userTagIds: [userTagPublicId] }, ctx)
+    await invokeResolver(getUserTagWithAssignments, { bandPublicId: parsePublicId<"Band">("InvitationBand01"), userTagIds: [userTagPublicId] }, ctx)
 
     expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
       select: expect.objectContaining({

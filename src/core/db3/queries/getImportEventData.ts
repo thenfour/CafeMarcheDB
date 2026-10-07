@@ -243,7 +243,7 @@ export default resolver.pipe(
             }
 
             ret.event.expectedAttendanceUserTagId = defaultInvitationUserTag
-                ? db3.xUserTag.parseIdentity(defaultInvitationUserTag.publicId)
+                ? db3.xBandUserTag.parseIdentity(defaultInvitationUserTag.publicId)
                 : null;
 
             // extract event type. either concert or rehearsal

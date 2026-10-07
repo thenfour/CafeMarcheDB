@@ -167,7 +167,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         columns: {
             userComment: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.comment", columnName, cellWidth: 200 }),
             isInvited: columnName => new DB3Client.BoolColumnClient({ fieldDescriptionKey: null, columnName, fieldCaptionKey: "db3.fields.invited" }),
-            instrument: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.instrument", columnName, cellWidth: 120 }),
+            bandInstrument: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.instrument", columnName, cellWidth: 120 }),
         },
     });
 
@@ -226,7 +226,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             userId: props.user.publicId,
             eventId: props.event.publicId,
             comment: eventResponseValue.userComment,
-            instrumentId: eventResponseValue.instrumentId,
+            instrumentId: eventResponseValue.bandInstrumentId,
             segmentResponses: Object.fromEntries(Object.entries(eventSegmentResponseValues).map(x => {
                 const att = dashboardContext.eventAttendance.getById(x[1].attendanceId);
                 return [x[0], {
@@ -280,7 +280,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
 
         <div className="NameValuePairList">
             {eventResponseTableSpec.renderEditor("isInvited", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
-            {eventResponseTableSpec.renderEditor("instrument", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
+            {eventResponseTableSpec.renderEditor("bandInstrument", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
 
             {(cancelledSegments.length > 0) && dashboardContext.isAuthorized(Permission.manage_events) &&
                 <FormControlLabel

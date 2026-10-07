@@ -34,7 +34,7 @@ const event = {
     id: 100, publicId: eventPublicId(100), name: "Rehearsal", revision: 1,
     createdAt: now, createdByUserId: 42, isDeleted: false, visiblePermissionId: null,
     locationDescription: "", locationURL: "", typeId: null, statusId: null,
-    relevanceClassOverride: null, segmentBehavior: "Sets", expectedAttendanceUserTagId: null,
+    relevanceClassOverride: null, expectedAttendanceUserTagId: null,
     startsAt: new Date("2026-09-26T11:30:00Z"), endDateTime: new Date("2026-09-26T12:30:00Z"),
     durationMillis: BigInt(3_600_000), isAllDay: false,
     descriptionWikiPageId: null, descriptionWikiPage: null, expectedAttendanceUserTag: null,
@@ -66,8 +66,10 @@ describe.each(["normal", "sysadmin"] as const)("dashboard public identities for 
         } : { id: 42 });
         authorizationTestDb.reset({
             user: [user],
-            role: [{ ...user.role!, isPublicRole: false, isSysAdminRole: persona === "sysadmin",
-                isRoleForNewUsers: false, description: "", sortOrder: 1, color: null, significance: null }],
+            role: [{
+                ...user.role!, isPublicRole: false, isSysAdminRole: persona === "sysadmin",
+                isRoleForNewUsers: false, description: "", sortOrder: 1, color: null, significance: null
+            }],
             event: [event, upcoming, privateEvent, deletedEvent],
             eventStatus: cancelledStatusIds.map(id => ({ id, significance: db3.EventStatusSignificance.Cancelled, isDeleted: true })),
         });

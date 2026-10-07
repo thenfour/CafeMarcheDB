@@ -336,12 +336,12 @@ describe("instrument catalog public-ID transport", () => {
             cmdbQueryContext: "file-tag-natural-id-test",
         })).toThrow("Expected string, received number");
         expect(() => validateDB3QueryRequest({
-            table: { tableID: "UserTag", tableName: "UserTag" },
+            table: { tableID: "BandUserTag", tableName: "bandUserTag" },
             filter: { items: [], tableParams: { ids: [userTagPublicId] } },
             cmdbQueryContext: "user-tag-public-id-test",
         })).not.toThrow();
         expect(() => validateDB3QueryRequest({
-            table: { tableID: "UserTag", tableName: "UserTag" },
+            table: { tableID: "BandUserTag", tableName: "bandUserTag" },
             filter: { items: [], tableParams: { ids: [101] } },
             cmdbQueryContext: "user-tag-natural-id-test",
         })).toThrow("Expected string, received number");
@@ -425,18 +425,18 @@ describe("instrument catalog public-ID transport", () => {
             updateModel: { tagId: wikiPageTagPublicId },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
-            tableID: "UserTag",
-            tableName: "UserTag",
+            tableID: "BandUserTag",
+            tableName: "bandUserTag",
             mutationType: "update",
             updatePublicId: userTagPublicId,
-            updateModel: { text: "Current members" },
+            updateModel: { name: { kind: "set", localeTag: "en-US", stringPublicId: null, value: "Current members" } },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
-            tableID: "UserTagAssignment",
-            tableName: "UserTagAssignment",
+            tableID: "BandUserTagAssignment",
+            tableName: "bandUserTagAssignment",
             mutationType: "update",
             updatePublicId: userTagAssignmentPublicId,
-            updateModel: { userTagId: userTagPublicId },
+            updateModel: { bandUserTagId: userTagPublicId },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
             tableID: "SongCreditType",
@@ -508,8 +508,8 @@ describe("instrument catalog public-ID transport", () => {
         const resolved = await resolvePublicForeignIds(
             db3.xEvent,
             { expectedAttendanceUserTagId: userTagPublicId },
-            authorization(Permission.login, Permission.view_users_basic_info),
-            { UserTag: { findMany } } as any,
+            testBandAuthorization({ id: 100 }, authorization(Permission.login).effectivePermissions),
+            { bandUserTag: { findMany } } as unknown as Parameters<typeof resolvePublicForeignIds>[3], // This fixture implements only the tag lookup.
         );
 
         expect(resolved.expectedAttendanceUserTagId).toBe(101);

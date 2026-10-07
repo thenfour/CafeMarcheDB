@@ -68,7 +68,7 @@ const InstrumentControl = ({ response, environment }: {
         return instrument ? [instrument] : [];
     });
     const selected = environment.instruments.find(
-        instrument => db3.getInstrumentIdentity(instrument) === response.response.instrumentId,
+        instrument => db3.getInstrumentIdentity(instrument) === response.response.bandInstrumentId,
     );
     const change = async (instrumentId: db3.InstrumentIdentity) => {
         setInProgress(true);

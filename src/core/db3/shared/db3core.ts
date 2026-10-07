@@ -971,6 +971,7 @@ export interface TableDesc {
     queryStrategy?: "resolved";
 
     // SQL membership reads also need fresh grants and rows from one snapshot.
+    // aka does it require a read-consistent transaction
     readConsistency?: "snapshot";
 
     // for things like attendance options, where options can go stale and become "inactive", allow table schemas to filter items out.
@@ -1254,6 +1255,7 @@ export class xTable<
     queryStrategy?: "resolved";
     readConsistency?: "snapshot";
 
+    // aka does it require a read-consistent transaction
     get requiresReadSnapshot(): boolean {
         return this.queryStrategy === "resolved" || this.readConsistency === "snapshot";
     }

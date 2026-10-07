@@ -10,7 +10,7 @@ import { DateValue } from "../DateTime/DateTimeComponents";
 
 export interface AttendanceChipTooltipProps {
     value: db3.EventAttendanceDisplay | null;
-    eventResponse?: Pick<db3.EventUserResponseClientPayload, "instrumentId" | "userComment"> | undefined;
+    eventResponse?: Pick<db3.EventUserResponseClientPayload, "bandInstrumentId" | "userComment"> | undefined;
     segmentResponse?: Pick<db3.EventDetailSegmentResponse, "attendanceId" | "createdAt" | "updatedAt" | "updatedByUser"> | undefined;
     event?: { publicId: EventPublicId; name: string; startsAt: Date | null } | undefined;
     eventSegment?: Pick<db3.EventDetailSegmentClient, "publicId" | "name" | "startsAt"> | undefined;
@@ -47,7 +47,7 @@ export const AttendanceChipTooltipContent = (props: AttendanceChipTooltipProps) 
 export interface AttendanceChipProps {
     event?: { publicId: EventPublicId; name: string; startsAt: Date | null } | undefined;
     eventSegment?: Pick<db3.EventDetailSegmentClient, "publicId" | "name" | "startsAt"> | undefined;
-    eventResponse?: Pick<db3.EventUserResponseClientPayload, "instrumentId" | "userComment"> | undefined;
+    eventResponse?: Pick<db3.EventUserResponseClientPayload, "bandInstrumentId" | "userComment"> | undefined;
     segmentResponse?: Pick<db3.EventDetailSegmentResponse, "attendanceId" | "createdAt" | "updatedAt" | "updatedByUser"> | undefined;
 
     showLabel?: boolean | undefined;

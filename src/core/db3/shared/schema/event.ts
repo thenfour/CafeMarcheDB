@@ -1,3 +1,7 @@
+import { xEventResponseMembership } from "../entities/event/eventResponseMembership";
+import { xBandUserTag } from "../entities/user/bandUserTagViews";
+import { xBandInstrument } from "../entities/instrument/bandInstrumentContracts";
+import { serverOwnedField } from "../columnTypes/inherited";
 import type { EventParticipant } from "../entities/user/eventParticipant";
 import { xBandEventTag } from "../entities/event/eventTagCatalogs";
 import { localizedText } from "../columnTypes/localizedString";
@@ -25,7 +29,7 @@ import type {
     EventStatusPublicId,
     EventTagAssignmentPublicId,
     EventTypePublicId,
-    UserPublicId,
+    BandUserPublicId,
 } from "shared/publicId";
 import { type CMDBTableFilterModel } from "../apiTypes";
 import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../columnTypes/genericString";
@@ -34,7 +38,7 @@ import * as db3 from "../db3core";
 import {
     EventArgs,
     EventNaturalOrderBy, type EventPayload, type EventPayloadClient,
-    EventSegmentArgs, EventSegmentBehavior, EventSegmentNaturalOrderBy, type EventSegmentPayload,
+    EventSegmentArgs, EventSegmentNaturalOrderBy, type EventSegmentPayload,
     EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
     type EventSegmentUserResponsePayload, EventSongListArgs, EventSongListDividerArgs, type EventSongListDividerPayload, EventSongListDividerTextStyle, EventSongListNaturalOrderBy, type EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy,
     type EventSongListSongPayload, EventTagAssignmentArgs,
@@ -44,9 +48,8 @@ import {
     type InstrumentClientOrDbPayload,
     type InstrumentIdentity,
 } from "./prismArgs";
-import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField, xUser, xUserTag } from "./user";
+import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField } from "./user";
 import { xEventType, xEventStatus, xEventAttendance } from "../entities/event/eventCatalogs";
-import { xInstrument } from "./instrument";
 import { xSong } from "./song";
 import { xWikiPage } from "./wiki";
 
@@ -145,8 +148,8 @@ export const xEventTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
 };
 
 export const xEventTableAuthMap_UserResponse: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.view_events,
-    View: Permission.view_events,
+    ViewOwn: Permission.view_events_nonpublic,
+    View: Permission.view_events_nonpublic,
     EditOwn: Permission.respond_to_events,
     Edit: Permission.change_others_event_responses,
     Insert: Permission.change_others_event_responses,
@@ -299,6 +302,8 @@ export const xEventArgs_Base = db3.defineTableDesc({
     getIdentity: (event: { publicId: EventPublicId }) => event.publicId,
     // modifying an event means multiple related changes; see the mutation event hooks.
     tableName: "Event", // case matters :(
+    bandScope: { member: "bandId", managePermission: Permission.manage_events },
+    readConsistency: "snapshot",
     deletePolicy: "softOnly",
     viewDeletedPermission: Permission.recover_events,
     restorePermission: Permission.recover_events,
@@ -408,6 +413,10 @@ export const xEventArgs_Base = db3.defineTableDesc({
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<EventPublicId>(),
+        bandId: columnName => serverOwnedField(new GenericIntegerField({
+            columnName, allowNull: false, allowSearchingThisField: false,
+            authMap: { ...xEventAuthMap_R_EManagers, PostQuery: Permission.never_grant, PostQueryAsOwner: Permission.never_grant },
+        })),
         name: columnName => MakeTitleField(columnName, { authMap: xEventAuthMap_Homepage, }),
         isDeleted: () => MakeIsDeletedField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         locationDescription: columnName => MakePlainTextField(columnName, { authMap: xEventAuthMap_Homepage, }),
@@ -432,13 +441,6 @@ export const xEventArgs_Base = db3.defineTableDesc({
             allowNull: true,
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
-        segmentBehavior: columnName => new ConstEnumStringField({
-            columnName,
-            allowNull: true,
-            defaultValue: EventSegmentBehavior.Sets,
-            options: EventSegmentBehavior,
-            authMap: xEventAuthMap_R_EOwn_EManagers,
-        }),
         type: foreignRef(() => xEventType, {
             fkidMember: "typeId",
             allowNull: true,
@@ -449,7 +451,7 @@ export const xEventArgs_Base = db3.defineTableDesc({
             allowNull: true,
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
-        expectedAttendanceUserTag: foreignRef(() => xUserTag, {
+        expectedAttendanceUserTag: foreignRef(() => xBandUserTag, {
             fkidMember: "expectedAttendanceUserTagId",
             allowNull: true,
             authMap: xEventAuthMap_R_EOwn_EManagers,
@@ -562,6 +564,8 @@ export const xEventSegment = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventSegmentDelegate>(),
     getIdentity: (row: { publicId: EventSegmentPublicId }) => row.publicId,
     tableName: "EventSegment",
+    bandScope: { member: "bandId", via: { relation: "event", ownerUserMember: "createdByUserId" }, managePermission: Permission.manage_events },
+    readConsistency: "snapshot",
     deletePolicy: "hard",
     queryParameters: {
         eventId: {
@@ -667,6 +671,8 @@ export const xEventSegmentUserResponse = db3.defineTable({
     getIdentity: (row: { publicId: EventSegmentUserResponsePublicId }) => row.publicId,
     tableName: "EventSegmentUserResponse",
     deletePolicy: "hard",
+    bandScope: { member: "bandId", via: { relation: "bandUser", ownerUserMember: "userId" }, managePermission: Permission.change_others_event_responses },
+    readConsistency: "snapshot",
     queryParameters: {
         eventSegmentId: { kind: "entityIdentity", targetTableID: "EventSegment", authorizeAs: "eventSegmentId" },
     },
@@ -674,11 +680,17 @@ export const xEventSegmentUserResponse = db3.defineTable({
     naturalOrderBy: EventSegmentUserResponseNaturalOrderBy,
     getRowInfo: (row: EventSegmentUserResponsePayload) => ({
         pk: row.publicId,
-        name: row.user?.name || "",
-        ownerUserId: row.userId,
+        name: row.bandUser?.user?.name || "",
+        ownerUserId: row.bandUser?.userId ?? null,
     }),
-    getParameterizedWhereClause: (params: TAnyModel) => {
-        const ret: Prisma.EventSegmentUserResponseWhereInput[] = [];
+    getParameterizedWhereClause: (params: { eventSegmentId?: number }, auth): Prisma.EventSegmentUserResponseWhereInput[] => {
+        const ret: Prisma.EventSegmentUserResponseWhereInput[] = [{
+            eventSegment: {
+                event: {
+                    bandId: auth.requireBand().id, isDeleted: false,
+                }
+            }
+        }];
         if (params.eventSegmentId != null) {
             ret.push({
                 eventSegmentId: { equals: params.eventSegmentId }
@@ -698,9 +710,8 @@ export const xEventSegmentUserResponse = db3.defineTable({
             requireVisibleTarget: true,
             authMap: xEventAuthMap_UserResponseRelation,
         }),
-        user: foreignRef(() => xUser, {
-            fkidMember: "userId",
-            specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
+        bandUser: foreignRef(() => xEventResponseMembership, {
+            fkidMember: "bandUserId",
             authMap: xEventAuthMap_UserResponseRelation,
         }),
         attendance: foreignRef(() => xEventAttendance, {
@@ -721,6 +732,8 @@ export const xEventUserResponse = db3.defineTable({
     getIdentity: (row: { publicId: EventUserResponsePublicId }) => row.publicId,
     tableName: "EventUserResponse",
     deletePolicy: "hard",
+    bandScope: { member: "bandId", via: { relation: "bandUser", ownerUserMember: "userId" }, managePermission: Permission.change_others_event_responses },
+    readConsistency: "snapshot",
     queryParameters: {
         eventId: {
             kind: "entityIdentity",
@@ -732,11 +745,15 @@ export const xEventUserResponse = db3.defineTable({
     tableAuthMap: xEventTableAuthMap_UserResponse,
     getRowInfo: (row: EventUserResponsePayload) => ({
         pk: row.publicId,
-        name: row.user?.name || "",
-        ownerUserId: row.userId || row.user?.id,
+        name: row.bandUser?.user?.name || "",
+        ownerUserId: row.bandUser?.userId ?? null,
     }),
-    getParameterizedWhereClause: (params: TAnyModel) => {
-        const ret: Prisma.EventUserResponseWhereInput[] = [];
+    getParameterizedWhereClause: (params: { eventId?: number }, auth): Prisma.EventUserResponseWhereInput[] => {
+        const ret: Prisma.EventUserResponseWhereInput[] = [{
+            event: {
+                bandId: auth.requireBand().id, isDeleted: false,
+            }, OR: [{ bandInstrumentId: null }, { bandInstrument: { bandId: auth.requireBand().id } }]
+        }];
         if (params.eventId != null) {
             ret.push({
                 eventId: { equals: params.eventId }
@@ -759,13 +776,12 @@ export const xEventUserResponse = db3.defineTable({
             fkidMember: "eventId", requireVisibleTarget: true,
             authMap: xEventAuthMap_UserResponseRelation,
         }),
-        user: foreignRef(() => xUser, {
-            fkidMember: "userId",
-            specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
+        bandUser: foreignRef(() => xEventResponseMembership, {
+            fkidMember: "bandUserId",
             authMap: xEventAuthMap_UserResponseRelation,
         }),
-        instrument: foreignRef(() => xInstrument, {
-            fkidMember: "instrumentId",
+        bandInstrument: foreignRef(() => xBandInstrument, {
+            fkidMember: "bandInstrumentId",
             allowNull: true,
             authMap: xEventAuthMap_UserResponse,
         }),
@@ -957,10 +973,10 @@ declare module "../db3core" {
 
 export const EventResponses_MinimalEventUserResponseArgs = Prisma.validator<Prisma.EventUserResponseFindManyArgs>()({
     select: {
-        instrumentId: true,
+        bandInstrumentId: true,
         isInvited: true,
         userComment: true,
-        userId: true,
+        bandUserId: true,
     }
 });
 type EventResponses_MinimalEventUserResponseDb = Prisma.EventUserResponseGetPayload<
@@ -968,23 +984,23 @@ type EventResponses_MinimalEventUserResponseDb = Prisma.EventUserResponseGetPayl
 >;
 export type EventResponses_MinimalEventUserResponse = Omit<
     EventResponses_MinimalEventUserResponseDb,
-    "instrumentId" | "userId"
+    "bandInstrumentId" | "bandUserId"
 > & {
     // Shared attendance algorithms consume both trusted Prisma rows and
     // projected client responses after Instrument migrated to public identity.
-    instrumentId: InstrumentIdentity | null;
-    userId: number | UserPublicId;
+    bandInstrumentId: InstrumentIdentity | null;
+    bandUserId: BandUserPublicId;
 };
 
 export const EventResponses_MinimalEventSegmentUserResponseArgs = Prisma.validator<Prisma.EventSegmentUserResponseFindManyArgs>()({
     select: {
         attendanceId: true,
-        userId: true,
+        bandUserId: true,
     }
 });
 export type EventResponses_MinimalEventSegmentUserResponse = Omit<
-    Prisma.EventSegmentUserResponseGetPayload<typeof EventResponses_MinimalEventSegmentUserResponseArgs>, "attendanceId" | "userId"
-> & { attendanceId: EventAttendancePublicId | null; userId: number | UserPublicId };
+    Prisma.EventSegmentUserResponseGetPayload<typeof EventResponses_MinimalEventSegmentUserResponseArgs>, "attendanceId" | "bandUserId"
+> & { attendanceId: EventAttendancePublicId | null; bandUserId: BandUserPublicId };
 
 
 

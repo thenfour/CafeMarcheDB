@@ -114,12 +114,12 @@ describe("shared person and membership contract boundary", () => {
         expect(db3.xBandUser.bandScope).toMatchObject({ member: "bandId" });
     });
 
-    it("blocks all writes through the legacy tag relation retained by deferred invitation views", () => {
-        expect(db3.xUserTagAssignment.deletePolicy).toBe("disabled");
+    it("keeps invitation assignment writes on the membership aggregate command", () => {
+        expect(db3.xBandUserTagAssignment.deletePolicy).toBe("disabled");
         const manager = authorization(20, Permission.login, Permission.manage_users, Permission.sysadmin);
         for (const auth of [owner, manager, platformAdmin]) {
-            expect(db3.xUserTagAssignment.authorizeRowBeforeInsert({ auth })).toBe(false);
-            expect(db3.xUserTagAssignment.authorizeRowForEdit({ model: { publicId: "UserTagAssign001", userId: auth.userId }, auth }))
+            expect(db3.xBandUserTagAssignment.authorizeRowBeforeInsert({ auth })).toBe(false);
+            expect(db3.xBandUserTagAssignment.authorizeRowForEdit({ model: { publicId: "UserTagAssign001", bandUser: { userId: auth.userId } }, auth }))
                 .toBe(false);
         }
     });

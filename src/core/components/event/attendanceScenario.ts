@@ -134,7 +134,7 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
             durationMillis: BigInt(2 * hour),
             statusId: config.cancelled ? cancelledStatusId : null,
             responses: attendanceId === "missing" ? [] : [{
-                eventSegmentId: scenarioSegmentPublicId(index), userId: user.publicId,
+                eventSegmentId: scenarioSegmentPublicId(index), bandUserId: user.membershipId,
                 attendanceId: attendanceId === null ? null : scenarioAttendances[attendanceId - 1]!.publicId,
                 createdAt: now, updatedAt: now, createdByUserId: null, updatedByUserId: null,
             }],
@@ -147,21 +147,21 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
         publicId: scenarioEventPublicId, name: scenario.eventName, startsAt: dateRange.getStartDateTime(), segments,
         responses: [{
             id: -1,
-            userId: user.publicId,
-            instrumentId: person.instrumentId == null
+            bandUserId: user.membershipId,
+            bandInstrumentId: person.instrumentId == null
                 ? null
                 : scenarioClientInstruments[person.instrumentId - 1]!.publicId,
             isInvited: person.individualInvitation, userComment: person.comment
         }],
     };
     const eventUserResponse = getEventResponseForUser({
-        user, event, userMap: [user], defaultInvitationUserIds: new Set(person.tagInvited ? [user.publicId] : []),
+        user, event, userMap: [user], defaultInvitationMembershipIds: new Set(person.tagInvited ? [user.membershipId] : []),
         dashboardContext: { instrument: { find: predicate => scenarioClientInstruments.find(predicate) } },
         makeMockEventUserResponse: () => event.responses[0]!,
     })!;
     const segmentUserResponses = segments.map(segment => getEventSegmentResponseForSegmentAndUser({
         user, segment, expectedAttendanceTag: null,
-        makeMockEventSegmentResponse: () => ({ userId: user.publicId, attendanceId: null }),
+        makeMockEventSegmentResponse: () => ({ bandUserId: user.membershipId, attendanceId: null }),
     })!);
     const attendance = calculateEventAttendance({
         eventUserResponse,
