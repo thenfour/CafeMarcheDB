@@ -11,7 +11,7 @@ export type DB3SnapshotIsolation = "RepeatableRead" | "Serializable";
 /** Only the interactive transaction capability is needed from the root Prisma/Blitz client. */
 export interface DB3ReadRootDatabase {
     $transaction<T>(read: (database: Prisma.TransactionClient) => Promise<T>,
-        options: { isolationLevel: DB3SnapshotIsolation }): Promise<T>;
+        options: { isolationLevel: DB3SnapshotIsolation; timeout?: number }): Promise<T>;
 }
 export type DB3ReadDatabase = DB3ReadRootDatabase | DB3ReadContext;
 function isReadContext(database: DB3ReadDatabase): database is DB3ReadContext {

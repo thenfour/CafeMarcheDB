@@ -20,6 +20,9 @@ import { useConfirm } from "src/core/components/ConfirmationDialog";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { CalendarUserSettingsControl } from "src/core/components/user/UserSettingsControls";
+import { usePresentation } from "src/locale/components/PresentationProvider";
+import { useLocale } from "src/locale/components/useLocale";
+import type { BandPublicId } from "shared/publicId";
 
 type TTabId = "apple" | "google" | "outlook" | "other";
 
@@ -55,21 +58,32 @@ const ClientCalendarQrCode = ({ value }: { value: string }) => {
     />;
 };
 
-const CalendarPageContent = () => {
-    const [subscription, { refetch }] = useQuery(getMyCalendarSubscription, null);
+export const CalendarPageContent = ({ bandPublicId }: { bandPublicId: BandPublicId }) => {
+    const [subscription, { refetch }] = useQuery(getMyCalendarSubscription, { bandPublicId });
     const [replaceSubscription] = useMutation(replaceMyCalendarSubscription);
     const [showLink, setShowLink] = React.useState(false);
     const [selectedTab, setSelectedTab] = useURLState<TTabId>("caltab", "other");
     const [linkWasCopied, setLinkWasCopied] = React.useState(false);
     const confirm = useConfirm();
     const snackbar = useSnackbar();
+    const active = React.useRef(true);
+    React.useEffect(() => {
+        active.current = true;
+        return () => { active.current = false; };
+    }, []);
 
     const copySubscriptionUrl = async () => {
         try {
             await navigator.clipboard.writeText(subscription.subscriptionUrl);
+            if (!active.current) {
+                return;
+            }
             setLinkWasCopied(true);
             snackbar.showSuccess("Private calendar link copied");
         } catch {
+            if (!active.current) {
+                return;
+            }
             setShowLink(true);
             snackbar.showError("Could not copy automatically. Select and copy the displayed link.");
         }
@@ -78,17 +92,27 @@ const CalendarPageContent = () => {
     const replaceSubscriptionUrl = async () => {
         const confirmed = await confirm({
             title: "Replace your private calendar link?",
-            description: "Your existing calendar subscriptions will stop updating. You can re-subscribe with the new link in your calendar app(s).",
+            description: "Your existing calendar subscriptions for all bands will stop updating. You can re-subscribe with the new links in your calendar app(s).",
         });
-        if (!confirmed) return;
+        if (!confirmed || !active.current) {
+            return;
+        }
 
         try {
-            await replaceSubscription(null);
+            await replaceSubscription({ bandPublicId });
+            if (!active.current) {
+                return;
+            }
             await refetch();
+            if (!active.current) {
+                return;
+            }
             setShowLink(false);
             snackbar.showSuccess("Private calendar link replaced");
         } catch {
-            snackbar.showError("The private calendar link could not be replaced. Please try again.");
+            if (active.current) {
+                snackbar.showError("The private calendar link could not be replaced. Please try again.");
+            }
         }
     };
 
@@ -121,7 +145,11 @@ const CalendarPageContent = () => {
                     {/* <Typography variant="h5">Choose your calendar app</Typography> */}
                     <CMTabPanel
                         className="calPageTabPanel"
-                        handleTabChange={(x, newId) => setSelectedTab(newId as TTabId || "matrix")}
+                        handleTabChange={(x, newId) => {
+                            if (newId === "apple" || newId === "google" || newId === "outlook" || newId === "other") {
+                                setSelectedTab(newId);
+                            }
+                        }}
                         selectedTabId={selectedTab}
                     >
                         <CMTab thisTabId={"apple"} summaryIcon={<AppleIcon />} summaryTitle="Apple Calendar">
@@ -204,10 +232,18 @@ const CalendarPageContent = () => {
     </div>;
 };
 
+export const SelectedBandCalendar = () => {
+    const presentation = usePresentation();
+    const locale = useLocale();
+    const bandPublicId = presentation.bandPublicId;
+    return bandPublicId ? <CalendarPageContent key={bandPublicId} bandPublicId={bandPublicId} />
+        : <Alert severity="info">{locale.getPlainString("calendar.selectBand")}</Alert>;
+};
+
 const CalendarPage: BlitzPage = () => (
     <DashboardLayout title="Calendar subscription">
         <AppContextMarker name="calendar subscription page">
-            <CalendarPageContent />
+            <SelectedBandCalendar />
         </AppContextMarker>
     </DashboardLayout>
 );

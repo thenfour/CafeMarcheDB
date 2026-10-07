@@ -43,7 +43,7 @@ async function exportSegment(startsAt: string | null, durationMillis: number, is
   }
   const input = GetEventSegmentCalendarInput({ segment, event, descriptionText: "", bandTimeZone: "Europe/Brussels" })
   const calendar = await createCalendar({ icalSettings: settings })
-  addEventToCalendar2(calendar, null, input, event as never, [], settings)
+  addEventToCalendar2(calendar, null, input, settings)
   const lines = calendar.toString().split(/\r?\n/)
   return {
     start: input?.start.toISOString() ?? null,

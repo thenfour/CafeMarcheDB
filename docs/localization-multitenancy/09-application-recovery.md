@@ -4,7 +4,8 @@ The A0 bootstrap path has development-browser evidence, obsolete Role and
 shared-account merge dependencies are isolated, and telemetry recording and Custom
 Links now use the target schema and explicit ownership. Platform account
 maintenance and shared event catalogs have platform-authorized views and
-commands. **A0 remains open.** The
+commands. Private calendar feeds and subscription callers now use explicit band
+context and membership ownership. **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
 
@@ -90,8 +91,9 @@ preserving source alone.
   The formatting locale resolves independently of raw device locale/language;
   an unregistered or deleted locale remains null. Asynchronous device collection
   retains the event's original band, locale, URI and associations. Account-level
-  Google sign-in and the still-deferred calendar feed explicitly use null band/
-  locale context. Recording schemas no longer initialize the DB3 registry.
+  Google sign-in uses null band/locale context; calendar-feed recording uses the
+  subscriber and selected band/calendar locale from its authorized snapshot.
+  Recording schemas no longer initialize the DB3 registry.
 - Shared event types/statuses and attendance options now use localized DB3 fields
   with explicit global write storage. Generated CRUD and the three editor routes
   require `manage_global_catalogs`; band authority and selected-band writes are
@@ -134,8 +136,43 @@ preserving source alone.
   retries and empty clears are no-ops. Writes, audits, revisions and calendar
   recalculation share one Serializable transaction. Existing menu confirmation,
   clipboard and refetch behavior remains available with explicit band forwarding.
+- Private calendar feeds use a dedicated typed reader, scoped to the subscriber's
+  active BandUser and selected band. Credential, fresh principal/grants, settings,
+  invitation-tag membership and content reads share a repeatable snapshot. Event
+  responses contribute their revision; segment answers retain retired attendance
+  meanings. Explicit invitations, group invitations overriding stored false,
+  declined/uninvited preferences and whole-event inclusion behavior are retained.
+  Calendar UIDs and stored natural-key content hashes remain unchanged. Event
+  links carry public identity and band context. Visible setlists/dividers and wiki
+  descriptions remain available with their own read capabilities and visibility;
+  foreign, private or deleted songs and foreign/private wiki revisions are excluded.
+  Twelve-month history uses the band's calendar day, including leap-day clamping.
+- Subscription retrieval and replacement require a strict band argument and the
+  signed-in account owner, rejecting impersonation and unavailable membership or
+  event-read authority. Creation/replacement and nonsecret audit markers share a
+  Serializable transaction. One account credential backs its different band URLs;
+  replacement invalidates all of them, as the confirmation explains. Old URLs
+  lacking `bandPublicId` return 404: re-subscribe from the selected band's page
+  without rotating the credential. The preview also forwards band context and
+  refreshes platform authority. Band switches discard pending replacement
+  confirmations and stale completion notifications. Required iCalendar product
+  metadata now tolerates blank band settings; preview dates and its button wrapper
+  were also corrected. Full page localization and general event UI parity remain
+  separate.
 
 ## Verification
+
+The calendar browser probe used a new private target-schema database on
+`127.0.0.1:32695`, with a signed-in delegated band member. It obtained a scoped
+subscription through the real RPC and fetched its calendar anonymously using the
+bearer URL. Missing scope, nonmembership, revoked event-read authority and the old
+rotated token returned 404. Replacement restored delivery. Successful feed actions
+carried server-owned subscriber/band/locale identity; audit records and action URIs
+contained neither credential. The selected-band subscription page rendered without
+browser errors, kept its link concealed and retained copy/reveal recovery. Its
+screenshot was inspected (`temp/a0-calendar-feed-last.png`). The helper removed
+its database and stopped the browser/development server. This is development
+verification; the existing build failure still prevents built-app evidence.
 
 The attendance browser probe used a new private target-schema database on
 `127.0.0.1:32695` and a signed-in person with a delegated band role. Real RPC
@@ -214,6 +251,9 @@ production server could not be checked because the normal build still fails.
 
 | Check | Result |
 | --- | --- |
+| Calendar attendance/date-time behavior, credential lifecycle, HTTP and subscription UI | Passed: 99 tests across five files, including four isolated DOM cases. Covers both preferences, invitations, stable UIDs/revisions, five host time zones, strict context, token replacement/impersonation, audit-failure rollback, private HTTP status/headers/redaction and stale confirmation/completion cancellation. All existing calendar behavior assertions remain executable. |
+| Calendar feeds plus attendance, shared catalogs, bootstrap, accounts, links, telemetry and member profiles on private MariaDB | Passed: 111 tests across ten files, including 13 calendar cases. Covers separate memberships, fresh access revocation, historical attendance/status meaning, group invitations, band branding/locale, child visibility/ownership, leap-day history and shared credential rotation. Fixture writes roll back and the generated database is removed. |
+| Calendar development-browser delivery | Passed: real subscription/replacement RPCs, anonymous scoped bearer GET, rejected missing/foreign/revoked/old credentials, nonsecret server-owned telemetry/audits, and selected-band subscription-page rendering; no browser page errors. |
 | Attendance RPC/HTTP and bulk boundaries, client menus/control/adapter and preservation/recovery regression | Passed: 124 tests across seven files, including 13 isolated DOM cases. Validates explicit band forwarding, strict public identities, bounded batches/pagination, method/status handling, menu confirmations/cancellation and existing control behavior. |
 | Attendance plus shared event catalogs, bootstrap, accounts, links, telemetry, dashboard catalogs and member profiles on fresh private MariaDB | Passed: 98 tests across nine files, including 27 direct attendance and 28 bulk cases. Covers same-person separate memberships, foreign resources/targets, independent grants, revoked/deleted/merged actors, retired history, hidden instruments, visibility, replacement/clear semantics, null answers, unchanged identities, auditing, idempotence and member revisions. Seven bulk failure-injection cases verify rollback at insert, audit, revision and calendar steps. Fixture writes roll back and the generated database is removed. |
 | Attendance development-browser endpoint check | Passed: real signed-in direct and bulk RPC writes, HTTP/history projections, replacement/clear and metadata/revision/audit behavior, idempotence, foreign-resource/missing-context/anonymous rejection and fresh revoked-grant denial; no page errors. Full attendance UI recovery remains separate. |
@@ -239,9 +279,9 @@ production server could not be checked because the normal build still fails.
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 317 diagnostics, down from 321 before bulk attendance recovery. No increased file/error-code groups, compiler exclusions or error suppression added. |
+| `yarn typecheck` | Fails: 315 diagnostics, down from 317 before calendar-feed recovery. No increased file/error-code groups, compiler exclusions or error suppression added. |
 | `yarn build` | Gets past Custom Links and shared field-label callers; fails at the existing event-search payload in `src/core/components/event/EventComponents.tsx:1394`. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 288 failed, 1,452 passed, 173 skipped. Failure labels match the previous attendance baseline, with no added failing cases. The 55 direct/bulk MariaDB cases skip without their private test URL and pass in the native run above. Later isolated DOM batches are not reached; focused DOM checks above passed. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 278 failed, 1,481 passed, 186 skipped. The ten calendar-export failures in the previous attendance baseline now pass; no failure labels were added. The 55 direct/bulk attendance and 13 calendar MariaDB cases skip without their private test URL and pass in the native run above. Later isolated DOM batches are not reached; focused DOM checks above passed. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -275,9 +315,9 @@ verification resources, not application configuration.
 Fix owning contracts before their cascading consumers: `prismArgs.ts` remains the
 largest diagnostic root, followed by obsolete person-level instrument/tag and
 event/file/song descriptors and views. Shared event catalogs and dedicated
-attendance write/history/HTTP and bulk copy/clear endpoints are migrated. Event
-payloads/editing, default/tag invitations and calendar feeds still need band
-ownership and membership response contracts. Legacy authorization
+attendance write/history/HTTP, bulk copy/clear endpoints and private calendar feeds
+are migrated. Event payloads/editing and default/tag invitation management still
+need band ownership and membership response contracts. Legacy authorization
 fixtures also retain removed relationships. Generic settings storage is isolated;
 its editor now uses the registered API. Role administration and shared-account
 merge execution are isolated; other deferred domains still need that boundary.

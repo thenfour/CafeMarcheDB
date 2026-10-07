@@ -2,17 +2,20 @@ import { CMTable } from "@/src/core/components/CMTable";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import { Button, FormControlLabel, Switch } from "@mui/material";
+import { Alert, FormControlLabel, Switch } from "@mui/material";
 import * as React from 'react';
 import { DateTimeRange } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
-import { EventDateField, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
+import { CMButton, EventDateField, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import getCalendarPreview from "src/core/db3/queries/getCalendarPreview";
+import { usePresentation } from "src/locale/components/PresentationProvider";
+import { useLocale } from "src/locale/components/useLocale";
+import type { BandPublicId } from "shared/publicId";
 
 const CopyText = ({ value, label }: { value: string, label?: string | undefined }) => {
 
@@ -28,12 +31,12 @@ const CopyText = ({ value, label }: { value: string, label?: string | undefined 
 
 }
 
-const MainContent = () => {
+const MainContent = ({ bandPublicId }: { bandPublicId: BandPublicId }) => {
     const [tab, setTab] = React.useState<number>(0);
     const [showDetails, setShowDetails] = React.useState<boolean>(false);
     const [filterText, setFilterText] = React.useState<string>("");
     //console.log(cal);
-    const [cal, queryExtra] = useQuery(getCalendarPreview, {});
+    const [cal, queryExtra] = useQuery(getCalendarPreview, { bandPublicId });
     const { events, ...rootValues } = cal;
     const filterTextLower = filterText.toLowerCase();
     const filteredCal = {
@@ -66,9 +69,9 @@ const MainContent = () => {
                 <CMTextInputBase value={filterText} onChange={(e, v) => setFilterText(v)} />}
             label="Filter"
         />
-        <Button onClick={() => queryExtra.refetch()}>Refresh</Button>
+        <CMButton onClick={() => queryExtra.refetch()}>Refresh</CMButton>
         <KeyValueDisplay data={moreValues} />
-        <CMTabPanel handleTabChange={(e, n) => setTab(n as any)} selectedTabId={tab} >
+        <CMTabPanel handleTabChange={(e, n) => setTab(Number(n))} selectedTabId={tab} >
             <CMTab thisTabId={0} summaryTitle={"Table"}>
                 <CMTable
                     className="CalendarPreview TopAlignedCells"
@@ -79,7 +82,7 @@ const MainContent = () => {
                         {
                             header: "Date", render: args => {
                                 if (!args.row.end) {
-                                    return args.row.start.toDateString() + args.row.allDay ? "(all day)" : "";
+                                    return `${args.row.start.toDateString()}${args.row.allDay ? " (all day)" : ""}`;
                                 }
                                 if (!args.row.start) {
                                     return "no start date?";
@@ -119,9 +122,12 @@ const MainContent = () => {
 
 
 const CalendarPreviewPage: BlitzPage = () => {
+    const presentation = usePresentation();
+    const locale = useLocale();
     return (
         <DashboardLayout title="iCal Preview">
-            <MainContent />
+            {presentation.bandPublicId ? <MainContent key={presentation.bandPublicId} bandPublicId={presentation.bandPublicId} />
+                : <Alert severity="info">{locale.getPlainString("calendar.selectBand")}</Alert>}
         </DashboardLayout>
     )
 }

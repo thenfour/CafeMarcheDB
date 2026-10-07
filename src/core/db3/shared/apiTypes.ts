@@ -357,8 +357,8 @@ export function MakeICalEventUid(eventUid: string, userUid: string | null) {
     return `${eventUid}_${userUid || "public"}`;
 }
 
-export function GetICalRelativeURIForUserUpcomingEvents(args: { calendarFeedToken: string | null }) {
-    return `/api/ical/user/${encodeURIComponent(args.calendarFeedToken || "public")}/upcoming`;
+export function GetICalRelativeURIForUserUpcomingEvents(args: { calendarFeedToken: string | null; bandPublicId: BandPublicId }) {
+    return `/api/ical/user/${encodeURIComponent(args.calendarFeedToken || "public")}/upcoming?bandPublicId=${encodeURIComponent(args.bandPublicId)}`;
 }
 
 export enum GetSongActivityReportFilterSpecTimingFilter {

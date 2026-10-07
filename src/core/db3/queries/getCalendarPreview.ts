@@ -2,11 +2,14 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db from "db";
-import { ICalCalendar, ICalDateTimeValue } from "ical-generator";
+import { ICalCalendar, ICalDateTimeValue, ICalLocation } from "ical-generator";
 import { Permission } from "shared/permissions";
 import { CalExportCore } from "../server/ical";
 import { ICalCalendarJSON } from "../shared/apiTypes";
 import { UserForCalBackendArgs } from "../shared/schema/prismArgs";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
+import { CalendarBandContextSchema } from "../shared/calendarFeed";
+import { cmauthorize } from "@/src/auth/server/cmResolver";
 
 
 function ICalConvertToDate(value: ICalDateTimeValue): Date {
@@ -22,24 +25,35 @@ function ICalConvertToDate(value: ICalDateTimeValue): Date {
 }
 
 
+function calendarLocationTitle(location: ICalLocation | null): string | undefined {
+    return location && "title" in location ? location.title : undefined;
+}
+
 export default resolver.pipe(
-    resolver.authorize(Permission.sysadmin),
-    async (input: {}, ctx: AuthenticatedCtx): Promise<ICalCalendarJSON> => {
+    cmauthorize(Permission.sysadmin),
+    resolver.zod(CalendarBandContextSchema),
+    async (input, ctx): Promise<ICalCalendarJSON> => {
         try {
             const startTimestamp = Date.now();
-
+            const auth = await loadAuthorization(ctx.session, input.bandPublicId);
+            const freshAuth = await auth.refresh();
+            const authWithUser = freshAuth.requireUser();
+            freshAuth.requirePermission(Permission.sysadmin);
             const u = await db.user.findFirst({
                 ...UserForCalBackendArgs,
                 where: {
-                    id: ctx.session.userId,
+                    id: authWithUser.userId,
                     isDeleted: false,
                 },
             });
-            if (!u) throw new Error("Active calendar preview user not found.");
+            if (!u) {
+                throw new Error("Active calendar preview user not found.");
+            }
 
             const cal: ICalCalendar = await CalExportCore({
                 type: "upcoming",
                 currentUser: u,
+                bandPublicId: input.bandPublicId,
             });
 
             const ret: ICalCalendarJSON = {
@@ -67,7 +81,7 @@ export default resolver.pipe(
                         html: e.description()?.html,
                         plain: e.description()?.plain,
                     } : undefined,
-                    location: (e.location() as any)?.title,
+                    location: calendarLocationTitle(e.location()),
                     organizer: e.organizer() ? {
                         name: e.organizer()?.name!,
                         email: e.organizer()?.email,

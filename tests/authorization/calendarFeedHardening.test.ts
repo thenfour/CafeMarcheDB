@@ -39,6 +39,9 @@ import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { loadAuthorization } from "src/auth/server/serverAuthorization"
 import { invokeResolver } from "./support/resolverHarness"
 
+import { calendarAuthorizationSeed, calendarBandPublicId } from "../support/calendarFeedFixtures"
+
+const context = { bandPublicId: calendarBandPublicId }
 const existingToken = "a".repeat(64)
 const otherToken = "b".repeat(64)
 
@@ -54,7 +57,7 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
 
   beforeEach(() => {
     process.env.CMDB_BASE_URL = "https://band.test"
-    authorizationTestDb.reset({ user: [owner, target], change: [] })
+    authorizationTestDb.reset(calendarAuthorizationSeed([owner, target]))
     vi.restoreAllMocks()
   })
 
@@ -64,25 +67,25 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
       calendarFeedToken: existingToken,
     })
 
-    const result = await invokeResolver(getMyCalendarSubscription, null, ctx)
+    const result = await invokeResolver(getMyCalendarSubscription, context, ctx)
 
     expect(result).toEqual({
-      subscriptionUrl: `https://band.test/api/ical/user/${existingToken}/upcoming`,
-      webcalUrl: `webcal://band.test/api/ical/user/${existingToken}/upcoming`,
+      subscriptionUrl: `https://band.test/api/ical/user/${existingToken}/upcoming?bandPublicId=${calendarBandPublicId}`,
+      webcalUrl: `webcal://band.test/api/ical/user/${existingToken}/upcoming?bandPublicId=${calendarBandPublicId}`,
     })
-    expect(authorizationTestDb.snapshot("user")).toEqual([owner, target])
+    expect(authorizationTestDb.snapshot("user")).toEqual([expect.objectContaining(owner), expect.objectContaining(target)])
     expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
   it("creates a strong subscription credential only when the owner first opens the page", async () => {
     const ownerWithoutToken = { ...owner, calendarFeedToken: null }
-    authorizationTestDb.reset({ user: [ownerWithoutToken, target], change: [] })
+    authorizationTestDb.reset(calendarAuthorizationSeed([ownerWithoutToken, target]))
     const { ctx } = createAuthorizationPersona("normal", {
       id: owner.id,
       calendarFeedToken: null,
     })
 
-    const result = await invokeResolver(getMyCalendarSubscription, null, ctx)
+    const result = await invokeResolver(getMyCalendarSubscription, context, ctx)
     const storedOwner = authorizationTestDb.snapshot("user").find(user => user.id === owner.id)!
     const generatedToken = storedOwner.calendarFeedToken as string
 
@@ -102,22 +105,20 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
     expect(JSON.stringify(audit)).not.toContain(generatedToken)
   })
 
-  it("ignores a forged target user id and exposes only the signed-in Band Admin's link", async () => {
+  it("rejects a forged target user id and exposes only the signed-in Band Admin's link", async () => {
     const bandAdmin = createAuthorizationTestUser("bandAdmin", {
       id: 30,
       calendarFeedToken: existingToken,
     })
-    authorizationTestDb.reset({ user: [bandAdmin, target], change: [] })
+    authorizationTestDb.reset(calendarAuthorizationSeed([bandAdmin, target]))
     const { ctx } = createAuthorizationPersona("bandAdmin", {
       id: bandAdmin.id,
       calendarFeedToken: existingToken,
     })
 
-    const result = await invokeResolver(
-      getMyCalendarSubscription,
-      { userId: target.id } as never,
-      ctx,
-    )
+    // Forged transport fields must fail schema validation before touching the credential.
+    await expect(invokeResolver(getMyCalendarSubscription, { ...context, userId: target.id } as never, ctx)).rejects.toThrow()
+    const result = await invokeResolver(getMyCalendarSubscription, context, ctx)
 
     expect(result.subscriptionUrl).toContain(existingToken)
     expect(result.subscriptionUrl).not.toContain(otherToken)
@@ -129,9 +130,9 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
     const findFirst = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
 
-    await expect(invokeResolver(getMyCalendarSubscription, null, ctx))
+    await expect(invokeResolver(getMyCalendarSubscription, context, ctx))
       .rejects.toBeInstanceOf(CalendarFeedAuthorizationError)
-    await expect(invokeResolver(replaceMyCalendarSubscription, null, ctx))
+    await expect(invokeResolver(replaceMyCalendarSubscription, context, ctx))
       .rejects.toBeInstanceOf(CalendarFeedAuthorizationError)
 
     expect(findFirst).not.toHaveBeenCalled()
@@ -140,15 +141,15 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
 
   it("does not create a link for a deactivated account", async () => {
     const deletedOwner = { ...owner, isDeleted: true, calendarFeedToken: null }
-    authorizationTestDb.reset({ user: [deletedOwner], change: [] })
+    authorizationTestDb.reset(calendarAuthorizationSeed([deletedOwner]))
     const { ctx } = createAuthorizationPersona("normal", {
       id: owner.id,
       isDeleted: true,
       calendarFeedToken: null,
     })
 
-    await expect(invokeResolver(getMyCalendarSubscription, null, ctx)).rejects.toThrow()
-    expect(authorizationTestDb.snapshot("user")).toEqual([deletedOwner])
+    await expect(invokeResolver(getMyCalendarSubscription, context, ctx)).rejects.toThrow()
+    expect(authorizationTestDb.snapshot("user")).toEqual([expect.objectContaining(deletedOwner)])
     expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
@@ -158,7 +159,7 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
       calendarFeedToken: existingToken,
     })
 
-    const result = await invokeResolver(replaceMyCalendarSubscription, null, ctx)
+    const result = await invokeResolver(replaceMyCalendarSubscription, context, ctx)
     const storedOwner = authorizationTestDb.snapshot("user").find(user => user.id === owner.id)!
     const replacementToken = storedOwner.calendarFeedToken as string
 
@@ -178,12 +179,34 @@ describe("BA-S001 calendar subscription ownership and lifecycle", () => {
     expect(JSON.stringify(audit)).not.toContain(existingToken)
     expect(JSON.stringify(audit)).not.toContain(replacementToken)
   })
+
+  it.each([{}, { bandPublicId: null }, { bandPublicId: 1 }, { ...context, bandUserId: 10 }])("rejects invalid band context before accessing credentials: %j", async input => {
+    const { ctx } = createAuthorizationPersona("normal", { id: owner.id })
+    const before = authorizationTestDb.snapshot("user")
+    // Malformed transport values intentionally bypass the client's TypeScript contract.
+    await expect(invokeResolver(getMyCalendarSubscription, input as never, ctx)).rejects.toThrow()
+    await expect(invokeResolver(replaceMyCalendarSubscription, input as never, ctx)).rejects.toThrow()
+    expect(authorizationTestDb.snapshot("user")).toEqual(before)
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
+  })
+
+  it.each(["create", "replace"])("rolls back credential %s if its audit fails", async mode => {
+    const user = { ...owner, calendarFeedToken: mode === "create" ? null : existingToken }
+    authorizationTestDb.reset(calendarAuthorizationSeed([user]))
+    const { ctx } = createAuthorizationPersona("normal", { id: owner.id })
+    const before = authorizationTestDb.snapshot("user")
+    vi.spyOn(authorizationTestDb.getDelegate("change"), "create").mockRejectedValue(new Error("Audit unavailable"))
+    const resolver = mode === "create" ? getMyCalendarSubscription : replaceMyCalendarSubscription
+    await expect(invokeResolver(resolver, context, ctx)).rejects.toThrow("Audit unavailable")
+    expect(authorizationTestDb.snapshot("user")).toEqual(before)
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
+  })
 })
 
 describe("BA-S001 calendar endpoint identity", () => {
   const activeUser = {
     ...createAuthorizationTestUser("normal", { id: 10, calendarFeedToken: existingToken }),
-    uid: "calendar-user-uid",
+    uid: "calendar-user-uid", mergedIntoUserId: null, globalRoleId: null,
   }
 
   beforeEach(() => {
@@ -207,13 +230,17 @@ describe("BA-S001 calendar endpoint identity", () => {
 
     await expect(resolveCalendarFeedRequestUser(existingToken)).resolves.toEqual(activeUser)
     expect(findFirst).toHaveBeenCalledWith(expect.objectContaining({
-      where: { calendarFeedToken: existingToken, isDeleted: false },
+      where: { calendarFeedToken: existingToken, isDeleted: false, mergedIntoUserId: null },
     }))
 
     authorizationTestDb.reset({ user: [{ ...activeUser, isDeleted: true }] })
     await expect(resolveCalendarFeedRequestUser(existingToken))
       .rejects.toBeInstanceOf(CalendarFeedNotFoundError)
     await expect(resolveCalendarFeedRequestUser(otherToken))
+      .rejects.toBeInstanceOf(CalendarFeedNotFoundError)
+
+    authorizationTestDb.reset({ user: [{ ...activeUser, mergedIntoUserId: 20 }] })
+    await expect(resolveCalendarFeedRequestUser(existingToken))
       .rejects.toBeInstanceOf(CalendarFeedNotFoundError)
   })
 
@@ -236,7 +263,7 @@ describe("BA-S001 calendar endpoint identity", () => {
 
 describe("BA-S001 credential containment", () => {
   beforeEach(() => {
-    authorizationTestDb.reset({ change: [] })
+    authorizationTestDb.reset(calendarAuthorizationSeed([createAuthorizationTestUser("sysadmin", { id: 1 })]))
     vi.restoreAllMocks()
   })
 

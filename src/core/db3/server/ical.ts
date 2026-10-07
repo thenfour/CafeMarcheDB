@@ -1,19 +1,17 @@
-import type { EventAttendancePublicId, EventPublicId, EventSegmentPublicId, UserPublicId } from "shared/publicId";
-import db, { Prisma } from "db";
-import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent } from "ical-generator";
-import { floorLocalToLocalDay } from "shared/time";
-import { queryHydratedView } from "src/core/db3/server/db3QueryCore";
-import * as db3 from "../db3";
-import { MakeICalEventUid } from "../shared/apiTypes";
-import { EventCalendarInput, GetEventCalendarInput } from "./icalUtils";
+import type { EventPublicId, EventSegmentPublicId } from "shared/publicId";
+import { parsePublicId } from "shared/publicId";
+import db from "db";
+import ical, { ICalCalendarMethod, type ICalCalendar, type ICalEvent } from "ical-generator";
 import { isAttendanceGoing } from "shared/eventAttendance";
-import { isUserInvitedToEvent } from "shared/eventInvitation";
-import { loadSettingsSnapshot } from "src/setting/server/settings";
+import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
+import { resolveActiveCalendarFeedUser } from "src/auth/server/calendarFeedSubscription";
 import { readSettingSnapshot, type SettingsSnapshot } from "src/setting/shared/settingsContract";
+import { MakeICalEventUid } from "../shared/apiTypes";
+import { CalendarExportSchema, type CalendarExportArgs } from "../shared/calendarFeed";
 import { shouldIncludeEventInCalendarFeed } from "../shared/calendarAttendance";
-import { loadBandTimeZone } from "@/src/server/bandTimeZone";
-import type { EventStatusPublicId } from "shared/publicId";
-import { loadAuthorizationForUser } from "@/src/auth/server/serverAuthorization";
+import type { DB3ReadRootDatabase } from "./db3ReadExecution";
+import { readCalendarFeedInTransaction } from "./calendarFeedRead";
+import { GetEventCalendarInput, type EventCalendarInput } from "./icalUtils";
 
 interface ICalSettings {
     calendarName: string;
@@ -41,8 +39,9 @@ export const createCalendar = async (args: CreateCalendarArgs): Promise<ICalCale
     const calendar = ical({
         name: args.icalSettings.calendarName,
         prodId: {
-            company: args.icalSettings.calendarCompany,
-            product: args.icalSettings.calendarProduct,
+            // Band metadata may be blank; RFC product identifiers still require both parts.
+            company: args.icalSettings.calendarCompany.trim() || "CMDB",
+            product: args.icalSettings.calendarProduct.trim() || "Calendar",
             language: new Intl.Locale(args.localeTag ?? "en-US").language.toUpperCase(),
         },
         //ttl: ,  seconds; let users decide.
@@ -59,224 +58,103 @@ export const createCalendar = async (args: CreateCalendarArgs): Promise<ICalCale
 
 
 
-// if user is null, it's a public access.
-export const addEventToCalendar2 = (
+export interface CalendarEventPersonalization {
+    subscriberUid: string | null;
+    responseRevision: number;
+    isAttending: boolean;
+}
+
+export function addEventToCalendar2(
     calendar: ICalCalendar,
-    user: null | db3.UserForCalBackendPayload,
+    personalization: CalendarEventPersonalization | null,
     event: EventCalendarInput<number | EventSegmentPublicId, number | EventPublicId> | null,
-    calendarEvent: db3.EventCalendarClient,
-    eventAttendanceIdsRepresentingGoing: EventAttendancePublicId[],
-    icalSettings: ICalSettings
-): ICalEvent | null => {
-
-    if (!event) {
+    icalSettings: ICalSettings,
+): ICalEvent | null {
+    if (!event || event.statusSignificance === "Cancelled") {
         return null;
     }
-    //if (eventVerbose.status?.significance as db3.EventStatusSignificance)
-    if (event.statusSignificance === "Cancelled") {
-        return null;
-    }
-
-    // I don't have the right info here to use things like 
-    // db3.GetEventResponseInfo();
-    // CalculateEventMetadata
-    // et al,
-    // so wing it.
-    const getEventUserResponse = (): null | { revision: number } => {
-        if (!user) return null;
-        const found = calendarEvent.responses.find(u => u.userId === user.publicId);
-        return found || null;
-    };
-
-    const isUserAttending = (userId: UserPublicId): boolean => {
-        return calendarEvent.segments.some(segment =>
-            segment.responses.some(response =>
-                response.userId === userId && response.attendanceId && eventAttendanceIdsRepresentingGoing.includes(response.attendanceId)
-            )
-        );
-    }
-
-    const eventUserResponse = getEventUserResponse();
-
-    let summary = `${icalSettings.eventNamePrefix}${event.name}`;
-    if (user && isUserAttending(db3.xUser.parseIdentity(user.publicId))) {
-        summary = `${icalSettings.eventNamePrefix}👍 ${event.name}`;
-    }
-
-    // RFC 5545 sections 3.6.1/3.8.2.2
-    // https://datatracker.ietf.org/doc/html/rfc5545#section-3.6.1
-    // iCalendar has second precision and
-    // represent a timed point by omitting DTEND, which must otherwise be later
-    // than DTSTART. Keep exact input bounds for hashing and other consumers.
-
-    // so basically, if the event ends in the same second it starts, DTEND needs to be omitted.
-    // it's considered a point event if it's less than 1 second long.
+    // RFC 5545 requires DTEND after DTSTART. Timed points omit DTEND; input bounds stay exact.
     const endsInStartSecond = !event.isAllDay
         && Math.floor(event.end.valueOf() / 1000) === Math.floor(event.start.valueOf() / 1000);
     const calEvent = calendar.createEvent({
-        allDay: event.isAllDay,
-        start: event.start,
-        end: endsInStartSecond ? undefined : event.end,
-        summary: summary,//`CM: ${event.name}`,
-        description: `${event.eventUri}\n\n${event.description}`,
-        location: event.locationDescription,
-        url: event.eventUri,
-        status: event.calStatus,
-        sequence: event.revision + (eventUserResponse?.revision || 0),
-
-        //sequence: event.sequenceid, // not sure we really can do this well.
-        // don't include organizer; this is like, for a meeting request, who would you contact to propose time changes.
-        //organizer: "Carl Corcoran",// * event.organizer('Organizer\'s Name <organizer@example.com>'); 
-        // don't do attendees; it complicates last modified time, may not even really be used for this purpose etc.
-        // attendees: [
-        //     // new ICalAttendee({
-        //     // })
-        // ],
-        //class: "", // public | private | confidential
+        allDay: event.isAllDay, start: event.start, end: endsInStartSecond ? undefined : event.end,
+        summary: `${icalSettings.eventNamePrefix}${personalization?.isAttending ? "\u{1F44D} " : ""}${event.name}`,
+        description: `${event.eventUri}\n\n${event.description}`, location: event.locationDescription,
+        url: event.eventUri, status: event.calStatus,
+        sequence: event.revision + (personalization?.responseRevision ?? 0),
     });
     if (event.uid) {
-        calEvent.uid(`${MakeICalEventUid(event.uid, user?.uid || null)}`);
+        calEvent.uid(MakeICalEventUid(event.uid, personalization?.subscriberUid ?? null));
     }
-
     return calEvent;
-};
+}
 
-export const addEventToCalendar = async (
-    calendar: ICalCalendar,
-    user: null | db3.UserForCalBackendPayload,
-    event: db3.EventCalendarClient,
-    eventAttendanceIdsRepresentingGoing: EventAttendancePublicId[],
-    cancelledStatusIds: EventStatusPublicId[],
-    icalSettings: ICalSettings,
-    bandTimeZone: string,
-): Promise<ICalEvent[]> => {
-    // Export consumes projected rows. The hash here is not persisted; revision hooks
-    // still hash natural DB identities, and calendar UIDs keep their existing values.
-    const inputs = GetEventCalendarInput({
-        ...event,
-        id: event.publicId,
-        songLists: event.songLists.map(songList => ({
-            songs: songList.songs.map(row => ({
-                subtitle: row.subtitle,
-                sortOrder: row.sortOrder,
-                song: {
-                    name: row.song.name,
-                    lengthSeconds: row.song.lengthSeconds,
-                    startBPM: row.song.startBPM,
-                    endBPM: row.song.endBPM,
-                },
-            })),
-            dividers: songList.dividers.map(row => ({
-                subtitle: row.subtitle,
-                sortOrder: row.sortOrder,
-                color: row.color?.id ?? null,
-                isInterruption: row.isInterruption,
-                isSong: row.isSong,
-                subtitleIfSong: row.subtitleIfSong,
-                lengthSeconds: row.lengthSeconds,
-                textStyle: row.textStyle,
-            })),
-        })),
-        segments: event.segments.map(segment => ({
-            ...segment,
-            id: segment.publicId
-        })),
-    }, cancelledStatusIds, bandTimeZone)!;
+type CalendarFeedSnapshot = Awaited<ReturnType<typeof readCalendarFeedInTransaction>>;
 
-    return inputs
-        .segments
-        .map(input => addEventToCalendar2(calendar, user, input, event, eventAttendanceIdsRepresentingGoing, icalSettings))
-        .filter(x => !!x);
-};
-
-export interface CalExportCoreArgs1 {
-    currentUser: db3.UserForCalBackendPayload;
-};
-
-export interface CalExportCoreArgsSingleEvent extends CalExportCoreArgs1 {
-    type: "event";
-    eventUid: string;
-};
-
-export interface CalExportCoreArgsUpcoming extends CalExportCoreArgs1 {
-    type: "upcoming";
-};
-
-type CalExportCoreArgs = CalExportCoreArgsUpcoming | CalExportCoreArgsSingleEvent;
-
-export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCoreArgs): Promise<ICalCalendar> => {
-
-
-    const minDate = floorLocalToLocalDay(new Date()); // avoid tight loop where date changes every render, by flooring to day.
-    minDate.setMonth(minDate.getMonth() - 12); // #226 this is a default calendar export and it should not make events disappear immediately.
-
-    const eventsTableParams: db3.EventTableParams = {
-        minDate: type === "upcoming" ? minDate : undefined,
-        eventUids: type === "event" ? [(args as CalExportCoreArgsSingleEvent).eventUid] : undefined,
-    };
-
-    const auth = await loadAuthorizationForUser(currentUser);
-    const { eventsRaw, bandTimeZone, settingsSnapshot } = await db.$transaction(async tx => {
-        const bandTimeZone = await loadBandTimeZone(tx, auth.requireBand().id);
-        const settingsSnapshot = await loadSettingsSnapshot(tx, auth);
-        const eventsRaw = await queryHydratedView({
-            view: db3.eventCalendarView,
-            filter: {
-                tableParams: eventsTableParams,
-            },
-            cmdbQueryContext: `CalExportCore`,
-            orderBy: undefined,
-        }, auth, new db3.DB3ReferenceStore(), tx);
-        return { eventsRaw, bandTimeZone, settingsSnapshot };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 30_000 });
-
-    // don't error if 0 events. this is a calendar-of-events and 0 events is valid.
-
-    const events = eventsRaw.items;
-
-    const settings = getICalSettings(settingsSnapshot);
-
-    const cal = await createCalendar({
-        icalSettings: settings,
-        localeTag: auth.membership ? readSettingSnapshot(settingsSnapshot, "bandUser", "calendar.locale") : "en-US",
-    });
-
-    // These reference rows interpret existing event data; soft deletion makes
-    // an option unavailable for future selection but does not erase its meaning.
-    const eventAttendances = await db.eventAttendance.findMany();
-
-    const cancelledStatusIds = (await db.eventStatus.findMany({
-        select: { publicId: true },
-        where: { significance: db3.EventStatusSignificance.Cancelled },
-    })).map(status => db3.xEventStatus.parseIdentity(status.publicId));
-    const attendanceById = new Map(eventAttendances.map(
-        attendance => [
-            db3.xEventAttendance.parseIdentity(attendance.publicId),
-            attendance
-        ]));
-    const cancelledStatuses = new Set(cancelledStatusIds);
-    const goingAttendanceIds = eventAttendances
-        .filter(isAttendanceGoing)
-        .map(attendance => db3.xEventAttendance.parseIdentity(attendance.publicId));
-
-    for (let i = 0; i < events.length; ++i) {
-        const event = events[i]!;
-        const defaultInviteeUserIds = new Set(event.expectedAttendanceUserTag?.userAssignments.map(assignment => assignment.userId));
-        if (!shouldIncludeEventInCalendarFeed({
-            userId: db3.xUser.parseIdentity(currentUser.publicId),
-            showDeclinedEvents: readSettingSnapshot(settingsSnapshot, "user", "calendar.showDeclinedEvents"),
-            showUninvitedEvents: readSettingSnapshot(settingsSnapshot, "user", "calendar.showUninvitedEvents"),
-            isInvited: isUserInvitedToEvent({
-                userId: db3.xUser.parseIdentity(currentUser.publicId),
-                defaultInvitationUserIds: defaultInviteeUserIds,
-                responses: event.responses,
-            }),
-            segments: event.segments,
-            cancelledStatusIds: cancelledStatuses,
-            attendanceById,
-        })) continue;
-        await addEventToCalendar(cal, currentUser, event, goingAttendanceIds, cancelledStatusIds, settings, bandTimeZone);
+function renderCalendarEvent(calendar: ICalCalendar, event: CalendarFeedSnapshot["events"][number],
+    snapshot: CalendarFeedSnapshot, settings: ICalSettings,
+): void {
+    const response = event.responses[0];
+    const isInvited = event.expectedAttendanceUserTag?.bandUserTagAssignments.length
+        ? true : response?.isInvited === true;
+    const attendanceById = new Map(snapshot.attendance.map(row => [row.id, row]));
+    // These policy helpers use a generic identity; each private feed contains only its subscriber's BandUser answers.
+    const membershipIdentity = snapshot.membershipId;
+    const segments = event.segments.map(segment => ({ ...segment,
+        responses: segment.responses.map(answer => ({ ...answer, userId: membershipIdentity })),
+    }));
+    if (!shouldIncludeEventInCalendarFeed({
+        userId: membershipIdentity, isInvited, segments,
+        showDeclinedEvents: readSettingSnapshot(snapshot.settingsSnapshot, "user", "calendar.showDeclinedEvents"),
+        showUninvitedEvents: readSettingSnapshot(snapshot.settingsSnapshot, "user", "calendar.showUninvitedEvents"),
+        cancelledStatusIds: new Set(snapshot.cancelledStatusIds), attendanceById,
+    })) {
+        return;
     }
+    const personalization: CalendarEventPersonalization = {
+        subscriberUid: snapshot.subscriber.uid, responseRevision: response?.revision ?? 0,
+        isAttending: event.segments.some(segment => segment.responses.some(answer =>
+            answer.attendanceId != null && isAttendanceGoing(attendanceById.get(answer.attendanceId)))),
+    };
+    const inputs = GetEventCalendarInput({ ...event, id: parsePublicId<"Event">(event.publicId),
+        segments: event.segments.map(segment => ({ ...segment, id: parsePublicId<"EventSegment">(segment.publicId) })),
+    }, snapshot.cancelledStatusIds, snapshot.bandTimeZone);
+    for (const input of inputs?.segments ?? []) {
+        const uri = new URL(input.eventUri);
+        uri.searchParams.set("bandPublicId", snapshot.bandPublicId);
+        addEventToCalendar2(calendar, personalization, { ...input, eventUri: uri.toString() }, settings);
+    }
+}
 
-    return cal;
-};
+async function renderCalendarFeed(snapshot: CalendarFeedSnapshot): Promise<ICalCalendar> {
+    const settings = getICalSettings(snapshot.settingsSnapshot);
+    const calendar = await createCalendar({ icalSettings: settings, localeTag: snapshot.localeTag });
+    for (const event of snapshot.events) {
+        renderCalendarEvent(calendar, event, snapshot, settings);
+    }
+    return calendar;
+}
+
+export type CalExportCoreArgs = CalendarExportArgs & { currentUser: { id: number } };
+
+export function CalExportCore(input: CalExportCoreArgs, database: DB3ReadRootDatabase = db): Promise<ICalCalendar> {
+    const { currentUser, ...context } = input;
+    const args = CalendarExportSchema.parse(context);
+    return database.$transaction(async transaction => {
+        const auth = await loadAuthorizationForUser(currentUser, transaction, args.bandPublicId);
+        return renderCalendarFeed(await readCalendarFeedInTransaction(transaction, auth, args));
+    }, { isolationLevel: "RepeatableRead", timeout: 30_000 });
+}
+
+export function exportCalendarFeedForToken(calendarFeedToken: string, context: CalendarExportArgs,
+    database: DB3ReadRootDatabase = db,
+) {
+    const args = CalendarExportSchema.parse(context);
+    return database.$transaction(async transaction => {
+        // Credential, principal, membership, grants, settings and content share one snapshot.
+        const user = await resolveActiveCalendarFeedUser(calendarFeedToken, transaction);
+        const auth = await loadAuthorizationForUser(user, transaction, args.bandPublicId);
+        const snapshot = await readCalendarFeedInTransaction(transaction, auth, args);
+        return { calendar: await renderCalendarFeed(snapshot), userId: snapshot.userId, actionContext: snapshot.actionContext };
+    }, { isolationLevel: "RepeatableRead", timeout: 30_000 });
+}

@@ -9,14 +9,15 @@ vi.mock("db", async () => ({
     ...await vi.importActual<typeof import("@prisma/client")>("@prisma/client"),
     default: (await import("./authorization/support/inMemoryPrisma")).authorizationTestDb,
 }));
-vi.mock("src/core/db3/server/db3QueryCore", () => ({ queryHydratedView: vi.fn() }));
+vi.mock("src/core/db3/server/calendarFeedRead", () => ({ readCalendarFeedInTransaction: vi.fn() }));
 
 import { CalExportCore } from "src/core/db3/server/ical";
-import { queryHydratedView } from "src/core/db3/server/db3QueryCore";
+import { readCalendarFeedInTransaction } from "src/core/db3/server/calendarFeedRead";
+import { loadSettingsSnapshot } from "src/setting/server/settings";
+import { calendarAuthorizationSeed, calendarBandPublicId } from "./support/calendarFeedFixtures";
 import { shouldIncludeEventInCalendarFeed } from "src/core/db3/shared/calendarAttendance";
 import { createAuthorizationTestUser } from "./authorization/support/authorizationFixtures";
 import { authorizationTestDb } from "./authorization/support/inMemoryPrisma";
-import type { UserForCalBackendPayload } from "src/core/db3/shared/schema/prismArgs";
 import { parsePublicId, type EventStatusPublicId } from "shared/publicId";
 
 const owner = { ...createAuthorizationTestUser("normal", { id: 10 }), uid: "owner-uid" };
@@ -32,14 +33,32 @@ const segment = (id: number, strength?: number | null, statusId: EventStatusPubl
 });
 const makeEvent = (segments: ReturnType<typeof segment>[]) => ({
     publicId: eventPublicId(1), name: "Concert", revision: 1, locationDescription: "Hall", segments,
-    songLists: [], responses: [] as { userId: typeof owner.publicId; isInvited: boolean | null }[],
+    songLists: [], responses: [] as { userId: typeof owner.publicId; isInvited: boolean | null; revision?: number }[],
     expectedAttendanceUserTag: null as { userAssignments: { userId: typeof owner.publicId }[] } | null,
     status: { significance: null as string | null },
 });
 
 const mockCalendarEvents = (events: ReturnType<typeof makeEvent>[]) => {
-    // Vitest cannot infer one result type from queryHydratedView's generic view parameter.
-    vi.mocked(queryHydratedView).mockResolvedValue({ items: events } as never);
+    vi.mocked(readCalendarFeedInTransaction).mockImplementation(async (database, auth) => ({
+        events: events.map(event => ({ ...event, locationURL: "", descriptionWikiPage: null,
+            responses: event.responses.filter(answer => answer.userId === owner.publicId)
+                .map(answer => ({ isInvited: answer.isInvited, revision: answer.revision ?? 1 })),
+            expectedAttendanceUserTag: event.expectedAttendanceUserTag ? {
+                bandUserTagAssignments: event.expectedAttendanceUserTag.userAssignments
+                    .filter(assignment => assignment.userId === owner.publicId).map(() => ({ publicId: "Assignment000001" })),
+            } : null,
+            segments: event.segments.map((segment, index) => ({ ...segment, id: index + 1,
+                statusId: segment.statusId === cancelledId ? cancelledDbId : null,
+                responses: segment.responses.filter(answer => answer.userId === owner.publicId)
+                    .map(answer => ({ attendanceId: answer.attendanceId === null ? null
+                        : attendanceRows.find(row => row.publicId === answer.attendanceId)!.id })),
+            })),
+        })),
+        attendance: attendanceRows, cancelledStatusIds: [cancelledDbId], subscriber: { uid: owner.uid },
+        settingsSnapshot: await loadSettingsSnapshot(database, auth), bandTimeZone: "Europe/Brussels",
+        bandPublicId: calendarBandPublicId, localeTag: "en-US", actionContext: { bandId: 1, localeContextId: null },
+        userId: owner.id, membershipId: owner.id + 100,
+    }));
 };
 
 const include = (segments: ReturnType<typeof segment>[], showDeclinedEvents = false, userId = owner.publicId, showUninvitedEvents = true) =>
@@ -91,7 +110,7 @@ describe("event-level calendar attendance", () => {
 beforeEach(() => {
     process.env.CMDB_BASE_URL = "https://band.test";
     authorizationTestDb.reset({
-        user: [owner],
+        ...calendarAuthorizationSeed([owner]),
         userSetting: [{ id: 1, userId: owner.id, name: "calendar.showDeclinedEvents", value: false }],
         eventAttendance: attendanceRows,
         eventStatus: [{ id: cancelledDbId, publicId: cancelledId, significance: "Cancelled", isDeleted: true }],
@@ -100,7 +119,7 @@ beforeEach(() => {
 
 describe("calendar export integration", () => {
     const exportFeed = () => CalExportCore({
-        type: "upcoming", currentUser: owner as UserForCalBackendPayload,
+        type: "upcoming", currentUser: owner, bandPublicId: calendarBandPublicId,
     });
 
     it("retains all dated active segments of a qualifying event, including declined ones", async () => {
