@@ -1,31 +1,6 @@
 # Localization and multiband design
 
-The accepted execution checklist is
-[04-implementation-plan.md](04-implementation-plan.md), updated 2026-10-05.
-The SQL migration is implemented and rehearsed; see
-[03-sql-migration.md](03-sql-migration.md). Phase 1's trusted context and access-control
-foundation is implemented; see [05-authorization-foundation.md](05-authorization-foundation.md).
-Phase 2's localization and settings foundation is implemented; see
-[06-localization-settings.md](06-localization-settings.md).
-Application recovery and production cutover remain ahead.
-
-This document records design rationale and earlier exploration. Its illustrative
-APIs/models are not additional schema guarantees. Use `db/schema.prisma` for the
-actual target model, the SQL runbook for migration rules, and the execution plan
-for phase order and completion criteria. Checkmarks in the design notes indicate
-settled direction rather than implemented application behavior.
-
--  use ❓✅ [x] [-] [#] etc
--  🔵 or 🟡 = small migration needed
--  🔴 = bigger migration needed
--  🟣 = decision that suggests a task / design
--  ❌ = rejected / thinking out-loud
-
----
-
-todo:
-
--  ❓❓❓ self-references.
+Agents: do not modify this file.
 
 ---
 
@@ -983,29 +958,3 @@ model BandSetting {
    @@id([key, bandId])
 }
 ```
-
-# linear plan
-
-This summary replaces the earlier milestone sketch. Track individual tasks and
-validation in [04-implementation-plan.md](04-implementation-plan.md).
-
--  [x] Homepage decoupling and standalone homepage SPA.
--  [x] Target schema, four settings registries, and static string registry established.
--  [x] Data-preserving SQL migration implemented and rehearsed on disposable
-       databases; see [03-sql-migration.md](03-sql-migration.md).
--  [x] Phase 1: trusted context, scoped authorization, new permissions, bootstrap.
--  [x] Phase 2: typed localization and four-hive settings lookups/writes.
--  [ ] Phase 3: localized DB3 fields and shared in-memory catalog queries;
-       instruments/groups and the BandSongTag reuse proof now use this shared
-       design; adapt remaining catalogs, consumers, and xTables/views next.
--  [ ] Phase 4: application recovery, explicit localized column labels, temporary
-       read-only `LocalizedMarkdown`, and migrated-data/isolation acceptance.
--  [ ] Milestone A: the migrated application builds and core workflows work.
--  [ ] Phase 5: portal routing, band lifecycle, and platform/band management.
--  [ ] Phase 6: scoped localized editing, restored deferred features, locale
-       presentation, and agreed translation coverage.
--  [ ] Milestone B: localization and multiband complete, with final acceptance and
-       no unaccounted temporary restrictions.
-
-Full routing UX follows application recovery, but trusted band context and
-isolation precede it. A browser-supplied band ID is never sufficient authorization.

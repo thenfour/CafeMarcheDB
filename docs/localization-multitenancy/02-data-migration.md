@@ -1,52 +1,23 @@
 # Existing-data migration requirements
 
-The reviewed `schema.prisma` is the destination. The executable migration is
-`db/migrations/20261004130808_696_lsmb/migration.sql`; its accepted policies,
-rehearsal results, and recovery procedure are in [03-sql-migration.md](03-sql-migration.md).
-Application consumer changes and cutover follow
-[04-implementation-plan.md](04-implementation-plan.md). That plan separates
-migrated-app recovery from complete routing, management, and localized editing.
-Prisma's default diff for these renames/localized fields would drop data.
+This is the source-to-target preservation checklist for
+[db/schema.prisma](../../db/schema.prisma). The
+[SQL runbook](03-sql-migration.md) owns executable migration rules, the settings
+manifest, deployment order, rehearsal evidence, and recovery. Prisma's default
+diff for these renames/localized fields would drop data.
 
-## Preparation and order
+Capture source counts, identities, statuses, nullable values, grants, text,
+settings, revisions, and serialized references before migration. Create ownership,
+membership, catalog, and string mappings before remapping associations; verify
+backfills before removing source columns or requiring destination constraints.
+Unknown authors stay null. Historical memberships must retain inactive account
+state rather than gaining access through migration.
 
-1. Rehearse on a restored production copy, with writes stopped. Record row
-   counts, primary/public IDs, nullable values, role grants, settings, wiki
-   revisions, serialized plans, and routes before changing anything.
-2. Create the existing band's identity, its locales and enabled-locale rows.
-   Keep an explicit mapping from the existing deployment to that band.
-   The accepted migration locale for all existing localized fields is `en-US`.
-   Create `en-US`, `fr-BE`, and `nl-BE`, without inventing translated values.
-   Create string identities before locale/band rows, then their value rows,
-   avoiding the locale-name/string-value creation cycle.
-3. Move only the designated sysadmin role and its grants to global roles.
-   All other definitions/grants become band roles, with the same permission
-   matrix. Preserve bootstrap and sysadmin identity rules. Clear stored session
-   permissions; rebuild them during the later application cutover.
-4. Create one membership for every existing user, including deactivated,
-   merged, and pending accounts needed by historical references. Preserve their
-   status; a row needed for history must not become an active member merely
-   because the migration created it. Resolve pending/default/public roles explicitly.
-5. Rename catalogs, introduce band opt-ins/overrides, and localize their fields.
-   Preserve both numeric and public IDs when a table is renamed. New wrapper
-   and membership rows get new IDs; map through explicit global/person keys.
-6. Assign band ownership to content. Preserve inherited ownership through parents
-   and remap association FKs using the membership/catalog mappings. Deduplicate
-   exact associations before adding new uniqueness constraints, preserving a
-   documented survivor's public ID.
-7. Classify each existing setting key into a settings registry or chrome-string
-   registry. Backfill scoped settings and localized menu captions. Preserve
-   value types, intentional empty text, Markdown format, and source locale.
-8. Migrate every runtime consumer: Prisma arguments, DB3 descriptors/hydration/
-   SQL, seeds, authorization, user merge policies, RPC/API parameters, file
-   serving/uploads, wiki/Custom Link resolution, calendars, and serialized plan
-   references. Resolve band context on the server and enforce all optional
-   same-band references listed in `01-schema.md`. Follow phases 1–4 of the
-   implementation plan, with authorization/isolation checks throughout.
-9. Validate backfills before requiring new columns and creating destination FKs.
-   Switch to the new generated client and application together. Remove old
-   string/role fields and obsolete runtime constants only after preservation
-   checks pass.
+Application adaptation follows the [restoration plan](04-implementation-plan.md):
+first restore build/startup, then core workflows. Deferred consumers remain
+coherently unavailable until migrated; merge, platform administration, and full
+localized editing are not restoration prerequisites. Every enabled consumer must
+enforce the ownership invariants in [the schema guide](01-schema.md).
 
 ## Model and key mapping
 
@@ -80,7 +51,7 @@ Prisma's default diff for these renames/localized fields would drop data.
 | `FileInstrumentTag` | `instrumentId -> bandInstrumentId`; retain association identity and inherited ownership. |
 | `FileSongTag`, `FileEventTag`, `FileWikiPageTag` | Preserve identities and parent references. All existing parents receive the same band. |
 | `WikiPage`, `WikiPageRevision` | Add page ownership, change slug uniqueness to `(bandId, slug)`. Keep revision/history IDs, current-revision pointer, content versions, text, namespace and locking state. Verify the current revision belongs to the page. |
-| `WikiPageTag` | `GlobalWikiPageTag` plus `BandWikiPageTag` wrappers. Localize `text -> name`, description; keep style/order and archive any removed significance values. |
+| `WikiPageTag` | `GlobalWikiPageTag` plus `BandWikiPageTag` wrappers. Localize `text -> name`, description; keep style/order. Removed significance values remain in the source backup. |
 | `WikiPageTagAssignment` | `tagId -> bandWikiPageTagId`; retain association identity and inherited ownership. |
 | `MenuLink` | Add band ownership. `caption -> captionId` with a localized string/value. Preserve URI/slug references, group/style, order and visibility. |
 | `CustomLink`, `CustomLinkVisit` | Add link ownership and `(bandId, slug)` uniqueness. Visits inherit through the link. Preserve destination/file behavior, redirects and visit history; resolve custom URLs under the band's portal root. |
@@ -108,9 +79,11 @@ before constraints are applied; never truncate them silently.
 - Compare visible text and Markdown by source locale, including null versus
   empty values. Check menus, tags, attendance captions, catalog regexes,
   partitions/recordings and invitation behavior.
-- Exercise uploads/downloads and preview links, pinned recordings, wiki saves
-  and history, event/setlist editing, calendars and feed tokens, account merge,
-  existing URLs and Custom Links. Validate serialized plan references.
+- Exercise restored uploads/downloads and previews, recordings, wiki/history,
+  event/setlist editing, calendars/tokens, URLs, and Custom Links as their workflows
+  become available. Validate serialized plan references. Deferred workflows such
+  as account merge need acceptance before they are enabled; their existing data
+  must still survive migration.
 - For the SQL task, run Prisma schema validation, an actual migration deploy,
   destination schema comparison, and source/destination data comparisons on a
   disposable production copy. Application generation/build, the repository test

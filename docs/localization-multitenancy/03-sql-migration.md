@@ -9,13 +9,12 @@ The application recovery and completion checklist is
 [04-implementation-plan.md](04-implementation-plan.md). SQL rehearsal is complete;
 application readiness and production cutover are separate acceptance steps.
 
-The rules and grant counts below describe the data-preserving localization
-migration. Phase 1 adds capabilities in a separate follow-up migration; see
-[05-authorization-foundation.md](05-authorization-foundation.md) for its SQL,
-grant choices, and separate validation evidence. That latest existing migration
-also corrects `GlobalSetting.value` and `BandSetting.value` to native JSON, matching
-`UserSetting` and `BandUserSetting`. Apply both migrations to reach the current
-schema; the correction preserves the earlier migration's JSON documents.
+The rules below describe the initial data migration. The follow-up migration
+`db/migrations/20261005120000_696_authorization_foundation/migration.sql` adds the
+capabilities documented in [authorization](05-authorization-foundation.md) and
+corrects `GlobalSetting.value`/`BandSetting.value` to native JSON. Apply both
+migrations to reach the current schema; the correction preserves the earlier
+migration's JSON documents and original grant matrices.
 
 ## Accepted migration rules
 
@@ -146,10 +145,17 @@ absent from the production manifest, so no timezone setting is invented.
    yarn prisma migrate diff --from-schema-datasource db/schema.prisma --to-schema-datamodel db/schema.prisma --script --exit-code
    ```
 
-   The diff must report an empty migration, exit code `0`. For a main-schema
-   copy without migration history, use `prisma db execute --schema
-   db/schema.prisma --file db/migrations/20261004130808_696_lsmb/migration.sql`
-   instead of migration deploy. `db execute` does not record migration history.
+   The diff must report an empty migration, exit code `0`. A disposable
+   main-schema fixture without migration history can instead execute both files
+   in order, then run the same diff:
+
+   ```powershell
+   yarn prisma db execute --schema db/schema.prisma --file db/migrations/20261004130808_696_lsmb/migration.sql
+   yarn prisma db execute --schema db/schema.prisma --file db/migrations/20261005120000_696_authorization_foundation/migration.sql
+   ```
+
+   `db execute` does not record migration history. Use normal migration deployment
+   for production and databases with migration history.
 5. Compare IDs, grants, text, content, settings, memberships, and serialized
    references to the source backup. Schema equality alone is insufficient.
 6. Production application cutover happens only after consumer/build work and
@@ -167,38 +173,24 @@ migration, use `db push`, or mark a failed partial migration as applied.
 Removed significance/segment-behavior fields and obsolete settings remain in
 the required source backup; no archive tables are added to the target schema.
 
-## Rehearsal evidence
+## Rehearsal evidence and limits
 
-Rehearsed on an isolated MariaDB `10.11.9` instance using
-`temp/tenfour_cmdb_20261002_at_git_094a783a9.sql`, brought to the main schema.
-The source and destination Prisma schema comparisons were both empty; the
-localization migration ran through `prisma migrate deploy`.
+The initial migration was rehearsed through `prisma migrate deploy` on isolated
+MariaDB `10.11.9` using `temp/tenfour_cmdb_20261002_at_git_094a783a9.sql`, brought
+to the main schema. Source/destination Prisma comparisons were empty. Comparisons
+covered all 183 original grants, 103 people/memberships, localized fields/settings,
+public identities/history, unchanged scalars, and remapped references. All 707
+numeric references in 29 plans were upgraded while preserving unrelated content.
+No migration helper tables/procedure remained.
 
-| Check | Verified outcome |
-| --- | --- |
-| Roles/grants | 1 global role / 49 grants, 6 band roles / 134 grants; all 183 grants preserved |
-| People/memberships | 103 people and 103 memberships, deleted/merged state preserved |
-| Localized fields | 340 source fields compared exactly; 344 identities including band/locale names |
-| Production settings | 12 band settings, 9 global settings, 26 band chrome values; all 48 migrated source values preserved |
-| Serialized references | All 707 numeric references in 29 plans upgraded; unrelated JSON content preserved |
-| Identity/history | 22,352 public identities checked; 132,206 actions and 26,764 change records retained |
-| Scalar/FK preservation | 4,292,073 unchanged scalar values and 14,379 remapped references checked |
-| Destination | 72 models, no leftover migration tables/procedure, empty Prisma diff |
+Additional fixtures on MariaDB `10.11.9` and MySQL `8.0.37` covered mismatched
+numeric identities, null/empty/Unicode/Markdown values, duplicate instruments,
+sysadmin inheritance, deleted/merged people, missing timestamps, native JSON,
+session data, additional associations, and already upgraded plans. Eleven rejection
+fixtures on each engine verified that invalid settings, identities, mappings,
+references, and payloads fail before permanent changes.
 
-Additional fixtures passed on MariaDB `10.11.9` and MySQL `8.0.37`, covering
-nonmatching numeric IDs, null/empty strings, Markdown, supplementary Unicode,
-quotes/backslashes, inherited sysadmin grants, merged/deleted users, exact
-duplicate instrument assignments, missing timestamps, native JSON user
-preferences, null session data, wiki tags/file-user tags absent from the dump,
-and already upgraded setlist payloads.
-
-Eleven rejection fixtures on each engine checked that permanent schema/data
-remained unchanged: unknown settings, conflicting merged settings, invalid
-enum values, conflicting instrument duplicates, overlong slugs, malformed
-public IDs, dangling serialized/relational references, public-ID repair
-collisions, missing sysadmin designation, and invalid setlist JSON.
-
-The DB instances and databases used for these checks were disposable. No
-production or existing development database was migrated. Application build,
-client generation, runtime behavior, and Linux table-case execution remain
-outside these database rehearsals.
+These were disposable database rehearsals; no production or existing development
+database was migrated. They establish SQL preservation behavior, not application
+build/runtime acceptance or Linux table-case execution. Repeat the rehearsal on a
+current production copy before cutover.

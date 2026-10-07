@@ -1,248 +1,114 @@
-# Localization and settings foundations
+# Localization and settings contracts
 
-Implemented 2026-10-06, phase 2 of
-[the implementation plan](04-implementation-plan.md). This records the shared
-contracts, their initial server/client consumers, and focused validation. Domain
-DTO hydration and localized entity writers follow in phase 3; application
-recovery follows in phase 4.
+These are the shared server/client contracts. Delivery status, unfinished editors,
+and temporary restrictions belong to the [implementation plan](04-implementation-plan.md).
 
-## Preferences, string resolution, and formatting
+## String resolution and formatting
 
-`localePreferences.ts` preserves the explicit route tag, ordered browser tags,
-and `en-US` system fallback. Tags are canonicalized and duplicates removed.
-Malformed route preferences fail validation; malformed browser entries are
-ignored. SSR obtains browser preferences from `Accept-Language`, including
-quality ordering. The client supplies `navigator.languages` and reacts to
-`languagechange`. The transport accepts a route preference now; full portal
-route extraction remains phase 5.
+`localePreferences.ts` preserves route preference, ordered browser tags, and the
+`en-US` system fallback. Canonicalize tags and deduplicate. Malformed route tags
+fail validation; malformed browser entries are ignored. SSR uses quality-ordered
+`Accept-Language`; clients use `navigator.languages` and react to `languagechange`.
+Full portal route extraction follows restoration.
 
-`stringResolution.ts` chooses scope before language. Any stored band override for
-the string blocks global values and registered defaults, including when all of
-the overrides belong to disabled or deleted locales. Within the chosen scope,
-selection tries route exact/language match, then each browser exact/language
-match, then `en-US`, then any eligible translation. Language-match and last-resort
-ties use canonical tag order, independent of database ordering.
+`stringResolution.ts` chooses scope before language. **Any stored band override
+blocks global values and registry defaults**, even when every override belongs to
+a disabled/deleted locale. Within the selected scope, try route exact/language
+match, each browser exact/language match in order, `en-US`, then any eligible value.
+Language-match and final ties use canonical tag order rather than database order.
 
-Platform requests admit active global locales. Band requests constrain both
-stored global and band candidates to that band's enabled, active locales. The
-queries retain unavailable rows so override existence still prevents global
-fallback. An intentional empty translation remains a value. Static registered
-English defaults provide a virtual English candidate when there is no eligible
-stored English global value and no band override, including an empty locale
-table. They do not restore global meaning underneath a band override.
+Platform candidates use active global locales. In band context, both global and
+band candidates must use that band's enabled active locales. Unavailable rows
+remain visible to override-existence detection. Empty text is a value; missing
+text is `null`. Static English defaults supply a virtual candidate when no
+eligible global English value exists and no band override exists, including an
+empty locale table. Defaults never restore global meaning beneath a band override.
 
-Resolution details include text, selected locale, scope, source, requested tag,
-and reason. Missing text is `null`, distinct from `""`. Inherited catalog fields
-use the same resolver: a null local string identity inherits; an empty custom
-identity remains custom and untranslated. It cannot silently inherit global
-content.
+A null inherited field identity uses its source identity. A custom identity with
+no translation stays untranslated rather than falling back to the source. Each
+resolved field carries text, selected locale, scope, source, requested tag, and
+reason. Independent fields may resolve to different languages on one page.
 
-Privileged server helper `lookupStaticTranslation` reads an explicit key, locale,
-and global/band scope without fallbacks, including stored values excluded from
-presentation. Its standalone RPC is deferred until the editor requires it.
-The server also exposes batch resolution and exact lookup for dynamic strings
-whose identities came from an authorized entity read. There is no public endpoint
-that accepts arbitrary dynamic string IDs. Phase 3 must wire those helpers into
-DB3 reads and hydration together with entity ownership checks.
+`lookupStaticTranslation` reads an exact key/locale/scope without fallback,
+including values excluded from presentation. Its standalone editor RPC is deferred.
+Dynamic exact/batch lookup uses identities obtained from authorized entity reads;
+there is no public arbitrary-string-ID lookup endpoint. DB3 integrates resolution
+with entity ownership and field projection.
 
-`formattingLocale` independently selects a formatter-supported tag from the same
-preferences. It needs no translation or database locale row. The dashboard
-presentation contract now carries `localePreferences` and `formattingLocale`.
-Plain-text and Markdown keys derive from registry formats. Plain text uses ICU
-MessageFormat with required, typed parameters; plural grammar uses the selected
-translation's language while number/date formatting uses `formattingLocale`.
-Markdown does not interpolate parameters. Typed getters and React components
-share these contracts. Unloaded catalogs and unavailable translations have
-explicit loading/error behavior; they do not silently return empty strings.
+`formattingLocale` independently selects a formatter-supported preference; it
+requires no database locale row or translation. Presentation carries both the
+full `localePreferences` and `formattingLocale`. Registry formats distinguish
+plain text from Markdown. ICU plain text has typed required parameters: plural
+grammar uses translation language, while numbers/dates use formatting locale.
+Markdown never interpolates. Typed getters/components report unavailable or
+unloaded text explicitly rather than silently returning empty strings.
 
 ## Delivery and refresh
 
 `loadPresentationData` refreshes authorization and reads the complete static
-catalog and settings snapshot inside one repeatable-read transaction. The initial
-presentation is delivered through `_app` for SSR and through `getPresentationData`
-for client changes. Dashboard delivery uses the same catalog/settings contracts.
-The transport's optional `bandPublicId` adds band authorization to global/account
-authorization. Omission or null loads global/account data; no band is inferred.
-Language preferences do not select the band or grants. Remaining portal entry
-points must supply the selected band's public ID during phases 3–5.
+catalog/settings snapshot in RepeatableRead. `_app` supplies SSR presentation;
+`getPresentationData` handles client changes; dashboard delivery uses the same
+contracts. An optional band public ID selects validated band context; omission/null
+loads platform/account presentation. Language never selects a band or grants.
+Keep whole-catalog delivery until measured costs justify a different strategy.
 
-The catalog currently contains **83 registered keys**. The native two-band fixture
-measured **13,170 UTF-8 bytes** for the catalog, including resolution details and
-context metadata. This is a reproducible fixture measurement, not a production
-dashboard measurement or a reason to introduce bundles yet.
+Fingerprints cover band, full preferences, locale availability, membership/grants,
+registry defaults, and stored values/revisions. Client queries use a refresh nonce
+and do not retain another scope's data while loading. After leaving the initial
+SSR context, switching back cannot revive that snapshot. Settings writes invalidate
+queries and notify other tabs through a storage marker; focus/language changes
+also refresh. `invalidatePresentation` is the common boundary for membership,
+grant, translation, and locale-availability writers as well.
 
-Catalog fingerprints include band, full ordered preferences, relevant locale
-availability, membership/grants, registered defaults, and stored values/revisions.
-Server reads are fresh. Client queries use a request nonce and retain no previous
-scope data while loading. Once the provider leaves its initial SSR context, that
-snapshot cannot reappear on a later switch back. This avoids band A → B → A
-reviving stale grants, strings, or settings.
+## Typed settings
 
-Successful settings writes invalidate queries and notify the current tab and
-other tabs through a storage marker. Focus and language changes refresh the
-presentation as well. `invalidatePresentation` is the shared refresh boundary;
-future translation, locale-availability, membership, and grant writers must call
-it when introduced in phases 3/5/6. Those editing surfaces do not exist yet.
+Registries define defaults, validation, and per-key capabilities. Hives are
+independent and have no implicit inheritance.
 
-## Four typed settings hives
+| Hive | Owner selected by server | Default read/write policy |
+| --- | --- | --- |
+| `global` | Platform | Public registered reads; `manage_global_settings` writes. |
+| `band` | Authorized selected band | Public registered reads; `manage_band_settings` writes. |
+| `user` | Current active person | Authenticated self reads/writes. |
+| `bandUser` | Current active selected membership | Membership self reads/writes. |
 
-Each registry defines defaults, value validation, and per-key capabilities.
-There is no implicit inheritance between hives.
+Branding/calendar-brand writes use `manage_site_branding`; timezone writes use
+`manage_band_settings`. Development text palettes require sysadmin reads; the
+upload-size setting requires `manage_files` reads. Restricted values are omitted
+from snapshots. Unknown registry keys cannot be delivered or written; unrelated
+stored rows remain intact. Membership `calendar.locale` validates canonical tags,
+defaults to `en-US`, and requires no database locale row.
 
-| Hive | Owner selected on the server | Default capability | Storage |
-| --- | --- | --- | --- |
-| `global` | Platform | Public registered reads; `manage_global_settings` writes | Native Prisma JSON |
-| `band` | Authorized selected band | Public registered reads; `manage_band_settings` writes | Native Prisma JSON |
-| `user` | Current active person | Authenticated self reads/writes | Native Prisma JSON |
-| `bandUser` | Current active membership in the selected band | Membership self reads/writes | Native Prisma JSON |
+All values use native Prisma JSON. Validate directly, without reparsing strings.
+Missing rows use defaults; valid blank strings and `false` survive. Zero/null also
+remain values when a registry permits them. Invalid stored types fail validation.
+Reset explicitly deletes the owned row. The follow-up SQL converts former text
+columns while preserving the documents encoded by the data migration.
 
-Branding/calendar-brand keys require `manage_site_branding`; timezone uses
-`manage_band_settings`. Development text palettes require sysadmin read access,
-and the maximum-upload-size setting requires `manage_files` read access.
-Restricted values are omitted from snapshots rather than merely hidden by UI.
-Unknown registry keys cannot be delivered or written; unrelated existing rows
-remain intact. `calendar.locale` is a membership preference with canonical tag
-validation and an `en-US` default; it does not require a locale row.
+Strict single/bulk commands accept an optional band public ID, required for
+band/membership writes. Person/membership owner IDs come from authorization, not
+client payloads. Refresh grants inside Serializable execution and validate the
+whole batch before writes. Audits and timezone-derived updates share the
+transaction. Unchanged values preserve revisions/audit history. Branding caches
+clear after commit. Hooks provide synchronous typed reads, capabilities, set,
+reset, and refetch once presentation has loaded.
 
-All four `value` columns use Prisma `Json`; the server validates values directly
-without interpreting strings as another JSON document. The latest existing
-authorization-foundation migration converts the two former text columns to JSON,
-preserving the documents encoded by the preceding data migration. Missing rows
-use registry defaults. Valid blank
-strings and `false` survive. Zero and null are not reset signals: a future
-registry that permits them must preserve them too. Invalid stored types fail
-validation instead of becoming defaults. Reset explicitly deletes the owned row.
+Generic DB3 mutations reject all settings-hive writes. Editors use the registered
+command API so they cannot bypass key validation or per-key authorization.
 
-Single and bulk mutations accept strict registered commands and optional
-`bandPublicId`. Band and membership writes require it. Person and membership
-owner IDs come from authorization; client-supplied owner IDs are rejected. Authorization is refreshed inside
-the serializable mutation transaction, and the entire batch is validated before
-any writes. Audit records and timezone-derived event updates share that
-transaction. Repeating an unchanged value leaves its row revision and audit
-history intact. Branding caches are cleared after commit.
+## Branding, timezone, and Markdown consumers
 
-The client hooks provide synchronous typed reads, capabilities, set, reset, and
-refetch after presentation delivery. They support all four hives and are covered
-through real React provider/control tests.
+Branding reads selected-band settings with registry defaults/validation. Cache
+identity includes trusted band and host. Café Marché production configures
+`CMDB_HOSTING_MODE=CafeMarche`; other modes retain their default branding. Removed
+logo/text-color schema fields are not recreated; blank titles are intentional.
 
-## Adapted consumers and temporary restrictions
+Timezone reads take a trusted numeric band ID from authorization/loaded events and
+the caller's database/transaction. The versioned UTC conversion command requires
+`--band=<public-id>` and converts only that band. Changing/resetting timezone
+reanchors that band's all-day segments and recomputes event bounds in the same
+transaction, including DST changes. Timed segments and other bands are unaffected.
+Calendar consumers use the settings snapshot and membership locale.
 
-Branding reads selected-band JSON settings with registry defaults and validation.
-Known-good cache entries include trusted band identity and host. Production
-Café Marché must configure `CMDB_HOSTING_MODE=CafeMarche`; other hosting modes use
-the existing default branding. Removed logo/text-color schema fields are not
-restored. Blank title values remain intentional.
-
-Timezone reads require an explicit numeric band ID from trusted authorization or
-a loaded event, and use the caller's database/transaction. The versioned UTC
-conversion command requires `--band=<public-id>` and only converts that band.
-Changing or resetting a band's timezone
-reanchors that band's all-day segments and recalculates its event bounds in the
-same transaction, including DST-length changes. Timed segments and other bands
-are excluded. Calendar settings consumption uses the four-hive snapshot and
-membership locale; the calendar's broader domain adaptation remains phases 3–4.
-
-`LocalizedMarkdown` now renders resolved Markdown and is read-only. Its obsolete
-inline editor/write path was removed in phase 2 because it relied on the removed
-settings model; phase 6 supplies the replacement scoped editor. Generic DB3
-setting mutations now reject writes to all four hives. Phase 3 must adapt their
-editors to the registered command API rather than bypassing key validation.
-
-Obsolete user-settings and setting-authorization tests tied to removed helper
-APIs, unrestricted raw setting writes, and permissive invalid-value defaulting
-were replaced by server, React, and native-storage coverage. Timezone read/write
-and native transaction tests now exercise registered band settings, explicit
-reset, typed JSON, mixed bounds, rollback, and DST. The old pre-band fixture's
-generic-setting hook cases were retired. Its versioned UTC-storage rehearsal and
-the pure legacy calendar-date decoding checks remain. Broader maintenance-tool
-multiband adaptation follows with domain recovery. The nine independent
-attendance-classification tests were retained in
-`eventAttendanceClassification.test.ts`. The repository runner now discovers
-`.test.tsx` as well as `.test.ts`, fixing a trivial omission encountered while
-adding React coverage.
-
-## Validation
-
-Focused command:
-
-```powershell
-yarn test tests/localizationResolution.test.ts tests/localizationSettings.test.ts tests/userSettingsContext.test.tsx tests/brandLoading.test.ts tests/brandingLifecycle.test.ts tests/authorization/multibandAuthorization.test.ts tests/authorization/permissionRegistry.test.ts tests/authorization/permissionSet.test.ts tests/testEnvironment.test.ts tests/eventAttendanceClassification.test.ts tests/datetime/bandTimeZoneLoading.test.ts tests/datetime/bandTimeZoneWrites.test.ts tests/datetime/bandTimePolicy.test.ts --reporter=dot
-```
-
-Native command, against a private disposable database only:
-
-```powershell
-yarn test tests/localizationSettings.mysql.test.ts tests/datetime/bandPolicy.mysql.test.ts tests/settingsStorageMigration.mysql.test.ts --reporter=dot
-```
-
-The native fixture requires `CMDB_PHASE2_TEST_DATABASE_URL`, rejects ordinary
-database names/hosts/ports, and rolls each fixture back. Validation used an
-isolated MariaDB 10.11.9 instance and a fresh target-schema database, which was
-removed afterward. No existing application database was changed.
-
-Results:
-
-- **169 focused tests passed across 13 files**, including isolated React tests.
-- **10 native tests passed across two files** using real relations, JSON storage,
-  audits, transactions, and event bounds. The private server was shut down after
-  validation.
-- ESLint passed for all **58 changed/new code files**, and `git diff --check`
-  passed.
-- `yarn typecheck` still fails with **716 diagnostics**, versus **759** at the
-  start. The new localization/settings modules, adapted branding/timezone/date
-  services, and phase-2 tests have no diagnostics. Remaining errors include
-  removed domain models, descriptors, DTOs, and old editor contracts.
-- An additional `tests/datetime/eventDateConsumers.test.ts` run was blocked in
-  all four timezone probes before its 49 assertions: the existing dashboard DB3
-  selection still requests removed `UserTag.significance`. This descriptor
-  adaptation belongs in phase 3; the test remains in place.
-
-Application builds, the full repository suite, and interactive application
-acceptance remain phase 4 work; passing focused tests does not establish a usable
-migrated application.
-
-## Cleanup validation, 2026-10-06
-
-Auth scope selection was removed in favor of optional `bandPublicId`. Omitting it
-or passing null never queries bands; supplying it loads that band's grants in
-addition to global/account grants. Refresh retains the same band identity, or
-stays global. The UI drops old band data when switching to global presentation
-and refreshes when returning to the initial band.
-
-Both former text setting columns now use native JSON. The correction is in
-`20261005120000_696_authorization_foundation/migration.sql`; no new migration was
-added. Native checks execute that full amended SQL against old text columns and
-verify preserved blank/numeric-looking strings, booleans, zero, null, arrays, and
-objects. A second check round-trips the same native values through all four hives.
-
-- **170 focused tests passed across 13 files.** Obsolete configured-band tests
-  were replaced with omitted/null/explicit-band coverage.
-- **12 native tests passed across three files.** The UTC conversion now requires
-  `--band=<public-id>` and excludes other bands. The aggregate-only repair no
-  longer reads an unnecessary band timezone.
-- Prisma schema validation and client generation passed. Both maintenance
-  scripts pass Node syntax checks.
-- ESLint passed for all **41 changed/new code files**, and `git diff --check`
-  passed.
-- Typecheck still fails with **717 diagnostics**, compared with **736** before
-  this cleanup. No diagnostic file/code occurrences were added. The auth,
-  localization, settings foundations and focused tests have no diagnostics;
-  touched legacy domain/page consumers still have existing migration errors.
-- Skipped native suites now construct Prisma without an undefined datasource
-  override, fixing a test harness error encountered during validation.
-
-The disposable native database was removed and its private server shut down.
-Remaining domain consumers and portal boundaries still need explicit band
-identity during phases 3–5; missing identity does not select a nominal band.
-
-## Next execution step
-
-Phase 3's initial instrument/group behavior is implemented, but its DB3 design
-still needs acceptance. Rework the slice to use shared field validation, derived
-view contracts, and shared read/write execution, building on phase 2's resolver
-and settings contracts. The agreed V1 query strategy resolves localized fields
-before shared server-side in-memory filtering, ordering, and pagination. See
-[07-db3-band-instruments.md](07-db3-band-instruments.md#agreed-design-direction).
-Prove reuse with one other catalog before adapting the remaining dashboard/
-reference, catalog, membership/content, and registered settings-editor consumers.
-Application recovery and complete portal routing remain phases 4–5.
+`LocalizedMarkdown` renders resolved Markdown read-only. Scoped editing replaces
+the removed legacy inline write path after restoration.
