@@ -7,8 +7,10 @@ import type { xTable } from "../shared/db3core";
 import { xBandUser, activeBandMembershipWhere } from "../shared/entities/user/bandUser";
 import { resolvePublicIds } from "./db3PublicIds";
 
-export async function requireEditableBandMembership(database: Prisma.TransactionClient,
-    auth: CMServerAuthorization, publicId: BandUserPublicId,
+export async function requireActiveBandMembership(
+    database: Prisma.TransactionClient,
+    auth: CMServerAuthorization,
+    publicId: BandUserPublicId,
 ) {
     auth.requirePermission(Permission.login);
     const membership = await database.bandUser.findFirst({
@@ -18,7 +20,19 @@ export async function requireEditableBandMembership(database: Prisma.Transaction
             bandId: auth.requireBand().id,
         }
     });
-    if (!membership || !xBandUser.authorizeRowForEdit({ model: membership, auth })) {
+    if (!membership) {
+        throw new AuthorizationError("The membership cannot be edited.");
+    }
+    return membership;
+}
+
+export async function requireEditableBandMembership(
+    database: Prisma.TransactionClient,
+    auth: CMServerAuthorization,
+    publicId: BandUserPublicId,
+) {
+    const membership = await requireActiveBandMembership(database, auth, publicId);
+    if (!xBandUser.authorizeRowForEdit({ model: membership, auth })) {
         throw new AuthorizationError("The membership cannot be edited.");
     }
     return membership;

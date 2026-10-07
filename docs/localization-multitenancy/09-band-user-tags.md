@@ -128,8 +128,10 @@ Native validation uses a private MariaDB 10.11.9 server and disposable
 target-schema database; no existing application database is changed. The
 disposable database is dropped and its server stopped after validation.
 
-Continue with member profile/search and role consumers, respecting the shared
-person versus band membership boundary. Then migrate event/default-instrument,
+The next [membership-role assignment slice](10-band-user-roles.md) is now
+implemented, respecting the shared-person versus band-membership boundary.
+Continue with member profile/search, membership offboarding/recovery and platform
+role administration. Then migrate event/default-instrument,
 invitation/tag-search and merge consumers, remaining catalogs/global
 administration, band content, and registered settings editors. Legacy
 person-level assignment DTOs/descriptors still used by those consumers remain

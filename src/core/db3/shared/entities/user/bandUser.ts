@@ -7,6 +7,7 @@ import { GenericIntegerField } from "../../columnTypes/genericInteger";
 import { serverOwnedField } from "../../columnTypes/inherited";
 import { xUserMinimum } from "../../schema/user";
 import { kReadOnlyAuthMap } from "../common/entityCommon";
+import { xBandRole } from "./bandRoleViews";
 
 /** Active membership also requires an active, unmerged shared person. */
 export function activeBandMembershipWhere(): Prisma.BandUserWhereInput {
@@ -73,6 +74,11 @@ export const xBandUser = defineTable({
         })),
         user: foreignRef(() => xUserMinimum, {
             fkidMember: "userId", specialFunction: SqlSpecialColumnFunction.ownerUser, authMap: kReadOnlyAuthMap,
+        }),
+        bandRole: foreignRef(() => xBandRole, {
+            fkidMember: "bandRoleId",
+            allowNull: true,
+            authMap: kReadOnlyAuthMap,
         }),
         bandUserInstruments: tagsRef("BandUserInstrument", "BandInstrument", {
             associationLocalObjectMember: "bandUser",

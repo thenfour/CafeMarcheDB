@@ -40,9 +40,6 @@ async function prepareTableQuery(
     if (input.table.tableName !== table.tableName) {
         throw new Error("The table name does not match its registered identity.");
     }
-    if (auth.band && !table.bandScope) {
-        throw new DB3QueryAuthorizationError();
-    }
     if (input.bandPublicId != null && input.bandPublicId !== auth.requireBand().publicId) {
         throw new DB3QueryAuthorizationError();
     }
