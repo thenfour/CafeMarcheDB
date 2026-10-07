@@ -29,7 +29,8 @@ import { MediaPlayerBar } from "../mediaPlayer/MediaPlayerBar";
 import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerContext";
 import { MessageBoxProvider } from "../MessageBoxContext";
 import { QrCodeDialog } from "../QrCode";
-import { MainSiteSearch } from "../search/MainSiteSearch";
+import { BandSelection } from "./BandSelection";
+import { withMemberPresentation } from "../user/bandMemberLinks";
 import { LocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
 import {
     SideMenu
@@ -138,7 +139,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => 
             </>
         }
 
-        <MenuItem component={Link} href='/backstage/profile' onClick={closeMenu}>Your profile</MenuItem>
+        <MenuItem component={Link} href={withMemberPresentation('/backstage/profile', dashboardContext.memberPresentation)} onClick={closeMenu}>Your profile</MenuItem>
         <Divider />
 
         <MenuItem onClick={async () => {
@@ -303,7 +304,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                 </IconButton>
                 <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
                     {brand.siteLogoUrl && (
-                        <Link href={"/backstage"} aria-label="Home" style={{ display: 'inline-flex' }}>
+                        <Link href={withMemberPresentation("/backstage", dashboardContext.memberPresentation)} aria-label="Home" style={{ display: 'inline-flex' }}>
                             <img src={brand.siteLogoUrl} alt="logo" style={{ display: 'block' }} />
                         </Link>
                     )}
@@ -312,17 +313,17 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                         noWrap
                         component="div"
                     >
-                        {!IsNullOrWhitespace(brand.siteTitle) && <Link href={"/backstage"} className={`logo`}>{brand.siteTitle}</Link>}
+                        {!IsNullOrWhitespace(brand.siteTitle) && <Link href={withMemberPresentation("/backstage", dashboardContext.memberPresentation)} className={`logo`}>{brand.siteTitle}</Link>}
                     </Typography>
                 </Box>
 
                 <Tooltip title="Practice tools">
-                    <Link href="/backstage/practice-tools" aria-label="Practice tools" className="freeButton globalMetronomeButton">
+                    <Link href={withMemberPresentation("/backstage/practice-tools", dashboardContext.memberPresentation)} aria-label="Practice tools" className="freeButton globalMetronomeButton">
                         {gIconMap.VolumeDown()}
                     </Link>
                 </Tooltip>
 
-                <MainSiteSearch />
+                {/* Cross-domain search is deferred until its band-owned readers are restored. */}
 
                 <Box sx={{ flexGrow: 1 }} />{/* spacing to separate left from right sides */}
 
@@ -492,6 +493,7 @@ const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
 
                             <React.Suspense>
                                 {forceLogin ? <LoginSignup /> : <>
+                                    {dashboardContext.currentUser && <BandSelection />}
                                     {children}
                                 </>}
                             </React.Suspense>

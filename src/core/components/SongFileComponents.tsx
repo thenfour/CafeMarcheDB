@@ -832,7 +832,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                                                 key={t.publicId}
                                                 color={getInstrumentColor(t)}
                                                 //tooltip={t.description}
-                                                size={dashboardContext.currentUser?.instruments.some(yi => yi.instrumentId === t.publicId) ? 'big' : 'small'}
+                                                size={dashboardContext.currentMembership?.bandUserInstruments.some(yi => yi.bandInstrumentId === t.publicId) ? 'big' : 'small'}
                                                 variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedInstrumentIds, t.publicId) }}
                                                 onClick={() => props.onChange({ ...props.value, taggedInstrumentIds: toggleValueInArray(props.value.taggedInstrumentIds, t.publicId) })}
                                             >

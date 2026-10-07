@@ -226,6 +226,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
 
     const [dashboardDto, { refetch }] = useQuery(getDashboardData, presentation.data?.input ?? {});
     const dashboardData = React.useMemo(() => db3.hydrateDashboardData(dashboardDto), [dashboardDto]);
+    valueRef.current.currentMembership = dashboardData.currentMembership;
     valueRef.current.refetchDashboardData = refetch;
     valueRef.current.permission = new TableAccessor(dashboardData.permission);
 
@@ -295,7 +296,9 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     };
 
     // establish singleton for use by non-react code
-    getCmdbWindow().cmdbDashboardContext = valueRef.current;
+    if (typeof window !== "undefined") { // Q: why is this necessary? shouldn't this always be running in a client browser with `window`?
+        getCmdbWindow().cmdbDashboardContext = valueRef.current;
+    }
 
     valueRef.current.dynMenuLinks = new TableAccessor(dashboardData.dynMenuLinks);
     valueRef.current.instrument = new TableAccessor(dashboardData.instrument, value => value.publicId);

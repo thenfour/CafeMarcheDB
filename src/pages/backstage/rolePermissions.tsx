@@ -11,6 +11,7 @@ import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdo
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3AssociationMatrix } from "src/core/db3/components/DB3AssociationMatrix";
 import * as db3 from "src/core/db3/db3";
+import { LocalizedStringColumnClient } from "src/core/db3/components/DB3CatalogFields";
 
 
 const MainContent = () => {
@@ -38,7 +39,7 @@ const MainContent = () => {
         columns: {
             publicId: DB3Client.publicIdFieldGen(),
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
-            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+            description: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.description" }),
             sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
             isVisibility: columnName => new DB3Client.BoolColumnClient({ columnName }),
             color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 120 }),

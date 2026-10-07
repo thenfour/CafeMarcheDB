@@ -65,10 +65,20 @@ Work in this order, adjusting the next slice to the actual blocker found:
    Assess the full suite so unrelated failures are visible; do not present focused
    checks as a full-suite pass.
 
-**Next implementation slice:** establish the current typecheck/build/startup
-blockers and repair or isolate the dependencies of the minimum browser path.
-Platform role administration is deferred unless that investigation proves it is
-a blocker. Membership recovery enhancements are deferred.
+The account/dashboard bootstrap slice now runs in development against a migrated
+production copy: login, explicit band selection, member-profile navigation/reload,
+and clearing the selected band have browser evidence. Startup reads use migrated
+catalogs and membership assignments; deferred dashboard domains are not queried.
+This does not close A0: normal typecheck/build still fail, and deferred routes,
+RPC/API implementations, and source dependencies still require isolation.
+See [current recovery evidence](09-application-recovery.md).
+
+**Next implementation slice:** repair or isolate obsolete shared-account/Role
+consumers and the remaining DB3 descriptor/payload roots, then isolate deferred
+pages and non-page entry points together. Preserve the working bootstrap and
+migrated membership/catalog contracts. Platform role administration remains
+deferred; the browser path works with existing role definitions and assignments.
+Membership recovery enhancements remain deferred.
 
 ## A1: restore everyday workflows
 
@@ -119,7 +129,7 @@ These are ordered by dependency and product need, not prerequisites for A0/A1:
 - Delivery/query optimizations, automatic command invalidation, and optional UX
   refinements justified by measurements or observed need.
 
-The [design](00-localization-multitenancy.md) and contract references remain the
+The [design](00-design%20notes.md) and contract references remain the
 target for this work. Existing safe implementations stay in place; deferral changes
 the order of unfinished work, not ownership or authorization policy.
 
@@ -135,8 +145,9 @@ surface isolated during A0, with its user-visible behavior and restoration gate.
 | Translation tools | Native catalog controls can edit explicit translations; full inventory/inspection/chrome tooling is incomplete. | Complete after A1. |
 | Portal routing | Recovery uses explicit `?bandPublicId=<publicId>` and optional `routeLocale`; omission never selects a default band. | Full routing after A1; retain enough explicit selection for A0. |
 | Legacy DB3 domains | Selected-band queries/row services reject undeclared ownership policies. | Migrate required domains for A0/A1; keep other domains coherently unavailable. |
+| Dashboard content and search | Bootstrap omits events, announcements, role metadata, custom menus and other deferred catalogs. Home explains the restriction; global search is removed from the shell. Legacy sidebar/direct routes and non-page entry points are not yet isolated. | Finish coherent route/endpoint/source isolation during A0; restore content required by core workflows during A1. |
 | Shared-account/platform administration | Band grants cannot authorize shared-account or global-catalog writes; remaining consumers need adaptation. | Isolate build dependencies during A0; complete broader workflows after A1. |
-| Catalog/demo seeds | Access-control initialization exists; old demo generators use removed models. | Isolate obsolete generators; restore only seed data needed by a named acceptance path before A1. |
+| Catalog/demo seeds | Production seeds initialize access control. Unused demo generators that referenced removed models are deleted. | Restore only seed data needed by a named acceptance path before A1. |
 | Legacy synchronous band guards | `resolver.authorize` rejects band capabilities. | Required callers use fresh request authorization and loaded resource ownership. |
 
 ## Verification and cutover

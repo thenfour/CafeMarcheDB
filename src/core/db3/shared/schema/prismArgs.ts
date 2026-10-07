@@ -151,9 +151,7 @@ export const VisiblePermissionInclude = {
 };
 
 export const PermissionArgs = Prisma.validator<Prisma.PermissionArgs>()({
-    include: {
-        roles: true,
-    }
+    include: { description: true },
 });
 export type PermissionPayloadMinimum = Prisma.PermissionGetPayload<{}>;
 export type PermissionPayload = Prisma.PermissionGetPayload<typeof PermissionArgs>;
@@ -382,8 +380,9 @@ const UserInstrumentReferenceArgs = Prisma.validator<Prisma.UserInstrumentArgs>(
 });
 
 type PermissionForVisibilityDbPayload = Prisma.PermissionGetPayload<typeof PermissionForVisibilityArgs>;
-export type PermissionForVisibilityPayload = Omit<PermissionForVisibilityDbPayload, "publicId"> & {
+export type PermissionForVisibilityPayload = Omit<PermissionForVisibilityDbPayload, "publicId" | "description"> & {
     publicId: PermissionPublicId;
+    description: string | null;
 };
 
 export type PermissionClientPayload = Omit<Prisma.PermissionGetPayload<{}>, "id" | "publicId"> & {
@@ -527,9 +526,6 @@ export type UserClientPayload = Omit<
     instruments: UserInstrumentClientPayload[];
     tags: UserTagAssignmentClientPayload[];
 };
-
-// Only getCurrentUser may attach the session owner's natural ID.
-export type SelfUserClientPayload = UserClientPayload & { id: number };
 
 // Generic user queries must not expose role grants. Server authorization code
 // uses UserArgs/UserWithRolesArgs when it needs the permission composition.

@@ -4,6 +4,7 @@ import { freezeRegistry } from "@/src/setting/shared/registryHelpers";
 import { instrumentStrings } from "./instrumentStrings";
 import { catalogStrings } from "./catalogStrings";
 import { membershipStrings } from "./membershipStrings";
+import { dashboardStrings } from "./dashboardStrings";
 
 function defaultMarkdownStaticString() {
     return markdownStaticString({
@@ -25,6 +26,7 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
     ...instrumentStrings,
     ...catalogStrings,
     ...membershipStrings,
+    ...dashboardStrings,
     "common.action.ok": plainStaticString({
         defaultValue: "OK",
         description: "Label for an OK button",

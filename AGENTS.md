@@ -32,6 +32,14 @@ See `docs/testing.md` for the rationale and full conventions.
 - Prefer clean new-looking code rather than legacy fallbacks.
   Legacy / fallbacks / odd-but-justified behavior / workarounds requires a comment explanation.
 
+## frontend/UI/UX
+
+- Even though this app includes MUI, many wrappers/adapters/custom controls have been
+  for UI composition. A couple examples are
+  - `CMButton`: replaces `<Button>`; never use `<Button>`.
+  - `ResponsiveDialog` likewise replaces `Dialog`.
+  - (and plenty others)
+
 ## Task scope
 
 - If you encounter obvious trivial errors during your main task, fix them and report

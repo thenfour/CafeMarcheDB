@@ -22,10 +22,12 @@ import '../../public/frontpage.css';
 import { DbBrandConfig, DefaultDbBrandConfig } from "@/shared/brandConfigBase";
 import { ConnectionHealthMonitor } from "src/core/connectivity/ConnectionHealthComponents";
 import { isConnectivityError } from "src/core/connectivity/connectionHealth";
-import { useQueryErrorResetBoundary } from "@blitzjs/rpc";
+import { invoke, useQueryErrorResetBoundary } from "@blitzjs/rpc";
 import { PresentationProvider } from "src/locale/components/PresentationProvider";
 import type { PresentationData } from "src/locale/shared/presentationContext";
 import { pagePresentationInput } from "src/locale/shared/pagePresentationInput";
+import Router, { useRouter } from "next/router";
+import getPageBootstrap from "src/auth/queries/getPageBootstrap";
 
 // Client-side cache, shared for the whole session of the user in the browser.
 const clientSideEmotionCache = createEmotionCache();
@@ -128,6 +130,8 @@ function getMainPaletteColor(color: PaletteColorOptions | undefined): SimplePale
 
 // in order to emit css from the theme, this must be a CHILD of ThemeProvider.
 function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pageProps">) {
+  const router = useRouter();
+  const presentationInput = pagePresentationInput(router.query);
   const queryErrorResetBoundary = useQueryErrorResetBoundary();
   const getLayout = Component.getLayout || ((page: React.ReactElement) => page)
   // Persist brand across client navigations; only update when a new brand is provided
@@ -192,9 +196,15 @@ function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pag
         <SnackbarProvider>
           <BrandContext.Provider value={brand}>
             <ErrorBoundary FallbackComponent={RootErrorFallback} onReset={queryErrorResetBoundary.reset}>
-              <PresentationProvider initial={pageProps.presentation}>
-                {getLayout(<Component {...pageProps} />)}
-              </PresentationProvider>
+              <React.Suspense fallback={<span role="status">Loading language and settings…</span>}>
+                <PresentationProvider
+                  initial={pageProps.presentation}
+                  bandPublicId={presentationInput.bandPublicId ?? null}
+                  routeLocale={presentationInput.routeLocale ?? null}
+                >
+                  {getLayout(<Component {...pageProps} />)}
+                </PresentationProvider>
+              </React.Suspense>
             </ErrorBoundary>
           </BrandContext.Provider>
         </SnackbarProvider>
@@ -219,54 +229,28 @@ export function MyApp({
 MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<SharedPageProps>> => {
   const { req, res, pathname } = appCtx.ctx;
   const presentationInput = pagePresentationInput(appCtx.ctx.query, req?.headers["accept-language"]);
-  if (req) {
-    if (!res) throw new Error("Server page request is missing its response.");
-
-    // getInitialProps also runs in the browser during navigation. Initialize
-    // server authentication only for server requests, before reading a session.
-    const { getSessionForRequest } = await import("src/blitz-server");
-    const { authorizePageRequest } = await import("@/src/auth/server/pageRequestAuthorization");
-    const session = await getSessionForRequest(req, res);
-    try {
-      await authorizePageRequest(pathname, session, presentationInput.bandPublicId ?? undefined);
-    } catch (error) {
-      // Redirect unauthenticated users to the backstage login page.
-      if (!(error instanceof AuthenticationError)) throw error;
-      // also if you're already exactly at /backstage, don't redirect in an infinite loop
-      if (pathname === "/backstage") {
-        return { pageProps: {} };
-      }
-      res.writeHead(302, { Location: "/backstage" });
-      res.end();
-      return { pageProps: {} };
+  let bootstrap: Awaited<ReturnType<typeof getPageBootstrap>>;
+  try {
+    const input = { ...presentationInput, pathname };
+    bootstrap = req ? await getPageBootstrap(input, appCtx.ctx) : await invoke(getPageBootstrap, input);
+  } catch (error) {
+    if (!(error instanceof AuthenticationError)) {
+      throw error;
     }
+    if (pathname !== "/backstage") {
+      if (res) {
+        res.writeHead(302, { Location: "/backstage" });
+        res.end();
+      } else {
+        await Router.replace("/backstage");
+      }
+    }
+    return { pageProps: {} };
   }
 
-  // Authorize before invoking page loaders, including on requests we redirect.
+  // Route authorization precedes page loaders on both SSR and client navigation.
   const appProps: AppInitialProps<SharedPageProps> = await NextApp.getInitialProps(appCtx);
-  if (req) {
-    // A request with no valid or last-known-good brand must fail instead of
-    // rendering normal application content under the wrong site identity.
-    const { loadDbBrandConfig } = await import("@/src/server/brand");
-
-    const { loadPresentationData } = await import("src/locale/server/presentation");
-    const { loadAuthorization } = await import("src/auth/server/serverAuthorization");
-    const { getSessionForRequest } = await import("src/blitz-server");
-    const sessionContext = await getSessionForRequest(req, res!);
-    const auth = await loadAuthorization(sessionContext, presentationInput.bandPublicId);
-    const presentation = await loadPresentationData(
-      auth,
-      presentationInput
-    );
-    const brand = await loadDbBrandConfig(req.headers.host, auth.band?.id ?? null);
-    appProps.pageProps = {
-      ...(appProps.pageProps || {}),
-      brand,
-      presentation,
-    };
-  }
-
-  return appProps;
+  return { ...appProps, pageProps: { ...appProps.pageProps, ...bootstrap } };
 };
 
 export default withBlitz(MyApp);

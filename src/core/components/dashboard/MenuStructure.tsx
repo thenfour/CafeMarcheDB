@@ -16,6 +16,7 @@ import { useLocalStorageSet } from "../useLocalStorageState";
 import { gMenuSections, MenuLink, MenuSection, NavRealm } from './StaticMenuItems';
 import { HostingMode } from '@/shared/brandConfigBase';
 import { DashboardContextData, useClientTelemetryEvent, useDashboardContext } from '../dashboardContext/DashboardContext';
+import { withMemberPresentation } from "../user/bandMemberLinks";
 
 
 // Flattened types for rendering (used internally by flattening functions)
@@ -192,6 +193,7 @@ export interface MenuItemComponentProps {
 // Menu item component
 export const MenuItemComponent = (props: MenuItemComponentProps) => {
     const router = useRouter();
+    const dashboard = useDashboardContext();
     const recordFeature = useClientTelemetryEvent();
 
     if (props.item.item.type === "divider") {
@@ -227,7 +229,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
                     {linkItem.openInNewTab ? (
                         <ListItemButton
                             component="a"
-                            href={linkItem.path}
+                            href={withMemberPresentation(linkItem.path, dashboard.memberPresentation)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
@@ -241,7 +243,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
                     ) : (
                         <ListItemButton
                             component={Link}
-                            href={linkItem.path}
+                            href={withMemberPresentation(linkItem.path, dashboard.memberPresentation)}
                             selected={MenuItemMatchesRealm(linkItem.path, linkItem.realm, props.realm, router)}
                             className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
                             onClick={e => {
@@ -265,7 +267,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
             return (
                 <ListItemButton
                     component="a"
-                    href={linkItem.path}
+                    href={withMemberPresentation(linkItem.path, dashboard.memberPresentation)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
@@ -280,7 +282,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
             return (
                 <ListItemButton
                     component={Link}
-                    href={linkItem.path}
+                    href={withMemberPresentation(linkItem.path, dashboard.memberPresentation)}
                     selected={router.pathname === linkItem.path}
                     className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
                     onClick={e => {

@@ -9,6 +9,8 @@ import type { EventAttendancePublicId, EventPublicId, EventStatusPublicId, Event
 import { SettingsDto } from "../../db3/shared/schema/settings";
 import type { PresentationInput } from "src/locale/shared/presentationInput";
 import { withMemberPresentation } from "../user/bandMemberLinks";
+import type { CurrentAccount } from "src/auth/shared/currentAccount";
+import type { BandUserInstrumentsDto } from "../../db3/shared/entities/user/bandUserInstruments";
 
 export abstract class DashboardContextDataBase {
     referenceStore = db3.createDashboardReferenceStore();
@@ -37,7 +39,8 @@ export abstract class DashboardContextDataBase {
         InstrumentFunctionalGroupPublicId
     >;
 
-    currentUser: db3.SelfUserClientPayload | null;
+    currentUser: CurrentAccount | null;
+    currentMembership: BandUserInstrumentsDto | null = null;
     serverBaseUri: string;
     serverStartupState: ServerStartInfo | null; // null if not available (non-admins)
 

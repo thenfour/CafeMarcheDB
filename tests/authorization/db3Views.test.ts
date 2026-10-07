@@ -1,4 +1,4 @@
-import { groupReferenceFixture, instrumentDtoFixture, instrumentReferenceFixture, songTagReferenceFixture } from "../support/catalogReferenceFixtures";
+import { groupReferenceFixture, instrumentDtoFixture, instrumentReferenceFixture, permissionReferenceFixture, songTagReferenceFixture } from "../support/catalogReferenceFixtures";
 import { testBandAuthorization, testServerAuthorization } from "tests/support/serverAuthorization";
 import { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
@@ -231,6 +231,10 @@ describe("DB3 named views", () => {
             publicId: permissionPublicId,
             name: Permission.visibility_public,
             description: "Public",
+            descriptionStringPublicId: null,
+            descriptionResolution: {
+                value: "Public", localeTag: "en-US", scope: "global", source: "stored", reason: "exact", requestedTag: "en-US",
+            },
             sortOrder: 1,
             isVisibility: true,
             significance: null,
@@ -630,17 +634,7 @@ describe("DB3 named views", () => {
 
     it("hydrates the Song search view recursively and keeps authorized fields optional", () => {
         const references = db3.createDashboardReferenceStore();
-        const permission = {
-            id: 4,
-            publicId: permissionPublicId,
-            name: "members",
-            description: "",
-            isVisibility: true,
-            sortOrder: 1,
-            significance: null,
-            color: null,
-            iconName: null,
-        };
+        const permission = permissionReferenceFixture(permissionPublicId);
         const songTag = songTagReferenceFixture(songTagPublicId);
         const fileTag = { publicId: fileTagPublicId, text: "Partition", description: "", color: null, sortOrder: 1, significance: db3.FileTagSignificance.Partition };
         db3.registerDashboardReferences(references, {
@@ -687,17 +681,7 @@ describe("DB3 named views", () => {
 
     it("hydrates the File search view with normalized reference relations", () => {
         const references = db3.createDashboardReferenceStore();
-        const permission = {
-            id: 4,
-            publicId: permissionPublicId,
-            name: "members",
-            description: "",
-            isVisibility: true,
-            sortOrder: 1,
-            significance: null,
-            color: null,
-            iconName: null,
-        };
+        const permission = permissionReferenceFixture(permissionPublicId);
         const fileTag = {
             publicId: fileTagPublicId,
             text: "Partition",
@@ -782,17 +766,7 @@ describe("DB3 named views", () => {
 
     it("hydrates the File detail view with its relationship panels", () => {
         const references = db3.createDashboardReferenceStore();
-        const permission = {
-            id: 4,
-            publicId: permissionPublicId,
-            name: "members",
-            description: "",
-            isVisibility: true,
-            sortOrder: 1,
-            significance: null,
-            color: null,
-            iconName: null,
-        };
+        const permission = permissionReferenceFixture(permissionPublicId);
         const fileTag = {
             publicId: fileTagPublicId,
             text: "Partition",
@@ -1318,17 +1292,7 @@ describe("DB3 named views", () => {
 
     it("hydrates the Song detail view, including its reusable File-card shape", () => {
         const references = db3.createDashboardReferenceStore();
-        const permission = {
-            id: 4,
-            publicId: permissionPublicId,
-            name: "members",
-            description: "",
-            isVisibility: true,
-            sortOrder: 1,
-            significance: null,
-            color: null,
-            iconName: null,
-        };
+        const permission = permissionReferenceFixture(permissionPublicId);
         const songTag = songTagReferenceFixture(songTagPublicId);
         const fileTag = { publicId: fileTagPublicId, text: "Partition", description: "", color: null, sortOrder: 1, significance: db3.FileTagSignificance.Partition };
         const instrument = instrumentReferenceFixture(instrumentPublicId, hydratedGroup);

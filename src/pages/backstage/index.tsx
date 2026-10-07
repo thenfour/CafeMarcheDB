@@ -1,78 +1,31 @@
-import { RelevantEvents } from "@/src/core/components/event/RelevantEvents";
-import { BlitzPage } from "@blitzjs/next";
-import { Suspense } from "react";
-import { Permission } from "shared/permissions";
-import { AppContextMarker } from "src/core/components/AppContext";
-import { CMSinglePageSurfaceCard, PermissionBoundary } from "src/core/components/CMCoreComponents";
-import { BigEventCalendar } from "src/core/components/EventCalendar";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
-import { WikiStandaloneControl } from "src/core/components/wiki/WikiStandaloneComponents";
-import { gIconMap } from "src/core/db3/components/IconMap";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
+import type { BlitzPage } from "@blitzjs/next";
+import { Alert, Stack } from "@mui/material";
+import { CMLink } from "src/core/components/CMLink";
+import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
+import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
+import { useLocale } from "src/locale/components/useLocale";
+import { LocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 
-
-const HomepageBigEventCalendar = () => {
-  const dashboardContext = useDashboardContext();
-  if (!dashboardContext) return null;
-  return <BigEventCalendar />;
-  //return <BigEventCalendar selectedEventId={dashboardContext.relevantEventIds[0]} />;
-};
-
-const DynamicContent = () => {
-  const dashboardContext = useDashboardContext();
-  const currentUser = dashboardContext.currentUser;
-  let noInstrumentsWarning = (currentUser?.instruments?.length || 0) < 1;
-  const userHasLimitedAccount = !!(currentUser?.role?.isRoleForNewUsers);
-  const userHasNoAccountButNoRole = !!(currentUser && !currentUser.role);
-  const limitedAccountWarning = userHasLimitedAccount || userHasNoAccountButNoRole;
-
-  return (<Suspense>
-    <AppContextMarker name="backstage home">
-
-      {limitedAccountWarning && <CMSinglePageSurfaceCard className="noInstrumentsWarning">
-        <div>{gIconMap.ErrorOutline()}</div>
-        <div>Your account has limited access; please contact an admin for access 😊.
-        </div>
-      </CMSinglePageSurfaceCard>}
-
-      {noInstrumentsWarning && <CMSinglePageSurfaceCard className="noInstrumentsWarning">
-        <div>{gIconMap.ErrorOutline()}</div>
-        <div>You have no instruments assigned; please go to
-          &nbsp;<a href="/backstage/profile">your profile</a>&nbsp;
-          and specify your instruments.
-        </div>
-      </CMSinglePageSurfaceCard>}
-
-      <div className="DashboardHeader">
-        <LocalizedMarkdown setting="BackstageFrontpageHeaderMarkdown" />
-      </div>
-
-      <WikiStandaloneControl
-        canonicalWikiPath="special/announcements"
-        className="contentSection announcementMarkdown"
-        floatingHeader={true}
-      />
-
-      <PermissionBoundary permission={Permission.view_events_nonpublic}>
-        <RelevantEvents />
-        <HomepageBigEventCalendar />
-      </PermissionBoundary>
-
+function HomeContent() {
+  const dashboard = useDashboardContext();
+  const locale = useLocale();
+  const member = dashboard.currentMembership;
+  return <Stack spacing={2}>
+      {!dashboard.memberPresentation.bandPublicId && <Alert severity="info">{locale.getPlainString("dashboard.band.required")}</Alert>}
+      {member && member.bandUserInstruments.length === 0 && <Alert severity="info">
+        {locale.getPlainString("dashboard.instruments.missing")}{" "}
+        <CMLink href={withMemberPresentation("/backstage/profile", dashboard.memberPresentation)}>{locale.getPlainString("dashboard.profile")}</CMLink>
+      </Alert>}
+      <LocalizedMarkdown setting="BackstageFrontpageHeaderMarkdown" />
+      <Alert severity="info">{locale.getPlainString("dashboard.deferred")}</Alert>
       <LocalizedMarkdown setting="BackstageFrontpageMarkdown" />
-
-    </AppContextMarker>
-    {/* <DashboardInner /> */}
-  </Suspense>
-  )
-};
+    </Stack>;
+}
 
 const Home: BlitzPage = () => {
-  return (
-    <DashboardLayout title="Home">
-      <DynamicContent />
-    </DashboardLayout>
-  )
-}
+  const locale = useLocale();
+  return <DashboardLayout title={locale.getPlainString("dashboard.title")}><HomeContent /></DashboardLayout>;
+};
 
 export default Home;

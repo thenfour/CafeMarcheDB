@@ -25,7 +25,7 @@ import {
     bandInstrumentGroupDisplayContract,
     bandInstrumentDisplayContract,
 } from "../entities/instrument/bandInstrumentContracts";
-import { PermissionForVisibilityArgs } from "../schema/prismArgs";
+import { permissionDisplayContract } from "../entities/user/permissionViews";
 import {
     xSongCreditType,
 } from "../schema/song";
@@ -140,10 +140,7 @@ const dashboardSongCreditTypeSelection = Prisma.validator<Prisma.SongCreditTypeD
 // These projections and conversions are private details of the dashboard
 // provider. DB3 views see only dashboardReferenceContract's per-entity output
 // types; another provider may construct completely different values.
-export const dashboardPermissionResource = deriveViewContract(
-    xPermission,
-    PermissionForVisibilityArgs,
-);
+export const dashboardPermissionResource = permissionDisplayContract;
 export const dashboardUserTagResource = bandUserTagDisplayContract;
 export const dashboardRoleResource = deriveViewContract(
     xRole,

@@ -1,5 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { Permission } from "shared/permissions";
+import { DefaultRolePermissionAssignments } from "shared/defaultRolePermissionAssignments";
 import { generatePublicId } from "src/server/publicId";
 
 export const settingsMysqlTestUrl = process.env.CMDB_PHASE2_TEST_DATABASE_URL;
@@ -29,7 +29,19 @@ export async function withSettingsMysqlFixture(database: PrismaClient,
             const englishId = locales.find(locale => locale.ietfTag === "en-US")!.id;
             const frenchId = locales.find(locale => locale.ietfTag === "fr-BE")!.id;
             const dutchId = locales.find(locale => locale.ietfTag === "nl-BE")!.id;
-            const role = await tx.bandRole.findFirstOrThrow({ where: { bandRolePermissions: { some: { permission: { name: Permission.manage_band_settings } } } } });
+            // Migrated databases preserve their grants. Fixture authority must not depend on them.
+            const fixtureGrants = DefaultRolePermissionAssignments.filter(([role]) => role === "Band Admin").map(([, permission]) => permission);
+            const permissions = await tx.permission.findMany({ where: { name: { in: fixtureGrants }, isDeleted: false } });
+            if (permissions.length !== new Set(fixtureGrants).size) {
+                throw new Error("Settings fixture permissions must be initialized first.");
+            }
+            const role = await tx.bandRole.create({ data: {
+                publicId: generatePublicId(),
+                name: { create: { publicId: generatePublicId(), values: { create: {
+                    publicId: generatePublicId(), localeId: englishId, indexedValue: "Settings fixture role",
+                } } } },
+                bandRolePermissions: { create: permissions.map(permission => ({ publicId: generatePublicId(), permissionId: permission.id })) },
+            } });
             const globalRole = await tx.globalRole.findFirstOrThrow({ where: { isSysAdminRole: true } });
             const user = await tx.user.create({ data: { publicId: generatePublicId<"User">(), name: "Shared settings person", email: "settings@test.invalid" } });
             const admin = await tx.user.create({ data: { publicId: generatePublicId<"User">(), name: "Platform fixture", email: "platform@test.invalid", globalRoleId: globalRole.id } });

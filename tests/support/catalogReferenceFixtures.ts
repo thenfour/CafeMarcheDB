@@ -1,7 +1,7 @@
-import type { InstrumentPublicId, InstrumentFunctionalGroupPublicId, SongTagPublicId, UserTagPublicId } from "shared/publicId";
+import type { InstrumentPublicId, InstrumentFunctionalGroupPublicId, PermissionPublicId, SongTagPublicId, UserTagPublicId } from "shared/publicId";
 import type { StringResolution } from "src/locale/shared/stringResolution";
 import { hydrateView } from "src/core/db3/shared/core/db3View";
-import { instrumentDashboardView, instrumentFunctionalGroupDashboardView, songTagDashboardView, userTagDashboardView,
+import { instrumentDashboardView, instrumentFunctionalGroupDashboardView, permissionDashboardView, songTagDashboardView, userTagDashboardView,
     createDashboardReferenceStore, registerDashboardReferences } from "src/core/db3/shared/references/dashboardReferences";
 
 function resolution(value: string): StringResolution {
@@ -43,6 +43,15 @@ export function songTagReferenceFixture(publicId: SongTagPublicId) {
         indicatorCssClass: null, indicatorCssClassOverride: null, indicatorCssClassInheritedValue: null,
     });
     return hydrateView(songTagDashboardView, dto, createDashboardReferenceStore());
+}
+
+export function permissionReferenceFixture(publicId: PermissionPublicId) {
+    const dto = permissionDashboardView.parseDto({
+        publicId, name: "members", description: "", descriptionStringPublicId: null,
+        descriptionResolution: { ...resolution(""), scope: "global" },
+        isVisibility: true, sortOrder: 1, significance: null, color: null, iconName: null,
+    });
+    return hydrateView(permissionDashboardView, dto, createDashboardReferenceStore());
 }
 
 export function userTagReferenceFixture(publicId: UserTagPublicId, name: string) {

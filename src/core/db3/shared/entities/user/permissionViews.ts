@@ -10,6 +10,15 @@ const permissionMetadataViewContract = deriveViewContract(
     PermissionForVisibilityArgs,
 );
 
+/** Display consumers use resolved Markdown; editors keep explicit translation state. */
+export const permissionDisplayContract = {
+    ...permissionMetadataViewContract,
+    hydrate: (...args: Parameters<typeof permissionMetadataViewContract.hydrate>) => {
+        const row = permissionMetadataViewContract.hydrate(...args);
+        return { ...row, description: row.description.value };
+    },
+};
+
 export const permissionEditorView = defineCrudView({
     viewID: "Permission_Editor",
     entity: xPermission,
@@ -29,7 +38,7 @@ export const permissionVisibilityView = defineView({
         id: { in: auth.effectivePermissions.ids },
     }),
     dtoSchema: permissionMetadataViewContract.dtoSchema,
-    hydrate: permissionMetadataViewContract.hydrate,
+    hydrate: permissionDisplayContract.hydrate,
 });
 
 const permissionRoleMatrixSelection = Prisma.validator<Prisma.PermissionDefaultArgs>()({

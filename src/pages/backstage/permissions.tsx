@@ -7,6 +7,7 @@ import { gPermissionOrdered } from "shared/permissions";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
+import { LocalizedStringColumnClient } from "src/core/db3/components/DB3CatalogFields";
 
 const Inner = () => {
     const dashboardContext = useDashboardContext();
@@ -18,7 +19,7 @@ const Inner = () => {
         columns: {
             publicId: DB3Client.publicIdFieldGen(),
             name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
-            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+            description: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.description" }),
             sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
             isVisibility: columnName => new DB3Client.BoolColumnClient({ columnName }),
             significance: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 120 }),

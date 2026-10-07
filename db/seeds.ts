@@ -1,8 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { initializeAccessControl } from "../src/setup/accessControl";
 
-// Seed real access-control foundations. Legacy random demo data references the
-// old model; its generators are adapted with the affected domains in phase 4.
+// Fresh installs need access-control foundations. Workflow fixtures are separate
+// from this production seed and must use explicit band ownership.
 const database = new PrismaClient();
 initializeAccessControl(database)
     .catch(error => {

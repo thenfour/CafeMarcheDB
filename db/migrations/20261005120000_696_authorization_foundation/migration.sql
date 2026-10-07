@@ -16,8 +16,8 @@ SELECT
         WHERE `isSysAdminRole` = TRUE AND `isDeleted` = FALSE);
 
 CREATE TEMPORARY TABLE `_LsmbAuthorizationPermissions` (
-    `name` VARCHAR(191) NOT NULL PRIMARY KEY,
-    `description` TEXT NOT NULL,
+    `name` VARCHAR(191) COLLATE utf8mb4_bin NOT NULL PRIMARY KEY,
+    `description` TEXT COLLATE utf8mb4_bin NOT NULL,
     `sortOrder` INTEGER NOT NULL,
     `descriptionPublicId` CHAR(16) NOT NULL
 );

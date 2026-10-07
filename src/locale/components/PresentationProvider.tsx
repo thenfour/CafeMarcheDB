@@ -48,7 +48,7 @@ function LoadedPresentation({ input, children }: React.PropsWithChildren<{ input
 }
 
 export function PresentationProvider({ initial, bandPublicId, routeLocale, children }: React.PropsWithChildren<{
-    initial: PresentationData;
+    initial?: PresentationData;
     bandPublicId?: BandPublicId | null;
     routeLocale?: string | null;
 }>) {
@@ -79,11 +79,20 @@ export function PresentationProvider({ initial, bandPublicId, routeLocale, child
             window.removeEventListener("storage", storageUpdate);
         };
     }, []);
+
+    // TODO: lift out tab/session mgmt logic/plumbing.
     const sessionKey = `${session.userId ?? "public"}/${session.permissionNames?.join(",") ?? ""}`;
     const [initialSession] = React.useState(sessionKey);
     const initialEligible = React.useRef(true);
-    // Generate outside the suspending child so retries use the same query input.
-    const clientRequestId = React.useMemo(() => `${Date.now()}/${Math.random()}`, [contextKey, sessionKey, refresh]);
+    // React may discard a changed useMemo during a suspended transition. Retain
+    // each context's token across retries, or every retry starts another request.
+    const requestIds = React.useRef(new Map<string, string>());
+    const requestKey = JSON.stringify([contextKey, sessionKey, refresh]);
+    let clientRequestId = requestIds.current.get(requestKey);
+    if (!clientRequestId) {
+        clientRequestId = `${Date.now()}/${Math.random()}`;
+        requestIds.current.set(requestKey, clientRequestId);
+    }
     if (!initial || initialSession !== sessionKey || refresh > 0 || presentationContextKey(initial.input) !== contextKey) {
         initialEligible.current = false;
     }

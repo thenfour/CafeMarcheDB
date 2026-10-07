@@ -22,6 +22,7 @@ import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserWithInstrumentsArgs } from "./prismArgs";
 import { xInstrument } from "./instrument";
+import { LocalizedStringField, localizedText } from "../columnTypes/localizedString";
 
 // Basic profile data is self-service for the account owner and readable for
 // other users only through the explicit member-profile capability.
@@ -258,13 +259,14 @@ export const xPermissionBaseArgs = db3.defineTableDesc({
         return PermissionArgs;
     },
     tableName: "Permission",
+    queryStrategy: "resolved",
     deletePolicy: "disabled",
     naturalOrderBy: PermissionNaturalOrderBy,
     tableAuthMap: xPermissionTableAuthMap,
     getRowInfo: (row: PermissionPayload) => ({
         pk: row.publicId,
         name: row.name,
-        description: row.description || "",
+        description: localizedText(row.description) ?? "",
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
@@ -278,11 +280,10 @@ export const xPermissionBaseArgs = db3.defineTableDesc({
             specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xPermissionMetadataAuthMap,
         }),
-        description: columnName => new GenericStringField({
+        description: columnName => new LocalizedStringField({
             columnName,
-            allowNull: true,
-            format: "markdown",
-            specialFunction: db3.SqlSpecialColumnFunction.description,
+            stringIdentityMember: "descriptionId",
+            stringFormat: "Markdown",
             authMap: xPermissionMetadataAuthMap,
         }),
         sortOrder: () => MakeSortOrderField({ authMap: xPermissionMetadataAuthMap }),
