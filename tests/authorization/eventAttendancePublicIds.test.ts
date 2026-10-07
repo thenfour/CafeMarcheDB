@@ -184,6 +184,7 @@ describe("EventAttendance public identities", () => {
 
     it("resolves initial event response choices and rolls back event creation for invalid choices", async () => {
         const input: TinsertEventArgs = {
+            bandPublicId: attendanceBandPublicId,
             event: { name: "New concert", locationDescription: "", typeId: null, statusId: null,
                 tags: [], expectedAttendanceUserTagId: null, visiblePermissionId: null },
             segment: { name: "First set", description: "", startsAt: null, durationMillis: 0, isAllDay: true },

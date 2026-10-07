@@ -47,6 +47,7 @@ export class GenericIntegerField<
 
     allowNull: boolean;
     allowSearchingThisField: boolean;
+    private readonly usesBigIntStorage: boolean;
 
     constructor(args: GenericIntegerFieldArgs<TReadTransportType, TAllowNull, TAuthSpec>) {
         const scalarSchema = (
@@ -62,6 +63,7 @@ export class GenericIntegerField<
             _customAuth: (args as any)._customAuth || null,
         });
         this.allowNull = args.allowNull;
+        this.usesBigIntStorage = args.readTransportType === "bigint";
         this.allowSearchingThisField = CoerceToBoolean(args.allowSearchingThisField, true);
     }
 
@@ -109,6 +111,16 @@ export class GenericIntegerField<
                 return ErrorValidateAndParseResult("Input string was not convertible to integer", objValue);
             }
             value = i;
+        }
+        // BigInt-backed durations can exceed Prisma Int. The editor uses numbers,
+        // so accept only values that it can represent without losing precision.
+        if (this.usesBigIntStorage) {
+            const numericValue = typeof value === "bigint" ? Number(value) : value;
+            if (typeof numericValue !== "number" || !Number.isSafeInteger(numericValue)) {
+                return ErrorValidateAndParseResult("Expected a safe integer", objValue);
+            }
+            objValue[this.member] = numericValue;
+            return SuccessfulValidateAndParseResult(objValue);
         }
         // Prisma Int uses signed 32-bit storage; reject fractions and out-of-range values before persistence.
         if (typeof value !== "number" || !Number.isInteger(value) || value < -2_147_483_648 || value > 2_147_483_647) {

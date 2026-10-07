@@ -16,6 +16,34 @@ import { getDB3LocalizedIdentities, resolveDB3LocalizedFields } from "./db3Local
 
 
 type ReadRow = Readonly<Record<string, unknown>>;
+
+/** Selected child catalogs need the same localization/inheritance resolution as their root. */
+export async function resolveDB3ReadGraph(
+    table: xTable,
+    rows: readonly ReadRow[],
+    database: LocalizationDatabase,
+    auth: CMServerAuthorization,
+    preferences: LocalePreferenceInput,
+): Promise<ReadRow[]> {
+    const resolved = await resolveDB3ReadRows(table, rows, database, auth, preferences);
+    return Promise.all(resolved.map(async row => {
+        const result = { ...row };
+        for (const [member, value] of Object.entries(row)) {
+            const relation = table.prismaMemberRegistry.get(member);
+            if ((relation?.kind !== "foreignObject" && relation?.kind !== "relationCollection")
+                || !table.authorizeColumnForView({ model: row, auth, columnName: relation.field.member })) {
+                continue;
+            }
+            if (value && typeof value === "object" && !Array.isArray(value)) {
+                // Prisma selected relations are records; metadata determines the concrete model.
+                [result[member]] = await resolveDB3ReadGraph(relation.getTargetTable(), [value as ReadRow], database, auth, preferences);
+            } else if (Array.isArray(value)) {
+                result[member] = await resolveDB3ReadGraph(relation.getTargetTable(), value, database, auth, preferences);
+            }
+        }
+        return result;
+    }));
+}
 function sourceOf(table: xTable, row: ReadRow): ReadRow | null {
     const value = table.bandScope?.inheritedFrom ? row[table.bandScope.inheritedFrom] : null;
     return value !== null && typeof value === "object" && !Array.isArray(value) ? value as ReadRow : null; // Prisma source selections are records.

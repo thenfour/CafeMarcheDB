@@ -14,7 +14,7 @@ import { createActionRecord } from "@db3/server/recordActionServer";
 import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
 
 import { Permission } from "shared/permissions";
-import { isPublicId } from "shared/publicId";
+import { isPublicId, parsePublicId } from "shared/publicId";
 import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
 import { eventPublicId } from "../support/eventResponseFixtures";
 import { songPublicId } from "../support/songFixtures";
@@ -106,6 +106,7 @@ describe("Event setlist public identities", () => {
 
     it("generates parent and item public IDs for the initial setlist created with an Event", async () => {
         await invokeResolver(insertEvent, {
+            bandPublicId: parsePublicId<"Band">("FixtureBand00001"),
             event: {
                 name: "New concert", locationDescription: "", typeId: null, statusId: null,
                 tags: [], expectedAttendanceUserTagId: null, visiblePermissionId: null,

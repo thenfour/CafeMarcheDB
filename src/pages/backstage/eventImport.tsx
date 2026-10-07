@@ -4,14 +4,13 @@ import { useDashboardContext } from "@/src/core/components/dashboardContext/Dash
 import { EventDateTimeRangeControl } from "@/src/core/components/DateTime/DateTimeRangeControl";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import { Button } from "@mui/material";
 import React, { Suspense } from "react";
 import { CalendarDate } from "shared/dateTimePolicy";
 import type { EventPublicId, EventStatusPublicId, EventTypePublicId, PermissionPublicId, UserTagPublicId } from "shared/publicId";
 import { createAllDayRange, DateTimeRange, gMillisecondsPerDay } from "shared/time";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMStandardDBChip } from "src/core/components/CMChip";
-import { EventDateField, NameValuePair } from "src/core/components/CMCoreComponents2";
+import { CMButton, EventDateField, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { EventTableClientColumns } from "src/core/components/event/EventComponentsBase";
 import { EventSegmentClientColumns } from "src/core/components/event/EventSegmentComponents";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -153,8 +152,15 @@ const NewEventForm = (props: NewEventDialogProps) => {
 
     const handleSaveClick = async () => {
         const payload: TinsertEventArgs = {
+            bandPublicId: dashboardContext.requireBandPublicId(),
+            routeLocale: dashboardContext.localePreferences.routeLocale,
+            browserLanguages: [...dashboardContext.localePreferences.browserLanguages],
             event: eventTableClient.prepareInsertMutation(eventValue),
-            segment: segmentTableClient.prepareInsertMutation(segmentValue),
+            segment: {
+                name: "Set 1",
+                description: "",
+                ...segmentTableClient.prepareInsertMutation(segmentValue)
+            },
             responses: props.serverData?.responses,
             songList: props.serverData?.songList,
         };
@@ -237,7 +243,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
         {renderColumn(eventTableSpec, "status", eventValue, eventValidationResult, eventAPI, false)}
         {/* {renderColumn(eventTableSpec, "description", eventValue, eventValidationResult, eventAPI, false)} */}
 
-        <Button onClick={handleSaveClick}>Save</Button>
+        <CMButton onClick={handleSaveClick}>Save</CMButton>
 
     </div>
 };

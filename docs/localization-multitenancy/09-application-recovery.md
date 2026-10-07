@@ -219,7 +219,46 @@ export found during this slice was also repaired by naming the public-ID schema
   instrument filter now uses the existing dashboard display type rather than
   its obsolete Prisma client-payload annotation.
 
+- Event creation now validates an explicit band public ID, strict public foreign
+  identities and server-owned-field exclusion. A fresh authorization snapshot
+  owns the whole Serializable aggregate transaction: event, first segment,
+  optional ordered setlist (including repeated songs), imported membership-owned
+  attendance answers, insert audits and calendar/date updates. Song targets must
+  be visible, active and owned by the selected band; answer targets must be active
+  members of that band and active shared attendance choices. Existing field
+  grants, including `admin_events` for the initial revision and
+  `edit_public_homepage` for public event fields, remain enforced independently
+  of `manage_events`. Imported answers retain their separate cross-user grant.
+  Editor DTOs resolve nested localized/inherited catalogs before authorization
+  and public projection. Callers forward band/locale input and first-segment
+  defaults. A failed dialog save now re-enables its controls, and the import
+  form uses the shared `CMButton` wrapper. Import preview and general event UI
+  dependencies remain unfinished.
+
 ## Verification
+
+The event-creation slice passes 96 focused transport, integer-boundary, DB3 view,
+memory-query and preservation tests across four files. Its private MariaDB run
+passes 69 tests across creation, attendance, event tags and file tags, including
+32 creation cases. These cover public projection, trusted ownership/actor audits,
+large precise durations, undated/private events, shared and inherited French
+labels, separate memberships, repeated/empty setlists, independent grants,
+revocation, hidden/foreign/unavailable targets and aggregate rollback. Five
+failure-injection cases exercise segment, setlist item, response, audit and
+calendar persistence. BigInt-backed editor fields now accept safe integer
+durations beyond Prisma Int's 32-bit range and reject precision loss; ordinary
+Int fields retain their existing range.
+
+The development browser invokes the real signed-in `insertEvent` RPC, creates
+the event/segment, initial setlist and membership response, switches bands and
+creates a separate event, then rejects foreign songs, missing context, forged
+ownership, freshly revoked grants and anonymous requests. Public results omit
+natural identity/ownership keys; failed foreign-song creation leaves no event.
+No browser page errors occurred. Evidence is under `temp/a0-event-creation-*`.
+The helper dropped its private database and stopped its browser/development server;
+the private MariaDB instance was shut down after the final native regression.
+This verifies RPC delivery, not the ordinary creation dialog or import preview,
+and does not establish built-production application readiness.
 
 The File-tag slice passes 114 focused view/identity/transport/preservation tests
 and 13 native tests across file tags, event tags and dashboard catalogs on a fresh
@@ -237,13 +276,14 @@ the band editor screenshot was visually checked. Logs/screenshots are under
 server/browser, and the private MariaDB instance was shut down. This establishes
 development editor delivery, not a successful production build.
 
-Focused ESLint, preservation verification and diff checks pass. Typecheck falls
-from 195 to 145 diagnostics, with no increased file/error-code groups. The build
+At the File-tag checkpoint, typecheck fell from 195 to 145 diagnostics, with no
+increased file/error-code groups. The build
 gets past the File tag and adjacent instrument filter failures and stops at
 `src/core/db3/mutations/insertEvent.ts:28`: the legacy creation command has no
 trusted band ownership. The full suite still fails in the Node batch: 278 tests
 and ten suites fail, with 1,488 tests passing and 207 skipped across 140 files.
-Isolated DOM batches are not reached. A0/A1 remain open.
+Isolated DOM batches were not reached. The current results are in the table below;
+A0/A1 remain open.
 
 
 The activity-report probe used a fresh private target-schema MariaDB database on
@@ -410,9 +450,9 @@ production server could not be checked because the normal build still fails.
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 145 diagnostics, down from 195 before File-tag recovery. No increased file/error-code groups, compiler exclusions or error suppression added. |
-| `yarn build` | Gets past File-tag and adjacent instrument-filter failures; stops at `src/core/db3/mutations/insertEvent.ts:28`, where legacy event creation lacks trusted band ownership. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 278 failed, 1,488 passed, 207 skipped across 140 files, with ten suite failures. The failure totals match the previous recovery checkpoint. Native File-tag cases skip without the private URL and pass in the native run above; later isolated DOM batches are not reached. |
+| `yarn typecheck` | Fails: 144 diagnostics, down from 145 at the File-tag checkpoint. The event-creation ownership error is repaired; no compiler exclusions or error suppression added. |
+| `yarn build` | Gets past event creation; stops at `src/core/db3/mutations/upsertSetlistPlan.ts:63`, whose create result no longer satisfies its selected payload contract. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 278 failed, 1,504 passed, 239 skipped across 142 files, with ten suite failures. Failure totals match the previous recovery checkpoint. Native creation/catalog cases require the private URL and pass in the native run above; later isolated DOM batches are not reached. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -442,6 +482,10 @@ private database server, databases, browser, and baseline worktree are disposabl
 verification resources, not application configuration.
 
 ## Remaining A0 blockers
+
+Setlist Plan persistence is the next build stop. Import preview still has an
+unscoped band lookup and removed UserTag/schema dependencies; creation RPC
+recovery does not establish the full importer workflow.
 
 Fix owning contracts before their cascading consumers: `prismArgs.ts` remains the
 largest diagnostic root, followed by obsolete person-level instrument/tag and

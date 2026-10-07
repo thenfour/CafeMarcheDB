@@ -93,12 +93,20 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** repair or isolate legacy event creation, the current
-build stop (`insertEvent.ts` lacks trusted band ownership), then continue the
-remaining File/song/wiki payload roots. File member/instrument relations still
+**Next implementation slice:** repair or isolate Setlist Plan persistence, the current
+build stop (`upsertSetlistPlan.ts:63` has an obsolete create/selection contract),
+then continue the remaining File/song/wiki payload roots. File member/instrument relations still
 use removed person/catalog fields, and legacy payloads still include
 `Permission.roles`. Adapt their owning contracts before their consumers; isolate
 deferred pages and non-page entry points together.
+
+Event creation now requires explicit band context and refreshes authorization in
+its Serializable transaction. It retains the initial segment, ordered setlist
+and membership-owned imported answers, audit records and calendar hooks. Returned
+editor DTOs resolve localized/inherited catalogs and omit natural ownership keys.
+Existing independent field grants remain enforced. Native and real development
+RPC checks pass; the importer preview, ordinary event pages and full creation UI
+still need workflow recovery. This removes the creation build stop, not the A0 gate.
 
 File-tag catalogs now use BandFileTag/GlobalFileTag, localized CRUD/editor views,
 inherited display references and `bandFileTagId` assignment metadata. Dashboard

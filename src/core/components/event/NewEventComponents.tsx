@@ -114,8 +114,11 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             feature: ActivityFeature.event_create,
         });
         const payload: TinsertEventArgs = {
+            bandPublicId: dashboardContext.requireBandPublicId(),
+            routeLocale: dashboardContext.localePreferences.routeLocale,
+            browserLanguages: [...dashboardContext.localePreferences.browserLanguages],
             event: eventTableClient.prepareInsertMutation(eventValue),
-            segment: segmentTableClient.prepareInsertMutation(segmentValue),
+            segment: { name: "Set 1", description: "", ...segmentTableClient.prepareInsertMutation(segmentValue) },
         }; setGrayed(true);
         mut.invoke(payload).then(async (ret) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
@@ -124,6 +127,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             void router.push(dashboardContext.routingApi.getURIForEvent(ret.event));
 
         }).catch(err => {
+            setGrayed(false);
             console.log(err);
             showSnackbar({ children: "insert error", severity: 'error' });
         });
@@ -174,7 +178,7 @@ export const NewEventButton = (props: {}) => {
     const [open, setOpen] = React.useState<boolean>(false);
     const dashboardContext = useDashboardContext();
 
-    if (!dashboardContext.isAuthorized(Permission.manage_events)) {
+    if (!dashboardContext.authorizationContext?.bandPublicId || !dashboardContext.isAuthorized(Permission.manage_events)) {
         return null;
     }
 

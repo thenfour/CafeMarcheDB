@@ -1,4 +1,6 @@
 import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
+import type { LocalePreferenceInput } from "src/locale/shared/localePreferences";
+import { PresentationInputSchema } from "src/locale/shared/presentationInput";
 
 import db, { Prisma } from "db";
 import { z } from "zod";
@@ -168,7 +170,8 @@ export interface TinsertEventResponse {
     attendanceId: EventAttendancePublicId;
 };
 
-export interface TinsertEventArgs {
+export interface TinsertEventArgs extends LocalePreferenceInput {
+    bandPublicId: BandPublicId;
     event: {
         name: string,
         //description: string,
@@ -190,6 +193,42 @@ export interface TinsertEventArgs {
     songList?: TinsertEventSong[],
     responses?: TinsertEventResponse[],
 }
+
+export const ZinsertEventArgs: z.ZodType<TinsertEventArgs> = z.object({
+    ...PresentationInputSchema.pick({ routeLocale: true, browserLanguages: true }).shape,
+    bandPublicId: z.custom<BandPublicId>(isPublicId),
+    event: z.object({
+        name: z.string().trim().min(1).max(768),
+        locationDescription: z.string().max(768).nullable(),
+        typeId: z.custom<EventTypePublicId>(isPublicId).nullable(),
+        statusId: z.custom<EventStatusPublicId>(isPublicId).nullable(),
+        tags: z.array(z.custom<EventTagPublicId>(isPublicId)),
+        expectedAttendanceUserTagId: z.custom<UserTagPublicId>(isPublicId).nullable(),
+        visiblePermissionId: z.custom<PermissionPublicId>(isPublicId).nullable(),
+    }).strict(),
+    segment: z.object({
+        startsAt: z.date().nullable(),
+        durationMillis: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+        isAllDay: z.boolean(),
+        name: z.string().max(768),
+        description: z.string(),
+    }).strict(),
+    songList: z.array(z.object({
+        songId: z.custom<SongPublicId>(isPublicId),
+        songName: z.string().optional(),
+        comment: z.string(),
+    }).strict()).optional(),
+    responses: z.array(z.object({
+        userId: z.custom<UserPublicId>(isPublicId),
+        userName: z.string().optional(),
+        attendanceId: z.custom<EventAttendancePublicId>(isPublicId),
+    }).strict()).optional(),
+}).strict().superRefine((args, context) => {
+    const userIds = args.responses?.map(response => response.userId) ?? [];
+    if (new Set(userIds).size !== userIds.length) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["responses"], message: "Each member can have only one initial response." });
+    }
+});
 
 export interface TupdateEventCommentArgs {
     id: number;
@@ -744,6 +783,7 @@ export type GetUserAttendanceArgs = {
     userId: UserPublicId;
     eventId: EventPublicId;
 }
+
 
 export const ZGetUserAttendanceArgs = z.object({
     bandPublicId: z.custom<BandPublicId>(isPublicId),
