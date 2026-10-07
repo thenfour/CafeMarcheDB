@@ -8,6 +8,7 @@ import { deriveViewContract } from "../../core/db3ViewContract";
 import { EventTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { db3s, graft } from "../common/viewCommon";
 import { hydrateEventDateRange } from "./eventDateRange";
+import { bandEventTagContract } from "./eventTagCatalogs";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
 import { fileCardSelection, fileCardTransportSelection } from "../file/fileViews";
 import { eventSongListTransportSelection } from "../eventSongList/eventSongListViews";
@@ -16,7 +17,6 @@ import {
     xEventSegment,
     xEventSegmentUserResponse,
     xEventUserResponse,
-    xEventTag,
 } from "../../schema/event";
 
 // TODO: stop using Zod in this file; use the better deriveViewContract pattern.
@@ -41,32 +41,6 @@ const EventStatusDtoSchema = z.object({
 
     name: z.string().optional(),
     significance: z.string().nullable().optional(),
-});
-
-// event tag ------------------------------------------
-export const eventTagEditorSelection = Prisma.validator<Prisma.EventTagDefaultArgs>()({
-    select: {
-        publicId: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        text: true,
-        visibleOnFrontpage: true,
-    },
-});
-
-const eventTagViewContract = deriveViewContract(
-    xEventTag,
-    eventTagEditorSelection,
-);
-
-export const eventTagEditorView = defineCrudView({
-    viewID: "EventTag_Editor",
-    entity: xEventTag,
-    operations: { create: true, update: true, delete: true },
-    selection: eventTagViewContract.prismaSelection,
-    dtoSchema: eventTagViewContract.dtoSchema,
-    hydrate: eventTagViewContract.hydrate,
 });
 
 // event editor ------------------------------------------
@@ -125,13 +99,7 @@ export const eventUserResponseView = defineView({
     hydrate: eventUserResponseContract.hydrate,
 });
 
-const EventEditorTagDtoSchema = z.object({
-    publicId: z.custom<EventTagPublicId>(isPublicId),
-    text: z.string().optional(),
-    ...db3s.descriptionColorSortOrder(),
-    significance: z.string().nullable().optional(),
-    visibleOnFrontpage: z.boolean().optional(),
-});
+const EventEditorTagDtoSchema = bandEventTagContract.dtoSchema;
 
 const EventEditorDtoSchema = z.object({
     publicId: z.custom<EventPublicId>(isPublicId),
@@ -154,7 +122,7 @@ const EventEditorDtoSchema = z.object({
     tags: z.array(z.object({
         publicId: z.custom<EventTagAssignmentPublicId>(isPublicId),
         eventId: z.custom<EventPublicId>(isPublicId).optional(),
-        eventTagId: z.custom<EventTagPublicId>(isPublicId).optional(),
+        bandEventTagId: z.custom<EventTagPublicId>(isPublicId).optional(),
         eventTag: EventEditorTagDtoSchema.optional(),
     })).optional(),
 
@@ -191,6 +159,10 @@ const eventEditorSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
         ...eventEditorBaseSelection.select,
         tags: {
             ...eventEditorBaseSelection.select.tags,
+            select: {
+                publicId: true, eventId: true, bandEventTagId: true,
+                eventTag: bandEventTagContract.prismaSelection,
+            },
             orderBy: EventTagAssignmentNaturalOrderBy,
         },
     },
@@ -251,7 +223,7 @@ const eventDetailTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
             orderBy: EventTagAssignmentNaturalOrderBy,
             select: {
                 publicId: true,
-                eventTagId: true,
+                bandEventTagId: true,
             },
         },
         fileTags: {
@@ -563,7 +535,7 @@ export const eventCalendarView = defineView({
 
 // const EventTagAssignmentDtoSchema = z.object({
 //     id: z.number().int(),
-//     eventTagId: z.number().int().optional(),
+//     bandEventTagId: z.number().int().optional(),
 // });
 
 const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
@@ -582,7 +554,7 @@ const eventSearchTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
         tags: {
             select: {
                 publicId: true,
-                eventTagId: true,
+                bandEventTagId: true,
             },
         },
         revision: true,

@@ -30,6 +30,10 @@ type TagsFieldArgs<
     TAssociationForeignObjectMember extends string,
     TForeignTableID extends DB3RegisteredTableID,
     TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+    // TODO: try to avoid this kind of hardcoded string-composed member names,
+    // because it encodes decisions/style of the schema naming conventions directly into this type,
+    // and it also makes it harder to search for usages of this member by name.
+    TForeignKeyMember extends string = `${TAssociationForeignObjectMember}Id`,
 > = Omit<
     TagsFieldValueArgs<
         TAssociation,
@@ -43,6 +47,7 @@ type TagsFieldArgs<
     columnName: string;
     associationTableID: TAssociationTableID;
     foreignTableID: TForeignTableID;
+    associationForeignIDMember?: TForeignKeyMember;
 };
 
 type TagsFieldValueArgs<
@@ -125,13 +130,14 @@ type DB3TagsAssociationValue<
 
 export type TagsRefArgs<
     TAssociationTableID extends DB3RegisteredPrismaTableID,
-    TForeignObjectMember extends DB3SupportedTagsRelationKeys<TAssociationTableID>,
+    TForeignObjectMember extends DB3PrismaRelationKeys<TAssociationTableID>,
     TLocalObjectMember extends DB3SupportedTagsRelationKeys<TAssociationTableID>,
     TForeignTableID extends Extract<
         DB3PrismaRelationTargetID<TAssociationTableID, TForeignObjectMember>,
         DB3RegisteredTableID
     >,
     TAuthSpec extends DB3AuthSpec,
+    TForeignKeyMember extends DB3PrismaScalarKeys<TAssociationTableID> = Extract<`${TForeignObjectMember}Id`, DB3PrismaScalarKeys<TAssociationTableID>>,
 > = Omit<
     TagsFieldValueArgs<
         DB3TagsAssociationValue<
@@ -144,7 +150,9 @@ export type TagsRefArgs<
         TForeignTableID
     >,
     "columnName" | "associationTableID" | "foreignTableID"
-> & TAuthSpec;
+> & TAuthSpec & (`${TForeignObjectMember}Id` extends DB3PrismaScalarKeys<TAssociationTableID>
+    ? { associationForeignIDMember?: TForeignKeyMember }
+    : { associationForeignIDMember: TForeignKeyMember });
 
 // Tags encode an association collection rather than a same-key scalar value.
 // Client preparation projects the association objects to target identities.
@@ -155,6 +163,7 @@ class TagsFieldImpl<
     TAssociationForeignObjectMember extends string = string,
     TForeignTableID extends DB3RegisteredTableID = DB3RegisteredTableID,
     const TAuthSpec extends DB3AuthSpec = DB3AuthSpec,
+    TForeignKeyMember extends string = `${TAssociationForeignObjectMember}Id`,
 > extends FieldBase<
     TAssociation[],
     undefined,
@@ -190,8 +199,9 @@ class TagsFieldImpl<
         return `${this.associationLocalObjectMember}Id`;
     }
 
-    get associationForeignIDMember(): `${TAssociationForeignObjectMember}Id` {
-        return `${this.associationForeignObjectMember}Id`;
+    private readonly foreignKeyMember: TForeignKeyMember;
+    get associationForeignIDMember(): TForeignKeyMember {
+        return this.foreignKeyMember;
     }
 
     getAssociationTableShema = () => {
@@ -313,7 +323,8 @@ class TagsFieldImpl<
         TAssociationLocalObjectMember,
         TAssociationForeignObjectMember,
         TForeignTableID,
-        TAuthSpec
+        TAuthSpec,
+        TForeignKeyMember
     >) {
         super({
             member: args.columnName,
@@ -344,6 +355,8 @@ class TagsFieldImpl<
         this.createMockAssociation = args.createMockAssociation || this.createMockAssociation_DefaultImpl;
         this.associationLocalObjectMember = args.associationLocalObjectMember;
         this.associationForeignObjectMember = args.associationForeignObjectMember;
+        // tagsRef checks explicit scalars; the generic default is the conventional relation ID.
+        this.foreignKeyMember = (args.associationForeignIDMember ?? `${args.associationForeignObjectMember}Id`) as TForeignKeyMember;
         //this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
     }
 
@@ -620,19 +633,19 @@ export type TagsField<
 
 /**
  * Declares a tags/association relation between registered DB3 tables. Prisma
- * metadata verifies both relation members, their conventional `${member}Id`
- * scalar keys, and the exact foreign model. Relationships that do not follow
- * that currently supported shape fail here and need an explicit new contract.
+ * metadata verifies relation members, scalar keys and the exact foreign model.
+ * Relations with a nonconventional scalar declare associationForeignIDMember.
  */
 export const tagsRef = <
     const TAssociationTableID extends DB3RegisteredPrismaTableID,
-    const TForeignObjectMember extends DB3SupportedTagsRelationKeys<TAssociationTableID>,
+    const TForeignObjectMember extends DB3PrismaRelationKeys<TAssociationTableID>,
     const TLocalObjectMember extends DB3SupportedTagsRelationKeys<TAssociationTableID>,
     const TForeignTableID extends Extract<
         DB3PrismaRelationTargetID<TAssociationTableID, TForeignObjectMember>,
         DB3RegisteredTableID
     >,
     const TAuthSpec extends DB3AuthSpec,
+    const TForeignKeyMember extends DB3PrismaScalarKeys<TAssociationTableID> = Extract<`${TForeignObjectMember}Id`, DB3PrismaScalarKeys<TAssociationTableID>>,
 >(
     associationTableID: TAssociationTableID,
     foreignTableID: TForeignTableID,
@@ -641,7 +654,8 @@ export const tagsRef = <
         TForeignObjectMember,
         TLocalObjectMember,
         TForeignTableID,
-        TAuthSpec
+        TAuthSpec,
+        TForeignKeyMember
     >,
 ) => (columnName: string) => new TagsFieldImpl<
     DB3TagsAssociationValue<
@@ -652,7 +666,8 @@ export const tagsRef = <
     TLocalObjectMember,
     TForeignObjectMember,
     TForeignTableID,
-    TAuthSpec
+    TAuthSpec,
+    TForeignKeyMember
 >({
     ...args,
     columnName,

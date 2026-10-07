@@ -1845,16 +1845,17 @@ describe("BA-A005 delete authorization", () => {
 
   it.each([
     ["soft", "EventType", eventType.publicId, "softWhenPossible"],
-    ["hard", "EventTag", eventTag.publicId, "hard"],
+    ["hard", "BandEventTag", eventTag.publicId, "hard"],
   ] as const)("does not let login alone perform a %s delete", async (_kind, tableName, publicId, deleteType) => {
     const { ctx } = createAuthorizationPersona("limited", { id: limited.id })
-    const delegate = authorizationTestDb.getDelegate(tableName)
+    const table = db3.GetTableById(tableName)
+    const delegate = authorizationTestDb.getDelegate(table.tableName)
     const update = vi.spyOn(delegate, "update")
     const deleteMany = vi.spyOn(delegate, "deleteMany")
 
     await expect(
-      invokeResolver(db3Mutation, forgeDb3PublicDelete(tableName, publicId, deleteType), ctx),
-    ).rejects.toThrow(`Not authorized to mutate ${tableName} fields`)
+      invokeResolver(db3Mutation, forgeDb3PublicDelete(tableName, publicId, deleteType, { tableName: table.tableName }), ctx),
+    ).rejects.toThrow(`Not authorized to mutate ${table.tableName} fields`)
 
     expect(update).not.toHaveBeenCalled()
     expect(deleteMany).not.toHaveBeenCalled()

@@ -58,8 +58,11 @@ export function loadDashboardData(
             serverStartupState: server.diagnostics,
             bandTimeZone: authorization.band ? readSettingSnapshot(settings, "band", "dateTime.bandTimeZone") : "Europe/Brussels",
             // These consumers are deferred during A0 recovery; do not query their old models.
-            wikiPageTag: [], eventTag: [],
-            fileTag: [], songCreditType: [], dynMenuLinks: [], relevantEventIds: [],
+            wikiPageTag: [],
+            fileTag: [],
+            songCreditType: [],
+            dynMenuLinks: [],
+            relevantEventIds: [],
         };
     });
 }

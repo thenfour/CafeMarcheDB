@@ -1,3 +1,4 @@
+import { xBandEventTag, bandEventTagDisplayContract } from "../entities/event/eventTagCatalogs";
 // one could argue "why is dashboard stuff in db3"?
 // but db3 has basically 2 layers: the core ORM-like layer, and an application-specific
 // layer that understands the CMDB schema.
@@ -13,7 +14,6 @@ import { deriveViewContract } from "../core/db3ViewContract";
 import {
     xEventAttendance,
     xEventStatus,
-    xEventTag,
     xEventType,
 } from "../schema/event";
 import {
@@ -51,17 +51,6 @@ const dashboardWikiPageTagSelection = Prisma.validator<Prisma.WikiPageTagDefault
     },
 });
 
-const dashboardEventTagSelection = Prisma.validator<Prisma.EventTagDefaultArgs>()({
-    select: {
-        publicId: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        text: true,
-        visibleOnFrontpage: true,
-    },
-});
-
 const dashboardFileTagSelection = Prisma.validator<Prisma.FileTagDefaultArgs>()({
     select: {
         publicId: true,
@@ -94,10 +83,7 @@ export const dashboardWikiPageTagResource = deriveViewContract(
 );
 export const dashboardEventTypeResource = eventTypeDisplayContract;
 export const dashboardEventStatusResource = eventStatusDisplayContract;
-export const dashboardEventTagResource = deriveViewContract(
-    xEventTag,
-    dashboardEventTagSelection,
-);
+export const dashboardEventTagResource = bandEventTagDisplayContract;
 export const dashboardEventAttendanceResource = eventAttendanceDisplayContract;
 export const dashboardFileTagResource = deriveViewContract(
     xFileTag,
@@ -116,7 +102,7 @@ export const dashboardLeafReferenceContract = defineReferenceContract({
     wikiPageTag: reference(xWikiPageTag)<CompleteWikiPageTagDashboardClient>(),
     eventType: reference(xEventType)<ReturnType<typeof dashboardEventTypeResource.hydrate>>(),
     eventStatus: reference(xEventStatus)<ReturnType<typeof dashboardEventStatusResource.hydrate>>(),
-    eventTag: reference(xEventTag)<ReturnType<typeof dashboardEventTagResource.hydrate>>(),
+    eventTag: reference(xBandEventTag)<ReturnType<typeof dashboardEventTagResource.hydrate>>(),
     eventAttendance: reference(xEventAttendance)<ReturnType<typeof dashboardEventAttendanceResource.hydrate>>(),
     fileTag: reference(xFileTag)<ReturnType<typeof dashboardFileTagResource.hydrate>>(),
     instrumentFunctionalGroup: reference(xBandInstrumentFunctionalGroup)<
@@ -179,8 +165,8 @@ export const eventStatusDashboardView = defineView({
 });
 
 export const eventTagDashboardView = defineView({
-    viewID: "EventTag_Dashboard",
-    entity: xEventTag,
+    viewID: "BandEventTag_Dashboard",
+    entity: xBandEventTag,
     selection: dashboardEventTagResource.prismaSelection,
     dtoSchema: dashboardEventTagResource.dtoSchema,
     references: dashboardEventTagResource.referenceContract,
@@ -352,7 +338,7 @@ export function registerDashboardReferences(
         store.register(xEventStatus, input.eventStatus);
     }
     if (input.eventTag) {
-        store.register(xEventTag, input.eventTag);
+        store.register(xBandEventTag, input.eventTag);
     }
     if (input.eventAttendance) {
         store.register(xEventAttendance, input.eventAttendance);

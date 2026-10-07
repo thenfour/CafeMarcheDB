@@ -1,7 +1,7 @@
 import type { TAnyModel } from "@/shared/rootroot";
 import type { Prisma } from "db";
 import type { StringResolution } from "src/locale/shared/stringResolution";
-import type { DynamicLocalizedStringPublicId, PublicId } from "shared/publicId";
+import type { DynamicLocalizedStringPublicId } from "shared/publicId";
 import { z } from "zod";
 import {
     type DB3FieldsOf,
@@ -188,6 +188,13 @@ type InheritedKeys<TFields, TKeys extends string> = {
 type SourceKeys<TFields, TKeys extends string> = {
     [K in Extract<TKeys, keyof TFields>]: TFields[K] extends { readonly catalogSource: true } ? K : never
 }[Extract<TKeys, keyof TFields>];
+type SourceReadCompanions<TFields, TKeys extends string> = {
+    [K in SourceKeys<TFields, TKeys>]: TFields[K] extends { readonly readCompanionSchemas: infer TShape extends z.ZodRawShape }
+        ? z.output<z.ZodObject<TShape>> : never
+}[SourceKeys<TFields, TKeys>];
+type IntersectSourceCompanions<TUnion> = [TUnion] extends [never] ? {}
+    : (TUnion extends unknown ? (value: TUnion) => void : never) extends (value: infer TIntersection) => void
+    ? TIntersection : never;
 type ReadCompanions<TFields, TKeys extends string> = {
     [K in LocalizedKeys<TFields, TKeys> as `${K}Resolution`]: StringResolution
 } & {
@@ -196,7 +203,7 @@ type ReadCompanions<TFields, TKeys extends string> = {
     [K in InheritedKeys<TFields, TKeys> as `${K}Override`]: DB3ReadTransportValueOf<TFields[K]> | null
 } & {
     [K in InheritedKeys<TFields, TKeys> as `${K}InheritedValue`]: DB3ReadTransportValueOf<TFields[K]> | null
-} & (SourceKeys<TFields, TKeys> extends never ? {} : { globalPublicId: string | null });
+} & IntersectSourceCompanions<SourceReadCompanions<TFields, TKeys>>;
 
 /** The statically known DTO output for an entity and explicit Prisma selection. */
 export type DB3DtoForSelection<

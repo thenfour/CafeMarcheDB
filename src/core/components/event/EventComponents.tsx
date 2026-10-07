@@ -174,7 +174,8 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     const eventSegmentResponseTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEventSegmentUserResponse,
         columns: {
-            attendance: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null,
+            attendance: columnName => new DB3Client.ForeignSingleFieldClient({
+                fieldDescriptionKey: null,
                 columnName,
                 cellWidth: 120,
                 fieldCaptionKey: "db3.fields.attendance"
@@ -1015,7 +1016,10 @@ export const EventDetailContainer = ({ eventData, tableClient, editCommands, ref
                     key={db3.xEventTagAssignment.getIdentity(tag)}
                     model={tag.eventTag}
                     size='small'
-                    variation={{ ...StandardVariationSpec.Weak, selected: highlightTagIds.includes(tag.eventTagId) }}
+                    variation={{
+                        ...StandardVariationSpec.Weak,
+                        selected: highlightTagIds.includes(tag.bandEventTagId)
+                    }}
                     getTooltip={(_) => tag.eventTag.description}
                 />)}
             </CMChipContainer>
@@ -1365,7 +1369,10 @@ export const EventSearchItemContainer = ({
                             key={db3.xEventTagAssignment.getIdentity(tag)}
                             model={tag.eventTag}
                             size='small'
-                            variation={{ ...StandardVariationSpec.Weak, selected: tag.eventTagId !== undefined && highlightTagIds.includes(tag.eventTagId) }}
+                            variation={{
+                                ...StandardVariationSpec.Weak,
+                                selected: tag.bandEventTagId !== undefined && highlightTagIds.includes(tag.bandEventTagId)
+                            }}
                             getTooltip={(_) => tag.eventTag.description}
                         />)}
                     </CMChipContainer>}

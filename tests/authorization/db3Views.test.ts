@@ -1,5 +1,5 @@
 import { eventStatusDtoFixture, eventTypeDtoFixture } from "../support/eventCatalogFixtures";
-import { groupReferenceFixture, instrumentDtoFixture, instrumentReferenceFixture, permissionReferenceFixture, songTagReferenceFixture } from "../support/catalogReferenceFixtures";
+import { groupReferenceFixture, instrumentDtoFixture, instrumentReferenceFixture, permissionReferenceFixture, songTagReferenceFixture, eventTagReferenceFixture } from "../support/catalogReferenceFixtures";
 import { testBandAuthorization, testServerAuthorization } from "tests/support/serverAuthorization";
 import { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
@@ -203,7 +203,7 @@ describe("DB3 named views", () => {
                 id: true,
                 tags: {
                     select: { id: true },
-                    where: { eventTagId: { gt: 0 } },
+                    where: { bandEventTagId: { gt: 0 } },
                 },
             },
         });
@@ -226,6 +226,7 @@ describe("DB3 named views", () => {
             { id: 2, name: Permission.public },
             { id: 3, name: Permission.view_events },
             { id: 4, name: Permission.visibility_public },
+            { id: 5, name: Permission.login },
         ]);
 
         await queryTable({
@@ -237,7 +238,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "db3-view-where-composition-test",
-        }, new CMServerAuthorization({ id: 42 } as any, effectivePermissions), {
+        }, testBandAuthorization({ id: 42 }, effectivePermissions), {
             Event: { findMany },
         } as any);
 
@@ -246,7 +247,7 @@ describe("DB3 named views", () => {
             { createdByUserId: 42 },
         ]));
         expect(prismaArgs.select.tags.where.AND).toEqual(expect.arrayContaining([
-            { eventTagId: { gt: 0 } },
+            { bandEventTagId: { gt: 0 } },
         ]));
         expectTypeOf(view.getWhereClause({
             filter: { items: [] },
@@ -816,10 +817,7 @@ describe("DB3 named views", () => {
         const references = db3.createDashboardReferenceStore();
         const eventType = db3.eventTypeDashboardView.hydrate(eventTypeDtoFixture(eventTypePublicId), references);
         const eventStatus = db3.eventStatusDashboardView.hydrate(eventStatusDtoFixture(eventStatusPublicId), references);
-        const eventTag = {
-            publicId: eventTagPublicId, text: "Public", description: "", color: null, sortOrder: 1,
-            significance: null, visibleOnFrontpage: true,
-        };
+        const eventTag = eventTagReferenceFixture(eventTagPublicId);
         db3.registerDashboardReferences(references, {
             eventType: [eventType],
             eventStatus: [eventStatus],
@@ -836,7 +834,7 @@ describe("DB3 named views", () => {
             isAllDay: false,
             typeId: eventType.publicId,
             statusId: eventStatus.publicId,
-            tags: [{ publicId: eventTagAssignmentPublicId, eventTagId: eventTag.publicId }],
+            tags: [{ publicId: eventTagAssignmentPublicId, bandEventTagId: eventTag.publicId }],
             responses: [{ publicId: eventResponsePublicId(11), userId: userPublicId(42), instrumentId: null, isInvited: true, userComment: null }],
             expectedAttendanceUserTag: {
                 publicId: userTagPublicId,
@@ -852,7 +850,7 @@ describe("DB3 named views", () => {
             references.require(db3.xEventStatus, eventStatus.publicId, "test"),
         );
         expect(hydrated.tags?.[0]?.eventTag).toEqual(
-            references.require(db3.xEventTag, eventTag.publicId, "test"),
+            references.require(db3.xBandEventTag, eventTag.publicId, "test"),
         );
         expect(hydrated.expectedAttendanceUserTag?.userAssignments?.[0]?.userId).toBe(userPublicId(42));
         expect(hydrated.dateRange).toBeInstanceOf(DateTimeRange);
@@ -943,8 +941,8 @@ describe("DB3 named views", () => {
             tags: [{
                 id: 10,
                 publicId: eventTagAssignmentPublicId,
-                eventTagId: 4,
-                eventTag: { publicId: eventTagPublicId },
+                bandEventTagId: 4,
+                eventTag: { id: 4, publicId: eventTagPublicId, bandId: 1 },
             }],
             responses: [{ id: 11, publicId: eventResponsePublicId(11), userId: 42, user: { id: 42, publicId: userPublicId(42), isDeleted: false }, instrumentId: null, isInvited: true, userComment: null }],
             segments: [{
@@ -998,7 +996,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "event-search-view-test",
-        }, new CMServerAuthorization({ id: 42 } as any, effectivePermissions), {
+        }, testBandAuthorization({ id: 42 }, effectivePermissions), {
             Event: { findMany },
         } as any);
 

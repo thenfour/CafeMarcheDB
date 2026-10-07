@@ -24,7 +24,7 @@ export default resolver.pipe(
             const [eventTypeIds, eventStatusIds, eventTagIds, songTagIds] = await Promise.all([
                 resolvePublicIds(db3.xEventType, args.filterSpec.eventTypeIds, authorization, db),
                 resolvePublicIds(db3.xEventStatus, args.filterSpec.eventStatusIds, authorization, db),
-                resolvePublicIds(db3.xEventTag, args.filterSpec.eventTagIds, authorization, db),
+                resolvePublicIds(db3.xBandEventTag, args.filterSpec.eventTagIds, authorization, db),
                 resolvePublicIds(db3.xSongTag, args.filterSpec.songTagIds, authorization, db),
             ]);
 
@@ -61,10 +61,10 @@ export default resolver.pipe(
             let eventHavingClause = "";
 
             if (eventTagIds.length > 0) {
-                eventFilters.push(`(eta.eventTagId in (${eventTagIds.join(",")}))`);
+                eventFilters.push(`(eta.bandEventTagId in (${eventTagIds.join(",")}))`);
                 eventHavingClause = `
                 HAVING
-					COUNT(DISTINCT eta.eventTagId) = ${eventTagIds.length}
+					COUNT(DISTINCT eta.bandEventTagId) = ${eventTagIds.length}
                 `;
             }
 

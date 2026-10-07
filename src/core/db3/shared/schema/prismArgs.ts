@@ -624,7 +624,6 @@ export type EventTagAssignmentPayload = Prisma.EventTagAssignmentGetPayload<type
 
 export const EventTagAssignmentNaturalOrderBy: Prisma.EventTagAssignmentOrderByWithRelationInput[] = [
     { eventTag: { sortOrder: 'asc' } },
-    { eventTag: { text: 'asc' } },
     { eventTag: { id: 'asc' } },
 ];
 
@@ -707,11 +706,11 @@ export type EventWithTagsPayload = Prisma.EventGetPayload<typeof EventWithTagsAr
 
 export type EventTagAssignmentClientPayload = Omit<
     Prisma.EventTagAssignmentGetPayload<{}>,
-    "id" | "publicId" | "eventId" | "eventTagId"
+    "id" | "publicId" | "eventId" | "bandEventTagId"
 > & {
     publicId: EventTagAssignmentPublicId;
     eventId: EventPublicId;
-    eventTagId: EventTagPublicId;
+    bandEventTagId: EventTagPublicId;
 };
 
 
@@ -1202,24 +1201,6 @@ export const EventStatusNaturalOrderBy: Prisma.EventStatusOrderByWithRelationInp
     { sortOrder: 'asc' },
     { id: 'asc' },
 ];
-
-
-
-export const EventTagArgs = Prisma.validator<Prisma.EventTagArgs>()({
-    include: {
-        events: true,
-    }
-});
-
-export type EventTagPayload = Prisma.EventTagGetPayload<typeof EventTagArgs>;
-
-export const EventTagNaturalOrderBy: Prisma.EventTagOrderByWithRelationInput[] = [
-    { sortOrder: 'asc' },
-    { text: 'asc' },
-    { id: 'asc' },
-];
-
-
 
 
 

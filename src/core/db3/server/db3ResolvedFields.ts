@@ -56,7 +56,7 @@ export async function resolveDB3ReadRows(table: xTable, rows: readonly ReadRow[]
                 result[field.member] = row[field.member] ?? inherited;
             } else if (field instanceof CatalogSourceField) {
                 result[field.member] = source?.publicId ?? null;
-                result.globalPublicId = source?.publicId ?? null;
+                Object.assign(result, field.resolveSourceReadCompanions(source));
             }
         }
         return result;

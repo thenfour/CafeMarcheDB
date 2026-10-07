@@ -403,7 +403,7 @@ export const EventTableClientColumns = DB3Client.makeClientColumnSet({
         fieldDescriptionKey: null,
         selectStyle: "inline",
         allowDeleteFromCell: false,
-        selectionView: db3.eventTagEditorView,
+        selectionView: db3.bandEventTagView,
     }),
 
     visiblePermission: DB3Client.foreignRefFieldGen({ fieldDescriptionKey: "event.visiblePermission.DescriptionMarkdown",

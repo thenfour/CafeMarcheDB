@@ -150,6 +150,17 @@ export class CatalogSourceField<const TAuth extends DB3AuthSpec> extends Generic
     readonly readCompanionSchemas = { globalPublicId: z.string().nullable() };
     readonly sourceTable: Exclude<keyof Prisma.TransactionClient, `$${string}`>;
 
+    // called explicitly by resolveDB3ReadRows;
+    // converts payload shape from
+    //   { publicId: "some-id" }
+    // to
+    //   { globalPublicId: "some-id" }
+    // TODO: assess whether it's actually safe to assume the `publicId` and `globalPublicId` field names.
+    // this could *probably* eventually use better typing to strengthen assumptions
+    resolveSourceReadCompanions(source: Readonly<Record<string, unknown>> | null) {
+        return { globalPublicId: source?.publicId ?? null };
+    }
+
     constructor(args: TAuth & { columnName: string; sourceTable: Exclude<keyof Prisma.TransactionClient, `$${string}`> }) {
         super({ ...args, allowNull: true, format: "raw", allowQuickFilter: false });
         this.ApplyToNewRow = () => { };

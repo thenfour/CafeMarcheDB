@@ -410,7 +410,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     const tagsResetter = () => ({
         en: props.event.tags
             ?.filter(t => t.eventTag?.visibleOnFrontpage)
-            .map(t => `#${t.eventTag?.text}`)
+            .map(t => `#${t.eventTag?.name}`)
             .join(" ") || "",
         fr: "",
         nl: "",

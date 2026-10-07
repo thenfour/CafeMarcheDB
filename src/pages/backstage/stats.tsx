@@ -82,7 +82,7 @@ export const GlobalStatsFilterControls = ({ filterSpec, setFilterSpec, defaultFi
             style='toggle'
             items={dashboardContext.eventTag.map((s): ChipFilterGroupItem<EventTagPublicId> => ({
                 id: s.publicId,
-                label: s.text,
+                label: s.name,
                 color: s.color,
             }))}
             onChange={(ns) => setFilterSpec({ ...filterSpec, eventTagIds: ns })}

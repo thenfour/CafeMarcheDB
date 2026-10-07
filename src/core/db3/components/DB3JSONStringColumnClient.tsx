@@ -128,7 +128,7 @@ const ActivityLogEvent = ({ eventId, cacheData }: { eventId: number | null | und
 const ActivityLogEventTag = ({ eventTagId }: { eventTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
     const foundEventTag = isPublicId(eventTagId)
-        ? dashboardContext.eventTag.getById(db3.xEventTag.parseIdentity(eventTagId))
+        ? dashboardContext.eventTag.getById(db3.xBandEventTag.parseIdentity(eventTagId))
         : undefined;
     if (!foundEventTag) {
         return <ActivityLogChip><Id value={eventTagId} /></ActivityLogChip>;
@@ -136,7 +136,7 @@ const ActivityLogEventTag = ({ eventTagId }: { eventTagId: number | string | nul
     return <ActivityLogChip
         color={foundEventTag.color}
     >
-        {foundEventTag.text}
+        {foundEventTag.name}
     </ActivityLogChip>;
 };
 

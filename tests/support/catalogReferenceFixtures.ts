@@ -1,7 +1,7 @@
-import type { InstrumentPublicId, InstrumentFunctionalGroupPublicId, PermissionPublicId, SongTagPublicId, UserTagPublicId } from "shared/publicId";
+import type { EventTagPublicId, InstrumentPublicId, InstrumentFunctionalGroupPublicId, PermissionPublicId, SongTagPublicId, UserTagPublicId } from "shared/publicId";
 import type { StringResolution } from "src/locale/shared/stringResolution";
 import { hydrateView } from "src/core/db3/shared/core/db3View";
-import { instrumentDashboardView, instrumentFunctionalGroupDashboardView, permissionDashboardView, songTagDashboardView, userTagDashboardView,
+import { eventTagDashboardView, instrumentDashboardView, instrumentFunctionalGroupDashboardView, permissionDashboardView, songTagDashboardView, userTagDashboardView,
     createDashboardReferenceStore, registerDashboardReferences } from "src/core/db3/shared/references/dashboardReferences";
 
 function resolution(value: string): StringResolution {
@@ -61,4 +61,15 @@ export function userTagReferenceFixture(publicId: UserTagPublicId, name: string)
         significance: null, significanceOverride: null, significanceInheritedValue: null,
     });
     return hydrateView(userTagDashboardView, dto, createDashboardReferenceStore());
+}
+
+export function eventTagDtoFixture(publicId: EventTagPublicId, name = "Public") {
+    return eventTagDashboardView.parseDto({
+        ...commonFields(name, "Public event", 1), publicId,
+        color: "orange", colorOverride: "orange", colorInheritedValue: null,
+        globalEventTag: null, visibleOnFrontpage: false,
+    });
+}
+export function eventTagReferenceFixture(publicId: EventTagPublicId, name = "Public") {
+    return hydrateView(eventTagDashboardView, eventTagDtoFixture(publicId, name), createDashboardReferenceStore());
 }

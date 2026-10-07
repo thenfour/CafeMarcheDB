@@ -5,7 +5,8 @@ shared-account merge dependencies are isolated, and telemetry recording and Cust
 Links now use the target schema and explicit ownership. Platform account
 maintenance and shared event catalogs have platform-authorized views and
 commands. Private calendar feeds and subscription callers now use explicit band
-context and membership ownership. **A0 remains open.** The
+context and membership ownership. Event-tag catalogs now use localized shared
+defaults and band-owned overrides. **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
 
@@ -160,7 +161,32 @@ preserving source alone.
   were also corrected. Full page localization and general event UI parity remain
   separate.
 
+- Event-tag catalogs use typed BandEventTag and GlobalEventTag descriptors,
+  generated CRUD and localized editor/display contracts. The editor selects the
+  band's catalog with `admin_events`, or shared defaults in platform context
+  with `manage_global_catalogs`. Names/descriptions use explicit writing locales;
+  band tags inherit color/order and can be hidden without removing assignments.
+  Frontpage visibility belongs to GlobalEventTag; band display references expose
+  its flag as a read-only, authorized companion. Custom band tags have no shared
+  frontpage flag. Hard deletion remains supported: band ownership is enforced,
+  band-tag assignments cascade, and referenced global tags are protected by the
+  restrictive foreign key. Dashboard snapshots now include band event tags.
+  Assignment metadata, references and transports use `bandEventTagId`, supported
+  by DB3's explicit nonconventional association-key declaration. This repairs a
+  payload dependency; full event editing/frontpage/search/report readers remain
+  unfinished.
+
 ## Verification
+
+The event-tag browser probe used a fresh private target-schema database on
+`127.0.0.1:32695` and a delegated platform catalog manager with a band role. It
+created a shared tag with frontpage visibility through the real dialog, displayed
+an inherited tag in the selected band, created a custom tag, and saved a French
+band translation without modifying the shared English label. Returning to
+platform mode replaced the band rows with shared defaults. No page errors
+occurred; the band-grid screenshot was inspected (`temp/a0-event-tags-band.png`).
+The helper removed its database and stopped the browser/development server.
+This is development evidence; built-app verification remains blocked.
 
 The calendar browser probe used a new private target-schema database on
 `127.0.0.1:32695`, with a signed-in delegated band member. It obtained a scoped
@@ -251,6 +277,9 @@ production server could not be checked because the normal build still fails.
 
 | Check | Result |
 | --- | --- |
+| Event-tag/DB3 selection, identity, nested hydration and shared editor/navigation regressions | Passed: 104 Node tests across four files and 17 isolated DOM tests across three files. Association keys use BandEventTag's actual foreign key and inherited/localized codecs. |
+| Event-tag catalogs plus calendar, attendance, shared catalogs, bootstrap, accounts, links, telemetry, member profiles and song-tag regression on private MariaDB | Passed: 120 tests across twelve files, including six new event-tag cases. Covers global versus band grants, fresh revocation, translations/blanks/inheritance, sorting/filtering/pagination, forged source/ownership fields, hidden assignments and authorized/restricted deletion. Fixture writes roll back; the generated database is removed. |
+| Event-tag development-browser editor | Passed: shared/custom creation, inherited display, French band translation persistence, unchanged shared English label and context switching; no page errors. |
 | Calendar attendance/date-time behavior, credential lifecycle, HTTP and subscription UI | Passed: 99 tests across five files, including four isolated DOM cases. Covers both preferences, invitations, stable UIDs/revisions, five host time zones, strict context, token replacement/impersonation, audit-failure rollback, private HTTP status/headers/redaction and stale confirmation/completion cancellation. All existing calendar behavior assertions remain executable. |
 | Calendar feeds plus attendance, shared catalogs, bootstrap, accounts, links, telemetry and member profiles on private MariaDB | Passed: 111 tests across ten files, including 13 calendar cases. Covers separate memberships, fresh access revocation, historical attendance/status meaning, group invitations, band branding/locale, child visibility/ownership, leap-day history and shared credential rotation. Fixture writes roll back and the generated database is removed. |
 | Calendar development-browser delivery | Passed: real subscription/replacement RPCs, anonymous scoped bearer GET, rejected missing/foreign/revoked/old credentials, nonsecret server-owned telemetry/audits, and selected-band subscription-page rendering; no browser page errors. |
@@ -279,9 +308,9 @@ production server could not be checked because the normal build still fails.
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 315 diagnostics, down from 317 before calendar-feed recovery. No increased file/error-code groups, compiler exclusions or error suppression added. |
+| `yarn typecheck` | Fails: 285 diagnostics, down from 315 before event-tag recovery. No increased file/error-code groups, compiler exclusions or error suppression added. |
 | `yarn build` | Gets past Custom Links and shared field-label callers; fails at the existing event-search payload in `src/core/components/event/EventComponents.tsx:1394`. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 278 failed, 1,481 passed, 186 skipped. The ten calendar-export failures in the previous attendance baseline now pass; no failure labels were added. The 55 direct/bulk attendance and 13 calendar MariaDB cases skip without their private test URL and pass in the native run above. Later isolated DOM batches are not reached; focused DOM checks above passed. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 278 failed, 1,481 passed, 192 skipped. Failure counts by file match the calendar baseline; no new failure groups remain. The six new event-tag native cases skip without the private test URL and pass in the native run above. The 55 direct/bulk attendance and 13 calendar MariaDB cases skip without their private test URL and pass in the native run above. Later isolated DOM batches are not reached; focused DOM checks above passed. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests

@@ -371,7 +371,7 @@ describe("DB3 command boundary", () => {
     expect(authorizationTestDb.snapshot("eventTagAssignment")).toEqual([
       expect.objectContaining({
         eventId: event.id,
-        eventTagId: eventTag.id,
+        bandEventTagId: eventTag.id,
         publicId: expect.any(String),
       }),
     ])

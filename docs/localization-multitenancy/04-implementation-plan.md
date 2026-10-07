@@ -135,6 +135,17 @@ resolution. Retired options still label history, while new attendance choices
 exclude retired/inactive options. Native and development-browser checks cover
 this catalog slice.
 
+Event tags now use BandEventTag/GlobalEventTag catalog contracts. The editor
+selects the band's catalog or shared defaults according to explicit context;
+localized names/descriptions, inherited color/order, hidden entries and hard
+deletion are active. Public-site visibility stays on the shared default and is
+projected as read-only metadata for band references. Global tags in use cannot
+be deleted; hiding a band tag retains assignments. Dashboard bootstrap supplies
+fresh band event-tag references, and assignment payloads use bandEventTagId.
+Native and development-browser checks cover the catalogs; full event payloads,
+frontpage content, search/report readers and invitation management still need
+recovery. Existing source references and deferred specifications remain intact.
+
 Dedicated attendance writes, the member-history RPC and the setlist-planner HTTP
 reader now require explicit band selection and resolve the requested person to
 an active BandUser. Response/invitation grants are independent; validation,

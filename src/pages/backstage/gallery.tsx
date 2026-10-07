@@ -90,7 +90,7 @@ const FilterControlsTester = () => {
             selectedIds={spec.selectedEventTagIds}
             items={dashboardContext.eventTag.map(t => ({
                 id: t.publicId,
-                label: t.text,
+                label: t.name,
                 color: t.color,
             }))}
             onChange={(newSel) => setSpec({ ...spec, selectedEventTagIds: newSel })}

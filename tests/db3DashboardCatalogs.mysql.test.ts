@@ -127,11 +127,11 @@ describe.skipIf(!settingsMysqlTestUrl)("dashboard catalog references on MariaDB"
             const context = await bindDB3ReadSnapshot(tx, seed.auth, { isolationLevel: "Serializable" });
             // The original authorization still has admin grants; the reader must refresh them itself.
             expect(await loadDashboardCatalogs(context, seed.auth, { routeLocale: "en-US" })).toEqual({
-                instrument: [], instrumentFunctionalGroup: [], songTag: [], userTag: [],
+                instrument: [], instrumentFunctionalGroup: [], songTag: [], userTag: [], eventTag: [],
             });
             const unscoped = await loadAuthorizationForUser(fixture.user, tx);
             expect(await loadDashboardCatalogs(context, unscoped, { routeLocale: "en-US" })).toEqual({
-                instrument: [], instrumentFunctionalGroup: [], songTag: [], userTag: [],
+                instrument: [], instrumentFunctionalGroup: [], songTag: [], userTag: [], eventTag: [],
             });
         }));
 });

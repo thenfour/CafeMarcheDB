@@ -1,37 +1,55 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { BlitzPage } from "@blitzjs/next";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+import type { BlitzPage } from "@blitzjs/next";
+import { Alert } from "@mui/material";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
+import { bandEventTagView, globalEventTagView } from "src/core/db3/shared/entities/event/eventTagCatalogs";
+import { defineTableClientSpec } from "src/core/db3/components/DB3ClientCore";
+import { GenericIntegerColumnClient, ColorColumnClient, BoolColumnClient } from "src/core/db3/components/DB3ClientBasicFields";
+import { LocalizedStringColumnClient, InheritedColumnClient } from "src/core/db3/components/DB3CatalogFields";
+import { usePresentation } from "src/locale/components/PresentationProvider";
+import { useLocale } from "src/locale/components/useLocale";
+import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
+import { LocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 
-
-const tableSpec = DB3Client.defineTableClientSpec({
-    view: db3.eventTagEditorView,
+export const bandEventTagTableSpec = defineTableClientSpec({
+    view: bandEventTagView,
     columns: {
-        publicId: DB3Client.publicIdFieldGen(),
-        text: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.label", columnName, cellWidth: 180 }),
-        description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 200 }),
-        color: columnName => new DB3Client.ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.color", columnName, cellWidth: 300 }),
-        sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.sortOrder", columnName, cellWidth: 80 }),
-        visibleOnFrontpage: columnName => new DB3Client.BoolColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.visibleOnFrontpage", columnName }),
+        name: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.name" }),
+        description: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.description" }),
+        color: columnName => new InheritedColumnClient(new ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "catalog.color", columnName, cellWidth: 250 }), { fieldCaptionKey: "catalog.color" }),
+        sortOrder: columnName => new InheritedColumnClient(new GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "catalog.sortOrder", columnName, cellWidth: 80 }), { fieldCaptionKey: "catalog.sortOrder" }),
+        isHidden: columnName => new BoolColumnClient({ columnName, fieldCaptionKey: "catalog.hidden", fieldDescriptionKey: null }),
     },
 });
-
-const MainContent = () => {
+export const globalEventTagTableSpec = defineTableClientSpec({
+    view: globalEventTagView,
+    columns: {
+        name: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.name" }),
+        description: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.description" }),
+        color: columnName => new ColorColumnClient({ columnName, fieldCaptionKey: "catalog.color", fieldDescriptionKey: null, cellWidth: 250 }),
+        sortOrder: columnName => new GenericIntegerColumnClient({ columnName, fieldCaptionKey: "catalog.sortOrder", fieldDescriptionKey: null, cellWidth: 80 }),
+        visibleOnFrontpage: columnName => new BoolColumnClient({ columnName, fieldCaptionKey: "db3.fields.visibleOnFrontpage", fieldDescriptionKey: null }),
+    },
+});
+export const EventTagCatalogContent = () => {
+    const dashboard = useDashboardContext();
+    const presentation = usePresentation();
+    const locale = useLocale();
     return <>
-        <LocalizedMarkdown setting="EditEventTagsPage_markdown"></LocalizedMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} view={db3.eventTagEditorView} />
+        <LocalizedMarkdown setting="EditEventTagsPage_markdown" />
+        {presentation.bandPublicId && <Alert severity="info">{locale.getPlainString("catalog.eventTagsSharedDefaults")}</Alert>}
+        {presentation.bandPublicId ? <DB3EditGrid
+            tableSpec={bandEventTagTableSpec} view={bandEventTagView}
+            referenceProvider={dashboard.referenceStore}
+        /> : <DB3EditGrid
+            tableSpec={globalEventTagTableSpec} view={globalEventTagView}
+            referenceProvider={dashboard.referenceStore}
+        />}
     </>;
 };
-
-
 const EditEventTagsPage: BlitzPage = () => {
-    return (
-        <DashboardLayout title="Event Tags">
-            <MainContent />
-        </DashboardLayout>
-    )
-}
-
+    const locale = useLocale();
+    const presentation = usePresentation();
+    return <DashboardLayout title={locale.getPlainString(presentation.bandPublicId ? "catalog.eventTags" : "catalog.globalEventTags")}><EventTagCatalogContent /></DashboardLayout>;
+};
 export default EditEventTagsPage;

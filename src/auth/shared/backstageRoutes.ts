@@ -54,7 +54,7 @@ const routes = [
     { key: "brand", pattern: "/backstage/brand", caption: "Brand", permission: Permission.manage_site_branding },
     { key: "menuLinks", pattern: "/backstage/menuLinks", caption: "Menu Links", permission: Permission.customize_menu },
     { key: "customLinks", pattern: "/backstage/customLinks", caption: "Custom URLs", permission: Permission.view_custom_links, unscopedPermission: Permission.login },
-    { key: "editEventTags", pattern: "/backstage/editEventTags", caption: "Event Tags", permission: Permission.admin_events },
+    { key: "editEventTags", pattern: "/backstage/editEventTags", caption: "Event Tags", permission: Permission.admin_events, unscopedPermission: Permission.manage_global_catalogs },
     { key: "editEventTypes", pattern: "/backstage/editEventTypes", caption: "Event Types", permission: Permission.manage_global_catalogs },
     { key: "editEventStatuses", pattern: "/backstage/editEventStatuses", caption: "Event Statuses", permission: Permission.manage_global_catalogs },
     { key: "editEventAttendances", pattern: "/backstage/editEventAttendances", caption: "Event Attendance Options", permission: Permission.manage_global_catalogs },

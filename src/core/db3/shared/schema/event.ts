@@ -1,3 +1,5 @@
+import { xBandEventTag } from "../entities/event/eventTagCatalogs";
+import { localizedText } from "../columnTypes/localizedString";
 // TODO: permissions for actions like these needs to be done in a different way.
 // for example i should be able to edit my own posts but not others. etc.
 // or think about the concept of user blocking, or not being able to see responses of certain kinds of events or people. todo...
@@ -21,7 +23,6 @@ import type {
     EventSongListDividerPublicId,
     EventStatusPublicId,
     EventTagAssignmentPublicId,
-    EventTagPublicId,
     EventTypePublicId,
     UserPublicId,
 } from "shared/publicId";
@@ -35,8 +36,8 @@ import {
     EventSegmentArgs, EventSegmentBehavior, EventSegmentNaturalOrderBy, type EventSegmentPayload,
     EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
     type EventSegmentUserResponsePayload, EventSongListArgs, EventSongListDividerArgs, type EventSongListDividerPayload, EventSongListDividerTextStyle, EventSongListNaturalOrderBy, type EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy,
-    type EventSongListSongPayload, EventTagArgs, EventTagAssignmentArgs,
-    EventTagAssignmentNaturalOrderBy, type EventTagAssignmentPayload, EventTagNaturalOrderBy, type EventTagPayload,
+    type EventSongListSongPayload, EventTagAssignmentArgs,
+    EventTagAssignmentNaturalOrderBy, type EventTagAssignmentPayload,
     EventTypeSignificance, EventUserResponseArgs, EventUserResponseNaturalOrderBy,
     type EventUserResponsePayload,
     type InstrumentClientOrDbPayload,
@@ -201,47 +202,6 @@ export const getEventSegmentMinDate = (event: EventPayload): Date | null => {
     return DateTimeRange.union(event.segments.map(getEventSegmentDateTimeRange)).getStartDateTime();
 };
 
-export const xEventTag = db3.defineTable({
-    prismaModel: db3.prismaModel<Prisma.EventTagDelegate>(),
-    getIdentity: (eventTag: { publicId: EventTagPublicId }) => eventTag.publicId,
-    tableName: "EventTag",
-    deletePolicy: "hard",
-    getSelectionArgs: (): Prisma.EventTagDefaultArgs => {
-        return EventTagArgs;
-    },
-    naturalOrderBy: EventTagNaturalOrderBy,
-    tableAuthMap: xEventTableAuthMap_R_EAdmins,
-    createInsertModelFromString: (input: string): Partial<EventTagPayload> => {
-        return {
-            text: input,
-            description: "auto-created",
-            sortOrder: 0,
-            color: null,
-            significance: null,
-        };
-    },
-    getRowInfo: (row: EventTagPayload) => ({
-        pk: row.publicId,
-        name: row.text,
-        description: row.description,
-        color: gGeneralPaletteList.findEntry(row.color),
-        ownerUserId: null,
-    }),
-    fields: db3.makeColumnSet({
-        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
-        publicId: () => MakePublicIdField<EventTagPublicId>(),
-        text: columnName => MakeTitleField(columnName, { authMap: xEventChipsAuthMap, }),
-        visibleOnFrontpage: columnName => new BoolField({ columnName, defaultValue: false, authMap: xEventChipsAuthMap, allowNull: false }),
-        description: () => MakeDescriptionField({ authMap: xEventChipsAuthMap, }),
-        sortOrder: makeEventChipSortOrderField,
-        color: () => MakeColorField({ authMap: xEventChipsAuthMap, }),
-
-        events: memberName => new GhostField({ memberName, authMap: xEventAuthMap_R_EOwn_EManagers }),
-    })
-});
-
-
-
 ////////////////////////////////////////////////////////////////
 
 export const xEventTagAssignment = db3.defineTable({
@@ -257,8 +217,8 @@ export const xEventTagAssignment = db3.defineTable({
     getRowInfo: (row: EventTagAssignmentPayload) => {
         return {
             pk: row.publicId,
-            name: row.eventTag?.text || "",
-            description: row.eventTag?.description || "",
+            name: localizedText(row.eventTag?.name) ?? "",
+            description: localizedText(row.eventTag?.description) ?? "",
             color: gGeneralPaletteList.findEntry(row.eventTag?.color || null),
             ownerUserId: null,
         };
@@ -266,8 +226,8 @@ export const xEventTagAssignment = db3.defineTable({
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<EventTagAssignmentPublicId>(),
-        eventTag: foreignRef(() => xEventTag, {
-            fkidMember: "eventTagId",
+        eventTag: foreignRef(() => xBandEventTag, {
+            fkidMember: "bandEventTagId",
             authMap: xEventChipsAuthMap,
         }),
     })
@@ -521,7 +481,8 @@ export const xEventArgs_Base = db3.defineTableDesc({
         frontpageLocationURI_fr: columnName => MakeNullableRawTextField(columnName, { authMap: xEventAuthMap_Homepage, }),
         frontpageTags_fr: columnName => MakeNullableRawTextField(columnName, { authMap: xEventAuthMap_Homepage, }),
 
-        tags: tagsRef("EventTagAssignment", "EventTag", {
+        tags: tagsRef("EventTagAssignment", "BandEventTag", {
+            associationForeignIDMember: "bandEventTagId",
             associationForeignObjectMember: "eventTag",
             associationLocalObjectMember: "event",
             authMap: xEventAuthMap_Homepage,
@@ -533,13 +494,13 @@ export const xEventArgs_Base = db3.defineTableDesc({
 
                 return {
                     AND: tagIds.map(tagId => ({
-                        tags: { some: { eventTagId: { equals: tagId } } }
+                        tags: { some: { bandEventTagId: { equals: tagId } } }
                     }))
                 };
 
                 // the following does not work; it would require that, for an event, all of its tags are being queried.
                 // return ({
-                //     tags: { every: { eventTagId: { in: query!.tagIds } } }
+                //     tags: { every: { bandEventTagId: { in: query!.tagIds } } }
                 // });
             },
         }), // tags
@@ -979,7 +940,6 @@ export const xEventSongListDivider = db3.defineTable({
 declare module "../db3core" {
     interface DB3TableTypeRegistry {
         Event: typeof xEvent;
-        EventTag: typeof xEventTag;
         EventTagAssignment: typeof xEventTagAssignment;
         EventSegment: typeof xEventSegment;
         EventSegmentUserResponse: typeof xEventSegmentUserResponse;

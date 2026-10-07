@@ -84,17 +84,7 @@ const eventFrontpageRequestedSelection = Prisma.validator<Prisma.EventDefaultArg
             orderBy: EventTagAssignmentNaturalOrderBy,
             select: {
                 publicId: true,
-                eventTagId: true,
-                eventTag: {
-                    select: {
-                        publicId: true,
-                        description: true,
-                        color: true,
-                        sortOrder: true,
-                        visibleOnFrontpage: true,
-                        text: true,
-                    },
-                },
+                bandEventTagId: true,
             },
         },
     },

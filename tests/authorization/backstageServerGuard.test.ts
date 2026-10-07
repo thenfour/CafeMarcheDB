@@ -76,7 +76,7 @@ describe("backstage server page guard", () => {
         await expect(authorizePageRequest(
             "/backstage/editEventTags",
             eventAdmin.id,
-        )).rejects.toThrow(new RegExp(`${Permission.admin_events}`));
+        )).rejects.toThrow(new RegExp(`${Permission.manage_global_catalogs}`));
     });
 
     it("allows anonymous access through the public permission baseline", async () => {

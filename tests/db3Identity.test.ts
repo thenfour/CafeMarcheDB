@@ -110,7 +110,7 @@ describe("DB3 table identity authority", () => {
         const eventTagPublicId = parsePublicId<"EventTag">("EventTagPublic01");
         const eventMutation = {};
         db3.xEvent.fields.tags.ApplyClientToDb({
-            tags: [{ eventTagId: eventTagPublicId }],
+            tags: [{ bandEventTagId: eventTagPublicId }],
         }, eventMutation, "new");
         expect(eventMutation).toEqual({ tags: [eventTagPublicId] });
 

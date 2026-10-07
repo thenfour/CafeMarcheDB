@@ -45,7 +45,7 @@ export default resolver.pipe(
             const authorization = ctx.auth;
             const [statusIds, tagIds, typeIds] = await Promise.all([
                 resolvePublicIds(db3.xEventStatus, args.filterSpec.statusIds, authorization, db),
-                resolvePublicIds(db3.xEventTag, args.filterSpec.tagIds, authorization, db),
+                resolvePublicIds(db3.xBandEventTag, args.filterSpec.tagIds, authorization, db),
                 resolvePublicIds(db3.xEventType, args.filterSpec.typeIds, authorization, db),
             ]);
 
@@ -88,11 +88,11 @@ export default resolver.pipe(
             let havingClause = "";
 
             if (tagIds.length > 0) {
-                eventFilterExpressions.push(`(EventTagAssignment.eventTagId IN (${tagIds}))`);
+                eventFilterExpressions.push(`(EventTagAssignment.bandEventTagId IN (${tagIds}))`);
                 // make sure items have matched ALL tags, not just any.
                 havingClause = `
                 HAVING
-					COUNT(DISTINCT EventTagAssignment.eventTagId) = ${tagIds.length}
+					COUNT(DISTINCT EventTagAssignment.bandEventTagId) = ${tagIds.length}
                 `;
             }
 
@@ -189,7 +189,7 @@ export default resolver.pipe(
     join 
         EventTagAssignment as ETA on FE.EventId = ETA.eventId
     join 
-        EventTag as ET on ET.id = ETA.eventTagId
+        EventTag as ET on ET.id = ETA.bandEventTagId
     group by
         ET.id
     order by

@@ -263,7 +263,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     );
     valueRef.current.eventTag = new TableAccessor(
         dashboardData.eventTag,
-        value => db3.xEventTag.getIdentity(value),
+        value => db3.xBandEventTag.getIdentity(value),
     );
     valueRef.current.eventAttendance = new TableAccessor(dashboardData.eventAttendance, value => db3.xEventAttendance.getIdentity(value));
     valueRef.current.fileTag = new TableAccessor(

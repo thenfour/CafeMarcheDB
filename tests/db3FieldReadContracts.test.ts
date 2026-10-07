@@ -61,11 +61,11 @@ describe("DB3 xTable model metadata", () => {
   })
 
   it("derives Prisma and application identity types from the table", () => {
-    expectTypeOf<db3.DB3PrismaPayloadOf<typeof db3.xEventTag>>()
-      .toEqualTypeOf<Prisma.EventTagGetPayload<{}>>()
-    expectTypeOf<db3.DB3PrismaDelegateOf<typeof db3.xEventTag>>()
-      .toEqualTypeOf<Prisma.EventTagDelegate>()
-    expectTypeOf<db3.DB3IdentityOf<typeof db3.xEventTag>>()
+    expectTypeOf<db3.DB3PrismaPayloadOf<typeof db3.xBandEventTag>>()
+      .toEqualTypeOf<Prisma.BandEventTagGetPayload<{}>>()
+    expectTypeOf<db3.DB3PrismaDelegateOf<typeof db3.xBandEventTag>>()
+      .toEqualTypeOf<Prisma.BandEventTagDelegate>()
+    expectTypeOf<db3.DB3IdentityOf<typeof db3.xBandEventTag>>()
       .toEqualTypeOf<EventTagPublicId>()
     expectTypeOf<db3.DB3IdentityOf<typeof db3.xInstrumentFunctionalGroup>>()
       .toEqualTypeOf<InstrumentFunctionalGroupPublicId>()
@@ -78,9 +78,9 @@ describe("DB3 xTable model metadata", () => {
       .toEqualTypeOf<typeof db3.xInstrumentFunctionalGroup>()
     expectTypeOf(db3.xEventTagAssignment.fields.eventTag).toMatchTypeOf<
       db3.ForeignSingleField<
-        Prisma.EventTagGetPayload<{}>,
-        typeof db3.xEventTag,
-        "eventTagId"
+        Prisma.BandEventTagGetPayload<{}>,
+        typeof db3.xBandEventTag,
+        "bandEventTagId"
       >
     >()
     expectTypeOf<db3.DB3ForeignKeyMemberOf<
@@ -92,9 +92,9 @@ describe("DB3 xTable model metadata", () => {
   })
 
   it("keeps target resolution lazy while deriving the runtime table ID", () => {
-    const getTarget = vi.fn(() => db3.xEventTag)
+    const getTarget = vi.fn(() => db3.xBandEventTag)
     const field = db3.foreignRef(getTarget, {
-      fkidMember: "eventTagId",
+      fkidMember: "bandEventTagId",
       authMap: db3.createAuthContextMap_GrantAll(),
     })("eventTag")
 
@@ -103,8 +103,8 @@ describe("DB3 xTable model metadata", () => {
     expect(getTarget).not.toHaveBeenCalled()
     expect(descriptor.kind).toBe("foreignObject")
     if (descriptor.kind !== "foreignObject") throw new Error("expected relation descriptor")
-    expect(descriptor.getTargetTable()).toBe(db3.xEventTag)
-    expect(field.foreignTableID).toBe("EventTag")
+    expect(descriptor.getTargetTable()).toBe(db3.xBandEventTag)
+    expect(field.foreignTableID).toBe("BandEventTag")
     expect(field.allowNull).toBe(false)
     expect(field.getQuickFilterWhereClause("anything")).toBe(false)
   })
@@ -112,8 +112,8 @@ describe("DB3 xTable model metadata", () => {
   it("resolves migrated schema relations directly to their target xTable", () => {
     const field = db3.xEventTagAssignment.fields.eventTag
 
-    expect(field.getForeignTableSchema()).toBe(db3.xEventTag)
-    expect(field.foreignTableID).toBe(db3.xEventTag.tableID)
+    expect(field.getForeignTableSchema()).toBe(db3.xBandEventTag)
+    expect(field.foreignTableID).toBe(db3.xBandEventTag.tableID)
     expect(db3.xWikiPage.fields.currentRevision.getForeignTableSchema())
       .toBe(db3.xWikiPageRevision)
     expect(db3.xWikiPageRevision.fields.wikiPage.getForeignTableSchema())
@@ -125,10 +125,10 @@ describe("DB3 xTable model metadata", () => {
 
     expect(eventTags.associationTableID).toBe("EventTagAssignment")
     expect(eventTags.associationLocalIDMember).toBe("eventId")
-    expect(eventTags.associationForeignIDMember).toBe("eventTagId")
-    expect(eventTags.foreignTableID).toBe("EventTag")
+    expect(eventTags.associationForeignIDMember).toBe("bandEventTagId")
+    expect(eventTags.foreignTableID).toBe("BandEventTag")
     expect(eventTags.getAssociationTableShema()).toBe(db3.xEventTagAssignment)
-    expect(eventTags.getForeignTableShema()).toBe(db3.xEventTag)
+    expect(eventTags.getForeignTableShema()).toBe(db3.xBandEventTag)
 
     const songs = db3.xEventSongList.fields.songs
     expect(songs.foreignTableID).toBe("EventSongListSong")

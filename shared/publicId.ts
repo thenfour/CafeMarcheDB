@@ -51,6 +51,7 @@ export type EventAttendancePublicId = PublicId<"EventAttendance">;
 export type EventTypePublicId = PublicId<"EventType">;
 export type EventStatusPublicId = PublicId<"EventStatus">;
 export type EventTagPublicId = PublicId<"EventTag">;
+export type GlobalEventTagPublicId = PublicId<"GlobalEventTag">;
 export type EventTagAssignmentPublicId = PublicId<"EventTagAssignment">;
 export type UserTagPublicId = PublicId<"UserTag">;
 export type UserTagAssignmentPublicId = PublicId<"UserTagAssignment">;
