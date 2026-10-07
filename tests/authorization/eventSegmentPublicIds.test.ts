@@ -194,9 +194,11 @@ describe("Event segment and response public identities", () => {
     });
 
     it("resolves telemetry to natural keys and projects public report references", async () => {
-        const input = { feature: ActivityFeature.attendance_response, eventSegmentId: segmentPublicId(1), isClient: true };
+        const input = { feature: ActivityFeature.attendance_response, eventSegmentId: segmentPublicId(1) };
+        expect(() => ZTRecordActionArgs.parse(input)).not.toThrow();
         expect(() => ZTRecordActionArgs.parse({ ...input, eventSegmentId: 1 })).toThrow();
-        await createActionRecord(input);
+        await authorizationTestDb.getDelegate("event").update({ where: { id: event.id }, data: { bandId: 1 } });
+        await createActionRecord({ ...input, isClient: true }, { bandId: 1, localeContextId: null });
         expect(authorizationTestDb.snapshot("action")[0]?.eventSegmentId).toBe(1);
         const evidence = { id: 900, createdAt: new Date(), feature: input.feature, isClient: true,
             uri: null, queryText: null, context: null, pointerType: null, screenWidth: null, screenHeight: null,

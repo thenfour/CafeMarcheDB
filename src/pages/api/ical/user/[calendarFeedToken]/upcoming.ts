@@ -34,7 +34,7 @@ export default api(async (req, res, ctx: Ctx) => {
             uri: redactedCalendarFeedRoute,
             userId: accessingUser?.id,
             isClient: false,
-        });
+        }, { bandId: null, localeContextId: null });
 
         res.setHeader("Content-Type", "text/calendar; charset=utf-8");
         res.setHeader("Content-Disposition", "inline; filename=CM_UpcomingAgenda.ics");

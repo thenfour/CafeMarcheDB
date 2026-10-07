@@ -1,5 +1,5 @@
-import { Ctx } from "blitz";
-import { ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
+import { Ctx, NotFoundError } from "blitz";
+import { ClientActionRequestSchema } from "src/core/components/featureReports/activityTracking";
 import { recordAuthenticatedClientAction } from "src/core/db3/server/recordActionServer";
 import { api } from "src/blitz-server";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
@@ -12,7 +12,7 @@ export default api(async (req, res, ctx: Ctx) => {
         return res.status(405).end("Method Not Allowed");
     }
 
-    let data: { event?: unknown } | null = null;
+    let data: unknown = null;
     if (req.headers["content-type"]?.includes("application/json")) {
         data = req.body;
     } else if (req.headers["content-type"]?.includes("text/plain")) {
@@ -23,13 +23,19 @@ export default api(async (req, res, ctx: Ctx) => {
         data = req.body;
     }
 
-    const parsedEvent = ZTRecordActionArgs.safeParse(data?.event);
-    if (!parsedEvent.success) return res.status(400).json({ error: "Invalid telemetry event" });
+    const parsedRequest = ClientActionRequestSchema.safeParse(data);
+    if (!parsedRequest.success) {
+        return res.status(400).json({ error: "Invalid telemetry event" });
+    }
 
     // Store the telemetry event in the database using shared logic
     try {
-        await recordAuthenticatedClientAction(parsedEvent.data, await loadAuthorization(ctx.session));
+        const authorization = await loadAuthorization(ctx.session, parsedRequest.data.presentation.bandPublicId);
+        await recordAuthenticatedClientAction(parsedRequest.data, authorization);
     } catch (e) {
+        if (e instanceof NotFoundError) {
+            return res.status(404).json({ error: "The selected band is unavailable" });
+        }
         console.error("[Telemetry] Failed to record action", e);
         return res.status(500).json({ error: "Failed to record telemetry event" });
     }

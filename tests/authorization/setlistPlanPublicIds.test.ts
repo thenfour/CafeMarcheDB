@@ -129,9 +129,11 @@ describe("Setlist planning public identities", () => {
     });
 
     it("records public telemetry with an internal ledger foreign key", async () => {
-        const input = { feature: ActivityFeature.setlist_plan_save, setlistPlanId: planId(30), isClient: true };
+        const input = { feature: ActivityFeature.setlist_plan_save, setlistPlanId: planId(30) };
+        expect(() => ZTRecordActionArgs.parse(input)).not.toThrow();
         expect(() => ZTRecordActionArgs.parse({ ...input, setlistPlanId: 30 })).toThrow();
-        await createActionRecord(input);
+        await authorizationTestDb.getDelegate("setlistPlan").update({ where: { id: 30 }, data: { bandId: 1 } });
+        await createActionRecord({ ...input, isClient: true }, { bandId: 1, localeContextId: null });
         expect(authorizationTestDb.snapshot("action")[0]?.setlistPlanId).toBe(30);
     });
 

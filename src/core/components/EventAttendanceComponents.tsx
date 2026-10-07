@@ -61,7 +61,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
                 : change.type === "instrument" ? ActivityFeature.attendance_instrument : ActivityFeature.attendance_comment,
             eventId,
             ...(change.type === "segment" ? { eventSegmentId: change.segmentId, attendanceId: change.attendanceId ?? undefined } : {}),
-            ...(change.type === "instrument" ? { instrumentId: instrumentId ?? undefined } : {}),
+            ...(change.type === "instrument" ? { bandInstrumentId: instrumentId ?? undefined } : {}),
             ...(change.type === "comment" ? { context: "EventAttendanceCommentEditorDialog" } : {}),
         });
         try {

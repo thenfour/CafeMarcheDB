@@ -1,21 +1,18 @@
 import type { EventAttendancePublicId } from "shared/publicId";
 import { localTimeZone } from "@/shared/time";
 import { shouldShowAdminControls } from '@/shared/adminControls';
-import { ClientSession, getAntiCSRFToken, useSession } from '@blitzjs/auth';
+import { ClientSession, useSession } from '@blitzjs/auth';
 import { useMutation, useQuery } from '@blitzjs/rpc';
 import React from 'react';
 import { Permission } from 'shared/permissions';
 import { TableAccessor } from 'shared/rootroot';
-import { useThrottle } from 'shared/useGeneral';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import setShowingAdminControls from 'src/auth/mutations/setShowingAdminControls';
 import getDashboardData from 'src/auth/queries/getDashboardData';
 import * as db3 from "src/core/db3/db3";
-import { z } from 'zod';
-import { useAppContext } from '../AppContext';
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
 import { ColorVariationSpec, gAppColors, gGeneralPaletteList } from '../color/palette';
-import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams, ZTRecordActionArgs } from '../featureReports/activityTracking';
+import { ActivityFeature } from '../featureReports/activityTracking';
 import { DbBrandConfig, DefaultDbBrandConfig } from '@/shared/brandConfigBase';
 import { useBrand } from '@/shared/brandConfig';
 import { DashboardContextDataBase } from './dashboardContextTypes';
@@ -306,75 +303,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     );
 };
 
-/**
- * Keepalive-based drop-in replacement for recordFeature (client-side only), as a hook.
- * Usage: const recordClientTelemetry = useClientTelemetryEvent();
- *        recordClientTelemetry({ feature, context, ...associations })
- * thisComponentContext - normally we like to use <AppContextMarker>, but if you want to use this hook in the
- * same component as <AppContextMarker>, you can pass the context manually because otherwise it won't be available yet in the tree.
- */
-
-export function useClientTelemetryEvent(thisComponentContext?: string) {
-    const appCtx = useAppContext();
-    return async ({ feature, context, ...associations }: ClientActivityParams) => {
-        const url = "/api/telemetry";
-        const deviceInfo = await collectDeviceInfo();
-        const { stack, ...sanitizedAppCtx } = appCtx; // remove stack from app context to avoid sending it over the wire
-
-        // calculate the context from appctx stack, thisComponentContext, and the passed context.
-        const contextParts = [stack, thisComponentContext, context].filter(Boolean);
-
-        const event: z.infer<typeof ZTRecordActionArgs> = {
-            ...sanitizedAppCtx,
-            ...associations,
-            uri: window.location.href,
-            context: contextParts.join("/"),
-            feature,
-            deviceInfo,
-        };
-
-        //console.log("Recording client telemetry event", { appCtx, feature, context, associations, event });
-
-        // see blitz docs for manually invoking APIs / https://blitzjs.com/docs/session-management#manual-api-requests
-        const antiCSRFToken = getAntiCSRFToken();
-
-        const payload = JSON.stringify({ event });
-        const contentType = "application/json";
-        const headers: Record<string, string> = { "Content-Type": contentType };
-        if (antiCSRFToken) headers["anti-csrf"] = antiCSRFToken;
-
-        // keepalive retains unload-time delivery while allowing the auth
-        // middleware's required anti-CSRF header, which sendBeacon cannot set.
-        await fetch(url, {
-            method: "POST",
-            headers,
-            body: payload,
-            keepalive: true,
-        });
-    };
-}
-
-
-export const useFeatureRecorder = () => {
-    return useClientTelemetryEvent();
-}
-
-
-export const useRecordFeatureUse = (params: UseFeatureUseClientActivityParams) => {
-    const recordEvent = useClientTelemetryEvent();
-    // react likes to make redundant renders; throttle.
-    const throttledRecordAction = useThrottle(() => {
-        void collectDeviceInfo().then(deviceInfo => {
-            try {
-                void recordEvent(params);
-            } catch (e) {
-                console.error("Error recording feature use", e);
-            }
-        });
-    }, 250);
-
-    React.useEffect(throttledRecordAction, []);
-}
+export { useClientTelemetryEvent, useFeatureRecorder, useRecordFeatureUse } from "../featureReports/useClientTelemetryEvent";
 
 export const getDashboardContextDataSingleton = () => {
     return getCmdbWindow().cmdbDashboardContext;

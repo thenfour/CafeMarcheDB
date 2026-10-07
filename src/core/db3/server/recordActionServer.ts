@@ -1,101 +1,62 @@
-import { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
+import type { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
+import { AuthorizationError } from "blitz";
 import db, { Prisma } from "db";
-import { z } from "zod";
-import { ZTRecordActionArgs } from "../../components/featureReports/activityTracking";
+import { collectLocalePreferences, selectFormattingLocale } from "src/locale/shared/localePreferences";
+import type { z } from "zod";
+import type { ClientActionRequest, ZTRecordActionArgs } from "../../components/featureReports/activityTracking";
 
 type RecordActionArgs = z.infer<typeof ZTRecordActionArgs>;
+type ServerActionArgs = RecordActionArgs & { userId?: number | null; isClient: boolean };
+type ActionDatabase = Pick<Prisma.TransactionClient, "action" | "song" | "customLink" | "menuLink"
+    | "wikiPage" | "file" | "frontpageGalleryItem" | "event" | "bandInstrument"
+    | "songCreditType" | "eventSegment" | "eventAttendance" | "eventSongList" | "setlistPlan">;
 
-/**
- * Safely truncates a string to the specified maximum length
- */
+// Blitz enhances these delegates; this service uses the standard Prisma API.
+const actionDatabase = db as unknown as ActionDatabase;
+
+export interface ActionContext {
+    readonly bandId: number | null;
+    readonly localeContextId: number | null;
+}
+
 function truncateString(value: string | null | undefined, maxLength: number): string | null {
-    if (value == null) return null;
-    if (typeof value !== 'string') return null;
-    return value.length > maxLength ? value.substring(0, maxLength) : value;
-}
-
-/**
- * Safely converts a value to lowercase string with length limit
- */
-function toLowerCaseString(value: string | null | undefined, maxLength: number): string | null {
-    if (value == null) return null;
-    if (typeof value !== 'string') return null;
-    const lowerValue = value.toLowerCase();
-    return lowerValue.length > maxLength ? lowerValue.substring(0, maxLength) : lowerValue;
-}
-
-/**
- * Safely converts a value to a positive integer within reasonable bounds
- */
-function toSafeInteger(value: number | null | undefined): number | null {
-    if (value == null) return null;
-    if (typeof value !== 'number' || !Number.isInteger(value) || !Number.isFinite(value)) return null;
-    // Protect against unreasonably large values that could cause issues
-    if (value < 0 || value > 2147483647) return null; // MySQL INT max value
-    return value;
-}
-
-/**
- * Safely converts association ID values to valid integers
- */
-function toSafeId(value: number | null | undefined): number | null {
-    if (value == null) return null;
-    if (typeof value !== 'number' || !Number.isInteger(value) || !Number.isFinite(value)) return null;
-    // IDs should be positive
-    if (value <= 0 || value > 2147483647) return null;
-    return value;
-}
-
-/**
- * Validates and sanitizes feature field against database constraints
- */
-function sanitizeFeature(feature: string): string {
-    if (typeof feature !== 'string') {
-        throw new Error('Feature field is required and must be a string');
+    if (typeof value !== "string") {
+        return null;
     }
-    // Truncate to database limit if necessary
-    const truncated = feature.length > 64 ? feature.substring(0, 64) : feature;
-    // Note: Enum validation is handled by Zod schema validation before this point
-    // This function focuses on database constraint compliance
-    return truncated;
+    return value.substring(0, maxLength);
 }
 
-export const redactSensitiveActionUri = (uri: string | null | undefined): string | null => {
-    if (uri == null) return null;
-    return uri.replace(
-        /(\/api\/ical\/user\/)[^/?#]+(\/upcoming)/gi,
-        "$1[calendarFeedToken]$2",
-    );
-};
+function toLowerCaseString(value: string | undefined, maxLength: number): string | null {
+    return truncateString(typeof value === "string" ? value.toLowerCase() : null, maxLength);
+}
 
-/**
- * Sanitizes all input fields according to database schema constraints.
- * 
- * This function implements a defense-in-depth approach:
- * - Truncates strings to database VARCHAR limits
- * - Normalizes case for fields that specify lowercase storage
- * - Validates numeric ranges and ensures safe integer values
- * - Handles null/undefined values gracefully
- * - Protects against SQL injection and data corruption
- * 
- * Note: Type and enum validation is handled by Zod schemas before this point.
- * This function focuses specifically on database constraint compliance.
- */
-function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null, isClient: boolean }): Prisma.ActionUncheckedCreateInput {
-    const { deviceInfo, ...otherArgs } = args;
+function toSafeInteger(value: number | null | undefined, minimum: number): number | null {
+    if (typeof value !== "number" || !Number.isInteger(value) || value < minimum || value > 2147483647) {
+        return null;
+    }
+    return value;
+}
 
+export function redactSensitiveActionUri(uri: string | null | undefined): string | null {
+    if (uri == null) {
+        return null;
+    }
+    return uri.replace(/(\/api\/ical\/user\/)[^/?#]+(\/upcoming)/gi, "$1[calendarFeedToken]$2");
+}
+
+function sanitizeActionInputs(args: ServerActionArgs, context: ActionContext): Prisma.ActionUncheckedCreateInput {
+    const { deviceInfo } = args;
     return {
-        // Core fields
-        userId: toSafeId(args.userId),
-        isClient: Boolean(args.isClient),
+        userId: toSafeInteger(args.userId, 1),
+        bandId: context.bandId,
+        localeContextId: context.localeContextId,
+        isClient: args.isClient,
         uri: truncateString(redactSensitiveActionUri(args.uri), 192),
-        feature: sanitizeFeature(args.feature),
+        feature: args.feature.substring(0, 64),
         context: truncateString(args.context, 256),
         queryText: truncateString(args.queryText, 64),
-
-        // Device info fields - all with lowercase normalization where specified
-        screenHeight: toSafeInteger(deviceInfo?.screenHeight),
-        screenWidth: toSafeInteger(deviceInfo?.screenWidth),
+        screenHeight: toSafeInteger(deviceInfo?.screenHeight, 0),
+        screenWidth: toSafeInteger(deviceInfo?.screenWidth, 0),
         deviceClass: toLowerCaseString(deviceInfo?.deviceClass, 16),
         pointerType: toLowerCaseString(deviceInfo?.pointer, 16),
         browserName: toLowerCaseString(deviceInfo?.browser, 16),
@@ -103,145 +64,72 @@ function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null,
         language: toLowerCaseString(deviceInfo?.language, 8),
         locale: toLowerCaseString(deviceInfo?.locale, 8),
         timezone: toLowerCaseString(deviceInfo?.timezone, 48),
-
-        // Association IDs - all must be positive integers
-        eventId: null,
-        fileId: null,
-        songId: null,
-        wikiPageId: null,
-        attendanceId: null,
-        eventSegmentId: null,
-        customLinkId: null,
-        eventSongListId: null,
-        frontpageGalleryItemId: null,
-        menuLinkId: null,
-        setlistPlanId: null,
-        songCreditTypeId: null,
-        instrumentId: null,
     };
 }
 
-/**
- * Shared logic for recording an action/telemetry event in the database.
- * Used by both recordActionMutation and the /api/telemetry endpoint.
- */
-export async function createActionRecord(args: RecordActionArgs & { userId?: number | null, isClient: boolean }) {
-    // Sanitize and validate all inputs according to database constraints
-    const sanitizedData = sanitizeActionInputs(args);
-    if (args.songId) {
-        const song = await db.song.findUnique({
-            where: { publicId: args.songId },
-            select: { id: true },
-        });
-        sanitizedData.songId = song?.id ?? null;
-    }
-    if (args.customLinkId) {
-        const link = await db.customLink.findUnique({
-            where: { publicId: args.customLinkId },
-            select: { id: true },
-        });
-        sanitizedData.customLinkId = link?.id ?? null;
-    }
-    if (args.menuLinkId) {
-        const link = await db.menuLink.findUnique({
-            where: { publicId: args.menuLinkId },
-            select: { id: true },
-        });
-        sanitizedData.menuLinkId = link?.id ?? null;
-    }
-    if (args.wikiPageId) {
-        const wikiPage = await db.wikiPage.findUnique({
-            where: { publicId: args.wikiPageId },
-            select: { id: true },
-        });
-        sanitizedData.wikiPageId = wikiPage?.id ?? null;
-    }
-    if (args.fileId) {
-        const file = await db.file.findUnique({
-            where: { publicId: args.fileId },
-            select: { id: true },
-        });
-        sanitizedData.fileId = file?.id ?? null;
-    }
-    if (args.frontpageGalleryItemId) {
-        const galleryItem = await db.frontpageGalleryItem.findUnique({
-            where: { publicId: args.frontpageGalleryItemId },
-            select: { id: true },
-        });
-        sanitizedData.frontpageGalleryItemId = galleryItem?.id ?? null;
-    }
-    if (args.eventId) {
-        const event = await db.event.findUnique({
-            where: { publicId: args.eventId },
-            select: { id: true },
-        });
-        sanitizedData.eventId = event?.id ?? null;
-    }
-    if (args.instrumentId) {
-        const instrument = await db.instrument.findUnique({
-            where: { publicId: args.instrumentId },
-            select: { id: true },
-        });
-        sanitizedData.instrumentId = instrument?.id ?? null;
-    }
-    if (args.songCreditTypeId) {
-        const songCreditType = await db.songCreditType.findUnique({
-            where: { publicId: args.songCreditTypeId },
-            select: { id: true },
-        });
-        sanitizedData.songCreditTypeId = songCreditType?.id ?? null;
-    }
-
-    if (args.eventSegmentId) {
-        const segment = await db.eventSegment.findUnique({
-            where:
-            {
-                publicId: args.eventSegmentId
-            },
-            select: {
-                id: true
-            }
-        });
-        sanitizedData.eventSegmentId = segment?.id ?? null;
-    }
-
-    if (args.attendanceId) {
-        const attendance = await db.eventAttendance.findUnique({ where: { publicId: args.attendanceId }, select: { id: true } });
-        sanitizedData.attendanceId = attendance?.id ?? null;
-    }
-
-    if (args.eventSongListId) {
-        const songList = await db.eventSongList.findUnique({
-            where: { publicId: args.eventSongListId },
-            select: { id: true },
-        });
-        sanitizedData.eventSongListId = songList?.id ?? null;
-    }
-    if (args.setlistPlanId) {
-        const plan = await db.setlistPlan.findUnique({
-            where: { publicId: args.setlistPlanId },
-            select: { id: true },
-        });
-        sanitizedData.setlistPlanId = plan?.id ?? null;
-    }
-
-    await db.action.create({
-        data: sanitizedData,
-    });
-
-    // console.log("[ActivityLog] Recorded action", {
-    //     uri: sanitizedData.uri,
-    //     feature: sanitizedData.feature,
-    //     context: sanitizedData.context,
-    //     userId: sanitizedData.userId,
-    //     isClient: sanitizedData.isClient
-    // });
+// Missing and foreign-band references are omitted, as with unknown telemetry IDs.
+// Child rows inherit ownership through their event or file, never through the client.
+async function resolveBandAssociations(database: ActionDatabase, args: RecordActionArgs, bandId: number | null) {
+    const [song, customLink, menuLink, wikiPage, file, galleryItem, event, instrument, segment, songList, plan] = bandId === null
+        ? [] : await Promise.all([
+            args.songId ? database.song.findFirst({ where: { publicId: args.songId, bandId }, select: { id: true } }) : null,
+            args.customLinkId ? database.customLink.findFirst({ where: { publicId: args.customLinkId, bandId }, select: { id: true } }) : null,
+            args.menuLinkId ? database.menuLink.findFirst({ where: { publicId: args.menuLinkId, bandId }, select: { id: true } }) : null,
+            args.wikiPageId ? database.wikiPage.findFirst({ where: { publicId: args.wikiPageId, bandId }, select: { id: true } }) : null,
+            args.fileId ? database.file.findFirst({ where: { publicId: args.fileId, bandId }, select: { id: true } }) : null,
+            args.frontpageGalleryItemId ? database.frontpageGalleryItem.findFirst({ where: { publicId: args.frontpageGalleryItemId, file: { bandId } }, select: { id: true } }) : null,
+            args.eventId ? database.event.findFirst({ where: { publicId: args.eventId, bandId }, select: { id: true } }) : null,
+            args.bandInstrumentId ? database.bandInstrument.findFirst({ where: { publicId: args.bandInstrumentId, bandId }, select: { id: true } }) : null,
+            args.eventSegmentId ? database.eventSegment.findFirst({ where: { publicId: args.eventSegmentId, event: { bandId } }, select: { id: true } }) : null,
+            args.eventSongListId ? database.eventSongList.findFirst({ where: { publicId: args.eventSongListId, event: { bandId } }, select: { id: true } }) : null,
+            args.setlistPlanId ? database.setlistPlan.findFirst({ where: { publicId: args.setlistPlanId, bandId }, select: { id: true } }) : null,
+        ]);
+    return {
+        songId: song?.id ?? null,
+        customLinkId: customLink?.id ?? null,
+        menuLinkId: menuLink?.id ?? null,
+        wikiPageId: wikiPage?.id ?? null,
+        fileId: file?.id ?? null,
+        frontpageGalleryItemId: galleryItem?.id ?? null,
+        eventId: event?.id ?? null,
+        bandInstrumentId: instrument?.id ?? null,
+        eventSegmentId: segment?.id ?? null,
+        eventSongListId: songList?.id ?? null,
+        setlistPlanId: plan?.id ?? null,
+    };
 }
 
-export async function recordAuthenticatedClientAction(args: RecordActionArgs, auth: CMServerAuthorization) {
-    await createActionRecord({
-        ...args,
-        userId: auth.userId,
-        isClient: true,
-    });
+async function resolveGlobalAssociations(database: ActionDatabase, args: RecordActionArgs) {
+    const [creditType, attendance] = await Promise.all([
+        args.songCreditTypeId ? database.songCreditType.findUnique({ where: { publicId: args.songCreditTypeId }, select: { id: true } }) : null,
+        args.attendanceId ? database.eventAttendance.findUnique({ where: { publicId: args.attendanceId }, select: { id: true } }) : null,
+    ]);
+    return { songCreditTypeId: creditType?.id ?? null, attendanceId: attendance?.id ?? null };
+}
+
+/** Server callers supply trusted context explicitly; platform/unknown context uses nulls. */
+export async function createActionRecord(args: ServerActionArgs, context: ActionContext, database: ActionDatabase = actionDatabase): Promise<void> {
+    const [bandAssociations, globalAssociations] = await Promise.all([
+        resolveBandAssociations(database, args, context.bandId),
+        resolveGlobalAssociations(database, args),
+    ]);
+    await database.action.create({ data: {
+        ...sanitizeActionInputs(args, context), ...bandAssociations, ...globalAssociations,
+    } });
+}
+
+export async function recordAuthenticatedClientAction(request: ClientActionRequest, auth: CMServerAuthorization): Promise<void> {
+    await db.$transaction(async (tx: Prisma.TransactionClient) => {
+        const freshAuth = await auth.refresh(tx);
+        if ((freshAuth.band?.publicId ?? null) !== (request.presentation.bandPublicId ?? null)) {
+            throw new AuthorizationError("Telemetry context does not match the selected band.");
+        }
+        const formattingLocale = selectFormattingLocale(collectLocalePreferences(request.presentation));
+        // Formatting can use an unregistered locale. Keep that context unknown rather than inventing a row.
+        const locale = await tx.locale.findFirst({ where: { ietfTag: formattingLocale, isDeleted: false }, select: { id: true } });
+        await createActionRecord({ ...request.event, userId: freshAuth.userId, isClient: true }, {
+            bandId: freshAuth.band?.id ?? null,
+            localeContextId: locale?.id ?? null,
+        }, tx);
+    }, { isolationLevel: "RepeatableRead" });
 }

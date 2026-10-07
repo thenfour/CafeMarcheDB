@@ -5,7 +5,8 @@ import {
     type InstrumentPublicId,
     type SongCreditTypePublicId,
 } from "shared/publicId";
-import * as db3 from "../../db3/db3";
+import { PresentationInputSchema } from "src/locale/shared/presentationInput";
+import { collectLocalePreferences } from "src/locale/shared/localePreferences";
 
 export enum ActivityFeature {
     global_ical_digest = "global_ical_digest",
@@ -348,13 +349,26 @@ export const ZTRecordActionArgs = z.object({
     attendanceId: z.custom<EventAttendancePublicId>(isPublicId).optional(),
     eventSegmentId: z.custom<EventSegmentPublicId>(isPublicId).optional(),
     customLinkId: z.custom<CustomLinkPublicId>(isPublicId).optional(),
-    eventSongListId: db3.xEventSongList.identitySchema.optional(),
+    eventSongListId: z.custom<EventSongListPublicId>(isPublicId).optional(),
     frontpageGalleryItemId: z.custom<FrontpageGalleryItemPublicId>(isPublicId).optional(),
     menuLinkId: z.custom<MenuLinkPublicId>(isPublicId).optional(),
-    setlistPlanId: db3.xSetlistPlan.identitySchema.optional(),
-    songCreditTypeId: db3.xSongCreditType.identitySchema.optional(),
-    instrumentId: z.string().optional(),
-});
+    setlistPlanId: z.custom<SetlistPlanPublicId>(isPublicId).optional(),
+    songCreditTypeId: z.custom<SongCreditTypePublicId>(isPublicId).optional(),
+    bandInstrumentId: z.custom<InstrumentPublicId>(isPublicId).optional(),
+}).strict();
+
+export const ClientActionRequestSchema = z.object({
+    event: ZTRecordActionArgs,
+    presentation: PresentationInputSchema.refine(input => {
+        try {
+            collectLocalePreferences(input);
+            return true;
+        } catch {
+            return false;
+        }
+    }, "Invalid presentation locale"),
+}).strict();
+export type ClientActionRequest = z.infer<typeof ClientActionRequestSchema>;
 
 export type ActivityFeatureAssociations = {
     queryText?: string;
@@ -372,7 +386,7 @@ export type ActivityFeatureAssociations = {
     menuLinkId?: MenuLinkPublicId;
     setlistPlanId?: SetlistPlanPublicId;
     songCreditTypeId?: SongCreditTypePublicId;
-    instrumentId?: InstrumentPublicId;
+    bandInstrumentId?: InstrumentPublicId;
 };
 
 export type ClientActivityParams = ActivityFeatureAssociations & {

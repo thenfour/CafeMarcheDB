@@ -148,10 +148,11 @@ describe("FrontpageGalleryItem public identity", () => {
         const input = {
             feature: ActivityFeature.frontpagegallery_item_edit,
             frontpageGalleryItemId: galleryPublicId(20),
-            isClient: true,
         };
+        expect(() => ZTRecordActionArgs.parse(input)).not.toThrow();
         expect(() => ZTRecordActionArgs.parse({ ...input, frontpageGalleryItemId: 20 })).toThrow();
-        await createActionRecord(input);
+        await authorizationTestDb.getDelegate("file").create({ data: { id: 10, bandId: 1 } });
+        await createActionRecord({ ...input, isClient: true }, { bandId: 1, localeContextId: null });
         expect(authorizationTestDb.snapshot("action")[0]?.frontpageGalleryItemId).toBe(20);
     });
 

@@ -246,13 +246,13 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
 
     it("replaces a client-supplied telemetry identity with the fresh authenticated actor", async () => {
         const actor = createAuthorizationTestUser("normal", { id: 300 });
-        authorizationTestDb.reset({ user: [actor], action: [] });
+        authorizationTestDb.reset({ user: [{ ...actor, mergedIntoUserId: null, globalRoleId: null }], action: [] });
         const { ctx } = createAuthorizationPersona("normal", { id: actor.id });
 
-        await recordAuthenticatedClientAction({
+        await recordAuthenticatedClientAction({ event: {
             feature: ActivityFeature.song_view,
             songId: songPublicId(3),
-        }, await loadAuthorization(ctx.session));
+        }, presentation: {} }, await loadAuthorization(ctx.session));
 
         expect(authorizationTestDb.snapshot("action")).toEqual([
             expect.objectContaining({ userId: actor.id, feature: ActivityFeature.song_view }),
@@ -262,9 +262,9 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
     it("records anonymous telemetry without accepting a claimed user identity", async () => {
         const { ctx } = createAuthorizationPersona("public");
 
-        await recordAuthenticatedClientAction({
+        await recordAuthenticatedClientAction({ event: {
             feature: ActivityFeature.song_view,
-        }, await loadAuthorization(ctx.session));
+        }, presentation: {} }, await loadAuthorization(ctx.session));
 
         expect(authorizationTestDb.snapshot("action")).toEqual([
             expect.objectContaining({ userId: null, feature: ActivityFeature.song_view }),
@@ -274,7 +274,7 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
     it("resolves a public SongCreditType telemetry identity before persistence", async () => {
         const actor = createAuthorizationTestUser("normal", { id: 301 });
         authorizationTestDb.reset({
-            user: [actor],
+            user: [{ ...actor, mergedIntoUserId: null, globalRoleId: null }],
             songCreditType: [{
                 id: 41,
                 publicId: songCreditTypePublicId,
@@ -285,10 +285,10 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
         });
         const { ctx } = createAuthorizationPersona("normal", { id: actor.id });
 
-        await recordAuthenticatedClientAction({
+        await recordAuthenticatedClientAction({ event: {
             feature: ActivityFeature.song_credit_edit,
             songCreditTypeId: songCreditTypePublicId,
-        }, await loadAuthorization(ctx.session));
+        }, presentation: {} }, await loadAuthorization(ctx.session));
 
         expect(authorizationTestDb.snapshot("action")).toEqual([
             expect.objectContaining({

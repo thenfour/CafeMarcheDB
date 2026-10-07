@@ -33,7 +33,7 @@ export default api(
                 userId: user.id,
                 uri: undefined,
                 isClient: false,
-              });
+              }, { bandId: null, localeContextId: null });
               done(null, { publicData: await createPublicDataFromDatabase(authorizationDatabase, { user }) });
             } catch (err) {
               done(null, false);

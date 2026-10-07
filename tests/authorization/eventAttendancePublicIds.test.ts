@@ -213,9 +213,10 @@ describe("EventAttendance public identities", () => {
     });
 
     it("stores telemetry references as numeric foreign keys and projects report and CSV references as public", async () => {
-        const input = { feature: ActivityFeature.attendance_response, attendanceId: attendance.publicId, isClient: true };
+        const input = { feature: ActivityFeature.attendance_response, attendanceId: attendance.publicId };
+        expect(() => ZTRecordActionArgs.parse(input)).not.toThrow();
         expect(() => ZTRecordActionArgs.parse({ ...input, attendanceId: 2 })).toThrow();
-        await createActionRecord(input);
+        await createActionRecord({ ...input, isClient: true }, { bandId: null, localeContextId: null });
         expect(authorizationTestDb.snapshot("action")[0]?.attendanceId).toBe(2);
         const evidence = {
             id: 900, createdAt: new Date(), feature: ActivityFeature.attendance_response, isClient: true,

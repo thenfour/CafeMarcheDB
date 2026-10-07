@@ -146,6 +146,9 @@ const testRelations: Record<string, Record<string, Relation>> = {
     songs: { table: "eventSongListSong", local: "id", foreign: "eventSongListId", many: true },
     dividers: { table: "eventSongListDivider", local: "id", foreign: "eventSongListId", many: true },
   },
+  frontpageGalleryItem: {
+    file: { table: "file", local: "fileId", foreign: "id" },
+  },
   eventSongListSong: {
     eventSongList: { table: "eventSongList", local: "eventSongListId", foreign: "id" },
     song: { table: "song", local: "songId", foreign: "id" },

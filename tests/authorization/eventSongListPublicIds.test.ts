@@ -192,9 +192,11 @@ describe("Event setlist public identities", () => {
     });
 
     it("records public telemetry references as natural foreign keys only on the server", async () => {
-        const input = { feature: ActivityFeature.setlist_edit, eventSongListId: listPublicId(50), isClient: true };
+        const input = { feature: ActivityFeature.setlist_edit, eventSongListId: listPublicId(50) };
+        expect(() => ZTRecordActionArgs.parse(input)).not.toThrow();
         expect(() => ZTRecordActionArgs.parse({ ...input, eventSongListId: 50 })).toThrow();
-        await createActionRecord(input);
+        await authorizationTestDb.getDelegate("event").update({ where: { id: event.id }, data: { bandId: 1 } });
+        await createActionRecord({ ...input, isClient: true }, { bandId: 1, localeContextId: null });
         expect(authorizationTestDb.snapshot("action")[0]?.eventSongListId).toBe(50);
     });
     it("projects report and CSV setlist references without natural row identity", () => {

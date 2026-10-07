@@ -33,11 +33,13 @@ describe("remaining public identities", () => {
             feature: ActivityFeature.custom_link_update,
             customLinkId: customLinkPublicId,
             menuLinkId: menuLinkPublicId,
-            isClient: true,
         };
+        expect(() => ZTRecordActionArgs.parse(input)).not.toThrow();
         expect(() => ZTRecordActionArgs.parse({ ...input, customLinkId: 20 })).toThrow();
         expect(() => ZTRecordActionArgs.parse({ ...input, menuLinkId: 30 })).toThrow();
-        await createActionRecord(input);
+        await authorizationTestDb.getDelegate("customLink").update({ where: { id: 20 }, data: { bandId: 1 } });
+        await authorizationTestDb.getDelegate("menuLink").update({ where: { id: 30 }, data: { bandId: 1 } });
+        await createActionRecord({ ...input, isClient: true }, { bandId: 1, localeContextId: null });
         expect(authorizationTestDb.snapshot("action")[0]).toMatchObject({ customLinkId: 20, menuLinkId: 30 });
     });
 

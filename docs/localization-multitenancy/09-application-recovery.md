@@ -1,7 +1,8 @@
 # Current application recovery evidence
 
-The A0 bootstrap path has development-browser evidence, and obsolete Role and
-shared-account merge dependencies are now isolated. **A0 remains open.** The
+The A0 bootstrap path has development-browser evidence, obsolete Role and
+shared-account merge dependencies are isolated, and telemetry recording now uses
+the target schema and explicit ownership. **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
 
@@ -66,6 +67,17 @@ preserving source alone.
   contracts stay active. Deferred invitation views still resolve old
   tag-assignment metadata during startup; its generic writes/deletion are now
   disabled, and its removal remains coupled to event payload recovery.
+- Client telemetry carries the presentation input in both HTTP and RPC requests.
+  Actor identity is refreshed with band context in the recording transaction;
+  natural/client-owned IDs are rejected. Direct resource associations require
+  the selected band; segments/setlists and gallery items inherit ownership
+  through their event/file. Global credit-type and attendance references remain
+  available in platform context. Instrument actions use `bandInstrumentId`.
+  The formatting locale resolves independently of raw device locale/language;
+  an unregistered or deleted locale remains null. Asynchronous device collection
+  retains the event's original band, locale, URI and associations. Account-level
+  Google sign-in and the still-deferred calendar feed explicitly use null band/
+  locale context. Recording schemas no longer initialize the DB3 registry.
 
 ## Verification
 
@@ -94,12 +106,14 @@ production server could not be checked because the normal build still fails.
 | Member profile/directory pages and instrument/tag editor DOM regressions | Passed: 22 tests across three isolated jsdom files. |
 | Recovery RPC/registration boundaries, table authorization, account/bootstrap and membership role/lifecycle contracts | Passed: 66 tests across six files. A strict database proxy rejects any access from deferred RPCs. |
 | Account/bootstrap, membership contracts/pages/editors and suspended presentation navigation | Passed: 67 tests across ten files. |
+| Telemetry ownership, HTTP/RPC validation and delivery, preservation/recovery boundaries, member profile, instrument/tag editors and suspended navigation | Passed: 173 tests across nine files, including 20 isolated DOM cases. Nine targeted existing public-ID/actor telemetry cases also pass across seven otherwise partly failing legacy suites. |
+| Telemetry persistence, dashboard catalogs and member profiles on a fresh private MariaDB fixture | Passed: 18 tests across three files, including five native telemetry cases. All direct/inherited associations, foreign-band omissions, mixed references, global catalogs, null platform context and calendar credential redaction are covered. The fixture used a new database on `127.0.0.1:32695`; writes were rolled back and the database removed. |
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 389 diagnostics, down from 408 before the shared-person selector/editor slice. No new diagnostic groups, compiler exclusions or error suppression added. |
+| `yarn typecheck` | Fails: 386 diagnostics, down from 389 before the telemetry slice. No increased file/error-code groups, compiler exclusions or error suppression added. |
 | `yarn build` | Gets past Custom Links and shared field-label callers; fails at the legacy event-search payload in `src/core/components/event/EventComponents.tsx:1392`. The duplicate role-page component-name warning is also fixed. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 296 failed, 1,290 passed, 94 skipped. The shared-account owner-update case now passes; no failure groups were added. Later isolated DOM batches are not reached; focused DOM checks above passed. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 294 failed, 1,360 passed, 99 skipped. Two old telemetry actor fixtures now carry the target account state and pass; no failure groups were added. Later isolated DOM batches are not reached; focused DOM checks above passed. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -118,6 +132,11 @@ Broader native suites still assume an empty audit history and default role grant
 they were therefore run against a separate fresh target-schema fixture. Running
 those suites directly on preserved production history exposed 12 fixture-dependent
 failures; production history/grants were not rewritten to satisfy those tests.
+
+An additional `tests/domainSelection.test.ts` DOM probe stops during collection:
+its RPC mock lacks `BlitzRpcPlugin` when `userChip` imports the presentation
+provider through `useDB3Context`. That selection-fixture dependency remains
+unresolved; it is not included in the passing focused checks above.
 
 Local diagnostic logs and screenshots are under ignored `temp/a0-*` paths. The
 private database server, databases, browser, and baseline worktree are disposable
@@ -144,9 +163,12 @@ the platform grid is usable.
 Deferred source, registrations, pages, RPC/API entry points, and background jobs
 still need coherent isolation. The home notice and omitted dashboard reads do not
 establish that isolation; legacy sidebar/direct links still expose unfinished
-surfaces. The browser probe also observed server errors from the old telemetry
-writer and the catch-all Custom Link lookup for a missing favicon. Those are
-supporting-domain ownership defects requiring migration or deliberate isolation.
+surfaces. The browser probe also observed server errors from the catch-all Custom
+Link lookup for a missing favicon. Its slug lookup still needs explicit band
+ownership or deliberate isolation. Telemetry recording is now migrated and has
+native/HTTP/RPC/DOM evidence; it still needs built-browser verification. Activity
+report readers retain obsolete instrument relations and require a separate
+ownership/localization adaptation before analytics can be called restored.
 
 After those dependencies compile, rerun the normal checks and start the built app
 with `yarn start` against a disposable migrated copy before closing A0. Keep the

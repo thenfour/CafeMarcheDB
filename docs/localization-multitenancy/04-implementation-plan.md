@@ -25,6 +25,12 @@ presentation delivery, and typed settings are implemented. Shared DB3 facilities
 support localized/inherited fields, coherent reads, transactional writes, and
 dashboard references.
 
+Startup telemetry now writes target-schema actions with explicit band and
+presentation-locale context. HTTP and RPC delivery share fresh authorization;
+resource references resolve only within the selected band, including ownership
+through event/file parents. Account-level server actions retain null context.
+This restores recording, while analytics/report readers still need migration.
+
 Migrated slices include instrument/group catalogs, song tags, member instruments
 and tags, role assignment, basic profiles/directory, and membership deactivation/
 recovery. Their current contracts are in [DB3](07-db3-contracts.md) and
@@ -175,6 +181,7 @@ implementation/test references and verification obligations for audited removals
 | Settings and branding | Generic DB3 settings storage/view are inactive and preserved in source. Settings/branding pages use registered commands and per-key capabilities, with explicit scope, save/reset and validated clipboard import. Logo editing, optional primary text color and upload controls remain unavailable; hosting mode belongs to deployment configuration. | Verify editors in the built app during A0/A1; recover remaining branding controls and account for legacy clipboard documents under `settings-editors`. |
 | Translation tools | Native catalog controls can edit explicit translations; full inventory/inspection/chrome tooling is incomplete. | Complete after A1. |
 | Portal routing | Recovery uses explicit `?bandPublicId=<publicId>` and optional `routeLocale`; omission never selects a default band. | Full routing after A1; retain enough explicit selection for A0. |
+| Telemetry and activity reports | Recording uses explicit presentation context, server-owned actor/internal IDs and band-scoped associations. The formatting locale is separate from raw device locale/language; unregistered/deleted locales remain null. Analytics readers still contain obsolete relations and are not established as usable. | Verify recording in the built app during A0; adapt report permissions, queries, facets and projections before restoring analytics. Calendar-feed ownership remains a separate supporting-domain task. |
 | Legacy DB3 domains | Selected-band queries/row services reject undeclared ownership policies. | Migrate required domains for A0/A1; keep other domains coherently unavailable. |
 | Dashboard content and search | Bootstrap omits events, announcements, role metadata, custom menus and other deferred catalogs. Home explains the restriction; global search is removed from the shell. Legacy sidebar/direct routes and non-page entry points are not yet isolated. | Finish coherent route/endpoint/source isolation during A0; restore content required by core workflows during A1. |
 | Platform role administration | Legacy Role descriptors, views, commands and account role controls are removed. Assignment/designation RPCs reject before database access; `/backstage/roles` and `/backstage/rolePermissions` explain unavailability. Existing global/band role definitions still authorize requests; membership role assignment remains available. | Build GlobalRole/BandRole and permission editors after A1. |
