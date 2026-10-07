@@ -107,14 +107,15 @@ query-string state and CSV export still need shared DB3 search recovery. Old
 unscoped facet SQL would give incorrect membership authorization and counts.
 Contact/sign-in search is also pending.
 
-Membership offboarding/recovery, account-only profile editing without membership,
+Membership offboarding/recovery is now implemented in
+[12-band-user-lifecycle.md](12-band-user-lifecycle.md). Account-only profile editing without membership,
 shared-account lifecycle/merge operations and platform role administration remain
 separate work. Old account-admin and analytics components remain for their domain
 recovery; the migrated member profile does not render them. Attendance, credits,
 wiki contribution and mass-analysis tabs await event/song/wiki consumers. Full
 portal routing follows in phase 5.
 
-Continue with membership offboarding/recovery and platform role administration,
+Continue with platform role administration,
 then event invitation/default-instrument and merge consumers, remaining catalogs,
 band content and registered settings editors. Track outstanding directory and
 analytics features with phase 4 workflow acceptance.

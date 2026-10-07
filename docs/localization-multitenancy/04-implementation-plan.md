@@ -248,6 +248,11 @@ shared name/phone self service, basic directory search/filter/paging and context
 person links. Advanced directory facets/export/presets, account-only profiles,
 lifecycle/merge operations and profile analytics remain explicit recovery work.
 
+[12-band-user-lifecycle.md](12-band-user-lifecycle.md) adds membership offboarding
+and recovery through shared DB3 execution, role delegation/continuity policy and
+authorized deleted-row queries. Shared-account lifecycle/merge, platform role
+administration and broader domain recovery remain incomplete.
+
 **Settled query policy:** treat each localized field as an ordinary string field
 containing its resolved value for the request. Preserve existing DB3 token/filter
 semantics across quicksearch, autocomplete, and field filters. Use those same
@@ -322,6 +327,10 @@ SQL/Prisma optimization is deferred, not a prerequisite for this slice.
   memberships. Keep person URLs and shared name/phone editing separate from band
   assignment authority, enforce contact visibility, and reuse assignment editors
   and ordinary DB3 paging/filter/order execution.
+- [x] Implement band membership offboarding/recovery with explicit capabilities,
+  fresh transactional authorization, retained-role delegation, continuity
+  confirmation, audit/noops and authorized inactive-member search/paging.
+  Preserve shared accounts, sessions, other memberships and retained assignments.
 - [ ] Recover advanced directory facets, multi-choice filters, presets,
   query-string state and export, plus account-only profiles and member analytics
   with their owning domains. See the bounded profile/directory slice above.
@@ -453,7 +462,7 @@ owner/restoration phase for any additional gap.
 | Full portal routing and band management | Recovery requests select a band explicitly with `?bandPublicId=<publicId>` and may supply `routeLocale`. Server authorization validates the selection; omitting it never selects a default band. | Phase 5 completes host/path routing, links, switching, and lifecycle surfaces. |
 | Legacy DB3 operations with selected-band grants | Selected-band execution uses declared DB3 ownership policies. Generic queries and composed row services reject unadapted legacy descriptors; instrument-specific exceptions have been removed. | Phase 3 replaces exceptions with shared declared policies without weakening the ownership gate. Phases 3–4 admit other domains only after migration. |
 | Global instrument administration and remaining instrument consumers | Native instrument/group CRUD, richer opt-in, and song tags use the shared DB3 catalog design. Dashboard catalog references and chips now use canonical band entities. Global catalog writers, member selectors, file/event associations, and catalog seeds still use obsolete contracts. | Continue phase 3 consumer/descriptor adaptation and phase 4 recovery; no compatibility delegates were added. |
-| Band administrators using old global-account writers | Shared-account changes require platform grants. Membership instruments, tags, role assignment and basic profile/directory reads have migrated commands/views; advanced directory features, account-only profiles, global-role/merge consumers and membership offboarding/recovery remain incomplete. | Continue phases 3–4 consumer recovery and membership lifecycle work. |
+| Band administrators using old global-account writers | Shared-account changes require platform grants. Membership instruments, tags, roles, profiles/directory and offboarding/recovery have migrated commands/views. Advanced directory features, account-only profiles, global-role/merge and shared-account lifecycle consumers remain incomplete. | Continue phases 3–4 consumer recovery and platform administration. |
 | Legacy random demo seeds | Implemented in phase 1: the seed entry point now initializes real access-control foundations. Old catalog/demo generators reference removed models. | Phases 3–4 adapt useful catalog/demo seed content with its domains. |
 | Legacy synchronous band-permission guards | Implemented in the phase-1 correction: `resolver.authorize` rejects band capabilities; only request-scoped authorization can check them. | Phases 3–4 replace remaining band guards with `cmauthorize` and enforce resource ownership. |
 
@@ -489,12 +498,13 @@ Their dashboard references, client details/chips, and native editor reference
 providers are migrated, followed by [membership instruments](08-band-user-instruments.md)
 and [member-tag catalogs/assignments](09-band-user-tags.md), then
 [membership-role assignment and manager controls](10-band-user-roles.md), followed
-by [member profiles and basic directory recovery](11-band-user-profiles.md).
-Continue with membership offboarding/recovery and platform
+by [member profiles and basic directory recovery](11-band-user-profiles.md), then
+[membership offboarding/recovery](12-band-user-lifecycle.md).
+Continue with platform
 role administration, event invitation/default-instrument and merge
 consumers, remaining catalogs/global administration, band content, and registered
 settings editors. Broader application recovery follows in phase 4. The latest
-slice records 233 focused passing tests and 655 TypeScript diagnostics. Advanced
+slice records 222 focused passing tests (51 native) and 655 TypeScript diagnostics. Advanced
 directory features and profile analytics remain phase 4 workflow recovery;
 historical full-suite failures are recorded in the instrument slice. The application remains
 unbuildable until the remaining consumer adaptations are complete.

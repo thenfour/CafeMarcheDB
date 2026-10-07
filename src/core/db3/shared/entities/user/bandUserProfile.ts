@@ -37,6 +37,7 @@ const selection = Prisma.validator<Prisma.BandUserDefaultArgs>()({
         ...bandUserTagsSelection.select,
         ...bandUserRolesSelection.select,
         createdAt: true,
+        isDeleted: true,
         user:
         {
             select:

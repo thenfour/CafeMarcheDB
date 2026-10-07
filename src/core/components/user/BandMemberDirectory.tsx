@@ -13,7 +13,7 @@ import { useLocale } from "src/locale/components/useLocale";
 import { CMLink } from "../CMLink";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
-import { bandMemberHref } from "./bandMemberLinks";
+import { bandMemberHref, withMemberPresentation } from "./bandMemberLinks";
 
 function BandMemberListItem({ member, roles }: { readonly member: BandUserProfileDto; readonly roles: readonly BandRoleDto[] }) {
     const dashboard = useDashboardContext();
@@ -58,6 +58,8 @@ function LoadedMemberDirectory() {
     const [result, status] = useQuery(db3paginatedQueries, bandMemberDirectoryQuery(filter, context, canManage),
         { ...options, suspense: false, useErrorBoundary: false });
     return <Stack spacing={2}>
+        {presentation.data?.authorization.effectivePermissionNames.includes(Permission.recover_users)
+            && <CMLink href={withMemberPresentation("/backstage/recoverMembers", context)}>{locale.getPlainString("membership.lifecycle.recoveryTitle")}</CMLink>}
         <TextField label={locale.getPlainString("membership.directory.search")} value={filter.search} onChange={event => updateFilter({ search: event.target.value })} inputProps={{ maxLength: 500 }} />
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
             <TextField select fullWidth label={locale.getPlainString("membership.tags.title")} value={filter.tagId} onChange={event => updateFilter({ tagId: event.target.value })}>

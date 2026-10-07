@@ -1,11 +1,10 @@
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
-import { Alert, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from "@mui/material";
 import { Permission } from "shared/permissions";
 import type { BandRolePublicId } from "shared/publicId";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
-import type { LocalizedPlainStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
 import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 import { useDB3Command } from "src/core/db3/components/useDB3Command";
 import db3queries from "src/core/db3/queries/db3queries";
@@ -13,11 +12,7 @@ import { bandRoleChoicesView, bandRoleListView, xBandRole, type BandRoleDto } fr
 import { bandUserRoleCommand, bandUserRolesView, type BandUserRolesDto } from "src/core/db3/shared/entities/user/bandUserRoles";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { useSnackbar } from "../SnackbarContext";
-
-const continuityLabels: Partial<Record<Permission, LocalizedPlainStringKey>> = {
-    [Permission.assign_user_roles]: "membership.roles.permission.assignRoles",
-    [Permission.deactivate_users]: "membership.roles.permission.deactivate",
-};
+import { BandMemberContinuityWarning } from "./BandMemberContinuityWarning";
 
 export function BandUserRoleEditor({ member, roles, assignableRoleIds, refetch }: {
     readonly member: BandUserRolesDto;
@@ -100,12 +95,7 @@ export function BandUserRoleEditor({ member, roles, assignableRoleIds, refetch }
                         && <MenuItem value={member.bandRoleId} disabled>{roleLabel(member.bandRoleId)}</MenuItem>}
                     {roles.filter(role => assignableRoleIds.includes(role.publicId)).map(role => <MenuItem key={role.publicId} value={role.publicId}>{roleLabel(role.publicId)}</MenuItem>)}
                 </TextField>
-                {warnings.length > 0 && <Alert severity="warning">
-                    {locale.getPlainString("membership.roles.continuity")}
-                    <ul>{warnings.map(permission => <li key={permission}>{locale.getPlainString(continuityLabels[permission] ?? "membership.roles.permission.other")}</li>)}</ul>
-                    <FormControlLabel label={locale.getPlainString("membership.roles.acknowledge")} control={<Checkbox checked={acknowledged} disabled={saving}
-                        onChange={(_, checked) => setAcknowledged(checked)} />} />
-                </Alert>}
+                {warnings.length > 0 && <BandMemberContinuityWarning permissions={warnings} acknowledged={acknowledged} saving={saving} onAcknowledge={setAcknowledged} />}
             </Stack></DialogContent>
             <DialogActions>
                 <Button disabled={saving} onClick={close}>{locale.getPlainString("membership.roles.cancel")}</Button>

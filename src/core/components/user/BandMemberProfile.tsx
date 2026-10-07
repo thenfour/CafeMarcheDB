@@ -15,6 +15,7 @@ import { CMLink } from "../CMLink";
 import { BandUserInstrumentsEditor } from "./BandUserInstruments";
 import { BandUserTagsEditor } from "./BandUserTags";
 import { BandUserRoleEditor } from "./BandUserRoles";
+import { BandUserLifecycleControl } from "./BandUserLifecycle";
 import { withMemberPresentation } from "./bandMemberLinks";
 import { useMemberAssignmentSave } from "./useMemberAssignmentSave";
 
@@ -107,6 +108,7 @@ function LoadedMemberProfile({ personId }: { readonly personId: UserPublicId }) 
         <Stack><Typography variant="h6">{locale.getPlainString("membership.roles.role")}</Typography><MemberProfileRole member={member} refetch={refetch} /></Stack>
         <Stack><Typography variant="h6">{locale.getPlainString("membership.instruments.title")}</Typography><BandUserInstrumentsEditor member={member} refetch={refetch} /></Stack>
         <Stack><Typography variant="h6">{locale.getPlainString("membership.tags.title")}</Typography><BandUserTagsEditor member={member} refetch={refetch} /></Stack>
+        <BandUserLifecycleControl member={member} refetch={refetch} />
     </Stack>;
 }
 

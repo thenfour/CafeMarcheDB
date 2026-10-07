@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { z } from "zod";
 import { Permission } from "shared/permissions";
 import type { BandUserPublicId } from "shared/publicId";
 import { defineAuthMap, defineTable, makeColumnSet, prismaModel, SqlSpecialColumnFunction } from "../../db3core";
@@ -33,6 +34,7 @@ export const xBandUser = defineTable({
     getIdentity: (row: { publicId: BandUserPublicId }) => row.publicId,
     bandScope: { member: "bandId", managePermission: Permission.manage_users },
     readConsistency: "snapshot", deletePolicy: "disabled",
+    viewDeletedPermission: Permission.recover_users,
     tableAuthMap: {
         View: Permission.view_users_basic_info,
         ViewOwn: Permission.login,
@@ -45,14 +47,22 @@ export const xBandUser = defineTable({
             kind: "string",
             authorizeAs: "user",
         },
+        membershipStatus: { kind: "string", authorizeAs: "isDeleted" },
         tagId: { kind: "entityIdentity", targetTableID: "BandUserTag", authorizeAs: "bandUserTagAssignments" },
         instrumentId: { kind: "entityIdentity", targetTableID: "BandInstrument", authorizeAs: "bandUserInstruments" },
         roleId: { kind: "entityIdentity", targetTableID: "BandRole", authorizeAs: "bandRole", nullable: true },
     },
     getParameterizedWhereClause: (params: {
-        personPublicId?: string; tagId?: number; instrumentId?: number; roleId?: number | null;
-    }): Prisma.BandUserWhereInput[] => {
-        const clauses: Prisma.BandUserWhereInput[] = [activeBandMembershipWhere()];
+        personPublicId?: string; tagId?: number; instrumentId?: number; roleId?: number | null; membershipStatus?: string;
+    }, auth): Prisma.BandUserWhereInput[] => {
+        const status = z.enum(["active", "inactive"]).parse(params.membershipStatus ?? "active");
+        if (status === "inactive") {
+            auth.requirePermission(Permission.recover_users);
+        }
+        // Deleted-row authorization still requires includeDeleted; shared people must remain active.
+        const clauses: Prisma.BandUserWhereInput[] = [{
+            ...activeBandMembershipWhere(), isDeleted: status === "inactive",
+        }];
         if (params.personPublicId !== undefined) {
             // Keep person URLs; the predicate still starts from authorized memberships.
             clauses.push({ user: { publicId: xUserMinimum.parseIdentity(params.personPublicId) } });

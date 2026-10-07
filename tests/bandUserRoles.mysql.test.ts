@@ -93,10 +93,11 @@ describe.skipIf(!settingsMysqlTestUrl)("membership role assignments on MariaDB",
         expect(await context.edit(desired.publicId)).toMatchObject({ status: "saved" });
     }));
 
-    it("does not count a Sysadmin's membership as an ordinary continuity holder", () => withFixture(async (tx, fixture) => {
+    it.each(["account flag", "global role"])("does not count a Sysadmin's membership as an ordinary continuity holder: %s", carrier => withFixture(async (tx, fixture) => {
         const context = await prepare(tx, fixture);
         const desired = await createRole(tx, fixture, "Member");
-        await tx.user.update({ where: { id: fixture.user.id }, data: { isSysAdmin: true } });
+        const sysadminRole = await tx.globalRole.findFirstOrThrow({ where: { isSysAdminRole: true } });
+        await tx.user.update({ where: { id: fixture.user.id }, data: carrier === "account flag" ? { isSysAdmin: true } : { globalRoleId: sysadminRole.id } });
         expect(await context.edit(desired.publicId)).toMatchObject({ status: "saved" });
     }));
 

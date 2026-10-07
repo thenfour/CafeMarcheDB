@@ -42,7 +42,7 @@ vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({ getPlain
 const personId = parsePublicId<"User">("User000000000001");
 const member = bandUserProfileView.parseDto({
     publicId: "Membership000001", userId: personId, user: { publicId: personId, name: "Alice", email: "alice@test.invalid", phone: "+32 123" },
-    bandRoleId: null, bandRole: null, bandUserInstruments: [], bandUserTagAssignments: [],
+    bandRoleId: null, bandRole: null, bandUserInstruments: [], bandUserTagAssignments: [], isDeleted: false,
 });
 const invoke = vi.fn(async (_input: unknown): Promise<unknown> => ({ membershipId: member.publicId, personId }));
 const refetch = vi.fn(async () => {});

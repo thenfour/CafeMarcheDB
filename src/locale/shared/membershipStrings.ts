@@ -3,6 +3,18 @@ import { plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 
 const label = (defaultValue: string) => plainStaticString({ defaultValue, description: "Band membership interface label", schema: z.string() });
 export const membershipStrings = {
+    "membership.lifecycle.deactivate": label("Deactivate band membership"),
+    "membership.lifecycle.reactivate": label("Reactivate band membership"),
+    "membership.lifecycle.deactivateDescription": label("This removes access through this membership. Its role, instruments, tags and history are retained. The shared account and other band memberships stay active."),
+    "membership.lifecycle.reactivateDescription": label("This restores this membership with its retained band role, instruments and tags."),
+    "membership.lifecycle.confirm": label("Confirm membership change"),
+    "membership.lifecycle.saved": label("Band membership updated"),
+    "membership.lifecycle.failed": label("Could not change this membership. Check your management authority and try again."),
+    "membership.lifecycle.refreshFailed": label("Membership saved. Reload this page to show the latest membership and permissions."),
+    "membership.lifecycle.saving": label("Saving membership…"),
+    "membership.lifecycle.recoveryTitle": label("Recover band members"),
+    "membership.lifecycle.recoveryDescription": label("Inactive memberships in this band can be restored with their retained role and assignments. Shared accounts that are deactivated or merged need platform administration."),
+    "membership.lifecycle.empty": label("No inactive memberships found."),
     "membership.profile.title": label("Member profile"),
     "membership.profile.edit": label("Edit shared profile"),
     "membership.profile.save": label("Save profile"),
