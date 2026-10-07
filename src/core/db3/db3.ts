@@ -21,7 +21,6 @@ export * from "./shared/schema/song"
 export * from "./shared/schema/event"
 export * from "./shared/schema/file"
 export * from "./shared/schema/customLinks"
-export * from "./shared/schema/admin"
 export * from "./shared/schema/wiki"
 export * from "./shared/schema/wikiPageTag"
 export * from "./shared/schema/menuLink"
@@ -133,4 +132,14 @@ export * from "./shared/references/dashboardData"
 // export * from "./shared/entities/menuLink/menuLinkViews"
 // export * from "./shared/entities/menuLink/menuLinkCommands"
 // export * from "./shared/references/dashboardData"
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: audit-log
+// Source: 6ee055895a049d6f105d775b4e2e563542f34d32:src/core/db3/db3.ts:24-24
+// Reason: Legacy audit readers and JSON rendering lack scoped ownership and target-schema references.
+// Restore: Restore protected audit browsing, filters, historical JSON/detail links and clipboard/Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction; retain immutable audit recording.
+// Verification: Reactivate preserved audit specifications; test sysadmin/member/anonymous access, two bands, deleted references, revoked grants, redaction, filters, JSON inspection and built-browser navigation.
+// SHA256: 8e969d1b00946cab4dac0cee4e6ddbea30c41fd429548f27d41771afc4879242
+// MIGRATION_REFERENCE_BEGIN
+// export * from "./shared/schema/admin"
 // MIGRATION_REFERENCE_END

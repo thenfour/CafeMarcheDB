@@ -1,4 +1,5 @@
 import { Alert } from "@mui/material";
+import React from "react";
 import { useLocale } from "src/locale/components/useLocale";
 import DashboardLayout from "./dashboard/DashboardLayout";
 
@@ -15,5 +16,13 @@ export function DeferredActivityReportsPage() {
     const locale = useLocale();
     return <DashboardLayout title={locale.getPlainString("recovery.activityReports.title")}>
         <Alert severity="info">{locale.getPlainString("recovery.activityReports.description")}</Alert>
+    </DashboardLayout>;
+}
+
+/** Keep the audit URL explicit while its historical readers are being migrated. */
+export function DeferredAuditLogPage() {
+    const locale = useLocale();
+    return <DashboardLayout title={locale.getPlainString("recovery.auditLog.title")}>
+        <Alert severity="info">{locale.getPlainString("recovery.auditLog.description")}</Alert>
     </DashboardLayout>;
 }

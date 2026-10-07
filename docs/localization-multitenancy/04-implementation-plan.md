@@ -93,12 +93,21 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** repair or isolate the File administration/activity lookup,
-the current build stop (`getAdminLogItemInfo.ts:52` selects the removed FileInstrumentTag
-instrument relation), then continue the remaining File/song/wiki payload roots. File member/instrument relations still
+**Next implementation slice:** repair or isolate event filtering and its related
+readers, starting at `getEventFilterInfo.ts:38`, where authorization still assumes
+`User.role`. Trace the complete filter/reference/page boundary before adapting its
+owning contracts. Then continue the remaining File/song/wiki payload roots. File member/instrument relations still
 use removed person/catalog fields, and legacy payloads still include
 `Permission.roles`. Adapt their owning contracts before their consumers; isolate
 deferred pages and non-page entry points together.
+
+Audit-log browsing is coherently isolated: the protected page shows registered
+localized recovery text, both historical-reference/filter RPCs reject before
+database access, and the generic Change reader and JSON viewer are unregistered.
+Fourteen source references preserve the original implementation and assertions
+under `audit-log`. Existing audit writes, redaction and transactional rollback
+remain active and verified. This clears the audit lookup build stop; it does not
+close A0 or restore audit browsing.
 
 Setlist Plan persistence now requires explicit band context for save/list/delete
 and reorder. Fresh authorization owns repeatable reads and Serializable writes,
@@ -290,13 +299,14 @@ implementation/test references and verification obligations for audited removals
 | Portal routing | Recovery uses explicit `?bandPublicId=<publicId>` and optional `routeLocale`; omission never selects a default band. | Full routing after A1; retain enough explicit selection for A0. |
 | Custom Links | Scoped editor CRUD, file selection/serving, all redirect modes and visits are active. Public URLs require explicit `bandPublicId`; missing, malformed/repeated and unavailable bands return 404. The narrow read-only File target does not enable unfinished general file APIs. | Verify in the built application during A0/A1; integrate URLs with band portal roots when full routing lands after A1. |
 | Telemetry recording | Recording uses explicit presentation context, server-owned actor/internal IDs and band-scoped associations. The formatting locale is separate from raw device locale/language; unregistered/deleted locales remain null. | Verify recording in the built app during A0. Calendar-feed recording uses the subscriber and band/locale from its authorized snapshot. Activity-report recovery is tracked separately below. |
+| Audit log | The Sysadmin-protected page displays a localized recovery notice. Both historical-reference/filter RPCs reject before database access; the generic Change descriptor and audit JSON viewer are unregistered. Original source/assertions are preserved under `audit-log`. Audit recording and redaction remain active. | Restore audit browsing, filters, historical detail links and JSON/clipboard/Markdown inspection with explicit platform/band policy, fresh authorization, localized/public references and redaction; verify the complete built-browser workflow. |
 | Activity-report delivery | `/backstage/featureReports` explains temporary unavailability. All five report RPCs require login and reject before database access, including CSV export. Report implementations and affected specifications are preserved; telemetry recording remains active. | Restore explicit report ownership/permissions, localized references, timelines, facets, filtering, detail and CSV behavior under `activity-reports`; reactivate specifications and verify two-band/browser isolation. |
 | Legacy DB3 domains | Selected-band queries/row services reject undeclared ownership policies. | Migrate required domains for A0/A1; keep other domains coherently unavailable. |
 | Dashboard content and search | Bootstrap includes migrated shared event catalogs but omits events, announcements, role metadata, custom menus and other deferred catalogs. Home explains the restriction; global search is removed from the shell. Legacy sidebar/direct routes and non-page entry points are not yet isolated. | Finish coherent route/endpoint/source isolation during A0; restore content required by core workflows during A1. |
 | Platform role administration | Legacy Role descriptors, views, commands and account role controls are removed. Assignment/designation RPCs reject before database access; `/backstage/roles` and `/backstage/rolePermissions` explain unavailability. Existing global/band role definitions still authorize requests; membership role assignment remains available. | Build GlobalRole/BandRole and permission editors after A1. |
 | Shared-account merging and dependency reports | Merge search, preview, commit and dependency-analysis RPCs explicitly reject without database access. Merge controls and obsolete person-level merge policies are removed; the analysis tab explains unavailability. Capability responses do not advertise merge or account-role assignment. | Restore cross-band account workflows after A1 with complete ownership-aware policies. |
 | Other shared-account/platform administration | Band grants cannot authorize shared-account or global-catalog writes; remaining legacy consumers need adaptation or isolation. | Finish isolation during A0; complete broader workflows after A1. |
-| Person-level instrument/tag editors | Shared User reads/editor/writes no longer include band assignments. `UserInstrument` storage/editor/CRUD are unregistered; unreachable legacy profile/directory renderers are preserved. The old tag-assignment descriptor remains a startup read dependency for deferred invitation views, with writes disabled. Migrated BandUser assignment commands remain active. | Remove remaining invitation/person-map metadata with event payload recovery during A0; verify full profile/directory parity under their existing preservation obligations. |
+| Person-level instrument/tag editors | Shared User reads/editor/writes no longer include band assignments. `UserInstrument` storage/editor/CRUD are unregistered; unreachable legacy profile/directory renderers are preserved. Invitation/response metadata now uses BandUserTagAssignment; migrated BandUser assignment commands remain active. | Verify full profile/directory parity under their existing preservation obligations. |
 | Catalog/demo seeds | Production seeds initialize access control. Old demo generators are preserved as disabled source. | Restore seed data needed by a named acceptance path before A1; account for remaining generators at B, with explicit approval for retirement. |
 | Legacy synchronous band guards | `resolver.authorize` rejects band capabilities. | Required callers use fresh request authorization and loaded resource ownership. |
 

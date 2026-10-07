@@ -16,7 +16,9 @@ vi.mock("db", async () => {
 
 import * as db3 from "@db3/db3";
 import { getDB3CommandHandler } from "@db3/server/db3CommandRegistry";
-import { validateDB3MutationRequest } from "@db3/server/db3RequestValidation";
+import { validateDB3MutationRequest, validateDB3PaginatedQueryRequest, validateDB3QueryRequest } from "@db3/server/db3RequestValidation";
+import getAdminLogItemInfo from "@db3/queries/getAdminLogItemInfo";
+import getDistinctChangeFilterValues from "@db3/queries/getDistinctChangeFilterValues";
 import assignUserRole from "src/auth/mutations/assignUserRole";
 import setRoleDesignation from "src/auth/mutations/setRoleDesignation";
 import mergeUsers from "src/auth/mutations/mergeUsers";
@@ -33,7 +35,7 @@ import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
 import { invokeResolver } from "./support/resolverHarness";
-import { forgeDb3Insert, forgeDb3PublicUpdate, forgeDb3PublicDelete } from "./support/db3RequestBuilders";
+import { forgeDb3Insert, forgeDb3PublicUpdate, forgeDb3PublicDelete, forgeDb3Query } from "./support/db3RequestBuilders";
 
 const member = createAuthorizationTestUser("normal", { id: 10 });
 const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 });
@@ -61,6 +63,48 @@ const deferredReportEndpoints = [
     { name: "general activity details", resolve: getGeneralFeatureDetail },
     { name: "activity timeline", resolve: getGeneralFeatureReport },
 ];
+
+const deferredAuditEndpoints = [
+    { name: "historical audit references", resolve: getAdminLogItemInfo },
+    { name: "audit filter references", resolve: getDistinctChangeFilterValues },
+];
+
+describe("deferred audit log readers", () => {
+    it.each(deferredAuditEndpoints)("rejects $name without reading audit, account or reference data", async ({ resolve }) => {
+        const requests: unknown[] = [
+            { tableName: "File", pk: 1 },
+            { bandPublicId: parsePublicId<"Band">("AuditBand0000001"), routeLocale: "fr-BE" },
+            null,
+        ];
+        for (const actor of [member, sysadmin]) {
+            for (const input of requests) {
+                await expect(invokeResolver(resolve, input, createAuthorizationTestContext(actor)))
+                    .rejects.toThrow(ApplicationFeatureUnavailableError);
+            }
+        }
+    });
+
+    it.each(deferredAuditEndpoints)("requires login before reporting availability for $name", async ({ resolve }) => {
+        await expect(invokeResolver(resolve, {}, createAuthorizationTestContext(null)))
+            .rejects.toThrow("login");
+    });
+
+    it("rejects crafted generic audit reads and writes before database access", () => {
+        expect(() => db3.GetTableById("Change")).toThrow("was not found");
+        expect(() => validateDB3QueryRequest(forgeDb3Query("Change")))
+            .toThrow("unknown table ID 'Change'");
+        expect(() => validateDB3PaginatedQueryRequest({ ...forgeDb3Query("Change"), skip: 0, take: 50 }))
+            .toThrow("unknown table ID 'Change'");
+        const requests = [
+            forgeDb3Insert("Change", { table: "User" }),
+            forgeDb3PublicUpdate("Change", userId, { table: "User" }),
+            forgeDb3PublicDelete("Change", userId),
+        ];
+        for (const request of requests) {
+            expect(() => validateDB3MutationRequest(request)).toThrow("unknown table ID 'Change'");
+        }
+    });
+});
 
 describe("deferred activity report readers", () => {
     it.each(deferredReportEndpoints)("rejects $name without reading account, report or reference data", async ({ resolve }) => {

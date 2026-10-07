@@ -52,9 +52,6 @@ const compatibilitySites: Record<string, InventoryEntry[]> = {
     "src/core/db3/components/db3DataGrid.tsx": [
         { api: "useLegacyTableRenderContext", category: "generic-infrastructure", count: 1 },
     ],
-    "src/pages/backstage/adminLogs.tsx": [
-        { api: "defineLegacyTableClientSpec", category: "table-only-query", count: 1 },
-    ],
     "src/pages/backstage/eventImport.tsx": [
         { api: "defineLegacyTableClientSpec", category: "render-only-editor", count: 2 },
         { api: "useLegacyTableRenderContext", category: "render-only-editor", count: 2 },
@@ -149,3 +146,15 @@ describe("legacy DB3 read compatibility inventory", () => {
         expect(collectCompatibilityUsage().retiredDefinitionSites).toEqual([]);
     });
 });
+
+// MIGRATION_RESTORE: audit-log
+// Source: 6ee055895a049d6f105d775b4e2e563542f34d32:tests/db3LegacyReadCompatibilityInventory.test.ts:55-57
+// Reason: Legacy audit readers and JSON rendering lack scoped ownership and target-schema references.
+// Restore: Restore protected audit browsing, filters, historical JSON/detail links and clipboard/Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction; retain immutable audit recording.
+// Verification: Reactivate preserved audit specifications; test sysadmin/member/anonymous access, two bands, deleted references, revoked grants, redaction, filters, JSON inspection and built-browser navigation.
+// SHA256: 721d445d5a5ce99c9e4d920e4a760bb52f6976d7411eb5feb8f6e16a6176f6c6
+// MIGRATION_REFERENCE_BEGIN
+//     "src/pages/backstage/adminLogs.tsx": [
+//         { api: "defineLegacyTableClientSpec", category: "table-only-query", count: 1 },
+//     ],
+// MIGRATION_REFERENCE_END

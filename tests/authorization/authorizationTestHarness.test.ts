@@ -370,26 +370,37 @@ describe("BA-A002 generic DB3 query authorization", () => {
     vi.restoreAllMocks()
   })
 
+  function grantAccountLogin() {
+    authorizationTestDb.reset({
+      user: [{ ...normal, mergedIntoUserId: null, globalRoleId: 10_000 }],
+      globalRole: [{ id: 10_000, isDeleted: false }],
+      globalRolePermission: [{ id: 1, globalRoleId: 10_000, permissionId: 1 }],
+      permission: [{ id: 1, name: Permission.login }],
+    })
+  }
+
   it("rejects an unauthorized table before its Prisma query executes", async () => {
-    const findMany = vi.spyOn(authorizationTestDb.getDelegate("change"), "findMany")
+    grantAccountLogin()
+    const findMany = vi.spyOn(authorizationTestDb.getDelegate("userSignInMethod"), "findMany")
     const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
 
-    await expect(invokeResolver(db3Query, forgeDb3Query("Change"), ctx)).rejects.toThrow(
+    await expect(invokeResolver(db3Query, forgeDb3Query("UserSignInMethod"), ctx)).rejects.toThrow(
       "Not authorized to perform this query.",
     )
     expect(findMany).not.toHaveBeenCalled()
   })
 
   it("rejects an unauthorized paginated table before querying or counting", async () => {
-    const changeDelegate = authorizationTestDb.getDelegate("change")
-    const findMany = vi.spyOn(changeDelegate, "findMany")
-    const count = vi.spyOn(changeDelegate, "count")
+    grantAccountLogin()
+    const methodDelegate = authorizationTestDb.getDelegate("userSignInMethod")
+    const findMany = vi.spyOn(methodDelegate, "findMany")
+    const count = vi.spyOn(methodDelegate, "count")
     const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
 
     await expect(
       invokeResolver(
         db3PaginatedQuery,
-        { ...forgeDb3Query("Change"), skip: 0, take: 50 },
+        { ...forgeDb3Query("UserSignInMethod"), skip: 0, take: 50 },
         ctx,
       ),
     ).rejects.toThrow("Not authorized to perform this query.")
@@ -452,11 +463,11 @@ describe("BA-A002 generic DB3 query authorization", () => {
 
   it("does not let a primary key qualify a row from a protected table", () => {
     const { schemaAuthorization: publicData } = createAuthorizationPersona("public")
-    const result = db3.xChange.authorizeAndSanitize({
+    const result = db3.xUserSignInMethod.authorizeAndSanitize({
       contextDesc: "BA-A002 protected-row regression",
       auth: publicData,
       rowMode: "view",
-      model: { id: 41, table: "User", recordId: activeTarget.id },
+      model: { id: 41, publicId: "ProtectedRow0001", type: "email", userId: activeTarget.id },
       fallbackOwnerId: null,
     })
 
@@ -3355,4 +3366,72 @@ describe("BA-A005 delete authorization", () => {
 //     )
 //   })
 // })
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: audit-log
+// Source: 6ee055895a049d6f105d775b4e2e563542f34d32:tests/authorization/authorizationTestHarness.test.ts:453-468
+// Reason: Legacy audit readers and JSON rendering lack scoped ownership and target-schema references.
+// Restore: Restore protected audit browsing, filters, historical JSON/detail links and clipboard/Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction; retain immutable audit recording.
+// Verification: Reactivate preserved audit specifications; test sysadmin/member/anonymous access, two bands, deleted references, revoked grants, redaction, filters, JSON inspection and built-browser navigation.
+// SHA256: af50346dd18745fc15e8081263db9def9f3ec585fa71deeb762b07d3da24a791
+// MIGRATION_REFERENCE_BEGIN
+//   it("does not let a primary key qualify a row from a protected table", () => {
+//     const { schemaAuthorization: publicData } = createAuthorizationPersona("public")
+//     const result = db3.xChange.authorizeAndSanitize({
+//       contextDesc: "BA-A002 protected-row regression",
+//       auth: publicData,
+//       rowMode: "view",
+//       model: { id: 41, table: "User", recordId: activeTarget.id },
+//       fallbackOwnerId: null,
+//     })
+//
+//     expect(result.rowIsAuthorized).toBe(false)
+//     expect(result.authorizedModel).toEqual({})
+//     expect(result.unauthorizedModel).toEqual(
+//       expect.objectContaining({ id: 41 }),
+//     )
+//   })
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: audit-log
+// Source: 6ee055895a049d6f105d775b4e2e563542f34d32:tests/authorization/authorizationTestHarness.test.ts:373-381
+// Reason: Legacy audit readers and JSON rendering lack scoped ownership and target-schema references.
+// Restore: Restore protected audit browsing, filters, historical JSON/detail links and clipboard/Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction; retain immutable audit recording.
+// Verification: Reactivate preserved audit specifications; test sysadmin/member/anonymous access, two bands, deleted references, revoked grants, redaction, filters, JSON inspection and built-browser navigation.
+// SHA256: f546ee9f049a5a71aa73bbffaa231949144bb85972fb694a82ae21e9fbda4d80
+// MIGRATION_REFERENCE_BEGIN
+//   it("rejects an unauthorized table before its Prisma query executes", async () => {
+//     const findMany = vi.spyOn(authorizationTestDb.getDelegate("change"), "findMany")
+//     const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
+//
+//     await expect(invokeResolver(db3Query, forgeDb3Query("Change"), ctx)).rejects.toThrow(
+//       "Not authorized to perform this query.",
+//     )
+//     expect(findMany).not.toHaveBeenCalled()
+//   })
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: audit-log
+// Source: 6ee055895a049d6f105d775b4e2e563542f34d32:tests/authorization/authorizationTestHarness.test.ts:383-398
+// Reason: Legacy audit readers and JSON rendering lack scoped ownership and target-schema references.
+// Restore: Restore protected audit browsing, filters, historical JSON/detail links and clipboard/Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction; retain immutable audit recording.
+// Verification: Reactivate preserved audit specifications; test sysadmin/member/anonymous access, two bands, deleted references, revoked grants, redaction, filters, JSON inspection and built-browser navigation.
+// SHA256: 8a5afbe7a83bac3b13798a831a5b4dfb5744c961ee1ea32391efa9d1840a9cd6
+// MIGRATION_REFERENCE_BEGIN
+//   it("rejects an unauthorized paginated table before querying or counting", async () => {
+//     const changeDelegate = authorizationTestDb.getDelegate("change")
+//     const findMany = vi.spyOn(changeDelegate, "findMany")
+//     const count = vi.spyOn(changeDelegate, "count")
+//     const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
+//
+//     await expect(
+//       invokeResolver(
+//         db3PaginatedQuery,
+//         { ...forgeDb3Query("Change"), skip: 0, take: 50 },
+//         ctx,
+//       ),
+//     ).rejects.toThrow("Not authorized to perform this query.")
+//     expect(findMany).not.toHaveBeenCalled()
+//     expect(count).not.toHaveBeenCalled()
+//   })
 // MIGRATION_REFERENCE_END

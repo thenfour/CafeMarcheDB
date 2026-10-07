@@ -1132,18 +1132,6 @@ export interface ObjectWithVisiblePermission {
     visiblePermissionId: PermissionPublicId | null;
 };
 
-export const ChangeArgs = Prisma.validator<Prisma.ChangeDefaultArgs>()({
-    include: {
-        user: true,
-    }
-});
-
-export type ChangePayload = Prisma.ChangeGetPayload<typeof ChangeArgs>;
-
-export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
-    { changedAt: 'desc' },
-];
-
 // MIGRATION_RESTORE: role-administration
 // Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:3-29
 // Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
@@ -1697,5 +1685,26 @@ export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
 //     userTagId: UserTagPublicId;
 //     userTag: { publicId: UserTagPublicId };
 // };
+//
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: audit-log
+// Source: 6ee055895a049d6f105d775b4e2e563542f34d32:src/core/db3/shared/schema/prismArgs.ts:1135-1146
+// Reason: Legacy audit readers and JSON rendering lack scoped ownership and target-schema references.
+// Restore: Restore protected audit browsing, filters, historical JSON/detail links and clipboard/Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction; retain immutable audit recording.
+// Verification: Reactivate preserved audit specifications; test sysadmin/member/anonymous access, two bands, deleted references, revoked grants, redaction, filters, JSON inspection and built-browser navigation.
+// SHA256: 4406beff321c7c32c061980f4f6bd116b64a603e0e428ffc3ac7f3732c131862
+// MIGRATION_REFERENCE_BEGIN
+// export const ChangeArgs = Prisma.validator<Prisma.ChangeDefaultArgs>()({
+//     include: {
+//         user: true,
+//     }
+// });
+//
+// export type ChangePayload = Prisma.ChangeGetPayload<typeof ChangeArgs>;
+//
+// export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
+//     { changedAt: 'desc' },
+// ];
 //
 // MIGRATION_REFERENCE_END

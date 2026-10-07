@@ -25,4 +25,6 @@ export const dashboardStrings = {
     "recovery.accountRoles.description": label("Role definitions and permission editing are temporarily unavailable. Existing roles still apply. You can change a member's band role from their profile."),
     "recovery.activityReports.title": label("Activity reports"),
     "recovery.activityReports.description": label("Activity reports and their CSV exports are temporarily unavailable while band support is restored. Activity recording remains available."),
+    "recovery.auditLog.title": label("Audit log"),
+    "recovery.auditLog.description": label("Audit browsing and historical record details are temporarily unavailable while band support is restored. Audit recording remains available."),
 };

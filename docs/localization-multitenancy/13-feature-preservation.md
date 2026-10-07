@@ -43,6 +43,7 @@ running tests. Neither compiler exclusions nor TypeScript suppressions are used.
 | `file-search` | File quick filtering against resolved band tag labels, including blanks, hidden assignments, visibility and pagination. General File ownership remains a prerequisite. |
 | `global-search` | Shell search, authorized domain readers, keyboard behavior, selected-band links and cache isolation. |
 | `activity-reports` | Activity timelines, facets, filtering, detail and CSV exports with explicit band/platform authorization, localized references, public identities and anonymization/redaction. Telemetry recording remains executable. |
+| `audit-log` | Protected audit browsing, table/user filters, historical JSON/detail links, clipboard and Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction. Audit recording remains executable. |
 | `markdown-editing` | Inline edit/cancel/save/save-and-close, authorization, feedback and refresh against explicit translation scope and locale. |
 | `settings-editors` | Existing settings/branding workflows through typed hives, including time-zone reanchoring and cache invalidation. Replaced storage APIs are historical references. |
 | `catalog-help` | Song-tag help Markdown alongside the migrated editor. Its rendering call is restored; browser verification remains pending. |
@@ -123,6 +124,14 @@ the complete reporting workflow is restored and verified.
 The checker detects missing references and inconsistent closure records. Review
 must still establish that the recorded evidence proves parity and that a
 retirement decision was actually authorized.
+
+Audit-log isolation adds fourteen references from `6ee05589` for the page, both
+reference-reading RPCs, the JSON viewer, Change descriptor/payload and their
+registrations, plus affected audit-specific assertions and the legacy read
+inventory entry. Generic table/field authorization regressions remain executable
+against the protected sign-in-method table. Existing reference blocks remain
+intact. The `audit-log` obligation stays pending; recovery notices and rejection
+tests establish isolation, while immutable audit writes remain active.
 
 ## Audit scope
 

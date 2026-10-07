@@ -11,6 +11,8 @@ instruments/tags and retain separate person and membership identities. Response
 and invitation readers now use membership ownership and selected-band references.
 Setlist Plan persistence and group CRUD now enforce selected-band ownership,
 transactional authorization and public transport identities.
+Audit browsing and its historical-reference readers are coherently isolated;
+audit recording remains active.
 **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
@@ -136,8 +138,9 @@ export found during this slice was also repaired by naming the public-ID schema
   retain their band write storage. Dashboard reads include shared metadata without
   a band, resolve band overrides when selected, and retain retired labels for
   history. New attendance choices exclude deleted/inactive options. Catalog
-  consumers now use `name` and the four target caption fields; activity-log
-  attendance identities resolve captions through the dashboard snapshot.
+  consumers now use `name` and the four target caption fields. Preserved audit-log
+  attendance rendering resolves captions through the dashboard snapshot; that
+  viewer is now isolated.
   This repairs catalog dependencies without establishing event/invitation parity.
 - Dedicated attendance writes now resolve public person/event/segment/instrument
   references within the selected band. Responses belong to BandUser; created/
@@ -253,6 +256,33 @@ export found during this slice was also repaired by naming the public-ID schema
   search and full planner editor workflows remain deferred dependencies.
 
 ## Verification
+
+The audit-log slice passes 108 focused checks across eight files, including the
+recovery RPC boundaries, rejected generic Change reads/writes, protected page
+authorization, localized notice rendering, generic table/field denial and audit
+redaction/persistence. The generic authorization regressions now use the active
+Sysadmin-only sign-in-method table. Two query fixtures supply current account
+login grants and the explicit unmerged-person state, so paginated rejection reaches
+the table policy. The DOM probe also exposed a missing React import in the shared
+deferred-page component; that trivial test-runtime dependency is repaired.
+
+The native MariaDB run passes all 98 Setlist Plan, creation, attendance and
+event/file-tag tests, including audit-failure rollback. A signed-in development
+browser opens the audit recovery page in platform context and two bands, with an
+explicit French route locale. No audit/reference query or grid is mounted. Both
+real RPCs reject legacy, band-scoped and malformed requests without returning
+data; anonymous calls require login. A real Setlist Plan save still persists its
+actor's audit record. All three assertion groups pass with no page errors, and
+the recovery notice screenshot was visually checked
+(`temp/a0-audit-log-browser-result.json`). The helper dropped its disposable
+database and stopped its browser/development server; the owned private MariaDB
+instance was shut down. This is development delivery evidence; normal build and
+the complete audit-browsing workflow remain open.
+
+Preservation verification now protects 195 source references and ten deferred
+test specifications, with fourteen pending features. All previous references
+remain intact. Fourteen new references preserve the audit viewer, both readers,
+Change registration/payload and affected specifications under `audit-log`.
 
 The Setlist Plan slice passes 68 focused tests across public-ID RPC contracts,
 DB3 projection, snapshot execution and preservation. Its native MariaDB run
@@ -478,7 +508,10 @@ production server could not be checked because the normal build still fails.
 | Custom-link routes/URLs/page guards, bootstrap, view contracts, preservation/recovery boundaries, membership roles and public Markdown/Suspense navigation | Passed: 161 tests across ten files, including two isolated jsdom files. All redirect modes, nested slugs, repeated query values, visit details, routing-parameter exclusion, hash forwarding and the selection-page authorization boundary are covered. |
 | Custom-link CRUD/file authorization, telemetry persistence, dashboard catalogs and member profiles on a fresh private MariaDB fixture | Passed: 24 tests across four files, including six native custom-link cases. Covers duplicate slugs across bands, create/update/delete and visit cascade, server-owned IDs, missing context/revoked authority, file visibility/ownership and crafted unavailable targets. Fixture writes roll back and the generated database is removed. |
 | Existing Custom Link/Menu Link view and schema-wide policy fixtures | The collection view passes with an explicit scoped snapshot. Policy rows now carry band/active-person context and use public identities where natural-ID filtering is forbidden; five earlier failures are recovered. The existing broad metadata assertion still fails because Locale has no DB3 descriptor. |
-| Source preservation and Git provenance | Passed: 181 references, including the removed raw File tag-text filter. Ten deferred specifications and thirteen pending recovery obligations remain protected. |
+| Source preservation and Git provenance | Passed: 195 references, including fourteen audit-log references. Ten deferred specifications and fourteen pending recovery obligations remain protected. |
+| Audit-log isolation, protected/localized page, generic query denial and audit redaction | Passed: 108 focused checks across eight files, including two isolated DOM cases. Both RPCs reject before any database access; generic audit registration is absent. Generic authorization regressions remain active on the protected sign-in-method table. |
+| Audit recording and existing persistence workflows on fresh private MariaDB | Passed: 98 tests across five files, including audit-failure rollback. The development browser also persisted a real actor-attributed audit after the reader was isolated. |
+| Audit recovery development-browser check | Passed: protected page in platform context and two bands, no audit queries/grid, both RPCs unavailable, anonymous calls require login, and no page errors. Screenshot inspected; private verification resources stopped/removed. |
 | Preservation safeguards, temporary RPC boundaries, member/page contracts and DOM regression | Passed: 108 tests across ten active files, including 23 preservation checks. Nine wholly disabled specifications are retained separately; eight are under the runner's default `tests/` directory. |
 | Field localization, selectors, instrument editor, presentation delivery, factory contracts and preservation/recovery boundaries | Passed: 106 tests across nine files. Includes band-first labels/help, band and language switches, intentional blanks, composite captions, accessible names, unchanged scalar writes and explicit dialog captions. |
 | Registered settings editor, clipboard validation, settings RPCs/presentation, table authorization and preservation/recovery boundaries | Passed: 122 tests across seven files, including 13 editor DOM checks. Covers explicit scope, blanks/false, failed saves, resets, permissions, band/account switches, batch rejection and pending clipboard cancellation. |
@@ -490,10 +523,10 @@ production server could not be checked because the normal build still fails.
 | Telemetry persistence, dashboard catalogs and member profiles on a fresh private MariaDB fixture | Passed: 18 tests across three files, including five native telemetry cases. All direct/inherited associations, foreign-band omissions, mixed references, global catalogs, null platform context and calendar credential redaction are covered. The fixture used a new database on `127.0.0.1:32695`; writes were rolled back and the database removed. |
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
-| ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 141 diagnostics, down from 144 at the event-creation checkpoint. Setlist Plan ownership/selection errors are repaired; no compiler exclusions or error suppression added. |
-| `yarn build` | Gets past Setlist Plan persistence; stops at `src/core/db3/queries/getAdminLogItemInfo.ts:52`, which selects the removed FileInstrumentTag instrument relation. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 272 failed, 1,511 passed, 268 skipped across 143 files, with ten suite failures. Six failures from the event-creation checkpoint are repaired; no new failing cases remain. Native persistence/creation/catalog cases require the private URL and pass in the native run above; later isolated DOM batches are not reached. |
+| `yarn lint`; `git diff --check` | Passed. |
+| `yarn typecheck` | Fails: 135 diagnostics, down from 141 at the Setlist Plan checkpoint. Audit lookup errors are isolated with full source preservation; no compiler exclusions or error suppression added. |
+| `yarn build` | Gets past audit lookup; stops at `src/core/db3/queries/getEventFilterInfo.ts:38`, whose authorization still reads removed `User.role`. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 271 failed, 1,521 passed, 268 skipped across 144 files, with ten suite failures. The protected paginated-query regression is repaired with current login fixtures; no new failing cases remain. Native cases require the private URL and pass above; later isolated DOM batches are not reached, so the audit page DOM tests were run separately. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -524,8 +557,10 @@ verification resources, not application configuration.
 
 ## Remaining A0 blockers
 
-File administration/activity lookup is the next build stop: its File graph still
-selects removed member/instrument relations. Setlist Plan storage is recovered;
+Event filtering is the next build stop: its authorization still reads removed
+`User.role`. The audit lookup and companion viewer/filter reader are isolated,
+with the complete original source and assertions preserved under `audit-log`.
+General File ownership/member/instrument workflows remain unfinished. Setlist Plan storage is recovered;
 its complete editor still depends on deferred Song/search workflows. Import preview still has an
 unscoped band lookup and removed UserTag/schema dependencies; creation RPC
 recovery does not establish the full importer workflow.
@@ -559,7 +594,7 @@ global slug key. Full portal-root routing remains deferred, so recovery custom
 URLs explicitly require `bandPublicId`. General file editing/upload and its
 existing download API still need their own ownership/schema migration; this
 narrow custom-link file reader does not establish those workflows. Telemetry recording is now migrated and has
-native/HTTP/RPC/DOM evidence; it still needs built-browser verification. Activity
+native/HTTP/RPC/DOM evidence; it still needs built-browser verification. Preserved activity
 report readers retain obsolete instrument relations and require a separate
 ownership/localization adaptation before analytics can be called restored.
 
