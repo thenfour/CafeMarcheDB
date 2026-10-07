@@ -6,13 +6,13 @@ import { menuLinkListView } from "../entities/menuLink/menuLinkViews";
 import { SettingsDto } from "../schema/settings";
 import * as dashboard from "./dashboardReferences";
 import type { LocalizationCatalog } from "src/locale/shared/localizationCatalog";
-import type { BandUserInstrumentsDto } from "../entities/user/bandUserInstruments";
+import type { EventParticipantDto } from "../entities/user/eventParticipant";
 
 /** RPC payload: field codecs and reference expansion have not run yet. */
 export interface DashboardDataDto {
     authorization: ScopedAuthorizationData;
     localization: LocalizationCatalog;
-    currentMembership: BandUserInstrumentsDto | null;
+    currentMembership: EventParticipantDto | null;
     permission: DtoOf<typeof dashboard.permissionDashboardView>[];
     userTag: DtoOf<typeof dashboard.userTagDashboardView>[];
     wikiPageTag: DtoOf<typeof dashboard.wikiPageTagDashboardView>[];

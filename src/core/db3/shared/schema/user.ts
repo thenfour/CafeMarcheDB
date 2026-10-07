@@ -17,7 +17,7 @@ import { PermissionSignificance } from "../apiTypes";
 import { BoolField, ForeignCollectionField, foreignRef, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserWithInstrumentsArgs } from "./prismArgs";
+import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload } from "./prismArgs";
 import { LocalizedStringField, localizedText } from "../columnTypes/localizedString";
 
 // Basic profile data is self-service for the account owner and readable for
@@ -185,6 +185,9 @@ export const xUserMinimum = db3.defineTable({
             maxLength: 768,
             specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xUserBasicProfileAuthMap,
+        }),
+        cssClass: columnName => new GenericStringField({
+            columnName, allowNull: true, format: "raw", authMap: xUserPresentationMetadataAuthMap,
         }),
         email: columnName => new GenericStringField({
             columnName,
@@ -569,16 +572,6 @@ const userBaseArgs = db3.defineTableDesc({
 });
 
 export const xUser = db3.defineTable(userBaseArgs);
-
-
-export const xUserWithInstrument = db3.defineTable({
-    ...userBaseArgs,
-    tableUniqueName: "xUserWithInstrument",
-    getSelectionArgs: (): Prisma.UserDefaultArgs => {
-        return UserWithInstrumentsArgs;
-    },
-});
-
 
 
 // let's create a "created by" field which is a specialization of ForeignSingle, specialized to User payload

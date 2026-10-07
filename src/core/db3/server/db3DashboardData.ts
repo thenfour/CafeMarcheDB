@@ -5,7 +5,7 @@ import { loadLocalizationCatalog } from "src/locale/server/localization";
 import type { PresentationInput } from "src/locale/shared/presentationInput";
 import { loadSettingsSnapshot } from "src/setting/server/settings";
 import { readSettingSnapshot } from "src/setting/shared/settingsContract";
-import { bandUserInstrumentsView } from "../shared/entities/user/bandUserInstruments";
+import { eventParticipantView } from "../shared/entities/user/eventParticipant";
 import type { DashboardDataDto } from "../shared/references/dashboardData";
 import { permissionDashboardView } from "../shared/references/dashboardReferences";
 import { loadDashboardCatalogs, loadSharedEventCatalogs } from "./db3DashboardCatalogs";
@@ -19,7 +19,7 @@ async function loadCurrentMembership(context: DB3ReadContext, input: Presentatio
         return null;
     }
     const result = await queryView({
-        view: bandUserInstrumentsView,
+        view: eventParticipantView,
         ...input,
         filter: {
             publicIds: [xBandUser.parseIdentity(authorization.membership.publicId)]

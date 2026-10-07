@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { isUserInvitedToEvent } from "shared/eventInvitation";
 import { getEventResponseForUser } from "src/core/db3/shared/schema/eventAPI";
 import type { EventResponses_MinimalEvent, EventResponses_MinimalEventUserResponse } from "src/core/db3/shared/schema/event";
-import type { UserWithInstrumentsPayload } from "src/core/db3/shared/schema/prismArgs";
+import type { EventParticipant } from "src/core/db3/shared/entities/user/eventParticipant";
+import { parsePublicId } from "shared/publicId";
 import type { DashboardContextDataBase } from "src/core/components/dashboardContext/dashboardContextTypes";
 import { eventPublicId } from "./support/eventResponseFixtures";
 import { userPublicId } from "./support/userFixtures";
@@ -36,8 +37,11 @@ describe("event invitation", () => {
 
 describe("website invitation resolution", () => {
     // No instrument lookup is needed for this user, keeping the fixture focused on invitations.
-    const user = { publicId: userPublicId(10), instruments: [] } as unknown as UserWithInstrumentsPayload; // The fixture supplies only fields used by invitation resolution.
-    const resolve = (responses: EventResponses_MinimalEventUserResponse[], invitedUserIds: UserWithInstrumentsPayload["publicId"][]) =>
+    const user: EventParticipant = {
+        publicId: userPublicId(10), membershipId: parsePublicId<"BandUser">("InviteMember0010"),
+        name: "Invited member", cssClass: null, bandUserInstruments: [], bandUserTagAssignments: [],
+    };
+    const resolve = (responses: EventResponses_MinimalEventUserResponse[], invitedUserIds: EventParticipant["publicId"][]) =>
         getEventResponseForUser({
             user,
             event: { publicId: eventPublicId(1), responses, segments: [] } satisfies EventResponses_MinimalEvent,

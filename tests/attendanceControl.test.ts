@@ -34,16 +34,17 @@ let changeScenario: React.Dispatch<React.SetStateAction<AttendanceScenario>>;
 let currentScenario: AttendanceScenario;
 const saves = vi.fn();
 const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT");
-const Harness = ({ initial, userIndex = 1, minimal = false, attendances = scenarioAttendances }: {
+const Harness = ({ initial, userIndex = 1, minimal = false, attendances = scenarioAttendances, instruments = scenarioClientInstruments }: {
     initial: AttendanceScenario; userIndex?: number; minimal?: boolean;
     attendances?: AttendanceControlEnvironment["attendances"];
+    instruments?: AttendanceControlEnvironment["instruments"];
 }) => {
     const [scenario, setScenario] = React.useState(initial);
     changeScenario = setScenario;
     currentScenario = scenario;
     const { attendance, event } = buildAttendanceScenario(scenario, userIndex);
     return React.createElement(AttendanceControlView, { attendance, event, minimalWhenNotAlert: minimal, environment: {
-        attendances, instruments: scenarioClientInstruments, allowUploads: false, datePresentation: { bandTimeZone: "UTC", viewerTimeZone: "UTC", locale: "en" },
+        attendances, instruments, allowUploads: false, datePresentation: { bandTimeZone: "UTC", viewerTimeZone: "UTC", locale: "en" },
         commentDialogTitle: "Comment", commentDialogDescription: "Local comment",
         onSave: async (change: AttendanceChange) => {
             saves(change);
@@ -69,6 +70,20 @@ const render = async (initial = createAttendanceScenario(), minimal = false, use
 };
 
 describe("shared attendance view with a local adapter", () => {
+    it("keeps available instrument choices when an assigned catalog entry is unreadable", async () => {
+        const scenario = createAttendanceScenario();
+        scenario.users[1]!.responses = [3, 3, 3];
+        await act(async () => root.render(React.createElement(Harness, {
+            initial: scenario, instruments: scenarioClientInstruments.slice(0, 2),
+        })));
+        expect(buttons("Trumpet")).toHaveLength(1);
+        await click(buttons("Trumpet")[0]!);
+        expect(buttons("Saxophone")).toHaveLength(1);
+        expect(buttons("Percussion")).toHaveLength(0);
+        await click(buttons("Saxophone")[0]!);
+        expect(currentScenario.users[1]!.instrumentId).toBe(2);
+    });
+
     it("keeps an intentionally blank option caption distinct from the no-answer control", async () => {
         const attendances = scenarioAttendances.map(option => option.buttonCaption === "Probably"
             ? { ...option, buttonCaption: "" } : option);

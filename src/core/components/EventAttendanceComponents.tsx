@@ -1,7 +1,7 @@
 // Production adapter for the shared attendance control.
 import React from "react";
 import { API } from "../db3/clientAPI";
-import type { UserInstrumentList } from "../db3/shared/schema/eventAPI";
+import type { EventParticipantList } from "../db3/shared/schema/eventAPI";
 import { AdminInspectObject } from "./CMCoreComponents2";
 import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/DashboardContext";
 import { AttendanceChange, AttendanceControlView } from "./event/AttendanceControlView";
@@ -34,7 +34,7 @@ export const CreatedUpdatedView = (props: { obj: CreatedUpdatedObj, caption: str
 export interface EventAttendanceControlProps {
     eventData: AttendanceEventMetadata;
     onRefetch: () => void,
-    userMap: UserInstrumentList,
+    userMap: EventParticipantList,
     minimalWhenNotAlert: boolean,
     //alertOnly?: boolean; // when true, the control hides unless it's an alert.
 };

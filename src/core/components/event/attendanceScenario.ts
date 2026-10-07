@@ -107,23 +107,18 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
     const person = scenario.users[userIndex]!;
     const now = new Date(scenario.now);
     const userPublicId = parsePublicId<"User">(`ScenarioUser${String(userIndex + 1).padStart(4, "0")}`);
-    const user: db3.UserWithInstrumentsPayload = {
+    const user: db3.EventParticipant = {
         publicId: userPublicId,
+        membershipId: parsePublicId<"BandUser">(`ScnBandUser_${String(userIndex + 1).padStart(4, "0")}`),
         name: person.name,
-        isSysAdmin: false,
-        isDeleted: false,
-        email: "",
-        phone: "",
-        createdAt: now,
         cssClass: null,
-        tags: [],
-        instruments: scenarioInstruments.slice(0, person.instrumentCount).map(instrument => ({
-            publicId: parsePublicId<"UserInstrument">(
+        bandUserTagAssignments: [],
+        bandUserInstruments: scenarioInstruments.slice(0, person.instrumentCount).map(instrument => ({
+            publicId: parsePublicId<"BandUserInstrument">(
                 `ScnUsrInst${String((userIndex + 1) * 10 + instrument.id).padStart(6, "0")}`,
             ),
-            instrumentId: parsePublicId<"Instrument">(instrument.publicId),
-            instrument: { publicId: parsePublicId<"Instrument">(instrument.publicId) },
-            userId: userPublicId,
+            bandInstrumentId: parsePublicId<"Instrument">(instrument.publicId),
+            bandInstrument: { publicId: parsePublicId<"Instrument">(instrument.publicId) },
             isPrimary: instrument.id === person.primaryInstrumentId,
         })),
     };

@@ -4,8 +4,8 @@ import { DateTimeRange, Timing } from 'shared/time';
 import { getUniqueNegativeID } from 'shared/utils';
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { defineLegacyTableClientSpec, useLegacyTableRenderContext, xTableClientCaps } from '../../db3/components/DB3ClientCore';
-import { EventResponseInfo, fn_makeMockEventSegmentResponse, fn_makeMockEventUserResponse, GetEventResponseInfo, UserInstrumentList } from '../../db3/shared/schema/eventAPI';
+import { useEventParticipants } from './useEventParticipants';
+import { EventResponseInfo, fn_makeMockEventSegmentResponse, fn_makeMockEventUserResponse, GetEventResponseInfo, EventParticipantList } from '../../db3/shared/schema/eventAPI';
 import { DashboardContextData, useDashboardContext } from '../dashboardContext/DashboardContext';
 import { DashboardContextDataBase } from '../dashboardContext/dashboardContextTypes';
 import { calculateEventAttendance, EventAttendanceResult } from "./attendanceCalculation";
@@ -43,7 +43,7 @@ export function CalculateEventMetadata<
     dateRange: DateTimeRange,
     tabSlug: string | undefined,
     dashboardContext: DashboardContextDataBase,
-    userMap: UserInstrumentList, // unique list of all relevant users.
+    userMap: EventParticipantList, // unique list of all relevant users.
     expectedAttendanceTag: db3.EventResponses_ExpectedUserTag | null, // unique list of all invited user tags.
     makeMockEventSegmentResponse: fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>,
     makeMockEventUserResponse: fn_makeMockEventUserResponse<TEvent, TEventResponse>,
@@ -103,23 +103,7 @@ export function CalculateEventDetailMetadata({ event, tabSlug, dashboardContext 
         userIdMap.add(dashboardContext.currentUser.publicId);
     }
 
-    const tableParams = {
-        userIds: [...userIdMap]
-    };
-
-    // fetch users with instruments.
-    const dynMenuClient = useLegacyTableRenderContext<db3.UserWithInstrumentsPayload>({
-        requestedCaps: xTableClientCaps.Query,
-        tableSpec: defineLegacyTableClientSpec({
-            table: db3.xUserWithInstrument,
-            columns: {},
-        }),
-        filterModel: {
-            tableParams,
-        }
-    });
-
-    const userMap = dynMenuClient.items;
+    const userMap = useEventParticipants([...userIdMap]);
 
     const eventData = CalculateEventMetadata<
         EventDetailEvent,
@@ -181,7 +165,7 @@ export type AttendanceEventMetadata = EventWithMetadata<
 
 export interface CalcEventAttendanceArgs {
     eventData: AttendanceEventMetadata;
-    userMap: UserInstrumentList,
+    userMap: EventParticipantList,
     dashboardContext: DashboardContextDataBase;
 };
 
@@ -190,7 +174,8 @@ export { type EventAttendanceResult } from "./attendanceCalculation";
 // Production context adapter; the calculation itself has no React dependencies.
 export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttendanceResult => {
     const dashboardContext = props.dashboardContext;
-    const user = dashboardContext.currentUser!;
+    const user = props.userMap.find(participant => participant.publicId === dashboardContext.currentUser?.publicId);
+    assert(!!user, "Attendance requires an active participant in the selected band");
     if (!props.eventData.responseInfo) throw new Error("no response info");
     const eventUserResponse = props.eventData.responseInfo.getEventResponseForUser(user, dashboardContext, props.userMap);
     assert(!!eventUserResponse, "getEventResponseForUser should always return an event response");
@@ -266,10 +251,10 @@ const isEventSegmentReady = (
 
 export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProps): {
     eventData: EventSearchMetadata;
-    userMap: UserInstrumentList;
+    userMap: EventParticipantList;
 } | null => {
     const dashboardContext = useDashboardContext();
-    const currentUser = dashboardContext.currentUser;
+    const currentUser = db3.eventParticipantFromMembership(dashboardContext.currentMembership);
 
     if (!currentUser
         || event.expectedAttendanceUserTagId === undefined
@@ -282,7 +267,7 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
         return null;
     }
 
-    const userMap: UserInstrumentList = [currentUser];
+    const userMap: EventParticipantList = [currentUser];
     const attendanceTag = event.expectedAttendanceUserTag;
     if (attendanceTag && (
         attendanceTag.userAssignments === undefined

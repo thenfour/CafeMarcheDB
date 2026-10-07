@@ -1,3 +1,4 @@
+import type { EventParticipant } from "../entities/user/eventParticipant";
 import { xBandEventTag } from "../entities/event/eventTagCatalogs";
 import { localizedText } from "../columnTypes/localizedString";
 // TODO: permissions for actions like these needs to be done in a different way.
@@ -42,7 +43,6 @@ import {
     type EventUserResponsePayload,
     type InstrumentClientOrDbPayload,
     type InstrumentIdentity,
-    type UserWithInstrumentsPayload
 } from "./prismArgs";
 import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField, xUser, xUserTag } from "./user";
 import { xEventType, xEventStatus, xEventAttendance } from "../entities/event/eventCatalogs";
@@ -1029,7 +1029,7 @@ export type EventResponses_MinimalEvent = Omit<EventResponses_MinimalEventDb, "p
 
 export interface EventUserResponse<TEvent extends EventResponses_MinimalEvent, TResponse extends EventResponses_MinimalEventUserResponse> {
     event: TEvent;
-    user: UserWithInstrumentsPayload;
+    user: EventParticipant;
     response: TResponse;
 
     // calculated invitation status -- can derive from either tag membership or explicit individual invitation.
@@ -1048,6 +1048,6 @@ export interface EventSegmentUserResponse<
     TSegmentResponse extends EventResponses_MinimalEventSegmentUserResponse,
 > {
     segment: TEventSegment;
-    user: UserWithInstrumentsPayload;
+    user: EventParticipant;
     response: TSegmentResponse;
 };

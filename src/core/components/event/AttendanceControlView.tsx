@@ -62,9 +62,11 @@ const InstrumentControl = ({ response, environment }: {
     response: EventAttendanceResult["eventUserResponse"]; environment: AttendanceControlEnvironment;
 }) => {
     const [inProgress, setInProgress] = React.useState(false);
-    const instruments = response.user.instruments.map(ui => environment.instruments.find(
-        instrument => db3.getInstrumentIdentity(instrument) === ui.instrumentId,
-    )!);
+    const instruments = response.user.bandUserInstruments.flatMap(assignment => {
+        const instrument = environment.instruments.find(option => db3.getInstrumentIdentity(option) === assignment.bandInstrumentId);
+        // Assignment history may outlive access to its catalog entry.
+        return instrument ? [instrument] : [];
+    });
     const selected = environment.instruments.find(
         instrument => db3.getInstrumentIdentity(instrument) === response.response.instrumentId,
     );

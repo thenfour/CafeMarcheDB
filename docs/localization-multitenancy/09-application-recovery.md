@@ -6,7 +6,8 @@ Links now use the target schema and explicit ownership. Platform account
 maintenance and shared event catalogs have platform-authorized views and
 commands. Private calendar feeds and subscription callers now use explicit band
 context and membership ownership. Event-tag catalogs now use localized shared
-defaults and band-owned overrides. **A0 remains open.** The
+defaults and band-owned overrides. Event participant reads now use band membership
+instruments/tags and retain separate person and membership identities. **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
 
@@ -20,7 +21,7 @@ preserving source alone.
 
 - Current-account loading returns shared identity/contact fields, with no role
   grants, credentials, or person-level band assignments. The dashboard loads the
-  current membership's instruments separately.
+  current membership's instruments, tags and authorized display data separately.
 - Dashboard startup uses the existing DB3 read owner, fresh authorization,
   localized Permission metadata, migrated catalogs, settings, and membership
   views, including shared event type/status/attendance metadata. It does not
@@ -72,6 +73,18 @@ preserving source alone.
   contracts stay active. Deferred invitation views still resolve old
   tag-assignment metadata during startup; its generic writes/deletion are now
   disabled, and its removal remains coupled to event payload recovery.
+- Event participants use the read-only `BandUser_EventParticipant` view and
+  existing membership/assignment authorization. Detail queries use public person
+  filters over selected-band memberships; an empty list returns no rows. Dashboard
+  current-membership reads use the same view, including roleless owners. Attendance
+  metadata, primary instrument defaults, tag styling and the scenario adapter now
+  consume membership assignments with distinct person/membership IDs. Client
+  queries forward band/locale/request identity and discard previous results.
+  Unreadable instrument references no longer crash the attendance picker. The
+  unused `xUserWithInstrument` descriptor is removed; its original source remains
+  in existing preservation blocks. Old Prisma response/invitation selections,
+  including `UserWithInstrumentsArgs`, remain a separate recovery obligation;
+  this reader does not establish full event or attendance UI parity.
 - Platform account maintenance has a separate `PlatformUser` descriptor and
   `PlatformUser_Editor` view with generated create/update commands. Its table,
   fields, contact search and page use `manage_global_users`; no band capability
@@ -178,6 +191,18 @@ preserving source alone.
 
 ## Verification
 
+The participant browser probe used a fresh private target-schema database on
+`127.0.0.1:32695`. A signed-in person switched between two bands, including a
+roleless membership. The dashboard rendered in each context, and real DB3 RPCs
+returned each membership's separate public instrument/tag identities and shared
+person display metadata without contact/security/natural-ID fields. Empty person
+lists remained empty, missing band context was rejected, and revoking basic member
+read access removed another participant on the next request. Returning to platform
+context rendered without page errors. The helper removed its database and stopped
+the development server/browser (`temp/a0-event-participants-browser-result.json`).
+This verifies bootstrap and reader delivery in development; full event UI and
+built-app verification remain blocked by the existing event-search contract.
+
 The event-tag browser probe used a fresh private target-schema database on
 `127.0.0.1:32695` and a delegated platform catalog manager with a band role. It
 created a shared tag with frontpage visibility through the real dialog, displayed
@@ -277,6 +302,9 @@ production server could not be checked because the normal build still fails.
 
 | Check | Result |
 | --- | --- |
+| Participant projection, membership consumers, invitation/attendance behavior, DB3 contracts and remaining read-compatibility inventory | Passed: 152 Node tests across nine files and 30 isolated DOM tests across six files. Includes context switches, empty/revoked participant results, membership instrument/tag identities, date-time lifecycle behavior and an unavailable catalog entry in the instrument picker. All existing behavior assertions remain executable. |
+| Participant reader plus membership assignments, event-tag/calendar/attendance/catalog/bootstrap/account/link/telemetry/profile regression on private MariaDB | Passed: 139 tests across fifteen files, including five new participant cases. Covers separate memberships, roleless ownership, empty/foreign person filters, public-ID redaction, hidden assignment history, exclusion of corrupt cross-band associations, grant revocation and inactive/deleted/merged actors. Fixture writes roll back and the generated database is removed. |
+| Participant development-browser delivery | Passed: real scoped DB3 RPCs, dashboard band switching, roleless owner reads, empty/missing context, fresh revoked-grant exclusion and return to platform; no page errors. |
 | Event-tag/DB3 selection, identity, nested hydration and shared editor/navigation regressions | Passed: 104 Node tests across four files and 17 isolated DOM tests across three files. Association keys use BandEventTag's actual foreign key and inherited/localized codecs. |
 | Event-tag catalogs plus calendar, attendance, shared catalogs, bootstrap, accounts, links, telemetry, member profiles and song-tag regression on private MariaDB | Passed: 120 tests across twelve files, including six new event-tag cases. Covers global versus band grants, fresh revocation, translations/blanks/inheritance, sorting/filtering/pagination, forged source/ownership fields, hidden assignments and authorized/restricted deletion. Fixture writes roll back; the generated database is removed. |
 | Event-tag development-browser editor | Passed: shared/custom creation, inherited display, French band translation persistence, unchanged shared English label and context switching; no page errors. |
@@ -308,9 +336,9 @@ production server could not be checked because the normal build still fails.
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 285 diagnostics, down from 315 before event-tag recovery. No increased file/error-code groups, compiler exclusions or error suppression added. |
-| `yarn build` | Gets past Custom Links and shared field-label callers; fails at the existing event-search payload in `src/core/components/event/EventComponents.tsx:1394`. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 278 failed, 1,481 passed, 192 skipped. Failure counts by file match the calendar baseline; no new failure groups remain. The six new event-tag native cases skip without the private test URL and pass in the native run above. The 55 direct/bulk attendance and 13 calendar MariaDB cases skip without their private test URL and pass in the native run above. Later isolated DOM batches are not reached; focused DOM checks above passed. |
+| `yarn typecheck` | Fails: 282 diagnostics, down from 285 before participant recovery. No increased file/error-code groups, compiler exclusions or error suppression added. |
+| `yarn build` | Gets past Custom Links and shared field-label callers; fails at the existing event-search payload in `src/core/components/event/EventComponents.tsx:1401`. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 278 failed, 1,479 passed, 197 skipped. Failure counts by file match the event-tag baseline; no new failure groups remain. Removing the obsolete selector also removes its two generated read-policy cases. The five new participant MariaDB cases skip without the private test URL and pass in the native run above, alongside the existing event-tag, attendance and calendar native cases. Later isolated DOM batches are not reached; focused DOM checks above passed. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests

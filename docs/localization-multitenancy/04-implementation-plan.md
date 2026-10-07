@@ -116,8 +116,18 @@ contain person fields only. Membership views/commands retain instrument and tag
 assignments. The obsolete `UserInstrument` descriptor/editor/CRUD registrations
 and unreachable person-profile/directory renderers are disabled and preserved.
 Deferred invitation views still resolve the old tag-assignment read metadata at
-startup; its writes are disabled. Remove that dependency together with the event
-payload roots, including `UserWithInstrumentsArgs` and `xUserWithInstrument`.
+startup; its writes are disabled. Remove that dependency together with the remaining
+event response/invitation payload roots, including `UserWithInstrumentsArgs`.
+The event participant reader now uses `BandUser_EventParticipant`, carrying
+separate person and membership identities, membership instruments/tags and
+authorized display metadata. Event detail's participant query and the dashboard's
+current membership use this view; attendance consumers use the typed participant
+model. The unused `xUserWithInstrument` descriptor is removed, with its original
+source retained in the existing references. Empty person filters stay empty,
+roleless owners can read their own membership, and client requests carry the
+complete presentation context without retaining previous-band results. Native,
+DOM and signed-in development-browser RPC checks cover this reader; full event
+response/search payloads and invitation management remain unfinished.
 Platform account maintenance now uses a separate `PlatformUser_Editor` view and
 generated commands, authorized by `manage_global_users` without band selection.
 It searches and edits shared person data; security state is read-only, and email

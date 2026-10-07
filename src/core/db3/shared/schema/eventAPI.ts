@@ -8,19 +8,19 @@ import type { UserPublicId } from "shared/publicId";
 ////////////////////////////////////////////////////////////////
 
 export type fn_makeMockEventSegmentResponse<TEventSegment extends db3.EventResponses_MinimalEventSegment, TSegmentResponse extends db3.EventResponses_MinimalEventSegmentUserResponse,> =
-    (segment: TEventSegment, user: db3.UserWithInstrumentsPayload) => TSegmentResponse | null;
+    (segment: TEventSegment, user: db3.EventParticipant) => TSegmentResponse | null;
 
 export type fn_makeMockEventUserResponse<TEvent extends db3.EventResponses_MinimalEvent, TEventResponse extends db3.EventResponses_MinimalEventUserResponse> =
-    (event: TEvent, user: db3.UserWithInstrumentsPayload, isInvited: boolean) => TEventResponse | null;
+    (event: TEvent, user: db3.EventParticipant, isInvited: boolean) => TEventResponse | null;
 
 
-export type UserInstrumentList = db3.UserWithInstrumentsPayload[];
+export type EventParticipantList = db3.EventParticipant[];
 
 export interface GetEventResponseForSegmentAndUserArgs<
     TEventSegment extends db3.EventResponses_MinimalEventSegment,
     TSegmentResponse extends db3.EventResponses_MinimalEventSegmentUserResponse,
 > {
-    user: db3.UserWithInstrumentsPayload;
+    user: db3.EventParticipant;
     segment: TEventSegment;
     expectedAttendanceTag: db3.EventResponses_ExpectedUserTag | null;
     makeMockEventSegmentResponse: fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>;
@@ -70,16 +70,16 @@ const findInstrument = (
     return data.instrument.find(instrument => db3.getInstrumentIdentity(instrument) === identity) ?? null;
 };
 
-export function getUserPrimaryInstrument(user: db3.UserWithInstrumentsPayload, data: EventResponseInstrumentLookup): (db3.InstrumentClientOrDbPayload | null) {
-    if (user.instruments.length < 1) return null;
-    const p = user.instruments.find(i => i.isPrimary);
+export function getUserPrimaryInstrument(user: db3.EventParticipant, data: EventResponseInstrumentLookup): (db3.InstrumentClientOrDbPayload | null) {
+    if (user.bandUserInstruments.length < 1) return null;
+    const p = user.bandUserInstruments.find(i => i.isPrimary);
     if (p) {
-        return findInstrument(data, p.instrumentId);
+        return findInstrument(data, p.bandInstrumentId);
     }
-    return findInstrument(data, user.instruments[0]!.instrumentId);
+    return findInstrument(data, user.bandUserInstruments[0]!.bandInstrumentId);
 }
 
-export function getInstrumentForEventUserResponse<TEventResponse extends db3.EventResponses_MinimalEventUserResponse>(response: TEventResponse, userId: UserPublicId, data: EventResponseInstrumentLookup, users: UserInstrumentList): (db3.InstrumentClientOrDbPayload | null) {
+export function getInstrumentForEventUserResponse<TEventResponse extends db3.EventResponses_MinimalEventUserResponse>(response: TEventResponse, userId: UserPublicId, data: EventResponseInstrumentLookup, users: EventParticipantList): (db3.InstrumentClientOrDbPayload | null) {
     if (response.instrumentId != null) {
         return findInstrument(data, response.instrumentId);
     }
@@ -93,7 +93,7 @@ export interface createMockEventUserResponseArgs<TEvent extends db3.EventRespons
     event: TEvent;
     defaultInvitees: Set<UserPublicId>;
     dashboardContext: EventResponseInstrumentLookup;
-    users: UserInstrumentList;
+    users: EventParticipantList;
     makeMockEventUserResponse: fn_makeMockEventUserResponse<TEvent, TEventResponse>;
 };
 
@@ -147,11 +147,11 @@ export interface GetEventResponseForUserArgs<
     TEvent extends db3.EventResponses_MinimalEvent,
     TEventResponse extends db3.EventResponses_MinimalEventUserResponse
 > {
-    user: db3.UserWithInstrumentsPayload;
+    user: db3.EventParticipant;
     event: TEvent;
     defaultInvitationUserIds: Set<UserPublicId>;
     dashboardContext: EventResponseInstrumentLookup;
-    userMap: UserInstrumentList;
+    userMap: EventParticipantList;
     makeMockEventUserResponse: fn_makeMockEventUserResponse<TEvent, TEventResponse>;
 };
 
@@ -188,7 +188,7 @@ export interface EventResponseInfoBase<
     event: TEvent;
     allEventResponses: db3.EventUserResponse<TEvent, TEventResponse>[];
     allSegmentResponses: db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse>[];
-    distinctUsers: db3.UserWithInstrumentsPayload[];
+    distinctUsers: db3.EventParticipant[];
     expectedAttendanceTag: db3.EventResponses_ExpectedUserTag | null;
     defaultInvitationUserIds: Set<UserPublicId>;
 
@@ -207,14 +207,14 @@ export class EventResponseInfo<
     event: TEvent;
     allEventResponses: db3.EventUserResponse<TEvent, TEventResponse>[];
     allSegmentResponses: db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse>[];
-    distinctUsers: db3.UserWithInstrumentsPayload[];
+    distinctUsers: db3.EventParticipant[];
     expectedAttendanceTag: db3.EventResponses_ExpectedUserTag | null;
     defaultInvitationUserIds: Set<UserPublicId>;
 
     makeMockEventSegmentResponse: fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>;
     makeMockEventUserResponse: fn_makeMockEventUserResponse<TEvent, TEventResponse>;
 
-    constructor(args: EventResponseInfoBase<TEvent, TEventSegment, TEventResponse, TSegmentResponse>, data: DashboardContextDataBase, users: UserInstrumentList) {
+    constructor(args: EventResponseInfoBase<TEvent, TEventSegment, TEventResponse, TSegmentResponse>, data: DashboardContextDataBase, users: EventParticipantList) {
         Object.assign(this, args);
 
         // populate calculated stuff
@@ -234,7 +234,7 @@ export class EventResponseInfo<
     };
 
     // ALWAYS returns a response. if doesn't exist in the list then a mock one is created.
-    getResponseForUserAndSegment({ user, segment }: { user: db3.UserWithInstrumentsPayload, segment: TEventSegment }):
+    getResponseForUserAndSegment({ user, segment }: { user: db3.EventParticipant, segment: TEventSegment }):
         db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse> | null {
         const f = this.allSegmentResponses.find(resp => resp.user.publicId === user.publicId && resp.segment.publicId === segment.publicId);
         if (f) return f;
@@ -242,7 +242,7 @@ export class EventResponseInfo<
     };
 
     // returns responses for all event segments
-    getResponsesBySegmentForUser = (user: db3.UserWithInstrumentsPayload): Record<EventSegmentPublicId, db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse>> => {
+    getResponsesBySegmentForUser = (user: db3.EventParticipant): Record<EventSegmentPublicId, db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse>> => {
         const ret: Record<EventSegmentPublicId, db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse>> = {};
         this.event.segments.forEach(segment1 => {
             const segment = segment1 as unknown as TEventSegment; // assumes TEventSegment is type of TEvent.segment[n]
@@ -256,7 +256,7 @@ export class EventResponseInfo<
 
     getResponsesForSegment = (segmentId: EventSegmentPublicId) => this.allSegmentResponses.filter(r => r.segment.publicId === segmentId);
 
-    getEventResponseForUser = (user: db3.UserWithInstrumentsPayload, dashboardContext: DashboardContextDataBase, userMap: UserInstrumentList) => {
+    getEventResponseForUser = (user: db3.EventParticipant, dashboardContext: DashboardContextDataBase, userMap: EventParticipantList) => {
         const ret = this.allEventResponses.find(r => r.user.publicId === user.publicId);
         if (!ret) return createMockEventUserResponse({ event: this.event, defaultInvitees: this.defaultInvitationUserIds, dashboardContext, users: userMap, userId: user.publicId, makeMockEventUserResponse: this.makeMockEventUserResponse });
         return ret;
@@ -276,7 +276,7 @@ interface EventResponsesPerUserArgs<
     event: TEvent;
     expectedAttendanceTag: db3.EventResponses_ExpectedUserTag | null;
     dashboardContext: DashboardContextDataBase;
-    userMap: UserInstrumentList;
+    userMap: EventParticipantList;
 
     makeMockEventSegmentResponse: fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>;
     makeMockEventUserResponse: fn_makeMockEventUserResponse<TEvent, TEventResponse>;
@@ -298,7 +298,7 @@ export function GetEventResponseInfo<
     let defaultInvitationUserIds = new Set<UserPublicId>();
 
     // calculate a list of potentially relevant users to all segments of the event.
-    const users: db3.UserWithInstrumentsPayload[] = [];
+    const users: db3.EventParticipant[] = [];
     if (expectedAttendanceTag) {
         defaultInvitationUserIds = new Set<UserPublicId>(expectedAttendanceTag.userAssignments.map(ua => ua.userId));
         expectedAttendanceTag.userAssignments.forEach(ua => {

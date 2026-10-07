@@ -22,7 +22,7 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../../db3/clientAPI';
 import { gCharMap, gIconMap } from '../../db3/components/IconMap';
-import { EventResponseInfo, UserInstrumentList } from '../../db3/shared/schema/eventAPI';
+import { EventResponseInfo, EventParticipantList } from '../../db3/shared/schema/eventAPI';
 import { wikiMakeWikiPathFromEventDescription } from '../../wiki/shared/wikiUtils';
 import { AppContextMarker } from '../AppContext';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
@@ -133,8 +133,8 @@ export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
 export interface EventAttendanceEditDialogProps {
     responseInfo: DetailEventResponseInfo;
     event: EventDetailEvent;
-    user: db3.UserWithInstrumentsPayload;
-    userMap: UserInstrumentList;
+    user: db3.EventParticipant;
+    userMap: EventParticipantList;
     refetch: () => void;
 
     onCancel: () => void;
@@ -318,8 +318,8 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
 export interface EventAttendanceEditButtonProps {
     responseInfo: DetailEventResponseInfo;
     event: EventDetailEvent;
-    user: db3.UserWithInstrumentsPayload;
-    userMap: UserInstrumentList;
+    user: db3.EventParticipant;
+    userMap: EventParticipantList;
     refetch: () => void;
 };
 export const EventAttendanceEditButton = (props: EventAttendanceEditButtonProps) => {
@@ -342,8 +342,8 @@ export const EventAttendanceEditButton = (props: EventAttendanceEditButtonProps)
 export interface EventAttendanceDetailRowProps {
     responseInfo: DetailEventResponseInfo;
     event: EventDetailEvent;
-    user: db3.UserWithInstrumentsPayload;
-    userMap: UserInstrumentList;
+    user: db3.EventParticipant;
+    userMap: EventParticipantList;
     showCancelledSegments: boolean;
     refetch: () => void;
     readonly: boolean;
@@ -375,7 +375,7 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
         `nameCellContainer`,
         isYou && "you",
         `userCssClass_${user.cssClass}`,
-        ...user.tags.map(ta => `userTagCssClass_${dashboardContext.userTag.getById(ta.userTagId)?.cssClass}`),
+        ...user.bandUserTagAssignments.map(ta => `userTagCssClass_${dashboardContext.userTag.getById(ta.bandUserTagId)?.cssClass}`),
     ];
 
     if (isYou) {
@@ -428,7 +428,7 @@ export interface EventAttendanceDetailProps {
     //functionalGroups: db3.InstrumentFunctionalGroupPayload[];
     refetch: () => void;
     readonly: boolean;
-    userMap: UserInstrumentList;
+    userMap: EventParticipantList;
 };
 
 type EventAttendanceDetailSortField = "user" | "instrument" | "response";
@@ -652,7 +652,7 @@ const EventSegmentAttendeeStat = (props: { stat: SegmentResponseStat }) => {
     </div>;
 };
 
-const GetSegmentAttendeeNames = (copyInstrumentNames: boolean, segmentId: EventSegmentPublicId, eventData: DetailEventWithMetadata, userMap: UserInstrumentList, dashboardContext: DashboardContextData): string[] => {
+const GetSegmentAttendeeNames = (copyInstrumentNames: boolean, segmentId: EventSegmentPublicId, eventData: DetailEventWithMetadata, userMap: EventParticipantList, dashboardContext: DashboardContextData): string[] => {
     const responseInfo = eventData.responseInfo!;
     const segmentResponses = responseInfo.getResponsesForSegment(segmentId)
         .filter(r => dashboardContext.isAttendanceIdGoing(r.response.attendanceId));
@@ -667,7 +667,7 @@ const GetSegmentAttendeeNames = (copyInstrumentNames: boolean, segmentId: EventS
 
 export interface EventCompletenessTabContentProps {
     eventData: DetailEventWithMetadata;
-    userMap: UserInstrumentList;
+    userMap: EventParticipantList;
     readonly: boolean;
     refetch: () => void;
 }
@@ -1044,7 +1044,7 @@ type EventDetailFullTabAreaProps = EventDetailFullProps & {
     selectedTab: string;
     setSelectedTab: (v: string) => void;
     eventData: DetailEventWithMetadata;
-    userMap: UserInstrumentList;
+    userMap: EventParticipantList;
 };
 
 export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event, tableClient, userMap, ...props }: EventDetailFullTabAreaProps) => {
