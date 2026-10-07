@@ -1,5 +1,5 @@
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
-import { writeBandDynamicString, type DynamicStringWriterDatabase } from "src/locale/server/dynamicStringWriter";
+import { writeBandDynamicString, writeGlobalDynamicString, type DynamicStringWriterDatabase } from "src/locale/server/dynamicStringWriter";
 import type { xTable } from "../shared/db3core";
 
 // Field discovery spans registered Prisma models; this boundary validates each heterogeneous field value.
@@ -17,7 +17,9 @@ export async function prepareDB3FieldWrites(table: xTable, values: MutationValue
         const write = await field.applyTransactionalWrite({
             value: values[field.member], existingRow: existing,
             hasInheritedSource: !!(table.bandScope?.inheritedSourceMember && existing?.[table.bandScope.inheritedSourceMember]),
-            writeLocalizedString: (ownedId, format, edit) => writeBandDynamicString(database, auth, ownedId, format, edit),
+            writeLocalizedString: (ownedId, format, edit, scope) => scope === "global"
+                ? writeGlobalDynamicString(database, auth, ownedId, format, edit)
+                : writeBandDynamicString(database, auth, ownedId, format, edit),
         });
         if (write) {
             Object.assign(result, write.values);

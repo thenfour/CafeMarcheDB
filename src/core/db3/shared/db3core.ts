@@ -21,7 +21,7 @@ import type { UserWithRolesPayload } from "./schema/userPayloads";
 import type { BandPublicId } from "shared/publicId";
 import type { LocalePreferenceInput } from "src/locale/shared/localePreferences";
 import type { LocalizedStringFormat } from "@prisma/client";
-import type { LocalizedFieldEditSchema } from "src/locale/shared/dynamicStringWrite";
+import type { LocalizedFieldEditSchema, LocalizedFieldWriteScope } from "src/locale/shared/dynamicStringWrite";
 
 // Registered fields span different row shapes; each hook validates its own members.
 export interface DB3TransactionalFieldWriteContext {
@@ -29,7 +29,7 @@ export interface DB3TransactionalFieldWriteContext {
     readonly existingRow: Readonly<Record<string, unknown>> | null;
     readonly hasInheritedSource: boolean;
     readonly writeLocalizedString: (ownedStringId: number | null, format: LocalizedStringFormat,
-        edit: z.infer<typeof LocalizedFieldEditSchema>) => Promise<number | null>;
+        edit: z.infer<typeof LocalizedFieldEditSchema>, scope: LocalizedFieldWriteScope) => Promise<number | null>;
 }
 export interface DB3TransactionalFieldWriteResult {
     readonly values: Readonly<Record<string, unknown>>;

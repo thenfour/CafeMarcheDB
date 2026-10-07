@@ -8,7 +8,7 @@ import { readSettingSnapshot } from "src/setting/shared/settingsContract";
 import { bandUserInstrumentsView } from "../shared/entities/user/bandUserInstruments";
 import type { DashboardDataDto } from "../shared/references/dashboardData";
 import { permissionDashboardView } from "../shared/references/dashboardReferences";
-import { loadDashboardCatalogs } from "./db3DashboardCatalogs";
+import { loadDashboardCatalogs, loadSharedEventCatalogs } from "./db3DashboardCatalogs";
 import { executeDB3Read, type DB3ReadDatabase, type DB3ReadContext } from "./db3ReadExecution";
 import { queryView } from "./db3QueryCore";
 import { xBandUser } from "../db3";
@@ -37,16 +37,18 @@ export function loadDashboardData(
 ): Promise<DashboardDataDto> {
     return executeDB3Read(database, authorization, async context => {
         const { database: transaction, authorization } = context;
-        const [localization, settings, permissions, catalogs, currentMembership] = await Promise.all([
+        const [localization, settings, permissions, catalogs, eventCatalogs, currentMembership] = await Promise.all([
             loadLocalizationCatalog(transaction, authorization, input),
             loadSettingsSnapshot(transaction, authorization),
             queryView({ view: permissionDashboardView, ...input, filter: {}, cmdbQueryContext: "dashboard permissions" }, authorization, context),
             loadDashboardCatalogs(context, authorization, input),
+            loadSharedEventCatalogs(context, authorization, input),
             loadCurrentMembership(context, input),
         ]);
         const server = getClientServerState(authorization.hasPermission(Permission.sysadmin));
         return {
             ...catalogs,
+            ...eventCatalogs,
             currentMembership,
             permission: permissions.items,
             authorization: authorization.toClientContext(),
@@ -56,8 +58,8 @@ export function loadDashboardData(
             serverStartupState: server.diagnostics,
             bandTimeZone: authorization.band ? readSettingSnapshot(settings, "band", "dateTime.bandTimeZone") : "Europe/Brussels",
             // These consumers are deferred during A0 recovery; do not query their old models.
-            wikiPageTag: [], eventType: [], eventStatus: [], eventTag: [],
-            eventAttendance: [], fileTag: [], songCreditType: [], dynMenuLinks: [], relevantEventIds: [],
+            wikiPageTag: [], eventTag: [],
+            fileTag: [], songCreditType: [], dynMenuLinks: [], relevantEventIds: [],
         };
     });
 }

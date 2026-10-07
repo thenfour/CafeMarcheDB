@@ -1,3 +1,5 @@
+import { GlobalEventCatalogContext } from "src/core/db3/components/GlobalEventCatalogContext";
+import { useLocale } from "src/locale/components/useLocale";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
 import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
@@ -12,8 +14,8 @@ const MainContent = () => {
         columns: {
             publicId: DB3Client.publicIdFieldGen(),
             isDeleted: columnName => new DB3Client.BoolColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.deleted", columnName }),
-            text: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.label", columnName, cellWidth: 180 }),
-            description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 200 }),
+            name: columnName => new DB3Client.LocalizedStringColumnClient({ fieldCaptionKey: "db3.fields.name", columnName }),
+            description: columnName => new DB3Client.LocalizedStringColumnClient({ fieldCaptionKey: "db3.fields.description", columnName }),
             color: columnName => new DB3Client.ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.color", columnName, cellWidth: 300 }),
             sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.sortOrder", columnName, cellWidth: 80 }),
             significance: columnName => new DB3Client.ConstEnumStringFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.significance", columnName, cellWidth: 120 }),
@@ -23,14 +25,15 @@ const MainContent = () => {
 
     return <>
         <LocalizedMarkdown setting="EditEventTypesPage_markdown"></LocalizedMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} view={db3.eventTypeEditorView} />
+        <GlobalEventCatalogContext><DB3EditGrid tableSpec={tableSpec} view={db3.eventTypeEditorView} /></GlobalEventCatalogContext>
     </>;
 };
 
 
 const EditEventTypesPage: BlitzPage = () => {
+    const locale = useLocale();
     return (
-        <DashboardLayout title="Event Types">
+        <DashboardLayout title={locale.getPlainString("eventCatalog.types.title")}>
             <MainContent />
         </DashboardLayout>
     )

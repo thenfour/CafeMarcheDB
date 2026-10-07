@@ -46,8 +46,15 @@ describe.skipIf(!settingsMysqlTestUrl)("account and dashboard bootstrap on migra
     }
 
     it("boots platform/account context without executing deferred domain readers", () => withFixture(async (tx, fixture) => {
+        const name = await tx.dynamicLocalizedString.create({ data: {
+            publicId: generatePublicId(), format: "PlainText",
+            values: { create: { publicId: generatePublicId(), localeId: fixture.englishId, indexedValue: "Historical confirmation" } },
+        } });
+        const description = await tx.dynamicLocalizedString.create({ data: { publicId: generatePublicId(), format: "Markdown" } });
+        const status = await tx.eventStatus.create({ data: {
+            publicId: generatePublicId(), nameId: name.id, descriptionId: description.id, isDeleted: true,
+        } });
         const eventRead = vi.spyOn(tx.event, "findMany");
-        const statusRead = vi.spyOn(tx.eventStatus, "findMany");
         const menuRead = vi.spyOn(tx.menuLink, "findMany");
         const { context, auth } = await authorize(tx, fixture);
         const dto = await loadDashboardData(context, auth, {});
@@ -58,10 +65,12 @@ describe.skipIf(!settingsMysqlTestUrl)("account and dashboard bootstrap on migra
         expect(dto).not.toHaveProperty("role");
         expect(dto.permission.length).toBeGreaterThan(0);
         expect(dto.permission.every(permission => !("id" in permission) && !("roles" in permission))).toBe(true);
+        expect(dto.eventStatus).toEqual([expect.objectContaining({ publicId: status.publicId, name: "Historical confirmation", isDeleted: true })]);
         expect(eventRead).not.toHaveBeenCalled();
-        expect(statusRead).not.toHaveBeenCalled();
         expect(menuRead).not.toHaveBeenCalled();
-        expect(hydrateDashboardData(dto).currentMembership).toBeNull();
+        const hydrated = hydrateDashboardData(dto);
+        expect(hydrated.currentMembership).toBeNull();
+        expect(hydrated.eventStatus[0]?.name).toBe("Historical confirmation");
     }));
 
     it("keeps the shared person's instruments in the explicitly selected membership, including a roleless owner", () => withFixture(async (tx, fixture) => {

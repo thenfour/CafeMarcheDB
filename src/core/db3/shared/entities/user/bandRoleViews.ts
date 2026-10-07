@@ -46,8 +46,8 @@ export const xBandRole = defineTable({
     fields: makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "never" }),
         publicId: () => MakePublicIdField<BandRolePublicId>(),
-        name: columnName => new LocalizedStringField({ columnName, stringIdentityMember: "nameId", stringFormat: "PlainText", authMap: kReadOnlyAuthMap }),
-        description: columnName => new LocalizedStringField({ columnName, stringIdentityMember: "descriptionId", stringFormat: "Markdown", authMap: kReadOnlyAuthMap }),
+        name: columnName => new LocalizedStringField({ columnName, stringIdentityMember: "nameId", stringFormat: "PlainText", writeScope: "band", authMap: kReadOnlyAuthMap }),
+        description: columnName => new LocalizedStringField({ columnName, stringIdentityMember: "descriptionId", stringFormat: "Markdown", writeScope: "band", authMap: kReadOnlyAuthMap }),
         color: () => MakeColorField({ authMap: kReadOnlyAuthMap }),
         sortOrder: () => MakeSortOrderField({ authMap: kReadOnlyAuthMap }),
     }),

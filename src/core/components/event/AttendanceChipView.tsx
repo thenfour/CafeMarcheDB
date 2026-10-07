@@ -19,10 +19,10 @@ export const AttendanceChipTooltipContent = (props: AttendanceChipTooltipProps) 
     return <div>
         <div className="attendanceChipTooltip">
             <div className="attendanceChipTooltipResponse">
-                {props.value?.text || "No response"}
+                {props.value?.buttonCaption ?? "No response"}
             </div>
             <div className="attendanceChipTooltipDescription" style={{ marginTop: "4px" }}>
-                {props.value?.description || "No description"}
+                {props.value?.description ?? "No description"}
             </div>
         </div>
         {props.event &&
@@ -66,7 +66,7 @@ export interface AttendanceChipViewProps extends Omit<AttendanceChipProps, "valu
 
 export const AttendanceChipView = ({ fadeNoResponse = false, showLabel = true, ...props }: AttendanceChipViewProps) => {
     const value = props.value;
-    let label: React.ReactNode = showLabel && (value?.text || "No response");
+    let label: React.ReactNode = showLabel && (value?.buttonCaption ?? "No response");
     if (!label && !value?.iconName) {
         label = <Icon />;
     }

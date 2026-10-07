@@ -31,7 +31,7 @@ export const SubtleEventCard = ({ event, dateRange, now }: { event: db3.EventSea
 
     const classes = [
         "SubtleEventCard",
-        event.type?.text,
+        event.type?.name,
         visibilityClassName,
         `status_${event.status?.significance}`,
         (eventTiming === Timing.Past) ? "past" : "notPast",

@@ -382,12 +382,12 @@ export const EventTextLink = (props: {
         >
             <CMChip
                 color={status?.color}
-                tooltip={status?.label || ""}
+                tooltip={status?.name || ""}
                 className={`attendanceResponseColorBarSegment`}
                 style={style}
                 shape="rectangle"
             >
-                {firstLetter(status?.label)}
+                {firstLetter(status?.name)}
             </CMChip>
             <Tooltip title={label} disableInteractive>
                 <span>

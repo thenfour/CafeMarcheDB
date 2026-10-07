@@ -751,6 +751,24 @@ copy these from dorico/finale
 
 not needed for establish v1 though.
 
+# merge users function
+
+The ability to merge users needs to continue, but can remain server-wide and
+a sysadmin-only action. The use case remains important: users accidentally
+create multiple accounts.
+
+But a merge action must be platform-wide. Which is fine because the use case
+is likely platform-wide (users did not clearly remember their credentials for
+band A, but then accidentally created an account for band B).
+
+Scenario is also likely that users create multiple accounts, for each band.
+In all cases, likely scenarios in a multi-band installation involve cross-band
+account-wide merging.
+
+In order to do this per-band, it would be a matter of duplicating the multiple
+signin method mechanism but for band membership. Which is complex and totally
+unneeded.
+
 ## routing
 
 we need to basically be able to dynamically rewrite/route everthing
@@ -958,3 +976,13 @@ model BandSetting {
    @@id([key, bandId])
 }
 ```
+
+# TECH DEBT accumulating
+
+-  base: full feature restoration
+   -  localization
+   -  band awareness and platform vs. band mgmt
+   -  supporting routing
+-  xTable should stop being used like a view
+   -  only 1 xtable per db entity
+-  find a way to auto-hydrate localized strings. the view would need a way to specify this.

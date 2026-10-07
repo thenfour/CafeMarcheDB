@@ -44,9 +44,17 @@ export const scenarioAttendances: db3.EventAttendanceDisplay[] = [
     { id: 3, text: "Yes", strength: 100, color: "attendance_yes", iconName: "CheckCircleOutline", description: "I will attend." },
 ].map((option, sortOrder) => ({
     publicId: db3.xEventAttendance.parseIdentity(`scenarioAttend0${option.id}`),
-    text: option.text, strength: option.strength, iconName: option.iconName, description: option.description,
-    color: gGeneralPaletteList.findEntry(option.color), sortOrder, isActive: true, isDeleted: false,
-    personalText: "", pastText: "", pastPersonalText: ""
+    buttonCaption: option.text,
+    strength: option.strength,
+    iconName: option.iconName,
+    description: option.description,
+    color: gGeneralPaletteList.findEntry(option.color),
+    sortOrder,
+    isActive: true,
+    isDeleted: false,
+    personalCaption: "",
+    pastCaption: "",
+    personalPastCaption: ""
 }));
 
 export const scenarioInstruments: db3.InstrumentPayload[] = ["Trumpet", "Saxophone", "Percussion", "Tuba"].map((name, index) => ({

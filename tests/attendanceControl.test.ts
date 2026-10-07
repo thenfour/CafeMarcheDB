@@ -26,7 +26,7 @@ vi.mock("src/core/components/markdown/MarkdownControl3", () => ({
         value, onChange: (e: any) => onChange(e.target.value), "data-uploads": String(allowUploads),
     }),
 }));
-import { AttendanceControlView, AttendanceChange } from "src/core/components/event/AttendanceControlView";
+import { AttendanceControlView, AttendanceChange, AttendanceControlEnvironment } from "src/core/components/event/AttendanceControlView";
 import { AttendanceScenario, applyAttendanceScenarioChange, buildAttendanceScenario, createAttendanceScenario, scenarioAttendances, scenarioClientInstruments } from "src/core/components/event/attendanceScenario";
 
 let root: Root;
@@ -34,13 +34,16 @@ let changeScenario: React.Dispatch<React.SetStateAction<AttendanceScenario>>;
 let currentScenario: AttendanceScenario;
 const saves = vi.fn();
 const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT");
-const Harness = ({ initial, userIndex = 1, minimal = false }: { initial: AttendanceScenario; userIndex?: number; minimal?: boolean }) => {
+const Harness = ({ initial, userIndex = 1, minimal = false, attendances = scenarioAttendances }: {
+    initial: AttendanceScenario; userIndex?: number; minimal?: boolean;
+    attendances?: AttendanceControlEnvironment["attendances"];
+}) => {
     const [scenario, setScenario] = React.useState(initial);
     changeScenario = setScenario;
     currentScenario = scenario;
     const { attendance, event } = buildAttendanceScenario(scenario, userIndex);
     return React.createElement(AttendanceControlView, { attendance, event, minimalWhenNotAlert: minimal, environment: {
-        attendances: scenarioAttendances, instruments: scenarioClientInstruments, allowUploads: false, datePresentation: { bandTimeZone: "UTC", viewerTimeZone: "UTC", locale: "en" },
+        attendances, instruments: scenarioClientInstruments, allowUploads: false, datePresentation: { bandTimeZone: "UTC", viewerTimeZone: "UTC", locale: "en" },
         commentDialogTitle: "Comment", commentDialogDescription: "Local comment",
         onSave: async (change: AttendanceChange) => {
             saves(change);
@@ -66,6 +69,33 @@ const render = async (initial = createAttendanceScenario(), minimal = false, use
 };
 
 describe("shared attendance view with a local adapter", () => {
+    it("keeps an intentionally blank option caption distinct from the no-answer control", async () => {
+        const attendances = scenarioAttendances.map(option => option.buttonCaption === "Probably"
+            ? { ...option, buttonCaption: "" } : option);
+        await act(async () => root.render(React.createElement(Harness, { initial: createAttendanceScenario(), attendances })));
+        expect(buttons("(no answer)")).toHaveLength(2);
+        const blankOptions = [...document.querySelectorAll<HTMLButtonElement>(".attendanceAnswer")].filter(button => button.textContent === "");
+        expect(blankOptions).toHaveLength(2);
+        await click(blankOptions[1]!);
+        expect(currentScenario.users[1]!.responses).toEqual([3, 2, "missing"]);
+    });
+
+    it.each(["deleted", "inactive"] as const)("shows an existing %s answer but excludes it from new choices", async retirement => {
+        const scenario = createAttendanceScenario();
+        scenario.users[1]!.responses = [3, 3, 3];
+        const attendances = scenarioAttendances.map(option => option.buttonCaption === "Yes"
+            ? { ...option, isDeleted: retirement === "deleted", isActive: retirement !== "inactive" } : option);
+        await act(async () => root.render(React.createElement(Harness, { initial: scenario, minimal: true, attendances })));
+        expect(document.querySelector(".minimalView")?.textContent).toContain("Yes");
+        await click(buttons("Yes")[0]!);
+        expect(buttons("Yes")).toHaveLength(0);
+        expect(buttons("Probably")).toHaveLength(2);
+        expect(buttons("(no answer)")).toHaveLength(2);
+        await click(buttons("Probably")[0]!);
+        expect(currentScenario.users[1]!.responses).toEqual([2, 3, 3]);
+        expect(saves.mock.calls.map(([change]) => change.type)).toEqual(["segment"]);
+    });
+
     it("completes attendance, edits the instrument, and saves a comment for only the simulated user", async () => {
         await render();
         expect(document.querySelector(".eventAttendanceControl.alert")).not.toBeNull();

@@ -1,3 +1,5 @@
+import { eventStatusDtoFixture, eventTypeDtoFixture } from "./support/eventCatalogFixtures";
+import type { LocalizedFieldValue } from "src/core/db3/shared/columnTypes/localizedString";
 import { testServerAuthorization } from "tests/support/serverAuthorization";
 import type { EventAttendancePublicId, EventSegmentPublicId, EventSegmentUserResponsePublicId, EventUserResponsePublicId } from "shared/publicId";
 import { Prisma } from "db"
@@ -6,13 +8,11 @@ import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest"
 
 import type { ColorPaletteEntry } from "src/core/components/color/palette"
 import * as db3 from "src/core/db3/db3"
-import { ZodToPrismaSelection } from "shared/prismaUtils"
 import {
   parsePublicId,
   type EventStatusPublicId,
   type EventTagAssignmentPublicId,
   type EventTagPublicId,
-  type EventTypePublicId,
   type FileTagAssignmentPublicId,
   type FilePublicId,
   type FileTagPublicId,
@@ -231,7 +231,7 @@ describe("DB3 scalar selection compiler", () => {
     const selection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
       select: {
         publicId: true,
-        label: true,
+        significance: true,
         iconName: true,
       },
     })
@@ -241,7 +241,7 @@ describe("DB3 scalar selection compiler", () => {
     expectTypeOf(compiled.prismaSelection).toEqualTypeOf<typeof selection>()
     expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
       publicId: EventStatusPublicId
-      label: string
+      significance: string | null
       iconName: string | null
     }>()
 
@@ -251,22 +251,22 @@ describe("DB3 scalar selection compiler", () => {
       required: member.required,
     }))).toEqual([
       { member: "publicId", required: true },
-      { member: "label", required: true },
+      { member: "significance", required: true },
       { member: "iconName", required: true },
     ])
     expect(compiled.dtoSchema.parse({
       publicId: eventStatusPublicId,
-      label: "Confirmed",
+      significance: "FinalConfirmation",
       iconName: null,
     })).toEqual({
       publicId: eventStatusPublicId,
-      label: "Confirmed",
+      significance: "FinalConfirmation",
       iconName: null,
     })
     expect(compiled.dtoSchema.safeParse({ id: 10, iconName: null }).success).toBe(false)
     expect(compiled.dtoSchema.safeParse({
       id: 10,
-      label: "Confirmed",
+      significance: "FinalConfirmation",
       iconName: undefined,
     }).success).toBe(false)
   })
@@ -296,7 +296,7 @@ describe("DB3 scalar selection compiler", () => {
     const selection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
       select: {
         publicId: true,
-        label: false,
+        significance: false,
       },
     })
 
@@ -307,7 +307,7 @@ describe("DB3 scalar selection compiler", () => {
     }>()
 
     expect(compiled.members.map(member => member.member)).toEqual(["publicId"])
-    expect(compiled.dtoSchema.parse({ publicId: eventStatusPublicId, label: "stripped" })).toEqual({ publicId: eventStatusPublicId })
+    expect(compiled.dtoSchema.parse({ publicId: eventStatusPublicId, significance: "stripped" })).toEqual({ publicId: eventStatusPublicId })
   })
 
   it("reports the entity and complete path for unknown selected members", () => {
@@ -429,7 +429,7 @@ describe("DB3 scalar selection compiler", () => {
     const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
       select: {
         status: {
-          select: { publicId: true, label: true },
+          select: { publicId: true, significance: true },
         },
       },
     })
@@ -439,7 +439,7 @@ describe("DB3 scalar selection compiler", () => {
     expectTypeOf<z.infer<typeof compiled.dtoSchema>>().toEqualTypeOf<{
       status?: {
         publicId: EventStatusPublicId
-        label: string
+        significance: string | null
       } | null
     }>()
 
@@ -450,10 +450,10 @@ describe("DB3 scalar selection compiler", () => {
       member: "status",
     })
     expect(compiled.dtoSchema.parse({ status: null })).toEqual({ status: null })
-    expect(compiled.dtoSchema.parse({ status: { publicId: eventStatusPublicId, label: "Confirmed" } }))
-      .toEqual({ status: { publicId: eventStatusPublicId, label: "Confirmed" } })
+    expect(compiled.dtoSchema.parse({ status: { publicId: eventStatusPublicId, significance: "FinalConfirmation" } }))
+      .toEqual({ status: { publicId: eventStatusPublicId, significance: "FinalConfirmation" } })
     expect(compiled.dtoSchema.safeParse({
-      status: { publicId: 4, label: "Confirmed" },
+      status: { publicId: 4, significance: "FinalConfirmation" },
     }).success).toBe(false)
   })
 
@@ -582,7 +582,7 @@ describe("DB3 derived scalar hydration", () => {
     const selection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
       select: {
         publicId: true,
-        label: true,
+        significance: true,
         color: true,
       },
     })
@@ -590,18 +590,18 @@ describe("DB3 derived scalar hydration", () => {
     const decode = vi.spyOn(db3.xEventStatus.fields.color.codec, "decode")
     const dto = {
       publicId: eventStatusPublicId,
-      label: "Confirmed",
+      significance: "FinalConfirmation",
       color: "green",
     }
 
     expectTypeOf<Parameters<typeof derived.hydrate>[0]>().toEqualTypeOf<{
       publicId: EventStatusPublicId
-      label: string
+      significance: string | null
       color: string | null
     }>()
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
       publicId: EventStatusPublicId
-      label: string
+      significance: string | null
       color: ColorPaletteEntry | null
     }>()
 
@@ -609,7 +609,7 @@ describe("DB3 derived scalar hydration", () => {
 
     expect(hydrated).toEqual({
       publicId: eventStatusPublicId,
-      label: "Confirmed",
+      significance: "FinalConfirmation",
       color: expect.objectContaining({ id: "green" }),
     })
     expect(dto.color).toBe("green")
@@ -667,123 +667,35 @@ describe("DB3 derived scalar hydration", () => {
   })
 })
 
-describe("EventStatus editor derived-view pilot", () => {
-  const legacyDtoSchema = z.object({
-    publicId: z.custom<EventStatusPublicId>(value => typeof value === "string"),
-    isDeleted: z.boolean().optional(),
-    description: z.string().optional(),
-    color: z.string().nullable().optional(),
-    sortOrder: z.number().int().optional(),
-    iconName: z.string().nullable().optional(),
-    label: z.string().optional(),
-    significance: z.string().nullable().optional(),
-  })
-
-  it("preserves the view identity and former DTO-derived Prisma selection", () => {
+describe("localized EventStatus editor", () => {
+  const dto = eventStatusDtoFixture(eventStatusPublicId)
+  it("retains view identity and fetches field-owned translation dependencies", () => {
     expect(db3.eventStatusEditorView.viewID).toBe("EventStatus_Editor")
-    expect(db3.eventStatusEditorView.getSelectionArgs(
-      {} as db3.DB3ViewSelectionContext,
-    )).toBe(db3.eventStatusEditorSelection)
-    expect(db3.eventStatusEditorSelection).toEqual(
-      ZodToPrismaSelection(legacyDtoSchema),
-    )
+    expect(db3.eventStatusEditorView.getSelectionArgs({ filter: { items: [] }, auth: testServerAuthorization(null, new ServerPermissionSet([])) }))
+      .toMatchObject({ select: { ...db3.eventStatusEditorSelection.select, nameId: true, descriptionId: true } }) // Localized fields add their storage identities as read dependencies.
+    expect(db3.eventStatusEditorSelection.select).toMatchObject({ name: true, description: true })
   })
-
-  it("strengthens inherited DTO presence while retaining transport nullability", () => {
-    type LegacyDto = z.infer<typeof legacyDtoSchema>
-    type DerivedDto = db3.DtoOf<typeof db3.eventStatusEditorView>
-
-    expectTypeOf<DerivedDto>().toMatchTypeOf<LegacyDto>()
-    expectTypeOf<DerivedDto>().toEqualTypeOf<{
-      publicId: EventStatusPublicId
-      isDeleted: boolean
-      description: string
-      color: string | null
-      sortOrder: number
-      iconName: string | null
-      label: string
-      significance: string | null
-    }>()
-    expectTypeOf<db3.ClientOf<typeof db3.eventStatusEditorView>>()
-      .toEqualTypeOf<{
-        publicId: EventStatusPublicId
-        isDeleted: boolean
-        description: string
-        color: ColorPaletteEntry | null
-        sortOrder: number
-        iconName: string | null
-        label: string
-        significance: string | null
-      }>()
-
-    expect(legacyDtoSchema.safeParse({ publicId: eventStatusPublicId }).success).toBe(true)
-    expect(db3.eventStatusEditorView.dtoSchema.safeParse({ publicId: eventStatusPublicId }).success)
-      .toBe(false)
-    expect(db3.eventStatusEditorView.dtoSchema.safeParse({
-      publicId: eventStatusPublicId,
-      isDeleted: false,
-      description: "Public display metadata",
-      color: null,
-      sortOrder: 1,
-      iconName: null,
-      label: "Confirmed",
-      significance: null,
-    }).success).toBe(true)
+  it("requires complete resolved fields and retains nullable text and resolution metadata", () => {
+    expect(db3.eventStatusEditorView.dtoSchema.safeParse({ publicId: eventStatusPublicId }).success).toBe(false)
+    expect(db3.eventStatusEditorView.dtoSchema.safeParse(dto).success).toBe(true)
+    expectTypeOf<db3.DtoOf<typeof db3.eventStatusEditorView>["name"]>().toEqualTypeOf<string | null>()
+    expectTypeOf<db3.ClientOf<typeof db3.eventStatusEditorView>["name"]>().toEqualTypeOf<LocalizedFieldValue>()
   })
-
-  it("matches the former xTable hydrator for a complete DTO", () => {
-    const dto: db3.DtoOf<typeof db3.eventStatusEditorView> = {
-      publicId: eventStatusPublicId,
-      isDeleted: false,
-      description: "Public display metadata",
-      color: "green",
-      sortOrder: 1,
-      iconName: null,
-      label: "Confirmed",
-      significance: db3.EventStatusSignificance.FinalConfirmation,
-    }
-
-    expect(db3.eventStatusEditorView.hydrate(
-      dto,
-      new db3.DB3ReferenceStore(),
-    )).toEqual(db3.xEventStatus.getClientModel(dto, "view"))
+  it("hydrates localized editor state and palette values through authoritative fields", () => {
+    const client = db3.eventStatusEditorView.hydrate(dto, new db3.DB3ReferenceStore())
+    expect(client).toEqual(db3.xEventStatus.getClientModel(dto, "view"))
+    expect(client.name).toMatchObject({ value: "Confirmed", stringPublicId: null, canInherit: false })
+    expect(client.color).toMatchObject({ id: "green" })
   })
 })
 
 describe("Event lookup editor derived-view rollout", () => {
-  it("migrates EventType with required intrinsic fields and codec hydration", () => {
-    type Dto = db3.DtoOf<typeof db3.eventTypeEditorView>
-    type Client = db3.ClientOf<typeof db3.eventTypeEditorView>
-
-    expectTypeOf<Dto>().toEqualTypeOf<{
-      publicId: EventTypePublicId
-      isDeleted: boolean
-      description: string
-      color: string | null
-      sortOrder: number
-      iconName: string | null
-      text: string
-      significance: string | null
-    }>()
-    expectTypeOf<Client["color"]>().toEqualTypeOf<ColorPaletteEntry | null>()
-    expect(db3.eventTypeEditorView.getSelectionArgs(
-      {} as db3.DB3ViewSelectionContext,
-    )).toBe(db3.eventTypeEditorSelection)
-
-    const dto: Dto = {
-      publicId: eventTypePublicId,
-      isDeleted: false,
-      description: "Public concert",
-      color: "green",
-      sortOrder: 1,
-      iconName: null,
-      text: "Concert",
-      significance: db3.EventTypeSignificance.Concert,
-    }
-    expect(db3.eventTypeEditorView.hydrate(
-      dto,
-      new db3.DB3ReferenceStore(),
-    )).toEqual(db3.xEventType.getClientModel(dto, "view"))
+  it("migrates EventType with localized editor state and palette hydration", () => {
+    const dto = eventTypeDtoFixture(eventTypePublicId)
+    expectTypeOf<db3.DtoOf<typeof db3.eventTypeEditorView>["name"]>().toEqualTypeOf<string | null>()
+    expectTypeOf<db3.ClientOf<typeof db3.eventTypeEditorView>["color"]>().toEqualTypeOf<ColorPaletteEntry | null>()
+    expect(db3.eventTypeEditorView.hydrate(dto, new db3.DB3ReferenceStore()))
+      .toEqual(db3.xEventType.getClientModel(dto, "view"))
   })
 
   it("migrates EventTag with required intrinsic fields and codec hydration", () => {
@@ -1414,7 +1326,7 @@ describe("DB3 derived embedded-relation hydration", () => {
         status: {
           select: {
             publicId: true,
-            label: true,
+            significance: true,
             color: true,
           },
         },
@@ -1426,7 +1338,7 @@ describe("DB3 derived embedded-relation hydration", () => {
     expectTypeOf<ReturnType<typeof derived.hydrate>>().toEqualTypeOf<{
       status?: {
         publicId: EventStatusPublicId
-        label: string
+        significance: string | null
         color: ColorPaletteEntry | null
       } | null
     }>()
@@ -1434,7 +1346,7 @@ describe("DB3 derived embedded-relation hydration", () => {
     const hydrated = derived.hydrate({
       status: {
         publicId: eventStatusPublicId,
-        label: "Confirmed",
+        significance: "FinalConfirmation",
         color: "green",
       },
     }, new db3.DB3ReferenceStore())
@@ -1442,7 +1354,7 @@ describe("DB3 derived embedded-relation hydration", () => {
     expect(hydrated).toEqual({
       status: {
         publicId: eventStatusPublicId,
-        label: "Confirmed",
+        significance: "FinalConfirmation",
         color: expect.objectContaining({ id: "green" }),
       },
     })

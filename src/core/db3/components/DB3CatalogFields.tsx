@@ -40,7 +40,7 @@ function NativeLocalizedEditor({ field, value, labelKey, onChange }: {
 }) {
     const locale = useLocale();
     const presentation = usePresentation();
-    const enabled = presentation.data?.localization.availability.band ?? [];
+    const enabled = presentation.data?.localization.availability[field.writeScope] ?? [];
     const [localeTag, setLocaleTag] = React.useState(() => value.edit?.kind === "set" ? value.edit.localeTag
         : value.resolution?.localeTag && enabled.includes(value.resolution.localeTag) ? value.resolution.localeTag : enabled[0] ?? "");
     React.useEffect(() => {

@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { ClientOf, DbPayloadOf, defineView, DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
+import { dashboardReferenceContract } from "../../references/dashboardReferences";
 import { xEvent } from "../../schema/event";
 import { EventTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { xFrontpageGalleryItem } from "../../schema/file";
@@ -79,30 +80,6 @@ const eventFrontpageRequestedSelection = Prisma.validator<Prisma.EventDefaultArg
         frontpageLocation_fr: true,
         frontpageLocationURI_fr: true,
         frontpageTags_fr: true,
-        type: {
-            select: {
-                publicId: true,
-                isDeleted: true,
-                description: true,
-                color: true,
-                sortOrder: true,
-                iconName: true,
-                text: true,
-                significance: true,
-            },
-        },
-        status: {
-            select: {
-                publicId: true,
-                isDeleted: true,
-                description: true,
-                color: true,
-                sortOrder: true,
-                iconName: true,
-                label: true,
-                significance: true,
-            },
-        },
         tags: {
             orderBy: EventTagAssignmentNaturalOrderBy,
             select: {
@@ -126,6 +103,7 @@ const eventFrontpageRequestedSelection = Prisma.validator<Prisma.EventDefaultArg
 const eventFrontpageViewContract = deriveViewContract(
     xEvent,
     eventFrontpageRequestedSelection,
+    { references: dashboardReferenceContract },
 );
 
 export const eventFrontpageSelection = eventFrontpageViewContract.prismaSelection;
@@ -135,6 +113,7 @@ export const eventFrontpageView = defineView({
     entity: xEvent,
     dtoSchema: eventFrontpageViewContract.dtoSchema,
     selection: eventFrontpageSelection,
+    references: eventFrontpageViewContract.referenceContract,
     hydrate: eventFrontpageViewContract.hydrate,
 });
 

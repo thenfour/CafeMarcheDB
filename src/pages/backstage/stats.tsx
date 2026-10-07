@@ -61,7 +61,7 @@ export const GlobalStatsFilterControls = ({ filterSpec, setFilterSpec, defaultFi
             style='toggle'
             items={dashboardContext.eventType.map((s): ChipFilterGroupItem<EventTypePublicId> => ({
                 id: s.publicId,
-                label: s.text,
+                label: s.name,
                 color: s.color,
             }))}
             onChange={(ns) => setFilterSpec({ ...filterSpec, eventTypeIds: ns })}
@@ -71,7 +71,7 @@ export const GlobalStatsFilterControls = ({ filterSpec, setFilterSpec, defaultFi
             style='toggle'
             items={dashboardContext.eventStatus.map((s): ChipFilterGroupItem<EventStatusPublicId> => ({
                 id: s.publicId,
-                label: s.label,
+                label: s.name,
                 color: s.color,
                 shape: 'rectangle',
             }))}

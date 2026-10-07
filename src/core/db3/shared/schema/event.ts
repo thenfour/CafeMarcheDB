@@ -9,7 +9,7 @@ import { z } from "zod";
 import { assertIsNumberArray, assertIsStringArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
-import { CoalesceBool, gIconOptions, smartTruncate } from "shared/utils";
+import { CoalesceBool, smartTruncate } from "shared/utils";
 import type {
     EventPublicId,
     EventSegmentPublicId,
@@ -27,26 +27,29 @@ import type {
 } from "shared/publicId";
 import { type CMDBTableFilterModel } from "../apiTypes";
 import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../columnTypes/genericString";
-import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignCollectionField, foreignRef, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import {
-    EventArgs, EventAttendanceArgs, EventAttendanceNaturalOrderBy, type EventAttendancePayload,
+    EventArgs,
     EventNaturalOrderBy, type EventPayload, type EventPayloadClient,
     EventSegmentArgs, EventSegmentBehavior, EventSegmentNaturalOrderBy, type EventSegmentPayload,
     EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
     type EventSegmentUserResponsePayload, EventSongListArgs, EventSongListDividerArgs, type EventSongListDividerPayload, EventSongListDividerTextStyle, EventSongListNaturalOrderBy, type EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy,
-    type EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, type EventStatusPayload, EventStatusSignificance, EventTagArgs, EventTagAssignmentArgs,
+    type EventSongListSongPayload, EventTagArgs, EventTagAssignmentArgs,
     EventTagAssignmentNaturalOrderBy, type EventTagAssignmentPayload, EventTagNaturalOrderBy, type EventTagPayload,
-    EventTypeArgs, EventTypeNaturalOrderBy, type EventTypePayload, EventTypeSignificance, EventUserResponseArgs, EventUserResponseNaturalOrderBy,
+    EventTypeSignificance, EventUserResponseArgs, EventUserResponseNaturalOrderBy,
     type EventUserResponsePayload,
     type InstrumentClientOrDbPayload,
     type InstrumentIdentity,
     type UserWithInstrumentsPayload
 } from "./prismArgs";
 import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField, xUser, xUserTag } from "./user";
+import { xEventType, xEventStatus, xEventAttendance } from "../entities/event/eventCatalogs";
 import { xInstrument } from "./instrument";
 import { xSong } from "./song";
 import { xWikiPage } from "./wiki";
+
+export { xEventType, xEventStatus, xEventAttendance } from "../entities/event/eventCatalogs";
 
 
 export const xEventAuthMap_UserResponse = db3.defineAuthMap({
@@ -197,97 +200,6 @@ export function getEventDateRangeUpdateColumnsFromSegments(
 export const getEventSegmentMinDate = (event: EventPayload): Date | null => {
     return DateTimeRange.union(event.segments.map(getEventSegmentDateTimeRange)).getStartDateTime();
 };
-
-export const xEventType = db3.defineTable({
-    prismaModel: db3.prismaModel<Prisma.EventTypeDelegate>(),
-    getIdentity: (eventType: { publicId: EventTypePublicId }) => eventType.publicId,
-    getSelectionArgs: (): Prisma.EventTypeDefaultArgs => {
-        return EventTypeArgs;
-    },
-    tableName: "EventType",
-    deletePolicy: "softOnly",
-    viewDeletedPermission: Permission.recover_events,
-    restorePermission: Permission.recover_events,
-    tableAuthMap: xEventTableAuthMap_R_EAdmins,
-    naturalOrderBy: EventTypeNaturalOrderBy,
-    createInsertModelFromString: (input: string): Partial<EventTypePayload> => {
-        return {
-            text: input,
-            description: "auto-created",
-            sortOrder: 0,
-            color: null,
-        };
-    },
-    getRowInfo: (row: EventTypePayload) => ({
-        pk: row.publicId,
-        name: row.text,
-        description: row.description,
-        color: gGeneralPaletteList.findEntry(row.color),
-        ownerUserId: null,
-    }),
-    fields: db3.makeColumnSet({
-        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
-        publicId: () => MakePublicIdField<EventTypePublicId>(),
-        isDeleted: () => MakeIsDeletedField({ authMap: xEventChipsAuthMap, }),
-        text: columnName => MakeTitleField(columnName, { authMap: xEventChipsAuthMap, }),
-        description: () => MakeDescriptionField({ authMap: xEventChipsAuthMap, }),
-        sortOrder: makeEventChipSortOrderField,
-        color: () => MakeColorField({ authMap: xEventChipsAuthMap, }),
-        significance: columnName => MakeSignificanceField(columnName, EventTypeSignificance, { authMap: xEventChipsAuthMap, }),
-        iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xEventChipsAuthMap, }),
-        events: memberName => new GhostField({ memberName, authMap: xEventAuthMap_R_EOwn_EManagers }),
-    })
-});
-
-
-////////////////////////////////////////////////////////////////
-
-
-export const xEventStatus = db3.defineTable({
-    prismaModel: db3.prismaModel<Prisma.EventStatusDelegate>(),
-    getIdentity: (eventStatus: { publicId: EventStatusPublicId }) => eventStatus.publicId,
-    getSelectionArgs: (): Prisma.EventStatusDefaultArgs => {
-        return EventStatusArgs;
-    },
-    tableName: "EventStatus",
-    // persisted status is valid even if it's isDeleted=true.
-    // soft delete really means "don't show in option lists"
-    deletePolicy: "softOnly",
-    viewDeletedPermission: Permission.recover_events,
-    restorePermission: Permission.recover_events,
-    tableAuthMap: xEventTableAuthMap_R_EAdmins,
-    naturalOrderBy: EventStatusNaturalOrderBy,
-    createInsertModelFromString: (input: string): Partial<EventStatusPayload> => {
-        return {
-            label: input,
-            description: "auto-created",
-            sortOrder: 0,
-        };
-    },
-    getRowInfo: (row: EventStatusPayload) => ({
-        pk: row.publicId,
-        name: row.label,
-        description: row.description,
-        color: gGeneralPaletteList.findEntry(row.color),
-        ownerUserId: null,
-    }),
-    fields: db3.makeColumnSet({
-        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
-        publicId: () => MakePublicIdField<EventStatusPublicId>(),
-        isDeleted: () => MakeIsDeletedField({ authMap: xEventChipsAuthMap, }),
-        label: columnName => MakeTitleField(columnName, { authMap: xEventChipsAuthMap, }),
-        description: () => MakeDescriptionField({ authMap: xEventChipsAuthMap, }),
-        sortOrder: makeEventChipSortOrderField,
-        color: () => MakeColorField({ authMap: xEventChipsAuthMap, }),
-        significance: columnName => MakeSignificanceField(columnName, EventStatusSignificance, { authMap: xEventChipsAuthMap, }),
-        iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xEventChipsAuthMap, }),
-        events: memberName => new GhostField({ memberName, authMap: xEventAuthMap_R_EOwn_EManagers }),
-        eventSegments: memberName => new GhostField({ memberName, authMap: xEventAuthMap_R_EOwn_EManagers }),
-    })
-});
-
-
-////////////////////////////////////////////////////////////////
 
 export const xEventTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventTagDelegate>(),
@@ -786,53 +698,6 @@ export const xEventSegment = db3.defineTable({
 
 ////////////////////////////////////////////////////////////////
 
-export const xEventAttendance = db3.defineTable({
-    prismaModel: db3.prismaModel<Prisma.EventAttendanceDelegate>(),
-    getIdentity: (attendance: { publicId: EventAttendancePublicId }) => attendance.publicId,
-    getSelectionArgs: (): Prisma.EventAttendanceDefaultArgs => {
-        return EventAttendanceArgs;
-    },
-    tableName: "EventAttendance",
-    // NB: historical records are preserved and presented, even if soft deleted.
-    // soft delete really means "don't show in option lists for new things"
-    deletePolicy: "softOnly",
-    viewDeletedPermission: Permission.recover_events,
-    restorePermission: Permission.recover_events,
-    tableAuthMap: xEventTableAuthMap_R_EAdmins,
-    naturalOrderBy: EventAttendanceNaturalOrderBy,
-    getRowInfo: (row: EventAttendancePayload) => ({
-        pk: row.publicId,
-        name: row.text,
-        description: `${row.isActive ? "" : "(inactive) "}${row.description}`,
-        color: gGeneralPaletteList.findEntry(row.color),
-        ownerUserId: null,
-        iconName: row.iconName,
-    }),
-    activeAsSelectable: (row: EventAttendancePayload) => {
-        return row.isActive;
-    },
-    fields: db3.makeColumnSet({
-        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
-        publicId: () => MakePublicIdField<EventAttendancePublicId>(),
-        text: columnName => MakeTitleField(columnName, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        description: () => MakeDescriptionField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        color: () => MakeColorField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        sortOrder: () => MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        isDeleted: () => MakeIsDeletedField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-
-        strength: columnName => MakeIntegerField(columnName, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        personalText: columnName => new GenericStringField({ allowNull: false, columnName, format: "title", caseSensitive: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        pastText: columnName => new GenericStringField({ allowNull: false, columnName, format: "title", caseSensitive: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        pastPersonalText: columnName => new GenericStringField({ allowNull: false, columnName, format: "title", caseSensitive: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        isActive: columnName => new BoolField({ columnName, defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
-        responses: memberName => new GhostField({ memberName, authMap: xEventAuthMap_R_EOwn_EManagers }),
-    })
-});
-
-
-
-
 export const xEventSegmentUserResponse = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.EventSegmentUserResponseDelegate>(),
     getSelectionArgs: (): Prisma.EventSegmentUserResponseDefaultArgs => {
@@ -1114,8 +979,6 @@ export const xEventSongListDivider = db3.defineTable({
 declare module "../db3core" {
     interface DB3TableTypeRegistry {
         Event: typeof xEvent;
-        EventType: typeof xEventType;
-        EventStatus: typeof xEventStatus;
         EventTag: typeof xEventTag;
         EventTagAssignment: typeof xEventTagAssignment;
         EventSegment: typeof xEventSegment;

@@ -271,8 +271,8 @@ const EventListOuter = () => {
                     Order: index.toString(),
                     ID: event.publicId,
                     Name: event.name || "",
-                    Type: event.type?.text || "",
-                    Status: event.status?.label || "",
+                    Type: event.type?.name || "",
+                    Status: event.status?.name || "",
                     StartsAt: dateRange
                         ? dateRange.getStartDateTime()?.toISOString() || "TBD"
                         : "",

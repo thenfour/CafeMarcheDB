@@ -96,7 +96,7 @@ const SegmentAttendanceIndicator = (props: SegmentAttendanceIndicatorProps) => {
         color: props.attendance.color,
     });
 
-    return <Tooltip title={props.attendance.text || "No response"}>
+    return <Tooltip title={props.attendance.buttonCaption || "No response"}>
         <div className={`attendanceIndicator badge applyColor ${style.cssClass}`} style={style.style}>
             {RenderMuiIcon(props.attendance.iconName)}
         </div>

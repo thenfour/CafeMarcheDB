@@ -906,7 +906,6 @@ export type EventTypeMinimumPayload = Prisma.EventTypeGetPayload<{}>;
 
 export const EventTypeNaturalOrderBy: Prisma.EventTypeOrderByWithRelationInput[] = [
     { sortOrder: 'asc' },
-    { text: 'asc' },
     { id: 'asc' },
 ];
 
@@ -1201,7 +1200,6 @@ export type EventStatusPayloadMinimum = Prisma.EventStatusGetPayload<{}>;
 
 export const EventStatusNaturalOrderBy: Prisma.EventStatusOrderByWithRelationInput[] = [
     { sortOrder: 'asc' },
-    { label: 'asc' },
     { id: 'asc' },
 ];
 
@@ -1238,7 +1236,6 @@ export type EventAttendanceBasePayload = Prisma.EventAttendanceGetPayload<{}>;
 
 export const EventAttendanceNaturalOrderBy: Prisma.EventAttendanceOrderByWithRelationInput[] = [
     { sortOrder: 'asc' },
-    { text: 'asc' },
     { id: 'asc' },
 ];
 

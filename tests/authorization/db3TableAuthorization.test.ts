@@ -105,7 +105,7 @@ describe("inherited field read authorization", () => {
       id: 10,
       publicId: "AuthEventStat001",
       isDeleted: false,
-      label: "Confirmed",
+      name: "Confirmed",
       description: "Public display metadata",
       sortOrder: 1,
       color: "green",
@@ -123,20 +123,20 @@ describe("inherited field read authorization", () => {
     expect(result.rowIsAuthorized).toBe(true)
     expect(result.authorizedModel).toEqual(expect.objectContaining({
       publicId: model.publicId,
-      label: model.label,
+      name: model.name,
     }))
     expect(result.authorizedModel).not.toHaveProperty("id")
     expect(result.unauthorizedColumnCount).toBe(1)
-    expect(db3.xEventStatus.fields.label.isReadRequiredAfterRowAuth()).toBe(true)
+    expect(db3.xEventStatus.fields.name.isReadRequiredAfterRowAuth()).toBe(true)
     expect(db3.xEventStatus.fields.events.isReadRequiredAfterRowAuth()).toBe(false)
   })
 
-  it("does not change event-status mutation authorization", () => {
+  it("rejects public event-status mutations", () => {
     const publicData = authorization(Permission.always_grant, Permission.public)
     const result = db3.xEventStatus.authorizeAndSanitize({
       contextDesc: "event-status-inherit-row-write-test",
-      model: { label: "Replacement" },
-      existingModel: { id: 10, label: "Confirmed" },
+      model: { name: "Replacement" },
+      existingModel: { id: 10, name: "Confirmed" },
       rowMode: "update",
       auth: publicData,
       fallbackOwnerId: null,
@@ -144,7 +144,7 @@ describe("inherited field read authorization", () => {
 
     expect(result.rowIsAuthorized).toBe(false)
     expect(result.authorizedModel).toEqual({})
-    expect(result.unauthorizedModel).toEqual({ label: "Replacement" })
+    expect(result.unauthorizedModel).toEqual({ name: "Replacement" })
   })
 })
 

@@ -1,7 +1,7 @@
 import type { LocalizedStringFormat } from "@prisma/client";
 import { z } from "zod";
 import type { PublicId } from "shared/publicId";
-import { DynamicStringIdentitySchema, LocalizedFieldEditSchema } from "src/locale/shared/dynamicStringWrite";
+import { DynamicStringIdentitySchema, LocalizedFieldEditSchema, type LocalizedFieldWriteScope } from "src/locale/shared/dynamicStringWrite";
 import type { StringResolution } from "src/locale/shared/stringResolution";
 import {
     type DB3AuthSpec, type DB3FieldCodec, type DB3ReadPresenceForAuthSpec, type DB3RowMode,
@@ -49,6 +49,7 @@ export class LocalizedStringField<const TAuth extends DB3AuthSpec, const TIdenti
 > {
     readonly stringIdentityMember: TIdentityMember;
     readonly stringFormat: LocalizedStringFormat;
+    readonly writeScope: LocalizedFieldWriteScope; // LSMB TODO: this should not be on the xTable schema fields. It should be on the view or command.
     readonly localized = true;
     readonly writeTransportSchema = LocalizedFieldEditSchema;
     readonly readCompanionSchemas: z.ZodRawShape;
@@ -69,20 +70,30 @@ export class LocalizedStringField<const TAuth extends DB3AuthSpec, const TIdenti
         if (currentId !== null && (typeof currentId !== "number" || !Number.isSafeInteger(currentId))) {
             throw new Error(`Invalid owned string identity for '${this.member}'.`);
         }
-        const stringId = await context.writeLocalizedString(currentId, this.stringFormat, edit);
+        const stringId = await context.writeLocalizedString(currentId, this.stringFormat, edit, this.writeScope);
         return { values: { [this.stringIdentityMember]: stringId }, removeMembers: [this.member] };
     };
 
-    constructor(args: TAuth & { columnName: string; stringIdentityMember: TIdentityMember; stringFormat: LocalizedStringFormat }) {
-        const textField = new GenericStringField({ ...args, allowNull: true,
+    constructor(args: TAuth & {
+        columnName: string;
+        stringIdentityMember: TIdentityMember;
+        stringFormat: LocalizedStringFormat;
+        writeScope: LocalizedFieldWriteScope; // LSMB TODO: this should not be on the xTable schema fields. It should be on the view or command.
+    }) {
+        const textField = new GenericStringField({
+            ...args, allowNull: true,
             format: args.stringFormat === "Markdown" ? "markdown" : "raw",
-            allowQuickFilter: args.stringFormat === "PlainText", maxLength: args.stringFormat === "PlainText" ? 768 : 1_000_000 });
-        super({ member: args.columnName, fieldTableAssociation: "tableColumn", defaultValue: emptyLocalizedFieldValue(),
+            allowQuickFilter: args.stringFormat === "PlainText", maxLength: args.stringFormat === "PlainText" ? 768 : 1_000_000
+        });
+        super({
+            member: args.columnName, fieldTableAssociation: "tableColumn", defaultValue: emptyLocalizedFieldValue(),
             readTransportSchema: z.string().nullable(), authMap: textField.authMap, _customAuth: textField._customAuth,
-            specialFunction: textField.specialFunction });
+            specialFunction: textField.specialFunction
+        });
         this.textField = textField;
         this.stringIdentityMember = args.stringIdentityMember;
         this.stringFormat = args.stringFormat;
+        this.writeScope = args.writeScope;
         this.readCompanionSchemas = {
             [`${this.member}Resolution`]: stringResolutionSchema,
             [`${this.member}StringPublicId`]: DynamicStringIdentitySchema.nullable(),
@@ -97,7 +108,7 @@ export class LocalizedStringField<const TAuth extends DB3AuthSpec, const TIdenti
     SqlGetDiscreteCriterionElements = (...args: Parameters<GenericStringField["SqlGetDiscreteCriterionElements"]>) => this.textField.SqlGetDiscreteCriterionElements(...args);
     SqlGetFacetInfoQuery = (...args: Parameters<GenericStringField["SqlGetFacetInfoQuery"]>) => this.textField.SqlGetFacetInfoQuery(...args);
     SqlGetSortableQueryElements = (...args: Parameters<GenericStringField["SqlGetSortableQueryElements"]>) => this.textField.SqlGetSortableQueryElements(...args);
-    ApplyIncludeFiltering = () => {};
+    ApplyIncludeFiltering = () => { };
     isEqual = (left: LocalizedFieldValue, right: LocalizedFieldValue) => JSON.stringify(left.edit) === JSON.stringify(right.edit);
 
     hydrateReadTransportValue = (value: string | null, row?: Readonly<Record<string, unknown>>): LocalizedFieldValue => ({
@@ -116,8 +127,10 @@ export class LocalizedStringField<const TAuth extends DB3AuthSpec, const TIdenti
             return;
         }
         const edit = this.writeTransportSchema.parse(value);
-        client[this.member] = { ...emptyLocalizedFieldValue(), value: edit.kind === "set" ? edit.value : null,
-            stringPublicId: edit.stringPublicId, edit } satisfies LocalizedFieldValue;
+        client[this.member] = {
+            ...emptyLocalizedFieldValue(), value: edit.kind === "set" ? edit.value : null,
+            stringPublicId: edit.stringPublicId, edit
+        } satisfies LocalizedFieldValue;
     };
     ApplyClientToDb = (row: { [member: string]: unknown }, mutation: { [member: string]: unknown }) => {
         const value = row[this.member];

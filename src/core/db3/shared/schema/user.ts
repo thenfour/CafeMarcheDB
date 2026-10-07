@@ -251,6 +251,7 @@ export const xPermissionBaseArgs = db3.defineTableDesc({
             columnName,
             stringIdentityMember: "descriptionId",
             stringFormat: "Markdown",
+            writeScope: "band",
             authMap: xPermissionMetadataAuthMap,
         }),
         sortOrder: () => MakeSortOrderField({ authMap: xPermissionMetadataAuthMap }),

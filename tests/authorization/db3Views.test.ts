@@ -1,8 +1,8 @@
+import { eventStatusDtoFixture, eventTypeDtoFixture } from "../support/eventCatalogFixtures";
 import { groupReferenceFixture, instrumentDtoFixture, instrumentReferenceFixture, permissionReferenceFixture, songTagReferenceFixture } from "../support/catalogReferenceFixtures";
 import { testBandAuthorization, testServerAuthorization } from "tests/support/serverAuthorization";
 import { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
-import { attendancePublicId } from "../support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId, listDividerPublicId } from "../support/eventSongListFixtures";
 import { songPublicId } from "../support/songFixtures";
 import { userPublicId } from "../support/userFixtures";
@@ -75,34 +75,20 @@ const scalarRow = { ...group, publicId: db3.xSetlistPlanGroup.parseIdentity(grou
 
 describe("DB3 named views", () => {
     it("returns DTOs by default and hydrates only when explicitly requested", async () => {
-        const row = {
-            id: 7,
-            publicId: attendancePublicId(7),
-            text: "Going",
-            description: "Attending",
-            iconName: null,
-            color: "green",
-            sortOrder: 1,
-            isDeleted: false,
-            strength: 100,
-            personalText: "I am going",
-            pastText: "Attended",
-            pastPersonalText: "I attended",
-            isActive: true,
-        };
+        const row = { ...scalarRow, id: 7, createdByUserId: 10 };
         const findMany = vi.fn(async () => [row]);
         // queryHydratedView accepts the full Prisma client contract; this focused test double
         // deliberately implements only the delegate exercised by this view.
-        const database = { EventAttendance: { findMany } } as unknown as Parameters<typeof queryHydratedView>[3];
+        const database = { SetlistPlanGroup: { findMany } } as unknown as Parameters<typeof queryHydratedView>[3];
         const references = db3.createDashboardReferenceStore();
         const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.public },
-            { id: 3, name: Permission.view_events_nonpublic },
+            { id: 3, name: Permission.setlist_planner_access },
         ]);
 
         const input = {
-            view: db3.eventAttendanceDashboardView,
+            view: scalarListView,
             filter: { items: [] },
             cmdbQueryContext: "dashboard-view-query-test",
             orderBy: undefined,
@@ -110,7 +96,7 @@ describe("DB3 named views", () => {
         const authorization = new CMServerAuthorization(null, effectivePermissions);
         const hydrate = vi.spyOn(input.view, "hydrate");
         const dtoResult = await queryView(input, authorization, database);
-        expect(dtoResult.items).toEqual([{ ...row, id: undefined }]);
+        expect(dtoResult.items).toEqual([scalarRow]);
         expect(dtoResult.items[0]).not.toHaveProperty("id");
         expectTypeOf(dtoResult.items).toEqualTypeOf<db3.DtoOf<typeof input.view>[]>();
         expect(hydrate).not.toHaveBeenCalled();
@@ -120,54 +106,21 @@ describe("DB3 named views", () => {
         hydrate.mockRestore();
 
         expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
-            select: expect.objectContaining({
-                publicId: true,
-                text: true,
-                color: true,
-                personalText: true,
-            }),
+            select: expect.objectContaining({ publicId: true, name: true, description: true, color: true }),
         }));
-        expect(result.items).toEqual([{
-            ...row,
-            id: undefined,
-            color: gGeneralPaletteList.findEntry("green"),
-        }]);
+        expect(result.items).toEqual([{ ...scalarRow, color: gGeneralPaletteList.findEntry("orange") }]);
         expect(result.items[0]).not.toHaveProperty("id");
-        expectTypeOf(result.items).toEqualTypeOf<db3.EventAttendanceDashboardClient[]>();
+        expectTypeOf(result.items).toEqualTypeOf<db3.ClientOf<typeof scalarListView>[]>();
     });
 
-    it("removes unauthorized dashboard-view fields before hydration", async () => {
-        const findMany = vi.fn(async () => [{
-            id: 7,
-            publicId: attendancePublicId(7),
-            text: "Going",
-            description: "Attending",
-            iconName: null,
-            color: "green",
-            sortOrder: 1,
-            isDeleted: false,
-            strength: 100,
-            personalText: "I am going",
-            pastText: "Attended",
-            pastPersonalText: "I attended",
-            isActive: true,
-        }]);
-        // queryHydratedView accepts the full Prisma client contract; this focused test double
-        // deliberately implements only the delegate exercised by this view.
-        const database = { EventAttendance: { findMany } } as unknown as Parameters<typeof queryHydratedView>[3];
-
-        const result = await queryHydratedView({
-            view: db3.eventAttendanceDashboardView,
-            filter: { items: [] },
-            cmdbQueryContext: "dashboard-view-authorization-test",
-            orderBy: undefined,
-        }, new CMServerAuthorization(null, new ServerPermissionSet([
-            { id: 1, name: Permission.always_grant },
-            { id: 2, name: Permission.public },
-        ])), db3.createDashboardReferenceStore(), database);
-
-        expect(result.items).toEqual([{ publicId: attendancePublicId(7) }]);
-        expect(db3.isCompleteEventAttendanceDashboardClient(result.items[0]!)).toBe(false);
+    it("reads shared attendance captions as public metadata without a band grant", () => {
+        const authorization = new CMServerAuthorization(null, new ServerPermissionSet([
+            { id: 1, name: Permission.always_grant }, { id: 2, name: Permission.public },
+        ]));
+        expect(authorization.hasPermission(Permission.view_events_nonpublic)).toBe(false);
+        for (const columnName of ["buttonCaption", "personalCaption", "pastCaption", "personalPastCaption", "description", "strength", "isActive"]) {
+            expect(db3.xEventAttendance.authorizeColumnForView({ auth: authorization, model: null, columnName })).toBe(true);
+        }
     });
 
     it("derives ordinary selections from DTO schemas and preserves explicit query additions", async () => {
@@ -179,8 +132,8 @@ describe("DB3 named views", () => {
         expect(db3.eventTypeEditorView.getSelectionArgs(context)).toEqual({
             select: {
                 publicId: true,
-                text: true,
-                description: true,
+                name: true, nameId: true,
+                description: true, descriptionId: true,
                 color: true,
                 sortOrder: true,
                 significance: true,
@@ -241,7 +194,7 @@ describe("DB3 named views", () => {
         expectTypeOf(permissionDto.isVisibility).toEqualTypeOf<boolean>();
 
         expectTypeOf<db3.DbPayloadOf<typeof db3.eventTypeEditorView>>()
-            .toMatchTypeOf<{ publicId: string; text: string }>();
+            .toMatchTypeOf<{ publicId: string; name: { publicId: string; format: string } }>();
     });
 
     it("composes a root view predicate without disturbing nested Prisma where clauses", async () => {
@@ -698,26 +651,8 @@ describe("DB3 named views", () => {
             fileTag: [fileTag],
             instrumentFunctionalGroup: [hydratedGroup],
             instrument: [instrument],
-            eventStatus: [{
-                publicId: eventStatusPublicId,
-                label: "Confirmed",
-                description: "",
-                color: null,
-                sortOrder: 1,
-                significance: null,
-                iconName: null,
-                isDeleted: false,
-            }],
-            eventType: [{
-                publicId: eventTypePublicId,
-                text: "Concert",
-                description: "",
-                color: null,
-                sortOrder: 1,
-                significance: null,
-                iconName: null,
-                isDeleted: false,
-            }],
+            eventStatus: [db3.eventStatusDashboardView.hydrate(eventStatusDtoFixture(eventStatusPublicId, "Confirmed"), db3.createDashboardReferenceStore())],
+            eventType: [db3.eventTypeDashboardView.hydrate(eventTypeDtoFixture(eventTypePublicId, "Concert"), db3.createDashboardReferenceStore())],
         });
 
         const dto = db3.fileSearchView.parseDto({
@@ -783,16 +718,7 @@ describe("DB3 named views", () => {
             fileTag: [fileTag],
             instrumentFunctionalGroup: [hydratedGroup],
             instrument: [instrument],
-            eventType: [{
-                publicId: eventTypePublicId,
-                text: "Concert",
-                description: "",
-                color: null,
-                sortOrder: 1,
-                significance: null,
-                iconName: null,
-                isDeleted: false,
-            }],
+            eventType: [db3.eventTypeDashboardView.hydrate(eventTypeDtoFixture(eventTypePublicId, "Concert"), db3.createDashboardReferenceStore())],
         });
 
         const selection = db3.fileDetailView.getSelectionArgs({
@@ -888,14 +814,8 @@ describe("DB3 named views", () => {
 
     it("hydrates Event search data into one typed client shape and preserves omitted collections", () => {
         const references = db3.createDashboardReferenceStore();
-        const eventType = {
-            publicId: eventTypePublicId, text: "Concert", description: "", color: null, sortOrder: 1,
-            significance: null, iconName: null, isDeleted: false,
-        };
-        const eventStatus = {
-            publicId: eventStatusPublicId, label: "Confirmed", description: "", color: null, sortOrder: 1,
-            significance: null, iconName: null, isDeleted: false,
-        };
+        const eventType = db3.eventTypeDashboardView.hydrate(eventTypeDtoFixture(eventTypePublicId), references);
+        const eventStatus = db3.eventStatusDashboardView.hydrate(eventStatusDtoFixture(eventStatusPublicId), references);
         const eventTag = {
             publicId: eventTagPublicId, text: "Public", description: "", color: null, sortOrder: 1,
             significance: null, visibleOnFrontpage: true,

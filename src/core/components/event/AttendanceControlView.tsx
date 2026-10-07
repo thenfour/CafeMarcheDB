@@ -127,7 +127,7 @@ const AnswerButton = ({ value, selected, noItemSelected, onSelect, tooltip }: {
 }) => <CMChip onClick={onSelect} shape="rectangle" size="big" color={value?.color} tooltip={tooltip}
     className={`attendanceAnswer ${isAttendanceGoing(value) ? "yes" : "no"} CMChipNoMargin`}
     variation={{ enabled: true, fillOption: "filled", variation: selected || noItemSelected ? "strong" : "weak", selected }}>
-        {value?.text || "(no answer)"}{RenderMuiIcon(value?.iconName)}
+        {value?.buttonCaption ?? "(no answer)"}{RenderMuiIcon(value?.iconName)}
     </CMChip>;
 
 const AnswerControl = ({ segment, environment, forceEditMode, onReadonlyClick }: {
@@ -149,7 +149,7 @@ const AnswerControl = ({ segment, environment, forceEditMode, onReadonlyClick }:
     if (inProgress) return <CircularProgress size={16} />;
     return <CMChipContainer className="EventAttendanceResponseControlButtonGroup">
         {explicitEdit || forceEditMode ? <>
-            {environment.attendances.filter(a => a.isActive).map(option => <AnswerButton key={option.publicId}
+            {environment.attendances.filter(a => a.isActive && !a.isDeleted).map(option => <AnswerButton key={option.publicId}
                 value={option} selected={selectedId === option.publicId} noItemSelected={selectedId === null}
                 onSelect={() => { void change(option.publicId); }} tooltip={option.description} />)}
             <AnswerButton value={null} selected={selectedId === null} noItemSelected={selectedId === null}

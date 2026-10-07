@@ -79,7 +79,7 @@ const FilterControlsTester = () => {
             selectedIds={spec.selectedEventTypeId ? [spec.selectedEventTypeId] : []}
             items={dashboardContext.eventType.map(t => ({
                 id: t.publicId,
-                label: <>{RenderMuiIcon(t.iconName)}{t.text}</>,
+                label: <>{RenderMuiIcon(t.iconName)}{t.name}</>,
                 shape: "rectangle",
                 color: t.color,
             }))}

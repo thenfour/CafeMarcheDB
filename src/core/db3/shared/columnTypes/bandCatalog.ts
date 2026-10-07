@@ -83,8 +83,8 @@ export function bandCatalogFields<const TAuth extends DB3AuthSpec>(auth: TAuth) 
                 PreMutateAsOwner: Permission.never_grant,
             })
         })),
-        name: columnName => new LocalizedStringField({ ...auth, columnName, stringIdentityMember: "nameId", stringFormat: "PlainText" }),
-        description: columnName => new LocalizedStringField({ ...auth, columnName, stringIdentityMember: "descriptionId", stringFormat: "Markdown" }),
+        name: columnName => new LocalizedStringField({ ...auth, columnName, stringIdentityMember: "nameId", stringFormat: "PlainText", writeScope: "band" }),
+        description: columnName => new LocalizedStringField({ ...auth, columnName, stringIdentityMember: "descriptionId", stringFormat: "Markdown", writeScope: "band" }),
         sortOrder: () => inheritedField(MakeSortOrderField(auth)),
         isHidden: columnName => new BoolField({ ...auth, columnName, allowNull: false, defaultValue: false }),
     });

@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { isPublicId, parsePublicId } from "shared/publicId";
 
+export type LocalizedFieldWriteScope = "global" | "band";
+
 export const DynamicStringIdentitySchema = z.string()
     .refine(isPublicId, "Expected a string public ID")
     .transform(value => parsePublicId<"DynamicLocalizedString">(value));

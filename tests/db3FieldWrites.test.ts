@@ -31,7 +31,7 @@ describe("DB3 transactional field writes", () => {
         expect(await xBandSongTag.fields.name.applyTransactionalWrite({
             value: edit, existingRow: { nameId: 19 }, hasInheritedSource: false, writeLocalizedString,
         })).toEqual({ values: { nameId: 25 }, removeMembers: ["name"] });
-        expect(writeLocalizedString).toHaveBeenCalledWith(19, "PlainText", edit);
+        expect(writeLocalizedString).toHaveBeenCalledWith(19, "PlainText", edit, "band");
         await expect(xBandSongTag.fields.name.applyTransactionalWrite({
             value: { kind: "inherit", stringPublicId: "StringIdentity01" }, existingRow: { nameId: 19 },
             hasInheritedSource: false, writeLocalizedString,

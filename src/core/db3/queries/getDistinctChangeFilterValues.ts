@@ -57,7 +57,12 @@ export default resolver.pipe(
             });
 
             // Historical Change JSON stores natural keys, including retired options.
-            const attendances = await db.eventAttendance.findMany({ select: { id: true, text: true, color: true } });
+            const attendances = await db.eventAttendance.findMany({
+                select: {
+                    id: true,
+                    publicId: true
+                }
+            });
 
             return {
                 attendances,

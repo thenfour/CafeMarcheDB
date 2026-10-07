@@ -12,14 +12,11 @@ import { dashboardReferenceContract } from "../../references/dashboardReferences
 import { fileCardSelection, fileCardTransportSelection } from "../file/fileViews";
 import { eventSongListTransportSelection } from "../eventSongList/eventSongListViews";
 import {
-    xEventAttendance,
     xEvent,
     xEventSegment,
     xEventSegmentUserResponse,
     xEventUserResponse,
-    xEventStatus,
     xEventTag,
-    xEventType,
 } from "../../schema/event";
 
 // TODO: stop using Zod in this file; use the better deriveViewContract pattern.
@@ -31,35 +28,8 @@ const EventTypeDtoSchema = z.object({
     ...db3s.descriptionColorSortOrder(),
     ...db3s.iconName(),
 
-    text: db3s.authNeeded(z.string()),
+    name: db3s.authNeeded(z.string()),
     significance: db3s.authNeeded(z.string().nullable()),
-});
-
-export const eventTypeEditorSelection = Prisma.validator<Prisma.EventTypeDefaultArgs>()({
-    select: {
-        publicId: true,
-        isDeleted: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        iconName: true,
-        text: true,
-        significance: true,
-    },
-});
-
-const eventTypeViewContract = deriveViewContract(
-    xEventType,
-    eventTypeEditorSelection,
-);
-
-export const eventTypeEditorView = defineCrudView({
-    viewID: "EventType_Editor",
-    entity: xEventType,
-    operations: { create: true, update: true, delete: true },
-    selection: eventTypeViewContract.prismaSelection,
-    dtoSchema: eventTypeViewContract.dtoSchema,
-    hydrate: eventTypeViewContract.hydrate,
 });
 
 // event status ------------------------------------------
@@ -69,35 +39,8 @@ const EventStatusDtoSchema = z.object({
     ...db3s.descriptionColorSortOrder(),
     ...db3s.iconName(),
 
-    label: z.string().optional(),
+    name: z.string().optional(),
     significance: z.string().nullable().optional(),
-});
-
-export const eventStatusEditorSelection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
-    select: {
-        publicId: true,
-        isDeleted: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        iconName: true,
-        label: true,
-        significance: true,
-    },
-});
-
-const eventStatusViewContract = deriveViewContract(
-    xEventStatus,
-    eventStatusEditorSelection,
-);
-
-export const eventStatusEditorView = defineCrudView({
-    viewID: "EventStatus_Editor",
-    entity: xEventStatus,
-    operations: { create: true, update: true, delete: true },
-    selection: eventStatusViewContract.prismaSelection,
-    dtoSchema: eventStatusViewContract.dtoSchema,
-    hydrate: eventStatusViewContract.hydrate,
 });
 
 // event tag ------------------------------------------
@@ -126,33 +69,6 @@ export const eventTagEditorView = defineCrudView({
     hydrate: eventTagViewContract.hydrate,
 });
 
-// event attendance ------------------------------------------
-export const eventAttendanceEditorSelection = Prisma.validator<Prisma.EventAttendanceDefaultArgs>()({
-    select: {
-        publicId: true,
-        text: true,
-        description: true,
-        iconName: true,
-        color: true,
-        sortOrder: true,
-        isDeleted: true,
-        strength: true,
-        personalText: true,
-        pastText: true,
-        pastPersonalText: true,
-        isActive: true,
-    },
-});
-const eventAttendanceContract = deriveViewContract(xEventAttendance, eventAttendanceEditorSelection);
-export const eventAttendanceEditorView = defineCrudView({
-    viewID: "EventAttendance_Editor",
-    entity: xEventAttendance,
-    operations: { create: true, update: true, delete: true },
-    selection: eventAttendanceContract.prismaSelection,
-    dtoSchema: eventAttendanceContract.dtoSchema,
-    hydrate: eventAttendanceContract.hydrate,
-});
-
 // event editor ------------------------------------------
 
 export const eventSegmentEditorSelection = Prisma.validator<Prisma.EventSegmentDefaultArgs>()({
@@ -160,19 +76,6 @@ export const eventSegmentEditorSelection = Prisma.validator<Prisma.EventSegmentD
         publicId: true, name: true, description: true,
         startsAt: true, durationMillis: true, isAllDay: true,
         statusId: true,
-        status: {
-            select: {
-                publicId: true,
-                label: true,
-                description: true,
-                color: true,
-                iconName: true,
-                sortOrder: true,
-                significance: true,
-                isDeleted: true
-
-            }
-        },
         eventId: true,
         event: {
             select: {
@@ -180,25 +83,18 @@ export const eventSegmentEditorSelection = Prisma.validator<Prisma.EventSegmentD
                 name: true,
                 startsAt: true,
                 createdByUserId: true,
-                type: {
-                    select: {
-                        publicId: true,
-                        text: true,
-                        color: true,
-                        iconName: true
-
-                    }
-                }
+                typeId: true,
             }
         },
     },
 });
-const eventSegmentEditorContract = deriveViewContract(xEventSegment, eventSegmentEditorSelection);
+const eventSegmentEditorContract = deriveViewContract(xEventSegment, eventSegmentEditorSelection, { references: dashboardReferenceContract });
 export const eventSegmentEditorView = defineCrudView({
     viewID: "EventSegment_Editor", entity: xEventSegment,
     operations: { create: true, update: true, delete: true },
     selection: eventSegmentEditorContract.prismaSelection,
     dtoSchema: eventSegmentEditorContract.dtoSchema,
+    references: eventSegmentEditorContract.referenceContract,
     hydrate: eventSegmentEditorContract.hydrate,
 });
 
@@ -901,3 +797,5 @@ export type EventCalendarClient = ClientOf<typeof eventCalendarView>;
 export type EventWikiPageContextClient = ClientOf<typeof eventWikiPageContextView>;
 export type EventWikiPageContextDto = DtoOf<typeof eventWikiPageContextView>;
 //type aoeus = EventFrontpageClient;
+
+export { eventTypeEditorSelection, eventTypeEditorView, eventStatusEditorSelection, eventStatusEditorView, eventAttendanceEditorSelection, eventAttendanceEditorView } from "./eventCatalogs";

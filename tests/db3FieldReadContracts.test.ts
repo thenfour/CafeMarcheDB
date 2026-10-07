@@ -1,3 +1,4 @@
+import { globalTextFixture } from "./support/eventCatalogFixtures";
 import { Prisma } from "db"
 import { describe, expect, expectTypeOf, it, vi } from "vitest"
 
@@ -9,17 +10,15 @@ import { parsePublicId, type EventTagPublicId, type InstrumentFunctionalGroupPub
 const eventStatusTransport = {
   publicId: parsePublicId<"EventStatus">("AbCdEfGhIjKlMn12"),
   isDeleted: false,
-  label: "Confirmed",
-  description: "Public display metadata",
+  ...globalTextFixture("name", "Confirmed"),
+  ...globalTextFixture("description", "Public display metadata"),
   sortOrder: 1,
   color: "green",
   significance: db3.EventStatusSignificance.FinalConfirmation,
   iconName: null,
 }
 
-const eventStatusScalarMembers = Object.keys(eventStatusTransport) as Array<
-  keyof typeof eventStatusTransport
->
+const eventStatusScalarMembers = ["publicId", "isDeleted", "sortOrder", "color", "significance", "iconName"] as const;
 
 describe("DB3 xTable model metadata", () => {
   it("requires auth maps to retain their compile-time read presence", () => {
@@ -141,8 +140,8 @@ describe("DB3 xTable model metadata", () => {
 describe("DB3 scalar field read contracts", () => {
   it("retains nullability and authorization presence in field types", () => {
     type RequiredNonNull = db3.DB3ReadFieldProperty<
-      "label",
-      typeof db3.xEventStatus.fields.label
+      "isDeleted",
+      typeof db3.xEventStatus.fields.isDeleted
     >
     type RequiredNullable = db3.DB3ReadFieldProperty<
       "iconName",
@@ -176,12 +175,12 @@ describe("DB3 scalar field read contracts", () => {
       typeof mixedOwnerPolicy
     >
 
-    expectTypeOf<RequiredNonNull>().toEqualTypeOf<{ label: string }>()
+    expectTypeOf<RequiredNonNull>().toEqualTypeOf<{ isDeleted: boolean }>()
     expectTypeOf<RequiredNullable>().toEqualTypeOf<{ iconName: string | null }>()
     expectTypeOf<OptionalNonNull>().toEqualTypeOf<{ value?: string }>()
     expectTypeOf<MixedPolicyOptional>().toEqualTypeOf<{ mixed?: string }>()
-    expectTypeOf(db3.xEventStatus.fields.label.parseReadTransportValue("Visible"))
-      .toEqualTypeOf<string>()
+    expectTypeOf(db3.xEventStatus.fields.isDeleted.parseReadTransportValue(false))
+      .toEqualTypeOf<boolean>()
     expectTypeOf(db3.xEventStatus.fields.iconName.parseReadTransportValue(null))
       .toEqualTypeOf<string | null>()
   })
@@ -202,7 +201,7 @@ describe("DB3 scalar field read contracts", () => {
     expect(db3.xEventStatus.fields.significance.parseReadTransportValue(null)).toBeNull()
     expect(db3.xEventStatus.fields.iconName.parseReadTransportValue(null)).toBeNull()
 
-    expect(db3.xEventStatus.fields.label.readTransportSchema!.safeParse(null).success).toBe(false)
+    expect(db3.xEventStatus.fields.isDeleted.readTransportSchema!.safeParse(null).success).toBe(false)
     expect(db3.xEventStatus.fields.id.readTransportSchema!.safeParse(1.5).success).toBe(false)
     expect(db3.xEventStatus.fields.sortOrder.readTransportSchema!.safeParse(1.5).success).toBe(false)
     expect(db3.xEventStatus.fields.isDeleted.readTransportSchema!.safeParse("false").success)
@@ -285,21 +284,21 @@ describe("DB3 scalar field read contracts", () => {
   })
 
   it("keeps the read contract independent from write authorization", () => {
-    expect(db3.xEventStatus.fields.label.authMap?.PreMutate).toBe(Permission.manage_events)
-    expect(db3.xEventStatus.fields.label.getReadTransportSchema().parse("Visible")).toBe("Visible")
+    expect(db3.xEventStatus.fields.name.authMap?.PreMutate).toBe(Permission.manage_global_catalogs)
+    expect(db3.xEventStatus.fields.name.getReadTransportSchema().parse("Visible")).toBe("Visible")
   })
 })
 
 describe("DB3 Prisma-member ownership", () => {
   it("registers ordinary scalar members against their field contracts", () => {
-    const ownership = db3.xEventStatus.resolvePrismaMember("label")
+    const ownership = db3.xEventStatus.resolvePrismaMember("sortOrder")
 
     expect(ownership).toMatchObject({
-      member: "label",
+      member: "sortOrder",
       kind: "field",
-      field: db3.xEventStatus.fields.label,
+      field: db3.xEventStatus.fields.sortOrder,
     })
-    expect(db3.xEventStatus.prismaMemberRegistry.get("label")).toBe(ownership)
+    expect(db3.xEventStatus.prismaMemberRegistry.get("sortOrder")).toBe(ownership)
   })
 
   it("registers both the relation object and scalar key for foreign-single fields", () => {

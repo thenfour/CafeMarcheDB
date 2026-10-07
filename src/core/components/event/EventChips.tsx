@@ -99,11 +99,11 @@ export const EventStatusMinimal = ({ statusId }: { statusId: EventStatusPublicId
     const style = GetStyleVariablesForColor({ color: status.color, ...StandardVariationSpec.Strong });
 
     return <Tooltip title={<div>
-        <div className="tooltipTitle">{status.label}</div>
+        <div className="tooltipTitle">{status.name}</div>
         <Markdown markdown={status.description || ""} />
     </div>}>
         <span className={`iconIndicator ${style.cssClass}`} style={style.style}>
-            {IsNullOrWhitespace(status.iconName) ? status.label : RenderMuiIcon(status.iconName)}
+            {IsNullOrWhitespace(status.iconName) ? status.name : RenderMuiIcon(status.iconName)}
         </span>
     </Tooltip>;
 
@@ -121,6 +121,6 @@ export interface EventStatusValueProps {
 export const EventStatusValue = (props: EventStatusValueProps) => {
     const dashboardContext = useDashboardContext();
     const status = dashboardContext.eventStatus.getById(props.statusId);
-    return status && (<CMStatusIndicator size={props.size} model={status} onClick={props.onClick} getText={o => o?.label || ""} />);
+    return status && (<CMStatusIndicator size={props.size} model={status} onClick={props.onClick} getText={o => o?.name || ""} />);
 };
 

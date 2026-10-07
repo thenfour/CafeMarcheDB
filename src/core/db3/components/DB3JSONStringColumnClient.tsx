@@ -151,7 +151,7 @@ const ActivityLogEventStatus = ({ eventStatusId }: { eventStatusId: number | str
     return <ActivityLogChip
         color={foundEventStatus.color}
     >
-        {foundEventStatus.label}
+        {foundEventStatus.name}
     </ActivityLogChip>;
 };
 
@@ -166,19 +166,23 @@ const ActivityLogEventType = ({ eventTypeId }: { eventTypeId: number | string | 
     return <ActivityLogChip
         color={found.color}
     >
-        {found.text}
+        {found.name}
     </ActivityLogChip>;
 };
 
-const ActivityLogAttendance = ({ attendanceId, cacheData }: { attendanceId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
-    const found = cacheData.attendances.find(option => option.id === attendanceId);
+const ActivityLogAttendance = ({ attendanceId, cacheData }: { attendanceId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
+    const dashboardContext = useDashboardContext();
+    // Old Change JSON uses natural IDs; captions come from the localized dashboard snapshot.
+    const identity = cacheData.attendances.find(option => typeof attendanceId === "number"
+        ? option.id === attendanceId : option.publicId === attendanceId)?.publicId;
+    const found = identity ? dashboardContext.eventAttendance.getById(db3.xEventAttendance.parseIdentity(identity)) : undefined;
     if (!found) {
         return <ActivityLogChip><Id value={attendanceId} /></ActivityLogChip>;
     }
     return <ActivityLogChip
         color={found.color}
     >
-        {found.text}#{found.id}
+        {found.buttonCaption}
     </ActivityLogChip>;
 };
 

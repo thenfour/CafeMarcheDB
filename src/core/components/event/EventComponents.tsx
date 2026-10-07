@@ -763,7 +763,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                                             const going = isAttendanceGoing(att);
                                             const color = going ? att?.color : null;
                                             const style = GetStyleVariablesForColor({ color, ...StandardVariationSpec.Strong });
-                                            return <Tooltip disableInteractive key={resp.user.publicId} title={`${resp.user.name}: ${att?.text || "no response"}`}>
+                                            return <Tooltip disableInteractive key={resp.user.publicId} title={`${resp.user.name}: ${att?.buttonCaption || "no response"}`}>
                                                 <div className={`attendanceResponseColorBarSegment applyColor ${style.cssClass} ${going ? "going" : "notgoing"}`} style={style.style}>
                                                     {/* {resp.user.name.substring(0, 1).toLocaleUpperCase()} */}
                                                     {resp.user.name}
@@ -899,7 +899,7 @@ export const EventDetailContainer = ({ eventData, tableClient, editCommands, ref
         `contentSection`,
         `event`,
         `ApplyBorderLeftColor`,
-        eventData.event.type?.text,
+        eventData.event.type?.name,
         visInfo.className,
         (props.fadePastEvents && (eventData.eventTiming === Timing.Past)) ? "past" : "notPast",
         `status_${eventData.event.status?.significance}`,
@@ -1275,7 +1275,7 @@ export const EventSearchItemContainer = ({
         `contentSection`,
         `event`,
         `ApplyBorderLeftColor`,
-        event.type?.text,
+        event.type?.name,
         visibilityClassName,
         (fadePastEvents && eventTiming === Timing.Past) ? "past" : "notPast",
         `status_${event.status?.significance}`,

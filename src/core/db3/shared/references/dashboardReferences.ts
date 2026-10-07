@@ -34,23 +34,12 @@ import { xPermission } from "../schema/user";
 import { xBandUserTag, bandUserTagDisplayContract } from "../entities/user/bandUserTagViews";
 import { xWikiPageTag } from "../schema/wikiPageTag";
 
+import { eventTypeDisplayContract, eventStatusDisplayContract, eventAttendanceDisplayContract } from "../entities/event/eventCatalogs";
+
 // dashboard provider provides "hydrated" objects, not raw db rows
 // (e.g. ColorPaletteEntry rather than `string`).
 // use the actual db3 view mechanism to do this;  it means prisma select -> dto schema -> hydration with xTable column metadata
 
-
-const dashboardEventTypeSelection = Prisma.validator<Prisma.EventTypeDefaultArgs>()({
-    select: {
-        publicId: true,
-        isDeleted: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        iconName: true,
-        text: true,
-        significance: true,
-    },
-});
 
 const dashboardWikiPageTagSelection = Prisma.validator<Prisma.WikiPageTagDefaultArgs>()({
     select: {
@@ -62,19 +51,6 @@ const dashboardWikiPageTagSelection = Prisma.validator<Prisma.WikiPageTagDefault
     },
 });
 
-const dashboardEventStatusSelection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
-    select: {
-        publicId: true,
-        isDeleted: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        iconName: true,
-        label: true,
-        significance: true,
-    },
-});
-
 const dashboardEventTagSelection = Prisma.validator<Prisma.EventTagDefaultArgs>()({
     select: {
         publicId: true,
@@ -83,23 +59,6 @@ const dashboardEventTagSelection = Prisma.validator<Prisma.EventTagDefaultArgs>(
         sortOrder: true,
         text: true,
         visibleOnFrontpage: true,
-    },
-});
-
-const dashboardEventAttendanceSelection = Prisma.validator<Prisma.EventAttendanceDefaultArgs>()({
-    select: {
-        publicId: true,
-        text: true,
-        description: true,
-        iconName: true,
-        color: true,
-        sortOrder: true,
-        isDeleted: true,
-        strength: true,
-        personalText: true,
-        pastText: true,
-        pastPersonalText: true,
-        isActive: true,
     },
 });
 
@@ -133,22 +92,13 @@ export const dashboardWikiPageTagResource = deriveViewContract(
     xWikiPageTag,
     dashboardWikiPageTagSelection,
 );
-export const dashboardEventTypeResource = deriveViewContract(
-    xEventType,
-    dashboardEventTypeSelection,
-);
-export const dashboardEventStatusResource = deriveViewContract(
-    xEventStatus,
-    dashboardEventStatusSelection,
-);
+export const dashboardEventTypeResource = eventTypeDisplayContract;
+export const dashboardEventStatusResource = eventStatusDisplayContract;
 export const dashboardEventTagResource = deriveViewContract(
     xEventTag,
     dashboardEventTagSelection,
 );
-export const dashboardEventAttendanceResource = deriveViewContract(
-    xEventAttendance,
-    dashboardEventAttendanceSelection,
-);
+export const dashboardEventAttendanceResource = eventAttendanceDisplayContract;
 export const dashboardFileTagResource = deriveViewContract(
     xFileTag,
     dashboardFileTagSelection,
@@ -313,7 +263,20 @@ export type CompleteEventAttendanceDashboardClient = {
         undefined
     >;
 };
-export type EventAttendanceDisplay = CompleteEventAttendanceDashboardClient;
+export type EventAttendanceDisplay = Pick<CompleteEventAttendanceDashboardClient,
+    "publicId"
+    | "buttonCaption"
+    | "personalCaption"
+    | "pastCaption"
+    | "personalPastCaption"
+    | "description"
+    | "color"
+    | "iconName"
+    | "sortOrder"
+    | "isDeleted"
+    | "strength"
+    | "isActive"
+>;
 export type FileTagDashboardClient = ClientOf<typeof fileTagDashboardView>;
 export type InstrumentFunctionalGroupDashboardClient = ClientOf<
     typeof instrumentFunctionalGroupDashboardView
@@ -324,16 +287,16 @@ export type SongCreditTypeDashboardClient = ClientOf<typeof songCreditTypeDashbo
 export function isCompleteEventAttendanceDashboardClient(
     value: EventAttendanceDashboardClient,
 ): value is CompleteEventAttendanceDashboardClient {
-    return value.text !== undefined
+    return value.buttonCaption !== undefined
         && value.description !== undefined
         && value.iconName !== undefined
         && value.color !== undefined
         && value.sortOrder !== undefined
         && value.isDeleted !== undefined
         && value.strength !== undefined
-        && value.personalText !== undefined
-        && value.pastText !== undefined
-        && value.pastPersonalText !== undefined
+        && value.personalCaption !== undefined
+        && value.pastCaption !== undefined
+        && value.personalPastCaption !== undefined
         && value.isActive !== undefined;
 }
 

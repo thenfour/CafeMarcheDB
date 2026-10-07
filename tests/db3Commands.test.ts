@@ -1,3 +1,4 @@
+import { eventAttendanceDtoFixture } from "./support/eventCatalogFixtures";
 import { eventPublicId, segmentPublicId } from "./support/eventResponseFixtures";
 import { attendancePublicId } from "./support/eventAttendanceFixtures";
 import { listPublicId, listSongPublicId } from "./support/eventSongListFixtures";
@@ -333,24 +334,9 @@ describe("DB3 commands", () => {
     });
 
     it("defines finite CRUD views for the standalone relationship grids", () => {
-        expect(db3.eventAttendanceEditorView.parseDto({
-            publicId: attendancePublicId(1),
-            text: "Going",
-            personalText: "You are going",
-            pastText: "Went",
-            pastPersonalText: "You went",
-            description: "Confirmed attendance",
-            sortOrder: 1,
-            isActive: true,
-            isDeleted: false,
-            iconName: "Check",
-            color: "green",
-            strength: 100,
-        })).toMatchObject({ publicId: attendancePublicId(1), text: "Going", strength: 100 });
-        expect(db3.eventAttendanceEditorView.parseDto({
-            publicId: attendancePublicId(1),
-            responses: [],
-        })).toEqual({ publicId: attendancePublicId(1) });
+        const attendance = eventAttendanceDtoFixture(attendancePublicId(1));
+        expect(attendance).toMatchObject({ publicId: attendancePublicId(1), buttonCaption: "Going", strength: 100 });
+        expect(db3.eventAttendanceEditorView.parseDto({ ...attendance, responses: [] })).toEqual(attendance);
         expect(db3.eventAttendanceEditorView.crud.operations.delete.deleteType)
             .toBe("softWhenPossible");
 
@@ -362,7 +348,6 @@ describe("DB3 commands", () => {
             durationMillis: BigInt(3_600_000),
             isAllDay: false,
             statusId: eventStatusPublicId,
-            status: { publicId: eventStatusPublicId, label: "Confirmed", description: "", color: null, iconName: null, sortOrder: 0, significance: null, isDeleted: false },
             eventId: eventPublicId(4),
             event: {
                 publicId: eventPublicId(4),
@@ -371,7 +356,7 @@ describe("DB3 commands", () => {
             },
         })).toMatchObject({
             publicId: segmentPublicId(2),
-            status: { label: "Confirmed" },
+            statusId: eventStatusPublicId,
             event: { name: "Autumn concert" },
         });
         expect(db3.eventSegmentEditorView.crud.operations.update.command.parseDto({

@@ -3,7 +3,8 @@
 The A0 bootstrap path has development-browser evidence, obsolete Role and
 shared-account merge dependencies are isolated, and telemetry recording and Custom
 Links now use the target schema and explicit ownership. Platform account
-maintenance has its own platform-authorized view and commands. **A0 remains open.** The
+maintenance and shared event catalogs have platform-authorized views and
+commands. **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
 
@@ -20,7 +21,8 @@ preserving source alone.
   current membership's instruments separately.
 - Dashboard startup uses the existing DB3 read owner, fresh authorization,
   localized Permission metadata, migrated catalogs, settings, and membership
-  views. It does not execute deferred event/menu/legacy-role readers. DTOs remain
+  views, including shared event type/status/attendance metadata. It does not
+  execute deferred event-content/menu/legacy-role readers. DTOs remain
   unhydrated until the client builds one reference store per snapshot.
 - An authenticated account explicitly selects an active membership; a platform
   Sysadmin may select any active band. Names resolve in each band's locale scope.
@@ -90,8 +92,31 @@ preserving source alone.
   retains the event's original band, locale, URI and associations. Account-level
   Google sign-in and the still-deferred calendar feed explicitly use null band/
   locale context. Recording schemas no longer initialize the DB3 registry.
+- Shared event types/statuses and attendance options now use localized DB3 fields
+  with explicit global write storage. Generated CRUD and the three editor routes
+  require `manage_global_catalogs`; band authority and selected-band writes are
+  rejected. The editors explain the required platform context. Global edits
+  validate owned string identity, format and active locale, and audit translation
+  changes inside the entity transaction. They retain intentional blanks and do
+  not copy fallback text into another language. Existing band fields explicitly
+  retain their band write storage. Dashboard reads include shared metadata without
+  a band, resolve band overrides when selected, and retain retired labels for
+  history. New attendance choices exclude deleted/inactive options. Catalog
+  consumers now use `name` and the four target caption fields; activity-log
+  attendance identities resolve captions through the dashboard snapshot.
+  This repairs catalog dependencies without establishing event/invitation parity.
 
 ## Verification
+
+The shared event catalog browser probe used a fresh private target-schema database
+on `127.0.0.1:32695` and a delegated catalog manager without Sysadmin or localization
+administration. It created all three catalog kinds, including all four attendance
+captions, saved a French status translation without changing English, verified
+route-locale display and the selected-band platform prompt, and checked that no
+band translation rows were written. No browser page errors occurred; the French
+grid screenshot was inspected (`temp/a0-event-catalog-french.png`). The helper
+removed its database and stopped its development server/browser. This is
+development evidence; the normal build still blocks production-browser checks.
 
 Custom Links now retain all six modes: permanent/temporary/client redirects,
 disabled links, intermediate Markdown pages and direct file responses. The
@@ -144,6 +169,9 @@ production server could not be checked because the normal build still fails.
 
 | Check | Result |
 | --- | --- |
+| Shared event catalog contracts, DB3 read/write/view/command authorization, account/membership recovery and attendance DOM regression | Passed: 251 tests across fourteen Node files, plus 31 across five isolated jsdom files. Existing scalar-label assertions now exercise localized contracts; attendance controls cover retired answers and intentional blank captions. |
+| Shared event catalogs, dashboard bootstrap and existing account, Custom Links, telemetry, catalog and membership profile behavior on fresh private MariaDB | Passed: 43 tests across seven files, including seven new catalog cases. Covers global writes/audits, exact translations/blanks, resolved filtering/sorting/pagination, public metadata, band overrides, retired history/restore, owned string identity, unavailable locales, selected-band writes and revoked grants. The bootstrap fixture now asserts delivery of a retired localized status instead of treating shared statuses as deferred. Fixture writes roll back and the generated database is removed. |
+| Shared event catalog development-browser check | Passed: delegated-manager create/update, all attendance captions, French writing/display and the platform-context guard; no page errors. Does not establish event or invitation recovery. |
 | Platform account contracts, shared-person projections, view/bootstrap/page authorization, preservation and membership-role regression | Passed: 169 tests across eight Node files. Member pages, assignment editors and presentation navigation add 24 passing tests across four isolated jsdom files. |
 | Platform account reads/generated writes and existing Custom Links, telemetry, dashboard catalogs and member profiles on fresh private MariaDB | Passed: 30 tests across five files, including six new account cases. Covers searches/counts/pagination, public identity, platform-only contacts, default security state, create/update audit records, email correction restrictions, band/owner denial, crafted writes, deleted-account inspection and revoked grants. Fixture writes roll back and the generated database is removed. |
 | Platform account development-browser check | Passed: a delegated account manager without Sysadmin or band read capabilities can list contacts/deleted accounts in platform context, create a person and persist a name edit. Security controls and email correction are unavailable to that manager; selecting a band retains access and shared rows. HTTP 200, no browser page errors; the grid screenshot was inspected. This does not establish built-production evidence or lifecycle/role parity. |
@@ -163,9 +191,9 @@ production server could not be checked because the normal build still fails.
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 383 diagnostics, unchanged by platform account recovery and down from 386 before Custom Links. No increased file/error-code groups, compiler exclusions or error suppression added. |
+| `yarn typecheck` | Fails: 355 diagnostics, down from 383 before shared event catalog recovery. No increased file/error-code groups, compiler exclusions or error suppression added. |
 | `yarn build` | Gets past Custom Links and shared field-label callers; fails at the legacy event-search payload in `src/core/components/event/EventComponents.tsx:1392`. The duplicate role-page component-name warning is also fixed. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 289 failed, 1,410 passed, 111 skipped. The failure count/groups are unchanged by account recovery; its sixteen contract cases and two additional schema-policy cases pass. The six new MariaDB cases are skipped without their private test URL and pass in the native run above. Later isolated DOM batches are not reached; focused DOM checks above passed. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 289 failed, 1,410 passed, 118 skipped. Failure count/groups are unchanged by shared event catalog recovery. Its seven new MariaDB cases skip without their private test URL and pass in the native run above. Later isolated DOM batches are not reached; focused DOM checks above passed. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -198,7 +226,9 @@ verification resources, not application configuration.
 
 Fix owning contracts before their cascading consumers: `prismArgs.ts` remains the
 largest diagnostic root, followed by obsolete person-level instrument/tag and
-event/file/song descriptors and views. Legacy authorization
+event/file/song descriptors and views. Shared event catalogs are migrated; the
+remaining event roots still need band ownership and membership response/invitation
+contracts. Legacy authorization
 fixtures also retain removed relationships. Generic settings storage is isolated;
 its editor now uses the registered API. Role administration and shared-account
 merge execution are isolated; other deferred domains still need that boundary.
