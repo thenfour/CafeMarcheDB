@@ -25,14 +25,12 @@ import {
 import type { UserWithRolesPayload } from "@db3/shared/schema/userPayloads";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
-import assignUserRole from "src/auth/mutations/assignUserRole";
 import deactivateUser from "src/auth/mutations/deactivateUser";
 import forgotPassword from "src/auth/mutations/forgotPassword";
 import impersonateUser from "src/auth/mutations/impersonateUser";
 import resetPassword from "src/auth/mutations/resetPassword";
 import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
-import getUserManagementCapabilities from "src/auth/queries/getUserManagementCapabilities";
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 import {
   canManageUser,
@@ -366,7 +364,6 @@ describe("BA-A002 generic DB3 query authorization", () => {
       user: [sysadmin, normal, activeTarget, deletedTarget],
       change: [{ id: 1, table: "User", recordId: activeTarget.id }],
       event: [],
-      role: [],
     })
     vi.restoreAllMocks()
   })
@@ -1046,87 +1043,6 @@ describe("BA-U001 user management boundaries", () => {
     })).toBe(true)
   })
 
-  it("lets Band Admin edit an ordinary user and assign an allowed role separately", async () => {
-    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
-
-    await invokeResolver(
-      db3Mutation,
-      forgeDb3Update("User", ordinaryUser.id, {
-        name: "Managed by Band Admin",
-      }),
-      ctx,
-    )
-    await invokeResolver(assignUserRole, {
-      userId: ordinaryUser.publicId,
-      roleId: ordinaryRole.publicId,
-      acknowledgeContinuityRisk: false,
-    }, ctx)
-
-    expect(authorizationTestDb.snapshot("user")).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: ordinaryUser.id,
-          name: "Managed by Band Admin",
-          roleId: ordinaryRole.id,
-        }),
-      ]),
-    )
-  })
-
-  it.each([
-    ["a protected-role user", protectedRoleUser, false],
-    ["an isSysAdmin user with an ordinary assigned role", isSysAdminUser, true],
-  ])("uses DB3 profile editing and the assigned-role envelope for %s", async (_description, target, canAssignRole) => {
-    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
-    const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
-
-    await expect(
-      invokeResolver(
-        db3Mutation,
-        forgeDb3Update("User", target.id, { name: "Forbidden edit" }),
-        ctx,
-      ),
-    ).resolves.toEqual(expect.objectContaining({ name: "Forbidden edit" }))
-    const assignment = invokeResolver(
-      assignUserRole,
-      {
-        userId: target.publicId,
-        roleId: ordinaryRole.publicId,
-        acknowledgeContinuityRisk: false,
-      },
-      ctx,
-    )
-    if (canAssignRole) {
-      await expect(assignment).resolves.toEqual(expect.objectContaining({ roleId: ordinaryRole.publicId }))
-    } else {
-      await expect(assignment).rejects.toThrow("Not authorized to assignRole this user")
-    }
-
-    expect(update).toHaveBeenCalledTimes(canAssignRole ? 2 : 1)
-  })
-
-  it.each([
-    ["another user", ordinaryUser],
-    ["themselves", bandAdmin],
-  ])("does not let Band Admin assign a protected role to %s", async (_description, target) => {
-    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
-    const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
-
-    await expect(
-      invokeResolver(
-        assignUserRole,
-        {
-          userId: target.publicId,
-          roleId: protectedRole.publicId,
-          acknowledgeContinuityRisk: false,
-        },
-        ctx,
-      ),
-    ).rejects.toThrow("Not authorized to assignRole this user")
-
-    expect(update).not.toHaveBeenCalled()
-  })
-
   it("does not let generic user creation assign any role", async () => {
     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
     const create = vi.spyOn(authorizationTestDb.getDelegate("user"), "create")
@@ -1141,7 +1057,7 @@ describe("BA-U001 user management boundaries", () => {
         }),
         ctx,
       ),
-    ).rejects.toThrow("Role was not found")
+    ).rejects.toThrow("unknown mutation field 'roleId' on table 'User'")
 
     expect(create).not.toHaveBeenCalled()
   })
@@ -1185,74 +1101,6 @@ describe("BA-U001 user management boundaries", () => {
     await expect(
       invokeResolver(impersonateUser, { userId: target.publicId }, ctx),
     ).resolves.toEqual({ userId: target.publicId })
-  })
-
-  it("returns server-computed UI decisions for ordinary and protected targets", async () => {
-    const { ctx: bandAdminCtx } = createAuthorizationPersona("bandAdmin", {
-      id: bandAdmin.id,
-    })
-    const { ctx: sysadminCtx } = createAuthorizationPersona("sysadmin", {
-      id: sysadmin.id,
-    })
-
-    const bandAdminOrdinaryCapabilities = await invokeResolver(
-      getUserManagementCapabilities,
-      { userId: ordinaryUser.publicId },
-      bandAdminCtx,
-    )
-    expect(bandAdminOrdinaryCapabilities).toEqual(expect.objectContaining({
-      canAssignRole: true,
-      canCorrectEmail: false,
-      canDeactivate: true,
-      canImpersonate: false,
-      canResetPassword: false,
-      canSetSysAdmin: false,
-    }))
-    expect(bandAdminOrdinaryCapabilities.assignableRoles).toEqual([
-      {
-        publicId: ordinaryRole.publicId,
-        name: ordinaryRole.name,
-        description: ordinaryRole.description,
-        sortOrder: ordinaryRole.sortOrder,
-        color: ordinaryRole.color,
-        continuityWarnings: [],
-      },
-    ])
-    expect(bandAdminOrdinaryCapabilities.assignableRoles[0]).not.toHaveProperty("permissions")
-    expect(bandAdminOrdinaryCapabilities.assignableRoles[0]).not.toHaveProperty("isPublicRole")
-
-    const bandAdminProtectedCapabilities = await invokeResolver(
-      getUserManagementCapabilities,
-      { userId: protectedRoleUser.publicId },
-      bandAdminCtx,
-    )
-    expect(bandAdminProtectedCapabilities).toEqual(expect.objectContaining({
-      canAssignRole: false,
-      canCorrectEmail: false,
-      canDeactivate: true,
-      canImpersonate: false,
-      canResetPassword: false,
-      canSetSysAdmin: false,
-      assignableRoles: [],
-    }))
-
-    const sysadminCapabilities = await invokeResolver(
-      getUserManagementCapabilities,
-      { userId: ordinaryUser.publicId },
-      sysadminCtx,
-    )
-    expect(sysadminCapabilities).toEqual(expect.objectContaining({
-      canAssignRole: true,
-      canCorrectEmail: true,
-      canDeactivate: true,
-      canImpersonate: true,
-      canResetPassword: true,
-      canSetSysAdmin: true,
-    }))
-    expect(sysadminCapabilities.assignableRoles.map(role => role.publicId)).toEqual([
-      ordinaryRole.publicId,
-      protectedRole.publicId,
-    ])
   })
 
   it("does not give Moderator role-assignment authority", async () => {
@@ -1359,95 +1207,6 @@ describe("BA-U002 delegated user administration", () => {
       action: "assignRole",
       desiredRole: makePermissionSetFromRole(ordinaryRole),
     })).toBe(false)
-  })
-
-  it("assigns a peer-equivalent role, preserves target sessions, and logs only roleId", async () => {
-    const peer = {
-      ...createAuthorizationTarget("peerBandAdmin", { id: 11 }),
-      roleId: peerRole.id,
-      role: peerRole,
-    }
-    authorizationTestDb.reset({
-      user: [bandAdmin, peer],
-      role: [peerRole, ordinaryRole],
-      session: [
-        { id: 1, userId: bandAdmin.id },
-        { id: 2, userId: peer.id },
-      ],
-      change: [],
-    })
-    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
-
-    await invokeResolver(assignUserRole, {
-      userId: peer.publicId,
-      roleId: ordinaryRole.publicId,
-      acknowledgeContinuityRisk: false,
-    }, ctx)
-
-    expect(authorizationTestDb.snapshot("user")).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: peer.id, roleId: ordinaryRole.id }),
-    ]))
-    expect(authorizationTestDb.snapshot("session")).toEqual([
-      expect.objectContaining({ userId: bandAdmin.id }),
-      expect.objectContaining({ userId: peer.id }),
-    ])
-    const change = authorizationTestDb.snapshot("change")[0]!
-    expect(change).toEqual(expect.objectContaining({ table: "User", recordId: peer.id }))
-    expect(change.oldValues).toBe(JSON.stringify({ roleId: peerRole.id }))
-    expect(change.newValues).toBe(JSON.stringify({ roleId: ordinaryRole.id }))
-  })
-
-  it.each([
-    ["unheld", unheldRole],
-    ["protected", protectedRole],
-    ["unknown", unknownRole],
-  ])("rejects a %s permission composition before mutation", async (_description, role) => {
-    const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
-    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
-
-    await expect(invokeResolver(assignUserRole, {
-      userId: ordinaryUser.publicId,
-      roleId: role.publicId,
-      acknowledgeContinuityRisk: false,
-    }, ctx)).rejects.toThrow("Not authorized to assignRole this user")
-
-    expect(update).not.toHaveBeenCalled()
-  })
-
-  it("requires explicit acknowledgement before removing the last non-Sysadmin holder", async () => {
-    const selfInPeerRole = { ...bandAdmin, roleId: peerRole.id, role: peerRole }
-    authorizationTestDb.reset({
-      user: [selfInPeerRole, ordinaryUser],
-      role: [peerRole, ordinaryRole],
-      session: [{ id: 1, userId: selfInPeerRole.id }],
-      change: [],
-    })
-    const { ctx } = createAuthorizationPersona("bandAdmin", { id: selfInPeerRole.id })
-
-    expect(getContinuityWarningsForUserResult(
-      asUserManagementTarget(selfInPeerRole),
-      makePermissionSetFromRole(ordinaryRole),
-      [selfInPeerRole, ordinaryUser].map(asUserManagementTarget),
-    )).toEqual([Permission.deactivate_users, Permission.assign_user_roles])
-
-    await expect(invokeResolver(assignUserRole, {
-      userId: selfInPeerRole.publicId,
-      roleId: ordinaryRole.publicId,
-      acknowledgeContinuityRisk: false,
-    }, ctx)).rejects.toThrow(
-      "CONTINUITY_ACKNOWLEDGEMENT_REQUIRED:deactivate_users,assign_user_roles",
-    )
-    expect(authorizationTestDb.snapshot("change")).toEqual([])
-
-    await invokeResolver(assignUserRole, {
-      userId: selfInPeerRole.publicId,
-      roleId: ordinaryRole.publicId,
-      acknowledgeContinuityRisk: true,
-    }, ctx)
-    expect(authorizationTestDb.snapshot("user")).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: selfInPeerRole.id, roleId: ordinaryRole.id }),
-    ]))
-    expect(authorizationTestDb.snapshot("session")).toEqual([{ id: 1, userId: selfInPeerRole.id }])
   })
 
   it("does not warn when another active non-Sysadmin retains continuity permissions", async () => {
@@ -1931,95 +1690,6 @@ describe("BA-A004 association authorization", () => {
     vi.restoreAllMocks()
   })
 
-  it.each(protectedPermissions)(
-    "atomically rejects Band Admin granting $name",
-    async (protectedPermission) => {
-      const roleUpdate = vi.spyOn(authorizationTestDb.getDelegate("role"), "update")
-      const associationCreate = vi.spyOn(
-        authorizationTestDb.getDelegate("rolePermission"),
-        "create",
-      )
-      const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
-
-      await expect(
-        invokeResolver(
-          db3Mutation,
-          forgeDb3PublicUpdate("Role", ordinaryRole.publicId, {
-            name: "Must remain unchanged",
-            permissions: [ordinaryPermission.publicId, protectedPermission.publicId],
-          }),
-          ctx,
-        ),
-      ).rejects.toThrow("Not authorized to mutate Role fields")
-
-      expect(roleUpdate).not.toHaveBeenCalled()
-      expect(associationCreate).not.toHaveBeenCalled()
-      expect(authorizationTestDb.snapshot("role")).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ id: ordinaryRole.id, name: ordinaryRole.name }),
-        ]),
-      )
-      expect(authorizationTestDb.snapshot("rolePermission")).toEqual(
-        expect.arrayContaining([ordinaryRolePermission]),
-      )
-    },
-  )
-
-  it("rejects association changes on a protected role", async () => {
-    const associationDelete = vi.spyOn(
-      authorizationTestDb.getDelegate("rolePermission"),
-      "deleteMany",
-    )
-    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
-
-    await expect(
-      invokeResolver(
-        db3Mutation,
-        forgeDb3PublicUpdate("Role", protectedRole.publicId, {
-          permissions: [],
-        }),
-        ctx,
-      ),
-    ).rejects.toThrow("Not authorized to mutate Role fields")
-
-    expect(associationDelete).not.toHaveBeenCalled()
-    expect(authorizationTestDb.snapshot("rolePermission")).toEqual(
-      expect.arrayContaining([protectedRolePermission]),
-    )
-  })
-
-  it("blocks direct non-sysadmin RolePermission insert and delete mutations", async () => {
-    const rolePermissionDelegate = authorizationTestDb.getDelegate("rolePermission")
-    const create = vi.spyOn(rolePermissionDelegate, "create")
-    const deleteMany = vi.spyOn(rolePermissionDelegate, "deleteMany")
-    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
-
-    await expect(
-      invokeResolver(
-        db3Mutation,
-        forgeDb3Insert("RolePermission", {
-          roleId: ordinaryRole.publicId,
-          permissionId: protectedPermissions[0]!.publicId,
-        }),
-        ctx,
-      ),
-    ).rejects.toThrow("Permission was not found")
-
-    await expect(
-      invokeResolver(
-        db3Mutation,
-        forgeDb3PublicDelete("RolePermission", protectedRolePermission.publicId),
-        ctx,
-      ),
-    ).rejects.toThrow("Not authorized to mutate RolePermission fields")
-
-    expect(create).not.toHaveBeenCalled()
-    expect(deleteMany).not.toHaveBeenCalled()
-    expect(authorizationTestDb.snapshot("rolePermission")).toEqual(
-      expect.arrayContaining([ordinaryRolePermission, protectedRolePermission]),
-    )
-  })
-
   it("rejects an association-only update outside the caller's row scope", async () => {
     const associationDelegate = authorizationTestDb.getDelegate("userInstrument")
     const findMany = vi.spyOn(associationDelegate, "findMany")
@@ -2096,41 +1766,6 @@ describe("BA-A004 association authorization", () => {
     expect(authorizationTestDb.snapshot("userInstrument")).toEqual([
       expect.objectContaining({ userId: insertedUser?.id, instrumentId: 500 }),
     ])
-  })
-
-  it("allows sysadmin to add and remove role permissions", async () => {
-    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-    const sysadminPermission = protectedPermissions[0]!
-
-    await invokeResolver(
-      db3Mutation,
-      forgeDb3PublicUpdate("Role", ordinaryRole.publicId, {
-        permissions: [ordinaryPermission.publicId, sysadminPermission.publicId],
-      }),
-      ctx,
-    )
-    expect(authorizationTestDb.snapshot("rolePermission")).toEqual(
-      expect.arrayContaining([
-        ordinaryRolePermission,
-        expect.objectContaining({
-          roleId: ordinaryRole.id,
-          permissionId: sysadminPermission.id,
-        }),
-      ]),
-    )
-
-    await invokeResolver(
-      db3Mutation,
-      forgeDb3PublicUpdate("Role", ordinaryRole.publicId, {
-        permissions: [],
-      }),
-      ctx,
-    )
-    expect(authorizationTestDb.snapshot("rolePermission")).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ roleId: ordinaryRole.id }),
-      ]),
-    )
   })
 })
 

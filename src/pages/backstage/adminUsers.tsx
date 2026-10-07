@@ -41,7 +41,6 @@ const UserListContent: React.FC<{}> = () => {
             //new DB3Client.BoolColumnClient({ columnName: "isActive" }),
             instruments: columnName => new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
             tags: columnName => new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false, selectionView: db3.userTagEditorView }),
-            role: columnName => makeDisplayOnlyColumn(new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 180, })),
         },
     });
 

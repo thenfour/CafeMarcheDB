@@ -55,7 +55,7 @@ describe.skipIf(!settingsMysqlTestUrl)("account and dashboard bootstrap on migra
         expect(dto.authorization.bandPublicId).toBeNull();
         expect(dto.instrument).toEqual([]);
         expect(dto.relevantEventIds).toEqual([]);
-        expect(dto.role).toEqual([]);
+        expect(dto).not.toHaveProperty("role");
         expect(dto.permission.length).toBeGreaterThan(0);
         expect(dto.permission.every(permission => !("id" in permission) && !("roles" in permission))).toBe(true);
         expect(eventRead).not.toHaveBeenCalled();

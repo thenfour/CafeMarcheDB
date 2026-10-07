@@ -1,5 +1,4 @@
 import { Permission } from "shared/permissions";
-import { parsePublicId } from "shared/publicId";
 import { getClientServerState } from "shared/serverStateBase";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { loadLocalizationCatalog } from "src/locale/server/localization";
@@ -57,7 +56,7 @@ export function loadDashboardData(
             serverStartupState: server.diagnostics,
             bandTimeZone: authorization.band ? readSettingSnapshot(settings, "band", "dateTime.bandTimeZone") : "Europe/Brussels",
             // These consumers are deferred during A0 recovery; do not query their old models.
-            role: [], wikiPageTag: [], eventType: [], eventStatus: [], eventTag: [],
+            wikiPageTag: [], eventType: [], eventStatus: [], eventTag: [],
             eventAttendance: [], fileTag: [], songCreditType: [], dynMenuLinks: [], relevantEventIds: [],
         };
     });

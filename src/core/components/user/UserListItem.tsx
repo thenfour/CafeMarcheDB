@@ -49,15 +49,6 @@ export const UserListItem = (props: UserListItemProps) => {
                         variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.userTagId) }}
                         getTooltip={(_) => tag.userTag.description}
                     />)}
-                    {canManageUsers && props.user.role &&
-                        <CMChip
-                            color={props.user.role.color}
-                            shape={"rectangle"}
-                            size="small"
-                            variation={{ ...StandardVariationSpec.Strong, selected: props.filterSpec.roleFilter.options.includes(db3.xRole.getIdentity(props.user.role)) }}
-                        >
-                            {props.user.role.name}
-                        </CMChip>}
                     {canViewSignInMethods && <Suspense>
                         <CMDivider />
                         <UserIdentityIndicator userId={props.user.publicId} />

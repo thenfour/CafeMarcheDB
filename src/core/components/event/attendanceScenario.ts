@@ -107,7 +107,6 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
         email: "",
         phone: "",
         createdAt: now,
-        roleId: null,
         cssClass: null,
         tags: [],
         instruments: scenarioInstruments.slice(0, person.instrumentCount).map(instrument => ({

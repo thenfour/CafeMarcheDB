@@ -1,6 +1,6 @@
 import { TableAccessor } from "@/shared/rootroot";
 import * as db3 from "@db3/db3";
-import type { InstrumentPublicId, RolePublicId, UserTagPublicId } from "shared/publicId";
+import type { InstrumentPublicId, UserTagPublicId } from "shared/publicId";
 
 export type EnrichUserInput = Partial<db3.UserClientPayload>;
 
@@ -9,11 +9,9 @@ type EnrichedUserInstrument = Omit<db3.UserInstrumentClientPayload, "instrument"
 };
 
 export type EnrichedUser<T extends EnrichUserInput> = Omit<T,
-    'role'
-    | 'tags'
+    'tags'
     | 'instruments'
 > & {
-    role: db3.CompleteRoleDashboardClient | null | undefined;
     tags: (Omit<db3.UserTagAssignmentClientPayload, "userTag"> & {
         userTag: db3.UserTagDashboardClient;
     })[];
@@ -24,7 +22,6 @@ export type EnrichedUser<T extends EnrichUserInput> = Omit<T,
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
 export function enrichUser<T extends EnrichUserInput>(
     item: T,
-    roles: TableAccessor<db3.CompleteRoleDashboardClient, RolePublicId>,
     userTags: TableAccessor<db3.UserTagDashboardClient, UserTagPublicId>,
     instruments: TableAccessor<db3.InstrumentDashboardClient, InstrumentPublicId>
 ): EnrichedUser<T> {
@@ -33,7 +30,6 @@ export function enrichUser<T extends EnrichUserInput>(
     // + stuff we're adding/changing.
     const ret = {
         ...item,
-        role: item.roleId == null ? null : roles.getById(item.roleId),
 
         tags: (item.tags || []).map((assoc) => {
             const ret: Omit<db3.UserTagAssignmentClientPayload, "userTag"> & {

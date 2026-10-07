@@ -6,7 +6,6 @@ import { userPublicId } from "./support/userFixtures";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { eventSongListSaveCommandHandler } from "@db3/server/commands/eventSongListSaveCommand";
-import { rolePermissionSetCommandHandler } from "@db3/server/commands/rolePermissionSetCommand";
 import type { DB3CommandExecutionContext } from "@db3/server/db3CommandCore";
 import { getDB3CommandHandler } from "@db3/server/db3CommandRegistry";
 import { defineEntityCrudCommandHandlers } from "@db3/server/db3EntityCrudCommand";
@@ -24,11 +23,6 @@ const userTagPublicId = parsePublicId<"UserTag">("CommandUserTag01");
 const songCreditTypePublicId = parsePublicId<"SongCreditType">("CommandCreditTyp");
 const songCreditPublicId = parsePublicId<"SongCredit">("CommandCreditRow");
 const userInstrumentPublicId = parsePublicId<"UserInstrument">("CommandUsrInstr1");
-const permissionPublicId = parsePublicId<"Permission">("CommandPermiss01");
-const rolePublicId100 = parsePublicId<"Role">("CommandRole00100");
-const rolePublicId200 = parsePublicId<"Role">("CommandRole00200");
-const rolePublicId250 = parsePublicId<"Role">("CommandRole00250");
-const rolePermissionPublicId = parsePublicId<"RolePermission">("CommandRolePerm1");
 
 function createContext(seed?: {
     songList?: Record<string, unknown> | null;
@@ -267,32 +261,6 @@ describe("DB3 commands", () => {
             sortOrder: 1,
             color: null,
         }, context)).rejects.toThrow("Expected an SetlistPlanGroup public ID");
-    });
-
-    it("defines a strict association command that serializes rich rows to identities", () => {
-        const command = db3.setRolePermissionCommand;
-        const payload = command.serialize({
-            local: { publicId: permissionPublicId },
-            foreign: { publicId: rolePublicId200 },
-            isAssociated: true,
-        });
-
-        expect(command.commandID).toBe("RolePermission_Set");
-        expect(payload).toEqual({
-            localIdentity: permissionPublicId,
-            foreignIdentity: rolePublicId200,
-            isAssociated: true,
-        });
-        expect(command.parseDto(payload)).toEqual(payload);
-        expect(command.parseResult(payload)).toEqual(payload);
-        expect(() => command.parseDto({ ...payload, unexpected: true })).toThrow();
-        expect(() => command.parseDto({ ...payload, localIdentity: -1 })).toThrow();
-        expect(command.invalidation).toEqual({
-            mode: "caller",
-            entityIDs: ["Permission", "Role", "RolePermission"],
-        });
-        expect(getDB3CommandHandler(command.commandID))
-            .toBe(rolePermissionSetCommandHandler);
     });
 
     it("keeps the generic association contract on public client identities", () => {
@@ -589,24 +557,6 @@ describe("DB3 commands", () => {
         }
         expect(colorField.codec.decode(null)).toBeNull();
         expect(colorField.codec.encode(null)).toBeNull();
-    });
-
-    it("routes Role permission-set edits through the generated Role update command", async () => {
-        const handler = getDB3CommandHandler(db3.roleEditorView.crud.operations.update.command.commandID);
-        const { context, update } = createContext();
-
-        await expect(handler.execute({
-            identity: rolePublicId100,
-            patch: {
-                name: "Editors",
-                permissions: [permissionPublicId],
-            },
-        }, context)).resolves.toEqual({ identity: rolePublicId100 });
-        expect(update).toHaveBeenCalledWith(
-            db3.xRole,
-            rolePublicId100,
-            { name: "Editors", permissions: [permissionPublicId] },
-        );
     });
 
     it("builds a present-keys-only patch from prepared TableClient values", () => {

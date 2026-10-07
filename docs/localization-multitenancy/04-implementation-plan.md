@@ -73,12 +73,20 @@ This does not close A0: normal typecheck/build still fail, and deferred routes,
 RPC/API implementations, and source dependencies still require isolation.
 See [current recovery evidence](09-application-recovery.md).
 
-**Next implementation slice:** repair or isolate obsolete shared-account/Role
-consumers and the remaining DB3 descriptor/payload roots, then isolate deferred
-pages and non-page entry points together. Preserve the working bootstrap and
-migrated membership/catalog contracts. Platform role administration remains
-deferred; the browser path works with existing role definitions and assignments.
-Membership recovery enhancements remain deferred.
+The obsolete single-band Role tables, views, commands, dashboard metadata, and
+account controls are removed. Their assignment/designation RPCs reject without
+database access, and the role-administration URLs show intentional unavailability.
+Shared-account merge lookup/preview/commit and dependency reports are likewise
+unavailable; their obsolete implementations and controls are removed. Existing
+membership role/lifecycle commands remain available and have native regression
+coverage.
+
+**Next implementation slice:** repair or isolate the remaining DB3 payload and
+descriptor roots, including person-level instrument/tag relationships and generic
+settings, then isolate deferred pages and non-page entry points together. The
+normal build currently stops at a legacy localized-field caller in Custom Links.
+Preserve the working bootstrap and migrated membership/catalog contracts.
+Platform role administration and membership recovery enhancements remain deferred.
 
 ## A1: restore everyday workflows
 
@@ -146,7 +154,9 @@ surface isolated during A0, with its user-visible behavior and restoration gate.
 | Portal routing | Recovery uses explicit `?bandPublicId=<publicId>` and optional `routeLocale`; omission never selects a default band. | Full routing after A1; retain enough explicit selection for A0. |
 | Legacy DB3 domains | Selected-band queries/row services reject undeclared ownership policies. | Migrate required domains for A0/A1; keep other domains coherently unavailable. |
 | Dashboard content and search | Bootstrap omits events, announcements, role metadata, custom menus and other deferred catalogs. Home explains the restriction; global search is removed from the shell. Legacy sidebar/direct routes and non-page entry points are not yet isolated. | Finish coherent route/endpoint/source isolation during A0; restore content required by core workflows during A1. |
-| Shared-account/platform administration | Band grants cannot authorize shared-account or global-catalog writes; remaining consumers need adaptation. | Isolate build dependencies during A0; complete broader workflows after A1. |
+| Platform role administration | Legacy Role descriptors, views, commands and account role controls are removed. Assignment/designation RPCs reject before database access; `/backstage/roles` and `/backstage/rolePermissions` explain unavailability. Existing global/band role definitions still authorize requests; membership role assignment remains available. | Build GlobalRole/BandRole and permission editors after A1. |
+| Shared-account merging and dependency reports | Merge search, preview, commit and dependency-analysis RPCs explicitly reject without database access. Merge controls and obsolete person-level merge policies are removed; the analysis tab explains unavailability. Capability responses do not advertise merge or account-role assignment. | Restore cross-band account workflows after A1 with complete ownership-aware policies. |
+| Other shared-account/platform administration | Band grants cannot authorize shared-account or global-catalog writes; remaining legacy consumers need adaptation or isolation. | Finish isolation during A0; complete broader workflows after A1. |
 | Catalog/demo seeds | Production seeds initialize access control. Unused demo generators that referenced removed models are deleted. | Restore only seed data needed by a named acceptance path before A1. |
 | Legacy synchronous band guards | `resolver.authorize` rejects band capabilities. | Required callers use fresh request authorization and loaded resource ownership. |
 

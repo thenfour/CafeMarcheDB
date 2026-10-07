@@ -1,19 +1,17 @@
 import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import {
-    Button,
     Tooltip
 } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
 import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin";
-import { CMUserMgmtButton } from "../CMCoreComponents2";
+import { CMButton, CMUserMgmtButton } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { useSnackbar } from "../SnackbarContext";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
-import { MergeUsersButton } from "./MergeUsersButton";
 import { EnrichedVerboseUser } from "./UserListItem";
 import { useUserLifecycleActions } from "./useUserLifecycleActions";
 
@@ -86,7 +84,7 @@ export const ReactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
     const lifecycle = useUserLifecycleActions();
     const snackbar = useSnackbar();
     const [pending, setPending] = React.useState(false);
-    return capabilities.canReactivate ? <Button disabled={pending} onClick={async () => {
+    return capabilities.canReactivate ? <CMButton disabled={pending} onClick={async () => {
         setPending(true);
         try {
             if (!await lifecycle.reactivate(user)) return;
@@ -98,7 +96,7 @@ export const ReactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
         } finally {
             setPending(false);
         }
-    }}>Reactivate</Button> : null;
+    }}>Reactivate</CMButton> : null;
 };
 
 type SetUserSysadminButtonProps = {
@@ -139,7 +137,6 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
     if (!hasAnyControl) return null;
 
     return <>
-        {capabilities.canMerge && <MergeUsersButton user={props.user} />}
 
         <DeactivateUserButton
             capabilities={capabilities}

@@ -248,10 +248,6 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         dashboardData.wikiPageTag,
         tag => db3.xWikiPageTag.getIdentity(tag),
     );
-    valueRef.current.role = new TableAccessor(
-        dashboardData.role,
-        role => db3.xRole.getIdentity(role),
-    );
     valueRef.current.eventType = new TableAccessor(
         dashboardData.eventType,
         value => db3.xEventType.getIdentity(value),

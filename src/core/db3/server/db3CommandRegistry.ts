@@ -4,7 +4,6 @@ import type { AnyDB3CommandHandler } from "./db3CommandCore";
 import { DB3CommandError } from "./db3CommandCore";
 import { defineEntityCrudCommandHandlers } from "./db3EntityCrudCommand";
 import { eventSongListSaveCommandHandler } from "./commands/eventSongListSaveCommand";
-import { rolePermissionSetCommandHandler } from "./commands/rolePermissionSetCommand";
 import { galleryReorderCommandHandler } from "./commands/galleryOperations";
 import { menuLinkReorderCommandHandler } from "./commands/menuLinkOperations";
 import { bandInstrumentCommandHandler } from "./commands/bandInstrumentCommand";
@@ -40,7 +39,6 @@ registerDB3CommandHandlers([
     eventSongListSaveCommandHandler,
     eventSongListDeleteCommandHandler,
     eventSongListReorderCommandHandler,
-    rolePermissionSetCommandHandler,
     galleryReorderCommandHandler,
     menuLinkReorderCommandHandler,
 ]);

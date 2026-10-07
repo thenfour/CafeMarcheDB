@@ -15,7 +15,6 @@ export interface DashboardDataDto {
     currentMembership: BandUserInstrumentsDto | null;
     permission: DtoOf<typeof dashboard.permissionDashboardView>[];
     userTag: DtoOf<typeof dashboard.userTagDashboardView>[];
-    role: DtoOf<typeof dashboard.roleDashboardView>[];
     wikiPageTag: DtoOf<typeof dashboard.wikiPageTagDashboardView>[];
     eventType: DtoOf<typeof dashboard.eventTypeDashboardView>[];
     eventStatus: DtoOf<typeof dashboard.eventStatusDashboardView>[];
@@ -49,8 +48,6 @@ export function hydrateDashboardData(dto: DashboardDataDto) {
     const leaves = {
         permission: hydrate(dashboard.permissionDashboardView, dto.permission),
         userTag: hydrate(dashboard.userTagDashboardView, dto.userTag),
-        role: hydrate(dashboard.roleDashboardView, dto.role)
-            .filter(dashboard.isCompleteRoleDashboardClient),
         wikiPageTag: hydrate(dashboard.wikiPageTagDashboardView, dto.wikiPageTag)
             .filter(dashboard.isCompleteWikiPageTagDashboardClient),
         eventType: hydrate(dashboard.eventTypeDashboardView, dto.eventType),

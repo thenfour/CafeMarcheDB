@@ -3,7 +3,6 @@ import { Prisma } from "db";
 import {
     type InstrumentPublicId,
     isPublicId,
-    type RolePublicId,
     type UserInstrumentPublicId,
     type UserTagAssignmentPublicId,
     type UserTagPublicId,
@@ -36,15 +35,6 @@ export const userIdentitySummaryView = defineView({
     selection: userIdentitySummaryViewContract.prismaSelection,
     dtoSchema: userIdentitySummaryViewContract.dtoSchema,
     hydrate: userIdentitySummaryViewContract.hydrate
-});
-
-const UserEditorRoleDtoSchema = z.object({
-    publicId: z.custom<RolePublicId>(isPublicId),
-    name: z.string().optional(),
-    description: z.string().optional(),
-    color: z.string().nullable().optional(),
-    sortOrder: z.number().int().optional(),
-    significance: z.string().nullable().optional(),
 });
 
 const UserEditorInstrumentAssociationDtoSchema = z.object({
@@ -88,8 +78,6 @@ const UserEditorDtoSchema = z.object({
     cssClass: z.string().nullable().optional(),
     createdAt: z.date().optional(),
     isSysAdmin: z.boolean().optional(),
-    roleId: z.custom<RolePublicId>(isPublicId).nullable().optional(),
-    role: UserEditorRoleDtoSchema.nullable().optional(),
     instruments: z.array(UserEditorInstrumentAssociationDtoSchema).optional(),
     tags: z.array(UserEditorTagAssociationDtoSchema).optional(),
 });

@@ -30,7 +30,7 @@ import {
     xSongCreditType,
 } from "../schema/song";
 import { xBandSongTag, bandSongTagDisplayContract } from "../entities/song/bandSongTagViews";
-import { xPermission, xRole } from "../schema/user";
+import { xPermission } from "../schema/user";
 import { xBandUserTag, bandUserTagDisplayContract } from "../entities/user/bandUserTagViews";
 import { xWikiPageTag } from "../schema/wikiPageTag";
 
@@ -49,19 +49,6 @@ const dashboardEventTypeSelection = Prisma.validator<Prisma.EventTypeDefaultArgs
         iconName: true,
         text: true,
         significance: true,
-    },
-});
-
-const dashboardRoleSelection = Prisma.validator<Prisma.RoleDefaultArgs>()({
-    select: {
-        publicId: true,
-        name: true,
-        isRoleForNewUsers: true,
-        isPublicRole: true,
-        isSysAdminRole: true,
-        description: true,
-        sortOrder: true,
-        color: true,
     },
 });
 
@@ -142,10 +129,6 @@ const dashboardSongCreditTypeSelection = Prisma.validator<Prisma.SongCreditTypeD
 // types; another provider may construct completely different values.
 export const dashboardPermissionResource = permissionDisplayContract;
 export const dashboardUserTagResource = bandUserTagDisplayContract;
-export const dashboardRoleResource = deriveViewContract(
-    xRole,
-    dashboardRoleSelection,
-);
 export const dashboardWikiPageTagResource = deriveViewContract(
     xWikiPageTag,
     dashboardWikiPageTagSelection,
@@ -216,15 +199,6 @@ export const userTagDashboardView = defineView({
     dtoSchema: dashboardUserTagResource.dtoSchema,
     references: dashboardUserTagResource.referenceContract,
     hydrate: dashboardUserTagResource.hydrate,
-});
-
-export const roleDashboardView = defineView({
-    viewID: "Role_Dashboard",
-    entity: xRole,
-    selection: dashboardRoleResource.prismaSelection,
-    dtoSchema: dashboardRoleResource.dtoSchema,
-    references: dashboardRoleResource.referenceContract,
-    hydrate: dashboardRoleResource.hydrate,
 });
 
 export const wikiPageTagDashboardView = defineView({
@@ -320,11 +294,6 @@ export const instrumentDashboardView = defineView({
 export type PermissionDashboardClient = ClientOf<typeof permissionDashboardView>;
 export type UserTagDashboardClient = ClientOf<typeof userTagDashboardView>;
 export type UserTagDisplay = UserTagDashboardClient;
-export type RoleDashboardClient = ClientOf<typeof roleDashboardView>;
-export type CompleteRoleDashboardClient = {
-    [TKey in keyof RoleDashboardClient]-?: Exclude<RoleDashboardClient[TKey], undefined>;
-};
-export type RoleDisplay = CompleteRoleDashboardClient;
 export type WikiPageTagDashboardClient = ClientOf<typeof wikiPageTagDashboardView>;
 export type CompleteWikiPageTagDashboardClient = {
     [TKey in keyof WikiPageTagDashboardClient]-?: Exclude<
@@ -366,18 +335,6 @@ export function isCompleteEventAttendanceDashboardClient(
         && value.pastText !== undefined
         && value.pastPersonalText !== undefined
         && value.isActive !== undefined;
-}
-
-export function isCompleteRoleDashboardClient(
-    value: RoleDashboardClient,
-): value is CompleteRoleDashboardClient {
-    return value.name !== undefined
-        && value.isRoleForNewUsers !== undefined
-        && value.isPublicRole !== undefined
-        && value.isSysAdminRole !== undefined
-        && value.description !== undefined
-        && value.sortOrder !== undefined
-        && value.color !== undefined;
 }
 
 export function isCompleteWikiPageTagDashboardClient(

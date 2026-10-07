@@ -209,12 +209,6 @@ describe("DB3 named views", () => {
                     },
                 },
             });
-        expect(db3.roleEditorView.getSelectionArgs(context).select.permissions.orderBy)
-            .toEqual([
-                { permission: { sortOrder: "asc" } },
-                { permission: { name: "asc" } },
-                { permission: { id: "asc" } },
-            ]);
         expect(db3.wikiPageEditorView.getSelectionArgs(context).select.tags.orderBy)
             .toEqual([
                 { tag: { sortOrder: "asc" } },

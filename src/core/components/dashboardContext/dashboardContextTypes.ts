@@ -5,7 +5,7 @@ import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
 import { Prisma } from "db";
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
-import type { EventAttendancePublicId, EventPublicId, EventStatusPublicId, EventTagPublicId, EventTypePublicId, FilePublicId, FileTagPublicId, InstrumentFunctionalGroupPublicId, InstrumentPublicId, PermissionPublicId, RolePublicId, SongCreditTypePublicId, SongPublicId, SongTagPublicId, UserPublicId, UserTagPublicId, WikiPageTagPublicId } from "shared/publicId";
+import type { EventAttendancePublicId, EventPublicId, EventStatusPublicId, EventTagPublicId, EventTypePublicId, FilePublicId, FileTagPublicId, InstrumentFunctionalGroupPublicId, InstrumentPublicId, PermissionPublicId, SongCreditTypePublicId, SongPublicId, SongTagPublicId, UserPublicId, UserTagPublicId, WikiPageTagPublicId } from "shared/publicId";
 import { SettingsDto } from "../../db3/shared/schema/settings";
 import type { PresentationInput } from "src/locale/shared/presentationInput";
 import { withMemberPresentation } from "../user/bandMemberLinks";
@@ -31,7 +31,6 @@ export abstract class DashboardContextDataBase {
 
     dynMenuLinks: TableAccessor<db3.MenuLinkListClient>;
     permission: TableAccessor<db3.ClientOf<typeof db3.permissionDashboardView>, PermissionPublicId>;
-    role: TableAccessor<db3.CompleteRoleDashboardClient, RolePublicId>;
 
     instrument: TableAccessor<db3.InstrumentDashboardClient, InstrumentPublicId>;
     instrumentFunctionalGroup: TableAccessor<

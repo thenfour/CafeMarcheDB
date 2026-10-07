@@ -14,4 +14,7 @@ export const dashboardStrings = {
     "dashboard.instruments.missing": label("You have no instruments assigned in this band. Open your profile to choose them."),
     "dashboard.profile": label("Your profile"),
     "dashboard.deferred": label("Events, songs, files, announcements and custom navigation are temporarily unavailable while their band support is restored."),
+    "recovery.accountAnalysis.description": label("Account dependency analysis is temporarily unavailable while band support is restored."),
+    "recovery.accountRoles.title": label("Platform role administration"),
+    "recovery.accountRoles.description": label("Role definitions and permission editing are temporarily unavailable. Existing roles still apply. You can change a member's band role from their profile."),
 };

@@ -9,12 +9,9 @@ import * as db3 from "src/core/db3/db3";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
 import { AdminInspectObject, CMButtonGroup, KeyValueTable } from "../CMCoreComponents2";
-import { useSnackbar } from "../SnackbarContext";
 import { CMTab, CMTabPanel } from "../TabPanel";
 import { StandardVariationSpec } from "../color/palette";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
-import { CMSelectDisplayStyle, CMSingleSelect } from "../select/CMSelect";
-import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import { SongsProvider } from "../song/SongsContext";
 import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
 import { EditUserProfileButton } from "./EditUserProfileButton";
@@ -23,69 +20,6 @@ import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabCon
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
 import { EnrichedVerboseUser } from "./UserListItem";
 import { UserSignInMethodsButton } from "./UserSignInMethodsButton";
-import type { UserPublicId } from "shared/publicId";
-
-type RoleControlProps = {
-    value: db3.RoleDisplay | null | undefined;
-    userId: UserPublicId;
-    tableClient: DB3Client.xTableRenderClient<typeof db3.userEditorView>;
-    readonly: boolean;
-    onChange: () => void;
-};
-
-export const RoleControl = ({ value, userId, tableClient, readonly, onChange }: RoleControlProps) => {
-    const dashboardContext = useDashboardContext();
-    const snackbar = useSnackbar();
-    const editCommands = DB3Client.useCrudViewCommands({
-        view: db3.userEditorView,
-        tableClient,
-    });
-    return (
-        <CMSingleSelect<db3.RoleDisplay>
-            value={value ?? null}
-            readonly={readonly}
-            nullBehavior={CMSelectNullBehavior.AllowNull}
-            onChange={async (option) => {
-                await snackbar.invokeAsync(async () => {
-                    const newid = option ? db3.xRole.getIdentity(option) : null;
-                    console.log("Updating role for userId:", userId, "to roleId:", newid, " - ", dashboardContext.role.getById(newid));
-                    await editCommands.update({
-                        publicId: userId,
-                        roleId: newid,
-                        //role: dashboardContext.role.getById(newid) ?? null,
-                    }, {
-                        publicId: userId,
-                        roleId: value ? db3.xRole.getIdentity(value) : null,
-                    });
-                });
-                onChange();
-            }}
-            displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
-            renderOption={(item) => {
-                return item.name;
-            }}
-            getOptions={(args) => {
-                return dashboardContext.role.items;
-            }}
-            getOptionInfo={(item) => {
-                return {
-                    id: db3.xRole.getIdentity(item),
-                    color: item.color,
-                    tooltip: item.description ?? undefined,
-                };
-            }}
-        />
-    );
-};
-
-
-
-
-
-
-
-
-
 
 export enum UserDetailTabSlug {
     credits = "credits",
@@ -143,16 +77,6 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                         <span className='title'>{user.name}</span>
                     </div>
                 </div>
-
-                {canManageUsers && <RoleControl
-                    userId={user.publicId}
-                    value={user.role}
-                    readonly={props.readonly || !capabilities.canAssignRole}
-                    tableClient={tableClient}
-                    onChange={async () => {
-                        await refetch();
-                    }}
-                />}
 
                 <div className='flex-spacer'></div>
 

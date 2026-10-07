@@ -1,8 +1,9 @@
 # Current application recovery evidence
 
-The first A0 bootstrap slice restores a browser path in development. **A0 remains
-open.** The [implementation plan](04-implementation-plan.md) owns delivery gates
-and the restriction register.
+The A0 bootstrap path has development-browser evidence, and obsolete Role and
+shared-account merge dependencies are now isolated. **A0 remains open.** The
+[implementation plan](04-implementation-plan.md) owns delivery gates and the
+restriction register.
 
 ## Restored boundary
 
@@ -26,6 +27,16 @@ and the restriction register.
   and context-switch failures, rather than relaxing authorization or compilation.
   The navigation regression test reproduces the stale platform context with the
   old implementation and passes with the retained token.
+- The removed Role model has no DB3 tables, editor/dashboard/matrix views, command
+  registrations, or dashboard payload. Old account role controls are removed;
+  account projections no longer select its role relation or ID. Existing global
+  and band role authorization and membership role assignment are preserved.
+- Retired role assignment/designation, merge search/preview/commit, and account
+  dependency-analysis RPCs require login and explicitly reject before database
+  access. Their obsolete implementations are removed. Role-administration URLs
+  and the dependency-analysis tab display registered localized explanations;
+  merge controls are removed and capability responses advertise neither merge
+  nor account-role assignment.
 
 ## Verification
 
@@ -46,22 +57,24 @@ production server could not be checked because the normal build still fails.
 
 | Check | Result |
 | --- | --- |
-| New bootstrap/navigation tests, including six native MariaDB cases | Passed: 23 tests across six files. |
-| Migrated-production-copy bootstrap/account tests | Passed: eight tests, including six native cases. |
-| Broader focused catalog/membership/localization regression | Passed: 240 tests across 31 files, including native MariaDB tests on a separate fresh fixture. |
-| Updated Permission-view fixtures and band-selector typing | Passed: 35 tests across two files. |
+| Recovery RPC/registration boundaries, table authorization, account/bootstrap and membership role/lifecycle contracts | Passed: 66 tests across six files. A strict database proxy rejects any access from deferred RPCs. |
+| Account/bootstrap, membership contracts/pages/editors and suspended presentation navigation | Passed: 67 tests across ten files. |
+| Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
+| Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 641 diagnostics; baseline was 655. No compiler exclusions or error suppression added. |
-| `yarn build` | Fails at obsolete `tx.role` in `src/auth/mutations/assignUserRole.ts:44`, after the unused demo-seed blocker was removed. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 343 failed, 1,223 passed, 103 skipped. Later isolated DOM batches are not reached. |
+| `yarn typecheck` | Fails: 531 diagnostics, down from 641 at the start of the Role/merge slice. No compiler exclusions or error suppression added. |
+| `yarn build` | Gets past the obsolete Role implementation; fails at legacy `fieldCaption` in `src/core/components/CustomLinksComponents.tsx:56`. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 297 failed, 1,221 passed, 94 skipped. No new failing test names against the earlier 343-failure baseline. Later isolated DOM batches are not reached; focused DOM checks above passed. |
 
-The unchanged commit was checked in a detached temporary worktree: its full-run
-Node batch had 345 failures. The final comparison added no failing test names.
-The two removed failures belonged to the obsolete dashboard transport fixture,
-which assumed removed Role/Instrument models and legacy menus. Its meaningful
-DTO/hydration/reference-isolation assertions now run against native migrated
-catalog/membership reads. Permission-view fixture data now includes the explicit
-localized-string resolution contract.
+The Role/merge slice began with 343 full-run Node failures. Tests of the retired
+single-band Role editor, designation mutations, association commands and merge
+policies/native transaction/picker were removed alongside their implementations.
+They are replaced by explicit RPC rejection, crafted generic-write rejection,
+registration-absence and preserved membership-command checks. Generic command,
+authorization and pure management-policy tests remain; this is not a blanket skip
+of deferred failures. Permission-view fixtures retain the explicit localized-string
+resolution contract, and dashboard DTO/hydration/isolation checks run on native
+migrated catalog/membership readers.
 
 Focused tests use the repository runner, `yarn test <test paths> --reporter=dot`.
 Native tests set `CMDB_PHASE2_TEST_DATABASE_URL` to a private disposable database.
@@ -78,11 +91,12 @@ verification resources, not application configuration.
 
 ## Remaining A0 blockers
 
-Fix owning contracts before their cascading consumers: `prismArgs.ts` is the
-largest diagnostic root, followed by obsolete shared-user/Role and event/file/
-song descriptors and views. Shared-account merge code and legacy authorization
-fixtures also retain removed relationships. None are repaired by an implicit band
-default or a compatibility alias.
+Fix owning contracts before their cascading consumers: `prismArgs.ts` remains the
+largest diagnostic root, followed by obsolete person-level instrument/tag and
+event/file/song descriptors and views. Generic settings and legacy authorization
+fixtures also retain removed relationships. Role administration and shared-account
+merge execution are isolated; other deferred domains still need that boundary.
+None are repaired by an implicit band default or a compatibility alias.
 The stricter shared-account payload also exposes three deferred event consumers
 that still treat the account as a person carrying instruments. They must consume
 membership data when events are restored; band assignments are not added back to

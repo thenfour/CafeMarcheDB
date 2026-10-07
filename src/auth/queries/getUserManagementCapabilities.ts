@@ -12,7 +12,6 @@ import {
     findActiveNonSysadminUsers,
     findUserManagementActor,
     findUserManagementTargetByPublicId,
-    getAssignableRoles,
 } from "../server/userManagementState";
 import { PermissionSet } from "../shared/PermissionSet";
 
@@ -29,7 +28,9 @@ export default resolver.pipe(
             findUserManagementTargetByPublicId(db, userId),
         ]);
 
-        if (!target) throw new NotFoundError();
+        if (!target) {
+            throw new NotFoundError();
+        }
         if (target.principal.isDeleted
             && !actor.auth.hasPermission(Permission.recover_users)) {
             // target user is deleted.
@@ -37,25 +38,19 @@ export default resolver.pipe(
             throw new AuthorizationError();
         }
         const capabilities = getUserManagementCapabilities(actor, target);
-        const activeNonSysadminUsers = capabilities.canAssignRole || capabilities.canDeactivate
+        const activeNonSysadminUsers = capabilities.canDeactivate
             ? await findActiveNonSysadminUsers(db)
             : [];
 
         return {
             ...capabilities,
+            // These account-wide workflows have no migrated implementation yet.
+            canAssignRole: false,
+            canMerge: false,
             mergedIntoUserId: target.principal.mergedIntoUserId == null ? null : (await db.user.findUnique({
                 where: { id: target.principal.mergedIntoUserId },
                 select: { publicId: true },
             }))?.publicId ?? null,
-            assignableRoles: await getAssignableRoles(
-                db,
-                actor,
-                target,
-                activeNonSysadminUsers,
-            ),
-            unassignedRoleContinuityWarnings: capabilities.canAssignRole
-                ? getContinuityWarningsForUserResult(target, new PermissionSet([]), activeNonSysadminUsers)
-                : [],
             deactivationContinuityWarnings: capabilities.canDeactivate
                 ? getContinuityWarningsForUserResult(target, new PermissionSet([]), activeNonSysadminUsers)
                 : [],

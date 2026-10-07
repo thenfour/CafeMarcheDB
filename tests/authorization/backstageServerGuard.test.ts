@@ -180,12 +180,12 @@ describe("backstage server page guard", () => {
         )).rejects.toThrow(new RegExp(`${Permission.sysadmin}`));
     });
 
-    it("keeps user Mass Analysis behind the sysadmin permission", async () => {
+    it("reports deferred account analysis without returning dependency data", async () => {
         await expect(invokeResolver(
             getUserMassAnalysis,
             { userId: eventAdmin.publicId },
             createAuthorizationTestContext(eventAdmin),
-        )).rejects.toThrow(new RegExp(`Not authorized for ${Permission.sysadmin}`));
+        )).rejects.toThrow("Shared-account dependency analysis is temporarily unavailable");
     });
 
     it("fails closed for an unregistered backstage page", async () => {

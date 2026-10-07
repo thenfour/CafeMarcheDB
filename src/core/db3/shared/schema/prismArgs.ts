@@ -15,8 +15,6 @@ import type {
     InstrumentFunctionalGroupPublicId,
     InstrumentPublicId,
     PermissionPublicId,
-    RolePermissionPublicId,
-    RolePublicId,
     SongPublicId,
     SongTagAssociationPublicId,
     SongTagPublicId,
@@ -145,9 +143,7 @@ export const UserTagSignificance = {
 
 ////////////////////////////////////////////////////////////////
 export const VisiblePermissionInclude = {
-    include: {
-        roles: true
-    }
+    include: { description: true },
 };
 
 export const PermissionArgs = Prisma.validator<Prisma.PermissionArgs>()({
@@ -174,49 +170,6 @@ export const PermissionNaturalOrderBy: Prisma.PermissionOrderByWithRelationInput
     { name: 'asc' },
     { id: 'asc' },
 ];
-
-
-
-
-export const RolePermissionArgs = Prisma.validator<Prisma.RolePermissionArgs>()({
-    include: {
-        permission: true,
-        role: true,
-    }
-});
-
-export type RolePermissionAssociationPayload = Prisma.RolePermissionGetPayload<typeof RolePermissionArgs>;
-
-export const RolePermissionNaturalOrderBy: Prisma.RolePermissionOrderByWithRelationInput[] = [
-    { permission: { sortOrder: 'asc' } },
-    { permission: { name: 'asc' } },
-    { permission: { id: 'asc' } },
-];
-
-
-
-export const RoleArgs = Prisma.validator<Prisma.RoleArgs>()({
-    include: {
-        permissions: {
-            include: {
-                permission: true,
-            },
-            orderBy: RolePermissionNaturalOrderBy,
-        },
-    }
-});
-
-export type RolePayload = Prisma.RoleGetPayload<typeof RoleArgs>;
-
-export const RoleNaturalOrderBy: Prisma.RoleOrderByWithRelationInput[] = [
-    { sortOrder: 'asc' },
-    { name: 'asc' },
-    { id: 'asc' },
-];
-
-
-
-
 
 
 
@@ -389,35 +342,6 @@ export type PermissionClientPayload = Omit<Prisma.PermissionGetPayload<{}>, "id"
     publicId: PermissionPublicId;
 };
 
-export type RoleClientPayload = Omit<Prisma.RoleGetPayload<{}>, "id" | "publicId"> & {
-    publicId: RolePublicId;
-};
-
-export type RolePermissionClientPayload = Omit<
-    Prisma.RolePermissionGetPayload<{}>,
-    "id" | "publicId" | "roleId" | "permissionId"
-> & {
-    publicId: RolePermissionPublicId;
-    roleId: RolePublicId;
-    permissionId: PermissionPublicId;
-};
-
-export type RoleWithPermissionsClientPayload = Omit<
-    RolePayload,
-    "id" | "publicId" | "permissions"
-> & {
-    publicId: RolePublicId;
-    permissions: Array<Omit<
-        RolePayload["permissions"][number],
-        "id" | "publicId" | "roleId" | "permissionId" | "permission"
-    > & {
-        publicId: RolePermissionPublicId;
-        roleId?: RolePublicId;
-        permissionId: PermissionPublicId;
-        permission: PermissionClientPayload;
-    }>;
-};
-
 type UserInstrumentReferenceDbPayload = Prisma.UserInstrumentGetPayload<
     typeof UserInstrumentReferenceArgs
 >;
@@ -474,18 +398,8 @@ export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
         email: true,
         phone: true,
         createdAt: true,
-        roleId: true,
         cssClass: true,
         // Explicitly exclude: hashedPassword, signInMethods, calendarFeedToken, uid
-        role: {
-            include: {
-                permissions: {
-                    include: {
-                        permission: true,
-                    }
-                },
-            }
-        },
         instruments: UserInstrumentArgs,
         tags: {
             include: {
@@ -518,17 +432,14 @@ export type UserTagAssignmentClientPayload = Omit<
 };
 export type UserClientPayload = Omit<
     UserPayload,
-    "id" | "publicId" | "instruments" | "tags" | "roleId" | "role"
+    "id" | "publicId" | "instruments" | "tags"
 > & {
     publicId: UserPublicId;
-    roleId: RolePublicId | null;
-    role: RoleWithPermissionsClientPayload | null;
     instruments: UserInstrumentClientPayload[];
     tags: UserTagAssignmentClientPayload[];
 };
 
-// Generic user queries must not expose role grants. Server authorization code
-// uses UserArgs/UserWithRolesArgs when it needs the permission composition.
+// Generic account queries do not expose role grants. Authorization uses UserWithRolesArgs.
 export const UserSafeArgs = Prisma.validator<Prisma.UserArgs>()({
     select: {
         id: true,
@@ -539,9 +450,7 @@ export const UserSafeArgs = Prisma.validator<Prisma.UserArgs>()({
         email: true,
         phone: true,
         createdAt: true,
-        roleId: true,
         cssClass: true,
-        role: true,
         instruments: UserInstrumentArgs,
         tags: {
             include: {
@@ -566,15 +475,13 @@ export const UserMinimumArgs = Prisma.validator<Prisma.UserArgs>()({
         email: true,
         phone: true,
         createdAt: true,
-        roleId: true,
         cssClass: true,
         // Explicitly exclude: hashedPassword, signInMethods, calendarFeedToken, uid
     }
 });
 type UserPayloadMinimumDb = Prisma.UserGetPayload<typeof UserMinimumArgs>;
-export type UserPayloadMinimum = Omit<UserPayloadMinimumDb, "id" | "publicId" | "roleId"> & {
+export type UserPayloadMinimum = Omit<UserPayloadMinimumDb, "id" | "publicId"> & {
     publicId: UserPublicId;
-    roleId: RolePublicId | null;
 };
 
 
@@ -588,18 +495,8 @@ export const UserForCalBackendArgs = Prisma.validator<Prisma.UserDefaultArgs>()(
         email: true,
         phone: true,
         createdAt: true,
-        roleId: true,
         cssClass: true,
         uid: true,
-        role: {
-            include: {
-                permissions: {
-                    include: {
-                        permission: true,
-                    }
-                },
-            }
-        }
     }
 });
 export type UserForCalBackendPayload = Prisma.UserGetPayload<typeof UserForCalBackendArgs>;
@@ -615,7 +512,6 @@ export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserDefaultArgs>(
         email: true,
         phone: true,
         createdAt: true,
-        roleId: true,
         cssClass: true,
 
         instruments: UserInstrumentReferenceArgs,
@@ -626,10 +522,9 @@ export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserDefaultArgs>(
 export type UserWithInstrumentsDbPayload = Prisma.UserGetPayload<typeof UserWithInstrumentsArgs>;
 export type UserWithInstrumentsClientPayload = Omit<
     UserWithInstrumentsDbPayload,
-    "id" | "publicId" | "instruments" | "tags" | "roleId"
+    "id" | "publicId" | "instruments" | "tags"
 > & {
     publicId: UserPublicId;
-    roleId: RolePublicId | null;
     instruments: UserInstrumentReferenceClientPayload[];
     tags: UserTagAssignmentReferenceClientPayload[];
 };

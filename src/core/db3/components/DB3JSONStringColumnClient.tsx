@@ -197,21 +197,6 @@ const ActivityLogPermission = ({ permissionId, cacheData }: { permissionId: numb
     </ActivityLogChip>;
 };
 
-const ActivityLogRole = ({ roleId, cacheData }: { roleId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
-    const dashboardContext = useDashboardContext();
-    const found = db3.xRole.isIdentity(roleId)
-        ? dashboardContext.role.getById(db3.xRole.parseIdentity(roleId))
-        : undefined;
-    if (!found) {
-        return <ActivityLogChip><Id value={roleId} /></ActivityLogChip>;
-    }
-    return <ActivityLogChip
-        color={found.color}
-    >
-        {found.name}
-    </ActivityLogChip>;
-};
-
 const ActivityLogUserTag = ({ userTagId, cacheData }: { userTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
     const found = db3.xBandUserTag.isIdentity(userTagId)
@@ -541,7 +526,8 @@ const ActivityLogKeyValueTable = ({ value, cacheData, tableName }: ActivityLogVa
             case 'permissionid':
                 return <ActivityLogPermission permissionId={value} cacheData={cacheData} />;
             case 'roleid':
-                return <ActivityLogRole roleId={value} cacheData={cacheData} />;
+                // Historical Role IDs remain readable after the old role editor is retired.
+                return <ActivityLogChip><Id value={value} /></ActivityLogChip>;
             case 'expectedattendanceusertagid':
             case 'usertagid':
                 return <ActivityLogUserTag userTagId={value} cacheData={cacheData} />;
