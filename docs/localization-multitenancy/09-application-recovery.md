@@ -49,6 +49,15 @@ preserving source alone.
   intentional blanks are retained, and changing band/language replaces the old
   presentation. Custom Link behavior help uses a finite registered inventory.
   This repairs presentation dependencies without restoring deferred domains.
+- Generic settings storage/view are no longer registered with DB3. Settings and
+  branding pages read authorized presentation snapshots and write registered
+  commands, with per-key controls, validation, reset and scope-bound clipboard
+  import. Failed writes retain drafts; account/band changes discard old drafts
+  and pending clipboard imports. The obsolete editors, descriptor/view and
+  replaced authorization assertion are preserved in five new source references.
+  Logo editing, optional primary text color and uploads remain explicitly
+  unavailable; hosting mode is configured by deployment. `settings-editors`
+  remains pending until full parity and built-browser verification.
 
 ## Verification
 
@@ -69,17 +78,18 @@ production server could not be checked because the normal build still fails.
 
 | Check | Result |
 | --- | --- |
-| Source preservation and Git provenance | Passed: 130 references in 98 files. All 4,509 removed lines in the 67 pending code/test files are covered. 57 active files retain identical executable syntax; 39 reference modules contain only an empty export. Existing staging is unchanged. |
+| Source preservation and Git provenance | Passed: 135 references in 102 files. The five new settings references match their recorded Git source exactly. The initial audit covered all 4,509 removed lines in 67 code/test files. Existing reference blocks and staging are unchanged. |
 | Preservation safeguards, temporary RPC boundaries, member/page contracts and DOM regression | Passed: 108 tests across ten active files, including 23 preservation checks. Nine wholly disabled specifications are retained separately; eight are under the runner's default `tests/` directory. |
 | Field localization, selectors, instrument editor, presentation delivery, factory contracts and preservation/recovery boundaries | Passed: 106 tests across nine files. Includes band-first labels/help, band and language switches, intentional blanks, composite captions, accessible names, unchanged scalar writes and explicit dialog captions. |
+| Registered settings editor, clipboard validation, settings RPCs/presentation, table authorization and preservation/recovery boundaries | Passed: 122 tests across seven files, including 13 editor DOM checks. Covers explicit scope, blanks/false, failed saves, resets, permissions, band/account switches, batch rejection and pending clipboard cancellation. |
 | Recovery RPC/registration boundaries, table authorization, account/bootstrap and membership role/lifecycle contracts | Passed: 66 tests across six files. A strict database proxy rejects any access from deferred RPCs. |
 | Account/bootstrap, membership contracts/pages/editors and suspended presentation navigation | Passed: 67 tests across ten files. |
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 422 diagnostics, down from 531 before the field-presentation slice. No compiler exclusions or error suppression added. |
+| `yarn typecheck` | Fails: 408 diagnostics, down from 422 before the settings-editor slice. No compiler exclusions or error suppression added. |
 | `yarn build` | Gets past Custom Links and shared field-label callers; fails at the legacy event-search payload in `src/core/components/event/EventComponents.tsx:1392`. The duplicate role-page component-name warning is also fixed. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 297 failed, 1,244 passed, 94 skipped, matching the preceding baseline. Later isolated DOM batches are not reached; focused DOM checks above passed. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 297 failed, 1,268 passed, 94 skipped. Failure groups are unchanged; 24 additional Node checks pass. Later isolated DOM batches are not reached; focused DOM checks above passed. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -107,8 +117,9 @@ verification resources, not application configuration.
 
 Fix owning contracts before their cascading consumers: `prismArgs.ts` remains the
 largest diagnostic root, followed by obsolete person-level instrument/tag and
-event/file/song descriptors and views. Generic settings and legacy authorization
-fixtures also retain removed relationships. Role administration and shared-account
+event/file/song descriptors and views. Legacy authorization
+fixtures also retain removed relationships. Generic settings storage is isolated;
+its editor now uses the registered API. Role administration and shared-account
 merge execution are isolated; other deferred domains still need that boundary.
 None are repaired by an implicit band default or a compatibility alias.
 The stricter shared-account payload also exposes three deferred event consumers

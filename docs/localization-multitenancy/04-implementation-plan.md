@@ -88,9 +88,11 @@ membership role/lifecycle commands remain available and have native regression
 coverage.
 
 **Next implementation slice:** repair or isolate the remaining DB3 payload and
-descriptor roots, including person-level instrument/tag relationships and generic
-settings, then isolate deferred pages and non-page entry points together. Shared
-client field declarations and callers now use registered labels/help on both
+descriptor roots, including person-level instrument/tag relationships, then
+isolate deferred pages and non-page entry points together. Generic settings
+storage is no longer registered with DB3; the settings and branding pages use
+the authorized registered-hive editor. Shared client field declarations and
+callers now use registered labels/help on both
 named and legacy render paths. The normal build gets past Custom Links and stops
 at the deferred event-search payload contract.
 Preserve the working bootstrap and migrated membership/catalog contracts.
@@ -159,7 +161,7 @@ implementation/test references and verification obligations for audited removals
 | Surface | Current boundary | Required follow-up |
 | --- | --- | --- |
 | `LocalizedMarkdown` | Resolved rendering is available; legacy inline editing is disabled and preserved in source. | Scoped translation/Markdown editing after A1. |
-| Settings writes | Generic DB3 mutations reject settings hives; registered commands enforce per-key policy. | Adapt any editor needed by a core workflow through the registered API; broader editors after A1. |
+| Settings and branding | Generic DB3 settings storage/view are inactive and preserved in source. Settings/branding pages use registered commands and per-key capabilities, with explicit scope, save/reset and validated clipboard import. Logo editing, optional primary text color and upload controls remain unavailable; hosting mode belongs to deployment configuration. | Verify editors in the built app during A0/A1; recover remaining branding controls and account for legacy clipboard documents under `settings-editors`. |
 | Translation tools | Native catalog controls can edit explicit translations; full inventory/inspection/chrome tooling is incomplete. | Complete after A1. |
 | Portal routing | Recovery uses explicit `?bandPublicId=<publicId>` and optional `routeLocale`; omission never selects a default band. | Full routing after A1; retain enough explicit selection for A0. |
 | Legacy DB3 domains | Selected-band queries/row services reject undeclared ownership policies. | Migrate required domains for A0/A1; keep other domains coherently unavailable. |

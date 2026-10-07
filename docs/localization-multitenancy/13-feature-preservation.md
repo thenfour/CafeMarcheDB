@@ -84,6 +84,13 @@ a smaller replacement or from permission to isolate a feature.
 Delete reference-only modules when their replacements are verified. Reactivated
 test files must remove the deferred-test marker and contain executable tests.
 
+The settings-editor recovery adds five references from `14c644c1`: both obsolete
+pages, the generic settings descriptor/view, and its old table-authorization
+assertion. The registered editor does not close `settings-editors`: logo/text-color
+and upload controls, legacy clipboard accounting, and built-browser verification
+remain obligations. Existing reference blocks and deferred specifications remain
+intact.
+
 The checker detects missing references and inconsistent closure records. Review
 must still establish that the recorded evidence proves parity and that a
 retirement decision was actually authorized.

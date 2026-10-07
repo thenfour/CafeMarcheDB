@@ -149,17 +149,10 @@ describe("inherited field read authorization", () => {
 })
 
 describe("schema-owned table authorization", () => {
-  it.each([db3.xSetting])(
-    "uses the operation map for $tableName access",
-    table => {
-      expect(table.authorizeTableForView(sysadminGrant)).toBe(true)
-      expect(table.authorizeTableForEdit(sysadminGrant)).toBe(true)
-      expect(table.authorizeRowBeforeInsert({ auth: sysadminGrant })).toBe(true)
-      expect(table.authorizeTableForView(userManager)).toBe(false)
-      expect(table.authorizeTableForEdit(userManager)).toBe(false)
-      expect(table.authorizeRowBeforeInsert({ auth: userManager })).toBe(false)
-    },
-  )
+  it("does not register generic settings storage", () => {
+    expect(() => db3.GetTableById("Setting")).toThrow("was not found")
+    expect(() => db3.getDB3View("Setting_Editor")).toThrow("was not found")
+  })
 
   it("keeps canonical permission metadata public and mutations Sysadmin-only", () => {
     const publicGrant = authorization(Permission.public)
@@ -501,4 +494,25 @@ describe("schema-owned table authorization", () => {
 //     expect(table.authorizeRowForEdit({ auth: publicData, model: { id: 999 } })).toBe(false)
 //   })
 // })
+// MIGRATION_REFERENCE_END
+
+
+// MIGRATION_RESTORE: settings-editors
+// Source: 14c644c1242b8bfac9190afe3ac05ebf2573c49d:tests/authorization/db3TableAuthorization.test.ts:152-162
+// Reason: The old generic settings descriptor and editors use removed storage APIs.
+// Restore: Account for legacy settings and branding editor workflows using typed hives and per-key authorization; preserve scheduling reanchor and cache invalidation semantics.
+// Verification: Adapt preserved user/branding/setting authorization specifications and native time-zone tests; verify editor saves and resets in the built app.
+// SHA256: bdbb497d9b1dbab20eca1d34a3c4be149cbd1b476169494d884e13b6649a0456
+// MIGRATION_REFERENCE_BEGIN
+//   it.each([db3.xSetting])(
+//     "uses the operation map for $tableName access",
+//     table => {
+//       expect(table.authorizeTableForView(sysadminGrant)).toBe(true)
+//       expect(table.authorizeTableForEdit(sysadminGrant)).toBe(true)
+//       expect(table.authorizeRowBeforeInsert({ auth: sysadminGrant })).toBe(true)
+//       expect(table.authorizeTableForView(userManager)).toBe(false)
+//       expect(table.authorizeTableForEdit(userManager)).toBe(false)
+//       expect(table.authorizeRowBeforeInsert({ auth: userManager })).toBe(false)
+//     },
+//   )
 // MIGRATION_REFERENCE_END

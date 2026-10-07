@@ -6,6 +6,7 @@ import { catalogStrings } from "./catalogStrings";
 import { membershipStrings } from "./membershipStrings";
 import { dashboardStrings } from "./dashboardStrings";
 import { db3FieldStrings } from "./db3FieldStrings";
+import { settingsEditorStrings } from "./settingsEditorStrings";
 
 function defaultMarkdownStaticString() {
     return markdownStaticString({
@@ -21,6 +22,7 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
     ...membershipStrings,
     ...dashboardStrings,
     ...db3FieldStrings,
+    ...settingsEditorStrings,
     "common.action.ok": plainStaticString({
         defaultValue: "OK",
         description: "Label for an OK button",

@@ -96,6 +96,20 @@ reset, and refetch once presentation has loaded.
 Generic DB3 mutations reject all settings-hive writes. Editors use the registered
 command API so they cannot bypass key validation or per-key authorization.
 
+The registered editor reads only the current authorized presentation snapshot.
+Scope selection is explicit; account/membership IDs never come from the form or
+clipboard. Each field exposes its saved/default source, validates against its
+registry schema, and offers separate save, cancel and reset actions. A context
+switch discards the previous account/band draft; a refresh retains unsaved edits
+while updating untouched fields. Failed writes retain the draft.
+
+Clipboard export contains visible `{ key, value }` entries for one scope. Import
+validates every entry, edit capability and duplicate key before submitting one
+batch to the registered API. Pasted owner IDs, unregistered keys, and legacy
+`{ name, value }` documents are rejected. A pending clipboard read is abandoned
+when its scope changes. Successful writes await presentation invalidation; server
+authorization remains authoritative if permissions change during editing.
+
 ## Branding, timezone, and Markdown consumers
 
 Branding reads selected-band settings with registry defaults/validation. Cache

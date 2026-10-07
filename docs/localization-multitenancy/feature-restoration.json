@@ -869,6 +869,36 @@
       "featureId": "demo-seeding",
       "source": "451c9cde3af65ffce804cb7360032dd001c681eb:db/seeding/wikiPageSeeding.ts:1-67",
       "sha256": "e1204ebde15206aab5158532d37b99fcbc516dfe23bca86edf0136e9070d72ce"
+    },
+    {
+      "file": "src/core/db3/shared/db3schema.ts",
+      "featureId": "settings-editors",
+      "source": "14c644c1242b8bfac9190afe3ac05ebf2573c49d:src/core/db3/shared/db3schema.ts:1-69",
+      "sha256": "eb5512fffa700c89878b510c6385d7062956957d68bceb080e5e7a18d6626935"
+    },
+    {
+      "file": "src/core/db3/shared/entities/setting/settingViews.ts",
+      "featureId": "settings-editors",
+      "source": "14c644c1242b8bfac9190afe3ac05ebf2573c49d:src/core/db3/shared/entities/setting/settingViews.ts:1-17",
+      "sha256": "4df162f6690b88127c7a43bcb0b7c94c401b8bc8a505b1bf6ef2f50ec0f5f6fd"
+    },
+    {
+      "file": "src/pages/backstage/settings.tsx",
+      "featureId": "settings-editors",
+      "source": "14c644c1242b8bfac9190afe3ac05ebf2573c49d:src/pages/backstage/settings.tsx:1-92",
+      "sha256": "3656d18d7155df7a125f6d881f6f868c40d7813d609446ec48a2b57fb3c67f65"
+    },
+    {
+      "file": "src/pages/backstage/brand.tsx",
+      "featureId": "settings-editors",
+      "source": "14c644c1242b8bfac9190afe3ac05ebf2573c49d:src/pages/backstage/brand.tsx:1-345",
+      "sha256": "3365c3407de4c0c6b97e5fc812c7c9c01fbb2d9eff3c538b6ab7aaeba964d75e"
+    },
+    {
+      "file": "tests/authorization/db3TableAuthorization.test.ts",
+      "featureId": "settings-editors",
+      "source": "14c644c1242b8bfac9190afe3ac05ebf2573c49d:tests/authorization/db3TableAuthorization.test.ts:152-162",
+      "sha256": "bdbb497d9b1dbab20eca1d34a3c4be149cbd1b476169494d884e13b6649a0456"
     }
   ]
 }

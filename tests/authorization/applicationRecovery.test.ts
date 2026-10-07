@@ -61,11 +61,11 @@ describe("deferred shared-account operations", () => {
             .rejects.toThrow("login");
     });
 
-    it.each(["Role", "RolePermission"])("does not register the retired %s table", tableID => {
+    it.each(["Role", "RolePermission", "Setting", "GlobalSetting", "BandSetting", "UserSetting", "BandUserSetting"])("does not register obsolete or command-owned %s storage", tableID => {
         expect(() => db3.GetTableById(tableID)).toThrow("was not found");
     });
 
-    it.each(["Role", "RolePermission"])("rejects crafted generic writes to %s before database access", tableID => {
+    it.each(["Role", "RolePermission", "Setting", "GlobalSetting", "BandSetting", "UserSetting", "BandUserSetting"])("rejects crafted generic writes to %s before database access", tableID => {
         const requests = [
             forgeDb3Insert(tableID, { name: "Retired" }),
             forgeDb3PublicUpdate(tableID, roleId, { name: "Retired" }),
@@ -76,7 +76,7 @@ describe("deferred shared-account operations", () => {
         }
     });
 
-    it.each(["Role_Editor", "Role_Dashboard", "Permission_RoleMatrix"])("does not expose the retired %s view", viewID => {
+    it.each(["Role_Editor", "Role_Dashboard", "Permission_RoleMatrix", "Setting_Editor"])("does not expose the retired %s view", viewID => {
         expect(() => db3.getDB3View(viewID)).toThrow("was not found");
     });
 
