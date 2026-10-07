@@ -23,6 +23,7 @@ import getEventFilterInfo from "@db3/queries/getEventFilterInfo";
 import getSongFilterInfo from "@db3/queries/getSongFilterInfo";
 import getGlobalStats from "@db3/queries/getGlobalStats";
 import getSongActivityReport from "@db3/queries/getSongActivityReport";
+import getImportEventData from "@db3/queries/getImportEventData";
 import assignUserRole from "src/auth/mutations/assignUserRole";
 import setRoleDesignation from "src/auth/mutations/setRoleDesignation";
 import mergeUsers from "src/auth/mutations/mergeUsers";
@@ -102,6 +103,32 @@ describe("deferred event/song filters and statistics", () => {
 
     it.each(deferredDomainReaders)("requires login before reporting availability for $name", async ({ resolve }) => {
         await expect(invokeResolver(resolve, {}, createAuthorizationTestContext(null)))
+            .rejects.toThrow("login");
+    });
+});
+
+describe("deferred event import preview", () => {
+    it("rejects every request before reading authorization, people, catalogs or songs", async () => {
+        const eventAdministrator = createAuthorizationTestUser("normal", {
+            id: 14,
+            permissions: [Permission.login, Permission.admin_events, Permission.manage_events],
+        });
+        const requests: unknown[] = [
+            { text: "Gig\ncarl", config: "y2026" },
+            { bandPublicId: parsePublicId<"Band">("ImportBand000001"), routeLocale: "fr-BE", text: "Rehearsal", config: "" },
+            { bandId: 1, text: "", config: {} },
+            null,
+        ];
+        for (const actor of [member, eventAdministrator, sysadmin]) {
+            for (const input of requests) {
+                await expect(invokeResolver(getImportEventData, input, createAuthorizationTestContext(actor)))
+                    .rejects.toThrow(ApplicationFeatureUnavailableError);
+            }
+        }
+    });
+
+    it("requires login before reporting availability", async () => {
+        await expect(invokeResolver(getImportEventData, {}, createAuthorizationTestContext(null)))
             .rejects.toThrow("login");
     });
 });

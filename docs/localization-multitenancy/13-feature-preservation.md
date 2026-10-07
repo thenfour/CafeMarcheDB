@@ -46,6 +46,7 @@ running tests. Neither compiler exclusions nor TypeScript suppressions are used.
 | `audit-log` | Protected audit browsing, table/user filters, historical JSON/detail links, clipboard and Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction. Audit recording remains executable. |
 | `legacy-event-song-filters` | Account for the old event/song facet RPC semantics through the existing search owner: timing/relevance, multi-tag matching, counts, localized facets, pagination and ordering with selected-band snapshots and public identities. |
 | `event-song-statistics` | Event statistics, popular-song occurrences and song performance history; timing/type/status/tag controls, visualization, bucket selection, expansion and event links with fresh band-scoped authorization and localized references. |
+| `event-import` | Text/config parsing, dates/year overrides, band-owned defaults, membership and visible-song matching, editable preview, explicit save and saved-event history with fresh authorization, public identities, localized references and band scheduling through migrated event creation. |
 | `markdown-editing` | Inline edit/cancel/save/save-and-close, authorization, feedback and refresh against explicit translation scope and locale. |
 | `settings-editors` | Existing settings/branding workflows through typed hives, including time-zone reanchoring and cache invalidation. Replaced storage APIs are historical references. |
 | `catalog-help` | Song-tag help Markdown alongside the migrated editor. Its rendering call is restored; browser verification remains pending. |
@@ -142,6 +143,18 @@ calendar helpers and the current search implementation stay executable. No
 existing test directly covered these four RPCs, and no test is newly deferred.
 New rejection and recovery-notice checks establish isolation, not replacement
 search/report parity. Both restoration obligations remain pending.
+
+Experimental event-import isolation adds seven references from `ced31f2c`.
+They preserve the complete preview RPC/parser, page with editor/save/history,
+API declarations, public-response-identity assertion and its import, old route/RPC
+guard assertion and four legacy editor bindings in the compatibility inventory.
+One functional preview test is newly inactive; its remaining attendance,
+creation and telemetry cases stay executable. The guard now verifies Sysadmin
+routing and explicit preview unavailability. No additional whole-file test is
+deferred. The existing creation transaction stays executable and has native and
+development-browser regression evidence. The `event-import` obligation remains
+pending until the complete parser/preview/save workflow and preserved
+specifications are restored and verified.
 
 ## Audit scope
 

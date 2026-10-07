@@ -30,4 +30,6 @@ export const dashboardStrings = {
     "recovery.eventSongStatistics.title": label("Event statistics"),
     "recovery.eventSongStatistics.description": label("Event statistics and popular-song reports are temporarily unavailable while band support is restored."),
     "recovery.eventSongStatistics.songHistoryDescription": label("Song performance history is temporarily unavailable while band support is restored."),
+    "recovery.eventImport.title": label("Import events"),
+    "recovery.eventImport.description": label("Event import is temporarily unavailable while band support is restored."),
 };

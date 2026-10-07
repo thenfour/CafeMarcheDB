@@ -316,33 +316,6 @@ export function GetICalRelativeURIForUserUpcomingEvents(args: { calendarFeedToke
     return `/api/ical/user/${encodeURIComponent(args.calendarFeedToken || "public")}/upcoming?bandPublicId=${encodeURIComponent(args.bandPublicId)}`;
 }
 
-export interface TGetImportEventDataArgs {
-    text: string;
-    config: string;
-};
-
-export interface TGetImportEventDataRet {
-    log: string[],
-    event: {
-        name: string,
-        //description: string;
-        typeId: EventTypePublicId | null,
-        statusId: EventStatusPublicId | null,
-        tags: EventTagPublicId[],
-        expectedAttendanceUserTagId: UserTagPublicId | null,
-        visiblePermissionId: PermissionPublicId | null;
-    },
-    segment: {
-        startsAt: Date | null,
-        durationMillis: number,
-        isAllDay: boolean,
-        name: string,
-    },
-    songList: TinsertEventSong[],
-    responses: TinsertEventResponse[],
-};
-
-
 ///////////////////////////////////////////////////////
 
 export interface SearchResultsFacetOption {
@@ -891,5 +864,41 @@ export function sortEventsRaw<T extends { startsAt: null | number }>(events: T[]
 //     // eventsQuery: string;
 //     // popularSongsQuery: string;
 // };
+//
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: event-import
+// Source: ced31f2c6595be33520214fe5e23a75cc8148b3a:src/core/db3/shared/apiTypes.ts:319-345
+// Reason: Experimental import preview uses global person/song lookups, obsolete invitation tags and an unscoped authorization/time-zone boundary; its editor depends on unfinished event/song contracts.
+// Restore: Restore text/config parsing, band-owned defaults, visible song and membership matching, editable preview, explicit save and saved-event history with strict public inputs, fresh snapshot authorization, localized references and band scheduling through the migrated creation transaction.
+// Verification: Reactivate preserved preview/identity/authorization specifications; test supported dates and year overrides, comments/repeated songs, ambiguous or missing matches, two bands, inactive members/catalogs, hidden songs, grant revocation, preview edits and saves in the built browser.
+// SHA256: b0d5c41b45258544a0a3430afc0573392337e2730301b8827398ebaa54c665e2
+// MIGRATION_REFERENCE_BEGIN
+// export interface TGetImportEventDataArgs {
+//     text: string;
+//     config: string;
+// };
+//
+// export interface TGetImportEventDataRet {
+//     log: string[],
+//     event: {
+//         name: string,
+//         //description: string;
+//         typeId: EventTypePublicId | null,
+//         statusId: EventStatusPublicId | null,
+//         tags: EventTagPublicId[],
+//         expectedAttendanceUserTagId: UserTagPublicId | null,
+//         visiblePermissionId: PermissionPublicId | null;
+//     },
+//     segment: {
+//         startsAt: Date | null,
+//         durationMillis: number,
+//         isAllDay: boolean,
+//         name: string,
+//     },
+//     songList: TinsertEventSong[],
+//     responses: TinsertEventResponse[],
+// };
+//
 //
 // MIGRATION_REFERENCE_END

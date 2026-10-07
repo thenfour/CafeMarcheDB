@@ -127,6 +127,14 @@
       "verification": "Test two bands, platform policy, permission/member revocation, hidden/deleted songs/events, date boundaries, consistent aggregates and public references; exercise statistics and song history controls in the built browser.",
       "status": "pending",
       "evidence": []
+    },
+    {
+      "id": "event-import",
+      "reason": "Experimental import preview uses global person/song lookups, obsolete invitation tags and an unscoped authorization/time-zone boundary; its editor depends on unfinished event/song contracts.",
+      "restore": "Restore text/config parsing, band-owned defaults, visible song and membership matching, editable preview, explicit save and saved-event history with strict public inputs, fresh snapshot authorization, localized references and band scheduling through the migrated creation transaction.",
+      "verification": "Reactivate preserved preview/identity/authorization specifications; test supported dates and year overrides, comments/repeated songs, ambiguous or missing matches, two bands, inactive members/catalogs, hidden songs, grant revocation, preview edits and saves in the built browser.",
+      "status": "pending",
+      "evidence": []
     }
   ],
   "references": [
@@ -1365,6 +1373,48 @@
       "featureId": "event-song-statistics",
       "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:403-478",
       "sha256": "eb8cfc9674c05473dca4de4f29957edba984bf7cd252f27380e5fafc69882722"
+    },
+    {
+      "file": "src/core/db3/queries/getImportEventData.ts",
+      "featureId": "event-import",
+      "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:src/core/db3/queries/getImportEventData.ts:1-399",
+      "sha256": "5c4b33418fc27962a5c5e0831e38e7179ee9e9139ee838f4345840d11461a2b9"
+    },
+    {
+      "file": "src/pages/backstage/eventImport.tsx",
+      "featureId": "event-import",
+      "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:src/pages/backstage/eventImport.tsx:1-331",
+      "sha256": "d6cdcd6d856e4eb603459a4fb0ad1b2de2ab33862cfe6d90cd2ad18c86c7344f"
+    },
+    {
+      "file": "src/core/db3/shared/apiTypes.ts",
+      "featureId": "event-import",
+      "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:src/core/db3/shared/apiTypes.ts:319-345",
+      "sha256": "b0d5c41b45258544a0a3430afc0573392337e2730301b8827398ebaa54c665e2"
+    },
+    {
+      "file": "tests/authorization/eventAttendancePublicIds.test.ts",
+      "featureId": "event-import",
+      "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:tests/authorization/eventAttendancePublicIds.test.ts:17-17",
+      "sha256": "86ddf59632a9e69dea1e0c1a1bf4d6dcb7d486754222a735471727f188b41810"
+    },
+    {
+      "file": "tests/authorization/eventAttendancePublicIds.test.ts",
+      "featureId": "event-import",
+      "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:tests/authorization/eventAttendancePublicIds.test.ts:206-216",
+      "sha256": "ca18fef4ca8eeda056f5d3aa2d8fcdafa0b4cf77221647d28f7ec784a70a7b2f"
+    },
+    {
+      "file": "tests/authorization/backstageServerGuard.test.ts",
+      "featureId": "event-import",
+      "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:tests/authorization/backstageServerGuard.test.ts:170-181",
+      "sha256": "dea4485ea47d786517c2bbd1860bda1eabc867ec90d7824bc88f46a28d4434d0"
+    },
+    {
+      "file": "tests/db3LegacyReadCompatibilityInventory.test.ts",
+      "featureId": "event-import",
+      "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:tests/db3LegacyReadCompatibilityInventory.test.ts:55-58",
+      "sha256": "44a41f081f7d08485da974f7cc053d7fba37aacd0b46ed4920b74da161a50338"
     }
   ]
 }

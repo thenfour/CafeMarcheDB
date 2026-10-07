@@ -34,3 +34,11 @@ export function DeferredEventSongStatisticsPage() {
         <Alert severity="info">{locale.getPlainString("recovery.eventSongStatistics.description")}</Alert>
     </DashboardLayout>;
 }
+
+/** Keep import reachable without mounting preview readers or save controls. */
+export function DeferredEventImportPage() {
+    const locale = useLocale();
+    return <DashboardLayout title={locale.getPlainString("recovery.eventImport.title")}>
+        <Alert severity="info">{locale.getPlainString("recovery.eventImport.description")}</Alert>
+    </DashboardLayout>;
+}

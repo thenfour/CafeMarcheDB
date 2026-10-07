@@ -167,7 +167,7 @@ describe("backstage server page guard", () => {
             .rejects.toThrow("missing route authorization metadata");
     });
 
-    it("keeps experimental event import behind sysadmin at the route and query", async () => {
+    it("keeps import routing protected and reports deferred preview without data", async () => {
         await expect(authorizePageRequest(
             "/backstage/eventImport",
             eventAdmin.id,
@@ -175,9 +175,9 @@ describe("backstage server page guard", () => {
 
         await expect(invokeResolver(
             getImportEventData,
-            {} as never,
+            {},
             createAuthorizationTestContext(eventAdmin),
-        )).rejects.toThrow(new RegExp(`${Permission.sysadmin}`));
+        )).rejects.toThrow("Event import is temporarily unavailable");
     });
 
     it("reports deferred account analysis without returning dependency data", async () => {
@@ -401,4 +401,25 @@ describe("backstage server page guard", () => {
 //         )).rejects.toThrow("missing route authorization metadata");
 //     });
 // });
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: event-import
+// Source: ced31f2c6595be33520214fe5e23a75cc8148b3a:tests/authorization/backstageServerGuard.test.ts:170-181
+// Reason: Experimental import preview uses global person/song lookups, obsolete invitation tags and an unscoped authorization/time-zone boundary; its editor depends on unfinished event/song contracts.
+// Restore: Restore text/config parsing, band-owned defaults, visible song and membership matching, editable preview, explicit save and saved-event history with strict public inputs, fresh snapshot authorization, localized references and band scheduling through the migrated creation transaction.
+// Verification: Reactivate preserved preview/identity/authorization specifications; test supported dates and year overrides, comments/repeated songs, ambiguous or missing matches, two bands, inactive members/catalogs, hidden songs, grant revocation, preview edits and saves in the built browser.
+// SHA256: dea4485ea47d786517c2bbd1860bda1eabc867ec90d7824bc88f46a28d4434d0
+// MIGRATION_REFERENCE_BEGIN
+//     it("keeps experimental event import behind sysadmin at the route and query", async () => {
+//         await expect(authorizePageRequest(
+//             "/backstage/eventImport",
+//             eventAdmin.id,
+//         )).rejects.toThrow(new RegExp(`${Permission.sysadmin}`));
+//
+//         await expect(invokeResolver(
+//             getImportEventData,
+//             {} as never,
+//             createAuthorizationTestContext(eventAdmin),
+//         )).rejects.toThrow(new RegExp(`${Permission.sysadmin}`));
+//     });
 // MIGRATION_REFERENCE_END

@@ -1,5 +1,5 @@
 export type DeferredApplicationFeature = "accountRoles" | "accountMerge" | "accountAnalysis" | "activityReports" | "auditLog"
-    | "legacyEventSongFilters" | "eventSongStatistics";
+    | "legacyEventSongFilters" | "eventSongStatistics" | "eventImport";
 
 const featureNames: { readonly [Feature in DeferredApplicationFeature]: string } = {
     accountRoles: "Platform role administration",
@@ -9,6 +9,7 @@ const featureNames: { readonly [Feature in DeferredApplicationFeature]: string }
     auditLog: "Audit log",
     legacyEventSongFilters: "Legacy event and song filters",
     eventSongStatistics: "Event statistics and song history",
+    eventImport: "Event import",
 };
 
 export class ApplicationFeatureUnavailableError extends Error {

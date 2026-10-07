@@ -15,6 +15,9 @@ Audit browsing and its historical-reference readers are coherently isolated;
 audit recording remains active.
 Legacy event/song facet RPCs and statistics/history readers are now isolated;
 statistics and song history show localized recovery notices.
+Experimental event import now shows a localized notice on its Sysadmin-protected
+page; the preview RPC rejects before database access. Migrated event creation
+remains active.
 **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
@@ -259,6 +262,37 @@ export found during this slice was also repaired by naming the public-ID schema
 
 ## Verification
 
+The event-import slice passes 104 focused checks across six files: 72 recovery
+RPC/registration checks, four page guards, two isolated DOM cases, two legacy
+read-inventory checks, 23 preservation checks and one targeted existing route/RPC
+guard. The strict database proxy verifies preview rejection before any account,
+catalog, person or song lookup for ordinary members, event administrators and
+Sysadmins, including legacy, selected-band and malformed inputs. Anonymous
+requests require login. The page retains Sysadmin authorization and renders
+registered localized text without preview/save hooks or draft controls.
+
+All 98 native Setlist Plan, event creation, attendance and event/file-tag cases
+pass on a fresh private target-schema MariaDB fixture. The development browser
+verifies that an ordinary event administrator cannot bootstrap the import page,
+and that Sysadmin access in platform context and two selected bands (with a French
+route locale) renders the notice without preview/save requests or a draft form.
+Real preview requests reject legacy, selected-band and malformed inputs;
+anonymous requests require login. A real creation RPC still saves a band-owned
+event, first segment and initial song list with public transport identity and an
+actor-attributed audit. Four browser assertion groups pass with no page errors;
+the notice screenshot was visually checked
+(`temp/a0-event-import-browser-result.json`). The helper removed its database and
+stopped the browser/development server; the owned MariaDB instance was shut down.
+This is development-browser evidence, not built-production or importer parity.
+
+Preservation now protects 213 references, ten wholly deferred specifications and
+seventeen pending obligations. Seven references from `ced31f2c` preserve the
+importer parser/preview RPC, complete editor/save/history page, API declarations
+and affected specifications. One previously failing preview public-identity case
+is newly inactive and preserved; the remaining attendance/creation/telemetry
+cases stay executable. The old route/RPC assertion is preserved and adapted to
+verify the recovery boundary. No additional whole-file specification is deferred.
+
 The legacy event/song reader slice passes 100 focused checks across four files:
 70 recovery RPC/registration checks, four statistics page guards, three isolated
 DOM checks and 23 preservation checks. A strict database proxy proves that all
@@ -282,8 +316,8 @@ and stopped its browser/development server; the owned private MariaDB instance
 was shut down. Song history has component DOM evidence; the complete song detail
 page and built-production delivery remain unverified.
 
-Preservation now protects 206 references and ten deferred specifications, with
-sixteen pending obligations. Eleven new references from `8fdb9fd6` preserve the
+The legacy-reader checkpoint protected 206 references and ten deferred
+specifications, with sixteen pending obligations. Eleven references from `8fdb9fd6` preserve the
 four readers, statistics page, song history and removed API declarations. No
 existing behavioral test directly targeted these RPCs, and none is newly
 deferred. The current search owner, shared date predicates, autocomplete payloads,
@@ -540,7 +574,8 @@ production server could not be checked because the normal build still fails.
 | Custom-link routes/URLs/page guards, bootstrap, view contracts, preservation/recovery boundaries, membership roles and public Markdown/Suspense navigation | Passed: 161 tests across ten files, including two isolated jsdom files. All redirect modes, nested slugs, repeated query values, visit details, routing-parameter exclusion, hash forwarding and the selection-page authorization boundary are covered. |
 | Custom-link CRUD/file authorization, telemetry persistence, dashboard catalogs and member profiles on a fresh private MariaDB fixture | Passed: 24 tests across four files, including six native custom-link cases. Covers duplicate slugs across bands, create/update/delete and visit cascade, server-owned IDs, missing context/revoked authority, file visibility/ownership and crafted unavailable targets. Fixture writes roll back and the generated database is removed. |
 | Existing Custom Link/Menu Link view and schema-wide policy fixtures | The collection view passes with an explicit scoped snapshot. Policy rows now carry band/active-person context and use public identities where natural-ID filtering is forbidden; five earlier failures are recovered. The existing broad metadata assertion still fails because Locale has no DB3 descriptor. |
-| Source preservation and Git provenance | Passed: 206 references, including eleven legacy event/song reader references. Ten deferred specifications and sixteen pending recovery obligations remain protected. |
+| Source preservation and Git provenance | Passed: 213 references, including seven new importer references. Ten wholly deferred specifications and seventeen pending recovery obligations remain protected; one additional preview case is preserved as inactive source in a partly active file. |
+| Event-import isolation, protected/localized page and retained event creation | Passed: 104 focused checks across six files, including two isolated DOM cases. All 98 native persistence/creation/attendance/event/file-tag cases pass. Four development-browser assertion groups verify protected routing, notice rendering in platform/two-band contexts, deferred RPCs, anonymous rejection and a real event/segment/song-list save with actor audit; no page errors. |
 | Legacy event/song reader isolation, statistics page authorization and localized statistics/song history notices | Passed: 100 checks across four files, including three isolated DOM cases. A strict database proxy verifies rejection before any database access for all four RPCs; no tests are newly deferred. |
 | Legacy event/song reader development-browser and native regression | Passed: statistics notice for an ordinary report member in two bands; four RPCs unavailable for member/Sysadmin, anonymous calls require login, no queries/charts/page errors, and real audit persistence remains active. All 98 native tests across five files pass. Screenshot inspected and private resources stopped/removed. |
 | Audit-log isolation, protected/localized page, generic query denial and audit redaction | Passed: 108 focused checks across eight files, including two isolated DOM cases. Both RPCs reject before any database access; generic audit registration is absent. Generic authorization regressions remain active on the protected sign-in-method table. |
@@ -558,9 +593,9 @@ production server could not be checked because the normal build still fails.
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 126 diagnostics, down from 135 at the audit-log checkpoint. The four obsolete SQL readers are isolated with full source preservation; no compiler exclusions or error suppression added. |
-| `yarn build` | Gets past event/song facet and statistics readers; stops at `src/core/db3/queries/getImportEventData.ts:187`, where the Prisma client exceeds the time-zone database type comparison depth. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 271 failed, 1,533 passed, 268 skipped across 145 files, with ten suite failures. Failure entries match the audit-log checkpoint; no new failures were introduced. Native cases pass with the private URL above. Later isolated DOM batches are not reached, so the statistics/song history DOM checks were run separately. |
+| `yarn typecheck` | Fails: 123 diagnostics, down from 126 at the legacy-reader checkpoint. Experimental import is isolated with full source preservation; no compiler exclusions or error suppression added. |
+| `yarn build` | Gets past import preview; stops at `src/core/db3/server/db3mutationCore.ts:826`, where File creation omits required `bandId`. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 270 failed, 1,539 passed, 268 skipped across 146 files, with ten suite failures. Failure-entry comparison finds only the preserved inactive import-preview case removed from the previous 271 failures; no new failure entries. Native cases pass with the private URL above. Later isolated DOM batches are not reached, so the importer DOM checks were run separately. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -591,16 +626,17 @@ verification resources, not application configuration.
 
 ## Remaining A0 blockers
 
-Event import preview is the next build stop: its Prisma/time-zone boundary
-exceeds type comparison depth. It also lacks selected-band authorization and
-still queries the removed UserTag model. The old event/song facet and statistics
-readers are isolated, with complete original implementations preserved under
-`legacy-event-song-filters` and `event-song-statistics`. Audit lookup and its
-companion viewer/filter reader remain isolated under `audit-log`.
-General File ownership/member/instrument workflows remain unfinished. Setlist Plan storage is recovered;
-its complete editor still depends on deferred Song/search workflows. Import preview still has an
-unscoped band lookup and removed UserTag/schema dependencies; creation RPC
-recovery does not establish the full importer workflow.
+General File creation is the next build stop: its creation fields omit required
+band ownership at `db3mutationCore.ts:826`. File ownership/member/instrument,
+upload/preview/download and background entry points still need coherent recovery.
+Experimental import is isolated under `event-import`; restoring its preserved
+parser, defaults, membership/song matching, editable preview and save/history
+requires a fresh selected-band contract. The migrated creation RPC does not
+establish full importer parity. The old event/song facet and statistics readers
+remain isolated under `legacy-event-song-filters` and `event-song-statistics`;
+audit lookup and its companion viewer/filter reader remain under `audit-log`.
+Setlist Plan storage is recovered; its complete editor still depends on deferred
+Song/search workflows.
 
 Fix owning contracts before their cascading consumers: `prismArgs.ts` remains the
 largest diagnostic root, followed by obsolete person-level instrument/tag and

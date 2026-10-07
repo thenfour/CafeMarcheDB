@@ -14,7 +14,6 @@ import insertEvent from "@db3/mutations/insertEvent";
 import updateAttendance from "@db3/mutations/updateUserEventAttendanceMutation";
 import query from "@db3/queries/db3queries";
 import getUserEventAttendance from "@db3/queries/getUserEventAttendance";
-import getImportEventData from "@db3/queries/getImportEventData";
 import { createActionRecord } from "@db3/server/recordActionServer";
 import attendanceApi from "src/pages/api/event/getUserAttendance";
 import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
@@ -203,17 +202,6 @@ describe("EventAttendance public identities", () => {
         }
     });
 
-    it("returns public response choices from import preview", async () => {
-        const admin = createAuthorizationTestUser("sysadmin", { id: 94 });
-        reset({ user: [admin, { ...actor, name: "carl" }],
-            eventStatus: [{ id: 8, publicId: statusId, isDeleted: false, significance: db3.EventStatusSignificance.FinalConfirmation }],
-            eventAttendance: [attendance,
-            { ...attendance, id: 3, publicId: attendancePublicId(3), strength: 0 }],
-        });
-        const { ctx: adminCtx } = createAuthorizationPersona("sysadmin", { id: admin.id });
-        const result = await invokeResolver(getImportEventData, { config: "", text: "Gig\ncarl" }, adminCtx);
-        expect(result.responses).toEqual([expect.objectContaining({ userId: actor.publicId, attendanceId: attendance.publicId })]);
-    });
 
     it("stores telemetry references as numeric foreign keys", async () => {
         const input = { feature: ActivityFeature.attendance_response, attendanceId: attendance.publicId };
@@ -262,5 +250,35 @@ describe("EventAttendance public identities", () => {
 //             expect(report).toMatchObject({ id: 900, attendanceId: attendance.publicId, attendance: { publicId: attendance.publicId } });
 //             expect(report.attendance).not.toHaveProperty("id");
 //         }
+//     });
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: event-import
+// Source: ced31f2c6595be33520214fe5e23a75cc8148b3a:tests/authorization/eventAttendancePublicIds.test.ts:17-17
+// Reason: Experimental import preview uses global person/song lookups, obsolete invitation tags and an unscoped authorization/time-zone boundary; its editor depends on unfinished event/song contracts.
+// Restore: Restore text/config parsing, band-owned defaults, visible song and membership matching, editable preview, explicit save and saved-event history with strict public inputs, fresh snapshot authorization, localized references and band scheduling through the migrated creation transaction.
+// Verification: Reactivate preserved preview/identity/authorization specifications; test supported dates and year overrides, comments/repeated songs, ambiguous or missing matches, two bands, inactive members/catalogs, hidden songs, grant revocation, preview edits and saves in the built browser.
+// SHA256: 86ddf59632a9e69dea1e0c1a1bf4d6dcb7d486754222a735471727f188b41810
+// MIGRATION_REFERENCE_BEGIN
+// import getImportEventData from "@db3/queries/getImportEventData";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: event-import
+// Source: ced31f2c6595be33520214fe5e23a75cc8148b3a:tests/authorization/eventAttendancePublicIds.test.ts:206-216
+// Reason: Experimental import preview uses global person/song lookups, obsolete invitation tags and an unscoped authorization/time-zone boundary; its editor depends on unfinished event/song contracts.
+// Restore: Restore text/config parsing, band-owned defaults, visible song and membership matching, editable preview, explicit save and saved-event history with strict public inputs, fresh snapshot authorization, localized references and band scheduling through the migrated creation transaction.
+// Verification: Reactivate preserved preview/identity/authorization specifications; test supported dates and year overrides, comments/repeated songs, ambiguous or missing matches, two bands, inactive members/catalogs, hidden songs, grant revocation, preview edits and saves in the built browser.
+// SHA256: ca18fef4ca8eeda056f5d3aa2d8fcdafa0b4cf77221647d28f7ec784a70a7b2f
+// MIGRATION_REFERENCE_BEGIN
+//     it("returns public response choices from import preview", async () => {
+//         const admin = createAuthorizationTestUser("sysadmin", { id: 94 });
+//         reset({ user: [admin, { ...actor, name: "carl" }],
+//             eventStatus: [{ id: 8, publicId: statusId, isDeleted: false, significance: db3.EventStatusSignificance.FinalConfirmation }],
+//             eventAttendance: [attendance,
+//             { ...attendance, id: 3, publicId: attendancePublicId(3), strength: 0 }],
+//         });
+//         const { ctx: adminCtx } = createAuthorizationPersona("sysadmin", { id: admin.id });
+//         const result = await invokeResolver(getImportEventData, { config: "", text: "Gig\ncarl" }, adminCtx);
+//         expect(result.responses).toEqual([expect.objectContaining({ userId: actor.publicId, attendanceId: attendance.publicId })]);
 //     });
 // MIGRATION_REFERENCE_END
