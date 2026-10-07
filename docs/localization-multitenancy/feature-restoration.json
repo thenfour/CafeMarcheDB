@@ -111,6 +111,22 @@
       "verification": "Reactivate preserved audit specifications; test sysadmin/member/anonymous access, two bands, deleted references, revoked grants, redaction, filters, JSON inspection and built-browser navigation.",
       "status": "pending",
       "evidence": []
+    },
+    {
+      "id": "legacy-event-song-filters",
+      "reason": "Legacy event/song facet RPCs use obsolete role/catalog contracts and lack selected-band snapshot ownership; current search pages use the separate search owner.",
+      "restore": "Account for legacy event/song filtering through the current search owner, retaining timing/relevance, multi-tag matching, counts, facets, pagination and ordering with selected-band authorization, localized references and public identities; avoid a second search implementation.",
+      "verification": "Verify equivalent filter semantics, two-band isolation, hidden/deleted references, strict request limits, fresh revocation, consistent rows/counts/facets and browser search workflows before closing this obligation.",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "event-song-statistics",
+      "reason": "Event statistics and song history use legacy SQL readers without selected-band snapshots and depend on removed role/catalog fields.",
+      "restore": "Restore event statistics, popular-song occurrences and song performance history with timing/type/status/tag filters, visualization, bucket selection, expansion and event links using fresh band-scoped authorization, public identities and localized catalog labels.",
+      "verification": "Test two bands, platform policy, permission/member revocation, hidden/deleted songs/events, date boundaries, consistent aggregates and public references; exercise statistics and song history controls in the built browser.",
+      "status": "pending",
+      "evidence": []
     }
   ],
   "references": [
@@ -1283,6 +1299,72 @@
       "featureId": "audit-log",
       "source": "6ee055895a049d6f105d775b4e2e563542f34d32:tests/authorization/authorizationTestHarness.test.ts:383-398",
       "sha256": "8a5afbe7a83bac3b13798a831a5b4dfb5744c961ee1ea32391efa9d1840a9cd6"
+    },
+    {
+      "file": "src/core/db3/queries/getEventFilterInfo.ts",
+      "featureId": "legacy-event-song-filters",
+      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/queries/getEventFilterInfo.ts:1-378",
+      "sha256": "5ef75cf160aa6101f0a3c063646edeace38c0fb3c5d0b514f693b1f7b32b5b96"
+    },
+    {
+      "file": "src/core/db3/queries/getSongFilterInfo.ts",
+      "featureId": "legacy-event-song-filters",
+      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/queries/getSongFilterInfo.ts:1-214",
+      "sha256": "f4c565857d61ddd62d69ce301edc1dbc7e2904b458e0f495c6fcc2dee005673d"
+    },
+    {
+      "file": "src/core/db3/queries/getGlobalStats.ts",
+      "featureId": "event-song-statistics",
+      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/queries/getGlobalStats.ts:1-223",
+      "sha256": "3d44380935ff787e6614465499c28c670aa79ff2d192cc5ec198ea206f737a8d"
+    },
+    {
+      "file": "src/core/db3/queries/getSongActivityReport.ts",
+      "featureId": "event-song-statistics",
+      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/queries/getSongActivityReport.ts:1-122",
+      "sha256": "d0efc70cb1b6397ca15b8ec847e169d12b6da7bdff7c48fa287a5401a1118625"
+    },
+    {
+      "file": "src/pages/backstage/stats.tsx",
+      "featureId": "event-song-statistics",
+      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/pages/backstage/stats.tsx:1-313",
+      "sha256": "2486c760974560b74da292a80d3da49706ffd8fb3b12717d594a43dfb1fd435b"
+    },
+    {
+      "file": "src/core/components/song/SongHistory.tsx",
+      "featureId": "event-song-statistics",
+      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/components/song/SongHistory.tsx:1-201",
+      "sha256": "5c2fbe7cc40e6ec62cd84061d3d2fd1237f519c965cc498d11d4d041adc066f0"
+    },
+    {
+      "file": "src/core/db3/shared/apiTypes.ts",
+      "featureId": "legacy-event-song-filters",
+      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:12-12",
+      "sha256": "94eb398cb9d379d60152113bea277cc8b695545ee5107b4e6c581e477ffbf101"
+    },
+    {
+      "file": "src/core/db3/shared/apiTypes.ts",
+      "featureId": "legacy-event-song-filters",
+      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:260-314",
+      "sha256": "2ac5fee94d530f4a1a17f3035f55a6f5d09bbd327d9c6057863909b3381760d9"
+    },
+    {
+      "file": "src/core/db3/shared/apiTypes.ts",
+      "featureId": "legacy-event-song-filters",
+      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:322-337",
+      "sha256": "f723ecc90640b1c3bb9fa50564b37c441f805904f78940b5c0b42bc903ab2735"
+    },
+    {
+      "file": "src/core/db3/shared/apiTypes.ts",
+      "featureId": "legacy-event-song-filters",
+      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:376-387",
+      "sha256": "8ac7c09c507f37e73a47b262c3e4e0c7975bba42f9c25427772f12bea458b60e"
+    },
+    {
+      "file": "src/core/db3/shared/apiTypes.ts",
+      "featureId": "event-song-statistics",
+      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:403-478",
+      "sha256": "eb8cfc9674c05473dca4de4f29957edba984bf7cd252f27380e5fafc69882722"
     }
   ]
 }

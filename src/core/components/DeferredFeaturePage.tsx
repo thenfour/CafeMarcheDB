@@ -26,3 +26,11 @@ export function DeferredAuditLogPage() {
         <Alert severity="info">{locale.getPlainString("recovery.auditLog.description")}</Alert>
     </DashboardLayout>;
 }
+
+/** Keep statistics reachable without mounting its obsolete readers. */
+export function DeferredEventSongStatisticsPage() {
+    const locale = useLocale();
+    return <DashboardLayout title={locale.getPlainString("recovery.eventSongStatistics.title")}>
+        <Alert severity="info">{locale.getPlainString("recovery.eventSongStatistics.description")}</Alert>
+    </DashboardLayout>;
+}

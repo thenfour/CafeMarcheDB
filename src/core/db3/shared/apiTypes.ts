@@ -9,7 +9,6 @@ import { isPublicId, type EventPublicId, type EventSegmentPublicId, type EventAt
 
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 import { ColorPaletteEntry } from "../../components/color/palette";
-import type { SongSearchDto } from "./entities/song/songViews";
 
 export const MAX_DB3_PAGE_SIZE = 1000;
 
@@ -257,82 +256,11 @@ export interface TdeleteEventCommentArgs {
 };
 
 
-export interface GetEventFilterInfoChipInfo<TIdentity extends number | string = number> {
-    rowCount: number;
-
-    id: TIdentity;
-
-    label: string;
-    color: string | null;
-    iconName: string | null;
-    tooltip: string | null;
-};
-
-// exclusive
-export type TimingFilter = "past" | "since 60 days" | "relevant" | "future" | "all";
-
-export const gEventFilterTimingIDConstants = {
-    past: 0,
-    future: 1,
-};
-export interface GetEventFilterInfoRet {
-    rowCount: number;
-    eventIds: EventPublicId[];
-
-    types: GetEventFilterInfoChipInfo<EventTypePublicId>[];
-    statuses: GetEventFilterInfoChipInfo<EventStatusPublicId>[];
-    tags: GetEventFilterInfoChipInfo<EventTagPublicId>[];
-    //timings: GetEventFilterInfoChipInfo[];
-
-    typesQuery: string;
-    statusesQuery: string;
-    tagsQuery: string;
-    paginatedEventQuery: string;
-
-    totalExecutionTimeMS: number;
-
-    fullEvents: unknown[],
-    userTags: unknown[],
-};
-
-export const MakeGetEventFilterInfoRet = (): GetEventFilterInfoRet => ({
-    statuses: [],
-    tags: [],
-    types: [],
-    //timings: [],
-    eventIds: [],
-    rowCount: 0,
-    typesQuery: "",
-    statusesQuery: "",
-    tagsQuery: "",
-    paginatedEventQuery: "",
-
-    totalExecutionTimeMS: 0,
-    fullEvents: [],
-    userTags: [],
-});
-
 export const EventRelevantFilterExpression = (args: { startsAtExpr: string }) => `((${args.startsAtExpr} >= DATE_SUB(curdate(), INTERVAL 6 day)) OR (${args.startsAtExpr} IS NULL))`;
 export const EventPast60DaysFilterExpression = (args: { startsAtExpr: string }) => `((${args.startsAtExpr} >= DATE_SUB(curdate(), INTERVAL 60 day)) OR (${args.startsAtExpr} IS NULL))`;
 export const EventPastFilterExpression = (args: { startsAtExpr: string }) => `(${args.startsAtExpr} <= curdate())`;
 export const EventFutureFilterExpression = (args: { startsAtExpr: string }) => `(${args.startsAtExpr} > curdate())`;
 export const EventThisYearFilterExpression = (args: { startsAtExpr: string }) => `(year(${args.startsAtExpr}) = year(curdate()))`;
-
-
-export type SongSelectionFilter = "relevant" | "all";
-
-export interface GetSongFilterInfoRet {
-    rowCount: number;
-    songIds: SongPublicId[];
-
-    tags: GetEventFilterInfoChipInfo<SongTagPublicId>[];
-    tagsQuery: string;
-    paginatedResultQuery: string;
-    totalRowCountQuery: string;
-
-    fullSongs: SongSearchDto[];
-};
-
 
 
 export const GetFilteredSongsItemSongSelect = Prisma.validator<Prisma.SongSelect>()({
@@ -373,18 +301,6 @@ export interface GetFilteredSongsRet {
     matchingItem: GetFilteredSongsItemSongPayload | null;
 };
 
-export const MakeGetSongFilterInfoRet = (): GetSongFilterInfoRet => ({
-    rowCount: 0,
-    songIds: [],
-
-    tags: [],
-
-    tagsQuery: "",
-    paginatedResultQuery: "",
-    totalRowCountQuery: "",
-    fullSongs: [],
-});
-
 // UIDs need to be url path compatible. So a slash cannot be used because it would break routing.
 // we use:
 // event uid is like "48f0e9ad-9354-4664-8a6d-a4681e14e75c"
@@ -399,82 +315,6 @@ export function MakeICalEventUid(eventUid: string, userUid: string | null) {
 export function GetICalRelativeURIForUserUpcomingEvents(args: { calendarFeedToken: string | null; bandPublicId: BandPublicId }) {
     return `/api/ical/user/${encodeURIComponent(args.calendarFeedToken || "public")}/upcoming?bandPublicId=${encodeURIComponent(args.bandPublicId)}`;
 }
-
-export enum GetSongActivityReportFilterSpecTimingFilter {
-    "All past",
-    "Past 5 years",
-    "Past year",
-    "Future",
-    "All",
-};
-
-export interface GetSongActivityReportFilterSpec {
-    eventTypeIds: EventTypePublicId[];
-    timing: keyof typeof GetSongActivityReportFilterSpecTimingFilter;
-    eventTagIds: EventTagPublicId[];
-    eventStatusIds: EventStatusPublicId[];
-};
-
-export interface GetSongActivityReportArgs {
-    songId: SongPublicId;
-    filterSpec: GetSongActivityReportFilterSpec;
-};
-
-export interface GetSongActivityReportRetEvent {
-    publicId: EventPublicId,
-    name: string,
-    startsAt: null | Date,
-    durationMillis: bigint,
-    isAllDay: boolean,
-    endDateTime: null | Date,
-};
-
-export interface GetSongActivityReportRet {
-    events: GetSongActivityReportRetEvent[];
-};
-
-export interface GetGlobalStatsFilterSpec {
-    eventTypeIds: EventTypePublicId[];
-    timing: keyof typeof GetSongActivityReportFilterSpecTimingFilter;
-    eventTagIds: EventTagPublicId[];
-    eventStatusIds: EventStatusPublicId[];
-    songTagIds: SongTagPublicId[];
-};
-
-export interface GetGlobalStatsArgs {
-    filterSpec: GetGlobalStatsFilterSpec;
-};
-
-export interface GetGlobalStatsRetEvent {
-    publicId: EventPublicId,
-    name: string,
-    startsAt: null | Date,
-    durationMillis: bigint,
-    isAllDay: boolean,
-    endDateTime: null | Date,
-    typeId: EventTypePublicId | null,
-    statusId: EventStatusPublicId | null,
-};
-
-export interface GetGlobalStatsRetPopularSongOccurrance {
-    songId: SongPublicId,
-    songName: string,
-    eventId: EventPublicId,
-    eventName: string,
-    typeId: EventTypePublicId | null,
-    statusId: EventStatusPublicId | null,
-    startsAt: null | Date,
-    durationMillis: bigint,
-    isAllDay: boolean,
-    endDateTime: null | Date,
-};
-
-export interface GetGlobalStatsRet {
-    allEvents: GetGlobalStatsRetEvent[];
-    popularSongsOccurrances: GetGlobalStatsRetPopularSongOccurrance[];
-    // eventsQuery: string;
-    // popularSongsQuery: string;
-};
 
 export interface TGetImportEventDataArgs {
     text: string;
@@ -848,3 +688,208 @@ export function sortEventsRaw<T extends { startsAt: null | number }>(events: T[]
 
     return ret;
 }
+
+// MIGRATION_RESTORE: legacy-event-song-filters
+// Source: 8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:12-12
+// Reason: Legacy event/song facet RPCs use obsolete role/catalog contracts and lack selected-band snapshot ownership; current search pages use the separate search owner.
+// Restore: Account for legacy event/song filtering through the current search owner, retaining timing/relevance, multi-tag matching, counts, facets, pagination and ordering with selected-band authorization, localized references and public identities; avoid a second search implementation.
+// Verification: Verify equivalent filter semantics, two-band isolation, hidden/deleted references, strict request limits, fresh revocation, consistent rows/counts/facets and browser search workflows before closing this obligation.
+// SHA256: 94eb398cb9d379d60152113bea277cc8b695545ee5107b4e6c581e477ffbf101
+// MIGRATION_REFERENCE_BEGIN
+// import type { SongSearchDto } from "./entities/song/songViews";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: legacy-event-song-filters
+// Source: 8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:260-314
+// Reason: Legacy event/song facet RPCs use obsolete role/catalog contracts and lack selected-band snapshot ownership; current search pages use the separate search owner.
+// Restore: Account for legacy event/song filtering through the current search owner, retaining timing/relevance, multi-tag matching, counts, facets, pagination and ordering with selected-band authorization, localized references and public identities; avoid a second search implementation.
+// Verification: Verify equivalent filter semantics, two-band isolation, hidden/deleted references, strict request limits, fresh revocation, consistent rows/counts/facets and browser search workflows before closing this obligation.
+// SHA256: 2ac5fee94d530f4a1a17f3035f55a6f5d09bbd327d9c6057863909b3381760d9
+// MIGRATION_REFERENCE_BEGIN
+// export interface GetEventFilterInfoChipInfo<TIdentity extends number | string = number> {
+//     rowCount: number;
+//
+//     id: TIdentity;
+//
+//     label: string;
+//     color: string | null;
+//     iconName: string | null;
+//     tooltip: string | null;
+// };
+//
+// // exclusive
+// export type TimingFilter = "past" | "since 60 days" | "relevant" | "future" | "all";
+//
+// export const gEventFilterTimingIDConstants = {
+//     past: 0,
+//     future: 1,
+// };
+// export interface GetEventFilterInfoRet {
+//     rowCount: number;
+//     eventIds: EventPublicId[];
+//
+//     types: GetEventFilterInfoChipInfo<EventTypePublicId>[];
+//     statuses: GetEventFilterInfoChipInfo<EventStatusPublicId>[];
+//     tags: GetEventFilterInfoChipInfo<EventTagPublicId>[];
+//     //timings: GetEventFilterInfoChipInfo[];
+//
+//     typesQuery: string;
+//     statusesQuery: string;
+//     tagsQuery: string;
+//     paginatedEventQuery: string;
+//
+//     totalExecutionTimeMS: number;
+//
+//     fullEvents: unknown[],
+//     userTags: unknown[],
+// };
+//
+// export const MakeGetEventFilterInfoRet = (): GetEventFilterInfoRet => ({
+//     statuses: [],
+//     tags: [],
+//     types: [],
+//     //timings: [],
+//     eventIds: [],
+//     rowCount: 0,
+//     typesQuery: "",
+//     statusesQuery: "",
+//     tagsQuery: "",
+//     paginatedEventQuery: "",
+//
+//     totalExecutionTimeMS: 0,
+//     fullEvents: [],
+//     userTags: [],
+// });
+//
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: legacy-event-song-filters
+// Source: 8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:322-337
+// Reason: Legacy event/song facet RPCs use obsolete role/catalog contracts and lack selected-band snapshot ownership; current search pages use the separate search owner.
+// Restore: Account for legacy event/song filtering through the current search owner, retaining timing/relevance, multi-tag matching, counts, facets, pagination and ordering with selected-band authorization, localized references and public identities; avoid a second search implementation.
+// Verification: Verify equivalent filter semantics, two-band isolation, hidden/deleted references, strict request limits, fresh revocation, consistent rows/counts/facets and browser search workflows before closing this obligation.
+// SHA256: f723ecc90640b1c3bb9fa50564b37c441f805904f78940b5c0b42bc903ab2735
+// MIGRATION_REFERENCE_BEGIN
+// export type SongSelectionFilter = "relevant" | "all";
+//
+// export interface GetSongFilterInfoRet {
+//     rowCount: number;
+//     songIds: SongPublicId[];
+//
+//     tags: GetEventFilterInfoChipInfo<SongTagPublicId>[];
+//     tagsQuery: string;
+//     paginatedResultQuery: string;
+//     totalRowCountQuery: string;
+//
+//     fullSongs: SongSearchDto[];
+// };
+//
+//
+//
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: legacy-event-song-filters
+// Source: 8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:376-387
+// Reason: Legacy event/song facet RPCs use obsolete role/catalog contracts and lack selected-band snapshot ownership; current search pages use the separate search owner.
+// Restore: Account for legacy event/song filtering through the current search owner, retaining timing/relevance, multi-tag matching, counts, facets, pagination and ordering with selected-band authorization, localized references and public identities; avoid a second search implementation.
+// Verification: Verify equivalent filter semantics, two-band isolation, hidden/deleted references, strict request limits, fresh revocation, consistent rows/counts/facets and browser search workflows before closing this obligation.
+// SHA256: 8ac7c09c507f37e73a47b262c3e4e0c7975bba42f9c25427772f12bea458b60e
+// MIGRATION_REFERENCE_BEGIN
+// export const MakeGetSongFilterInfoRet = (): GetSongFilterInfoRet => ({
+//     rowCount: 0,
+//     songIds: [],
+//
+//     tags: [],
+//
+//     tagsQuery: "",
+//     paginatedResultQuery: "",
+//     totalRowCountQuery: "",
+//     fullSongs: [],
+// });
+//
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: event-song-statistics
+// Source: 8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:403-478
+// Reason: Event statistics and song history use legacy SQL readers without selected-band snapshots and depend on removed role/catalog fields.
+// Restore: Restore event statistics, popular-song occurrences and song performance history with timing/type/status/tag filters, visualization, bucket selection, expansion and event links using fresh band-scoped authorization, public identities and localized catalog labels.
+// Verification: Test two bands, platform policy, permission/member revocation, hidden/deleted songs/events, date boundaries, consistent aggregates and public references; exercise statistics and song history controls in the built browser.
+// SHA256: eb8cfc9674c05473dca4de4f29957edba984bf7cd252f27380e5fafc69882722
+// MIGRATION_REFERENCE_BEGIN
+// export enum GetSongActivityReportFilterSpecTimingFilter {
+//     "All past",
+//     "Past 5 years",
+//     "Past year",
+//     "Future",
+//     "All",
+// };
+//
+// export interface GetSongActivityReportFilterSpec {
+//     eventTypeIds: EventTypePublicId[];
+//     timing: keyof typeof GetSongActivityReportFilterSpecTimingFilter;
+//     eventTagIds: EventTagPublicId[];
+//     eventStatusIds: EventStatusPublicId[];
+// };
+//
+// export interface GetSongActivityReportArgs {
+//     songId: SongPublicId;
+//     filterSpec: GetSongActivityReportFilterSpec;
+// };
+//
+// export interface GetSongActivityReportRetEvent {
+//     publicId: EventPublicId,
+//     name: string,
+//     startsAt: null | Date,
+//     durationMillis: bigint,
+//     isAllDay: boolean,
+//     endDateTime: null | Date,
+// };
+//
+// export interface GetSongActivityReportRet {
+//     events: GetSongActivityReportRetEvent[];
+// };
+//
+// export interface GetGlobalStatsFilterSpec {
+//     eventTypeIds: EventTypePublicId[];
+//     timing: keyof typeof GetSongActivityReportFilterSpecTimingFilter;
+//     eventTagIds: EventTagPublicId[];
+//     eventStatusIds: EventStatusPublicId[];
+//     songTagIds: SongTagPublicId[];
+// };
+//
+// export interface GetGlobalStatsArgs {
+//     filterSpec: GetGlobalStatsFilterSpec;
+// };
+//
+// export interface GetGlobalStatsRetEvent {
+//     publicId: EventPublicId,
+//     name: string,
+//     startsAt: null | Date,
+//     durationMillis: bigint,
+//     isAllDay: boolean,
+//     endDateTime: null | Date,
+//     typeId: EventTypePublicId | null,
+//     statusId: EventStatusPublicId | null,
+// };
+//
+// export interface GetGlobalStatsRetPopularSongOccurrance {
+//     songId: SongPublicId,
+//     songName: string,
+//     eventId: EventPublicId,
+//     eventName: string,
+//     typeId: EventTypePublicId | null,
+//     statusId: EventStatusPublicId | null,
+//     startsAt: null | Date,
+//     durationMillis: bigint,
+//     isAllDay: boolean,
+//     endDateTime: null | Date,
+// };
+//
+// export interface GetGlobalStatsRet {
+//     allEvents: GetGlobalStatsRetEvent[];
+//     popularSongsOccurrances: GetGlobalStatsRetPopularSongOccurrance[];
+//     // eventsQuery: string;
+//     // popularSongsQuery: string;
+// };
+//
+// MIGRATION_REFERENCE_END

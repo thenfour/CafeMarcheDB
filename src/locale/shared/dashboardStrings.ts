@@ -27,4 +27,7 @@ export const dashboardStrings = {
     "recovery.activityReports.description": label("Activity reports and their CSV exports are temporarily unavailable while band support is restored. Activity recording remains available."),
     "recovery.auditLog.title": label("Audit log"),
     "recovery.auditLog.description": label("Audit browsing and historical record details are temporarily unavailable while band support is restored. Audit recording remains available."),
+    "recovery.eventSongStatistics.title": label("Event statistics"),
+    "recovery.eventSongStatistics.description": label("Event statistics and popular-song reports are temporarily unavailable while band support is restored."),
+    "recovery.eventSongStatistics.songHistoryDescription": label("Song performance history is temporarily unavailable while band support is restored."),
 };

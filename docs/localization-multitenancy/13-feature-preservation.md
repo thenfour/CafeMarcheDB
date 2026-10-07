@@ -44,6 +44,8 @@ running tests. Neither compiler exclusions nor TypeScript suppressions are used.
 | `global-search` | Shell search, authorized domain readers, keyboard behavior, selected-band links and cache isolation. |
 | `activity-reports` | Activity timelines, facets, filtering, detail and CSV exports with explicit band/platform authorization, localized references, public identities and anonymization/redaction. Telemetry recording remains executable. |
 | `audit-log` | Protected audit browsing, table/user filters, historical JSON/detail links, clipboard and Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction. Audit recording remains executable. |
+| `legacy-event-song-filters` | Account for the old event/song facet RPC semantics through the existing search owner: timing/relevance, multi-tag matching, counts, localized facets, pagination and ordering with selected-band snapshots and public identities. |
+| `event-song-statistics` | Event statistics, popular-song occurrences and song performance history; timing/type/status/tag controls, visualization, bucket selection, expansion and event links with fresh band-scoped authorization and localized references. |
 | `markdown-editing` | Inline edit/cancel/save/save-and-close, authorization, feedback and refresh against explicit translation scope and locale. |
 | `settings-editors` | Existing settings/branding workflows through typed hives, including time-zone reanchoring and cache invalidation. Replaced storage APIs are historical references. |
 | `catalog-help` | Song-tag help Markdown alongside the migrated editor. Its rendering call is restored; browser verification remains pending. |
@@ -132,6 +134,14 @@ inventory entry. Generic table/field authorization regressions remain executable
 against the protected sign-in-method table. Existing reference blocks remain
 intact. The `audit-log` obligation stays pending; recovery notices and rejection
 tests establish isolation, while immutable audit writes remain active.
+
+Legacy event/song reader isolation adds eleven references from `8fdb9fd6`.
+The four RPCs, statistics page, song-history component and their obsolete API
+contracts remain searchable. Shared date predicates, autocomplete payloads,
+calendar helpers and the current search implementation stay executable. No
+existing test directly covered these four RPCs, and no test is newly deferred.
+New rejection and recovery-notice checks establish isolation, not replacement
+search/report parity. Both restoration obligations remain pending.
 
 ## Audit scope
 

@@ -1,217 +1,232 @@
-// based off the structure/logic of getEventFilterInfo
-
-import { cmauthorize, type CMAuthCtx } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
-import db, { Prisma } from "db";
-import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
-import type { SongTagPublicId } from "shared/publicId";
-import { SplitQuickFilter } from "shared/quickFilter";
-import { IsNullOrWhitespace } from "shared/utils";
-import * as db3 from "../db3";
-import { resolvePublicIds } from "../server/db3PublicIds";
-import { queryView } from "../server/db3QueryCore";
-import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "../shared/apiTypes";
+import { requireRestoredApplicationFeature } from "src/core/shared/applicationRecovery";
 
-interface TArgs {
-    filterSpec: {
-        pageSize: number;
-        page: number;
-        selection: SongSelectionFilter;
-
-        quickFilter: string,
-        tagIds: SongTagPublicId[];
-    }
-};
-
+// Reject every legacy input before reading authorization, domain rows or references.
 export default resolver.pipe(
-    cmauthorize(Permission.view_songs),
-    async (args: TArgs, ctx: CMAuthCtx): Promise<GetSongFilterInfoRet> => {
-        try {
-            const authorization = ctx.auth;
-            const u = ctx.auth.user;
-            if (!u?.role || u.role.permissions.length < 1) {
-                return MakeGetSongFilterInfoRet();
-            }
-
-            const tagIds = await resolvePublicIds(
-                db3.xSongTag,
-                args.filterSpec.tagIds,
-                authorization,
-                db,
-            );
-
-            const songFilterExpressions: string[] = [];
-            if (!IsNullOrWhitespace(args.filterSpec.quickFilter)) {
-
-                // tokens are AND'd together.
-                const tokens = SplitQuickFilter(args.filterSpec.quickFilter);
-                const tokensExpr = tokens.map(t => {
-                    const qf = MysqlEscape(t);
-                    const or = [
-                        `(Song.name LIKE '%${qf}%')`,
-                        `(Song.aliases LIKE '%${qf}%')`,
-                    ];
-                    return `(${or.join(" OR ")})`;
-                });
-
-                songFilterExpressions.push(`(${tokensExpr.join(" AND ")})`);
-            }
-
-            let havingClause = "";
-
-            if (tagIds.length > 0) {
-                songFilterExpressions.push(`(SongTagAssociation.tagId IN (${tagIds}))`);
-                // make sure songs have matched ALL tags, not just any.
-                havingClause = `
-                HAVING
-					COUNT(DISTINCT SongTagAssociation.tagId) = ${tagIds.length}
-                `;
-            }
-
-            const songFilterExpression = songFilterExpressions.length > 0 ? `(${songFilterExpressions.join(" and ")})` : "";
-
-            const AND: string[] = [];
-            AND.push(db3.xSong.SqlGetVisFilterExpression({ auth: ctx.auth, tableAlias: "Song" }));
-
-            if (!IsNullOrWhitespace(songFilterExpression)) {
-                AND.push(songFilterExpression);
-            }
-
-            // this CTE should return a list of songs which match the filter.
-            const filteredSongsCTE = `
-        WITH RelevantSongs as (
-            select
-                ESLS.songID
-            from 
-                Event E
-            join
-                EventSongList ESL on E.id = ESL.eventId
-            join
-                EventSongListSong ESLS on ESL.id = ESLS.eventSongListId
-            where 
-                ${EventRelevantFilterExpression({ startsAtExpr: `startsAt` })}
-            group by
-                ESLS.songID
-            order by
-                songID
-            ),
-        FilteredSongs AS (
-            SELECT 
-                Song.id AS SongId,
-                Song.name
-            FROM 
-                Song
-            ${args.filterSpec.selection === "relevant" ? "inner join RelevantSongs RS on RS.songId = Song.id" : ""}
-            left JOIN 
-                SongTagAssociation ON Song.id = SongTagAssociation.songId
-            WHERE
-                ${AND.join("\n AND ")}
-            group by
-                Song.id
-            ${havingClause}
-            )
-        `;
-
-            // TAGS
-            const tagsQuery = `
-        ${filteredSongsCTE}
-    select
-        ST.*,
-        count(distinct(FS.SongId)) as song_count
-    from
-        FilteredSongs as FS
-    join 
-        SongTagAssociation as STA on FS.SongId = STA.songId
-    join 
-        SongTag as ST on ST.id = STA.tagId
-    group by
-        ST.id
-    order by
-        -- count(distinct(FS.SongId)) desc, -- seems natural to do this but it causes things to constantly reorder
-        ST.sortOrder asc
-        `;
-
-            const tagsResult: ({ song_count: bigint } & Prisma.SongTagGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(tagsQuery));
-
-            const tags: GetEventFilterInfoChipInfo<SongTagPublicId>[] = tagsResult.map(r => ({
-                color: r.color,
-                iconName: null,
-                id: db3.xSongTag.parseIdentity(r.publicId),
-                label: r.text,
-                tooltip: r.description,
-                rowCount: new Number(r.song_count).valueOf(),
-            }));
-
-
-
-            // PAGINATED RESULTS LIST
-            const paginatedResultQuery = `
-        ${filteredSongsCTE}
-    select
-        FS.SongId
-    from
-        FilteredSongs as FS
-    order by
-        FS.name ASC
-    limit
-        ${args.filterSpec.pageSize * args.filterSpec.page},${args.filterSpec.pageSize}
-
-        `;
-
-            const songIds: { SongId: number }[] = await db.$queryRaw(Prisma.raw(paginatedResultQuery));
-
-            // TOTAL filtered row count
-            const totalRowCountQuery = `
-        ${filteredSongsCTE}
-    select
-		count(*) as rowCount
-    from
-        FilteredSongs
-        `;
-
-            const rowCountResult: { rowCount: bigint, futureCount: bigint, pastCount: bigint }[] = await db.$queryRaw(Prisma.raw(totalRowCountQuery));
-
-
-
-
-
-            // FULL EVENT DETAILS USING DB3.
-            let fullSongs: db3.SongSearchDto[] = [];
-            if (songIds.length) {
-                const queryResult = await queryView({
-                    cmdbQueryContext: "getSongFilterInfo",
-                    view: db3.songSearchView,
-                    filter: {},
-                    orderBy: undefined,
-                }, authorization, db, {
-                    trustedNaturalPrimaryKeys: songIds.map(song => song.SongId),
-                });
-
-                fullSongs = queryResult.items;
-            }
-
-
-            const isUserSysadmin = authorization.effectivePermissions.includesName(Permission.sysadmin);
-
-            return {
-                rowCount: new Number(rowCountResult[0]!.rowCount).valueOf(),
-                songIds: fullSongs.map(song => song.publicId),
-
-                tags,
-                // Raw SQL contains trusted natural IDs and remains server-only.
-                tagsQuery: isUserSysadmin ? tagsQuery : "",
-                paginatedResultQuery: isUserSysadmin ? paginatedResultQuery : "",
-                totalRowCountQuery: isUserSysadmin ? totalRowCountQuery : "",
-
-                fullSongs,
-            };
-        } catch (e) {
-            console.error(e);
-            throw (e);
-        }
-    }
+    resolver.authorize(Permission.login),
+    async (_args: unknown): Promise<never> => requireRestoredApplicationFeature("legacyEventSongFilters"),
 );
 
-
-
+// MIGRATION_RESTORE: legacy-event-song-filters
+// Source: 8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/queries/getSongFilterInfo.ts:1-214
+// Reason: Legacy event/song facet RPCs use obsolete role/catalog contracts and lack selected-band snapshot ownership; current search pages use the separate search owner.
+// Restore: Account for legacy event/song filtering through the current search owner, retaining timing/relevance, multi-tag matching, counts, facets, pagination and ordering with selected-band authorization, localized references and public identities; avoid a second search implementation.
+// Verification: Verify equivalent filter semantics, two-band isolation, hidden/deleted references, strict request limits, fresh revocation, consistent rows/counts/facets and browser search workflows before closing this obligation.
+// SHA256: f4c565857d61ddd62d69ce301edc1dbc7e2904b458e0f495c6fcc2dee005673d
+// MIGRATION_REFERENCE_BEGIN
+// // based off the structure/logic of getEventFilterInfo
+//
+// import { cmauthorize, type CMAuthCtx } from "@/src/auth/server/cmResolver";
+// import { resolver } from "@blitzjs/rpc";
+// import db, { Prisma } from "db";
+// import { MysqlEscape } from "shared/mysqlUtils";
+// import { Permission } from "shared/permissions";
+// import type { SongTagPublicId } from "shared/publicId";
+// import { SplitQuickFilter } from "shared/quickFilter";
+// import { IsNullOrWhitespace } from "shared/utils";
+// import * as db3 from "../db3";
+// import { resolvePublicIds } from "../server/db3PublicIds";
+// import { queryView } from "../server/db3QueryCore";
+// import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "../shared/apiTypes";
+//
+// interface TArgs {
+//     filterSpec: {
+//         pageSize: number;
+//         page: number;
+//         selection: SongSelectionFilter;
+//
+//         quickFilter: string,
+//         tagIds: SongTagPublicId[];
+//     }
+// };
+//
+// export default resolver.pipe(
+//     cmauthorize(Permission.view_songs),
+//     async (args: TArgs, ctx: CMAuthCtx): Promise<GetSongFilterInfoRet> => {
+//         try {
+//             const authorization = ctx.auth;
+//             const u = ctx.auth.user;
+//             if (!u?.role || u.role.permissions.length < 1) {
+//                 return MakeGetSongFilterInfoRet();
+//             }
+//
+//             const tagIds = await resolvePublicIds(
+//                 db3.xSongTag,
+//                 args.filterSpec.tagIds,
+//                 authorization,
+//                 db,
+//             );
+//
+//             const songFilterExpressions: string[] = [];
+//             if (!IsNullOrWhitespace(args.filterSpec.quickFilter)) {
+//
+//                 // tokens are AND'd together.
+//                 const tokens = SplitQuickFilter(args.filterSpec.quickFilter);
+//                 const tokensExpr = tokens.map(t => {
+//                     const qf = MysqlEscape(t);
+//                     const or = [
+//                         `(Song.name LIKE '%${qf}%')`,
+//                         `(Song.aliases LIKE '%${qf}%')`,
+//                     ];
+//                     return `(${or.join(" OR ")})`;
+//                 });
+//
+//                 songFilterExpressions.push(`(${tokensExpr.join(" AND ")})`);
+//             }
+//
+//             let havingClause = "";
+//
+//             if (tagIds.length > 0) {
+//                 songFilterExpressions.push(`(SongTagAssociation.tagId IN (${tagIds}))`);
+//                 // make sure songs have matched ALL tags, not just any.
+//                 havingClause = `
+//                 HAVING
+// 					COUNT(DISTINCT SongTagAssociation.tagId) = ${tagIds.length}
+//                 `;
+//             }
+//
+//             const songFilterExpression = songFilterExpressions.length > 0 ? `(${songFilterExpressions.join(" and ")})` : "";
+//
+//             const AND: string[] = [];
+//             AND.push(db3.xSong.SqlGetVisFilterExpression({ auth: ctx.auth, tableAlias: "Song" }));
+//
+//             if (!IsNullOrWhitespace(songFilterExpression)) {
+//                 AND.push(songFilterExpression);
+//             }
+//
+//             // this CTE should return a list of songs which match the filter.
+//             const filteredSongsCTE = `
+//         WITH RelevantSongs as (
+//             select
+//                 ESLS.songID
+//             from
+//                 Event E
+//             join
+//                 EventSongList ESL on E.id = ESL.eventId
+//             join
+//                 EventSongListSong ESLS on ESL.id = ESLS.eventSongListId
+//             where
+//                 ${EventRelevantFilterExpression({ startsAtExpr: `startsAt` })}
+//             group by
+//                 ESLS.songID
+//             order by
+//                 songID
+//             ),
+//         FilteredSongs AS (
+//             SELECT
+//                 Song.id AS SongId,
+//                 Song.name
+//             FROM
+//                 Song
+//             ${args.filterSpec.selection === "relevant" ? "inner join RelevantSongs RS on RS.songId = Song.id" : ""}
+//             left JOIN
+//                 SongTagAssociation ON Song.id = SongTagAssociation.songId
+//             WHERE
+//                 ${AND.join("\n AND ")}
+//             group by
+//                 Song.id
+//             ${havingClause}
+//             )
+//         `;
+//
+//             // TAGS
+//             const tagsQuery = `
+//         ${filteredSongsCTE}
+//     select
+//         ST.*,
+//         count(distinct(FS.SongId)) as song_count
+//     from
+//         FilteredSongs as FS
+//     join
+//         SongTagAssociation as STA on FS.SongId = STA.songId
+//     join
+//         SongTag as ST on ST.id = STA.tagId
+//     group by
+//         ST.id
+//     order by
+//         -- count(distinct(FS.SongId)) desc, -- seems natural to do this but it causes things to constantly reorder
+//         ST.sortOrder asc
+//         `;
+//
+//             const tagsResult: ({ song_count: bigint } & Prisma.SongTagGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(tagsQuery));
+//
+//             const tags: GetEventFilterInfoChipInfo<SongTagPublicId>[] = tagsResult.map(r => ({
+//                 color: r.color,
+//                 iconName: null,
+//                 id: db3.xSongTag.parseIdentity(r.publicId),
+//                 label: r.text,
+//                 tooltip: r.description,
+//                 rowCount: new Number(r.song_count).valueOf(),
+//             }));
+//
+//
+//
+//             // PAGINATED RESULTS LIST
+//             const paginatedResultQuery = `
+//         ${filteredSongsCTE}
+//     select
+//         FS.SongId
+//     from
+//         FilteredSongs as FS
+//     order by
+//         FS.name ASC
+//     limit
+//         ${args.filterSpec.pageSize * args.filterSpec.page},${args.filterSpec.pageSize}
+//
+//         `;
+//
+//             const songIds: { SongId: number }[] = await db.$queryRaw(Prisma.raw(paginatedResultQuery));
+//
+//             // TOTAL filtered row count
+//             const totalRowCountQuery = `
+//         ${filteredSongsCTE}
+//     select
+// 		count(*) as rowCount
+//     from
+//         FilteredSongs
+//         `;
+//
+//             const rowCountResult: { rowCount: bigint, futureCount: bigint, pastCount: bigint }[] = await db.$queryRaw(Prisma.raw(totalRowCountQuery));
+//
+//
+//
+//
+//
+//             // FULL EVENT DETAILS USING DB3.
+//             let fullSongs: db3.SongSearchDto[] = [];
+//             if (songIds.length) {
+//                 const queryResult = await queryView({
+//                     cmdbQueryContext: "getSongFilterInfo",
+//                     view: db3.songSearchView,
+//                     filter: {},
+//                     orderBy: undefined,
+//                 }, authorization, db, {
+//                     trustedNaturalPrimaryKeys: songIds.map(song => song.SongId),
+//                 });
+//
+//                 fullSongs = queryResult.items;
+//             }
+//
+//
+//             const isUserSysadmin = authorization.effectivePermissions.includesName(Permission.sysadmin);
+//
+//             return {
+//                 rowCount: new Number(rowCountResult[0]!.rowCount).valueOf(),
+//                 songIds: fullSongs.map(song => song.publicId),
+//
+//                 tags,
+//                 // Raw SQL contains trusted natural IDs and remains server-only.
+//                 tagsQuery: isUserSysadmin ? tagsQuery : "",
+//                 paginatedResultQuery: isUserSysadmin ? paginatedResultQuery : "",
+//                 totalRowCountQuery: isUserSysadmin ? totalRowCountQuery : "",
+//
+//                 fullSongs,
+//             };
+//         } catch (e) {
+//             console.error(e);
+//             throw (e);
+//         }
+//     }
+// );
+// MIGRATION_REFERENCE_END

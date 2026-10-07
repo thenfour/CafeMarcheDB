@@ -93,13 +93,23 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** repair or isolate event filtering and its related
-readers, starting at `getEventFilterInfo.ts:38`, where authorization still assumes
-`User.role`. Trace the complete filter/reference/page boundary before adapting its
-owning contracts. Then continue the remaining File/song/wiki payload roots. File member/instrument relations still
+**Next implementation slice:** repair or isolate event import preview and its
+callers, starting at `getImportEventData.ts:187`. Its Prisma/time-zone boundary
+fails type comparison, its authorization does not select a band, and its default
+invitation lookup still uses the removed UserTag model. Keep the migrated event
+creation transaction active while recovering the preview contract. Then continue
+the remaining File/song/wiki payload roots. File member/instrument relations still
 use removed person/catalog fields, and legacy payloads still include
 `Permission.roles`. Adapt their owning contracts before their consumers; isolate
 deferred pages and non-page entry points together.
+
+Four legacy event/song SQL readers are now isolated: the unused event/song facet
+RPCs and the statistics/song-history RPCs require login and reject before database
+access. Statistics and song history show registered localized notices and retain
+their existing page/tab authorization. Their original source and obsolete API
+contracts are preserved in eleven references. The current search path, date
+predicates, autocomplete/calendar helpers and migrated creation/attendance/Setlist
+Plan writes remain active. Search/report parity and A0 remain open.
 
 Audit-log browsing is coherently isolated: the protected page shows registered
 localized recovery text, both historical-reference/filter RPCs reject before
@@ -300,6 +310,8 @@ implementation/test references and verification obligations for audited removals
 | Custom Links | Scoped editor CRUD, file selection/serving, all redirect modes and visits are active. Public URLs require explicit `bandPublicId`; missing, malformed/repeated and unavailable bands return 404. The narrow read-only File target does not enable unfinished general file APIs. | Verify in the built application during A0/A1; integrate URLs with band portal roots when full routing lands after A1. |
 | Telemetry recording | Recording uses explicit presentation context, server-owned actor/internal IDs and band-scoped associations. The formatting locale is separate from raw device locale/language; unregistered/deleted locales remain null. | Verify recording in the built app during A0. Calendar-feed recording uses the subscriber and band/locale from its authorized snapshot. Activity-report recovery is tracked separately below. |
 | Audit log | The Sysadmin-protected page displays a localized recovery notice. Both historical-reference/filter RPCs reject before database access; the generic Change descriptor and audit JSON viewer are unregistered. Original source/assertions are preserved under `audit-log`. Audit recording and redaction remain active. | Restore audit browsing, filters, historical detail links and JSON/clipboard/Markdown inspection with explicit platform/band policy, fresh authorization, localized/public references and redaction; verify the complete built-browser workflow. |
+| Legacy event/song facet RPCs | Both unused endpoints reject before database access; their SQL and obsolete response helpers are preserved under `legacy-event-song-filters`. Current search pages use the separate search owner and are unchanged. | Verify equivalent timing/relevance, multi-tag matching, counts/facets, pagination and ordering through the current search owner with explicit band snapshots, localized references and public identities. |
+| Event statistics and song history | Statistics page and the song history tab display registered localized notices. Both RPCs reject before database access; original queries, controls, charts, event links and API types are preserved under `event-song-statistics`. Existing report/song authorization remains enforced. | Restore and verify the complete statistics/popular-song/history workflow with fresh band authorization, localized catalogs, public references and consistent aggregation. |
 | Activity-report delivery | `/backstage/featureReports` explains temporary unavailability. All five report RPCs require login and reject before database access, including CSV export. Report implementations and affected specifications are preserved; telemetry recording remains active. | Restore explicit report ownership/permissions, localized references, timelines, facets, filtering, detail and CSV behavior under `activity-reports`; reactivate specifications and verify two-band/browser isolation. |
 | Legacy DB3 domains | Selected-band queries/row services reject undeclared ownership policies. | Migrate required domains for A0/A1; keep other domains coherently unavailable. |
 | Dashboard content and search | Bootstrap includes migrated shared event catalogs but omits events, announcements, role metadata, custom menus and other deferred catalogs. Home explains the restriction; global search is removed from the shell. Legacy sidebar/direct routes and non-page entry points are not yet isolated. | Finish coherent route/endpoint/source isolation during A0; restore content required by core workflows during A1. |

@@ -1,313 +1,325 @@
-import { AdminInspectObject } from "@/src/core/components/CMCoreComponents2";
-import { StandardVariationSpec } from "@/src/core/components/color/palette";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
-import { BlitzPage } from "@blitzjs/next";
-import { useQuery } from "@blitzjs/rpc";
-import React, { Suspense } from 'react';
-import { arraysContainSameValues } from "shared/arrayUtils";
-import { getEnumValues } from "shared/utils";
-import { ActivityVis, ActivityVisBucket } from "src/core/components/ActivityVis";
-import { CMChip } from "src/core/components/CMChip";
-import { CMSinglePageSurfaceCard, EventTextLink } from "src/core/components/CMCoreComponents";
-import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from "src/core/components/search/FilterControl";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
-import { EventAPI, EventStatusSignificance, EventTypeSignificance } from "src/core/db3/db3";
-import getGlobalStats from "src/core/db3/queries/getGlobalStats";
-import { GetGlobalStatsFilterSpec, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance, GetSongActivityReportFilterSpecTimingFilter } from "src/core/db3/shared/apiTypes";
-import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, SongPublicId, SongTagPublicId } from "shared/publicId";
+import { DeferredEventSongStatisticsPage } from "src/core/components/DeferredFeaturePage";
 
+export default DeferredEventSongStatisticsPage;
 
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface GlobalStatsFilterControlsProps {
-    filterSpec: GetGlobalStatsFilterSpec;
-    setFilterSpec: (s: GetGlobalStatsFilterSpec) => void;
-    defaultFilterSpec: GetGlobalStatsFilterSpec;
-}
-
-export const GlobalStatsFilterControls = ({ filterSpec, setFilterSpec, defaultFilterSpec }: GlobalStatsFilterControlsProps) => {
-    const dashboardContext = useDashboardContext();
-
-    const hasExtraFilters = () => {
-        if (!arraysContainSameValues(filterSpec.eventStatusIds, defaultFilterSpec.eventStatusIds)) return true;
-        if (!arraysContainSameValues(filterSpec.eventTagIds, defaultFilterSpec.eventTagIds)) return true;
-        if (!arraysContainSameValues(filterSpec.eventTypeIds, defaultFilterSpec.eventTypeIds)) return true;
-        if (!arraysContainSameValues(filterSpec.songTagIds, defaultFilterSpec.songTagIds)) return true;
-        return false;
-    };
-
-    const hasAnyFilters = () => {
-        if (filterSpec.timing !== defaultFilterSpec.timing) return true;
-        return hasExtraFilters();
-    };
-
-    const filters = <>
-        <ChipFilterGroup
-            style='radio'
-            items={getEnumValues(GetSongActivityReportFilterSpecTimingFilter).map(x => ({
-                id: x as keyof typeof GetSongActivityReportFilterSpecTimingFilter,
-                label: x,
-            }))}
-            onChange={(ns) => setFilterSpec({ ...filterSpec, timing: ns[0]! })}
-            selectedIds={[filterSpec.timing]}
-        />
-    </>;
-
-    const extFilters = <>
-        <div className='divider'></div>
-        <ChipFilterGroup
-            style='toggle'
-            items={dashboardContext.eventType.map((s): ChipFilterGroupItem<EventTypePublicId> => ({
-                id: s.publicId,
-                label: s.name,
-                color: s.color,
-            }))}
-            onChange={(ns) => setFilterSpec({ ...filterSpec, eventTypeIds: ns })}
-            selectedIds={filterSpec.eventTypeIds}
-        />
-        <ChipFilterGroup
-            style='toggle'
-            items={dashboardContext.eventStatus.map((s): ChipFilterGroupItem<EventStatusPublicId> => ({
-                id: s.publicId,
-                label: s.name,
-                color: s.color,
-                shape: 'rectangle',
-            }))}
-            onChange={(ns) => setFilterSpec({ ...filterSpec, eventStatusIds: ns })}
-            selectedIds={filterSpec.eventStatusIds}
-        />
-        <ChipFilterGroup
-            style='toggle'
-            items={dashboardContext.eventTag.map((s): ChipFilterGroupItem<EventTagPublicId> => ({
-                id: s.publicId,
-                label: s.name,
-                color: s.color,
-            }))}
-            onChange={(ns) => setFilterSpec({ ...filterSpec, eventTagIds: ns })}
-            selectedIds={filterSpec.eventTagIds}
-        />
-        <div className='divider'></div>
-        <ChipFilterGroup
-            style='toggle'
-            items={dashboardContext.songTag.map((s): ChipFilterGroupItem<SongTagPublicId> => ({
-                id: s.publicId,
-                label: s.name,
-                color: s.color,
-            }))}
-            onChange={(ns) => setFilterSpec({ ...filterSpec, songTagIds: ns })}
-            selectedIds={filterSpec.songTagIds}
-        />
-    </>;
-
-    return <FilterControls
-        inCard={true}
-        hasAnyFilters={hasAnyFilters()}
-        onResetFilter={() => setFilterSpec(defaultFilterSpec)}
-        primaryFilter={filters}
-        extraFilter={extFilters}
-        hasExtraFilters={hasExtraFilters()}
-    />;
-};
-
-
-
-
-
-
-
-
-
-const StatsPagePopularSong = ({ occurrances, expanded }: { occurrances: GetGlobalStatsRetPopularSongOccurrance[], expanded: boolean }) => {
-    const [selectedBucket, setSelectedBucket] = React.useState<null | ActivityVisBucket<GetGlobalStatsRetPopularSongOccurrance>>(null);
-    const dashboardContext = useDashboardContext();
-
-    return <div>
-        <h2>
-            <a
-                href={dashboardContext.routingApi.getURIForSong({
-                    publicId: occurrances[0]!.songId,
-                    name: occurrances[0]!.songName,
-                })}
-                rel="noreferrer"
-                target="_blank"
-            >
-                {occurrances[0]!.songName}</a>
-            ({occurrances.length})
-        </h2>
-        {expanded && <>
-            <ActivityVis
-                items={occurrances.filter(a => !!a.startsAt)}
-                getItemInfo={x => {
-                    return {
-                        occursAt: x.startsAt!,
-                    }
-                }}
-                getBucketInfo={(b) => {
-                    return {
-                        tooltip: <ul>{b.items.map(x => <li key={x.item.eventId}>{x.item.eventName}</li>)}</ul>
-                    };
-                }}
-                selectedMonthBucketId={selectedBucket?.yearMonthBucketId || null}
-                onBucketClick={(b) => setSelectedBucket(b)}
-            />
-            <div>
-                <ul>
-                    {selectedBucket?.items.map(i => {
-                        return <li key={i.item.eventId}>
-                            <EventTextLink event={{ publicId: i.item.eventId, name: i.item.eventName, startsAt: i.item.startsAt, statusId: i.item.statusId, typeId: i.item.typeId }} />
-                        </li>;
-
-                    })}
-                </ul>
-            </div>
-        </>}
-    </div>
-};
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface StatsPageQuerierProps {
-    filterSpec: GetGlobalStatsFilterSpec,
-    setResults: (x: GetGlobalStatsRet) => void;
-}
-const StatsPageQuerier = (props: StatsPageQuerierProps) => {
-    const [results, { refetch }] = useQuery(getGlobalStats, {
-        filterSpec: props.filterSpec,
-    });
-    //const [results, queryInfo] = useQuery(getSongActivityReport, { songId: props.songId, filterSpec: props.filterSpec });
-    React.useEffect(() => {
-        props.setResults(results);
-    }, [results]);
-    return <div></div>;
-};
-
-
-
-const StatsPageInner = () => {
-    const dashboardContext = useDashboardContext();
-
-    const defaultFilterSpec: GetGlobalStatsFilterSpec = {
-        // primary
-        timing: "All",
-
-        // extra
-        eventStatusIds: dashboardContext.eventStatus.filter(s => s.significance === EventStatusSignificance.FinalConfirmation).map(s => s.publicId),// dashboardContext.eventStatus.filter(s => s.significance !== EventStatusSignificance.Cancelled).map(s => s.publicId), // everything
-        eventTypeIds: dashboardContext.eventType.filter(t => t.significance === EventTypeSignificance.Concert).map(t => t.publicId), // concerts & rehearsals & weekend are the only thing that matter for songs
-        eventTagIds: [],
-        songTagIds: [],
-    };
-
-    const [expanded, setExpanded] = React.useState<boolean>(true);
-    const [filterSpec, setFilterSpec] = React.useState<GetGlobalStatsFilterSpec>(defaultFilterSpec);
-    const [results, setResults] = React.useState<GetGlobalStatsRet>({
-        allEvents: [],
-        //eventsQuery: "",
-        popularSongsOccurrances: [],
-        //popularSongsQuery: "",
-    });
-
-    const [selectedEventBucket, setSelectedEventBucket] = React.useState<null | ActivityVisBucket<GetGlobalStatsRetEvent>>(null);
-
-    const songMap = new Map<SongPublicId, GetGlobalStatsRetPopularSongOccurrance[]>();
-    results.popularSongsOccurrances.forEach(s => {
-        if (songMap.has(s.songId)) {
-            songMap.get(s.songId)?.push(s);
-        } else {
-            songMap.set(s.songId, [s]);
-        }
-    });
-
-    const sortedSongs = [...songMap.values()];
-    sortedSongs.sort((a, b) => {
-        return b.length - a.length; // desc
-    });
-
-    return <div>
-        <AdminInspectObject src={results} label="results" />
-
-        <GlobalStatsFilterControls
-            defaultFilterSpec={defaultFilterSpec}
-            filterSpec={filterSpec}
-            setFilterSpec={setFilterSpec}
-        />
-
-        <CMChip
-            onClick={() => setExpanded(!expanded)}
-            shape="rectangle"
-            variation={{ ...StandardVariationSpec.Strong, selected: expanded }}
-        >
-            Show graphs
-        </CMChip>
-
-        <Suspense>
-            <StatsPageQuerier filterSpec={filterSpec} setResults={setResults} />
-        </Suspense>
-
-        <h1>Event activity ({results.allEvents.length})</h1>
-
-        {expanded &&
-            <ActivityVis
-                className="events"
-                items={results.allEvents.filter(e => !!e.startsAt)}
-                getItemInfo={(e) => {
-                    return {
-                        occursAt: e.startsAt!,
-                    };
-                }}
-                getBucketInfo={(b) => {
-                    return {
-                        tooltip: <ul>{b.items.map(x => <li key={x.item.publicId}>{EventAPI.getLabel(x.item)}</li>)}</ul>
-                    };
-                }}
-                selectedMonthBucketId={selectedEventBucket?.yearMonthBucketId || null}
-                onBucketClick={(b) => setSelectedEventBucket(b)}
-            />}
-
-        <div>
-            <ul>
-                {selectedEventBucket?.items.map(i => {
-                    return <li key={i.item.publicId}>
-                        <EventTextLink event={i.item} />
-                        {/* <a rel="noreferrer" target="_blank" href={getURIForEvent(i.item)}>
-                            {EventAPI.getLabel(i.item)}
-                        </a> */}
-                    </li>;
-
-                })}
-            </ul>
-        </div>
-
-        <h1>Most popular songs (top 10)</h1>
-        {sortedSongs.map(s => {
-            return <StatsPagePopularSong key={s[0]!.songId} occurrances={s} expanded={expanded} />;
-        })}
-    </div>;
-};
-
-const MainContent = () => {
-
-    return <>
-        <CMSinglePageSurfaceCard>
-            <div className="content">
-                <LocalizedMarkdown setting="StatsPage_markdown"></LocalizedMarkdown>
-                <Suspense>
-                    <StatsPageInner />
-                </Suspense>
-            </div>
-        </CMSinglePageSurfaceCard>
-    </>;
-};
-
-
-const StatsPage: BlitzPage = () => {
-    return (
-        <DashboardLayout title="Global Stats">
-            <MainContent />
-        </DashboardLayout>
-    )
-}
-
-export default StatsPage;
+// MIGRATION_RESTORE: event-song-statistics
+// Source: 8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/pages/backstage/stats.tsx:1-313
+// Reason: Event statistics and song history use legacy SQL readers without selected-band snapshots and depend on removed role/catalog fields.
+// Restore: Restore event statistics, popular-song occurrences and song performance history with timing/type/status/tag filters, visualization, bucket selection, expansion and event links using fresh band-scoped authorization, public identities and localized catalog labels.
+// Verification: Test two bands, platform policy, permission/member revocation, hidden/deleted songs/events, date boundaries, consistent aggregates and public references; exercise statistics and song history controls in the built browser.
+// SHA256: 2486c760974560b74da292a80d3da49706ffd8fb3b12717d594a43dfb1fd435b
+// MIGRATION_REFERENCE_BEGIN
+// import { AdminInspectObject } from "@/src/core/components/CMCoreComponents2";
+// import { StandardVariationSpec } from "@/src/core/components/color/palette";
+// import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+// import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
+// import { BlitzPage } from "@blitzjs/next";
+// import { useQuery } from "@blitzjs/rpc";
+// import React, { Suspense } from 'react';
+// import { arraysContainSameValues } from "shared/arrayUtils";
+// import { getEnumValues } from "shared/utils";
+// import { ActivityVis, ActivityVisBucket } from "src/core/components/ActivityVis";
+// import { CMChip } from "src/core/components/CMChip";
+// import { CMSinglePageSurfaceCard, EventTextLink } from "src/core/components/CMCoreComponents";
+// import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from "src/core/components/search/FilterControl";
+// import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+// import { EventAPI, EventStatusSignificance, EventTypeSignificance } from "src/core/db3/db3";
+// import getGlobalStats from "src/core/db3/queries/getGlobalStats";
+// import { GetGlobalStatsFilterSpec, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance, GetSongActivityReportFilterSpecTimingFilter } from "src/core/db3/shared/apiTypes";
+// import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId, SongPublicId, SongTagPublicId } from "shared/publicId";
+//
+//
+//
+//
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// interface GlobalStatsFilterControlsProps {
+//     filterSpec: GetGlobalStatsFilterSpec;
+//     setFilterSpec: (s: GetGlobalStatsFilterSpec) => void;
+//     defaultFilterSpec: GetGlobalStatsFilterSpec;
+// }
+//
+// export const GlobalStatsFilterControls = ({ filterSpec, setFilterSpec, defaultFilterSpec }: GlobalStatsFilterControlsProps) => {
+//     const dashboardContext = useDashboardContext();
+//
+//     const hasExtraFilters = () => {
+//         if (!arraysContainSameValues(filterSpec.eventStatusIds, defaultFilterSpec.eventStatusIds)) return true;
+//         if (!arraysContainSameValues(filterSpec.eventTagIds, defaultFilterSpec.eventTagIds)) return true;
+//         if (!arraysContainSameValues(filterSpec.eventTypeIds, defaultFilterSpec.eventTypeIds)) return true;
+//         if (!arraysContainSameValues(filterSpec.songTagIds, defaultFilterSpec.songTagIds)) return true;
+//         return false;
+//     };
+//
+//     const hasAnyFilters = () => {
+//         if (filterSpec.timing !== defaultFilterSpec.timing) return true;
+//         return hasExtraFilters();
+//     };
+//
+//     const filters = <>
+//         <ChipFilterGroup
+//             style='radio'
+//             items={getEnumValues(GetSongActivityReportFilterSpecTimingFilter).map(x => ({
+//                 id: x as keyof typeof GetSongActivityReportFilterSpecTimingFilter,
+//                 label: x,
+//             }))}
+//             onChange={(ns) => setFilterSpec({ ...filterSpec, timing: ns[0]! })}
+//             selectedIds={[filterSpec.timing]}
+//         />
+//     </>;
+//
+//     const extFilters = <>
+//         <div className='divider'></div>
+//         <ChipFilterGroup
+//             style='toggle'
+//             items={dashboardContext.eventType.map((s): ChipFilterGroupItem<EventTypePublicId> => ({
+//                 id: s.publicId,
+//                 label: s.name,
+//                 color: s.color,
+//             }))}
+//             onChange={(ns) => setFilterSpec({ ...filterSpec, eventTypeIds: ns })}
+//             selectedIds={filterSpec.eventTypeIds}
+//         />
+//         <ChipFilterGroup
+//             style='toggle'
+//             items={dashboardContext.eventStatus.map((s): ChipFilterGroupItem<EventStatusPublicId> => ({
+//                 id: s.publicId,
+//                 label: s.name,
+//                 color: s.color,
+//                 shape: 'rectangle',
+//             }))}
+//             onChange={(ns) => setFilterSpec({ ...filterSpec, eventStatusIds: ns })}
+//             selectedIds={filterSpec.eventStatusIds}
+//         />
+//         <ChipFilterGroup
+//             style='toggle'
+//             items={dashboardContext.eventTag.map((s): ChipFilterGroupItem<EventTagPublicId> => ({
+//                 id: s.publicId,
+//                 label: s.name,
+//                 color: s.color,
+//             }))}
+//             onChange={(ns) => setFilterSpec({ ...filterSpec, eventTagIds: ns })}
+//             selectedIds={filterSpec.eventTagIds}
+//         />
+//         <div className='divider'></div>
+//         <ChipFilterGroup
+//             style='toggle'
+//             items={dashboardContext.songTag.map((s): ChipFilterGroupItem<SongTagPublicId> => ({
+//                 id: s.publicId,
+//                 label: s.name,
+//                 color: s.color,
+//             }))}
+//             onChange={(ns) => setFilterSpec({ ...filterSpec, songTagIds: ns })}
+//             selectedIds={filterSpec.songTagIds}
+//         />
+//     </>;
+//
+//     return <FilterControls
+//         inCard={true}
+//         hasAnyFilters={hasAnyFilters()}
+//         onResetFilter={() => setFilterSpec(defaultFilterSpec)}
+//         primaryFilter={filters}
+//         extraFilter={extFilters}
+//         hasExtraFilters={hasExtraFilters()}
+//     />;
+// };
+//
+//
+//
+//
+//
+//
+//
+//
+//
+// const StatsPagePopularSong = ({ occurrances, expanded }: { occurrances: GetGlobalStatsRetPopularSongOccurrance[], expanded: boolean }) => {
+//     const [selectedBucket, setSelectedBucket] = React.useState<null | ActivityVisBucket<GetGlobalStatsRetPopularSongOccurrance>>(null);
+//     const dashboardContext = useDashboardContext();
+//
+//     return <div>
+//         <h2>
+//             <a
+//                 href={dashboardContext.routingApi.getURIForSong({
+//                     publicId: occurrances[0]!.songId,
+//                     name: occurrances[0]!.songName,
+//                 })}
+//                 rel="noreferrer"
+//                 target="_blank"
+//             >
+//                 {occurrances[0]!.songName}</a>
+//             ({occurrances.length})
+//         </h2>
+//         {expanded && <>
+//             <ActivityVis
+//                 items={occurrances.filter(a => !!a.startsAt)}
+//                 getItemInfo={x => {
+//                     return {
+//                         occursAt: x.startsAt!,
+//                     }
+//                 }}
+//                 getBucketInfo={(b) => {
+//                     return {
+//                         tooltip: <ul>{b.items.map(x => <li key={x.item.eventId}>{x.item.eventName}</li>)}</ul>
+//                     };
+//                 }}
+//                 selectedMonthBucketId={selectedBucket?.yearMonthBucketId || null}
+//                 onBucketClick={(b) => setSelectedBucket(b)}
+//             />
+//             <div>
+//                 <ul>
+//                     {selectedBucket?.items.map(i => {
+//                         return <li key={i.item.eventId}>
+//                             <EventTextLink event={{ publicId: i.item.eventId, name: i.item.eventName, startsAt: i.item.startsAt, statusId: i.item.statusId, typeId: i.item.typeId }} />
+//                         </li>;
+//
+//                     })}
+//                 </ul>
+//             </div>
+//         </>}
+//     </div>
+// };
+//
+//
+//
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// interface StatsPageQuerierProps {
+//     filterSpec: GetGlobalStatsFilterSpec,
+//     setResults: (x: GetGlobalStatsRet) => void;
+// }
+// const StatsPageQuerier = (props: StatsPageQuerierProps) => {
+//     const [results, { refetch }] = useQuery(getGlobalStats, {
+//         filterSpec: props.filterSpec,
+//     });
+//     //const [results, queryInfo] = useQuery(getSongActivityReport, { songId: props.songId, filterSpec: props.filterSpec });
+//     React.useEffect(() => {
+//         props.setResults(results);
+//     }, [results]);
+//     return <div></div>;
+// };
+//
+//
+//
+// const StatsPageInner = () => {
+//     const dashboardContext = useDashboardContext();
+//
+//     const defaultFilterSpec: GetGlobalStatsFilterSpec = {
+//         // primary
+//         timing: "All",
+//
+//         // extra
+//         eventStatusIds: dashboardContext.eventStatus.filter(s => s.significance === EventStatusSignificance.FinalConfirmation).map(s => s.publicId),// dashboardContext.eventStatus.filter(s => s.significance !== EventStatusSignificance.Cancelled).map(s => s.publicId), // everything
+//         eventTypeIds: dashboardContext.eventType.filter(t => t.significance === EventTypeSignificance.Concert).map(t => t.publicId), // concerts & rehearsals & weekend are the only thing that matter for songs
+//         eventTagIds: [],
+//         songTagIds: [],
+//     };
+//
+//     const [expanded, setExpanded] = React.useState<boolean>(true);
+//     const [filterSpec, setFilterSpec] = React.useState<GetGlobalStatsFilterSpec>(defaultFilterSpec);
+//     const [results, setResults] = React.useState<GetGlobalStatsRet>({
+//         allEvents: [],
+//         //eventsQuery: "",
+//         popularSongsOccurrances: [],
+//         //popularSongsQuery: "",
+//     });
+//
+//     const [selectedEventBucket, setSelectedEventBucket] = React.useState<null | ActivityVisBucket<GetGlobalStatsRetEvent>>(null);
+//
+//     const songMap = new Map<SongPublicId, GetGlobalStatsRetPopularSongOccurrance[]>();
+//     results.popularSongsOccurrances.forEach(s => {
+//         if (songMap.has(s.songId)) {
+//             songMap.get(s.songId)?.push(s);
+//         } else {
+//             songMap.set(s.songId, [s]);
+//         }
+//     });
+//
+//     const sortedSongs = [...songMap.values()];
+//     sortedSongs.sort((a, b) => {
+//         return b.length - a.length; // desc
+//     });
+//
+//     return <div>
+//         <AdminInspectObject src={results} label="results" />
+//
+//         <GlobalStatsFilterControls
+//             defaultFilterSpec={defaultFilterSpec}
+//             filterSpec={filterSpec}
+//             setFilterSpec={setFilterSpec}
+//         />
+//
+//         <CMChip
+//             onClick={() => setExpanded(!expanded)}
+//             shape="rectangle"
+//             variation={{ ...StandardVariationSpec.Strong, selected: expanded }}
+//         >
+//             Show graphs
+//         </CMChip>
+//
+//         <Suspense>
+//             <StatsPageQuerier filterSpec={filterSpec} setResults={setResults} />
+//         </Suspense>
+//
+//         <h1>Event activity ({results.allEvents.length})</h1>
+//
+//         {expanded &&
+//             <ActivityVis
+//                 className="events"
+//                 items={results.allEvents.filter(e => !!e.startsAt)}
+//                 getItemInfo={(e) => {
+//                     return {
+//                         occursAt: e.startsAt!,
+//                     };
+//                 }}
+//                 getBucketInfo={(b) => {
+//                     return {
+//                         tooltip: <ul>{b.items.map(x => <li key={x.item.publicId}>{EventAPI.getLabel(x.item)}</li>)}</ul>
+//                     };
+//                 }}
+//                 selectedMonthBucketId={selectedEventBucket?.yearMonthBucketId || null}
+//                 onBucketClick={(b) => setSelectedEventBucket(b)}
+//             />}
+//
+//         <div>
+//             <ul>
+//                 {selectedEventBucket?.items.map(i => {
+//                     return <li key={i.item.publicId}>
+//                         <EventTextLink event={i.item} />
+//                         {/* <a rel="noreferrer" target="_blank" href={getURIForEvent(i.item)}>
+//                             {EventAPI.getLabel(i.item)}
+//                         </a> */}
+//                     </li>;
+//
+//                 })}
+//             </ul>
+//         </div>
+//
+//         <h1>Most popular songs (top 10)</h1>
+//         {sortedSongs.map(s => {
+//             return <StatsPagePopularSong key={s[0]!.songId} occurrances={s} expanded={expanded} />;
+//         })}
+//     </div>;
+// };
+//
+// const MainContent = () => {
+//
+//     return <>
+//         <CMSinglePageSurfaceCard>
+//             <div className="content">
+//                 <LocalizedMarkdown setting="StatsPage_markdown"></LocalizedMarkdown>
+//                 <Suspense>
+//                     <StatsPageInner />
+//                 </Suspense>
+//             </div>
+//         </CMSinglePageSurfaceCard>
+//     </>;
+// };
+//
+//
+// const StatsPage: BlitzPage = () => {
+//     return (
+//         <DashboardLayout title="Global Stats">
+//             <MainContent />
+//         </DashboardLayout>
+//     )
+// }
+//
+// export default StatsPage;
+// MIGRATION_REFERENCE_END
