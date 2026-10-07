@@ -39,9 +39,9 @@ export function BandSelection() {
 
     return <Stack spacing={1} sx={{ mb: 2 }}>
         <FormControl size="small" sx={{ maxWidth: 480 }}>
-            <InputLabel htmlFor="dashboard-band">{locale.getPlainString("dashboard.band.select")}</InputLabel>
+            <InputLabel shrink htmlFor="dashboard-band">{locale.getPlainString("dashboard.band.select")}</InputLabel>
             <Select native inputProps={{ id: "dashboard-band" }} value={selected}
-                label={locale.getPlainString("dashboard.band.select")} disabled={switching}
+                label={locale.getPlainString("dashboard.band.select")} notched disabled={switching}
                 onChange={event => { void selectBand(event.target.value); }}>
                 <option value="">{locale.getPlainString("dashboard.band.platform")}</option>
                 {selected && !selectedChoice && <option value={selected} disabled>{locale.getPlainString("dashboard.band.unavailable")}</option>}

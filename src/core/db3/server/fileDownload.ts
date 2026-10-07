@@ -6,10 +6,54 @@ import send from "send";
 import type { FilePublicId } from "shared/publicId";
 import * as db3 from "src/core/db3/db3";
 import * as mutationCore from "src/core/db3/server/db3mutationCore";
+import { Permission } from "shared/permissions";
+import { parsePublicId } from "shared/publicId";
+import { z } from "zod";
+import db from "db";
+import { xCustomLinkFile } from "../shared/entities/customLink/customLinkFile";
+import { executeDB3Read, type DB3ReadDatabase } from "./db3ReadExecution";
+import { queryTable } from "./db3QueryCore";
 
 type DownloadableFile = Pick<db3.FilePayloadMinimum,
     "fileLeafName" | "storedLeafName" | "isDeleted"
 > & { publicId: FilePublicId };
+
+const downloadableCustomLinkFile = z.object({
+    publicId: z.string().transform(value => parsePublicId<"File">(value)),
+    fileLeafName: z.string(), storedLeafName: z.string(), isDeleted: z.boolean(),
+});
+
+export async function GetAuthorizedCustomLinkFile(
+    filePublicId: string,
+    auth: CMServerAuthorization,
+    database: DB3ReadDatabase = db,
+): Promise<DownloadableFile | null> {
+    return executeDB3Read(database, auth, async context => {
+        if (!context.authorization.hasPermission(Permission.view_files)) {
+            return null;
+        }
+        const result = await queryTable({
+            table: xCustomLinkFile, filter: { publicIds: [parsePublicId<"File">(filePublicId)] },
+            take: 1, orderBy: undefined, cmdbQueryContext: "custom link download",
+        }, context.authorization, context);
+        return result.items[0] ? downloadableCustomLinkFile.parse(result.items[0]) : null;
+    });
+}
+
+export async function ServeAuthorizedCustomLinkFileDownload(
+    req: IncomingMessage,
+    res: ServerResponse,
+    auth: CMServerAuthorization,
+    filePublicId: string,
+): Promise<void> {
+    const file = await GetAuthorizedCustomLinkFile(filePublicId, auth);
+    if (!file) {
+        res.statusCode = 404;
+        res.end();
+        return;
+    }
+    await SendFileDownload(req, res, file);
+}
 
 export const GetAuthorizedDirectDownloadFile = async (
     storedLeafName: string,

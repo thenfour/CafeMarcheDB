@@ -1,8 +1,9 @@
 # Current application recovery evidence
 
 The A0 bootstrap path has development-browser evidence, obsolete Role and
-shared-account merge dependencies are isolated, and telemetry recording now uses
-the target schema and explicit ownership. **A0 remains open.** The
+shared-account merge dependencies are isolated, and telemetry recording and Custom
+Links now use the target schema and explicit ownership. Platform account
+maintenance has its own platform-authorized view and commands. **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
 
@@ -67,6 +68,17 @@ preserving source alone.
   contracts stay active. Deferred invitation views still resolve old
   tag-assignment metadata during startup; its generic writes/deletion are now
   disabled, and its removal remains coupled to event payload recovery.
+- Platform account maintenance has a separate `PlatformUser` descriptor and
+  `PlatformUser_Editor` view with generated create/update commands. Its table,
+  fields, contact search and page use `manage_global_users`; no band capability
+  or owner exemption admits access. Snapshot reads refresh grants. The DTO carries
+  person details and public identity only. Security state and timestamps are
+  read-only, email correction still requires Sysadmin, and creation adds neither
+  sign-in methods nor memberships. Existing shared-person/member projections and
+  their permissions are unchanged. Member-profile links require selected context
+  and the existing owner/read capability. The old generic projection on the
+  display-only Sysadmin column was also corrected to the typed mutation API.
+  A visible band-selector label overlap in platform context is fixed.
 - Client telemetry carries the presentation input in both HTTP and RPC requests.
   Actor identity is refreshed with band context in the recording transaction;
   natural/client-owned IDs are rejected. Direct resource associations require
@@ -80,6 +92,40 @@ preserving source alone.
   locale context. Recording schemas no longer initialize the DB3 registry.
 
 ## Verification
+
+Custom Links now retain all six modes: permanent/temporary/client redirects,
+disabled links, intermediate Markdown pages and direct file responses. The
+editor's list, picker and generated writes use the selected band; ownership and
+creator IDs remain server-owned. Public lookup uses `(bandId, slug)`. Copied and
+preview URLs carry `bandPublicId`; internal band/locale routing parameters are
+not forwarded to external destinations. Client hash forwarding replaces an
+existing fragment instead of producing two fragments. Visits and visit counts
+remain active.
+
+File selection and serving use a narrow read-only File descriptor. They enforce
+fresh grants, band ownership, visibility and soft deletion without executing the
+unfinished general File descriptor or enabling general file writes. An optional
+reference with no file no longer excludes ordinary redirect links. The server
+and dashboard shell share an explicit selection-page permission: login before
+band selection, then `view_custom_links` in the selected band. App bootstrap
+returns 404 for malformed/repeated or unavailable custom-link band context before
+it can turn the catch-all request into a server error.
+
+Custom-link development-browser evidence uses a separate fresh target-schema
+database on `127.0.0.1:32695`, with its own account, bands and files. The probe
+checked same-slug redirects in two bands, exclusion of routing parameters,
+missing/malformed/repeated/unknown band responses, byte-range HTML serving,
+intermediate Markdown/continuation/hash behavior, the no-band prompt, editor
+create/update/delete, scoped display URLs and both bands' editor rows. No browser
+page errors occurred. The band selector returns to the dashboard; the probe then
+opened the second band's editor. Screenshots are in
+`temp/a0-custom-link-intermediate.png` and `temp/a0-custom-link-editor.png`.
+The helper removed its database and stopped its server/browser. This is
+development evidence, not a production-build check.
+Deliberately malformed/unknown context probes still print server diagnostics,
+including a `node:util/inspect` formatting TypeError, despite returning 404.
+That development logging issue remains unresolved; the passing probe does not
+establish that the server log is error-free.
 
 Rehearsal data: restored `tenfour_cmdb_20261002_at_git_094a783a9.sql` into a new
 private MariaDB 10.11 database on `127.0.0.1:32694`, then ran the normal migration
@@ -98,6 +144,12 @@ production server could not be checked because the normal build still fails.
 
 | Check | Result |
 | --- | --- |
+| Platform account contracts, shared-person projections, view/bootstrap/page authorization, preservation and membership-role regression | Passed: 169 tests across eight Node files. Member pages, assignment editors and presentation navigation add 24 passing tests across four isolated jsdom files. |
+| Platform account reads/generated writes and existing Custom Links, telemetry, dashboard catalogs and member profiles on fresh private MariaDB | Passed: 30 tests across five files, including six new account cases. Covers searches/counts/pagination, public identity, platform-only contacts, default security state, create/update audit records, email correction restrictions, band/owner denial, crafted writes, deleted-account inspection and revoked grants. Fixture writes roll back and the generated database is removed. |
+| Platform account development-browser check | Passed: a delegated account manager without Sysadmin or band read capabilities can list contacts/deleted accounts in platform context, create a person and persist a name edit. Security controls and email correction are unavailable to that manager; selecting a band retains access and shared rows. HTTP 200, no browser page errors; the grid screenshot was inspected. This does not establish built-production evidence or lifecycle/role parity. |
+| Custom-link routes/URLs/page guards, bootstrap, view contracts, preservation/recovery boundaries, membership roles and public Markdown/Suspense navigation | Passed: 161 tests across ten files, including two isolated jsdom files. All redirect modes, nested slugs, repeated query values, visit details, routing-parameter exclusion, hash forwarding and the selection-page authorization boundary are covered. |
+| Custom-link CRUD/file authorization, telemetry persistence, dashboard catalogs and member profiles on a fresh private MariaDB fixture | Passed: 24 tests across four files, including six native custom-link cases. Covers duplicate slugs across bands, create/update/delete and visit cascade, server-owned IDs, missing context/revoked authority, file visibility/ownership and crafted unavailable targets. Fixture writes roll back and the generated database is removed. |
+| Existing Custom Link/Menu Link view and schema-wide policy fixtures | The collection view passes with an explicit scoped snapshot. Policy rows now carry band/active-person context and use public identities where natural-ID filtering is forbidden; five earlier failures are recovered. The existing broad metadata assertion still fails because Locale has no DB3 descriptor. |
 | Source preservation and Git provenance | Passed: 149 references in 105 files. The fourteen new person/profile/assignment references match `15d112e0` exactly. The initial audit covered all 4,509 removed lines in 67 code/test files. Existing references and staging are unchanged. |
 | Preservation safeguards, temporary RPC boundaries, member/page contracts and DOM regression | Passed: 108 tests across ten active files, including 23 preservation checks. Nine wholly disabled specifications are retained separately; eight are under the runner's default `tests/` directory. |
 | Field localization, selectors, instrument editor, presentation delivery, factory contracts and preservation/recovery boundaries | Passed: 106 tests across nine files. Includes band-first labels/help, band and language switches, intentional blanks, composite captions, accessible names, unchanged scalar writes and explicit dialog captions. |
@@ -111,9 +163,9 @@ production server could not be checked because the normal build still fails.
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 386 diagnostics, down from 389 before the telemetry slice. No increased file/error-code groups, compiler exclusions or error suppression added. |
+| `yarn typecheck` | Fails: 383 diagnostics, unchanged by platform account recovery and down from 386 before Custom Links. No increased file/error-code groups, compiler exclusions or error suppression added. |
 | `yarn build` | Gets past Custom Links and shared field-label callers; fails at the legacy event-search payload in `src/core/components/event/EventComponents.tsx:1392`. The duplicate role-page component-name warning is also fixed. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 294 failed, 1,360 passed, 99 skipped. Two old telemetry actor fixtures now carry the target account state and pass; no failure groups were added. Later isolated DOM batches are not reached; focused DOM checks above passed. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 289 failed, 1,410 passed, 111 skipped. The failure count/groups are unchanged by account recovery; its sixteen contract cases and two additional schema-policy cases pass. The six new MariaDB cases are skipped without their private test URL and pass in the native run above. Later isolated DOM batches are not reached; focused DOM checks above passed. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -155,17 +207,21 @@ The stricter shared-account payload also exposes three deferred event consumers
 that still treat the account as a person carrying instruments. They must consume
 membership data when events are restored; band assignments are not added back to
 the shared-account payload to satisfy those consumers.
-Platform account administration still uses band capabilities for table/field
-reads, which are absent in platform context. It needs a separate ownership and
-permission adaptation; the account selector/editor repair does not prove that
-the platform grid is usable.
+Platform account maintenance now has native and development-browser evidence
+through its separate platform view. Account lifecycle, sign-in-method management,
+account merge and platform-role administration remain separate recovery work;
+this slice does not establish their parity. The shared grid's remaining generic
+toolbar, confirmation and diagnostic text still needs its localization pass.
 
 Deferred source, registrations, pages, RPC/API entry points, and background jobs
 still need coherent isolation. The home notice and omitted dashboard reads do not
 establish that isolation; legacy sidebar/direct links still expose unfinished
-surfaces. The browser probe also observed server errors from the catch-all Custom
-Link lookup for a missing favicon. Its slug lookup still needs explicit band
-ownership or deliberate isolation. Telemetry recording is now migrated and has
+surfaces. The catch-all Custom Link lookup is now band-scoped and returns 404
+without a valid band; the missing-favicon lookup no longer uses the obsolete
+global slug key. Full portal-root routing remains deferred, so recovery custom
+URLs explicitly require `bandPublicId`. General file editing/upload and its
+existing download API still need their own ownership/schema migration; this
+narrow custom-link file reader does not establish those workflows. Telemetry recording is now migrated and has
 native/HTTP/RPC/DOM evidence; it still needs built-browser verification. Activity
 report readers retain obsolete instrument relations and require a separate
 ownership/localization adaptation before analytics can be called restored.

@@ -1,4 +1,5 @@
 import { BlitzPage } from "@blitzjs/next";
+import { NotFoundError } from "blitz";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { Box, NoSsr, Paper, Stack, Typography } from "@mui/material";
 import db from "db";
@@ -8,8 +9,9 @@ import React from "react";
 import { useBrand } from "shared/brandConfig";
 import { CoerceToBoolean, IsNullOrWhitespace } from "shared/utils";
 import { Markdown } from "src/core/components/markdown/Markdown";
-import * as db3 from "src/core/db3/db3";
-import { ServeAuthorizedFileDownload } from "src/core/db3/server/fileDownload";
+import { CustomLinkRedirectType } from "src/core/db3/shared/schema/customLinks";
+import { customLinkBand, customLinkClientDestination, customLinkDestination } from "src/core/db3/shared/entities/customLink/customLinkUrl";
+import { ServeAuthorizedCustomLinkFileDownload } from "src/core/db3/server/fileDownload";
 import { gSSP } from "src/blitz-server";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { CMButton } from "../core/components/CMCoreComponents2";
@@ -22,12 +24,28 @@ interface CustomLinkPageProps {
 }
 
 export const getServerSideProps = gSSP<CustomLinkPageProps>(async ({ params, req, res, query, ctx }) => {
+    const bandPublicId = customLinkBand(query);
+    if (!bandPublicId) {
+        return { notFound: true };
+    }
+    const auth = await loadAuthorization(ctx.session, bandPublicId).catch(error => {
+        if (error instanceof NotFoundError) {
+            return null;
+        }
+        throw error;
+    });
+    if (!auth) {
+        return { notFound: true };
+    }
     const slugParts = params?.customLinkSlug;
     const slug = Array.isArray(slugParts) ? slugParts.join('/') : slugParts || '';
 
-    const link = await db.customLink.findUnique({ where: { slug }, include: { file: true } });
+    const link = await db.customLink.findUnique({
+        where: { bandId_slug: { bandId: auth.requireBand().id, slug } },
+        include: { file: { select: { publicId: true } } },
+    });
 
-    if (!link || link.redirectType === db3.CustomLinkRedirectType.Disabled) {
+    if (!link || link.redirectType === CustomLinkRedirectType.Disabled) {
         return { notFound: true };
     }
 
@@ -47,47 +65,39 @@ export const getServerSideProps = gSSP<CustomLinkPageProps>(async ({ params, req
     // NORMALLY I would record the feature use here, but without a user ID or much client data
     // it's not the right place to record it.
 
-    if (link.redirectType === db3.CustomLinkRedirectType.ServeFile) {
+    if (link.redirectType === CustomLinkRedirectType.ServeFile) {
         if (!link.file) {
             res.statusCode = 404;
             res.end();
             return { props: {} };
         }
-        await ServeAuthorizedFileDownload(req, res, await loadAuthorization(ctx.session), link.file.storedLeafName);
+        await ServeAuthorizedCustomLinkFileDownload(req, res, auth, link.file.publicId);
         // Next skips page rendering after the stream has ended the response.
         return { props: {} };
     }
 
-    if (!link.destinationURL) return { notFound: true };
-
-    // Build the destination URL with query string
-    let destinationURL = link.destinationURL;
-    if (link.forwardQuery) {
-        const baseUrl = new URL(link.destinationURL);
-        Object.keys(query).filter(key => key !== "customLinkSlug").forEach(key => {
-            const value = query[key];
-            for (const part of Array.isArray(value) ? value : [value]) {
-                if (part !== undefined) baseUrl.searchParams.append(key, part);
-            }
-        });
-        destinationURL = baseUrl.toString();
+    if (!link.destinationURL) {
+        return { notFound: true };
     }
 
+    // Build the destination URL with query string
+    const destinationURL = customLinkDestination(link.destinationURL, query, link.forwardQuery);
+
     // Handle redirection
-    switch (link.redirectType as keyof typeof db3.CustomLinkRedirectType) {
-        case db3.CustomLinkRedirectType.Permanent:
-        case db3.CustomLinkRedirectType.Temporary:
+    switch (link.redirectType) {
+        case CustomLinkRedirectType.Permanent:
+        case CustomLinkRedirectType.Temporary:
             return {
                 redirect: {
                     destination: destinationURL,
-                    permanent: link.redirectType === db3.CustomLinkRedirectType.Permanent,
+                    permanent: link.redirectType === CustomLinkRedirectType.Permanent,
                 },
             };
-        case db3.CustomLinkRedirectType.Client:
+        case CustomLinkRedirectType.Client:
             return {
                 props: { destinationURL, forwardQuery: link.forwardQuery, intermediate: false }, // Client-side redirection
             };
-        case db3.CustomLinkRedirectType.IntermediatePage:
+        case CustomLinkRedirectType.IntermediatePage:
             return {
                 props: { intermediate: true, destinationURL, forwardQuery: link.forwardQuery, intermediateMessage: link.intermediateMessage },
             };
@@ -106,7 +116,7 @@ interface CustomLinkClientProps {
 const CustomLinkClient = (props: CustomLinkClientProps) => {
     const router = useRouter();
     const brand = useBrand();
-    const destinationURL = props.forwardQuery ? props.destinationURL + window.location.hash : props.destinationURL;
+    const destinationURL = customLinkClientDestination(props.destinationURL, window.location.hash, props.forwardQuery);
 
     React.useEffect(() => {
         if (!props.intermediate) void router.replace(destinationURL);

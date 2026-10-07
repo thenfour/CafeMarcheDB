@@ -3,6 +3,10 @@ import { plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 
 const label = (defaultValue: string) => plainStaticString({ defaultValue, description: "Dashboard recovery interface", schema: z.string() });
 export const dashboardStrings = {
+    "platformUser.title": label("Platform accounts"),
+    "platformUser.description": label("Shared person details apply across all bands. Creating a person adds no sign-in method or band membership. Memberships are managed from the selected band's member profiles. Security state is read-only here."),
+    "platformUser.visitProfile": label("Visit member profile"),
+    "customLink.selectBand": label("Select a band to view its custom links."),
     "dashboard.title": label("Home"),
     "dashboard.band.select": label("Select a band"),
     "dashboard.band.platform": label("Account and platform"),

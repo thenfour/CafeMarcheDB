@@ -1,11 +1,14 @@
 import { Routes } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
+import type { BandPublicId } from "shared/publicId";
 
 export interface BackstageRouteDefinition {
     key: string;
     pattern: string;
     caption: string;
     permission: Permission;
+    // An authenticated selection page may be reachable before a band is selected.
+    unscopedPermission?: Permission;
 }
 
 const routes = [
@@ -50,7 +53,7 @@ const routes = [
     { key: "frontpageEvents", pattern: "/backstage/frontpageEvents", caption: "Agenda", permission: Permission.edit_public_homepage },
     { key: "brand", pattern: "/backstage/brand", caption: "Brand", permission: Permission.manage_site_branding },
     { key: "menuLinks", pattern: "/backstage/menuLinks", caption: "Menu Links", permission: Permission.customize_menu },
-    { key: "customLinks", pattern: "/backstage/customLinks", caption: "Custom URLs", permission: Permission.view_custom_links },
+    { key: "customLinks", pattern: "/backstage/customLinks", caption: "Custom URLs", permission: Permission.view_custom_links, unscopedPermission: Permission.login },
     { key: "editEventTags", pattern: "/backstage/editEventTags", caption: "Event Tags", permission: Permission.admin_events },
     { key: "editEventTypes", pattern: "/backstage/editEventTypes", caption: "Event Types", permission: Permission.admin_events },
     { key: "editEventStatuses", pattern: "/backstage/editEventStatuses", caption: "Event Statuses", permission: Permission.admin_events },
@@ -79,7 +82,7 @@ const routes = [
     { key: "roles", pattern: "/backstage/roles", caption: "Roles", permission: Permission.sysadmin },
     { key: "permissions", pattern: "/backstage/permissions", caption: "Permissions", permission: Permission.sysadmin },
     { key: "rolePermissions", pattern: "/backstage/rolePermissions", caption: "Permission matrix", permission: Permission.sysadmin },
-    { key: "adminUsers", pattern: "/backstage/adminUsers", caption: "Users grid", permission: Permission.sysadmin },
+    { key: "adminUsers", pattern: "/backstage/adminUsers", caption: "Platform accounts", permission: Permission.manage_global_users },
     { key: "serverHealth", pattern: "/backstage/serverHealth", caption: "Server health", permission: Permission.sysadmin },
     { key: "calendarPreview", pattern: "/backstage/calendarPreview", caption: "iCal Preview", permission: Permission.sysadmin },
     { key: "gallery", pattern: "/backstage/gallery", caption: "Component Gallery", permission: Permission.sysadmin },
@@ -110,6 +113,10 @@ export function getBackstageRoute(key: BackstageRouteKey): BackstageRouteDefinit
 // Needed for reverse lookup: "which route am I currently on?"
 export function findBackstageRouteByPattern(pattern: string): BackstageRouteDefinition | undefined {
     return routeByPattern.get(pattern.replace(/\/$/, "") || "/");
+}
+
+export function pageRoutePermission(route: BackstageRouteDefinition, bandPublicId: BandPublicId | null | undefined): Permission {
+    return bandPublicId == null ? route.unscopedPermission ?? route.permission : route.permission;
 }
 
 export function ValidateRouteRegistry(): void {

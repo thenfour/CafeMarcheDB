@@ -38,7 +38,7 @@ import {
 import { NavRealm } from "./StaticMenuItems";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { DateValue } from "../DateTime/DateTimeComponents";
-import { findBackstageRouteByPattern } from "@/src/auth/shared/backstageRoutes";
+import { findBackstageRouteByPattern, pageRoutePermission } from "@/src/auth/shared/backstageRoutes";
 import { ApplicationFrameProvider, useApplicationFrame, useApplicationFrameBackgroundRef } from "./ApplicationFrameContext";
 import { useDialogViewportRect } from "../ResponsiveDialog";
 import { ConnectionStatusIndicator } from "../../connectivity/ConnectionHealthComponents";
@@ -376,7 +376,7 @@ const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
     if (!registeredRoute) {
         throw new Error(`No route for path: ${router.pathname}`);
     }
-    const isPageAuthorized = dashboardContext.isAuthorized(registeredRoute.permission);
+    const isPageAuthorized = dashboardContext.isAuthorized(pageRoutePermission(registeredRoute, dashboardContext.memberPresentation.bandPublicId));
     if (!isPageAuthorized) {
         // are you even logged in?
         if (!dashboardContext.session?.userId) {

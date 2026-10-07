@@ -208,7 +208,9 @@ export class ForeignSingleField<
         const where = target.CalculateWhereClause({
             auth, includeDeleted, filterModel: { items: [], tableParams: targetIncludesHidden ? { includeHidden: true } : {} },
         });
-        return { [this.member]: { is: where || {} } };
+        const visibleTarget = { [this.member]: { is: where || {} } };
+        // An optional reference has no target to authorize until it is assigned.
+        return this.allowNull ? { OR: [{ [this.fkidMember]: null }, visibleTarget] } : visibleTarget;
     };
 
     ApplyIncludeFiltering = async (include: TAnyModel, auth: CMServerAuthorization, includeDeleted: boolean) => {

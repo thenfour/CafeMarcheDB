@@ -28,6 +28,7 @@ import { z } from "zod";
 import { gGeneralPaletteList } from "src/core/components/color/palette";
 import { selectPrismaTestRow } from "../support/prismaSelection";
 import type { DB3ReadSelectionArgs } from "@db3/shared/core/db3ReadSelection";
+import { bindDB3ReadSnapshot } from "@db3/server/db3ReadExecution";
 
 const groupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
 const songTagPublicId = parsePublicId<"SongTag">("AbCdEfGhIjKlMn04");
@@ -428,6 +429,7 @@ describe("DB3 named views", () => {
         const createdByUser = { id: 100, publicId: userPublicId(100), name: "Ada", cssClass: null, isDeleted: false };
         const customLink = {
             id: 20,
+            bandId: 1,
             publicId: "CustomLinkTest01",
             name: "Scores",
             description: "Shared scores",
@@ -436,6 +438,8 @@ describe("DB3 named views", () => {
             redirectType: "Temporary",
             intermediateMessage: null,
             forwardQuery: true,
+            fileId: null,
+            file: null,
             createdAt,
             createdByUserId: createdByUser.id,
             createdByUser,
@@ -451,6 +455,7 @@ describe("DB3 named views", () => {
             fileId: 8,
             file: {
                 id: 8,
+                bandId: 1,
                 publicId: filePublicId(8),
                 fileLeafName: "mypage.html",
                 storedLeafName: "stored-page.html",
@@ -491,6 +496,11 @@ describe("DB3 named views", () => {
             { id: 7, name: Permission.visibility_public },
         ]);
         const authorization = new CMServerAuthorization({ id: createdByUser.id } as any, effectivePermissions);
+        const customLinkAuthorization = testBandAuthorization(createdByUser, effectivePermissions);
+        vi.spyOn(customLinkAuthorization, "refresh").mockResolvedValue(customLinkAuthorization);
+        // This projection fixture supplies only the delegate used by the read snapshot.
+        const customLinkDatabase = { CustomLink: { findMany: vi.fn(async () => [customLink, directFileLink]) } } as unknown as Prisma.TransactionClient;
+        const customLinkSnapshot = await bindDB3ReadSnapshot(customLinkDatabase, customLinkAuthorization, { isolationLevel: "Serializable" });
 
         const customResult = await queryTable({
             table: {
@@ -501,9 +511,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "custom-link-list-view-test",
-        }, authorization, {
-            CustomLink: { findMany: vi.fn(async () => [customLink, directFileLink]) },
-        } as any);
+        }, customLinkAuthorization, customLinkSnapshot);
         const menuResult = await queryTable({
             table: {
                 tableID: db3.xMenuLink.tableID,

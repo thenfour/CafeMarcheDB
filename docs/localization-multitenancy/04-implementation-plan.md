@@ -104,6 +104,13 @@ at the deferred event-search payload contract.
 Preserve the working bootstrap and migrated membership/catalog contracts.
 Platform role administration and membership recovery enhancements remain deferred.
 
+Custom Links now have scoped list/editor/generated writes and explicit-band
+public URLs, with all redirect/intermediate/file modes and visit tracking active.
+The file target reader is read-only and enforces band/visibility/deletion policy;
+general File workflows remain separate. Native and development-browser checks
+cover scoped CRUD, direct streaming and public redirects. Full host/path portal
+resolution remains after A1; this slice does not close A0.
+
 Shared account selectors, the `User_Editor` view and its generated writes now
 contain person fields only. Membership views/commands retain instrument and tag
 assignments. The obsolete `UserInstrument` descriptor/editor/CRUD registrations
@@ -111,9 +118,13 @@ and unreachable person-profile/directory renderers are disabled and preserved.
 Deferred invitation views still resolve the old tag-assignment read metadata at
 startup; its writes are disabled. Remove that dependency together with the event
 payload roots, including `UserWithInstrumentsArgs` and `xUserWithInstrument`.
-Platform account administration also still needs its table/field read permissions
-adapted to platform context; this selector repair does not establish that the
-account grid is usable.
+Platform account maintenance now uses a separate `PlatformUser_Editor` view and
+generated commands, authorized by `manage_global_users` without band selection.
+It searches and edits shared person data; security state is read-only, and email
+updates retain their Sysadmin requirement. Native and development-browser checks
+cover list/create/update and switching to band context. Shared selectors retain
+their existing member/owner read policy. Account lifecycle and role administration
+are separate workflows; this grid does not establish their full recovery.
 
 ## A1: restore everyday workflows
 
@@ -181,6 +192,7 @@ implementation/test references and verification obligations for audited removals
 | Settings and branding | Generic DB3 settings storage/view are inactive and preserved in source. Settings/branding pages use registered commands and per-key capabilities, with explicit scope, save/reset and validated clipboard import. Logo editing, optional primary text color and upload controls remain unavailable; hosting mode belongs to deployment configuration. | Verify editors in the built app during A0/A1; recover remaining branding controls and account for legacy clipboard documents under `settings-editors`. |
 | Translation tools | Native catalog controls can edit explicit translations; full inventory/inspection/chrome tooling is incomplete. | Complete after A1. |
 | Portal routing | Recovery uses explicit `?bandPublicId=<publicId>` and optional `routeLocale`; omission never selects a default band. | Full routing after A1; retain enough explicit selection for A0. |
+| Custom Links | Scoped editor CRUD, file selection/serving, all redirect modes and visits are active. Public URLs require explicit `bandPublicId`; missing, malformed/repeated and unavailable bands return 404. The narrow read-only File target does not enable unfinished general file APIs. | Verify in the built application during A0/A1; integrate URLs with band portal roots when full routing lands after A1. |
 | Telemetry and activity reports | Recording uses explicit presentation context, server-owned actor/internal IDs and band-scoped associations. The formatting locale is separate from raw device locale/language; unregistered/deleted locales remain null. Analytics readers still contain obsolete relations and are not established as usable. | Verify recording in the built app during A0; adapt report permissions, queries, facets and projections before restoring analytics. Calendar-feed ownership remains a separate supporting-domain task. |
 | Legacy DB3 domains | Selected-band queries/row services reject undeclared ownership policies. | Migrate required domains for A0/A1; keep other domains coherently unavailable. |
 | Dashboard content and search | Bootstrap omits events, announcements, role metadata, custom menus and other deferred catalogs. Home explains the restriction; global search is removed from the shell. Legacy sidebar/direct routes and non-page entry points are not yet isolated. | Finish coherent route/endpoint/source isolation during A0; restore content required by core workflows during A1. |

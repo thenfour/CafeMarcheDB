@@ -9,7 +9,7 @@ import { gIconMap } from "../db3/components/IconMap";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
 import { AppContextMarker } from "./AppContext";
 import { CMChip, CMChipContainer } from "./CMChip";
-import { AbsoluteUriText, CMSmallButton, NameValuePair } from './CMCoreComponents2';
+import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { gLightSwatchColors, gSwatchColors } from "./color/palette";
 import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/DashboardContext";
@@ -17,6 +17,13 @@ import { ActivityFeature } from "./featureReports/activityTracking";
 import { Markdown } from "./markdown/Markdown";
 import { useLocale } from "src/locale/components/useLocale";
 import type { LocalizedMarkdownKey, LocalizedPlainStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
+import { customLinkHref } from "src/core/db3/shared/entities/customLink/customLinkUrl";
+
+function CustomLinkUrlPreview({ slug }: { readonly slug: string }) {
+    const dashboard = useDashboardContext();
+    const bandPublicId = dashboard.memberPresentation.bandPublicId;
+    return bandPublicId ? <>{dashboard.getAbsoluteUri(customLinkHref(slug.trim(), bandPublicId))}</> : null;
+}
 
 
 const gRedirectTypeColorMap: Record<keyof typeof db3.CustomLinkRedirectType, string> = {
@@ -48,8 +55,12 @@ const prepareCustomLinkForSave = (row: TAnyModel): TAnyModel | string => {
         }
         return { ...row, destinationURL: null, forwardQuery: false };
     }
-    if (row.redirectType === db3.CustomLinkRedirectType.Disabled) return row;
-    if (!row.destinationURL) return "Enter an external URL for this link.";
+    if (row.redirectType === db3.CustomLinkRedirectType.Disabled) {
+        return row;
+    }
+    if (!row.destinationURL) {
+        return "Enter an external URL for this link.";
+    }
     return { ...row, fileId: null, file: null };
 };
 
@@ -77,10 +88,10 @@ export class CustomLinkSlugColumn extends DB3Client.GenericStringColumnClient {
                 aria-label={this.fieldCaption}
                 onChange={(e, val) => params.api.setFieldValues({ [this.columnName]: val })}
                 autoFocus={params.autoFocus}
-                value={params.value as string}
+                value={typeof params.value === "string" ? params.value : ""}
                 className={this.className}
             />
-            <>{params.value && <div className='preview'><AbsoluteUriText relativeUri={((params.value as string) || "").trim()} /></div>}</>
+            {typeof params.value === "string" && params.value && <div className='preview'><CustomLinkUrlPreview slug={params.value} /></div>}
         </div>
     });
 };
@@ -143,9 +154,10 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
 
     // Optional view members represent fields omitted by authorization. Keep
     // those values absent rather than inventing a legacy display/copy fallback.
-    const absoluteLocalURL = props.item.slug === undefined
+    const bandPublicId = dashboardContext.memberPresentation.bandPublicId;
+    const absoluteLocalURL = props.item.slug === undefined || !bandPublicId
         ? undefined
-        : dashboardContext.getAbsoluteUri(props.item.slug);
+        : dashboardContext.getAbsoluteUri(customLinkHref(props.item.slug, bandPublicId));
     const destinationURL = props.item.destinationURL;
 
     const clipboardCopy = async (text: string) => {

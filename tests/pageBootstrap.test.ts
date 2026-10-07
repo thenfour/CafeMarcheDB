@@ -1,6 +1,6 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { Socket } from "net";
-import { AuthenticationError } from "blitz";
+import { AuthenticationError, NotFoundError } from "blitz";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { parsePublicId } from "shared/publicId";
 import { createAuthorizationTestContext } from "./authorization/support/authorizationFixtures";
@@ -62,5 +62,13 @@ describe("page bootstrap server boundary", () => {
         await expect(getPageBootstrap(forgedHost, context)).rejects.toThrow();
         await expect(getPageBootstrap(internalIdentity, context)).rejects.toThrow();
         expect(services.authorize).not.toHaveBeenCalled();
+    });
+
+    it("propagates unavailable custom-link bands without loading unscoped page data", async () => {
+        services.authorize.mockRejectedValue(new NotFoundError());
+        await expect(getPageBootstrap({ ...input, pathname: "/[...customLinkSlug]" }, context)).rejects.toBeInstanceOf(NotFoundError);
+        expect(services.authorize).toHaveBeenCalledOnce();
+        expect(services.presentation).not.toHaveBeenCalled();
+        expect(services.brand).not.toHaveBeenCalled();
     });
 });

@@ -1,6 +1,8 @@
 import { Prisma } from "@prisma/client"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
+import type { CMServerAuthorization } from "src/auth/server/serverAuthorization"
+import { parsePublicId } from "shared/publicId"
 import { testBandAuthorization, testServerAuthorization } from "tests/support/serverAuthorization"
 
 vi.mock("db", async () => {
@@ -38,12 +40,21 @@ const actorPublicData = createAuthorizationSchemaData(actor)
 const grantedVisibilityId = actor.role!.permissions.find(
   entry => entry.permission.name === Permission.visibility_public,
 )!.permissionId
+const policyPublicId = parsePublicId("PolicyRow0000001")
+
+function policyAuthorization(table: db3.xTable, auth = actorPublicData): CMServerAuthorization {
+  return table.bandScope ? testBandAuthorization(auth.user, auth.effectivePermissions) : auth
+}
 
 function makePolicyRow(
   table: db3.xTable,
   overrides: Record<string, unknown> = {},
 ): { id: number; [key: string]: unknown } {
-  const row: Record<string, unknown> = { id: 1 }
+  // Synthetic rows follow each descriptor's policy columns, rather than one Prisma model.
+  const row: Record<string, unknown> = { id: 1, publicId: policyPublicId, externalURI: null, user: { isDeleted: false, mergedIntoUserId: null } }
+  if (table.bandScope) {
+    row[table.bandScope.member] = 1
+  }
   const deletedColumn = table.SqlSpecialColumns.isDeleted
   const visibilityColumn = table.SqlSpecialColumns.visiblePermission
   const ownerColumn = table.SqlSpecialColumns.ownerUser
@@ -89,7 +100,7 @@ describe("schema-wide DB3 read-policy contracts", () => {
     (_tableId, table) => {
       const where = table.CalculateWhereClause({
         filterModel: emptyFilter,
-        auth: actorPublicData,
+        auth: policyAuthorization(table),
       })
       const deletedColumn = table.SqlSpecialColumns.isDeleted!
 
@@ -103,7 +114,7 @@ describe("schema-wide DB3 read-policy contracts", () => {
     (_tableId, table) => {
       const where = table.CalculateWhereClause({
         filterModel: emptyFilter,
-        auth: actorPublicData,
+        auth: policyAuthorization(table),
       })
       const visibilityColumn = table.SqlSpecialColumns.visiblePermission!
       const ownerColumn = table.SqlSpecialColumns.ownerUser!
@@ -125,11 +136,13 @@ describe("schema-wide DB3 read-policy contracts", () => {
   )
 
   it.each(visibilityTables.map(table => [table.tableID, table] as const))(
-    "%s keeps private ownership inside an independent primary-key scope",
+    "%s keeps private ownership inside an independent identity scope",
     (_tableId, table) => {
+      const auth = policyAuthorization(table)
+      const canFilterNaturalId = table.authorizeColumnForView({ auth, model: null, columnName: table.pkMember })
       const where = table.CalculateWhereClause({
-        filterModel: { ...emptyFilter, pks: [1] },
-        auth: actorPublicData,
+        filterModel: { ...emptyFilter, ...(canFilterNaturalId ? { pks: [1] } : { publicIds: [policyPublicId] }) },
+        auth,
       })
       const visibilityColumn = table.SqlSpecialColumns.visiblePermission!
       const ownerColumn = table.SqlSpecialColumns.ownerUser!
@@ -139,7 +152,7 @@ describe("schema-wide DB3 read-policy contracts", () => {
       }
 
       expect(matchesWhere(makePolicyRow(table, { id: 1, ...privateOwner }), where as any)).toBe(true)
-      expect(matchesWhere(makePolicyRow(table, { id: 2, ...privateOwner }), where as any)).toBe(false)
+      expect(matchesWhere(makePolicyRow(table, { id: 2, publicId: parsePublicId("PolicyRow0000002"), ...privateOwner }), where as any)).toBe(false)
     },
   )
 
@@ -160,9 +173,10 @@ describe("schema-wide DB3 read-policy contracts", () => {
     ))
 
     for (const table of visibilityTables) {
+      const auth = policyAuthorization(table, publicData)
       const where = table.CalculateWhereClause({
         filterModel: emptyFilter,
-        auth: publicData,
+        auth,
       })
       const visibilityColumn = table.SqlSpecialColumns.visiblePermission!
       const ownerColumn = table.SqlSpecialColumns.ownerUser!
@@ -170,7 +184,7 @@ describe("schema-wide DB3 read-policy contracts", () => {
       const publicRowMatches = matchesWhere(makePolicyRow(table, {
         [visibilityColumn.fkidMember!]: publicVisibilityId,
       }), where as any)
-      expect(publicRowMatches).toBe(table.authorizeTableForView(publicData))
+      expect(publicRowMatches).toBe(table.authorizeTableForView(auth))
       expect(matchesWhere(makePolicyRow(table, {
         [visibilityColumn.fkidMember!]: null,
         [ownerColumn.fkidMember || ownerColumn.member]: actor.id,
@@ -182,13 +196,15 @@ describe("schema-wide DB3 read-policy contracts", () => {
     "%s applies row policies to Sysadmins and requires explicit deleted-row access",
     (_tableId, table) => {
       const sysadmin = createAuthorizationTestUser("sysadmin", { id: 601 })
-      const publicData = createAuthorizationSchemaData(sysadmin)
+      const publicData = policyAuthorization(table, createAuthorizationSchemaData(sysadmin))
       const restrictedWhere = table.CalculateWhereClause({
         filterModel: emptyFilter,
         auth: publicData,
       })
       const recoveryWhere = table.CalculateWhereClause({
-        filterModel: emptyFilter,
+        filterModel: table.queryParameters?.membershipStatus
+          ? { ...emptyFilter, tableParams: { membershipStatus: "inactive" } }
+          : emptyFilter,
         auth: publicData,
         includeDeleted: true,
       })

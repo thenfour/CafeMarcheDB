@@ -5,10 +5,11 @@ import type { CustomLinkPublicId } from "shared/publicId";
 import { AuxUserArgs } from "types";
 import { z } from "zod";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { BoolField, ConstEnumStringField, foreignRef, GhostField, MakeCreatedAtField, MakePKfield, MakePublicIdField } from "../columnTypes/xTableColumnTypes";
+import { BoolField, ConstEnumStringField, foreignRef, GenericIntegerField, GhostField, MakeCreatedAtField, MakePKfield, MakePublicIdField } from "../columnTypes/xTableColumnTypes";
+import { serverOwnedField } from "../columnTypes/inherited";
 import * as db3 from "../db3core";
 import { kReadOnlyAuthMap } from "../entities/common/entityCommon";
-import { xFile } from "./file";
+import { xCustomLinkFile } from "../entities/customLink/customLinkFile";
 import { MakeCreatedByField } from "./user";
 
 const xAuthMap = db3.defineAuthMap({
@@ -64,6 +65,8 @@ export const xCustomLink = db3.defineTable({
         return CustomLinkArgs;
     },
     tableName: "CustomLink",
+    bandScope: { member: "bandId", managePermission: Permission.manage_custom_links },
+    readConsistency: "snapshot",
     deletePolicy: "hard",
     naturalOrderBy: CustomLinkNaturalOrderBy,
     getRowInfo: (row: CustomLinkPayload) => ({
@@ -77,7 +80,14 @@ export const xCustomLink = db3.defineTable({
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "never" }),
         publicId: () => MakePublicIdField<CustomLinkPublicId>(),
-        name: columnName => MakeTitleField(columnName, { authMap: xAuthMap, }),
+        bandId: columnName => serverOwnedField(new GenericIntegerField({
+            columnName, allowNull: false, allowSearchingThisField: false,
+            authMap: db3.defineAuthMap({
+                PostQuery: Permission.never_grant, PostQueryAsOwner: Permission.never_grant,
+                PreInsert: Permission.never_grant, PreMutate: Permission.never_grant, PreMutateAsOwner: Permission.never_grant,
+            }),
+        })),
+        name: columnName => MakeTitleField(columnName, { authMap: xAuthMap, maxLength: 768 }),
         description: () => MakeDescriptionField({ authMap: xAuthMap, }),
         createdAt: () => MakeCreatedAtField({ authMap: kReadOnlyAuthMap }),
         createdByUser: () => MakeCreatedByField(),
@@ -85,6 +95,7 @@ export const xCustomLink = db3.defineTable({
             columnName,
             allowNull: false,
             format: "customLinkSlug",
+            maxLength: 767,
             authMap: xAuthMap,
         }),
         destinationURL: columnName => {
@@ -92,6 +103,7 @@ export const xCustomLink = db3.defineTable({
                 columnName,
                 allowNull: true,
                 format: "uri",
+                maxLength: 768,
                 authMap: xAuthMap,
             });
             const parse = field.ValidateAndParse;
@@ -101,14 +113,15 @@ export const xCustomLink = db3.defineTable({
                 : parse(args);
             return field;
         },
-        file: foreignRef(() => xFile, {
+        file: foreignRef(() => xCustomLinkFile, {
             fkidMember: "fileId",
             allowNull: true,
+            requireVisibleTarget: true,
             authMap: xAuthMap,
         }),
         redirectType: columnName => new ConstEnumStringField({
             columnName,
-            allowNull: true,
+            allowNull: false,
             defaultValue: CustomLinkRedirectType.Temporary,
             options: CustomLinkRedirectType,
             authMap: xAuthMap,

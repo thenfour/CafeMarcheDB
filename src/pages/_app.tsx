@@ -6,7 +6,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 //import CssBaseline from "@material-ui/core/CssBaseline";
 import { ThemeProvider, createTheme, PaletteColorOptions, SimplePaletteColorOptions } from '@mui/material/styles';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { AuthenticationError, AuthorizationError } from "blitz";
+import { AuthenticationError, AuthorizationError, NotFoundError } from "blitz";
+import { ZodError } from "zod";
 import React from "react";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { queryClient, withBlitz } from "src/blitz-client";
@@ -228,12 +229,23 @@ export function MyApp({
 // withBlitz preserves this hook; define it here so its Next types stay visible.
 MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<SharedPageProps>> => {
   const { req, res, pathname } = appCtx.ctx;
-  const presentationInput = pagePresentationInput(appCtx.ctx.query, req?.headers["accept-language"]);
   let bootstrap: Awaited<ReturnType<typeof getPageBootstrap>>;
   try {
+    const presentationInput = pagePresentationInput(appCtx.ctx.query, req?.headers["accept-language"]);
     const input = { ...presentationInput, pathname };
     bootstrap = req ? await getPageBootstrap(input, appCtx.ctx) : await invoke(getPageBootstrap, input);
   } catch (error) {
+    // App bootstrap runs before the catch-all's own 404 handler.
+    const invalidBandInput = error instanceof ZodError && error.issues.some(issue => issue.path[0] === "bandPublicId");
+    if (pathname === "/[...customLinkSlug]" && (error instanceof NotFoundError || invalidBandInput)) {
+      if (res) {
+        res.statusCode = 404;
+        res.end();
+      } else {
+        await Router.replace("/404");
+      }
+      return { pageProps: {} };
+    }
     if (!(error instanceof AuthenticationError)) {
       throw error;
     }

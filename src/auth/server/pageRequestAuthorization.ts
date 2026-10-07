@@ -1,5 +1,5 @@
 import type { SessionContext } from "@blitzjs/auth";
-import { findBackstageRouteByPattern } from "../shared/backstageRoutes";
+import { findBackstageRouteByPattern, pageRoutePermission } from "../shared/backstageRoutes";
 import { loadAuthorization } from "./serverAuthorization";
 import type { BandPublicId } from "shared/publicId";
 
@@ -29,6 +29,6 @@ export async function loadPageAuthorization(
     }
 
     const auth = await loadAuthorization(session, bandPublicId);
-    auth.requirePermission(route.permission);
+    auth.requirePermission(pageRoutePermission(route, bandPublicId));
     return auth;
 }

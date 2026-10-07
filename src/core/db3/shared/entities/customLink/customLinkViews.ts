@@ -2,7 +2,7 @@ import { Prisma } from "db";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { xCustomLink } from "../../schema/customLinks";
-import { xFile } from "../../schema/file";
+import { xCustomLinkFile } from "./customLinkFile";
 import { deriveViewContract } from "../../core/db3ViewContract";
 
 //-----------------------------------------------------------------------
@@ -17,11 +17,11 @@ const customLinkFileArgs = Prisma.validator<Prisma.FileDefaultArgs>()({
     }
 });
 
-const customLinkFileViewContract = deriveViewContract(xFile, customLinkFileArgs);
+const customLinkFileViewContract = deriveViewContract(xCustomLinkFile, customLinkFileArgs);
 
 export const customLinkFileSelectionView = defineView({
     viewID: "CustomLink_FileSelection",
-    entity: xFile,
+    entity: xCustomLinkFile,
     where: { externalURI: null },
     dtoSchema: customLinkFileViewContract.dtoSchema,
     selection: customLinkFileViewContract.prismaSelection,
