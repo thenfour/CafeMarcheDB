@@ -221,6 +221,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             eventId: props.event.publicId,
         });
         mutationToken.invoke({
+            bandPublicId: dashboardContext.requireBandPublicId(),
             userId: props.user.publicId,
             eventId: props.event.publicId,
             comment: eventResponseValue.userComment,
@@ -461,6 +462,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
             feature: ActivityFeature.attendance_explicit_invite,
         });
         token.invoke({
+            bandPublicId: dashboardContext.requireBandPublicId(),
             eventId: event.publicId,
             userId: u.publicId,
             isInvited: true,
@@ -1424,4 +1426,3 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
         }
     </EventSearchItemContainer>;
 };
-

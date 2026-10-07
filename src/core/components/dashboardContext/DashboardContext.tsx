@@ -1,4 +1,4 @@
-import type { EventAttendancePublicId } from "shared/publicId";
+import type { BandPublicId, EventAttendancePublicId } from "shared/publicId";
 import { localTimeZone } from "@/shared/time";
 import { shouldShowAdminControls } from '@/shared/adminControls';
 import { ClientSession, useSession } from '@blitzjs/auth';
@@ -46,6 +46,14 @@ export class DashboardContextData extends DashboardContextDataBase {
     authorization: CMClientAuthorization = new CMClientAuthorization(null, new PermissionSet([]));
     authorizationContext: ScopedAuthorizationData | null = null;
     localePreferences: LocalePreferences = collectLocalePreferences();
+
+    requireBandPublicId(): BandPublicId {
+        const bandPublicId = this.authorizationContext?.bandPublicId;
+        if (!bandPublicId) {
+            throw new Error("A band is required for this operation");
+        }
+        return bandPublicId;
+    }
 
     constructor() {
         super();

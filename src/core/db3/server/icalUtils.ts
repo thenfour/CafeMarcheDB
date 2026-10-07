@@ -71,6 +71,7 @@ export const EventSegmentForCalArgs = Prisma.validator<Prisma.EventSegmentDefaul
 export const EventForCalArgs = Prisma.validator<Prisma.EventDefaultArgs>()({
     select: {
         id: true,
+        bandId: true,
         name: true,
         //description: true,
         revision: true,
@@ -163,19 +164,19 @@ export type EventCalendarInput<
     | "locationDescription"
 > &
     Pick<EventSegmentForCal, "isAllDay" | "uid"> &
-{
-    description: string,
-    eventUri: string;
-    name: string,
-    statusSignificance: undefined | (keyof typeof db3.EventStatusSignificance),
+    {
+        description: string,
+        eventUri: string;
+        name: string,
+        statusSignificance: undefined | (keyof typeof db3.EventStatusSignificance),
 
-    start: Date,
-    end: Date,
+        start: Date,
+        end: Date,
 
-    calStatus: ICalEventStatus,
-    eventId: TEventIdentity,
-    segmentId: TSegmentIdentity,
-};
+        calStatus: ICalEventStatus,
+        eventId: TEventIdentity,
+        segmentId: TSegmentIdentity,
+    };
 
 
 // does some processing on an Event db model in order to prepare it for calendar export. the idea is to
@@ -313,7 +314,8 @@ export const GetEventCalendarInput = <
     const validSegments = segmentsForCalendar.filter(e => !!e);
 
     return {
-        inputHash: hash256(JSON.stringify(validSegments)),
+        // remove / sanitize to make CONTENT hash stable
+        inputHash: hash256(JSON.stringify(validSegments.map(segment => ({ ...segment, revision: 0 })))),
         segments: validSegments,
     };
 };

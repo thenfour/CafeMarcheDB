@@ -30,7 +30,7 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
     const dashboardContext = useDashboardContext();
     const [take, setTake] = React.useState<number>(50);
 
-    const [qr, refetch] = useQuery(getUserEventAttendance, { userId: props.user.publicId, take });
+    const [qr, refetch] = useQuery(getUserEventAttendance, { bandPublicId: dashboardContext.requireBandPublicId(), userId: props.user.publicId, take });
     const agg = qr.events.reduce((acc, event) => {
         const segAgg = event.segments.reduce((segAcc, seg) => {
             const hasResponse = seg.attendanceId != null;

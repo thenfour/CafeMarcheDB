@@ -2,6 +2,7 @@ import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 
 import db, { Prisma } from "db";
 import { z } from "zod";
+import type { BandPublicId } from "shared/publicId";
 import { isPublicId, type EventPublicId, type EventSegmentPublicId, type EventAttendancePublicId, type EventStatusPublicId, type EventTagPublicId, type EventTypePublicId, type FilePublicId, type InstrumentPublicId, type PermissionPublicId, type SongPublicId, type SongTagAssociationPublicId, type SongTagPublicId, type UserTagPublicId, type UserPublicId } from "shared/publicId";
 
 import type { SortDirection, TAnyModel } from "shared/rootroot";
@@ -41,10 +42,12 @@ export interface CMDBTableFilterModel {
 
 
 export interface TupdateUserEventAttendanceMutationArgs {
+    bandPublicId: BandPublicId;
+    // The server resolves this person to an active membership in the selected band.
     userId: UserPublicId;
     eventId: EventPublicId;
     comment?: string | null; // for event
-    instrumentId?: InstrumentPublicId | null; // for event
+    instrumentId?: InstrumentPublicId | null; // Selected band's instrument public ID.
     isInvited?: boolean | null; // for event
 
     // if undefined, attendance is not set.
@@ -59,6 +62,7 @@ export interface TupdateUserEventAttendanceMutationArgs {
 const ZPositiveRecordId = z.number().int().positive();
 
 export const ZupdateUserEventAttendanceMutationArgs = z.object({
+    bandPublicId: z.custom<BandPublicId>(isPublicId),
     userId: z.custom<UserPublicId>(isPublicId),
     eventId: z.custom<EventPublicId>(isPublicId),
     comment: z.string().nullable().optional(),
@@ -736,9 +740,16 @@ export interface ICalCalendarJSON {
 
 
 export type GetUserAttendanceArgs = {
+    bandPublicId: BandPublicId;
     userId: UserPublicId;
     eventId: EventPublicId;
 }
+
+export const ZGetUserAttendanceArgs = z.object({
+    bandPublicId: z.custom<BandPublicId>(isPublicId),
+    userId: z.custom<UserPublicId>(isPublicId),
+    eventId: z.custom<EventPublicId>(isPublicId),
+}).strict();
 
 export type GetUserAttendanceRet = {
     userId: UserPublicId;

@@ -1,126 +1,33 @@
-// TODO: unify with the normal search api.
-// fyi i think this is only used by the setlist planner LEDs
-
-import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
-import { Ctx } from "@blitzjs/next";
+import { AuthenticationError, AuthorizationError, NotFoundError, type Ctx } from "blitz";
 import db from "db";
-import { BigintToNumber } from "shared/utils";
+import { ZodError } from "zod";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { api } from "src/blitz-server";
-import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
-import { GetUserAttendanceArgs, GetUserAttendanceRet } from "src/core/db3/shared/apiTypes";
-import { xEvent, xEventAttendance, xEventSegment, xEventStatus } from "src/core/db3/shared/schema/event";
-import { xInstrument } from "src/core/db3/shared/schema/instrument";
-import { xUser } from "src/core/db3/shared/schema/user";
-
-
-
-
-async function getUserAttendanceCore(
-    { userId, eventId }: GetUserAttendanceArgs,
-    eventPolicyWhere: Record<string, unknown>,
-): Promise<GetUserAttendanceRet> {
-    // validation.
-
-    const user = await db.user.findFirst({
-        where: { publicId: userId, isDeleted: false },
-    });
-    if (!user) throw new Error("User not found");
-    const event = await db.event.findFirst({
-        where: ComposePrismaWhere(eventPolicyWhere, { publicId: eventId }),
-    });
-    if (!event) throw new Error("Event not found");
-    const eventResponse = await db.eventUserResponse.findFirst({
-        where: {
-            userId: user.id,
-            eventId: event.id,
-        },
-        select: {
-            userComment: true,
-            instrument: {
-                select: {
-                    publicId: true,
-                },
-            },
-        },
-    });
-    const segmentResponses = await db.eventSegmentUserResponse.findMany({
-        include: {
-            eventSegment:
-            {
-                include:
-                {
-                    status: {
-                        select: {
-                            publicId: true
-
-                        }
-                    }
-                }
-            },
-            attendance: {
-                select: {
-                    publicId: true
-
-                }
-            },
-        },
-        where: {
-            userId: user.id,
-            eventSegment: {
-                eventId: event.id,
-            },
-        },
-        orderBy: {
-            eventSegment: {
-                startsAt: "asc",
-            },
-        },
-    });
-
-    return {
-        eventId,
-        userId: userId,
-        comment: eventResponse?.userComment || null,
-        instrumentId: eventResponse?.instrument
-            ? xInstrument.parseIdentity(eventResponse.instrument.publicId)
-            : null,
-        segmentResponses: segmentResponses.map(sr => ({
-            segmentId: xEventSegment.parseIdentity(sr.eventSegment.publicId),
-            name: sr.eventSegment.name,
-            statusId: sr.eventSegment.status ? xEventStatus.parseIdentity(sr.eventSegment.status.publicId) : null,
-            startsAt: sr.eventSegment.startsAt,
-            durationMillis: BigintToNumber(sr.eventSegment.durationMillis),
-            isAllDay: sr.eventSegment.isAllDay,
-            attendanceId: sr.attendance ? xEventAttendance.parseIdentity(sr.attendance.publicId) : null,
-        })),
-    };
-}
-
-function ParseQueryInput(query: any): GetUserAttendanceArgs {
-    return {
-        userId: xUser.parseIdentity(query.userId),
-        eventId: xEvent.parseIdentity(query.eventId),
-    };
-}
+import { readUserEventAttendance } from "src/core/db3/server/eventAttendanceRead";
+import { ZGetUserAttendanceArgs } from "src/core/db3/shared/apiTypes";
 
 export default api(async (req, res, ctx: Ctx) => {
+    if (req.method !== "GET") {
+        res.setHeader("Allow", "GET");
+        res.status(405).json({ error: "Method not allowed" });
+        return;
+    }
     try {
-        const auth = await loadAuthorization(ctx.session);
-        const eventPolicyWhere = await GetAuthorizedTableReadWhere({
-            table: xEvent,
-            auth,
-        });
-
-        const inp = ParseQueryInput(req.query);
-        const slugs = await getUserAttendanceCore(inp, eventPolicyWhere);
-        res.status(200).json(slugs);
+        const args = ZGetUserAttendanceArgs.parse(req.query);
+        const auth = await loadAuthorization(ctx.session, args.bandPublicId);
+        res.status(200).json(await readUserEventAttendance(db, auth, args));
     } catch (error) {
-        console.error("Failed to fetch slugs", error);
-        res.status(500).json({ error: "Failed to fetch data" });
+        if (error instanceof ZodError) {
+            res.status(400).json({ error: "Invalid attendance request" });
+        } else if (error instanceof AuthenticationError) {
+            res.status(401).json({ error: "Authentication required" });
+        } else if (error instanceof AuthorizationError) {
+            res.status(403).json({ error: "Attendance access denied" });
+        } else if (error instanceof NotFoundError) {
+            res.status(404).json({ error: "Attendance target not found" });
+        } else {
+            console.error("Failed to fetch attendance", error);
+            res.status(500).json({ error: "Failed to fetch attendance" });
+        }
     }
 });
-
-
-
-
-

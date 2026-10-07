@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isPublicId, type UserPublicId } from "shared/publicId";
+import { isPublicId, type BandPublicId, type UserPublicId } from "shared/publicId";
 
 export const UserPublicIdSchema = z.custom<UserPublicId>(isPublicId);
 
@@ -71,3 +71,9 @@ export const ZGetUserEventAttendanceArgrs = z.object({
   userId: UserPublicIdSchema,
   take: z.number(),
 });
+
+export const GetBandUserEventAttendanceSchema = z.object({
+  bandPublicId: z.custom<BandPublicId>(isPublicId),
+  userId: UserPublicIdSchema,
+  take: z.number().int().min(1).max(1000),
+}).strict();

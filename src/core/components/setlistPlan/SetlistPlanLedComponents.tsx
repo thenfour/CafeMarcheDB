@@ -39,6 +39,7 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
     const [actualColor, setActualColor] = React.useState<string | ColorPaletteEntry | null>(props.value?.color || null);
     const [userAttendance, setUserAttendance] = React.useState<GetUserAttendanceRet | null>(null);
     const dashboardContext = useDashboardContext();
+    const bandPublicId = dashboardContext.authorizationContext?.bandPublicId;
 
     React.useEffect(() => {
         // unify list of associations.
@@ -47,10 +48,22 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
         // so first find an eventId and a userId.
         const eventId = associations.find((x) => x?.itemType === "event")?.id;
         const userId = associations.find((x) => x?.itemType === "user")?.id;
-        if (props.def.autoColor && eventId && userId) {
-            void fetch(`/api/event/getUserAttendance?userId=${userId}&eventId=${eventId}`)
-                .then((res) => res.json())
+        if (props.def.autoColor && eventId && userId && bandPublicId) {
+            let cancelled = false;
+            setUserAttendance(null);
+            setActualColor(props.value?.color || null);
+            // LSMB todo: use a structured router to generate URLs
+            void fetch(`/api/event/getUserAttendance?${new URLSearchParams({ bandPublicId, userId, eventId })}`)
+                .then((res) => {
+                    if (!res.ok) {
+                        throw new Error("Unable to load attendance color.");
+                    }
+                    return res.json();
+                })
                 .then((data: GetUserAttendanceRet) => {
+                    if (cancelled) {
+                        return;
+                    }
                     setUserAttendance(data);
                     // event ID has been specified, but what if there are multiple segments?
                     // use the first one.
@@ -59,12 +72,18 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
                     if (attendance) {
                         setActualColor(attendance.color);
                     }
-                })
+                }).catch(error => {
+                    if (!cancelled) {
+                        console.error(error);
+                    }
+                });
+            return () => { cancelled = true; };
         } else {
+            setUserAttendance(null);
             setActualColor(props.value?.color || null);
         }
     },
-        [props.def.autoColor, JSON.stringify(props.def.associatedItem), JSON.stringify(props.additionalAssociatedItems), props.value?.color]);
+        [bandPublicId, props.def.autoColor, JSON.stringify(props.def.associatedItem), JSON.stringify(props.additionalAssociatedItems), props.value?.color]);
 
     const style = GetStyleVariablesForColor({
         color: actualColor,
@@ -106,26 +125,26 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
                 onClose={() => setOpen(false)}
                 actions={<Button onClick={() => setOpen(false)}>Close</Button>}
             >
-                    <CMTextInputBase
-                        value={props.value?.text || ""}
-                        //autoFocus={true}
-                        onChange={(e) => props.onChange({
+                <CMTextInputBase
+                    value={props.value?.text || ""}
+                    //autoFocus={true}
+                    onChange={(e) => props.onChange({
+                        ledId: props.def.ledId,
+                        ...props.value,
+                        text: e.target.value
+                    })}
+                />
+                <ColorPick
+                    value={props.value?.color || null}
+                    allowNull={true}
+                    onChange={(newColor) => {
+                        props.onChange({
                             ledId: props.def.ledId,
                             ...props.value,
-                            text: e.target.value
-                        })}
-                    />
-                    <ColorPick
-                        value={props.value?.color || null}
-                        allowNull={true}
-                        onChange={(newColor) => {
-                            props.onChange({
-                                ledId: props.def.ledId,
-                                ...props.value,
-                                color: newColor?.id || null
-                            });
-                        }}
-                    />
+                            color: newColor?.id || null
+                        });
+                    }}
+                />
             </CMDialog>
         )}
     </>;

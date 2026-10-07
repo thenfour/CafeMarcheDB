@@ -30,7 +30,7 @@ import updateAttendance from "@db3/mutations/updateUserEventAttendanceMutation";
 import { createActionRecord } from "@db3/server/recordActionServer";
 import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
 import { projectFeatureReportDetailItem, projectGeneralActivityReportDetailItem } from "src/core/components/featureReports/activityReportTypes";
-import { isPublicId } from "shared/publicId";
+import { isPublicId, parsePublicId } from "shared/publicId";
 import { Permission } from "shared/permissions";
 import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
 import { attendancePublicId } from "../support/eventAttendanceFixtures";
@@ -40,6 +40,8 @@ import { forgeDb3Query } from "./support/db3RequestBuilders";
 import { invokeResolver } from "./support/resolverHarness";
 
 let forbidOuterWrites = false;
+const attendanceBandPublicId = parsePublicId<"Band">("AttendanceBand01");
+
 const permissions = [Permission.login, Permission.manage_events, Permission.admin_events, Permission.view_events_nonpublic,
     Permission.respond_to_events, Permission.change_others_event_responses];
 const actor = createAuthorizationTestUser("normal", { id: 93, permissions });
@@ -130,7 +132,7 @@ describe("Event segment and response public identities", () => {
         const badKey = kind === "numeric" ? "2" : kind === "malformed" ? "bad" : segmentPublicId(kind === "unknown" ? 999 : 2);
         const before = snapshots();
         const create = vi.spyOn(authorizationTestDb.getDelegate("eventSegmentUserResponse"), "create");
-        await expect(invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.publicId, comment: "Must not save",
+        await expect(invokeResolver(updateAttendance, { bandPublicId: attendanceBandPublicId, eventId: event.publicId, userId: actor.publicId, comment: "Must not save",
             segmentResponses: { [segmentPublicId(1)]: { attendanceId: null }, [badKey]: { attendanceId: null } },
         }, ctx)).rejects.toThrow();
         expect(create).not.toHaveBeenCalled();
@@ -139,7 +141,7 @@ describe("Event segment and response public identities", () => {
 
     it("assigns public IDs when creating both response kinds", async () => {
         reset({ eventUserResponse: [], eventSegmentUserResponse: [] });
-        await invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.publicId, comment: "New response",
+        await invokeResolver(updateAttendance, { bandPublicId: attendanceBandPublicId, eventId: event.publicId, userId: actor.publicId, comment: "New response",
             segmentResponses: { [segmentPublicId(1)]: { attendanceId: attendancePublicId(2) } } }, ctx);
         for (const table of ["eventUserResponse", "eventSegmentUserResponse"]) {
             expect(isPublicId(authorizationTestDb.snapshot(table)[0]!.publicId)).toBe(true);

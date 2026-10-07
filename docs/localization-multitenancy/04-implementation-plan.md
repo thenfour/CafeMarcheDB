@@ -133,9 +133,18 @@ cannot authorize these writes. All four attendance captions and descriptions
 use explicit writing locales. Band overrides remain part of scoped display
 resolution. Retired options still label history, while new attendance choices
 exclude retired/inactive options. Native and development-browser checks cover
-this catalog slice. Event ownership, membership invitations/responses and their
-remaining person-level payload dependencies are the next event recovery work;
-the catalog editors do not establish that those workflows are usable.
+this catalog slice.
+
+Dedicated attendance writes, the member-history RPC and the setlist-planner HTTP
+reader now require explicit band selection and resolve the requested person to
+an active BandUser. Response/invitation grants are independent; validation,
+auditing, response revisions and calendar recalculation share the write
+transaction. Reads refresh permissions in a consistent snapshot. Native tests
+and a signed-in development-browser probe cover these endpoints. Existing
+callers forward band context, including cancellation of stale setlist color
+requests after a switch. Event payloads/editing, default/tag invitations,
+bulk segment copy/clear, calendar feeds and full attendance UI parity still
+require recovery; this endpoint slice does not close A0 or A1.
 
 ## A1: restore everyday workflows
 
@@ -203,6 +212,7 @@ implementation/test references and verification obligations for audited removals
 | Settings and branding | Generic DB3 settings storage/view are inactive and preserved in source. Settings/branding pages use registered commands and per-key capabilities, with explicit scope, save/reset and validated clipboard import. Logo editing, optional primary text color and upload controls remain unavailable; hosting mode belongs to deployment configuration. | Verify editors in the built app during A0/A1; recover remaining branding controls and account for legacy clipboard documents under `settings-editors`. |
 | Translation tools | Native catalog controls can edit explicit translations; full inventory/inspection/chrome tooling is incomplete. | Complete after A1. |
 | Shared event catalogs | Type/status/attendance CRUD edits global defaults with platform catalog authority and explicit locales. Dashboard references resolve scoped labels, including retired history. | Verify in the built application during A0/A1; recover event ownership, invitations and responses separately. |
+| Attendance endpoints | Dedicated response writes and person-history/setlist readers resolve active memberships within an explicitly selected band. HTTP reads require authentication and band event-read authority. Native and development-browser endpoint checks pass. | Recover event payload/editor ownership, default/tag invitations, bulk segment operations, feeds and full attendance UI; verify workflows in the built app before closing A1. |
 | Portal routing | Recovery uses explicit `?bandPublicId=<publicId>` and optional `routeLocale`; omission never selects a default band. | Full routing after A1; retain enough explicit selection for A0. |
 | Custom Links | Scoped editor CRUD, file selection/serving, all redirect modes and visits are active. Public URLs require explicit `bandPublicId`; missing, malformed/repeated and unavailable bands return 404. The narrow read-only File target does not enable unfinished general file APIs. | Verify in the built application during A0/A1; integrate URLs with band portal roots when full routing lands after A1. |
 | Telemetry and activity reports | Recording uses explicit presentation context, server-owned actor/internal IDs and band-scoped associations. The formatting locale is separate from raw device locale/language; unregistered/deleted locales remain null. Analytics readers still contain obsolete relations and are not established as usable. | Verify recording in the built app during A0; adapt report permissions, queries, facets and projections before restoring analytics. Calendar-feed ownership remains a separate supporting-domain task. |

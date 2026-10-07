@@ -66,6 +66,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
         });
         try {
             await token.invoke({
+                bandPublicId: dashboardContext.requireBandPublicId(),
                 eventId, userId,
                 ...(change.type === "segment" ? { segmentResponses: { [change.segmentId]: { attendanceId: change.attendanceId } } } : {}),
                 ...(change.type === "instrument" ? { instrumentId: instrumentId ?? null } : {}),

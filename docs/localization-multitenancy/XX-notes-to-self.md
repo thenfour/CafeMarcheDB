@@ -985,4 +985,5 @@ model BandSetting {
    -  supporting routing
 -  xTable should stop being used like a view
    -  only 1 xtable per db entity
+   -  fieldbase should also own serialization, validation (and likely own zod schema at very least for DTO parsing)
 -  find a way to auto-hydrate localized strings. the view would need a way to specify this.

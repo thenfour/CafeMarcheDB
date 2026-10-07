@@ -28,6 +28,8 @@ import { forgeDb3Insert, forgeDb3PublicUpdate } from "./support/db3RequestBuilde
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 
+const attendanceBandPublicId = parsePublicId<"Band">("AttendanceBand01");
+
 const publicVisibility = {
   id: 920_002, // Matches the inherited public-role grant in the database fixture.
   publicId: parsePublicId<"Permission">("PublicVisPerm002"),
@@ -1024,7 +1026,7 @@ describe("BA-S003 event attendance ownership", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(updateUserEventAttendance, {
+    await invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
       userId: actor.publicId,
       eventId: eventPublicId(100),
       comment: "I will be there",
@@ -1056,7 +1058,7 @@ describe("BA-S003 event attendance ownership", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
     const eventLookup = vi.spyOn(authorizationTestDb.getDelegate("event"), "findFirst")
 
-    await expect(invokeResolver(updateUserEventAttendance, {
+    await expect(invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
       userId: target.publicId,
       eventId: eventPublicId(100),
       comment: "Forged",
@@ -1079,7 +1081,7 @@ describe("BA-S003 event attendance ownership", () => {
     })
     const eventLookup = vi.spyOn(authorizationTestDb.getDelegate("event"), "findFirst")
 
-    await expect(invokeResolver(updateUserEventAttendance, {
+    await expect(invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
       userId: target.publicId,
       eventId: eventPublicId(100),
       comment: "Stale grant",
@@ -1118,7 +1120,7 @@ describe("BA-S003 event attendance ownership", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(updateUserEventAttendance, {
+    await invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
       userId: target.publicId,
       eventId: eventPublicId(100),
       comment: "Updated by delegate",
@@ -1143,7 +1145,7 @@ describe("BA-S003 event attendance ownership", () => {
     authorizationTestDb.reset({ user: [actor], event: [makeEvent()], change: [] })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await expect(invokeResolver(updateUserEventAttendance, {
+    await expect(invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
       userId: actor.publicId,
       eventId: eventPublicId(100),
       isInvited: true,
@@ -1165,7 +1167,7 @@ describe("BA-S003 event attendance ownership", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await invokeResolver(updateUserEventAttendance, {
+    await invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
       userId: target.publicId,
       eventId: eventPublicId(100),
       isInvited: true,
@@ -1194,7 +1196,7 @@ describe("BA-S003 event attendance ownership", () => {
     })
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
-    await expect(invokeResolver(updateUserEventAttendance, {
+    await expect(invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
       userId: actor.publicId,
       eventId: eventPublicId(100),
       segmentResponses: { [segmentPublicId(102)]: { attendanceId: attendancePublicId(2) } },
@@ -1211,7 +1213,7 @@ describe("BA-S003 event attendance ownership", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
     const eventLookup = vi.spyOn(authorizationTestDb.getDelegate("event"), "findFirst")
 
-    await expect(invokeResolver(updateUserEventAttendance, {
+    await expect(invokeResolver(updateUserEventAttendance, { bandPublicId: attendanceBandPublicId,
       userId: actor.publicId,
       eventId: eventPublicId(100),
       segmentResponses: { "101suffix": { attendanceId: attendancePublicId(2) } },

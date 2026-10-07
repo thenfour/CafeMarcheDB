@@ -27,6 +27,8 @@ import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { forgeDb3Query } from "./support/db3RequestBuilders";
 import { invokeResolver } from "./support/resolverHarness";
 
+const attendanceBandPublicId = parsePublicId<"Band">("AttendanceBand01");
+
 const permissions = [Permission.login, Permission.admin_events, Permission.manage_events,
     Permission.view_events_nonpublic, Permission.respond_to_events, Permission.change_others_event_responses, Permission.edit_public_homepage, Permission.visibility_members];
 const actor = createAuthorizationTestUser("normal", { id: 93, permissions });
@@ -70,7 +72,7 @@ function reset(overrides: Parameters<typeof authorizationTestDb.reset>[0] = {}) 
 const operations = db3.eventAttendanceEditorView.crud.operations;
 const command = (commandID: string, payload: unknown) => invokeResolver(executeCommand, { commandID, payload }, ctx);
 const changeResponse = (attendanceId: EventAttendancePublicId | null) =>
-    invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.publicId, segmentResponses: { [segment.publicId]: { attendanceId } } }, ctx);
+    invokeResolver(updateAttendance, { bandPublicId: attendanceBandPublicId, eventId: event.publicId, userId: actor.publicId, segmentResponses: { [segment.publicId]: { attendanceId } } }, ctx);
 
 describe("EventAttendance public identities", () => {
     beforeEach(() => { vi.restoreAllMocks(); vi.stubEnv("CMDB_BASE_URL", "https://band.test"); reset(); });
@@ -137,7 +139,7 @@ describe("EventAttendance public identities", () => {
     it("resolves a shared choice once for several segments", async () => {
         reset({ eventSegment: [segment, { ...segment, id: 102, publicId: segmentPublicId(102) }], eventSegmentUserResponse: [] });
         const lookup = vi.spyOn(authorizationTestDb.getDelegate("eventAttendance"), "findMany");
-        await invokeResolver(updateAttendance, { eventId: event.publicId, userId: actor.publicId,
+        await invokeResolver(updateAttendance, { bandPublicId: attendanceBandPublicId, eventId: event.publicId, userId: actor.publicId,
             segmentResponses: { [segment.publicId]: { attendanceId: attendance.publicId }, [segmentPublicId(102)]: { attendanceId: attendance.publicId } },
         }, ctx);
         expect(lookup).toHaveBeenCalledTimes(1);
@@ -153,7 +155,7 @@ describe("EventAttendance public identities", () => {
         const create = vi.spyOn(authorizationTestDb.getDelegate("eventSegmentUserResponse"), "create");
         const badChoice = kind === "numeric" ? 2 : attendancePublicId(kind === "deleted" ? 3 : 999);
         // Forged transport data deliberately bypasses the branded client type.
-        await expect(invokeResolver(updateAttendance, {
+        await expect(invokeResolver(updateAttendance, { bandPublicId: attendanceBandPublicId,
             eventId: event.publicId, userId: actor.publicId, comment: "Must not be saved",
             segmentResponses: { [segment.publicId]: { attendanceId: attendance.publicId }, [segmentPublicId(102)]: { attendanceId: badChoice } },
         } as unknown as TupdateUserEventAttendanceMutationArgs, ctx)).rejects.toThrow();
@@ -163,17 +165,17 @@ describe("EventAttendance public identities", () => {
     });
 
     it("projects user attendance report references", async () => {
-        const result = await invokeResolver(getUserEventAttendance, { userId: actor.publicId, take: 100 }, ctx);
+        const result = await invokeResolver(getUserEventAttendance, { bandPublicId: attendanceBandPublicId, userId: actor.publicId, take: 100 }, ctx);
         expect(result.events[0]!.segments[0]).toMatchObject({ attendanceId: attendance.publicId, statusId });
     });
 
     it("projects attendance and status references in the HTTP API and completes the request", async () => {
         const json = vi.fn();
         // The API wrapper is replaced above; the handler only consumes query, status/json, and context.
-        const handler = attendanceApi as unknown as (req: { query: { userId: string; eventId: string } },
+        const handler = attendanceApi as unknown as (req: { method: string; query: { bandPublicId: string; userId: string; eventId: string } },
             res: { status: (code: number) => { json: typeof json } }, context: typeof ctx) => Promise<void>;
         const status = vi.fn(() => ({ json }));
-        await handler({ query: { userId: actor.publicId, eventId: event.publicId } }, { status }, ctx);
+        await handler({ method: "GET", query: { bandPublicId: attendanceBandPublicId, userId: actor.publicId, eventId: event.publicId } }, { status }, ctx);
         expect(status).toHaveBeenCalledWith(200);
         expect(json).toHaveBeenCalledWith(expect.objectContaining({
             segmentResponses: [expect.objectContaining({ attendanceId: attendance.publicId, statusId })],
