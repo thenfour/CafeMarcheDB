@@ -37,7 +37,7 @@ const MainContent = () => {
                 fieldDescriptionKey: null,
                 selectStyle: "inline",
                 allowDeleteFromCell: false,
-                selectionView: db3.fileTagEditorView,
+                selectionView: db3.bandFileTagView,
             }),
             taggedUsers: columnName => new DB3Client.TagsFieldClient<db3.FileEditorUserTag>({
                 columnName,

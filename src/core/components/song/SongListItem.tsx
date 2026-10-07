@@ -28,7 +28,7 @@ export const SongListItem = (props: SongListItemProps) => {
         association.file ? [{ ...association, file: association.file }] : []
     ));
     const hasFileTagSignificance = (association: typeof taggedFiles[number], significance: string) => (
-        (association.file.tags || []).some(tag => tag.fileTag.significance === significance)
+        (association.file.tags || []).some(tag => tag.bandFileTag.significance === significance)
     );
     const partitions = taggedFiles.filter(file => hasFileTagSignificance(file, db3.FileTagSignificance.Partition));
     const recordings = taggedFiles.filter(file => hasFileTagSignificance(file, db3.FileTagSignificance.Recording));

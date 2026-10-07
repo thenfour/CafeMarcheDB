@@ -95,6 +95,14 @@
       "verification": "Reactivate the preserved projection/filter specifications; test two bands, platform policy, grant revocation, anonymization, private references, CSV and browser report navigation/context switches.",
       "status": "pending",
       "evidence": []
+    },
+    {
+      "id": "file-search",
+      "reason": "Raw File tag text matching cannot query the new localized catalog. General File ownership recovery remains pending.",
+      "restore": "Restore File quick filtering against resolved band tag labels, alongside the File ownership migration.",
+      "verification": "Test localized names, intentional blanks, hidden assigned tags, cross-band visibility, pagination and the built File search.",
+      "status": "pending",
+      "evidence": []
     }
   ],
   "references": [
@@ -1177,6 +1185,12 @@
       "featureId": "activity-reports",
       "source": "9306d02db399b172ad5e9957c64e5930054faae8:tests/authorization/setlistPlanPublicIds.test.ts:140-164",
       "sha256": "76d6a51ba5d4ed5d0b01d6026513b428eaa08da5d9d8fd71ec402b1744da5b17"
+    },
+    {
+      "file": "src/core/db3/shared/schema/file.ts",
+      "featureId": "file-search",
+      "source": "16e1df9a3676926a787728cb1ef970f9d99cf70e:src/core/db3/shared/schema/file.ts:514-533",
+      "sha256": "53c67c38509c8af2b219262e0379ba637cdb443bcb04c00ecdeab26f0d2b2c0d"
     }
   ]
 }

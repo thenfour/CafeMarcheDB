@@ -93,16 +93,24 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** repair or isolate the remaining File/song/wiki
-DB3 payload and descriptor roots, beginning with File tag assignments and their
-Prisma payloads, then isolate deferred pages and non-page entry points together.
-Generic settings storage is no longer registered with DB3; the settings and branding pages use
-the authorized registered-hive editor. Shared client field declarations and
-callers now use registered labels/help on both
-named and legacy render paths. Activity-report pages, RPCs, implementation helpers
-and report-only specifications are now coherently isolated and preserved. Activity
-recording remains active. The normal compiler now gets past that report dependency
-and stops at the legacy File tag-assignment payload contract.
+**Next implementation slice:** repair or isolate legacy event creation, the current
+build stop (`insertEvent.ts` lacks trusted band ownership), then continue the
+remaining File/song/wiki payload roots. File member/instrument relations still
+use removed person/catalog fields, and legacy payloads still include
+`Permission.roles`. Adapt their owning contracts before their consumers; isolate
+deferred pages and non-page entry points together.
+
+File-tag catalogs now use BandFileTag/GlobalFileTag, localized CRUD/editor views,
+inherited display references and `bandFileTagId` assignment metadata. Dashboard
+snapshots include the selected band's tags. Partition/Recording behavior remains
+global. Native and development-browser checks pass; general File editing/uploads
+and localized File quick filtering remain separate recovery work. The removed raw
+tag-text filter is preserved under `file-search`.
+Generic settings storage is no longer registered with DB3; the settings and branding
+pages use the authorized registered-hive editor. Activity-report pages, RPCs,
+implementation helpers and report-only specifications are coherently isolated and
+preserved; recording remains active. Typecheck/build still fail on remaining
+migration contracts, so A0 remains open.
 Preserve the working bootstrap and migrated membership/catalog contracts.
 Platform role administration and membership recovery enhancements remain deferred.
 
@@ -256,6 +264,7 @@ implementation/test references and verification obligations for audited removals
 | `LocalizedMarkdown` | Resolved rendering is available; legacy inline editing is disabled and preserved in source. | Scoped translation/Markdown editing after A1. |
 | Settings and branding | Generic DB3 settings storage/view are inactive and preserved in source. Settings/branding pages use registered commands and per-key capabilities, with explicit scope, save/reset and validated clipboard import. Logo editing, optional primary text color and upload controls remain unavailable; hosting mode belongs to deployment configuration. | Verify editors in the built app during A0/A1; recover remaining branding controls and account for legacy clipboard documents under `settings-editors`. |
 | Translation tools | Native catalog controls can edit explicit translations; full inventory/inspection/chrome tooling is incomplete. | Complete after A1. |
+| File-tag catalogs and File payloads | Shared/band tag CRUD, explicit translations, inherited color/order, hiding, deletion and dashboard references are migrated. Partition/Recording behavior comes only from GlobalFileTag. Assignment metadata uses BandFileTagAssignment; general File row services still reject undeclared ownership. Raw File tag-text quick filtering is disabled with its source preserved under `file-search`. | Recover member/instrument/File ownership, uploads/downloads and resolved File filtering; verify the complete workflows in the built application during A0/A1. |
 | Shared event catalogs | Type/status/attendance CRUD edits global defaults with platform catalog authority and explicit locales. Dashboard references resolve scoped labels, including retired history. | Verify in the built application during A0/A1; recover event ownership, invitations and responses separately. |
 | Attendance endpoints | Dedicated response writes and person-history/setlist readers resolve active memberships within an explicitly selected band. HTTP reads require authentication and band event-read authority. Bulk segment copy/clear use band event administration, preserve recorded history and update affected membership revisions. Native, menu DOM and development-browser endpoint checks pass. | Recover event payload/editor ownership, default/tag invitation management and full attendance UI; verify workflows in the built app before closing A1. |
 | Calendar subscriptions | Private feeds and subscription/preview callers require explicit band context and active membership. Preferences, invitation groups, historical attendance, UIDs/revisions, setlists and band locale/branding remain supported. The account credential is shared across its band URLs; replacing it invalidates every band subscription. | Re-subscribe existing unscoped URLs using the selected band; verify in the built app during A0/A1. Full subscription-page localization and general event UI recovery remain separate. |

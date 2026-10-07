@@ -56,7 +56,7 @@ export const FileTagChip = (props: FileTagChipProps) => {
         border={"noBorder"}
         tooltip={props.value.description && <Markdown markdown={props.value.description} />}
     >
-        {props.value.text}
+        {props.value.name}
     </CMChip>
 }
 

@@ -60,7 +60,7 @@ const routes = [
     { key: "editEventAttendances", pattern: "/backstage/editEventAttendances", caption: "Event Attendance Options", permission: Permission.manage_global_catalogs },
     { key: "editSongTags", pattern: "/backstage/editSongTags", caption: "Song Tags", permission: Permission.admin_songs },
     { key: "editSongCreditTypes", pattern: "/backstage/editSongCreditTypes", caption: "Song Credit Types", permission: Permission.sysadmin },
-    { key: "editFileTags", pattern: "/backstage/editFileTags", caption: "File Tags", permission: Permission.admin_files },
+    { key: "editFileTags", pattern: "/backstage/editFileTags", caption: "File Tags", permission: Permission.admin_files, unscopedPermission: Permission.manage_global_catalogs },
     { key: "editWikiPageTags", pattern: "/backstage/editWikiPageTags", caption: "Wiki Page Tags", permission: Permission.admin_wiki_pages },
     { key: "editUserTags", pattern: "/backstage/editUserTags", caption: "Member Tag Catalog", permission: Permission.manage_user_taxonomy },
     { key: "instruments", pattern: "/backstage/instruments", caption: "Instruments", permission: Permission.admin_instruments },

@@ -205,7 +205,46 @@ export found during this slice was also repaired by naming the public-ID schema
   payload dependency; full event editing/frontpage/search/report readers remain
   unfinished.
 
+- File-tag catalogs now use BandFileTag/GlobalFileTag descriptors, generated CRUD
+  and explicit localized editor/display contracts. The editor requires
+  `admin_files` for the selected band, or `manage_global_catalogs` for platform
+  defaults. Band tags inherit color/order, support intentional blank translations
+  and hiding, and expose the source's Partition/Recording behavior read-only.
+  Shared deletion protects referenced tags; band deletion checks ownership and
+  cascades assignments without deleting files. Dashboard snapshots and existing
+  File/song consumers use the band tag references and `bandFileTagId` metadata.
+  General File execution still needs its own ownership and member/instrument
+  relation recovery. Its old raw tag-text quick filter is preserved under
+  `file-search` until filtering can use resolved localized labels. The adjacent
+  instrument filter now uses the existing dashboard display type rather than
+  its obsolete Prisma client-payload annotation.
+
 ## Verification
+
+The File-tag slice passes 114 focused view/identity/transport/preservation tests
+and 13 native tests across file tags, event tags and dashboard catalogs on a fresh
+private target-schema MariaDB database (`127.0.0.1:32695`). Four native File-tag
+cases cover global behavior grants, band-first translations/blanks/inheritance,
+resolved label filtering, foreign-band rejection, hidden assignments, protected
+shared deletion, band deletion and revoked grants.
+
+The development browser signed in, created a shared tag with Partition behavior
+through the real dialog, displayed its inherited band tag, created a local tag,
+saved a French band override without changing the shared English text, and
+returned to platform mode without retaining band rows. There were no page errors;
+the band editor screenshot was visually checked. Logs/screenshots are under
+`temp/a0-file-tags-*`; the helper removed its disposable database and stopped its
+server/browser, and the private MariaDB instance was shut down. This establishes
+development editor delivery, not a successful production build.
+
+Focused ESLint, preservation verification and diff checks pass. Typecheck falls
+from 195 to 145 diagnostics, with no increased file/error-code groups. The build
+gets past the File tag and adjacent instrument filter failures and stops at
+`src/core/db3/mutations/insertEvent.ts:28`: the legacy creation command has no
+trusted band ownership. The full suite still fails in the Node batch: 278 tests
+and ten suites fail, with 1,488 tests passing and 207 skipped across 140 files.
+Isolated DOM batches are not reached. A0/A1 remain open.
+
 
 The activity-report probe used a fresh private target-schema MariaDB database on
 `127.0.0.1:32695`. A signed-in report manager opened the recovery page in account
@@ -219,16 +258,10 @@ the private MariaDB instance was shut down (`temp/a0-activity-reports-browser-re
 The page's account-context explanation requires login; selected-band requests retain
 the report capability check.
 
-Focused report/page-boundary, instrument/member-instrument, telemetry and
-preservation checks pass, including the native telemetry suite and isolated DOM
-tests. Focused ESLint, `yarn migration:verify` and `git diff --check` pass. Normal
-typecheck diagnostics decreased from 211 to 195. The normal build now stops at
-`FileListItem.tsx`, where legacy File tag assignments do not match the target
-payload contract. The full-suite attempt failed in its Node batch with 278 failed
-tests and ten failed suites, before running isolated DOM files. The six edited
-mixed public-identity files retain the same 35 failing cases as their before-change
-run; their report-only assertions are preserved, not counted as passing tests.
-This is an A0 isolation slice, not a passing build or A0/A1 acceptance.
+The earlier activity-report isolation passed focused page/RPC, telemetry,
+preservation and DOM checks. Report-only specifications remain preserved and
+are not counted as passing tests. Its File tag build blocker is repaired by the
+current slice; full application readiness still requires the remaining contracts.
 
 The response/participant browser probe used a fresh private target-schema database
 on `127.0.0.1:32695`. A signed-in person switched between two bands, including a
@@ -242,7 +275,7 @@ to platform rendered with no page errors. The helper removed its database and
 stopped the development server/browser (`temp/a0-event-responses-browser-result.json`).
 This proves development reader delivery; full event UI and built-app verification
 remain pending. That checkpoint's activity-report build blocker is now isolated;
-the current blocker is the File tag-assignment payload described above.
+the current build blocker is legacy event creation, described above.
 
 The event-tag browser probe used a fresh private target-schema database on
 `127.0.0.1:32695` and a delegated platform catalog manager with a band role. It
@@ -364,7 +397,7 @@ production server could not be checked because the normal build still fails.
 | Custom-link routes/URLs/page guards, bootstrap, view contracts, preservation/recovery boundaries, membership roles and public Markdown/Suspense navigation | Passed: 161 tests across ten files, including two isolated jsdom files. All redirect modes, nested slugs, repeated query values, visit details, routing-parameter exclusion, hash forwarding and the selection-page authorization boundary are covered. |
 | Custom-link CRUD/file authorization, telemetry persistence, dashboard catalogs and member profiles on a fresh private MariaDB fixture | Passed: 24 tests across four files, including six native custom-link cases. Covers duplicate slugs across bands, create/update/delete and visit cascade, server-owned IDs, missing context/revoked authority, file visibility/ownership and crafted unavailable targets. Fixture writes roll back and the generated database is removed. |
 | Existing Custom Link/Menu Link view and schema-wide policy fixtures | The collection view passes with an explicit scoped snapshot. Policy rows now carry band/active-person context and use public identities where natural-ID filtering is forbidden; five earlier failures are recovered. The existing broad metadata assertion still fails because Locale has no DB3 descriptor. |
-| Source preservation and Git provenance | Passed: 152 references in 106 files. Three new references from `0daa91f9` preserve the old invitation views and retired person-assignment/tag payload helpers. The previous 149 references remain unchanged. Nine deferred specifications and eleven pending recovery obligations remain protected. |
+| Source preservation and Git provenance | Passed: 181 references, including the removed raw File tag-text filter. Ten deferred specifications and thirteen pending recovery obligations remain protected. |
 | Preservation safeguards, temporary RPC boundaries, member/page contracts and DOM regression | Passed: 108 tests across ten active files, including 23 preservation checks. Nine wholly disabled specifications are retained separately; eight are under the runner's default `tests/` directory. |
 | Field localization, selectors, instrument editor, presentation delivery, factory contracts and preservation/recovery boundaries | Passed: 106 tests across nine files. Includes band-first labels/help, band and language switches, intentional blanks, composite captions, accessible names, unchanged scalar writes and explicit dialog captions. |
 | Registered settings editor, clipboard validation, settings RPCs/presentation, table authorization and preservation/recovery boundaries | Passed: 122 tests across seven files, including 13 editor DOM checks. Covers explicit scope, blanks/false, failed saves, resets, permissions, band/account switches, batch rejection and pending clipboard cancellation. |
@@ -377,9 +410,9 @@ production server could not be checked because the normal build still fails.
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 214 diagnostics, down from 282 before response/invitation recovery. No increased file/error-code groups, compiler exclusions or error suppression added. |
-| `yarn build` | Gets past the earlier event component failure; stops at `src/core/components/featureReports/activityReportTypes.ts:148`, where the deferred Menu Link report still expects a scalar caption instead of a localized string. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 278 failed, 1,479 passed, 203 skipped across 139 files. Failure counts by file match the participant baseline; no new failure groups remain. The six new MariaDB cases skip without the private test URL and pass in the native run above. Later isolated DOM batches are not reached; focused DOM checks above passed. |
+| `yarn typecheck` | Fails: 145 diagnostics, down from 195 before File-tag recovery. No increased file/error-code groups, compiler exclusions or error suppression added. |
+| `yarn build` | Gets past File-tag and adjacent instrument-filter failures; stops at `src/core/db3/mutations/insertEvent.ts:28`, where legacy event creation lacks trusted band ownership. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 278 failed, 1,488 passed, 207 skipped across 140 files, with ten suite failures. The failure totals match the previous recovery checkpoint. Native File-tag cases skip without the private URL and pass in the native run above; later isolated DOM batches are not reached. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests

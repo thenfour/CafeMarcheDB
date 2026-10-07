@@ -40,6 +40,7 @@ running tests. Neither compiler exclusions nor TypeScript suppressions are used.
 | `account-merge` | Candidate search, picker, preview and confirmation; policy-specific transfers/deduplication, credentials, sessions, rollback, stale-preview and concurrency guarantees. |
 | `account-analysis` | Authorized dependency counts, risk summaries and two-account comparisons. |
 | `dashboard-content` | Relevant events, calendar, announcements/wiki, custom navigation and the required reference catalogs. |
+| `file-search` | File quick filtering against resolved band tag labels, including blanks, hidden assignments, visibility and pagination. General File ownership remains a prerequisite. |
 | `global-search` | Shell search, authorized domain readers, keyboard behavior, selected-band links and cache isolation. |
 | `activity-reports` | Activity timelines, facets, filtering, detail and CSV exports with explicit band/platform authorization, localized references, public identities and anonymization/redaction. Telemetry recording remains executable. |
 | `markdown-editing` | Inline edit/cancel/save/save-and-close, authorization, feedback and refresh against explicit translation scope and locale. |

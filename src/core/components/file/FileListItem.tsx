@@ -73,16 +73,16 @@ export const FileListItem = (props: FileListItemProps) => {
             <div className="chips">
                 {(props.file.tags || []).map(tag => (
                     <CMChip
-                        key={db3.xFileTagAssignment.getIdentity(tag)}
-                        color={tag.fileTag.color}
+                        key={db3.xBandFileTagAssignment.getIdentity(tag)}
+                        color={tag.bandFileTag.color}
                         variation={{
                             ...StandardVariationSpec.Weak,
-                            selected: props.filterSpec.tagFilter.options.includes(tag.fileTagId),
+                            selected: props.filterSpec.tagFilter.options.includes(tag.bandFileTagId),
                         }}
                         size="small"
                         shape="rectangle"
                     >
-                        {tag.fileTag.text}
+                        {tag.bandFileTag.name}
                     </CMChip>
                 ))}
 

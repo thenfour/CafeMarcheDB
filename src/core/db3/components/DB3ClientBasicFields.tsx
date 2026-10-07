@@ -288,7 +288,7 @@ export class MarkdownStringColumnClient<TColumnName extends string = string>
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface GenericIntegerColumnArgs<TColumnName extends string = string> extends DB3ClientCore.ColumnPresentationArgs {
     columnName: TColumnName;
-    cellWidth: number;
+    cellWidth?: number;
     className?: string;
 };
 
@@ -300,7 +300,7 @@ export class GenericIntegerColumnClient<TColumnName extends string = string>
             editable: true,
             headerNameKey: args.fieldCaptionKey,
             isAutoFocusable: true,
-            width: args.cellWidth,
+            width: args.cellWidth || 150,
             visible: true,
             className: args.className,
             fieldCaptionKey: args.fieldCaptionKey,
@@ -505,7 +505,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface ColorColumnArgs<TColumnName extends string = string> extends DB3ClientCore.ColumnPresentationArgs {
     columnName: TColumnName;
-    cellWidth: number;
+    cellWidth?: number;
     className?: string;
 };
 
@@ -520,7 +520,7 @@ export class ColorColumnClient<TColumnName extends string = string>
             headerNameKey: args.fieldCaptionKey,
             className: args.className,
             isAutoFocusable: false,
-            width: args.cellWidth,
+            width: args.cellWidth || 250,
             visible: true,
             GridColProps: {
                 renderCell: (args: GridRenderCellParams) => {
@@ -576,7 +576,7 @@ export interface ConstEnumStringFieldClientItemInfo {
 
 export interface ConstEnumStringFieldClientArgs extends DB3ClientCore.ColumnPresentationArgs {
     columnName: string;
-    cellWidth: number;
+    cellWidth?: number;
     className?: string;
     allowNull?: boolean;
     getItemInfo?: (option: { value: string, label: string }) => ConstEnumStringFieldClientItemInfo;
@@ -594,7 +594,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
             isAutoFocusable: true,
             headerNameKey: args.fieldCaptionKey,
             editable: true,
-            width: args.cellWidth,
+            width: args.cellWidth || 150,
             className: args.className,
             visible: true,
             fieldCaptionKey: args.fieldCaptionKey,

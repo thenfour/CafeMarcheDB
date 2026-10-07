@@ -1,17 +1,20 @@
+import { xBandFileTag } from "../entities/file/fileTagCatalogs";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import type { FileEventTagPublicId, FileInstrumentTagPublicId, FilePublicId, FileSongTagPublicId, FileTagAssignmentPublicId, FileTagPublicId, FileUserTagPublicId, FileWikiPageTagPublicId, FrontpageGalleryItemPublicId } from "shared/publicId";
 import { TAnyModel } from "shared/rootroot";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { DateTimeField, foreignRef, ForeignCollectionField, foreignRefByTableId, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSignificanceField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { DateTimeField, foreignRef, ForeignCollectionField, foreignRefByTableId, GenericIntegerField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
-import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FileWikiPageTagArgs, FileWikiPageTagNaturalOrderBy, FileWikiPageTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
+import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, BandFileTagAssignmentArgs, BandFileTagAssignmentNaturalOrderBy, BandFileTagAssignmentPayload, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FileWikiPageTagArgs, FileWikiPageTagNaturalOrderBy, FileWikiPageTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
 import { CreatedByUserField, MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
 import { xEvent } from "./event";
 import { xInstrument } from "./instrument";
 import { xSong } from "./song";
 import { xWikiPage } from "./wiki";
-import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeTitleField } from "../columnTypes/genericString";
+import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
+import { localizedText } from "../columnTypes/localizedString";
+import { catalogColor } from "../columnTypes/bandCatalog";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 export const xFrontpageTableAuthMap: db3.DB3AuthTablePermissionMap = {
@@ -21,24 +24,6 @@ export const xFrontpageTableAuthMap: db3.DB3AuthTablePermissionMap = {
     Edit: Permission.edit_public_homepage,
     Insert: Permission.edit_public_homepage,
 };
-
-
-// Admin objects are like file tags and similar fields which are viewable by any file users, but only managed by admins.
-export const xFileTableAuth_AdminObjects: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.view_files,
-    View: Permission.view_files,
-    EditOwn: Permission.view_files,
-    Edit: Permission.admin_files,
-    Insert: Permission.admin_files,
-};
-
-export const xFileAuthMap_AdminObjects = db3.defineAuthMap({
-    PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
-    PostQuery: db3.DB3FieldReadAuth.inheritRow,
-    PreMutateAsOwner: Permission.view_files,
-    PreMutate: Permission.admin_files,
-    PreInsert: Permission.admin_files,
-});
 
 
 // files for example, where
@@ -94,73 +79,24 @@ const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeFieldInp
 
 
 
-// // tech rider, partition, invoice, contract, event media, other, what is the usage?
-// model FileTag {
-//     id           Int                  @id @default(autoincrement())
-//     text         String
-//     description  String               @default("")
-//     color        String?
-//     significance String? // 
-//     sortOrder    Int                  @default(0)
-//     fileAssignments       FileTagAssignment[]
-//   }
-
-
-export const xFileTag = db3.defineTable({
-    prismaModel: db3.prismaModel<Prisma.FileTagDelegate>(),
-    getIdentity: (tag: { publicId: FileTagPublicId }) => tag.publicId,
-    getSelectionArgs: (): Prisma.FileTagDefaultArgs => {
-        return FileTagArgs;
-    },
-    tableName: "FileTag",
-    deletePolicy: "hard",
-    naturalOrderBy: FileTagNaturalOrderBy,
-    tableAuthMap: xFileTableAuth_AdminObjects,
-    createInsertModelFromString: (input: string): Partial<FileTagPayload> => {
-        return {
-            text: input,
-            description: "auto-created",
-            sortOrder: 0,
-            color: null,
-            significance: null,
-        };
-    },
-    getRowInfo: (row: FileTagPayload) => ({
-        pk: row.publicId,
-        name: row.text,
-        description: row.description,
-        color: gGeneralPaletteList.findEntry(row.color),
-        ownerUserId: null,
-    }),
-    fields: db3.makeColumnSet({
-        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
-        publicId: () => MakePublicIdField<FileTagPublicId>(),
-        text: columnName => MakeTitleField(columnName, { authMap: xFileAuthMap_AdminObjects }),
-        description: columnName => MakeMarkdownTextField(columnName, { authMap: xFileAuthMap_AdminObjects }),
-        sortOrder: () => MakeSortOrderField({ authMap: xFileAuthMap_AdminObjects }),
-        color: () => MakeColorField({ authMap: xFileAuthMap_AdminObjects }),
-        significance: columnName => MakeSignificanceField(columnName, FileTagSignificance, { authMap: xFileAuthMap_AdminObjects }),
-        fileAssignments: memberName => new GhostField({ memberName, authMap: xFileAuthMap_AdminObjects }),
-    })
-});
-
-
-export const xFileTagAssignment = db3.defineTable({
-    prismaModel: db3.prismaModel<Prisma.FileTagAssignmentDelegate>(),
+export const xBandFileTagAssignment = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.BandFileTagAssignmentDelegate>(),
     getIdentity: (association: { publicId: FileTagAssignmentPublicId }) => association.publicId,
-    tableName: "FileTagAssignment",
+    tableName: "bandFileTagAssignment",
+    tableUniqueName: "BandFileTagAssignment",
+    // File ownership is still deferred; selected-band row services reject this undeclared policy.
     deletePolicy: "hard",
-    naturalOrderBy: FileTagAssignmentNaturalOrderBy,
+    naturalOrderBy: BandFileTagAssignmentNaturalOrderBy,
     tableAuthMap: xFileTableAuth_FileObjects,
-    getSelectionArgs: (): Prisma.FileTagAssignmentDefaultArgs => {
-        return FileTagAssignmentArgs;
+    getSelectionArgs: (): Prisma.BandFileTagAssignmentDefaultArgs => {
+        return BandFileTagAssignmentArgs;
     },
-    getRowInfo: (row: FileTagAssignmentPayload) => {
+    getRowInfo: (row: BandFileTagAssignmentPayload) => {
         return {
             pk: row.publicId,
-            name: row.fileTag?.text || "",
-            description: row.fileTag?.description || "",
-            color: gGeneralPaletteList.findEntry(row.fileTag?.color || null),
+            name: localizedText(row.bandFileTag?.name) ?? "",
+            description: localizedText(row.bandFileTag?.description) ?? undefined,
+            color: catalogColor(row.bandFileTag?.color, gGeneralPaletteList),
             // A view may select only the association IDs and hydrate the tag
             // from a reference store, so the owning file is not guaranteed to
             // be present in every legitimate query shape.
@@ -175,8 +111,8 @@ export const xFileTagAssignment = db3.defineTable({
             fkidMember: "fileId",
             authMap: xFileAuthMap_FileObjects,
         }),
-        fileTag: foreignRef(() => xFileTag, {
-            fkidMember: "fileTagId",
+        bandFileTag: foreignRef(() => xBandFileTag, {
+            fkidMember: "bandFileTagId",
             authMap: xFileAuthMap_FileObjects,
         }),
     })
@@ -420,7 +356,7 @@ const xFileBaseArgs = {
         fileId: { kind: "entityIdentity", targetTableID: "File", authorizeAs: "publicId" },
         fileTagIds: {
             kind: "entityIdentityArray",
-            targetTableID: "FileTag",
+            targetTableID: "BandFileTag",
             authorizeAs: "tags",
         },
     } satisfies db3.DB3QueryParameterMap,
@@ -437,7 +373,7 @@ const xFileBaseArgs = {
         if (params.fileTagIds?.length) {
             ret.push({
                 AND: params.fileTagIds.map(fileTagId => ({
-                    tags: { some: { fileTagId } },
+                    tags: { some: { bandFileTagId: fileTagId } },
                 })),
             });
         }
@@ -511,21 +447,13 @@ const xFileBaseArgs = {
             getQuickFilterWhereClause: (query: string) => false,
         }),
 
-        tags: tagsRef("FileTagAssignment", "FileTag", {
-            associationForeignObjectMember: "fileTag",
+        tags: tagsRef("BandFileTagAssignment", "BandFileTag", {
+            associationForeignObjectMember: "bandFileTag",
+            associationForeignIdentityMember: "bandFileTagId",
             associationLocalObjectMember: "file",
             authMap: xFileAuthMap_FileObjects,
-            getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
-                tags: {
-                    some: {
-                        fileTag: {
-                            text: {
-                                contains: query
-                            }
-                        }
-                    }
-                }
-            }),
+            // Localized tag labels are resolved by their catalog, outside raw File SQL matching.
+            getQuickFilterWhereClause: () => false,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => {
                 // see events tagIds on how to filter by this field.
                 return false;
@@ -773,8 +701,7 @@ export const xFileWikiPageTag = db3.defineTable({
 declare module "../db3core" {
     interface DB3TableTypeRegistry {
         File: typeof xFile;
-        FileTag: typeof xFileTag;
-        FileTagAssignment: typeof xFileTagAssignment;
+        BandFileTagAssignment: typeof xBandFileTagAssignment;
         FileUserTag: typeof xFileUserTag;
         FileSongTag: typeof xFileSongTag;
         FileEventTag: typeof xFileEventTag;
@@ -783,3 +710,33 @@ declare module "../db3core" {
         FrontpageGalleryItem: typeof xFrontpageGalleryItem;
     }
 }
+
+
+// MIGRATION_RESTORE: file-search
+// Source: 16e1df9a3676926a787728cb1ef970f9d99cf70e:src/core/db3/shared/schema/file.ts:514-533
+// Reason: Raw File tag text matching cannot query the new localized catalog. General File ownership recovery remains pending.
+// Restore: Restore File quick filtering against resolved band tag labels, alongside the File ownership migration.
+// Verification: Test localized names, intentional blanks, hidden assigned tags, cross-band visibility, pagination and the built File search.
+// SHA256: 53c67c38509c8af2b219262e0379ba637cdb443bcb04c00ecdeab26f0d2b2c0d
+// MIGRATION_REFERENCE_BEGIN
+//         tags: tagsRef("FileTagAssignment", "FileTag", {
+//             associationForeignObjectMember: "fileTag",
+//             associationLocalObjectMember: "file",
+//             authMap: xFileAuthMap_FileObjects,
+//             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
+//                 tags: {
+//                     some: {
+//                         fileTag: {
+//                             text: {
+//                                 contains: query
+//                             }
+//                         }
+//                     }
+//                 }
+//             }),
+//             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => {
+//                 // see events tagIds on how to filter by this field.
+//                 return false;
+//             },
+//         }), // column: tags
+// MIGRATION_REFERENCE_END

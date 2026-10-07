@@ -594,8 +594,8 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
     const recordingTag = dashboardContext.fileTag.find(
         tag => tag.significance === db3.FileTagSignificance.Recording,
     );
-    const partitionTagId = partitionTag && db3.xFileTag.getIdentity(partitionTag);
-    const recordingTagId = recordingTag && db3.xFileTag.getIdentity(recordingTag);
+    const partitionTagId = partitionTag && db3.xBandFileTag.getIdentity(partitionTag);
+    const recordingTagId = recordingTag && db3.xBandFileTag.getIdentity(recordingTag);
 
     return <SongDetailContainer readonly={props.readonly} songData={songData} tableClient={tableClient} editCommands={editCommands} showVisibility={true}>
 

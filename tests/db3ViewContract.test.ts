@@ -167,10 +167,10 @@ describe("DB3 scalar selection compiler", () => {
       keyof DtoSong,
       "createdByUserId" | "visiblePermissionId" | "isDeleted"
     >
-    type FileTagIsAny = 0 extends (1 & ClientTag["fileTag"]) ? true : false
+    type FileTagIsAny = 0 extends (1 & ClientTag["bandFileTag"]) ? true : false
 
     expectTypeOf<DtoTag["publicId"]>().toEqualTypeOf<FileTagAssignmentPublicId>()
-    expectTypeOf<DtoTag["fileTagId"]>().toEqualTypeOf<FileTagPublicId>()
+    expectTypeOf<DtoTag["bandFileTagId"]>().toEqualTypeOf<FileTagPublicId>()
     expectTypeOf<Extract<keyof DtoTag, "id">>().toEqualTypeOf<never>()
     expectTypeOf<DtoSongTag["publicId"]>().toEqualTypeOf<FileSongTagPublicId>()
     expectTypeOf<DtoEventTag["publicId"]>().toEqualTypeOf<FileEventTagPublicId>()
@@ -180,8 +180,8 @@ describe("DB3 scalar selection compiler", () => {
     expectTypeOf<Extract<keyof DtoEventTag, "id">>().toEqualTypeOf<never>()
     expectTypeOf<Extract<keyof DtoInstrumentTag, "id">>().toEqualTypeOf<never>()
     expectTypeOf<Extract<keyof DtoWikiPageTag, "id">>().toEqualTypeOf<never>()
-    expectTypeOf<ClientTag["fileTag"]>()
-      .toEqualTypeOf<NonNullable<ClientTag["fileTag"]>>()
+    expectTypeOf<ClientTag["bandFileTag"]>()
+      .toEqualTypeOf<NonNullable<ClientTag["bandFileTag"]>>()
     expectTypeOf<ClientSongTag["song"]>()
       .toEqualTypeOf<NonNullable<ClientSongTag["song"]>>()
     expectTypeOf<ClientEventTag["event"]>()
@@ -779,19 +779,21 @@ describe("Wiki page tag derived-view migration", () => {
 
 describe("File derived-view migration", () => {
   it("derives File Tag transport and consumer codecs", () => {
-    type Dto = db3.DtoOf<typeof db3.fileTagEditorView>
-    type Client = db3.ClientOf<typeof db3.fileTagEditorView>
+    type Dto = db3.DtoOf<typeof db3.bandFileTagView>
+    type Client = db3.ClientOf<typeof db3.bandFileTagView>
 
     expectTypeOf<Dto["publicId"]>().toEqualTypeOf<FileTagPublicId>()
     expectTypeOf<Extract<keyof Dto, "id">>().toEqualTypeOf<never>()
-    expectTypeOf<Dto["text"]>().toEqualTypeOf<string>()
+    expectTypeOf<Dto["name"]>().toEqualTypeOf<string | null>()
+    expectTypeOf<Client["name"]>().toEqualTypeOf<LocalizedFieldValue>()
     expectTypeOf<Dto["color"]>()
       .toEqualTypeOf<string | null>()
     expectTypeOf<Client["color"]>()
-      .toEqualTypeOf<ColorPaletteEntry | null>()
-    expect(db3.fileTagEditorView.getSelectionArgs(
+      .toEqualTypeOf<InheritedFieldValue<ColorPaletteEntry | null>>()
+    expect(db3.bandFileTagView.getSelectionArgs(
+      // This catalog's static selection does not inspect the request context.
       {} as db3.DB3ViewSelectionContext,
-    )).toBe(db3.fileTagEditorSelection)
+    )).toBe(db3.bandFileTagContract.prismaSelection)
   })
 
   it("derives finite File Detail DTO relations and normalized client associations", () => {
@@ -843,8 +845,8 @@ describe("File derived-view migration", () => {
     expectTypeOf<Extract<keyof DtoEventTag, "id">>().toEqualTypeOf<never>()
     expectTypeOf<Extract<keyof DtoInstrumentTag, "id">>().toEqualTypeOf<never>()
     expectTypeOf<Extract<keyof DtoWikiPageTag, "id">>().toEqualTypeOf<never>()
-    expectTypeOf<ClientFileTag["fileTag"]>()
-      .toEqualTypeOf<NonNullable<ClientFileTag["fileTag"]>>()
+    expectTypeOf<ClientFileTag["bandFileTag"]>()
+      .toEqualTypeOf<NonNullable<ClientFileTag["bandFileTag"]>>()
     expectTypeOf<ClientUserTag["user"]>()
       .toEqualTypeOf<NonNullable<ClientUserTag["user"]>>()
     expectTypeOf<ClientSongTag["song"]>()
@@ -875,8 +877,8 @@ describe("File derived-view migration", () => {
     expectTypeOf<Dto["customData"]>()
       .toEqualTypeOf<string | null | undefined>()
     expectTypeOf<DetailOnlyKeys>().toEqualTypeOf<never>()
-    expectTypeOf<ClientFileTag["fileTag"]>()
-      .toEqualTypeOf<NonNullable<ClientFileTag["fileTag"]>>()
+    expectTypeOf<ClientFileTag["bandFileTag"]>()
+      .toEqualTypeOf<NonNullable<ClientFileTag["bandFileTag"]>>()
     expect(db3.fileEditorView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
     )).toBe(db3.fileEditorSelection)
@@ -1008,8 +1010,8 @@ describe("Song derived-view migration", () => {
       .toEqualTypeOf<SongCreditTypePublicId>()
     expectTypeOf<ClientTag["tag"]>()
       .toEqualTypeOf<NonNullable<ClientTag["tag"]>>()
-    expectTypeOf<ClientFileTag["fileTag"]>()
-      .toEqualTypeOf<NonNullable<ClientFileTag["fileTag"]>>()
+    expectTypeOf<ClientFileTag["bandFileTag"]>()
+      .toEqualTypeOf<NonNullable<ClientFileTag["bandFileTag"]>>()
     expect(db3.songSearchView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
     )).toBe(db3.songSearchSelection)
@@ -1056,8 +1058,8 @@ describe("Song derived-view migration", () => {
     expectTypeOf<Extract<keyof DtoFileSongAssociation, "id">>().toEqualTypeOf<never>()
     expectTypeOf<FileAuthorizationOnlyKeys>().toEqualTypeOf<never>()
     expectTypeOf<FileSongAuthorizationOnlyKeys>().toEqualTypeOf<never>()
-    expectTypeOf<ClientFileTag["fileTag"]>()
-      .toEqualTypeOf<NonNullable<ClientFileTag["fileTag"]>>()
+    expectTypeOf<ClientFileTag["bandFileTag"]>()
+      .toEqualTypeOf<NonNullable<ClientFileTag["bandFileTag"]>>()
     expectTypeOf<ClientCreditType["color"]>()
       .toEqualTypeOf<ColorPaletteEntry | null>()
     expectTypeOf<ClientCredit["publicId"]>().toEqualTypeOf<SongCreditPublicId>()

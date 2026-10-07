@@ -164,8 +164,8 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                         <CMChipContainer>
                             {file.tags.map(tag => (
                                 <FileTagChip
-                                    key={db3.xFileTagAssignment.getIdentity(tag)}
-                                    value={tag.fileTag}
+                                    key={db3.xBandFileTagAssignment.getIdentity(tag)}
+                                    value={tag.bandFileTag}
                                 />))}
                         </CMChipContainer>) : "",
                     "Tagged Users": (file.taggedUsers && file.taggedUsers.length > 0) ? (

@@ -1,37 +1,61 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { BlitzPage } from "@blitzjs/next";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+import type { BlitzPage } from "@blitzjs/next";
+import { Alert } from "@mui/material";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
+import { bandFileTagView, globalFileTagView } from "src/core/db3/shared/entities/file/fileTagCatalogs";
+import { defineTableClientSpec } from "src/core/db3/components/DB3ClientCore";
+import { GenericIntegerColumnClient, ColorColumnClient, BoolColumnClient, ConstEnumStringFieldClient } from "src/core/db3/components/DB3ClientBasicFields";
+import { LocalizedStringColumnClient, InheritedColumnClient } from "src/core/db3/components/DB3CatalogFields";
+import { usePresentation } from "src/locale/components/PresentationProvider";
+import { useLocale } from "src/locale/components/useLocale";
+import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
+import { LocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 
-
-const tableSpec = DB3Client.defineTableClientSpec({
-    view: db3.fileTagEditorView,
+export const bandFileTagTableSpec = defineTableClientSpec({
+    view: bandFileTagView,
     columns: {
-        publicId: DB3Client.publicIdFieldGen(),
-        text: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.label", columnName, cellWidth: 180 }),
-        description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 200 }),
-        color: columnName => new DB3Client.ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.color", columnName, cellWidth: 300 }),
-        sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.sortOrder", columnName, cellWidth: 80 }),
-        significance: columnName => new DB3Client.ConstEnumStringFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.significance", columnName, cellWidth: 120 }),
+        name: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.name" }),
+        description: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.description" }),
+        color: columnName => new InheritedColumnClient(
+            new ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "catalog.color", columnName }),
+            { fieldCaptionKey: "catalog.color" }
+        ),
+        sortOrder: columnName => new InheritedColumnClient(
+            new GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "catalog.sortOrder", columnName }),
+            { fieldCaptionKey: "catalog.sortOrder" }
+        ),
+        isHidden: columnName => new BoolColumnClient({ columnName, fieldCaptionKey: "catalog.hidden", fieldDescriptionKey: null }),
     },
 });
-
-const MainContent = () => {
+export const globalFileTagTableSpec = defineTableClientSpec({
+    view: globalFileTagView,
+    columns: {
+        name: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.name" }),
+        description: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.description" }),
+        color: columnName => new ColorColumnClient({ columnName, fieldCaptionKey: "catalog.color", fieldDescriptionKey: null }),
+        sortOrder: columnName => new GenericIntegerColumnClient({ columnName, fieldCaptionKey: "catalog.sortOrder", fieldDescriptionKey: null }),
+        significance: columnName => new ConstEnumStringFieldClient({ columnName, fieldCaptionKey: "db3.fields.significance", fieldDescriptionKey: null }),
+    },
+});
+export const FileTagCatalogContent = () => {
+    const dashboard = useDashboardContext();
+    const presentation = usePresentation();
+    const locale = useLocale();
     return <>
-        <LocalizedMarkdown setting="EditFileTagsPage_markdown"></LocalizedMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} view={db3.fileTagEditorView} />
+        <LocalizedMarkdown setting="EditFileTagsPage_markdown" />
+        {presentation.bandPublicId && <Alert severity="info">{locale.getPlainString("catalog.fileTagsSharedDefaults")}</Alert>}
+        {presentation.bandPublicId ? <DB3EditGrid
+            tableSpec={bandFileTagTableSpec} view={bandFileTagView}
+            referenceProvider={dashboard.referenceStore}
+        /> : <DB3EditGrid
+            tableSpec={globalFileTagTableSpec} view={globalFileTagView}
+            referenceProvider={dashboard.referenceStore}
+        />}
     </>;
 };
-
-
 const EditFileTagsPage: BlitzPage = () => {
-    return (
-        <DashboardLayout title="File Tags">
-            <MainContent />
-        </DashboardLayout>
-    )
-}
-
+    const locale = useLocale();
+    const presentation = usePresentation();
+    return <DashboardLayout title={locale.getPlainString(presentation.bandPublicId ? "catalog.fileTags" : "catalog.globalFileTags")}><FileTagCatalogContent /></DashboardLayout>;
+};
 export default EditFileTagsPage;

@@ -1,7 +1,7 @@
-import type { EventTagPublicId, InstrumentPublicId, InstrumentFunctionalGroupPublicId, PermissionPublicId, SongTagPublicId, UserTagPublicId } from "shared/publicId";
+import type { FileTagPublicId, EventTagPublicId, InstrumentPublicId, InstrumentFunctionalGroupPublicId, PermissionPublicId, SongTagPublicId, UserTagPublicId } from "shared/publicId";
 import type { StringResolution } from "src/locale/shared/stringResolution";
 import { hydrateView } from "src/core/db3/shared/core/db3View";
-import { eventTagDashboardView, instrumentDashboardView, instrumentFunctionalGroupDashboardView, permissionDashboardView, songTagDashboardView, userTagDashboardView,
+import { fileTagDashboardView, eventTagDashboardView, instrumentDashboardView, instrumentFunctionalGroupDashboardView, permissionDashboardView, songTagDashboardView, userTagDashboardView,
     createDashboardReferenceStore, registerDashboardReferences } from "src/core/db3/shared/references/dashboardReferences";
 
 function resolution(value: string): StringResolution {
@@ -72,4 +72,13 @@ export function eventTagDtoFixture(publicId: EventTagPublicId, name = "Public") 
 }
 export function eventTagReferenceFixture(publicId: EventTagPublicId, name = "Public") {
     return hydrateView(eventTagDashboardView, eventTagDtoFixture(publicId, name), createDashboardReferenceStore());
+}
+
+export function fileTagReferenceFixture(publicId: FileTagPublicId) {
+    const dto = fileTagDashboardView.parseDto({
+        ...commonFields("Partition", "", 1), publicId,
+        color: null, colorOverride: null, colorInheritedValue: null,
+        globalFileTag: null, significance: "Partition",
+    });
+    return hydrateView(fileTagDashboardView, dto, createDashboardReferenceStore());
 }

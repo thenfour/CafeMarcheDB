@@ -81,14 +81,14 @@ export default api(async (req, res, ctx: Ctx) => {
                     args.visiblePermissionId = fields.visiblePermissionId && db3.xPermission.parseIdentity(
                         fields.visiblePermissionId[0],
                     );
-                    args.fileTagId = fields.fileTagId && db3.xFileTag.parseIdentity(
+                    args.fileTagId = fields.fileTagId && db3.xBandFileTag.parseIdentity(
                         fields.fileTagId[0],
                     );
 
                     const resolvedFileTagId = args.fileTagId === undefined
                         ? undefined
                         : await resolvePublicId(
-                            db3.xFileTag,
+                            db3.xBandFileTag,
                             args.fileTagId,
                             auth,
                             db,

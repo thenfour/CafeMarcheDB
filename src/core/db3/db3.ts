@@ -1,4 +1,5 @@
 export * from "./shared/entities/event/eventTagCatalogs";
+export * from "./shared/entities/file/fileTagCatalogs";
 export * from "./shared/schema/prismArgs"
 
 export * from "./shared/db3core"

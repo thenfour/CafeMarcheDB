@@ -1,5 +1,5 @@
 import { eventStatusDtoFixture, eventTypeDtoFixture } from "../support/eventCatalogFixtures";
-import { groupReferenceFixture, instrumentDtoFixture, instrumentReferenceFixture, permissionReferenceFixture, songTagReferenceFixture, eventTagReferenceFixture } from "../support/catalogReferenceFixtures";
+import { fileTagReferenceFixture, groupReferenceFixture, instrumentDtoFixture, instrumentReferenceFixture, permissionReferenceFixture, songTagReferenceFixture, eventTagReferenceFixture } from "../support/catalogReferenceFixtures";
 import { testBandAuthorization, testServerAuthorization } from "tests/support/serverAuthorization";
 import { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { eventPublicId, segmentPublicId, segmentResponsePublicId, eventResponsePublicId } from "../support/eventResponseFixtures";
@@ -600,7 +600,7 @@ describe("DB3 named views", () => {
         const references = db3.createDashboardReferenceStore();
         const permission = permissionReferenceFixture(permissionPublicId);
         const songTag = songTagReferenceFixture(songTagPublicId);
-        const fileTag = { publicId: fileTagPublicId, text: "Partition", description: "", color: null, sortOrder: 1, significance: db3.FileTagSignificance.Partition };
+        const fileTag = fileTagReferenceFixture(fileTagPublicId);
         db3.registerDashboardReferences(references, {
             permission: [permission],
             songTag: [songTag],
@@ -623,7 +623,7 @@ describe("DB3 named views", () => {
                 songId: songPublicId(7),
                 file: {
                     publicId: filePublicId(8),
-                    tags: [{ publicId: fileTagAssignmentPublicId, fileTagId: fileTag.publicId }],
+                    tags: [{ publicId: fileTagAssignmentPublicId, bandFileTagId: fileTag.publicId }],
                 },
             }],
             credits: [],
@@ -636,8 +636,8 @@ describe("DB3 named views", () => {
         expect(hydrated.tags?.[0]?.tag).toEqual(
             references.require(db3.xSongTag, songTag.publicId, "test"),
         );
-        expect(hydrated.taggedFiles?.[0]?.file?.tags?.[0]?.fileTag).toEqual(
-            references.require(db3.xFileTag, fileTag.publicId, "test"),
+        expect(hydrated.taggedFiles?.[0]?.file?.tags?.[0]?.bandFileTag).toEqual(
+            references.require(db3.xBandFileTag, fileTag.publicId, "test"),
         );
         expectTypeOf(dto.aliases).toEqualTypeOf<string>();
         expectTypeOf(hydrated).toEqualTypeOf<db3.SongSearchClient>();
@@ -646,14 +646,7 @@ describe("DB3 named views", () => {
     it("hydrates the File search view with normalized reference relations", () => {
         const references = db3.createDashboardReferenceStore();
         const permission = permissionReferenceFixture(permissionPublicId);
-        const fileTag = {
-            publicId: fileTagPublicId,
-            text: "Partition",
-            description: "",
-            color: null,
-            sortOrder: 1,
-            significance: db3.FileTagSignificance.Partition,
-        };
+        const fileTag = fileTagReferenceFixture(fileTagPublicId);
         const instrument = instrumentReferenceFixture(instrumentPublicId, hydratedGroup);
         db3.registerDashboardReferences(references, {
             permission: [permission],
@@ -670,7 +663,7 @@ describe("DB3 named views", () => {
             description: "",
             externalURI: null,
             visiblePermissionId: permission.publicId,
-            tags: [{ publicId: fileTagAssignmentPublicId, fileTagId: fileTag.publicId }],
+            tags: [{ publicId: fileTagAssignmentPublicId, bandFileTagId: fileTag.publicId }],
             taggedSongs: [{ publicId: fileSongTagPublicId, song: { publicId: songPublicId(7), name: "A song" } }],
             taggedEvents: [
                 {
@@ -693,8 +686,8 @@ describe("DB3 named views", () => {
             references.require(db3.xPermission, permission.publicId, "test"),
         );
         expect(hydrated.tags).toHaveLength(1);
-        expect(hydrated.tags?.[0]?.fileTag).toEqual(
-            references.require(db3.xFileTag, fileTag.publicId, "test"),
+        expect(hydrated.tags?.[0]?.bandFileTag).toEqual(
+            references.require(db3.xBandFileTag, fileTag.publicId, "test"),
         );
         expect(hydrated.taggedSongs).toHaveLength(1);
         expect(hydrated.taggedSongs?.[0]?.song.name).toBe("A song");
@@ -713,14 +706,7 @@ describe("DB3 named views", () => {
     it("hydrates the File detail view with its relationship panels", () => {
         const references = db3.createDashboardReferenceStore();
         const permission = permissionReferenceFixture(permissionPublicId);
-        const fileTag = {
-            publicId: fileTagPublicId,
-            text: "Partition",
-            description: "",
-            color: null,
-            sortOrder: 1,
-            significance: db3.FileTagSignificance.Partition,
-        };
+        const fileTag = fileTagReferenceFixture(fileTagPublicId);
         const instrument = instrumentReferenceFixture(instrumentPublicId, hydratedGroup);
         db3.registerDashboardReferences(references, {
             permission: [permission],
@@ -758,7 +744,7 @@ describe("DB3 named views", () => {
             previewFileId: null,
             isDeleted: true,
             visiblePermissionId: permission.publicId,
-            tags: [{ publicId: fileTagAssignmentPublicId, fileTagId: fileTag.publicId }],
+            tags: [{ publicId: fileTagAssignmentPublicId, bandFileTagId: fileTag.publicId }],
             taggedUsers: [{ publicId: fileUserTagPublicId, user: { publicId: userPublicId(13), name: "Ada" } }],
             taggedSongs: [{ publicId: fileSongTagPublicId, song: { publicId: songPublicId(14), name: "A song" } }],
             taggedEvents: [{
@@ -786,8 +772,8 @@ describe("DB3 named views", () => {
             references.require(db3.xPermission, permission.publicId, "test"),
         );
         expect(dto).not.toHaveProperty("isDeleted");
-        expect(hydrated.tags?.[0]?.fileTag).toEqual(
-            references.require(db3.xFileTag, fileTag.publicId, "test"),
+        expect(hydrated.tags?.[0]?.bandFileTag).toEqual(
+            references.require(db3.xBandFileTag, fileTag.publicId, "test"),
         );
         expect(hydrated.taggedUsers).toEqual([{ publicId: fileUserTagPublicId, user: { publicId: userPublicId(13), name: "Ada" } }]);
         expect(hydrated.taggedSongs).toEqual([{ publicId: fileSongTagPublicId, song: { publicId: songPublicId(14), name: "A song" } }]);
@@ -1153,8 +1139,8 @@ describe("DB3 named views", () => {
                     tags: [{
                         id: 90,
                         publicId: fileTagAssignmentPublicId,
-                        fileTagId: 30,
-                        fileTag: { publicId: fileTagPublicId },
+                        bandFileTagId: 30,
+                        bandFileTag: { publicId: fileTagPublicId, bandId: 1 },
                     }],
                 },
             }],
@@ -1198,7 +1184,7 @@ describe("DB3 named views", () => {
                     publicId: filePublicId(8),
                     tags: [{
                         publicId: fileTagAssignmentPublicId,
-                        fileTagId: fileTagPublicId,
+                        bandFileTagId: fileTagPublicId,
                     }],
                 },
             }],
@@ -1219,7 +1205,7 @@ describe("DB3 named views", () => {
         const references = db3.createDashboardReferenceStore();
         const permission = permissionReferenceFixture(permissionPublicId);
         const songTag = songTagReferenceFixture(songTagPublicId);
-        const fileTag = { publicId: fileTagPublicId, text: "Partition", description: "", color: null, sortOrder: 1, significance: db3.FileTagSignificance.Partition };
+        const fileTag = fileTagReferenceFixture(fileTagPublicId);
         const instrument = instrumentReferenceFixture(instrumentPublicId, hydratedGroup);
         db3.registerDashboardReferences(references, {
             permission: [permission],
@@ -1254,7 +1240,7 @@ describe("DB3 named views", () => {
                     parentFileId: null,
                     previewFileId: null,
                     visiblePermissionId: permission.publicId,
-                    tags: [{ publicId: fileTagAssignmentPublicId, fileTagId: fileTag.publicId }],
+                    tags: [{ publicId: fileTagAssignmentPublicId, bandFileTagId: fileTag.publicId }],
                     taggedUsers: [],
                     taggedSongs: [],
                     taggedEvents: [],
@@ -1277,8 +1263,8 @@ describe("DB3 named views", () => {
         expect(hydrated.taggedFiles?.[0]?.file.visiblePermission).toEqual(
             references.require(db3.xPermission, permission.publicId, "test"),
         );
-        expect(hydrated.taggedFiles?.[0]?.file.tags?.[0]?.fileTag).toEqual(
-            references.require(db3.xFileTag, fileTag.publicId, "test"),
+        expect(hydrated.taggedFiles?.[0]?.file.tags?.[0]?.bandFileTag).toEqual(
+            references.require(db3.xBandFileTag, fileTag.publicId, "test"),
         );
         expect(hydrated.taggedFiles?.[0]?.file.taggedInstruments?.[0]?.instrument).toEqual(
             references.require(db3.xInstrument, instrument.publicId, "test"),
@@ -1339,8 +1325,8 @@ describe("DB3 named views", () => {
                     tags: [{
                         id: 90,
                         publicId: fileTagAssignmentPublicId,
-                        fileTagId: 30,
-                        fileTag: { publicId: fileTagPublicId },
+                        bandFileTagId: 30,
+                        bandFileTag: { publicId: fileTagPublicId, bandId: 1 },
                     }],
                     taggedUsers: [],
                     taggedSongs: [{
@@ -1393,7 +1379,7 @@ describe("DB3 named views", () => {
                     fileLeafName: "score.pdf",
                     tags: [{
                         publicId: fileTagAssignmentPublicId,
-                        fileTagId: fileTagPublicId,
+                        bandFileTagId: fileTagPublicId,
                     }],
                     taggedSongs: [{
                         publicId: fileSongTagPublicId,

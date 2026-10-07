@@ -41,14 +41,14 @@ export const GetSongFileInfo = (song: db3.SongDetailClient) => {
 
     const enrichedFiles = song.taggedFiles ?? [];
 
-    const partitions = enrichedFiles.filter(f => (f.file.tags ?? []).some(t => t.fileTag.significance === db3.FileTagSignificance.Partition));
-    const recordings = enrichedFiles.filter(f => (f.file.tags ?? []).some(t => t.fileTag.significance === db3.FileTagSignificance.Recording));
+    const partitions = enrichedFiles.filter(f => (f.file.tags ?? []).some(t => t.bandFileTag.significance === db3.FileTagSignificance.Partition));
+    const recordings = enrichedFiles.filter(f => (f.file.tags ?? []).some(t => t.bandFileTag.significance === db3.FileTagSignificance.Recording));
     const otherFiles = enrichedFiles.filter(
         f =>
             !(f.file.tags ?? []).some(
                 t =>
-                    t.fileTag.significance === db3.FileTagSignificance.Partition ||
-                    t.fileTag.significance === db3.FileTagSignificance.Recording
+                    t.bandFileTag.significance === db3.FileTagSignificance.Partition ||
+                    t.bandFileTag.significance === db3.FileTagSignificance.Recording
             )
     );
     return {

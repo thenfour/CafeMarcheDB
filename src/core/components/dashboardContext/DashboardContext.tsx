@@ -268,7 +268,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.eventAttendance = new TableAccessor(dashboardData.eventAttendance, value => db3.xEventAttendance.getIdentity(value));
     valueRef.current.fileTag = new TableAccessor(
         dashboardData.fileTag,
-        tag => db3.xFileTag.getIdentity(tag),
+        tag => db3.xBandFileTag.getIdentity(tag),
     );
     valueRef.current.referenceStore = dashboardData.referenceStore;
     valueRef.current.instrumentFunctionalGroup = new TableAccessor(

@@ -16,9 +16,7 @@ import {
     xEventStatus,
     xEventType,
 } from "../schema/event";
-import {
-    xFileTag,
-} from "../schema/file";
+import { xBandFileTag, bandFileTagDisplayContract } from "../entities/file/fileTagCatalogs";
 import {
     xBandInstrument,
     xBandInstrumentFunctionalGroup,
@@ -51,17 +49,6 @@ const dashboardWikiPageTagSelection = Prisma.validator<Prisma.WikiPageTagDefault
     },
 });
 
-const dashboardFileTagSelection = Prisma.validator<Prisma.FileTagDefaultArgs>()({
-    select: {
-        publicId: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        significance: true,
-    },
-});
-
 const dashboardSongCreditTypeSelection = Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
     select: {
         publicId: true,
@@ -85,10 +72,7 @@ export const dashboardEventTypeResource = eventTypeDisplayContract;
 export const dashboardEventStatusResource = eventStatusDisplayContract;
 export const dashboardEventTagResource = bandEventTagDisplayContract;
 export const dashboardEventAttendanceResource = eventAttendanceDisplayContract;
-export const dashboardFileTagResource = deriveViewContract(
-    xFileTag,
-    dashboardFileTagSelection,
-);
+export const dashboardFileTagResource = bandFileTagDisplayContract;
 export const dashboardInstrumentFunctionalGroupResource = bandInstrumentGroupDisplayContract;
 export const dashboardSongTagResource = bandSongTagDisplayContract;
 export const dashboardSongCreditTypeResource = deriveViewContract(
@@ -104,7 +88,7 @@ export const dashboardLeafReferenceContract = defineReferenceContract({
     eventStatus: reference(xEventStatus)<ReturnType<typeof dashboardEventStatusResource.hydrate>>(),
     eventTag: reference(xBandEventTag)<ReturnType<typeof dashboardEventTagResource.hydrate>>(),
     eventAttendance: reference(xEventAttendance)<ReturnType<typeof dashboardEventAttendanceResource.hydrate>>(),
-    fileTag: reference(xFileTag)<ReturnType<typeof dashboardFileTagResource.hydrate>>(),
+    fileTag: reference(xBandFileTag)<ReturnType<typeof dashboardFileTagResource.hydrate>>(),
     instrumentFunctionalGroup: reference(xBandInstrumentFunctionalGroup)<
         ReturnType<typeof dashboardInstrumentFunctionalGroupResource.hydrate>
     >(),
@@ -184,7 +168,7 @@ export const eventAttendanceDashboardView = defineView({
 
 export const fileTagDashboardView = defineView({
     viewID: "FileTag_Dashboard",
-    entity: xFileTag,
+    entity: xBandFileTag,
     selection: dashboardFileTagResource.prismaSelection,
     dtoSchema: dashboardFileTagResource.dtoSchema,
     references: dashboardFileTagResource.referenceContract,
@@ -344,7 +328,7 @@ export function registerDashboardReferences(
         store.register(xEventAttendance, input.eventAttendance);
     }
     if (input.fileTag) {
-        store.register(xFileTag, input.fileTag);
+        store.register(xBandFileTag, input.fileTag);
     }
     if (input.instrumentFunctionalGroup) {
         store.register(

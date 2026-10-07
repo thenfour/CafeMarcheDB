@@ -178,7 +178,7 @@ const songSearchTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
                         tags: {
                             select: {
                                 publicId: true,
-                                fileTagId: true,
+                                bandFileTagId: true,
                             },
                         },
                     },
@@ -273,9 +273,9 @@ export const songSearchView = defineView({
                 file: association.file && {
                     ...association.file,
                     tags: association.file.tags
-                        ?.flatMap(tagAssociation => tagAssociation.fileTag == null ? [] : [{
+                        ?.flatMap(tagAssociation => tagAssociation.bandFileTag == null ? [] : [{
                             ...tagAssociation,
-                            fileTag: tagAssociation.fileTag,
+                            bandFileTag: tagAssociation.bandFileTag,
                         }]),
                 },
             })),

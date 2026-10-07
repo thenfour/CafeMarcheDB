@@ -35,8 +35,8 @@ describe("DB3 table identity authority", () => {
             .toBe(galleryPublicId(42));
         expect(db3.xFrontpageGalleryItem.isIdentity(42)).toBe(false);
         expect(db3.xInstrument.parseDatabaseIdentity(42)).toBe(42);
-        expect(db3.xFileTag.getIdentity({ publicId: fileTagPublicId })).toBe(fileTagPublicId);
-        expect(db3.xFileTagAssignment.getIdentity({ publicId: fileTagAssignmentPublicId }))
+        expect(db3.xBandFileTag.getIdentity({ publicId: fileTagPublicId })).toBe(fileTagPublicId);
+        expect(db3.xBandFileTagAssignment.getIdentity({ publicId: fileTagAssignmentPublicId }))
             .toBe(fileTagAssignmentPublicId);
         expect(db3.xWikiPageTag.getIdentity({ publicId: wikiPageTagPublicId }))
             .toBe(wikiPageTagPublicId);

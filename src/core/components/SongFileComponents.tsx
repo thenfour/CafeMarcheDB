@@ -325,11 +325,11 @@ export const FileValueViewer = (props: FileViewerProps) => {
                         tags
                             .filter(a => !props.hiddenTagIds.fileTagIds || !existsInArray(
                                 props.hiddenTagIds.fileTagIds,
-                                db3.xFileTag.getIdentity(a.fileTag),
+                                db3.xBandFileTag.getIdentity(a.bandFileTag),
                             ))
                             .map(a => <CMStandardDBChip
-                                key={db3.xFileTagAssignment.getIdentity(a)}
-                                model={a.fileTag}
+                                key={db3.xBandFileTagAssignment.getIdentity(a)}
+                                model={a.bandFileTag}
                                 size="small"
                                 variation={variation}
                             />)
@@ -449,7 +449,7 @@ export const FileEditor = (props: FileEditorProps) => {
                 fieldDescriptionKey: null,
                 allowDeleteFromCell: false,
                 selectStyle: 'inline',
-                selectionView: db3.fileTagEditorView,
+                selectionView: db3.bandFileTagView,
             }),
             taggedInstruments: DB3Client.tagsFieldClientGen<db3.FileEditorInstrumentTag>({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.instruments",
                 cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline',
@@ -500,10 +500,10 @@ export const FileEditor = (props: FileEditorProps) => {
             ),
         tags: props.initialValue.tags.map(association => ({
             ...association,
-            fileTag: dashboardContext.referenceStore.require(
-                db3.xFileTag,
-                association.fileTagId,
-                `File(${props.initialValue.publicId}).tags.fileTag`,
+            bandFileTag: dashboardContext.referenceStore.require(
+                db3.xBandFileTag,
+                association.bandFileTagId,
+                `File(${props.initialValue.publicId}).tags.bandFileTag`,
             ),
         })),
         taggedInstruments: props.initialValue.taggedInstruments.map(association => ({
@@ -593,7 +593,7 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         const taggedSongs = item.file.taggedSongs ?? [];
         const taggedEvents = item.file.taggedEvents ?? [];
         const taggedWikiPages = item.file.taggedWikiPages ?? [];
-        const tagIds = tags.map(tag => db3.xFileTag.getIdentity(tag.fileTag));
+        const tagIds = tags.map(tag => db3.xBandFileTag.getIdentity(tag.bandFileTag));
         if (spec.tagIds.length && !tagIds.some(id => spec.tagIds.includes(id))) return false;
 
         const userIds = taggedUsers.map(user => user.user.publicId);
@@ -632,7 +632,7 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
             taggedEvents.map(i => (i.event.name || "").toLocaleLowerCase()),
             taggedSongs.map(i => (i.song.name || "").toLocaleLowerCase()),
             taggedWikiPages.map(i => (i.wikiPage.slug || "").toLocaleLowerCase()),
-            tags.map(i => i.fileTag.text.toLocaleLowerCase()),
+            tags.map(i => (i.bandFileTag.name || "").toLocaleLowerCase()),
         ];
 
         return filterTokens.every(searchToken => tokensToSearch.flat().some(t => t.includes(searchToken)));
@@ -749,14 +749,14 @@ const CalculateUniqueMimeTypes = (props: { fileTags: FileTagBase[] }): Calculate
 export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps) => {
     const dashboardContext = useDashboardContext();
 
-    const getInstrumentColor = (instrument: db3.InstrumentClientPayload) => {
+    const getInstrumentColor = (instrument: db3.InstrumentDashboardClient) => {
         const fg = dashboardContext.instrumentFunctionalGroup.getById(instrument.functionalGroupId);
         if (!fg) return null;
         return fg.color;
     };
 
     const uniqueTags = CalculateUniqueTags<db3.FileTagDashboardClient>({ field: db3.xFile.fields.tags, fileTags: props.fileTags });
-    const uniqueInstrumentTags = CalculateUniqueTags<db3.InstrumentClientPayload>({ field: db3.xFile.fields.taggedInstruments, fileTags: props.fileTags });
+    const uniqueInstrumentTags = CalculateUniqueTags<db3.InstrumentDashboardClient>({ field: db3.xFile.fields.taggedInstruments, fileTags: props.fileTags });
     const uniqueEventTags = CalculateUniqueTags<{ publicId: EventPublicId; name: string }>({ field: db3.xFile.fields.taggedEvents, fileTags: props.fileTags });
     const uniqueUserTags = CalculateUniqueTags<db3.UserPayloadMinimum>({ field: db3.xFile.fields.taggedUsers, fileTags: props.fileTags });
     const uniqueSongTags = CalculateUniqueTags<db3.SongPayloadMinimum>({ field: db3.xFile.fields.taggedSongs, fileTags: props.fileTags });
@@ -805,7 +805,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                                     {uniqueTags.length > 1 && <CMChipContainer>
                                         {uniqueTags.map(t => (
                                             <CMChip
-                                                key={db3.xFileTag.getIdentity(t.tag)}
+                                                key={db3.xBandFileTag.getIdentity(t.tag)}
                                                 color={t.tag.color}
                                                 tooltip={t.tag.description}
                                                 size='small'
@@ -813,18 +813,18 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                                                     ...StandardVariationSpec.Strong,
                                                     selected: existsInArray(
                                                         props.value.tagIds,
-                                                        db3.xFileTag.getIdentity(t.tag),
+                                                        db3.xBandFileTag.getIdentity(t.tag),
                                                     ),
                                                 }}
                                                 onClick={() => props.onChange({
                                                     ...props.value,
                                                     tagIds: toggleValueInArray(
                                                         props.value.tagIds,
-                                                        db3.xFileTag.getIdentity(t.tag),
+                                                        db3.xBandFileTag.getIdentity(t.tag),
                                                     ),
                                                 })}
                                             >
-                                                {t.tag.text} ({t.count})
+                                                {t.tag.name} ({t.count})
                                             </CMChip>))}
                                     </CMChipContainer>}
                                 </div>

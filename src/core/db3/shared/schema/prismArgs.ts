@@ -12,7 +12,6 @@ import type {
     EventTypePublicId,
     EventUserResponsePublicId,
     FilePublicId,
-    FileTagPublicId,
     InstrumentFunctionalGroupPublicId,
     InstrumentPublicId,
     PermissionPublicId,
@@ -868,42 +867,18 @@ export const EventNaturalOrderBy: Prisma.EventOrderByWithRelationInput[] = [
 
 
 ////////////////////////////////////////////////////////////////
-export const FileTagArgs = Prisma.validator<Prisma.FileTagArgs>()({
-    include: {
-        fileAssignments: true,
-    }
-});
-
-export type FileTagPayload = Prisma.FileTagGetPayload<typeof FileTagArgs>;
-
-export type FileTagClientPayload = Omit<
-    Prisma.FileTagGetPayload<{}>,
-    "id" | "publicId" | "color"
-> & {
-    publicId: FileTagPublicId;
-    color: ColorPaletteEntry | null;
-};
-
-export const FileTagNaturalOrderBy: Prisma.FileTagOrderByWithRelationInput[] = [
-    { sortOrder: 'asc' },
-    { text: 'asc' },
-    { id: 'asc' },
-];
-
-
 ////////////////////////////////////////////////////////////////
-export const FileTagAssignmentArgs = Prisma.validator<Prisma.FileTagAssignmentArgs>()({
+export const BandFileTagAssignmentArgs = Prisma.validator<Prisma.BandFileTagAssignmentDefaultArgs>()({
     include: {
         file: true,
-        fileTag: true,
+        bandFileTag: { include: { name: true, description: true, globalFileTag: true } },
     }
 });
-export type FileTagAssignmentPayload = Prisma.FileTagAssignmentGetPayload<typeof FileTagAssignmentArgs>;
+export type BandFileTagAssignmentPayload = Prisma.BandFileTagAssignmentGetPayload<typeof BandFileTagAssignmentArgs>;
 
-export const FileTagAssignmentNaturalOrderBy: Prisma.FileTagAssignmentOrderByWithRelationInput[] = [
-    { fileTag: { sortOrder: 'asc' } },
-    { fileTag: { text: 'asc' } },
-    { fileTag: { id: 'asc' } },
+export const BandFileTagAssignmentNaturalOrderBy: Prisma.BandFileTagAssignmentOrderByWithRelationInput[] = [
+    { bandFileTag: { sortOrder: 'asc' } },
+    { publicId: 'asc' },
 ];
 
 
@@ -1048,7 +1023,7 @@ export const FileArgs = Prisma.validator<Prisma.FileArgs>()({
         },
         uploadedByUser: true,
 
-        tags: FileTagAssignmentArgs,
+        tags: BandFileTagAssignmentArgs,
         taggedUsers: FileUserTagArgs,
         taggedSongs: FileSongTagArgs,
         taggedEvents: FileEventTagArgs,

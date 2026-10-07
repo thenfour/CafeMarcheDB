@@ -102,11 +102,11 @@ describe("instrument catalog public-ID transport", () => {
                 id: 92,
                 publicId: fileTagAssociationPublicId,
                 fileId: 90,
-                fileTagId: 21,
-                fileTag: {
+                bandFileTagId: 21,
+                bandFileTag: {
                     id: 21,
                     publicId: fileTagPublicId,
-                    text: "Partition",
+                    name: "Partition",
                 },
             }],
             taggedUsers: [{
@@ -159,11 +159,11 @@ describe("instrument catalog public-ID transport", () => {
         expect(nestedInstrument.functionalGroup).not.toHaveProperty("id");
         expect(projectedFile.tags[0]).toMatchObject({
             publicId: fileTagAssociationPublicId,
-            fileTagId: fileTagPublicId,
-            fileTag: { publicId: fileTagPublicId, text: "Partition" },
+            bandFileTagId: fileTagPublicId,
+            bandFileTag: { publicId: fileTagPublicId, name: "Partition" },
         });
         expect(projectedFile.tags[0]).not.toHaveProperty("id");
-        expect(projectedFile.tags[0].fileTag).not.toHaveProperty("id");
+        expect(projectedFile.tags[0].bandFileTag).not.toHaveProperty("id");
         expect(projectedFile.taggedUsers[0]).toMatchObject({
             publicId: fileUserTagPublicId,
             userId: userPublicId(100),
@@ -397,18 +397,18 @@ describe("instrument catalog public-ID transport", () => {
             updateModel: { tagId: songTagPublicId },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
-            tableID: "FileTag",
-            tableName: "FileTag",
+            tableID: "BandFileTag",
+            tableName: "bandFileTag",
             mutationType: "update",
             updatePublicId: fileTagPublicId,
-            updateModel: { text: "Chart" },
+            updateModel: { name: { kind: "set", localeTag: "en-US", stringPublicId: null, value: "Chart" } },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
-            tableID: "FileTagAssignment",
-            tableName: "FileTagAssignment",
+            tableID: "BandFileTagAssignment",
+            tableName: "bandFileTagAssignment",
             mutationType: "update",
             updatePublicId: fileTagAssociationPublicId,
-            updateModel: { fileTagId: fileTagPublicId },
+            updateModel: { bandFileTagId: fileTagPublicId },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
             tableID: "WikiPageTag",

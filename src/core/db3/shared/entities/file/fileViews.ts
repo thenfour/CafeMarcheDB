@@ -7,31 +7,8 @@ import { graft } from "../common/viewCommon";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
 import {
     xFile,
-    xFileTag,
     xFrontpageGalleryItem,
 } from "../../schema/file";
-
-export const fileTagEditorSelection = Prisma.validator<Prisma.FileTagDefaultArgs>()({
-    select: {
-        publicId: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        significance: true,
-    },
-});
-
-const fileTagEditorContract = deriveViewContract(xFileTag, fileTagEditorSelection);
-
-export const fileTagEditorView = defineCrudView({
-    viewID: "FileTag_Editor",
-    entity: xFileTag,
-    operations: { create: true, update: true, delete: true },
-    selection: fileTagEditorContract.prismaSelection,
-    dtoSchema: fileTagEditorContract.dtoSchema,
-    hydrate: fileTagEditorContract.hydrate,
-});
 
 const frontpageGalleryItemEditorSelection = Prisma.validator<Prisma.FrontpageGalleryItemDefaultArgs>()({
     select: {
@@ -215,7 +192,7 @@ export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArg
         tags: {
             select: {
                 publicId: true,
-                fileTagId: true,
+                bandFileTagId: true,
             },
         },
         taggedUsers: {
