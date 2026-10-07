@@ -12,7 +12,7 @@ import { useConfirm } from "../ConfirmationDialog";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { useSnackbar } from "../SnackbarContext";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
-import { EnrichedVerboseUser } from "./UserListItem";
+import type { UserClientPayload } from "src/core/db3/shared/schema/prismArgs";
 import { useUserLifecycleActions } from "./useUserLifecycleActions";
 
 
@@ -30,14 +30,14 @@ type UserMgmtCaps = {
 }
 
 interface UserAdminPanelProps {
-    user: EnrichedVerboseUser;
+    user: UserClientPayload;
     refetch?: () => void;
     capabilities: UserMgmtCaps;
 }
 
 export type DeactivateUserButtonProps = {
     capabilities: UserMgmtCaps;
-    user: EnrichedVerboseUser;
+    user: UserClientPayload;
     onOK?: () => void;
 };
 
@@ -101,7 +101,7 @@ export const ReactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
 
 type SetUserSysadminButtonProps = {
     capabilities: UserMgmtCaps;
-    user: EnrichedVerboseUser;
+    user: UserClientPayload;
     onOK?: () => void;
 };
 
@@ -160,7 +160,6 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
 
     </>;
 };
-
 
 // MIGRATION_RESTORE: account-merge
 // Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/UserAdminPanel.tsx:1-165

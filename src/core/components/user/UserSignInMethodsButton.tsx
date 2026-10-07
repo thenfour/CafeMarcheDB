@@ -11,10 +11,10 @@ import { CMButton } from "../CMCoreComponents2";
 import { CMDialog } from "../CMDialog";
 import { useConfirm } from "../ConfirmationDialog";
 import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
-import type { EnrichedVerboseUser } from "./UserListItem";
+import type { UserClientPayload } from "src/core/db3/shared/schema/prismArgs";
 import { xUserSignInMethod } from "src/core/db3/shared/schema/userSignInMethod";
 
-type Props = { user: EnrichedVerboseUser; onChanged?: () => void };
+type Props = { user: UserClientPayload; onChanged?: () => void };
 
 const SignInMethodsEditor = ({ user, onChanged }: Props) => {
     const [data, { refetch }] = useQuery(getUserSignInMethods, { userId: user.publicId });

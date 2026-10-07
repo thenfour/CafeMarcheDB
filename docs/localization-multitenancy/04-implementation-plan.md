@@ -98,6 +98,17 @@ at the deferred event-search payload contract.
 Preserve the working bootstrap and migrated membership/catalog contracts.
 Platform role administration and membership recovery enhancements remain deferred.
 
+Shared account selectors, the `User_Editor` view and its generated writes now
+contain person fields only. Membership views/commands retain instrument and tag
+assignments. The obsolete `UserInstrument` descriptor/editor/CRUD registrations
+and unreachable person-profile/directory renderers are disabled and preserved.
+Deferred invitation views still resolve the old tag-assignment read metadata at
+startup; its writes are disabled. Remove that dependency together with the event
+payload roots, including `UserWithInstrumentsArgs` and `xUserWithInstrument`.
+Platform account administration also still needs its table/field read permissions
+adapted to platform context; this selector repair does not establish that the
+account grid is usable.
+
 ## A1: restore everyday workflows
 
 Once A0 passes, keep the application runnable after each slice and manually test
@@ -169,6 +180,7 @@ implementation/test references and verification obligations for audited removals
 | Platform role administration | Legacy Role descriptors, views, commands and account role controls are removed. Assignment/designation RPCs reject before database access; `/backstage/roles` and `/backstage/rolePermissions` explain unavailability. Existing global/band role definitions still authorize requests; membership role assignment remains available. | Build GlobalRole/BandRole and permission editors after A1. |
 | Shared-account merging and dependency reports | Merge search, preview, commit and dependency-analysis RPCs explicitly reject without database access. Merge controls and obsolete person-level merge policies are removed; the analysis tab explains unavailability. Capability responses do not advertise merge or account-role assignment. | Restore cross-band account workflows after A1 with complete ownership-aware policies. |
 | Other shared-account/platform administration | Band grants cannot authorize shared-account or global-catalog writes; remaining legacy consumers need adaptation or isolation. | Finish isolation during A0; complete broader workflows after A1. |
+| Person-level instrument/tag editors | Shared User reads/editor/writes no longer include band assignments. `UserInstrument` storage/editor/CRUD are unregistered; unreachable legacy profile/directory renderers are preserved. The old tag-assignment descriptor remains a startup read dependency for deferred invitation views, with writes disabled. Migrated BandUser assignment commands remain active. | Remove remaining invitation/person-map metadata with event payload recovery during A0; verify full profile/directory parity under their existing preservation obligations. |
 | Catalog/demo seeds | Production seeds initialize access control. Old demo generators are preserved as disabled source. | Restore seed data needed by a named acceptance path before A1; account for remaining generators at B, with explicit approval for retirement. |
 | Legacy synchronous band guards | `resolver.authorize` rejects band capabilities. | Required callers use fresh request authorization and loaded resource ownership. |
 

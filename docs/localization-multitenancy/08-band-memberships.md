@@ -6,6 +6,12 @@ preferences, and active status. These migrated contracts use
 They do not establish whole-application readiness. Further lifecycle features and
 advanced directory work follow the [restoration plan](04-implementation-plan.md).
 
+Generic shared-account DB3 selectors and `User_Editor` deliver person fields only;
+their generated writes reject instrument/tag assignment fields. The obsolete
+person-level instrument editor/CRUD are unregistered. Membership assignments use
+the contracts below. Deferred invitation readers still depend on old tag relation
+metadata at startup, with writes disabled until event recovery removes it.
+
 ## Member reads and directory
 
 The canonical membership declaration lives in `bandUser.ts`.

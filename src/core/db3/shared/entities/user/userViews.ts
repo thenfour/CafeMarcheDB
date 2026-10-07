@@ -1,21 +1,8 @@
-import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { Prisma } from "db";
-import {
-    type InstrumentPublicId,
-    isPublicId,
-    type UserInstrumentPublicId,
-    type UserTagAssignmentPublicId,
-    type UserTagPublicId,
-} from "shared/publicId";
-import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
-import {
-    UserInstrumentNaturalOrderBy,
-    UserTagAssignmentNaturalOrderBy,
-} from "../../schema/prismArgs";
-import { xUser, xUserInstrument } from "../../schema/user";
+import { xUser } from "../../schema/user";
 
 const userIdentitySummaryArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
     select: {
@@ -27,135 +14,38 @@ const userIdentitySummaryArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
     },
 });
 
-const userIdentitySummaryViewContract = deriveViewContract(xUser, userIdentitySummaryArgs);
-
+const userIdentitySummaryContract = deriveViewContract(xUser, userIdentitySummaryArgs);
 export const userIdentitySummaryView = defineView({
     viewID: "User_IdentitySummary",
     entity: xUser,
-    selection: userIdentitySummaryViewContract.prismaSelection,
-    dtoSchema: userIdentitySummaryViewContract.dtoSchema,
-    hydrate: userIdentitySummaryViewContract.hydrate
+    selection: userIdentitySummaryContract.prismaSelection,
+    dtoSchema: userIdentitySummaryContract.dtoSchema,
+    hydrate: userIdentitySummaryContract.hydrate,
 });
 
-const UserEditorInstrumentAssociationDtoSchema = z.object({
-    publicId: z.custom<UserInstrumentPublicId>(isPublicId),
-    userId: xUser.identitySchema.optional(),
-    instrumentId: z.custom<InstrumentPublicId>(isPublicId).optional(),
-    isPrimary: z.boolean().optional(),
-    instrument: z.object({
-        publicId: z.custom<InstrumentPublicId>(isPublicId),
-        name: z.string().optional(),
-        description: z.string().optional(),
-        sortOrder: z.number().int().optional(),
-        functionalGroup: z.object({
-            publicId: z.string().optional(),
-            color: z.string().nullable().optional(),
-        }).optional(),
-    }).optional(),
-});
-
-const UserEditorTagAssociationDtoSchema = z.object({
-    publicId: z.custom<UserTagAssignmentPublicId>(isPublicId),
-    userId: xUser.identitySchema.optional(),
-    userTagId: z.custom<UserTagPublicId>(isPublicId).optional(),
-    userTag: z.object({
-        publicId: z.custom<UserTagPublicId>(isPublicId),
-        text: z.string().optional(),
-        description: z.string().optional(),
-        color: z.string().nullable().optional(),
-        sortOrder: z.number().int().optional(),
-        cssClass: z.string().nullable().optional(),
-        significance: z.string().nullable().optional(),
-    }).optional(),
-});
-
-const UserEditorDtoSchema = z.object({
-    publicId: xUser.identitySchema,
-    isDeleted: z.boolean().optional(),
-    name: z.string().optional(),
-    email: z.string().optional(),
-    phone: z.string().nullable().optional(),
-    cssClass: z.string().nullable().optional(),
-    createdAt: z.date().optional(),
-    isSysAdmin: z.boolean().optional(),
-    instruments: z.array(UserEditorInstrumentAssociationDtoSchema).optional(),
-    tags: z.array(UserEditorTagAssociationDtoSchema).optional(),
-});
-
-
-
-const userEditorBaseSelection = ZodToPrismaSelection(UserEditorDtoSchema.omit({ instruments: true }));
+// This editor maintains shared person data. Band membership editors own assignments.
 const userEditorSelection = Prisma.validator<Prisma.UserDefaultArgs>()({
     select: {
-        ...userEditorBaseSelection.select,
-        instruments: {
-            select: {
-                publicId: true,
-                userId: true,
-                instrumentId: true,
-                isPrimary: true,
-                instrument: {
-                    select: {
-                        publicId: true,
-                        name: true,
-                        description: true,
-                        sortOrder: true,
-                        functionalGroup: {
-                            select: { publicId: true, color: true },
-                        },
-                    },
-                },
-            },
-            orderBy: UserInstrumentNaturalOrderBy,
-        },
-        tags: {
-            ...userEditorBaseSelection.select.tags,
-            orderBy: UserTagAssignmentNaturalOrderBy,
-        },
+        publicId: true,
+        isDeleted: true,
+        name: true,
+        email: true,
+        phone: true,
+        cssClass: true,
+        createdAt: true,
+        isSysAdmin: true,
     },
 });
+const userEditorContract = deriveViewContract(xUser, userEditorSelection);
 
 export const userEditorView = defineCrudView({
     viewID: "User_Editor",
     entity: xUser,
     operations: { create: true, update: true },
-    selection: userEditorSelection,
-    dtoSchema: UserEditorDtoSchema,
-    hydrate: dto => xUser.getClientModel(dto, "view"),
+    selection: userEditorContract.prismaSelection,
+    dtoSchema: userEditorContract.dtoSchema,
+    hydrate: userEditorContract.hydrate,
 });
-
-const userInstrumentEditorSelection = Prisma.validator<Prisma.UserInstrumentDefaultArgs>()({
-    select: {
-        publicId: true,
-        userId: true,
-        user: { select: { publicId: true, name: true } },
-        instrumentId: true,
-        instrument: {
-            select: {
-                publicId: true,
-                name: true,
-                description: true,
-                functionalGroup: { select: { publicId: true, color: true } },
-            },
-        },
-        isPrimary: true,
-    },
-});
-
-const userInstrumentEditorContract = deriveViewContract(
-    xUserInstrument,
-    userInstrumentEditorSelection,
-);
-
-export const userInstrumentEditorView = defineCrudView({
-    viewID: "UserInstrument_Editor",
-    entity: xUserInstrument,
-    operations: { create: true, update: true, delete: true },
-    selection: userInstrumentEditorContract.prismaSelection,
-    dtoSchema: userInstrumentEditorContract.dtoSchema,
-    hydrate: userInstrumentEditorContract.hydrate,
-});
-
 
 // MIGRATION_RESTORE: role-administration
 // Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/entities/user/userViews.ts:1-169
@@ -256,6 +146,172 @@ export const userInstrumentEditorView = defineCrudView({
 //     isSysAdmin: z.boolean().optional(),
 //     roleId: z.custom<RolePublicId>(isPublicId).nullable().optional(),
 //     role: UserEditorRoleDtoSchema.nullable().optional(),
+//     instruments: z.array(UserEditorInstrumentAssociationDtoSchema).optional(),
+//     tags: z.array(UserEditorTagAssociationDtoSchema).optional(),
+// });
+//
+//
+//
+// const userEditorBaseSelection = ZodToPrismaSelection(UserEditorDtoSchema.omit({ instruments: true }));
+// const userEditorSelection = Prisma.validator<Prisma.UserDefaultArgs>()({
+//     select: {
+//         ...userEditorBaseSelection.select,
+//         instruments: {
+//             select: {
+//                 publicId: true,
+//                 userId: true,
+//                 instrumentId: true,
+//                 isPrimary: true,
+//                 instrument: {
+//                     select: {
+//                         publicId: true,
+//                         name: true,
+//                         description: true,
+//                         sortOrder: true,
+//                         functionalGroup: {
+//                             select: { publicId: true, color: true },
+//                         },
+//                     },
+//                 },
+//             },
+//             orderBy: UserInstrumentNaturalOrderBy,
+//         },
+//         tags: {
+//             ...userEditorBaseSelection.select.tags,
+//             orderBy: UserTagAssignmentNaturalOrderBy,
+//         },
+//     },
+// });
+//
+// export const userEditorView = defineCrudView({
+//     viewID: "User_Editor",
+//     entity: xUser,
+//     operations: { create: true, update: true },
+//     selection: userEditorSelection,
+//     dtoSchema: UserEditorDtoSchema,
+//     hydrate: dto => xUser.getClientModel(dto, "view"),
+// });
+//
+// const userInstrumentEditorSelection = Prisma.validator<Prisma.UserInstrumentDefaultArgs>()({
+//     select: {
+//         publicId: true,
+//         userId: true,
+//         user: { select: { publicId: true, name: true } },
+//         instrumentId: true,
+//         instrument: {
+//             select: {
+//                 publicId: true,
+//                 name: true,
+//                 description: true,
+//                 functionalGroup: { select: { publicId: true, color: true } },
+//             },
+//         },
+//         isPrimary: true,
+//     },
+// });
+//
+// const userInstrumentEditorContract = deriveViewContract(
+//     xUserInstrument,
+//     userInstrumentEditorSelection,
+// );
+//
+// export const userInstrumentEditorView = defineCrudView({
+//     viewID: "UserInstrument_Editor",
+//     entity: xUserInstrument,
+//     operations: { create: true, update: true, delete: true },
+//     selection: userInstrumentEditorContract.prismaSelection,
+//     dtoSchema: userInstrumentEditorContract.dtoSchema,
+//     hydrate: userInstrumentEditorContract.hydrate,
+// });
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: member-profile
+// Source: 15d112e042f38d63f5a18b105120cf1165df7845:src/core/db3/shared/entities/user/userViews.ts:1-157
+// Reason: Shared accounts no longer own band instrument or tag assignments; legacy profile renderers are unreachable.
+// Restore: Restore reachable profile tabs, attendance, credits, wiki contributions, permitted account controls, and profile activity recording with explicit ownership.
+// Verification: Test tab URLs, self/admin/outsider permissions and context switches; exercise each restored profile workflow in the built app.
+// SHA256: cc3b9019d0d6107fa2ef5d8e29b7b61bf922863c8df2a3609cb9d2874135bd2e
+// MIGRATION_REFERENCE_BEGIN
+// import { ZodToPrismaSelection } from "@/shared/prismaUtils";
+// import { Prisma } from "db";
+// import {
+//     type InstrumentPublicId,
+//     isPublicId,
+//     type UserInstrumentPublicId,
+//     type UserTagAssignmentPublicId,
+//     type UserTagPublicId,
+// } from "shared/publicId";
+// import { z } from "zod";
+// import { defineCrudView } from "../../core/db3CrudView";
+// import { defineView } from "../../core/db3View";
+// import { deriveViewContract } from "../../core/db3ViewContract";
+// import {
+//     UserInstrumentNaturalOrderBy,
+//     UserTagAssignmentNaturalOrderBy,
+// } from "../../schema/prismArgs";
+// import { xUser, xUserInstrument } from "../../schema/user";
+//
+// const userIdentitySummaryArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
+//     select: {
+//         publicId: true,
+//         signInMethods: {
+//             select: { type: true, displayId: true },
+//             orderBy: [{ createdAt: "asc" }, { publicId: "asc" }],
+//         },
+//     },
+// });
+//
+// const userIdentitySummaryViewContract = deriveViewContract(xUser, userIdentitySummaryArgs);
+//
+// export const userIdentitySummaryView = defineView({
+//     viewID: "User_IdentitySummary",
+//     entity: xUser,
+//     selection: userIdentitySummaryViewContract.prismaSelection,
+//     dtoSchema: userIdentitySummaryViewContract.dtoSchema,
+//     hydrate: userIdentitySummaryViewContract.hydrate
+// });
+//
+// const UserEditorInstrumentAssociationDtoSchema = z.object({
+//     publicId: z.custom<UserInstrumentPublicId>(isPublicId),
+//     userId: xUser.identitySchema.optional(),
+//     instrumentId: z.custom<InstrumentPublicId>(isPublicId).optional(),
+//     isPrimary: z.boolean().optional(),
+//     instrument: z.object({
+//         publicId: z.custom<InstrumentPublicId>(isPublicId),
+//         name: z.string().optional(),
+//         description: z.string().optional(),
+//         sortOrder: z.number().int().optional(),
+//         functionalGroup: z.object({
+//             publicId: z.string().optional(),
+//             color: z.string().nullable().optional(),
+//         }).optional(),
+//     }).optional(),
+// });
+//
+// const UserEditorTagAssociationDtoSchema = z.object({
+//     publicId: z.custom<UserTagAssignmentPublicId>(isPublicId),
+//     userId: xUser.identitySchema.optional(),
+//     userTagId: z.custom<UserTagPublicId>(isPublicId).optional(),
+//     userTag: z.object({
+//         publicId: z.custom<UserTagPublicId>(isPublicId),
+//         text: z.string().optional(),
+//         description: z.string().optional(),
+//         color: z.string().nullable().optional(),
+//         sortOrder: z.number().int().optional(),
+//         cssClass: z.string().nullable().optional(),
+//         significance: z.string().nullable().optional(),
+//     }).optional(),
+// });
+//
+// const UserEditorDtoSchema = z.object({
+//     publicId: xUser.identitySchema,
+//     isDeleted: z.boolean().optional(),
+//     name: z.string().optional(),
+//     email: z.string().optional(),
+//     phone: z.string().nullable().optional(),
+//     cssClass: z.string().nullable().optional(),
+//     createdAt: z.date().optional(),
+//     isSysAdmin: z.boolean().optional(),
 //     instruments: z.array(UserEditorInstrumentAssociationDtoSchema).optional(),
 //     tags: z.array(UserEditorTagAssociationDtoSchema).optional(),
 // });

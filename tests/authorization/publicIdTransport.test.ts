@@ -19,10 +19,10 @@ const fileTagAssociationPublicId = parsePublicId<"FileTagAssignment">("AbCdEfGhI
 const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("AbCdEfGhIjKlMn10");
 const wikiPageTagAssignmentPublicId = parsePublicId<"WikiPageTagAssignment">("AbCdEfGhIjKlMn11");
 const userTagPublicId = parsePublicId<"UserTag">("AbCdEfGhIjKlMn12");
-const userTagAssignmentPublicId = parsePublicId<"UserTagAssignment">("AbCdEfGhIjKlMn13");
+const userTagAssignmentPublicId = parsePublicId<"BandUserTagAssignment">("AbCdEfGhIjKlMn13");
 const songCreditTypePublicId = parsePublicId<"SongCreditType">("AbCdEfGhIjKlMn14");
 const songCreditPublicId = parsePublicId<"SongCredit">("AbCdEfGhIjKlMn15");
-const userInstrumentPublicId = parsePublicId<"UserInstrument">("AbCdEfGhIjKlMn16");
+const userInstrumentPublicId = parsePublicId<"BandUserInstrument">("AbCdEfGhIjKlMn16");
 const fileUserTagPublicId = parsePublicId<"FileUserTag">("AbCdEfGhIjKlMn17");
 const fileSongTagPublicId = parsePublicId<"FileSongTag">("AbCdEfGhIjKlMn18");
 const songPublicId = parsePublicId<"Song">("AbCdEfGhIjKlMn31");
@@ -261,50 +261,39 @@ describe("instrument catalog public-ID transport", () => {
         expect(projectedWikiPage.tags[0]).not.toHaveProperty("id");
         expect(projectedWikiPage.tags[0].tag).not.toHaveProperty("id");
 
-        const projectedUser = projectDB3ModelPublicIds(db3.xUser, {
-            id: 99,
-            publicId: userPublicId(99),
-            instruments: [{
-                id: 102,
-                publicId: userInstrumentPublicId,
-                userId: 99,
-                user: { id: 99, publicId: userPublicId(99) },
-                instrumentId: instrument.id,
-                instrument,
-                isPrimary: true,
+        const memberPublicId = parsePublicId<"BandUser">("MemberTransport1");
+        const member = { id: 500, publicId: memberPublicId };
+        const projectedMember = projectDB3ModelPublicIds(db3.xBandUser, {
+            ...member,
+            bandUserInstruments: [{
+                id: 102, publicId: userInstrumentPublicId,
+                bandUserId: member.id, bandUser: member,
+                bandInstrumentId: instrument.id, bandInstrument: instrument, isPrimary: true,
             }],
-            tags: [{
-                id: 100,
-                publicId: userTagAssignmentPublicId,
-                userId: 99,
-                user: { id: 99, publicId: userPublicId(99) },
-                userTagId: 101,
-                userTag: {
-                    id: 101,
-                    publicId: userTagPublicId,
-                    text: "Members",
-                },
+            bandUserTagAssignments: [{
+                id: 100, publicId: userTagAssignmentPublicId,
+                bandUserId: member.id, bandUser: member,
+                bandUserTagId: 101, bandUserTag: { id: 101, publicId: userTagPublicId },
             }],
         }, authorization(Permission.view_users_basic_info));
-        expect(projectedUser.tags[0]).toMatchObject({
+        expect(projectedMember.bandUserTagAssignments[0]).toMatchObject({
             publicId: userTagAssignmentPublicId,
-            userId: userPublicId(99),
-            userTagId: userTagPublicId,
-            userTag: { publicId: userTagPublicId, text: "Members" },
+            bandUserId: memberPublicId,
+            bandUserTagId: userTagPublicId,
+            bandUserTag: { publicId: userTagPublicId },
         });
-        expect(projectedUser.tags[0]).not.toHaveProperty("id");
-        expect(projectedUser.tags[0].userTag).not.toHaveProperty("id");
-        expect(projectedUser.instruments[0]).toMatchObject({
+        expect(projectedMember.bandUserTagAssignments[0]).not.toHaveProperty("id");
+        expect(projectedMember.bandUserTagAssignments[0].bandUserTag).not.toHaveProperty("id");
+        expect(projectedMember.bandUserInstruments[0]).toMatchObject({
             publicId: userInstrumentPublicId,
-            userId: userPublicId(99),
-            instrumentId: instrumentPublicId,
-            instrument: { publicId: instrumentPublicId, name: "Trumpet" },
+            bandUserId: memberPublicId,
+            bandInstrumentId: instrumentPublicId,
+            bandInstrument: { publicId: instrumentPublicId, name: "Trumpet" },
             isPrimary: true,
         });
-        expect(projectedUser.instruments[0]).not.toHaveProperty("id");
-        expect(projectedUser.instruments[0].instrument).not.toHaveProperty("id");
+        expect(projectedMember.bandUserInstruments[0]).not.toHaveProperty("id");
+        expect(projectedMember.bandUserInstruments[0].bandInstrument).not.toHaveProperty("id");
     });
-
     it("accepts only public targets for converted-table queries and mutations", () => {
         expect(() => validateDB3QueryRequest({
             table: { tableID: db3.xBandInstrumentFunctionalGroup.tableID, tableName: db3.xBandInstrumentFunctionalGroup.tableName },
@@ -471,20 +460,6 @@ describe("instrument catalog public-ID transport", () => {
             updateModel: { typeId: songCreditTypePublicId },
         })).toThrow("updates require updatePublicId");
         expect(() => validateDB3MutationRequest({
-            tableID: "UserInstrument",
-            tableName: "UserInstrument",
-            mutationType: "update",
-            updatePublicId: userInstrumentPublicId,
-            updateModel: { instrumentId: instrumentPublicId, isPrimary: true },
-        })).not.toThrow();
-        expect(() => validateDB3MutationRequest({
-            tableID: "UserInstrument",
-            tableName: "UserInstrument",
-            mutationType: "update",
-            updateId: 102,
-            updateModel: { isPrimary: true },
-        })).toThrow("updates require updatePublicId");
-        expect(() => validateDB3MutationRequest({
             tableID: "FileUserTag",
             tableName: "FileUserTag",
             mutationType: "update",
@@ -614,3 +589,90 @@ describe("instrument catalog public-ID transport", () => {
         )).rejects.toThrow("Invalid public ID for BandSongTag.");
     });
 });
+
+// MIGRATION_RESTORE: member-profile
+// Source: 15d112e042f38d63f5a18b105120cf1165df7845:tests/authorization/publicIdTransport.test.ts:263-313
+// Reason: Person-level assignment transport has been replaced by band membership contracts.
+// Restore: Restore reachable profile tabs, attendance, credits, wiki contributions, permitted account controls, and profile activity recording with explicit ownership.
+// Verification: Test tab URLs, self/admin/outsider permissions and context switches; exercise each restored profile workflow in the built app.
+// SHA256: 9c90fde68a7b590dc74d10829af9974e82b28c5f061f57c5d6c1154bbc0aa06c
+// MIGRATION_REFERENCE_BEGIN
+//
+//         const projectedUser = projectDB3ModelPublicIds(db3.xUser, {
+//             id: 99,
+//             publicId: userPublicId(99),
+//             instruments: [{
+//                 id: 102,
+//                 publicId: userInstrumentPublicId,
+//                 userId: 99,
+//                 user: { id: 99, publicId: userPublicId(99) },
+//                 instrumentId: instrument.id,
+//                 instrument,
+//                 isPrimary: true,
+//             }],
+//             tags: [{
+//                 id: 100,
+//                 publicId: userTagAssignmentPublicId,
+//                 userId: 99,
+//                 user: { id: 99, publicId: userPublicId(99) },
+//                 userTagId: 101,
+//                 userTag: {
+//                     id: 101,
+//                     publicId: userTagPublicId,
+//                     text: "Members",
+//                 },
+//             }],
+//         }, authorization(Permission.view_users_basic_info));
+//         expect(projectedUser.tags[0]).toMatchObject({
+//             publicId: userTagAssignmentPublicId,
+//             userId: userPublicId(99),
+//             userTagId: userTagPublicId,
+//             userTag: { publicId: userTagPublicId, text: "Members" },
+//         });
+//         expect(projectedUser.tags[0]).not.toHaveProperty("id");
+//         expect(projectedUser.tags[0].userTag).not.toHaveProperty("id");
+//         expect(projectedUser.instruments[0]).toMatchObject({
+//             publicId: userInstrumentPublicId,
+//             userId: userPublicId(99),
+//             instrumentId: instrumentPublicId,
+//             instrument: { publicId: instrumentPublicId, name: "Trumpet" },
+//             isPrimary: true,
+//         });
+//         expect(projectedUser.instruments[0]).not.toHaveProperty("id");
+//         expect(projectedUser.instruments[0].instrument).not.toHaveProperty("id");
+//     });
+//
+//     it("accepts only public targets for converted-table queries and mutations", () => {
+//         expect(() => validateDB3QueryRequest({
+//             table: { tableID: db3.xBandInstrumentFunctionalGroup.tableID, tableName: db3.xBandInstrumentFunctionalGroup.tableName },
+//             filter: { items: [], publicIds: [publicId] },
+//             cmdbQueryContext: "public-id-test",
+//         })).not.toThrow();
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: member-profile
+// Source: 15d112e042f38d63f5a18b105120cf1165df7845:tests/authorization/publicIdTransport.test.ts:469-486
+// Reason: Person-level assignment transport has been replaced by band membership contracts.
+// Restore: Restore reachable profile tabs, attendance, credits, wiki contributions, permitted account controls, and profile activity recording with explicit ownership.
+// Verification: Test tab URLs, self/admin/outsider permissions and context switches; exercise each restored profile workflow in the built app.
+// SHA256: 013f9bc81869edb207ef61411bec78de64ccffa088b7c78427bd5cf2c186c68e
+// MIGRATION_REFERENCE_BEGIN
+//             mutationType: "update",
+//             updateId: 95,
+//             updateModel: { typeId: songCreditTypePublicId },
+//         })).toThrow("updates require updatePublicId");
+//         expect(() => validateDB3MutationRequest({
+//             tableID: "UserInstrument",
+//             tableName: "UserInstrument",
+//             mutationType: "update",
+//             updatePublicId: userInstrumentPublicId,
+//             updateModel: { instrumentId: instrumentPublicId, isPrimary: true },
+//         })).not.toThrow();
+//         expect(() => validateDB3MutationRequest({
+//             tableID: "UserInstrument",
+//             tableName: "UserInstrument",
+//             mutationType: "update",
+//             updateId: 102,
+//             updateModel: { isPrimary: true },
+//         })).toThrow("updates require updatePublicId");
+// MIGRATION_REFERENCE_END

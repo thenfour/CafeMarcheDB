@@ -27,7 +27,6 @@ import {
   type SongTagPublicId,
   type SongPublicId,
   type UserTagPublicId,
-  type UserTagAssignmentPublicId,
   type UserPublicId,
   type WikiPageTagAssignmentPublicId,
   type WikiPageTagPublicId,
@@ -820,25 +819,14 @@ describe("Event lookup editor derived-view rollout", () => {
 })
 
 describe("UserTag Event search derived-view migration", () => {
-  it("uses public identity in administration, dashboard, and user associations", () => {
+  it("uses public identity in administration and dashboard catalogs", () => {
     type TagDto = db3.DtoOf<typeof db3.userTagEditorView>
     type DashboardTag = db3.UserTagDashboardClient
-    type UserDto = db3.DtoOf<typeof db3.userEditorView>
-    type Assignment = NonNullable<UserDto["tags"]>[number]
 
     expectTypeOf<TagDto["publicId"]>().toEqualTypeOf<UserTagPublicId>()
     expectTypeOf<DashboardTag["publicId"]>().toEqualTypeOf<UserTagPublicId>()
-    expectTypeOf<Assignment["publicId"]>()
-      .toEqualTypeOf<UserTagAssignmentPublicId>()
-    expectTypeOf<NonNullable<Assignment["userTagId"]>>()
-      .toEqualTypeOf<UserTagPublicId>()
-    expectTypeOf<NonNullable<Assignment["userTag"]>["publicId"]>()
-      .toEqualTypeOf<UserTagPublicId>()
     expectTypeOf<Extract<keyof TagDto, "id">>().toEqualTypeOf<never>()
-    expectTypeOf<Extract<keyof Assignment, "id">>().toEqualTypeOf<never>()
     expect(db3.xUserTag.getIdentity({ publicId: userTagPublicId })).toBe(userTagPublicId)
-    expect(db3.xUserTagAssignment.getIdentity({ publicId: userTagAssignmentPublicId }))
-      .toBe(userTagAssignmentPublicId)
   })
 
   it("keeps the relation shape on a named view over canonical xUserTag", () => {
@@ -1566,3 +1554,34 @@ describe("DB3 derived embedded-relation hydration", () => {
     expect(decode).toHaveBeenCalledTimes(1)
   })
 })
+
+
+// MIGRATION_RESTORE: member-profile
+// Source: 15d112e042f38d63f5a18b105120cf1165df7845:tests/db3ViewContract.test.ts:822-842
+// Reason: These specifications used person-level instrument/tag assignments; membership commands now own those edits.
+// Restore: Restore reachable profile tabs, attendance, credits, wiki contributions, permitted account controls, and profile activity recording with explicit ownership.
+// Verification: Test tab URLs, self/admin/outsider permissions and context switches; exercise each restored profile workflow in the built app.
+// SHA256: b97a703c65c3baa7f09ac01c99341a2833d4d2a4fd143d46a870adfafc40abfb
+// MIGRATION_REFERENCE_BEGIN
+// describe("UserTag Event search derived-view migration", () => {
+//   it("uses public identity in administration, dashboard, and user associations", () => {
+//     type TagDto = db3.DtoOf<typeof db3.userTagEditorView>
+//     type DashboardTag = db3.UserTagDashboardClient
+//     type UserDto = db3.DtoOf<typeof db3.userEditorView>
+//     type Assignment = NonNullable<UserDto["tags"]>[number]
+//
+//     expectTypeOf<TagDto["publicId"]>().toEqualTypeOf<UserTagPublicId>()
+//     expectTypeOf<DashboardTag["publicId"]>().toEqualTypeOf<UserTagPublicId>()
+//     expectTypeOf<Assignment["publicId"]>()
+//       .toEqualTypeOf<UserTagAssignmentPublicId>()
+//     expectTypeOf<NonNullable<Assignment["userTagId"]>>()
+//       .toEqualTypeOf<UserTagPublicId>()
+//     expectTypeOf<NonNullable<Assignment["userTag"]>["publicId"]>()
+//       .toEqualTypeOf<UserTagPublicId>()
+//     expectTypeOf<Extract<keyof TagDto, "id">>().toEqualTypeOf<never>()
+//     expectTypeOf<Extract<keyof Assignment, "id">>().toEqualTypeOf<never>()
+//     expect(db3.xUserTag.getIdentity({ publicId: userTagPublicId })).toBe(userTagPublicId)
+//     expect(db3.xUserTagAssignment.getIdentity({ publicId: userTagAssignmentPublicId }))
+//       .toBe(userTagAssignmentPublicId)
+//   })
+// MIGRATION_REFERENCE_END

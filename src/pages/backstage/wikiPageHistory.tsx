@@ -2,7 +2,6 @@ import { CMLink } from "@/src/core/components/CMLink";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { UserChip } from "@/src/core/components/user/userChip";
-import { EnrichedUser } from "@/src/core/db3/shared/schema/enrichedUserTypes";
 import { BlitzPage, useRouterQuery } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import { Tooltip } from "@mui/material";
@@ -18,14 +17,12 @@ import { Markdown } from "src/core/components/markdown/Markdown";
 import { useMessageBox } from "src/core/components/MessageBoxContext";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { gIconMap } from "src/core/db3/components/IconMap";
-import * as db3 from "src/core/db3/db3";
 import deleteWikiRevision from "src/core/wiki/mutations/deleteWikiRevision";
 import rebuildWikiPageRevisionStats from "src/core/wiki/mutations/rebuildWikiPageRevisionStats";
 import getWikiPageRevision from "src/core/wiki/queries/getWikiPageRevision";
 import getWikiPageRevisions from "src/core/wiki/queries/getWikiPageRevisions";
 import { wikiParseCanonicalWikiPath } from "src/core/wiki/shared/wikiUtils";
 
-export type EnrichedVerboseUser = EnrichedUser<db3.UserClientPayload>;
 type RevisionHistoryItem = NonNullable<
     NonNullable<Awaited<ReturnType<typeof getWikiPageRevisions>>>["revisions"]
 >[number];

@@ -899,6 +899,90 @@
       "featureId": "settings-editors",
       "source": "14c644c1242b8bfac9190afe3ac05ebf2573c49d:tests/authorization/db3TableAuthorization.test.ts:152-162",
       "sha256": "bdbb497d9b1dbab20eca1d34a3c4be149cbd1b476169494d884e13b6649a0456"
+    },
+    {
+      "file": "src/core/db3/shared/schema/prismArgs.ts",
+      "featureId": "member-profile",
+      "source": "15d112e042f38d63f5a18b105120cf1165df7845:src/core/db3/shared/schema/prismArgs.ts:302-326",
+      "sha256": "fa214cc999470349d1a35c227447b93a83038dbb421a5aeef085c9b8d1abb26c"
+    },
+    {
+      "file": "src/core/db3/shared/schema/prismArgs.ts",
+      "featureId": "member-profile",
+      "source": "15d112e042f38d63f5a18b105120cf1165df7845:src/core/db3/shared/schema/prismArgs.ts:391-466",
+      "sha256": "93f76602a315831647e0ec88ec448f7298cf43a8a03b9579c9e666e105d96a12"
+    },
+    {
+      "file": "src/core/db3/shared/schema/user.ts",
+      "featureId": "member-profile",
+      "source": "15d112e042f38d63f5a18b105120cf1165df7845:src/core/db3/shared/schema/user.ts:1-754",
+      "sha256": "bea9b0a3629c2f1c7b9c54a79b4f264a8217daf4f0c8f55b6badb31867d92ece"
+    },
+    {
+      "file": "src/core/db3/shared/entities/user/userViews.ts",
+      "featureId": "member-profile",
+      "source": "15d112e042f38d63f5a18b105120cf1165df7845:src/core/db3/shared/entities/user/userViews.ts:1-157",
+      "sha256": "cc3b9019d0d6107fa2ef5d8e29b7b61bf922863c8df2a3609cb9d2874135bd2e"
+    },
+    {
+      "file": "src/core/components/user/UserDetail.tsx",
+      "featureId": "member-profile",
+      "source": "15d112e042f38d63f5a18b105120cf1165df7845:src/core/components/user/UserDetail.tsx:1-209",
+      "sha256": "13d736adf749cfcc285f5911a29bef5a658572f4b123f5e5a604012f10301f0e"
+    },
+    {
+      "file": "src/core/components/user/UserListItem.tsx",
+      "featureId": "directory-search",
+      "source": "15d112e042f38d63f5a18b105120cf1165df7845:src/core/components/user/UserListItem.tsx:1-75",
+      "sha256": "bf39f72e5fd602995aa25981a4395e5964e6a84b1c7b4f8252e0b3fb9d0ef93c"
+    },
+    {
+      "file": "src/core/db3/shared/schema/enrichedUserTypes.ts",
+      "featureId": "directory-search",
+      "source": "15d112e042f38d63f5a18b105120cf1165df7845:src/core/db3/shared/schema/enrichedUserTypes.ts:1-60",
+      "sha256": "54d66c9de406c1e473089ce529a970f5ef1669567f5efa2817b71736b74c4072"
+    },
+    {
+      "file": "src/pages/backstage/adminUsers.tsx",
+      "featureId": "member-profile",
+      "source": "15d112e042f38d63f5a18b105120cf1165df7845:src/pages/backstage/adminUsers.tsx:1-88",
+      "sha256": "7bdf7bb60797f530601f92e27c2f55cc750563077c5d29993fe3d1cf19e462bd"
+    },
+    {
+      "file": "tests/db3Identity.test.ts",
+      "featureId": "member-profile",
+      "source": "15d112e042f38d63f5a18b105120cf1165df7845:tests/db3Identity.test.ts:1-153",
+      "sha256": "84604d69f9085bcbb865049e38d71329e7d8441aa204b5b0f9a917042bd7139a"
+    },
+    {
+      "file": "tests/db3Commands.test.ts",
+      "featureId": "member-profile",
+      "source": "15d112e042f38d63f5a18b105120cf1165df7845:tests/db3Commands.test.ts:430-459",
+      "sha256": "9642de2d9af73fd557a7bc55fcbb800ee39eccd0cf3279eef38f3cfe53eb29f8"
+    },
+    {
+      "file": "tests/db3ViewContract.test.ts",
+      "featureId": "member-profile",
+      "source": "15d112e042f38d63f5a18b105120cf1165df7845:tests/db3ViewContract.test.ts:822-842",
+      "sha256": "b97a703c65c3baa7f09ac01c99341a2833d4d2a4fd143d46a870adfafc40abfb"
+    },
+    {
+      "file": "tests/authorization/directMutationHardening.test.ts",
+      "featureId": "member-profile",
+      "source": "15d112e042f38d63f5a18b105120cf1165df7845:tests/authorization/directMutationHardening.test.ts:243-301",
+      "sha256": "758ac1ae27fa0d0fa95258c97ef034f1b4d301747af1b83ebf891678e4231955"
+    },
+    {
+      "file": "tests/authorization/publicIdTransport.test.ts",
+      "featureId": "member-profile",
+      "source": "15d112e042f38d63f5a18b105120cf1165df7845:tests/authorization/publicIdTransport.test.ts:263-313",
+      "sha256": "9c90fde68a7b590dc74d10829af9974e82b28c5f061f57c5d6c1154bbc0aa06c"
+    },
+    {
+      "file": "tests/authorization/publicIdTransport.test.ts",
+      "featureId": "member-profile",
+      "source": "15d112e042f38d63f5a18b105120cf1165df7845:tests/authorization/publicIdTransport.test.ts:469-486",
+      "sha256": "013f9bc81869edb207ef61411bec78de64ccffa088b7c78427bd5cf2c186c68e"
     }
   ]
 }

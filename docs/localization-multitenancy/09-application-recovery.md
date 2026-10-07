@@ -58,6 +58,14 @@ preserving source alone.
   Logo editing, optional primary text color and uploads remain explicitly
   unavailable; hosting mode is configured by deployment. `settings-editors`
   remains pending until full parity and built-browser verification.
+- Generic shared-person selectors, the derived `User_Editor` DTO, its grid and
+  generated writes now exclude instrument/tag assignments. Name/phone validation
+  matches the database's 768-character limits. `UserInstrument` storage, editor
+  and CRUD registrations are removed; unreachable legacy person-detail/list
+  renderers and enrichment remain as source references. BandUser assignment
+  contracts stay active. Deferred invitation views still resolve old
+  tag-assignment metadata during startup; its generic writes/deletion are now
+  disabled, and its removal remains coupled to event payload recovery.
 
 ## Verification
 
@@ -78,18 +86,20 @@ production server could not be checked because the normal build still fails.
 
 | Check | Result |
 | --- | --- |
-| Source preservation and Git provenance | Passed: 135 references in 102 files. The five new settings references match their recorded Git source exactly. The initial audit covered all 4,509 removed lines in 67 code/test files. Existing reference blocks and staging are unchanged. |
+| Source preservation and Git provenance | Passed: 149 references in 105 files. The fourteen new person/profile/assignment references match `15d112e0` exactly. The initial audit covered all 4,509 removed lines in 67 code/test files. Existing references and staging are unchanged. |
 | Preservation safeguards, temporary RPC boundaries, member/page contracts and DOM regression | Passed: 108 tests across ten active files, including 23 preservation checks. Nine wholly disabled specifications are retained separately; eight are under the runner's default `tests/` directory. |
 | Field localization, selectors, instrument editor, presentation delivery, factory contracts and preservation/recovery boundaries | Passed: 106 tests across nine files. Includes band-first labels/help, band and language switches, intentional blanks, composite captions, accessible names, unchanged scalar writes and explicit dialog captions. |
 | Registered settings editor, clipboard validation, settings RPCs/presentation, table authorization and preservation/recovery boundaries | Passed: 122 tests across seven files, including 13 editor DOM checks. Covers explicit scope, blanks/false, failed saves, resets, permissions, band/account switches, batch rejection and pending clipboard cancellation. |
+| Shared-person selectors/editor/write boundary, command/identity/transport contracts, recovery registrations and migrated membership contracts | Passed: 164 tests across nine files. Includes strict rejection of account assignment fields, contact redaction, separate sign-in summaries, retired instrument CRUD and retained membership commands. The adapted owner-update case also passes in the otherwise failing direct-mutation fixture suite. |
+| Member profile/directory pages and instrument/tag editor DOM regressions | Passed: 22 tests across three isolated jsdom files. |
 | Recovery RPC/registration boundaries, table authorization, account/bootstrap and membership role/lifecycle contracts | Passed: 66 tests across six files. A strict database proxy rejects any access from deferred RPCs. |
 | Account/bootstrap, membership contracts/pages/editors and suspended presentation navigation | Passed: 67 tests across ten files. |
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 408 diagnostics, down from 422 before the settings-editor slice. No compiler exclusions or error suppression added. |
+| `yarn typecheck` | Fails: 389 diagnostics, down from 408 before the shared-person selector/editor slice. No new diagnostic groups, compiler exclusions or error suppression added. |
 | `yarn build` | Gets past Custom Links and shared field-label callers; fails at the legacy event-search payload in `src/core/components/event/EventComponents.tsx:1392`. The duplicate role-page component-name warning is also fixed. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 297 failed, 1,268 passed, 94 skipped. Failure groups are unchanged; 24 additional Node checks pass. Later isolated DOM batches are not reached; focused DOM checks above passed. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 296 failed, 1,290 passed, 94 skipped. The shared-account owner-update case now passes; no failure groups were added. Later isolated DOM batches are not reached; focused DOM checks above passed. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -126,6 +136,10 @@ The stricter shared-account payload also exposes three deferred event consumers
 that still treat the account as a person carrying instruments. They must consume
 membership data when events are restored; band assignments are not added back to
 the shared-account payload to satisfy those consumers.
+Platform account administration still uses band capabilities for table/field
+reads, which are absent in platform context. It needs a separate ownership and
+permission adaptation; the account selector/editor repair does not prove that
+the platform grid is usable.
 
 Deferred source, registrations, pages, RPC/API entry points, and background jobs
 still need coherent isolation. The home notice and omitted dashboard reads do not

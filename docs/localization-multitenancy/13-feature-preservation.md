@@ -91,6 +91,15 @@ and upload controls, legacy clipboard accounting, and built-browser verification
 remain obligations. Existing reference blocks and deferred specifications remain
 intact.
 
+The shared-person selector/editor cleanup adds fourteen references from
+`15d112e0`. They preserve the obsolete account assignment selections/descriptors,
+editor, grid columns, unreachable profile/directory renderers and enrichment, and
+affected command/identity/transport specifications. Active transport checks now
+use BandUser associations, and the shared account command has an executable
+owner-update regression. The invitation tag-assignment read dependency remains
+temporary, with writes disabled. Profile/directory restoration obligations stay
+pending; this cleanup does not establish full workflow parity.
+
 The checker detects missing references and inconsistent closure records. Review
 must still establish that the recorded evidence proves parity and that a
 retirement decision was actually authorized.

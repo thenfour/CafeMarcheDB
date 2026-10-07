@@ -240,63 +240,23 @@ describe("DB3 command boundary", () => {
     })
   })
 
-  it("updates User profile sets through generated create/update commands without adding generic deletion", async () => {
-    const actor = createAuthorizationTestUser("sysadmin", { id: 98 })
+  it("updates the owner's shared User fields without generic assignment writes or deletion", async () => {
     const target = createAuthorizationTestUser("normal", {
-      id: 99,
-      name: "Original user",
-      email: "original@example.test",
+      id: 99, name: "Original user", email: "original@example.test",
     })
-    const instrument = {
-      id: 41,
-      publicId: "instrmnt00000041",
-      name: "Trumpet",
-      description: "",
-      sortOrder: 1,
-      functionalGroupId: 1,
-    }
-    const userTag = {
-      id: 42,
-      publicId: "UserTagPublic042",
-      text: "Band",
-      description: "",
-      sortOrder: 1,
-      color: null,
-      cssClass: null,
-      significance: null,
-    }
     authorizationTestDb.reset({
-      user: [actor, target],
-      instrument: [instrument],
-      userTag: [userTag],
-      userInstrument: [],
-      userTagAssignment: [],
+      user: [{ ...target, globalRoleId: null, mergedIntoUserId: null }],
+      permission: [{ id: 1, name: Permission.login, isDeleted: false }],
       change: [],
     })
-    const { ctx } = createAuthorizationPersona("sysadmin", { id: actor.id })
-
+    const { ctx } = createAuthorizationPersona("normal", { id: target.id })
     await expect(invokeResolver(executeDB3CommandMutation, {
       commandID: db3.userEditorView.crud.operations.update.command.commandID,
-      payload: {
-        identity: target.publicId,
-        patch: {
-          name: "Updated user",
-          phone: "+32 123",
-          instruments: [instrument.publicId],
-          tags: [userTag.publicId],
-        },
-      },
+      payload: { identity: target.publicId, patch: { name: "Updated user", phone: "+32 123" } },
     }, ctx)).resolves.toEqual({ identity: target.publicId })
-
     expect(authorizationTestDb.snapshot("user")).toContainEqual(
       expect.objectContaining({ id: target.id, name: "Updated user", phone: "+32 123" }),
     )
-    expect(authorizationTestDb.snapshot("userInstrument")).toEqual([
-      expect.objectContaining({ userId: target.id, instrumentId: instrument.id }),
-    ])
-    expect(authorizationTestDb.snapshot("userTagAssignment")).toEqual([
-      expect.objectContaining({ userId: target.id, userTagId: userTag.id }),
-    ])
     expect(db3.getDB3CrudViewForCommand("User_Delete")).toBeUndefined()
   })
 
@@ -1454,7 +1414,6 @@ describe("Band Admin split mutation boundaries", () => {
   })
 })
 
-
 // MIGRATION_RESTORE: role-administration
 // Source: ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/directMutationHardening.test.ts:70-192
 // Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
@@ -1585,4 +1544,72 @@ describe("Band Admin split mutation boundaries", () => {
 //   it("updates an Instrument public reference through generated CRUD", async () => {
 //     const permissions = [Permission.login, Permission.admin_instruments]
 //     const actor = createAuthorizationTestUser("normal", { id: 96, permissions })
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: member-profile
+// Source: 15d112e042f38d63f5a18b105120cf1165df7845:tests/authorization/directMutationHardening.test.ts:243-301
+// Reason: These specifications used person-level instrument/tag assignments; membership commands now own those edits.
+// Restore: Restore reachable profile tabs, attendance, credits, wiki contributions, permitted account controls, and profile activity recording with explicit ownership.
+// Verification: Test tab URLs, self/admin/outsider permissions and context switches; exercise each restored profile workflow in the built app.
+// SHA256: 758ac1ae27fa0d0fa95258c97ef034f1b4d301747af1b83ebf891678e4231955
+// MIGRATION_REFERENCE_BEGIN
+//   it("updates User profile sets through generated create/update commands without adding generic deletion", async () => {
+//     const actor = createAuthorizationTestUser("sysadmin", { id: 98 })
+//     const target = createAuthorizationTestUser("normal", {
+//       id: 99,
+//       name: "Original user",
+//       email: "original@example.test",
+//     })
+//     const instrument = {
+//       id: 41,
+//       publicId: "instrmnt00000041",
+//       name: "Trumpet",
+//       description: "",
+//       sortOrder: 1,
+//       functionalGroupId: 1,
+//     }
+//     const userTag = {
+//       id: 42,
+//       publicId: "UserTagPublic042",
+//       text: "Band",
+//       description: "",
+//       sortOrder: 1,
+//       color: null,
+//       cssClass: null,
+//       significance: null,
+//     }
+//     authorizationTestDb.reset({
+//       user: [actor, target],
+//       instrument: [instrument],
+//       userTag: [userTag],
+//       userInstrument: [],
+//       userTagAssignment: [],
+//       change: [],
+//     })
+//     const { ctx } = createAuthorizationPersona("sysadmin", { id: actor.id })
+//
+//     await expect(invokeResolver(executeDB3CommandMutation, {
+//       commandID: db3.userEditorView.crud.operations.update.command.commandID,
+//       payload: {
+//         identity: target.publicId,
+//         patch: {
+//           name: "Updated user",
+//           phone: "+32 123",
+//           instruments: [instrument.publicId],
+//           tags: [userTag.publicId],
+//         },
+//       },
+//     }, ctx)).resolves.toEqual({ identity: target.publicId })
+//
+//     expect(authorizationTestDb.snapshot("user")).toContainEqual(
+//       expect.objectContaining({ id: target.id, name: "Updated user", phone: "+32 123" }),
+//     )
+//     expect(authorizationTestDb.snapshot("userInstrument")).toEqual([
+//       expect.objectContaining({ userId: target.id, instrumentId: instrument.id }),
+//     ])
+//     expect(authorizationTestDb.snapshot("userTagAssignment")).toEqual([
+//       expect.objectContaining({ userId: target.id, userTagId: userTag.id }),
+//     ])
+//     expect(db3.getDB3CrudViewForCommand("User_Delete")).toBeUndefined()
+//   })
 // MIGRATION_REFERENCE_END

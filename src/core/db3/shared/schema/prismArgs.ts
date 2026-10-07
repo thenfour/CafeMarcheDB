@@ -299,31 +299,6 @@ export const InstrumentMinimumArgs = Prisma.validator<Prisma.InstrumentArgs>()({
 
 export type InstrumentPayloadMinimum = Prisma.InstrumentGetPayload<typeof InstrumentMinimumArgs>;
 
-export const UserInstrumentArgs = Prisma.validator<Prisma.UserInstrumentArgs>()({
-    include: {
-        instrument: InstrumentArgs,
-        //user: true,
-    }
-});
-
-export type UserInstrumentPayload = Prisma.UserInstrumentGetPayload<typeof UserInstrumentArgs>;
-
-export type UserInstrumentClientPayload = Omit<
-    UserInstrumentPayload,
-    "id" | "publicId" | "userId" | "instrumentId" | "instrument"
-> & {
-    publicId: UserInstrumentPublicId;
-    userId: UserPublicId;
-    instrumentId: InstrumentPublicId;
-    instrument: InstrumentClientPayload;
-};
-
-export const UserInstrumentNaturalOrderBy: Prisma.UserInstrumentOrderByWithRelationInput[] = [
-    { instrument: { sortOrder: 'asc' } },
-    { instrument: { name: 'asc' } },
-    { instrument: { id: 'asc' } },
-];
-
 const UserInstrumentReferenceArgs = Prisma.validator<Prisma.UserInstrumentArgs>()({
     include: {
         // Projection needs the target's public ID to translate instrumentId,
@@ -388,7 +363,8 @@ export type UserPayload_Name = Prisma.UserGetPayload<{
 
 //export type UserMinimumPayload = Prisma.UserGetPayload<{}>;
 
-export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
+// Shared account reads contain person fields only. BandUser views own taxonomy and grants.
+export const UserArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
     select: {
         id: true,
         publicId: true,
@@ -399,71 +375,16 @@ export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
         phone: true,
         createdAt: true,
         cssClass: true,
-        // Explicitly exclude: hashedPassword, signInMethods, calendarFeedToken, uid
-        instruments: UserInstrumentArgs,
-        tags: {
-            include: {
-                userTag: true,
-            },
-            orderBy: {
-                userTag: {
-                    sortOrder: 'asc'
-                }
-            }
-        },
-    }
+        // Credentials, sign-in identifiers and feed secrets use dedicated readers.
+    },
 });
 
 export type UserPayload = Prisma.UserGetPayload<typeof UserArgs>;
-export type UserTagClientPayload = Omit<
-    UserPayload["tags"][number]["userTag"],
-    "id" | "publicId"
-> & {
-    publicId: UserTagPublicId;
-};
-export type UserTagAssignmentClientPayload = Omit<
-    UserPayload["tags"][number],
-    "id" | "publicId" | "userId" | "userTagId" | "userTag"
-> & {
-    publicId: UserTagAssignmentPublicId;
-    userId: UserPublicId;
-    userTagId: UserTagPublicId;
-    userTag: UserTagClientPayload;
-};
-export type UserClientPayload = Omit<
-    UserPayload,
-    "id" | "publicId" | "instruments" | "tags"
-> & {
+export type UserClientPayload = Omit<UserPayload, "id" | "publicId"> & {
     publicId: UserPublicId;
-    instruments: UserInstrumentClientPayload[];
-    tags: UserTagAssignmentClientPayload[];
 };
 
-// Generic account queries do not expose role grants. Authorization uses UserWithRolesArgs.
-export const UserSafeArgs = Prisma.validator<Prisma.UserArgs>()({
-    select: {
-        id: true,
-        publicId: true,
-        name: true,
-        isSysAdmin: true,
-        isDeleted: true,
-        email: true,
-        phone: true,
-        createdAt: true,
-        cssClass: true,
-        instruments: UserInstrumentArgs,
-        tags: {
-            include: {
-                userTag: true,
-            },
-            orderBy: {
-                userTag: {
-                    sortOrder: 'asc'
-                }
-            }
-        },
-    },
-});
+export const UserSafeArgs = UserArgs;
 
 export const UserMinimumArgs = Prisma.validator<Prisma.UserArgs>()({
     select: {
@@ -1382,7 +1303,6 @@ export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
     { changedAt: 'desc' },
 ];
 
-
 // MIGRATION_RESTORE: role-administration
 // Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:3-29
 // Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
@@ -1710,4 +1630,123 @@ export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
 //     instruments: UserInstrumentReferenceClientPayload[];
 //     tags: UserTagAssignmentReferenceClientPayload[];
 // };
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: member-profile
+// Source: 15d112e042f38d63f5a18b105120cf1165df7845:src/core/db3/shared/schema/prismArgs.ts:302-326
+// Reason: Shared accounts no longer own band instrument or tag assignments; legacy profile renderers are unreachable.
+// Restore: Restore reachable profile tabs, attendance, credits, wiki contributions, permitted account controls, and profile activity recording with explicit ownership.
+// Verification: Test tab URLs, self/admin/outsider permissions and context switches; exercise each restored profile workflow in the built app.
+// SHA256: fa214cc999470349d1a35c227447b93a83038dbb421a5aeef085c9b8d1abb26c
+// MIGRATION_REFERENCE_BEGIN
+// export const UserInstrumentArgs = Prisma.validator<Prisma.UserInstrumentArgs>()({
+//     include: {
+//         instrument: InstrumentArgs,
+//         //user: true,
+//     }
+// });
+//
+// export type UserInstrumentPayload = Prisma.UserInstrumentGetPayload<typeof UserInstrumentArgs>;
+//
+// export type UserInstrumentClientPayload = Omit<
+//     UserInstrumentPayload,
+//     "id" | "publicId" | "userId" | "instrumentId" | "instrument"
+// > & {
+//     publicId: UserInstrumentPublicId;
+//     userId: UserPublicId;
+//     instrumentId: InstrumentPublicId;
+//     instrument: InstrumentClientPayload;
+// };
+//
+// export const UserInstrumentNaturalOrderBy: Prisma.UserInstrumentOrderByWithRelationInput[] = [
+//     { instrument: { sortOrder: 'asc' } },
+//     { instrument: { name: 'asc' } },
+//     { instrument: { id: 'asc' } },
+// ];
+//
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: member-profile
+// Source: 15d112e042f38d63f5a18b105120cf1165df7845:src/core/db3/shared/schema/prismArgs.ts:391-466
+// Reason: Shared accounts no longer own band instrument or tag assignments; legacy profile renderers are unreachable.
+// Restore: Restore reachable profile tabs, attendance, credits, wiki contributions, permitted account controls, and profile activity recording with explicit ownership.
+// Verification: Test tab URLs, self/admin/outsider permissions and context switches; exercise each restored profile workflow in the built app.
+// SHA256: 93f76602a315831647e0ec88ec448f7298cf43a8a03b9579c9e666e105d96a12
+// MIGRATION_REFERENCE_BEGIN
+// export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
+//     select: {
+//         id: true,
+//         publicId: true,
+//         name: true,
+//         isSysAdmin: true,
+//         isDeleted: true,
+//         email: true,
+//         phone: true,
+//         createdAt: true,
+//         cssClass: true,
+//         // Explicitly exclude: hashedPassword, signInMethods, calendarFeedToken, uid
+//         instruments: UserInstrumentArgs,
+//         tags: {
+//             include: {
+//                 userTag: true,
+//             },
+//             orderBy: {
+//                 userTag: {
+//                     sortOrder: 'asc'
+//                 }
+//             }
+//         },
+//     }
+// });
+//
+// export type UserPayload = Prisma.UserGetPayload<typeof UserArgs>;
+// export type UserTagClientPayload = Omit<
+//     UserPayload["tags"][number]["userTag"],
+//     "id" | "publicId"
+// > & {
+//     publicId: UserTagPublicId;
+// };
+// export type UserTagAssignmentClientPayload = Omit<
+//     UserPayload["tags"][number],
+//     "id" | "publicId" | "userId" | "userTagId" | "userTag"
+// > & {
+//     publicId: UserTagAssignmentPublicId;
+//     userId: UserPublicId;
+//     userTagId: UserTagPublicId;
+//     userTag: UserTagClientPayload;
+// };
+// export type UserClientPayload = Omit<
+//     UserPayload,
+//     "id" | "publicId" | "instruments" | "tags"
+// > & {
+//     publicId: UserPublicId;
+//     instruments: UserInstrumentClientPayload[];
+//     tags: UserTagAssignmentClientPayload[];
+// };
+//
+// // Generic account queries do not expose role grants. Authorization uses UserWithRolesArgs.
+// export const UserSafeArgs = Prisma.validator<Prisma.UserArgs>()({
+//     select: {
+//         id: true,
+//         publicId: true,
+//         name: true,
+//         isSysAdmin: true,
+//         isDeleted: true,
+//         email: true,
+//         phone: true,
+//         createdAt: true,
+//         cssClass: true,
+//         instruments: UserInstrumentArgs,
+//         tags: {
+//             include: {
+//                 userTag: true,
+//             },
+//             orderBy: {
+//                 userTag: {
+//                     sortOrder: 'asc'
+//                 }
+//             }
+//         },
+//     },
+// });
 // MIGRATION_REFERENCE_END

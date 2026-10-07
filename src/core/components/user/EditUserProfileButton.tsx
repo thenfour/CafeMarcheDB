@@ -4,12 +4,12 @@ import { userEditorView } from "src/core/db3/shared/entities/user/userViews";
 import { CMUserMgmtButton } from "../CMCoreComponents2";
 import { EditFieldsDialogButton } from "../EditFieldsDialog";
 import { useSnackbar } from "../SnackbarContext";
-import type { EnrichedVerboseUser } from "./UserListItem";
+import type { UserClientPayload } from "src/core/db3/shared/schema/prismArgs";
 
 type EditUserProfileButtonProps = {
     readonly: boolean;
     tableClient: xTableRenderClient<typeof userEditorView>;
-    user: EnrichedVerboseUser;
+    user: UserClientPayload;
     onOK: () => void;
 };
 

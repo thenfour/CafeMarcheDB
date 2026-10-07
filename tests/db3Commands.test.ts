@@ -427,36 +427,6 @@ describe("DB3 commands", () => {
         });
         expect(db3.songCreditEditorView.crud.operations.delete.deleteType).toBe("hard");
 
-        expect(db3.userInstrumentEditorView.parseDto({
-            publicId: userInstrumentPublicId,
-            userId: userPublicId(6),
-            user: { publicId: userPublicId(6), name: "Ada" },
-            instrumentId: instrumentPublicId,
-            instrument: {
-                publicId: instrumentPublicId,
-                name: "Trumpet",
-                description: "",
-                nameResolution: { value: "Trumpet", localeTag: "en-US", scope: "band", source: "stored", reason: "exact", requestedTag: "en-US" },
-                nameStringPublicId: null,
-                descriptionResolution: { value: "", localeTag: "en-US", scope: "band", source: "stored", reason: "exact", requestedTag: "en-US" },
-                descriptionStringPublicId: null,
-                functionalGroup: { publicId: "abcdefghijklmnop", color: "orange", colorOverride: "orange", colorInheritedValue: null },
-            },
-            isPrimary: true,
-        })).toMatchObject({
-            publicId: userInstrumentPublicId,
-            user: { name: "Ada" },
-            instrument: { name: "Trumpet" },
-            isPrimary: true,
-        });
-        expect(db3.userInstrumentEditorView.crud.operations.update.command.parseDto({
-            identity: userInstrumentPublicId,
-            patch: { instrumentId: instrumentPublicId, isPrimary: false },
-        })).toEqual({
-            identity: userInstrumentPublicId,
-            patch: { instrumentId: instrumentPublicId, isPrimary: false },
-        });
-        expect(db3.userInstrumentEditorView.crud.operations.delete.deleteType).toBe("hard");
 
         expect(db3.setlistPlanGroupEditorView.parseDto({
             publicId: "SetlistGroup0001",
@@ -667,7 +637,6 @@ describe("DB3 commands", () => {
     });
 });
 
-
 // MIGRATION_RESTORE: role-administration
 // Source: ab71102f2df004302ff85cb652a1be4f49b54191:tests/db3Commands.test.ts:9-9
 // Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
@@ -808,4 +777,43 @@ describe("DB3 commands", () => {
 //     it("builds a present-keys-only patch from prepared TableClient values", () => {
 //         expect(db3.createEntityCrudUpdatePatch({
 //             name: "Brass",
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: member-profile
+// Source: 15d112e042f38d63f5a18b105120cf1165df7845:tests/db3Commands.test.ts:430-459
+// Reason: These specifications used person-level instrument/tag assignments; membership commands now own those edits.
+// Restore: Restore reachable profile tabs, attendance, credits, wiki contributions, permitted account controls, and profile activity recording with explicit ownership.
+// Verification: Test tab URLs, self/admin/outsider permissions and context switches; exercise each restored profile workflow in the built app.
+// SHA256: 9642de2d9af73fd557a7bc55fcbb800ee39eccd0cf3279eef38f3cfe53eb29f8
+// MIGRATION_REFERENCE_BEGIN
+//         expect(db3.userInstrumentEditorView.parseDto({
+//             publicId: userInstrumentPublicId,
+//             userId: userPublicId(6),
+//             user: { publicId: userPublicId(6), name: "Ada" },
+//             instrumentId: instrumentPublicId,
+//             instrument: {
+//                 publicId: instrumentPublicId,
+//                 name: "Trumpet",
+//                 description: "",
+//                 nameResolution: { value: "Trumpet", localeTag: "en-US", scope: "band", source: "stored", reason: "exact", requestedTag: "en-US" },
+//                 nameStringPublicId: null,
+//                 descriptionResolution: { value: "", localeTag: "en-US", scope: "band", source: "stored", reason: "exact", requestedTag: "en-US" },
+//                 descriptionStringPublicId: null,
+//                 functionalGroup: { publicId: "abcdefghijklmnop", color: "orange", colorOverride: "orange", colorInheritedValue: null },
+//             },
+//             isPrimary: true,
+//         })).toMatchObject({
+//             publicId: userInstrumentPublicId,
+//             user: { name: "Ada" },
+//             instrument: { name: "Trumpet" },
+//             isPrimary: true,
+//         });
+//         expect(db3.userInstrumentEditorView.crud.operations.update.command.parseDto({
+//             identity: userInstrumentPublicId,
+//             patch: { instrumentId: instrumentPublicId, isPrimary: false },
+//         })).toEqual({
+//             identity: userInstrumentPublicId,
+//             patch: { instrumentId: instrumentPublicId, isPrimary: false },
+//         });
+//         expect(db3.userInstrumentEditorView.crud.operations.delete.deleteType).toBe("hard");
 // MIGRATION_REFERENCE_END

@@ -20,11 +20,11 @@ import { Markdown } from "../markdown/Markdown";
 import { SongChip } from "../song/SongChip";
 import { useSongsContext } from "../song/SongsContext";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
-import { EnrichedVerboseUser } from "./UserListItem";
+import type { UserClientPayload } from "src/core/db3/shared/schema/prismArgs";
 
 ////////////////////////////////////////////////////////////////
 type UserAttendanceTabContentProps = {
-    user: EnrichedVerboseUser;
+    user: UserClientPayload;
 };
 export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) => {
     const dashboardContext = useDashboardContext();
@@ -170,7 +170,7 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
 
 ////////////////////////////////////////////////////////////////
 type UserCreditsTabContentProps = {
-    user: EnrichedVerboseUser;
+    user: UserClientPayload;
 };
 export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
     const dashboardContext = useDashboardContext();
@@ -236,7 +236,7 @@ export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
 
 ////////////////////////////////////////////////////////////////
 type UserWikiContributionsTabContentProps = {
-    user: EnrichedVerboseUser;
+    user: UserClientPayload;
 };
 export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabContentProps) => {
     const dashboardContext = useDashboardContext();
@@ -308,11 +308,10 @@ export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabC
 };
 
 ////////////////////////////////////////////////////////////////
-export const UserMassAnalysisTabContent = (_props: { user: EnrichedVerboseUser }) => {
+export const UserMassAnalysisTabContent = (_props: { user: UserClientPayload }) => {
     const locale = useLocale();
     return <Alert severity="info">{locale.getPlainString("recovery.accountAnalysis.description")}</Alert>;
 };
-
 
 // MIGRATION_RESTORE: account-analysis
 // Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/UserAnalyticTables.tsx:2-11
