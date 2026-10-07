@@ -350,10 +350,12 @@ interface EventSegmentDotMenuCopyUserResponsesFromMenuItemProps {
 export const EventSegmentDotMenuCopyUserResponsesFromMenuItem = (props: EventSegmentDotMenuCopyUserResponsesFromMenuItemProps) => {
     const snackbar = useSnackbar();
     const confirm = useConfirm();
+    const dashboardContext = useDashboardContext();
     const [copyEventSegmentResponsesMutation] = useMutation(copyEventSegmentResponses);
 
     const handleCopyEventSegmentResponses = async () => {
         await copyEventSegmentResponsesMutation({
+            bandPublicId: dashboardContext.requireBandPublicId(),
             fromEventSegmentId: props.fromSegment.publicId,
             toEventSegmentId: props.toSegment.publicId,
         });
@@ -395,6 +397,7 @@ export const EventSegmentDotMenu = (props: EventSegmentDotMenuProps) => {
 
     const handleClear = async () => {
         await clearEventSegmentResponsesMutation({
+            bandPublicId: dashboardContext.requireBandPublicId(),
             eventSegmentId: props.segment.publicId,
         });
     };

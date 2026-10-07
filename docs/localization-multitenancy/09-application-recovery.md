@@ -122,6 +122,18 @@ preserving source alone.
   discard late responses after a band change. Calendar queries now select the
   owning band, and their content hashes exclude the sequence number so unchanged
   calendar content does not repeatedly increment its own revision.
+- Bulk segment response copy/clear require explicit band context and fresh
+  `admin_events` authority. Source and destination must have visible, undeleted
+  parents in that band; copying requires the same event. Responses use BandUser
+  ownership and server-owned actor IDs. Maintenance preserves recorded null or
+  retired answers and former same-band members, while rejecting corrupt
+  cross-band membership references. Copy replaces the destination answer set,
+  preserving unchanged row identities; clear removes all answers. Each affected
+  member's event response revision changes once, retaining comments, invitations
+  and instrument metadata. Audit snapshots include added/removed and null answers;
+  retries and empty clears are no-ops. Writes, audits, revisions and calendar
+  recalculation share one Serializable transaction. Existing menu confirmation,
+  clipboard and refetch behavior remains available with explicit band forwarding.
 
 ## Verification
 
@@ -130,9 +142,13 @@ The attendance browser probe used a new private target-schema database on
 requests saved two segment answers, an instrument, a blank comment and an explicit
 false invitation; repeating the request added no audit/revision changes. The
 HTTP and history RPC returned public references and retained blank/false values.
-Foreign events, missing band context and anonymous HTTP reads were rejected;
-revoking the response grant rejected the next RPC without writing. No browser
-page errors occurred (`temp/a0-event-attendance-browser-result.json`). The helper
+Bulk copy/clear preserved source answers and destination identity, retained event
+response metadata, incremented member revisions once and audited only changed
+batches. Foreign events/segments, missing band context and anonymous HTTP reads
+were rejected; revoking response or bulk administration grants rejected the next
+RPC without writing. An existing RPC error logger crashed while inspecting a
+validation error; logging its text now allows the normal rejection response.
+No browser page errors occurred (`temp/a0-event-attendance-bulk-browser-result.json`). The helper
 removed its database and stopped the development server/browser. This verifies
 endpoint delivery in development; the full event/attendance UI and built app
 remain unverified.
@@ -198,9 +214,9 @@ production server could not be checked because the normal build still fails.
 
 | Check | Result |
 | --- | --- |
-| Attendance request/RPC/HTTP boundaries, client adapter/control/scenario and preservation/recovery regression | Passed: 113 tests across six files, including eight isolated DOM cases. Validates explicit band forwarding, strict public identities, bounded batches/pagination, method/status handling and existing control behavior. |
-| Attendance plus shared event catalogs, bootstrap, accounts, links, telemetry, dashboard catalogs and member profiles on fresh private MariaDB | Passed: 70 tests across eight files, including 27 attendance cases. Covers same-person separate memberships, foreign resources/targets, independent grants, revoked/deleted/merged actors, retired history, hidden instruments, visibility, batching, auditing, idempotence, revisions and rollback. Fixture writes roll back and the generated database is removed. |
-| Attendance development-browser endpoint check | Passed: real signed-in RPC writes, HTTP/history projections, idempotence, foreign-event/missing-context/anonymous rejection and fresh revoked-grant denial; no page errors. Full attendance UI recovery remains separate. |
+| Attendance RPC/HTTP and bulk boundaries, client menus/control/adapter and preservation/recovery regression | Passed: 124 tests across seven files, including 13 isolated DOM cases. Validates explicit band forwarding, strict public identities, bounded batches/pagination, method/status handling, menu confirmations/cancellation and existing control behavior. |
+| Attendance plus shared event catalogs, bootstrap, accounts, links, telemetry, dashboard catalogs and member profiles on fresh private MariaDB | Passed: 98 tests across nine files, including 27 direct attendance and 28 bulk cases. Covers same-person separate memberships, foreign resources/targets, independent grants, revoked/deleted/merged actors, retired history, hidden instruments, visibility, replacement/clear semantics, null answers, unchanged identities, auditing, idempotence and member revisions. Seven bulk failure-injection cases verify rollback at insert, audit, revision and calendar steps. Fixture writes roll back and the generated database is removed. |
+| Attendance development-browser endpoint check | Passed: real signed-in direct and bulk RPC writes, HTTP/history projections, replacement/clear and metadata/revision/audit behavior, idempotence, foreign-resource/missing-context/anonymous rejection and fresh revoked-grant denial; no page errors. Full attendance UI recovery remains separate. |
 | Shared event catalog contracts, DB3 read/write/view/command authorization, account/membership recovery and attendance DOM regression | Passed: 251 tests across fourteen Node files, plus 31 across five isolated jsdom files. Existing scalar-label assertions now exercise localized contracts; attendance controls cover retired answers and intentional blank captions. |
 | Shared event catalogs, dashboard bootstrap and existing account, Custom Links, telemetry, catalog and membership profile behavior on fresh private MariaDB | Passed: 43 tests across seven files, including seven new catalog cases. Covers global writes/audits, exact translations/blanks, resolved filtering/sorting/pagination, public metadata, band overrides, retired history/restore, owned string identity, unavailable locales, selected-band writes and revoked grants. The bootstrap fixture now asserts delivery of a retired localized status instead of treating shared statuses as deferred. Fixture writes roll back and the generated database is removed. |
 | Shared event catalog development-browser check | Passed: delegated-manager create/update, all attendance captions, French writing/display and the platform-context guard; no page errors. Does not establish event or invitation recovery. |
@@ -223,9 +239,9 @@ production server could not be checked because the normal build still fails.
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 321 diagnostics, down from 355 before attendance endpoint recovery. No increased file/error-code groups, compiler exclusions or error suppression added. |
+| `yarn typecheck` | Fails: 317 diagnostics, down from 321 before bulk attendance recovery. No increased file/error-code groups, compiler exclusions or error suppression added. |
 | `yarn build` | Gets past Custom Links and shared field-label callers; fails at the existing event-search payload in `src/core/components/event/EventComponents.tsx:1394`. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 288 failed, 1,436 passed, 145 skipped. No new failing cases compared with the catalog baseline; malformed segment identifiers now fail at the schema boundary as specified. The 27 new MariaDB cases skip without their private test URL and pass in the native run above. Later isolated DOM batches are not reached; focused DOM checks above passed. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 288 failed, 1,452 passed, 173 skipped. Failure labels match the previous attendance baseline, with no added failing cases. The 55 direct/bulk MariaDB cases skip without their private test URL and pass in the native run above. Later isolated DOM batches are not reached; focused DOM checks above passed. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -259,9 +275,9 @@ verification resources, not application configuration.
 Fix owning contracts before their cascading consumers: `prismArgs.ts` remains the
 largest diagnostic root, followed by obsolete person-level instrument/tag and
 event/file/song descriptors and views. Shared event catalogs and dedicated
-attendance write/history/HTTP endpoints are migrated. Event payloads/editing,
-default/tag invitations, bulk segment response copy/clear and calendar feeds still
-need band ownership and membership response contracts. Legacy authorization
+attendance write/history/HTTP and bulk copy/clear endpoints are migrated. Event
+payloads/editing, default/tag invitations and calendar feeds still need band
+ownership and membership response contracts. Legacy authorization
 fixtures also retain removed relationships. Generic settings storage is isolated;
 its editor now uses the registered API. Role administration and shared-account
 merge execution are isolated; other deferred domains still need that boundary.

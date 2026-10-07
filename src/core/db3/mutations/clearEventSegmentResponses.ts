@@ -1,48 +1,11 @@
-import { cmauthorize, type CMAuthCtx } from "@/src/auth/server/cmResolver";
 import { resolver } from "@blitzjs/rpc";
-import db, { Prisma } from "db";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "@/src/auth/server/activityLog";
-import { Permission } from "shared/permissions";
-import { z } from "zod";
-import * as db3 from "../db3";
-import { resolvePublicId } from "../server/db3PublicIds";
-import { CallMutateEventHooks } from "../server/db3mutationCore";
-
-const ZArgs = z.object({ eventSegmentId: db3.xEventSegment.identitySchema }).strict();
+import type { Ctx } from "blitz";
+import db from "db";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
+import { clearEventSegmentResponses } from "../server/eventAttendanceBulk";
+import { ClearEventSegmentResponsesSchema } from "../shared/eventAttendanceBulk";
 
 export default resolver.pipe(
-    cmauthorize(Permission.admin_events),
-    resolver.zod(ZArgs),
-    async (args, ctx: CMAuthCtx) => {
-
-        await db.$transaction(async tx => {
-            const eventSegmentId = await resolvePublicId(db3.xEventSegment, args.eventSegmentId, ctx.auth, tx);
-            const segment = await tx.eventSegment.findUniqueOrThrow({
-                where: { id: eventSegmentId },
-                select: { eventId: true }
-            });
-
-            const oldValues = await tx.eventSegmentUserResponse.findMany({ where: { eventSegmentId } });
-            if (oldValues.length === 0) {
-                return;
-            }
-            await tx.eventSegmentUserResponse.deleteMany({
-                where: { eventSegmentId }
-            });
-            await CallMutateEventHooks({ tableNameOrSpecialMutationKey: "mutation:cleareventsegmentresponses", model: { id: segment.eventId }, db: tx });
-            await RegisterChange({
-                action: ChangeAction.delete,
-                changeContext: CreateChangeContext("clearEventSegmentResponses"),
-                table: db3.xEventSegmentUserResponse.tableName,
-                pkid: eventSegmentId,
-                // Historical Change values retain natural foreign keys.
-                oldValues: oldValues.filter(row => row.attendanceId !== null)
-                    .map(row => ({ userId: row.userId, attendanceId: row.attendanceId })),
-                newValues: undefined,
-                auth: ctx.auth,
-                db: tx,
-            });
-        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-        return null;
-    },
+    resolver.zod(ClearEventSegmentResponsesSchema),
+    async (args, ctx: Ctx) => clearEventSegmentResponses(db, await loadAuthorization(ctx.session, args.bandPublicId), args),
 );

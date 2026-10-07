@@ -63,8 +63,8 @@ function reset(overrides: Parameters<typeof authorizationTestDb.reset>[0] = {}) 
         eventUserResponse: [eventResponse], eventAttendance: [{ id: 2, publicId: attendancePublicId(2), isDeleted: false }],
         eventStatus: [], setting: [], change: [], action: [], ...overrides });
 }
-const copy = () => invokeResolver(copyResponses, { fromEventSegmentId: segmentPublicId(1), toEventSegmentId: segmentPublicId(2) }, ctx);
-const clear = () => invokeResolver(clearResponses, { eventSegmentId: segmentPublicId(2) }, ctx);
+const copy = () => invokeResolver(copyResponses, { bandPublicId: attendanceBandPublicId, fromEventSegmentId: segmentPublicId(1), toEventSegmentId: segmentPublicId(2) }, ctx);
+const clear = () => invokeResolver(clearResponses, { bandPublicId: attendanceBandPublicId, eventSegmentId: segmentPublicId(2) }, ctx);
 const operations = db3.eventSegmentEditorView.crud.operations;
 const command = (commandID: string, payload: unknown) => invokeResolver(executeCommand, { commandID, payload }, ctx);
 const snapshots = () => ["event", "eventSegment", "eventSegmentUserResponse", "eventUserResponse", "change"]
@@ -166,7 +166,7 @@ describe("Event segment and response public identities", () => {
     });
 
     it("rejects self-copy, cross-event copy, unknown targets, and revoked admin permission", async () => {
-        await expect(invokeResolver(copyResponses, { fromEventSegmentId: segmentPublicId(1), toEventSegmentId: segmentPublicId(1) }, ctx)).rejects.toThrow();
+        await expect(invokeResolver(copyResponses, { bandPublicId: attendanceBandPublicId, fromEventSegmentId: segmentPublicId(1), toEventSegmentId: segmentPublicId(1) }, ctx)).rejects.toThrow();
         reset({ event: [event, { ...event, id: 999 }], eventSegment: [segment(1), segment(2, 999)] });
         await expect(copy()).rejects.toThrow("same event");
         reset({ eventSegment: [segment(1)] });

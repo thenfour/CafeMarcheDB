@@ -85,28 +85,22 @@ async function saveSegmentResponses(
 
 // lsmb todo: this should invoke db3's native mutation routines
 // instead of duplicating its flow (auth, sanitization, validation)
-async function saveEventResponse(
+export async function saveEventAttendanceResponse(
     database: Prisma.TransactionClient,
     auth: CMServerAuthorizationWithUser,
     changeContext: ChangeContext,
     bandUserId: number,
     eventId: number,
-    args: TupdateUserEventAttendanceMutationArgs,
-    bandInstrumentId: number | null | undefined,
+    fields: { userComment?: string | null; bandInstrumentId?: number | null; isInvited?: boolean | null },
     segmentsChanged: boolean,
 ): Promise<void> {
     const existing = await database.eventUserResponse.findUnique({
         where: { bandUserId_eventId: { bandUserId, eventId } }
     });
-    const fields = {
-        ...(args.comment !== undefined ? { userComment: args.comment } : {}),
-        ...(args.instrumentId !== undefined ? { bandInstrumentId } : {}),
-        ...(args.isInvited !== undefined ? { isInvited: args.isInvited } : {}),
-    };
     if (existing && !segmentsChanged
-        && (args.comment === undefined || args.comment === existing.userComment)
-        && (args.instrumentId === undefined || bandInstrumentId === existing.bandInstrumentId)
-        && (args.isInvited === undefined || args.isInvited === existing.isInvited)) {
+        && (fields.userComment === undefined || fields.userComment === existing.userComment)
+        && (fields.bandInstrumentId === undefined || fields.bandInstrumentId === existing.bandInstrumentId)
+        && (fields.isInvited === undefined || fields.isInvited === existing.isInvited)) {
         return;
     }
     const saved = existing
@@ -149,7 +143,11 @@ export async function updateEventAttendanceInTransaction(
     const changes = await resolveAttendanceChanges(database, event.id, bandId, args);
     const changeContext = CreateChangeContext("updateUserEventAttendance");
     const segmentsChanged = await saveSegmentResponses(database, auth, changeContext, member.id, changes.segments);
-    await saveEventResponse(database, auth, changeContext, member.id, event.id, args, changes.bandInstrumentId, segmentsChanged);
+    await saveEventAttendanceResponse(database, auth, changeContext, member.id, event.id, {
+        ...(args.comment !== undefined ? { userComment: args.comment } : {}),
+        ...(args.instrumentId !== undefined ? { bandInstrumentId: changes.bandInstrumentId } : {}),
+        ...(args.isInvited !== undefined ? { isInvited: args.isInvited } : {}),
+    }, segmentsChanged);
     if (segmentsChanged) {
         // Attendance changes share the calendar/date hook with other event changes, once per batch.
         await RecalcEventDateRangeAndIncrementRevision({ eventId: event.id, updatingEventModel: {}, db: database });
