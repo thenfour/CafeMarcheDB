@@ -31,6 +31,7 @@ import * as db3 from '../db3';
 import { gIconMap } from './IconMap';
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
 import { gridSortModelFromPrismaOrderBy } from "./db3GridSort";
+import { useLocale } from "src/locale/components/useLocale";
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 50 as number;
@@ -243,6 +244,7 @@ function DB3EditGridImpl<
     queryState,
     ...props
 }: DB3EditGridImplProps<TRow, TClient>) {
+    const locale = useLocale();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const dashboardContext = useDashboardContext();
     const readOnly = CoerceToBoolean(props.readOnly, false);
@@ -328,7 +330,7 @@ function DB3EditGridImpl<
             resolve(updatedRow);
             if (props.onUpdateRow) {
                 await tableClient.refetch();
-                dashboardContext.refreshCachedData();
+                await dashboardContext.refreshCachedData();
             }
             if (updatedRow !== oldRow) showSnackbar({ children: "update success", severity: 'success' });
         } catch (error) {
@@ -458,7 +460,7 @@ function DB3EditGridImpl<
         {
             field: 'actions',
             type: 'actions',
-            headerName: 'Actions',
+            headerName: locale.getPlainString("db3.action.heading"),
             getActions: ({ id, ...args }) => {
                 const isInEditMode = rowModesModel[id]?.mode === GridRowModes.Edit;
 

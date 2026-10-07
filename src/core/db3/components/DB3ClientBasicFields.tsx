@@ -34,7 +34,7 @@ import type { ColorPaletteEntry } from "../../components/color/palette";
 import { ColorPick } from "../../components/color/ColorPick";
 import { gNullValue, TAnyModel } from "@/shared/rootroot";
 import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
-import { LocalizedMarkdownKey, LocalizedPlainStringKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
+import type { LocalizedMarkdownKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs<TColumnName extends string = string> {
@@ -64,7 +64,7 @@ export class PKColumnClient<TColumnName extends string = string>
 
     renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => <NameValuePair
         className={params.className}
-        name={this.columnName}
+        name={this.fieldCaption}
         value={params.value}
         isReadOnly={true}
         fieldName={this.columnName}
@@ -101,7 +101,7 @@ export class PublicIdColumnClient
     renderForNewDialog = undefined;
     renderViewer = (params: DB3ClientCore.RenderViewerArgs<string>) => <NameValuePair
         className={params.className}
-        name={this.columnName}
+        name={this.fieldCaption}
         value={params.value}
         isReadOnly={true}
         fieldName={this.columnName}
@@ -113,12 +113,10 @@ export class PublicIdColumnClient
 export const publicIdFieldGen = () => (columnName: string) => new PublicIdColumnClient();
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface GenericStringColumnArgs<TColumnName extends string = string> {
+export interface GenericStringColumnArgs<TColumnName extends string = string> extends DB3ClientCore.ColumnPresentationArgs {
     columnName: TColumnName;
     cellWidth?: number;
     className?: string;
-    fieldCaptionKey: LocalizedPlainStringKey;
-    fieldDescriptionKey: LocalizedMarkdownKey | null;
     renderCell?: undefined | ((params: GridRenderCellParams) => React.ReactNode);
 };
 
@@ -177,9 +175,9 @@ export class GenericStringColumnClient<TColumnName extends string = string>
         };
     };
 
-    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => <NameValuePair
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<string | null>) => <NameValuePair
         className={params.className}
-        name={this.columnName}
+        name={this.fieldCaption}
         value={params.value}
         fieldName={this.columnName}
         isReadOnly={false}
@@ -189,6 +187,7 @@ export class GenericStringColumnClient<TColumnName extends string = string>
         validationResult: params.validationResult,
         isReadOnly: false,
         value: <CMTextInputBase
+            aria-label={this.fieldCaption}
             onChange={(e, val) => params.api.setFieldValues({ [this.columnName]: val })}
             //autoFocus={params.autoFocus}
             autoFocus={false}
@@ -204,11 +203,9 @@ export class GenericStringColumnClient<TColumnName extends string = string>
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface MarkdownStringColumnArgs<TColumnName extends string = string> {
+export interface MarkdownStringColumnArgs<TColumnName extends string = string> extends DB3ClientCore.ColumnPresentationArgs {
     columnName: TColumnName;
     cellWidth: number;
-    fieldCaption?: string;
-    fieldDescriptionSettingName?: SettingKey;
     className?: string;
     visible?: boolean;
 };
@@ -221,13 +218,13 @@ export class MarkdownStringColumnClient<TColumnName extends string = string>
         super({
             columnName: args.columnName,
             editable: true,
-            headerName: args.columnName,
+            headerNameKey: args.fieldCaptionKey,
             isAutoFocusable: true,
             width: args.cellWidth,
             visible: CoerceToBoolean(args.visible, true),
             className: args.className,
-            fieldCaption: args.fieldCaption,
-            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
         });
     }
     ApplyClientToPostClient = undefined;
@@ -261,7 +258,7 @@ export class MarkdownStringColumnClient<TColumnName extends string = string>
 
     renderViewer = (params: DB3ClientCore.RenderViewerArgs<string | null>) => <NameValuePair
         className={params.className}
-        name={this.columnName}
+        name={this.fieldCaption}
         value={<Markdown key={params.key} markdown={params.value ?? ""} />}
         fieldName={this.columnName}
         isReadOnly={false}
@@ -289,11 +286,9 @@ export class MarkdownStringColumnClient<TColumnName extends string = string>
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface GenericIntegerColumnArgs<TColumnName extends string = string> {
+export interface GenericIntegerColumnArgs<TColumnName extends string = string> extends DB3ClientCore.ColumnPresentationArgs {
     columnName: TColumnName;
     cellWidth: number;
-    fieldCaption?: string;
-    fieldDescriptionSettingName?: SettingKey;
     className?: string;
 };
 
@@ -303,13 +298,13 @@ export class GenericIntegerColumnClient<TColumnName extends string = string>
         super({
             columnName: args.columnName,
             editable: true,
-            headerName: args.columnName,
+            headerNameKey: args.fieldCaptionKey,
             isAutoFocusable: true,
             width: args.cellWidth,
             visible: true,
             className: args.className,
-            fieldCaption: args.fieldCaption,
-            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
         });
     }
     ApplyClientToPostClient = undefined;
@@ -331,6 +326,7 @@ export class GenericIntegerColumnClient<TColumnName extends string = string>
                 const val = params.value;
                 const displayValue = (val == null) || isNaN(val) ? "" : `${val}`;
                 return <CMTextInputBase
+                    aria-label={this.fieldCaption}
                     autoFocus={params.hasFocus}
                     initialValue={displayValue}
                     readOnly={!this.editable}
@@ -344,7 +340,7 @@ export class GenericIntegerColumnClient<TColumnName extends string = string>
 
     renderViewer = (params: DB3ClientCore.RenderViewerArgs<number | null>) => <NameValuePair
         className={params.className}
-        name={this.columnName}
+        name={this.fieldCaption}
         value={params.value}
         isReadOnly={!this.editable}
         fieldName={this.columnName}
@@ -359,7 +355,7 @@ export class GenericIntegerColumnClient<TColumnName extends string = string>
             isReadOnly: !this.editable,
             validationResult: params.validationResult,
             className: `field_${this.columnName}`,
-            value: <CMTextInputBase value={displayValue} readOnly={!this.editable} onChange={(e, val) => {
+            value: <CMTextInputBase aria-label={this.fieldCaption} value={displayValue} readOnly={!this.editable} onChange={(e, val) => {
                 params.api.setFieldValues({ [this.columnName]: CoerceToNumberOrNull(val) });
             }} />,
         });
@@ -369,11 +365,9 @@ export class GenericIntegerColumnClient<TColumnName extends string = string>
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface SongLengthSecondsColumnArgs {
+export interface SongLengthSecondsColumnArgs extends DB3ClientCore.ColumnPresentationArgs {
     columnName: string;
     cellWidth: number;
-    fieldCaption?: string;
-    fieldDescriptionSettingName?: SettingKey;
     className?: string;
 };
 
@@ -382,13 +376,13 @@ export class SongLengthSecondsColumnClient extends DB3ClientCore.IColumnClient {
         super({
             columnName: args.columnName,
             editable: true,
-            headerName: args.columnName,
+            headerNameKey: args.fieldCaptionKey,
             width: args.cellWidth,
             isAutoFocusable: true,
             visible: true,
             className: args.className,
-            fieldCaption: args.fieldCaption,
-            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
         });
     }
     ApplyClientToPostClient = undefined;
@@ -416,7 +410,7 @@ export class SongLengthSecondsColumnClient extends DB3ClientCore.IColumnClient {
     // TODO: this can be enhanced like renderForNewDialog
     renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => <NameValuePair
         className={params.className}
-        name={this.columnName}
+        name={this.fieldCaption}
         value={params.value}
         isReadOnly={!this.editable}
         fieldName={this.columnName}
@@ -444,11 +438,9 @@ export class SongLengthSecondsColumnClient extends DB3ClientCore.IColumnClient {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface BoolColumnArgs {
+export interface BoolColumnArgs extends DB3ClientCore.ColumnPresentationArgs {
     columnName: string;
     //cellWidth: number;
-    fieldCaption?: string;
-    fieldDescriptionSettingName?: SettingKey;
     className?: string;
 };
 
@@ -457,13 +449,13 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
         super({
             columnName: args.columnName,
             editable: true,
-            headerName: args.columnName,
+            headerNameKey: args.fieldCaptionKey,
             width: 80,//args.cellWidth,
             isAutoFocusable: false,
             visible: true,
             className: args.className,
-            fieldCaption: args.fieldCaption,
-            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
         });
     }
     ApplyClientToPostClient = undefined;
@@ -488,7 +480,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
 
     renderViewer = (params: DB3ClientCore.RenderViewerArgs<boolean>) => <NameValuePair
         className={params.className}
-        name={this.columnName}
+        name={this.fieldCaption}
         value={!!params.value ? "Yes" : "No"}
         fieldName={this.columnName}
         isReadOnly={!this.editable}
@@ -511,11 +503,9 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface ColorColumnArgs<TColumnName extends string = string> {
+export interface ColorColumnArgs<TColumnName extends string = string> extends DB3ClientCore.ColumnPresentationArgs {
     columnName: TColumnName;
     cellWidth: number;
-    fieldCaption?: string;
-    fieldDescriptionSettingName?: SettingKey;
     className?: string;
 };
 
@@ -523,11 +513,11 @@ export class ColorColumnClient<TColumnName extends string = string>
     extends DB3ClientCore.IColumnClient<TColumnName, ColorPaletteEntry | null> {
     constructor(args: ColorColumnArgs<TColumnName>) {
         super({
-            fieldCaption: args.fieldCaption,
-            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
             columnName: args.columnName,
             editable: true,
-            headerName: args.columnName,
+            headerNameKey: args.fieldCaptionKey,
             className: args.className,
             isAutoFocusable: false,
             width: args.cellWidth,
@@ -556,7 +546,7 @@ export class ColorColumnClient<TColumnName extends string = string>
 
     renderViewer = (params: DB3ClientCore.RenderViewerArgs<ColorPaletteEntry | null>) => <NameValuePair
         className={params.className}
-        name={this.columnName}
+        name={this.fieldCaption}
         value={<ColorSwatch color={params.value} variation={{ enabled: true, selected: true, fillOption: "filled", variation: "strong" }} />}
         fieldName={this.columnName}
         isReadOnly={!this.editable}
@@ -581,14 +571,12 @@ export class ColorColumnClient<TColumnName extends string = string>
 export interface ConstEnumStringFieldClientItemInfo {
     color?: string | null;
     label?: string;
-    descriptionMarkdownSettingKey?: string;
+    descriptionKey?: LocalizedMarkdownKey;
 };
 
-export interface ConstEnumStringFieldClientArgs {
+export interface ConstEnumStringFieldClientArgs extends DB3ClientCore.ColumnPresentationArgs {
     columnName: string;
     cellWidth: number;
-    fieldCaption?: string;
-    fieldDescriptionSettingName?: SettingKey;
     className?: string;
     allowNull?: boolean;
     getItemInfo?: (option: { value: string, label: string }) => ConstEnumStringFieldClientItemInfo;
@@ -604,13 +592,13 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
         super({
             columnName: args.columnName,
             isAutoFocusable: true,
-            headerName: args.columnName,
+            headerNameKey: args.fieldCaptionKey,
             editable: true,
             width: args.cellWidth,
             className: args.className,
             visible: true,
-            fieldCaption: args.fieldCaption,
-            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
         });
         this.getItemInfo = args.getItemInfo;
         this.allowNull = CoalesceBool(args.allowNull, true);
@@ -619,7 +607,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
 
     renderViewer = (params: DB3ClientCore.RenderViewerArgs<string>) => <NameValuePair
         className={params.className}
-        name={this.columnName}
+        name={this.fieldCaption}
         value={params.value}
         isReadOnly={!this.editable}
         fieldName={this.columnName}
@@ -651,11 +639,11 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         const value = params.value === null ? gNullValue : params.value;
 
-        let selectedDescriptionSettingMarkdownKey: string | undefined = undefined;
+        let selectedDescriptionKey: LocalizedMarkdownKey | undefined = undefined;
         if (this.getItemInfo) {
             const selectedOption = this.gridOptions.find(o => o.value === value)!;
             const selectedInfo = this.getItemInfo(selectedOption);
-            selectedDescriptionSettingMarkdownKey = selectedInfo.descriptionMarkdownSettingKey;
+            selectedDescriptionKey = selectedInfo.descriptionKey;
         }
 
         const handleClick = (val: typeof this.gridOptions[0]) => {
@@ -694,9 +682,9 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
                         </CMChip>;
                     })}
                 </CMChipContainer>
-                {selectedDescriptionSettingMarkdownKey && <div className="description">
+                {selectedDescriptionKey && <div className="description">
                     <Suspense>
-                        <LocalizedMarkdown setting={selectedDescriptionSettingMarkdownKey as any} />
+                        <LocalizedMarkdown setting={selectedDescriptionKey} />
                     </Suspense>
                 </div>}
             </div>
@@ -847,11 +835,9 @@ export const CMDatePicker = (props: CMDatePickerProps) => {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface CreatedAtColumnArgs {
+export interface CreatedAtColumnArgs extends DB3ClientCore.ColumnPresentationArgs {
     columnName: string;
     cellWidth: number;
-    fieldCaption?: string;
-    fieldDescriptionSettingName?: SettingKey;
     className?: string;
 };
 
@@ -864,12 +850,12 @@ export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
             columnName: args.columnName,
             isAutoFocusable: false,
             editable: true,
-            headerName: args.columnName,
+            headerNameKey: args.fieldCaptionKey,
             width: args.cellWidth,
             visible: true,
             className: args.className,
-            fieldCaption: args.fieldCaption,
-            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
         });
     }
     ApplyClientToPostClient = undefined;
@@ -900,7 +886,7 @@ export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
         const ageStr = `(${formatTimeSpan(value, now)} ago)`;
         return <NameValuePair
             className={params.className}
-            name={this.columnName}
+            name={this.fieldCaption}
             value={<>{value.toTimeString()} {ageStr}</>}// todo
             isReadOnly={!this.editable}
             fieldName={this.columnName}
@@ -928,9 +914,8 @@ export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface DateTimeColumnArgs {
+export interface DateTimeColumnArgs extends DB3ClientCore.ColumnPresentationArgs {
     columnName: string;
-    fieldCaption?: string;
     className?: string;
 };
 
@@ -943,12 +928,12 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
             columnName: args.columnName,
             isAutoFocusable: true,
             editable: true,
-            headerName: args.columnName,
+            headerNameKey: args.fieldCaptionKey,
             width: 150,
             visible: true,
             className: args.className,
-            fieldCaption: args.fieldCaption,
-            fieldDescriptionSettingName: null,
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
         });
     }
     ApplyClientToPostClient = undefined;
@@ -985,7 +970,7 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
         const ageStr = `(${formatTimeSpan(value, now)} ago)`;
         return <NameValuePair
             className={params.className}
-            name={this.columnName}
+            name={this.fieldCaption}
             value={<>{!!value ? value.toLocaleString() : "--"} {ageStr}</>} // todo
             isReadOnly={!this.editable}
             fieldName={this.columnName}
@@ -1009,6 +994,7 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
             validationResult: params.validationResult,
             value: <div>
                 <CMTextInputBase
+                    aria-label={this.fieldCaption}
                     onChange={(e, val) => {
                         const date = IsNullOrWhitespace(val) ? null : new Date(val); // convert to kosher value.
                         params.api.setFieldValues({ [this.columnName]: date });
@@ -1039,18 +1025,18 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // for generic non-UI support for any column type
-export interface AnyColumnArgs {
+export interface AnyColumnArgs extends DB3ClientCore.ColumnPresentationArgs {
     columnName: string;
 };
 
 export class AnyColumnClient extends DB3ClientCore.IColumnClient {
     constructor(args: AnyColumnArgs) {
         super({
-            fieldCaption: args.columnName,
-            fieldDescriptionSettingName: undefined,
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
             columnName: args.columnName,
             editable: true,
-            headerName: args.columnName,
+            headerNameKey: args.fieldCaptionKey,
             className: undefined,
             isAutoFocusable: false,
             width: 100,
@@ -1119,7 +1105,8 @@ export function useDb3Query(
     }
     const legacySpec = args.tableSpec ?? DB3ClientCore.defineLegacyDynamicTableClientSpec({
         table: args.schema,
-        columns: args.schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
+        // Query-only columns have no field renderer; their technical members still identify the data.
+        columns: args.schema.columns.map(c => new AnyColumnClient({ columnName: c.member, fieldCaptionKey: "db3.fields.value", fieldDescriptionKey: null })),
     });
     return DB3ClientCore.useLegacyTableRenderContext({
         requestedCaps: args.requestedCaps ?? DB3ClientCore.xTableClientCaps.Query,

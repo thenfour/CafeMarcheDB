@@ -65,8 +65,8 @@ const SettingsContent = () => {
         view: db3.settingEditorView,
         columns: {
             publicId: DB3Client.publicIdFieldGen(),
-            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
-            value: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
+            name: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.name", columnName, cellWidth: 200 }),
+            value: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.value", columnName, cellWidth: 200 }),
         },
     });
 

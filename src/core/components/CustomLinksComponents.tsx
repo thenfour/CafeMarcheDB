@@ -15,6 +15,8 @@ import { gLightSwatchColors, gSwatchColors } from "./color/palette";
 import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/DashboardContext";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { Markdown } from "./markdown/Markdown";
+import { useLocale } from "src/locale/components/useLocale";
+import type { LocalizedMarkdownKey, LocalizedPlainStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
 
 
 const gRedirectTypeColorMap: Record<keyof typeof db3.CustomLinkRedirectType, string> = {
@@ -24,6 +26,18 @@ const gRedirectTypeColorMap: Record<keyof typeof db3.CustomLinkRedirectType, str
     [db3.CustomLinkRedirectType.Client]: gSwatchColors.teal,
     [db3.CustomLinkRedirectType.IntermediatePage]: gSwatchColors.purple,
     [db3.CustomLinkRedirectType.ServeFile]: gSwatchColors.orange,
+};
+
+const redirectTypeText: Record<keyof typeof db3.CustomLinkRedirectType, {
+    readonly labelKey: LocalizedPlainStringKey;
+    readonly descriptionKey: LocalizedMarkdownKey;
+}> = {
+    Disabled: { labelKey: "db3.customLink.disabled", descriptionKey: "db3.customLink.disabledHelp" },
+    Permanent: { labelKey: "db3.customLink.permanent", descriptionKey: "db3.customLink.permanentHelp" },
+    Temporary: { labelKey: "db3.customLink.temporary", descriptionKey: "db3.customLink.temporaryHelp" },
+    Client: { labelKey: "db3.customLink.client", descriptionKey: "db3.customLink.clientHelp" },
+    IntermediatePage: { labelKey: "db3.customLink.intermediate", descriptionKey: "db3.customLink.intermediateHelp" },
+    ServeFile: { labelKey: "db3.customLink.serveFile", descriptionKey: "db3.customLink.serveFileHelp" },
 };
 
 // DB3 passes the editor's generic row model to this feature specific save path.
@@ -43,17 +57,15 @@ const usesFileTarget = (row: TAnyModel): boolean => row.redirectType === db3.Cus
     || (row.redirectType === db3.CustomLinkRedirectType.Disabled && !!row.fileId);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface CustomLinkSlugColumnArgs {
-    columnName: string;
-    fieldCaption?: string;
-};
+export interface CustomLinkSlugColumnArgs extends DB3Client.GenericStringColumnArgs {};
 
 export class CustomLinkSlugColumn extends DB3Client.GenericStringColumnClient {
     constructor(args: CustomLinkSlugColumnArgs) {
         super({
             cellWidth: 250,
             columnName: args.columnName,
-            fieldCaption: args.fieldCaption,
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
         });
     }
 
@@ -62,6 +74,7 @@ export class CustomLinkSlugColumn extends DB3Client.GenericStringColumnClient {
         isReadOnly: false,
         value: <div className='CustomLinkSlugColumnValue'>
             <CMTextInputBase
+                aria-label={this.fieldCaption}
                 onChange={(e, val) => params.api.setFieldValues({ [this.columnName]: val })}
                 autoFocus={params.autoFocus}
                 value={params.value as string}
@@ -216,14 +229,19 @@ export const CustomLinkList = () => {
     const recordFeature = useFeatureRecorder();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
+    const locale = useLocale();
     const getItemInfo = (option: { value: string, label: string }): DB3Client.ConstEnumStringFieldClientItemInfo => {
-        if (option.value === gNullValue) return {};
+        if (option.value === gNullValue) {
+            return {};
+        }
+        const text = Object.entries(redirectTypeText).find(([value]) => value === option.value)?.[1];
+        if (!text) {
+            throw new Error(`Unknown Custom Link behavior: ${option.value}`);
+        }
         return {
             color: gRedirectTypeColorMap[option.value],
-            label: option.value === db3.CustomLinkRedirectType.ServeFile ? "Serve uploaded file" : option.label,
-            descriptionMarkdownSettingKey: option.value === db3.CustomLinkRedirectType.ServeFile
-                ? undefined
-                : `CustomLinkRedirectTypeDescriptionMarkdown_${option.value}`,
+            label: locale.getPlainString(text.labelKey),
+            descriptionKey: text.descriptionKey,
         };
     };
 
@@ -231,11 +249,17 @@ export const CustomLinkList = () => {
         view: db3.customLinkListView,
         columns: {
             publicId: DB3Client.publicIdFieldGen(),
-            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Name" }),
-            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 250, visible: true }), // required field but it's distracting to see here.
-            slug: columnName => new CustomLinkSlugColumn({ columnName, fieldCaption: "Slug" }),
+            name: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, columnName, cellWidth: 250, fieldCaptionKey: "db3.fields.name" }),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 250, visible: true }), // required field but it's distracting to see here.
+            slug: columnName => new CustomLinkSlugColumn({ fieldDescriptionKey: null, columnName, fieldCaptionKey: "db3.fields.slug" }),
             redirectType: columnName => {
-                const column = new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 250, fieldCaption: "Link behavior", getItemInfo });
+                const column = new DB3Client.ConstEnumStringFieldClient({
+                    columnName,
+                    cellWidth: 250,
+                    fieldCaptionKey: "db3.fields.linkBehavior",
+                    fieldDescriptionKey: "customLink.redirectType.DescriptionMarkdown",
+                    getItemInfo,
+                });
                 const render = column.renderForNewDialog;
                 column.renderForNewDialog = params => <>
                     {render(params)}
@@ -246,16 +270,16 @@ export const CustomLinkList = () => {
                 return column;
             },
             destinationURL: columnName => {
-                const column = new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "External URL" });
+                const column = new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, columnName, cellWidth: 250, fieldCaptionKey: "db3.fields.externalUrl" });
                 const render = column.renderForNewDialog;
                 column.renderForNewDialog = params => usesFileTarget(params.row) ? <></> : render(params);
                 return column;
             },
             file: columnName => {
-                const column = new DB3Client.ForeignSingleFieldClient<NonNullable<db3.CustomLinkListClient["file"]>>({
+                const column = new DB3Client.ForeignSingleFieldClient<NonNullable<db3.CustomLinkListClient["file"]>>({ fieldDescriptionKey: null,
                     columnName,
                     cellWidth: 250,
-                    fieldCaption: "Uploaded file",
+                    fieldCaptionKey: "db3.fields.uploadedFile",
                     selectionView: db3.customLinkFileSelectionView,
                 });
                 const render = column.renderForNewDialog;
@@ -263,13 +287,13 @@ export const CustomLinkList = () => {
                 return column;
             },
             intermediateMessage: columnName => {
-                const column = new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 250, visible: true });
+                const column = new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.intermediateMessage", columnName, cellWidth: 250, visible: true });
                 const render = column.renderForNewDialog;
                 column.renderForNewDialog = params => params.row.redirectType === db3.CustomLinkRedirectType.IntermediatePage ? render(params) : <></>;
                 return column;
             },
             forwardQuery: columnName => {
-                const column = new DB3Client.BoolColumnClient({ columnName, fieldCaption: "Forward URL parameters?" });
+                const column = new DB3Client.BoolColumnClient({ fieldDescriptionKey: null, columnName, fieldCaptionKey: "db3.fields.forwardQuery" });
                 const render = column.renderForNewDialog;
                 column.renderForNewDialog = params => usesFileTarget(params.row) ? <></> : render(params);
                 return column;

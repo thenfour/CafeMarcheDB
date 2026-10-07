@@ -28,6 +28,8 @@ import { useDashboardContext } from '../../components/dashboardContext/Dashboard
 import { type CrudViewCreateToken, useCrudViewCreate } from './useCrudViewCreate';
 import { LocalizedMarkdownKey, LocalizedPlainStringKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
 import { useGlobalSettings } from "@/src/setting/client/useSettings";
+import type { GlobalSettingKey } from "src/setting/shared/globalSettingsRegistry";
+import { useLocale } from "src/locale/components/useLocale";
 
 
 const gMaxVisibleTags = 6;
@@ -65,6 +67,7 @@ export interface DB3SelectTagsDialogProps<TAssociation extends TAnyModel> {
 };
 
 function DB3SelectTagsDialogInner<TAssociation extends TAnyModel>(props: DB3SelectTagsDialogProps<TAssociation>) {
+    const locale = useLocale();
     const descriptionSettingName = props.descriptionKey || props.spec.fieldDescriptionKey;
     const source: SelectionSource<TAssociation> = {
         getKey: item => item[props.spec.associationForeignIDMember],
@@ -93,7 +96,7 @@ function DB3SelectTagsDialogInner<TAssociation extends TAnyModel>(props: DB3Sele
         },
     };
     return <SelectionPicker source={source} multiple value={props.initialValue}
-        title={props.caption || `Select ${props.spec.selectionCaption}`}
+        title={props.caption ? locale.getPlainString(props.caption) : locale.getPlainString("db3.action.selectField", { field: props.spec.selectionCaption })}
         description={descriptionSettingName ? <LocalizedMarkdown setting={descriptionSettingName} /> : undefined}
         onCancel={props.onClose} onAccept={value => { props.onChange(value); props.onClose(); }} />;
 }
@@ -113,7 +116,7 @@ export interface TagsFieldInputProps<TAssociation extends TAnyModel> {
     // for creating new associations
     row: TAnyModel;
 
-    //selectStyle: "inline" | "dialog";
+    selectStyle?: "inline" | "dialog";
 };
 
 
@@ -159,6 +162,7 @@ export const ChipsFieldInlineValues = <TAssociation extends TAnyModel,>(props: T
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // general use "edit cell" for tags
 export const TagsFieldInput = <TAssociation extends TAnyModel,>(props: TagsFieldInputProps<TAssociation>) => {
+    const locale = useLocale();
     //const [setSetting] = useMutation(updateSetting);
     //const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
@@ -195,8 +199,8 @@ export const TagsFieldInput = <TAssociation extends TAnyModel,>(props: TagsField
     //const selectStyleSetting = GenerateForeignSingleSelectStyleSettingName(props.spec.schemaTable.tableName, props.spec.columnName);
     //const [selectStyleSettingValue] = useQuery(getSetting, { name: selectStyleSetting });//  API.settings.useSetting(selectStyleSetting);
     //const selectStyle = (selectStyleSettingValue || props.selectStyle) as ("inline" | "dialog");
-    const styleKey = props.spec.typedSchemaColumn.selectStyleSettingKey;
-    const selectStyle = styleKey ? globalSettings.getValue(styleKey) : props.selectStyle;
+    const styleKey = props.spec.args.selectStyleSettingKey;
+    const selectStyle = styleKey ? globalSettings.getValue(styleKey) : props.selectStyle ?? props.spec.args.selectStyle;
     const newProps = { ...props, selectStyle };
     //newProps.selectStyle = selectStyle;
 
@@ -225,10 +229,14 @@ export const TagsFieldInput = <TAssociation extends TAnyModel,>(props: TagsField
                 props.onChange(correctedValue.filter(v => v[props.spec.associationForeignIDMember] !== value[props.spec.associationForeignIDMember]));
             } : undefined}
         >
-            <SelectionEditButton onClick={() => setIsOpen(true)} label={`Edit ${props.spec.selectionCaption}`} />
+            <SelectionEditButton onClick={() => setIsOpen(true)} label={locale.getPlainString("db3.action.editField", { field: props.spec.selectionCaption })}>
+                {locale.getPlainString("db3.action.edit")}
+            </SelectionEditButton>
         </SelectionValueList> : <SelectionFieldFrame>
             <ChipsFieldInlineValues {...newProps} />
-            <SelectionEditButton onClick={() => setIsOpen(true)} label={`Edit ${props.spec.selectionCaption}`} />
+            <SelectionEditButton onClick={() => setIsOpen(true)} label={locale.getPlainString("db3.action.editField", { field: props.spec.selectionCaption })}>
+                {locale.getPlainString("db3.action.edit")}
+            </SelectionEditButton>
         </SelectionFieldFrame>}
 
         {isOpen && <DB3SelectTagsDialog
@@ -326,7 +334,8 @@ export interface TagsFieldClientArgs<TAssociation> {
     className?: string;
     fieldCaptionKey: LocalizedPlainStringKey;
     fieldDescriptionKey: LocalizedMarkdownKey | null;
-    //selectStyle?: "inline" | "dialog",
+    selectStyle: "inline" | "dialog";
+    selectStyleSettingKey?: Extract<GlobalSettingKey, `global.ui.${string}.selectStyle`>;
     overrideRowInfo?: (value: TAssociation, rowInfo: db3.RowInfo) => db3.RowInfo,
 };
 
@@ -339,7 +348,7 @@ export class TagsFieldClient<TAssociation extends TAnyModel> extends IColumnClie
     //selectStyle: "inline" | "dialog";
 
     get selectionCaption(): string {
-        return this.headerName;
+        return this.fieldCaption;
     }
 
     getSelectionLabel = (value: TAssociation): string => {

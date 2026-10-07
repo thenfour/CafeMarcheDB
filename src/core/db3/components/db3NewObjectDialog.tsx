@@ -4,7 +4,7 @@ import {
     FormControl
 } from "@mui/material";
 import React, { Suspense } from "react";
-import type { SettingKey } from "@/src/setting/shared/settingKeys";
+import type { LocalizedMarkdownKey } from "src/locale/shared/staticLocalizedStringRegistry";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMDialog } from "src/core/components/CMDialog";
@@ -30,7 +30,7 @@ type db3NewObjectDialogProps<TView extends ViewBase> = {
 
 
     caption?: string;
-    descriptionSettingName?: SettingKey;
+    descriptionSettingName?: LocalizedMarkdownKey;
 };
 
 export function DB3NewObjectDialog<TView extends ViewBase>(props: db3NewObjectDialogProps<TView>) {

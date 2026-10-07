@@ -91,6 +91,20 @@ contracts. Writing language is explicit and enabled; drafts never copy another
 language's fallback. Failed creates retain dialogs/drafts. Picker creation must
 not remount an unsaved parent form.
 
+Client field declarations require a registered plain-text `fieldCaptionKey` and
+an explicit Markdown `fieldDescriptionKey` or `null`. Composite controls may use
+a separate `headerNameKey` for a shorter grid heading. Technical column names
+still identify reads and writes; they are never humanized into labels. Both named
+and legacy table render contexts resolve headings and captions from the current
+presentation catalog on every render, including intentional blanks. Inherited
+scalar controls retain their wrapper's resolved caption. Plain text inputs and
+selection buttons expose localized accessible names, and selection captions/help
+use registered keys rather than generated setting names.
+
+Tag selection declares its inline/dialog style at the client caller. An optional
+registered global UI setting can override that choice; presentation preferences
+do not belong to the persistence field descriptor.
+
 Queries carry band, route locale, the entire ordered browser list, and presentation
 refresh identity. Formatting locale alone is an insufficient cache key. Ordinary
 CRUD consumers await dashboard/reference refresh; `useDB3Command` has no automatic

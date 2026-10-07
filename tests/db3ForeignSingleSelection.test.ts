@@ -3,6 +3,14 @@ import React from "react";
 import { act, Simulate } from "react-dom/test-utils";
 import { createRoot, Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { kStaticLocalizedStringRegistry, type LocalizedPlainStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
+
+vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({
+    getPlainString: (key: LocalizedPlainStringKey, parameters?: { field: string }) => {
+        const text = kStaticLocalizedStringRegistry[key].defaultValue;
+        return parameters ? text.replace("{field}", parameters.field) : text;
+    },
+}) }));
 
 vi.mock("@blitzjs/rpc", () => ({ useQuery: vi.fn(), useMutation: vi.fn() }));
 vi.mock("src/core/db3/db3", async () => {
@@ -95,7 +103,7 @@ beforeEach(() => {
         hydrate: (item: Instrument) => item,
         crud: { operations: { create: { kind: "create", command: {} } } },
     };
-    spec = new ForeignSingleFieldClient<Instrument>({
+    spec = new ForeignSingleFieldClient<Instrument>({ fieldDescriptionKey: null,
         columnName: "instrument", fieldCaptionKey: "catalog.name", selectStyleSettingKey: "global.ui.visiblePermission.selectStyle", cellWidth: 150,
         // This intentionally minimal descriptor supplies only the view members
         // exercised by the selector test.
@@ -103,7 +111,7 @@ beforeEach(() => {
         renderAsChip: args => React.createElement("span", { className: "custom-chip", onClick: args.onClick }, args.value?.name || spec.args.nullItemInfo?.label || "None"),
     });
     // Creation permission belongs to the referenced table, not this parent row.
-    spec.headerName = "Instrument";
+    spec.fieldCaption = "Instrument";
     spec.schemaTable = { tableName: "User", authorizeRowBeforeInsert: () => false } as any;
     spec.schemaColumn = {
         member: "instrument", allowNull: true, allowInsertFromString: true,

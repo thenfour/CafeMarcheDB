@@ -43,6 +43,12 @@ preserving source alone.
   and the dependency-analysis tab display registered localized explanations;
   merge controls are removed and capability responses advertise neither merge
   nor account-role assignment.
+- Shared DB3 client fields and callers now declare registered labels and help.
+  Named and legacy render paths update headings, form captions and accessible
+  names from the current catalog. Composite headings/captions remain distinct,
+  intentional blanks are retained, and changing band/language replaces the old
+  presentation. Custom Link behavior help uses a finite registered inventory.
+  This repairs presentation dependencies without restoring deferred domains.
 
 ## Verification
 
@@ -65,14 +71,15 @@ production server could not be checked because the normal build still fails.
 | --- | --- |
 | Source preservation and Git provenance | Passed: 130 references in 98 files. All 4,509 removed lines in the 67 pending code/test files are covered. 57 active files retain identical executable syntax; 39 reference modules contain only an empty export. Existing staging is unchanged. |
 | Preservation safeguards, temporary RPC boundaries, member/page contracts and DOM regression | Passed: 108 tests across ten active files, including 23 preservation checks. Nine wholly disabled specifications are retained separately; eight are under the runner's default `tests/` directory. |
+| Field localization, selectors, instrument editor, presentation delivery, factory contracts and preservation/recovery boundaries | Passed: 106 tests across nine files. Includes band-first labels/help, band and language switches, intentional blanks, composite captions, accessible names, unchanged scalar writes and explicit dialog captions. |
 | Recovery RPC/registration boundaries, table authorization, account/bootstrap and membership role/lifecycle contracts | Passed: 66 tests across six files. A strict database proxy rejects any access from deferred RPCs. |
 | Account/bootstrap, membership contracts/pages/editors and suspended presentation navigation | Passed: 67 tests across ten files. |
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 531 diagnostics, down from 641 at the start of the Role/merge slice. No compiler exclusions or error suppression added. |
-| `yarn build` | Gets past the obsolete Role implementation; fails at legacy `fieldCaption` in `src/core/components/CustomLinksComponents.tsx:56`. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 297 failed, 1,244 passed, 94 skipped. The same failure groups remain as before source preservation; the 23 new safeguard tests pass. Later isolated DOM batches are not reached; focused DOM checks above passed. |
+| `yarn typecheck` | Fails: 422 diagnostics, down from 531 before the field-presentation slice. No compiler exclusions or error suppression added. |
+| `yarn build` | Gets past Custom Links and shared field-label callers; fails at the legacy event-search payload in `src/core/components/event/EventComponents.tsx:1392`. The duplicate role-page component-name warning is also fixed. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 297 failed, 1,244 passed, 94 skipped, matching the preceding baseline. Later isolated DOM batches are not reached; focused DOM checks above passed. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests

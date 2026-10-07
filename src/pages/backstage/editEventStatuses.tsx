@@ -10,13 +10,13 @@ const tableSpec = DB3Client.defineTableClientSpec({
     view: db3.eventStatusEditorView,
     columns: {
         publicId: DB3Client.publicIdFieldGen(),
-        isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
-        label: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
-        description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
-        color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 300 }),
-        sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
-        significance: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 120 }),
-        iconName: columnName => new DB3Client.IconFieldClient({ columnName, cellWidth: 120 }),
+        isDeleted: columnName => new DB3Client.BoolColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.deleted", columnName }),
+        label: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.label", columnName, cellWidth: 180 }),
+        description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 200 }),
+        color: columnName => new DB3Client.ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.color", columnName, cellWidth: 300 }),
+        sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.sortOrder", columnName, cellWidth: 80 }),
+        significance: columnName => new DB3Client.ConstEnumStringFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.significance", columnName, cellWidth: 120 }),
+        iconName: columnName => new DB3Client.IconFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.icon", columnName, cellWidth: 120 }),
     },
 });
 

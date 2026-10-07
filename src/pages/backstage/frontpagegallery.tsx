@@ -608,14 +608,14 @@ const MainContent = () => {
         columns: {
             publicId: DB3Client.publicIdFieldGen(),
             // fields which are editable through db3mutation need to be specified here.
-            file: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
-            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
-            isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
-            caption: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 120 }),
-            caption_nl: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 120 }),
-            caption_fr: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 120 }),
-            displayParams: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 120 }),
-            visiblePermission: DB3Client.foreignRefFieldGen({
+            file: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.file", columnName, cellWidth: 120 }),
+            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.sortOrder", columnName, cellWidth: 80 }),
+            isDeleted: columnName => new DB3Client.BoolColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.deleted", columnName }),
+            caption: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.caption", columnName, cellWidth: 120 }),
+            caption_nl: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.captionDutch", columnName, cellWidth: 120 }),
+            caption_fr: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.captionFrench", columnName, cellWidth: 120 }),
+            displayParams: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.displayParameters", columnName, cellWidth: 120 }),
+            visiblePermission: DB3Client.foreignRefFieldGen({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.visibility",
                 selectionView: db3.permissionVisibilityView,
             }),
         },

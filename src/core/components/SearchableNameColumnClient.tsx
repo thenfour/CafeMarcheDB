@@ -1,16 +1,19 @@
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { CMTextInputBase, CMTextInputBaseProps } from "./CMTextField";
+import { useLocale } from "src/locale/components/useLocale";
 
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface TextInputWithSearchProps extends CMTextInputBaseProps {
+export interface TextInputWithSearchProps extends CMTextInputBaseProps, DB3Client.ColumnPresentationArgs {
     columnName: string;
     schema: db3.xTable;
     allowSearch: boolean;
 };
 export const TextInputWithSearch = (props: TextInputWithSearchProps) => {
+    const locale = useLocale();
+    const { fieldCaptionKey, fieldDescriptionKey, columnName, schema, allowSearch, ...inputProps } = props;
     const searchQuery = props.value || "";
 
     // i'm almost certain the only columnName used here is `name`;
@@ -20,7 +23,7 @@ export const TextInputWithSearch = (props: TextInputWithSearchProps) => {
             table: props.schema,
             columns: [
                 new DB3Client.PKColumnClient({ columnName: "id" }),
-                new DB3Client.GenericStringColumnClient({ columnName: props.columnName, cellWidth: 120 }),
+                new DB3Client.GenericStringColumnClient({ fieldCaptionKey, fieldDescriptionKey, columnName, cellWidth: 120 }),
             ],
         }),
         filterModel: {
@@ -36,12 +39,12 @@ export const TextInputWithSearch = (props: TextInputWithSearchProps) => {
     const items = songsClient.items;
 
     return <div className="searchableValueContainer">
-        <CMTextInputBase {...props} />
-        {(items.length > 0) && (searchQuery.length > 2) && props.allowSearch &&
+        <CMTextInputBase {...inputProps} />
+        {(items.length > 0) && (searchQuery.length > 2) && allowSearch &&
             <div className="searchableValueResult">
-                <div className="existingMatchLabel">Existing match:</div>
+                <div className="existingMatchLabel">{locale.getPlainString("db3.search.existingMatch")}</div>
                 <div className="existingMatchValue">{items[0]![props.columnName]}</div>
-                <div className="littleHelpText">Try to avoid creating duplicate items</div>
+                <div className="littleHelpText">{locale.getPlainString("db3.search.avoidDuplicates")}</div>
             </div>}
     </div>;
 };
@@ -61,6 +64,7 @@ export class SearchableNameColumnClient extends DB3Client.GenericStringColumnCli
         validationResult: params.validationResult,
         isReadOnly: false,
         value: <TextInputWithSearch
+            aria-label={this.fieldCaption}
             onChange={(e, val) => params.api.setFieldValues({ [this.columnName]: val })}
             autoFocus={params.autoFocus}
             value={params.value as string}
@@ -69,6 +73,8 @@ export class SearchableNameColumnClient extends DB3Client.GenericStringColumnCli
             allowSearch={!params.validationResult || !!params.validationResult.success}
             columnName={this.columnName}
             schema={this.schemaTable}
+            fieldCaptionKey={this.fieldCaptionKey}
+            fieldDescriptionKey={this.fieldDescriptionKey}
         />
     });
 };

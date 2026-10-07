@@ -42,7 +42,7 @@ export const NewSongButton = () => {
                 SongClientColumns.aliases,
                 //SongClientColumns.slug,
             ),
-            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200, visible: false }), // required field but it's distracting to see here.
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 200, visible: false }), // required field but it's distracting to see here.
             ...DB3Client.makeClientColumnSelection(
                 SongClientColumns.startBPM,
                 SongClientColumns.endBPM,

@@ -32,6 +32,7 @@ import { RenderMuiIcon } from "./IconMap";
 import { type CrudViewCreateToken, useCrudViewCreate } from "./useCrudViewCreate";
 import { type ColorPaletteEntry, type ColorVariationSpec, StandardVariationSpec } from "../../components/color/palette";
 import { TAnyModel } from "@/shared/rootroot";
+import { useLocale } from "src/locale/components/useLocale";
 
 
 
@@ -134,6 +135,7 @@ export const ForeignSingleFieldInlineValues = <TForeign extends TAnyModel,>(prop
 
 // general use "edit cell" for foreign single values. does not show a label or validation stuff; just the value and a button to select
 export const ForeignSingleFieldInput = <TForeign extends TAnyModel,>(props: ForeignSingleFieldInputProps<TForeign>) => {
+    const locale = useLocale();
 
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
 
@@ -167,11 +169,12 @@ export const ForeignSingleFieldInput = <TForeign extends TAnyModel,>(props: Fore
             .catch(() => showSnackbar({ children: "Error", severity: "error" }));
     };
 
-    const defaultCaption = props.value == null ? "Select" : "Edit";
+    const defaultCaption = locale.getPlainString(props.value == null ? "db3.action.select" : "db3.action.edit");
     const openDialogCaption = (selectStyle === "dialog" ? props.openDialogButtonCaption : props.inlineSelectOpenDialogButtonCaption) || defaultCaption;
 
     const openDialogButton = !props.readOnly && <SelectionEditButton
-        label={typeof openDialogCaption === "string" && openDialogCaption !== defaultCaption ? openDialogCaption : `${defaultCaption} ${props.foreignSpec.selectionCaption}`}
+        label={typeof openDialogCaption === "string" && openDialogCaption !== defaultCaption ? openDialogCaption
+            : locale.getPlainString(props.value == null ? "db3.action.selectField" : "db3.action.editField", { field: props.foreignSpec.selectionCaption })}
         onClick={() => setIsOpen(true)}
     >{openDialogCaption}</SelectionEditButton>;
 
@@ -214,8 +217,8 @@ export interface ForeignSingleFieldNullItemInfo {
 
 export interface ForeignSingleFieldClientArgs<TForeign extends TAnyModel> {
     columnName: string;
-    fieldCaptionKey?: LocalizedPlainStringKey;
-    fieldDescriptionKey?: LocalizedMarkdownKey | null;
+    fieldCaptionKey: LocalizedPlainStringKey;
+    fieldDescriptionKey: LocalizedMarkdownKey | null;
     cellWidth?: number;
     // the db3 view used for populating selection dialogs
     selectionView?: db3.AnyDB3View;
@@ -227,8 +230,6 @@ export interface ForeignSingleFieldClientArgs<TForeign extends TAnyModel> {
 
     visible?: boolean;
     className?: string;
-    fieldCaption?: string;
-    fieldDescriptionSettingName?: LocalizedMarkdownKey;
 
     selectStyle?: "inline" | "dialog";
     selectStyleSettingKey?: Extract<GlobalSettingKey, `global.ui.${string}.selectStyle`>;
@@ -249,7 +250,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
     size: CMChipSizeOptions;
 
     get selectionCaption(): string {
-        return this.headerName || this.columnName.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/_/g, " ").toLowerCase();
+        return this.fieldCaption;
     }
 
     getSelectionLabel = (value: TForeign | null): string => value == null
@@ -259,14 +260,14 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
     constructor(args: ForeignSingleFieldClientArgs<TForeign>) {
         super({
             columnName: args.columnName,
-            headerNameKey: args.fieldCaptionKey ?? "catalog.select",
+            headerNameKey: args.fieldCaptionKey,
             editable: true,
             width: args.cellWidth ?? 150,
             isAutoFocusable: false,
             visible: Coalesce(args.visible, true),
             className: args.className,
-            fieldCaptionKey: args.fieldCaptionKey ?? "catalog.select",
-            fieldDescriptionKey: args.fieldDescriptionKey ?? null,
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
         });
 
         this.args = args;
@@ -567,6 +568,7 @@ export interface SelectSingleForeignDialogProps<TForeign extends TAnyModel> {
 };
 
 export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props: SelectSingleForeignDialogProps<TForeign>) {
+    const locale = useLocale();
     const foreignSchema = props.spec.typedSchemaColumn.getForeignTableSchema();
     const allowNull = props.spec.typedSchemaColumn.allowNull && (props.allowNull ?? true);
     const nullBehavior = allowNull ? CMSelectNullBehavior.AllowNull : CMSelectNullBehavior.NonNullable;
@@ -599,7 +601,7 @@ export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props
         source={withNullSelection(source, nullBehavior, () => props.spec.args.renderAsChip!({ value: null, colorVariant: StandardVariationSpec.Strong }), props.spec.getSelectionLabel(null))}
         value={singleSelectionValue(props.value, nullBehavior)}
         closeOnSelect={props.closeOnSelect}
-        title={props.caption || `Select ${props.spec.selectionCaption}`}
+        title={props.caption ?? locale.getPlainString("db3.action.selectField", { field: props.spec.selectionCaption })}
         description={descriptionSettingName ? <LocalizedMarkdown setting={descriptionSettingName} /> : undefined}
         onCancel={props.onCancel} onAccept={values => props.onOK(values[0]!)}
     />;

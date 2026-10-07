@@ -5,17 +5,10 @@ import { instrumentStrings } from "./instrumentStrings";
 import { catalogStrings } from "./catalogStrings";
 import { membershipStrings } from "./membershipStrings";
 import { dashboardStrings } from "./dashboardStrings";
+import { db3FieldStrings } from "./db3FieldStrings";
 
 function defaultMarkdownStaticString() {
     return markdownStaticString({
-        defaultValue: "",
-        description: "",
-        schema: z.string(),
-    });
-}
-
-function defaultPlainStringStaticString() {
-    return plainStaticString({
         defaultValue: "",
         description: "",
         schema: z.string(),
@@ -27,6 +20,7 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
     ...catalogStrings,
     ...membershipStrings,
     ...dashboardStrings,
+    ...db3FieldStrings,
     "common.action.ok": plainStaticString({
         defaultValue: "OK",
         description: "Label for an OK button",
@@ -123,7 +117,11 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
     "Event.workflowDef.DescriptionMarkdown": defaultMarkdownStaticString(),
     "NewEventSegmentDialogDescription": defaultMarkdownStaticString(),
     "NewEventSegmentDialogTitle": defaultMarkdownStaticString(),
-    "general.fieldCaptions.id": defaultPlainStringStaticString(),
+    "general.fieldCaptions.id": plainStaticString({
+        defaultValue: "ID",
+        description: "Record identifier column heading",
+        schema: z.string(),
+    }),
 });
 
 export type StaticLocalizedStringKey = keyof typeof kStaticLocalizedStringRegistry;

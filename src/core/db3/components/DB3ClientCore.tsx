@@ -20,7 +20,7 @@ import { type RestPaginatedResult, type RestQueryResult, usePaginatedQuery, useQ
 import React from "react";
 //import * as db3 from "../db3";
 import { TAnyModel } from "@/shared/rootroot";
-import { LocalizedMarkdownKey, LocalizedPlainStringKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
+import { kStaticLocalizedStringRegistry, type LocalizedMarkdownKey, type LocalizedPlainStringKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
 import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import type { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import { assert } from "blitz";
@@ -55,7 +55,12 @@ export interface RenderViewerArgs<T> {
     className?: string;
 };
 
-export interface IColumnClientArgs<TColumnName extends string = string> {
+export interface ColumnPresentationArgs {
+    fieldCaptionKey: LocalizedPlainStringKey;
+    fieldDescriptionKey: LocalizedMarkdownKey | null;
+}
+
+export interface IColumnClientArgs<TColumnName extends string = string> extends ColumnPresentationArgs {
     // NB: keep IColumnClient in sync with these fields.
     columnName: TColumnName;
     editable: boolean;
@@ -63,11 +68,8 @@ export interface IColumnClientArgs<TColumnName extends string = string> {
     width: number;
     isAutoFocusable: boolean;
 
-    // so what's the diff between these 2 fields?
+    // Composite fields can use a shorter grid heading than their form label.
     headerNameKey: LocalizedPlainStringKey;
-    fieldCaptionKey: LocalizedPlainStringKey;
-
-    fieldDescriptionKey: LocalizedMarkdownKey | null;
 
     className: string | undefined;
 
@@ -91,6 +93,7 @@ export abstract class IColumnClient<
     width: number;
 
     headerName: string;
+    fieldCaption: string;
     headerNameKey: LocalizedPlainStringKey;
     fieldCaptionKey: LocalizedPlainStringKey;
     fieldDescriptionKey: LocalizedMarkdownKey | null;
@@ -117,6 +120,8 @@ export abstract class IColumnClient<
 
     constructor(args: IColumnClientArgs<TColumnName>) {
         Object.assign(this, args);
+        this.headerName = kStaticLocalizedStringRegistry[args.headerNameKey].defaultValue;
+        this.fieldCaption = kStaticLocalizedStringRegistry[args.fieldCaptionKey].defaultValue;
         // safety.
         assert(this.visible !== undefined, "visible is required; maybe a column client type forgot to include this in the ctor?");
         this.visible = Coalesce(this.visible, true);
@@ -138,7 +143,7 @@ export abstract class IColumnClient<
         //const defaultDescriptionSettingName = GenerateDefaultDescriptionSettingName(this.schemaTable.tableName, this.columnName);
         return <NameValuePair
             key={this.columnName}
-            name={this.headerName}
+            name={this.fieldCaption}
             description={this.fieldDescriptionKey ? <LocalizedMarkdown setting={this.fieldDescriptionKey} /> : undefined}
             value={value}
             fieldName={this.columnName}
@@ -715,16 +720,19 @@ export class xTableRenderClient<
 };
 
 
+function useColumnPresentation(columns: readonly AnyIColumnClient[]): void {
+    const locale = useLocale();
+    columns.forEach(column => {
+        column.headerName = locale.getPlainString(column.headerNameKey);
+        column.fieldCaption = locale.getPlainString(column.fieldCaptionKey);
+    });
+}
+
 export const useTableRenderContext = <TView extends db3.AnyDB3View,>(
     args: xTableClientArgs<TView>,
 ): xTableRenderClient<TView> => {
     const auth = useClientAuth();
-    const locale = useLocale();
-    args.tableSpec.args.columns.forEach(column => {
-        if (column.headerNameKey) {
-            column.headerName = locale.getPlainString(column.headerNameKey);
-        }
-    });
+    useColumnPresentation(args.tableSpec.args.columns);
     const queryContext = useDB3QueryContext();
     return new xTableRenderClient({ ...args, queryContext }, auth);
 };
@@ -737,6 +745,7 @@ export const useLegacyTableRenderContext = <TRow extends TAnyModel = TAnyModel,>
     args: xTableClientArgs<undefined>,
 ): xLegacyTableRenderClient<TRow> => {
     const auth = useClientAuth();
+    useColumnPresentation(args.tableSpec.args.columns);
     const queryContext = useDB3QueryContext();
     return new xTableRenderClient<undefined, TRow>({ ...args, queryContext }, auth);
 };

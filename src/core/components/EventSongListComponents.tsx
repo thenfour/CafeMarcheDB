@@ -1131,8 +1131,8 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.eventSongListDetailView,
         columns: {
-            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
-            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+            name: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.name", columnName, cellWidth: 180 }),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 200 }),
         },
     });
 

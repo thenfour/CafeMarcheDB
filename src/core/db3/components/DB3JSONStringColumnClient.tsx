@@ -625,7 +625,7 @@ export const ActivityLogValueViewer = ({ value, cacheData, tableName, }: Activit
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface JSONStringColumnClientArgs {
+export interface JSONStringColumnClientArgs extends DB3ClientCore.ColumnPresentationArgs {
     columnName: string;
     cacheData: ActivityLogCacheData;
 };
@@ -640,13 +640,13 @@ export class JSONStringColumnClient extends DB3ClientCore.IColumnClient {
         super({
             columnName: args.columnName,
             editable: true,
-            headerName: args.columnName,
+            headerNameKey: args.fieldCaptionKey,
             width: 400,
             visible: true,
             className: undefined,
             isAutoFocusable: true,
-            fieldCaption: undefined,
-            fieldDescriptionSettingName: undefined,
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
         });
         this.cacheData = args.cacheData;
     }

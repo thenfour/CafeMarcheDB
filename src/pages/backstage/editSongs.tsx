@@ -41,7 +41,7 @@ const MainContent = () => {
                 SongClientColumns.visiblePermission,
             ),
 
-            isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
+            isDeleted: columnName => new DB3Client.BoolColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.deleted", columnName }),
         },
     });
 

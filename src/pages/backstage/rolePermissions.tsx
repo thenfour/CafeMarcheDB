@@ -1,6 +1,8 @@
 import { DeferredRoleAdministrationPage } from "src/core/components/DeferredFeaturePage";
 
-export default DeferredRoleAdministrationPage;
+export default function RolePermissionsPage() {
+    return <DeferredRoleAdministrationPage />;
+}
 
 
 // MIGRATION_RESTORE: role-administration

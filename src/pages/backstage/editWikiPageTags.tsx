@@ -9,10 +9,10 @@ const tableSpec = DB3Client.defineTableClientSpec({
     view: db3.wikiPageTagEditorView,
     columns: {
         publicId: DB3Client.publicIdFieldGen(),
-        text: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
-        description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
-        color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 300 }),
-        sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
+        text: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.label", columnName, cellWidth: 180 }),
+        description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 200 }),
+        color: columnName => new DB3Client.ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.color", columnName, cellWidth: 300 }),
+        sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.sortOrder", columnName, cellWidth: 80 }),
     },
 });
 

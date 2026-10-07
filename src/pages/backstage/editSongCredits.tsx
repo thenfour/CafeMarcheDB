@@ -17,9 +17,9 @@ const MainContent = () => {
         view: db3.songCreditEditorView,
         columns: {
             publicId: DB3Client.publicIdFieldGen(),
-            user: DB3Client.foreignRefFieldGen({}),
-            song: DB3Client.foreignRefFieldGen({}),
-            type: DB3Client.foreignRefFieldGen({ selectionView: db3.songCreditTypeEditorView }),
+            user: DB3Client.foreignRefFieldGen({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.member",}),
+            song: DB3Client.foreignRefFieldGen({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.song",}),
+            type: DB3Client.foreignRefFieldGen({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.creditType", selectionView: db3.songCreditTypeEditorView }),
         },
     });
 

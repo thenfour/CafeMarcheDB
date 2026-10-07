@@ -13,17 +13,17 @@ const MainContent = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.eventAttendanceEditorView,
         columns: {
-            isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
-            text: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
-            personalText: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
-            pastText: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
-            pastPersonalText: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
-            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
-            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
-            isActive: columnName => new DB3Client.BoolColumnClient({ columnName }),
-            iconName: columnName => new DB3Client.IconFieldClient({ columnName, cellWidth: 120 }),
-            color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 300 }),
-            strength: columnName => new DB3Client.GenericIntegerColumnClient({ cellWidth: 90, columnName }),
+            isDeleted: columnName => new DB3Client.BoolColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.deleted", columnName }),
+            text: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.label", columnName, cellWidth: 180 }),
+            personalText: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.personalText", columnName, cellWidth: 180 }),
+            pastText: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.pastText", columnName, cellWidth: 180 }),
+            pastPersonalText: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.pastPersonalText", columnName, cellWidth: 180 }),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 200 }),
+            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.sortOrder", columnName, cellWidth: 80 }),
+            isActive: columnName => new DB3Client.BoolColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.active", columnName }),
+            iconName: columnName => new DB3Client.IconFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.icon", columnName, cellWidth: 120 }),
+            color: columnName => new DB3Client.ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.color", columnName, cellWidth: 300 }),
+            strength: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.attendanceStrength", cellWidth: 90, columnName }),
         },
     });
 

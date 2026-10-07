@@ -30,10 +30,17 @@ import { CMButton } from "../CMCoreComponents2";
 
 
 export const EventSegmentClientColumns = DB3Client.makeClientColumnSet({
-    name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
-    description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200, fieldCaption: "Description" }),
-    startsAt: columnName => new DB3Client.EventDateRangeColumn({ startsAtColumnName: columnName, headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay", fieldCaption: "Date/time range" }),
-    event: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, visible: false }),
+    name: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.name", columnName, cellWidth: 180 }),
+    description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: "EventSegment.description.DescriptionMarkdown", columnName, cellWidth: 200, fieldCaptionKey: "db3.fields.description" }),
+    startsAt: columnName => new DB3Client.EventDateRangeColumn({
+        fieldCaptionKey: "db3.fields.dateTimeRange",
+        fieldDescriptionKey: null,
+        startsAtColumnName: columnName,
+        headerNameKey: "db3.fields.dateRange",
+        durationMillisColumnName: "durationMillis",
+        isAllDayColumnName: "isAllDay",
+    }),
+    event: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.event", columnName, cellWidth: 120, visible: false }),
 });
 
 type EventSegmentEditorClient = db3.ClientOf<typeof db3.eventSegmentEditorView>;

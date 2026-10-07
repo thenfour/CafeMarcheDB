@@ -124,6 +124,7 @@ export class InheritedColumnClient<TColumnName extends string, TValue> extends I
         this.valueColumn.schemaTable = this.schemaTable;
         this.valueColumn.schemaColumn = this.schemaColumn.valueField;
         this.valueColumn.headerName = this.headerName;
+        this.valueColumn.fieldCaption = this.fieldCaption;
         this.valueColumn.fieldCaptionKey = this.fieldCaptionKey;
         this.valueColumn.fieldDescriptionKey = this.fieldDescriptionKey;
         this.valueColumn.onSchemaConnected(tableClient);
@@ -160,12 +161,4 @@ export class InheritedColumnClient<TColumnName extends string, TValue> extends I
             })} />
         </Stack>;
     };
-}
-
-/** Label declarations can also accompany existing scalar clients during the wider UI migration. */
-export function catalogColumn<TColumn extends IColumnClient>(column: TColumn, key: LocalizedPlainStringKey): TColumn {
-    column.headerNameKey = key;
-    column.fieldCaptionKey = key;
-    column.fieldDescriptionKey = null;
-    return column;
 }

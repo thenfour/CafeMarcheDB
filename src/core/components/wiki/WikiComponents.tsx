@@ -83,8 +83,10 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
         view: db3.wikiPageEditorView,
         columns: {
             tags: DB3Client.tagsFieldClientGen<db3.WikiPageEditorClient["tags"][number]>({
+                selectStyle: "inline",
+                fieldDescriptionKey: null,
                 allowDeleteFromCell: false,
-                fieldCaption: "Tags",
+                fieldCaptionKey: "db3.fields.tags",
             }),
         },
     }), []);

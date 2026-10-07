@@ -48,7 +48,7 @@ const MainContent = () => {
         table: db3.xChange,
         columns: {
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
-            user: columnName => new DB3Client.ForeignSingleFieldClient({
+            user: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.member",
                 columnName,
                 cellWidth: 120,
                 size: "small",
@@ -68,21 +68,21 @@ const MainContent = () => {
                 }
             }),
 
-            action: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 80 }),
+            action: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.action", columnName, cellWidth: 80 }),
             //new DB3Client.GenericStringColumnClient({ columnName: "context", cellWidth: 150 }),
             //new DB3Client.GenericStringColumnClient({ columnName: "operationId", cellWidth: 150 }),
-            table: columnName => new DB3Client.GenericStringColumnClient({
+            table: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.table",
                 columnName,
                 cellWidth: 150,
                 renderCell: (params) => {
                     return <span style={{ color: getHashedColor(String(params.value || "")) }}>{params.value}</span>;
                 }
             }),
-            recordId: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80, }),
+            recordId: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.recordId", columnName, cellWidth: 80, }),
             //new DB3Client.GenericStringColumnClient({ columnName: "sessionHandle", cellWidth: 150 }),
-            oldValues: columnName => new DB3Client.JSONStringColumnClient({ columnName, cacheData: filterSourceData }),
-            newValues: columnName => new DB3Client.JSONStringColumnClient({ columnName, cacheData: filterSourceData }),
-            changedAt: columnName => new DB3Client.DateTimeColumn({ columnName }),
+            oldValues: columnName => new DB3Client.JSONStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.oldValues", columnName, cacheData: filterSourceData }),
+            newValues: columnName => new DB3Client.JSONStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.newValues", columnName, cacheData: filterSourceData }),
+            changedAt: columnName => new DB3Client.DateTimeColumn({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.changedAt", columnName }),
         },
     });
 

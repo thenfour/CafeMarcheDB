@@ -16,6 +16,7 @@ import { CoerceToNumberOrNull, parseFloatOrNull } from "shared/utils";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMTextInputBaseProps {
+    "aria-label"?: string;
     value?: string | null;
     initialValue?: string | null;
     onChange: (e, value: string) => void;
@@ -48,6 +49,7 @@ export function CMTextInputBase({ value, onChange, autoFocus, readOnly, ...props
     };
 
     return <input
+        aria-label={props["aria-label"]}
         ref={inputRef}
         placeholder={props.placeholder}
         type={props.type || "text"}

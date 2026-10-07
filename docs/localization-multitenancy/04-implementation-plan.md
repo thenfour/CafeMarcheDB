@@ -89,8 +89,10 @@ coverage.
 
 **Next implementation slice:** repair or isolate the remaining DB3 payload and
 descriptor roots, including person-level instrument/tag relationships and generic
-settings, then isolate deferred pages and non-page entry points together. The
-normal build currently stops at a legacy localized-field caller in Custom Links.
+settings, then isolate deferred pages and non-page entry points together. Shared
+client field declarations and callers now use registered labels/help on both
+named and legacy render paths. The normal build gets past Custom Links and stops
+at the deferred event-search payload contract.
 Preserve the working bootstrap and migrated membership/catalog contracts.
 Platform role administration and membership recovery enhancements remain deferred.
 

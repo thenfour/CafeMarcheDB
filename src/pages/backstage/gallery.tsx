@@ -155,11 +155,11 @@ const AutoAssignInstrumentTester = () => {
         view: db3.instrumentDashboardView,
         columns: {
             publicId: DB3Client.publicIdFieldGen(),
-            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
-            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
-            autoAssignFileLeafRegex: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200, fieldCaption: "Regex" }),
-            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
-            functionalGroup: columnName => new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupClientPayload>({
+            name: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.name", columnName, cellWidth: 200 }),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 200 }),
+            autoAssignFileLeafRegex: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, columnName, cellWidth: 200, fieldCaptionKey: "db3.fields.fileMatcher" }),
+            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.sortOrder", columnName, cellWidth: 80 }),
+            functionalGroup: columnName => new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupClientPayload>({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.functionalGroup",
                 columnName,
                 cellWidth: 200,
                 selectionView: db3.instrumentFunctionalGroupEditorView,

@@ -14,15 +14,13 @@ import * as db3fields from "../shared/columnTypes/xTableColumnTypes";
 import * as DB3ClientCore from "./DB3ClientCore";
 //import { API } from '../clientAPI';
 import * as db3 from "../db3";
-import type { SettingKey } from "@/src/setting/shared/settingKeys";
+import type { LocalizedPlainStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
 import { TAnyModel } from "@/shared/rootroot";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export interface EventDateRangeColumnArgs {
-    headerName: string;
-    fieldCaption?: string;
-    fieldDescriptionSettingName?: SettingKey;
+export interface EventDateRangeColumnArgs extends DB3ClientCore.ColumnPresentationArgs {
+    headerNameKey: LocalizedPlainStringKey;
     startsAtColumnName: string;
     durationMillisColumnName: string;
     isAllDayColumnName: string;
@@ -40,12 +38,12 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
             columnName: args.startsAtColumnName,
             isAutoFocusable: false,
             editable: true,
-            headerName: args.headerName,
+            headerNameKey: args.headerNameKey,
             width: 250,
             visible: true,
             className: args.className,
-            fieldCaption: args.fieldCaption,
-            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
+            fieldCaptionKey: args.fieldCaptionKey,
+            fieldDescriptionKey: args.fieldDescriptionKey,
         });
         this.args = args;
     }

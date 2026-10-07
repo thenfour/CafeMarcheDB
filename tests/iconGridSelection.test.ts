@@ -19,7 +19,7 @@ import { IconFieldClient } from "src/core/db3/components/DB3ClientBasicFields";
 
 describe("icon grid editor null boundary", () => {
     it.each([null, "Alarm"])("passes %s from the grid into the picker without exposing the null sentinel", value => {
-        const column = new IconFieldClient({ columnName: "iconName", cellWidth: 150, allowNull: true });
+        const column = new IconFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.icon", columnName: "iconName", cellWidth: 150, allowNull: true });
         column.schemaColumn = { member: "iconName", options: gIconOptions, ValidateAndParse: () => ({ result: "success" }) } as any;
         column.onSchemaConnected({} as any);
         const grid = column.GridColProps!;

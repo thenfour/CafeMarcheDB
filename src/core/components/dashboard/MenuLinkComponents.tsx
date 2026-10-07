@@ -17,6 +17,7 @@ import { CMTextInputBase, type CMTextInputBaseProps } from "../CMTextField";
 import { VisibilityValue } from "../VisibilityControl";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
+import { useLocale } from "src/locale/components/useLocale";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -39,9 +40,9 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
             menuLinkId: props.item.publicId,
             context: "MenuLinkItem",
         });
-        props.commands.update(obj, props.item).then(() => {
+        props.commands.update(obj, props.item).then(async () => {
             showSnackbar({ severity: "success", children: "success" });
-            dashboardContext.refetchDashboardData();
+            await dashboardContext.refetchDashboardData();
             api.closeDialog();
         }).catch(e => {
             console.log(e);
@@ -58,11 +59,9 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
         props.commands.delete(props.item.publicId).then(() => {
             showSnackbar({ children: "delete successful", severity: 'success' });
             api.closeDialog();
-        }).catch(err => {
+        }).finally(() => dashboardContext.refetchDashboardData()).catch(err => {
             console.log(err);
             showSnackbar({ children: "delete error", severity: 'error' });
-        }).finally(() => {
-            dashboardContext.refetchDashboardData();
         });
     }
 
@@ -127,12 +126,14 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // this is basically TextInputWithSearchProps but with different formatting.
-export interface WikiSlugInputWithSearchProps extends CMTextInputBaseProps {
+export interface WikiSlugInputWithSearchProps extends CMTextInputBaseProps, DB3Client.ColumnPresentationArgs {
     columnName: string;
     schema: db3.xTable;
     allowSearch: boolean;
 };
 export const WikiSlugInputWithSearch = (props: WikiSlugInputWithSearchProps) => {
+    const locale = useLocale();
+    const { fieldCaptionKey, fieldDescriptionKey, columnName, schema, allowSearch, ...inputProps } = props;
     const searchQuery = props.value || "";
 
 
@@ -142,7 +143,7 @@ export const WikiSlugInputWithSearch = (props: WikiSlugInputWithSearchProps) => 
             table: props.schema,
             columns: [
                 new DB3Client.PKColumnClient({ columnName: "id" }),
-                new DB3Client.GenericStringColumnClient({ columnName: props.columnName, cellWidth: 120 }),
+                new DB3Client.GenericStringColumnClient({ fieldCaptionKey, fieldDescriptionKey, columnName, cellWidth: 120 }),
             ],
         }),
         filterModel: {
@@ -161,12 +162,12 @@ export const WikiSlugInputWithSearch = (props: WikiSlugInputWithSearchProps) => 
     const matchValue = (item && (item[props.columnName] as string)) || "";
 
     return <div className="searchableValueContainer">
-        <CMTextInputBase {...props} />
+        <CMTextInputBase {...inputProps} />
         <div className="searchableValueResult">
             {matchValue === props.value ?
                 (<div>✅</div>)
                 : (((props.value || "").length > 1) && (<>
-                    <div className="existingMatchLabel">No matching existing page found; best match: </div>
+                    <div className="existingMatchLabel">{locale.getPlainString("db3.search.noMatchingPage")}</div>
                     <div className="existingMatchValue">{matchValue}</div>
                 </>))
             }
@@ -190,6 +191,7 @@ export class SearchableWikiSlugColumnClient extends DB3Client.GenericStringColum
         validationResult: params.validationResult,
         isReadOnly: false,
         value: <WikiSlugInputWithSearch
+            aria-label={this.fieldCaption}
             onChange={(e, val) => params.api.setFieldValues({ [this.columnName]: val })}
             autoFocus={params.autoFocus}
             value={params.value as string}
@@ -198,6 +200,8 @@ export class SearchableWikiSlugColumnClient extends DB3Client.GenericStringColum
             allowSearch={!params.validationResult || !!params.validationResult.success}
             columnName={"slug"}
             schema={db3.xWikiPage}
+            fieldCaptionKey={this.fieldCaptionKey}
+            fieldDescriptionKey={this.fieldDescriptionKey}
         />
     });
 };
@@ -218,21 +222,27 @@ export const MenuLinkList = () => {
         columns: {
             publicId: DB3Client.publicIdFieldGen(),
 
-            applicationPage: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Section name" }),
-            groupName: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Group name" }),
-            caption: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Item text", className: "titleText" }),
-            iconName: columnName => new DB3Client.IconFieldClient({ columnName, cellWidth: 120, fieldCaption: "Icon" }),
+            applicationPage: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, columnName, cellWidth: 250, fieldCaptionKey: "db3.fields.sectionName" }),
+            groupName: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: "menuLink.groupName.DescriptionMarkdown", columnName, cellWidth: 250, fieldCaptionKey: "db3.fields.groupName" }),
+            caption: columnName => new DB3Client.GenericStringColumnClient({
+                columnName,
+                cellWidth: 250,
+                fieldCaptionKey: "db3.fields.menuItemText",
+                fieldDescriptionKey: "menuLink.caption.DescriptionMarkdown",
+                className: "titleText",
+            }),
+            iconName: columnName => new DB3Client.IconFieldClient({ fieldDescriptionKey: "menuLink.iconName.DescriptionMarkdown", columnName, cellWidth: 120, fieldCaptionKey: "db3.fields.icon" }),
 
-            linkType: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 120, fieldCaption: "Type" }),
-            externalURI: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "External URL" }),
-            wikiSlug: columnName => new SearchableWikiSlugColumnClient({ columnName, cellWidth: 250 }),
+            linkType: columnName => new DB3Client.ConstEnumStringFieldClient({ fieldDescriptionKey: "menuLink.linkType.DescriptionMarkdown", columnName, cellWidth: 120, fieldCaptionKey: "db3.fields.type" }),
+            externalURI: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: "menuLink.externalURI.DescriptionMarkdown", columnName, cellWidth: 250, fieldCaptionKey: "db3.fields.externalUrl" }),
+            wikiSlug: columnName => new SearchableWikiSlugColumnClient({ fieldDescriptionKey: "menuLink.wikiSlug.DescriptionMarkdown", fieldCaptionKey: "db3.fields.wikiSlug", columnName, cellWidth: 250 }),
 
-            visiblePermission: DB3Client.foreignRefFieldGen({
+            visiblePermission: DB3Client.foreignRefFieldGen({ fieldDescriptionKey: "menuLink.visiblePermission.DescriptionMarkdown", fieldCaptionKey: "db3.fields.visibility",
                 selectionView: db3.permissionVisibilityView,
             }),
 
-            groupCssClass: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Group CSS class" }),
-            itemCssClass: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Item CSS class" }),
+            groupCssClass: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: "menuLink.groupCssClass.DescriptionMarkdown", columnName, cellWidth: 250, fieldCaptionKey: "db3.fields.groupCssClass" }),
+            itemCssClass: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: "menuLink.itemCssClass.DescriptionMarkdown", columnName, cellWidth: 250, fieldCaptionKey: "db3.fields.itemCssClass" }),
         },
     });
     const client = DB3Client.useTableRenderContext({
@@ -262,9 +272,9 @@ export const MenuLinkList = () => {
             feature: ActivityFeature.menu_link_create,
             context: "MenuLinkList",
         });
-        commands.create(obj).then(() => {
+        commands.create(obj).then(async () => {
             showSnackbar({ severity: "success", children: "success" });
-            dashboardContext.refetchDashboardData();
+            await dashboardContext.refetchDashboardData();
             api.closeDialog();
         }).catch(e => {
             console.log(e);
@@ -294,9 +304,9 @@ export const MenuLinkList = () => {
             movingItemId: movingItem.publicId,
             newPositionItemId: newPositionItem.publicId,
             scopeRowIds: items.map(item => item.publicId),
-        }).then(() => {
+        }).then(async () => {
             showSnackbar({ severity: "success", children: "reorder successful" });
-            dashboardContext.refetchDashboardData();
+            await dashboardContext.refetchDashboardData();
             client.refetch();
         }).catch((e) => {
             console.log(e);

@@ -18,7 +18,7 @@ const allowField = () => true;
 const setlistPlanGroupPilotSpec = defineTableClientSpec({
     view: db3.setlistPlanGroupEditorView,
     columns: {
-        color: columnName => new ColorColumnClient({ columnName, cellWidth: 200 }),
+        color: columnName => new ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.color", columnName, cellWidth: 200 }),
     },
 });
 
@@ -51,8 +51,8 @@ describe("DB3 keyed column factories", () => {
 
     it("types and instantiates reusable client columns from their keys", () => {
         const columns = makeClientColumnSet({
-            name: columnName => new GenericStringColumnClient({ columnName, cellWidth: 200 }),
-            description: columnName => new GenericStringColumnClient({ columnName, cellWidth: 300 }),
+            name: columnName => new GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.name", columnName, cellWidth: 200 }),
+            description: columnName => new GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 300 }),
         });
 
         expect(Object.keys(columns)).toEqual(["name", "description"]);
@@ -68,11 +68,11 @@ describe("DB3 keyed column factories", () => {
 
     it("rejects client factories and selections with inconsistent names", () => {
         expect(() => makeClientColumnSet({
-            expected: () => new GenericStringColumnClient({ columnName: "different", cellWidth: 200 }),
+            expected: () => new GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.name", columnName: "different", cellWidth: 200 }),
         })).toThrow("factory 'expected' produced runtime column 'different'");
 
         const columns = makeClientColumnSet({
-            name: columnName => new GenericStringColumnClient({ columnName, cellWidth: 200 }),
+            name: columnName => new GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.name", columnName, cellWidth: 200 }),
         });
         expect(() => makeClientColumnSelection(columns.name, columns.name))
             .toThrow("Duplicate DB3 client column 'name'");

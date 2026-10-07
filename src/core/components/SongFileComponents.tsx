@@ -437,15 +437,21 @@ export const FileEditor = (props: FileEditorProps) => {
             // Any columns updated by the file CRUD command need to be specified here.
             // if they shouldn't be displayed to users, make a hidden version.
             publicId: DB3Client.publicIdFieldGen(),
-            visiblePermission: DB3Client.foreignRefFieldGen({
+            visiblePermission: DB3Client.foreignRefFieldGen({ fieldDescriptionKey: "File.visiblePermission.DescriptionMarkdown", fieldCaptionKey: "db3.fields.visibility",
                 selectionView: db3.permissionVisibilityView,
             }),
-            fileLeafName: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150, fieldCaption: "File name" }),
-            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 150 }),
-            fileCreatedAt: columnName => new DB3Client.DateTimeColumn({ columnName }),
+            fileLeafName: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, columnName, cellWidth: 150, fieldCaptionKey: "db3.fields.fileName" }),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 150 }),
+            fileCreatedAt: columnName => new DB3Client.DateTimeColumn({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.fileCreatedAt", columnName }),
 
-            tags: DB3Client.tagsFieldClientGen<db3.FileEditorTag>({ allowDeleteFromCell: false, selectStyle: 'inline', selectionView: db3.fileTagEditorView }),
-            taggedInstruments: DB3Client.tagsFieldClientGen<db3.FileEditorInstrumentTag>({
+            tags: DB3Client.tagsFieldClientGen<db3.FileEditorTag>({
+                fieldCaptionKey: "db3.fields.tags",
+                fieldDescriptionKey: null,
+                allowDeleteFromCell: false,
+                selectStyle: 'inline',
+                selectionView: db3.fileTagEditorView,
+            }),
+            taggedInstruments: DB3Client.tagsFieldClientGen<db3.FileEditorInstrumentTag>({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.instruments",
                 cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline',
                 overrideRowInfo: (association: db3.FileEditorInstrumentTag, rowInfo: db3.RowInfo) => {
                     // because the query doesn't include instrument functional group, get it from global dashboard context
@@ -454,9 +460,9 @@ export const FileEditor = (props: FileEditorProps) => {
                     return { ...rowInfo, color: gGeneralPaletteList.findEntry(fg.color) };
                 }
             }),
-            taggedUsers: DB3Client.tagsFieldClientGen<db3.FileEditorUserTag>({ allowDeleteFromCell: false }),
-            taggedSongs: DB3Client.tagsFieldClientGen<db3.FileEditorSongTag>({ allowDeleteFromCell: false }),
-            taggedEvents: DB3Client.tagsFieldClientGen<db3.FileEditorEventTag>({
+            taggedUsers: DB3Client.tagsFieldClientGen<db3.FileEditorUserTag>({ selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.members", allowDeleteFromCell: false }),
+            taggedSongs: DB3Client.tagsFieldClientGen<db3.FileEditorSongTag>({ selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.songs", allowDeleteFromCell: false }),
+            taggedEvents: DB3Client.tagsFieldClientGen<db3.FileEditorEventTag>({ selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.events",
                 cellWidth: 150,
                 allowDeleteFromCell: false,
                 renderAsChip: (args) => {
@@ -471,7 +477,7 @@ export const FileEditor = (props: FileEditorProps) => {
                     return event ? <EventChip renderAsLink={false} value={event} /> : null;
                 }
             }),
-            taggedWikiPages: DB3Client.tagsFieldClientGen<db3.FileEditorWikiPageTag>({ allowDeleteFromCell: false }),
+            taggedWikiPages: DB3Client.tagsFieldClientGen<db3.FileEditorWikiPageTag>({ selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.wikiPages", allowDeleteFromCell: false }),
         },
     });
     const tableRenderClient = DB3Client.useTableRenderContext({

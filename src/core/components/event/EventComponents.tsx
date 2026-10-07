@@ -165,19 +165,19 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     const eventResponseTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEventUserResponse,
         columns: {
-            userComment: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
-            isInvited: columnName => new DB3Client.BoolColumnClient({ columnName, fieldCaption: "Is invited?" }),
-            instrument: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
+            userComment: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.comment", columnName, cellWidth: 200 }),
+            isInvited: columnName => new DB3Client.BoolColumnClient({ fieldDescriptionKey: null, columnName, fieldCaptionKey: "db3.fields.invited" }),
+            instrument: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.instrument", columnName, cellWidth: 120 }),
         },
     });
 
     const eventSegmentResponseTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEventSegmentUserResponse,
         columns: {
-            attendance: columnName => new DB3Client.ForeignSingleFieldClient({
+            attendance: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null,
                 columnName,
                 cellWidth: 120,
-                fieldCaption: "Going?"
+                fieldCaptionKey: "db3.fields.attendance"
                 //renderAsChip: (args: DB3Client.RenderAsChipParams<db3.EventAttendanceBasePayload>) => <CMStandardDBChip model={args.value} variation={args.colorVariant} />,
             }),
         },

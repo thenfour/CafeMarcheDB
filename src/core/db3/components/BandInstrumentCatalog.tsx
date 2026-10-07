@@ -16,7 +16,7 @@ import {
 } from "../shared/entities/instrument/bandInstrumentContracts";
 import { defineTableClientSpec } from "./DB3ClientCore";
 import { GenericStringColumnClient, GenericIntegerColumnClient, ColorColumnClient, BoolColumnClient } from "./DB3ClientBasicFields";
-import { LocalizedStringColumnClient, InheritedColumnClient, catalogColumn } from "./DB3CatalogFields";
+import { LocalizedStringColumnClient, InheritedColumnClient } from "./DB3CatalogFields";
 import { ForeignSingleFieldClient } from "./db3ForeignSingleFieldClient";
 import { DB3EditGrid } from "./db3DataGrid";
 import { useDB3QueryContext } from "./useDB3Context";
@@ -24,13 +24,13 @@ import { useDB3QueryContext } from "./useDB3Context";
 const commonColumns = {
     name: (columnName: string) => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "instrument.name" }),
     description: (columnName: string) => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "instrument.description" }),
-    sortOrder: (columnName: string) => new InheritedColumnClient(new GenericIntegerColumnClient({ columnName, cellWidth: 80 }), { fieldCaptionKey: "instrument.sortOrder" }),
-    isHidden: (columnName: string) => catalogColumn(new BoolColumnClient({ columnName }), "instrument.hidden"),
+    sortOrder: (columnName: string) => new InheritedColumnClient(new GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "instrument.sortOrder", columnName, cellWidth: 80 }), { fieldCaptionKey: "instrument.sortOrder" }),
+    isHidden: (columnName: string) => new BoolColumnClient({ columnName, fieldCaptionKey: "instrument.hidden", fieldDescriptionKey: null }),
 };
 export const bandInstrumentGroupTableSpec = defineTableClientSpec({
     view: bandInstrumentGroupView, columns: {
         ...commonColumns,
-        color: columnName => new InheritedColumnClient(new ColorColumnClient({ columnName, cellWidth: 250 }), { fieldCaptionKey: "instrument.color" }),
+        color: columnName => new InheritedColumnClient(new ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "instrument.color", columnName, cellWidth: 250 }), { fieldCaptionKey: "instrument.color" }),
     },
 });
 export const bandInstrumentTableSpec = defineTableClientSpec({
@@ -40,10 +40,10 @@ export const bandInstrumentTableSpec = defineTableClientSpec({
             columnName,
             fieldCaptionKey: "instrument.matcher", fieldDescriptionKey: null
         }), { fieldCaptionKey: "instrument.matcher" }),
-        functionalGroup: columnName => catalogColumn(new ForeignSingleFieldClient({
+        functionalGroup: columnName => new ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "instrument.group",
             columnName,
             selectionView: bandInstrumentGroupView
-        }), "instrument.group"),
+        }),
     },
 });
 
