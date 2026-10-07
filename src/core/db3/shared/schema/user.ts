@@ -752,3 +752,447 @@ export class VisiblePermissionField<
 export const MakeVisiblePermissionField = <const TAuthSpec extends db3.DB3AuthSpec>(args: TAuthSpec) => (
     new VisiblePermissionField<"visiblePermissionId", TAuthSpec>(args)
 );
+
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/user.ts:8-16
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 44f0a169f351a2be78178375db8dc3c6a33a596a4642b496a88f44a76a14a9bd
+// MIGRATION_REFERENCE_BEGIN
+// import type {
+//     PermissionPublicId,
+//     RolePermissionPublicId,
+//     RolePublicId,
+//     UserInstrumentPublicId,
+//     UserPublicId,
+//     UserTagAssignmentPublicId,
+//     UserTagPublicId,
+// } from "shared/publicId";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/user.ts:23-23
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 5cd2fc741c4fea750e073ff1d9349a36709482ab389f0bcc644199504d6d6fa7
+// MIGRATION_REFERENCE_BEGIN
+// import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserWithInstrumentsArgs } from "./prismArgs";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/user.ts:103-142
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 15b90450c298577db5a592d1699730faa9c1348f7e146e341ae1319593a742ad
+// MIGRATION_REFERENCE_BEGIN
+// });
+//
+// // Permission display metadata is intrinsic to an authorized Permission row.
+// // Role assignments remain independently Sysadmin-only below.
+// const xPermissionMetadataAuthMap = db3.defineAuthMap({
+//     PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+//     PostQuery: db3.DB3FieldReadAuth.inheritRow,
+//     PreMutateAsOwner: Permission.sysadmin,
+//     PreMutate: Permission.sysadmin,
+//     PreInsert: Permission.sysadmin,
+// });
+//
+// const xRoleAdministrationFieldAuthMap = db3.defineAuthMap({
+//     PostQueryAsOwner: Permission.sysadmin,
+//     PostQuery: Permission.sysadmin,
+//     PreMutateAsOwner: Permission.sysadmin,
+//     PreMutate: Permission.sysadmin,
+//     PreInsert: Permission.sysadmin,
+// });
+//
+// // These fields are owned by dedicated authentication/calendar flows. Keep
+// // them known to request validation so crafted writes fail as unauthorized
+// // rather than falling through as unknown fields.
+// const denyGenericUserAuthenticationField = (): boolean => false;
+//
+// type BuiltInRoleFlag = "isRoleForNewUsers" | "isPublicRole" | "isSysAdminRole";
+//
+// // Built-in role designations are reassigned through one dedicated transaction.
+// // Generic creation may only create an ordinary, unassigned role.
+// const authorizeBuiltInRoleFlag = (flag: BuiltInRoleFlag) => (
+//     args: db3.DB3AuthorizeAndSanitizeFieldInput<TAnyModel>,
+// ): boolean => {
+//     if (args.rowMode === "view") return true;
+//     return args.rowMode === "new" && args.model?.[flag] === false;
+// };
+//
+//
+// export const xUserTableAuthMap: db3.DB3AuthTablePermissionMap = {
+//     ViewOwn: Permission.login,
+//     View: Permission.view_users_basic_info,
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/user.ts:166-181
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 7605907c64e82e49877d9dfe4297c1481bf4d728752dbae80b53962890576422
+// MIGRATION_REFERENCE_BEGIN
+//     Edit: Permission.sysadmin,
+//     Insert: Permission.sysadmin,
+// } as const;
+//
+// const xRoleAdministrationTableAuthMap: db3.DB3AuthTablePermissionMap = {
+//     ViewOwn: Permission.sysadmin,
+//     View: Permission.sysadmin,
+//     EditOwn: Permission.sysadmin,
+//     Edit: Permission.sysadmin,
+//     Insert: Permission.sysadmin,
+// } as const;
+//
+//
+// export const xUserMinimum = db3.defineTable({
+//     prismaModel: db3.prismaModel<Prisma.UserDelegate>(),
+//     getIdentity: (user: { publicId: UserPublicId }) => user.publicId,
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/user.ts:255-428
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 7f34b60a20d2b9deb57ca5225f086e83f58fac85653abf021a000754bfe42a01
+// MIGRATION_REFERENCE_BEGIN
+// export const xPermissionBaseArgs = db3.defineTableDesc({
+//     prismaModel: db3.prismaModel<Prisma.PermissionDelegate>(),
+//     getIdentity: (permission: { publicId: PermissionPublicId }) => permission.publicId,
+//     getSelectionArgs: (): Prisma.PermissionDefaultArgs => {
+//         return PermissionArgs;
+//     },
+//     tableName: "Permission",
+//     queryStrategy: "resolved",
+//     deletePolicy: "disabled",
+//     naturalOrderBy: PermissionNaturalOrderBy,
+//     tableAuthMap: xPermissionTableAuthMap,
+//     getRowInfo: (row: PermissionPayload) => ({
+//         pk: row.publicId,
+//         name: row.name,
+//         description: localizedText(row.description) ?? "",
+//         color: gGeneralPaletteList.findEntry(row.color),
+//         ownerUserId: null,
+//     }),
+//     fields: db3.makeColumnSet({
+//         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+//         publicId: () => MakePublicIdField<PermissionPublicId>(),
+//         name: columnName => new GenericStringField({
+//             columnName,
+//             allowNull: false,
+//             format: "plain",
+//             specialFunction: db3.SqlSpecialColumnFunction.name,
+//             authMap: xPermissionMetadataAuthMap,
+//         }),
+//         description: columnName => new LocalizedStringField({
+//             columnName,
+//             stringIdentityMember: "descriptionId",
+//             stringFormat: "Markdown",
+//             authMap: xPermissionMetadataAuthMap,
+//         }),
+//         sortOrder: () => MakeSortOrderField({ authMap: xPermissionMetadataAuthMap }),
+//         isVisibility: columnName => new BoolField({
+//             columnName,
+//             defaultValue: false,
+//             authMap: xPermissionMetadataAuthMap,
+//             allowNull: false,
+//         }),
+//         significance: columnName => MakeSignificanceField(columnName, PermissionSignificance, { authMap: xPermissionMetadataAuthMap }),
+//         color: () => MakeColorField({ authMap: xPermissionMetadataAuthMap }),
+//         iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xPermissionMetadataAuthMap }),
+//         roles: tagsRef("RolePermission", "Role", {
+//             associationForeignObjectMember: "role",
+//             associationLocalObjectMember: "permission",
+//             getCustomFilterWhereClause: (query: CMDBTableFilterModel) => false,
+//             getQuickFilterWhereClause: (query: string): Prisma.PermissionWhereInput | boolean => false,
+//             authMap: xRoleAdministrationFieldAuthMap,
+//         }),
+//
+//     })
+// });
+//
+// export const xPermission = db3.defineTable(xPermissionBaseArgs);
+//
+//
+// // if we think of role-permission as tags relationship,
+// // then roles are the local object, and permissions are the foreign tags object.
+//
+// // this schema is required for tags selection dlg.
+// export const xRolePermissionAssociation = db3.defineTable({
+//     prismaModel: db3.prismaModel<Prisma.RolePermissionDelegate>(),
+//     getIdentity: (rolePermission: { publicId: RolePermissionPublicId }) => rolePermission.publicId,
+//     tableName: "RolePermission",
+//     deletePolicy: "disabled",
+//     getSelectionArgs: (): Prisma.RolePermissionDefaultArgs => {
+//         return RolePermissionArgs;
+//     },
+//     tableAuthMap: xRoleAdministrationTableAuthMap,
+//     naturalOrderBy: RolePermissionNaturalOrderBy,
+//     getRowInfo: (row: RolePermissionAssociationPayload) => ({
+//         pk: row.publicId,
+//         name: row.permission?.name || "",
+//         description: row.permission?.description || "",
+//         ownerUserId: null,
+//     }),
+//     fields: db3.makeColumnSet({
+//         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+//         publicId: () => MakePublicIdField<RolePermissionPublicId>(),
+//         permission: foreignRef(() => xPermission, {
+//             fkidMember: "permissionId",
+//             authMap: xRoleAdministrationFieldAuthMap,
+//         }),
+//         role: foreignRef(() => xRole, {
+//             fkidMember: "roleId",
+//             authMap: xRoleAdministrationFieldAuthMap,
+//         }),
+//     })
+// });
+//
+// ////////////////////////////////////////////////////////////////
+//
+// export const xRole = db3.defineTable({
+//     prismaModel: db3.prismaModel<Prisma.RoleDelegate>(),
+//     getIdentity: (role: { publicId: RolePublicId }) => role.publicId,
+//     getSelectionArgs: (): Prisma.RoleDefaultArgs => {
+//         return RoleArgs;
+//     },
+//     tableName: "Role",
+//     deletePolicy: "disabled",
+//     tableAuthMap: xRoleAdministrationTableAuthMap,
+//     naturalOrderBy: RoleNaturalOrderBy,
+//     createInsertModelFromString: (input: string): Partial<RolePayload> => {
+//         return {
+//             name: input,
+//             description: "auto-created",
+//             sortOrder: 0,
+//         };
+//     },
+//     getRowInfo: (row: RolePayload) => ({
+//         pk: row.publicId,
+//         name: row.name,
+//         description: row.description || "",
+//         color: gGeneralPaletteList.findEntry(row.color),
+//         ownerUserId: null,
+//     }),
+//     fields: db3.makeColumnSet({
+//         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+//         publicId: () => MakePublicIdField<RolePublicId>(),
+//         name: columnName => new GenericStringField({
+//             columnName,
+//             allowNull: false,
+//             format: "plain",
+//             specialFunction: db3.SqlSpecialColumnFunction.name,
+//             authMap: xRoleAdministrationFieldAuthMap,
+//         }),
+//         description: () => MakeDescriptionField({ authMap: xRoleAdministrationFieldAuthMap }),
+//         isRoleForNewUsers: columnName => new BoolField({
+//             columnName,
+//             defaultValue: false,
+//             _customAuth: authorizeBuiltInRoleFlag("isRoleForNewUsers"),
+//             allowNull: false,
+//         }),
+//         isPublicRole: columnName => new BoolField({
+//             columnName,
+//             defaultValue: false,
+//             _customAuth: authorizeBuiltInRoleFlag("isPublicRole"),
+//             allowNull: false,
+//         }),
+//         isSysAdminRole: columnName => new BoolField({
+//             columnName,
+//             defaultValue: false,
+//             _customAuth: authorizeBuiltInRoleFlag("isSysAdminRole"),
+//             allowNull: false,
+//         }),
+//         sortOrder: () => MakeSortOrderField({ authMap: xRoleAdministrationFieldAuthMap }),
+//         color: () => MakeColorField({ authMap: xRoleAdministrationFieldAuthMap }),
+//         permissions: tagsRef("RolePermission", "Permission", {
+//             associationForeignObjectMember: "permission",
+//             associationLocalObjectMember: "role",
+//             authMap: xRoleAdministrationFieldAuthMap,
+//             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
+//             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
+//                 permissions: {
+//                     some: {
+//                         permission: {
+//                             name: { contains: query }
+//                         }
+//                     }
+//                 }
+//             }),
+//         }),
+//     })
+// });
+//
+//
+//
+//
+//
+// export const xUserInstrument = db3.defineTable({
+//     prismaModel: db3.prismaModel<Prisma.UserInstrumentDelegate>(),
+//     getIdentity: (association: { publicId: UserInstrumentPublicId }) => association.publicId,
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/user.ts:630-640
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 9ceacae85e680ceb3d3bfc640a42a073e68295045ddad35869b100880df9b1c1
+// MIGRATION_REFERENCE_BEGIN
+// declare module "../db3core" {
+//     interface DB3TableTypeRegistry {
+//         Permission: typeof xPermission;
+//         Role: typeof xRole;
+//         RolePermission: typeof xRolePermissionAssociation;
+//         User: typeof xUser;
+//         UserTag: typeof xUserTag;
+//         UserInstrument: typeof xUserInstrument;
+//         UserTagAssignment: typeof xUserTagAssignment;
+//     }
+// }
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/user.ts:675-803
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 9ee9f5efc2690744e164bc91f54e530d8c611b336edc016021a742b7f5b0c472
+// MIGRATION_REFERENCE_BEGIN
+// const userBaseArgs = db3.defineTableDesc({
+//     prismaModel: db3.prismaModel<Prisma.UserDelegate>(),
+//     getIdentity: (user: { publicId: UserPublicId }) => user.publicId,
+//     getSelectionArgs: (): Prisma.UserDefaultArgs => {
+//         return UserSafeArgs;
+//     },
+//     tableName: "User",
+//     deletePolicy: "disabled",
+//     viewDeletedPermission: Permission.recover_users,
+//     searchCapabilities: { includeDeleted: true },
+//     queryParameters: {
+//         userId: { kind: "entityIdentity", targetTableID: "User", authorizeAs: "publicId" },
+//         userIds: { kind: "entityIdentityArray", targetTableID: "User", authorizeAs: "publicId" },
+//     },
+//     tableAuthMap: xUserTableAuthMap_SysadminInsert,
+//     naturalOrderBy: UserNaturalOrderBy,
+//     getRowInfo: (row: UserPayload) => ({
+//         pk: row.publicId,
+//         name: row.name,
+//         ownerUserId: row.id,
+//     }),
+//     getParameterizedWhereClause: (params: UserTablParams): Prisma.UserWhereInput[] => {
+//         const ret: Prisma.UserWhereInput[] = [];
+//         if (params.userId != null) {
+//             ret.push({ id: { equals: params.userId } });
+//         }
+//         if (params.userIds !== undefined) {
+//             assertIsNumberArray(params.userIds);
+//             if (params.userIds.length > 0) {
+//                 const t: Prisma.UserWhereInput = {
+//                     id: { in: params.userIds }
+//                 };
+//                 ret.push(t);
+//             }
+//         }
+//         return ret;
+//     },
+//     fields: db3.makeColumnSet({
+//         id: () => MakePKfield({ isRowOwner: true, naturalIdVisibility: "never" }),
+//         publicId: () => MakePublicIdField<UserPublicId>(),
+//         isDeleted: () => MakeIsDeletedField({ authMap: xUserOperationalMetadataAuthMap }),
+//         createdAt: () => MakeCreatedAtField({ authMap: xUserOperationalMetadataAuthMap }),
+//         name: columnName => new GenericStringField({
+//             columnName,
+//             allowNull: false,
+//             format: "title",
+//             specialFunction: db3.SqlSpecialColumnFunction.name,
+//             authMap: xUserBasicProfileAuthMap,
+//         }),
+//         email: columnName => new GenericStringField({
+//             columnName,
+//             allowNull: false,
+//             format: "email",
+//             authMap: xUserEmailAuthMap,
+//         }),
+//         phone: columnName => new GenericStringField({
+//             columnName,
+//             allowNull: true,
+//             format: "plain",
+//             authMap: xUserContactInfoAuthMap,
+//         }),
+//         cssClass: columnName => new GenericStringField({
+//             columnName,
+//             allowNull: true,
+//             format: "raw",
+//             authMap: xUserPresentationMetadataAuthMap,
+//         }),
+//         isSysAdmin: columnName => new BoolField({
+//             columnName,
+//             defaultValue: false,
+//             authMap: xUserOperationalMetadataAuthMap,
+//             allowNull: false,
+//         }),
+//         role: foreignRef(() => xRole, {
+//             allowNull: true,
+//             fkidMember: "roleId",
+//             authMap: xUserOperationalMetadataAuthMap,
+//             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
+//                 OR: [
+//                     { name: { contains: query } },
+//                     //{ description: { contains: query } },
+//                 ]
+//             }),
+//         }),
+//         instruments: tagsRef("UserInstrument", "BandInstrument", {
+//             associationForeignObjectMember: "instrument",
+//             associationLocalObjectMember: "user",
+//             authMap: xUserBasicProfileAuthMap,
+//             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
+//             getQuickFilterWhereClause: (query: string) => false,
+//         }),
+//         tags: tagsRef("UserTagAssignment", "UserTag", {
+//             associationForeignObjectMember: "userTag",
+//             associationLocalObjectMember: "user",
+//             authMap: xUserBasicProfileManagerWriteAuthMap, // tags affect invitations, so owners may view but only managers may edit them.
+//             getQuickFilterWhereClause: (query: string): Prisma.UserWhereInput => ({
+//                 tags: {
+//                     some: {
+//                         userTag: {
+//                             text: {
+//                                 contains: query
+//                             }
+//                         }
+//                     }
+//                 }
+//             }),
+//             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.UserWhereInput | boolean => {
+//                 // see events tagIds on how to filter by this field.
+//                 return false;
+//             },
+//         }), // column: tags
+//
+//         signInMethods: memberName => new ForeignCollectionField({
+//             memberName,
+//             foreignTableID: "UserSignInMethod",
+//             authMap: xUserSignInMetadataAuthMap,
+//         }),
+//
+//         // This search-only field's runtime member is signInEmailSearch; the old
+//         // array placement beside email did not make it a second email field.
+//         signInEmailSearch: () => MakeUserSignInEmailSearchField(),
+//         mergedIntoUserId: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+//         mergedAt: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+//         hashedPassword: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+//         calendarFeedToken: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+//         accessToken: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }), // rejected legacy field name
+//         uid: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+//     })
+// });
+// MIGRATION_REFERENCE_END

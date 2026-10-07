@@ -2060,3 +2060,1292 @@ describe("BA-A005 delete authorization", () => {
     ])
   })
 })
+
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/authorizationTestHarness.test.ts:28-28
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: a31805b0e1f7840fa4261f20d4d956681353a443ca5ba10db4d358e80d82080f
+// MIGRATION_REFERENCE_BEGIN
+// import assignUserRole from "src/auth/mutations/assignUserRole";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/authorizationTestHarness.test.ts:35-35
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 7ac9a82ac429e61ebc989780bbc85bb8b841c8f38b0547db51043de074acb059
+// MIGRATION_REFERENCE_BEGIN
+// import getUserManagementCapabilities from "src/auth/queries/getUserManagementCapabilities";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/authorizationTestHarness.test.ts:351-731
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 9d83b87713e2dcfd04f78b36205dc589bca9220b3c74feddb49c224a15690c24
+// MIGRATION_REFERENCE_BEGIN
+// describe("BA-A002 generic DB3 query authorization", () => {
+//   const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
+//   const normal = createAuthorizationTestUser("normal", {
+//     id: 2,
+//     permissions: [
+//       Permission.login,
+//       Permission.view_users_basic_info,
+//       Permission.manage_users,
+//     ],
+//   })
+//   const activeTarget = createAuthorizationTestUser("normal", { id: 3 })
+//   const deletedTarget = createAuthorizationTestUser("normal", { id: 4, isDeleted: true })
+//
+//   beforeEach(() => {
+//     authorizationTestDb.reset({
+//       user: [sysadmin, normal, activeTarget, deletedTarget],
+//       change: [{ id: 1, table: "User", recordId: activeTarget.id }],
+//       event: [],
+//       role: [],
+//     })
+//     vi.restoreAllMocks()
+//   })
+//
+//   it("rejects an unauthorized table before its Prisma query executes", async () => {
+//     const findMany = vi.spyOn(authorizationTestDb.getDelegate("change"), "findMany")
+//     const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
+//
+//     await expect(invokeResolver(db3Query, forgeDb3Query("Change"), ctx)).rejects.toThrow(
+//       "Not authorized to perform this query.",
+//     )
+//     expect(findMany).not.toHaveBeenCalled()
+//   })
+//
+//   it("rejects an unauthorized paginated table before querying or counting", async () => {
+//     const changeDelegate = authorizationTestDb.getDelegate("change")
+//     const findMany = vi.spyOn(changeDelegate, "findMany")
+//     const count = vi.spyOn(changeDelegate, "count")
+//     const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
+//
+//     await expect(
+//       invokeResolver(
+//         db3PaginatedQuery,
+//         { ...forgeDb3Query("Change"), skip: 0, take: 50 },
+//         ctx,
+//       ),
+//     ).rejects.toThrow("Not authorized to perform this query.")
+//     expect(findMany).not.toHaveBeenCalled()
+//     expect(count).not.toHaveBeenCalled()
+//   })
+//
+//   it("rejects an internal query without the table's required effective permission", async () => {
+//     const findMany = vi.spyOn(authorizationTestDb.getDelegate("user"), "findMany")
+//     const databaseNormal = normal as unknown as UserWithRolesPayload
+//
+//     await expect(queryTable({
+//       ...forgeDb3Query("Role"),
+//     }, await loadAuthorizationForUser(databaseNormal))).rejects.toThrow("Not authorized to perform this query.")
+//     expect(findMany).not.toHaveBeenCalled()
+//   })
+//
+//   it.each([
+//     { name: "filter", request: { filter: { items: [{ field: "isDeleted", operator: "equals" as const, value: true }] } } },
+//     { name: "order", request: { orderBy: { isDeleted: "asc" as const } } },
+//     {
+//       name: "parameter",
+//       request: {
+//         filter: {
+//           items: [],
+//           tableParams: { eventTypeIds: [parsePublicId<"EventType">("AuthEventType003")] },
+//         },
+//       },
+//     },
+//   ])("rejects a protected $name field before querying", async ({ request }) => {
+//     const findMany = vi.spyOn(authorizationTestDb.getDelegate("event"), "findMany")
+//     const { ctx } = createAuthorizationPersona("public")
+//
+//     await expect(
+//       invokeResolver(db3Query, forgeDb3Query("Event", request), ctx),
+//     ).rejects.toThrow("Not authorized to perform this query.")
+//     expect(findMany).not.toHaveBeenCalled()
+//   })
+//
+//   it("does not consult protected columns while building quick or custom filters", () => {
+//     const { schemaAuthorization: publicData } = createAuthorizationPersona("public")
+//
+//     const protectedColumn = db3.xEvent.getColumn("isDeleted")!
+//     const quickFilter = vi.spyOn(protectedColumn, "getQuickFilterWhereClause")
+//     const customFilter = vi.spyOn(protectedColumn, "getCustomFilterWhereClause")
+//
+//     db3.xEvent.GetQuickFilterWhereClauseExpression("probe", publicData)
+//     db3.xEvent.GetCustomWhereClauseExpression(
+//       { items: [], tagIds: [12] },
+//       publicData,
+//     )
+//
+//     expect(quickFilter).not.toHaveBeenCalled()
+//     expect(customFilter).not.toHaveBeenCalled()
+//   })
+//
+//   it("does not let a primary key qualify a row from a protected table", () => {
+//     const { schemaAuthorization: publicData } = createAuthorizationPersona("public")
+//     const result = db3.xChange.authorizeAndSanitize({
+//       contextDesc: "BA-A002 protected-row regression",
+//       auth: publicData,
+//       rowMode: "view",
+//       model: { id: 41, table: "User", recordId: activeTarget.id },
+//       fallbackOwnerId: null,
+//     })
+//
+//     expect(result.rowIsAuthorized).toBe(false)
+//     expect(result.authorizedModel).toEqual({})
+//     expect(result.unauthorizedModel).toEqual(
+//       expect.objectContaining({ id: 41 }),
+//     )
+//   })
+//
+//   it("returns IDs only for rows inside the server-enforced visibility scope", async () => {
+//     const publicPermissionId = 700
+//     const loggedInPermissionId = 701
+//     authorizationTestDb.reset({
+//       user: [],
+//       role: [{
+//         id: 900,
+//         isPublicRole: true,
+//         permissions: [
+//           { permissionId: publicPermissionId, permission: { id: publicPermissionId, name: Permission.visibility_public } },
+//           { permissionId: 702, permission: { id: 702, name: Permission.view_events } },
+//           { permissionId: 703, permission: { id: 703, name: Permission.always_grant } },
+//           { permissionId: 704, permission: { id: 704, name: Permission.public } },
+//         ],
+//       }],
+//       event: [
+//         {
+//           id: 20,
+//           publicId: eventPublicId(20),
+//           name: "Public event",
+//           isDeleted: false,
+//           createdByUserId: null,
+//           visiblePermissionId: publicPermissionId,
+//           visiblePermission: { id: publicPermissionId, name: Permission.visibility_public },
+//           frontpageVisible: true,
+//         },
+//         {
+//           id: 21,
+//           publicId: eventPublicId(21),
+//           name: "Members event",
+//           isDeleted: false,
+//           createdByUserId: null,
+//           visiblePermissionId: loggedInPermissionId,
+//           visiblePermission: { id: loggedInPermissionId, name: Permission.visibility_logged_in_users },
+//           frontpageVisible: true,
+//         },
+//         {
+//           id: 22,
+//           publicId: eventPublicId(22),
+//           name: "Deleted public event",
+//           isDeleted: true,
+//           createdByUserId: null,
+//           visiblePermissionId: publicPermissionId,
+//           visiblePermission: { id: publicPermissionId, name: Permission.visibility_public },
+//           frontpageVisible: true,
+//         },
+//       ],
+//     })
+//     const { ctx } = createAuthorizationPersona("public")
+//
+//     const result = await invokeResolver(db3Query, forgeDb3Query("Event"), ctx)
+//
+//     expect(result.items).toEqual([
+//       expect.objectContaining({ publicId: eventPublicId(20), name: "Public event" }),
+//     ])
+//     expect(JSON.stringify(result)).not.toContain("Members event")
+//     expect(JSON.stringify(result)).not.toContain("Deleted public event")
+//   })
+//
+//   it("uses the same soft-delete scope for paginated items and counts", async () => {
+//     const { ctx: normalCtx } = createAuthorizationPersona("normal", { id: normal.id })
+//     const normalResult = await invokeResolver(
+//       db3PaginatedQuery,
+//       { ...forgeDb3Query("User"), skip: 0, take: 50 },
+//       normalCtx,
+//     )
+//
+//     expect(normalResult.count).toBe(3)
+//     expect(normalResult.items).not.toEqual(
+//       expect.arrayContaining([expect.objectContaining({ id: deletedTarget.id })]),
+//     )
+//
+//     const normalDeletedOnlyResult = await invokeResolver(
+//       db3PaginatedQuery,
+//       {
+//         ...forgeDb3Query("User", {
+//           filter: {
+//             items: [{ field: "isDeleted", operator: "equals", value: true }],
+//           },
+//         }),
+//         skip: 0,
+//         take: 50,
+//       },
+//       normalCtx,
+//     )
+//     expect(normalDeletedOnlyResult.count).toBe(0)
+//     expect(normalDeletedOnlyResult.items).toEqual([])
+//
+//     const { ctx: sysadminCtx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+//     const sysadminResult = await invokeResolver(
+//       db3PaginatedQuery,
+//       { ...forgeDb3Query("User"), skip: 0, take: 50 },
+//       sysadminCtx,
+//     )
+//
+//     expect(sysadminResult.count).toBe(3)
+//     expect(sysadminResult.items).not.toEqual(
+//       expect.arrayContaining([expect.objectContaining({ id: deletedTarget.id })]),
+//     )
+//
+//     const sysadminDeletedOnlyResult = await invokeResolver(
+//       db3PaginatedQuery,
+//       {
+//         ...forgeDb3Query("User", {
+//           filter: {
+//             items: [{ field: "isDeleted", operator: "equals", value: true }],
+//           },
+//         }),
+//         skip: 0,
+//         take: 50,
+//       },
+//       sysadminCtx,
+//     )
+//     expect(sysadminDeletedOnlyResult.count).toBe(0)
+//     expect(sysadminDeletedOnlyResult.items).toEqual([])
+//   })
+//
+//   it("does not count rows outside an authenticated user's visibility scope", async () => {
+//     const visibilityPermissions = [
+//       Permission.login,
+//       Permission.visibility_public,
+//     ]
+//     const visibilityUser = createAuthorizationTestUser("normal", {
+//       id: normal.id,
+//       permissions: visibilityPermissions,
+//     })
+//     const publicPermissionId = visibilityUser.role!.permissions.find(
+//       entry => entry.permission.name === Permission.visibility_public,
+//     )!.permissionId
+//     authorizationTestDb.reset({
+//       user: [visibilityUser],
+//       event: [
+//         {
+//           id: 30,
+//           publicId: eventPublicId(30),
+//           name: "Visible event",
+//           isDeleted: false,
+//           createdByUserId: null,
+//           visiblePermissionId: publicPermissionId,
+//           visiblePermission: { id: publicPermissionId, name: Permission.visibility_public },
+//         },
+//         {
+//           id: 31,
+//           publicId: eventPublicId(31),
+//           name: "Hidden event",
+//           isDeleted: false,
+//           createdByUserId: null,
+//           visiblePermissionId: 999,
+//           visiblePermission: { id: 999, name: Permission.visibility_members },
+//         },
+//         {
+//           id: 32,
+//           publicId: eventPublicId(32),
+//           name: "Deleted event",
+//           isDeleted: true,
+//           createdByUserId: null,
+//           visiblePermissionId: publicPermissionId,
+//           visiblePermission: { id: publicPermissionId, name: Permission.visibility_public },
+//         },
+//       ],
+//     })
+//     const { ctx } = createAuthorizationPersona("normal", {
+//       id: visibilityUser.id,
+//       permissions: visibilityPermissions,
+//     })
+//
+//     const result = await invokeResolver(
+//       db3PaginatedQuery,
+//       { ...forgeDb3Query("Event"), skip: 0, take: 50 },
+//       ctx,
+//     )
+//
+//     expect(result.count).toBe(1)
+//     expect(result.items).toEqual([
+//       expect.objectContaining({ publicId: eventPublicId(30), name: "Visible event" }),
+//     ])
+//   })
+//
+//   it("lets recovery-capable Band Admins include deleted rows without bypassing privacy", async () => {
+//     const permissions = [
+//       Permission.login,
+//       Permission.view_events,
+//       Permission.manage_events,
+//       Permission.recover_events,
+//       Permission.visibility_public,
+//     ]
+//     const recoveryAdmin = createAuthorizationTestUser("bandAdmin", { id: 40, permissions })
+//     const publicVisibilityId = recoveryAdmin.role!.permissions.find(
+//       entry => entry.permission.name === Permission.visibility_public,
+//     )!.permissionId
+//     authorizationTestDb.reset({
+//       user: [recoveryAdmin],
+//       event: [
+//         {
+//           id: 41,
+//           publicId: eventPublicId(41),
+//           name: "Deleted band event",
+//           isDeleted: true,
+//           createdByUserId: 999,
+//           visiblePermissionId: publicVisibilityId,
+//           visiblePermission: { id: publicVisibilityId, name: Permission.visibility_public },
+//         },
+//         {
+//           id: 42,
+//           publicId: eventPublicId(42),
+//           name: "Someone else's private event",
+//           isDeleted: true,
+//           createdByUserId: 999,
+//           visiblePermissionId: null,
+//           visiblePermission: null,
+//         },
+//         {
+//           id: 43,
+//           publicId: eventPublicId(43),
+//           name: "Own private event",
+//           isDeleted: true,
+//           createdByUserId: recoveryAdmin.id,
+//           visiblePermissionId: null,
+//           visiblePermission: null,
+//         },
+//       ],
+//     })
+//     const { ctx } = createAuthorizationPersona("bandAdmin", {
+//       id: recoveryAdmin.id,
+//       permissions,
+//     })
+//
+//     const result = await invokeResolver(db3PaginatedQuery, {
+//       ...forgeDb3Query("Event"),
+//       includeDeleted: true,
+//       skip: 0,
+//       take: 50,
+//     }, ctx)
+//
+//     expect(result.count).toBe(2)
+//     expect(result.items).toEqual(expect.arrayContaining([
+//       expect.objectContaining({ publicId: eventPublicId(41) }),
+//       expect.objectContaining({ publicId: eventPublicId(43) }),
+//     ]))
+//     expect(JSON.stringify(result)).not.toContain("Someone else's private event")
+//   })
+//
+//   it("rejects includeDeleted before querying when recovery permission is absent", async () => {
+//     const permissions = [Permission.login, Permission.view_events, Permission.manage_events]
+//     const ordinaryManager = createAuthorizationTestUser("moderator", { id: 44, permissions })
+//     authorizationTestDb.reset({ user: [ordinaryManager], event: [] })
+//     const { ctx } = createAuthorizationPersona("moderator", {
+//       id: ordinaryManager.id,
+//       permissions,
+//     })
+//     const eventDelegate = authorizationTestDb.getDelegate("event")
+//     const findMany = vi.spyOn(eventDelegate, "findMany")
+//     const count = vi.spyOn(eventDelegate, "count")
+//
+//     await expect(invokeResolver(db3PaginatedQuery, {
+//       ...forgeDb3Query("Event"),
+//       includeDeleted: true,
+//       skip: 0,
+//       take: 50,
+//     }, ctx)).rejects.toThrow("Not authorized to perform this query.")
+//
+//     expect(findMany).not.toHaveBeenCalled()
+//     expect(count).not.toHaveBeenCalled()
+//   })
+// })
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/authorizationTestHarness.test.ts:988-1571
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: ce2e8c7491eff8493f9a7d2b916a1d795a300198206c91cb2f67c299bfa2d174
+// MIGRATION_REFERENCE_BEGIN
+// describe("BA-U001 user management boundaries", () => {
+//   const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
+//   const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 })
+//   const moderator = createAuthorizationTestUser("moderator", { id: 3 })
+//   const ordinaryUser = createAuthorizationTarget("ordinary", { id: 10 })
+//   const protectedRoleUser = createAuthorizationTarget("protectedRole", { id: 11 })
+//   const isSysAdminUser = createAuthorizationTarget("isSysAdmin", { id: 12 })
+//
+//   const ordinaryRole = {
+//     id: 100,
+//     publicId: parsePublicId<"Role">("AuthRoleOrd00100"),
+//     name: "Ordinary role",
+//     description: "",
+//     isRoleForNewUsers: false,
+//     isPublicRole: false,
+//     sortOrder: 10,
+//     color: null,
+//     significance: null,
+//     permissions: [],
+//   }
+//   const protectedRole = {
+//     ...ordinaryRole,
+//     id: 101,
+//     publicId: parsePublicId<"Role">("AuthRolePro00101"),
+//     name: "Protected role",
+//     permissions: [{
+//       id: 1000,
+//       roleId: 101,
+//       permissionId: 1001,
+//       permission: { id: 1001, name: Permission.sysadmin },
+//     }],
+//   }
+//
+//   beforeEach(() => {
+//     authorizationTestDb.reset({
+//       user: [
+//         sysadmin,
+//         bandAdmin,
+//         moderator,
+//         ordinaryUser,
+//         protectedRoleUser,
+//         isSysAdminUser,
+//       ],
+//       role: [ordinaryRole, protectedRole],
+//       token: [],
+//       change: [],
+//     })
+//     vi.restoreAllMocks()
+//   })
+//
+//   it("allows an anonymous actor when the public permission set grants the action", () => {
+//     expect(canManageUser({
+//       actor: {
+//         principal: null,
+//         auth: testServerAuthorization(null, new ServerPermissionSet([{ id: 1, name: Permission.deactivate_users }])),
+//       },
+//       target: asUserManagementTarget(ordinaryUser),
+//       action: "deactivate",
+//     })).toBe(true)
+//   })
+//
+//   it("lets Band Admin edit an ordinary user and assign an allowed role separately", async () => {
+//     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+//
+//     await invokeResolver(
+//       db3Mutation,
+//       forgeDb3Update("User", ordinaryUser.id, {
+//         name: "Managed by Band Admin",
+//       }),
+//       ctx,
+//     )
+//     await invokeResolver(assignUserRole, {
+//       userId: ordinaryUser.publicId,
+//       roleId: ordinaryRole.publicId,
+//       acknowledgeContinuityRisk: false,
+//     }, ctx)
+//
+//     expect(authorizationTestDb.snapshot("user")).toEqual(
+//       expect.arrayContaining([
+//         expect.objectContaining({
+//           id: ordinaryUser.id,
+//           name: "Managed by Band Admin",
+//           roleId: ordinaryRole.id,
+//         }),
+//       ]),
+//     )
+//   })
+//
+//   it.each([
+//     ["a protected-role user", protectedRoleUser, false],
+//     ["an isSysAdmin user with an ordinary assigned role", isSysAdminUser, true],
+//   ])("uses DB3 profile editing and the assigned-role envelope for %s", async (_description, target, canAssignRole) => {
+//     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+//     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
+//
+//     await expect(
+//       invokeResolver(
+//         db3Mutation,
+//         forgeDb3Update("User", target.id, { name: "Forbidden edit" }),
+//         ctx,
+//       ),
+//     ).resolves.toEqual(expect.objectContaining({ name: "Forbidden edit" }))
+//     const assignment = invokeResolver(
+//       assignUserRole,
+//       {
+//         userId: target.publicId,
+//         roleId: ordinaryRole.publicId,
+//         acknowledgeContinuityRisk: false,
+//       },
+//       ctx,
+//     )
+//     if (canAssignRole) {
+//       await expect(assignment).resolves.toEqual(expect.objectContaining({ roleId: ordinaryRole.publicId }))
+//     } else {
+//       await expect(assignment).rejects.toThrow("Not authorized to assignRole this user")
+//     }
+//
+//     expect(update).toHaveBeenCalledTimes(canAssignRole ? 2 : 1)
+//   })
+//
+//   it.each([
+//     ["another user", ordinaryUser],
+//     ["themselves", bandAdmin],
+//   ])("does not let Band Admin assign a protected role to %s", async (_description, target) => {
+//     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+//     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
+//
+//     await expect(
+//       invokeResolver(
+//         assignUserRole,
+//         {
+//           userId: target.publicId,
+//           roleId: protectedRole.publicId,
+//           acknowledgeContinuityRisk: false,
+//         },
+//         ctx,
+//       ),
+//     ).rejects.toThrow("Not authorized to assignRole this user")
+//
+//     expect(update).not.toHaveBeenCalled()
+//   })
+//
+//   it("does not let generic user creation assign any role", async () => {
+//     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+//     const create = vi.spyOn(authorizationTestDb.getDelegate("user"), "create")
+//
+//     await expect(
+//       invokeResolver(
+//         db3Mutation,
+//         forgeDb3Insert("User", {
+//           name: "Forbidden protected user",
+//           email: "protected@test.invalid",
+//           roleId: protectedRole.publicId,
+//         }),
+//         ctx,
+//       ),
+//     ).rejects.toThrow("Role was not found")
+//
+//     expect(create).not.toHaveBeenCalled()
+//   })
+//
+//   it.each([
+//     ["an ordinary user", ordinaryUser],
+//     ["a protected-role user", protectedRoleUser],
+//     ["an isSysAdmin user", isSysAdminUser],
+//   ])("does not let Band Admin generate a reset URL for %s", async (_description, target) => {
+//     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+//     const tokenDelete = vi.spyOn(authorizationTestDb.getDelegate("token"), "deleteMany")
+//     const tokenCreate = vi.spyOn(authorizationTestDb.getDelegate("token"), "create")
+//
+//     await expect(
+//       invokeResolver(forgotPassword, { userId: target.publicId }, ctx),
+//     ).rejects.toThrow("Unauthorized test persona; required: sysadmin")
+//
+//     expect(tokenDelete).not.toHaveBeenCalled()
+//     expect(tokenCreate).not.toHaveBeenCalled()
+//   })
+//
+//   it("does not let Band Admin invoke impersonation", async () => {
+//     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+//
+//     expect(canManageUser({
+//       actor: asUserManagementActor(bandAdmin),
+//       target: asUserManagementTarget(isSysAdminUser),
+//       action: "impersonate",
+//     })).toBe(false)
+//     await expect(
+//       invokeResolver(impersonateUser, { userId: isSysAdminUser.publicId }, ctx),
+//     ).rejects.toThrow("Not authorized for impersonate_user.")
+//   })
+//
+//   it.each([
+//     ["a protected-role user", protectedRoleUser],
+//     ["an isSysAdmin user", isSysAdminUser],
+//   ])("lets Sysadmin impersonate %s when the dedicated grant is present", async (_description, target) => {
+//     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+//
+//     await expect(
+//       invokeResolver(impersonateUser, { userId: target.publicId }, ctx),
+//     ).resolves.toEqual({ userId: target.publicId })
+//   })
+//
+//   it("returns server-computed UI decisions for ordinary and protected targets", async () => {
+//     const { ctx: bandAdminCtx } = createAuthorizationPersona("bandAdmin", {
+//       id: bandAdmin.id,
+//     })
+//     const { ctx: sysadminCtx } = createAuthorizationPersona("sysadmin", {
+//       id: sysadmin.id,
+//     })
+//
+//     const bandAdminOrdinaryCapabilities = await invokeResolver(
+//       getUserManagementCapabilities,
+//       { userId: ordinaryUser.publicId },
+//       bandAdminCtx,
+//     )
+//     expect(bandAdminOrdinaryCapabilities).toEqual(expect.objectContaining({
+//       canAssignRole: true,
+//       canCorrectEmail: false,
+//       canDeactivate: true,
+//       canImpersonate: false,
+//       canResetPassword: false,
+//       canSetSysAdmin: false,
+//     }))
+//     expect(bandAdminOrdinaryCapabilities.assignableRoles).toEqual([
+//       {
+//         publicId: ordinaryRole.publicId,
+//         name: ordinaryRole.name,
+//         description: ordinaryRole.description,
+//         sortOrder: ordinaryRole.sortOrder,
+//         color: ordinaryRole.color,
+//         continuityWarnings: [],
+//       },
+//     ])
+//     expect(bandAdminOrdinaryCapabilities.assignableRoles[0]).not.toHaveProperty("permissions")
+//     expect(bandAdminOrdinaryCapabilities.assignableRoles[0]).not.toHaveProperty("isPublicRole")
+//
+//     const bandAdminProtectedCapabilities = await invokeResolver(
+//       getUserManagementCapabilities,
+//       { userId: protectedRoleUser.publicId },
+//       bandAdminCtx,
+//     )
+//     expect(bandAdminProtectedCapabilities).toEqual(expect.objectContaining({
+//       canAssignRole: false,
+//       canCorrectEmail: false,
+//       canDeactivate: true,
+//       canImpersonate: false,
+//       canResetPassword: false,
+//       canSetSysAdmin: false,
+//       assignableRoles: [],
+//     }))
+//
+//     const sysadminCapabilities = await invokeResolver(
+//       getUserManagementCapabilities,
+//       { userId: ordinaryUser.publicId },
+//       sysadminCtx,
+//     )
+//     expect(sysadminCapabilities).toEqual(expect.objectContaining({
+//       canAssignRole: true,
+//       canCorrectEmail: true,
+//       canDeactivate: true,
+//       canImpersonate: true,
+//       canResetPassword: true,
+//       canSetSysAdmin: true,
+//     }))
+//     expect(sysadminCapabilities.assignableRoles.map(role => role.publicId)).toEqual([
+//       ordinaryRole.publicId,
+//       protectedRole.publicId,
+//     ])
+//   })
+//
+//   it("does not give Moderator role-assignment authority", async () => {
+//     const { ctx } = createAuthorizationPersona("moderator", { id: moderator.id })
+//     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
+//
+//     expect(canManageUser({
+//       actor: asUserManagementActor(moderator),
+//       target: asUserManagementTarget(ordinaryUser),
+//       action: "assignRole",
+//       desiredRole: makePermissionSetFromRole(ordinaryRole),
+//     })).toBe(false)
+//     await expect(
+//       invokeResolver(
+//         db3Mutation,
+//         forgeDb3Update("User", ordinaryUser.id, {
+//           roleId: ordinaryRole.publicId,
+//         }),
+//         ctx,
+//       ),
+//     ).rejects.toThrow("Role was not found")
+//     await expect(
+//       invokeResolver(
+//         db3Mutation,
+//         forgeDb3Update("User", protectedRoleUser.id, {
+//           name: "Forbidden protected edit",
+//         }),
+//         ctx,
+//       ),
+//     ).resolves.toEqual(expect.objectContaining({ name: "Forbidden protected edit" }))
+//
+//     expect(update).toHaveBeenCalledTimes(1)
+//   })
+// })
+//
+// describe("BA-U002 delegated user administration", () => {
+//   const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
+//   const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 })
+//   const ordinaryUser = createAuthorizationTarget("ordinary", { id: 10 })
+//
+//   const makeRole = (id: number, name: string, permissions: string[]) => ({
+//     id,
+//     publicId: parsePublicId<"Role">(`AuthRole${id.toString().padStart(8, "0")}`),
+//     name,
+//     description: `${name} description`,
+//     isRoleForNewUsers: false,
+//     isPublicRole: false,
+//     sortOrder: id,
+//     color: null,
+//     significance: null,
+//     permissions: permissions.map((permission, index) => ({
+//       id: id * 100 + index,
+//       roleId: id,
+//       permissionId: id * 1000 + index,
+//       permission: {
+//         id: id * 1000 + index,
+//         name: permission,
+//       },
+//     })),
+//   })
+//
+//   const peerRole = makeRole(100, "Peer role", [
+//     Permission.login,
+//     Permission.view_users_basic_info,
+//     Permission.visibility_editors,
+//     Permission.manage_users,
+//     Permission.manage_user_taxonomy,
+//     Permission.deactivate_users,
+//     Permission.assign_user_roles,
+//   ])
+//   const ordinaryRole = makeRole(101, "Ordinary role", [
+//     Permission.login,
+//   ])
+//   const unheldRole = makeRole(102, "Unheld role", [Permission.manage_events])
+//   const protectedRole = makeRole(103, "Protected role", [Permission.sysadmin])
+//   const unknownRole = makeRole(104, "Unknown role", ["unknown_permission"])
+//
+//   beforeEach(() => {
+//     authorizationTestDb.reset({
+//       user: [sysadmin, bandAdmin, ordinaryUser],
+//       role: [peerRole, ordinaryRole, unheldRole, protectedRole, unknownRole],
+//       session: [],
+//       change: [],
+//     })
+//     vi.restoreAllMocks()
+//   })
+//
+//   it("uses permission composition rather than role identity or rank", () => {
+//     const actor = asUserManagementActor(bandAdmin)
+//     expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(peerRole))).toBe(true)
+//     expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(ordinaryRole))).toBe(true)
+//     expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(unheldRole))).toBe(false)
+//     expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(protectedRole))).toBe(false)
+//     expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(unknownRole))).toBe(false)
+//
+//     const targetOutsideEnvelope = {
+//       ...ordinaryUser,
+//       role: unheldRole,
+//       roleId: unheldRole.id,
+//     }
+//     expect(canManageUser({
+//       actor,
+//       target: asUserManagementTarget(targetOutsideEnvelope),
+//       action: "assignRole",
+//       desiredRole: makePermissionSetFromRole(ordinaryRole),
+//     })).toBe(false)
+//   })
+//
+//   it("assigns a peer-equivalent role, preserves target sessions, and logs only roleId", async () => {
+//     const peer = {
+//       ...createAuthorizationTarget("peerBandAdmin", { id: 11 }),
+//       roleId: peerRole.id,
+//       role: peerRole,
+//     }
+//     authorizationTestDb.reset({
+//       user: [bandAdmin, peer],
+//       role: [peerRole, ordinaryRole],
+//       session: [
+//         { id: 1, userId: bandAdmin.id },
+//         { id: 2, userId: peer.id },
+//       ],
+//       change: [],
+//     })
+//     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+//
+//     await invokeResolver(assignUserRole, {
+//       userId: peer.publicId,
+//       roleId: ordinaryRole.publicId,
+//       acknowledgeContinuityRisk: false,
+//     }, ctx)
+//
+//     expect(authorizationTestDb.snapshot("user")).toEqual(expect.arrayContaining([
+//       expect.objectContaining({ id: peer.id, roleId: ordinaryRole.id }),
+//     ]))
+//     expect(authorizationTestDb.snapshot("session")).toEqual([
+//       expect.objectContaining({ userId: bandAdmin.id }),
+//       expect.objectContaining({ userId: peer.id }),
+//     ])
+//     const change = authorizationTestDb.snapshot("change")[0]!
+//     expect(change).toEqual(expect.objectContaining({ table: "User", recordId: peer.id }))
+//     expect(change.oldValues).toBe(JSON.stringify({ roleId: peerRole.id }))
+//     expect(change.newValues).toBe(JSON.stringify({ roleId: ordinaryRole.id }))
+//   })
+//
+//   it.each([
+//     ["unheld", unheldRole],
+//     ["protected", protectedRole],
+//     ["unknown", unknownRole],
+//   ])("rejects a %s permission composition before mutation", async (_description, role) => {
+//     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
+//     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+//
+//     await expect(invokeResolver(assignUserRole, {
+//       userId: ordinaryUser.publicId,
+//       roleId: role.publicId,
+//       acknowledgeContinuityRisk: false,
+//     }, ctx)).rejects.toThrow("Not authorized to assignRole this user")
+//
+//     expect(update).not.toHaveBeenCalled()
+//   })
+//
+//   it("requires explicit acknowledgement before removing the last non-Sysadmin holder", async () => {
+//     const selfInPeerRole = { ...bandAdmin, roleId: peerRole.id, role: peerRole }
+//     authorizationTestDb.reset({
+//       user: [selfInPeerRole, ordinaryUser],
+//       role: [peerRole, ordinaryRole],
+//       session: [{ id: 1, userId: selfInPeerRole.id }],
+//       change: [],
+//     })
+//     const { ctx } = createAuthorizationPersona("bandAdmin", { id: selfInPeerRole.id })
+//
+//     expect(getContinuityWarningsForUserResult(
+//       asUserManagementTarget(selfInPeerRole),
+//       makePermissionSetFromRole(ordinaryRole),
+//       [selfInPeerRole, ordinaryUser].map(asUserManagementTarget),
+//     )).toEqual([Permission.deactivate_users, Permission.assign_user_roles])
+//
+//     await expect(invokeResolver(assignUserRole, {
+//       userId: selfInPeerRole.publicId,
+//       roleId: ordinaryRole.publicId,
+//       acknowledgeContinuityRisk: false,
+//     }, ctx)).rejects.toThrow(
+//       "CONTINUITY_ACKNOWLEDGEMENT_REQUIRED:deactivate_users,assign_user_roles",
+//     )
+//     expect(authorizationTestDb.snapshot("change")).toEqual([])
+//
+//     await invokeResolver(assignUserRole, {
+//       userId: selfInPeerRole.publicId,
+//       roleId: ordinaryRole.publicId,
+//       acknowledgeContinuityRisk: true,
+//     }, ctx)
+//     expect(authorizationTestDb.snapshot("user")).toEqual(expect.arrayContaining([
+//       expect.objectContaining({ id: selfInPeerRole.id, roleId: ordinaryRole.id }),
+//     ]))
+//     expect(authorizationTestDb.snapshot("session")).toEqual([{ id: 1, userId: selfInPeerRole.id }])
+//   })
+//
+//   it("does not warn when another active non-Sysadmin retains continuity permissions", async () => {
+//     const peer = { ...bandAdmin, id: 12, email: "peer@test.invalid" }
+//     const warnings = getContinuityWarningsForUserResult(
+//       asUserManagementTarget(bandAdmin),
+//       makePermissionSetFromRole(ordinaryRole),
+//       [bandAdmin, peer].map(asUserManagementTarget),
+//     )
+//     expect(warnings).toEqual([])
+//   })
+//
+//   it("applies the same continuity acknowledgement and session revocation to deactivation", async () => {
+//     authorizationTestDb.reset({
+//       user: [bandAdmin, ordinaryUser],
+//       session: [{ id: 1, userId: bandAdmin.id }],
+//       change: [],
+//     })
+//     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+//
+//     await expect(invokeResolver(deactivateUser, {
+//       userId: bandAdmin.publicId,
+//       acknowledgeContinuityRisk: false,
+//     }, ctx)).rejects.toThrow("CONTINUITY_ACKNOWLEDGEMENT_REQUIRED")
+//
+//     await invokeResolver(deactivateUser, {
+//       userId: bandAdmin.publicId,
+//       acknowledgeContinuityRisk: true,
+//     }, ctx)
+//     expect(authorizationTestDb.snapshot("user")).toEqual(expect.arrayContaining([
+//       expect.objectContaining({ id: bandAdmin.id, isDeleted: true }),
+//     ]))
+//     expect(authorizationTestDb.snapshot("session")).toEqual([])
+//   })
+//
+//   it("reserves the dedicated isSysAdmin mutation for a Sysadmin", async () => {
+//     const sessions = [{ id: 1, userId: ordinaryUser.id }, { id: 2, userId: sysadmin.id }]
+//     authorizationTestDb.getDelegate("session").reset(sessions)
+//     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
+//     const { ctx: bandAdminCtx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+//     const { ctx: sysadminCtx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+//
+//     await expect(invokeResolver(setUserSysAdmin, {
+//       userId: ordinaryUser.publicId,
+//       isSysAdmin: true,
+//     }, bandAdminCtx)).rejects.toThrow("Not authorized to setSysAdmin this user")
+//     expect(update).not.toHaveBeenCalled()
+//
+//     await invokeResolver(setUserSysAdmin, {
+//       userId: ordinaryUser.publicId,
+//       isSysAdmin: true,
+//     }, sysadminCtx)
+//     expect(authorizationTestDb.snapshot("user")).toEqual(expect.arrayContaining([
+//       expect.objectContaining({ id: ordinaryUser.id, isSysAdmin: true }),
+//     ]))
+//     expect(authorizationTestDb.snapshot("session")).toEqual(sessions)
+//   })
+//
+//   it("allows the Sysadmin maintenance grid to create an unprivileged user", async () => {
+//     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+//     const create = vi.spyOn(authorizationTestDb.getDelegate("user"), "create")
+//
+//     const result = await invokeResolver(
+//       db3Mutation,
+//       forgeDb3Insert("User", {
+//         name: "New unprivileged user",
+//         email: "new-user@test.invalid",
+//       }),
+//       ctx,
+//     )
+//
+//     expect(result).toEqual(expect.objectContaining({
+//       name: "New unprivileged user",
+//       email: "new-user@test.invalid",
+//     }))
+//     expect(create).toHaveBeenCalledWith({
+//       data: {
+//         name: "New unprivileged user",
+//         email: "new-user@test.invalid",
+//         publicId: expect.any(String),
+//       },
+//     })
+//   })
+//
+//   it("keeps visibility metadata writes behind the table's sysadmin grant", async () => {
+//     const ordinaryUser = createAuthorizationTestUser("normal", {
+//       id: 20,
+//       isSysAdmin: false,
+//       permissions: [Permission.login, Permission.manage_users],
+//     })
+//     const visibilityPermission = {
+//       id: 300,
+//       publicId: parsePublicId<"Permission">("AuthPerm00000300"),
+//       name: Permission.visibility_members,
+//       description: "Members",
+//       isVisibility: true,
+//       sortOrder: 1,
+//       significance: null,
+//       color: null,
+//       iconName: null,
+//     }
+//     authorizationTestDb.reset({
+//       user: [ordinaryUser],
+//       permission: [visibilityPermission],
+//     })
+//     const update = vi.spyOn(authorizationTestDb.getDelegate("permission"), "update")
+//     const { ctx } = createAuthorizationPersona("normal", {
+//       id: ordinaryUser.id,
+//       permissions: [Permission.login, Permission.manage_users],
+//     })
+//
+//     await expect(invokeResolver(
+//       db3Mutation,
+//       forgeDb3PublicUpdate("Permission", visibilityPermission.publicId, {
+//         description: "Forged",
+//       }, { tableName: "Permission" }),
+//       ctx,
+//     )).rejects.toThrow("Not authorized to mutate Permission fields")
+//     expect(update).not.toHaveBeenCalled()
+//   })
+// })
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/authorizationTestHarness.test.ts:1860-2135
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: b58044e39bb3534e84fd6574be28657b3f7af8a3816035e919e6f6a70c19e7cc
+// MIGRATION_REFERENCE_BEGIN
+// describe("BA-A004 association authorization", () => {
+//   const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
+//   const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 })
+//   const normal = createAuthorizationTestUser("normal", { id: 3 })
+//   const otherUser = createAuthorizationTestUser("normal", { id: 4 })
+//   const instrument = {
+//     id: 500,
+//     publicId: "AbCdEfGhIjKlMn50",
+//     name: "Trumpet",
+//     description: "",
+//     sortOrder: 1,
+//     functionalGroupId: 1,
+//     autoAssignFileLeafRegex: null,
+//   }
+//
+//   const ordinaryRole = {
+//     id: 100,
+//     publicId: parsePublicId<"Role">("AuthAssocRole100"),
+//     name: "Ordinary role",
+//     description: "",
+//     isRoleForNewUsers: false,
+//     isPublicRole: false,
+//     sortOrder: 10,
+//     color: null,
+//     significance: null,
+//   }
+//   const protectedRole = {
+//     ...ordinaryRole,
+//     id: 101,
+//     publicId: parsePublicId<"Role">("AuthAssocRole101"),
+//     name: "Protected role",
+//   }
+//   const ordinaryPermission = {
+//     id: 200,
+//     publicId: parsePublicId<"Permission">("AuthAssocPerm200"),
+//     name: Permission.manage_events,
+//     description: "",
+//     isVisibility: false,
+//     sortOrder: 10,
+//     significance: null,
+//     color: null,
+//     iconName: null,
+//   }
+//   const protectedPermissions = [
+//     { ...ordinaryPermission, id: 201, publicId: parsePublicId<"Permission">("AuthAssocPerm201"), name: Permission.sysadmin },
+//     { ...ordinaryPermission, id: 202, publicId: parsePublicId<"Permission">("AuthAssocPerm202"), name: Permission.impersonate_user },
+//     { ...ordinaryPermission, id: 203, publicId: parsePublicId<"Permission">("AuthAssocPerm203"), name: Permission.never_grant },
+//   ]
+//   const ordinaryRolePermission = {
+//     id: 300,
+//     publicId: parsePublicId<"RolePermission">("AuthAssocRP00300"),
+//     roleId: ordinaryRole.id,
+//     permissionId: ordinaryPermission.id,
+//   }
+//   const protectedRolePermission = {
+//     id: 301,
+//     publicId: parsePublicId<"RolePermission">("AuthAssocRP00301"),
+//     roleId: protectedRole.id,
+//     permissionId: protectedPermissions[0]!.id,
+//   }
+//
+//   beforeEach(() => {
+//     authorizationTestDb.reset({
+//       user: [sysadmin, bandAdmin, normal, otherUser],
+//       role: [ordinaryRole, protectedRole],
+//       permission: [ordinaryPermission, ...protectedPermissions],
+//       rolePermission: [ordinaryRolePermission, protectedRolePermission],
+//       instrument: [instrument],
+//       userInstrument: [],
+//       change: [],
+//     })
+//     vi.restoreAllMocks()
+//   })
+//
+//   it.each(protectedPermissions)(
+//     "atomically rejects Band Admin granting $name",
+//     async (protectedPermission) => {
+//       const roleUpdate = vi.spyOn(authorizationTestDb.getDelegate("role"), "update")
+//       const associationCreate = vi.spyOn(
+//         authorizationTestDb.getDelegate("rolePermission"),
+//         "create",
+//       )
+//       const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+//
+//       await expect(
+//         invokeResolver(
+//           db3Mutation,
+//           forgeDb3PublicUpdate("Role", ordinaryRole.publicId, {
+//             name: "Must remain unchanged",
+//             permissions: [ordinaryPermission.publicId, protectedPermission.publicId],
+//           }),
+//           ctx,
+//         ),
+//       ).rejects.toThrow("Not authorized to mutate Role fields")
+//
+//       expect(roleUpdate).not.toHaveBeenCalled()
+//       expect(associationCreate).not.toHaveBeenCalled()
+//       expect(authorizationTestDb.snapshot("role")).toEqual(
+//         expect.arrayContaining([
+//           expect.objectContaining({ id: ordinaryRole.id, name: ordinaryRole.name }),
+//         ]),
+//       )
+//       expect(authorizationTestDb.snapshot("rolePermission")).toEqual(
+//         expect.arrayContaining([ordinaryRolePermission]),
+//       )
+//     },
+//   )
+//
+//   it("rejects association changes on a protected role", async () => {
+//     const associationDelete = vi.spyOn(
+//       authorizationTestDb.getDelegate("rolePermission"),
+//       "deleteMany",
+//     )
+//     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+//
+//     await expect(
+//       invokeResolver(
+//         db3Mutation,
+//         forgeDb3PublicUpdate("Role", protectedRole.publicId, {
+//           permissions: [],
+//         }),
+//         ctx,
+//       ),
+//     ).rejects.toThrow("Not authorized to mutate Role fields")
+//
+//     expect(associationDelete).not.toHaveBeenCalled()
+//     expect(authorizationTestDb.snapshot("rolePermission")).toEqual(
+//       expect.arrayContaining([protectedRolePermission]),
+//     )
+//   })
+//
+//   it("blocks direct non-sysadmin RolePermission insert and delete mutations", async () => {
+//     const rolePermissionDelegate = authorizationTestDb.getDelegate("rolePermission")
+//     const create = vi.spyOn(rolePermissionDelegate, "create")
+//     const deleteMany = vi.spyOn(rolePermissionDelegate, "deleteMany")
+//     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+//
+//     await expect(
+//       invokeResolver(
+//         db3Mutation,
+//         forgeDb3Insert("RolePermission", {
+//           roleId: ordinaryRole.publicId,
+//           permissionId: protectedPermissions[0]!.publicId,
+//         }),
+//         ctx,
+//       ),
+//     ).rejects.toThrow("Permission was not found")
+//
+//     await expect(
+//       invokeResolver(
+//         db3Mutation,
+//         forgeDb3PublicDelete("RolePermission", protectedRolePermission.publicId),
+//         ctx,
+//       ),
+//     ).rejects.toThrow("Not authorized to mutate RolePermission fields")
+//
+//     expect(create).not.toHaveBeenCalled()
+//     expect(deleteMany).not.toHaveBeenCalled()
+//     expect(authorizationTestDb.snapshot("rolePermission")).toEqual(
+//       expect.arrayContaining([ordinaryRolePermission, protectedRolePermission]),
+//     )
+//   })
+//
+//   it("rejects an association-only update outside the caller's row scope", async () => {
+//     const associationDelegate = authorizationTestDb.getDelegate("userInstrument")
+//     const findMany = vi.spyOn(associationDelegate, "findMany")
+//     const create = vi.spyOn(associationDelegate, "create")
+//     const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
+//
+//     await expect(
+//       invokeResolver(
+//         db3Mutation,
+//         forgeDb3Update("User", otherUser.id, {
+//           instruments: [instrument.publicId],
+//         }),
+//         ctx,
+//       ),
+//     ).rejects.toThrow("Not authorized to mutate User fields: instruments")
+//
+//     expect(findMany).not.toHaveBeenCalled()
+//     expect(create).not.toHaveBeenCalled()
+//     expect(authorizationTestDb.snapshot("userInstrument")).toEqual([])
+//   })
+//
+//   it("awaits authorized association insertions and removals", async () => {
+//     const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
+//
+//     await invokeResolver(
+//       db3Mutation,
+//       forgeDb3Update("User", normal.id, {
+//         instruments: [instrument.publicId],
+//       }),
+//       ctx,
+//     )
+//     expect(authorizationTestDb.snapshot("userInstrument")).toEqual([
+//       expect.objectContaining({ userId: normal.id, instrumentId: 500 }),
+//     ])
+//
+//     await invokeResolver(
+//       db3Mutation,
+//       forgeDb3Update("User", normal.id, {
+//         instruments: [],
+//       }),
+//       ctx,
+//     )
+//     expect(authorizationTestDb.snapshot("userInstrument")).toEqual([])
+//     expect(authorizationTestDb.snapshot("change")).toEqual(
+//       expect.arrayContaining([
+//         expect.objectContaining({ table: "UserInstrument", action: "insert" }),
+//         expect.objectContaining({ table: "UserInstrument", action: "delete" }),
+//       ]),
+//     )
+//   })
+//
+//   it("authorizes and awaits associations supplied during an actual-Sysadmin insert", async () => {
+//     const { ctx } = createAuthorizationPersona("sysadmin", { id: 20 })
+//     const sysadminUser = createAuthorizationTestUser("sysadmin", { id: 20 })
+//     authorizationTestDb.reset({
+//       user: [sysadminUser],
+//       instrument: [instrument],
+//       userInstrument: [],
+//       change: [],
+//     })
+//
+//     const result = await invokeResolver(
+//       db3Mutation,
+//       forgeDb3Insert("User", {
+//         name: "User with instrument",
+//         email: "instrument@test.invalid",
+//         instruments: [instrument.publicId],
+//       }),
+//       ctx,
+//     ) as { publicId: string } // The client result exposes the new public identity.
+//
+//     expect(result).toEqual(expect.objectContaining({ publicId: expect.any(String) }))
+//     const insertedUser = authorizationTestDb.snapshot("user").find(user => user.publicId === result.publicId)
+//     expect(authorizationTestDb.snapshot("userInstrument")).toEqual([
+//       expect.objectContaining({ userId: insertedUser?.id, instrumentId: 500 }),
+//     ])
+//   })
+//
+//   it("allows sysadmin to add and remove role permissions", async () => {
+//     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+//     const sysadminPermission = protectedPermissions[0]!
+//
+//     await invokeResolver(
+//       db3Mutation,
+//       forgeDb3PublicUpdate("Role", ordinaryRole.publicId, {
+//         permissions: [ordinaryPermission.publicId, sysadminPermission.publicId],
+//       }),
+//       ctx,
+//     )
+//     expect(authorizationTestDb.snapshot("rolePermission")).toEqual(
+//       expect.arrayContaining([
+//         ordinaryRolePermission,
+//         expect.objectContaining({
+//           roleId: ordinaryRole.id,
+//           permissionId: sysadminPermission.id,
+//         }),
+//       ]),
+//     )
+//
+//     await invokeResolver(
+//       db3Mutation,
+//       forgeDb3PublicUpdate("Role", ordinaryRole.publicId, {
+//         permissions: [],
+//       }),
+//       ctx,
+//     )
+//     expect(authorizationTestDb.snapshot("rolePermission")).not.toEqual(
+//       expect.arrayContaining([
+//         expect.objectContaining({ roleId: ordinaryRole.id }),
+//       ]),
+//     )
+//   })
+// })
+// MIGRATION_REFERENCE_END

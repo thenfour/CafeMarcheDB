@@ -1854,3 +1854,92 @@ describe("DB3 named views", () => {
             .toThrow(`BandInstrument(${instrumentPublicId}).functionalGroupId`);
     });
 });
+
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:tests/authorization/db3Views.test.ts:172-250
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 6f0c652ea9f19dcb356b1eec932281240305da3824b61ac32ab1d44a544a6e39
+// MIGRATION_REFERENCE_BEGIN
+//     it("derives ordinary selections from DTO schemas and preserves explicit query additions", async () => {
+//         const context = {
+//             filter: { items: [] },
+//             auth: testServerAuthorization(null, new ServerPermissionSet([])),
+//         };
+//
+//         expect(db3.eventTypeEditorView.getSelectionArgs(context)).toEqual({
+//             select: {
+//                 publicId: true,
+//                 text: true,
+//                 description: true,
+//                 color: true,
+//                 sortOrder: true,
+//                 significance: true,
+//                 iconName: true,
+//                 isDeleted: true,
+//             },
+//         });
+//         expect(db3.frontpageGalleryItemEditorView.getSelectionArgs(context))
+//             .toMatchObject({
+//                 select: {
+//                     file: {
+//                         select: {
+//                             publicId: true,
+//                             fileLeafName: true,
+//                             storedLeafName: true,
+//                             externalURI: true,
+//                             sizeBytes: true,
+//                             mimeType: true,
+//                             customData: true,
+//                         },
+//                     },
+//                     createdByUser: { select: { id: true, name: true } },
+//                     visiblePermission: {
+//                         select: {
+//                             publicId: true,
+//                         },
+//                     },
+//                 },
+//             });
+//         expect(db3.roleEditorView.getSelectionArgs(context).select.permissions.orderBy)
+//             .toEqual([
+//                 { permission: { sortOrder: "asc" } },
+//                 { permission: { name: "asc" } },
+//                 { permission: { id: "asc" } },
+//             ]);
+//         expect(db3.wikiPageEditorView.getSelectionArgs(context).select.tags.orderBy)
+//             .toEqual([
+//                 { tag: { sortOrder: "asc" } },
+//                 { tag: { text: "asc" } },
+//             ]);
+//         expect(db3.eventTypeEditorView.getWhereClause(context)).toBeUndefined();
+//         expect(db3.songCreditUserView.getWhereClause(context)).toBeUndefined();
+//         expect(db3.permissionVisibilityView.getWhereClause(context)).toEqual({
+//             isVisibility: { equals: true },
+//             id: { in: [] },
+//         });
+//
+//         const permissionDto = db3.permissionVisibilityView.parseDto({
+//             publicId: permissionPublicId,
+//             name: Permission.visibility_public,
+//             description: "Public",
+//             descriptionStringPublicId: null,
+//             descriptionResolution: {
+//                 value: "Public", localeTag: "en-US", scope: "global", source: "stored", reason: "exact", requestedTag: "en-US",
+//             },
+//             sortOrder: 1,
+//             isVisibility: true,
+//             significance: null,
+//             color: "green",
+//             iconName: null,
+//         });
+//         expectTypeOf(permissionDto.name).toEqualTypeOf<string>();
+//         expectTypeOf(permissionDto.description).toEqualTypeOf<string | null>();
+//         expectTypeOf(permissionDto.isVisibility).toEqualTypeOf<boolean>();
+//
+//         expectTypeOf<db3.DbPayloadOf<typeof db3.eventTypeEditorView>>()
+//             .toMatchTypeOf<{ publicId: string; text: string }>();
+//     });
+// MIGRATION_REFERENCE_END

@@ -312,3 +312,369 @@ export const UserMassAnalysisTabContent = (_props: { user: EnrichedVerboseUser }
     const locale = useLocale();
     return <Alert severity="info">{locale.getPlainString("recovery.accountAnalysis.description")}</Alert>;
 };
+
+
+// MIGRATION_RESTORE: account-analysis
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/UserAnalyticTables.tsx:2-11
+// Reason: Account dependency analysis and comparison were disabled with the legacy merge readers.
+// Restore: Restore authorized dependency reports, risk summaries and two-account comparison with explicit account and band ownership.
+// Verification: Test dependency counts, visibility, comparison, merged/deleted accounts and the built analysis tab.
+// SHA256: 8a38563edf8532703e43fc5e7d24d20f1c77c20962dc377affaf3b3aef2c75f9
+// MIGRATION_REFERENCE_BEGIN
+// import { CompareArrows } from "@mui/icons-material";
+// import React from "react";
+// import { isAttendanceGoing } from "shared/eventAttendance";
+// import * as db3 from "src/core/db3/db3";
+// import getUserCredits from "../../db3/queries/getUserCredits";
+// import getUserEventAttendance from "../../db3/queries/getUserEventAttendance";
+// import getUserMassAnalysis from "../../db3/queries/getUserMassAnalysis";
+// import getUserWikiContributions from "../../db3/queries/getUserWikiContributions";
+// import { sortEvents } from "../../db3/shared/apiTypes";
+// import { getContentCountsRows, getParticipationCountsRows, getSummaryRows, getSystemCountsRows, getUserInfoRows, MassAnalysisDataRow } from "../../db3/shared/getUserMassAnalysisTypes";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: account-analysis
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/UserAnalyticTables.tsx:24-25
+// Reason: Account dependency analysis and comparison were disabled with the legacy merge readers.
+// Restore: Restore authorized dependency reports, risk summaries and two-account comparison with explicit account and band ownership.
+// Verification: Test dependency counts, visibility, comparison, merged/deleted accounts and the built analysis tab.
+// SHA256: 137800b46de7ae7f9287f8f004a5722e81191816a9eab06c08c13ac08c0c04a3
+// MIGRATION_REFERENCE_BEGIN
+// import { UserChip } from "./userChip";
+// import { AddUserButton } from "./UserComponents";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: account-analysis
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/UserAnalyticTables.tsx:315-640
+// Reason: Account dependency analysis and comparison were disabled with the legacy merge readers.
+// Restore: Restore authorized dependency reports, risk summaries and two-account comparison with explicit account and band ownership.
+// Verification: Test dependency counts, visibility, comparison, merged/deleted accounts and the built analysis tab.
+// SHA256: 8d387dd5a92512efe44676274d98bfca56e2c545c425c9c5ff59cd47ffaa0743
+// MIGRATION_REFERENCE_BEGIN
+// type UserMassAnalysisTabContentProps = {
+//     user: EnrichedVerboseUser;
+// };
+//
+// export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProps) => {
+//     const [qr, refetch] = useQuery(getUserMassAnalysis, { userId: props.user.publicId });
+//     const [compareWithUser, setCompareWithUser] = React.useState<db3.UserClientPayload | null>(null);
+//     const [compareQr, refetchCompare] = useQuery(getUserMassAnalysis, { userId: compareWithUser?.publicId ?? props.user.publicId }, { enabled: !!compareWithUser });
+//
+//     const getRiskColor = (level: 'low' | 'medium' | 'high') => {
+//         switch (level) {
+//             case 'low': return '#28a745';
+//             case 'medium': return '#ffc107';
+//             case 'high': return '#dc3545';
+//         }
+//     };
+//
+//     const renderDataRow = (row: MassAnalysisDataRow) => {
+//         if (row.isBooleanValue) {
+//             return <span>{row.displayValue || (row.value ? 'Yes' : 'No')}</span>;
+//         }
+//         if (row.isDateValue) {
+//             return <span>{row.displayValue || (row.value ? new Date(row.value).toLocaleDateString() : 'Never')}</span>;
+//         }
+//         if (row.displayValue) {
+//             return <span>{row.displayValue}</span>;
+//         }
+//         return <span>{row.value.toLocaleString()}</span>;
+//     };
+//
+//     const renderCompareDataRow = (row: MassAnalysisDataRow) => {
+//         if (row.isBooleanValue) {
+//             return <span>{row.compareDisplayValue || (row.compareValue ? 'Yes' : 'No')}</span>;
+//         }
+//         if (row.isDateValue) {
+//             return <span>{row.compareDisplayValue || (row.compareValue ? new Date(row.compareValue).toLocaleDateString() : 'Never')}</span>;
+//         }
+//         if (row.compareDisplayValue) {
+//             return <span>{row.compareDisplayValue}</span>;
+//         }
+//         return <span>{(row.compareValue || 0).toLocaleString()}</span>;
+//     };
+//
+//     // Get typed data rows
+//     const summaryRows = getSummaryRows(qr, compareQr);
+//     const contentRows = getContentCountsRows(qr.contentCounts, compareQr?.contentCounts);
+//     const participationRows = getParticipationCountsRows(qr.participationCounts, compareQr?.participationCounts);
+//     const systemRows = getSystemCountsRows(qr.systemCounts, compareQr?.systemCounts);
+//     const userInfoRows = getUserInfoRows(qr.userInfo, compareQr?.userInfo);
+//
+//     // Calculate totals for conditional rendering using strongly-typed approach
+//     const totalContentItems = qr.contentCounts.createdSongs + qr.contentCounts.createdEvents +
+//         qr.contentCounts.createdWikiPages + qr.contentCounts.createdGalleryItems +
+//         qr.contentCounts.uploadedFiles + qr.contentCounts.createdMenuLinks +
+//         qr.contentCounts.createdCustomLinks + qr.contentCounts.songCredits +
+//         qr.contentCounts.setlistPlans + qr.contentCounts.wikiPageRevisions;
+//
+//     const totalParticipationItems = qr.participationCounts.eventResponses + qr.participationCounts.eventSegmentResponses +
+//         qr.participationCounts.taggedFiles + qr.participationCounts.instruments +
+//         qr.participationCounts.userTags;
+//
+//     const totalSystemItems = qr.systemCounts.actions + qr.systemCounts.sessions +
+//         qr.systemCounts.tokens + qr.systemCounts.changes;
+//
+//     return <div className="UserMassAnalysisTabContent">
+//         <AdminInspectObject src={qr} label="mass analysis" />
+//         {compareQr && <AdminInspectObject src={compareQr} label="comparison" />}
+//
+//         <div style={{ display: 'flex', alignItems: 'center', margin: 10, gap: 10 }}>
+//             <AddUserButton
+//                 onSelect={setCompareWithUser}
+//                 buttonChildren={<><CompareArrows /> Compare with user...</>}
+//                 title={"Compare with user"}
+//             />
+//             <UserChip value={compareWithUser} />
+//             {compareWithUser && (
+//                 <span style={{
+//                     fontSize: '12px',
+//                     color: '#28a745',
+//                     fontWeight: 'bold',
+//                     backgroundColor: '#e7f5e7',
+//                     padding: '4px 8px',
+//                     borderRadius: '4px'
+//                 }}>
+//                     Comparison mode active
+//                 </span>
+//             )}
+//         </div>
+//
+//         {/* Risk Assessment */}
+//         <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
+//             <div style={{
+//                 flex: 1,
+//                 minWidth: '300px',
+//                 padding: '15px',
+//                 border: `2px solid ${getRiskColor(qr.riskAssessment.riskLevel)}`,
+//                 borderRadius: '8px',
+//                 backgroundColor: `${getRiskColor(qr.riskAssessment.riskLevel)}20`
+//             }}>
+//                 <h3 style={{ color: getRiskColor(qr.riskAssessment.riskLevel), margin: '0 0 10px 0' }}>
+//                     {props.user.name}: {qr.riskAssessment.riskLevel.toUpperCase()}
+//                 </h3>
+//                 <div style={{ marginBottom: '10px' }}>
+//                     <strong>Safe to Delete:</strong> {qr.riskAssessment.safeToDelete ? '✅ Yes' : '❌ No'}
+//                 </div>
+//
+//                 {qr.riskAssessment.blockers.length > 0 && (
+//                     <div style={{ marginBottom: '10px' }}>
+//                         <strong>Blockers:</strong>
+//                         <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+//                             {qr.riskAssessment.blockers.map((blocker, index) => (
+//                                 <li key={index} style={{ color: '#dc3545' }}>{blocker}</li>
+//                             ))}
+//                         </ul>
+//                     </div>
+//                 )}
+//
+//                 {qr.riskAssessment.warnings.length > 0 && (
+//                     <div>
+//                         <strong>Warnings:</strong>
+//                         <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+//                             {qr.riskAssessment.warnings.map((warning, index) => (
+//                                 <li key={index} style={{ color: '#856404' }}>{warning}</li>
+//                             ))}
+//                         </ul>
+//                     </div>
+//                 )}
+//             </div>
+//
+//             {compareWithUser && compareQr && (
+//                 <div style={{
+//                     flex: 1,
+//                     minWidth: '300px',
+//                     padding: '15px',
+//                     border: `2px solid ${getRiskColor(compareQr.riskAssessment.riskLevel)}`,
+//                     borderRadius: '8px',
+//                     backgroundColor: `${getRiskColor(compareQr.riskAssessment.riskLevel)}20`
+//                 }}>
+//                     <h3 style={{ color: getRiskColor(compareQr.riskAssessment.riskLevel), margin: '0 0 10px 0' }}>
+//                         {compareWithUser.name}: {compareQr.riskAssessment.riskLevel.toUpperCase()}
+//                     </h3>
+//                     <div style={{ marginBottom: '10px' }}>
+//                         <strong>Safe to Delete:</strong> {compareQr.riskAssessment.safeToDelete ? '✅ Yes' : '❌ No'}
+//                     </div>
+//
+//                     {compareQr.riskAssessment.blockers.length > 0 && (
+//                         <div style={{ marginBottom: '10px' }}>
+//                             <strong>Blockers:</strong>
+//                             <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+//                                 {compareQr.riskAssessment.blockers.map((blocker, index) => (
+//                                     <li key={index} style={{ color: '#dc3545' }}>{blocker}</li>
+//                                 ))}
+//                             </ul>
+//                         </div>
+//                     )}
+//
+//                     {compareQr.riskAssessment.warnings.length > 0 && (
+//                         <div>
+//                             <strong>Warnings:</strong>
+//                             <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+//                                 {compareQr.riskAssessment.warnings.map((warning, index) => (
+//                                     <li key={index} style={{ color: '#856404' }}>{warning}</li>
+//                                 ))}
+//                             </ul>
+//                         </div>
+//                     )}
+//                 </div>
+//             )}
+//         </div>
+//
+//         {/* Summary Statistics */}
+//         <div style={{ marginTop: '20px' }}>
+//             <h4>Summary Statistics</h4>
+//             <CMTable
+//                 rows={summaryRows}
+//                 columns={[
+//                     {
+//                         header: "Metric",
+//                         memberName: "label",
+//                         render: (row) => <span>{row.row.label}</span>,
+//                     },
+//                     {
+//                         header: compareWithUser ? `${props.user.name} Value` : "Value",
+//                         memberName: "value",
+//                         render: (row) => renderDataRow(row.row),
+//                         valueBar: {
+//                             getValue: (row) => row.isBooleanValue || row.isDateValue ? 0 : row.value,
+//                         },
+//                     },
+//                     ...(compareWithUser && compareQr ? [{
+//                         header: `${compareWithUser.name} Value`,
+//                         memberName: "compareValue" as const,
+//                         render: (row) => renderCompareDataRow(row.row),
+//                         valueBar: {
+//                             getValue: (row) => row.isBooleanValue || row.isDateValue ? 0 : (row.compareValue || 0),
+//                         },
+//                     }] : [])
+//                 ]}
+//             />
+//         </div>
+//
+//         {/* Content Creation Details */}
+//         {totalContentItems > 0 && (
+//             <div style={{ marginTop: '20px' }}>
+//                 <h4>Content Created</h4>
+//                 <CMTable
+//                     rows={contentRows}
+//                     columns={[
+//                         {
+//                             header: "Content Type",
+//                             memberName: "label",
+//                             render: (row) => <span>{row.row.label}</span>,
+//                         },
+//                         {
+//                             header: compareWithUser ? `${props.user.name} Count` : "Count",
+//                             memberName: "value",
+//                             render: (row) => renderDataRow(row.row),
+//                             valueBar: {
+//                                 getValue: (row) => row.value,
+//                             },
+//                         },
+//                         ...(compareWithUser && compareQr ? [{
+//                             header: `${compareWithUser.name} Count`,
+//                             memberName: "compareValue" as const,
+//                             render: (row) => renderCompareDataRow(row.row),
+//                             valueBar: {
+//                                 getValue: (row) => row.compareValue || 0,
+//                             },
+//                         }] : [])
+//                     ]}
+//                 />
+//             </div>
+//         )}
+//
+//         {/* Participation Details */}
+//         {totalParticipationItems > 0 && (
+//             <div style={{ marginTop: '20px' }}>
+//                 <h4>Participation & Engagement</h4>
+//                 <CMTable
+//                     rows={participationRows}
+//                     columns={[
+//                         {
+//                             header: "Participation Type",
+//                             memberName: "label",
+//                             render: (row) => <span>{row.row.label}</span>,
+//                         },
+//                         {
+//                             header: compareWithUser ? `${props.user.name} Count` : "Count",
+//                             memberName: "value",
+//                             render: (row) => renderDataRow(row.row),
+//                             valueBar: {
+//                                 getValue: (row) => row.value,
+//                             },
+//                         },
+//                         ...(compareWithUser && compareQr ? [{
+//                             header: `${compareWithUser.name} Count`,
+//                             memberName: "compareValue" as const,
+//                             render: (row) => renderCompareDataRow(row.row),
+//                             valueBar: {
+//                                 getValue: (row) => row.compareValue || 0,
+//                             },
+//                         }] : [])
+//                     ]}
+//                 />
+//             </div>
+//         )}
+//
+//         {/* System Data */}
+//         {totalSystemItems > 0 && (
+//             <div style={{ marginTop: '20px' }}>
+//                 <h4>System Data</h4>
+//                 <CMTable
+//                     rows={systemRows}
+//                     columns={[
+//                         {
+//                             header: "System Item",
+//                             memberName: "label",
+//                             render: (row) => <span>{row.row.label}</span>,
+//                         },
+//                         {
+//                             header: compareWithUser ? `${props.user.name} Count` : "Count",
+//                             memberName: "value",
+//                             render: (row) => renderDataRow(row.row),
+//                             valueBar: {
+//                                 getValue: (row) => row.value,
+//                             },
+//                         },
+//                         ...(compareWithUser && compareQr ? [{
+//                             header: `${compareWithUser.name} Count`,
+//                             memberName: "compareValue" as const,
+//                             render: (row) => renderCompareDataRow(row.row),
+//                             valueBar: {
+//                                 getValue: (row) => row.compareValue || 0,
+//                             },
+//                         }] : [])
+//                     ]}
+//                 />
+//             </div>
+//         )}
+//
+//         {/* User Info */}
+//         <div style={{ marginTop: '20px' }}>
+//             <h4>User Information</h4>
+//             <CMTable
+//                 rows={userInfoRows}
+//                 columns={[
+//                     {
+//                         header: "Property",
+//                         memberName: "label",
+//                         render: (row) => <span>{row.row.label}</span>,
+//                     },
+//                     {
+//                         header: compareWithUser ? `${props.user.name}` : "Value",
+//                         memberName: "value",
+//                         render: (row) => renderDataRow(row.row),
+//                     },
+//                     ...(compareWithUser && compareQr ? [{
+//                         header: `${compareWithUser.name}`,
+//                         memberName: "compareValue" as const,
+//                         render: (row) => renderCompareDataRow(row.row),
+//                     }] : [])
+//                 ]}
+//             />
+//         </div>
+//     </div>;
+// };
+// MIGRATION_REFERENCE_END

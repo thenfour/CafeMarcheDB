@@ -15,6 +15,8 @@ import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { bandMemberHref, withMemberPresentation } from "./bandMemberLinks";
 
+// Search parity reference: MIGRATION_RESTORE: directory-search in src/pages/backstage/users.tsx.
+
 function BandMemberListItem({ member, roles }: { readonly member: BandUserProfileDto; readonly roles: readonly BandRoleDto[] }) {
     const dashboard = useDashboardContext();
     const context = useDB3QueryContext();

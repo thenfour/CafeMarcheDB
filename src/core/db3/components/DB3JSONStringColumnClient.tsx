@@ -691,3 +691,133 @@ export class JSONStringColumnClient extends DB3ClientCore.IColumnClient {
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => <div>(unsupported render style)</div>;
 };
+
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/components/DB3JSONStringColumnClient.tsx:185-217
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: fe9bb1583ea4ce0e2dd74bb051b22cf7f505c6d2cb8831fec1f505577d2f7eb0
+// MIGRATION_REFERENCE_BEGIN
+// const ActivityLogPermission = ({ permissionId, cacheData }: { permissionId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
+//     const dashboardContext = useDashboardContext();
+//     const found = db3.xPermission.isIdentity(permissionId)
+//         ? dashboardContext.permission.getById(db3.xPermission.parseIdentity(permissionId))
+//         : undefined;
+//     if (!found) {
+//         return <ActivityLogChip><Id value={permissionId} /></ActivityLogChip>;
+//     }
+//     return <ActivityLogChip
+//         color={found.color}
+//     >
+//         {found.name}
+//     </ActivityLogChip>;
+// };
+//
+// const ActivityLogRole = ({ roleId, cacheData }: { roleId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
+//     const dashboardContext = useDashboardContext();
+//     const found = db3.xRole.isIdentity(roleId)
+//         ? dashboardContext.role.getById(db3.xRole.parseIdentity(roleId))
+//         : undefined;
+//     if (!found) {
+//         return <ActivityLogChip><Id value={roleId} /></ActivityLogChip>;
+//     }
+//     return <ActivityLogChip
+//         color={found.color}
+//     >
+//         {found.name}
+//     </ActivityLogChip>;
+// };
+//
+// const ActivityLogUserTag = ({ userTagId, cacheData }: { userTagId: number | string | null | undefined, cacheData: ActivityLogCacheData }) => {
+//     const dashboardContext = useDashboardContext();
+//     const found = db3.xBandUserTag.isIdentity(userTagId)
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/components/DB3JSONStringColumnClient.tsx:515-592
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 020fd71e3ae5445cce4f1b7aa355e2bb365199b0662c82afb6bad1eb709f1c7a
+// MIGRATION_REFERENCE_BEGIN
+// const ActivityLogKeyValueTable = ({ value, cacheData, tableName }: ActivityLogValueViewerProps<HistoricalAuditValue>) => {
+//     const IsMarkdownField = (key: string, value: unknown) => {
+//         return (typeof (value) === "string") && /comment|description|markdown/i.test(key);
+//     };
+//
+//     // Helper function to render value or component based on key
+//     const renderValue = (key: string, value: HistoricalAuditValue) => {
+//         switch (key.toLowerCase()) {
+//             case 'eventid':
+//                 return <ActivityLogEvent eventId={value} cacheData={cacheData} />;
+//             case 'eventtagid':
+//                 return <ActivityLogEventTag eventTagId={value} cacheData={cacheData} />;
+//             case 'eventstatusid':
+//                 return <ActivityLogEventStatus eventStatusId={value} cacheData={cacheData} />;
+//             case 'eventsegmentid':
+//                 return <ActivityLogEventSegment eventSegmentId={value} cacheData={cacheData} />;
+//             case 'createdbyuserid':
+//             case 'userid':
+//                 return <ActivityLogUserChip userId={value} cacheData={cacheData} />;
+//             case 'statusid':
+//                 return <ActivityLogEventStatus eventStatusId={value} cacheData={cacheData} />;
+//             case 'typeid':
+//                 return <ActivityLogEventType eventTypeId={value} cacheData={cacheData} />;
+//             case 'attendanceid':
+//                 return <ActivityLogAttendance attendanceId={value} cacheData={cacheData} />;
+//             case 'visiblepermissionid':
+//             case 'permissionid':
+//                 return <ActivityLogPermission permissionId={value} cacheData={cacheData} />;
+//             case 'roleid':
+//                 return <ActivityLogRole roleId={value} cacheData={cacheData} />;
+//             case 'expectedattendanceusertagid':
+//             case 'usertagid':
+//                 return <ActivityLogUserTag userTagId={value} cacheData={cacheData} />;
+//             case 'songid':
+//                 return <ActivityLogSong songId={value} cacheData={cacheData} />;
+//             case 'instrumentid':
+//                 return <ActivityLogInstrument instrumentId={value} cacheData={cacheData} />;
+//             case 'tagid':
+//                 {
+//                     switch (tableName.toLowerCase()) {
+//                         case 'songtagassociation':
+//                             return <ActivityLogSongTag songTagId={value} cacheData={cacheData} />;
+//                         default:
+//                             return <span>{JSON.stringify(value, null, 2)}</span>;
+//                     }
+//                 }
+//         }
+//         if (IsMarkdownField(key, value)) {
+//             return <ActivityLogMarkdownValue value={value} />
+//         }
+//         return <span>{JSON.stringify(value, null, 2)}</span>;
+//     };
+//
+//     if (value === null) return <div className="ActivityLogKeyValueTable">null</div>;
+//     if (value === undefined) return <div className="ActivityLogKeyValueTable">undefined</div>;
+//
+//     // a simple scalar value?
+//     if (typeof value !== "object") {
+//         return <div className="ActivityLogKeyValueTable">
+//             {/* <Toolbar value={value} /> */}
+//             <pre>{JSON.stringify(value, null, 2)}</pre>
+//         </div>;
+//     }
+//
+//     return (
+//         <div className="ActivityLogKeyValueTable">
+//             {/* <Toolbar value={value} /> */}
+//             {Object.entries(value).map(([key, val], index) => (
+//                 // use chip container to make the chips inline
+//                 <CMChipContainer key={index} style={{ flexWrap: "nowrap" }}>
+//                     {key}: {renderValue(key, val)}
+//                 </CMChipContainer>
+//             ))}
+//         </div>
+//     );
+//
+//
+// };
+// MIGRATION_REFERENCE_END

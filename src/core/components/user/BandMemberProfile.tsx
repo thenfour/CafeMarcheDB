@@ -1,3 +1,4 @@
+// Profile parity references: MIGRATION_RESTORE: member-profile in the backstage profile and user detail pages.
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from "@mui/material";

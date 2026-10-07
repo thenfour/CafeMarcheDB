@@ -5,6 +5,12 @@ shared-account merge dependencies are now isolated. **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
 
+Removed implementations and behavioral tests are now preserved as searchable
+source references under the [feature-preservation procedure](13-feature-preservation.md).
+The reference inventory and checksums protect that baseline; restoration still
+requires executable tests and browser evidence. No recovery gate is closed by
+preserving source alone.
+
 ## Restored boundary
 
 - Current-account loading returns shared identity/contact fields, with no role
@@ -33,7 +39,7 @@ restriction register.
   and band role authorization and membership role assignment are preserved.
 - Retired role assignment/designation, merge search/preview/commit, and account
   dependency-analysis RPCs require login and explicitly reject before database
-  access. Their obsolete implementations are removed. Role-administration URLs
+  access. Their obsolete implementations are disabled and preserved in source. Role-administration URLs
   and the dependency-analysis tab display registered localized explanations;
   merge controls are removed and capability responses advertise neither merge
   nor account-role assignment.
@@ -57,6 +63,8 @@ production server could not be checked because the normal build still fails.
 
 | Check | Result |
 | --- | --- |
+| Source preservation and Git provenance | Passed: 130 references in 98 files. All 4,509 removed lines in the 67 pending code/test files are covered. 57 active files retain identical executable syntax; 39 reference modules contain only an empty export. Existing staging is unchanged. |
+| Preservation safeguards, temporary RPC boundaries, member/page contracts and DOM regression | Passed: 108 tests across ten active files, including 23 preservation checks. Nine wholly disabled specifications are retained separately; eight are under the runner's default `tests/` directory. |
 | Recovery RPC/registration boundaries, table authorization, account/bootstrap and membership role/lifecycle contracts | Passed: 66 tests across six files. A strict database proxy rejects any access from deferred RPCs. |
 | Account/bootstrap, membership contracts/pages/editors and suspended presentation navigation | Passed: 67 tests across ten files. |
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
@@ -64,17 +72,16 @@ production server could not be checked because the normal build still fails.
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
 | `yarn typecheck` | Fails: 531 diagnostics, down from 641 at the start of the Role/merge slice. No compiler exclusions or error suppression added. |
 | `yarn build` | Gets past the obsolete Role implementation; fails at legacy `fieldCaption` in `src/core/components/CustomLinksComponents.tsx:56`. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 297 failed, 1,221 passed, 94 skipped. No new failing test names against the earlier 343-failure baseline. Later isolated DOM batches are not reached; focused DOM checks above passed. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 297 failed, 1,244 passed, 94 skipped. The same failure groups remain as before source preservation; the 23 new safeguard tests pass. Later isolated DOM batches are not reached; focused DOM checks above passed. |
 
-The Role/merge slice began with 343 full-run Node failures. Tests of the retired
-single-band Role editor, designation mutations, association commands and merge
-policies/native transaction/picker were removed alongside their implementations.
-They are replaced by explicit RPC rejection, crafted generic-write rejection,
-registration-absence and preserved membership-command checks. Generic command,
-authorization and pure management-policy tests remain; this is not a blanket skip
-of deferred failures. Permission-view fixtures retain the explicit localized-string
-resolution contract, and dashboard DTO/hydration/isolation checks run on native
-migrated catalog/membership readers.
+The Role/merge slice began with 343 full-run Node failures. The original Role
+editor/designation/association and merge policy/native transaction/picker tests
+are preserved as commented specifications. Partially affected test files retain
+their active cases. Explicit RPC rejection, crafted generic-write rejection,
+registration-absence and preserved membership-command checks verify the temporary
+boundary; they do not establish feature parity. Permission-view fixtures retain
+the explicit localized-string resolution contract, and dashboard DTO/hydration/
+isolation checks run on native migrated catalog/membership readers.
 
 Focused tests use the repository runner, `yarn test <test paths> --reporter=dot`.
 Native tests set `CMDB_PHASE2_TEST_DATABASE_URL` to a private disposable database.

@@ -42,3 +42,18 @@ the test. `tests/testEnvironment.test.ts` enforces the environment boundary.
 Some authorization tests intentionally exercise rejected requests and write the
 expected errors to stderr. Judge the run by its final Vitest summary and exit
 code, not by the presence of those messages.
+
+## Migration reference specifications
+
+The localization/multiband migration temporarily preserves disabled feature
+tests as line-commented source. A wholly disabled file starts with
+`// MIGRATION_DEFERRED_TEST` and contains only comments and `export {};`.
+The runner verifies source checksums and the inventory, rejects executable code
+under that marker, and reports those files separately from executed tests.
+Selecting only preserved specifications fails because no executable tests ran.
+Partially preserved files continue to run their active cases normally.
+
+Use `yarn migration:status` to inspect pending features and `yarn migration:verify`
+to check preservation. `yarn migration:check` is the final migration completion
+gate and intentionally fails until restoration/retirement evidence is recorded.
+See the [preservation procedure](localization-multitenancy/13-feature-preservation.md).

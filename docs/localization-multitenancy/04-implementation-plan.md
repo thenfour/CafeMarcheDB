@@ -11,7 +11,7 @@ build/startup blocker or enables a named core workflow.
 | --- | --- |
 | **A0: runnable and manually testable** | Normal typecheck/build pass. The app starts against disposable migrated data. Login, dashboard, explicit band selection, and an existing migrated page work in a browser. Deferred surfaces are coherently unavailable. |
 | **A1: core workflows restored** | Everyday member, event/invitation/attendance, song, and associated-file workflows work end to end, including their required non-page endpoints. Isolation is verified, required checks pass, and remaining restrictions are explicit. |
-| **B: localization and multiband complete** | Full portal routing, administration/lifecycle, translation tooling and agreed coverage work together. Remaining restrictions are restored or explicitly accepted for retirement. |
+| **B: localization and multiband complete** | Full portal routing, administration/lifecycle, translation tooling and agreed coverage work together. Remaining restrictions are restored or explicitly accepted for retirement. `yarn migration:check` passes with verification/retirement evidence recorded. |
 
 A0 and A1 have not been achieved. The SQL migration and focused domain checks
 establish useful foundations, not application readiness. A0 is a development
@@ -46,7 +46,7 @@ Work in this order, adjusting the next slice to the actual blocker found:
    references to the target model. Fix shared contracts before treating cascading
    consumer errors as independent tasks. Extend infrastructure only when a
    concrete consumer needs it.
-3. **Isolate deferred surfaces.** Repair or temporarily remove obsolete
+3. **Isolate deferred surfaces.** Repair or temporarily disable obsolete
    implementation dependencies, including imports, registrations, routes, RPC
    exposure, and startup/jobs. Deferred source modules themselves must not leave
    compilation broken. Show intentional unavailability where users can reach a
@@ -54,6 +54,10 @@ Work in this order, adjusting the next slice to the actual blocker found:
    dependency. Keep normal compiler/build settings and the target schema; do not
    restore obsolete models, add broad compatibility shims, narrow compiler
    coverage, or suppress errors to manufacture a passing build.
+   Preserve disabled implementations and behavioral tests as searchable
+   `MIGRATION_RESTORE` source references in the same change, following the
+   [feature-preservation procedure](13-feature-preservation.md). This also applies
+   when a working replacement supports only part of the old behavior.
 4. **Restore the minimum browser path.** Verify account login, dashboard loading,
    an explicit authorized band selection, navigation, and an existing migrated
    page against disposable migrated production data. Use seeded role definitions
@@ -74,10 +78,12 @@ RPC/API implementations, and source dependencies still require isolation.
 See [current recovery evidence](09-application-recovery.md).
 
 The obsolete single-band Role tables, views, commands, dashboard metadata, and
-account controls are removed. Their assignment/designation RPCs reject without
+account controls are disabled, with their source and tests preserved as searchable
+references. Their assignment/designation RPCs reject without
 database access, and the role-administration URLs show intentional unavailability.
 Shared-account merge lookup/preview/commit and dependency reports are likewise
-unavailable; their obsolete implementations and controls are removed. Existing
+unavailable; their implementations, controls and behavioral tests are preserved
+as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
@@ -145,10 +151,12 @@ the order of unfinished work, not ownership or authorization policy.
 
 This table is the single register for temporary delivery restrictions. Add any
 surface isolated during A0, with its user-visible behavior and restoration gate.
+The [source preservation inventory](13-feature-preservation.md) records the exact
+implementation/test references and verification obligations for audited removals.
 
 | Surface | Current boundary | Required follow-up |
 | --- | --- | --- |
-| `LocalizedMarkdown` | Resolved rendering is available; legacy inline editing is removed. | Scoped translation/Markdown editing after A1. |
+| `LocalizedMarkdown` | Resolved rendering is available; legacy inline editing is disabled and preserved in source. | Scoped translation/Markdown editing after A1. |
 | Settings writes | Generic DB3 mutations reject settings hives; registered commands enforce per-key policy. | Adapt any editor needed by a core workflow through the registered API; broader editors after A1. |
 | Translation tools | Native catalog controls can edit explicit translations; full inventory/inspection/chrome tooling is incomplete. | Complete after A1. |
 | Portal routing | Recovery uses explicit `?bandPublicId=<publicId>` and optional `routeLocale`; omission never selects a default band. | Full routing after A1; retain enough explicit selection for A0. |
@@ -157,7 +165,7 @@ surface isolated during A0, with its user-visible behavior and restoration gate.
 | Platform role administration | Legacy Role descriptors, views, commands and account role controls are removed. Assignment/designation RPCs reject before database access; `/backstage/roles` and `/backstage/rolePermissions` explain unavailability. Existing global/band role definitions still authorize requests; membership role assignment remains available. | Build GlobalRole/BandRole and permission editors after A1. |
 | Shared-account merging and dependency reports | Merge search, preview, commit and dependency-analysis RPCs explicitly reject without database access. Merge controls and obsolete person-level merge policies are removed; the analysis tab explains unavailability. Capability responses do not advertise merge or account-role assignment. | Restore cross-band account workflows after A1 with complete ownership-aware policies. |
 | Other shared-account/platform administration | Band grants cannot authorize shared-account or global-catalog writes; remaining legacy consumers need adaptation or isolation. | Finish isolation during A0; complete broader workflows after A1. |
-| Catalog/demo seeds | Production seeds initialize access control. Unused demo generators that referenced removed models are deleted. | Restore only seed data needed by a named acceptance path before A1. |
+| Catalog/demo seeds | Production seeds initialize access control. Old demo generators are preserved as disabled source. | Restore seed data needed by a named acceptance path before A1; account for remaining generators at B, with explicit approval for retirement. |
 | Legacy synchronous band guards | `resolver.authorize` rejects band capabilities. | Required callers use fresh request authorization and loaded resource ownership. |
 
 ## Verification and cutover

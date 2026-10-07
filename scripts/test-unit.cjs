@@ -4,6 +4,7 @@
 const fs = require("node:fs")
 const path = require("node:path")
 const { spawnSync } = require("node:child_process")
+const { inspectRestoration } = require("./lib/migration-restoration.cjs")
 
 const projectRoot = path.resolve(__dirname, "..")
 const testsRoot = path.join(projectRoot, "tests")
@@ -62,11 +63,27 @@ function filesForSelector(selector) {
   return allTestFiles.filter(file => relativeTestPath(file).includes(normalizedSelector))
 }
 
-const selectedTestFiles = selectors.length === 0
+const requestedTestFiles = selectors.length === 0
   ? allTestFiles
   : [...new Set(selectors.flatMap(filesForSelector))].sort()
 
-if (selectedTestFiles.length === 0) fail(`No test files matched: ${selectors.join(", ")}`)
+if (requestedTestFiles.length === 0) fail(`No test files matched: ${selectors.join(", ")}`)
+
+let deferredTestFiles
+try {
+  // Missing or damaged references fail even when the selected tests are unrelated.
+  deferredTestFiles = new Set(inspectRestoration(projectRoot).deferredTestFiles)
+} catch (error) {
+  fail(error.message)
+}
+const preservedTestFiles = requestedTestFiles.filter(file => deferredTestFiles.has(relativeTestPath(file)))
+const selectedTestFiles = requestedTestFiles.filter(file => !deferredTestFiles.has(relativeTestPath(file)))
+if (preservedTestFiles.length > 0) {
+  console.log(`[unit-tests] ${preservedTestFiles.length} deferred specifications preserved as comments; these are not executed tests.`)
+}
+if (selectedTestFiles.length === 0) {
+  fail("The selection contains only deferred specifications. No executable tests ran.")
+}
 
 const jsdomDirective = "// @vitest-environment jsdom"
 const jsdomTestFiles = []

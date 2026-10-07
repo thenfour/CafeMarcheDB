@@ -1381,3 +1381,333 @@ export type ChangePayload = Prisma.ChangeGetPayload<typeof ChangeArgs>;
 export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
     { changedAt: 'desc' },
 ];
+
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:3-29
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 22a1fe5f4db6256e1c8b783989dee84d2b17cfe6580903c0cf0d77ba90bd73f6
+// MIGRATION_REFERENCE_BEGIN
+// import type {
+//     EventAttendancePublicId,
+//     EventPublicId,
+//     EventSegmentPublicId,
+//     EventSegmentUserResponsePublicId,
+//     EventStatusPublicId,
+//     EventTagAssignmentPublicId,
+//     EventTagPublicId,
+//     EventTypePublicId,
+//     EventUserResponsePublicId,
+//     FilePublicId,
+//     FileTagPublicId,
+//     InstrumentFunctionalGroupPublicId,
+//     InstrumentPublicId,
+//     PermissionPublicId,
+//     RolePermissionPublicId,
+//     RolePublicId,
+//     SongPublicId,
+//     SongTagAssociationPublicId,
+//     SongTagPublicId,
+//     UserInstrumentPublicId,
+//     UserPublicId,
+//     UserTagAssignmentPublicId,
+//     UserTagPublicId,
+//     WikiPageTagAssignmentPublicId,
+//     WikiPageTagPublicId,
+// } from "shared/publicId";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:147-151
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: f35a55a84a92de9ef1fcd35e0c5041609461e5071223b7d4188d42356f31817e
+// MIGRATION_REFERENCE_BEGIN
+// export const VisiblePermissionInclude = {
+//     include: {
+//         roles: true
+//     }
+// };
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:174-226
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: c27889a1f2a6edc6c4339f1795187e39deef3a4fc3d32bbbad3793a0b0c5bc33
+// MIGRATION_REFERENCE_BEGIN
+//     { name: 'asc' },
+//     { id: 'asc' },
+// ];
+//
+//
+//
+//
+// export const RolePermissionArgs = Prisma.validator<Prisma.RolePermissionArgs>()({
+//     include: {
+//         permission: true,
+//         role: true,
+//     }
+// });
+//
+// export type RolePermissionAssociationPayload = Prisma.RolePermissionGetPayload<typeof RolePermissionArgs>;
+//
+// export const RolePermissionNaturalOrderBy: Prisma.RolePermissionOrderByWithRelationInput[] = [
+//     { permission: { sortOrder: 'asc' } },
+//     { permission: { name: 'asc' } },
+//     { permission: { id: 'asc' } },
+// ];
+//
+//
+//
+// export const RoleArgs = Prisma.validator<Prisma.RoleArgs>()({
+//     include: {
+//         permissions: {
+//             include: {
+//                 permission: true,
+//             },
+//             orderBy: RolePermissionNaturalOrderBy,
+//         },
+//     }
+// });
+//
+// export type RolePayload = Prisma.RoleGetPayload<typeof RoleArgs>;
+//
+// export const RoleNaturalOrderBy: Prisma.RoleOrderByWithRelationInput[] = [
+//     { sortOrder: 'asc' },
+//     { name: 'asc' },
+//     { id: 'asc' },
+// ];
+//
+//
+//
+//
+//
+//
+//
+//
+// ////////////////////////////////////////////////////////////////
+// export const SongTagArgs = Prisma.validator<Prisma.SongTagArgs>()({
+//     include: {
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:392-423
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: a4f2ff43a2510b89e122d018ced433d5bf944812d3f870cb7a55759f598d3c38
+// MIGRATION_REFERENCE_BEGIN
+// export type RoleClientPayload = Omit<Prisma.RoleGetPayload<{}>, "id" | "publicId"> & {
+//     publicId: RolePublicId;
+// };
+//
+// export type RolePermissionClientPayload = Omit<
+//     Prisma.RolePermissionGetPayload<{}>,
+//     "id" | "publicId" | "roleId" | "permissionId"
+// > & {
+//     publicId: RolePermissionPublicId;
+//     roleId: RolePublicId;
+//     permissionId: PermissionPublicId;
+// };
+//
+// export type RoleWithPermissionsClientPayload = Omit<
+//     RolePayload,
+//     "id" | "publicId" | "permissions"
+// > & {
+//     publicId: RolePublicId;
+//     permissions: Array<Omit<
+//         RolePayload["permissions"][number],
+//         "id" | "publicId" | "roleId" | "permissionId" | "permission"
+//     > & {
+//         publicId: RolePermissionPublicId;
+//         roleId?: RolePublicId;
+//         permissionId: PermissionPublicId;
+//         permission: PermissionClientPayload;
+//     }>;
+// };
+//
+// type UserInstrumentReferenceDbPayload = Prisma.UserInstrumentGetPayload<
+//     typeof UserInstrumentReferenceArgs
+// >;
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:467-501
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 4f37cb4b158dbdb6df8d2279c2de16f0aecc9ddb54e77d9b01c02f002b881be9
+// MIGRATION_REFERENCE_BEGIN
+// export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
+//     select: {
+//         id: true,
+//         publicId: true,
+//         name: true,
+//         isSysAdmin: true,
+//         isDeleted: true,
+//         email: true,
+//         phone: true,
+//         createdAt: true,
+//         roleId: true,
+//         cssClass: true,
+//         // Explicitly exclude: hashedPassword, signInMethods, calendarFeedToken, uid
+//         role: {
+//             include: {
+//                 permissions: {
+//                     include: {
+//                         permission: true,
+//                     }
+//                 },
+//             }
+//         },
+//         instruments: UserInstrumentArgs,
+//         tags: {
+//             include: {
+//                 userTag: true,
+//             },
+//             orderBy: {
+//                 userTag: {
+//                     sortOrder: 'asc'
+//                 }
+//             }
+//         },
+//     }
+// });
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:519-604
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 92efd85a3e8e83b82b19867d7337df59dd85f723d7afe5986c3b6fb75ddb6d7a
+// MIGRATION_REFERENCE_BEGIN
+// export type UserClientPayload = Omit<
+//     UserPayload,
+//     "id" | "publicId" | "instruments" | "tags" | "roleId" | "role"
+// > & {
+//     publicId: UserPublicId;
+//     roleId: RolePublicId | null;
+//     role: RoleWithPermissionsClientPayload | null;
+//     instruments: UserInstrumentClientPayload[];
+//     tags: UserTagAssignmentClientPayload[];
+// };
+//
+// // Generic user queries must not expose role grants. Server authorization code
+// // uses UserArgs/UserWithRolesArgs when it needs the permission composition.
+// export const UserSafeArgs = Prisma.validator<Prisma.UserArgs>()({
+//     select: {
+//         id: true,
+//         publicId: true,
+//         name: true,
+//         isSysAdmin: true,
+//         isDeleted: true,
+//         email: true,
+//         phone: true,
+//         createdAt: true,
+//         roleId: true,
+//         cssClass: true,
+//         role: true,
+//         instruments: UserInstrumentArgs,
+//         tags: {
+//             include: {
+//                 userTag: true,
+//             },
+//             orderBy: {
+//                 userTag: {
+//                     sortOrder: 'asc'
+//                 }
+//             }
+//         },
+//     },
+// });
+//
+// export const UserMinimumArgs = Prisma.validator<Prisma.UserArgs>()({
+//     select: {
+//         id: true,
+//         publicId: true,
+//         name: true,
+//         isSysAdmin: true,
+//         isDeleted: true,
+//         email: true,
+//         phone: true,
+//         createdAt: true,
+//         roleId: true,
+//         cssClass: true,
+//         // Explicitly exclude: hashedPassword, signInMethods, calendarFeedToken, uid
+//     }
+// });
+// type UserPayloadMinimumDb = Prisma.UserGetPayload<typeof UserMinimumArgs>;
+// export type UserPayloadMinimum = Omit<UserPayloadMinimumDb, "id" | "publicId" | "roleId"> & {
+//     publicId: UserPublicId;
+//     roleId: RolePublicId | null;
+// };
+//
+//
+// export const UserForCalBackendArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
+//     select: {
+//         id: true,
+//         publicId: true,
+//         name: true,
+//         isSysAdmin: true,
+//         isDeleted: true,
+//         email: true,
+//         phone: true,
+//         createdAt: true,
+//         roleId: true,
+//         cssClass: true,
+//         uid: true,
+//         role: {
+//             include: {
+//                 permissions: {
+//                     include: {
+//                         permission: true,
+//                     }
+//                 },
+//             }
+//         }
+//     }
+// });
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: role-administration
+// Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/db3/shared/schema/prismArgs.ts:608-635
+// Reason: Single-band Role administration cannot execute against GlobalRole and BandRole.
+// Restore: Restore role and permission editors, designations, account role assignment and continuity safeguards using GlobalRole/BandRole; never restore User.role.
+// Verification: Adapt the preserved authorization and command tests; verify atomic designations, protected grants, fresh authorization, auditing and browser editors.
+// SHA256: 4999318716a614e613a562c74aa07d89b879dea457a97c9cb126387cd50e8998
+// MIGRATION_REFERENCE_BEGIN
+// export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
+//     select: {
+//         id: true,
+//         publicId: true,
+//         name: true,
+//         isSysAdmin: true,
+//         isDeleted: true,
+//         email: true,
+//         phone: true,
+//         createdAt: true,
+//         roleId: true,
+//         cssClass: true,
+//
+//         instruments: UserInstrumentReferenceArgs,
+//         tags: UserTagAssignmentReferenceArgs,
+//     }
+// });
+//
+// export type UserWithInstrumentsDbPayload = Prisma.UserGetPayload<typeof UserWithInstrumentsArgs>;
+// export type UserWithInstrumentsClientPayload = Omit<
+//     UserWithInstrumentsDbPayload,
+//     "id" | "publicId" | "instruments" | "tags" | "roleId"
+// > & {
+//     publicId: UserPublicId;
+//     roleId: RolePublicId | null;
+//     instruments: UserInstrumentReferenceClientPayload[];
+//     tags: UserTagAssignmentReferenceClientPayload[];
+// };
+// MIGRATION_REFERENCE_END
