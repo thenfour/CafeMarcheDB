@@ -69,7 +69,7 @@ describe("shared DB3 read execution", () => {
     });
 
     it("owns a snapshot for resolved reads independently of band ownership", async () => {
-        const table = db3.xSetlistPlanGroup;
+        const table = db3.xUser;
         const originalStrategy = table.queryStrategy;
         const marker = new Error("Entered the snapshot owner");
         const execute = vi.spyOn(readExecution, "executeDB3Read").mockRejectedValue(marker);

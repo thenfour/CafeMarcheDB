@@ -8,6 +8,7 @@ export const dashboardStrings = {
     "platformUser.description": label("Shared person details apply across all bands. Creating a person adds no sign-in method or band membership. Memberships are managed from the selected band's member profiles. Security state is read-only here."),
     "platformUser.visitProfile": label("Visit member profile"),
     "customLink.selectBand": label("Select a band to view its custom links."),
+    "setlistPlanner.selectBand": label("Select a band to use the setlist planner."),
     "dashboard.title": label("Home"),
     "dashboard.band.select": label("Select a band"),
     "dashboard.band.platform": label("Account and platform"),

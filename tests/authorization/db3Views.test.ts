@@ -84,7 +84,7 @@ const scalarRow = { ...group, publicId: db3.xSetlistPlanGroup.parseIdentity(grou
 
 describe("DB3 named views", () => {
     it("returns DTOs by default and hydrates only when explicitly requested", async () => {
-        const row = { ...scalarRow, id: 7, createdByUserId: 10 };
+        const row = { ...scalarRow, id: 7, bandId: 1, createdByUserId: 10 };
         const findMany = vi.fn(async () => [row]);
         // queryHydratedView accepts the full Prisma client contract; this focused test double
         // deliberately implements only the delegate exercised by this view.
@@ -102,7 +102,7 @@ describe("DB3 named views", () => {
             cmdbQueryContext: "dashboard-view-query-test",
             orderBy: undefined,
         };
-        const authorization = new CMServerAuthorization(null, effectivePermissions);
+        const authorization = testBandAuthorization(null, effectivePermissions);
         const hydrate = vi.spyOn(input.view, "hydrate");
         const dtoResult = await queryView(input, authorization, database);
         expect(dtoResult.items).toEqual([scalarRow]);
@@ -298,7 +298,9 @@ describe("DB3 named views", () => {
     });
 
     it("parses the authorized DTO shape and never exposes a database ID", async () => {
-        const findMany = vi.fn(async () => [{ id: 54, createdByUserId: 100, ...scalarRow }]);
+        const findMany = vi.fn(async () => [{ id: 54, bandId: 1, createdByUserId: 100, ...scalarRow }]);
+        // Only this selected delegate is exercised by the projection test.
+        const database = { SetlistPlanGroup: { findMany } } as unknown as Parameters<typeof queryTable>[2];
         const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.setlist_planner_access },
@@ -314,9 +316,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "db3-view-test",
-        }, new CMServerAuthorization({ id: 100 } as any, effectivePermissions), {
-            SetlistPlanGroup: { findMany },
-        } as any);
+        }, testBandAuthorization({ id: 100 }, effectivePermissions), database);
 
         expect(result.items).toEqual([scalarRow]);
         expect(result.items[0]).not.toHaveProperty("id");
@@ -335,8 +335,8 @@ describe("DB3 named views", () => {
         ]);
         const dto = authorizeAndProjectViewDto(
             scalarListView,
-            { id: 54, createdByUserId: 100, ...scalarRow },
-            testServerAuthorization({ id: 100 }, effectivePermissions),
+            { id: 54, bandId: 1, createdByUserId: 100, ...scalarRow },
+            testBandAuthorization({ id: 100 }, effectivePermissions),
             "db3-single-view-dto-test",
         );
         expect(dto).toEqual(scalarRow);
@@ -345,8 +345,8 @@ describe("DB3 named views", () => {
 
         const result = authorizeAndHydrateViewModel(
             scalarListView,
-            { id: 54, createdByUserId: 100, ...scalarRow },
-            testServerAuthorization({ id: 100 }, effectivePermissions),
+            { id: 54, bandId: 1, createdByUserId: 100, ...scalarRow },
+            testBandAuthorization({ id: 100 }, effectivePermissions),
             db3.createDashboardReferenceStore(),
             "db3-single-view-model-test",
         );
@@ -358,9 +358,11 @@ describe("DB3 named views", () => {
     it("preserves a server-computed page order before a view removes database IDs", async () => {
         const secondPublicId = parsePublicId<"SetlistPlanGroup">("BcDeFgHiJkLmNo12");
         const findMany = vi.fn(async (args: DB3ReadSelectionArgs) => [
-            { id: 1, createdByUserId: 100, ...scalarRow },
-            { id: 2, createdByUserId: 100, ...scalarRow, publicId: secondPublicId, name: "Woodwind" },
+            { id: 1, bandId: 1, createdByUserId: 100, ...scalarRow },
+            { id: 2, bandId: 1, createdByUserId: 100, ...scalarRow, publicId: secondPublicId, name: "Woodwind" },
         ].map(row => selectPrismaTestRow(row, args)));
+        // Only this selected delegate is exercised by the projection test.
+        const database = { SetlistPlanGroup: { findMany } } as unknown as Parameters<typeof queryTable>[2];
         const effectivePermissions = new ServerPermissionSet([
             { id: 1, name: Permission.always_grant },
             { id: 2, name: Permission.setlist_planner_access },
@@ -376,9 +378,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "db3-view-ordered-test",
-        }, new CMServerAuthorization({ id: 100 } as any, effectivePermissions), {
-            SetlistPlanGroup: { findMany },
-        } as any, {
+        }, testBandAuthorization({ id: 100 }, effectivePermissions), database, {
             orderedPrimaryKeys: [2, 1],
         });
 

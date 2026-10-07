@@ -9,6 +9,8 @@ context and membership ownership. Event-tag catalogs now use localized shared
 defaults and band-owned overrides. Event participant reads now use band membership
 instruments/tags and retain separate person and membership identities. Response
 and invitation readers now use membership ownership and selected-band references.
+Setlist Plan persistence and group CRUD now enforce selected-band ownership,
+transactional authorization and public transport identities.
 **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
@@ -235,7 +237,46 @@ export found during this slice was also repaired by naming the public-ID schema
   form uses the shared `CMButton` wrapper. Import preview and general event UI
   dependencies remain unfinished.
 
+- Setlist Plan save/list/delete and group/plan reorder require explicit band
+  public IDs. Repeatable reads and Serializable writes refresh authorization in
+  their database snapshot. Creates supply the band, creator, date and public
+  identity on the server; write requests contain editable fields only. Saves
+  preserve group-move order reset, visibility and authored JSON, checking song
+  rows and column/row-LED/column-LED associations against resource visibility,
+  band ownership and active, unmerged members. Existing global-role planner grants
+  still require an explicit band. Group CRUD uses scoped DB3 descriptors and
+  server-owned band metadata. Every persistence operation audits in its write
+  transaction. Plans/groups survive author membership/account removal, with
+  nullable author DTOs. The overview requests all visible plans within its band;
+  selecting another band remounts editor state and requests carry captured band
+  identities. The no-band prompt uses registered localized text. General Song,
+  search and full planner editor workflows remain deferred dependencies.
+
 ## Verification
+
+The Setlist Plan slice passes 68 focused tests across public-ID RPC contracts,
+DB3 projection, snapshot execution and preservation. Its native MariaDB run
+passes 98 tests across five files, including 29 new persistence cases and the
+existing event creation, attendance, event-tag and file-tag checks. These cover
+cross-band identities, private/hidden/deleted references, every JSON reference
+position, author removal, fresh grant/role/member/person/band revocation, exact
+reorder scopes and audit-failure rollback for save/delete/reorder. Group CRUD
+retains content on group deletion. A virtual transaction capability on the
+in-memory fixture now reports its presence to snapshot readers, and scalar DB3
+view fixtures declare their newly required band context. No behavioral tests were
+removed or deferred.
+
+A signed-in development-browser probe exercised the real save/list/delete RPCs
+against a fresh private target-schema database on `127.0.0.1:32695`. It persisted
+the complete JSON document with server ownership, rejected foreign-band song
+references/deletes, missing context and forged ownership, created separate content
+after a dashboard band switch, and enforced revoked planner grants on the next
+read/write. All four assertion groups passed with no browser page errors
+(`temp/a0-setlist-plan-browser-result.json`). The helper removed its database and
+stopped its development server/browser. This is endpoint evidence; the editor's
+deferred Song provider and search dependencies still prevent full planner UI
+verification. Whole-repository lint also found two unused imports in calendar
+preview/public-ID tests; those trivial errors were removed.
 
 The event-creation slice passes 96 focused transport, integer-boundary, DB3 view,
 memory-query and preservation tests across four files. Its private MariaDB run
@@ -450,9 +491,9 @@ production server could not be checked because the normal build still fails.
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 144 diagnostics, down from 145 at the File-tag checkpoint. The event-creation ownership error is repaired; no compiler exclusions or error suppression added. |
-| `yarn build` | Gets past event creation; stops at `src/core/db3/mutations/upsertSetlistPlan.ts:63`, whose create result no longer satisfies its selected payload contract. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 278 failed, 1,504 passed, 239 skipped across 142 files, with ten suite failures. Failure totals match the previous recovery checkpoint. Native creation/catalog cases require the private URL and pass in the native run above; later isolated DOM batches are not reached. |
+| `yarn typecheck` | Fails: 141 diagnostics, down from 144 at the event-creation checkpoint. Setlist Plan ownership/selection errors are repaired; no compiler exclusions or error suppression added. |
+| `yarn build` | Gets past Setlist Plan persistence; stops at `src/core/db3/queries/getAdminLogItemInfo.ts:52`, which selects the removed FileInstrumentTag instrument relation. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 272 failed, 1,511 passed, 268 skipped across 143 files, with ten suite failures. Six failures from the event-creation checkpoint are repaired; no new failing cases remain. Native persistence/creation/catalog cases require the private URL and pass in the native run above; later isolated DOM batches are not reached. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -483,7 +524,9 @@ verification resources, not application configuration.
 
 ## Remaining A0 blockers
 
-Setlist Plan persistence is the next build stop. Import preview still has an
+File administration/activity lookup is the next build stop: its File graph still
+selects removed member/instrument relations. Setlist Plan storage is recovered;
+its complete editor still depends on deferred Song/search workflows. Import preview still has an
 unscoped band lookup and removed UserTag/schema dependencies; creation RPC
 recovery does not establish the full importer workflow.
 

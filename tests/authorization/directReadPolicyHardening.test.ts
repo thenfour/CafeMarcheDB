@@ -19,7 +19,7 @@ import getUserWikiContributions from "@db3/queries/getUserWikiContributions"
 import { loadAuthorization } from "src/auth/server/serverAuthorization"
 import getWikiPageRevision from "src/core/wiki/queries/getWikiPageRevision"
 import getWikiPageRevisions from "src/core/wiki/queries/getWikiPageRevisions"
-import { Permission } from "shared/permissions"
+import { gPermissionRegistry, Permission } from "shared/permissions"
 import {
   createAuthorizationPersona,
   createAuthorizationTestUser,
@@ -298,8 +298,19 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
   })
 
   it("filters hidden SetlistPlan rows before deserialization", async () => {
+    const bandPublicId = parsePublicId<"Band">("SetlistBand00001")
+    authorizationTestDb.reset({
+      user: [{ ...actor, isDeleted: false, mergedIntoUserId: null, globalRoleId: null }],
+      band: [{ id: 1, publicId: bandPublicId, isDeleted: false }],
+      bandUser: [{ id: 1, publicId: "BandUser00000001", userId: actor.id, bandId: 1, bandRoleId: 20, isDeleted: false }],
+      bandRole: [{ id: 20, isDeleted: false }],
+      permission: gPermissionRegistry.map((definition, index) => ({ id: index + 1, name: definition.key, isDeleted: false })),
+      bandRolePermission: [{ id: 1, bandRoleId: 20,
+        permissionId: gPermissionRegistry.findIndex(definition => definition.key === Permission.setlist_planner_access) + 1 }],
+    })
     authorizationTestDb.getDelegate("setlistPlan").reset([{
       id: 30,
+      bandId: 1,
       name: "Hidden plan",
       isDeleted: false,
       createdByUserId: actor.id,
@@ -310,7 +321,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
 
     // Ownership makes a null visibility row readable, but it must not override
     // an explicit visibility permission the actor does not possess.
-    await expect(invokeResolver(getSetlistPlans, { userId: actor.publicId }, ctx)).resolves.toEqual([])
+    await expect(invokeResolver(getSetlistPlans, { bandPublicId, userId: actor.publicId }, ctx)).resolves.toEqual([])
   })
 
   it("applies WikiPage visibility to page, contribution, and revision reads", async () => {

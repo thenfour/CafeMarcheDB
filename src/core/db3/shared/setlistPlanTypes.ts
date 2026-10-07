@@ -123,7 +123,7 @@ export const ZSetlistPlan = z.object({
     sortOrder: z.number().optional(),
     description: z.string(),
     createdAt: z.date(),
-    createdByUserId: db3.xUser.identitySchema,
+    createdByUserId: db3.xUser.identitySchema.nullable(),
     payload: ZSetlistPlanPayload,
     visiblePermissionId: z.custom<PermissionPublicId>(isPublicId).nullable(),
     // NOTE: Adding non-primitives (e.g. Date) here will cause issues with serialization to/from JSON.
@@ -209,14 +209,13 @@ export const DeserializeSetlistPlan = (obj: SetlistPlanWithVisibilityPayload): S
     };
     try {
         const parsed = JSON.parse(obj.payloadJson);
-        // convert any date strings back to Date objects.
-        if (parsed.createdAt) parsed.createdAt = new Date(parsed.createdAt);
         payload = ZSetlistPlanPayload.parse(parsed);
     } catch (e) {
+        // Keep a damaged historical document readable as an empty plan, as the editor did before migration.
         console.error(e);
     }
     return {
-        createdByUserId: db3.xUser.parseIdentity(obj.createdByUser.publicId),
+        createdByUserId: obj.createdByUser ? db3.xUser.parseIdentity(obj.createdByUser.publicId) : null,
         createdAt: obj.createdAt,
         description: obj.description,
         publicId: db3.xSetlistPlan.parseIdentity(obj.publicId),

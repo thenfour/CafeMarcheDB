@@ -45,6 +45,14 @@ import reorderSetlistPlans from "src/core/db3/mutations/reorderSetlistPlans";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
 import { CopySetlistPlanPayloadWithoutDerivedStats, CreateNewSetlistPlan, SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanCell, SetlistPlanLedDef, SetlistPlanLedValue, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
 import { SongPublicId, SetlistPlanGroupPublicId } from "shared/publicId";
+import { makeSetlistPlanSaveArgs } from "src/core/db3/shared/setlistPlanApi";
+import { useLocale } from "src/locale/components/useLocale";
+
+function usePlannerBand() {
+    const bandPublicId = useDashboardContext().memberPresentation.bandPublicId;
+    assert(bandPublicId, "The setlist planner requires a selected band.");
+    return bandPublicId;
+}
 
 function getId(prefix: string) {
     //return `${prefix}${nanoid(3)}`;
@@ -417,6 +425,7 @@ const createDuplicatedPlan = (plan: SetlistPlan, currentUserId?: SetlistPlan["cr
 };
 
 const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupTableClient, refetch }: SetlistPlannerDocumentOverviewItemProps) => {
+    const bandPublicId = usePlannerBand();
     const [showingGroupSelectDialog, setShowingGroupSelectDialog] = React.useState(false);
     const coloring = GetStyleVariablesForColor({ color: group?.color, ...StandardVariationSpec.Strong });
     const snackbar = useSnackbar();
@@ -481,7 +490,9 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
                             return;
                         }
                         await snackbar.invokeAsync(async () => {
-                            if (dbPlan.publicId) await deleteSetlistPlanToken(dbPlan.publicId);
+                            if (dbPlan.publicId) {
+                                await deleteSetlistPlanToken({ bandPublicId, publicId: dbPlan.publicId });
+                            }
                             refetch();
                         });
                     }}
@@ -511,7 +522,7 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
                         // move to new group.
                         dbPlan.groupId = group?.publicId || null;
                         await snackbar.invokeAsync(async () => {
-                            await upsertSetlistPlanToken(dbPlan);
+                            await upsertSetlistPlanToken(makeSetlistPlanSaveArgs(bandPublicId, dbPlan));
                             refetch();
                             setShowingGroupSelectDialog(false);
                         });
@@ -533,6 +544,7 @@ interface SetlistPlanOverviewGroupProps {
     refetch: () => void;
 };
 const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, refetch, groupTableClient }: SetlistPlanOverviewGroupProps) => {
+    const bandPublicId = usePlannerBand();
     const snackbar = useSnackbar();
     const dashboardContext = useDashboardContext();
     plansInGroup = toSorted(plansInGroup, (a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
@@ -550,6 +562,7 @@ const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, re
 
         await snackbar.invokeAsync(async () => {
             await reorder({
+                bandPublicId,
                 kind: "plan",
                 movingPublicId: movingItem.publicId!,
                 newPositionPublicId: newPositionItem.publicId!,
@@ -672,6 +685,7 @@ const SetlistPlannerDocumentOverview = ({ expandedGroups, setExpandedGroups, pla
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: string) => void }) => {
+    const bandPublicId = usePlannerBand();
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
     const [upsertSetlistPlanToken] = useMutation(upsertSetlistPlan);
@@ -687,7 +701,7 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
 
     if (!dashboardContext.currentUser) return <div>you must be logged in to use this feature</div>;
 
-    const [plans, { refetch }] = useQuery(getSetlistPlans, { userId: dashboardContext.currentUser.publicId });
+    const [plans, { refetch }] = useQuery(getSetlistPlans, { bandPublicId, userId: null });
 
     const [autocompleteProgressState, setAutocompleteProgressState] = React.useState<SetlistPlanSearchProgressState>();
     const cancellationTrigger = React.useRef<boolean>(false);
@@ -1512,7 +1526,7 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                             setlistPlanId: doc.publicId ?? undefined,
                         });
                         void snackbar.invokeAsync(async () => {
-                            const newDoc = await upsertSetlistPlanToken(doc);
+                            const newDoc = await upsertSetlistPlanToken(makeSetlistPlanSaveArgs(bandPublicId, doc));
                             // Replace the local draft key with the persisted public ID.
                             setDoc(newDoc);
                             setModified(false);
@@ -1534,7 +1548,9 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                                 setlistPlanId: doc.publicId ?? undefined,
                             });
                             void snackbar.invokeAsync(async () => {
-                                if (doc.publicId) await deleteSetlistPlanToken(doc.publicId);
+                                if (doc.publicId) {
+                                    await deleteSetlistPlanToken({ bandPublicId, publicId: doc.publicId });
+                                }
                                 setModified(false);
                                 setDoc(null);
                                 setSelectedTab("overview");
@@ -1548,7 +1564,7 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                 {isTempDoc && <h1>SHOWING TEMP VALUES</h1>}
             </CMTab>
             <CMTab thisTabId={"groupsEditor"} summaryTitle="Groups">
-                <SetlistPlanGroupList tableClient={groupTableClient} />
+                <SetlistPlanGroupList bandPublicId={bandPublicId} tableClient={groupTableClient} />
             </CMTab>
             <CMTab thisTabId={"colorSchemeEditor"} summaryTitle="Color scheme editor">
                 <div style={{ display: "flex", flexDirection: "column" }}>
@@ -1577,14 +1593,25 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
     </div >
 };
 
+// Remount the editor on band changes so drafts and pending responses cannot cross bands.
+const SelectedBandPlanner = ({ onTitleChange }: { onTitleChange: (title: string) => void }) => {
+    const dashboardContext = useDashboardContext();
+    const locale = useLocale();
+    const bandPublicId = dashboardContext.memberPresentation.bandPublicId;
+    if (!bandPublicId) {
+        return <div>{locale.getPlainString("setlistPlanner.selectBand")}</div>;
+    }
+    return <SongsProvider key={bandPublicId}>
+        <SetlistPlannerPageContent onTitleChange={onTitleChange} />
+    </SongsProvider>;
+};
+
 const SetlistPlannerPage: BlitzPage = (props) => {
     const [pageTitle, setPageTitle] = React.useState<string>("Setlist Planner");
     return (
         <DashboardLayout title={pageTitle}>
             <AppContextMarker name="Setlist plan page">
-                <SongsProvider>
-                    <SetlistPlannerPageContent onTitleChange={setPageTitle} />
-                </SongsProvider>
+                <SelectedBandPlanner onTitleChange={setPageTitle} />
             </AppContextMarker>
         </DashboardLayout>
     )

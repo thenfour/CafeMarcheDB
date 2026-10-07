@@ -7,6 +7,8 @@ import * as db3 from "../db3core";
 import { MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
+import { GenericIntegerField } from "../columnTypes/genericInteger";
+import { serverOwnedField } from "../columnTypes/inherited";
 
 const xAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.setlist_planner_access,
@@ -63,6 +65,10 @@ export const xSetlistPlanGroup = db3.defineTable({
         return SetlistPlanGroupArgs;
     },
     tableName: "SetlistPlanGroup",
+    bandScope: {
+        member: "bandId",
+        managePermission: Permission.setlist_planner_access
+    },
     deletePolicy: "hard",
     naturalOrderBy: SetlistPlanGroupNaturalOrderBy,
     getRowInfo: (row: SetlistPlanGroupPayload) => ({
@@ -77,6 +83,17 @@ export const xSetlistPlanGroup = db3.defineTable({
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "never" }),
         publicId: () => MakePublicIdField<SetlistPlanGroupPublicId>(),
+        bandId: columnName => serverOwnedField(
+            new GenericIntegerField({
+                columnName,
+                allowNull: false,
+                allowSearchingThisField: false,
+                authMap: {
+                    ...xAuthMap,
+                    PostQuery: Permission.never_grant,
+                    PostQueryAsOwner: Permission.never_grant
+                },
+            })),
         name: columnName => MakeTitleField(columnName, { authMap: xAuthMap, }),
         description: () => MakeDescriptionField({ authMap: xAuthMap, }),
         color: () => MakeColorField({ authMap: xAuthMap, }),
@@ -110,6 +127,10 @@ export const xSetlistPlan = db3.defineTable({
         return {};
     },
     tableName: "SetlistPlan",
+    bandScope: {
+        member: "bandId",
+        managePermission: Permission.setlist_planner_access,
+    },
     deletePolicy: "softOnly",
     viewDeletedPermission: Permission.setlist_planner_access,
     restorePermission: Permission.setlist_planner_access,
@@ -124,6 +145,17 @@ export const xSetlistPlan = db3.defineTable({
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "never" }),
         publicId: () => MakePublicIdField<SetlistPlanPublicId>(),
+        bandId: columnName => serverOwnedField(
+            new GenericIntegerField({
+                columnName,
+                allowNull: false,
+                allowSearchingThisField: false,
+                authMap: {
+                    ...xAuthMap,
+                    PostQuery: Permission.never_grant,
+                    PostQueryAsOwner: Permission.never_grant
+                },
+            })),
         name: columnName => MakeTitleField(columnName, { authMap: xAuthMap, }),
         description: () => MakeDescriptionField({ authMap: xAuthMap, }),
         sortOrder: () => MakeSortOrderField({ authMap: xAuthMap, }),

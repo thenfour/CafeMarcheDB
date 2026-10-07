@@ -2,7 +2,6 @@ import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { isPublicId, PUBLIC_ID_PLACEHOLDER_PREFIX, type InstrumentPublicId } from "shared/publicId";
 import { db3Server } from "src/core/db3/server/db3Server";
 import { xInstrument } from "src/core/db3/shared/schema/instrument";
-import type { xTable } from "src/core/db3/shared/db3core";
 import { generatePublicId, repairPublicIdPlaceholders, type PublicIdRepairDelegate } from "src/server/publicId";
 
 class InMemoryPublicIdDelegate implements PublicIdRepairDelegate {

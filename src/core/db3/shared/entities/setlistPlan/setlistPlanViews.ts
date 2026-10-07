@@ -10,7 +10,7 @@ const SetlistPlanGroupEditorDtoSchema = z.object({
     description: z.string(),
     color: z.string().nullable(),
     sortOrder: z.number().int(),
-    createdByUserId: xUser.identitySchema,
+    createdByUserId: xUser.identitySchema.nullable(),
     createdAt: z.date(),
 });
 
@@ -18,7 +18,15 @@ export const setlistPlanGroupEditorView = defineCrudView({
     viewID: "SetlistPlanGroup_Editor",
     entity: xSetlistPlanGroup,
     operations: { create: true, update: true, delete: true },
-    selection: { include: { createdByUser: { select: { publicId: true } } } },
+    selection: {
+        include: {
+            createdByUser: {
+                select: {
+                    publicId: true
+                }
+            }
+        }
+    },
     dtoSchema: SetlistPlanGroupEditorDtoSchema,
     hydrate: dto => xSetlistPlanGroup.getClientModel(dto, "view"),
 });

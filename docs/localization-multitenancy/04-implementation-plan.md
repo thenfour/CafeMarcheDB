@@ -93,12 +93,22 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** repair or isolate Setlist Plan persistence, the current
-build stop (`upsertSetlistPlan.ts:63` has an obsolete create/selection contract),
-then continue the remaining File/song/wiki payload roots. File member/instrument relations still
+**Next implementation slice:** repair or isolate the File administration/activity lookup,
+the current build stop (`getAdminLogItemInfo.ts:52` selects the removed FileInstrumentTag
+instrument relation), then continue the remaining File/song/wiki payload roots. File member/instrument relations still
 use removed person/catalog fields, and legacy payloads still include
 `Permission.roles`. Adapt their owning contracts before their consumers; isolate
 deferred pages and non-page entry points together.
+
+Setlist Plan persistence now requires explicit band context for save/list/delete
+and reorder. Fresh authorization owns repeatable reads and Serializable writes,
+including audits; groups use scoped DB3 CRUD. Saves reject client-owned band,
+creator, date and ordering fields, and validate JSON references against band
+ownership, visibility and active memberships. Public documents retain their
+payloads and nullable historical authors. The overview explicitly requests every
+visible plan in the selected band, including plans whose author was removed.
+Native and development RPC checks pass. The editor still depends on deferred
+Song/search workflows, so full planner UI parity and A0 remain open.
 
 Event creation now requires explicit band context and refreshes authorization in
 its Serializable transaction. It retains the initial segment, ordered setlist
@@ -276,6 +286,7 @@ implementation/test references and verification obligations for audited removals
 | Shared event catalogs | Type/status/attendance CRUD edits global defaults with platform catalog authority and explicit locales. Dashboard references resolve scoped labels, including retired history. | Verify in the built application during A0/A1; recover event ownership, invitations and responses separately. |
 | Attendance endpoints | Dedicated response writes and person-history/setlist readers resolve active memberships within an explicitly selected band. HTTP reads require authentication and band event-read authority. Bulk segment copy/clear use band event administration, preserve recorded history and update affected membership revisions. Native, menu DOM and development-browser endpoint checks pass. | Recover event payload/editor ownership, default/tag invitation management and full attendance UI; verify workflows in the built app before closing A1. |
 | Calendar subscriptions | Private feeds and subscription/preview callers require explicit band context and active membership. Preferences, invitation groups, historical attendance, UIDs/revisions, setlists and band locale/branding remain supported. The account credential is shared across its band URLs; replacing it invalidates every band subscription. | Re-subscribe existing unscoped URLs using the selected band; verify in the built app during A0/A1. Full subscription-page localization and general event UI recovery remain separate. |
+| Setlist Plan persistence | Save/list/delete, group/plan reorder and group CRUD require explicit band context, fresh grants, public identities and server-owned metadata. JSON references are validated; documents and groups survive author removal. The overview requests all visible plans in its band. | Restore Song/search dependencies and verify the complete planner editor in the built app during A0/A1. |
 | Portal routing | Recovery uses explicit `?bandPublicId=<publicId>` and optional `routeLocale`; omission never selects a default band. | Full routing after A1; retain enough explicit selection for A0. |
 | Custom Links | Scoped editor CRUD, file selection/serving, all redirect modes and visits are active. Public URLs require explicit `bandPublicId`; missing, malformed/repeated and unavailable bands return 404. The narrow read-only File target does not enable unfinished general file APIs. | Verify in the built application during A0/A1; integrate URLs with band portal roots when full routing lands after A1. |
 | Telemetry recording | Recording uses explicit presentation context, server-owned actor/internal IDs and band-scoped associations. The formatting locale is separate from raw device locale/language; unregistered/deleted locales remain null. | Verify recording in the built app during A0. Calendar-feed recording uses the subscriber and band/locale from its authorized snapshot. Activity-report recovery is tracked separately below. |

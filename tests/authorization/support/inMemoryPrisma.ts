@@ -404,6 +404,10 @@ const database = new AuthorizationTestDatabase()
 // uses delegate names (`user`). Resolve either form lazily so new tables can be
 // tested without growing a handwritten database mock.
 export const authorizationTestDb = new Proxy(database, {
+  has(target, property) {
+    // Snapshot readers detect the transaction capability before calling it.
+    return property === "$transaction" || Reflect.has(target, property)
+  },
   get(target, property, receiver) {
     if (typeof property !== "string") return Reflect.get(target, property, target)
     if (property === "$transaction") {

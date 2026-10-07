@@ -1,6 +1,5 @@
 
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { ICalCalendar, ICalDateTimeValue, ICalLocation } from "ical-generator";
 import { Permission } from "shared/permissions";

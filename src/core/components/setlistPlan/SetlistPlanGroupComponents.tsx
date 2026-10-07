@@ -13,7 +13,7 @@ import { CMSingleSelect } from "../select/CMSelect";
 import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import { ColorSwatch } from "../color/ColorSwatch";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
-import type { SetlistPlanGroupPublicId } from "shared/publicId";
+import type { BandPublicId, SetlistPlanGroupPublicId } from "shared/publicId";
 import reorderSetlistPlans from "../../db3/mutations/reorderSetlistPlans";
 import { useMutation } from "@blitzjs/rpc";
 
@@ -120,6 +120,7 @@ export const SetlistPlanGroupListItem = (props: SetlistPlanGroupListItemProps) =
 };
 
 interface SetlistPlanGroupListProps {
+    bandPublicId: BandPublicId;
     tableClient: DB3Client.xTableRenderClient<typeof db3.setlistPlanGroupEditorView>
 };
 
@@ -154,6 +155,7 @@ export const SetlistPlanGroupList = (props: SetlistPlanGroupListProps) => {
 
         await snackbar.invokeAsync(async () => {
             await reorder({
+                bandPublicId: props.bandPublicId,
                 kind: "group",
                 movingPublicId: movingItem.publicId,
                 newPositionPublicId: newPositionItem.publicId,
