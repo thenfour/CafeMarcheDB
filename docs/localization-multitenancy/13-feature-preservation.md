@@ -61,6 +61,15 @@ catalog, settings, authorization and bootstrap behavior stays active. Where a
 capability already has an equivalent replacement, record the matching tests and
 browser evidence instead of creating another implementation.
 
+The demo recovery adds an explicit reset/dev/build/start workflow and target-schema
+generators in `db/seeding/demo`, described in [the demo guide](../demo-seeding.md).
+CLI counts/locales/seed/date control repeatable fixtures spanning shared people,
+band memberships/grants, inherited/localized catalogs, wiki/menu content, songs,
+usable local files, events/setlists/attendance and activity. This is useful manual
+testing content; it does not establish parity with every preserved random-content
+variant. `demo-seeding` remains pending, its reference blocks remain intact, and
+no generator is retired. Production seed/startup behavior stays separate.
+
 ## Preserved test specifications
 
 The quick-search isolation adds eighteen references from `66c5806d` across its

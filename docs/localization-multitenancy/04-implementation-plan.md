@@ -94,7 +94,17 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** audit the remaining reachable deferred pages and
+**Latest implemented slice:** a repeatable demo reset/launch workflow
+before the remaining deferred-surface audit. The user prioritized target-schema
+sample content for manual testing, with CLI-configurable generator sizes, locales,
+seed and reference date. See [demo workflow](../demo-seeding.md). Production seed
+initialization stays separate; no historical startup backfill is restored.
+The implementation has 29 configuration checks, six native reset/generator checks,
+and five passing built-browser assertion groups. Full-suite failures remain at
+230. Ordinary-member wiki reading is a newly documented recovery issue: Harbour's
+seeded welcome page renders for its manager but appears absent under Normal Users.
+
+**Following implementation slice:** audit the remaining reachable deferred pages and
 matching RPC/API/background entry points for coherent unavailability. Normal
 compiler and production-build blockers are cleared. Preserve the verified login,
 explicit-band, member/catalog and palette workflows while replacing unfinished
@@ -438,7 +448,7 @@ implementation/test references and verification obligations for audited removals
 | Shared-account merging and dependency reports | Merge search, preview, commit and dependency-analysis RPCs explicitly reject without database access. Merge controls and obsolete person-level merge policies are removed; the analysis tab explains unavailability. Capability responses do not advertise merge or account-role assignment. | Restore cross-band account workflows after A1 with complete ownership-aware policies. |
 | Other shared-account/platform administration | Band grants cannot authorize shared-account or global-catalog writes; remaining legacy consumers need adaptation or isolation. | Finish isolation during A0; complete broader workflows after A1. |
 | Person-level instrument/tag editors | Shared User reads/editor/writes no longer include band assignments. `UserInstrument` storage/editor/CRUD are unregistered; unreachable legacy profile/directory renderers are preserved. Invitation/response metadata now uses BandUserTagAssignment; migrated BandUser assignment commands remain active. | Verify full profile/directory parity under their existing preservation obligations. |
-| Catalog/demo seeds | Production seeds initialize access control. Old demo generators are preserved as disabled source. | Restore seed data needed by a named acceptance path before A1; account for remaining generators at B, with explicit approval for retirement. |
+| Catalog/demo seeds | Production seeds initialize access control. Explicit demo reset/launch commands and parameterized target-schema generators provide multilingual bands, accounts, catalogs, wiki, songs/files, events/attendance and activity. Old generator references remain preserved. | Use the repeatable demo for recovery browser checks; account for remaining legacy generator variants before closing `demo-seeding`. |
 | Legacy synchronous band guards | `resolver.authorize` rejects band capabilities. | Required callers use fresh request authorization and loaded resource ownership. |
 
 ## Verification and cutover

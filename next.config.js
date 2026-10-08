@@ -24,6 +24,8 @@ const config = {
 
 
   reactStrictMode: true,
+  // Demo commands keep their build/dev output separate from the normal application.
+  distDir: process.env.CMDB_DEMO === "1" ? ".next-demo" : ".next",
   swcMinify: true,
   experimental: { instrumentationHook: true },
   i18n: {

@@ -16,6 +16,7 @@ temp/
 # blitz
 /.blitz/
 /.next/
+/.next-demo/
 *.sqlite
 *.sqlite-journal
 .now

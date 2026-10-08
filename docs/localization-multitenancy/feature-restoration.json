@@ -86,7 +86,10 @@
       "restore": "Account for useful sample users, catalogs, songs/files, events/attendance, wiki and activity generators using target-schema ownership; obtain explicit approval for any retired generator.",
       "verification": "Run restored generators only against a disposable target-schema database and verify their relationships; never restore automatic production startup backfills.",
       "status": "pending",
-      "evidence": []
+      "evidence": [
+        "Parameterized target-schema generators in db/seeding/demo and explicit demo:reset/dev/build/start commands; see docs/demo-seeding.md. Preserved legacy variants remain pending; no retirement is inferred.",
+        "2026-10-08: 29 configuration checks and six native reset/generator checks pass. Isolated production build and five built-browser assertion groups pass, including localized overrides/fallback, profile writes, actual SVG/WAV delivery and foreign-band file 404. See docs/localization-multitenancy/09-application-recovery.md."
+      ]
     },
     {
       "id": "activity-reports",

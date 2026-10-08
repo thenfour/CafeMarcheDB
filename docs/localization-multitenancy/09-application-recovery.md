@@ -934,3 +934,54 @@ Keep normal typecheck/build and the built-server browser path passing while
 auditing remaining deferred boundaries before closing A0. Keep the
 existing migrated membership/catalog behavior and the explicit-band browser path
 working throughout that work.
+
+## Demo reset and manual-testing checkpoint (2026-10-08)
+
+The user prioritized `demo-seeding` to make recovery repeatable without a
+production dump, then requested CLI-configurable generators. The new
+`demo:reset/dev/build/start` commands and [demo guide](../demo-seeding.md) provide
+a dedicated local database, separate assets/build output, validated counts,
+requested locales, stable seed identities and an explicit reference date.
+Reset replays the normal SQL migration history; production seed/startup
+initialization remains separate.
+
+Default data has River Fanfare and Harbour Brass, 16 memberships across 16 people
+(including a shared person and an extra platform administrator), 12 songs,
+10 events with 80 membership responses and 80 segment responses, local score/audio
+assets, localized/inherited catalogs, per-band settings/branding, welcome pages,
+canonical event-description pages, menus and activity. A fixed seed/date recreates
+the same authored fixture and removes manual edits. CLI zero-song/event and
+three-band configurations were verified separately.
+
+Validation:
+
+- `yarn typecheck` and normal `yarn build`: pass. `yarn demo:build`: pass using
+  `.next-demo`, independent of an already-running normal development server.
+- `yarn test tests/demoConfig.test.ts --reporter=dot`: 29 pass.
+- `yarn test tests/demoSeeding.mysql.test.ts --reporter=dot` with an explicit
+  disposable `DEMO_TEST_DATABASE_URL`: six pass. This includes real sign-in hashes,
+  per-band roles, locale/override/blank boundaries, ownership, canonical event
+  descriptions, usable file assets/ServeFile links, repeat resets, custom sizes,
+  and rejection without deleting existing data.
+- Built `demo:start` at port 10457 against a freshly reset demo: five passing
+  assertion groups, zero uncaught page errors. Verified shared-account login and
+  explicit bands; French override/blank and Dutch fallback; profile write and
+  branding/locale switch; manager wiki rendering; actual SVG/WAV HTTP delivery;
+  ordinary-member selector isolation and foreign-band file 404. Screenshot viewed.
+- `yarn test --reporter=dot`: still fails with 230 failed, 1654 passed and
+  315 skipped in the Node batch (25 failed files, 101 passed, 35 skipped;
+  10 suite-loading failures). Subsequent DOM batches were not reached. No new
+  failure count is attributed to this slice; native demo checks ran separately.
+- Changed-file ESLint, `git diff --check`, and `yarn migration:verify`: pass;
+  all 277 source references and 10 deferred specifications remain preserved.
+
+Evidence is in ignored `temp/demo-*` logs, `temp/demo-browser-result.json` and
+`temp/demo-browser.png`. Only owned verification databases/services were stopped
+and cleaned up.
+
+The walkthrough exposes an existing ordinary-member wiki issue: the welcome
+page renders for Harbour's manager but appears absent for Alex under Normal Users.
+This belongs in the next recovery audit; demo seeding does not grant broader
+permissions to conceal it. The remaining deferred-surface audit, A0/A1 gates and
+full-suite failures remain open. `demo-seeding` also stays pending until every
+preserved legacy random-content variant is accounted for; no generator is retired.

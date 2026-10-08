@@ -9,6 +9,10 @@
   },
   "scripts": {
     "dev": "blitz dev --port 10455",
+    "demo:reset": "node scripts/demo.cjs reset",
+    "demo:dev": "node scripts/demo.cjs dev",
+    "demo:build": "node scripts/demo.cjs build",
+    "demo:start": "node scripts/demo.cjs start",
     "build": "blitz build",
     "start": "blitz start --port 10455",
     "typecheck": "tsc --noEmit",
