@@ -1,5 +1,7 @@
 import React from "react";
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Typography } from "@mui/material";
+import { Alert, DialogActions, DialogContent, DialogTitle, Stack, Typography } from "@mui/material";
+import { CMButton } from "../CMCoreComponents2";
+import { ResponsiveDialog } from "../ResponsiveDialog";
 import { Permission } from "shared/permissions";
 import { useDB3Command } from "src/core/db3/components/useDB3Command";
 import { bandUserLifecycleCommand, type BandUserLifecycleDto } from "src/core/db3/shared/entities/user/bandUserLifecycle";
@@ -61,14 +63,14 @@ export function BandUserLifecycleControl({ member, refetch }: {
     };
     return <Stack spacing={1} aria-busy={saving}>
         {error && !open && <Alert severity="error">{error}</Alert>}
-        {canEdit && <Button color={member.isDeleted ? "primary" : "warning"} disabled={saving} onClick={() => {
+        {canEdit && <CMButton color={member.isDeleted ? "primary" : "warning"} disabled={saving} onClick={() => {
             setWarnings([]);
             setAcknowledged(false);
             setError(null);
             setOpen(true);
-        }}>{actionLabel}</Button>}
+        }}>{actionLabel}</CMButton>}
         {saving && <Typography role="status">{locale.getPlainString("membership.lifecycle.saving")}</Typography>}
-        <Dialog open={open} onClose={close} fullWidth maxWidth="sm">
+        <ResponsiveDialog open={open} onClose={close} fullWidth maxWidth="sm">
             <DialogTitle>{actionLabel}</DialogTitle>
             <DialogContent><Stack spacing={2} sx={{ pt: 1 }}>
                 <Typography>{member.user.name}</Typography>
@@ -77,9 +79,9 @@ export function BandUserLifecycleControl({ member, refetch }: {
                 {warnings.length > 0 && <BandMemberContinuityWarning permissions={warnings} acknowledged={acknowledged} saving={saving} onAcknowledge={setAcknowledged} />}
             </Stack></DialogContent>
             <DialogActions>
-                <Button disabled={saving} onClick={close}>{locale.getPlainString("common.action.cancel")}</Button>
-                <Button disabled={saving || (warnings.length > 0 && !acknowledged)} onClick={() => { void save(); }}>{locale.getPlainString("membership.lifecycle.confirm")}</Button>
+                <CMButton disabled={saving} onClick={close}>{locale.getPlainString("common.action.cancel")}</CMButton>
+                <CMButton disabled={saving || (warnings.length > 0 && !acknowledged)} onClick={() => { void save(); }}>{locale.getPlainString("membership.lifecycle.confirm")}</CMButton>
             </DialogActions>
-        </Dialog>
+        </ResponsiveDialog>
     </Stack>;
 }

@@ -90,6 +90,65 @@ unrelated domain assertions remain executable. The public-ID schema is named
 `BandInstrumentIdentity`; the former raw/client payload identity union has since
 been removed from the active consumers.
 
+## A1 member-workflow checkpoint (2026-10-08)
+
+The existing basic member workflows now have normal production-build browser
+evidence across River Fanfare and Harbour Brass. A1 remains open for events,
+songs/files and supporting workflows. Advanced directory search, profile tabs,
+activity and account controls retain their preservation obligations.
+
+The walkthrough covers directory name lookup and contextual person links;
+persisted shared name/phone edits visible in both bands; French instrument
+options, assignment/default saves that leave the other band unchanged; manager
+tag and role edits; roleless own-profile access and denied other/foreign-band
+reads; hidden instrument-group labels with retained assignments; and membership
+deactivation/recovery. Recovery uses its separate grant: the default band manager
+can deactivate but cannot recover; an authorized platform administrator recovers
+the membership. Platform sign-in summaries also work without selecting a band.
+
+Two defects found during verification are repaired. Directory cards and filter
+choices now conceal instruments whose functional group is hidden, matching the
+assignment editor. The sign-in summary previously used a band-oriented User
+reader, which filtered out platform access without a selected band; it now uses
+the existing platform account reader with Sysadmin-only sign-in fields. Member
+buttons/dialogs also use the repository's required UI wrappers.
+
+Authorization regression fixtures now seed current accounts, memberships,
+GlobalRole/BandRole grants and public reference identities, rather than removed
+person-level roles/assignments. Event read-selection tests retain strict Prisma
+projection while using the actual snapshot/authorization owner. The migrated
+visibility assertions cover contact redaction, roleless owners, revoked grants,
+inactive/deleted/merged targets, and shared-account metadata separation.
+
+Validation:
+
+- `yarn typecheck`, normal `yarn build`, changed-file ESLint and
+  `git diff --check` pass.
+- Focused member/authorization/contract/UI checks: **131 pass across 14 files**.
+  Commands and diagnostics are under ignored `temp/a1-members-*` paths; tests use
+  the repository runner and isolated jsdom processes.
+- Native MariaDB checks: **58 pass across six files**, using
+  `yarn test tests/bandUserProfile.mysql.test.ts tests/bandUserInstruments.mysql.test.ts tests/bandUserTags.mysql.test.ts tests/bandUserRoles.mysql.test.ts tests/bandUserLifecycle.mysql.test.ts tests/platformUsers.mysql.test.ts --reporter=dot`
+  with a newly created private `CMDB_PHASE2_TEST_DATABASE_URL`. The sign-in summary
+  checks include ordinary account-manager redaction, grant revocation and denied
+  generic sign-in writes. Test transactions roll back; the database is dropped.
+- Built Chromium walkthrough: **seven passing assertion groups, no uncaught
+  page errors**. It uses the normal `blitz start --port 10458` server
+  and a freshly migrated/reset two-band demo (`seed=104`, date `2026-10-08`).
+  Result and inspected profile screenshot are `temp/a1-members-browser-result.json`
+  and `temp/a1-members-profile.png`. Configured application data
+  and uploads are untouched; owned databases/services are cleaned up.
+- `yarn test --reporter=dot` still fails: **210 failed, 1697 passed, 318 skipped**
+  tests in the Node batch, with **21 failed, 105 passed, 35 skipped** files and
+  ten suite-loading failures. Compared with the A0 checkpoint, nine failures are
+  repaired and no new failure entries appear. DOM checks run separately because
+  the failing Node batch prevents later batches. This is not a full-suite pass.
+- `yarn migration:verify` still protects **319 source references, 13 deferred
+  test specifications and 26 pending features**. No feature was retired.
+
+The next slice restores selected-band event search/detail/creation and its
+invitation dependencies, keeping this member checkpoint runnable.
+
 ## A0 route and entry-point audit (2026-10-08)
 
 **A0 is achieved; A1 and B remain open.** The normal production build runs
@@ -164,9 +223,9 @@ Validation against this change:
 
 Diagnostic logs, the browser result and wiki screenshot are under ignored
 `temp/a0-boundary-*` paths. Verification used only owned private databases and
-services; configured application data was not modified. The next slice is the
-A1 member workflow verification recorded in the implementation plan, followed by
-event/search/invitation recovery. Existing authorization/date-time fixture
+services; configured application data was not modified. This checkpoint led to
+the A1 member workflow verification above; the implementation plan now advances
+to event/search/invitation recovery. Existing authorization/date-time fixture
 failures remain visible work for A1 rather than A0 compiler exclusions.
 
 ## Restored boundary

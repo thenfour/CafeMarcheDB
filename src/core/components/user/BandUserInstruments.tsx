@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
-import { Alert, Box, Button, Stack, Typography } from "@mui/material";
+import { Alert, Box, Stack, Typography } from "@mui/material";
 import { Permission } from "shared/permissions";
 import type { BandUserPublicId, InstrumentPublicId } from "shared/publicId";
 import { usePresentation } from "src/locale/components/PresentationProvider";
@@ -13,6 +13,7 @@ import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/Das
 import { ActivityFeature } from "../featureReports/activityTracking";
 import type { InstrumentDashboardClient } from "src/core/db3/shared/entities/instrument/instrumentViews";
 import { InstrumentChip } from "../CMCoreComponents";
+import { CMButton } from "../CMCoreComponents2";
 import { SelectionPicker } from "../select/SelectionPicker";
 import { makeLocalSelectionSource } from "../select/selectionSource";
 import { useMemberAssignmentSave } from "./useMemberAssignmentSave";
@@ -75,12 +76,12 @@ export function BandUserInstrumentsEditor({ member, refetch }: {
                 && <Typography variant="caption">{locale.getPlainString("membership.instruments.default")}</Typography>}
         </Box>)}
         {canEdit && <Box>
-            <Button disabled={saving} onClick={() => setDialog("instruments")}>
+            <CMButton disabled={saving} onClick={() => setDialog("instruments")}>
                 {locale.getPlainString(selected.length ? "membership.instruments.edit" : "membership.instruments.select")}
-            </Button>
-            {selected.length > 1 && <Button disabled={saving} onClick={() => setDialog("primary")}>
+            </CMButton>
+            {selected.length > 1 && <CMButton disabled={saving} onClick={() => setDialog("primary")}>
                 {locale.getPlainString("membership.instruments.changeDefault")}
-            </Button>}
+            </CMButton>}
         </Box>}
         {saving && <Typography role="status">{locale.getPlainString("membership.instruments.saving")}</Typography>}
         {dialog && <SelectionPicker

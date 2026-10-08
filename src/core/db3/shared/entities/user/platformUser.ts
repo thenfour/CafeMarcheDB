@@ -3,7 +3,7 @@ import { Permission } from "shared/permissions";
 import type { UserPublicId } from "shared/publicId";
 import { GenericStringField } from "../../columnTypes/genericString";
 import { serverOwnedField } from "../../columnTypes/inherited";
-import { BoolField, DateTimeField, MakeIsDeletedField, MakePKfield, MakePublicIdField } from "../../columnTypes/xTableColumnTypes";
+import { BoolField, DateTimeField, ForeignCollectionField, MakeIsDeletedField, MakePKfield, MakePublicIdField } from "../../columnTypes/xTableColumnTypes";
 import { defineCrudView } from "../../core/db3CrudView";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import * as db3 from "../../db3core";
@@ -62,6 +62,12 @@ export const xPlatformUser = db3.defineTable({
         createdAt: columnName => serverOwnedField(new DateTimeField({ columnName, allowNull: false, specialFunction: db3.SqlSpecialColumnFunction.createdAt, authMap: kReadOnlyAuthMap })),
         isDeleted: () => serverOwnedField(MakeIsDeletedField({ authMap: kReadOnlyAuthMap })),
         isSysAdmin: columnName => serverOwnedField(new BoolField({ columnName, allowNull: false, defaultValue: false, authMap: kReadOnlyAuthMap })),
+        signInMethods: memberName => new ForeignCollectionField({
+            memberName, foreignTableID: "UserSignInMethod",
+            authMap: db3.defineAuthMap({
+                ...kReadOnlyAuthMap, PostQuery: Permission.sysadmin, PostQueryAsOwner: Permission.sysadmin,
+            }),
+        }),
     }),
 });
 

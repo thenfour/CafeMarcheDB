@@ -3,6 +3,7 @@ import { defineCrudView } from "../../core/db3CrudView";
 import { defineView } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { xUser } from "../../schema/user";
+import { xPlatformUser } from "./platformUser";
 
 const userIdentitySummaryArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
     select: {
@@ -14,10 +15,11 @@ const userIdentitySummaryArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
     },
 });
 
-const userIdentitySummaryContract = deriveViewContract(xUser, userIdentitySummaryArgs);
+// Sign-in inspection belongs to platform maintenance and must work without a selected band.
+const userIdentitySummaryContract = deriveViewContract(xPlatformUser, userIdentitySummaryArgs);
 export const userIdentitySummaryView = defineView({
     viewID: "User_IdentitySummary",
-    entity: xUser,
+    entity: xPlatformUser,
     selection: userIdentitySummaryContract.prismaSelection,
     dtoSchema: userIdentitySummaryContract.dtoSchema,
     hydrate: userIdentitySummaryContract.hydrate,

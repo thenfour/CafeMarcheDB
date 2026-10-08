@@ -1,6 +1,8 @@
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
-import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Box, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from "@mui/material";
+import { CMButton } from "../CMCoreComponents2";
+import { ResponsiveDialog } from "../ResponsiveDialog";
 import { Permission } from "shared/permissions";
 import type { BandRolePublicId } from "shared/publicId";
 import { usePresentation } from "src/locale/components/PresentationProvider";
@@ -71,15 +73,15 @@ export function BandUserRoleEditor({ member, roles, assignableRoleIds, refetch }
     return <Stack spacing={1} aria-busy={saving}>
         <Typography>{roleLabel(member.bandRoleId)}</Typography>
         {error && !open && <Alert severity="error">{error}</Alert>}
-        {canEdit && <Button disabled={saving} onClick={() => {
+        {canEdit && <CMButton disabled={saving} onClick={() => {
             setDraft(member.bandRoleId);
             setWarnings([]);
             setAcknowledged(false);
             setError(null);
             setOpen(true);
-        }}>{locale.getPlainString("membership.roles.edit")}</Button>}
+        }}>{locale.getPlainString("membership.roles.edit")}</CMButton>}
         {saving && <Typography role="status">{locale.getPlainString("membership.roles.saving")}</Typography>}
-        <Dialog open={open} onClose={close} fullWidth maxWidth="sm">
+        <ResponsiveDialog open={open} onClose={close} fullWidth maxWidth="sm">
             <DialogTitle>{locale.getPlainString("membership.roles.edit")}</DialogTitle>
             <DialogContent><Stack spacing={2} sx={{ pt: 1 }}>
                 <Typography>{locale.getPlainString("membership.roles.description")}</Typography>
@@ -98,10 +100,10 @@ export function BandUserRoleEditor({ member, roles, assignableRoleIds, refetch }
                 {warnings.length > 0 && <BandMemberContinuityWarning permissions={warnings} acknowledged={acknowledged} saving={saving} onAcknowledge={setAcknowledged} />}
             </Stack></DialogContent>
             <DialogActions>
-                <Button disabled={saving} onClick={close}>{locale.getPlainString("membership.roles.cancel")}</Button>
-                <Button disabled={saving || (warnings.length > 0 && !acknowledged)} onClick={() => { void save(); }}>{locale.getPlainString("membership.roles.save")}</Button>
+                <CMButton disabled={saving} onClick={close}>{locale.getPlainString("membership.roles.cancel")}</CMButton>
+                <CMButton disabled={saving || (warnings.length > 0 && !acknowledged)} onClick={() => { void save(); }}>{locale.getPlainString("membership.roles.save")}</CMButton>
             </DialogActions>
-        </Dialog>
+        </ResponsiveDialog>
     </Stack>;
 }
 

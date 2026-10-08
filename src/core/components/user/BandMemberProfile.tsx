@@ -1,7 +1,7 @@
 // Profile parity references: MIGRATION_RESTORE: member-profile in the backstage profile and user detail pages.
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
-import { Alert, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Breadcrumbs, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from "@mui/material";
 import { Permission } from "shared/permissions";
 import type { UserPublicId } from "shared/publicId";
 import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
@@ -13,6 +13,8 @@ import { xUserMinimum } from "src/core/db3/shared/schema/user";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
 import { CMLink } from "../CMLink";
+import { CMButton } from "../CMCoreComponents2";
+import { ResponsiveDialog } from "../ResponsiveDialog";
 import { BandUserInstrumentsEditor } from "./BandUserInstruments";
 import { BandUserTagsEditor } from "./BandUserTags";
 import { BandUserRoleEditor } from "./BandUserRoles";
@@ -37,12 +39,12 @@ export function BandMemberProfileEditor({ member, refetch }: {
     });
     return <Stack spacing={1}>
         {error && !open && <Alert severity="error">{error}</Alert>}
-        {canEdit && <Button disabled={saving} onClick={() => {
+        {canEdit && <CMButton disabled={saving} onClick={() => {
             setName(member.user.name ?? "");
             setPhone(member.user.phone ?? "");
             setOpen(true);
-        }}>{locale.getPlainString("membership.profile.edit")}</Button>}
-        <Dialog open={open} onClose={() => {
+        }}>{locale.getPlainString("membership.profile.edit")}</CMButton>}
+        <ResponsiveDialog open={open} onClose={() => {
             if (!isPending()) {
                 setOpen(false);
             }
@@ -55,13 +57,13 @@ export function BandMemberProfileEditor({ member, refetch }: {
                 {member.user.phone !== undefined && <TextField label={locale.getPlainString("membership.profile.phone")} value={phone} disabled={saving} inputProps={{ maxLength: xUserMinimum.fields.phone.maxLength }} onChange={event => setPhone(event.target.value)} />}
             </Stack></DialogContent>
             <DialogActions>
-                <Button disabled={saving} onClick={() => setOpen(false)}>{locale.getPlainString("common.action.cancel")}</Button>
-                <Button disabled={saving || !name.trim()} onClick={() => { void save({
+                <CMButton disabled={saving} onClick={() => setOpen(false)}>{locale.getPlainString("common.action.cancel")}</CMButton>
+                <CMButton disabled={saving || !name.trim()} onClick={() => { void save({
                     membershipId: member.publicId, name,
                     ...(member.user.phone !== undefined ? { phone } : {}),
-                }); }}>{locale.getPlainString("membership.profile.save")}</Button>
+                }); }}>{locale.getPlainString("membership.profile.save")}</CMButton>
             </DialogActions>
-        </Dialog>
+        </ResponsiveDialog>
     </Stack>;
 }
 

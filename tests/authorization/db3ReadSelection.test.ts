@@ -19,6 +19,7 @@ import { eventPublicId, segmentPublicId } from "../support/eventResponseFixtures
 import { selectPrismaTestRow } from "../support/prismaSelection";
 import { createAuthorizationPersona } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
+import { readFixtureBandId, scopedReadFixture } from "./support/scopedReadFixture";
 
 afterEach(() => { vi.restoreAllMocks(); });
 
@@ -47,13 +48,15 @@ const segment = {
 
 function strictEventDatabase() {
     const delegate = authorizationTestDb.getDelegate("event");
+    const originalFindMany = delegate.findMany.bind(delegate);
     const findMany = vi.fn(async (args: DB3ReadSelectionArgs) => {
-        const rows = await delegate.findMany({ ...args, select: args.select ?? undefined, include: args.include ?? undefined });
+        const rows = await originalFindMany({ ...args, select: args.select ?? undefined, include: args.include ?? undefined });
         return rows.map(row => selectPrismaTestRow(row, args));
     });
-    // The query only uses Event; the real test delegate handles filtering and
-    // relations, then our projector enforces Prisma's explicit select shape.
-    const database = { Event: { findMany } } as unknown as TransactionalPrismaClient;
+    // Explicit selects may omit id, unlike the in-memory delegate's default full-row type.
+    vi.spyOn(delegate, "findMany").mockImplementation(findMany as unknown as typeof delegate.findMany);
+    // The proxy supplies root transactions and grant refreshes; the projector enforces Prisma's select shape.
+    const database = authorizationTestDb as unknown as TransactionalPrismaClient;
     return { database, findMany };
 }
 
@@ -62,12 +65,12 @@ describe("DB3 read execution dependencies", () => {
         const actor = createAuthorizationPersona(persona, {
             id: 93, permissions: [Permission.login, Permission.view_events_nonpublic, Permission.respond_to_events],
         });
-        authorizationTestDb.reset({ user: [actor.user!], event: [event], eventSegment: [segment] });
+        authorizationTestDb.reset({ ...scopedReadFixture([{ user: actor.user!, permissions: [Permission.view_events_nonpublic, Permission.respond_to_events] }]), event: [event], eventSegment: [segment] });
         const { database, findMany } = strictEventDatabase();
         const result = await queryHydratedView({
             view: db3.eventDetailView, filter: { items: [], publicIds: [event.publicId] },
             orderBy: undefined, cmdbQueryContext: "event-detail-dependency-test",
-        }, await loadAuthorization(actor.ctx.session), db3.createDashboardReferenceStore(), database);
+        }, await loadAuthorization(actor.ctx.session, readFixtureBandId), db3.createDashboardReferenceStore(), database);
 
         expect(result.items).toHaveLength(1);
         expect(result.items[0]!.segments[0]).toMatchObject({
@@ -80,7 +83,7 @@ describe("DB3 read execution dependencies", () => {
             select: expect.objectContaining({
                 segments: expect.objectContaining({
                     select: expect.objectContaining({
-                        event: { select: { publicId: true, createdByUserId: true, visiblePermissionId: true, isDeleted: true } },
+                        event: expect.objectContaining({ select: expect.objectContaining({ publicId: true, bandId: true, createdByUserId: true, visiblePermissionId: true, isDeleted: true }) }),
                     }),
                 }),
             }),
@@ -92,13 +95,13 @@ describe("DB3 read execution dependencies", () => {
             id: 93, permissions: [Permission.login, Permission.view_events_nonpublic],
         });
         const second = { ...event, id: 102, publicId: eventPublicId(102) };
-        authorizationTestDb.reset({ user: [actor.user!], event: [event, second] });
+        authorizationTestDb.reset({ ...scopedReadFixture([{ user: actor.user!, permissions: [Permission.view_events_nonpublic] }]), event: [event, second] });
         const { database, findMany } = strictEventDatabase();
         const input = {
             table: { tableID: "Event", tableName: "Event", viewID: db3.eventSearchView.viewID },
             filter: { items: [] }, orderBy: undefined, cmdbQueryContext: "event-search-order-test",
         };
-        const auth = await loadAuthorization(actor.ctx.session);
+        const auth = await loadAuthorization(actor.ctx.session, readFixtureBandId);
         const result = await queryTable(input, auth, database, {
             orderedPrimaryKeys: [102, 999, 100], trustedNaturalPrimaryKeys: [102, 999, 100],
         });
@@ -158,7 +161,7 @@ describe("DB3 read execution dependencies", () => {
 
     it("does not expose added ordering or authorization fields through a legacy selected read", async () => {
         const actor = createAuthorizationPersona("normal", { id: 93, permissions: [Permission.login, Permission.view_songs] });
-        authorizationTestDb.reset({ user: [actor.user!] });
+        authorizationTestDb.reset(scopedReadFixture([{ user: actor.user!, permissions: [Permission.view_songs] }]));
         vi.spyOn(db3.xSong, "getSelectionArgs").mockReturnValue({ select: { name: true, id: false } });
         const findMany = vi.fn(async (args: DB3ReadSelectionArgs) => [selectPrismaTestRow({
             id: 10, name: "Song", createdByUserId: 93, visiblePermissionId: null, isDeleted: false,
@@ -168,7 +171,7 @@ describe("DB3 read execution dependencies", () => {
         const result = await queryTable({
             table: { tableID: "Song", tableName: "Song" }, filter: { items: [] },
             orderBy: undefined, cmdbQueryContext: "legacy-selected-read-test",
-        }, await loadAuthorization(actor.ctx.session), database, { orderedPrimaryKeys: [10] });
+        }, await loadAuthorization(actor.ctx.session, readFixtureBandId), database, { orderedPrimaryKeys: [10] });
         expect(result.items).toStrictEqual([{ name: "Song" }]);
         expect(findMany.mock.calls[0]![0].select).toEqual({
             name: true, id: true, createdByUserId: true, visiblePermissionId: true, isDeleted: true,

@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
-import { Alert, Button, Card, CardContent, MenuItem, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Card, CardContent, MenuItem, Stack, TextField, Typography } from "@mui/material";
 import { Permission } from "shared/permissions";
 import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 import db3paginatedQueries from "src/core/db3/queries/db3paginatedQueries";
@@ -11,6 +11,7 @@ import { bandMemberDirectoryQuery, type BandMemberDirectoryFilter } from "src/co
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
 import { CMLink } from "../CMLink";
+import { CMButton } from "../CMCoreComponents2";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { bandMemberHref, withMemberPresentation } from "./bandMemberLinks";
@@ -36,7 +37,7 @@ function BandMemberListItem({ member, roles }: { readonly member: BandUserProfil
         </CMChipContainer>
         <CMChipContainer>{member.bandUserInstruments.map(assignment => {
             const instrument = dashboard.instrument.getById(assignment.bandInstrumentId);
-            return <CMChip key={assignment.publicId} size="small">{instrument && !instrument.isHidden ? instrument.name : locale.getPlainString("membership.instruments.unavailable")}
+            return <CMChip key={assignment.publicId} size="small">{instrument && !instrument.isHidden && !instrument.functionalGroup.isHidden ? instrument.name : locale.getPlainString("membership.instruments.unavailable")}
                 {assignment.isPrimary && ` (${locale.getPlainString("membership.instruments.default")})`}</CMChip>;
         })}</CMChipContainer>
         {member.createdAt !== undefined && <Typography variant="caption">{locale.getPlainString("membership.directory.joinedAt", { joinedAt: member.createdAt })}</Typography>}
@@ -70,7 +71,7 @@ function LoadedMemberDirectory() {
             </TextField>
             <TextField select fullWidth label={locale.getPlainString("membership.instruments.title")} value={filter.instrumentId} onChange={event => updateFilter({ instrumentId: event.target.value })}>
                 <MenuItem value="">{locale.getPlainString("membership.directory.all")}</MenuItem>
-                {dashboard.instrument.items.filter(instrument => !instrument.isHidden).map(instrument => <MenuItem key={instrument.publicId} value={instrument.publicId}>{instrument.name}</MenuItem>)}
+                {dashboard.instrument.items.filter(instrument => !instrument.isHidden && !instrument.functionalGroup.isHidden).map(instrument => <MenuItem key={instrument.publicId} value={instrument.publicId}>{instrument.name}</MenuItem>)}
             </TextField>
             <TextField select fullWidth label={locale.getPlainString("membership.roles.role")} value={filter.roleId} onChange={event => updateFilter({ roleId: event.target.value })}>
                 <MenuItem value="">{locale.getPlainString("membership.directory.all")}</MenuItem>
@@ -100,9 +101,9 @@ function LoadedMemberDirectory() {
             })}
         </>}
         <Stack direction="row" spacing={2}>
-            <Button disabled={status.isFetching || filter.page === 0} onClick={() => setFilter(current => ({ ...current, page: current.page - 1 }))}>{locale.getPlainString("membership.directory.previous")}</Button>
-            <Button disabled={status.isFetching || !result?.hasMore} onClick={() => setFilter(current => ({ ...current, page: current.page + 1 }))}>{locale.getPlainString("membership.directory.next")}</Button>
-            <Button disabled={status.isFetching} onClick={() => { void status.refetch(); }}>{locale.getPlainString("membership.directory.refresh")}</Button>
+            <CMButton disabled={status.isFetching || filter.page === 0} onClick={() => setFilter(current => ({ ...current, page: current.page - 1 }))}>{locale.getPlainString("membership.directory.previous")}</CMButton>
+            <CMButton disabled={status.isFetching || !result?.hasMore} onClick={() => setFilter(current => ({ ...current, page: current.page + 1 }))}>{locale.getPlainString("membership.directory.next")}</CMButton>
+            <CMButton disabled={status.isFetching} onClick={() => { void status.refetch(); }}>{locale.getPlainString("membership.directory.refresh")}</CMButton>
         </Stack>
     </Stack>;
 }

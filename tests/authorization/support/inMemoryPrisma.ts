@@ -102,6 +102,7 @@ type Relation = { table: string; local: string; foreign: string; many?: boolean 
 const testRelations: Record<string, Record<string, Relation>> = {
   user: {
     globalRole: { table: "globalRole", local: "globalRoleId", foreign: "id" },
+    signInMethods: { table: "userSignInMethod", local: "id", foreign: "userId", many: true },
   },
   band: {
     locales: { table: "bandLocale", local: "id", foreign: "bandId", many: true },
@@ -127,6 +128,20 @@ const testRelations: Record<string, Record<string, Relation>> = {
   },
   bandRolePermission: {
     permission: { table: "permission", local: "permissionId", foreign: "id" },
+  },
+  bandUser: {
+    user: { table: "user", local: "userId", foreign: "id" },
+    bandRole: { table: "bandRole", local: "bandRoleId", foreign: "id" },
+    bandUserInstruments: { table: "bandUserInstrument", local: "id", foreign: "bandUserId", many: true },
+    bandUserTagAssignments: { table: "bandUserTagAssignment", local: "id", foreign: "bandUserId", many: true },
+  },
+  bandUserInstrument: {
+    bandUser: { table: "bandUser", local: "bandUserId", foreign: "id" },
+    bandInstrument: { table: "bandInstrument", local: "bandInstrumentId", foreign: "id" },
+  },
+  bandUserTagAssignment: {
+    bandUser: { table: "bandUser", local: "bandUserId", foreign: "id" },
+    bandUserTag: { table: "bandUserTag", local: "bandUserTagId", foreign: "id" },
   },
   wikiPage: {
     revisions: { table: "wikiPageRevision", local: "id", foreign: "wikiPageId", many: true },

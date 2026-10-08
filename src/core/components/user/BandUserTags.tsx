@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@blitzjs/rpc";
-import { Alert, Box, Button, Stack, Typography } from "@mui/material";
+import { Alert, Box, Stack, Typography } from "@mui/material";
 import { Permission } from "shared/permissions";
 import type { UserTagPublicId } from "shared/publicId";
 import { usePresentation } from "src/locale/components/PresentationProvider";
@@ -11,6 +11,7 @@ import db3queries from "src/core/db3/queries/db3queries";
 import { bandUserTagsCommand, bandUserTagsView, type BandUserTagsDto, type BandUserTagsEdit } from "src/core/db3/shared/entities/user/bandUserTags";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { CMStandardDBChip } from "../CMChip";
+import { CMButton } from "../CMCoreComponents2";
 import { SelectionPicker } from "../select/SelectionPicker";
 import { makeLocalSelectionSource } from "../select/selectionSource";
 import { useMemberAssignmentSave } from "./useMemberAssignmentSave";
@@ -50,7 +51,7 @@ export function BandUserTagsEditor({ member, refetch }: {
         {error && !open && <Alert severity="error">{error}</Alert>}
         {selected.length === 0 && <Typography>{locale.getPlainString("membership.tags.empty")}</Typography>}
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>{selected.map(option => <React.Fragment key={option.publicId}>{renderTag(option)}</React.Fragment>)}</Box>
-        {canEdit && <Button disabled={saving} onClick={() => setOpen(true)}>{locale.getPlainString("membership.tags.edit")}</Button>}
+        {canEdit && <CMButton disabled={saving} onClick={() => setOpen(true)}>{locale.getPlainString("membership.tags.edit")}</CMButton>}
         {saving && <Typography role="status">{locale.getPlainString("membership.tags.saving")}</Typography>}
         {open && <SelectionPicker
             source={makeLocalSelectionSource({ items: options, getKey: option => option.publicId, getLabel: option => option.label, renderValue: renderTag })}

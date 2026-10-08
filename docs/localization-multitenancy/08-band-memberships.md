@@ -9,8 +9,8 @@ advanced directory work follow the [restoration plan](04-implementation-plan.md)
 Generic shared-account DB3 selectors and `User_Editor` deliver person fields only;
 their generated writes reject instrument/tag assignment fields. The obsolete
 person-level instrument editor/CRUD are unregistered. Membership assignments use
-the contracts below. Deferred invitation readers still depend on old tag relation
-metadata at startup, with writes disabled until event recovery removes it.
+the contracts below. Event invitation/response readers use membership assignments;
+broader event pages and invitation administration remain under recovery.
 
 ## Member reads and directory
 
@@ -38,6 +38,8 @@ Natural IDs, account credentials, and permission inventories stay off these DTOs
 Hidden existing assignments remain identifiable, with unavailable labels when
 their catalog reference is not delivered. Stored cross-band links are excluded
 from reads and reject writes.
+Instruments in hidden functional groups also use unavailable labels and are
+omitted from directory filter choices, matching the assignment editor.
 
 `/backstage/users` uses ordinary paginated DB3 reads: tokenized name search,
 counts, stable ordering, and paging. Declared filters accept public band-tag,
@@ -52,6 +54,9 @@ Profiles, directory, links, and breadcrumbs preserve band/route locale. Queries
 carry the full language preferences and refresh key. Context changes discard old
 drafts/query data. The own profile retains calendar preferences and separately
 authorized sign-in controls.
+Shared-account sign-in summaries use the platform account reader and require
+Sysadmin authority; they work without selecting a band. Band managers cannot
+inspect them through membership reads.
 
 ## Assignment commands
 

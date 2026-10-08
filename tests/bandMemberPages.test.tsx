@@ -27,7 +27,8 @@ vi.mock("@blitzjs/rpc", () => ({ useQuery: (_resolver: unknown, args: ReadInput)
         { refetch, isFetching: false, error: null }];
 } }));
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({
-    refreshCachedData: refreshDashboard, userTag: { items: [], getById: () => undefined }, instrument: { items: [], getById: () => undefined },
+    refreshCachedData: refreshDashboard, userTag: { items: [], getById: () => undefined },
+    instrument: { items: directoryInstruments, getById: (id: string) => directoryInstruments.find(item => item.publicId === id) },
 }) }));
 vi.mock("src/core/components/SnackbarContext", () => ({ useSnackbar: () => ({ showMessage: vi.fn() }) }));
 vi.mock("src/core/components/CMLink", () => ({ CMLink: ({ href, children }: React.PropsWithChildren<{ href: string }>) => <a href={href}>{children}</a> }));
@@ -49,6 +50,13 @@ const refetch = vi.fn(async () => {});
 const refreshDashboard = vi.fn(async () => {});
 const invalidate = vi.fn(async () => {});
 const queries: ReadInput[] = [];
+interface DirectoryInstrument {
+    readonly publicId: string;
+    readonly name: string;
+    readonly isHidden: boolean;
+    readonly functionalGroup: { readonly isHidden: boolean };
+}
+let directoryInstruments: DirectoryInstrument[];
 let currentMember = member;
 let actorId: string;
 let permissions: Permission[];
@@ -71,6 +79,7 @@ beforeEach(() => {
     bandId = "Band000000000001";
     requestId = "first";
     queries.length = 0;
+    directoryInstruments = [];
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -181,6 +190,28 @@ describe("band member profile controls", () => {
 });
 
 describe("member directory", () => {
+    it("redacts instruments in hidden groups from cards and selectable filters", async () => {
+        directoryInstruments = [
+            { publicId: "Instrument000001", name: "Hidden group trumpet", isHidden: false, functionalGroup: { isHidden: true } },
+            { publicId: "Instrument000002", name: "Visible drums", isHidden: false, functionalGroup: { isHidden: false } },
+        ];
+        currentMember = bandUserProfileView.parseDto({ ...member,
+            bandUserInstruments: [{ publicId: "Assignment000001", bandInstrumentId: directoryInstruments[0]!.publicId,
+                bandInstrument: { publicId: directoryInstruments[0]!.publicId }, isPrimary: true }],
+        });
+        await renderDirectory();
+        expect(container.textContent).toContain(kStaticLocalizedStringRegistry["membership.instruments.unavailable"].defaultValue);
+        expect(container.textContent).not.toContain("Hidden group trumpet");
+        const label = [...container.querySelectorAll<HTMLLabelElement>("label")].find(element => element.textContent === "Member instruments");
+        const select = label && document.getElementById(label.htmlFor);
+        if (!select) {
+            throw new Error("Missing instrument filter");
+        }
+        await act(async () => select.dispatchEvent(new window.MouseEvent("mousedown", { bubbles: true, button: 0 })));
+        const options = document.querySelector('[role="listbox"]');
+        expect(options?.textContent).toContain("Visible drums");
+        expect(options?.textContent).not.toContain("Hidden group trumpet");
+    });
     it("pages with scoped requests and resets to the first page when the search changes", async () => {
         await renderDirectory();
         const link = [...container.querySelectorAll<HTMLAnchorElement>("a")].find(element => element.textContent === "Alice");

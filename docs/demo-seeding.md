@@ -122,8 +122,21 @@ multilingual text contract rather than acquiring an invented translation model.
    also require that explicit band context.
 5. Sign in as `member1-1@demo.invalid`. Only River appears in the selector;
    manually supplying Harbour's band ID must not reveal its member content.
-6. Make a permitted edit, stop the site, repeat reset with the same options/date,
-   and launch again. The authored fixture is restored.
+6. As Alex, use the member directory's name search and open your profile. Edit
+   your shared name/phone, then switch bands: the shared values follow you.
+   Change instruments/default instrument in River and check that Harbour's
+   assignments stay unchanged. River's French options include its trumpet override.
+7. As `manager1@demo.invalid`, open another River member's profile. Change their
+   instruments/tags or band role. Their shared name/phone editor is unavailable
+   because band management does not grant shared-account maintenance. Clearing
+   the role applies new-member defaults; the person retains access to their own
+   profile while other-member reads require the appropriate grant.
+8. Deactivate an ordinary River membership. Recovery requires `recover_users`
+   separately; the default band manager lacks it. Use `admin@demo.invalid` to
+   recover the membership at `/backstage/recoverMembers` with River selected.
+   The shared account, retained assignments and other memberships stay intact.
+9. Clear band selection and check that member data disappears. Stop the site,
+   repeat reset with the same options/date, and launch again to restore the fixture.
 
 Seeded rows do not establish restoration of their pages. General event/song/file
 screens, uploads, custom sidebar delivery and other deferred surfaces still have

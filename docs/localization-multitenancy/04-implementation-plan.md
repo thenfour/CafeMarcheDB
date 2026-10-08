@@ -97,25 +97,23 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Latest implemented slice:** completed the A0 deferred-surface audit. Seventeen
-backstage routes and the public root show registered recovery text. Legacy
-event/song edits, pinned recordings, profile credits, public publication and raw
-domain search reject before their old readers; generic Song/File/gallery RPCs
-cannot bypass that boundary. Date selection remains usable with an explicit
-event-highlight notice. Ordinary-member wiki current content no longer requires
-history permission; direct local-file downloads use explicit-band authorization,
-fresh visibility checks and context-preserving URLs. Server health no longer
-calls the deferred audit-filter reader and accepts absolute upload directories.
-Preservation verification protects 319 source references, 13 deferred test
-specifications and 26 pending features. No feature is retired by this audit.
+**Latest implemented slice:** verified the first A1 member-workflow checkpoint
+through the normal built application in two bands: directory/profile lookup,
+shared name/phone edits, instrument/default selection, manager tag/role edits,
+roleless access and membership deactivation/recovery. Directory cards and filters
+now respect hidden instrument groups. Sign-in summaries use the existing platform
+reader and work without a selected band. Member controls use the app's button
+and responsive-dialog wrappers. Relevant authorization fixtures now persist
+account/membership grants and exercise snapshot reads; nine full-suite failures
+are repaired. See [current evidence](09-application-recovery.md#a1-member-workflow-checkpoint-2026-10-08).
+Broader profile/directory preservation obligations and the complete A1 gate remain
+open; no feature was retired.
 
-**Following implementation slice:** begin A1 with the existing member workflows:
-verify directory/profile lookup, permitted shared-person and membership edits,
-instrument/tag assignments, hidden references and roleless memberships through
-the normal built application in two bands. Repair the relevant authorization
-fixtures rather than suppressing the full-suite failures. Then restore the
-event search/detail/creation workflow with its required search and invitation
-dependencies; retain the guarded boundaries until each complete workflow passes.
+**Following implementation slice:** restore the selected-band event
+search/detail/creation workflow with its required search and invitation
+dependencies. Keep restored member workflows runnable, repair relevant remaining
+authorization/date fixtures, and retain guarded endpoints until each complete
+workflow passes through the built application.
 
 ### Earlier recovery slices
 

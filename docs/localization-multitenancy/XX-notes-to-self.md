@@ -986,6 +986,7 @@ model BandSetting {
 -  xTable should stop being used like a view
    -  only 1 xtable per db entity
    -  fieldbase should also own serialization, validation (and likely own zod schema at very least for DTO parsing)
+   -  don't re-invent auth: search for `export const xCustomLinkFile = db3.defineTable({` to see where ad-hoc auth is sneaking in
 -  find a way to auto-hydrate localized strings. the view would need a way to specify this.
 -  lots of entity details bleed into places it shouldn't. check for `isDeleted` and `mergedIntoUserId` to see all the places
    that are trying to own their own copy of user / user merging policies.

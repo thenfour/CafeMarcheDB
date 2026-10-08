@@ -6,6 +6,7 @@ import { loadAuthorizationForUser, type CMServerAuthorization } from "src/auth/s
 import { bindDB3ReadSnapshot } from "src/core/db3/server/db3ReadExecution";
 import { DB3PaginatedQueryCore, queryView } from "src/core/db3/server/db3QueryCore";
 import { platformUserEditorView } from "src/core/db3/shared/entities/user/platformUser";
+import { userIdentitySummaryView } from "src/core/db3/shared/entities/user/userViews";
 import { generatePublicId } from "src/server/publicId";
 import { initializeAccessControl } from "src/setup/accessControl";
 import { executeCatalogCrud } from "./support/db3CatalogFixture";
@@ -28,6 +29,23 @@ describe.skipIf(!settingsMysqlTestUrl)("platform accounts on MariaDB", () => {
     }
 
     const snapshot = (tx: Prisma.TransactionClient, auth: CMServerAuthorization) => bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" });
+
+    it("reads sign-in summaries without a band and withholds them from ordinary account managers", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const person = await tx.user.findUniqueOrThrow({ where: { id: fixture.user.id } });
+        await tx.userSignInMethod.create({ data: {
+            publicId: generatePublicId(), userId: person.id, type: "google", identifier: generatePublicId(), displayId: "person@test.invalid",
+        } });
+        const input = { view: userIdentitySummaryView, filter: { publicIds: [parsePublicId<"User">(person.publicId)] }, cmdbQueryContext: "platform sign-in summary" };
+        const admin = await loadAuthorizationForUser(fixture.admin, tx);
+        expect(admin.band).toBeNull();
+        expect((await queryView(input, admin, await snapshot(tx, admin))).items).toEqual([
+            { publicId: person.publicId, signInMethods: [{ type: "google", displayId: "person@test.invalid" }] },
+        ]);
+        const manager = await accountManager(tx, fixture);
+        expect((await queryView(input, manager.auth, await snapshot(tx, manager.auth))).items).toEqual([{ publicId: person.publicId }]);
+        await tx.user.update({ where: { id: fixture.admin.id }, data: { isSysAdmin: false, globalRoleId: null } });
+        await expect(queryView(input, admin, await snapshot(tx, admin))).rejects.toThrow();
+    }));
 
     it("reads and searches shared contacts without band grants, with stable sorting and public identities", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
         const manager = await accountManager(tx, fixture);
@@ -86,7 +104,7 @@ describe.skipIf(!settingsMysqlTestUrl)("platform accounts on MariaDB", () => {
         const attempts = [
             { isDeleted: true }, { isSysAdmin: true }, { createdAt: new Date("2000-01-01") },
             { hashedPassword: "crafted" }, { globalRoleId: 1 }, { bandId: fixture.bands[0]!.id },
-            { instruments: [] }, { tags: [] }, { id: 42 }, { publicId: generatePublicId() },
+            { instruments: [] }, { tags: [] }, { signInMethods: [] }, { id: 42 }, { publicId: generatePublicId() },
         ];
         for (const patch of attempts) {
             await expect(executeCatalogCrud(tx, auth, platformUserEditorView, patch, identity)).rejects.toThrow();

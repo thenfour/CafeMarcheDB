@@ -22,7 +22,7 @@ function authorization(actorId: number, ...permissions: Permission[]) {
 
 const owner = authorization(person.id, Permission.login);
 const reader = authorization(20, Permission.login, Permission.view_users_basic_info);
-const platformAdmin = authorization(1, Permission.login, Permission.view_users_basic_info, Permission.sysadmin);
+const platformAdmin = authorization(1, Permission.login, Permission.manage_global_users, Permission.sysadmin);
 const membershipFields = ["instruments", "tags", "bandUserInstruments", "bandUserTagAssignments", "bandRoleId", "bandId"];
 const secrets = ["hashedPassword", "calendarFeedToken", "accessToken", "uid", "signInMethods", "globalRole", "globalRoleId"];
 
@@ -103,7 +103,7 @@ describe("shared person and membership contract boundary", () => {
         const summary = authorizeAndProjectViewDto(db3.userIdentitySummaryView, model, platformAdmin, "shared-sign-in-admin");
         expect(summary).toEqual({ publicId: userId, signInMethods: model.signInMethods });
         expect(authorizeAndProjectViewDto(db3.userIdentitySummaryView, model, owner, "shared-sign-in-owner"))
-            .toEqual({ publicId: userId });
+            .toBeNull();
     });
 
     it("keeps the band-scoped assignment views and aggregate commands active", () => {
