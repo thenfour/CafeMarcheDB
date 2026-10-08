@@ -1,4 +1,3 @@
-import type { ColorPaletteEntry } from "@/src/core/components/color/palette";
 import { Prisma } from "db";
 import type {
     BandUserPublicId,
@@ -12,7 +11,6 @@ import type {
     EventTypePublicId,
     EventUserResponsePublicId,
     FilePublicId,
-    InstrumentFunctionalGroupPublicId,
     InstrumentPublicId,
     PermissionPublicId,
     SongPublicId,
@@ -22,6 +20,7 @@ import type {
 } from "shared/publicId";
 //import * as db3 from "../db3core"; // circular
 import { AuxUserArgs } from "types";
+import { bandEventTagSelection } from "../entities/event/eventTagCatalogs";
 import { bandWikiPageTagSelection } from "../entities/wikiPageTag/wikiPageTagViews";
 import type { bandSongTagDisplayContract } from "../entities/song/bandSongTagViews";
 //import { DateRangeInfo } from "shared/time";
@@ -255,35 +254,6 @@ export const SongNaturalOrderBy: Prisma.SongOrderByWithRelationInput[] = [
 
 
 
-export const InstrumentArgs = Prisma.validator<Prisma.InstrumentArgs>()({
-    include: {
-        functionalGroup: true,
-    }
-});
-
-export type InstrumentPayload = Prisma.InstrumentGetPayload<typeof InstrumentArgs>;
-
-const InstrumentWithFunctionalGroupArgs = Prisma.validator<Prisma.InstrumentArgs>()({
-    include: {
-        functionalGroup: true,
-    },
-});
-type InstrumentWithFunctionalGroupPayload = Prisma.InstrumentGetPayload<typeof InstrumentWithFunctionalGroupArgs>;
-
-
-////////////////////////////////////////////////////////////////
-export const InstrumentMinimumArgs = Prisma.validator<Prisma.InstrumentArgs>()({
-    select: {
-        id: true,
-        name: true,
-        sortOrder: true,
-        functionalGroupId: true,
-    }
-});
-
-export type InstrumentPayloadMinimum = Prisma.InstrumentGetPayload<typeof InstrumentMinimumArgs>;
-
-
 type PermissionForVisibilityDbPayload = Prisma.PermissionGetPayload<typeof PermissionForVisibilityArgs>;
 export type PermissionForVisibilityPayload = Omit<PermissionForVisibilityDbPayload, "publicId" | "description"> & {
     publicId: PermissionPublicId;
@@ -373,20 +343,6 @@ export const UserNaturalOrderBy: Prisma.UserOrderByWithRelationInput[] = [
 
 
 
-// order by functional group, then by instrument.
-export const InstrumentNaturalOrderBy: Prisma.InstrumentOrderByWithRelationInput[] = [
-    {
-        functionalGroup: {
-            sortOrder: 'asc',
-        }
-    },
-    { sortOrder: 'asc' },
-    { name: 'asc' },
-    { id: 'asc' },
-];
-
-
-
 ////////////////////////////////////////////////////////////////
 // a medium-verbosity song payload, used for non-primary things like song lists etc.
 export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
@@ -430,73 +386,6 @@ export type SongPayloadMinimum = {
 
 
 ////////////////////////////////////////////////////////////////
-export const InstrumentFunctionalGroupArgs = Prisma.validator<Prisma.InstrumentFunctionalGroupArgs>()({
-});
-
-export type InstrumentFunctionalGroupPayload = Prisma.InstrumentFunctionalGroupGetPayload<typeof InstrumentFunctionalGroupArgs>;
-export type InstrumentFunctionalGroupPayloadMinimum = Prisma.InstrumentFunctionalGroupGetPayload<{}>;
-
-// i'm thinking of a generic way to do this, but probably done together with an enrichment step.
-export type InstrumentFunctionalGroupClientPayload = Omit<
-    InstrumentFunctionalGroupPayload,
-    "id" | "publicId" | "color"
-> & {
-    publicId: InstrumentFunctionalGroupPublicId;
-    color: ColorPaletteEntry | null;
-};
-
-export type InstrumentClientPayload = Omit<
-    InstrumentPayload,
-    "id" | "publicId" | "functionalGroupId" | "functionalGroup"
-> & {
-    publicId: InstrumentPublicId;
-    functionalGroupId: InstrumentFunctionalGroupPublicId;
-    functionalGroup: InstrumentFunctionalGroupClientPayload;
-};
-
-// Some shared calculation code is also used by server-side/scenario data that
-// still carries Prisma's numeric foreign key.
-export type InstrumentClientOrDbPayload = InstrumentClientPayload | InstrumentPayload;
-
-export type InstrumentIdentity = InstrumentPublicId | number;
-
-export function getInstrumentIdentity(instrument: InstrumentClientOrDbPayload): InstrumentIdentity {
-    return "id" in instrument ? instrument.id : instrument.publicId;
-}
-
-// replaces natural-id-variants from prisma with publicid variants.
-export type InstrumentWithFunctionalGroupClientPayload = Omit<
-    InstrumentWithFunctionalGroupPayload,
-    "id" | "publicId" | "functionalGroupId" | "functionalGroup"
-> & {
-    publicId: InstrumentPublicId;
-    functionalGroupId: InstrumentFunctionalGroupPublicId;
-    functionalGroup: InstrumentFunctionalGroupClientPayload;
-};
-
-type DashboardInstrumentDbPayload = Prisma.InstrumentGetPayload<{
-    include: {
-        functionalGroup: true;
-    };
-}>;
-
-export type DashboardInstrumentPayload = Omit<DashboardInstrumentDbPayload, "id" | "publicId" | "functionalGroupId" | "functionalGroup"> & {
-    publicId: InstrumentPublicId;
-    functionalGroupId: InstrumentFunctionalGroupPublicId;
-    functionalGroup: InstrumentFunctionalGroupClientPayload;
-};
-
-export const InstrumentFunctionalGroupNaturalSortOrder: Prisma.InstrumentFunctionalGroupOrderByWithRelationInput[] = [
-    { sortOrder: 'asc' },
-    { name: 'asc' },
-    { id: 'asc' },
-];
-
-
-
-
-
-
 export const UserMinimalSelect = Prisma.validator<Prisma.UserSelect>()({
     id: true,
     name: true,
@@ -530,7 +419,7 @@ export enum EventSongListDividerTextStyle {
 export const EventTagAssignmentArgs = Prisma.validator<Prisma.EventTagAssignmentArgs>()({
     include: {
         event: true,
-        eventTag: true,
+        eventTag: { select: { ...bandEventTagSelection.select, bandId: true } },
     }
 });
 export type EventTagAssignmentPayload = Prisma.EventTagAssignmentGetPayload<typeof EventTagAssignmentArgs>;

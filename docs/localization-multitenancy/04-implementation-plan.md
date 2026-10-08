@@ -93,11 +93,21 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** repair the event-tag assignment selection in
-`prismArgs.ts`, which currently omits the localized fields consumed by
-`event.ts:223`. Then continue obsolete instrument payloads and remaining wiki/menu
-entry points; isolate deferred UI and non-page entry points together. Preserve the
-working song-tag lookup, File payloads and shared SongCreditType/wiki-tag catalogs.
+**Next implementation slice:** recover MenuLink caption/section localization and
+ownership, then the remaining wiki entry points. The normal build now stops at
+`menuLink.ts:55`. Isolate deferred UI and non-page entry points together. Preserve
+the working song-tag lookup, File payloads and shared SongCreditType/wiki-tag catalogs.
+
+Event-tag assignments now reuse the canonical band catalog selection, including
+localized string metadata and shared-source dependencies. Obsolete Instrument and
+InstrumentFunctionalGroup Prisma payload helpers and their numeric/public identity
+union are removed. Attendance, File display/filter and demo consumers use hydrated
+catalog types and public instrument identities. The attendance scenario adapter
+keeps its version-1 numeric choices local and translates them at the control boundary.
+Native checks cover the assignment selection and retained catalog/attendance
+contracts; Chromium covers scenario settings, control changes, export/import and
+reset. This clears these payload roots without closing A0 or restoring general
+event/menu/wiki workflows.
 
 Wiki tags now use the band-owned localized/inherited catalog and the shared
 snapshot/reference loader. Catalog CRUD requires selected-band wiki administration;

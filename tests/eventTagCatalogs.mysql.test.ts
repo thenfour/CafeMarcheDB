@@ -8,6 +8,7 @@ import { generatePublicId } from "src/server/publicId";
 import { xBandEventTag, bandEventTagView, xGlobalEventTag, globalEventTagView } from "src/core/db3/shared/entities/event/eventTagCatalogs";
 import { loadDashboardCatalogs } from "src/core/db3/server/db3DashboardCatalogs";
 import { eventTagDashboardView, createDashboardReferenceStore } from "src/core/db3/shared/references/dashboardReferences";
+import { EventTagAssignmentArgs } from "src/core/db3/shared/schema/prismArgs";
 import { xSong } from "src/core/db3/db3";
 import { deriveViewContract } from "src/core/db3/shared/core/db3ViewContract";
 import { defineView } from "src/core/db3/shared/core/db3View";
@@ -107,6 +108,22 @@ describe.skipIf(!settingsMysqlTestUrl)("event tag catalog on MariaDB", () => {
         const tag = await tx.bandEventTag.findUniqueOrThrow({ where: { publicId: opted.publicId } });
         const event = await tx.event.create({ data: { publicId: generatePublicId(), bandId: fixture.bands[0]!.id, name: "Concert", revision: 1 } });
         await tx.eventTagAssignment.create({ data: { publicId: generatePublicId(), eventId: event.id, bandEventTagId: tag.id } });
+        const assignment = await tx.eventTagAssignment.findFirstOrThrow({
+            ...EventTagAssignmentArgs, where: { eventId: event.id },
+        });
+        const source = await tx.globalEventTag.findUniqueOrThrow({ where: { publicId: String(global.identity) } });
+        expect(assignment.eventTag).toMatchObject({
+            publicId: opted.publicId, bandId: fixture.bands[0]!.id, name: null, description: null,
+            globalEventTag: { publicId: source.publicId, nameId: source.nameId, descriptionId: source.descriptionId },
+        });
+        await executeCatalogCrud(tx, auth, bandEventTagView, { name: text("Local"), description: text("Local details") }, opted.publicId);
+        const localized = await tx.eventTagAssignment.findFirstOrThrow({
+            ...EventTagAssignmentArgs, where: { eventId: event.id },
+        });
+        expect(localized.eventTag).toMatchObject({
+            name: { publicId: expect.any(String), format: "PlainText" },
+            description: { publicId: expect.any(String), format: "Markdown" },
+        });
         await executeCatalogCrud(tx, auth, bandEventTagView, { isHidden: true }, opted.publicId);
         expect(await tx.eventTagAssignment.count({ where: { bandEventTagId: tag.id } })).toBe(1);
         await expect(createCommandRowServices(other, tx).delete(xBandEventTag, opted.publicId, "hard")).rejects.toThrow();

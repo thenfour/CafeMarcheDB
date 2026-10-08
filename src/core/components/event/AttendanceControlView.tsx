@@ -1,4 +1,4 @@
-import type { EventAttendancePublicId, EventPublicId, EventSegmentPublicId } from "shared/publicId";
+import type { InstrumentPublicId, EventAttendancePublicId, EventPublicId, EventSegmentPublicId } from "shared/publicId";
 import { formatEventDateRange, EventDatePresentation } from "shared/dateTimePresentation";
 import React from "react";
 import { CircularProgress } from "@mui/material";
@@ -18,12 +18,12 @@ import type { EventAttendanceResult } from "./attendanceCalculation";
 
 export type AttendanceChange =
     | { type: "segment"; segmentId: EventSegmentPublicId; attendanceId: EventAttendancePublicId | null }
-    | { type: "instrument"; instrumentId: db3.InstrumentIdentity | null }
+    | { type: "instrument"; instrumentId: InstrumentPublicId | null }
     | { type: "comment"; comment: string };
 
 export interface AttendanceControlEnvironment {
     attendances: db3.EventAttendanceDisplay[];
-    instruments: db3.InstrumentClientOrDbPayload[];
+    instruments: db3.InstrumentDashboardClient[];
     // Reject on failure. The adapter owns persistence, refetching, telemetry,
     // and feedback; the view owns only the in-progress and editing states.
     onSave: (change: AttendanceChange) => Promise<void>;
@@ -48,7 +48,7 @@ const captions: Record<Timing, readonly string[]> = {
 };
 
 const InstrumentButton = ({ value, selected, onSelect }: {
-    value: db3.InstrumentClientOrDbPayload | null;
+    value: db3.InstrumentDashboardClient | null;
     selected: boolean;
     onSelect: () => void;
 }) => !value?.name ? null : <CMChip
@@ -63,26 +63,28 @@ const InstrumentControl = ({ response, environment }: {
 }) => {
     const [inProgress, setInProgress] = React.useState(false);
     const instruments = response.user.bandUserInstruments.flatMap(assignment => {
-        const instrument = environment.instruments.find(option => db3.getInstrumentIdentity(option) === assignment.bandInstrumentId);
+        const instrument = environment.instruments.find(option => option.publicId === assignment.bandInstrumentId);
         // Assignment history may outlive access to its catalog entry.
         return instrument ? [instrument] : [];
     });
     const selected = environment.instruments.find(
-        instrument => db3.getInstrumentIdentity(instrument) === response.response.bandInstrumentId,
+        instrument => instrument.publicId === response.response.bandInstrumentId,
     );
-    const change = async (instrumentId: db3.InstrumentIdentity) => {
+    const change = async (instrumentId: InstrumentPublicId) => {
         setInProgress(true);
         try { await environment.onSave({ type: "instrument", instrumentId }); }
         catch { /* Feedback belongs to the adapter. */ }
         finally { setInProgress(false); }
     };
-    if (instruments.length < 2) return null;
+    if (instruments.length < 2) {
+        return null;
+    }
     return <NameValuePair name="Instrument" value={<CMChipContainer className="EventAttendanceResponseControlButtonGroup">
         {inProgress ? <CircularProgress size={16} /> : instruments.map(option => <InstrumentButton
-            key={db3.getInstrumentIdentity(option)}
+            key={option.publicId}
             value={option}
-            selected={db3.getInstrumentIdentity(option) === (selected && db3.getInstrumentIdentity(selected))}
-            onSelect={() => { void change(db3.getInstrumentIdentity(option)); }} />)}
+            selected={option.publicId === selected?.publicId}
+            onSelect={() => { void change(option.publicId); }} />)}
     </CMChipContainer>} />;
 };
 

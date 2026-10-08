@@ -27,14 +27,14 @@ vi.mock("src/core/components/markdown/MarkdownControl3", () => ({
     }),
 }));
 import { AttendanceControlView, AttendanceChange, AttendanceControlEnvironment } from "src/core/components/event/AttendanceControlView";
-import { AttendanceScenario, applyAttendanceScenarioChange, buildAttendanceScenario, createAttendanceScenario, scenarioAttendances, scenarioClientInstruments } from "src/core/components/event/attendanceScenario";
+import { AttendanceScenario, applyAttendanceScenarioChange, buildAttendanceScenario, createAttendanceScenario, scenarioAttendances, scenarioInstruments } from "src/core/components/event/attendanceScenario";
 
 let root: Root;
 let changeScenario: React.Dispatch<React.SetStateAction<AttendanceScenario>>;
 let currentScenario: AttendanceScenario;
 const saves = vi.fn();
 const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT");
-const Harness = ({ initial, userIndex = 1, minimal = false, attendances = scenarioAttendances, instruments = scenarioClientInstruments }: {
+const Harness = ({ initial, userIndex = 1, minimal = false, attendances = scenarioAttendances, instruments = scenarioInstruments }: {
     initial: AttendanceScenario; userIndex?: number; minimal?: boolean;
     attendances?: AttendanceControlEnvironment["attendances"];
     instruments?: AttendanceControlEnvironment["instruments"];
@@ -74,7 +74,7 @@ describe("shared attendance view with a local adapter", () => {
         const scenario = createAttendanceScenario();
         scenario.users[1]!.responses = [3, 3, 3];
         await act(async () => root.render(React.createElement(Harness, {
-            initial: scenario, instruments: scenarioClientInstruments.slice(0, 2),
+            initial: scenario, instruments: scenarioInstruments.slice(0, 2),
         })));
         expect(buttons("Trumpet")).toHaveLength(1);
         await click(buttons("Trumpet")[0]!);

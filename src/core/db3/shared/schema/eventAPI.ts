@@ -1,8 +1,7 @@
-import type { EventSegmentPublicId } from "shared/publicId";
+import type { InstrumentPublicId, EventSegmentPublicId, BandUserPublicId } from "shared/publicId";
 import { DashboardContextDataBase } from "@/src/core/components/dashboardContext/dashboardContextTypes";
 import * as db3 from "@db3/db3";
 import { isUserInvitedToEvent } from "shared/eventInvitation";
-import type { BandUserPublicId } from "shared/publicId";
 
 
 ////////////////////////////////////////////////////////////////
@@ -58,20 +57,24 @@ export function createMockEventSegmentUserResponse
 // Response preparation needs only an instrument lookup, not a dashboard or DB.
 export interface EventResponseInstrumentLookup {
     instrument: {
-        find: (predicate: (instrument: db3.InstrumentClientOrDbPayload) => boolean) => db3.InstrumentClientOrDbPayload | undefined;
+        find: (predicate: (instrument: db3.InstrumentDashboardClient) => boolean) => db3.InstrumentDashboardClient | undefined;
     };
 }
 
 const findInstrument = (
     data: EventResponseInstrumentLookup,
-    identity: db3.InstrumentIdentity | null | undefined,
-): db3.InstrumentClientOrDbPayload | null => {
-    if (identity == null) return null;
-    return data.instrument.find(instrument => db3.getInstrumentIdentity(instrument) === identity) ?? null;
+    identity: InstrumentPublicId | null | undefined,
+): db3.InstrumentDashboardClient | null => {
+    if (identity == null) {
+        return null;
+    }
+    return data.instrument.find(instrument => instrument.publicId === identity) ?? null;
 };
 
-export function getUserPrimaryInstrument(user: db3.EventParticipant, data: EventResponseInstrumentLookup): (db3.InstrumentClientOrDbPayload | null) {
-    if (user.bandUserInstruments.length < 1) return null;
+export function getUserPrimaryInstrument(user: db3.EventParticipant, data: EventResponseInstrumentLookup): (db3.InstrumentDashboardClient | null) {
+    if (user.bandUserInstruments.length < 1) {
+        return null;
+    }
     const p = user.bandUserInstruments.find(i => i.isPrimary);
     if (p) {
         return findInstrument(data, p.bandInstrumentId);
@@ -79,7 +82,7 @@ export function getUserPrimaryInstrument(user: db3.EventParticipant, data: Event
     return findInstrument(data, user.bandUserInstruments[0]!.bandInstrumentId);
 }
 
-export function getInstrumentForEventUserResponse<TEventResponse extends db3.EventResponses_MinimalEventUserResponse>(response: TEventResponse, bandUserId: BandUserPublicId, data: EventResponseInstrumentLookup, users: EventParticipantList): (db3.InstrumentClientOrDbPayload | null) {
+export function getInstrumentForEventUserResponse<TEventResponse extends db3.EventResponses_MinimalEventUserResponse>(response: TEventResponse, bandUserId: BandUserPublicId, data: EventResponseInstrumentLookup, users: EventParticipantList): (db3.InstrumentDashboardClient | null) {
     if (response.bandInstrumentId != null) {
         return findInstrument(data, response.bandInstrumentId);
     }

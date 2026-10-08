@@ -22,6 +22,7 @@ import {
   type FileSongTagPublicId,
   type FileUserTagPublicId,
   type FileWikiPageTagPublicId,
+  type InstrumentPublicId,
   type InstrumentFunctionalGroupPublicId,
   type SongCreditPublicId,
   type SongCreditTypePublicId,
@@ -54,6 +55,7 @@ afterEach(() => {
 describe("DB3 scalar selection compiler", () => {
   it("makes unsupported tag relation declarations compile-time errors", () => {
     const args = {
+      associationForeignIDMember: "bandEventTagId",
       associationForeignObjectMember: "eventTag",
       associationLocalObjectMember: "event",
       authMap: db3.xEventAuthMap_Homepage,
@@ -110,7 +112,7 @@ describe("DB3 scalar selection compiler", () => {
     expectTypeOf<typeof db3.xEvent.fields.tags.associationTableID>()
       .toEqualTypeOf<"EventTagAssignment">()
     expectTypeOf<typeof db3.xEvent.fields.tags.foreignTableID>()
-      .toEqualTypeOf<"EventTag">()
+      .toEqualTypeOf<"BandEventTag">()
     expectTypeOf<typeof db3.xEvent.fields.tags.associationLocalIDMember>()
       .toEqualTypeOf<"eventId">()
     expectTypeOf<typeof db3.xEvent.fields.tags.associationForeignIDMember>()
@@ -1186,7 +1188,7 @@ describe("DB3 normalized foreign-single hydration", () => {
   })
 
   it("uses the target xTable identity for public-ID foreign-key transport", () => {
-    const selection = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
+    const selection = Prisma.validator<Prisma.BandInstrumentDefaultArgs>()({
       select: { functionalGroupId: true },
     })
     const groupReferences = db3.defineReferenceContract({

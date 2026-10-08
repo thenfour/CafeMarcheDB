@@ -44,6 +44,11 @@ Wiki tags now use band-owned localized/inherited catalog contracts, native CRUD
 and the shared dashboard snapshot. Wiki assignments transport public band-tag
 identities and order hydrated labels. General WikiPage/assignment reads and writes
 remain guarded; the original raw tag-name filter is preserved under `wiki-search`.
+Event-tag assignments now select localized catalog metadata and shared-source
+dependencies. Attendance, File filters/display and demo controls use canonical
+hydrated instruments and public identities. Obsolete raw instrument/group payload
+helpers and the numeric/public identity union are removed; only the local
+attendance scenario adapter retains numeric saved choices in its version-1 format.
 **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
@@ -59,9 +64,9 @@ localized recovery text, and all five reporting RPCs (timeline, general detail,
 facets, detail and CSV) require login and then reject before database access.
 Legacy readers lacked selected-band ownership; their helpers and report-only
 assertions are preserved under `activity-reports`. Existing telemetry writes and
-unrelated domain assertions remain executable. The duplicate instrument identity
-export found during this slice was also repaired by naming the public-ID schema
-`BandInstrumentIdentity`, separately from the existing payload identity type.
+unrelated domain assertions remain executable. The public-ID schema is named
+`BandInstrumentIdentity`; the former raw/client payload identity union has since
+been removed from the active consumers.
 
 ## Restored boundary
 
@@ -738,10 +743,13 @@ production server could not be checked because the normal build still fails.
 | Wiki-tag page authorization and bootstrap | Passed: nine checks across two files. Signed-in accounts can reach the selection prompt; anonymous accounts and selected-band accounts without wiki administration are denied. |
 | Wiki tags plus shared credit/event catalogs, dashboard bootstrap, accounts, File payloads, song tags/setlist reads, links, telemetry, catalogs and member profiles on private MariaDB | Passed: 72 cases across twelve files, including six new wiki-tag cases. Covers generated CRUD/audits, explicit writing languages, fallback/blanks/inheritance, resolved filtering/sorting/paging, separate band identities, hidden-option grants, forged ownership/source/string rejection, disabled languages, fresh revocation, assignment retention/deletion cascade and editor/search projection/hydration against real Prisma selections. General wiki row-service guards remain enforced. Fixture writes roll back; generated databases are removed. |
 | Wiki-tag development-browser editor | Passed: ordinary delegated band manager creates a custom tag, edits an inherited tag in French without changing shared English, switches bands without retained rows and reaches the no-band prompt. No page errors; the French grid screenshot was inspected. This is development evidence; the normal build still fails before a built server can be tested. |
+| Event/instrument payload contracts, attendance scenarios and controls, production adapter, calendar attendance, membership instruments and compatibility inventory | Passed: 115 checks across seven files, including nine isolated DOM cases. Covers public instrument changes, primary/stored choices, unreadable catalog entries, numeric scenario export/import, clearing and rejection of unknown instrument identities. |
+| Event-tag assignment selection, response views, attendance and membership instruments plus retained catalog/bootstrap/account/File/setlist/link/telemetry readers on private MariaDB | Passed: 118 cases across sixteen files on a new disposable database. The assignment payload includes inherited-source string identities and local string metadata. Existing hidden-assignment retention, cross-band rejection and deletion cascades remain covered. Fixture writes roll back and generated databases are removed. |
+| Attendance scenario development browser | Passed: primary and out-of-profile choices display hydrated labels; control edits emit public IDs while saved version-1 documents retain numeric local choices; import and user reset restore the primary default. Scenario actions also use the repository's CMButton wrapper. Three assertion groups, no page errors; the user card screenshot was inspected. This is development evidence; production build verification remains blocked. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 36 diagnostics, down from 49. Wiki-tag selections/descriptors/consumers and new native tests have no diagnostics. The stale song-tag `text` display in the select demo was also fixed. Remaining roots include event-tag assignment selections, menu captions, old instrument payloads, wiki entry points and legacy fixtures; no compiler exclusions or suppression added. |
-| `yarn build` | Gets past WikiPageTag; stops at `src/core/db3/shared/schema/event.ts:223`, whose assignment selection omits localized tag fields. General wiki ownership/workflows remain unfinished. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 265 failed, 1,582 passed, 294 skipped across 156 files, with ten suite failures. Reported failure entries exactly match the previous SongCreditType checkpoint. The six new native wiki-tag cases skip without the private URL and pass in the dedicated fixture above. No existing test is newly disabled. Later isolated DOM batches are not reached; development-browser checks verify the changed editor. |
+| `yarn typecheck` | Fails: 18 diagnostics, down from 36. Event-tag/instrument payloads and their migrated consumers have no diagnostics. Trivial stale contract fixtures now use the band model/foreign table, required association key and public-ID import. Remaining roots are menu captions, wiki entry points, the old color-editor settings API, authorization/calendar fixtures and DB3 derived-view type assertions. No compiler exclusions or suppression added. |
+| `yarn build` | Gets past EventTagAssignment and obsolete instrument payload roots; stops at `src/core/db3/shared/schema/menuLink.ts:55`, whose caption remains an obsolete scalar contract. General event/wiki/menu ownership and workflows remain unfinished. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 265 failed, 1,583 passed, 294 skipped across 156 files, with ten suite failures. Reported failure entries exactly match the previous wiki-tag checkpoint; one scenario regression case was added. Native cases skip without the private URL and pass in the dedicated fixture above. No existing test is newly disabled. Later isolated DOM batches are not reached; focused DOM and development-browser checks cover attendance controls. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -772,9 +780,11 @@ verification resources, not application configuration.
 
 ## Remaining A0 blockers
 
-The next build stop is the EventTagAssignment selection omitting localized tag
-fields required by `event.ts:223`. Reuse its canonical catalog selection before
-continuing the obsolete instrument payloads and wiki/menu entry points. Wiki-tag
+The next build stop is MenuLink's obsolete scalar caption at `menuLink.ts:55`.
+Recover localized caption/section contracts and ownership before restoring menu
+delivery, then continue remaining wiki entry points. EventTagAssignment now uses
+the canonical band catalog selection, and active instrument consumers use hydrated
+catalog/public-ID contracts. Wiki-tag
 catalogs, references, editor and association payloads now use the target contracts;
 general wiki ownership, locking/revision/editing and resolved search still require
 recovery. `wiki-search` preserves the former raw tag-name predicate.
@@ -805,8 +815,9 @@ audit lookup and its companion viewer/filter reader remain under `audit-log`.
 Setlist Plan storage is recovered; its complete editor still depends on deferred
 Song/search workflows.
 
-Fix owning contracts before their cascading consumers: `prismArgs.ts` remains the
-largest diagnostic root, including obsolete instrument selections. Shared event catalogs and dedicated
+Fix owning contracts before their cascading consumers. The obsolete instrument
+selections in `prismArgs.ts` are removed; remaining menu/wiki/settings entry points
+and authorization/calendar/derived-view fixtures still need repair. Shared event catalogs and dedicated
 attendance write/history/HTTP, bulk copy/clear endpoints and private calendar feeds
 are migrated. Response/invitation reader ownership and identities are migrated. Full event
 search/editing payloads and invitation management remain unfinished, including

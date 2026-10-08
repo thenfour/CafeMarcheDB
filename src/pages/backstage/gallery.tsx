@@ -159,7 +159,7 @@ const AutoAssignInstrumentTester = () => {
             description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 200 }),
             autoAssignFileLeafRegex: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, columnName, cellWidth: 200, fieldCaptionKey: "db3.fields.fileMatcher" }),
             sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.sortOrder", columnName, cellWidth: 80 }),
-            functionalGroup: columnName => new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupClientPayload>({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.functionalGroup",
+            functionalGroup: columnName => new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupListItem>({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.functionalGroup",
                 columnName,
                 cellWidth: 200,
                 selectionView: db3.instrumentFunctionalGroupEditorView,

@@ -1,11 +1,11 @@
 import React from "react";
-import * as db3 from "src/core/db3/db3";
-import { Alert, Box, Button, Checkbox, FormControl, FormControlLabel, FormLabel, MenuItem, Paper, Radio, RadioGroup, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Box, Checkbox, FormControl, FormControlLabel, FormLabel, MenuItem, Paper, Radio, RadioGroup, Stack, TextField, Typography } from "@mui/material";
+import { CMButton } from "../CMCoreComponents2";
 import { AttendanceControlView } from "./AttendanceControlView";
 import {
     AttendanceScenario, AttendanceScenarioUser, attendanceScenarioSchema, applyAttendanceScenarioChange,
     buildAttendanceScenario, createAttendanceScenario, describeAttendanceVisibility, scenarioAttendances,
-    scenarioClientInstruments, scenarioInstruments,
+    scenarioInstruments,
 } from "./attendanceScenario";
 
 const Choices = ({ label, value, choices, onChange }: {
@@ -37,12 +37,12 @@ const UserSettings = ({ person, segmentCount, update }: {
             <TextField select size="small" label="Primary instrument" sx={{ minWidth: 180 }} value={person.primaryInstrumentId ?? "none"}
                 onChange={e => update({ primaryInstrumentId: e.target.value === "none" ? null : Number(e.target.value) })}>
                 <MenuItem value="none">None marked primary</MenuItem>
-                {scenarioInstruments.map(i => <MenuItem key={i.id} value={i.id}>{i.name}</MenuItem>)}
+                {scenarioInstruments.map((instrument, index) => <MenuItem key={instrument.publicId} value={index + 1}>{instrument.name}</MenuItem>)}
             </TextField>
             <TextField select size="small" label="Stored event instrument" sx={{ minWidth: 200 }} value={person.instrumentId ?? "default"}
                 onChange={e => update({ instrumentId: e.target.value === "default" ? null : Number(e.target.value) })}>
                 <MenuItem value="default">Default (no stored choice)</MenuItem>
-                {scenarioInstruments.map(i => <MenuItem key={i.id} value={i.id}>{i.name}{i.id > person.instrumentCount ? " (outside profile)" : ""}</MenuItem>)}
+                {scenarioInstruments.map((instrument, index) => <MenuItem key={instrument.publicId} value={index + 1}>{instrument.name}{index + 1 > person.instrumentCount ? " (outside profile)" : ""}</MenuItem>)}
             </TextField>
         </Stack>
         <Stack direction="row" gap={2} flexWrap="wrap" alignItems="center">
@@ -57,10 +57,10 @@ const UserSettings = ({ person, segmentCount, update }: {
                     <MenuItem key={a.publicId} value={index + 1}>{a.buttonCaption}</MenuItem>
                 ))}
             </TextField>)}
-            <Button size="small" onClick={() => update({ responses: ["missing", "missing", "missing"] })}>Unanswered</Button>
-            <Button size="small" onClick={() => update({ responses: [3, 3, 3] })}>All yes</Button>
-            <Button size="small" onClick={() => update({ responses: [1, 1, 1] })}>All no</Button>
-            <Button size="small" onClick={() => update({ responses: [3, 1, 2] })}>Mixed</Button>
+            <CMButton style={{ fontSize: 12 }} onClick={() => update({ responses: ["missing", "missing", "missing"] })}>Unanswered</CMButton>
+            <CMButton style={{ fontSize: 12 }} onClick={() => update({ responses: [3, 3, 3] })}>All yes</CMButton>
+            <CMButton style={{ fontSize: 12 }} onClick={() => update({ responses: [1, 1, 1] })}>All no</CMButton>
+            <CMButton style={{ fontSize: 12 }} onClick={() => update({ responses: [3, 1, 2] })}>Mixed</CMButton>
         </Stack>
         <TextField size="small" label="Stored comment" multiline minRows={2} value={person.comment} onChange={e => update({ comment: e.target.value })} />
     </Stack>;
@@ -129,17 +129,17 @@ export const AttendanceScenarioPage = () => {
                     </Stack>
                 </details>
                 <Stack direction="row" gap={1} flexWrap="wrap">
-                    <Button variant="outlined" onClick={() => { void exportScenario(); }}>Copy current scenario</Button>
-                    <Button onClick={() => load(baseline)}>Reset to loaded scenario</Button>
-                    <Button onClick={() => load(createAttendanceScenario())}>Restore defaults</Button>
+                    <CMButton onClick={() => { void exportScenario(); }}>Copy current scenario</CMButton>
+                    <CMButton onClick={() => load(baseline)}>Reset to loaded scenario</CMButton>
+                    <CMButton onClick={() => load(createAttendanceScenario())}>Restore defaults</CMButton>
                 </Stack>
                 <details open={json.length > 0 || undefined}><summary>Export / import scenario JSON</summary>
                     <TextField fullWidth multiline minRows={5} maxRows={18} label="Scenario JSON" value={json} onChange={e => setJson(e.target.value)}
                         sx={{ mt: 2, mb: 1, "& textarea": { fontFamily: "monospace", fontSize: 12 } }} />
-                    <Button onClick={() => {
+                    <CMButton onClick={() => {
                         try { load(attendanceScenarioSchema.parse(JSON.parse(json))); setMessage({ severity: "success", text: "Scenario loaded." }); }
                         catch (error) { setMessage({ severity: "error", text: `Cannot load scenario: ${error instanceof Error ? error.message : String(error)}` }); }
-                    }}>Load JSON</Button>
+                    }}>Load JSON</CMButton>
                 </details>
                 {message && <Alert severity={message.severity} onClose={() => setMessage(null)} sx={{ whiteSpace: "pre-wrap" }}>{message.text}</Alert>}
             </Stack>
@@ -152,11 +152,11 @@ export const AttendanceScenarioPage = () => {
                 return <Paper key={`${revision}-${index}-${resetKeys[index] || 0}`} variant="outlined" sx={{ p: 2 }} data-scenario-user={index}>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
                         <Typography component="h2" variant="h6">{person.name}</Typography>
-                        <Button size="small" onClick={() => {
+                        <CMButton style={{ fontSize: 12 }} onClick={() => {
                             updateUser(index, baseline.users[index]!);
                             setResetKeys(keys => ({ ...keys, [index]: (keys[index] || 0) + 1 }));
                             setLastActions(actions => ({ ...actions, [index]: "Reset to loaded user." }));
-                        }}>Reset user</Button>
+                        }}>Reset user</CMButton>
                     </Stack>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                         {attendance.isInvited ? "Invited" : "Uninvited"} · {person.instrumentCount} profile instrument(s) · Effective instrument: {attendance.eventUserResponse.instrument?.name || "none"}
@@ -168,7 +168,7 @@ export const AttendanceScenarioPage = () => {
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{describeAttendanceVisibility(attendance)}</Typography>
                             <AttendanceControlView attendance={attendance} event={event} minimalWhenNotAlert={mode === "list"} environment={{
                                 attendances: scenarioAttendances,
-                                instruments: scenarioClientInstruments,
+                                instruments: scenarioInstruments,
                                 allowUploads: false,
                                 datePresentation: { bandTimeZone: "UTC", viewerTimeZone: "UTC", locale: "en" },
                                 commentDialogTitle: "Attendance comment", commentDialogDescription: <Typography paragraph>Leave a comment for this event. This preview saves locally.</Typography>,
@@ -185,7 +185,7 @@ export const AttendanceScenarioPage = () => {
                             ...flags,
                             storedInstrumentId: person.instrumentId,
                             effectiveInstrumentId: attendance.eventUserResponse.instrument
-                                ? db3.getInstrumentIdentity(attendance.eventUserResponse.instrument)
+                                ? attendance.eventUserResponse.instrument.publicId
                                 : null,
                             segments: event.segments.map((s, index) => ({ publicId: s.publicId, startsAt: s.startsAt, cancelled: s.statusId !== null, response: person.responses[index] })),
                         }, null, 2)}</Box>

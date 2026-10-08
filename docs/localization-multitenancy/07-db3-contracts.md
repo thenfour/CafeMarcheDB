@@ -86,6 +86,19 @@ requires a group; no synthetic/null group fallback is introduced.
 
 ## Native controls and references
 
+Attendance lookups and controls consume `InstrumentDashboardClient` from the
+hydrated catalog snapshot. Instrument changes, response references and File
+instrument filters use `InstrumentPublicId`; no raw Prisma/client payload union
+or numeric identity helper remains. The self-contained attendance scenario
+adapter hydrates its sample catalog through the same views. Saved version-1
+documents retain numeric local choices, which the adapter alone translates to
+and from public references.
+
+EventTagAssignment includes the canonical `bandEventTagSelection` plus the
+server-side band ownership support field. Localized string metadata and the
+shared catalog source are fetched together; this payload repair does not declare
+general event/assignment ownership or enable custom-menu delivery.
+
 Song associations use the `BandSongTagAssociation` descriptor and explicit
 `bandSongTagId` foreign key. Both that key and `songId` transport public
 identities; the existing `SongTag`/`SongTagAssociation` identity brands remain the

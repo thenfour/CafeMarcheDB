@@ -147,7 +147,7 @@ export class DashboardContextData extends DashboardContextDataBase {
         return partition(segments, isCancelled);
     }
 
-    sortInstruments<Tinst extends { sortOrder?: number, functionalGroupId: db3.InstrumentFunctionalGroupClientPayload["publicId"] }>(instruments: Tinst[]): Tinst[] {
+    sortInstruments<Tinst extends { sortOrder?: number, functionalGroupId: db3.InstrumentFunctionalGroupListItem["publicId"] }>(instruments: Tinst[]): Tinst[] {
         // sort first by functional group, then by instrument sort order.
         const ret = [...instruments];
         ret.sort((a, b) => {

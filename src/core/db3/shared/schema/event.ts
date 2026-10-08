@@ -1,3 +1,4 @@
+import type { InstrumentDashboardClient } from "../entities/instrument/instrumentViews";
 import { xEventResponseMembership } from "../entities/event/eventResponseMembership";
 import { xBandUserTag } from "../entities/user/bandUserTagViews";
 import { xBandInstrument } from "../entities/instrument/bandInstrumentContracts";
@@ -30,6 +31,7 @@ import type {
     EventTagAssignmentPublicId,
     EventTypePublicId,
     BandUserPublicId,
+    InstrumentPublicId,
 } from "shared/publicId";
 import { type CMDBTableFilterModel } from "../apiTypes";
 import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../columnTypes/genericString";
@@ -45,8 +47,6 @@ import {
     EventTagAssignmentNaturalOrderBy, type EventTagAssignmentPayload,
     EventTypeSignificance, EventUserResponseArgs, EventUserResponseNaturalOrderBy,
     type EventUserResponsePayload,
-    type InstrumentClientOrDbPayload,
-    type InstrumentIdentity,
 } from "./prismArgs";
 import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField } from "./user";
 import { xEventType, xEventStatus, xEventAttendance } from "../entities/event/eventCatalogs";
@@ -986,9 +986,8 @@ export type EventResponses_MinimalEventUserResponse = Omit<
     EventResponses_MinimalEventUserResponseDb,
     "bandInstrumentId" | "bandUserId"
 > & {
-    // Shared attendance algorithms consume both trusted Prisma rows and
-    // projected client responses after Instrument migrated to public identity.
-    bandInstrumentId: InstrumentIdentity | null;
+    // Attendance lookups use public catalog references after server projection.
+    bandInstrumentId: InstrumentPublicId | null;
     bandUserId: BandUserPublicId;
 };
 
@@ -1056,7 +1055,7 @@ export interface EventUserResponse<TEvent extends EventResponses_MinimalEvent, T
     // if the user is not invited but has responded, show them.
     isRelevantForDisplay: boolean;
 
-    instrument: InstrumentClientOrDbPayload | null;
+    instrument: InstrumentDashboardClient | null;
 };
 
 export interface EventSegmentUserResponse<

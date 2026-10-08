@@ -6,7 +6,7 @@ import { Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { Permission } from 'shared/permissions';
-import type { BandUserPublicId, EventPublicId, EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FilePublicId, FileSongTagPublicId, FileTagPublicId, SongPublicId, UserPublicId, WikiPagePublicId } from 'shared/publicId';
+import type { InstrumentPublicId, BandUserPublicId, EventPublicId, EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FilePublicId, FileSongTagPublicId, FileTagPublicId, SongPublicId, UserPublicId, WikiPagePublicId } from 'shared/publicId';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { formatFileSize, SortDirection } from 'shared/rootroot';
 import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
@@ -192,7 +192,7 @@ export const FileExternalLink = ({ file, highlight }: { file: DetailFile, highli
 interface FileViewerHiddenTagIds {
     fileTagIds?: FileTagPublicId[];
     userTagIds?: UserPublicId[];
-    instrumentTagIds?: db3.InstrumentIdentity[];
+    instrumentTagIds?: InstrumentPublicId[];
     songTagIds?: SongPublicId[];
     eventTagIds?: EventPublicId[];
     wikiPageTagIds?: WikiPagePublicId[];
@@ -364,7 +364,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
                         taggedInstruments
                             .filter(a => !props.hiddenTagIds.instrumentTagIds || !existsInArray(
                                 props.hiddenTagIds.instrumentTagIds,
-                                db3.getInstrumentIdentity(a.bandInstrument),
+                                a.bandInstrument.publicId,
                             ))
                             .map(a => <InstrumentChip key={db3.xFile.fields.taggedInstruments.getForeignIdentity(a)} value={a.bandInstrument} size="small" variation={variation} />)
                     )}
@@ -573,7 +573,7 @@ interface FileFilterAndSortSpec {
     quickFilter: string;
     tagIds: FileTagPublicId[];
     taggedUserIds: BandUserPublicId[];
-    taggedInstrumentIds: db3.InstrumentIdentity[];
+    taggedInstrumentIds: InstrumentPublicId[];
     taggedSongIds: SongPublicId[];
     taggedEventIds: EventPublicId[];
     taggedWikiPageIds: WikiPagePublicId[];
@@ -599,7 +599,7 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         const userIds = taggedUsers.map(association => association.bandUser.publicId);
         if (spec.taggedUserIds.length && !userIds.some(id => spec.taggedUserIds.includes(id))) return false;
 
-        const instrumentIds = taggedInstruments.map(instrument => db3.getInstrumentIdentity(instrument.bandInstrument));
+        const instrumentIds = taggedInstruments.map(instrument => instrument.bandInstrument.publicId);
         if (spec.taggedInstrumentIds.length && !instrumentIds.some(id => spec.taggedInstrumentIds.includes(id))) return false;
 
         const songIds = taggedSongs.map(song => song.song.publicId);

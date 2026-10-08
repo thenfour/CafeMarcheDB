@@ -1,3 +1,4 @@
+import type { StringResolution } from "src/locale/shared/stringResolution";
 import { z } from "zod";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { parsePublicId } from "shared/publicId";
@@ -57,33 +58,39 @@ export const scenarioAttendances: db3.EventAttendanceDisplay[] = [
     personalPastCaption: ""
 }));
 
-export const scenarioInstruments: db3.InstrumentPayload[] = ["Trumpet", "Saxophone", "Percussion", "Tuba"].map((name, index) => ({
-    id: index + 1,
-    publicId: `sceninst${String(index + 1).padStart(8, "0")}`,
-    name, sortOrder: index, description: name, autoAssignFileLeafRegex: null,
-    functionalGroupId: 1,
-    functionalGroup: { id: 1, publicId: "scenario_group01", name: "Band", sortOrder: 0, description: "Scenario instruments", color: "blue" },
-}));
+function scenarioCatalogFields(name: string, description: string, sortOrder: number) {
+    const resolution = (value: string): StringResolution => ({
+        value, localeTag: "en-US", scope: "band", source: "stored", reason: "exact", requestedTag: "en-US",
+    });
+    return {
+        name, description, sortOrder, nameResolution: resolution(name), descriptionResolution: resolution(description),
+        nameStringPublicId: null, descriptionStringPublicId: null, sortOrderOverride: sortOrder,
+        sortOrderInheritedValue: null, isHidden: false, globalPublicId: null,
+    };
+}
 
-export const scenarioClientInstruments: db3.InstrumentClientPayload[] = scenarioInstruments.map(instrument => ({
-    publicId: parsePublicId<"Instrument">(instrument.publicId),  // fictional, don't need to use xInstrument
-    name: instrument.name,
-    description: instrument.description,
-    sortOrder: instrument.sortOrder,
-    autoAssignFileLeafRegex: instrument.autoAssignFileLeafRegex,
-    functionalGroupId: parsePublicId<"InstrumentFunctionalGroup">(
-        instrument.functionalGroup.publicId,
-    ),
-    functionalGroup: {
-        publicId: parsePublicId<"InstrumentFunctionalGroup">(
-            instrument.functionalGroup.publicId,
-        ),
-        name: instrument.functionalGroup.name,
-        description: instrument.functionalGroup.description,
-        sortOrder: instrument.functionalGroup.sortOrder,
-        color: gGeneralPaletteList.findEntry(instrument.functionalGroup.color),
-    },
-}));
+function createScenarioInstruments(): db3.InstrumentDashboardClient[] {
+    const references = db3.createDashboardReferenceStore();
+    const groupDto = db3.instrumentFunctionalGroupDashboardView.parseDto({
+        ...scenarioCatalogFields("Band", "Scenario instruments", 0),
+        publicId: parsePublicId<"InstrumentFunctionalGroup">("scenario_group01"),
+        color: "blue", colorOverride: "blue", colorInheritedValue: null, globalFunctionalGroup: null,
+    });
+    const group = db3.instrumentFunctionalGroupDashboardView.hydrate(groupDto, references);
+    db3.registerDashboardReferences(references, { instrumentFunctionalGroup: [group] });
+    return ["Trumpet", "Saxophone", "Percussion", "Tuba"].map((name, index) => {
+        const dto = db3.instrumentDashboardView.parseDto({
+            ...scenarioCatalogFields(name, name, index),
+            publicId: parsePublicId<"Instrument">(`sceninst${String(index + 1).padStart(8, "0")}`),
+            functionalGroupId: group.publicId, globalInstrument: null,
+            autoAssignFileLeafRegex: null, autoAssignFileLeafRegexOverride: null, autoAssignFileLeafRegexInheritedValue: null,
+        });
+        return db3.instrumentDashboardView.hydrate(dto, references);
+    });
+}
+
+// The adapter uses the real hydrated catalog contract; saved choices remain local array positions.
+export const scenarioInstruments = createScenarioInstruments();
 
 export const createAttendanceScenario = (): AttendanceScenario => ({
     version: 1,
@@ -113,13 +120,13 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
         name: person.name,
         cssClass: null,
         bandUserTagAssignments: [],
-        bandUserInstruments: scenarioInstruments.slice(0, person.instrumentCount).map(instrument => ({
+        bandUserInstruments: scenarioInstruments.slice(0, person.instrumentCount).map((instrument, index) => ({
             publicId: parsePublicId<"BandUserInstrument">(
-                `ScnUsrInst${String((userIndex + 1) * 10 + instrument.id).padStart(6, "0")}`,
+                `ScnUsrInst${String((userIndex + 1) * 10 + index + 1).padStart(6, "0")}`,
             ),
-            bandInstrumentId: parsePublicId<"Instrument">(instrument.publicId),
-            bandInstrument: { publicId: parsePublicId<"Instrument">(instrument.publicId) },
-            isPrimary: instrument.id === person.primaryInstrumentId,
+            bandInstrumentId: instrument.publicId,
+            bandInstrument: { publicId: instrument.publicId },
+            isPrimary: index + 1 === person.primaryInstrumentId,
         })),
     };
     const segments = scenario.segments.map((config, index) => {
@@ -150,13 +157,13 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
             bandUserId: user.membershipId,
             bandInstrumentId: person.instrumentId == null
                 ? null
-                : scenarioClientInstruments[person.instrumentId - 1]!.publicId,
+                : scenarioInstruments[person.instrumentId - 1]!.publicId,
             isInvited: person.individualInvitation, userComment: person.comment
         }],
     };
     const eventUserResponse = getEventResponseForUser({
         user, event, userMap: [user], defaultInvitationMembershipIds: new Set(person.tagInvited ? [user.membershipId] : []),
-        dashboardContext: { instrument: { find: predicate => scenarioClientInstruments.find(predicate) } },
+        dashboardContext: { instrument: { find: predicate => scenarioInstruments.find(predicate) } },
         makeMockEventUserResponse: () => event.responses[0]!,
     })!;
     const segmentUserResponses = segments.map(segment => getEventSegmentResponseForSegmentAndUser({
@@ -176,16 +183,13 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
 }
 
 export function applyAttendanceScenarioChange(person: AttendanceScenarioUser, change: AttendanceChange): AttendanceScenarioUser {
-    if (change.type === "comment") return { ...person, comment: change.comment };
+    if (change.type === "comment") {
+        return { ...person, comment: change.comment };
+    }
     if (change.type === "instrument") {
-        const scenarioInstrumentId = change.instrumentId == null
-            ? null
-            : typeof change.instrumentId === "number"
-                ? change.instrumentId
-                : scenarioInstruments.find(
-                    instrument => instrument.publicId === change.instrumentId,
-                )?.id;
-        return { ...person, instrumentId: instrumentId.parse(scenarioInstrumentId) };
+        const localChoice = change.instrumentId === null ? null
+            : scenarioInstruments.findIndex(instrument => instrument.publicId === change.instrumentId) + 1;
+        return { ...person, instrumentId: instrumentId.parse(localChoice) };
     }
     // Saved scenarios use local choices 1/2/3, while the rendered control uses public IDs.
     const localChoice = change.attendanceId === null ? null

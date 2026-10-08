@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { Timing } from "shared/time";
+import { parsePublicId } from "shared/publicId";
 import {
     applyAttendanceScenarioChange,
     scenarioAttendances, attendanceScenarioSchema, buildAttendanceScenario, createAttendanceScenario,
     scenarioInstruments, scenarioSegmentPublicId,
 } from "src/core/components/event/attendanceScenario";
-import { getInstrumentIdentity } from "src/core/db3/db3";
 
 describe("attendance scenario adapter", () => {
     it("replays exported data including cleared answers, dates, comments, and explicit instruments", () => {
@@ -23,10 +23,10 @@ describe("attendance scenario adapter", () => {
         scenario.users[0]!.tagInvited = false;
         expect(buildAttendanceScenario(scenario, 0).attendance.isInvited).toBe(false);
         scenario.users[1]!.primaryInstrumentId = 2;
-        expect(getInstrumentIdentity(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse.instrument!))
+        expect(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse.instrument!.publicId)
             .toBe(scenarioInstruments[1]!.publicId);
         scenario.users[1]!.instrumentId = 4;
-        expect(getInstrumentIdentity(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse.instrument!))
+        expect(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse.instrument!.publicId)
             .toBe(scenarioInstruments[3]!.publicId);
     });
 
@@ -60,9 +60,19 @@ describe("attendance scenario adapter", () => {
         const person = createAttendanceScenario().users[1]!;
         const answered = applyAttendanceScenarioChange(person, { type: "segment", segmentId: scenarioSegmentPublicId(1), attendanceId: scenarioAttendances[0]!.publicId });
         const commented = applyAttendanceScenarioChange(answered, { type: "comment", comment: "Local comment" });
-        const instrument = applyAttendanceScenarioChange(commented, { type: "instrument", instrumentId: 2 });
+        const instrument = applyAttendanceScenarioChange(commented, { type: "instrument", instrumentId: scenarioInstruments[1]!.publicId });
         expect(person.responses).toEqual([3, "missing", "missing"]);
         expect(instrument).toEqual({ ...person, responses: [3, 1, "missing"], comment: "Local comment", instrumentId: 2 });
+    });
+
+    it("clears stored instruments and rejects public identities outside the scenario catalog", () => {
+        const person = { ...createAttendanceScenario().users[1]!, instrumentId: 2 };
+        expect(applyAttendanceScenarioChange(person, { type: "instrument", instrumentId: null }))
+            .toEqual({ ...person, instrumentId: null });
+        expect(() => applyAttendanceScenarioChange(person, {
+            type: "instrument", instrumentId: parsePublicId<"Instrument">("OtherInstrument1"),
+        })).toThrow();
+        expect(person.instrumentId).toBe(2);
     });
 
     it("rejects invalid imports before replacing a working scenario", () => {
