@@ -1,6 +1,6 @@
 # Localization and band migration SQL
 
-`db/migrations/20261004130808_696_lsmb/migration.sql` migrates the schema
+[The localization migration](../../db/migrations/20261004130808_696_lsmb/migration.sql) migrates the schema
 immediately preceding localization to the initial localization schema. It preserves
 existing data through explicit renames and backfills, independently of application
 startup, client generation, and the application build.
@@ -13,12 +13,13 @@ arbitrary intermediate development schemas is outside this production migration
 scope. The application parity reference is separately pinned to `f027830a9790`;
 see [baselines](00-design%20notes.md#baselines-and-restoration-target).
 
-The application recovery and completion checklist is
-[04-implementation-plan.md](04-implementation-plan.md). SQL rehearsal is complete;
-application readiness and production cutover are separate acceptance steps.
+The [Prisma schema](../../db/schema.prisma) defines the target; SQL owns exact
+source-to-target mappings. The [plan](04-implementation-plan.md) owns application
+recovery. SQL rehearsal is complete; application readiness and production cutover
+are separate acceptance steps.
 
-The rules below describe the initial data migration. The follow-up migration
-`db/migrations/20261005120000_696_authorization_foundation/migration.sql` adds the
+The rules below describe the initial data migration. The
+[authorization follow-up](../../db/migrations/20261005120000_696_authorization_foundation/migration.sql) adds the
 capabilities documented in [authorization](05-authorization-foundation.md) and
 corrects `GlobalSetting.value`/`BandSetting.value` to native JSON. Apply both
 migrations to reach the current schema; the correction preserves the earlier
@@ -71,64 +72,55 @@ migration's JSON documents and original grant matrices.
 
 ## Production settings manifest
 
-The manifest covers the 60 keys in `temp/settings20261004.xml`. SQL reads
-their actual database values; the XML is evidence of which keys need migration,
-not a source of hardcoded replacement values. Missing keys are not seeded.
-An unknown key stops the migration before permanent changes.
+The SQL contains the complete per-key manifest for the 60 keys captured in
+`temp/settings20261004.xml`. Read actual database values, not hardcoded XML values.
+Unknown keys stop migration before permanent changes; missing keys are not seeded.
 
-All migrated setting values are JSON **strings**, including the `textPalette`
-JSON document stored inside a string. Existing `UserSetting` rows remain global
-with their original JSON types. `BandUserSetting` starts empty.
+Branding/calendar settings become band settings; developer/selection preferences
+become global settings; 26 chrome keys become band `en-US` static-string values,
+preserving raw Markdown and intentional blanks without creating global defaults.
+Four visibility-selection keys use the registry's inline default, and seven
+obsolete keys are removed. Exact key mappings belong to SQL rather than a second
+table here. The two status-selection aliases merge only if identical, retaining
+the smallest source ID/public ID; other moved rows keep their identities.
 
-| Old setting | Band setting |
-| --- | --- |
-| `Dashboard_SiteTitle` | `siteCustomization.title` |
-| `Dashboard_SiteTitlePrefix` | `siteCustomization.titlePrefix` |
-| `Dashboard_SiteFaviconUrl` | `siteCustomization.faviconUrl` |
-| `Dashboard_Theme_PrimaryMain` | `siteCustomization.themeColors.primaryMain` |
-| `Dashboard_Theme_SecondaryMain` | `siteCustomization.themeColors.secondaryMain` |
-| `Dashboard_Theme_BackgroundDefault` | `siteCustomization.themeColors.backgroundDefault` |
-| `Dashboard_Theme_BackgroundPaper` | `siteCustomization.themeColors.backgroundPaper` |
-| `Dashboard_Theme_ContrastText` | `siteCustomization.themeColors.contrastText` |
-| `Ical_CalendarName` | `ical.calendarName` |
-| `Ical_CalendarCompany` | `ical.calendarCompany` |
-| `Ical_CalendarProduct` | `ical.calendarProduct` |
-| `Ical_CalendarEventPrefix` | `ical.calendarEventPrefix` |
+Migrated values are JSON **strings**, including the text-palette JSON document
+inside a string. Existing `UserSetting` values retain their JSON types and global
+scope; `BandUserSetting` starts empty. Never expose or duplicate private calendar
+bearer tokens as public settings.
 
-| Old setting | Global setting |
-| --- | --- |
-| `textPalette` | `global.dev.textPalette` |
-| `event.expectedAttendanceUserTag.SelectStyle` | `global.ui.event.expectedAttendanceUserTag.selectStyle` |
-| `event.status.SelectStyle`, `EventSegment.status.SelectStyle` | `global.ui.event.status.selectStyle` |
-| `event.type.SelectStyle` | `global.ui.event.type.selectStyle` |
-| `eventSegmentUserResponse.attendance.SelectStyle` | `global.ui.event.attendance.selectStyle` |
-| `Event.tags.SelectStyle` | `global.ui.event.tags.selectStyle` |
-| `songCredit.type.SelectStyle` | `global.ui.songCredit.type.selectStyle` |
-| `user.role.SelectStyle` | `global.ui.user.role.selectStyle` |
-| `Song.tags.SelectStyle` | `global.ui.song.tags.selectStyle` |
+`Dashboard_HostingMode` is removed; configure production with
+`CMDB_HOSTING_MODE=CafeMarche` at application cutover. `BandTimeZone` is absent
+from the production manifest, so no timezone setting is invented.
 
-The two status keys merge only when their values are identical. The smallest
-source ID/public ID survives. All other moved setting rows retain their IDs
-and public IDs in the destination hive.
+## Data preservation acceptance
 
-The 26 chrome keys marked `TO LOCALIZED STRING` in
-`src/locale/staticLocalizedStringRegistry.ts` become
-`BandStaticLocalizedStringValue` rows for band `1`, `en-US`, under the same key.
-Their raw Markdown, including intentional empty strings, is preserved.
-They do not create global static defaults. The registry includes every migrated
-key, and the global registry includes the attendance select-style destination.
+Capture source counts, identities, statuses, nullable values, grants, text,
+settings, revisions and serialized references before migration. Create ownership,
+membership, catalog and string mappings before remapping associations. Backfill
+and compare before dropping source columns or requiring destination constraints.
+Document the source of new audit timestamps; never invent unknown authors.
+Reject overlong destination keys/slugs rather than silently truncating them.
 
-The four `*.visiblePermission.SelectStyle` keys are removed in favor of the
-registry's inline default. Seven obsolete keys are removed:
-`EnableNewPublicHomepageBackstageLink`, `EnableOldPublicHomepageBackstageLink`,
-`EventSegment`, `MarkdownHelpPage`, `info_text`,
-`CustomLinkRedirectTypeDescriptionMarkdown_Temporary`, and
-`Event.workflowDef.SelectStyle`.
-
-`Dashboard_HostingMode` is removed; its production value is `CafeMarche`.
-The later application cutover must supply that value through environment
-configuration. SQL cannot configure an environment file. `BandTimeZone` is
-absent from the production manifest, so no timezone setting is invented.
+- Account for every retained ID, new membership/wrapper/string and deduplicated
+  association. Preserve credentials, sessions/tokens, merge history, content UIDs,
+  hashes/revisions, file paths/URLs/metadata and authored content.
+- Verify direct/inherited ownership, optional references and serialized plan
+  references against the mapped existing band; every current wiki revision must
+  belong to its page. Preserve nullable `SetNull` behavior and content on author
+  deletion. Same-band checks for future writes remain an application responsibility.
+- Compare the permission matrix for anonymous, pending, member, editor, band
+  administrator and actual platform administrator accounts, including inactive,
+  deleted and merged cases. Ordinary migration must not confer platform elevation.
+- Compare visible text/Markdown by source locale, including null versus empty,
+  menu/attendance captions, catalog styles/regexes and invitation/Partition/
+  Recording behavior. Removed fields/settings remain in the required source backup.
+- Run schema validation, actual migration deployment, destination-schema comparison
+  and source/destination data comparisons on a disposable production copy.
+  Deferred workflows' data must survive even while their app surfaces are guarded.
+- Before cutover, exercise restored files/previews/recordings, wiki/history,
+  event/setlist editing, feeds/tokens, supported URLs and Custom Links. Application
+  parity/testing is a separate gate; schema equality alone is insufficient.
 
 ## Execution and recovery
 
@@ -156,18 +148,8 @@ absent from the production manifest, so no timezone setting is invented.
    yarn prisma migrate diff --from-schema-datasource db/schema.prisma --to-schema-datamodel db/schema.prisma --script --exit-code
    ```
 
-   The diff must report an empty migration, exit code `0`. A disposable
-   fixture already at the schema immediately preceding localization, without
-   migration history, can instead execute both files in order, then run the same diff:
-
-   ```powershell
-   yarn prisma db execute --schema db/schema.prisma --file db/migrations/20261004130808_696_lsmb/migration.sql
-   yarn prisma db execute --schema db/schema.prisma --file db/migrations/20261005120000_696_authorization_foundation/migration.sql
-   ```
-
-   `db execute` does not record migration history. Use normal migration deployment
-   for production and databases with migration history. This shortcut does not
-   rehearse the complete upgrade from the production baseline.
+   The diff must report an empty migration, exit code `0`. Use normal migration
+   deployment with the production migration history, not standalone SQL execution.
 5. Compare IDs, grants, text, content, settings, memberships, and serialized
    references to the source backup. Schema equality alone is insufficient.
 6. Production application cutover requires both production-source data preservation
@@ -184,6 +166,10 @@ Foreign-key checks stay enabled throughout the migration.
 DDL commits implicitly. A failure after permanent changes requires restoring
 the source backup, including migration history. Do not retry against a partial
 migration, use `db push`, or mark a failed partial migration as applied.
+The release deployer stops the service, backs up, deploys migrations and restarts;
+it does not automatically restore on failure. Rehearse backup restoration with
+the matching old application/client, keeping writes stopped and accounting for
+uploads made after the backup separately. The old app cannot use the target schema.
 Removed significance/segment-behavior fields and obsolete settings remain in
 the required source backup; no archive tables are added to the target schema.
 

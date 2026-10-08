@@ -91,7 +91,7 @@
       "status": "pending",
       "evidence": [
         "Parameterized target-schema generators in db/seeding/demo and explicit demo:reset/dev/build/start commands; see docs/demo-seeding.md. Preserved legacy variants remain pending; no retirement is inferred.",
-        "2026-10-08: 29 configuration checks and six native reset/generator checks pass. Isolated production build and five built-browser assertion groups pass, including localized overrides/fallback, profile writes, actual SVG/WAV delivery and foreign-band file 404. See docs/localization-multitenancy/09-application-recovery.md."
+        "2026-10-08: 29 configuration checks and six native reset/generator checks pass. Isolated production build and five built-browser assertion groups pass, including localized overrides/fallback, profile writes, actual SVG/WAV delivery and foreign-band file 404. See docs/localization-multitenancy/04-implementation-plan.md#verification-status."
       ]
     },
     {

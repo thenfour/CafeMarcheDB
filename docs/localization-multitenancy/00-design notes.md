@@ -1,152 +1,120 @@
 # Localization and multiband design
 
-The migration introduces shared accounts, band-owned content, localized UI and
-catalog text, and scoped settings. Restore a buildable, runnable application and
-its everyday workflows first. Complete broader administration and localization
-tooling after restoration.
+Restore **pre-migration functionality and UX on the migrated schema**. Complete
+broader localization and multiband tooling after the everyday workflows work.
 
 ## Baselines and restoration target
 
-Two fixed commits serve different purposes:
-
-| Purpose | Commit | Required use |
-| --- | --- | --- |
-| Production migration source | `094a783a94b95ed4ec15089e9372763b7d59f66c` | Existing production deployments run this version. Rehearse the complete database/application/upload cutover from its data and migration history to the target release. |
-| Functional and UX parity reference | `f027830a9790ab2bf015805ef765775a9e40de55` (`f027830a9790`) | The localization/multiband work started from this version. Compare restored application behavior, screens, interactions and tests with it. |
-
-Production migration support is required for the production baseline, not every
-intermediate development schema. The parity reference includes work since that
-production release; it is not an additional production database input. Apply the
-required intervening migrations as part of the production upgrade.
-
-Restoration targets **pre-migration functional and UX parity on the migrated
-schema**. For `CMDB_HOSTING_MODE=CafeMarche`, retain familiar layouts, controls,
-defaults, navigation, supported URLs, filters, exports and detail tabs. Adapt
-existing pages/components and query pipelines to the new ownership, authorization
-and localized reference contracts. A reduced replacement or a new GUI does not
-satisfy restoration. Preserve safe fixes made since the reference commit; do not
-reintroduce obsolete schema models or weaken authorization to reproduce old code.
-
-Resolve localized catalog labels for display. Free-text matching against those
-localized names may remain deferred during A1, as specified in the
-[search exception](04-implementation-plan.md#localized-catalog-text-search-exception).
-Catalog selection and identity-based filtering/facets remain required. Complete
-localization of existing site chrome is not a prerequisite for parity; retain
-working labels and use shared resolution where the migrated data requires it.
-
-Later `MIGRATION_RESTORE` snapshots preserve implementation history, not a
-different parity target. Compare them with `f027830a9790` before restoring a
-workflow. Temporary A0 notices and smaller recovery screens are development
-checkpoints, not accepted UX changes or evidence of parity.
-
-## Reading guide
-
-| Document | Purpose |
+| Purpose | Fixed commit |
 | --- | --- |
-| [Implementation plan](04-implementation-plan.md) | Restoration gates, next work, deferred scope, and acceptance. |
-| [Schema](01-schema.md) | Target ownership, relationships, and server invariants. |
-| [Data migration](02-data-migration.md) | Source-to-target mappings and preservation requirements. |
-| [SQL runbook](03-sql-migration.md) | Executable migration, settings manifest, deployment, and recovery. |
-| [Authorization](05-authorization-foundation.md) | Trusted context, grants, and startup policy. |
-| [Localization and settings](06-localization-settings.md) | Resolution, formatting, delivery, refresh, and settings APIs. |
-| [DB3 contracts](07-db3-contracts.md) | Shared query, field, write, and reference architecture. |
-| [Band memberships](08-band-memberships.md) | Member reads, assignments, profile edits, and membership status. |
-| [Feature preservation](13-feature-preservation.md) | Archived source, parity verification and outstanding restoration obligations. |
+| Production migration source | `094a783a94b95ed4ec15089e9372763b7d59f66c` |
+| Functional and UX parity reference | `f027830a9790ab2bf015805ef765775a9e40de55` (`f027830a9790`) |
 
-These documents describe settled contracts and remaining work. The actual
-[Prisma schema](../../db/schema.prisma) defines database constraints; the SQL
-runbook defines migration behavior. The implementation plan owns delivery status
-and temporary restrictions. Superseded proposals and journals remain in Git history.
+Production upgrades support the production commit's data, migration history and
+uploads, including the required intervening migrations. Intermediate development
+schemas do not add compatibility requirements. The parity reference includes
+later work and is not another production database input.
 
-## Ownership and roles
+For `CMDB_HOSTING_MODE=CafeMarche`, preserve familiar screens, defaults,
+interactions, navigation, supported URLs, filters, exports and detail tabs.
+Adapt existing components and query pipelines to the target schema. A smaller
+replacement or a redesigned search does not establish parity. Preserve safe
+later fixes without restoring obsolete models or weakening authorization.
 
-Use **band** in domain names and user-facing language. A `User` is a shared
-person/account; a `BandUser` is that person's membership in one band. Instruments,
-tags, roles, and preferences attached to a membership can differ across bands.
-Authorship and song credits continue to identify the shared person.
+Resolve migrated catalog labels for display. A1 may defer only free-text matching
+against newly localized catalog names; the [plan](04-implementation-plan.md#localized-catalog-text-search-exception)
+defines the boundary. Full localization of existing site chrome is not required.
+Later `MIGRATION_RESTORE` snapshots are adaptation material, not a new parity
+baseline; temporary notices and basic recovery screens are checkpoints.
 
-Ordinary content belongs to a band. Authorization uses an explicit,
-server-validated band selection and verifies the loaded resource's ownership.
-Single-band and multiband hosting share the backend, database, and authorization
-policy. Hosting conveniences never supply an implicit backend default band.
+## Documentation map
 
-Global roles and band-role definitions/permission matrices are platform-owned.
-A band assigns an existing band role to a membership. Band administration does
-not confer authority over shared accounts, global catalogs, or role definitions.
-Signup creates a shared account without a membership or platform elevation.
+| Read | For |
+| --- | --- |
+| [Implementation plan](04-implementation-plan.md) | Current gates, next slice and acceptance. |
+| [SQL runbook](03-sql-migration.md) | Data preservation, migration execution and recovery. |
+| [Authorization and memberships](05-authorization-foundation.md) | Trusted context, grants, member reads and commands. |
+| [Localization and settings](06-localization-settings.md) | Resolution, formatting, delivery and settings policy. |
+| [DB3 contracts](07-db3-contracts.md) | Shared fields, queries, writes and references. |
+| [Feature preservation](13-feature-preservation.md) | Source preservation and completion procedure. |
 
-## Catalog ownership and customization
+The [Prisma schema](../../db/schema.prisma) and implementation define structural
+and API details. [feature-restoration.json](feature-restoration.json) owns the
+feature inventory. Keep current delivery status in the plan, not in duplicate
+registers or dated journals. Superseded detail remains in Git history.
 
-Platform-owned catalogs supply reusable vocabulary. Bands explicitly opt into
-items through band-owned wrappers, or create custom items with no global source.
-An opted-in item can inherit metadata, override fields, or be hidden without
-destroying existing associations. Global catalog membership alone does not make
-an item selectable in every band.
+## Ownership
 
-An instrument always references a band functional group. Opting into a global
-instrument ensures its global group has a corresponding band opt-in. Custom
-instruments require a band group; a future onboarding wizard may simplify this
-workflow without changing the ownership contract.
+Use **band** in domain and UI language. `User` is a shared person/account;
+`BandUser` is a unique membership in one band. Roles, instruments, tags, responses
+and preferences attached to a membership can differ across bands. Authors,
+uploaders, locks and song credits identify the shared person. Account deletion or
+merge and membership deactivation are separate operations. Signup creates an
+account without membership or platform elevation.
 
-Behavior-driving definitions remain platform-owned: event types, statuses,
-attendance options, and song-credit types. Global file-tag significance retains
-Partition/Recording behavior. Invitation behavior continues through effective
-user-tag significance and `Event.expectedAttendanceUserTagId`. Bands customize
-presentation without redefining those behaviors.
+Songs, events, files, wiki pages, Custom Links, menus, setlist plans/groups and
+band catalogs have direct band ownership. Segments, song lists, revisions,
+dividers, visits and gallery items inherit ownership through their parent.
+Queries constrain ownership; mutations check targets and references together in
+the authorized transaction. Foreign keys alone do not prove same-band validity.
+This includes invitation tags, response instruments, pinned/preview/parent files,
+plan groups, serialized plan references and menu wiki slugs. A wiki current
+revision must belong to that page.
 
-## Localization boundaries
+Keep optional `SetNull` relations without clearing required ownership. Removing
+an author must not delete band plans or credits. Hard band deletion is restricted
+until content is explicitly removed. Wiki and Custom Link slugs are band-unique.
+Action band/locale context may be null for platform or unknown historical actions;
+references on a band action must belong to that band.
 
-Static UI text uses typed registry keys. Entity-owned labels and descriptions use
-dynamic string identities. Central resolution, matching, and editing facilities
-serve every domain; catalogs do not implement their own fallback rules. Registry
-keys describe UI concepts and never embed entity IDs.
+Existing hosting exception: Frontpage Gallery is specific to Café Marché's
+single-band hosting mode and does not require band context.
 
-Song titles/aliases, authored descriptions, and wiki content remain multilingual
-authored text. The migration does not split that content into translation columns.
-Short searchable plain text and long text/Markdown use different value columns,
-with exactly one column populated per stored value. Empty text is intentional.
+Role definitions and permission matrices are platform-owned; `BandRole` has no
+band owner. Bands assign existing roles to memberships. Band administration does
+not grant authority over shared accounts, global catalogs or role definitions.
 
-A band override takes precedence for the whole string, before language selection.
-Once present, it prevents fallback to a different global meaning. Resolution uses
-the route preference, ordered browser preferences, English, and deterministic
-remaining candidates. String language and date/number formatting locale are
-independent. The exact algorithm is in
-[localization and settings](06-localization-settings.md#string-resolution-and-formatting).
+## Catalogs, text and settings
 
-Plain text supports ICU parameters; Markdown does not interpolate. Static strings
-arrive as a complete authorized catalog for synchronous client reads. Dynamic
-strings are batch-resolved with authorized entity reads. Optimize delivery or
-query execution only when measurements justify it.
+Bands explicitly opt into global catalog items through wrappers or create custom
+items. A wrapper may inherit metadata, override individual fields or hide the
+item while retaining associations. A global item alone is not selectable in a
+band. An instrument always has a band functional group: global instrument opt-in
+also ensures group opt-in; custom creation supplies a group.
 
-## Settings
+Event types, statuses, attendance options and credit types remain global behavior
+definitions. Global File-tag significance retains Partition/Recording behavior.
+Invitation behavior uses effective user-tag significance and
+`Event.expectedAttendanceUserTagId`; ordinary catalog edits do not change it.
 
-Global, band, user, and membership settings are four independent hives, with no
-inheritance hierarchy. Registries own types, defaults, per-key read/write gates,
-and reset behavior. Values are native JSON; a JSON string remains a string.
-Hosting mode is deployment configuration rather than a database setting.
+Static UI text uses typed registry keys; entity labels/descriptions use dynamic
+string identities. Shared resolution serves every domain. Null metadata inherits;
+empty text, `false` and zero are explicit values. Each localized field resolves
+independently. Plain text may use ICU parameters; Markdown does not interpolate.
+Song titles/aliases, descriptions and wiki revisions remain authored multilingual
+content. Referenced string deletion is restricted; removing an override is explicit.
 
-## Eventual routing and management
+Global, band, user and membership settings are independent native-JSON hives.
+Registries own validation, defaults and per-key authority. Hosting mode is
+deployment configuration. Exact resolution and settings rules live in the
+[localization contract](06-localization-settings.md).
 
-Standalone hosting retains the intended root or `/backstage` shape. Platform
-portals use `/[locale]/b/<publicBandId>/...`, with the locale optional. URLs without
-a locale work directly, use browser preferences, and are preferred for sharing;
-they do not redirect to a selected language. A language switch links to the
-equivalent page. Rewrites adapt existing page implementations.
+## Routing and later scope
 
-The final CafeMarche experience retains familiar URLs and navigation without
-adding mandatory band-selection steps to established single-band flows. Hosting
-and routing must supply explicit context that the server validates; this does
-not permit an implicit default band in backend authorization. The development
-band selector is recovery scaffolding, not the production UX reference.
+Backend authorization uses explicit, server-validated band context in all hosting
+modes, without an implicit default band. Café Marché must retain familiar URLs
+and single-band navigation without a mandatory picker; hosting/routing supplies
+validated context. The development selector is temporary scaffolding.
 
-The server validates host, band, and locale. Middleware hints do not authorize
-requests. Full routing work replaces Next's static i18n assumptions and carries
-the same context through SSR, RPC, files, feeds, notifications, and exported links.
-Band-owned Custom Links resolve under the band's portal root and do not implement
-locale-dependent redirects. Public band IDs remain identity; mutable band names
-are not routing identity.
+Standalone hosting keeps the intended root or `/backstage` shape. Platform
+portals use `/[locale]/b/<publicBandId>/...`, with locale optional. URLs without
+locale use browser preferences directly and are preferred for sharing; language
+switching links to the equivalent page. Rewrites reuse existing pages. Validate
+host/band/locale on the server; middleware hints do not authorize. Carry context
+through SSR, RPC, files, feeds, notifications and exports. Custom Links use the
+band portal root without locale-dependent redirects. Mutable band names are not
+routing identity.
 
-Band creation, switching, invitations, decommissioning, platform administration,
-and full translation editing belong after restoration. Cross-band account merge
-also remains shared-account work. Ensemble templates, onboarding wizards,
-marketing, pricing, and other product additions are separate optional work.
+Full portal routing, band lifecycle/onboarding, platform administration, cross-band
+account merge and translation tools follow core restoration. New product features
+and optional UX refinements need separate scope.

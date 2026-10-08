@@ -1,118 +1,128 @@
-# Authorization contracts
+# Authorization and membership contracts
 
-Request authorization is independent of presentation language and hosting mode.
-Delivery status and remaining consumer adaptation belong to the
-[implementation plan](04-implementation-plan.md).
+Authorization is independent of presentation language and hosting mode. These
+are policy boundaries; [the plan](04-implementation-plan.md) owns delivery status.
+Implementation owners are [serverAuthorization.ts](../../src/auth/server/serverAuthorization.ts),
+[bandUser.ts](../../src/core/db3/shared/entities/user/bandUser.ts), membership
+[commands](../../src/core/db3/server/commands) and
+[db3BandMemberPolicy.ts](../../src/core/db3/server/db3BandMemberPolicy.ts).
 
-## Trusted context
+## Trusted context and grants
 
-`src/auth/server/serverAuthorization.ts` loads fresh account state and returns
-`CMServerAuthorization`: effective permissions, separately attributed global/band
-grants, the resolved band, and active membership. Shared session PublicData holds
-person/session state and band-independent display grants. Selected band,
-membership, locale, and membership-derived grants stay in the request/tab context.
+Load fresh account/role state on the server. An explicit band public ID resolves
+an active band and membership; omitted/null means platform/account context and
+never selects a default band. Missing/deleted supplied bands fail. Keep selected
+band, membership, locale and membership-derived permissions request/tab-local;
+shared sessions hold only account/person state and band-independent grants.
+Client context exposes public identities and permission names, not internal IDs.
 
-`loadAuthorization(session, bandPublicId?)` always loads global/account grants.
-An explicit public ID additionally resolves an active band and membership.
-Omission/null produces platform/account context without querying bands; a
-supplied missing/deleted band fails. Single-band hosting uses the same contract.
-There is no environment-selected or hard-coded backend band.
+Refresh authorization inside the operation's read/write transaction. Constrain
+queries by the trusted band and verify loaded resource ownership separately from
+capability checks. Member-only operations also require membership. The legacy
+synchronous `resolver.authorize` must reject band capabilities, including stale
+cookie grants. Supplied account hints are IDs to reread, not trusted role state.
 
-The request's session context caches snapshots by band public ID/null and session
-identity. A → B → A keeps independent snapshots without mutating session selection.
-`refresh(database?)` reloads the same band/person/grants, optionally inside a
-transaction. `loadAuthorizationForUser` trusts only the supplied person ID and
-rereads account/role state. Session creation likewise publishes only shared grants.
-
-`toClientContext()` exposes public person/band/membership identities and effective
-permission names. Internal IDs and the server authorization object remain on the
-server. Presentation delivery separately supplies
-[locale preferences and formatting](06-localization-settings.md).
-
-Shared session permissions include the account baseline, global-role non-band
-grants, and applicable shared public/account grants. Even account capabilities
-originating only in a selected membership role remain tab-local. A request in
-another band cannot overwrite those grants. Retired cookie fields are ignored
-while unrelated session metadata is preserved.
-
-`cmauthorize` accepts an optional band public ID. Band consumers constrain queries
-to its resolved identity, call `requireBandResource` for loaded ownership, and
-`requireMembership` for member-only operations. A capability alone does not prove
-resource ownership. Legacy synchronous `resolver.authorize` rejects band
-capabilities, including ones present in older cookies.
-
-## Effective grants
-
-- Active people receive active stored `login` and `visibility_logged_in_users`
-  independently of membership. Signup creates no membership or global elevation.
-- Public-role band grants apply only with a resolved band. Account grants require
-  an active person.
-- Only the active selected membership supplies its band role. Null uses the
-  designated new-member role. Absent/inactive memberships and outsiders do not
-  receive that default.
-- Active global-role grants apply independently of membership. `isSysAdmin`
-  additionally inherits the designated active global Sysadmin role's actual
-  grants; it is not a bypass. Missing/ambiguous designation fails for flagged people.
-- Registry scope is authoritative. Band roles cannot confer platform capabilities.
-  Band capabilities from global roles also require a selected band.
-- Deleted definitions, unknown permission names, and `never_grant` do not
-  authorize. Unknown names are logged. Ambiguous active public/new-member role
-  designations fail instead of combining grants.
-- Deleted/merged people lose account access and their sessions are revoked.
-  Membership deactivation removes that band's member grants while retaining
-  global account access, other memberships, and applicable public access.
+- Active people receive stored `login` and logged-in visibility independently of
+  membership. Deleted/merged people lose access and sessions are revoked.
+- Public-role band grants require a resolved band. Only an active selected
+  membership supplies its role; null uses designated new-member defaults.
+  Outsiders and inactive memberships do not receive that default.
+- Global-role grants are membership-independent. `isSysAdmin` inherits the actual
+  designated active global Sysadmin grants; it is not an authorization bypass.
+- Registry scope is authoritative: band roles cannot confer platform authority;
+  global-role band grants still require a band. Deleted definitions, unknown
+  permission names and `never_grant` are ineffective. Ambiguous active role
+  designations fail rather than combining grants.
+- Deactivating membership removes that band's member grants while preserving
+  account/global, other-band and applicable public access.
 
 ## Capability boundaries
 
-Both role-definition tables and their matrices are platform-owned. Band-role
-assignment is a membership operation; `BandRole` itself has no band owner.
-
-| Operation | Required authority |
+| Operation | Authority |
 | --- | --- |
-| Own shared display profile/preferences | Active account; sensitive sign-in operations keep their dedicated gates. |
-| Another person's shared profile, global role, account lifecycle | `manage_global_users`; merge also requires `merge_users`. Credentials/impersonation retain protected gates. |
-| Membership instruments/tags/profile management | Their declared owner/`manage_users` policy; taxonomy editing separately uses `manage_user_taxonomy`. |
-| Membership role assignment/deactivation/reactivation | `assign_user_roles` / `deactivate_users` / `recover_users`, plus delegation and continuity policy. |
+| Own shared display profile/preferences | Active account; credentials retain dedicated protected gates. |
+| Another person's shared profile/global role/account lifecycle | `manage_global_users`; merge also needs `merge_users`. |
+| Own membership instruments | Owner with `login`. |
+| Another member's instruments; any member's tags | `manage_users`. Taxonomy editing alone cannot assign tags. |
+| Membership role/deactivation/reactivation | `assign_user_roles` / `deactivate_users` / `recover_users`, with delegation/continuity checks. |
 | Role definitions/designations/matrices | Platform `sysadmin`. |
-| Global catalogs/behavior definitions | `manage_global_catalogs`. |
-| Band catalog opt-ins/customization | Selected-band domain administration capability. |
-| Settings/localization | Global or band capability and any per-key override. |
-| Band lifecycle | Platform `manage_bands`; membership operations also require their band capabilities. |
-| Band content, RPC/API, files, feeds, jobs | Applicable domain capability and verified ownership in trusted context. |
+| Global catalogs | `manage_global_catalogs`. |
+| Band catalogs/content | Selected-band domain capability and verified ownership. |
+| Settings/localization | Relevant global/band capability plus per-key rules. |
+| Band lifecycle | Platform `manage_bands`; membership operations keep their band gates. |
 
-See [band memberships](08-band-memberships.md) for command-specific delegation,
-continuity, self-service, and projection rules. Band grants cannot modify shared
-accounts or global definitions.
+Role definitions/matrices remain platform-owned. A band assigns an existing
+role; band administration cannot modify shared accounts or global definitions.
 
-## Permission migration and initialization
+## Member reads and writes
 
-The follow-up migration
-[20261005120000_696_authorization_foundation](../../db/migrations/20261005120000_696_authorization_foundation/migration.sql)
-adds these capabilities without rewriting the preceding migration's original
-matrices:
+Membership reads require an explicit band and exclude inactive memberships and
+deleted/merged people by default. Owners may read their active membership with
+`login`, including roleless owners; other-member reads need `view_users_basic_info`.
+Profile URLs retain person public identity and resolve through the selected
+membership. Directory access additionally requires `search_users`; own-profile
+access does not confer it. The basic directory is not reference parity.
 
-| Added capabilities | Initial grant |
-| --- | --- |
-| `manage_band_settings`, `manage_band_localization` | Global Sysadmin and active band roles already granted `manage_site_branding`. |
-| `manage_bands`, `manage_global_catalogs`, `manage_global_settings`, `manage_global_localization`, `manage_global_users` | Global Sysadmin. |
+Contact fields require ownership or `view_user_contact_info`; membership creation
+date requires `manage_users`. Credentials, internal IDs and grant inventories
+stay off member DTOs. Sign-in summaries use the protected platform account reader,
+work without band selection and are unavailable to ordinary band managers.
 
-Platform capabilities are protected/nondelegable; the two band capabilities are
-delegable. Existing grants are selected by technical capability, never translated
-role name. Fresh defaults grant both band capabilities to Band Admin and all seven
-to the designated global Admin. Descriptions are global dynamic Markdown strings;
-SQL corrects eight existing descriptions while preserving identity/non-English
-values. Startup preserves subsequent wording edits. Apply SQL through the
-[runbook](03-sql-migration.md).
+Assignments and catalog references use public membership/band identities, keeping
+person IDs distinct. Hidden existing assignments remain identifiable but may lack
+labels; hidden functional groups suppress instrument labels and new choices.
+Cross-band links are excluded from reads and rejected on writes. New references
+must be visible; existing hidden references may be retained or removed.
 
-`src/setup/accessControl.ts`, shared by instrumentation and seeds, runs Serializable
-initialization: ensure the three locale identities/English names, synchronize
-known permission metadata and missing descriptions, seed one global/six band roles
-only when both role tables are empty, and require exactly one active global
-Sysadmin designation with active `login`/`sysadmin` definitions and required grants.
+Commands accept strict public inputs and refresh grants in Serializable execution.
+Ownership, reference validation, writes and audits share the transaction; noops
+preserve identity/history. Generic account/association CRUD cannot bypass them.
+A nonempty edited instrument list has exactly one assigned primary; retain a
+surviving primary or choose the first public ID in stable order. Empty lists have
+none; migrated primary-less lists use that same read fallback.
 
-Repeated initialization retains existing matrices and wording. It does not revive
-deleted definitions, create memberships, or run random demo generators. Signup
-creates only a shared account; bootstrap uses the existing one-time secret,
-transaction, and audit protocol to assign global authority without changing
-memberships. UID/public-ID/wiki/setlist/chrome backfills belong to SQL rather than
-startup code.
+Shared-name/phone edits change the person across bands. Another-person edits need
+`manage_global_users`, not `manage_users`, and target an active selected membership.
+Omitted phone stays unchanged; blank clears it. Forms omit unreadable fields
+instead of clearing them. Person-level instrument/tag fields remain rejected.
+Invitation significance is read-only in catalog editing; hiding retains assignments.
+
+## Delegation, continuity and membership status
+
+Role assignment checks current and desired complete effective grants, including
+public/new-member defaults. Null role is not an empty grant set. Unknown/platform
+grants are not delegable; invalid roles or ambiguous defaults fail. The authorized
+platform Sysadmin exception still requires an explicit band. UI-filtered role
+choices do not replace mutation checks.
+
+Before removing continuity-sensitive authority, inspect other active ordinary
+same-band members and effective defaults. Foreign/inactive members, deleted/merged
+people and platform Sysadmins must not mask the loss; grants retained through
+public access are not lost. Unacknowledged risk returns `confirmationRequired`
+without writes/audits. Confirmation reruns current authorization and policy checks.
+
+Deactivation/reactivation requires its distinct capability and delegation over
+the retained role; deactivation also checks continuity. Change only membership
+status and recordkeeping. Preserve the account, sessions, other memberships,
+role, assignments, settings and history. Reactivation restores retained state;
+it neither creates a membership nor recovers a deleted/merged person.
+
+Recovery reads require inactive-membership selection, `includeDeleted: true`,
+`recover_users` and basic-member visibility. `includeDeleted` alone does not expose
+inactive members. Use the ordinary scoped snapshot/pagination pipeline.
+
+## Initialization and UI consistency
+
+[accessControl.ts](../../src/setup/accessControl.ts) initializes known definitions
+and missing descriptions, seeds roles only when role tables are empty, and
+requires a unique active global Sysadmin designation with required grants.
+Repeated startup preserves matrices/wording and does not revive deleted definitions,
+create memberships, generate demos or run historical backfills. Signup creates
+only a shared account; bootstrap uses the existing one-time-secret/audit protocol.
+Permission additions and historical transformations belong to deployment SQL.
+
+Context changes clear old drafts/query data. Pending writes block duplicates and
+unsafe dismissal; failed writes retain drafts. Changed desired roles clear
+continuity acknowledgement. Successful writes refresh member/dashboard data;
+presentation-affecting writes also invalidate presentation across tabs. Report a
+committed save followed by refresh failure as saved but needing reload.
