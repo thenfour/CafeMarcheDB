@@ -130,6 +130,7 @@ type DB3RequiredSelectedKeys<
     : never
 }[DB3SelectedKeys<TSelect>];
 
+// Nested values carry the same resolution and inheritance metadata as root values.
 type DB3NestedDto<
     TPayload,
     TSelect,
@@ -148,7 +149,8 @@ type DB3NestedDto<
 } & {
     [TKey in Exclude<TSelectedKey, TRequiredKey>]?:
     DB3SelectedMemberValue<TPayload, TSelect, TTable, TKey>;
-}>;
+} & ReadCompanions<DB3FieldsOf<TTable>, Extract<TRequiredKey, string>>
+    & Partial<ReadCompanions<DB3FieldsOf<TTable>, Extract<Exclude<TSelectedKey, TRequiredKey>, string>>>>;
 
 type DB3PrismaPayload<
     TEntity extends AnyDB3Table,
@@ -195,7 +197,7 @@ type SourceReadCompanions<TFields, TKeys extends string> = {
 type IntersectSourceCompanions<TUnion> = [TUnion] extends [never] ? {}
     : (TUnion extends unknown ? (value: TUnion) => void : never) extends (value: infer TIntersection) => void
     ? TIntersection : never;
-type ReadCompanions<TFields, TKeys extends string> = {
+type ReadCompanions<TFields, TKeys extends string> = [TKeys] extends [never] ? {} : {
     [K in LocalizedKeys<TFields, TKeys> as `${K}Resolution`]: StringResolution
 } & {
     [K in LocalizedKeys<TFields, TKeys> as `${K}StringPublicId`]: DynamicLocalizedStringPublicId | null
@@ -998,6 +1000,6 @@ export function deriveViewContract<
         // TSelection remains the caller-authored selection authority.
         prismaSelection: prepareDB3ReadSelection(entity, prismaSelection).selection as TSelection,
         referenceContract,
-        hydrate: (dto, references) => hydrateCompiledSelection(entity, compiled, dto, references),
+        hydrate: (dto, references) => hydrateCompiledSelection<TEntity, TTransportSelection, TReferences>(entity, compiled, dto, references),
     };
 }

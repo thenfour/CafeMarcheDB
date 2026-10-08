@@ -75,12 +75,13 @@ Work in this order, adjusting the next slice to the actual blocker found:
    Assess the full suite so unrelated failures are visible; do not present focused
    checks as a full-suite pass.
 
-The account/dashboard bootstrap slice now runs in development against a migrated
-production copy: login, explicit band selection, member-profile navigation/reload,
-and clearing the selected band have browser evidence. Startup reads use migrated
-catalogs and membership assignments; deferred dashboard domains are not queried.
-This does not close A0: normal typecheck/build still fail, and deferred routes,
-RPC/API implementations, and source dependencies still require isolation.
+Normal typecheck and production build now pass. The account/dashboard bootstrap
+path has browser evidence against a migrated production copy: login, explicit
+band selection, member-profile navigation/reload and clearing the selected band.
+Startup reads use migrated catalogs and membership assignments; deferred dashboard
+domains are not queried. A0 still requires a coherent audit of reachable deferred
+routes and their non-page entry points. The full suite retains unrelated migration
+failures; its latest result and built-browser evidence are recorded below.
 See [current recovery evidence](09-application-recovery.md).
 
 The obsolete single-band Role tables, views, commands, dashboard metadata, and
@@ -93,10 +94,23 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** recover or coherently isolate the remaining palette
-editor dependency on the retired settings API. The normal build now gets past
-wiki and stops at `colorEditor2.tsx:16`. Keep deferred source/UI/non-page entry
-points accounted for together and preserve the recovered band-owned workflows.
+**Next implementation slice:** audit the remaining reachable deferred pages and
+matching RPC/API/background entry points for coherent unavailability. Normal
+compiler and production-build blockers are cleared. Preserve the verified login,
+explicit-band, member/catalog and palette workflows while replacing unfinished
+reachable surfaces with registered recovery notices and guarded entry points.
+Account for each disabled implementation and specification in the restoration
+inventory. Assess the remaining authorization/calendar/full-suite fixtures as
+part of that audit before closing A0.
+
+The developer palette now uses the registered `global.dev.textPalette` setting.
+It remains platform-owned across band selections, retains drafts on failed writes
+and same-scope refreshes, and refreshes authorization at the registered write
+boundary. Presentation refreshes preserve same-scope forms; account/band/locale
+changes discard their state. Nested DB3 DTO types now retain the localized and
+inherited companions already required by runtime validation. Calendar/startup/
+session fixtures use the target schema; retired role-matrix cases remain
+preserved under `role-administration`.
 
 Wiki pages, tag assignments and revisions now declare selected-band ownership.
 Page reads, creation, saves, leases, visibility, revision history/detail/deletion,

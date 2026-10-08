@@ -8,10 +8,17 @@ import { calendarWindowSql } from "src/core/db3/server/calendarWindowSql"
 
 const url = process.env.DATETIME_TEST_DATABASE_URL
 const db = new PrismaClient({ datasourceUrl: url })
+let bandId: number
+let cancelledStatusId: number
 describe.skipIf(!url)("calendar overlap SQL with real MySQL", () => {
   beforeAll(async () => {
     if (!url || !/^\/cmdb_datetime_test_[a-f0-9]{16}$/.test(new URL(url).pathname)) throw new Error("A disposable datetime-test database is required.")
-    await db.eventStatus.create({ data: { id: 9, publicId: "DateStatusTest01", label: "Cancelled", description: "", significance: "Cancelled" } })
+    const band = await db.band.create({ data: { publicId: generatePublicId<"Band">(), name: { create: { publicId: generatePublicId<"DynamicLocalizedString">() } } } })
+    bandId = band.id
+    const cancelled = await db.eventStatus.create({ data: { publicId: "DateStatusTest01",
+      name: { create: { publicId: generatePublicId<"DynamicLocalizedString">() } },
+      description: { create: { publicId: generatePublicId<"DynamicLocalizedString">() } }, significance: "Cancelled" } })
+    cancelledStatusId = cancelled.id
     const segment = (start: string | null, duration: number, allDay = false, statusId: number | null = null) => {
       const authored = allDay && start ? createAllDayRange({ startDate: start.slice(0, 10), endDateExclusive: addCalendarDays(start.slice(0, 10), Math.max(1, Math.round(duration / 86400000))) }, "Europe/Brussels") : null
       return { publicId: generatePublicId(), name: "Segment", description: "", startsAt: authored ? authored.getStartDateTime() : start ? new Date(start) : null, durationMillis: BigInt(authored ? authored.getDurationMillis() : duration), isAllDay: allDay, statusId,
@@ -28,7 +35,7 @@ describe.skipIf(!url)("calendar overlap SQL with real MySQL", () => {
       ["one-ms-overlap", [segment("2026-07-10T14:00:00Z", hour + 1)]],
       ["starts-at-end", [segment("2026-07-11T15:00:00Z", hour)]],
       ["tbd", [segment(null, day, true)]],
-      ["cancelled", [segment("2026-07-11T01:00:00Z", hour, false, 9)]],
+      ["cancelled", [segment("2026-07-11T01:00:00Z", hour, false, cancelledStatusId)]],
       ["all-day-selected", [segment("2026-07-11T00:00:00Z", day, true)]],
       ["all-day-previous", [segment("2026-07-10T00:00:00Z", day, true)]],
       ["all-day-spanning", [segment("2026-07-09T00:00:00Z", 3 * day, true)]],
@@ -43,7 +50,7 @@ describe.skipIf(!url)("calendar overlap SQL with real MySQL", () => {
     ] as const
     for (const [name, segments] of fixtures) {
       // Deliberately stale aggregate starts must not control segment selection.
-      await db.event.create({ data: { publicId: generatePublicId<"Event">(), name, revision: 1, startsAt: new Date("2026-06-01T00:00:00Z"), segments: { create: [...segments] } } })
+      await db.event.create({ data: { publicId: generatePublicId<"Event">(), bandId, name, revision: 1, startsAt: new Date("2026-06-01T00:00:00Z"), segments: { create: [...segments] } } })
     }
   })
   afterAll(async () => db.$disconnect())

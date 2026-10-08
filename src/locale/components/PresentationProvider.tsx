@@ -32,12 +32,17 @@ export async function invalidatePresentation(): Promise<void> {
     }
 }
 
-function LoadedPresentation({ input, children }: React.PropsWithChildren<{ input: PresentationInput }>) {
+function LoadedPresentation({ input, initial, children }: React.PropsWithChildren<{ input: PresentationInput; initial?: PresentationData }>) {
     const [data] = useQuery(getPresentationData, input, {
+        initialData: initial,
+        enabled: !initial,
         staleTime: 0,
         cacheTime: 0,
         keepPreviousData: false,
     });
+    if (!data) {
+        throw new Error("Presentation query returned no snapshot.");
+    }
     const value = React.useMemo(() => ({
         data,
         bandPublicId: input.bandPublicId,
@@ -97,10 +102,12 @@ export function PresentationProvider({ initial, bandPublicId, routeLocale, child
         initialEligible.current = false;
     }
     const canUseInitial = initial && initialEligible.current;
+    const scopeKey = JSON.stringify([contextKey, session.userId ?? null]);
     // During a band/account change the new tree suspends, so old text/grants cannot remain visible.
-    return canUseInitial
-        ? <PresentationContext.Provider value={{ data: initial, bandPublicId: input.bandPublicId, invalidate: invalidatePresentation }}>{children}</PresentationContext.Provider>
-        : <React.Suspense fallback={<span role="status">Loading language and settings…</span>}>
-            <LoadedPresentation key={clientRequestId} input={{ ...input, clientRequestId }}>{children}</LoadedPresentation>
-        </React.Suspense>;
+    // Refresh queries without remounting same-scope forms and discarding their drafts.
+    return <React.Suspense key={scopeKey} fallback={<span role="status">Loading language and settings…</span>}>
+        <LoadedPresentation input={{ ...input, clientRequestId }} initial={canUseInitial ? initial : undefined}>
+            {children}
+        </LoadedPresentation>
+    </React.Suspense>;
 }

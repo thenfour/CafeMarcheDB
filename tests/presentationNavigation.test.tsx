@@ -90,4 +90,25 @@ describe("presentation navigation through Suspense", () => {
         await act(async () => pending[0]!.resolve());
         expect(container.querySelector("[data-band]")?.textContent).toBe(pending[0]!.input.clientRequestId);
     });
+
+    it("preserves drafts through a suspending grant refresh and clears them for another account", async () => {
+        function Draft() {
+            const [draft, setDraft] = React.useState("saved");
+            return <button onClick={() => setDraft("unsaved")}>{draft}</button>;
+        }
+        const render = () => root.render(<PresentationProvider bandPublicId={null}><Draft /></PresentationProvider>);
+        const resolveReads = () => { for (const read of reads.values()) { read.resolve(); } };
+        await act(async () => render());
+        await act(async () => resolveReads());
+        await act(async () => container.querySelector("button")!.click());
+        session = { ...session, permissionNames: ["login", "search_users"] };
+        await act(async () => render());
+        expect(container.textContent).toContain("Loading");
+        await act(async () => resolveReads());
+        expect(container.querySelector("button")?.textContent).toBe("unsaved");
+        session = { ...session, userId: 12 };
+        await act(async () => render());
+        await act(async () => resolveReads());
+        expect(container.querySelector("button")?.textContent).toBe("saved");
+    });
 });

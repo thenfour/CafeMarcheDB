@@ -103,6 +103,21 @@ registry schema, and offers separate save, cancel and reset actions. A context
 switch discards the previous account/band draft; a refresh retains unsaved edits
 while updating untouched fields. Failed writes retain the draft.
 
+The developer color editor reads and writes `global.dev.textPalette` through the
+same registered API. The registry requires platform administrator visibility and
+global-settings edit permission; a band selection never changes its global owner.
+The editor waits for presentation, exposes read-only previews when appropriate,
+prevents duplicate saves and retains intentional blank values and failed drafts.
+Color-map edits remain previews exported to application source, as before. The
+page title, scope explanation and save feedback use registered strings; broader
+localization of the existing developer tools remains part of B.
+
+Presentation uses its SSR snapshot as disabled query initial data, then requests
+fresh snapshots on settings/grant/focus changes. These refreshes preserve mounted
+forms in the same account/band/locale scope, including across Suspense. A scope
+change replaces the Suspense boundary and clears the old form. Fresh request tokens
+still partition query results; preserving a draft does not preserve old grants.
+
 Clipboard export contains visible `{ key, value }` entries for one scope. Import
 validates every entry, edit capability and duplicate key before submitting one
 batch to the registered API. Pasted owner IDs, unregistered keys, and legacy

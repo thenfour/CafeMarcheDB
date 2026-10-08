@@ -211,6 +211,15 @@ Wiki ownership recovery adds one `markdown-editing` reference for the old per-pa
 `WikiPage_<slug>_Markdown` injection. Those dynamic Setting keys have no registered
 localization owner; this feature is considered legacy and is to be removed.
 
+Palette/compiler recovery adds one `role-administration` reference from
+`09914973`. It preserves the complete former session-hardening module, including
+three consecutive-role-matrix-edit scenarios that cannot execute through the
+isolated legacy matrix. Startup Sysadmin-role assertions remain executable against
+`GlobalRole`/`GlobalRolePermission`; request refresh checks now use separate global,
+public-band and selected-member grants. No whole specification file is newly
+deferred. Palette saving and preview tools remain active through the registered
+global setting; this change does not close settings/branding or role-editor parity.
+
 ## Audit scope
 
 The initial audit covered source/test removals from the October migration history

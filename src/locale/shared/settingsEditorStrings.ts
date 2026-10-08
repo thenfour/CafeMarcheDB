@@ -8,6 +8,9 @@ const label = (defaultValue: string) => plainStaticString({
 export const settingsEditorStrings = {
     "settings.title": label("Settings"),
     "settings.brandTitle": label("Branding"),
+    "settings.paletteTitle": label("Theme editor"),
+    "settings.paletteGlobalNotice": label("The developer text palette is a platform setting shared by all bands. Color-map edits are previews; copy the map to apply them in the application source."),
+    "settings.paletteUnavailable": label("The developer text palette requires platform administrator access."),
     "settings.scope": label("Scope"),
     "settings.scope.global": label("Platform"),
     "settings.scope.band": label("Selected band"),

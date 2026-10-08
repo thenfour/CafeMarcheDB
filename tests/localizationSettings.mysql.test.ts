@@ -91,6 +91,27 @@ describe.skipIf(!testUrl)("phase-2 foundations on MariaDB/MySQL", () => {
         expect(await tx.change.count({ where: { userId: fixture.user.id } })).toBe(4);
     }));
 
+    it("shares the protected developer palette across bands and rejects a revoked global writer", () => withFixture(async (tx, fixture) => {
+        const key = "global.dev.textPalette";
+        const firstBand = parsePublicId<"Band">(fixture.bands[0]!.publicId);
+        const secondBand = parsePublicId<"Band">(fixture.bands[1]!.publicId);
+        const platform = await loadAuthorizationForUser(fixture.admin, tx);
+        await writeSettings(tx, platform, [{ hive: "global", key, operation: { kind: "set", value: "#123456" } }], CreateChangeContext("palette"));
+        for (const band of [firstBand, secondBand]) {
+            const scoped = await loadAuthorizationForUser(fixture.admin, tx, band);
+            expect(readSettingSnapshot(await loadSettingsSnapshot(tx, scoped), "global", key)).toBe("#123456");
+        }
+        const member = await loadAuthorizationForUser(fixture.user, tx, firstBand);
+        expect((await loadSettingsSnapshot(tx, member)).global[key]).toBeUndefined();
+        await expect(writeSettings(tx, member, [{ hive: "global", key, operation: { kind: "set", value: "Denied" } }], CreateChangeContext("palette-denied"))).rejects.toThrow();
+        await writeSettings(tx, platform, [{ hive: "global", key, operation: { kind: "set", value: "" } }], CreateChangeContext("palette-blank"));
+        await tx.user.update({ where: { id: fixture.admin.id }, data: { globalRoleId: null } });
+        const revoked = await platform.refresh(tx);
+        await expect(writeSettings(tx, revoked, [{ hive: "global", key, operation: { kind: "set", value: "Denied" } }], CreateChangeContext("palette-revoked"))).rejects.toThrow();
+        expect((await tx.globalSetting.findUniqueOrThrow({ where: { name: key } })).value).toBe("");
+        expect(await tx.bandSetting.count({ where: { name: key } })).toBe(0);
+    }));
+
     it("rejects other-band grants and an invalid batch without partial changes", () => withFixture(async (tx, fixture) => {
         const second = fixture.bands[1]!;
         const auth = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(second.publicId));

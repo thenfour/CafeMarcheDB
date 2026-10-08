@@ -1,6 +1,7 @@
 import { wikiPageTagReferenceFixture, eventTagDtoFixture } from "./support/catalogReferenceFixtures";
 import { eventStatusDtoFixture, eventTypeDtoFixture } from "./support/eventCatalogFixtures";
 import type { LocalizedFieldValue } from "src/core/db3/shared/columnTypes/localizedString";
+import type { StringResolution } from "src/locale/shared/stringResolution";
 import { testServerAuthorization } from "tests/support/serverAuthorization";
 import type { EventAttendancePublicId, EventSegmentPublicId, EventSegmentUserResponsePublicId, EventUserResponsePublicId } from "shared/publicId";
 import { Prisma } from "db"
@@ -126,7 +127,7 @@ describe("DB3 scalar selection compiler", () => {
       statusId?: EventStatusPublicId | null
       responses?: Array<{
         publicId: EventSegmentUserResponsePublicId
-        userId?: UserPublicId
+        bandUserId?: BandUserPublicId
         attendanceId?: EventAttendancePublicId | null
       }>
     }>()
@@ -348,7 +349,7 @@ describe("DB3 scalar selection compiler", () => {
     type Dto = z.infer<typeof compiled.dtoSchema>
 
     expectTypeOf<Dto["bandUserTagAssignments"]>().toEqualTypeOf<{
-      bandUserId?: BandUserPublicId
+      bandUserId: BandUserPublicId
     }[] | undefined>()
     expect(compiled.dtoSchema.parse({ bandUserTagAssignments: [{ bandUserId: parsePublicId<"BandUser">("TestUser00000012") }] }))
       .toEqual({ bandUserTagAssignments: [{ bandUserId: parsePublicId<"BandUser">("TestUser00000012") }] })
@@ -721,7 +722,7 @@ describe("band invitation tag derived-view migration", () => {
     type Dto = db3.DtoOf<typeof db3.userTagEventSearchView>
     expectTypeOf<Dto["publicId"]>().toEqualTypeOf<UserTagPublicId>()
     expectTypeOf<Dto["bandUserTagAssignments"]>().toEqualTypeOf<{
-      bandUserId?: BandUserPublicId
+      bandUserId: BandUserPublicId
     }[] | undefined>()
     expect(db3.userTagEventSearchView.entity).toBe(db3.xBandUserTag)
     const dto: Dto = { publicId: userTagPublicId,
@@ -1388,7 +1389,7 @@ describe("DB3 derived embedded-relation hydration", () => {
         eventTag: {
           publicId: EventTagPublicId
           isHidden: boolean
-          color: { value: ColorPaletteEntry | null; override: ColorPaletteEntry | null; inheritedValue: ColorPaletteEntry | null }
+          color: InheritedFieldValue<ColorPaletteEntry | null>
           colorOverride: string | null
           colorInheritedValue: string | null
         }
@@ -1418,6 +1419,20 @@ describe("DB3 derived embedded-relation hydration", () => {
       }],
     })
     expect(decode).toHaveBeenCalledTimes(2)
+  })
+
+  it("retains localized companions on nested DTOs and validates them before hydration", () => {
+    const selection = Prisma.validator<Prisma.EventDefaultArgs>()({
+      select: { status: { select: { publicId: true, name: true } } },
+    })
+    const derived = db3.deriveViewContract(db3.xEvent, selection)
+    type Status = NonNullable<z.infer<typeof derived.dtoSchema>["status"]>
+    expectTypeOf<Status["nameResolution"]>().toEqualTypeOf<StringResolution>()
+    expectTypeOf<Status["nameStringPublicId"]>().toEqualTypeOf<db3.DtoOf<typeof db3.eventStatusEditorView>["nameStringPublicId"]>()
+    const dto = { status: eventStatusDtoFixture(eventStatusPublicId) }
+    expect(derived.dtoSchema.safeParse({ status: { publicId: eventStatusPublicId, name: "Confirmed" } }).success).toBe(false)
+    expect(derived.hydrate(dto, new db3.DB3ReferenceStore()).status?.name).toMatchObject({ value: "Confirmed", resolution: dto.status.nameResolution })
+    expect(derived.hydrate({ status: null }, new db3.DB3ReferenceStore())).toEqual({ status: null })
   })
 })
 

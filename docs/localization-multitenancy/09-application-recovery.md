@@ -66,7 +66,10 @@ code-point public-ID tie order as resolved reads, independently of MySQL collati
 Its editor supports explicit translations,
 band switching and manual wiki slugs. Sidebar delivery remains deferred under
 `dashboard-content`; the old wiki suggestion reader is preserved under `wiki-search`.
-**A0 remains open.** The
+Normal typecheck and production build now pass. The palette uses its registered
+global setting, nested DB3 DTO types retain runtime companion metadata, and
+same-scope presentation refreshes preserve drafts. **A0 remains open** for the
+remaining reachable deferred-surface audit. The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
 
@@ -810,11 +813,56 @@ Local diagnostic logs and screenshots are under ignored `temp/a0-*` paths. The
 private database server, databases, browser, and baseline worktree are disposable
 verification resources, not application configuration.
 
+### Palette and compiler recovery checkpoint
+
+| Check | Result |
+| --- | --- |
+| Registered settings/palette, presentation navigation, request/session refresh, startup-role assertion and DB3 contracts | Passed: 123 cases across eight files, including 33 isolated DOM cases, using `yarn test <paths> --reporter=dot`. Covers protected delivery, global scope with two bands/no band, intentional blanks, duplicate writes, failed save/refresh retries, SSR invalidation and suspending grant refresh without draft loss, and account changes. |
+| Private MariaDB checks | Passed: 36 cases across six files. Settings, dashboard/catalog, menu and wiki checks use a fresh target database; calendar SQL uses a separate fresh database with band ownership and localized status strings. Palette checks cover global delivery, blank JSON strings, band-admin exclusion and revoked global writes. Both databases are removed. |
+| `yarn typecheck` | Passed with normal compiler coverage. Palette, calendar, startup/session fixtures and nested DB3 companion types use the target contracts. |
+| `yarn build` | Passed through normal type validation, production compilation and page/build-trace generation, including the presentation refresh correction. |
+| Built browser | Passed: six assertion groups with no page errors, using `yarn start` against a newly restored/migrated production copy. Covers login, explicit band selection, profile navigation/reload, global palette saves across two bands, intentional blanks in platform context, fresh write-grant revocation with draft retention, and clearing context to the no-band profile prompt. Screenshot inspected. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 230 failed, 1,625 passed and 310 skipped across 159 files; ten suites fail to load. No failure header is new relative to the wiki checkpoint. Later isolated DOM batches are not reached; focused checks verify the changed editors/provider separately. Three legacy matrix-edit cases are preserved under `role-administration`; no whole test specification is newly deferred. |
+| Changed-file lint, preservation and whitespace | ESLint and `git diff --check` pass. `yarn migration:verify` passes: 277 references, ten deferred specification files, twenty pending features. The new reference matches its Git source/checksum. |
+
+The palette remains `global.dev.textPalette`, with platform administrator
+visibility and registered global-settings write authorization. A band selection
+never changes its global owner. Blender, matching, swatch editing and source-map
+export remain active. The title, scope explanation and save feedback use
+registered strings; full developer-tool localization and branding parity remain
+open.
+
+Request/session tests now persist separate global/public-band grants. Login
+survives removal of an assigned role; selected-band authority never enters the
+shared session. Startup assertions use active designated global roles and active
+required grants. The isolated matrix's consecutive-edit scenarios remain
+searchable source under `role-administration`.
+
+Logs: `temp/a0-palette-typecheck-final.log`, `temp/a0-palette-build-final.log`,
+`temp/a0-palette-focused-final.log`, `temp/a0-palette-native.log`,
+`temp/a0-palette-calendar-native.log`, `temp/a0-palette-full-suite.log` and
+`temp/a0-palette-browser.log`. Browser results/screenshots are recorded beside
+these logs. The built helper restores the October 2 production dump and runs
+normal migration deployment in a new private database; configured application
+data is not used for writes.
+
+The built fixture restores `tenfour_cmdb_20261002_at_git_094a783a9.sql` on private
+MariaDB 10.11 at `127.0.0.1:32695`, then runs `prisma migrate deploy`. It verifies
+103 migrated memberships and 26,764 existing audit rows before creating its test
+account. That account uses an existing migrated band role without changing its
+grants, plus a separate temporary platform role for palette checks. Revoking only
+the platform settings grant proves fresh RPC authorization while retaining access
+to the preview. The first run exposed a presentation remount that discarded the
+failed draft; the final rebuilt run passes after preserving same-scope forms.
+Results are in `temp/a0-palette-browser-result.json`; the inspected screenshot is
+`temp/a0-palette-editor.png`. The helper stops its built server/browser and drops
+its database; the private MariaDB process is stopped after all checks.
+
 ## Remaining A0 blockers
 
-The next build stop is `colorEditor2.tsx:16`, which still uses the retired generic
-settings API. Recover or coherently isolate that palette editor, then continue
-through the remaining normal compiler/build blockers. Wiki page/assignment/revision
+Normal compiler/build blockers are cleared. Audit reachable unfinished pages
+together with their RPC/API/background entry points for coherent registered
+recovery notices and guarded behavior. Wiki page/assignment/revision
 ownership, locking, saving, visibility and history now use explicit bands and fresh
 snapshots. Full wiki search, menu suggestions and optional per-page help remain
 tracked under `wiki-search`/`markdown-editing`. MenuLink captions, editor CRUD and
@@ -848,9 +896,10 @@ audit lookup and its companion viewer/filter reader remain under `audit-log`.
 Setlist Plan storage is recovered; its complete editor still depends on deferred
 Song/search workflows.
 
-Fix owning contracts before their cascading consumers. The obsolete instrument
-selections in `prismArgs.ts` are removed; remaining wiki/settings entry points
-and authorization/calendar/derived-view fixtures still need repair. Shared event catalogs and dedicated
+Continue to fix owning contracts before their cascading consumers. Obsolete
+instrument selections in `prismArgs.ts` are removed; wiki and palette entry points
+and compiler-blocking authorization/calendar/derived-view fixtures are recovered.
+Other legacy authorization fixtures still need migration. Shared event catalogs and dedicated
 attendance write/history/HTTP, bulk copy/clear endpoints and private calendar feeds
 are migrated. Response/invitation reader ownership and identities are migrated. Full event
 search/editing payloads and invitation management remain unfinished, including
@@ -881,7 +930,7 @@ native/HTTP/RPC/DOM evidence; it still needs built-browser verification. Preserv
 report readers retain obsolete instrument relations and require a separate
 ownership/localization adaptation before analytics can be called restored.
 
-After those dependencies compile, rerun the normal checks and start the built app
-with `yarn start` against a disposable migrated copy before closing A0. Keep the
+Keep normal typecheck/build and the built-server browser path passing while
+auditing remaining deferred boundaries before closing A0. Keep the
 existing migrated membership/catalog behavior and the explicit-band browser path
 working throughout that work.

@@ -63,7 +63,7 @@ beforeEach(() => {
     mutate.mockReset();
     // The mock exposes only the session fields and query methods used by these hooks.
     vi.mocked(useSession).mockImplementation(() => ({ userId: sessionUserId, permissionNames: [] }) as unknown as ReturnType<typeof useSession>);
-    vi.mocked(useQuery).mockImplementation((_query, input) => [dataFor(input), { refetch: vi.fn() }] as unknown as ReturnType<typeof useQuery>);
+    vi.mocked(useQuery).mockImplementation((_query, input, options) => [options?.initialData ?? dataFor(input), { refetch: vi.fn() }] as unknown as ReturnType<typeof useQuery>);
     vi.mocked(useMutation).mockReturnValue([mutate, {}] as unknown as ReturnType<typeof useMutation>);
     vi.mocked(queryClient.invalidateQueries).mockClear();
 });
@@ -84,7 +84,7 @@ describe("presentation and settings delivery", () => {
         const initial = dataFor({ browserLanguages: ["en-US"] });
         await act(async () => root.render(<PresentationProvider initial={initial}><Probe /></PresentationProvider>));
         expect(container.textContent).toContain("en-US");
-        expect(useQuery).not.toHaveBeenCalled();
+        expect(useQuery).toHaveBeenLastCalledWith(expect.anything(), expect.anything(), expect.objectContaining({ initialData: initial, enabled: false }));
         vi.spyOn(navigator, "languages", "get").mockReturnValue(["nl-BE", "en-US"]);
         await act(async () => window.dispatchEvent(new Event("languagechange")));
         expect(container.textContent).toContain("nl-BE");
@@ -173,6 +173,18 @@ describe("presentation and settings delivery", () => {
         loading = false;
         await act(async () => release());
         expect(container.textContent).toContain("Band000000000002");
+    });
+
+    it("keeps a form mounted when the SSR snapshot is invalidated in the same scope", async () => {
+        const initial = dataFor({ browserLanguages: ["en-US"] });
+        function Draft() {
+            const [draft, setDraft] = React.useState("saved");
+            return <button onClick={() => setDraft("unsaved")}>{draft}</button>;
+        }
+        await act(async () => root.render(<PresentationProvider initial={initial}><Draft /></PresentationProvider>));
+        await act(async () => container.querySelector("button")!.click());
+        await act(async () => invalidatePresentation());
+        expect(container.querySelector("button")?.textContent).toBe("unsaved");
     });
 });
 

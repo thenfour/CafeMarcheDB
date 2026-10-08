@@ -12,7 +12,10 @@ Typed Prisma arguments feed `deriveViewContract` and `defineView`/`defineCrudVie
 Fields declare fetched dependencies, resolved values, and read companions. The
 planner loads query dependencies even for narrow views and strips query-only
 support data from their DTOs. Public identity, projection, hydration, and
-resolution provenance remain part of the derived contract.
+resolution provenance remain part of the derived contract. Nested DTOs carry the
+same localized string identities/resolution and inherited override/source values
+as root DTOs, with matching required/optional presence. Their TypeScript types and
+runtime schemas agree at every selected relation depth.
 
 `LocalizedStringField` delegates text validation/predicates to ordinary string
 fields. Its client value separates display/provenance from an optional explicit

@@ -6,16 +6,30 @@ import { ColorPaletteEntry, ColorPaletteEntryVariation, gGeneralPaletteList } fr
 import { ParseColor, ParseTextPalette } from "@/src/core/components/color/TextPalette";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
-import { Button } from "@mui/material";
 import React from "react";
 import { CMSinglePageSurfaceCard, OpenCloseIcon } from "src/core/components/CMCoreComponents";
+import { CMButton } from "src/core/components/CMCoreComponents2";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { API } from "src/core/db3/clientAPI";
+import { usePresentation } from "src/locale/components/PresentationProvider";
+import { useLocale } from "src/locale/components/useLocale";
+import { useGlobalSettings } from "src/setting/client/useSettings";
 
-const MyComponent = () => {
-    const textPaletteSetting = API.settings.useSetting("textPalette");
-    const [textPalette, setTextPalette] = React.useState<string>(() => textPaletteSetting || "");
-    const updateSettingToken = API.settings.updateSetting.useToken();
+const PaletteEditor = () => {
+    const settings = useGlobalSettings();
+    const locale = useLocale();
+    const textPaletteSetting = settings.getValue("global.dev.textPalette");
+    const canEdit = settings.getCapabilities("global.dev.textPalette").canEdit;
+    const [textPalette, setTextPalette] = React.useState(textPaletteSetting);
+    const previousValue = React.useRef(textPaletteSetting);
+    React.useEffect(() => {
+        // Refresh untouched drafts without discarding unsaved or failed edits.
+        const previous = previousValue.current;
+        previousValue.current = textPaletteSetting;
+        setTextPalette(current => current === previous ? textPaletteSetting : current);
+    }, [textPaletteSetting]);
+    const [pending, setPending] = React.useState(false);
+    // Prevent duplicate writes before the disabled button renders.
+    const writing = React.useRef(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [selectedEntryId, setSelectedEntryId] = React.useState<string | null>(null);
     const [forceRedraw, setForceRedraw] = React.useState<number>(0);
@@ -28,13 +42,22 @@ const MyComponent = () => {
     const [paramBundleToSet, setParamBundleToSet] = React.useState<null | ColorBlenderParamsBundle>(null);
     const [paramBundleSerial, setParamBundleSerial] = React.useState<number>(0);
 
-    const handleSave = () => {
-        updateSettingToken.invoke({ name: "textPalette", value: textPalette }).then(x => {
-            showSnackbar({ severity: "success", children: "Updated palette setting" });
-        }).catch(e => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "Error updating palette setting" });
-        });
+    const handleSave = async () => {
+        if (!canEdit || writing.current || textPalette === textPaletteSetting) {
+            return;
+        }
+        writing.current = true;
+        setPending(true);
+        try {
+            await settings.setValue("global.dev.textPalette", textPalette);
+            showSnackbar({ severity: "success", children: locale.getPlainString("settings.saved") });
+        } catch (error) {
+            console.error(error);
+            showSnackbar({ severity: "error", children: locale.getPlainString("settings.failed") });
+        } finally {
+            writing.current = false;
+            setPending(false);
+        }
     };
 
     const handleSwatchClick = (p: ColorPaletteEntry | null) => {
@@ -48,7 +71,9 @@ const MyComponent = () => {
     const handleEntryChanged = (e: ColorPaletteEntry) => {
         // replace the entry in the palette.
         const f = gGeneralPaletteList.findEntry(e.id);
-        if (!f) return;
+        if (!f) {
+            return;
+        }
         Object.assign(f, e);
         setForceRedraw(forceRedraw + 1);
     };
@@ -123,13 +148,19 @@ const MyComponent = () => {
         localCheckVariation(e.weakSelected);
 
         looseCount += collectLoose;
-        if (collectLoose) looseEntries.push(e);
+        if (collectLoose) {
+            looseEntries.push(e);
+        }
 
         alphaCount += collectAlpha;
-        if (collectAlpha) alphaEntries.push(e);
+        if (collectAlpha) {
+            alphaEntries.push(e);
+        }
 
         errorCount += collectError;
-        if (collectError) errorEntries.push(e);
+        if (collectError) {
+            errorEntries.push(e);
+        }
 
     }));
 
@@ -139,19 +170,27 @@ const MyComponent = () => {
 
             const localDoVariation = (v: ColorPaletteEntryVariation) => {
                 const mS = FindClosestColorMatch({ parsedPalette, value: v.backgroundColor });
-                if (!mS) return;
+                if (!mS) {
+                    return;
+                }
                 v.backgroundColor = mS.cssColor;
                 const mSC = FindClosestColorMatch({ parsedPalette, value: v.foregroundColor });
-                if (!mSC) return;
+                if (!mSC) {
+                    return;
+                }
                 v.foregroundColor = mSC.cssColor;
             };
 
             const cob = FindClosestColorMatch({ parsedPalette, value: e.contrastColorOnBlack });
-            if (!cob) return;
+            if (!cob) {
+                return;
+            }
             e.contrastColorOnBlack = cob.cssColor;
 
             const cow = FindClosestColorMatch({ parsedPalette, value: e.contrastColorOnWhite });
-            if (!cow) return;
+            if (!cow) {
+                return;
+            }
             e.contrastColorOnWhite = cow.cssColor;
 
             localDoVariation(e.strongDisabled);
@@ -200,7 +239,7 @@ const MyComponent = () => {
             </div>
             {showTextPalette && <div className="content">
                 <div className="textPaletteLayout">
-                    <textarea value={textPalette || ""} onChange={e => setTextPalette(e.target.value)}></textarea>
+                    <textarea aria-label={locale.getPlainString("settings.field.textPalette")} value={textPalette} onChange={e => setTextPalette(e.target.value)}></textarea>
                     <UserPaletteGrid
                         parsedPalette={parsedPalette}
                         selectedEntries={[]}
@@ -211,7 +250,9 @@ const MyComponent = () => {
                         }}
                     />
                 </div>
-                <button onClick={handleSave} disabled={textPalette === textPaletteSetting} >Save to settings</button>
+                <CMButton onClick={() => { void handleSave(); }} disabled={!canEdit || pending || textPalette === textPaletteSetting}>
+                    {locale.getPlainString("settings.save")}
+                </CMButton>
             </div>}
         </CMSinglePageSurfaceCard>
 
@@ -222,7 +263,7 @@ const MyComponent = () => {
             {showColorEditor && <div className="content">
 
                 <div>
-                    <Button onClick={handleCopyMap}>copy map</Button>
+                    <CMButton onClick={handleCopyMap}>copy map</CMButton>
                     search for `const gPaletteMap` and paste this to set this as your palette.
                 </div>
 
@@ -254,7 +295,7 @@ const MyComponent = () => {
 
                 <div className={`looseColorsInfoContainer ${looseCount > 0 && "alert"}`}>
                     {looseCount} colors were found that don't have a match in your specified text palette. note: this does not work well when colors contain alpha values.
-                    <Button onClick={handleMatchAllColors}>correct all {looseCount} entries</Button>
+                    <CMButton onClick={handleMatchAllColors}>correct all {looseCount} entries</CMButton>
                     <div className="looseEntryList">
                         {looseEntries.map(e => <div className="looseEntry" key={e.id}>{e.label}</div>)}
                     </div>
@@ -262,7 +303,7 @@ const MyComponent = () => {
 
                 <div className={`alphaColorsInfoContainer ${alphaCount > 0 && "alert"}`}>
                     {alphaCount} colors were found that have alpha; it's not going to work well in some cases. maybe it's ok?
-                    {/* <Button onClick={removeAlphaAllColors}>remove alpha from all {alphaCount} entries</Button> */}
+                    {/* <CMButton onClick={removeAlphaAllColors}>remove alpha from all {alphaCount} entries</CMButton> */}
                     <div className="looseEntryList">
                         {alphaEntries.map(e => <div className="looseEntry" key={e.id}>{e.label}</div>)}
                     </div>
@@ -281,10 +322,27 @@ const MyComponent = () => {
     </div>;
 };
 
+const LoadedPaletteEditor = () => {
+    const presentation = usePresentation();
+    const locale = useLocale();
+    if (!presentation.data) {
+        return <div aria-busy="true" />;
+    }
+    if (!presentation.data.settings.global["global.dev.textPalette"]?.capabilities.canView) {
+        return <p>{locale.getPlainString("settings.paletteUnavailable")}</p>;
+    }
+    return <>
+        <p>{locale.getPlainString("settings.paletteGlobalNotice")}</p>
+        <PaletteEditor key={presentation.data.authorization.userPublicId} />
+    </>;
+};
+
 const ColorEdit2Page: BlitzPage = () => {
+    const presentation = usePresentation();
+    const locale = useLocale();
     return (
-        <DashboardLayout title="theme editor">
-            <MyComponent></MyComponent>
+        <DashboardLayout title={presentation.data ? locale.getPlainString("settings.paletteTitle") : undefined}>
+            <LoadedPaletteEditor />
         </DashboardLayout>
     )
 }

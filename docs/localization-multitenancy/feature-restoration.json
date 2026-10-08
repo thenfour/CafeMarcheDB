@@ -1817,6 +1817,12 @@
       "featureId": "wiki-search",
       "source": "976ab6f7a3781848ffc23a2a1cac87e96ff286b9:tests/db3LegacyReadCompatibilityInventory.test.ts:32-35",
       "sha256": "001ddfa0bc3a17b36304d67b9f93afaaadd0d35ba1208d524011048b76a1724b"
+    },
+    {
+      "file": "tests/authorization/sessionAuthorizationHardening.test.ts",
+      "featureId": "role-administration",
+      "source": "09914973c9b78c61740b465524f7ba48ccbe47c9:tests/authorization/sessionAuthorizationHardening.test.ts:1-94",
+      "sha256": "e1714128247b79d713384dfdd22cf29d778b025296853f51fce2f5443ea4e4d7"
     }
   ]
 }
