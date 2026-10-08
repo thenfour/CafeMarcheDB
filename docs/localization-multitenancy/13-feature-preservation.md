@@ -4,6 +4,41 @@ Temporary isolation must preserve the original implementation and behavioral
 tests as searchable source. A smaller replacement does not establish feature
 parity. This applies to partial removals as well as deleted modules.
 
+## Parity reference and source provenance
+
+The functional/UX reference is
+`f027830a9790ab2bf015805ef765775a9e40de55`. Production database migration has a
+different source, `094a783a94b95ed4ec15089e9372763b7d59f66c`; see the
+[baseline contract](00-design%20notes.md#baselines-and-restoration-target).
+In CafeMarche hosting mode, restoration preserves the reference screens,
+interactions and capabilities on the target schema. Keep safe later fixes and
+the migrated ownership/authorization contracts.
+
+Each reference block's `Source` commit identifies the exact code archived during
+isolation. Those later snapshots are useful adaptation material; they do not
+redefine parity or establish that every reference feature was preserved. Before
+working on an obligation, compare its archived/current implementation with the
+relevant `f027830a9790` pages, shared components, server owners and tests. Account
+for missing behavior even when it has no archived block. Do not rewrite source
+headers, hashes or archived code merely to make their commit match the parity
+baseline.
+
+Record acceptance as reference behavior retained, schema-driven differences,
+approved exceptions, executable regression coverage and built-browser evidence.
+Restore the existing UI/query path; a new basic page with passing tests cannot
+close a rich reference workflow. Partial checkpoints leave gaps visible and the
+owning obligations open.
+
+The [A1 search exception](04-implementation-plan.md#localized-catalog-text-search-exception)
+defers only free-text matching against localized catalog names, while retaining
+catalog filters/facets, presets, URL state, sorting, exports and familiar result
+and detail presentation. Full chrome localization is not required for parity.
+The corresponding localized-name search work remains pending after A1, not
+retired. Historical reference headers state the original restoration obligation;
+the current plan governs delivery order and this narrow exception.
+
+## Preserved source procedure
+
 Search the reference blocks with:
 
 ```powershell
@@ -25,12 +60,18 @@ Do not recreate a deleted RPC endpoint merely to store reference code, or add a
 primary-instrument RPC is beside the membership command, for example.
 
 The [reference inventory](feature-restoration.json) records each block
-independently. `yarn migration:verify` checks the inventory, source ranges,
+independently and pins both baselines plus the canonical restoration contract.
+`yarn migration:verify` checks the inventory, source ranges,
 checksums, and deferred test isolation. Deleting a file/block or changing its
 content fails this check. The normal test runner performs the same check before
 running tests. Neither compiler exclusions nor TypeScript suppressions are used.
 
 ## Current restoration obligations
+
+For the search obligations below, localized-name matching is the full completion
+target. Its A1 timing follows the narrow exception above; all other reference
+search behavior remains required. Feature status stays pending while any part of
+that obligation is unfinished.
 
 | Feature ID                  | Behavior to recover or verify                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -148,6 +189,11 @@ make them executable again. Retain the jsdom directive and normal cleanup rules
 when reactivating a DOM test.
 
 ## Completion rule
+
+Preservation verification checks the inventory/checksums and deferred-test
+isolation. It does not compare runtime behavior with `f027830a9790`; reference
+behavioral tests and browser comparisons supply that evidence. No feature is
+closed by this documentation clarification.
 
 `yarn migration:check` is the final B completion gate. It verifies preservation
 and fails while any feature is pending. A0 and A1 may have pending features;

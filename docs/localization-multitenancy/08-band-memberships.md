@@ -4,7 +4,12 @@
 preferences, and active status. These migrated contracts use
 [shared DB3](07-db3-contracts.md) and [request authorization](05-authorization-foundation.md).
 They do not establish whole-application readiness. Further lifecycle features and
-advanced directory work follow the [restoration plan](04-implementation-plan.md).
+reference directory/profile parity follow the [restoration plan](04-implementation-plan.md).
+The basic recovery directory/profile is an intermediate checkpoint. Existing
+multi-value filters, facets, presets, URL state, permitted contact search, exports
+and profile tabs from `f027830a9790` remain core A1 restoration work; they are not
+new enhancements to postpone beyond parity. Preserve the migrated membership
+contracts while restoring the familiar interactions.
 
 Generic shared-account DB3 selectors and `User_Editor` deliver person fields only;
 their generated writes reject instrument/tag assignment fields. The obsolete

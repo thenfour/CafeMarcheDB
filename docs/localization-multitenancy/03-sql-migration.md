@@ -1,9 +1,17 @@
 # Localization and band migration SQL
 
-`db/migrations/20261004130808_696_lsmb/migration.sql` migrates the `main`
-schema to the initial localization schema, preserving existing data through
-explicit renames and backfills. It runs independently of application startup,
-client generation, and the application build.
+`db/migrations/20261004130808_696_lsmb/migration.sql` migrates the schema
+immediately preceding localization to the initial localization schema. It preserves
+existing data through explicit renames and backfills, independently of application
+startup, client generation, and the application build.
+
+The production upgrade starts from
+`094a783a94b95ed4ec15089e9372763b7d59f66c`, including its actual migration
+history and uploads. The localization SQL alone is not the complete upgrade from
+that release: deploy the required intervening migrations in order. Supporting
+arbitrary intermediate development schemas is outside this production migration
+scope. The application parity reference is separately pinned to `f027830a9790`;
+see [baselines](00-design%20notes.md#baselines-and-restoration-target).
 
 The application recovery and completion checklist is
 [04-implementation-plan.md](04-implementation-plan.md). SQL rehearsal is complete;
@@ -126,8 +134,11 @@ absent from the production manifest, so no timezone setting is invented.
 
 1. Stop application writes and take a restorable database backup. Keep the
    matching application release and uploaded files available for recovery.
-2. Restore into a disposable database. Apply all preceding migrations from
-   `main`; do not start the old application to perform its startup backfills.
+2. Restore the production-baseline backup and its migration history into a
+   disposable database. Apply every pending migration from the target release in
+   order, including those between production and localization. Do not use a moving
+   branch name as the source contract or start the old application for startup
+   backfills.
    The localization SQL includes the required public-ID/serialized-reference
    repairs. The preceding InstrumentTag removal migration now uses the source
    table casing so it also works on a case-sensitive server. If an environment
@@ -146,8 +157,8 @@ absent from the production manifest, so no timezone setting is invented.
    ```
 
    The diff must report an empty migration, exit code `0`. A disposable
-   main-schema fixture without migration history can instead execute both files
-   in order, then run the same diff:
+   fixture already at the schema immediately preceding localization, without
+   migration history, can instead execute both files in order, then run the same diff:
 
    ```powershell
    yarn prisma db execute --schema db/schema.prisma --file db/migrations/20261004130808_696_lsmb/migration.sql
@@ -155,11 +166,14 @@ absent from the production manifest, so no timezone setting is invented.
    ```
 
    `db execute` does not record migration history. Use normal migration deployment
-   for production and databases with migration history.
+   for production and databases with migration history. This shortcut does not
+   rehearse the complete upgrade from the production baseline.
 5. Compare IDs, grants, text, content, settings, memberships, and serialized
    references to the source backup. Schema equality alone is insufficient.
-6. Production application cutover happens only after consumer/build work and
-   runtime acceptance. The old application cannot use the migrated schema.
+6. Production application cutover requires both production-source data preservation
+   and application/runtime parity against `f027830a9790`, with explicit evidence
+   for any accepted limitation. A0 startup or a smaller recovery page does not
+   establish release readiness. The old application cannot use the migrated schema.
 
 Preflight guards reject ambiguous mappings, orphan references, invalid public
 IDs/JSON, conflicting duplicate assignments, unknown settings, and overlong
@@ -177,7 +191,9 @@ the required source backup; no archive tables are added to the target schema.
 
 The initial migration was rehearsed through `prisma migrate deploy` on isolated
 MariaDB `10.11.9` using `temp/tenfour_cmdb_20261002_at_git_094a783a9.sql`, brought
-to the main schema. Source/destination Prisma comparisons were empty. Comparisons
+to the schema preceding localization. This dump identifies the pinned production
+source, not the functional parity reference. Source/destination Prisma comparisons
+were empty. Comparisons
 covered all 183 original grants, 103 people/memberships, localized fields/settings,
 public identities/history, unchanged scalars, and remapped references. All 707
 numeric references in 29 plans were upgraded while preserving unrelated content.

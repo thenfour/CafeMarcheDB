@@ -5,12 +5,59 @@ everyday workflows. Complete broader localization and multiband features after
 those gates. A task belongs before restoration only when it removes a concrete
 build/startup blocker or enables a named core workflow.
 
+## Restoration contract
+
+The [fixed baselines](00-design%20notes.md#baselines-and-restoration-target) are
+production commit `094a783a94b95ed4ec15089e9372763b7d59f66c` for data migration,
+and `f027830a9790ab2bf015805ef765775a9e40de55` for functional/UX parity. The
+production upgrade must work from the former; restored workflows must reproduce
+the latter on the target schema. Do not require production compatibility with
+every intervening development schema.
+
+For `CMDB_HOSTING_MODE=CafeMarche`, preserve the existing user experience. Start
+from the reference pages, components, search pipeline and behavioral tests. Make
+the ownership, authorization, public-reference and localized-display adaptations
+needed by the migrated schema. Preserve working fixes since the reference.
+Replacing rich screens with basic directories/forms, introducing parallel search
+systems, or treating existing features as optional enhancements is outside this
+restoration scope. Internal changes are justified by concrete migration needs;
+they do not authorize a UX redesign.
+
+A0 permits temporary isolation to keep development runnable. A1 restores parity
+for core workflows and their dependencies; a verified subset is only a checkpoint.
+Remaining existing administration workflows stay tracked through B. Production
+cutover requires the supported production upgrade and the required CafeMarche
+workflows, with any remaining limitation explicitly accepted. Neither successful
+startup nor source preservation alone meets that gate.
+
+### Localized catalog text search exception
+
+During A1, free-text matching against newly localized catalog names (tags,
+statuses, types, instruments and similar references) may remain deferred. Omit
+only those text predicates; do not disable an entire search or replace its UI.
+Keep authored/nonlocalized text search, catalog selection by public identity,
+multi-value filter operators, facets/counts, presets, URL state, existing sorting,
+result presentation, paging/load-more and exports. Resolve displayed catalog
+labels through the shared band/locale machinery. Do not query removed raw-name
+columns or introduce per-domain localization fallback logic.
+
+This exception does not permit dropping catalog filters or silently changing
+other ordering/filter semantics. If localized-name ordering needs adaptation,
+identify it separately rather than substituting a different sort. Record omitted
+name-matching behavior and its verification in the owning search obligation.
+Already working resolved small-catalog searches remain active. Full localized-name
+matching remains tracked after A1; it is deferred, not retired.
+
+Complete localization of existing site chrome is also not an A1 requirement.
+Retain working chrome and focus localization work on migrated data labels and
+the controls needed to use them correctly.
+
 ## Delivery gates
 
 | Gate | Required outcome |
 | --- | --- |
 | **A0: runnable and manually testable** | Normal typecheck/build pass. The app starts against disposable migrated data. Login, dashboard, explicit band selection, and an existing migrated page work in a browser. Deferred surfaces are coherently unavailable. |
-| **A1: core workflows restored** | Everyday member, event/invitation/attendance, song, and associated-file workflows work end to end, including their required non-page endpoints. Isolation is verified, required checks pass, and remaining restrictions are explicit. |
+| **A1: core workflows restored** | Everyday member, event/invitation/attendance, song, and associated-file workflows match the functional/UX reference on the migrated schema, including required non-page endpoints. Only the documented localized-name text-search exception and explicitly agreed limitations remain; isolation and required checks pass. |
 | **B: localization and multiband complete** | Full portal routing, administration/lifecycle, translation tooling and agreed coverage work together. Remaining restrictions are restored or explicitly accepted for retirement. `yarn migration:check` passes with verification/retirement evidence recorded. |
 
 A0 is achieved as of 2026-10-08: the normal built application runs on disposable
@@ -107,13 +154,33 @@ and responsive-dialog wrappers. Relevant authorization fixtures now persist
 account/membership grants and exercise snapshot reads; nine full-suite failures
 are repaired. See [current evidence](09-application-recovery.md#a1-member-workflow-checkpoint-2026-10-08).
 Broader profile/directory preservation obligations and the complete A1 gate remain
-open; no feature was retired.
+open; no feature was retired. This checkpoint validates a subset, not reference
+parity. Existing directory filters/presets/exports and profile tabs remain A1 work.
 
-**Following implementation slice:** restore the selected-band event
-search/detail/creation workflow with its required search and invitation
-dependencies. Keep restored member workflows runnable, repair relevant remaining
-authorization/date fixtures, and retain guarded endpoints until each complete
-workflow passes through the built application.
+**Following implementation slice: restore the existing event search.** Compare
+the page and dependency graph with `f027830a9790` before editing. Adapt
+`src/pages/backstage/events.tsx`, the existing `SearchPageContent`,
+`useSearchFilters`/`useSearchableList`, `eventSearchConfig`, event result components
+and `searchServerCore.ts`/search HTTP owner. Retain that composition and query
+mechanism; do not add a replacement event directory or a second search backend.
+
+The acceptance inventory for this slice is the reference's presets/defaults,
+date/type/status/tag criteria and operators, facet counts, URL state, sorting,
+result cards, load-more behavior, refresh and CSV export. Scope the existing
+queries, counts and facets to an authorized band snapshot; adapt catalog joins
+and actor/member identities, hydrate localized labels, and defer only the
+localized-name text predicates described above. Reactivate/adapt the relevant
+search specifications and verify the familiar page in the built CafeMarche app,
+plus two-band isolation and grant revocation. Report any remaining reference
+differences explicitly; this slice alone does not close event parity or A1.
+
+Then restore the reference event detail and creation flows using `EventDetailFull`,
+its existing tabs/controls and `NewEventButton`/dialog. Recover their invitation,
+attendance, segment, setlist, wiki/file and CafeMarche frontpage dependencies in
+bounded slices. A dependency that is still guarded remains a recorded gap, not
+permission to substitute a basic detail screen or declare that workflow complete.
+Keep the application runnable and preserve migrated member/attendance/calendar
+contracts throughout.
 
 ### Earlier recovery slices
 
@@ -373,18 +440,27 @@ Once A0 passes, keep the application runnable after each slice and manually test
 each restored workflow immediately. Do not accumulate another long sequence of
 unrunnable domain implementations.
 
+For each slice, inspect the relevant `f027830a9790` source/tests and list the
+observable behaviors to preserve before editing. Trace the existing component
+and server path, adapt its contracts, then compare behavior in the built app.
+Record the reference paths, preserved behaviors, verified differences and remaining
+gaps. Successful tests for a smaller new flow do not prove parity; partial work
+keeps the owning restoration obligation open.
+
 | Priority | Workflow and dependencies | Acceptance |
 | --- | --- | --- |
-| 1 | Member lookup/profiles, existing instrument/tag assignments, and required catalog references. | Owners/managers can perform ordinary permitted edits; roleless and hidden-reference cases retain their contract. |
-| 2 | Events, invitations, default/selected instruments, attendance, segments, and event song lists. | Create/read/edit and member responses preserve identity, dates, invitation behavior, and same-band references. |
+| 1 | Member lookup/profiles, existing instrument/tag assignments, required catalog references, and the reference directory filters/presets/exports and profile tabs. | Preserve the reference member UX and permitted edits, including contact-search policy; roleless and hidden-reference cases retain their migrated contract. |
+| 2 | Existing event search/detail/creation/editing, invitations, default/selected instruments, attendance, segments, and event song lists. | Preserve the reference search controls/results and detail tabs/interactions; create/read/edit and responses preserve identity, dates, invitations and same-band references. |
 | 3 | Songs, tags, credits, associated files, partitions/recordings, previews, uploads/downloads. | Ordinary content and file workflows work through pages and server endpoints with correct visibility and ownership. |
 | 4 | Supporting existing workflows needed for actual use: wiki/menu content, plans, search, calendars/feeds, Custom Links, exports, telemetry, and jobs. | Restore dependencies used by core workflows; explicitly account for any remaining deferred surface before accepting A1. |
 
-Apply existing locale/settings machinery and the English labels required by each
-restored component. Adapt grids, forms, validation, dialogs, filters, and accessible
-labels together. Preserve technical column names; do not use humanized identifiers
-as a replacement for registered UI text. Complete French/Dutch translation
-coverage and a full editing/inspection UI are later work.
+Apply existing locale/settings machinery to migrated data labels and references.
+Adapt existing grids, forms, validation, dialogs and filters only where their
+contracts require it. Keep working chrome labels; newly introduced UI text uses
+the registry, and technical column names are not replacement UI labels. Complete
+site-chrome localization, French/Dutch coverage and full translation
+editing/inspection tooling are later work. Follow the narrow search exception
+above without expanding it to other reference functionality.
 
 Required RPC/API, files, previews, feeds/tokens, and background entry points need
 trusted ownership context just as pages do. Preserve supported Café Marché URLs,
@@ -407,8 +483,9 @@ These are ordered by dependency and product need, not prerequisites for A0/A1:
 - New band creation, invitations, broader membership lifecycle, onboarding,
   decommissioning, and a complete account-without-membership experience.
 - Shared-account global-role/lifecycle and cross-band merge workflows.
-- Advanced directory filtering/facets, contact search, CSV/export, saved presets,
-  and profile analytics.
+- Free-text matching against localized catalog names in content searches. Existing
+  directory filters/facets, contact search, CSV/export, presets and profile behavior
+  belong to A1 parity; only genuinely new enhancements belong after restoration.
 - Full standalone/platform portal routing, host/path resolution, language
   switching, supported link generation, and removal of static Next i18n assumptions.
 - Shared static/dynamic translation inventory and editing, chrome/Markdown editing,
@@ -433,14 +510,14 @@ implementation/test references and verification obligations for audited removals
 | `LocalizedMarkdown` | Resolved rendering is available; legacy inline editing is disabled and preserved in source. | Scoped translation/Markdown editing after A1. |
 | Settings and branding | Generic DB3 settings storage/view are inactive and preserved in source. Settings/branding pages use registered commands and per-key capabilities, with explicit scope, save/reset and validated clipboard import. Logo editing, optional primary text color and upload controls remain unavailable; hosting mode belongs to deployment configuration. | Verify editors in the built app during A0/A1; recover remaining branding controls and account for legacy clipboard documents under `settings-editors`. |
 | Translation tools | Native catalog controls can edit explicit translations; full inventory/inspection/chrome tooling is incomplete. | Complete after A1. |
-| File-tag catalogs and File payloads | Migrated tags and associations use band-owned public references. General File pages and generic RPC roots are guarded; direct local-file GET/HEAD/range delivery uses the narrow read-only reader, explicit band context and fresh visibility checks. URLs retain band/locale. Raw resolved-name search remains deferred. | Restore metadata/association editing, uploads, previews and resolved File search during A1; retain verified direct-download isolation. |
-| Wiki content and tags | Page/assignment/revision ownership and editors use explicit bands and fresh snapshots. Current content uses page-read permission; older revisions still require history permission. Ordinary members can read visible welcome pages. The search list explains unavailability, and menu suggestions/per-page help remain preserved. | Restore resolved filtering/counts/pagination, suggestions and localized help; verify complete wiki/chrome workflows under the existing preservation obligations. |
+| File-tag catalogs and File payloads | Migrated tags and associations use band-owned public references. General File pages and generic RPC roots are guarded; direct local-file GET/HEAD/range delivery uses the narrow read-only reader, explicit band context and fresh visibility checks. URLs retain band/locale. | Restore the reference metadata/association editing, uploads, previews and File search during A1; retain verified direct-download isolation. Only localized-catalog-name text matching may remain deferred under the search exception. |
+| Wiki content and tags | Page/assignment/revision ownership and editors use explicit bands and fresh snapshots. Current content uses page-read permission; older revisions still require history permission. Ordinary members can read visible welcome pages. The search list explains unavailability, and menu suggestions/per-page help remain preserved. | Restore reference search/filter/count/paging, suggestions and help behavior, subject to recorded retirement decisions; localized-catalog-name text matching follows the search exception. Full chrome localization is separate from workflow parity. |
 | Menu Links | Caption editing uses explicit band locales; resolved reads, generated CRUD and audited public-ID reordering enforce selected-band ownership and visibility. The editor permits manual wiki slugs and explains unavailable wiki suggestions/sidebar delivery. | Restore authorized wiki suggestions and target-page workflows under `wiki-search`; restore complete custom navigation with `dashboard-content` and verify in the built application. Section/group fields retain their target-schema structural meaning. |
 | Shared event catalogs | Type/status/attendance CRUD edits global defaults with platform catalog authority and explicit locales. Dashboard references resolve scoped labels, including retired history. | Verify in the built application during A0/A1; recover event ownership, invitations and responses separately. |
 | Attendance endpoints | Dedicated response writes and person-history/setlist readers resolve active memberships within an explicitly selected band. HTTP reads require authentication and band event-read authority. Bulk segment copy/clear use band event administration, preserve recorded history and update affected membership revisions. Native, menu DOM and development-browser endpoint checks pass. | Recover event payload/editor ownership, default/tag invitation management and full attendance UI; verify workflows in the built app before closing A1. |
 | Calendar subscriptions | Private feeds and subscription/preview callers require explicit band context and active membership. Preferences, invitation groups, historical attendance, UIDs/revisions, setlists and band locale/branding remain supported. The account credential is shared across its band URLs; replacing it invalidates every band subscription. | Re-subscribe existing unscoped URLs using the selected band; verify in the built app during A0/A1. Full subscription-page localization and general event UI recovery remain separate. |
 | Setlist Plan persistence | Save/list/delete, group/plan reorder and group CRUD require explicit band context, fresh grants, public identities and server-owned metadata. JSON references are validated; documents and groups survive author removal. The overview requests all visible plans in its band. | Restore Song/search dependencies and verify the complete planner editor in the built app during A0/A1. |
-| Portal routing | Recovery uses explicit `?bandPublicId=<publicId>` and optional `routeLocale`; omission never selects a default band. | Full routing after A1; retain enough explicit selection for A0. |
+| Portal routing | Recovery uses explicit `?bandPublicId=<publicId>` and optional `routeLocale`; omission never selects a default band. | Preserve this authorization boundary. CafeMarche cutover must retain familiar URLs/navigation with explicit host/route context; development selection scaffolding is not the final UX. Full platform portal routing remains after A1. |
 | Custom Links | Scoped editor CRUD, file selection/serving, all redirect modes and visits are active. Public URLs require explicit `bandPublicId`; missing, malformed/repeated and unavailable bands return 404. The narrow read-only File target does not enable unfinished general file APIs. | Verify in the built application during A0/A1; integrate URLs with band portal roots when full routing lands after A1. |
 | Telemetry recording | Recording uses explicit presentation context, server-owned actor/internal IDs and band-scoped associations. The formatting locale is separate from raw device locale/language; unregistered/deleted locales remain null. | Verify recording in the built app during A0. Calendar-feed recording uses the subscriber and band/locale from its authorized snapshot. Activity-report recovery is tracked separately below. |
 | Audit log | The Sysadmin-protected page displays a localized recovery notice. Both historical-reference/filter RPCs reject before database access; the generic Change descriptor and audit JSON viewer are unregistered. Original source/assertions are preserved under `audit-log`. Audit recording and redaction remain active. | Restore audit browsing, filters, historical detail links and JSON/clipboard/Markdown inspection with explicit platform/band policy, fresh authorization, localized/public references and redaction; verify the complete built-browser workflow. |
@@ -452,7 +529,7 @@ implementation/test references and verification obligations for audited removals
 | Activity-report delivery | `/backstage/featureReports` explains temporary unavailability. All five report RPCs require login and reject before database access, including CSV export. Report implementations and affected specifications are preserved; telemetry recording remains active. | Restore explicit report ownership/permissions, localized references, timelines, facets, filtering, detail and CSV behavior under `activity-reports`; reactivate specifications and verify two-band/browser isolation. |
 | Event/song/file and publication screens | Seventeen backstage URLs retain their page permissions and render registered recovery notices. Dedicated legacy event/song edits, pinned recordings and profile credits reject before content reads; public root has a working Backstage/login link. | Restore complete workflows and their tests under `event-workflows`, `song-workflows`, `file-workflows`, `public-publication` and `domain-search`; do not treat notices as feature completion. |
 | Legacy DB3 domains | Generic Song, SongCredit, song-tag association, File/association and gallery read/write RPC roots reject before database access or transactions. Internal narrow readers retain their own scoped contracts; other row services enforce declared ownership. | Restore each required domain with authorized selected-band reads/writes during A1, then remove only its recovery gates. |
-| Dashboard content and search | Bootstrap uses migrated catalogs and omits deferred events/custom menus. Home explains the restriction, shell search is removed, and direct event/song/file/wiki-search/publication pages now show recovery notices. Public feed and raw domain-search HTTP routes return uncached 503; direct search rejects before SQL. | Restore content/search required by core A1 workflows, including date-picker event highlights; restore remaining dashboard/custom-menu behavior under its preservation obligation. |
+| Dashboard content and search | Bootstrap uses migrated catalogs and omits deferred events/custom menus. Home explains the restriction, shell search is removed, and direct event/song/file/wiki-search/publication pages now show recovery notices. Public feed and raw domain-search HTTP routes return uncached 503; direct search rejects before SQL. | Restore the reference content/search required by core A1 workflows through existing pipelines, including date-picker highlights and custom navigation. The localized-name text-search exception does not defer whole search pages. |
 | Platform role administration | Legacy Role descriptors, views, commands and account role controls are removed. Assignment/designation RPCs reject before database access; `/backstage/roles` and `/backstage/rolePermissions` explain unavailability. Existing global/band role definitions still authorize requests; membership role assignment remains available. | Build GlobalRole/BandRole and permission editors after A1. |
 | Shared-account merging and dependency reports | Merge search, preview, commit and dependency-analysis RPCs explicitly reject without database access. Merge controls and obsolete person-level merge policies are removed; the analysis tab explains unavailability. Capability responses do not advertise merge or account-role assignment. | Restore cross-band account workflows after A1 with complete ownership-aware policies. |
 | Other shared-account/platform administration | Shared-account maintenance and sign-in/lifecycle capabilities use platform authorization; band grants cannot authorize global writes. Retired account role/merge/dependency entry points are explicitly guarded. | Preserve these boundaries while completing broader account/lifecycle workflows after A1. |

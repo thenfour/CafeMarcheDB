@@ -1,17 +1,20 @@
 {
+  "productionMigrationSource": "094a783a94b95ed4ec15089e9372763b7d59f66c",
+  "functionalUxReference": "f027830a9790ab2bf015805ef765775a9e40de55",
+  "restorationContract": "00-design notes.md#baselines-and-restoration-target",
   "features": [
     {
       "id": "directory-search",
       "reason": "The membership directory replaces the old user search with a smaller feature set.",
-      "restore": "Restore multi-value filter operators, presets, URL state, contact search policy, and CSV export for the selected band.",
-      "verification": "Test filter combinations, permission restrictions, pagination, URL round trips, and exported rows; exercise the built directory.",
+      "restore": "Restore the f027830a9790 directory UX, multi-value filter operators/facets, presets, URL state, contact search policy and CSV export through migrated membership contracts. These existing capabilities remain A1 core parity work.",
+      "verification": "Compare the reference directory interactions and defaults; test filter combinations, permission restrictions, pagination, URL round trips and exported rows in the built CafeMarche app, plus two-band isolation.",
       "status": "pending",
       "evidence": []
     },
     {
       "id": "member-profile",
       "reason": "The basic membership profile no longer routes through the complete user-detail workflow.",
-      "restore": "Restore reachable profile tabs, attendance, credits, wiki contributions, permitted account controls, and profile activity recording with explicit ownership.",
+      "restore": "Restore the f027830a9790 profile presentation and reachable tabs, attendance, credits, wiki contributions, permitted account controls and profile activity recording with explicit ownership. The basic recovery profile does not establish parity.",
       "verification": "Test tab URLs, self/admin/outsider permissions and context switches; exercise each restored profile workflow in the built app.",
       "status": "pending",
       "evidence": []
@@ -102,8 +105,8 @@
     {
       "id": "file-search",
       "reason": "Raw File tag and instrument name matching cannot query the new localized catalogs safely.",
-      "restore": "Restore File quick filtering and association name ordering against resolved band tag and instrument labels, preserving blanks, hidden assignments, visibility and pagination.",
-      "verification": "Test localized names, intentional blanks, hidden assigned tags, cross-band visibility, pagination and the built File search.",
+      "restore": "Restore the f027830a9790 File search workflow through its existing pipeline with band-owned references, localized display labels and preserved visibility/pagination. A1 may defer only free-text matching against localized catalog names; retain filters/facets and account separately for localized-name ordering. Full localized-name matching remains pending after A1.",
+      "verification": "Compare reference controls/results, filters, counts, ordering and paging; test blanks, hidden assignments and cross-band visibility in the built File search. Record the exact A1 text-search exception and verify localized-name matching before closing the full obligation.",
       "status": "pending",
       "evidence": []
     },
@@ -158,16 +161,16 @@
     {
       "id": "wiki-search",
       "reason": "Wiki tag quick filtering still targets the removed raw text member.",
-      "restore": "Restore wiki quick filtering by resolved band tag names with per-string localization, intentional blanks, hidden assignments, visibility, consistent counts and pagination. Restore menu wiki-slug suggestions with the same selected-band visibility and resolved search owner.",
-      "verification": "Test two-band isolation, locale changes, hidden assigned tags, permission revocation, matching/counts/pagination and the built wiki search. Exercise menu suggestions and context-preserving wiki links across two bands.",
+      "restore": "Restore the f027830a9790 wiki search and menu wiki-slug suggestions through the existing search owner with selected-band visibility, localized display labels and consistent counts/pagination. A1 may defer only free-text matching against localized catalog names, retaining authored wiki text/slug search and catalog filters. Full localized-name matching remains pending after A1.",
+      "verification": "Compare the reference wiki search and menu suggestions; test two-band isolation, locale changes, hidden assignments, permission revocation, counts/pagination and contextual links. Record the exact A1 text-search exception and verify localized-name matching before closing the full obligation.",
       "status": "pending",
       "evidence": []
     },
     {
       "id": "event-workflows",
       "reason": "Event screens still mount incomplete search, editing and invitation contracts.",
-      "restore": "Restore event search/detail/editing, segments, invitations and frontpage editing through explicit band snapshots, public references and localized catalogs; retain migrated creation, attendance and calendar endpoints. Restore selected-band calendar-window event highlights while retaining date selection.",
-      "verification": "Verify two-band search/facets/paging, event and segment edits, invitation precedence, visibility, revoked grants and complete built-browser workflows. Reactivate calendar-window consumer specifications for cancelled segments, point events and localized highlights.",
+      "restore": "Restore f027830a9790 event search/detail/creation/editing through the existing search pipeline, result components, detail tabs and dialogs. Preserve presets, filter operators, facets, URL state, sorting, load-more, CSV, segments, invitations and CafeMarche frontpage behavior on band snapshots/public references with localized catalog labels; retain migrated attendance/calendar services and restore date-picker highlights. Only localized-catalog-name text matching follows the documented A1 exception.",
+      "verification": "Compare the reference CafeMarche UI, defaults and interactions rather than a reduced replacement. Reactivate search/calendar specifications; verify presets, operators, counts/facets, URL state, ordering, load-more/export, detail/tab URLs, edits, invitations and highlights in the built app, plus two-band isolation and grant revocation. Keep each unverified dependency recorded as a gap.",
       "status": "pending",
       "evidence": []
     },
@@ -198,8 +201,8 @@
     {
       "id": "domain-search",
       "reason": "The raw domain search owner does not establish a selected-band authorization snapshot for its SQL.",
-      "restore": "Restore the domain search HTTP/direct owner with explicit band snapshots, authorized localized predicates/facets, consistent counts/paging/order, public identities and contextual links; account for preserved event/song and directory semantics.",
-      "verification": "Reactivate preserved search authorization/recovery specifications; verify anonymous/member/admin visibility, two bands/locales, hidden assignments, all filter operators, grant revocation, facets and built-browser search.",
+      "restore": "Adapt the f027830a9790 domain search HTTP/direct owner and existing query pipeline to explicit band snapshots, authorized band-catalog joins, public identities and contextual links. Retain nonlocalized text search, filter operators, facets/counts, sorting/paging and existing consumers. A1 may omit only localized-catalog-name text predicates; full localized-name matching remains pending after A1. Do not introduce a parallel simplified search.",
+      "verification": "Reactivate reference search authorization/recovery specifications and compare existing consumers in the built CafeMarche app. Verify anonymous/member/admin visibility, two bands/locales, hidden assignments, all operators, revocation and consistent rows/counts/facets/order/paging. Record the A1 text-search exception and verify localized-name matching before closing the full obligation.",
       "status": "pending",
       "evidence": []
     },

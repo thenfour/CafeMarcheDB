@@ -1,5 +1,27 @@
 # Current application recovery evidence
 
+## How to interpret this evidence
+
+The [canonical baselines](00-design%20notes.md#baselines-and-restoration-target)
+are production commit `094a783a94b95ed4ec15089e9372763b7d59f66c` for migration
+preservation and `f027830a9790ab2bf015805ef765775a9e40de55` for application
+functional/UX parity. Production-copy rehearsals and demo-browser checks answer
+different questions; neither replaces comparison with the reference workflows.
+
+The checkpoints below record runnable subsets and historical validation. They
+do not approve reduced search/detail screens as the final CafeMarche UX. A0 is
+achieved, while A1 requires core-workflow parity with the documented
+[localized-name search exception](04-implementation-plan.md#localized-catalog-text-search-exception).
+Existing directory filters/exports and profile tabs remain A1 work. Full chrome
+localization remains separate. Archived source commits identify preservation
+provenance rather than superseding the parity reference.
+
+The next implementation checkpoint restores the existing event search page and
+pipeline, then the reference detail/creation flows and their dependencies, as
+specified in the [current plan](04-implementation-plan.md#restoration-contract).
+
+## Recovered foundations
+
 The A0 bootstrap path has development-browser evidence, obsolete Role and
 shared-account merge dependencies are isolated, and telemetry recording and Custom
 Links now use the target schema and explicit ownership. Platform account
@@ -94,8 +116,9 @@ been removed from the active consumers.
 
 The existing basic member workflows now have normal production-build browser
 evidence across River Fanfare and Harbour Brass. A1 remains open for events,
-songs/files and supporting workflows. Advanced directory search, profile tabs,
-activity and account controls retain their preservation obligations.
+songs/files, member-directory/profile parity and supporting workflows. Existing
+directory search, profile tabs, activity and account controls retain their
+preservation obligations; the subset below does not establish reference parity.
 
 The walkthrough covers directory name lookup and contextual person links;
 persisted shared name/phone edits visible in both bands; French instrument
@@ -146,8 +169,9 @@ Validation:
 - `yarn migration:verify` still protects **319 source references, 13 deferred
   test specifications and 26 pending features**. No feature was retired.
 
-The next slice restores selected-band event search/detail/creation and its
-invitation dependencies, keeping this member checkpoint runnable.
+The next slice restores the reference event search through its existing UI and
+query pipeline, followed by detail/creation and invitation dependencies. See the
+[current plan](04-implementation-plan.md); keep this member checkpoint runnable.
 
 ## A0 route and entry-point audit (2026-10-08)
 

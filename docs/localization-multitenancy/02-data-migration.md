@@ -6,6 +6,13 @@ This is the source-to-target preservation checklist for
 manifest, deployment order, rehearsal evidence, and recovery. Prisma's default
 diff for these renames/localized fields would drop data.
 
+The supported production source is commit
+`094a783a94b95ed4ec15089e9372763b7d59f66c`. Rehearse its full upgrade, including
+intervening migrations, against a disposable copy of production data and migration
+history. Intermediate development schemas do not add production compatibility
+requirements. The application parity reference `f027830a9790` serves a separate
+purpose; see [baselines and restoration target](00-design%20notes.md#baselines-and-restoration-target).
+
 Capture source counts, identities, statuses, nullable values, grants, text,
 settings, revisions, and serialized references before migration. Create ownership,
 membership, catalog, and string mappings before remapping associations; verify
@@ -16,8 +23,9 @@ state rather than gaining access through migration.
 Application adaptation follows the [restoration plan](04-implementation-plan.md):
 first restore build/startup, then core workflows. Deferred consumers remain
 coherently unavailable until migrated; merge, platform administration, and full
-localized editing are not restoration prerequisites. Every enabled consumer must
-enforce the ownership invariants in [the schema guide](01-schema.md).
+localized editing are not core-workflow prerequisites. Restore core functionality
+and UX against the parity reference, using the migrated schema. Every enabled
+consumer must enforce the ownership invariants in [the schema guide](01-schema.md).
 
 ## Model and key mapping
 

@@ -6,6 +6,13 @@ expresses genuine operations such as instrument opt-in, rather than duplicating
 readers, matchers, DTO schemas, or CRUD stacks. Delivery priorities belong to the
 [implementation plan](04-implementation-plan.md).
 
+Application restoration follows the
+[functional/UX reference](00-design%20notes.md#baselines-and-restoration-target),
+`f027830a9790`, on the target schema. Adapt the existing consumers and shared
+query pipelines; these contracts do not require replacement search/detail GUIs
+or a new query system for each restored domain. Resolve migrated catalog labels
+through shared references while retaining existing chrome where it works.
+
 ## Fields and derived contracts
 
 Typed Prisma arguments feed `deriveViewContract` and `defineView`/`defineCrudView`.
@@ -32,9 +39,9 @@ fallback or inherited value.
 
 ## Resolved query execution
 
-A localized field behaves as its effective displayed text for quicksearch,
-autocomplete, filters, sorting, counts, and pagination. Resolve using the trusted
-band and full locale preferences from
+Where localized-text querying is supported, a localized field behaves as its
+effective displayed text for quicksearch, autocomplete, filters, sorting, counts,
+and pagination. Resolve using the trusted band and full locale preferences from
 [localization](06-localization-settings.md#string-resolution-and-formatting).
 Suppressed/hidden translations cannot cause a match. Authorization constrains
 searchable fields as well as returned fields.
@@ -44,6 +51,16 @@ catalogs. It loads structurally eligible rows/dependencies, batch-resolves field
 applies authorized projection and DB3 token/filter clauses, sorts/counts/pages,
 then parses the requested DTO. Text filtering or pagination before resolution
 must not change the result. Existing large SQL query pipelines remain separate.
+
+For A1 content-search recovery, adapt the existing SQL/search owners to band
+catalogs, scoped authorization and public references. Free-text predicates on
+newly localized catalog names may remain deferred under the
+[explicit search exception](04-implementation-plan.md#localized-catalog-text-search-exception).
+Keep nonlocalized text predicates, catalog identity filters/operators, facets,
+counts, ordering and paging in the existing pipeline; hydrate display labels
+through shared resolution. The exception neither disables working small-catalog
+resolved queries nor justifies replacing a rich search with generic paginated
+CRUD. Localized-name sorting adaptations must be accounted for separately.
 
 Token composition stays AND across tokens and OR across eligible fields. Shared
 matching preserves supported LIKE `%`, `_`, escapes, trailing-space/tab, and SQL

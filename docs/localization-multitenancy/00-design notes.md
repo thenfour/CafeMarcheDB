@@ -5,6 +5,40 @@ catalog text, and scoped settings. Restore a buildable, runnable application and
 its everyday workflows first. Complete broader administration and localization
 tooling after restoration.
 
+## Baselines and restoration target
+
+Two fixed commits serve different purposes:
+
+| Purpose | Commit | Required use |
+| --- | --- | --- |
+| Production migration source | `094a783a94b95ed4ec15089e9372763b7d59f66c` | Existing production deployments run this version. Rehearse the complete database/application/upload cutover from its data and migration history to the target release. |
+| Functional and UX parity reference | `f027830a9790ab2bf015805ef765775a9e40de55` (`f027830a9790`) | The localization/multiband work started from this version. Compare restored application behavior, screens, interactions and tests with it. |
+
+Production migration support is required for the production baseline, not every
+intermediate development schema. The parity reference includes work since that
+production release; it is not an additional production database input. Apply the
+required intervening migrations as part of the production upgrade.
+
+Restoration targets **pre-migration functional and UX parity on the migrated
+schema**. For `CMDB_HOSTING_MODE=CafeMarche`, retain familiar layouts, controls,
+defaults, navigation, supported URLs, filters, exports and detail tabs. Adapt
+existing pages/components and query pipelines to the new ownership, authorization
+and localized reference contracts. A reduced replacement or a new GUI does not
+satisfy restoration. Preserve safe fixes made since the reference commit; do not
+reintroduce obsolete schema models or weaken authorization to reproduce old code.
+
+Resolve localized catalog labels for display. Free-text matching against those
+localized names may remain deferred during A1, as specified in the
+[search exception](04-implementation-plan.md#localized-catalog-text-search-exception).
+Catalog selection and identity-based filtering/facets remain required. Complete
+localization of existing site chrome is not a prerequisite for parity; retain
+working labels and use shared resolution where the migrated data requires it.
+
+Later `MIGRATION_RESTORE` snapshots preserve implementation history, not a
+different parity target. Compare them with `f027830a9790` before restoring a
+workflow. Temporary A0 notices and smaller recovery screens are development
+checkpoints, not accepted UX changes or evidence of parity.
+
 ## Reading guide
 
 | Document | Purpose |
@@ -17,6 +51,7 @@ tooling after restoration.
 | [Localization and settings](06-localization-settings.md) | Resolution, formatting, delivery, refresh, and settings APIs. |
 | [DB3 contracts](07-db3-contracts.md) | Shared query, field, write, and reference architecture. |
 | [Band memberships](08-band-memberships.md) | Member reads, assignments, profile edits, and membership status. |
+| [Feature preservation](13-feature-preservation.md) | Archived source, parity verification and outstanding restoration obligations. |
 
 These documents describe settled contracts and remaining work. The actual
 [Prisma schema](../../db/schema.prisma) defines database constraints; the SQL
@@ -97,6 +132,12 @@ portals use `/[locale]/b/<publicBandId>/...`, with the locale optional. URLs wit
 a locale work directly, use browser preferences, and are preferred for sharing;
 they do not redirect to a selected language. A language switch links to the
 equivalent page. Rewrites adapt existing page implementations.
+
+The final CafeMarche experience retains familiar URLs and navigation without
+adding mandatory band-selection steps to established single-band flows. Hosting
+and routing must supply explicit context that the server validates; this does
+not permit an implicit default band in backend authorization. The development
+band selector is recovery scaffolding, not the production UX reference.
 
 The server validates host, band, and locale. Middleware hints do not authorize
 requests. Full routing work replaces Next's static i18n assumptions and carries
