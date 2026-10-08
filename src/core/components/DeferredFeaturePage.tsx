@@ -2,6 +2,7 @@ import { Alert } from "@mui/material";
 import React from "react";
 import { useLocale } from "src/locale/components/useLocale";
 import DashboardLayout from "./dashboard/DashboardLayout";
+import { QuickSearchRecoveryNotice } from "./search/QuickSearchRecoveryNotice";
 
 /** Keep the existing role-administration URLs explicit during recovery. */
 export function DeferredRoleAdministrationPage() {
@@ -40,5 +41,13 @@ export function DeferredEventImportPage() {
     const locale = useLocale();
     return <DashboardLayout title={locale.getPlainString("recovery.eventImport.title")}>
         <Alert severity="info">{locale.getPlainString("recovery.eventImport.description")}</Alert>
+    </DashboardLayout>;
+}
+
+/** Preserve the protected explorer URL without mounting a global search reader. */
+export function DeferredQuickSearchPage() {
+    const locale = useLocale();
+    return <DashboardLayout title={locale.getPlainString("recovery.quickSearch.title")}>
+        <QuickSearchRecoveryNotice />
     </DashboardLayout>;
 }

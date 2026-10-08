@@ -42,6 +42,7 @@ running tests. Neither compiler exclusions nor TypeScript suppressions are used.
 | `dashboard-content` | Relevant events, calendar, announcements/wiki, custom navigation and the required reference catalogs. |
 | `file-search` | File quick filtering against resolved band tag labels, including blanks, hidden assignments, visibility and pagination. General File ownership remains a prerequisite. |
 | `global-search` | Shell search, authorized domain readers, keyboard behavior, selected-band links and cache isolation. |
+| `quick-search` | Public/member/administrator visibility within explicit bands; localized inherited catalogs; query grammar, all-tag/type filters, ranking/limits, public identities and context-preserving links; stale responses; association/song selection, clearing and keyboard behavior; song detail loading; Markdown wiki/mention suggestions and the protected explorer. Manual text/link editing, authored reference renderers and separate domain search remain active. |
 | `activity-reports` | Activity timelines, facets, filtering, detail and CSV exports with explicit band/platform authorization, localized references, public identities and anonymization/redaction. Telemetry recording remains executable. |
 | `audit-log` | Protected audit browsing, table/user filters, historical JSON/detail links, clipboard and Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction. Audit recording remains executable. |
 | `legacy-event-song-filters` | Account for the old event/song facet RPC semantics through the existing search owner: timing/relevance, multi-tag matching, counts, localized facets, pagination and ordering with selected-band snapshots and public identities. |
@@ -60,6 +61,16 @@ capability already has an equivalent replacement, record the matching tests and
 browser evidence instead of creating another implementation.
 
 ## Preserved test specifications
+
+The quick-search isolation adds eighteen references from `66c5806d` across its
+global reader/plugins, HTTP route, client selectors, song picker, Markdown
+suggestions and protected explorer. Their query/visibility/selection behavior is
+preserved for target-model restoration. No existing behavioral test directly
+invoked this reader, and no test is newly disabled. Active public-identity and
+Markdown mention-rendering checks remain executable. New HTTP/helper, page-guard
+and DOM checks verify intentional unavailability; they do not establish search
+parity. The `quick-search` obligation is distinct from the existing deferred
+shell mount under `global-search`.
 
 A wholly disabled test file starts with `// MIGRATION_DEFERRED_TEST` and contains
 only comments and `export {};`. The test runner verifies this with the TypeScript

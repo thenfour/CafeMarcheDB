@@ -34,4 +34,7 @@ export const dashboardStrings = {
     "recovery.eventImport.description": label("Event import is temporarily unavailable while band support is restored."),
     "recovery.fileCreation.description": label("File uploads and image creation are temporarily unavailable while band support is restored."),
     "recovery.fileCreation.bake": label("Bake new image"),
+    "recovery.quickSearch.title": label("Quick search"),
+    "recovery.quickSearch.description": label("Quick search and reference suggestions are temporarily unavailable while band support is restored."),
+    "recovery.quickSearch.association": label("Association"),
 };

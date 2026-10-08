@@ -143,6 +143,14 @@
       "verification": "Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.",
       "status": "pending",
       "evidence": []
+    },
+    {
+      "id": "quick-search",
+      "reason": "Quick search uses unscoped global account/content readers, removed Instrument/tag relations and untranslated catalogs; association and Markdown suggestion callers do not supply a band.",
+      "restore": "Restore authorized band-scoped HTTP search, domain plugins and query grammar/relevance, public identities and context-preserving links, association/song pickers, Markdown wiki/mention suggestions and the protected explorer; retain existing values, manual text/link editing and separate domain search.",
+      "verification": "Test public/member/administrator privacy, two bands and locales, hidden/deleted/merged accounts and resources, localized/inherited catalogs, all-tag and type filters, ranking/limits, stale query/band responses, selection/clearing/keyboard behavior, song detail loading and Markdown suggestions in the built browser.",
+      "status": "pending",
+      "evidence": []
     }
   ],
   "references": [
@@ -1663,6 +1671,114 @@
       "featureId": "file-creation",
       "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/db3/server/db3mutationCore.ts:22-22",
       "sha256": "b1f812261b9f6dc74121f5e4360bbad8e4ed579637d22c4ff338e170848c375d"
+    },
+    {
+      "file": "src/core/db3/server/quickSearchServerCore.ts",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/db3/server/quickSearchServerCore.ts:1-449",
+      "sha256": "139be87e031133fb6b7cc86253f7782207c4299d58bda20b22fbdcb00593d5f7"
+    },
+    {
+      "file": "src/pages/api/wiki/quickSearch.ts",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/pages/api/wiki/quickSearch.ts:1-37",
+      "sha256": "fa93c8e9a8b17bfe8145e17b10fc55a15bebf39d451ee82d1ef801b7ece43b27"
+    },
+    {
+      "file": "src/pages/backstage/test/quickSearchTest.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/pages/backstage/test/quickSearchTest.tsx:1-91",
+      "sha256": "8f9f39b15daabbfbb51f32c9bdae0a0acb78427cba7ae152ee840f9fc07b3d2b"
+    },
+    {
+      "file": "src/core/components/SongAutocomplete.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/SongAutocomplete.tsx:1-67",
+      "sha256": "b1d26e1abc5935afd754490e9bb65f3eeebaaab51733d3107e17638facc46548"
+    },
+    {
+      "file": "src/core/components/ItemAssociation.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/ItemAssociation.tsx:1-2",
+      "sha256": "b012ec5f8cd8495798016c523e966aeec26404dc69ff36a7290ca80f57398de4"
+    },
+    {
+      "file": "src/core/components/ItemAssociation.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/ItemAssociation.tsx:4-4",
+      "sha256": "408cb8eebba74743a643cdaeaa3f0592a5c64bb4f3b386a9555c8ad31cec3c10"
+    },
+    {
+      "file": "src/core/components/ItemAssociation.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/ItemAssociation.tsx:6-9",
+      "sha256": "e60cd2f4bc6eeec2a4357cd233eb424146176c43297092df6539ee9fa08f68f3"
+    },
+    {
+      "file": "src/core/components/ItemAssociation.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/ItemAssociation.tsx:14-33",
+      "sha256": "c3054afe40262c960227d4652e78f2d1ddcd07bc01df1209e814a480d0f18af9"
+    },
+    {
+      "file": "src/core/components/ItemAssociation.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/ItemAssociation.tsx:94-143",
+      "sha256": "dec50fc5857cd5540a622261a16a71292946c6be7a92b4a3fb9245bfd7f17ba8"
+    },
+    {
+      "file": "src/core/components/ItemAssociation.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/ItemAssociation.tsx:188-320",
+      "sha256": "d013eb45ced29f37ae13ac189ec0a6cc15dab433f565e2523dbde3a07bc16f32"
+    },
+    {
+      "file": "src/core/components/markdown/RichTextEditor.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:1-3",
+      "sha256": "7540d3e4ba883b7783873eb473cbcfb9f33d852f73fa02564128a5b29344b3bc"
+    },
+    {
+      "file": "src/core/components/markdown/RichTextEditor.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:6-6",
+      "sha256": "9abf3e6700d98954fe8bbe11cbda048f525400b21632402972b47c423c1be127"
+    },
+    {
+      "file": "src/core/components/markdown/RichTextEditor.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:9-9",
+      "sha256": "8fa305dc55b1abc3f6954c239a0c3fbed929164b5635ed2a3560e0e69857ed5f"
+    },
+    {
+      "file": "src/core/components/markdown/RichTextEditor.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:11-11",
+      "sha256": "89a5cb25f28085d9b3f2fbe3ccf3583c4ad1b4cd70f15681a0e8740e7ddd5775"
+    },
+    {
+      "file": "src/core/components/markdown/RichTextEditor.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:18-39",
+      "sha256": "3849e97684ccf4814ebe09c479c4b6469d9ea4402d9319dcc54406e36f11839e"
+    },
+    {
+      "file": "src/core/components/markdown/RichTextEditor.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:88-88",
+      "sha256": "4c4b27b562166d3cbac183d4ddebf6ed695579c7eef27ff0670d89c94259abdc"
+    },
+    {
+      "file": "src/core/components/markdown/RichTextEditor.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:128-133",
+      "sha256": "8f537aff7a7e09809953ee1e50fd2d2ec243ac6e09d05f5d3df428ad5ce45c02"
+    },
+    {
+      "file": "src/core/components/markdown/RichTextEditor.tsx",
+      "featureId": "quick-search",
+      "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:139-149",
+      "sha256": "454e38972139177d9385537ff1b83146c8a9a0d0d5cfc4c621a443c45f609a5d"
     }
   ]
 }

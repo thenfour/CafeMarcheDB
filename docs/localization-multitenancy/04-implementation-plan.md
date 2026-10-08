@@ -93,13 +93,26 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** repair or isolate legacy quick search, starting
-at `quickSearchServerCore.ts:51`, where it queries the removed global Instrument
-model. Trace its HTTP owner, association selectors and Markdown autocomplete
-callers, including event/song/tag and account visibility. Preserve the current
-domain-search owner and migrated catalog/membership readers. Then continue the
-remaining File/song/wiki payload roots, including legacy `Permission.roles`
-selections. Isolate deferred UI and non-page entry points together.
+**Next implementation slice:** repair the shared song payload root at
+`apiTypes.ts:277`, which still selects `BandSongTagAssociation.tagId` instead of
+the target relationship. Trace the authorized `getFilteredSongs` owner and
+event-song-list consumers before adapting their public identities, selected-band
+authorization and tag references. Preserve migrated song-tag catalogs and the
+separate domain-search owner. Then continue the remaining File/song/wiki payload
+roots, including legacy `Permission.roles` selections. Isolate deferred UI and
+non-page entry points together.
+
+Legacy quick search is now isolated under `quick-search`. Its public HTTP route
+returns 503 without inspecting query/body data or loading account/content readers;
+the server and client helpers reject before their work. Association/song pickers
+show registered localized notices and retain existing authored values and links.
+Markdown wiki/mention suggestions are deferred while raw text/HTML editing,
+authored references and local inline-class suggestions remain active. The
+explorer retains its Sysadmin guard and renders the same notice. Eighteen source
+references preserve the reader plugins, query behavior, controls and suggestions.
+No existing behavioral tests are newly disabled. The separately owned domain
+search remains active; shell search remains its existing `global-search`
+obligation. This clears the removed-Instrument build stop without closing A0.
 
 File uploads and image creation are now isolated under `file-creation`.
 The upload HTTP route requires login and returns an empty 503 without parsing
@@ -331,6 +344,7 @@ implementation/test references and verification obligations for audited removals
 | Legacy event/song facet RPCs | Both unused endpoints reject before database access; their SQL and obsolete response helpers are preserved under `legacy-event-song-filters`. Current search pages use the separate search owner and are unchanged. | Verify equivalent timing/relevance, multi-tag matching, counts/facets, pagination and ordering through the current search owner with explicit band snapshots, localized references and public identities. |
 | Event statistics and song history | Statistics page and the song history tab display registered localized notices. Both RPCs reject before database access; original queries, controls, charts, event links and API types are preserved under `event-song-statistics`. Existing report/song authorization remains enforced. | Restore and verify the complete statistics/popular-song/history workflow with fresh band authorization, localized catalogs, public references and consistent aggregation. |
 | Experimental event import | The Sysadmin-protected page shows a registered localized notice; the preview RPC requires login and rejects before database access. Parser, default/person/song matching, editable preview, explicit save/history and affected specifications are preserved under `event-import`. Migrated event creation remains active. | Restore parsing, band-owned defaults, membership and visible-song matching, preview editing, explicit saves and saved-event history with fresh authorization, public identities, localized references and band scheduling; reactivate specifications and verify the complete built-browser workflow. |
+| Legacy quick search and reference suggestions | The public HTTP route returns 503 before query/account/content reads. Direct server/client helpers reject; association/song controls retain existing values and explain unavailability. Markdown remote suggestions are unmounted, with manual text/HTML and local inline classes retained. The explorer keeps its Sysadmin guard. Eighteen references are preserved under `quick-search`; separate domain search and existing reference renderers remain active. | Restore fresh public/member/administrator visibility within explicit bands, localized/inherited catalogs, query grammar, all-tag/type filters, ranking/limits, public identities and contextual links, stale-response isolation, selection/clearing/keyboard behavior, song detail loading and Markdown suggestions; verify two bands/locales in the built browser. |
 | File uploads and image creation | Multipart/external-URL upload returns an empty 503 after login without parsing files. Image fork/gallery bake RPCs and generic File insertion reject before their work. Selection/paste/drop controls show localized recovery text; bake is disabled with an explanation. Forty references preserve creation, automatic tagging, image transforms/metadata and seven image-authorization cases under `file-creation`. Existing downloads and migrated File-tag catalogs stay executable. | Restore explicit band ownership, public membership/instrument/content references, fresh transactional grants, upload validation, filesystem cleanup/rollback, automatic tags, image crop/rotate/resize/metadata and complete browser controls; reactivate specifications and verify two-band workflows. |
 | Activity-report delivery | `/backstage/featureReports` explains temporary unavailability. All five report RPCs require login and reject before database access, including CSV export. Report implementations and affected specifications are preserved; telemetry recording remains active. | Restore explicit report ownership/permissions, localized references, timelines, facets, filtering, detail and CSV behavior under `activity-reports`; reactivate specifications and verify two-band/browser isolation. |
 | Legacy DB3 domains | Selected-band queries/row services reject undeclared ownership policies. | Migrate required domains for A0/A1; keep other domains coherently unavailable. |

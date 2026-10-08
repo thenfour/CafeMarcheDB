@@ -21,6 +21,12 @@ remains active.
 File uploads, image fork/gallery bake and generic File insertion are now isolated;
 their controls explain unavailability. Existing downloads, the narrow band-scoped
 Custom Link reader and migrated File-tag catalogs remain executable.
+Legacy quick search now returns public HTTP 503 without reading query, account or
+content data. Its direct helpers reject, association/song controls explain
+unavailability while displaying authored values, Markdown remote suggestions are
+unmounted, and the Sysadmin explorer displays a registered localized notice.
+Manual text/HTML editing, existing reference rendering, local inline-class
+suggestions and the separately owned domain search remain active.
 **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
@@ -265,6 +271,44 @@ export found during this slice was also repaired by naming the public-ID schema
 
 ## Verification
 
+The quick-search slice passes 130 focused checks across eight files: nine public
+HTTP/reader boundary cases, four explorer page guards, seven isolated controls
+cases, five existing Markdown/file-control cases, 77 recovery checks, 23
+preservation checks, four identity cases and one Markdown mention case. GET/HEAD
+returns 503, and unsupported methods return 405 with `Allow: GET, HEAD`, without
+query/body/session inspection or account/content reads in the handler. Direct
+reader/client helpers reject before work. Existing association links and song
+names remain visible; selectors do not issue requests or invoke changes. The
+actual explorer renders localized text without search effects and retains its
+Sysadmin guard. Markdown text/HTML edits, authored references and local inline
+classes stay active; remote wiki/mention triggers are removed.
+
+All 104 native Setlist Plan, event creation, attendance, event/File-tag and Custom
+Link cases pass across six files on a fresh private target-schema MariaDB
+fixture. Seven development-browser assertion groups pass without page errors:
+ordinary-member/public search 503 responses for legacy, band and malformed input,
+HEAD/405 methods and explorer authorization; the Sysadmin explorer in platform
+and two-band contexts with a French route locale; real Markdown edits and local
+inline-class suggestions without quick-search/song-detail requests; existing
+Custom Link content/ranges with foreign-band denial; a real File-tag save; and
+retained event/segment/song-list creation with actor audit. Explorer and editor
+screenshots were visually inspected
+(`temp/a0-quick-search-browser-result.json`). The helper dropped its database and
+storage and stopped the browser/development server; the owned MariaDB instance
+was shut down. Built-production delivery and search parity remain unverified.
+
+Preservation now protects 271 references, ten wholly deferred specifications and
+nineteen pending obligations. Eighteen new references from `66c5806d` preserve
+the legacy global reader/plugins, HTTP route, association/song controls, Markdown
+remote suggestions and protected explorer under `quick-search`. No existing test
+is newly disabled. Shared query grammar, public identities, authored reference
+renderers and the separately owned domain search remain active; the existing
+`global-search` shell obligation remains distinct. The full suite's 211 reported
+failure entries match the previous checkpoint exactly. Its Node batch still has
+265 failed tests and ten suite failures, with thirteen new passing Node cases.
+Later isolated DOM files are not reached by that failing full run; both relevant
+controls files pass separately.
+
 The File-creation slice passes 131 focused checks across six files: 77 recovery
 RPC/registration/generic-insert cases, nine upload HTTP/client cases, five isolated
 DOM cases, 23 preservation checks, 15 Custom Link delivery cases and two targeted
@@ -297,8 +341,8 @@ database and storage files, and stopped its browser/development server; the owne
 MariaDB instance was shut down. Upload/creation UI parity, general File workflows
 and built-production delivery remain unverified.
 
-Preservation now protects 253 references, ten wholly deferred specifications and
-eighteen pending obligations. Forty references from `1bea5a73` preserve upload,
+The File-creation checkpoint protects 253 references, ten wholly deferred
+specifications and eighteen pending obligations. Forty references from `1bea5a73` preserve upload,
 automatic tags/instrument matching, shared image/metadata helpers, gallery bake,
 Markdown/selection controls, the generic insert boundary and seven image
 authorization cases. Of those seven cases, five failed and two passed in the
@@ -618,7 +662,9 @@ production server could not be checked because the normal build still fails.
 | Custom-link routes/URLs/page guards, bootstrap, view contracts, preservation/recovery boundaries, membership roles and public Markdown/Suspense navigation | Passed: 161 tests across ten files, including two isolated jsdom files. All redirect modes, nested slugs, repeated query values, visit details, routing-parameter exclusion, hash forwarding and the selection-page authorization boundary are covered. |
 | Custom-link CRUD/file authorization, telemetry persistence, dashboard catalogs and member profiles on a fresh private MariaDB fixture | Passed: 24 tests across four files, including six native custom-link cases. Covers duplicate slugs across bands, create/update/delete and visit cascade, server-owned IDs, missing context/revoked authority, file visibility/ownership and crafted unavailable targets. Fixture writes roll back and the generated database is removed. |
 | Existing Custom Link/Menu Link view and schema-wide policy fixtures | The collection view passes with an explicit scoped snapshot. Policy rows now carry band/active-person context and use public identities where natural-ID filtering is forbidden; five earlier failures are recovered. The existing broad metadata assertion still fails because Locale has no DB3 descriptor. |
-| Source preservation and Git provenance | Passed: 253 references, including forty new File-creation references. Ten wholly deferred specifications and eighteen pending obligations remain protected; seven image-authorization cases are newly inactive in a partly active file. |
+| Source preservation and Git provenance | Passed: 271 references, including eighteen new quick-search references. Ten wholly deferred specifications and nineteen pending obligations remain protected; no test is newly disabled in this slice. |
+| Quick-search HTTP/reader/client isolation, explorer authorization, localized controls and retained Markdown editing | Passed: 130 focused checks across eight files, including twelve isolated DOM cases. Public GET/HEAD returns 503 before query/account/content reads; unsupported methods return 405. Direct helpers reject and controls remain inert with existing values visible; text/HTML and local inline-class suggestions remain active. |
+| Quick-search development-browser and retained native workflows | Passed: seven browser assertion groups without page errors, including public/member/Sysadmin callers, platform/two-band explorer contexts, real Markdown edits/local suggestions, retained File-tag/event saves and existing Custom Link content/ranges. All 104 native cases across six files pass. Screenshots inspected; private database/storage and owned servers removed/stopped. |
 | File-creation isolation, upload HTTP/client, image RPCs and localized controls | Passed: 131 focused checks across six files, including five isolated DOM cases and retained Custom Link/download regressions. Upload returns empty 503 responses before multipart parsing; anonymous HTTP requests receive explicit 401 responses. File/URL/paste/drop and bake controls remain inert while ordinary Markdown text/HTML paste works. |
 | Retained creation/catalog/persistence and Custom Link delivery on fresh private MariaDB | Passed: 104 native cases across six files. Six development-browser assertion groups cover deferred file/image endpoints, ordinary uploader/Sysadmin/anonymous callers, two selected bands, retained File-tag/event saves and existing file content/byte ranges with foreign-band denial; no page errors. |
 | Event-import isolation, protected/localized page and retained event creation | Passed: 104 focused checks across six files, including two isolated DOM cases. All 98 native persistence/creation/attendance/event/file-tag cases pass. Four development-browser assertion groups verify protected routing, notice rendering in platform/two-band contexts, deferred RPCs, anonymous rejection and a real event/segment/song-list save with actor audit; no page errors. |
@@ -639,9 +685,9 @@ production server could not be checked because the normal build still fails.
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 119 diagnostics, down from 123 at the importer checkpoint. File-creation paths are isolated with full source preservation; no compiler exclusions or error suppression added. |
-| `yarn build` | Gets past File creation; stops at `src/core/db3/server/quickSearchServerCore.ts:51`, which queries the removed global Instrument model. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 265 failed, 1,551 passed, 268 skipped across 147 files, with ten suite failures. Failure-entry comparison finds only five newly preserved image-authorization failures removed from the previous 270; no new failure entries. Two passing image cases are also preserved inactive. Native cases pass with the private URL above. Later isolated DOM batches are not reached, so the five new controls cases run separately. The final HTTP 401 correction also passes the focused upload/RPC/DOM run. |
+| `yarn typecheck` | Fails: 110 diagnostics, down from 119 at the File-creation checkpoint. No changed/new file has a diagnostic. Quick-search paths are isolated with full source preservation; no compiler exclusions or error suppression added. |
+| `yarn build` | Gets past quick search; stops at `src/core/db3/shared/apiTypes.ts:277`, which selects removed `BandSongTagAssociation.tagId`. Trace the owning song-detail payload and event-song-list consumers against the migrated tag model. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 265 failed, 1,564 passed, 268 skipped across 149 files, with ten suite failures. The 211 reported failure entries exactly match the File-creation checkpoint; thirteen new Node cases pass and no existing test is newly disabled. Native cases pass with the private URL above. Later isolated DOM batches are not reached, so both relevant controls files run separately. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -672,10 +718,14 @@ verification resources, not application configuration.
 
 ## Remaining A0 blockers
 
-Legacy quick search is the next build stop: it queries the removed global
-Instrument model at `quickSearchServerCore.ts:51`. Its HTTP owner, association
-selectors and Markdown autocomplete need coherent band ownership, visibility and
-localized references. File creation, multipart/URL uploads, shared image/metadata
+The next build stop is the shared song-detail selection at `apiTypes.ts:277`:
+`BandSongTagAssociation.tagId` was replaced by `bandSongTagId`. Its authorized
+`getFilteredSongs` owner and event-song-list consumers need a coherent payload,
+public identity and selected-band contract. Migrated song-tag catalogs remain
+active. Legacy quick search and its association/song/Markdown callers are
+isolated under `quick-search`; restoring them requires fresh public/member/admin
+visibility, band ownership, localized catalogs and complete query/selection
+behavior. Separate domain search stays active. File creation, multipart/URL uploads, shared image/metadata
 processing and gallery bake are isolated under `file-creation`. Restoring them
 requires explicit ownership and fresh authorization, migrated associations and
 transaction/filesystem cleanup. Existing downloads and the narrow Custom Link
