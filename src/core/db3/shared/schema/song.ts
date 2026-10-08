@@ -6,23 +6,23 @@ import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import type {
     SongCreditPublicId,
-    SongCreditTypePublicId,
     SongTagAssociationPublicId,
     SongTagPublicId,
     SongPublicId,
 } from "shared/publicId";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { ColorField, ForeignCollectionField, foreignRef, foreignRefByTableId, GenericIntegerField, GhostField, MakeIsDeletedField, MakePKfield, MakePublicIdField, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { ForeignCollectionField, foreignRef, foreignRefByTableId, GenericIntegerField, MakeIsDeletedField, MakePKfield, MakePublicIdField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
-import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload } from "./prismArgs";
+import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongNaturalOrderBy, SongPayload, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
 import { xBandSongTag as xSongTag } from "../entities/song/bandSongTagViews";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { localizedText } from "../columnTypes/localizedString";
 import { catalogColor } from "../columnTypes/bandCatalog";
+import { xSongCreditType } from "../entities/song/songCreditTypes";
 
-export { xSongTag };
+export { xSongTag, xSongCreditType };
 
 
 export const xSongAuthMap_R_EOwn_EManagers = db3.defineAuthMap({
@@ -257,63 +257,6 @@ const xSongArgs_Base = db3.defineTableDesc({
 export const xSong = db3.defineTable(xSongArgs_Base);
 
 ////////////////////////////////////////////////////////////////
-export const xSongCreditType = db3.defineTable({
-    prismaModel: db3.prismaModel<Prisma.SongCreditTypeDelegate>(),
-    getIdentity: (creditType: { publicId: SongCreditTypePublicId }) => creditType.publicId,
-    getSelectionArgs: (): Prisma.SongCreditTypeDefaultArgs => {
-        return SongCreditTypeArgs;
-    },
-    tableAuthMap: xSongTableAuthMap_R_EAdmins,
-    tableName: "SongCreditType",
-    deletePolicy: "hard",
-    naturalOrderBy: SongCreditTypeNaturalOrderBy,
-    createInsertModelFromString: (input: string): Partial<SongCreditTypePayload> => {
-        return {
-            text: input,
-            description: "auto-created",
-            sortOrder: 0,
-            color: null,
-        };
-    },
-    getRowInfo: (row: SongCreditTypePayload) => ({
-        pk: row.publicId,
-        name: row.text,
-        description: row.description,
-        color: gGeneralPaletteList.findEntry(row.color),
-        ownerUserId: null,
-    }),
-    fields: db3.makeColumnSet({
-        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
-        publicId: () => MakePublicIdField<SongCreditTypePublicId>(),
-        text: columnName => MakeTitleField(columnName, { authMap: xSongAuthMap_R_EManagers }),
-        description: columnName => new GenericStringField({
-            columnName,
-            allowNull: false,
-            format: "markdown",
-            authMap: xSongAuthMap_R_EManagers,
-        }),
-        sortOrder: columnName => new GenericIntegerField({
-            columnName,
-            allowSearchingThisField: false,
-            allowNull: false,
-            authMap: xSongAuthMap_R_EManagers,
-        }),
-        color: columnName => new ColorField({
-            columnName,
-            allowNull: true,
-            palette: gGeneralPaletteList,
-            authMap: xSongAuthMap_R_EManagers,
-        }),
-        songCredits: memberName => new GhostField({
-            memberName,
-            authMap: xSongAuthMap_R_EManagers,
-        }),
-    })
-});
-
-
-
-////////////////////////////////////////////////////////////////
 export interface SongCreditTableParams {
     songId?: SongPublicId | null;
     userId?: number | null;
@@ -392,7 +335,6 @@ declare module "../db3core" {
     interface DB3TableTypeRegistry {
         Song: typeof xSong;
         BandSongTagAssociation: typeof xSongTagAssociation;
-        SongCreditType: typeof xSongCreditType;
         SongCredit: typeof xSongCredit;
     }
 }

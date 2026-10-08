@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { loadAuthorizationForUser, type CMServerAuthorization } from "src/auth/server/serverAuthorization";
-import { loadSharedEventCatalogs } from "src/core/db3/server/db3DashboardCatalogs";
+import { loadSharedCatalogs } from "src/core/db3/server/db3DashboardCatalogs";
 import { bindDB3ReadSnapshot } from "src/core/db3/server/db3ReadExecution";
 import { DB3PaginatedQueryCore, queryView } from "src/core/db3/server/db3QueryCore";
 import { createCommandRowServices } from "src/core/db3/server/db3CommandCore";
@@ -48,7 +48,7 @@ describe.skipIf(!settingsMysqlTestUrl)("shared event catalogs on MariaDB", () =>
         const type = await executeCatalogCrud(tx, auth, eventTypeEditorView, { name: text("Concert"), description: text("Public concert"), significance: "Concert", sortOrder: 1 });
         const status = await executeCatalogCrud(tx, auth, eventStatusEditorView, { name: text("Confirmed"), description: text("Confirmed event"), significance: "FinalConfirmation", sortOrder: 1 });
         const attendance = await createAttendance(tx, auth);
-        const catalogs = await loadSharedEventCatalogs(await snapshot(tx, auth), auth, { routeLocale: "en-US" });
+        const catalogs = await loadSharedCatalogs(await snapshot(tx, auth), auth, { routeLocale: "en-US" });
         expect(catalogs.eventType).toEqual([expect.objectContaining({ publicId: type.identity, name: "Concert" })]);
         expect(catalogs.eventStatus).toEqual([expect.objectContaining({ publicId: status.identity, name: "Confirmed" })]);
         const option = catalogs.eventAttendance.find(row => row.publicId === attendance.identity)!;
@@ -101,7 +101,7 @@ describe.skipIf(!settingsMysqlTestUrl)("shared event catalogs on MariaDB", () =>
         const bandAuth = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(fixture.bands[0]!.publicId));
         const otherAuth = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(fixture.bands[1]!.publicId));
         for (const [auth, name] of [[publicAuth, "Concert"], [bandAuth, "Band concert"], [otherAuth, "Concert"]] as const) {
-            const catalogs = await loadSharedEventCatalogs(await snapshot(tx, auth), auth, { routeLocale: "en-US" });
+            const catalogs = await loadSharedCatalogs(await snapshot(tx, auth), auth, { routeLocale: "en-US" });
             expect(catalogs.eventType[0]?.name).toBe(name);
             expect(eventTypeDashboardView.hydrate(catalogs.eventType[0]!, createDashboardReferenceStore()).name).toBe(name);
         }
@@ -113,7 +113,7 @@ describe.skipIf(!settingsMysqlTestUrl)("shared event catalogs on MariaDB", () =>
         await createCommandRowServices(auth, tx).delete(xEventAttendance, xEventAttendance.parseIdentity(created.identity), "softWhenPossible");
         const visitor = await loadAuthorizationForUser(null, tx);
         expect((await queryView({ view: eventAttendanceDashboardView, filter: {}, cmdbQueryContext: "selectable attendance" }, visitor, await snapshot(tx, visitor))).items).toEqual([]);
-        const history = await loadSharedEventCatalogs(await snapshot(tx, visitor), visitor, {});
+        const history = await loadSharedCatalogs(await snapshot(tx, visitor), visitor, {});
         expect(history.eventAttendance).toEqual([expect.objectContaining({ publicId: created.identity, isDeleted: true, buttonCaption: "Yes" })]);
         await executeCatalogCrud(tx, auth, eventAttendanceEditorView, { isDeleted: false, isActive: false }, created.identity);
         const restored = await queryView({ view: eventAttendanceDashboardView, filter: {}, cmdbQueryContext: "restored attendance" }, visitor, await snapshot(tx, visitor));

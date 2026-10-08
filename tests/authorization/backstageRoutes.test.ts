@@ -54,6 +54,7 @@ describe("backstage route authorization registry", () => {
 
     it("expresses public, sysadmin, and contained routes with ordinary permissions", () => {
         const permissionFor = (key: string) => backstageRouteRegistry.find(route => route.key === key)?.permission;
+        expect(permissionFor("editSongCreditTypes")).toBe(Permission.manage_global_catalogs);
         expect(permissionFor("practiceTools")).toBe(Permission.practice_tools_use);
         expect(permissionFor("roles")).toBe(Permission.sysadmin);
         expect(permissionFor("user")).toBe(Permission.login);

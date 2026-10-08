@@ -226,21 +226,6 @@ export const SongTagAssociationNaturalOrderBy: Prisma.BandSongTagAssociationOrde
     { publicId: 'asc' },
 ];
 
-export const SongCreditTypeArgs = Prisma.validator<Prisma.SongCreditTypeArgs>()({
-    include: {
-        songCredits: true,
-    }
-});
-
-export type SongCreditTypePayload = Prisma.SongCreditTypeGetPayload<typeof SongCreditTypeArgs>;
-
-export const SongCreditTypeNaturalOrderBy: Prisma.SongCreditTypeOrderByWithRelationInput[] = [
-    { sortOrder: 'asc' },
-    { text: 'asc' },
-    { id: 'asc' },
-];
-
-
 export const SongCreditArgs = Prisma.validator<Prisma.SongCreditArgs>()({
     include: {
         song: true,

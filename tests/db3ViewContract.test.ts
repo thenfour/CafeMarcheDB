@@ -914,7 +914,6 @@ describe("Song derived-view migration", () => {
     type CreditTypeClient = db3.ClientOf<typeof db3.songCreditTypeEditorView>
     type CreditDto = db3.DtoOf<typeof db3.songCreditEditorView>
     type CreditClient = db3.ClientOf<typeof db3.songCreditEditorView>
-    type NestedCreditTypeDto = NonNullable<CreditDto["type"]>
     type NestedCreditTypeClient = NonNullable<CreditClient["type"]>
 
     expectTypeOf<TagDto["publicId"]>().toEqualTypeOf<SongTagPublicId>()
@@ -922,6 +921,10 @@ describe("Song derived-view migration", () => {
     expectTypeOf<TagDto["color"]>().toEqualTypeOf<string | null>()
     expectTypeOf<TagClient["color"]>()
       .toEqualTypeOf<InheritedFieldValue<ColorPaletteEntry | null>>()
+    expectTypeOf<CreditTypeDto["name"]>().toEqualTypeOf<string | null>()
+    expectTypeOf<CreditTypeClient["name"]>().toEqualTypeOf<LocalizedFieldValue>()
+    expectTypeOf<NestedCreditTypeClient["name"]>().toEqualTypeOf<string>()
+    expectTypeOf<Extract<keyof CreditDto, "type">>().toEqualTypeOf<never>()
     expectTypeOf<CreditTypeDto["color"]>()
       .toEqualTypeOf<string | null>()
     expectTypeOf<CreditTypeDto["publicId"]>()
@@ -935,10 +938,6 @@ describe("Song derived-view migration", () => {
     expectTypeOf<CreditDto["userId"]>()
       .toEqualTypeOf<UserPublicId | null>()
     expectTypeOf<CreditDto["songId"]>().toEqualTypeOf<SongPublicId>()
-    expectTypeOf<NestedCreditTypeDto["color"]>()
-      .toEqualTypeOf<string | null>()
-    expectTypeOf<NestedCreditTypeDto["publicId"]>()
-      .toEqualTypeOf<SongCreditTypePublicId>()
     expectTypeOf<NestedCreditTypeClient["color"]>()
       .toEqualTypeOf<ColorPaletteEntry | null>()
     expectTypeOf<Extract<keyof CreditTypeDto, "id">>().toEqualTypeOf<never>()
@@ -953,7 +952,7 @@ describe("Song derived-view migration", () => {
     )).toMatchObject(db3.songTagEditorSelection)
     expect(db3.songCreditTypeEditorView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
-    )).toBe(db3.songCreditTypeEditorSelection)
+    )).toMatchObject(db3.songCreditTypeEditorSelection)
     expect(db3.songCreditEditorView.getSelectionArgs(
       {} as db3.DB3ViewSelectionContext,
     )).toMatchObject(db3.songCreditEditorSelection)

@@ -1,3 +1,4 @@
+import { songCreditTypeReferenceFixture } from "./support/catalogReferenceFixtures";
 import { eventAttendanceDtoFixture } from "./support/eventCatalogFixtures";
 import { eventPublicId, segmentPublicId } from "./support/eventResponseFixtures";
 import { attendancePublicId } from "./support/eventAttendanceFixtures";
@@ -372,7 +373,7 @@ describe("DB3 commands", () => {
         })).toThrow();
         expect(db3.eventSegmentEditorView.crud.operations.delete.deleteType).toBe("hard");
 
-        expect(db3.songCreditEditorView.parseDto({
+        const credit = db3.songCreditEditorView.parseDto({
             publicId: songCreditPublicId,
             year: "2026",
             comment: "Original arrangement",
@@ -381,21 +382,18 @@ describe("DB3 commands", () => {
             songId: songPublicId(7),
             song: { publicId: songPublicId(7), name: "Autumn Leaves", description: "" },
             typeId: songCreditTypePublicId,
-            type: {
-                publicId: songCreditTypePublicId,
-                text: "Composer",
-                description: "",
-                color: null,
-                sortOrder: 1,
-                significance: null,
-            },
-        })).toMatchObject({
+        });
+        expect(credit).toMatchObject({ typeId: songCreditTypePublicId });
+        expect(credit).not.toHaveProperty("type");
+        const references = db3.createDashboardReferenceStore();
+        db3.registerDashboardReferences(references, { songCreditType: [songCreditTypeReferenceFixture(songCreditTypePublicId)] });
+        expect(db3.songCreditEditorView.hydrate(credit, references)).toMatchObject({
             publicId: songCreditPublicId,
             year: "2026",
             comment: "Original arrangement",
             user: { name: "Ada" },
             song: { name: "Autumn Leaves" },
-            type: { text: "Composer" },
+            type: { name: "Composer" },
         });
         expect(db3.songCreditEditorView.crud.operations.create.command.parseDto({
             userId: userPublicId(6),

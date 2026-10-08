@@ -840,7 +840,7 @@ export interface SortModel {
 };
 
 export interface RowInfo {
-    pk: number | string;
+    pk: number | string; // lsmb todo: rename this to reflect its intention (db identity? publicid? or just unique row identifier?..)
     name: string; // LSMB: todo: localize
     tooltip?: string | undefined; // LSMB: todo: localize
     description?: string | undefined; // LSMB: todo: localize

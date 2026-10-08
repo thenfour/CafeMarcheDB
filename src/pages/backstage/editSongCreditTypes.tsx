@@ -1,3 +1,5 @@
+import { GlobalCatalogContext } from "src/core/db3/components/GlobalCatalogContext";
+import { useLocale } from "src/locale/components/useLocale";
 
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
@@ -13,8 +15,8 @@ const MainContent = () => {
         view: db3.songCreditTypeEditorView,
         columns: {
             publicId: DB3Client.publicIdFieldGen(),
-            text: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.label", columnName, cellWidth: 180 }),
-            description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 200 }),
+            name: columnName => new DB3Client.LocalizedStringColumnClient({ fieldCaptionKey: "db3.fields.name", columnName }),
+            description: columnName => new DB3Client.LocalizedStringColumnClient({ fieldCaptionKey: "db3.fields.description", columnName }),
             color: columnName => new DB3Client.ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.color", columnName, cellWidth: 300 }),
             sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.sortOrder", columnName, cellWidth: 80 }),
         },
@@ -22,14 +24,15 @@ const MainContent = () => {
 
     return <>
         <LocalizedMarkdown setting="editSongCreditTypes_markdown"></LocalizedMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} view={db3.songCreditTypeEditorView} />
+        <GlobalCatalogContext><DB3EditGrid tableSpec={tableSpec} view={db3.songCreditTypeEditorView} /></GlobalCatalogContext>
     </>;
 };
 
 
 const EditSongCreditTypesPage: BlitzPage = () => {
+    const locale = useLocale();
     return (
-        <DashboardLayout title="Song Credit Types">
+        <DashboardLayout title={locale.getPlainString("catalog.songCreditTypes")}>
             <MainContent />
         </DashboardLayout>
     )

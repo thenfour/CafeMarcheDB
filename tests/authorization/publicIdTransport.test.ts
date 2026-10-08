@@ -221,7 +221,7 @@ describe("instrument catalog public-ID transport", () => {
                 type: {
                     id: 96,
                     publicId: songCreditTypePublicId,
-                    text: "Composer",
+                    name: "Composer",
                 },
             }],
         }, authorization(Permission.view_songs, Permission.view_users_basic_info));
@@ -238,7 +238,7 @@ describe("instrument catalog public-ID transport", () => {
             songId: songPublicId,
             userId: userPublicId(100),
             typeId: songCreditTypePublicId,
-            type: { publicId: songCreditTypePublicId, text: "Composer" },
+            type: { publicId: songCreditTypePublicId, name: "Composer" },
         });
         expect(projectedSong.credits[0]).not.toHaveProperty("id");
         expect(projectedSong.credits[0].type).not.toHaveProperty("id");
@@ -448,7 +448,7 @@ describe("instrument catalog public-ID transport", () => {
             tableName: "SongCreditType",
             mutationType: "update",
             updatePublicId: songCreditTypePublicId,
-            updateModel: { text: "Composer" },
+            updateModel: { name: { kind: "set", localeTag: "en-US", stringPublicId: null, value: "Composer" } },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
             tableID: "SongCredit",
@@ -534,8 +534,8 @@ describe("instrument catalog public-ID transport", () => {
         const resolved = await resolvePublicForeignIds(
             db3.xSongCredit,
             { typeId: songCreditTypePublicId },
-            authorization(Permission.view_songs),
-            { SongCreditType: { findMany } } as any,
+            authorization(Permission.public, Permission.view_songs),
+            { SongCreditType: { findMany } } as unknown as Parameters<typeof resolvePublicForeignIds>[3], // This fixture provides only the catalog identity lookup.
         );
 
         expect(resolved.typeId).toBe(96);

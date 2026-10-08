@@ -71,7 +71,7 @@ export const SongListItem = (props: SongListItemProps) => {
                             const creditType = credit.type;
                             return <div className="credit row" key={db3.xSongCredit.getIdentity(credit)}>
                                 {!!credit.user && <><div className="userName fieldItem">{credit.user?.name}</div></>}
-                                {!!creditType && <div className="creditType fieldItem">{creditType.text}</div>}
+                                {!!creditType && <div className="creditType fieldItem">{creditType.name}</div>}
                                 {!IsNullOrWhitespace(credit.year) && <div className="year fieldItem">({credit.year})</div>}
                                 {!IsNullOrWhitespace(credit.comment) && <div className="creditComment fieldItem">{credit.comment}</div>}
                             </div>;

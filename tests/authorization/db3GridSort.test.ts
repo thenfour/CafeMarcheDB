@@ -11,7 +11,7 @@ const authorization = (...names: Permission[]) => testServerAuthorization(
     { id: 501 },
     new ServerPermissionSet(names.map((name, index) => ({ id: index + 1, name }))),
 );
-const bandAdmin = authorization(Permission.login, Permission.admin_songs, Permission.view_songs);
+const bandAdmin = authorization(Permission.public, Permission.login, Permission.admin_songs, Permission.view_songs);
 
 describe("DB3 grid default sorting", () => {
     it.each([null, songPublicId(7)])("allows the song credit editor query with songId=%s", async songId => {

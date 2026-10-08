@@ -3,8 +3,8 @@
 The A0 bootstrap path has development-browser evidence, obsolete Role and
 shared-account merge dependencies are isolated, and telemetry recording and Custom
 Links now use the target schema and explicit ownership. Platform account
-maintenance and shared event catalogs have platform-authorized views and
-commands. Private calendar feeds and subscription callers now use explicit band
+maintenance, shared event catalogs and SongCreditType have platform-authorized
+views and commands. Private calendar feeds and subscription callers now use explicit band
 context and membership ownership. Event-tag catalogs now use localized shared
 defaults and band-owned overrides. Event participant reads now use band membership
 instruments/tags and retain separate person and membership identities. Response
@@ -66,7 +66,7 @@ export found during this slice was also repaired by naming the public-ID schema
   current membership's instruments, tags and authorized display data separately.
 - Dashboard startup uses the existing DB3 read owner, fresh authorization,
   localized Permission metadata, migrated catalogs, settings, and membership
-  views, including shared event type/status/attendance metadata. It does not
+  views, including shared event type/status/attendance and song-credit metadata. It does not
   execute deferred event-content/menu/legacy-role readers. DTOs remain
   unhydrated until the client builds one reference store per snapshot.
 - An authenticated account explicitly selects an active membership; a platform
@@ -727,10 +727,13 @@ production server could not be checked because the normal build still fails.
 | Telemetry persistence, dashboard catalogs and member profiles on a fresh private MariaDB fixture | Passed: 18 tests across three files, including five native telemetry cases. All direct/inherited associations, foreign-band omissions, mixed references, global catalogs, null platform context and calendar credential redaction are covered. The fixture used a new database on `127.0.0.1:32695`; writes were rolled back and the database removed. |
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
+| Song-credit contracts, generated CRUD/reference hydration, public transport and route/sort authorization | Passed: 106 tests across six files using `yarn test tests/db3Commands.test.ts tests/db3ViewContract.test.ts tests/authorization/db3Views.test.ts tests/authorization/db3GridSort.test.ts tests/authorization/publicIdTransport.test.ts tests/authorization/backstageRoutes.test.ts --reporter=dot`. Existing editor assertions now check public `typeId` transport and hydrated display captions. |
+| SongCreditType plus shared event catalogs, dashboard bootstrap, accounts, File payloads, song tags/setlist reads, Custom Links, telemetry, catalogs and member profiles on private MariaDB | Passed: 66 cases across eleven files, including six new credit-type cases. Covers global CRUD/audits, explicit writing languages, per-string fallback, intentional blanks, localized filtering/sorting/paging, public defaults, separate band overrides, consistent credit editor/profile/search/detail references, shared person identities, wrong-string/disabled-locale rejection, selected-band/revoked-grant denial and retained SongCredit guards. Fixture writes roll back and generated databases are removed. |
+| Song-credit development-browser editor | Passed: five assertion groups for delegated platform creation, French writing without copying fallback, locale display refresh, selected-band context explanation and deletion. No page errors; French grid screenshot inspected. The private server and databases were removed. This is development evidence; the normal build still fails before a built server can be tested. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 56 diagnostics, down from 89. No diagnostics remain in File selections, descriptors, consumers or new native tests. Remaining roots include localized Song-credit types, wiki/instrument payloads and legacy fixtures; no compiler exclusions or suppression added. |
-| `yarn build` | Gets past File payloads; stops at `src/core/db3/shared/entities/song/songViews.ts:29`, which selects the removed SongCreditType `text` member. General File ownership/workflows remain unfinished. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 265 failed, 1,578 passed, 282 skipped across 153 files, with ten suite failures. The 211 reported failure entries exactly match the previous song-tag checkpoint; no failure entry is added or removed. Four new native File cases skip without the private URL and pass in the dedicated fixture above. No existing test is newly disabled. Later isolated DOM batches are not reached; the development-browser regression above verifies retained controls. |
+| `yarn typecheck` | Fails: 49 diagnostics, down from 56. No diagnostics remain in File or Song-credit selections, descriptors, consumers or new native tests. Remaining roots include wiki/instrument payloads and legacy fixtures; no compiler exclusions or suppression added. |
+| `yarn build` | Gets past File and SongCreditType payloads; stops at `src/core/db3/shared/entities/wikiPageTag/wikiPageTagViews.ts:6`, which references removed `Prisma.WikiPageTagDefaultArgs`. General File/Song ownership and workflows remain unfinished. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 265 failed, 1,578 passed, 288 skipped across 154 files, with ten suite failures. Reported failure entries exactly match the previous File checkpoint; no failure entry is added or removed. The six new native SongCreditType cases skip without the private URL and pass in the dedicated fixture above. No existing test is newly disabled. Later isolated DOM batches are not reached; the development-browser check verifies the changed editor. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -761,15 +764,17 @@ verification resources, not application configuration.
 
 ## Remaining A0 blockers
 
-The next build stop is the SongCreditType selection at `songViews.ts:29`:
-`text` was replaced by a localized name. Trace its descriptor, editor, dashboard
-reference, credit selections and consumers through the shared localization
-contracts. File search/card/detail/editor payloads and consumers now use public
+The next build stop is the obsolete WikiPageTag selection in `wikiPageTagViews.ts`.
+Adapt band-owned wiki-tag contracts, references, editors and associations before
+continuing the remaining wiki/instrument roots. SongCreditType now uses localized
+name/description contracts and platform catalog CRUD. Credit displays use the
+same dashboard reference snapshot; general Song/SongCredit ownership and workflows
+remain unfinished and guarded. File search/card/detail/editor payloads and consumers now use public
 band membership/instrument references; general File ownership remains undeclared
 and guarded. Song-tag associations and the narrow
 `getFilteredSongs` lookup now have target-model payloads, public identity and
 fresh selected-band authorization. Migrated song-tag catalogs remain active;
-broader Song ownership/UI and localized credit types remain unfinished.
+broader Song ownership/UI remains unfinished.
 Legacy quick search and its association/song/Markdown callers are
 isolated under `quick-search`; restoring them requires fresh public/member/admin
 visibility, band ownership, localized catalogs and complete query/selection
@@ -789,8 +794,7 @@ Setlist Plan storage is recovered; its complete editor still depends on deferred
 Song/search workflows.
 
 Fix owning contracts before their cascading consumers: `prismArgs.ts` remains the
-largest diagnostic root, including obsolete instrument/wiki selections and
-localized Song-credit types. Shared event catalogs and dedicated
+largest diagnostic root, including obsolete instrument/wiki selections. Shared event catalogs and dedicated
 attendance write/history/HTTP, bulk copy/clear endpoints and private calendar feeds
 are migrated. Response/invitation reader ownership and identities are migrated. Full event
 search/editing payloads and invitation management remain unfinished, including

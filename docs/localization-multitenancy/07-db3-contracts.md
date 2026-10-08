@@ -111,6 +111,20 @@ general File reads/writes: their ownership policy remains undeclared and guarded
 Raw instrument-name filtering and association name ordering are preserved under
 `file-search` until resolved filtering/ordering is restored.
 
+SongCreditType is a shared global catalog declared in `songCreditTypes.ts`.
+Localized name/description fields use the common string writer, with an explicit
+enabled writing locale and platform `manage_global_catalogs` authority. The
+platform editor cannot mount in selected-band context. Resolved queries filter,
+sort and page effective names. `loadSharedCatalogs` includes credit types with
+shared event catalogs in the dashboard snapshot; public context sees global
+values, while selected-band context resolves that band's translation overrides.
+Editor values retain string identities and resolution metadata. Display values
+flatten the resolved text, preserving intentional blanks. Credit editor/profile,
+Song search/detail and their consumers hydrate `typeId` through dashboard
+references; they do not embed a separate text projection. Historical credit
+people retain shared person identities. General Song/SongCredit reads and writes
+remain guarded until their ownership migration.
+
 Native grids, dialogs, pickers, and create/edit forms use the field-derived
 contracts. Writing language is explicit and enabled; drafts never copy another
 language's fallback. Failed creates retain dialogs/drafts. Picker creation must

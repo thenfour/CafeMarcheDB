@@ -1,4 +1,4 @@
-import { GlobalEventCatalogContext } from "src/core/db3/components/GlobalEventCatalogContext";
+import { GlobalCatalogContext } from "src/core/db3/components/GlobalCatalogContext";
 import { useLocale } from "src/locale/components/useLocale";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
@@ -25,7 +25,7 @@ const MainContent = () => {
 
     return <>
         <LocalizedMarkdown setting="EditEventTypesPage_markdown"></LocalizedMarkdown>
-        <GlobalEventCatalogContext><DB3EditGrid tableSpec={tableSpec} view={db3.eventTypeEditorView} /></GlobalEventCatalogContext>
+        <GlobalCatalogContext><DB3EditGrid tableSpec={tableSpec} view={db3.eventTypeEditorView} /></GlobalCatalogContext>
     </>;
 };
 

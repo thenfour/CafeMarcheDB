@@ -24,9 +24,7 @@ import {
     bandInstrumentDisplayContract,
 } from "../entities/instrument/bandInstrumentContracts";
 import { permissionDisplayContract } from "../entities/user/permissionViews";
-import {
-    xSongCreditType,
-} from "../schema/song";
+import { xSongCreditType, songCreditTypeDisplayContract } from "../entities/song/songCreditTypes";
 import { xBandSongTag, bandSongTagDisplayContract } from "../entities/song/bandSongTagViews";
 import { xPermission } from "../schema/user";
 import { xBandUserTag, bandUserTagDisplayContract } from "../entities/user/bandUserTagViews";
@@ -40,16 +38,6 @@ import { eventTypeDisplayContract, eventStatusDisplayContract, eventAttendanceDi
 
 
 const dashboardWikiPageTagSelection = Prisma.validator<Prisma.WikiPageTagDefaultArgs>()({
-    select: {
-        publicId: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-    },
-});
-
-const dashboardSongCreditTypeSelection = Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
     select: {
         publicId: true,
         text: true,
@@ -75,10 +63,7 @@ export const dashboardEventAttendanceResource = eventAttendanceDisplayContract;
 export const dashboardFileTagResource = bandFileTagDisplayContract;
 export const dashboardInstrumentFunctionalGroupResource = bandInstrumentGroupDisplayContract;
 export const dashboardSongTagResource = bandSongTagDisplayContract;
-export const dashboardSongCreditTypeResource = deriveViewContract(
-    xSongCreditType,
-    dashboardSongCreditTypeSelection,
-);
+export const dashboardSongCreditTypeResource = songCreditTypeDisplayContract;
 
 export const dashboardLeafReferenceContract = defineReferenceContract({
     userTag: reference(xBandUserTag)<ReturnType<typeof dashboardUserTagResource.hydrate>>(),

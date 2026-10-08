@@ -93,12 +93,19 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** repair the localized SongCreditType payload root
-at `songViews.ts:29`, which still selects the removed `text` member. Trace its
-descriptor, editor, dashboard reference, credit selections and consumers through
-the shared localization contracts. Preserve the working song-tag lookup and File
-payloads. Then continue the remaining wiki and obsolete instrument payload roots;
-isolate deferred UI and non-page entry points together.
+**Next implementation slice:** repair the wiki-tag payload root in
+`wikiPageTagViews.ts`, tracing its band-owned model, descriptor, dashboard reference,
+editor and wiki associations through the shared localized/inherited contracts.
+Then continue obsolete instrument payloads and remaining wiki entry points;
+isolate deferred UI and non-page entry points together. Preserve the working
+song-tag lookup, File payloads and shared SongCreditType catalog.
+
+SongCreditType now has localized name/description fields, resolved filtering and
+ordering, explicit writing languages, and platform `manage_global_catalogs` CRUD.
+The dashboard delivers shared defaults and selected-band translation overrides;
+credit editor/profile/search/detail hydration uses that same reference snapshot.
+Its platform editor has native and development-browser evidence. General Song
+and SongCredit ownership/workflows remain guarded; this does not close A0.
 
 File search/card/detail/editor payloads now use `bandInstrumentId` and
 `bandInstrument`, while File-to-person associations resolve through `bandUser`.

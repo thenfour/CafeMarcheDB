@@ -3,6 +3,8 @@ import { plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 
 const label = (defaultValue: string) => plainStaticString({ defaultValue, description: "Shared band catalog label", schema: z.string() });
 export const catalogStrings = {
+    "catalog.platformMode": label("Select Platform / account in the band selector to edit shared catalog defaults."),
+    "catalog.songCreditTypes": label("Song Credit Types"),
     "catalog.name": label("Name"),
     "catalog.description": label("Description"),
     "catalog.locale": label("Translation language"),

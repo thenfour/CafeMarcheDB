@@ -1,4 +1,4 @@
-import { GlobalEventCatalogContext } from "src/core/db3/components/GlobalEventCatalogContext";
+import { GlobalCatalogContext } from "src/core/db3/components/GlobalCatalogContext";
 import { useLocale } from "src/locale/components/useLocale";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
@@ -26,7 +26,7 @@ const tableSpec = DB3Client.defineTableClientSpec({
 const MainContent = () => {
     return <>
         <LocalizedMarkdown setting="EditEventStatusesPage_markdown"></LocalizedMarkdown>
-        <GlobalEventCatalogContext><DB3EditGrid tableSpec={tableSpec} view={db3.eventStatusEditorView} /></GlobalEventCatalogContext>
+        <GlobalCatalogContext><DB3EditGrid tableSpec={tableSpec} view={db3.eventStatusEditorView} /></GlobalCatalogContext>
     </>;
 };
 

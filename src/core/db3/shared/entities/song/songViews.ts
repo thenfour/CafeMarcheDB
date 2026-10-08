@@ -7,7 +7,7 @@ import {
     fileCardSelection,
     fileCardTransportSelection,
 } from "../file/fileViews";
-import { xSongCredit, xSongCreditType, xSong } from "../../schema/song";
+import { xSongCredit, xSong } from "../../schema/song";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
 import { graft } from "../common/viewCommon";
 import { bandSongTagSelection as songTagEditorSelection } from "./bandSongTagViews";
@@ -23,20 +23,7 @@ function compareResolvedSongTags(a: { tag: SongTagClientPayload }, b: { tag: Son
         || a.tag.publicId.localeCompare(b.tag.publicId);
 }
 
-export const songCreditTypeEditorSelection = Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
-    select: {
-        publicId: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-    },
-});
-
-const songCreditTypeEditorContract = deriveViewContract(
-    xSongCreditType,
-    songCreditTypeEditorSelection,
-);
+export { songCreditTypeEditorSelection, songCreditTypeEditorView } from "./songCreditTypes";
 
 export const songCreditEditorSelection = Prisma.validator<Prisma.SongCreditDefaultArgs>()({
     select: {
@@ -59,13 +46,13 @@ export const songCreditEditorSelection = Prisma.validator<Prisma.SongCreditDefau
             },
         },
         typeId: true,
-        type: songCreditTypeEditorSelection,
     },
 });
 
 const songCreditEditorContract = deriveViewContract(
     xSongCredit,
     songCreditEditorSelection,
+    { references: dashboardReferenceContract },
 );
 
 export const songCreditUserSelection = Prisma.validator<Prisma.SongCreditDefaultArgs>()({
@@ -76,18 +63,13 @@ export const songCreditUserSelection = Prisma.validator<Prisma.SongCreditDefault
         typeId: true,
         year: true,
         comment: true,
-        type: {
-            select: {
-                publicId: true,
-                text: true,
-            },
-        },
     },
 });
 
 const songCreditUserContract = deriveViewContract(
     xSongCredit,
     songCreditUserSelection,
+    { references: dashboardReferenceContract },
 );
 
 export const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
@@ -125,21 +107,13 @@ export const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
 
 const songEditorContract = deriveViewContract(xSong, songEditorSelection);
 
-export const songCreditTypeEditorView = defineCrudView({
-    viewID: "SongCreditType_Editor",
-    entity: xSongCreditType,
-    operations: { create: true, update: true, delete: true },
-    selection: songCreditTypeEditorContract.prismaSelection,
-    dtoSchema: songCreditTypeEditorContract.dtoSchema,
-    hydrate: songCreditTypeEditorContract.hydrate,
-});
-
 export const songCreditEditorView = defineCrudView({
     viewID: "SongCredit_Editor",
     entity: xSongCredit,
     operations: { create: true, update: true, delete: true },
     selection: songCreditEditorContract.prismaSelection,
     dtoSchema: songCreditEditorContract.dtoSchema,
+    references: songCreditEditorContract.referenceContract,
     hydrate: songCreditEditorContract.hydrate,
 });
 
@@ -148,6 +122,7 @@ export const songCreditUserView = defineView({
     entity: xSongCredit,
     selection: songCreditUserContract.prismaSelection,
     dtoSchema: songCreditUserContract.dtoSchema,
+    references: songCreditUserContract.referenceContract,
     hydrate: songCreditUserContract.hydrate,
 });
 

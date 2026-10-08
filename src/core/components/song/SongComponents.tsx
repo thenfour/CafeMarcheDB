@@ -362,7 +362,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
             rows.push({
                 rowClassName: `credit `,
                 cells: [
-                    <th key={0} className={`creditType ${type.text}`}>{type.text}</th>,
+                    <th key={0} className={`creditType ${type.name}`}>{type.name}</th>,
                     <td key={1} className={`user`}><div className='flexRow'>
                         <SongCreditEditButton
                             readonly={props.readonly}

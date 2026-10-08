@@ -1,3 +1,4 @@
+import { songCreditUserView } from "src/core/db3/shared/entities/song/songViews";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert } from "@mui/material";
 import { useLocale } from "src/locale/components/useLocale";
@@ -177,12 +178,15 @@ export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
     const allSongs = useSongsContext().songs;
     const [qr, refetch] = useQuery(getUserCredits, { userId: props.user.publicId, take: 100 });
 
-    const songCreditsWithAddl = qr.songCredits.map((credit, index) => ({
-        ...credit,
-        rowIndex: index,
-        songYear: allSongs.find(s => s.publicId === credit.songId)?.introducedYear,
-        songName: allSongs.find(s => s.publicId === credit.songId)?.name || `#${credit.songId}`,
-    }));
+    const songCreditsWithAddl = qr.songCredits.map((dto, index) => {
+        const credit = songCreditUserView.hydrate(dto, dashboardContext.referenceStore);
+        return {
+            ...credit,
+            rowIndex: index,
+            songYear: allSongs.find(s => s.publicId === credit.songId)?.introducedYear,
+            songName: allSongs.find(s => s.publicId === credit.songId)?.name || `#${credit.songId}`,
+        };
+    });
 
     return <CMTable
         rows={songCreditsWithAddl}
@@ -216,7 +220,7 @@ export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
                 header: "Credit type",
                 memberName: "typeId",
                 render: (row) => {
-                    return <span>{row.row.type?.text}</span>;
+                    return <span>{row.row.type?.name}</span>;
                 },
             },
             {
