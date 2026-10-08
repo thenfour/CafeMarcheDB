@@ -86,6 +86,21 @@ requires a group; no synthetic/null group fallback is introduced.
 
 ## Native controls and references
 
+Song associations use the `BandSongTagAssociation` descriptor and explicit
+`bandSongTagId` foreign key. Both that key and `songId` transport public
+identities; the existing `SongTag`/`SongTagAssociation` identity brands remain the
+domain types. Setlist cards and planner indicators consume the same reference
+shape. Song search/detail hydration orders references by resolved tag order,
+localized label and public identity rather than raw nullable overrides.
+
+The narrow `getFilteredSongs` lookup requires `{ bandPublicId, id }`, where `id`
+may be null. Authorization refreshes inside the shared repeatable read snapshot;
+authenticated callers need `view_songs` in the explicitly selected band. Song
+visibility/deletion, tag ownership/hiding and pinned File ownership/visibility
+are enforced independently. The response contains scalar card details and public
+references only. A null selection still requires authorization. This reader does
+not enable generic Song/File writes or restore deferred picker/search controls.
+
 Native grids, dialogs, pickers, and create/edit forms use the field-derived
 contracts. Writing language is explicit and enabled; drafts never copy another
 language's fallback. Failed creates retain dialogs/drafts. Picker creation must

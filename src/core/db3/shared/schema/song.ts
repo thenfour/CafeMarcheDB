@@ -19,6 +19,8 @@ import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, 
 import { MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
 import { xBandSongTag as xSongTag } from "../entities/song/bandSongTagViews";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
+import { localizedText } from "../columnTypes/localizedString";
+import { catalogColor } from "../columnTypes/bandCatalog";
 
 export { xSongTag };
 
@@ -70,20 +72,21 @@ export const xSongTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
 ////////////////////////////////////////////////////////////////
 
 export const xSongTagAssociation = db3.defineTable({
-    prismaModel: db3.prismaModel<Prisma.SongTagAssociationDelegate>(),
+    prismaModel: db3.prismaModel<Prisma.BandSongTagAssociationDelegate>(),
     getIdentity: (association: { publicId: SongTagAssociationPublicId }) => association.publicId,
-    tableName: "SongTagAssociation",
+    tableName: "BandSongTagAssociation",
     deletePolicy: "hard",
-    getSelectionArgs: (): Prisma.SongTagAssociationDefaultArgs => {
+    getSelectionArgs: (): Prisma.BandSongTagAssociationDefaultArgs => {
         return SongTagAssociationArgs;
     },
     tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongTagAssociationNaturalOrderBy,
     getRowInfo: (row: SongTagAssociationPayload) => ({
-        name: row.tag?.text || "",
+        // Narrow views may omit the tag; display metadata consumes its resolved values.
+        name: localizedText(row.tag?.name) ?? "",
         pk: row.publicId,
-        description: row.tag?.description || "",
-        color: gGeneralPaletteList.findEntry(row.tag?.color || null),
+        description: localizedText(row.tag?.description) ?? "",
+        color: catalogColor(row.tag?.color, gGeneralPaletteList),
         ownerUserId: null,
     }),
     fields: db3.makeColumnSet({
@@ -94,7 +97,7 @@ export const xSongTagAssociation = db3.defineTable({
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         tag: foreignRef(() => xSongTag, {
-            fkidMember: "tagId",
+            fkidMember: "bandSongTagId",
             authMap: xSongAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput | false => false,
         }),
@@ -156,8 +159,8 @@ const xSongArgs_Base = db3.defineTableDesc({
         }
         if (params.songTagIds?.length) {
             ret.push({
-                AND: params.songTagIds.map(tagId => ({
-                    tags: { some: { tagId } },
+                AND: params.songTagIds.map(bandSongTagId => ({
+                    tags: { some: { bandSongTagId } },
                 })),
             });
         }
@@ -205,8 +208,9 @@ const xSongArgs_Base = db3.defineTableDesc({
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
 
-        tags: tagsRef("SongTagAssociation", "BandSongTag", {
+        tags: tagsRef("BandSongTagAssociation", "BandSongTag", {
             associationForeignObjectMember: "tag",
+            associationForeignIDMember: "bandSongTagId",
             associationLocalObjectMember: "song",
             authMap: xSongAuthMap_R_EOwn_EManagers,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.SongWhereInput | boolean => {
@@ -387,7 +391,7 @@ export const xSongCredit = db3.defineTable({
 declare module "../db3core" {
     interface DB3TableTypeRegistry {
         Song: typeof xSong;
-        SongTagAssociation: typeof xSongTagAssociation;
+        BandSongTagAssociation: typeof xSongTagAssociation;
         SongCreditType: typeof xSongCreditType;
         SongCredit: typeof xSongCredit;
     }

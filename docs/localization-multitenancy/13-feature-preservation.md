@@ -72,6 +72,14 @@ and DOM checks verify intentional unavailability; they do not establish search
 parity. The `quick-search` obligation is distinct from the existing deferred
 shell mount under `global-search`.
 
+The subsequent song-tag payload repair adds an authorized band-scoped
+`getFilteredSongs` lookup and updates shared setlist references to the target
+association model/key. Its native tests cover song/tag/pinned-file privacy and
+fresh snapshots. This is partial progress toward the preserved song-detail
+obligation; `quick-search` remains pending, and its original picker/suggestion
+references remain intact. No additional feature or test is deferred by that
+repair.
+
 A wholly disabled test file starts with `// MIGRATION_DEFERRED_TEST` and contains
 only comments and `export {};`. The test runner verifies this with the TypeScript
 parser before omitting it from execution. An import, test call, re-export or other

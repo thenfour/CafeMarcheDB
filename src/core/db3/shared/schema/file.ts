@@ -449,7 +449,7 @@ const xFileBaseArgs = {
 
         tags: tagsRef("BandFileTagAssignment", "BandFileTag", {
             associationForeignObjectMember: "bandFileTag",
-            associationForeignIdentityMember: "bandFileTagId",
+            associationForeignIDMember: "bandFileTagId",
             associationLocalObjectMember: "file",
             authMap: xFileAuthMap_FileObjects,
             // Localized tag labels are resolved by their catalog, outside raw File SQL matching.

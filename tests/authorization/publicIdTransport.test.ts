@@ -198,11 +198,11 @@ describe("instrument catalog public-ID transport", () => {
                 publicId: songTagAssociationPublicId,
                 songId: 92,
                 song: { id: 92, publicId: songPublicId },
-                tagId: 94,
+                bandSongTagId: 94,
                 tag: {
                     id: 94,
                     publicId: songTagPublicId,
-                    text: "March",
+                    name: null,
                 },
             }],
             credits: [{
@@ -223,8 +223,8 @@ describe("instrument catalog public-ID transport", () => {
         expect(projectedSong.tags[0]).toMatchObject({
             publicId: songTagAssociationPublicId,
             songId: songPublicId,
-            tagId: songTagPublicId,
-            tag: { publicId: songTagPublicId, text: "March" },
+            bandSongTagId: songTagPublicId,
+            tag: { publicId: songTagPublicId, name: null },
         });
         expect(projectedSong.tags[0]).not.toHaveProperty("id");
         expect(projectedSong.tags[0].tag).not.toHaveProperty("id");
@@ -390,11 +390,11 @@ describe("instrument catalog public-ID transport", () => {
             updateModel: { name: { kind: "set", localeTag: "en-US", stringPublicId: null, value: "Processional" } },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
-            tableID: "SongTagAssociation",
-            tableName: "SongTagAssociation",
+            tableID: "BandSongTagAssociation",
+            tableName: "BandSongTagAssociation",
             mutationType: "update",
             updatePublicId: songTagAssociationPublicId,
-            updateModel: { tagId: songTagPublicId },
+            updateModel: { bandSongTagId: songTagPublicId },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
             tableID: "BandFileTag",

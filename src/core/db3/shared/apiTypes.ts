@@ -263,18 +263,30 @@ export const EventFutureFilterExpression = (args: { startsAtExpr: string }) => `
 export const EventThisYearFilterExpression = (args: { startsAtExpr: string }) => `(year(${args.startsAtExpr}) = year(curdate()))`;
 
 
+export const GetFilteredSongsArgsSchema = z.object({
+    bandPublicId: z.custom<BandPublicId>(isPublicId, "invalid Band public ID"),
+    id: z.custom<SongPublicId>(isPublicId, "invalid Song public ID").nullable(),
+});
+export type GetFilteredSongsArgs = z.infer<typeof GetFilteredSongsArgsSchema>;
+
 export const GetFilteredSongsItemSongSelect = Prisma.validator<Prisma.SongSelect>()({
     name: true,
     publicId: true,
     aliases: true,
     startBPM: true,
     endBPM: true,
-    pinnedRecording: { select: { publicId: true } },
+    pinnedRecording: {
+        select: {
+            publicId: true,
+            bandId: true,
+            isDeleted: true,
+            uploadedByUserId: true,
+            visiblePermissionId: true,
+        }
+    },
     tags: {
         select: {
             publicId: true,
-            songId: true,
-            tagId: true,
             tag: { select: { publicId: true } },
         },
     },
@@ -293,7 +305,7 @@ export type GetFilteredSongsItemSongPayload = Omit<GetFilteredSongsItemSongDbPay
     tags: Array<{
         publicId: SongTagAssociationPublicId;
         songId: SongPublicId;
-        tagId: SongTagPublicId;
+        bandSongTagId: SongTagPublicId;
     }>;
 };
 

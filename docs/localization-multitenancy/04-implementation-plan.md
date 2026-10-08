@@ -93,14 +93,27 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** repair the shared song payload root at
-`apiTypes.ts:277`, which still selects `BandSongTagAssociation.tagId` instead of
-the target relationship. Trace the authorized `getFilteredSongs` owner and
-event-song-list consumers before adapting their public identities, selected-band
-authorization and tag references. Preserve migrated song-tag catalogs and the
-separate domain-search owner. Then continue the remaining File/song/wiki payload
-roots, including legacy `Permission.roles` selections. Isolate deferred UI and
-non-page entry points together.
+**Next implementation slice:** repair the File association payload root at
+`fileSearchView.ts:59`, which still selects `FileInstrumentTag.instrumentId`
+instead of the band instrument relationship. Trace its search/card/detail owners,
+File/member/instrument ownership and public reference hydration together;
+`fileViews.ts` also selects the removed File-to-person relationship. Preserve
+migrated File/Song-tag catalogs, existing Custom Link delivery and the narrow song
+lookup. Then continue the remaining File/song-credit/wiki payload roots,
+including legacy `Permission.roles` selections. Isolate deferred UI and non-page
+entry points together.
+
+Song-tag association payloads now use `BandSongTagAssociation` and
+`bandSongTagId` consistently in Prisma selections, DB3 field metadata, setlist
+transport, indicators and planner consumers. The `getFilteredSongs` RPC requires
+explicit public band/song identities and reads within fresh authorization and a
+repeatable snapshot. It returns visible undeleted songs in that band, omits
+hidden/foreign tag assignments and independently checks pinned File ownership,
+visibility and deletion before exposing its public identity. Generic Song/File
+writes remain guarded; the picker/search UI remains intentionally unavailable
+under `quick-search`. Migrated catalogs and reference rendering remain active.
+This clears the song-tag payload root; broader song UI, credits, files and A0 are
+still unfinished.
 
 Legacy quick search is now isolated under `quick-search`. Its public HTTP route
 returns 503 without inspecting query/body data or loading account/content readers;
@@ -329,6 +342,7 @@ implementation/test references and verification obligations for audited removals
 
 | Surface | Current boundary | Required follow-up |
 | --- | --- | --- |
+| Song-tag payloads and setlist song lookup | Association metadata, view/setlist transport and planner indicators use public `bandSongTagId` references. The narrow song RPC requires fresh selected-band authorization and enforces song/tag/pinned-File visibility and ownership. Generic Song/File writes and picker/search controls remain guarded. | Restore broader Song ownership, credits, editing/search and complete setlist UI during A0/A1; retain the `quick-search` restoration obligation and verify built-browser delivery. |
 | `LocalizedMarkdown` | Resolved rendering is available; legacy inline editing is disabled and preserved in source. | Scoped translation/Markdown editing after A1. |
 | Settings and branding | Generic DB3 settings storage/view are inactive and preserved in source. Settings/branding pages use registered commands and per-key capabilities, with explicit scope, save/reset and validated clipboard import. Logo editing, optional primary text color and upload controls remain unavailable; hosting mode belongs to deployment configuration. | Verify editors in the built app during A0/A1; recover remaining branding controls and account for legacy clipboard documents under `settings-editors`. |
 | Translation tools | Native catalog controls can edit explicit translations; full inventory/inspection/chrome tooling is incomplete. | Complete after A1. |

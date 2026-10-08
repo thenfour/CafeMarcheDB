@@ -315,7 +315,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                     </Tooltip>
                 </div>
                 <SongTagIndicatorContainer
-                    tagIds={song.tags.map(tag => tag.tagId)}
+                    tagIds={song.tags.map(tag => tag.bandSongTagId)}
                     allPossibleTags={props.allTagIds}
                 />
             </div>
@@ -812,7 +812,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             if (row.type === 'song' && row.songId) {
                 const song = allSongs.find(s => s.publicId === row.songId);
                 if (song) {
-                    song.tags.forEach(tag => tagIds.add(tag.tagId));
+                    song.tags.forEach(tag => tagIds.add(tag.bandSongTagId));
                 }
             }
         });

@@ -2,7 +2,7 @@ import { Prisma } from "db";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
-import { PermissionForVisibilityArgs, SongTagAssociationNaturalOrderBy } from "../../schema/prismArgs";
+import { PermissionForVisibilityArgs, SongTagAssociationNaturalOrderBy, type SongTagClientPayload } from "../../schema/prismArgs";
 import {
     fileCardSelection,
     fileCardTransportSelection,
@@ -15,6 +15,13 @@ import { bandSongTagSelection as songTagEditorSelection } from "./bandSongTagVie
 // Catalog editors and dashboard references share the band-owned definition.
 export { bandSongTagView as songTagEditorView } from "./bandSongTagViews";
 export { songTagEditorSelection };
+
+// todo: in theory this should compare in an app locale aware way.
+function compareResolvedSongTags(a: { tag: SongTagClientPayload }, b: { tag: SongTagClientPayload }): number {
+    return a.tag.sortOrder - b.tag.sortOrder
+        || a.tag.name.localeCompare(b.tag.name)
+        || a.tag.publicId.localeCompare(b.tag.publicId);
+}
 
 export const songCreditTypeEditorSelection = Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
     select: {
@@ -108,7 +115,7 @@ export const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
             select: {
                 publicId: true,
                 songId: true,
-                tagId: true,
+                bandSongTagId: true,
                 tag: songTagEditorSelection,
             },
             orderBy: SongTagAssociationNaturalOrderBy,
@@ -166,7 +173,7 @@ const songSearchTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
         tags: {
             select: {
                 publicId: true,
-                tagId: true,
+                bandSongTagId: true,
             },
         },
         taggedFiles: {
@@ -267,7 +274,7 @@ export const songSearchView = defineView({
                     ...association,
                     tag: association.tag,
                 }])
-                .sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
+                .sort(compareResolvedSongTags),
             taggedFiles: hydrated.taggedFiles?.map(association => ({
                 ...association,
                 file: association.file && {
@@ -302,7 +309,7 @@ const songDetailTransportSelection = Prisma.validator<Prisma.SongDefaultArgs>()(
         tags: {
             select: {
                 publicId: true,
-                tagId: true,
+                bandSongTagId: true,
             },
         },
         taggedFiles: {
@@ -377,7 +384,7 @@ export const songDetailView = defineView({
                     ...association,
                     tag: association.tag,
                 }])
-                .sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
+                .sort(compareResolvedSongTags),
             taggedFiles: hydrated.taggedFiles,
         };
     },

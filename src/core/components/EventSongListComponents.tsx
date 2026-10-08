@@ -343,7 +343,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
     const allTagIds = React.useMemo(() => {
         const tagIds = new Set<SongTagPublicId>();
         props.songList.content?.songItems.forEach(songListItem => {
-            songListItem.song.tags.forEach(tag => tagIds.add(tag.tagId));
+            songListItem.song.tags.forEach(tag => tagIds.add(tag.bandSongTagId));
         });
         return Array.from(tagIds);
     }, [props.songList.content]);
@@ -362,7 +362,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
                 {props.value.type === 'song' && <>
                     <CMLink target='_blank' rel="noreferrer" href={dashboardContext.routingApi.getURIForSong(props.value.song)} trackingFeature={ActivityFeature.link_follow_internal} >{props.value.song.name}</CMLink>
                     <SongTagIndicatorContainer
-                        tagIds={props.value.song.tags.map(tag => tag.tagId)}
+                        tagIds={props.value.song.tags.map(tag => tag.bandSongTagId)}
                         allPossibleTags={allTagIds}
                     />
                 </>}
@@ -875,7 +875,7 @@ const EventSongListValueEditorSongRow = (
         const tagIds = new Set<SongTagPublicId>();
         props.songList.items.forEach(songListItem => {
             if (songListItem.type !== "song") return;
-            songListItem.song.tags.forEach(tag => tagIds.add(tag.tagId));
+            songListItem.song.tags.forEach(tag => tagIds.add(tag.bandSongTagId));
         });
         return Array.from(tagIds);
     }, [props.songList.items]);
@@ -920,7 +920,7 @@ const EventSongListValueEditorSongRow = (
         <div className="td songName">
             <div>{props.value.song.name}</div>
             <SongTagIndicatorContainer
-                tagIds={props.value.song.tags.map(tag => tag.tagId)}
+                tagIds={props.value.song.tags.map(tag => tag.bandSongTagId)}
                 allPossibleTags={allTagIds}
             />
         </div>

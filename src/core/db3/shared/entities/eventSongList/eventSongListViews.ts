@@ -13,7 +13,7 @@ import { graft } from "../common/viewCommon";
 const CompleteSongTagAssociationDtoSchema = z.object({
     publicId: z.custom<SongTagAssociationPublicId>(isPublicId, "invalid SongTagAssociation public ID"),
     songId: xSong.identitySchema,
-    tagId: z.custom<SongTagPublicId>(isPublicId, "invalid SongTag public ID"),
+    bandSongTagId: z.custom<SongTagPublicId>(isPublicId, "invalid SongTag public ID"),
 });
 
 const CompleteSetlistSongDtoSchema = z.object({
@@ -80,7 +80,7 @@ export const eventSongListTransportSelection = Prisma.validator<Prisma.EventSong
                             select: {
                                 publicId: true,
                                 songId: true,
-                                tagId: true,
+                                bandSongTagId: true,
                             },
                         },
                     },

@@ -24,6 +24,7 @@ import type {
 } from "shared/publicId";
 //import * as db3 from "../db3core"; // circular
 import { AuxUserArgs } from "types";
+import type { bandSongTagDisplayContract } from "../entities/song/bandSongTagViews";
 //import { DateRangeInfo } from "shared/time";
 
 /*
@@ -172,55 +173,57 @@ export const PermissionNaturalOrderBy: Prisma.PermissionOrderByWithRelationInput
 
 
 ////////////////////////////////////////////////////////////////
-export const SongTagArgs = Prisma.validator<Prisma.SongTagArgs>()({
+export const SongTagArgs = Prisma.validator<Prisma.BandSongTagDefaultArgs>()({
     include: {
-        songs: true
+        songs: true,
+        name: true,
+        description: true,
+        globalSongTag: true,
     }
 });
 
-export type SongTagPayload = Prisma.SongTagGetPayload<typeof SongTagArgs>;
+export type SongTagPayload = Prisma.BandSongTagGetPayload<typeof SongTagArgs>;
 
-export const SongTagNaturalOrderBy: Prisma.SongTagOrderByWithRelationInput[] = [
+// Localized label ordering belongs to the resolved catalog; database ties stay stable.
+export const SongTagNaturalOrderBy: Prisma.BandSongTagOrderByWithRelationInput[] = [
     { sortOrder: 'asc' },
-    { text: 'asc' },
     { id: 'asc' },
 ];
-export const SongTagAssociationArgs = Prisma.validator<Prisma.SongTagAssociationDefaultArgs>()({
+export const SongTagAssociationArgs = Prisma.validator<Prisma.BandSongTagAssociationDefaultArgs>()({
     include: {
         song: true,
-        tag: true,
+        tag: {
+            include: {
+                name: true,
+                description: true,
+                globalSongTag: true
+            }
+        },
     },
 });
 
-export type SongTagAssociationPayload = Prisma.SongTagAssociationGetPayload<typeof SongTagAssociationArgs>;
+export type SongTagAssociationPayload = Prisma.BandSongTagAssociationGetPayload<typeof SongTagAssociationArgs>;
 
-export type SongTagClientPayload = Omit<
-    Prisma.SongTagGetPayload<{}>,
-    "id" | "publicId" | "color"
-> & {
-    publicId: SongTagPublicId;
-    color: ColorPaletteEntry | null;
-};
+export type SongTagClientPayload = ReturnType<typeof bandSongTagDisplayContract.hydrate>;
 
 export type SongTagAssociationClientPayload = Omit<
-    Prisma.SongTagAssociationGetPayload<{ include: { tag: true } }>,
-    "id" | "publicId" | "songId" | "tagId" | "tag"
+    Prisma.BandSongTagAssociationGetPayload<{ include: { tag: true } }>,
+    "id" | "publicId" | "songId" | "bandSongTagId" | "tag"
 > & {
     publicId: SongTagAssociationPublicId;
     songId: SongPublicId;
-    tagId: SongTagPublicId;
+    bandSongTagId: SongTagPublicId;
     tag: SongTagClientPayload;
 };
 
 export type SongTagAssociationReferenceClientPayload = Pick<
     SongTagAssociationClientPayload,
-    "publicId" | "songId" | "tagId"
+    "publicId" | "songId" | "bandSongTagId"
 >;
 
-export const SongTagAssociationNaturalOrderBy: Prisma.SongTagAssociationOrderByWithRelationInput[] = [
-    { tag: { sortOrder: 'asc' } },
-    { tag: { text: 'asc' } },
-    { tag: { id: 'asc' } },
+// Display views sort by resolved tag order after hydration, including inherited values.
+export const SongTagAssociationNaturalOrderBy: Prisma.BandSongTagAssociationOrderByWithRelationInput[] = [
+    { publicId: 'asc' },
 ];
 
 export const SongCreditTypeArgs = Prisma.validator<Prisma.SongCreditTypeArgs>()({

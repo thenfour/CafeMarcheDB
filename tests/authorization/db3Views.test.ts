@@ -616,7 +616,7 @@ describe("DB3 named views", () => {
             introducedYear: null,
             lengthSeconds: null,
             visiblePermissionId: permission.publicId,
-            tags: [{ publicId: songTagAssociationPublicId, tagId: songTag.publicId }],
+            tags: [{ publicId: songTagAssociationPublicId, bandSongTagId: songTag.publicId }],
             taggedFiles: [{
                 publicId: fileSongTagPublicId,
                 fileId: 8,
@@ -1122,7 +1122,7 @@ describe("DB3 named views", () => {
                 publicId: songTagAssociationPublicId,
                 songId: 7,
                 song: { publicId: songPublicId(7), createdByUserId: 100, visiblePermissionId: null, isDeleted: false },
-                tagId: 20,
+                bandSongTagId: 20,
                 tag: { publicId: songTagPublicId, bandId: 1 },
             }],
             taggedFiles: [{
@@ -1176,7 +1176,7 @@ describe("DB3 named views", () => {
             publicId: songPublicId(7),
             tags: [{
                 publicId: songTagAssociationPublicId,
-                tagId: songTagPublicId,
+                bandSongTagId: songTagPublicId,
             }],
             taggedFiles: [{
                 publicId: fileSongTagPublicId,
@@ -1227,7 +1227,7 @@ describe("DB3 named views", () => {
             lengthSeconds: null,
             visiblePermissionId: permission.publicId,
             pinnedRecordingId: null,
-            tags: [{ publicId: songTagAssociationPublicId, tagId: songTag.publicId }],
+            tags: [{ publicId: songTagAssociationPublicId, bandSongTagId: songTag.publicId }],
             taggedFiles: [{
                 publicId: fileSongTagPublicId,
                 fileId: filePublicId(8),
@@ -1297,7 +1297,7 @@ describe("DB3 named views", () => {
                 publicId: songTagAssociationPublicId,
                 songId: 7,
                 song: { publicId: songPublicId(7), createdByUserId: 100, visiblePermissionId: 3, isDeleted: false },
-                tagId: 20,
+                bandSongTagId: 20,
                 tag: { publicId: songTagPublicId, bandId: 1 },
             }],
             taggedFiles: [{
@@ -1370,7 +1370,7 @@ describe("DB3 named views", () => {
             name: "A song",
             tags: [{
                 publicId: songTagAssociationPublicId,
-                tagId: songTagPublicId,
+                bandSongTagId: songTagPublicId,
             }],
             taggedFiles: [{
                 publicId: fileSongTagPublicId,
@@ -1420,7 +1420,7 @@ describe("DB3 named views", () => {
                     tags: [{
                         publicId: songTagAssociationPublicId,
                         songId: songPublicId(7),
-                        tagId: songTagPublicId,
+                        bandSongTagId: songTagPublicId,
                     }],
                 },
             }, {
@@ -1693,7 +1693,7 @@ describe("DB3 named views", () => {
                         publicId: songTagAssociationPublicId,
                         songId: 7,
                         song: { publicId: songPublicId(7), createdByUserId: 42, visiblePermissionId: null, isDeleted: false },
-                        tagId: 9,
+                        bandSongTagId: 9,
                         tag: { publicId: songTagPublicId, bandId: 1 },
                     }],
                 },
