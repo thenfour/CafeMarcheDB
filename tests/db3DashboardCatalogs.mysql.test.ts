@@ -64,7 +64,7 @@ describe.skipIf(!settingsMysqlTestUrl)("dashboard catalog references on MariaDB"
         ]);
         // Other dashboard resources are unrelated to these catalog/reference contracts.
         return { ...catalogs, localization, settings, currentMembership: null, authorization: auth.toClientContext(),
-            permission: [], wikiPageTag: [], eventType: [], eventStatus: [], eventTag: [],
+            permission: [], eventType: [], eventStatus: [], eventTag: [],
             eventAttendance: [], songCreditType: [], dynMenuLinks: [], relevantEventIds: [],
             serverBaseUri: "https://example.test", serverStartupState: null, bandTimeZone: "Europe/Brussels" };
     }
@@ -127,11 +127,11 @@ describe.skipIf(!settingsMysqlTestUrl)("dashboard catalog references on MariaDB"
             const context = await bindDB3ReadSnapshot(tx, seed.auth, { isolationLevel: "Serializable" });
             // The original authorization still has admin grants; the reader must refresh them itself.
             expect(await loadDashboardCatalogs(context, seed.auth, { routeLocale: "en-US" })).toEqual({
-                instrument: [], instrumentFunctionalGroup: [], songTag: [], userTag: [], eventTag: [], fileTag: [],
+                instrument: [], instrumentFunctionalGroup: [], songTag: [], userTag: [], eventTag: [], fileTag: [], wikiPageTag: [],
             });
             const unscoped = await loadAuthorizationForUser(fixture.user, tx);
             expect(await loadDashboardCatalogs(context, unscoped, { routeLocale: "en-US" })).toEqual({
-                instrument: [], instrumentFunctionalGroup: [], songTag: [], userTag: [], eventTag: [], fileTag: [],
+                instrument: [], instrumentFunctionalGroup: [], songTag: [], userTag: [], eventTag: [], fileTag: [], wikiPageTag: [],
             });
         }));
 });

@@ -17,6 +17,7 @@ export const catalogStrings = {
     "catalog.indicatorCssClass": label("Indicator style"),
     "catalog.select": label("Option"),
     "catalog.selectBand": label("Select a band to view its catalog."),
+    "catalog.wikiPageTags": label("Wiki Page Tags"),
     "catalog.songTags": label("Song tags"),
     "catalog.missing": label("Translation unavailable"),
     "catalog.userTags": label("Member tags"),

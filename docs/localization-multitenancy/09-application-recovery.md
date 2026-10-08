@@ -40,6 +40,10 @@ cards fetch instrument public identities before projection, and hydrated labels
 come from the current band/locale reference store. File-related visibility reads
 no longer select the removed Permission role relation. General File ownership,
 metadata/search and creation workflows remain unfinished and guarded.
+Wiki tags now use band-owned localized/inherited catalog contracts, native CRUD
+and the shared dashboard snapshot. Wiki assignments transport public band-tag
+identities and order hydrated labels. General WikiPage/assignment reads and writes
+remain guarded; the original raw tag-name filter is preserved under `wiki-search`.
 **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
@@ -705,7 +709,7 @@ production server could not be checked because the normal build still fails.
 | Custom-link routes/URLs/page guards, bootstrap, view contracts, preservation/recovery boundaries, membership roles and public Markdown/Suspense navigation | Passed: 161 tests across ten files, including two isolated jsdom files. All redirect modes, nested slugs, repeated query values, visit details, routing-parameter exclusion, hash forwarding and the selection-page authorization boundary are covered. |
 | Custom-link CRUD/file authorization, telemetry persistence, dashboard catalogs and member profiles on a fresh private MariaDB fixture | Passed: 24 tests across four files, including six native custom-link cases. Covers duplicate slugs across bands, create/update/delete and visit cascade, server-owned IDs, missing context/revoked authority, file visibility/ownership and crafted unavailable targets. Fixture writes roll back and the generated database is removed. |
 | Existing Custom Link/Menu Link view and schema-wide policy fixtures | The collection view passes with an explicit scoped snapshot. Policy rows now carry band/active-person context and use public identities where natural-ID filtering is forbidden; five earlier failures are recovered. The existing broad metadata assertion still fails because Locale has no DB3 descriptor. |
-| Source preservation and Git provenance | Passed: 273 references, including two File instrument-search/ordering references. Ten wholly deferred specifications and nineteen pending obligations remain protected; no test is newly disabled in this slice. |
+| Source preservation and Git provenance | Passed: 274 references, including the wiki raw tag-name predicate. Ten wholly deferred specifications and twenty pending obligations remain protected; no test is newly disabled in this slice. |
 | Quick-search HTTP/reader/client isolation, explorer authorization, localized controls and retained Markdown editing | Passed: 130 focused checks across eight files, including twelve isolated DOM cases. Public GET/HEAD returns 503 before query/account/content reads; unsupported methods return 405. Direct helpers reject and controls remain inert with existing values visible; text/HTML and local inline-class suggestions remain active. |
 | Quick-search development-browser and retained native workflows | Passed: seven browser assertion groups without page errors, including public/member/Sysadmin callers, platform/two-band explorer contexts, real Markdown edits/local suggestions, retained File-tag/event saves and existing Custom Link content/ranges. All 104 native cases across six files pass. Screenshots inspected; private database/storage and owned servers removed/stopped. |
 | File-creation isolation, upload HTTP/client, image RPCs and localized controls | Passed: 131 focused checks across six files, including five isolated DOM cases and retained Custom Link/download regressions. Upload returns empty 503 responses before multipart parsing; anonymous HTTP requests receive explicit 401 responses. File/URL/paste/drop and bake controls remain inert while ordinary Markdown text/HTML paste works. |
@@ -730,10 +734,14 @@ production server could not be checked because the normal build still fails.
 | Song-credit contracts, generated CRUD/reference hydration, public transport and route/sort authorization | Passed: 106 tests across six files using `yarn test tests/db3Commands.test.ts tests/db3ViewContract.test.ts tests/authorization/db3Views.test.ts tests/authorization/db3GridSort.test.ts tests/authorization/publicIdTransport.test.ts tests/authorization/backstageRoutes.test.ts --reporter=dot`. Existing editor assertions now check public `typeId` transport and hydrated display captions. |
 | SongCreditType plus shared event catalogs, dashboard bootstrap, accounts, File payloads, song tags/setlist reads, Custom Links, telemetry, catalogs and member profiles on private MariaDB | Passed: 66 cases across eleven files, including six new credit-type cases. Covers global CRUD/audits, explicit writing languages, per-string fallback, intentional blanks, localized filtering/sorting/paging, public defaults, separate band overrides, consistent credit editor/profile/search/detail references, shared person identities, wrong-string/disabled-locale rejection, selected-band/revoked-grant denial and retained SongCredit guards. Fixture writes roll back and generated databases are removed. |
 | Song-credit development-browser editor | Passed: five assertion groups for delegated platform creation, French writing without copying fallback, locale display refresh, selected-band context explanation and deletion. No page errors; French grid screenshot inspected. The private server and databases were removed. This is development evidence; the normal build still fails before a built server can be tested. |
+| Wiki-tag contracts, public transport, reference hydration, identity/command/route/sort authorization | Passed: 108 checks across seven files, plus three existing wiki capability cases selected with `-t BA-S004`. Updated facet fixtures retain public-identity assertions against the actual band delegate. |
+| Wiki-tag page authorization and bootstrap | Passed: nine checks across two files. Signed-in accounts can reach the selection prompt; anonymous accounts and selected-band accounts without wiki administration are denied. |
+| Wiki tags plus shared credit/event catalogs, dashboard bootstrap, accounts, File payloads, song tags/setlist reads, links, telemetry, catalogs and member profiles on private MariaDB | Passed: 72 cases across twelve files, including six new wiki-tag cases. Covers generated CRUD/audits, explicit writing languages, fallback/blanks/inheritance, resolved filtering/sorting/paging, separate band identities, hidden-option grants, forged ownership/source/string rejection, disabled languages, fresh revocation, assignment retention/deletion cascade and editor/search projection/hydration against real Prisma selections. General wiki row-service guards remain enforced. Fixture writes roll back; generated databases are removed. |
+| Wiki-tag development-browser editor | Passed: ordinary delegated band manager creates a custom tag, edits an inherited tag in French without changing shared English, switches bands without retained rows and reaches the no-band prompt. No page errors; the French grid screenshot was inspected. This is development evidence; the normal build still fails before a built server can be tested. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 49 diagnostics, down from 56. No diagnostics remain in File or Song-credit selections, descriptors, consumers or new native tests. Remaining roots include wiki/instrument payloads and legacy fixtures; no compiler exclusions or suppression added. |
-| `yarn build` | Gets past File and SongCreditType payloads; stops at `src/core/db3/shared/entities/wikiPageTag/wikiPageTagViews.ts:6`, which references removed `Prisma.WikiPageTagDefaultArgs`. General File/Song ownership and workflows remain unfinished. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 265 failed, 1,578 passed, 288 skipped across 154 files, with ten suite failures. Reported failure entries exactly match the previous File checkpoint; no failure entry is added or removed. The six new native SongCreditType cases skip without the private URL and pass in the dedicated fixture above. No existing test is newly disabled. Later isolated DOM batches are not reached; the development-browser check verifies the changed editor. |
+| `yarn typecheck` | Fails: 36 diagnostics, down from 49. Wiki-tag selections/descriptors/consumers and new native tests have no diagnostics. The stale song-tag `text` display in the select demo was also fixed. Remaining roots include event-tag assignment selections, menu captions, old instrument payloads, wiki entry points and legacy fixtures; no compiler exclusions or suppression added. |
+| `yarn build` | Gets past WikiPageTag; stops at `src/core/db3/shared/schema/event.ts:223`, whose assignment selection omits localized tag fields. General wiki ownership/workflows remain unfinished. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 265 failed, 1,582 passed, 294 skipped across 156 files, with ten suite failures. Reported failure entries exactly match the previous SongCreditType checkpoint. The six new native wiki-tag cases skip without the private URL and pass in the dedicated fixture above. No existing test is newly disabled. Later isolated DOM batches are not reached; development-browser checks verify the changed editor. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -764,9 +772,13 @@ verification resources, not application configuration.
 
 ## Remaining A0 blockers
 
-The next build stop is the obsolete WikiPageTag selection in `wikiPageTagViews.ts`.
-Adapt band-owned wiki-tag contracts, references, editors and associations before
-continuing the remaining wiki/instrument roots. SongCreditType now uses localized
+The next build stop is the EventTagAssignment selection omitting localized tag
+fields required by `event.ts:223`. Reuse its canonical catalog selection before
+continuing the obsolete instrument payloads and wiki/menu entry points. Wiki-tag
+catalogs, references, editor and association payloads now use the target contracts;
+general wiki ownership, locking/revision/editing and resolved search still require
+recovery. `wiki-search` preserves the former raw tag-name predicate.
+SongCreditType now uses localized
 name/description contracts and platform catalog CRUD. Credit displays use the
 same dashboard reference snapshot; general Song/SongCredit ownership and workflows
 remain unfinished and guarded. File search/card/detail/editor payloads and consumers now use public
@@ -794,7 +806,7 @@ Setlist Plan storage is recovered; its complete editor still depends on deferred
 Song/search workflows.
 
 Fix owning contracts before their cascading consumers: `prismArgs.ts` remains the
-largest diagnostic root, including obsolete instrument/wiki selections. Shared event catalogs and dedicated
+largest diagnostic root, including obsolete instrument selections. Shared event catalogs and dedicated
 attendance write/history/HTTP, bulk copy/clear endpoints and private calendar feeds
 are migrated. Response/invitation reader ownership and identities are migrated. Full event
 search/editing payloads and invitation management remain unfinished, including

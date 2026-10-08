@@ -48,8 +48,7 @@ export function hydrateDashboardData(dto: DashboardDataDto) {
     const leaves = {
         permission: hydrate(dashboard.permissionDashboardView, dto.permission),
         userTag: hydrate(dashboard.userTagDashboardView, dto.userTag),
-        wikiPageTag: hydrate(dashboard.wikiPageTagDashboardView, dto.wikiPageTag)
-            .filter(dashboard.isCompleteWikiPageTagDashboardClient),
+        wikiPageTag: hydrate(dashboard.wikiPageTagDashboardView, dto.wikiPageTag),
         eventType: hydrate(dashboard.eventTypeDashboardView, dto.eventType),
         eventStatus: hydrate(dashboard.eventStatusDashboardView, dto.eventStatus),
         eventTag: hydrate(dashboard.eventTagDashboardView, dto.eventTag),

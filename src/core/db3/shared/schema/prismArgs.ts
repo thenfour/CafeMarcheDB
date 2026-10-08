@@ -19,11 +19,10 @@ import type {
     SongTagAssociationPublicId,
     SongTagPublicId,
     UserPublicId,
-    WikiPageTagAssignmentPublicId,
-    WikiPageTagPublicId,
 } from "shared/publicId";
 //import * as db3 from "../db3core"; // circular
 import { AuxUserArgs } from "types";
+import { bandWikiPageTagSelection } from "../entities/wikiPageTag/wikiPageTagViews";
 import type { bandSongTagDisplayContract } from "../entities/song/bandSongTagViews";
 //import { DateRangeInfo } from "shared/time";
 
@@ -960,42 +959,14 @@ export const FileWikiPageTagNaturalOrderBy: Prisma.FileWikiPageTagOrderByWithRel
 ];
 
 //////////////////////////////////////////////////////////////
-export const WikiPageTagArgs = Prisma.validator<Prisma.WikiPageTagDefaultArgs>()({
-    include: {}
-});
-export type WikiPageTagPayload = Prisma.WikiPageTagGetPayload<typeof WikiPageTagArgs>;
-export type WikiPageTagClientPayload = Omit<
-    WikiPageTagPayload,
-    "id" | "publicId" | "color"
-> & {
-    publicId: WikiPageTagPublicId;
-    color: ColorPaletteEntry | null;
-};
-
-export const WikiPageTagNaturalOrderBy: Prisma.WikiPageTagOrderByWithRelationInput[] = [
-    { sortOrder: 'asc' },
-    { text: 'asc' },
-];
-
-//////////////////////////////////////////////////////////////
 export const WikiPageTagAssignmentArgs = Prisma.validator<Prisma.WikiPageTagAssignmentDefaultArgs>()({
-    include: {
-        tag: true,
-    }
+    include: { tag: bandWikiPageTagSelection },
 });
 export type WikiPageTagAssignmentPayload = Prisma.WikiPageTagAssignmentGetPayload<typeof WikiPageTagAssignmentArgs>;
-export type WikiPageTagAssignmentClientPayload = Omit<
-    WikiPageTagAssignmentPayload,
-    "id" | "publicId" | "tagId" | "tag"
-> & {
-    publicId: WikiPageTagAssignmentPublicId;
-    tagId: WikiPageTagPublicId;
-    tag: WikiPageTagClientPayload;
-};
 
+// Fetch associations stably; consumers order their hydrated, localized tag values.
 export const WikiPageTagAssignmentNaturalOrderBy: Prisma.WikiPageTagAssignmentOrderByWithRelationInput[] = [
-    { tag: { sortOrder: 'asc' } },
-    { tag: { text: 'asc' } },
+    { publicId: "asc" },
 ];
 
 export const FileArgs = Prisma.validator<Prisma.FileArgs>()({

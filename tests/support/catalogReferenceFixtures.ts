@@ -1,7 +1,7 @@
-import type { SongCreditTypePublicId, FileTagPublicId, EventTagPublicId, InstrumentPublicId, InstrumentFunctionalGroupPublicId, PermissionPublicId, SongTagPublicId, UserTagPublicId } from "shared/publicId";
+import type { WikiPageTagPublicId, SongCreditTypePublicId, FileTagPublicId, EventTagPublicId, InstrumentPublicId, InstrumentFunctionalGroupPublicId, PermissionPublicId, SongTagPublicId, UserTagPublicId } from "shared/publicId";
 import type { StringResolution } from "src/locale/shared/stringResolution";
 import { hydrateView } from "src/core/db3/shared/core/db3View";
-import { songCreditTypeDashboardView, fileTagDashboardView, eventTagDashboardView, instrumentDashboardView, instrumentFunctionalGroupDashboardView, permissionDashboardView, songTagDashboardView, userTagDashboardView,
+import { wikiPageTagDashboardView, songCreditTypeDashboardView, fileTagDashboardView, eventTagDashboardView, instrumentDashboardView, instrumentFunctionalGroupDashboardView, permissionDashboardView, songTagDashboardView, userTagDashboardView,
     createDashboardReferenceStore, registerDashboardReferences } from "src/core/db3/shared/references/dashboardReferences";
 
 function resolution(value: string): StringResolution {
@@ -91,4 +91,12 @@ export function songCreditTypeReferenceFixture(publicId: SongCreditTypePublicId)
         descriptionResolution: { ...resolution(""), scope: "global" },
     });
     return hydrateView(songCreditTypeDashboardView, dto, createDashboardReferenceStore());
+}
+
+export function wikiPageTagReferenceFixture(publicId: WikiPageTagPublicId) {
+    const dto = wikiPageTagDashboardView.parseDto({
+        ...commonFields("Policy", "Policy page", 1), publicId,
+        color: null, colorOverride: null, colorInheritedValue: null, globalWikiPageTag: null,
+    });
+    return hydrateView(wikiPageTagDashboardView, dto, createDashboardReferenceStore());
 }

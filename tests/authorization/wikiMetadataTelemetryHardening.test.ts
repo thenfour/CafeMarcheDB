@@ -1,3 +1,4 @@
+import { testBandAuthorization } from "tests/support/serverAuthorization";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => {
@@ -60,12 +61,12 @@ describe("BA-S004 wiki DB3 capabilities", () => {
     });
 
     const wikiPage = { id: 1, slug: "policy", visiblePermission: null, createdByUserId: null };
-    const wikiTag = { id: 2, text: "Policy", description: "", color: null };
-    const assignment = { id: 3, tagId: wikiTag.id, tag: wikiTag, wikiPageId: wikiPage.id };
+    const wikiTag = { id: 2, bandId: 1, name: "Policy", description: "", color: null };
+    const assignment = { id: 3, bandWikiPageTagId: wikiTag.id, tag: wikiTag, wikiPageId: wikiPage.id };
     const revision = { id: 4, name: "Policy", wikiPageId: wikiPage.id };
 
     it("does not treat login visibility as wiki editing authority", () => {
-        const auth = makeAuthorizationArgs(loggedIn);
+        const auth = { auth: testBandAuthorization(loggedIn, createAuthorizationSchemaData(loggedIn).effectivePermissions) };
 
         expect(db3.xWikiPage.authorizeRowForEdit({ model: wikiPage, ...auth })).toBe(false);
         expect(db3.xWikiPage.authorizeColumnForEdit({
@@ -74,13 +75,13 @@ describe("BA-S004 wiki DB3 capabilities", () => {
             fallbackOwnerId: null,
             ...auth,
         })).toBe(false);
-        expect(db3.xWikiPageTag.authorizeRowForEdit({ model: wikiTag, ...auth })).toBe(false);
+        expect(db3.xBandWikiPageTag.authorizeRowForEdit({ model: wikiTag, ...auth })).toBe(false);
         expect(db3.xWikiPageTagAssignment.authorizeRowForEdit({ model: assignment, ...auth })).toBe(false);
         expect(db3.xWikiPageRevision.authorizeRowForEdit({ model: revision, ...auth })).toBe(false);
     });
 
     it("lets wiki editors edit pages and page-tag assignments, but not administer tags or revisions", () => {
-        const auth = makeAuthorizationArgs(editor);
+        const auth = { auth: testBandAuthorization(editor, createAuthorizationSchemaData(editor).effectivePermissions) };
 
         expect(db3.xWikiPage.authorizeRowForEdit({ model: wikiPage, ...auth })).toBe(true);
         expect(db3.xWikiPage.authorizeColumnForEdit({
@@ -96,17 +97,17 @@ describe("BA-S004 wiki DB3 capabilities", () => {
             ...auth,
         })).toBe(false);
         expect(db3.xWikiPageTagAssignment.authorizeRowForEdit({ model: assignment, ...auth })).toBe(true);
-        expect(db3.xWikiPageTag.authorizeRowForEdit({ model: wikiTag, ...auth })).toBe(false);
+        expect(db3.xBandWikiPageTag.authorizeRowForEdit({ model: wikiTag, ...auth })).toBe(false);
         expect(db3.xWikiPageRevision.authorizeRowForEdit({ model: revision, ...auth })).toBe(false);
     });
 
     it("reserves tag-vocabulary and revision administration for wiki admins", () => {
-        const auth = makeAuthorizationArgs(wikiAdmin);
+        const auth = { auth: testBandAuthorization(wikiAdmin, createAuthorizationSchemaData(wikiAdmin).effectivePermissions) };
 
-        expect(db3.xWikiPageTag.authorizeRowForEdit({ model: wikiTag, ...auth })).toBe(true);
-        expect(db3.xWikiPageTag.authorizeColumnForEdit({
+        expect(db3.xBandWikiPageTag.authorizeRowForEdit({ model: wikiTag, ...auth })).toBe(true);
+        expect(db3.xBandWikiPageTag.authorizeColumnForEdit({
             model: wikiTag,
-            columnName: "text",
+            columnName: "name",
             fallbackOwnerId: null,
             ...auth,
         })).toBe(true);

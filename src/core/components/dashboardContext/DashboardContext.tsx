@@ -251,7 +251,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.userTag = new TableAccessor(dashboardData.userTag, tag => tag.publicId);
     valueRef.current.wikiPageTag = new TableAccessor(
         dashboardData.wikiPageTag,
-        tag => db3.xWikiPageTag.getIdentity(tag),
+        tag => db3.xBandWikiPageTag.getIdentity(tag),
     );
     valueRef.current.eventType = new TableAccessor(
         dashboardData.eventType,

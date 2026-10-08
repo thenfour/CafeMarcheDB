@@ -61,7 +61,7 @@ const routes = [
     { key: "editSongTags", pattern: "/backstage/editSongTags", caption: "Song Tags", permission: Permission.admin_songs },
     { key: "editSongCreditTypes", pattern: "/backstage/editSongCreditTypes", caption: "Song Credit Types", permission: Permission.manage_global_catalogs },
     { key: "editFileTags", pattern: "/backstage/editFileTags", caption: "File Tags", permission: Permission.admin_files, unscopedPermission: Permission.manage_global_catalogs },
-    { key: "editWikiPageTags", pattern: "/backstage/editWikiPageTags", caption: "Wiki Page Tags", permission: Permission.admin_wiki_pages },
+    { key: "editWikiPageTags", pattern: "/backstage/editWikiPageTags", caption: "Wiki Page Tags", permission: Permission.admin_wiki_pages, unscopedPermission: Permission.login },
     { key: "editUserTags", pattern: "/backstage/editUserTags", caption: "Member Tag Catalog", permission: Permission.manage_user_taxonomy },
     { key: "instruments", pattern: "/backstage/instruments", caption: "Instruments", permission: Permission.admin_instruments },
     { key: "instrumentFunctionalGroups", pattern: "/backstage/instrumentFunctionalGroups", caption: "Functional Groups", permission: Permission.admin_instruments },

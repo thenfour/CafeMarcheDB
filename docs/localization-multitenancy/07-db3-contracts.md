@@ -111,6 +111,19 @@ general File reads/writes: their ownership policy remains undeclared and guarded
 Raw instrument-name filtering and association name ordering are preserved under
 `file-search` until resolved filtering/ordering is restored.
 
+Wiki tags use the `BandWikiPageTag` catalog declaration and common localized/
+inherited fields. Catalog writes require `admin_wiki_pages` in the selected band;
+ownership/source IDs remain server-owned. The dashboard loads visible options in
+its read snapshot, including hidden rows only for authorized catalog managers.
+Editor values retain explicit translations and raw overrides; ordinary references
+expose resolved names, descriptions, colors and ordering. WikiPageTagAssignment
+uses public `bandWikiPageTagId` references while retaining the existing WikiPageTag
+identity brand. Editor/search hydration sorts by resolved order/name/public identity.
+Payload conversion does not authorize general WikiPage/assignment reads or writes;
+their owning workflow policy remains guarded. The old raw tag-name quick-filter
+predicate is preserved under `wiki-search` until the resolved wiki search owner
+can supply equivalent visibility, matching, counts and pagination.
+
 SongCreditType is a shared global catalog declared in `songCreditTypes.ts`.
 Localized name/description fields use the common string writer, with an explicit
 enabled writing locale and platform `manage_global_catalogs` authority. The
@@ -152,7 +165,7 @@ Presentation-affecting membership/grant/settings writers use the shared
 presentation invalidation boundary.
 
 `loadDashboardCatalogs` composes canonical instrument, functional-group, song-tag,
-and member-tag views in one coherent snapshot with fresh grants/preferences.
+member-tag and wiki-tag views in one coherent snapshot with fresh grants/preferences.
 Platform context yields empty band collections. Hidden delivery uses the relevant
 catalog grant. Derived display contracts expose effective names/colors/orders
 while retaining rich companions; editor views retain explicit override metadata.
@@ -163,7 +176,7 @@ read `dashboard.referenceStore` synchronously. Only richer global opt-in choices
 need workflow-local catalog queries. There are no parallel global/band dashboard
 DTO schemas or private reference stores for ordinary catalog display.
 
-Instruments/groups, song tags, and member tags use these shared facilities. Adding
+Instruments/groups, song tags, member tags and wiki tags use these shared facilities. Adding
 another catalog should require its declaration and genuine domain operations,
 with equivalent query/write behavior and no new matcher, form stack, or endpoint
 family. Broader domain migration follows restoration needs.

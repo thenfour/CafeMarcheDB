@@ -1,34 +1,46 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { BlitzPage } from "@blitzjs/next";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+import type { BlitzPage } from "@blitzjs/next";
+import { Alert } from "@mui/material";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
+import { bandWikiPageTagView } from "src/core/db3/shared/entities/wikiPageTag/wikiPageTagViews";
+import { defineTableClientSpec } from "src/core/db3/components/DB3ClientCore";
+import { GenericIntegerColumnClient, ColorColumnClient, BoolColumnClient } from "src/core/db3/components/DB3ClientBasicFields";
+import { LocalizedStringColumnClient, InheritedColumnClient } from "src/core/db3/components/DB3CatalogFields";
+import { usePresentation } from "src/locale/components/PresentationProvider";
+import { useLocale } from "src/locale/components/useLocale";
+import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
+import { LocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
 
-const tableSpec = DB3Client.defineTableClientSpec({
-    view: db3.wikiPageTagEditorView,
+export const bandWikiPageTagTableSpec = defineTableClientSpec({
+    view: bandWikiPageTagView,
     columns: {
-        publicId: DB3Client.publicIdFieldGen(),
-        text: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.label", columnName, cellWidth: 180 }),
-        description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 200 }),
-        color: columnName => new DB3Client.ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.color", columnName, cellWidth: 300 }),
-        sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.sortOrder", columnName, cellWidth: 80 }),
+        name: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.name" }),
+        description: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.description" }),
+        color: columnName => new InheritedColumnClient(
+            new ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "catalog.color", columnName }),
+            { fieldCaptionKey: "catalog.color" }),
+        sortOrder: columnName => new InheritedColumnClient(
+            new GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "catalog.sortOrder", columnName }),
+            { fieldCaptionKey: "catalog.sortOrder" }),
+        isHidden: columnName => new BoolColumnClient({ columnName, fieldCaptionKey: "catalog.hidden", fieldDescriptionKey: null }),
     },
 });
-
 const MainContent = () => {
+    const dashboard = useDashboardContext();
+    const presentation = usePresentation();
+    const locale = useLocale();
     return <>
-        <LocalizedMarkdown setting="editWikiPageTags_markdown"></LocalizedMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} view={db3.wikiPageTagEditorView} />
+        <LocalizedMarkdown setting="editWikiPageTags_markdown" />
+        {presentation.bandPublicId ? <DB3EditGrid
+            tableSpec={bandWikiPageTagTableSpec}
+            view={bandWikiPageTagView}
+            referenceProvider={dashboard.referenceStore}
+        />
+            : <Alert severity="info">{locale.getPlainString("catalog.selectBand")}</Alert>}
     </>;
 };
-
 const EditWikiPageTagsPage: BlitzPage = () => {
-    return (
-        <DashboardLayout title="Wiki Page Tags">
-            <MainContent />
-        </DashboardLayout>
-    )
-}
-
+    const locale = useLocale();
+    return <DashboardLayout title={locale.getPlainString("catalog.wikiPageTags")}><MainContent /></DashboardLayout>;
+};
 export default EditWikiPageTagsPage;

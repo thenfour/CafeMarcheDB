@@ -250,18 +250,18 @@ describe("instrument catalog public-ID transport", () => {
                 id: 97,
                 publicId: wikiPageTagAssignmentPublicId,
                 wikiPageId: 96,
-                tagId: 98,
+                bandWikiPageTagId: 98,
                 tag: {
                     id: 98,
                     publicId: wikiPageTagPublicId,
-                    text: "Policy",
+                    name: "Policy",
                 },
             }],
         }, authorization(Permission.view_wiki_pages));
         expect(projectedWikiPage.tags[0]).toMatchObject({
             publicId: wikiPageTagAssignmentPublicId,
-            tagId: wikiPageTagPublicId,
-            tag: { publicId: wikiPageTagPublicId, text: "Policy" },
+            bandWikiPageTagId: wikiPageTagPublicId,
+            tag: { publicId: wikiPageTagPublicId, name: "Policy" },
         });
         expect(projectedWikiPage.tags[0]).not.toHaveProperty("id");
         expect(projectedWikiPage.tags[0].tag).not.toHaveProperty("id");
@@ -416,18 +416,18 @@ describe("instrument catalog public-ID transport", () => {
             updateModel: { bandFileTagId: fileTagPublicId },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
-            tableID: "WikiPageTag",
-            tableName: "WikiPageTag",
+            tableID: "BandWikiPageTag",
+            tableName: "bandWikiPageTag",
             mutationType: "update",
             updatePublicId: wikiPageTagPublicId,
-            updateModel: { text: "Procedure" },
+            updateModel: { name: { kind: "set", localeTag: "en-US", stringPublicId: null, value: "Procedure" } },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
             tableID: "WikiPageTagAssignment",
             tableName: "WikiPageTagAssignment",
             mutationType: "update",
             updatePublicId: wikiPageTagAssignmentPublicId,
-            updateModel: { tagId: wikiPageTagPublicId },
+            updateModel: { bandWikiPageTagId: wikiPageTagPublicId },
         })).not.toThrow();
         expect(() => validateDB3MutationRequest({
             tableID: "BandUserTag",

@@ -27,7 +27,7 @@ export abstract class DashboardContextDataBase {
     songTag: TableAccessor<db3.ClientOf<typeof db3.songTagDashboardView>, SongTagPublicId>;
     songCreditType: TableAccessor<db3.ClientOf<typeof db3.songCreditTypeDashboardView>, SongCreditTypePublicId>;
 
-    wikiPageTag: TableAccessor<db3.CompleteWikiPageTagDashboardClient, WikiPageTagPublicId>;
+    wikiPageTag: TableAccessor<db3.WikiPageTagDashboardClient, WikiPageTagPublicId>;
 
     dynMenuLinks: TableAccessor<db3.MenuLinkListClient>;
     permission: TableAccessor<db3.ClientOf<typeof db3.permissionDashboardView>, PermissionPublicId>;

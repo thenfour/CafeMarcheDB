@@ -46,7 +46,7 @@ export const WikiPageListItem = (props: WikiPageListItemProps) => {
                         variation={{
                             ...StandardVariationSpec.Weak,
                             selected: props.filterSpec.tagFilter.options.includes(
-                                db3.xWikiPageTag.getIdentity(tagAssignment.tag),
+                                db3.xBandWikiPageTag.getIdentity(tagAssignment.tag),
                             )
                         }}
                         getTooltip={() => tagAssignment.tag.description}

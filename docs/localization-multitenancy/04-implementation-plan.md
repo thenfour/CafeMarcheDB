@@ -93,12 +93,19 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** repair the wiki-tag payload root in
-`wikiPageTagViews.ts`, tracing its band-owned model, descriptor, dashboard reference,
-editor and wiki associations through the shared localized/inherited contracts.
-Then continue obsolete instrument payloads and remaining wiki entry points;
-isolate deferred UI and non-page entry points together. Preserve the working
-song-tag lookup, File payloads and shared SongCreditType catalog.
+**Next implementation slice:** repair the event-tag assignment selection in
+`prismArgs.ts`, which currently omits the localized fields consumed by
+`event.ts:223`. Then continue obsolete instrument payloads and remaining wiki/menu
+entry points; isolate deferred UI and non-page entry points together. Preserve the
+working song-tag lookup, File payloads and shared SongCreditType/wiki-tag catalogs.
+
+Wiki tags now use the band-owned localized/inherited catalog and the shared
+snapshot/reference loader. Catalog CRUD requires selected-band wiki administration;
+a signed-in account without a band sees a selection prompt. Wiki associations
+transport public `bandWikiPageTagId` identities and hydrate/order captions from the
+same resolved reference store. Native and development-browser checks cover this
+boundary. General wiki reads/writes and resolved wiki tag-name filtering remain
+unfinished; the original raw filter is preserved under `wiki-search`.
 
 SongCreditType now has localized name/description fields, resolved filtering and
 ordering, explicit writing languages, and platform `manage_global_catalogs` CRUD.
@@ -363,6 +370,7 @@ implementation/test references and verification obligations for audited removals
 | Settings and branding | Generic DB3 settings storage/view are inactive and preserved in source. Settings/branding pages use registered commands and per-key capabilities, with explicit scope, save/reset and validated clipboard import. Logo editing, optional primary text color and upload controls remain unavailable; hosting mode belongs to deployment configuration. | Verify editors in the built app during A0/A1; recover remaining branding controls and account for legacy clipboard documents under `settings-editors`. |
 | Translation tools | Native catalog controls can edit explicit translations; full inventory/inspection/chrome tooling is incomplete. | Complete after A1. |
 | File-tag catalogs and File payloads | Shared/band tag CRUD, explicit translations, inherited color/order, hiding, deletion and dashboard references are migrated. Partition/Recording behavior comes only from GlobalFileTag. File payloads use BandFileTagAssignment, BandUser and BandInstrument public references; general File row services still reject undeclared ownership. Raw tag/instrument name quick filtering and association name ordering are preserved under `file-search`. | Recover File ownership, uploads/downloads and resolved File filtering/ordering; verify the complete workflows in the built application during A0/A1. |
+| Wiki-tag catalog and payloads | Band-localized CRUD, inherited color/order, hiding, deletion and dashboard references are migrated. Wiki assignments transport public `bandWikiPageTagId` references and sort hydrated captions. General WikiPage/assignment row services remain guarded; the old raw tag-name predicate is preserved under `wiki-search`. | Recover wiki ownership, editing/locking/revisions and resolved filtering/counts/pagination; verify the complete workflows in the built application during A0/A1. |
 | Shared event catalogs | Type/status/attendance CRUD edits global defaults with platform catalog authority and explicit locales. Dashboard references resolve scoped labels, including retired history. | Verify in the built application during A0/A1; recover event ownership, invitations and responses separately. |
 | Attendance endpoints | Dedicated response writes and person-history/setlist readers resolve active memberships within an explicitly selected band. HTTP reads require authentication and band event-read authority. Bulk segment copy/clear use band event administration, preserve recorded history and update affected membership revisions. Native, menu DOM and development-browser endpoint checks pass. | Recover event payload/editor ownership, default/tag invitation management and full attendance UI; verify workflows in the built app before closing A1. |
 | Calendar subscriptions | Private feeds and subscription/preview callers require explicit band context and active membership. Preferences, invitation groups, historical attendance, UIDs/revisions, setlists and band locale/branding remain supported. The account credential is shared across its band URLs; replacing it invalidates every band subscription. | Re-subscribe existing unscoped URLs using the selected band; verify in the built app during A0/A1. Full subscription-page localization and general event UI recovery remain separate. |

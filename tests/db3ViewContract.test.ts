@@ -1,4 +1,4 @@
-import { eventTagDtoFixture } from "./support/catalogReferenceFixtures";
+import { wikiPageTagReferenceFixture, eventTagDtoFixture } from "./support/catalogReferenceFixtures";
 import { eventStatusDtoFixture, eventTypeDtoFixture } from "./support/eventCatalogFixtures";
 import type { LocalizedFieldValue } from "src/core/db3/shared/columnTypes/localizedString";
 import { testServerAuthorization } from "tests/support/serverAuthorization";
@@ -735,17 +735,19 @@ describe("Wiki page tag derived-view migration", () => {
   const assignmentPublicId = parsePublicId<"WikiPageTagAssignment">("WikiTagAssign001")
 
   it("uses public identities in tag administration and page association DTOs", () => {
-    type TagDto = db3.DtoOf<typeof db3.wikiPageTagEditorView>
+    type TagDto = db3.DtoOf<typeof db3.bandWikiPageTagView>
     type EditorDto = db3.WikiPageEditorDto
     type SearchDto = db3.WikiPageSearchDto
     type EditorAssignment = NonNullable<EditorDto["tags"]>[number]
     type SearchAssignment = NonNullable<SearchDto["tags"]>[number]
 
+    expectTypeOf<TagDto["name"]>().toEqualTypeOf<string | null>()
+    expectTypeOf<db3.ClientOf<typeof db3.bandWikiPageTagView>["name"]>().toEqualTypeOf<LocalizedFieldValue>()
     expectTypeOf<TagDto["publicId"]>().toEqualTypeOf<WikiPageTagPublicId>()
     expectTypeOf<Extract<keyof TagDto, "id">>().toEqualTypeOf<never>()
     expectTypeOf<EditorAssignment["publicId"]>()
       .toEqualTypeOf<WikiPageTagAssignmentPublicId>()
-    expectTypeOf<NonNullable<EditorAssignment["tagId"]>>()
+    expectTypeOf<NonNullable<EditorAssignment["bandWikiPageTagId"]>>()
       .toEqualTypeOf<WikiPageTagPublicId>()
     expectTypeOf<Extract<keyof EditorAssignment, "id" | "tag">>()
       .toEqualTypeOf<never>()
@@ -754,25 +756,19 @@ describe("Wiki page tag derived-view migration", () => {
 
   it("hydrates page-tag associations from the dashboard reference contract", () => {
     const references = db3.createDashboardReferenceStore()
-    const tag: db3.CompleteWikiPageTagDashboardClient = {
-      publicId: tagPublicId,
-      text: "Policy",
-      description: "Policy page",
-      color: null,
-      sortOrder: 1,
-    }
+    const tag = wikiPageTagReferenceFixture(tagPublicId)
     db3.registerDashboardReferences(references, { wikiPageTag: [tag] })
 
     const dto = db3.wikiPageEditorView.parseDto({
       publicId: parsePublicId<"WikiPage">("AbCdEfGhIjKlMn99"),
-      tags: [{ publicId: assignmentPublicId, tagId: tagPublicId }],
+      tags: [{ publicId: assignmentPublicId, bandWikiPageTagId: tagPublicId }],
     })
     const hydrated = db3.hydrateView(db3.wikiPageEditorView, dto, references)
 
     expect(dto).not.toHaveProperty("id")
     expect(hydrated.tags).toEqual([{
       publicId: assignmentPublicId,
-      tagId: tagPublicId,
+      bandWikiPageTagId: tagPublicId,
       tag,
     }])
   })

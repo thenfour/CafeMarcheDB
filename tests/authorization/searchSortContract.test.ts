@@ -106,7 +106,7 @@ describe("search sort contract", () => {
             db3.xWikiPage,
             [criterion],
             publicData,
-            { WikiPageTag: { findMany } } as any, // Focused identity-target delegate.
+            { bandWikiPageTag: { findMany } } as any, // Focused identity-target delegate.
         );
 
         expect(resolved[0]?.options).toEqual([31]);

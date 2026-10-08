@@ -3,7 +3,7 @@ import type { CMServerAuthorization } from "src/auth/server/serverAuthorization"
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DbPayloadOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
-import { dashboardReferenceContract } from "../../references/dashboardReferences";
+import { dashboardReferenceContract, type WikiPageTagDashboardClient } from "../../references/dashboardReferences";
 import { WikiPageTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { WikiPageRevisionNaturalOrderBy, xWikiPage, xWikiPageRevision } from "../../schema/wiki";
 import { graft } from "../common/viewCommon";
@@ -12,18 +12,20 @@ import type { PermissionPublicId } from "shared/publicId";
 const wikiPageTagAssociationTransportSelection = {
     select: {
         publicId: true,
-        tagId: true,
+        bandWikiPageTagId: true,
     },
     orderBy: WikiPageTagAssignmentNaturalOrderBy,
 } as const;
 
 const retainHydratedWikiPageTags = <
-    TAssociation extends { tag?: unknown },
+    TAssociation extends { tag?: WikiPageTagDashboardClient | null },
 >(associations: readonly TAssociation[] | undefined) => (
     (associations ?? []).flatMap(association => association.tag == null ? [] : [{
         ...association,
         tag: association.tag,
-    }])
+    }]).sort((a, b) => a.tag.sortOrder - b.tag.sortOrder
+        || a.tag.name.localeCompare(b.tag.name)
+        || a.tag.publicId.localeCompare(b.tag.publicId))
 );
 
 const requireWikiPageSearchFields = <TPage extends {

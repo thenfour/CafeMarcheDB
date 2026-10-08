@@ -151,6 +151,14 @@
       "verification": "Test public/member/administrator privacy, two bands and locales, hidden/deleted/merged accounts and resources, localized/inherited catalogs, all-tag and type filters, ranking/limits, stale query/band responses, selection/clearing/keyboard behavior, song detail loading and Markdown suggestions in the built browser.",
       "status": "pending",
       "evidence": []
+    },
+    {
+      "id": "wiki-search",
+      "reason": "Wiki tag quick filtering still targets the removed raw text member.",
+      "restore": "Restore wiki quick filtering by resolved band tag names with per-string localization, intentional blanks, hidden assignments, visibility, consistent counts and pagination.",
+      "verification": "Test two-band isolation, locale changes, hidden assigned tags, permission revocation, matching/counts/pagination and the built wiki search.",
+      "status": "pending",
+      "evidence": []
     }
   ],
   "references": [
@@ -1791,6 +1799,12 @@
       "featureId": "file-search",
       "source": "3eef35e286d02c61aebd0bb000c433c34cfb15a6:src/core/db3/shared/schema/prismArgs.ts:963-966",
       "sha256": "b998a780e5c6f49ff142aba85fdf3aa5ac5805fc37d469039e27a52e79f2e71c"
+    },
+    {
+      "file": "src/core/db3/shared/schema/wiki.ts",
+      "featureId": "wiki-search",
+      "source": "f9adfcffdcc67ed2abfc96bc151c7ab70139db53:src/core/db3/shared/schema/wiki.ts:133-141",
+      "sha256": "7245d61a00f57e501c065e5cdb9c782ac6fc52cceea3d869f6a6e553effdd095"
     }
   ]
 }

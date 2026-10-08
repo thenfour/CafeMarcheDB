@@ -99,6 +99,7 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
         view: db3.wikiPageEditorView,
         tableSpec: tagsTableSpec,
         filterModel,
+        referenceProvider: dashboardContext.referenceStore,
     });
     const editCommands = DB3Client.useCrudViewCommands({
         view: db3.wikiPageEditorView,
@@ -115,13 +116,13 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
         readonly={props.readonly}
         displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
         getOptionInfo={(tag) => ({
-            id: db3.xWikiPageTag.getIdentity(tag),
+            id: db3.xBandWikiPageTag.getIdentity(tag),
             color: tag.color,
-            name: tag.text,
+            name: tag.name,
             tooltip: tag.description,
         })}
         getOptions={() => dashboardContext.wikiPageTag.items}
-        renderOption={tag => tag.text}
+        renderOption={tag => tag.name}
         onChange={async (newTags) => {
             await snackbar.invokeAsync(async () => {
                 void featureRecorder({

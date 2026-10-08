@@ -173,10 +173,7 @@ describe("DB3 named views", () => {
                 },
             });
         expect(db3.wikiPageEditorView.getSelectionArgs(context).select.tags.orderBy)
-            .toEqual([
-                { tag: { sortOrder: "asc" } },
-                { tag: { text: "asc" } },
-            ]);
+            .toEqual([{ publicId: "asc" }]);
         expect(db3.eventTypeEditorView.getWhereClause(context)).toBeUndefined();
         expect(db3.songCreditUserView.getWhereClause(context)).toBeUndefined();
         expect(db3.permissionVisibilityView.getWhereClause(context)).toEqual({
@@ -532,15 +529,15 @@ describe("DB3 named views", () => {
             tags: [{
                 id: 16,
                 publicId: wikiPageTagAssignmentPublicId,
-                tagId: 17,
+                bandWikiPageTagId: 17,
                 tag: {
                     id: 17,
                     publicId: wikiPageTagPublicId,
-                    text: "Policy",
+                    name: "Policy",
+                    bandId: 1,
                     description: "Policy page",
                     color: null,
                     sortOrder: 1,
-                    significance: "Policy",
                 },
             }],
         }]);
@@ -559,7 +556,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { publicIds: [wikiPagePublicId] },
             cmdbQueryContext: "wiki-page-editor-view-test",
-        }, new CMServerAuthorization({ id: 100 } as any, effectivePermissions), {
+        }, testBandAuthorization({ id: 100 }, effectivePermissions), {
             WikiPage: { findMany },
         } as any);
 
@@ -567,7 +564,7 @@ describe("DB3 named views", () => {
             publicId: wikiPagePublicId,
             tags: [{
                 publicId: wikiPageTagAssignmentPublicId,
-                tagId: wikiPageTagPublicId,
+                bandWikiPageTagId: wikiPageTagPublicId,
             }],
         }]);
         expect(result.items[0]!.tags[0]).not.toHaveProperty("id");

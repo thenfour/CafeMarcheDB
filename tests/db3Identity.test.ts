@@ -38,7 +38,7 @@ describe("DB3 table identity authority", () => {
         expect(db3.xBandFileTag.getIdentity({ publicId: fileTagPublicId })).toBe(fileTagPublicId);
         expect(db3.xBandFileTagAssignment.getIdentity({ publicId: fileTagAssignmentPublicId }))
             .toBe(fileTagAssignmentPublicId);
-        expect(db3.xWikiPageTag.getIdentity({ publicId: wikiPageTagPublicId }))
+        expect(db3.xBandWikiPageTag.getIdentity({ publicId: wikiPageTagPublicId }))
             .toBe(wikiPageTagPublicId);
         expect(db3.xWikiPageTagAssignment.getIdentity({ publicId: wikiPageTagAssignmentPublicId }))
             .toBe(wikiPageTagAssignmentPublicId);
@@ -96,13 +96,13 @@ describe("DB3 table identity authority", () => {
 
         const wikiPageTagPublicId = parsePublicId<"WikiPageTag">("WikiTagPublic001");
         const wikiPage = { publicId: parsePublicId<"WikiPage">("WikiPagePublic01"), tags: [] as unknown[] };
-        const wikiTag = { publicId: wikiPageTagPublicId, text: "Policy" };
+        const wikiTag = { publicId: wikiPageTagPublicId, name: "Policy" };
         const editedWikiPage = db3.xWikiPage.fields.tags.withForeignObjects(wikiPage, [wikiTag]);
         expect(editedWikiPage.tags).toEqual([{
             wikiPage,
             wikiPageId: wikiPage.publicId,
             tag: wikiTag,
-            tagId: wikiPageTagPublicId,
+            bandWikiPageTagId: wikiPageTagPublicId,
         }]);
     });
 

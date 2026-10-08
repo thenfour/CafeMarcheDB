@@ -27,8 +27,10 @@ export function LocalizedFieldEditor(props: LocalizedFieldEditorProps) {
         <TextField label={props.label} value={text} multiline={props.multiline} disabled={inherit || !localeTag}
             onChange={event => onChange({ ...value, edit: { kind: "set", stringPublicId: value.stringPublicId, localeTag, value: event.target.value } })} />
         {value.canInherit && value.stringPublicId && <FormControlLabel label={props.inheritLabel}
-            control={<Checkbox checked={inherit} onChange={(_event, checked) => onChange({ ...value,
-                edit: checked && value.stringPublicId ? { kind: "inherit", stringPublicId: value.stringPublicId } : undefined })} />} />}
+            control={<Checkbox checked={inherit} onChange={(_event, checked) => onChange({
+                ...value,
+                edit: checked && value.stringPublicId ? { kind: "inherit", stringPublicId: value.stringPublicId } : undefined
+            })} />} />}
     </Stack>;
 }
 
@@ -67,8 +69,10 @@ export class LocalizedStringColumnClient<TColumnName extends string = string> ex
     ApplyClientToPostClient = undefined;
     private field: LocalizedStringField<DB3AuthSpec>;
     constructor(args: Pick<IColumnClientArgs<TColumnName>, "columnName" | "fieldCaptionKey">) {
-        super({ ...args, headerNameKey: args.fieldCaptionKey, fieldDescriptionKey: null, editable: true,
-            visible: true, width: 240, isAutoFocusable: false, className: undefined });
+        super({
+            ...args, headerNameKey: args.fieldCaptionKey, fieldDescriptionKey: null, editable: true,
+            visible: true, width: 240, isAutoFocusable: false, className: undefined
+        });
     }
     onSchemaConnected = () => {
         if (!(this.schemaColumn instanceof LocalizedStringField)) {
@@ -112,10 +116,15 @@ function InheritControl({ inherited, onChange }: { readonly inherited: boolean; 
 /** Wrap an existing scalar DB3 renderer; its controls, conversion, and validation stay authoritative. */
 export class InheritedColumnClient<TColumnName extends string, TValue> extends IColumnClient<TColumnName, InheritedFieldValue<TValue | null>> {
     ApplyClientToPostClient = undefined;
-    constructor(readonly valueColumn: IColumnClient<TColumnName, TValue>, args: { readonly fieldCaptionKey: LocalizedPlainStringKey }) {
-        super({ columnName: valueColumn.columnName, width: valueColumn.width, editable: valueColumn.editable,
+    constructor(
+        readonly valueColumn: IColumnClient<TColumnName, TValue>,
+        args: { readonly fieldCaptionKey: LocalizedPlainStringKey } //
+    ) {
+        super({
+            columnName: valueColumn.columnName, width: valueColumn.width, editable: valueColumn.editable,
             visible: valueColumn.visible, isAutoFocusable: valueColumn.isAutoFocusable, className: valueColumn.className,
-            fieldCaptionKey: args.fieldCaptionKey, headerNameKey: args.fieldCaptionKey, fieldDescriptionKey: null });
+            fieldCaptionKey: args.fieldCaptionKey, headerNameKey: args.fieldCaptionKey, fieldDescriptionKey: null
+        });
     }
     onSchemaConnected = (tableClient: Parameters<IColumnClient["onSchemaConnected"]>[0]) => {
         if (!(this.schemaColumn instanceof InheritedField)) {
@@ -133,8 +142,10 @@ export class InheritedColumnClient<TColumnName extends string, TValue> extends I
             ...scalarGrid,
             renderCell: params => scalarGrid?.renderCell ? scalarGrid.renderCell({ ...params, value: this.requireValue(params.value).value })
                 : <span>{String(this.requireValue(params.value).value ?? "")}</span>,
-            renderEditCell: params => this.renderForNewDialog({ key: params.id, row: params.row, value: params.value, autoFocus: false,
-                api: { setFieldValues: values => { void params.api.setEditCellValue({ id: params.id, field: this.columnName, value: values[this.columnName] }); } } }),
+            renderEditCell: params => this.renderForNewDialog({
+                key: params.id, row: params.row, value: params.value, autoFocus: false,
+                api: { setFieldValues: values => { void params.api.setEditCellValue({ id: params.id, field: this.columnName, value: values[this.columnName] }); } }
+            }),
         };
     };
     private requireValue(value: unknown): InheritedFieldValue<unknown> {
@@ -151,11 +162,15 @@ export class InheritedColumnClient<TColumnName extends string, TValue> extends I
             throw new Error(`Field '${this.columnName}' has no editor.`);
         }
         return <Stack spacing={1}>
-            {scalarRenderer({ ...params, row: { ...params.row, [this.columnName]: value.value }, value: value.value,
-                api: { setFieldValues: values => {
-                    const next = values[this.columnName];
-                    params.api.setFieldValues({ [this.columnName]: { ...value, value: next, override: next } });
-                } } })}
+            {scalarRenderer({
+                ...params, row: { ...params.row, [this.columnName]: value.value }, value: value.value,
+                api: {
+                    setFieldValues: values => {
+                        const next = values[this.columnName];
+                        params.api.setFieldValues({ [this.columnName]: { ...value, value: next, override: next } });
+                    }
+                }
+            })}
             <InheritControl inherited={value.override === null} onChange={checked => params.api.setFieldValues({
                 [this.columnName]: { ...value, value: checked ? value.inheritedValue : value.value, override: checked ? null : value.value },
             })} />
