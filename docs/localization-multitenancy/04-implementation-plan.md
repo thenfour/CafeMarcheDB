@@ -26,29 +26,42 @@ Preserve them while restoring their wider workflows. Basic member directory and
 profile behavior is only a subset: reference filters, presets, contact-search
 policy, exports and profile tabs remain A1 work.
 
-General event/song/file screens, domain/quick/shell search, publication, uploads
-and several reports/admin surfaces remain guarded or incomplete. The
+Event detail/creation/editing, general song/file screens, non-event domain search,
+quick/shell search, publication, uploads and several reports/admin surfaces remain
+guarded or incomplete. The
 [restoration manifest](feature-restoration.json) records the individual obligations
 and verification criteria; use `yarn migration:status` rather than maintaining a
 second restriction table. Keep every deferred page, RPC/API, generic DB3 root,
 startup/job and indirect caller coherently unavailable until its owner is safe.
 
-## Next slice: existing event search
+## Event search checkpoint
 
-Compare `f027830a9790` before editing. Trace `src/pages/backstage/events.tsx`,
-`SearchPageContent`, `useSearchFilters`/`useSearchableList`, `eventSearchConfig`,
-result components and `searchServerCore.ts`/the search HTTP owner. Adapt that
-composition and query mechanism; do not introduce another event directory or
-search backend.
+The existing Events page, `SearchPageContent`, filter/list hooks,
+`eventSearchConfig`, result cards and domain-search owner are active for
+`Event_Search`. Reference presets/defaults, date/type/status/tag operators,
+facets/counts, URL state, semantic sorting, load-more, refresh callbacks and
+CSV/TSV export are retained. Rows, counts, facets and public references share a
+freshly authorized band snapshot. Shared catalog views resolve localized labels,
+inheritance and effective label ordering. Band/language changes abort old requests
+and clear their results; event links and exports retain band/route locale.
 
-Preserve presets/defaults, date/type/status/tag criteria and operators, facets and
-counts, URL state, sorting, result cards, load-more, refresh and CSV export.
-Scope existing queries/counts/facets to a freshly authorized band snapshot, adapt
-catalog joins and member identities, and hydrate localized labels. Reactivate
-relevant reference search specifications. Verify the familiar built Café Marché
-page, two-band isolation and grant revocation; record any remaining differences.
-This slice alone does not close event parity or A1. Event detail/creation/editing
-and invitation dependencies follow through their existing UI and server owners.
+Authored text matching remains active; localized catalog-name matching follows
+the A1 exception below. Creation and pin/hide editing controls remain unavailable
+until their write owners are restored. Detail links retain the reference URLs and
+currently reach the guarded detail surface. Text-only search now exposes Reset
+filter, which also clears the text. This checkpoint does not close event parity
+or A1; other domain-search roots remain guarded.
+
+## Next slice: existing event detail and editing
+
+Compare `f027830a9790` and trace the existing event detail page, tabs, creation/edit
+dialogs, event/segment commands, invitations/default instruments and their indirect
+callers before editing. Restore them through their existing UI and server owners,
+using explicit band/public identities and shared localized catalogs. Retain the
+restored search path and migrated attendance/calendar services. Account for each
+dependency that remains unavailable, including date-picker highlights and
+frontpage behavior; verify detail/tab links and writes in the built app across two
+bands. Do not replace the detail workflow with a reduced page.
 
 ## Localized catalog text search exception
 
@@ -76,7 +89,7 @@ when a concrete workflow dependency requires it.
 | Work | Required parity |
 | --- | --- |
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
-| Events | Search/detail/creation/editing, segments, invitations/default instruments, attendance and event song lists. |
+| Events | Retain restored search; restore detail/creation/editing, segments, invitations/default instruments, attendance UI and event song lists. |
 | Songs and files | Search/detail/editing, tags/credits, partitions/recordings, metadata/associations, previews, uploads and downloads. |
 | Supporting workflows | Dashboard/wiki/custom navigation, plans, search, calendars/feeds/tokens, Custom Links, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
@@ -119,12 +132,22 @@ client together with writes stopped and matching upload backups.
 
 ## Verification status
 
-The last application checkpoint (2026-10-08) passed normal typecheck/build and
-focused/native member checks. Built-browser checks across two bands covered
-login, deferred-route boundaries, member edits/status, ordinary-member wiki
-reading, scoped downloads and locale/context changes. The complete suite still
-failed on migration-related cases; focused passes do not establish A1 readiness.
-These are recorded observations, not checks rerun by documentation maintenance.
+The event-search checkpoint (2026-10-08) passed normal typecheck/build, focused
+lint, 123 focused tests across 13 executable files and 30 native MariaDB tests
+across four files. Native cases cover all tag operators, combined criteria,
+stable paging, localized/blank/inherited facets, hidden/foreign references,
+private/deleted events, revoked grants and anonymous/member/roleless/platform/
+outsider/inactive/deleted/merged authorization boundaries. Seven built-browser
+assertion groups passed on an isolated production demo build: Relevant/All/Past
+concerts presets, 30-row paging, contextual links, TSV export, text/filter URL
+reload, facet counts/sorting, French labels, Dutch second-band results and
+ordinary-member access rejection. No uncaught browser errors occurred.
+
+The complete-suite run still reports 215 failed tests and ten suite-load failures
+in the Node batch, including authorization/account, deferred-domain and date-policy
+contracts; the runner stops before the later jsdom batches. Focused passes do not
+establish A1 readiness. Earlier built-browser member/profile/wiki/download checks
+remain recorded evidence, not workflows rerun by this event-search slice.
 
 The repeatable [demo workflow](../demo-seeding.md) has 29 configuration checks,
 six native generator/reset checks, an isolated production build and five passing

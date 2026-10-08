@@ -1,9 +1,9 @@
-import { Button, ListItemIcon, Menu, MenuItem } from "@mui/material";
+import { ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { arrayToTSV } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { CMButton, CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
@@ -157,7 +157,7 @@ export const SearchResultsList = <TItem, TFilterSpec extends { quickFilter?: str
                 ))}
             </InfiniteScroll>
 
-            {hasMore && <Button onClick={loadMoreData}>Load more results...</Button>}
+            {hasMore && <CMButton onClick={loadMoreData}>Load more results...</CMButton>}
         </>
     );
 

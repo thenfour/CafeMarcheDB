@@ -1,0 +1,200 @@
+import { PrismaClient, type Prisma } from "@prisma/client";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { Permission } from "shared/permissions";
+import { parsePublicId } from "shared/publicId";
+import { getCalendarWindow } from "shared/dateTimePolicy";
+import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
+import { bindDB3ReadSnapshot } from "src/core/db3/server/db3ReadExecution";
+import { GetSearchResultsCore } from "src/core/db3/server/searchServerCore";
+import { DiscreteCriterionFilterType as Behavior, type GetSearchResultsInput } from "src/core/db3/shared/apiTypes";
+import { generatePublicId } from "src/server/publicId";
+import { initializeAccessControl } from "src/setup/accessControl";
+import { settingsMysqlTestUrl, withSettingsMysqlFixture, type SettingsMysqlFixture } from "./support/settingsMysqlFixture";
+
+async function seedSearch(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture) {
+    const band = fixture.bands[0]!;
+    const otherBand = fixture.bands[1]!;
+    const bandPublicId = parsePublicId<"Band">(band.publicId);
+    const member = await tx.bandUser.findUniqueOrThrow({ where: { bandId_userId: { bandId: band.id, userId: fixture.user.id } } });
+    await tx.bandUser.update({ where: { bandId_userId: { bandId: otherBand.id, userId: fixture.user.id } }, data: { bandRoleId: member.bandRoleId } });
+    const auth = await loadAuthorizationForUser(fixture.user, tx, bandPublicId);
+    const visibility = await tx.permission.findUniqueOrThrow({ where: { name: Permission.visibility_members } });
+    const text = (english: string, french: string) => tx.dynamicLocalizedString.create({ data: {
+        publicId: generatePublicId(), values: { create: [
+            { publicId: generatePublicId(), localeId: fixture.englishId, indexedValue: english },
+            { publicId: generatePublicId(), localeId: fixture.frenchId, indexedValue: french },
+        ] },
+    } });
+    const name = await text("Concert", "Concert français");
+    const description = await text("Type description", "Description française");
+    const type = await tx.eventType.create({ data: { publicId: generatePublicId(), nameId: name.id, descriptionId: description.id, significance: "Concert", color: "blue" } });
+    const status = await tx.eventStatus.create({ data: { publicId: generatePublicId(), nameId: name.id, descriptionId: description.id, significance: "FinalConfirmation" } });
+    const globalTag = await tx.globalEventTag.create({ data: { publicId: generatePublicId(), nameId: name.id, descriptionId: description.id, color: "green", sortOrder: 7 } });
+    const firstTag = await tx.bandEventTag.create({ data: { publicId: generatePublicId(), bandId: band.id, globalEventTagId: globalTag.id } });
+    const secondName = await text("March", "Marche");
+    const secondTag = await tx.bandEventTag.create({ data: { publicId: generatePublicId(), bandId: band.id, nameId: secondName.id, sortOrder: 2 } });
+    const foreignTag = await tx.bandEventTag.create({ data: { publicId: generatePublicId(), bandId: otherBand.id, globalEventTagId: globalTag.id } });
+    const hiddenTag = await tx.bandEventTag.create({ data: { publicId: generatePublicId(), bandId: band.id, nameId: secondName.id, isHidden: true } });
+    const events: Array<{ id: number; publicId: string }> = [];
+    for (let index = 0; index < 4; index++) {
+        events.push(await tx.event.create({ data: {
+            publicId: generatePublicId(), bandId: band.id, name: ["Alpha", "Bravo", "Charlie", "Delta"][index]!,
+            revision: 1, visiblePermissionId: visibility.id, createdByUserId: fixture.user.id,
+            typeId: index === 3 ? null : type.id, statusId: index === 3 ? null : status.id,
+            startsAt: new Date("2026-10-10T10:00:00Z"), durationMillis: BigInt(3600000), isAllDay: false,
+            locationDescription: index === 0 ? "Town square" : "Hall",
+            tags: { create: (index === 0 ? [firstTag] : index === 1 ? [secondTag] : index === 2 ? [firstTag, secondTag] : [hiddenTag]).map(tag => ({ publicId: generatePublicId(), bandEventTagId: tag.id })) },
+        } }));
+    }
+    const foreign = await tx.event.create({ data: { publicId: generatePublicId(), bandId: otherBand.id, name: "Foreign secret", revision: 1, visiblePermissionId: visibility.id, createdByUserId: fixture.user.id, startsAt: new Date("2088-01-01T00:00:00Z") } });
+    await tx.event.create({ data: { publicId: generatePublicId(), bandId: band.id, name: "Private secret", revision: 1, createdByUserId: fixture.admin.id, startsAt: new Date("2087-01-01T00:00:00Z") } });
+    await tx.event.create({ data: { publicId: generatePublicId(), bandId: band.id, name: "Deleted secret", revision: 1, isDeleted: true, visiblePermissionId: visibility.id, startsAt: new Date("2086-01-01T00:00:00Z") } });
+    const query = (patch: Partial<GetSearchResultsInput> = {}) => ({
+        tableID: "Event", viewID: "Event_Search", bandPublicId, offset: 0, take: 20,
+        quickFilter: "", sort: [{ db3Column: "name", direction: "asc" as const }],
+        discreteCriteria: ["startsAt", "type", "status", "tags"].map(db3Column => ({ db3Column, options: [], behavior: Behavior.alwaysMatch })),
+        ...patch,
+    });
+    const read = async (patch: Partial<GetSearchResultsInput> = {}) => GetSearchResultsCore(query(patch), auth,
+        await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" }));
+    return { auth, member, query, read, events, type, status, firstTag, secondTag, foreignTag, hiddenTag, foreign, text, globalTag };
+}
+
+describe.skipIf(!settingsMysqlTestUrl)("existing event search on migrated MariaDB data", () => {
+    const database = new PrismaClient(settingsMysqlTestUrl ? { datasourceUrl: settingsMysqlTestUrl } : undefined);
+    beforeAll(() => initializeAccessControl(database), 30_000);
+    afterAll(() => database.$disconnect());
+
+    it("keeps rows, counts, catalog facets and date years in the authorized band", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const seed = await seedSearch(tx, fixture);
+        const result = await seed.read();
+        expect(result.results.map(row => row.name)).toEqual(["Alpha", "Bravo", "Charlie", "Delta"]);
+        expect(result.rowCount).toBe(4);
+        expect(result.facets.find(facet => facet.db3Column === "startsAt")?.items.map(item => item.id)).not.toEqual(expect.arrayContaining([2086, 2087, 2088]));
+        const tags = result.facets.find(facet => facet.db3Column === "tags")!.items;
+        expect(tags).toEqual([
+            expect.objectContaining({ id: null, rowCount: 1 }),
+            expect.objectContaining({ id: seed.secondTag.publicId, label: "March", rowCount: 2 }),
+            expect.objectContaining({ id: seed.firstTag.publicId, label: "Concert", rowCount: 2, color: "green" }),
+        ]);
+        expect(result.results[3]!.tags).toEqual([]);
+        expect(JSON.stringify(result.results)).not.toMatch(/"(?:id|bandId|userId|email|phone|nameId)":/);
+        const otherAuth = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(fixture.bands[1]!.publicId));
+        const other = await GetSearchResultsCore(seed.query({ bandPublicId: parsePublicId<"Band">(fixture.bands[1]!.publicId) }), otherAuth,
+            await bindDB3ReadSnapshot(tx, otherAuth, { isolationLevel: "Serializable" }));
+        expect(other.results.map(row => row.publicId)).toEqual([seed.foreign.publicId]);
+        expect(other.facets.find(facet => facet.db3Column === "tags")!.items.map(item => item.id)).not.toContain(seed.firstTag.publicId);
+    }));
+
+    it.each([
+        [Behavior.hasSomeOf, [0], ["Alpha", "Charlie"]],
+        [Behavior.hasAllOf, [0, 1], ["Charlie"]],
+        [Behavior.doesntHaveAnyOf, [0], ["Bravo", "Delta"]],
+        [Behavior.doesntHaveAllOf, [0, 1], ["Alpha", "Bravo", "Delta"]],
+        [Behavior.hasAny, [], ["Alpha", "Bravo", "Charlie"]],
+        [Behavior.hasNone, [], ["Delta"]],
+        [Behavior.alwaysMatch, [], ["Alpha", "Bravo", "Charlie", "Delta"]],
+    ] as const)("preserves tag operator %s", (behavior, indexes, names) => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const seed = await seedSearch(tx, fixture);
+        const options = indexes.map(index => [seed.firstTag, seed.secondTag][index]!.publicId);
+        const result = await seed.read({ discreteCriteria: [{ db3Column: "tags", behavior, options }] });
+        expect(result.results.map(row => row.name)).toEqual(names);
+        expect(result.rowCount).toBe(names.length);
+        expect(result.facets[0]!.items.find(item => item.id === seed.firstTag.publicId)?.rowCount).toBe(2);
+    }));
+
+    it("combines authored text, type, status and date filters without searching catalog labels", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const seed = await seedSearch(tx, fixture);
+        const result = await seed.read({ quickFilter: "square", discreteCriteria: [
+            { db3Column: "type", behavior: Behavior.hasSomeOf, options: [seed.type.publicId] },
+            { db3Column: "status", behavior: Behavior.doesntHaveAnyOf, options: [] },
+            { db3Column: "startsAt", behavior: Behavior.hasAllOf, options: [2026] },
+        ] });
+        expect(result.results.map(row => row.name)).toEqual(["Alpha"]);
+        expect(result.filterQueryResult.errors).toHaveLength(1);
+        expect((await seed.read({ quickFilter: "Concert français" })).rowCount).toBe(0);
+        expect((await seed.read({ discreteCriteria: [{ db3Column: "type", behavior: Behavior.hasNone, options: [] }] })).results.map(row => row.name)).toEqual(["Delta"]);
+        const unselected = await seed.read({ discreteCriteria: [{ db3Column: "type", behavior: Behavior.hasSomeOf, options: [] }] });
+        expect(unselected.rowCount).toBe(4);
+        expect(unselected.filterQueryResult.errors).toEqual([{ column: "type", error: "Select options to filter on" }]);
+    }));
+
+    it("hydrates locale overrides, intentional blanks and inherited facet metadata", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const seed = await seedSearch(tx, fixture);
+        await tx.bandDynamicLocalizedStringValue.create({ data: { publicId: generatePublicId(), stringId: seed.type.nameId, bandId: fixture.bands[0]!.id, localeId: fixture.frenchId, indexedValue: "" } });
+        const result = await seed.read({ routeLocale: "fr-BE", browserLanguages: ["nl-BE", "en-US"] });
+        expect(result.facets.find(facet => facet.db3Column === "type")!.items.find(item => item.id === seed.type.publicId)?.label).toBe("");
+        expect(result.facets.find(facet => facet.db3Column === "tags")!.items.find(item => item.id === seed.firstTag.publicId)).toMatchObject({ label: "", tooltip: "Description française", color: "green" });
+        const english = await seed.read({ routeLocale: "en-US" });
+        expect(english.facets.find(facet => facet.db3Column === "type")!.items.find(item => item.id === seed.type.publicId)?.label).toBe("");
+    }));
+
+    it("keeps semantic sorting, stable ties, paging and later-page totals", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const seed = await seedSearch(tx, fixture);
+        const first = await seed.read({ take: 2, sort: [{ db3Column: "startsAt", direction: "asc" }] });
+        const second = await seed.read({ offset: 2, take: 2, sort: [{ db3Column: "startsAt", direction: "asc" }] });
+        expect(new Set([...first.results, ...second.results].map(row => row.publicId)).size).toBe(4);
+        expect(first.rowCount).toBe(4);
+        expect(second.rowCount).toBe(4);
+        expect((await seed.read({ sort: [{ db3Column: "name", direction: "desc" }], take: 1 })).results[0]!.name).toBe("Delta");
+        expect(first.facets).toEqual(second.facets);
+    }));
+
+    it("retains calendar segment overlap in rows, facets and counts", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const seed = await seedSearch(tx, fixture);
+        await tx.eventSegment.create({ data: { publicId: generatePublicId(), eventId: seed.events[0]!.id, name: "Later set", description: "", startsAt: new Date("2026-11-01T12:00:00Z"), durationMillis: BigInt(3600000), isAllDay: false, dateTimeVersion: 2 } });
+        const calendarWindow = getCalendarWindow({ startDate: "2026-11-01", endDateExclusive: "2026-11-02" }, "Europe/Brussels");
+        const result = await seed.read({ calendarWindow });
+        expect(result.results.map(row => row.name)).toEqual(["Alpha"]);
+        expect(result.rowCount).toBe(1);
+        expect(result.facets.find(facet => facet.db3Column === "tags")!.items.find(item => item.id === seed.firstTag.publicId)?.rowCount).toBe(1);
+    }));
+
+    it("rejects foreign, hidden and forged catalog identities without widening results", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const seed = await seedSearch(tx, fixture);
+        for (const id of [seed.foreignTag.publicId, seed.hiddenTag.publicId, generatePublicId(), 123]) {
+            await expect(seed.read({ discreteCriteria: [{ db3Column: "tags", behavior: Behavior.hasSomeOf, options: [id] }] })).rejects.toThrow();
+        }
+        for (const patch of [{ bandPublicId: null }, { bandPublicId: parsePublicId<"Band">(fixture.bands[1]!.publicId) }, { includeDeleted: true }]) {
+            await expect(seed.read(patch)).rejects.toMatchObject({ statusCode: 403 });
+        }
+        await expect(seed.read({ sort: [{ db3Column: "bandId", direction: "asc" }] })).rejects.toThrow();
+        await expect(seed.read({ viewID: "Event_Editor" })).rejects.toThrow();
+    }));
+
+    it("refreshes revoked grants and inactive/deleted/merged membership identities", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const seed = await seedSearch(tx, fixture);
+        const context = await bindDB3ReadSnapshot(tx, seed.auth, { isolationLevel: "Serializable" });
+        const read = () => GetSearchResultsCore(seed.query(), seed.auth, context);
+        const grant = await tx.permission.findUniqueOrThrow({ where: { name: Permission.view_events_nonpublic } });
+        await tx.bandRolePermission.deleteMany({ where: { bandRoleId: seed.member.bandRoleId!, permissionId: grant.id } });
+        await expect(read()).rejects.toThrow();
+        await tx.bandRolePermission.create({ data: { publicId: generatePublicId(), bandRoleId: seed.member.bandRoleId!, permissionId: grant.id } });
+        expect((await read()).rowCount).toBe(4);
+        await tx.bandUser.update({ where: { id: seed.member.id }, data: { isDeleted: true } });
+        await expect(read()).rejects.toThrow();
+        await tx.bandUser.update({ where: { id: seed.member.id }, data: { isDeleted: false } });
+        await tx.user.update({ where: { id: fixture.user.id }, data: { isDeleted: true } });
+        await expect(read()).rejects.toThrow();
+        await tx.user.update({ where: { id: fixture.user.id }, data: { isDeleted: false, mergedIntoUserId: fixture.admin.id } });
+        await expect(read()).rejects.toThrow();
+    }));
+
+    it("applies public, outsider, roleless and explicit platform-context policy", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const seed = await seedSearch(tx, fixture);
+        const outsider = await tx.user.create({ data: { publicId: generatePublicId(), name: "Outsider", email: "outside-search@test.invalid" } });
+        for (const principal of [null, outsider]) {
+            const auth = await loadAuthorizationForUser(principal, tx, seed.query().bandPublicId);
+            await expect(GetSearchResultsCore(seed.query(), auth, await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" }))).rejects.toThrow();
+        }
+        await tx.bandUser.update({ where: { id: seed.member.id }, data: { bandRoleId: null } });
+        await expect(seed.read()).rejects.toThrow();
+        const platform = await loadAuthorizationForUser(fixture.admin, tx);
+        await expect(GetSearchResultsCore(seed.query(), platform, await bindDB3ReadSnapshot(tx, platform, { isolationLevel: "Serializable" }))).rejects.toThrow();
+        const selected = await loadAuthorizationForUser(fixture.admin, tx, seed.query().bandPublicId);
+        const result = await GetSearchResultsCore(seed.query(), selected, await bindDB3ReadSnapshot(tx, selected, { isolationLevel: "Serializable" }));
+        expect(result.rowCount).toBe(5);
+        expect(result.results.map(row => row.name)).toContain("Private secret");
+        expect(result.results.map(row => row.name)).not.toContain("Foreign secret");
+    }));
+});

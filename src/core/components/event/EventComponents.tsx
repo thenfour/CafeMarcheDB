@@ -802,7 +802,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
     </div>;
 };
 
-const EventDotMenu = ({ event, showVisibility, refetch }: {
+const EventDotMenu = ({ event, showVisibility, refetch, allowRelevanceEditing = true }: {
     event: {
         publicId: EventPublicId;
         name: string;
@@ -811,6 +811,7 @@ const EventDotMenu = ({ event, showVisibility, refetch }: {
     };
     showVisibility: boolean;
     refetch: () => void;
+    allowRelevanceEditing?: boolean;
 }) => {
     const endMenuItemRef = React.useRef<() => void>(() => { });
     const dashboardContext = useDashboardContext();
@@ -844,7 +845,7 @@ const EventDotMenu = ({ event, showVisibility, refetch }: {
 
         <Divider />
 
-        {dashboardContext.isAuthorized(Permission.manage_events) &&
+        {allowRelevanceEditing && dashboardContext.isAuthorized(Permission.manage_events) &&
             <RelevanceClassOverrideMenuItemGroup event={event} closeMenu={closeMenu} refetch={refetch} />
         }
     </DotMenu>;
@@ -1247,6 +1248,7 @@ export interface EventSearchItemContainerProps {
     hideTagsWhenCancelled?: boolean;
     showVisibility?: boolean;
     refetch?: () => void;
+    allowRelevanceEditing?: boolean;
 }
 
 export const EventSearchItemContainer = ({
@@ -1254,6 +1256,7 @@ export const EventSearchItemContainer = ({
     fadePastEvents = true,
     hideTagsWhenCancelled = true,
     showVisibility = false,
+    allowRelevanceEditing = true,
     refetch = () => { },
     ...props
 }: React.PropsWithChildren<EventSearchItemContainerProps>) => {
@@ -1332,12 +1335,17 @@ export const EventSearchItemContainer = ({
                     && event.name !== undefined
                     && event.visiblePermissionId !== undefined
                     && event.relevanceClassOverride !== undefined &&
-                    <EventDotMenu event={{
-                        publicId: event.publicId,
-                        name: event.name,
-                        visiblePermissionId: event.visiblePermissionId,
-                        relevanceClassOverride: event.relevanceClassOverride,
-                    }} showVisibility={showVisibility} refetch={refetch} />}
+                    <EventDotMenu
+                        event={{
+                            publicId: event.publicId,
+                            name: event.name,
+                            visiblePermissionId: event.visiblePermissionId,
+                            relevanceClassOverride: event.relevanceClassOverride,
+                        }}
+                        showVisibility={showVisibility}
+                        refetch={refetch}
+                        allowRelevanceEditing={allowRelevanceEditing}
+                    />}
             </div>
 
             <div className='content'>
@@ -1391,6 +1399,7 @@ export interface EventListItemProps {
     showTabs?: boolean;
     showAttendanceControl?: boolean;
     reducedInfo?: boolean; // show less info, like in the event list.
+    allowRelevanceEditing?: boolean;
 };
 
 export const EventListItem = ({ showTabs = false, showAttendanceControl = true, reducedInfo = false, event, ...props }: EventListItemProps) => {
@@ -1403,6 +1412,7 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
         highlightStatusIds={props.filterSpec ? props.filterSpec.statusFilter.options : []}
         highlightTypeIds={props.filterSpec ? props.filterSpec.typeFilter.options : []}
         reducedInfo={reducedInfo}
+        allowRelevanceEditing={props.allowRelevanceEditing}
     //queryText={props.queryText}
     >
         {showAttendanceControl && metadata &&

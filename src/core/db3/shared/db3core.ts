@@ -715,7 +715,7 @@ export abstract class FieldBase<
     abstract SqlGetQuickFilterElementsForToken: (token: string, quickFilterTokens: string[]) => string | null;
 
     // return null to not perform filtering on this criterion.
-    abstract SqlGetDiscreteCriterionElements: (crit: DiscreteCriterion, tableAlias: string) => CriterionQueryElements | null;
+    abstract SqlGetDiscreteCriterionElements: (crit: DiscreteCriterion, tableAlias: string, auth: CMServerAuthorization) => CriterionQueryElements | null;
 
     // return a SQL query
     // return null to not calculate any facet info for this criterion
@@ -1435,8 +1435,26 @@ export class xTable<
     parseDatabaseIdentity = (value: unknown): number => this.databaseIdentitySchema.parse(value);
 
     // AND this into your query to apply visibility & soft delete logic.
+    /** Prisma delegates may use camel case; SQL uses the model's actual table name. */
+    get sqlTableName(): string {
+        const model = Prisma.dmmf.datamodel.models.find(model => model.name.toLowerCase() === this.tableName.toLowerCase());
+        if (!model) {
+            throw new Error(`No Prisma model for SQL table ${this.tableID}.`);
+        }
+        return model.dbName ?? model.name;
+    }
+
     SqlGetVisFilterExpression({ tableAlias, includeDeleted = false, auth }: { tableAlias: string, auth: CMServerAuthorization, includeDeleted?: boolean }) {
         const AND: string[] = [];
+        if (this.bandScope) {
+            if (this.bandScope.via) {
+                throw new Error(`SQL visibility requires direct band ownership: ${this.tableID}.`);
+            }
+            AND.push(`(${tableAlias}.${this.bandScope.member} = ${auth.requireBand().id})`);
+            if (this.bandScope.hiddenMember) {
+                AND.push(`(${tableAlias}.${this.bandScope.hiddenMember} = false)`);
+            }
+        }
         const canIncludeDeleted = includeDeleted && !!auth && this.canViewDeletedRows(auth);
         if (this.SqlSpecialColumns.isDeleted && !canIncludeDeleted) {
             AND.push(`(${tableAlias}.${this.SqlSpecialColumns.isDeleted.member} = false)`);

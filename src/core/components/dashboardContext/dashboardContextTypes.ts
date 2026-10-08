@@ -74,7 +74,7 @@ export abstract class DashboardContextDataBase {
             if (event.name) parts.push(slugify(event.name));
             if (!IsNullOrWhitespace(tabSlug)) parts.push(tabSlug || "");
 
-            return this.getAbsoluteUri(`/backstage/event/${parts.join("/")}`);
+            return this.getAbsoluteUri(withMemberPresentation(`/backstage/event/${parts.join("/")}`, this.memberPresentation));
         },
 
         getURIForSong: (song: { publicId: SongPublicId, name?: string }, tabSlug?: string) => {

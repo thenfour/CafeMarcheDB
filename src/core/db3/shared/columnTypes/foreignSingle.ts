@@ -379,8 +379,9 @@ export class ForeignSingleField<
 
         // a query that returns 1 row per option
         const foreignSchema = this.getForeignTableSchema();
-        const foreignTable = foreignSchema.tableName;
-        const foreignMembers = foreignSchema.SqlSpecialColumns;
+        const foreignTable = foreignSchema.sqlTableName;
+        // Resolved catalogs supply display metadata through their authorized DB3 view.
+        const foreignMembers: Partial<typeof foreignSchema.SqlSpecialColumns> = foreignSchema.queryStrategy === "resolved" ? {} : foreignSchema.SqlSpecialColumns;
 
         // we actually need to exclude this field from search
         return {

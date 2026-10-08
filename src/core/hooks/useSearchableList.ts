@@ -87,6 +87,14 @@ export function useSearchableList<
     const snackbarContext = useSnackbar();
 
     const filterSpecHash = JSON.stringify(filterSpec);
+    const presentation = {
+        bandPublicId: dashboardContext.authorizationContext?.bandPublicId ?? null,
+        routeLocale: dashboardContext.localePreferences?.routeLocale,
+        browserLanguages: dashboardContext.localePreferences?.browserLanguages,
+    };
+    const contextHash = JSON.stringify(presentation);
+    const requestScope = `${contextHash}:${filterSpecHash}`;
+    const [resultScope, setResultScope] = useState(requestScope);
 
     const [enrichedItems, setEnrichedItems] = useState<TClientItem[]>([]);
     const [results, setResults] = useState<SearchResultsRet<TTransportItem>>(MakeEmptySearchResultsRet<TTransportItem>());
@@ -101,7 +109,7 @@ export function useSearchableList<
         setLoading(true);
 
         try {
-            const queryArgs = config.getQueryArgs(filterSpec, offset, pageSize);
+            const queryArgs = { ...config.getQueryArgs(filterSpec, offset, pageSize), ...presentation };
             //console.log('Fetching search results with args:', queryArgs);
             const searchResult = await fetchSearchResultsApi<TTransportItem>(queryArgs, request.signal);
             if (request.signal.aborted || activeRequest.current !== request) return;
@@ -142,18 +150,23 @@ export function useSearchableList<
         activeRequest.current = null;
         setEnrichedItems([]);
         setResults(MakeEmptySearchResultsRet<TTransportItem>());
+        setResultScope(requestScope);
         // Fetch the first page
         void fetchData(0);
         return () => {
             activeRequest.current?.abort();
             activeRequest.current = null;
         };
-    }, [filterSpecHash]);
+    }, [filterSpecHash, contextHash]);
 
     const loadMoreData = useCallback(() => {
         if (activeRequest.current) return;
         void fetchData(enrichedItems.length);
-    }, [enrichedItems, filterSpecHash]);
+    }, [enrichedItems, filterSpecHash, contextHash]);
 
-    return { enrichedItems, results, loadMoreData, loading };
+    return {
+        enrichedItems: resultScope === requestScope ? enrichedItems : [],
+        results: resultScope === requestScope ? results : MakeEmptySearchResultsRet<TTransportItem>(),
+        loadMoreData, loading,
+    };
 }

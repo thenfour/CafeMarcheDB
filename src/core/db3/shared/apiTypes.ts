@@ -447,7 +447,8 @@ export interface GetSearchResultsSortModel {
     direction: SortDirection,
 };
 
-export interface GetSearchResultsInput {
+export interface GetSearchResultsInput extends LocalePreferenceInput {
+    bandPublicId?: BandPublicId | null;
     calendarWindow?: CalendarWindow;
     tableID: string;
     viewID?: string;
@@ -495,20 +496,21 @@ const ZGetSearchResultsSortModel = z.object({
 
 // Zod schema for GetSearchResultsInput
 export const ZGetSearchResultsInput = z.object({
+    ...PresentationInputSchema.shape,
     calendarWindow: CalendarWindowSchema.optional(),
     tableID: ZDBSymbol,
     viewID: ZDBSymbol.optional(),
     includeDeleted: z.boolean().optional(),
     refreshSerial: z.number().optional(),
 
-    offset: z.number(),
-    take: z.number(),
+    offset: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+    take: z.number().int().min(1).max(MAX_DB3_PAGE_SIZE),
 
     // unspecified sort is not allowed
-    sort: z.array(ZGetSearchResultsSortModel).min(1),
+    sort: z.array(ZGetSearchResultsSortModel).min(1).max(10),
 
-    quickFilter: z.string(),
-    discreteCriteria: z.array(ZDiscreteCriterion),
+    quickFilter: z.string().max(2000),
+    discreteCriteria: z.array(ZDiscreteCriterion).max(30),
 });
 
 

@@ -1,4 +1,14 @@
 import { requireRestoredApplicationFeature } from "src/core/shared/applicationRecovery";
+import { AuthorizationError } from "blitz";
+import db, { Prisma } from "db";
+import { Permission } from "shared/permissions";
+import { Stopwatch } from "shared/rootroot";
+import { loadBandTimeZone } from "src/server/bandTimeZone";
+import { ZGetSearchResultsInput, MakeEmptySearchResultsRet, type SearchResultsFacet, type SearchQueryMetric } from "../shared/apiTypes";
+import { executeDB3Read, type DB3ReadContext, type DB3ReadDatabase } from "./db3ReadExecution";
+import { queryTable } from "./db3QueryCore";
+import { calendarWindowSql } from "./calendarWindowSql";
+import { resolveSearchFacetLabels } from "./searchFacetCatalogs";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 // generalized version of search results.
 // hopefully can unify song & event search, and then extend to users & files.
@@ -76,7 +86,9 @@ export async function resolveSearchDiscreteCriteria(
             throw new Error(`Search column ${criterion.db3Column} not found on table ${table.tableName}`);
         }
         const targetTable = column.getDiscreteCriterionTargetTable();
-        if (!targetTable?.publicIdMember) return criterion;
+        if (!targetTable?.publicIdMember) {
+            return criterion;
+        }
         if (!optionBearingDiscreteBehaviors.has(criterion.behavior)) {
             // These modes do not consume options. A UI may retain an old
             // selection while switching modes, so do not resolve or assert it.
@@ -117,7 +129,9 @@ function calculateFilterQuery(
     // each criterion will supply the info we need to construct the correct query.
     const whereAnd: string[] = [];
     if (args.calendarWindow) {
-        if (table.tableName !== "Event") throw new Error("Calendar windows are only supported for event searches.");
+        if (table.tableName !== "Event") {
+            throw new Error("Calendar windows are only supported for event searches.");
+        }
         whereAnd.push(calendarPredicate!);
     }
 
@@ -134,9 +148,13 @@ function calculateFilterQuery(
                 model: null,
                 auth,
                 columnName: column.member,
-            })) continue;
+            })) {
+                continue;
+            }
             const orExpr = column.SqlGetQuickFilterElementsForToken(token, qfTokens);
-            if (orExpr === null) continue;
+            if (orExpr === null) {
+                continue;
+            }
             OR.push(orExpr);
         }
 
@@ -153,15 +171,18 @@ function calculateFilterQuery(
         if (col.member === excludeCriterionColumn) {
             continue;
         }
-        const elements = col.SqlGetDiscreteCriterionElements(criterion, "P");
+        const elements = col.SqlGetDiscreteCriterionElements(criterion, "P", auth);
         // no filtering to be done on this column
-        if (!elements) continue;
+        if (!elements) {
+            continue;
+        }
 
         if (!!elements.error) {
             result.errors.push({
                 column: criterion.db3Column,
                 error: elements.error,
             });
+            // Keep the reference UI's unselected-filter behavior while showing its guidance.
             continue;
         }
 
@@ -174,6 +195,7 @@ function calculateFilterQuery(
     const ret: string = `
         SELECT
             P.${table.pkMember} id,
+            P.${table.publicIdMember} publicId,
             ${sortElements.select.map(m => `${m.expression} ${m.alias}`).join(", \n")}
         FROM 
             ${table.tableName} P
@@ -187,8 +209,152 @@ function calculateFilterQuery(
     return result;
 };
 
-export async function GetSearchResultsCore(_args: GetSearchResultsInput, _auth: CMServerAuthorization): Promise<SearchResultsRet> {
-    return requireRestoredApplicationFeature("domainSearch");
+export class SearchInputError extends Error { }
+
+export async function GetSearchResultsCore(input: GetSearchResultsInput, authorization: CMServerAuthorization,
+    database: DB3ReadDatabase = db,
+): Promise<SearchResultsRet> {
+    // Each domain is reopened only when its query and transport owners are migrated.
+    if (input.tableID.toLowerCase() !== db3.xEvent.tableID.toLowerCase()) {
+        return requireRestoredApplicationFeature("domainSearch");
+    }
+    const args = ZGetSearchResultsInput.parse(input);
+    return executeDB3Read(database, authorization, context => searchInSnapshot(args, context));
+}
+
+function authorizeSearch(args: GetSearchResultsInput, auth: CMServerAuthorization): DiscreteCriterion[] {
+    auth.requirePermission(Permission.view_events_nonpublic);
+    if (args.bandPublicId !== auth.requireBand().publicId || args.includeDeleted === true) {
+        throw new AuthorizationError();
+    }
+    if (args.viewID && args.viewID !== db3.eventSearchView.viewID) {
+        throw new SearchInputError("Event search requires the Event_Search view.");
+    }
+    const table: db3.xTable = db3.xEvent;
+    if (!table.authorizeTableForView(auth)) {
+        throw new AuthorizationError();
+    }
+    const requireReadableColumn = (columnName: string) => {
+        if (!table.getColumn(columnName)) {
+            throw new SearchInputError(`Unknown search column ${columnName}.`);
+        }
+        if (!table.authorizeColumnForView({ model: null, auth, columnName })) {
+            throw new AuthorizationError();
+        }
+    };
+    for (const sort of args.sort) {
+        requireReadableColumn(sort.db3Column);
+        if (sort.db3Column !== "name" && sort.db3Column !== "startsAt") {
+            throw new SearchInputError(`Unsupported search sort ${sort.db3Column}.`);
+        }
+    }
+    return args.discreteCriteria.filter(criterion => {
+        if (criterion.behavior === DiscreteCriterionFilterType.alwaysMatch
+            && !table.authorizeColumnForView({ model: null, auth, columnName: criterion.db3Column })) {
+            return false;
+        }
+        requireReadableColumn(criterion.db3Column);
+        if (!["startsAt", "type", "status", "tags"].includes(criterion.db3Column)) {
+            throw new SearchInputError(`Unsupported event search criterion ${criterion.db3Column}.`);
+        }
+        return true;
+    });
+}
+
+interface SearchExecution {
+    readonly context: DB3ReadContext;
+    readonly args: GetSearchResultsInput;
+    readonly sort: SortQueryElements;
+    readonly calendarPredicate: string | null;
+    readonly filter: CalculateFilterQueryResult;
+    readonly metrics: SearchQueryMetric[];
+}
+
+async function prepareSearch(args: GetSearchResultsInput, context: DB3ReadContext): Promise<SearchExecution> {
+    const auth = context.authorization;
+    const criteria = authorizeSearch(args, auth);
+    const discreteCriteria = await resolveSearchDiscreteCriteria(db3.xEvent, criteria, auth, context.database);
+    const searchArgs = { ...args, discreteCriteria };
+    const sort = processSearchSortModel(db3.xEvent, searchArgs);
+    const calendarPredicate = args.calendarWindow
+        ? calendarWindowSql(args.calendarWindow, await loadBandTimeZone(context.database, auth.requireBand().id)) : null;
+    const filter = calculateFilterQuery(searchArgs, null, sort, auth, calendarPredicate);
+    return { context, args: searchArgs, sort, calendarPredicate, filter, metrics: [] };
+}
+
+async function querySearchRows<T>(search: SearchExecution, title: string, sql: string): Promise<T[]> {
+    const start = Date.now();
+    const rows = await search.context.database.$queryRaw<T[]>(Prisma.raw(sql));
+    search.metrics.push({ title, query: sql, millis: Date.now() - start, rowCount: rows.length });
+    return rows;
+}
+
+async function loadSearchFacet(search: SearchExecution, criterion: DiscreteCriterion): Promise<SearchResultsFacet | null> {
+    const { args, sort, context, filter, calendarPredicate } = search;
+    const auth = context.authorization;
+    const table: db3.xTable = db3.xEvent;
+    const field = table.getColumn(criterion.db3Column)!;
+    const excluding = calculateFilterQuery(args, field.member, sort, auth, calendarPredicate);
+    const facet = field.SqlGetFacetInfoQuery({ auth, crit: criterion,
+        filteredItemsQuery: filter.sqlSelect, filteredItemsQueryExcludingThisCriterion: excluding.sqlSelect });
+    if (!facet) {
+        return null;
+    }
+    // Facet row shapes belong to the field that generated this SQL and transforms each row.
+    const rows = await querySearchRows<object>(search, `${field.member} facet info`, facet.sql);
+    const items = await resolveSearchFacetLabels(field.getDiscreteCriterionTargetTable(), rows.map(row => facet.transformResult(row)), context, args);
+    return { db3Column: field.member, items };
+}
+
+async function loadSearchFacets(search: SearchExecution): Promise<SearchResultsFacet[]> {
+    const facets = await Promise.all(search.args.discreteCriteria.map(criterion => loadSearchFacet(search, criterion)));
+    return facets.filter((facet): facet is SearchResultsFacet => facet !== null);
+}
+
+async function loadSearchPageIds(search: SearchExecution): Promise<number[]> {
+    const { args, sort, filter } = search;
+    // Public identities break semantic-sort ties without exposing database primary keys.
+    const orderBy = [...sort.select.map(item => `${item.alias} ${item.direction}`), "publicId asc"].join(", ");
+    const rows = await querySearchRows<{ id: number }>(search, "paginated results",
+        `WITH FilteredItems AS (${filter.sqlSelect}) SELECT id FROM FilteredItems ORDER BY ${orderBy} LIMIT ${args.offset},${args.take}`);
+    return rows.map(row => row.id);
+}
+
+async function loadSearchCount(search: SearchExecution): Promise<number> {
+    const rows = await querySearchRows<{ rowCount: bigint }>(search, "total row count",
+        `WITH FilteredItems AS (${search.filter.sqlSelect}) SELECT count(*) rowCount FROM FilteredItems`);
+    return Number(rows[0]?.rowCount ?? 0);
+}
+
+async function loadSearchPage(search: SearchExecution, primaryKeys: number[]): Promise<SearchResultsRet["results"]> {
+    if (!primaryKeys.length) {
+        return [];
+    }
+    const { args, context } = search;
+    const rows = await queryTable({
+        table: { tableID: db3.xEvent.tableID, tableName: db3.xEvent.tableName, viewID: db3.eventSearchView.viewID },
+        bandPublicId: args.bandPublicId, routeLocale: args.routeLocale, browserLanguages: args.browserLanguages,
+        filter: {}, orderBy: undefined, cmdbQueryContext: "event search results",
+    }, context.authorization, context, { orderedPrimaryKeys: primaryKeys, trustedNaturalPrimaryKeys: primaryKeys });
+    search.metrics.push({ title: "DB3 Event_Search items", millis: rows.executionTimeMillis, query: "", rowCount: rows.items.length });
+    return rows.items;
+}
+
+async function searchInSnapshot(args: GetSearchResultsInput, context: DB3ReadContext): Promise<SearchResultsRet> {
+    const sw = new Stopwatch();
+    const search = await prepareSearch(args, context);
+    const [facets, ids, rowCount] = await Promise.all([
+        loadSearchFacets(search), loadSearchPageIds(search), loadSearchCount(search),
+    ]);
+    const results = await loadSearchPage(search, ids);
+    search.metrics.push({ title: "(root)", millis: sw.ElapsedMillis, query: "", rowCount: results.length });
+    // Diagnostic SQL authorization uses the fresh snapshot, including for direct callers.
+    const canSeeSql = context.authorization.hasPermission(Permission.sysadmin);
+    return {
+        ...MakeEmptySearchResultsRet(), rowCount, results, facets,
+        filterQueryResult: { ...search.filter, sqlSelect: canSeeSql ? search.filter.sqlSelect : "" },
+        queryMetrics: search.metrics.map(metric => ({ ...metric, query: canSeeSql ? metric.query : "" })),
+    };
 }
 
 // MIGRATION_RESTORE: domain-search

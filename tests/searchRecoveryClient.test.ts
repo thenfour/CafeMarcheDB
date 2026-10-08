@@ -5,7 +5,10 @@ import { act } from "react-dom/test-utils";
 import { createRoot, Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({}) }));
+const presentation = vi.hoisted(() => ({ bandPublicId: "FixtureBand00001", routeLocale: "en-US", browserLanguages: ["en-US"] }));
+vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({
+    authorizationContext: { bandPublicId: presentation.bandPublicId }, localePreferences: presentation,
+}) }));
 vi.mock("src/core/components/search/SearchBase", () => ({ fetchSearchResultsApi: vi.fn() }));
 vi.mock("src/core/components/CMCoreComponents2", () => ({ useURLState: vi.fn() }));
 vi.mock("src/core/db3/components/useDB3Authorization", () => ({ useDB3Authorization: () => ({}) }));
@@ -59,6 +62,11 @@ describe("search recovery filter state", () => {
         await act(async () => state!.resetToDefaults());
         expect(state!.filterSpec).toEqual({ includeDeleted: false });
         expect(state!.hasExtraFilters).toBe(false);
+        await act(async () => state!.setQuickFilter("concert"));
+        expect(state!.hasAnyFilters).toBe(true);
+        await act(async () => state!.resetToDefaults());
+        expect(state!.quickFilter).toBe("");
+        expect(state!.hasAnyFilters).toBe(false);
     });
 
     it("ignores a recovery URL value when the capability is unavailable", async () => {
@@ -120,5 +128,35 @@ describe("search responses during recovery filter changes", () => {
         };
         await act(async () => root.render(React.createElement(Capture)));
         expect(loading).toBe(false);
+    });
+
+    it("clears results and aborts requests when band or ordered locale preferences change", async () => {
+        const pending: Array<{ resolve: (value: SearchResultsRet) => void; signal?: AbortSignal }> = [];
+        vi.mocked(fetchSearchResultsApi).mockImplementation((_args, signal) => new Promise(resolve => pending.push({ resolve, signal })));
+        let result: ReturnType<typeof useSearchableList<{ includeDeleted: boolean }, { id: number }, { id: number }>>;
+        const Capture = () => {
+            result = useSearchableList({ includeDeleted: false }, config);
+            return null;
+        };
+        try {
+            await act(async () => root.render(React.createElement(Capture)));
+            await act(async () => pending[0]!.resolve({ ...MakeEmptySearchResultsRet(), results: [{ id: 1 }], rowCount: 2 }));
+            expect(result!.enrichedItems).toEqual([{ id: 1 }]);
+            await act(async () => result!.loadMoreData());
+            presentation.bandPublicId = "FixtureBand00002";
+            await act(async () => root.render(React.createElement(Capture)));
+            expect(pending[1]!.signal!.aborted).toBe(true);
+            expect(result!.enrichedItems).toEqual([]);
+            expect(fetchSearchResultsApi).toHaveBeenLastCalledWith(expect.objectContaining({ bandPublicId: presentation.bandPublicId, offset: 0 }), expect.anything());
+            presentation.browserLanguages = ["en-US", "fr-BE"];
+            await act(async () => root.render(React.createElement(Capture)));
+            expect(pending[2]!.signal!.aborted).toBe(true);
+            await act(async () => pending[3]!.resolve({ ...MakeEmptySearchResultsRet(), results: [{ id: 3 }], rowCount: 1 }));
+            await act(async () => pending[2]!.resolve({ ...MakeEmptySearchResultsRet(), results: [{ id: 2 }], rowCount: 1 }));
+            expect(result!.enrichedItems).toEqual([{ id: 3 }]);
+        } finally {
+            presentation.bandPublicId = "FixtureBand00001";
+            presentation.browserLanguages = ["en-US"];
+        }
     });
 });

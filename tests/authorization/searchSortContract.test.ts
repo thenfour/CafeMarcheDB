@@ -54,7 +54,7 @@ describe("search sort contract", () => {
         expect(findMany).toHaveBeenCalledOnce();
         expect(resolved[0]?.options).toEqual([20, 21]);
         const tagsColumn = db3.xSong.getColumn("tags")!;
-        expect(tagsColumn.SqlGetDiscreteCriterionElements(resolved[0]!, "P")?.whereAnd)
+        expect(tagsColumn.SqlGetDiscreteCriterionElements(resolved[0]!, "P", publicData)?.whereAnd)
             .toContain("mt.bandSongTagId = 20");
 
         const facet = tagsColumn.SqlGetFacetInfoQuery({

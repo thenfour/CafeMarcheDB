@@ -172,7 +172,11 @@
       "restore": "Restore f027830a9790 event search/detail/creation/editing through the existing search pipeline, result components, detail tabs and dialogs. Preserve presets, filter operators, facets, URL state, sorting, load-more, CSV, segments, invitations and CafeMarche frontpage behavior on band snapshots/public references with localized catalog labels; retain migrated attendance/calendar services and restore date-picker highlights. Only localized-catalog-name text matching follows the documented A1 exception.",
       "verification": "Compare the reference CafeMarche UI, defaults and interactions rather than a reduced replacement. Reactivate search/calendar specifications; verify presets, operators, counts/facets, URL state, ordering, load-more/export, detail/tab URLs, edits, invitations and highlights in the built app, plus two-band isolation and grant revocation. Keep each unverified dependency recorded as a gap.",
       "status": "pending",
-      "evidence": []
+      "evidence": [
+        "2026-10-08: Restored the existing Events/SearchPageContent/eventSearchConfig composition and Event_Search HTTP/direct owner. Reference presets, date/type/status/tag operators, facets/counts, URL state, sorting, cards, load-more, refresh callbacks and CSV/TSV export use fresh band snapshots/public references and shared localized catalog views. Event links retain band/route locale. Text-only Reset filter was repaired.",
+        "123 focused checks and 30 native MariaDB checks pass; native eventSearch cases cover isolation, all tag operators, combined criteria, localized/blank/inherited facets, stable paging and revoked/member/platform/inactive/deleted/merged authorization. Normal typecheck/build, focused lint and seven built-browser assertion groups pass; see 04-implementation-plan.md#verification-status.",
+        "Still pending: event detail/creation/editing, segments, invitations/default instruments, complete attendance UI, event song lists, date-picker highlights and frontpage behavior. Creation and pin/hide write controls remain unavailable, and detail URLs reach the guarded surface. Localized catalog-name free-text matching remains pending under the A1 exception. The full repository suite remains failing; this checkpoint does not close A1."
+      ]
     },
     {
       "id": "song-workflows",
@@ -204,7 +208,10 @@
       "restore": "Adapt the f027830a9790 domain search HTTP/direct owner and existing query pipeline to explicit band snapshots, authorized band-catalog joins, public identities and contextual links. Retain nonlocalized text search, filter operators, facets/counts, sorting/paging and existing consumers. A1 may omit only localized-catalog-name text predicates; full localized-name matching remains pending after A1. Do not introduce a parallel simplified search.",
       "verification": "Reactivate reference search authorization/recovery specifications and compare existing consumers in the built CafeMarche app. Verify anonymous/member/admin visibility, two bands/locales, hidden assignments, all operators, revocation and consistent rows/counts/facets/order/paging. Record the A1 text-search exception and verify localized-name matching before closing the full obligation.",
       "status": "pending",
-      "evidence": []
+      "evidence": [
+        "2026-10-08: Event_Search reuses the existing SQL/filter/facet/query owner inside executeDB3Read, including fresh grants, explicit band, authorized public filter references, stable public-ID sort ties, same-snapshot counts/rows/facets and localized catalog-view labels/order. Client requests retain ordered presentation preferences and discard old-band/language results. Non-event domains remain guarded.",
+        "tests/eventSearch.mysql.test.ts, tests/eventSearchEndpoint.test.ts and reactivated search recovery/client contracts pass alongside existing view/calendar/sort contracts. Built-browser presets, filtering, URL reload, paging, export and two-band/localized presentation pass. Authored text predicates remain active; localized catalog-name text predicates are deliberately deferred until after A1 and must be restored before closing this obligation."
+      ]
     },
     {
       "id": "developer-examples",

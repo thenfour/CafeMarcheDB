@@ -3,6 +3,8 @@ import { plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 
 const label = (defaultValue: string) => plainStaticString({ defaultValue, description: "Dashboard recovery interface", schema: z.string() });
 export const dashboardStrings = {
+    "events.selectBand": label("Select a band to search its events."),
+    "events.creationPending": label("Event creation will return with the event editing workflow."),
     "calendar.selectBand": label("Select a band to view its calendar."),
     "platformUser.title": label("Platform accounts"),
     "platformUser.description": label("Shared person details apply across all bands. Creating a person adds no sign-in method or band membership. Memberships are managed from the selected band's member profiles. Security state is read-only here."),

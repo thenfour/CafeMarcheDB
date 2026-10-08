@@ -218,7 +218,7 @@ export function useSearchPage<TStaticFilter extends Record<string, any>, TFilter
         return config.filterMappings.some(mapping => mapping.filterHook.enabled);
     };
 
-    const hasAnyFilters = hasExtraFilters();
+    const hasAnyFilters = quickFilter.length > 0 || hasExtraFilters();
 
     // Handlers
     const handleClickStaticFilter = (staticFilter: TStaticFilter) => {
@@ -257,6 +257,7 @@ export function useSearchPage<TStaticFilter extends Record<string, any>, TFilter
     };
 
     const resetToDefaults = () => {
+        setQuickFilter("");
         setIncludeDeleted(false);
         handleClickStaticFilter(config.defaultStaticFilter);
     };

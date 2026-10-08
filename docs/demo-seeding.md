@@ -135,18 +135,20 @@ multilingual text contract rather than acquiring an invented translation model.
    separately; the default band manager lacks it. Use `admin@demo.invalid` to
    recover the membership at `/backstage/recoverMembers` with River selected.
    The shared account, retained assignments and other memberships stay intact.
-9. Clear band selection and check that member data disappears. Stop the site,
+9. Open Events with River selected. Check the Relevant/All/Past concerts presets,
+   type/status/tag/date facets, text search, URL reload, sorting and export. Use
+   `--events-per-band=30` at reset to exercise load-more. Switch to French for
+   localized labels, then Harbour for separate event results. Event detail and
+   editing remain deferred.
+10. Clear band selection and check that member/event data disappears. Stop the site,
    repeat reset with the same options/date, and launch again to restore the fixture.
 
-Seeded rows do not establish restoration of their pages. General event/song/file
-screens, uploads, custom sidebar delivery and other deferred surfaces still have
-their migration restrictions. Use the supported profile/catalog/wiki/settings and
-Custom Link paths now; the same event/song fixtures support subsequent recovery.
-The A0 audit repaired the ordinary-member wiki issue exposed by the first demo
-walkthrough: Alex now reads Harbour's current welcome content without gaining
-revision-history permission. General event/song/file/publication and wiki-search
-URLs display recovery notices. Their seeded data remains available for later
-workflow restoration.
+Seeded rows do not establish restoration of their pages. Event search is active;
+event detail/creation/editing, general song/file screens, uploads, custom sidebar
+delivery, publication and wiki search retain their migration restrictions. The
+supported profile/catalog/wiki/settings and Custom Link paths remain available.
+Alex reads Harbour's current welcome content without gaining revision-history
+permission. The same fixtures support subsequent workflow restoration.
 
 ## Verification
 

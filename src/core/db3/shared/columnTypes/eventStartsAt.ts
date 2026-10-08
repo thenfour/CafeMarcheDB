@@ -408,7 +408,7 @@ export class EventStartsAtField<
     };
 
     // return a SQL query which is executed, then a transformation function that returns the 
-    SqlGetFacetInfoQuery = ({ filteredItemsQuery: filteredQuery }: DB3FacetInfoArgs): SearchResultsFacetQuery | null => {
+    SqlGetFacetInfoQuery = ({ auth, filteredItemsQuery: filteredQuery }: DB3FacetInfoArgs): SearchResultsFacetQuery | null => {
         return {
             sql: `
         with FIQ as (${filteredQuery})
@@ -423,6 +423,8 @@ export class EventStartsAtField<
         from
             ${this.localTableSpec.tableName} as P
             left join FIQ on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the startsAt field
+        where
+            ${this.localTableSpec.SqlGetVisFilterExpression({ auth, tableAlias: "P" })}
         group by
             coalesce(year(${this.member}), ${gTbdId})
         

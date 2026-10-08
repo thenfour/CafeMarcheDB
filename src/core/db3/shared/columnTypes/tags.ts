@@ -471,24 +471,26 @@ class TagsFieldImpl<
     SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
     getDiscreteCriterionTargetTable = (): xTable => this.getForeignTableShema();
 
-    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion, tableAlias: string): CriterionQueryElements | null => {
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion, tableAlias: string, auth: CMServerAuthorization): CriterionQueryElements | null => {
         assertIsNumberArray(crit.options);
         // select 1 from eventTagAssociations mt where mt.eventId = 
         const associationSchema = this.getAssociationTableShema();
-        const associationTable = associationSchema.tableName;
+        const associationTable = associationSchema.sqlTableName;
         const assLocalId = this.associationLocalIDMember;
         const assTagId = this.associationForeignIDMember;
+        const target = this.getForeignTableShema();
+        const targetVisibility = ` AND EXISTS (SELECT 1 FROM ${target.sqlTableName} VT WHERE VT.${target.pkMember} = mt.${assTagId} AND ${target.SqlGetVisFilterExpression({ auth, tableAlias: "VT" })})`;
         const errorResult: CriterionQueryElements = {
             whereAnd: `(true)`,
             error: "Select options to filter on",
         };
         const hasAny: CriterionQueryElements = {
             error: undefined,
-            whereAnd: `EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id)`,
+            whereAnd: `EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id${targetVisibility})`,
         };
         const hasNone: CriterionQueryElements = {
             error: undefined,
-            whereAnd: `NOT EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id)`,
+            whereAnd: `NOT EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id${targetVisibility})`,
         };
         const map: { [key in DiscreteCriterionFilterType]: () => CriterionQueryElements | null } = {
             alwaysMatch: () => {
@@ -543,11 +545,12 @@ class TagsFieldImpl<
         return map[crit.behavior]();
     }
 
-    SqlGetFacetInfoQuery = ({ filteredItemsQueryExcludingThisCriterion }: DB3FacetInfoArgs): SearchResultsFacetQuery | null => {
+    SqlGetFacetInfoQuery = ({ auth, filteredItemsQueryExcludingThisCriterion }: DB3FacetInfoArgs): SearchResultsFacetQuery | null => {
         //return null;
         const foreignSchema = this.getForeignTableShema();
-        const foreignTable = foreignSchema.tableName;
-        const foreignMembers = foreignSchema.SqlSpecialColumns;
+        const foreignTable = foreignSchema.sqlTableName;
+        // Resolved catalogs supply display metadata through their authorized DB3 view.
+        const foreignMembers: Partial<typeof foreignSchema.SqlSpecialColumns> = foreignSchema.queryStrategy === "resolved" ? {} : foreignSchema.SqlSpecialColumns;
         const filteredQuery = filteredItemsQueryExcludingThisCriterion;
         return {
             sql: `
@@ -564,9 +567,11 @@ class TagsFieldImpl<
                 -1 sortOrder
             FROM
                 FIQ -- filtered events
-                left join ${this.getAssociationTableShema().tableName} ASS on ASS.${this.associationLocalIDMember} = FIQ.id
             where
-                ASS.${this.associationForeignIDMember} is null
+                NOT EXISTS (SELECT 1 FROM ${this.getAssociationTableShema().sqlTableName} ASS
+                    INNER JOIN ${foreignTable} VT ON VT.${foreignSchema.pkMember} = ASS.${this.associationForeignIDMember}
+                    WHERE ASS.${this.associationLocalIDMember} = FIQ.id
+                    AND ${foreignSchema.SqlGetVisFilterExpression({ auth, tableAlias: "VT" })})
     
             union all
     
@@ -580,8 +585,10 @@ class TagsFieldImpl<
                 FT.${foreignMembers.sortOrder?.member || foreignSchema.pkMember} AS sortOrder
             from
                 FIQ
-                inner join ${this.getAssociationTableShema().tableName} ASS on ASS.${this.associationLocalIDMember} = FIQ.id
+                inner join ${this.getAssociationTableShema().sqlTableName} ASS on ASS.${this.associationLocalIDMember} = FIQ.id
                 right join ${foreignTable} FT on FT.${foreignSchema.pkMember} = ASS.${this.associationForeignIDMember}
+            where
+                ${foreignSchema.SqlGetVisFilterExpression({ auth, tableAlias: "FT" })}
             group by
                 FT.${foreignSchema.pkMember}
 
