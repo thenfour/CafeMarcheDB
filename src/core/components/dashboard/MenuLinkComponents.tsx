@@ -18,6 +18,9 @@ import { VisibilityValue } from "../VisibilityControl";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { useLocale } from "src/locale/components/useLocale";
+import { LocalizedStringColumnClient } from "src/core/db3/components/DB3CatalogFields";
+import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
+import { withMemberPresentation } from "../user/bandMemberLinks";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,7 +89,7 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
 
             <div className='titleLine'>
                 <div className="titleText">
-                    {RenderMuiIcon(props.item.iconName)} {props.item.caption}
+                    {RenderMuiIcon(props.item.iconName)} {localizedText(props.item.caption)}
                 </div>
                 <div className='flex-spacer'></div>
 
@@ -113,7 +116,7 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
 
             {
                 ((props.item.linkType as keyof typeof DynamicMenuLinkType) === "Wiki") &&
-                <CMLink href={`/backstage/wiki/${slugify(props.item.wikiSlug || "")}`} target="_blank" rel="noreferrer" className="menuLinkTestLink wikiCMLink">
+                <CMLink href={withMemberPresentation(`/backstage/wiki/${slugify(props.item.wikiSlug || "")}`, dashboardContext.memberPresentation)} target="_blank" rel="noreferrer" className="menuLinkTestLink wikiCMLink">
                     <div>Test wiki link</div>
                     {gIconMap.Launch()}
                 </CMLink>
@@ -134,44 +137,10 @@ export interface WikiSlugInputWithSearchProps extends CMTextInputBaseProps, DB3C
 export const WikiSlugInputWithSearch = (props: WikiSlugInputWithSearchProps) => {
     const locale = useLocale();
     const { fieldCaptionKey, fieldDescriptionKey, columnName, schema, allowSearch, ...inputProps } = props;
-    const searchQuery = props.value || "";
-
-
-    // legacy because of columnName being runtime so correct type cannot be known.
-    const songsClient = DB3Client.useLegacyTableRenderContext({
-        tableSpec: DB3Client.defineLegacyDynamicTableClientSpec({
-            table: props.schema,
-            columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-                new DB3Client.GenericStringColumnClient({ fieldCaptionKey, fieldDescriptionKey, columnName, cellWidth: 120 }),
-            ],
-        }),
-        filterModel: {
-            quickFilterValues: [searchQuery],
-        },
-        paginationModel: {
-            page: 0,
-            pageSize: 1,
-        },
-        requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
-    });
-
-    const items = songsClient.items;
-    const hasMatch = items.length > 0;
-    const item = items[0];
-    const matchValue = (item && (item[props.columnName] as string)) || "";
-
+    // Wiki ownership and resolved search remain under the wiki-search restoration obligation.
     return <div className="searchableValueContainer">
         <CMTextInputBase {...inputProps} />
-        <div className="searchableValueResult">
-            {matchValue === props.value ?
-                (<div>✅</div>)
-                : (((props.value || "").length > 1) && (<>
-                    <div className="existingMatchLabel">{locale.getPlainString("db3.search.noMatchingPage")}</div>
-                    <div className="existingMatchValue">{matchValue}</div>
-                </>))
-            }
-        </div>
+        <div className="searchableValueResult">{locale.getPlainString("menuLink.wikiSearchDeferred")}</div>
     </div>;
 };
 
@@ -224,12 +193,9 @@ export const MenuLinkList = () => {
 
             applicationPage: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, columnName, cellWidth: 250, fieldCaptionKey: "db3.fields.sectionName" }),
             groupName: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: "menuLink.groupName.DescriptionMarkdown", columnName, cellWidth: 250, fieldCaptionKey: "db3.fields.groupName" }),
-            caption: columnName => new DB3Client.GenericStringColumnClient({
+            caption: columnName => new LocalizedStringColumnClient({
                 columnName,
-                cellWidth: 250,
                 fieldCaptionKey: "db3.fields.menuItemText",
-                fieldDescriptionKey: "menuLink.caption.DescriptionMarkdown",
-                className: "titleText",
             }),
             iconName: columnName => new DB3Client.IconFieldClient({ fieldDescriptionKey: "menuLink.iconName.DescriptionMarkdown", columnName, cellWidth: 120, fieldCaptionKey: "db3.fields.icon" }),
 
@@ -262,7 +228,7 @@ export const MenuLinkList = () => {
     const newObj = db3.xMenuLink.createNew(dashboardContext.currentUser) as db3.ClientOf<typeof db3.menuLinkEditorView>;
     // iconName is persisted from the registered icon-key vocabulary.
     newObj.iconName = "Link" as keyof typeof gIconMap;
-    newObj.linkType = DynamicMenuLinkType.Wiki;
+    newObj.linkType = DynamicMenuLinkType.ExternalURL;
     const defaultVisibilityPermission = dashboardContext.getDefaultVisibilityPermission();
     newObj.visiblePermission = defaultVisibilityPermission;
     newObj.visiblePermissionId = db3.xPermission.getIdentity(defaultVisibilityPermission);
@@ -288,8 +254,12 @@ export const MenuLinkList = () => {
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
         // removedIndex is the previous index; the original item to be moved
         // addedIndex is the new index where it should be moved to.
-        if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
-        if (args.addedIndex === args.removedIndex) return; // nothing to do
+        if (args.addedIndex == null || args.removedIndex == null) {
+            return;
+        }
+        if (args.addedIndex === args.removedIndex) {
+            return;
+        }
         const movingItem = items[args.removedIndex];
         const newPositionItem = items[args.addedIndex];
         assert(!!movingItem && !!newPositionItem, "moving item not found?");
@@ -348,3 +318,56 @@ export const MenuLinkList = () => {
 };
 
 
+
+
+// MIGRATION_RESTORE: wiki-search
+// Source: 976ab6f7a3781848ffc23a2a1cac87e96ff286b9:src/core/components/dashboard/MenuLinkComponents.tsx:134-176
+// Reason: Menu wiki suggestions query an undeclared WikiPage ownership policy.
+// Restore: Restore menu wiki-slug suggestions through the authorized selected-band wiki search owner.
+// Verification: Test visible and private local pages, foreign bands, no-band context, localization, matching and context switches; exercise the built editor.
+// SHA256: 0f4cc09a66f08dea38fe4ebe20fc9bd59dcb23ed141846569f93c0c666a1705a
+// MIGRATION_REFERENCE_BEGIN
+// export const WikiSlugInputWithSearch = (props: WikiSlugInputWithSearchProps) => {
+//     const locale = useLocale();
+//     const { fieldCaptionKey, fieldDescriptionKey, columnName, schema, allowSearch, ...inputProps } = props;
+//     const searchQuery = props.value || "";
+//
+//
+//     // legacy because of columnName being runtime so correct type cannot be known.
+//     const songsClient = DB3Client.useLegacyTableRenderContext({
+//         tableSpec: DB3Client.defineLegacyDynamicTableClientSpec({
+//             table: props.schema,
+//             columns: [
+//                 new DB3Client.PKColumnClient({ columnName: "id" }),
+//                 new DB3Client.GenericStringColumnClient({ fieldCaptionKey, fieldDescriptionKey, columnName, cellWidth: 120 }),
+//             ],
+//         }),
+//         filterModel: {
+//             quickFilterValues: [searchQuery],
+//         },
+//         paginationModel: {
+//             page: 0,
+//             pageSize: 1,
+//         },
+//         requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
+//     });
+//
+//     const items = songsClient.items;
+//     const hasMatch = items.length > 0;
+//     const item = items[0];
+//     const matchValue = (item && (item[props.columnName] as string)) || "";
+//
+//     return <div className="searchableValueContainer">
+//         <CMTextInputBase {...inputProps} />
+//         <div className="searchableValueResult">
+//             {matchValue === props.value ?
+//                 (<div>✅</div>)
+//                 : (((props.value || "").length > 1) && (<>
+//                     <div className="existingMatchLabel">{locale.getPlainString("db3.search.noMatchingPage")}</div>
+//                     <div className="existingMatchValue">{matchValue}</div>
+//                 </>))
+//             }
+//         </div>
+//     </div>;
+// };
+// MIGRATION_REFERENCE_END

@@ -155,8 +155,8 @@
     {
       "id": "wiki-search",
       "reason": "Wiki tag quick filtering still targets the removed raw text member.",
-      "restore": "Restore wiki quick filtering by resolved band tag names with per-string localization, intentional blanks, hidden assignments, visibility, consistent counts and pagination.",
-      "verification": "Test two-band isolation, locale changes, hidden assigned tags, permission revocation, matching/counts/pagination and the built wiki search.",
+      "restore": "Restore wiki quick filtering by resolved band tag names with per-string localization, intentional blanks, hidden assignments, visibility, consistent counts and pagination. Restore menu wiki-slug suggestions with the same selected-band visibility and resolved search owner.",
+      "verification": "Test two-band isolation, locale changes, hidden assigned tags, permission revocation, matching/counts/pagination and the built wiki search. Exercise menu suggestions and context-preserving wiki links across two bands.",
       "status": "pending",
       "evidence": []
     }
@@ -1805,6 +1805,18 @@
       "featureId": "wiki-search",
       "source": "f9adfcffdcc67ed2abfc96bc151c7ab70139db53:src/core/db3/shared/schema/wiki.ts:133-141",
       "sha256": "7245d61a00f57e501c065e5cdb9c782ac6fc52cceea3d869f6a6e553effdd095"
+    },
+    {
+      "file": "src/core/components/dashboard/MenuLinkComponents.tsx",
+      "featureId": "wiki-search",
+      "source": "976ab6f7a3781848ffc23a2a1cac87e96ff286b9:src/core/components/dashboard/MenuLinkComponents.tsx:134-176",
+      "sha256": "0f4cc09a66f08dea38fe4ebe20fc9bd59dcb23ed141846569f93c0c666a1705a"
+    },
+    {
+      "file": "tests/db3LegacyReadCompatibilityInventory.test.ts",
+      "featureId": "wiki-search",
+      "source": "976ab6f7a3781848ffc23a2a1cac87e96ff286b9:tests/db3LegacyReadCompatibilityInventory.test.ts:32-35",
+      "sha256": "001ddfa0bc3a17b36304d67b9f93afaaadd0d35ba1208d524011048b76a1724b"
     }
   ]
 }

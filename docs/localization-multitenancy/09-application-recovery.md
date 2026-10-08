@@ -49,6 +49,11 @@ dependencies. Attendance, File filters/display and demo controls use canonical
 hydrated instruments and public identities. Obsolete raw instrument/group payload
 helpers and the numeric/public identity union are removed; only the local
 attendance scenario adapter retains numeric saved choices in its version-1 format.
+MenuLink now uses localized captions, selected-band ownership and resolved
+filtering/sorting/paging. Generated CRUD and public-ID reordering retain fresh
+authorization, visibility and auditing. Its editor supports explicit translations,
+band switching and manual wiki slugs. Sidebar delivery remains deferred under
+`dashboard-content`; the old wiki suggestion reader is preserved under `wiki-search`.
 **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
@@ -746,10 +751,13 @@ production server could not be checked because the normal build still fails.
 | Event/instrument payload contracts, attendance scenarios and controls, production adapter, calendar attendance, membership instruments and compatibility inventory | Passed: 115 checks across seven files, including nine isolated DOM cases. Covers public instrument changes, primary/stored choices, unreadable catalog entries, numeric scenario export/import, clearing and rejection of unknown instrument identities. |
 | Event-tag assignment selection, response views, attendance and membership instruments plus retained catalog/bootstrap/account/File/setlist/link/telemetry readers on private MariaDB | Passed: 118 cases across sixteen files on a new disposable database. The assignment payload includes inherited-source string identities and local string metadata. Existing hidden-assignment retention, cross-band rejection and deletion cascades remain covered. Fixture writes roll back and generated databases are removed. |
 | Attendance scenario development browser | Passed: primary and out-of-profile choices display hydrated labels; control edits emit public IDs while saved version-1 documents retain numeric local choices; import and user reset restore the primary default. Scenario actions also use the repository's CMButton wrapper. Three assertion groups, no page errors; the user card screenshot was inspected. This is development evidence; production build verification remains blocked. |
+| Menu-link contracts, ordinary collection projection, commands, route registry, page authorization and compatibility inventory | Passed: 100 checks across six files. The existing collection fixture now uses an explicit read snapshot, selected band and localized caption metadata; its public creator/identity assertions remain active. The deletion inventory no longer lists the preserved, inactive wiki suggestion query. |
+| Menu-link CRUD/localization/ownership/reorder plus retained catalog/attendance/account/File/setlist/link/telemetry readers on private MariaDB | Passed: 124 cases across seventeen files, including six new menu cases. Covers band-first fallback, intentional blanks, unchanged shared text, private rows and same-creator foreign-band isolation, forged ownership/string identities, disabled writing languages, fresh revocation, audited reorder and resolved filtering/counts/pagination. The six menu cases were also rerun with equal initial sort positions to verify deterministic public-ID ties. Writes roll back and generated databases are removed. |
+| Menu-link development browser | Passed: ordinary delegated manager creates a band-localized caption, saves a French translation without copying fallback or changing shared English, switches bands, reaches the no-band prompt and deletes a menu item. Manual wiki slugs remain editable without querying the deferred WikiPage reader. Five assertion groups, no page errors; French caption editor screenshot inspected. This is development evidence; production build verification remains blocked. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 18 diagnostics, down from 36. Event-tag/instrument payloads and their migrated consumers have no diagnostics. Trivial stale contract fixtures now use the band model/foreign table, required association key and public-ID import. Remaining roots are menu captions, wiki entry points, the old color-editor settings API, authorization/calendar fixtures and DB3 derived-view type assertions. No compiler exclusions or suppression added. |
-| `yarn build` | Gets past EventTagAssignment and obsolete instrument payload roots; stops at `src/core/db3/shared/schema/menuLink.ts:55`, whose caption remains an obsolete scalar contract. General event/wiki/menu ownership and workflows remain unfinished. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 265 failed, 1,583 passed, 294 skipped across 156 files, with ten suite failures. Reported failure entries exactly match the previous wiki-tag checkpoint; one scenario regression case was added. Native cases skip without the private URL and pass in the dedicated fixture above. No existing test is newly disabled. Later isolated DOM batches are not reached; focused DOM and development-browser checks cover attendance controls. |
+| `yarn typecheck` | Fails: 17 diagnostics, down from 18. Menu-link contracts, consumers and new native tests have no diagnostics. Remaining roots are wiki entry points, the old color-editor settings API, authorization/calendar fixtures and DB3 derived-view type assertions. No compiler exclusions or suppression added. |
+| `yarn build` | Gets past MenuLink; stops at `src/core/wiki/mutations/wikiAdminClearLock.ts:13`, which still uses the obsolete global slug key. General event/wiki workflows and custom sidebar delivery remain unfinished. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 265 failed, 1,587 passed, 300 skipped across 158 files, with ten suite failures. Reported failure entries exactly match the previous event/instrument checkpoint; four page-authorization cases pass and six new native menu cases skip without the private URL. Those native cases pass in the dedicated fixture above. No existing test is newly disabled. Later isolated DOM batches are not reached; focused checks and development-browser coverage verify the changed menu editor. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -780,9 +788,11 @@ verification resources, not application configuration.
 
 ## Remaining A0 blockers
 
-The next build stop is MenuLink's obsolete scalar caption at `menuLink.ts:55`.
-Recover localized caption/section contracts and ownership before restoring menu
-delivery, then continue remaining wiki entry points. EventTagAssignment now uses
+The next build stop is the unscoped wiki-lock mutation at
+`wikiAdminClearLock.ts:13`. Recover wiki locking/visibility, page reads and their
+ownership contracts. MenuLink captions, editor CRUD and reorder now use the target
+contracts; custom sidebar delivery remains under `dashboard-content`, and wiki
+suggestions remain under `wiki-search`. EventTagAssignment now uses
 the canonical band catalog selection, and active instrument consumers use hydrated
 catalog/public-ID contracts. Wiki-tag
 catalogs, references, editor and association payloads now use the target contracts;
@@ -816,7 +826,7 @@ Setlist Plan storage is recovered; its complete editor still depends on deferred
 Song/search workflows.
 
 Fix owning contracts before their cascading consumers. The obsolete instrument
-selections in `prismArgs.ts` are removed; remaining menu/wiki/settings entry points
+selections in `prismArgs.ts` are removed; remaining wiki/settings entry points
 and authorization/calendar/derived-view fixtures still need repair. Shared event catalogs and dedicated
 attendance write/history/HTTP, bulk copy/clear endpoints and private calendar feeds
 are migrated. Response/invitation reader ownership and identities are migrated. Full event

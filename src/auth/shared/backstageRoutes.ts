@@ -52,7 +52,7 @@ const routes = [
     { key: "frontpagegallery", pattern: "/backstage/frontpagegallery", caption: "Photo Gallery", permission: Permission.edit_public_homepage },
     { key: "frontpageEvents", pattern: "/backstage/frontpageEvents", caption: "Agenda", permission: Permission.edit_public_homepage },
     { key: "brand", pattern: "/backstage/brand", caption: "Brand", permission: Permission.manage_site_branding },
-    { key: "menuLinks", pattern: "/backstage/menuLinks", caption: "Menu Links", permission: Permission.customize_menu },
+    { key: "menuLinks", pattern: "/backstage/menuLinks", caption: "Menu Links", permission: Permission.customize_menu, unscopedPermission: Permission.login },
     { key: "customLinks", pattern: "/backstage/customLinks", caption: "Custom URLs", permission: Permission.view_custom_links, unscopedPermission: Permission.login },
     { key: "editEventTags", pattern: "/backstage/editEventTags", caption: "Event Tags", permission: Permission.admin_events, unscopedPermission: Permission.manage_global_catalogs },
     { key: "editEventTypes", pattern: "/backstage/editEventTypes", caption: "Event Types", permission: Permission.manage_global_catalogs },

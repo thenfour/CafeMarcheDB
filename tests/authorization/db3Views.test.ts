@@ -428,12 +428,14 @@ describe("DB3 named views", () => {
         };
         const menuLink = {
             id: 30,
+            bandId: 1,
             publicId: "MenuLinkTest0001",
             sortOrder: 2,
             realm: "General",
             applicationPage: null,
             groupName: "Resources",
-            caption: "Scores",
+            captionId: 501,
+            caption: { id: 501, publicId: "MenuCaption00001", format: "PlainText" },
             iconName: "Link",
             linkType: "ExternalURL",
             externalURI: "https://example.test/scores",
@@ -454,12 +456,21 @@ describe("DB3 named views", () => {
             { id: 6, name: Permission.view_files },
             { id: 7, name: Permission.visibility_public },
         ]);
-        const authorization = new CMServerAuthorization({ id: createdByUser.id } as any, effectivePermissions);
         const customLinkAuthorization = testBandAuthorization(createdByUser, effectivePermissions);
         vi.spyOn(customLinkAuthorization, "refresh").mockResolvedValue(customLinkAuthorization);
         // This projection fixture supplies only the delegate used by the read snapshot.
         const customLinkDatabase = { CustomLink: { findMany: vi.fn(async () => [customLink, directFileLink]) } } as unknown as Prisma.TransactionClient;
         const customLinkSnapshot = await bindDB3ReadSnapshot(customLinkDatabase, customLinkAuthorization, { isolationLevel: "Serializable" });
+        // This projection fixture supplies the menu/localization delegates used inside the read snapshot.
+        const menuDatabase = {
+            MenuLink: { findMany: vi.fn(async () => [menuLink]) },
+            locale: { findMany: vi.fn(async () => [{ ietfTag: "en-US", bandLocales: [{ id: 1 }] }]) },
+            dynamicLocalizedStringValue: { findMany: vi.fn(async () => []) },
+            bandDynamicLocalizedStringValue: { findMany: vi.fn(async () => [{
+                stringId: 501, indexedValue: "Scores", blobValue: null, locale: { ietfTag: "en-US" }, updatedAt: createdAt,
+            }]) },
+        } as unknown as Prisma.TransactionClient;
+        const menuSnapshot = await bindDB3ReadSnapshot(menuDatabase, customLinkAuthorization, { isolationLevel: "Serializable" });
 
         const customResult = await queryTable({
             table: {
@@ -480,9 +491,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { items: [] },
             cmdbQueryContext: "menu-link-list-view-test",
-        }, authorization, {
-            MenuLink: { findMany: vi.fn(async () => [menuLink]) },
-        } as any);
+        }, customLinkAuthorization, menuSnapshot);
 
         const createdByUserDto = { publicId: createdByUser.publicId, name: createdByUser.name, cssClass: createdByUser.cssClass };
         expect(customResult.items).toEqual([
@@ -493,7 +502,7 @@ describe("DB3 named views", () => {
                 file: expect.objectContaining({ publicId: filePublicId(8), fileLeafName: "mypage.html" }),
             }),
         ]);
-        expect(menuResult.items).toEqual([expect.objectContaining({ publicId: menuLink.publicId, createdByUserId: createdByUser.publicId, createdByUser: createdByUserDto })]);
+        expect(menuResult.items).toEqual([expect.objectContaining({ publicId: menuLink.publicId, caption: "Scores", createdByUserId: createdByUser.publicId, createdByUser: createdByUserDto })]);
         expect(customResult.items[0]).not.toHaveProperty("id");
         expect(menuResult.items[0]).not.toHaveProperty("id");
     });

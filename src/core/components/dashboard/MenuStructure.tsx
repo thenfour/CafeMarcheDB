@@ -17,6 +17,7 @@ import { gMenuSections, MenuLink, MenuSection, NavRealm } from './StaticMenuItem
 import { HostingMode } from '@/shared/brandConfigBase';
 import { DashboardContextData, useClientTelemetryEvent, useDashboardContext } from '../dashboardContext/DashboardContext';
 import { withMemberPresentation } from "../user/bandMemberLinks";
+import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
 
 
 // Flattened types for rendering (used internally by flattening functions)
@@ -62,7 +63,7 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext
             path = item.externalURI || "";
             break;
         case "Wiki":
-            path = item.wikiSlug ? `/backstage/wiki/${slugify(item.wikiSlug)}` : "";
+            path = item.wikiSlug ? withMemberPresentation(`/backstage/wiki/${slugify(item.wikiSlug)}`, dashboardContext.memberPresentation) : "";
             break;
     }
 
@@ -74,7 +75,7 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext
         // that defines the Permission enum used by static menu items.
         permission: (pobj?.name || Permission.never_grant) as Permission,
         className: item.itemCssClass,
-        linkCaption: item.caption ?? "",
+        linkCaption: localizedText(item.caption) ?? "",
         renderIcon: item.iconName ? gIconMap[item.iconName] : undefined,
         path,
         openInNewTab,

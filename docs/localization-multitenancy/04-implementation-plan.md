@@ -93,10 +93,20 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** recover MenuLink caption/section localization and
-ownership, then the remaining wiki entry points. The normal build now stops at
-`menuLink.ts:55`. Isolate deferred UI and non-page entry points together. Preserve
+**Next implementation slice:** recover remaining wiki entry points, beginning
+with the unscoped lock/visibility mutations and page reader. The normal build now
+stops at `wikiAdminClearLock.ts:13`. Isolate deferred UI and non-page entry points together. Preserve
 the working song-tag lookup, File payloads and shared SongCreditType/wiki-tag catalogs.
+
+MenuLink captions now use localized band writes, resolved queries and public
+transport. Reads, generated CRUD and audited reordering require an explicit band
+and fresh authorization; internal band/creator/string keys cannot be
+supplied by the caller. Section/group fields remain structural strings, as in the
+target schema. The editor supports explicit language changes, manual wiki slugs,
+band switches and a no-band prompt. Wiki suggestions are preserved under
+`wiki-search`; sidebar delivery stays under `dashboard-content`, and the editor
+explains that boundary. Native and development-browser checks cover this slice;
+general wiki workflows and A0 remain open.
 
 Event-tag assignments now reuse the canonical band catalog selection, including
 localized string metadata and shared-source dependencies. Obsolete Instrument and
@@ -381,6 +391,7 @@ implementation/test references and verification obligations for audited removals
 | Translation tools | Native catalog controls can edit explicit translations; full inventory/inspection/chrome tooling is incomplete. | Complete after A1. |
 | File-tag catalogs and File payloads | Shared/band tag CRUD, explicit translations, inherited color/order, hiding, deletion and dashboard references are migrated. Partition/Recording behavior comes only from GlobalFileTag. File payloads use BandFileTagAssignment, BandUser and BandInstrument public references; general File row services still reject undeclared ownership. Raw tag/instrument name quick filtering and association name ordering are preserved under `file-search`. | Recover File ownership, uploads/downloads and resolved File filtering/ordering; verify the complete workflows in the built application during A0/A1. |
 | Wiki-tag catalog and payloads | Band-localized CRUD, inherited color/order, hiding, deletion and dashboard references are migrated. Wiki assignments transport public `bandWikiPageTagId` references and sort hydrated captions. General WikiPage/assignment row services remain guarded; the old raw tag-name predicate is preserved under `wiki-search`. | Recover wiki ownership, editing/locking/revisions and resolved filtering/counts/pagination; verify the complete workflows in the built application during A0/A1. |
+| Menu Links | Caption editing uses explicit band locales; resolved reads, generated CRUD and audited public-ID reordering enforce selected-band ownership and visibility. The editor permits manual wiki slugs and explains unavailable wiki suggestions/sidebar delivery. | Restore authorized wiki suggestions and target-page workflows under `wiki-search`; restore complete custom navigation with `dashboard-content` and verify in the built application. Section/group fields retain their target-schema structural meaning. |
 | Shared event catalogs | Type/status/attendance CRUD edits global defaults with platform catalog authority and explicit locales. Dashboard references resolve scoped labels, including retired history. | Verify in the built application during A0/A1; recover event ownership, invitations and responses separately. |
 | Attendance endpoints | Dedicated response writes and person-history/setlist readers resolve active memberships within an explicitly selected band. HTTP reads require authentication and band event-read authority. Bulk segment copy/clear use band event administration, preserve recorded history and update affected membership revisions. Native, menu DOM and development-browser endpoint checks pass. | Recover event payload/editor ownership, default/tag invitation management and full attendance UI; verify workflows in the built app before closing A1. |
 | Calendar subscriptions | Private feeds and subscription/preview callers require explicit band context and active membership. Preferences, invitation groups, historical attendance, UIDs/revisions, setlists and band locale/branding remain supported. The account credential is shared across its band URLs; replacing it invalidates every band subscription. | Re-subscribe existing unscoped URLs using the selected band; verify in the built app during A0/A1. Full subscription-page localization and general event UI recovery remain separate. |

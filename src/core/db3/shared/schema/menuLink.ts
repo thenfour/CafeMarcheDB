@@ -3,16 +3,18 @@ import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { gIconOptions } from "shared/utils";
 import { DynamicMenuLinkRealm, DynamicMenuLinkType } from "../../../../../shared/dynMenuTypes";
-import { ConstEnumStringField, MakeCreatedAtField, MakeIconField, MakePKfield, MakePublicIdField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
+import { ConstEnumStringField, GenericIntegerField, MakeCreatedAtField, MakeIconField, MakePKfield, MakePublicIdField, MakeSortOrderField } from "../columnTypes/xTableColumnTypes";
 import type { MenuLinkPublicId } from "shared/publicId";
 import * as db3 from "../db3core";
-import { GenericStringField, MakeTitleField } from "../columnTypes/genericString";
+import { GenericStringField } from "../columnTypes/genericString";
+import { LocalizedStringField, localizedText } from "../columnTypes/localizedString";
+import { serverOwnedField } from "../columnTypes/inherited";
 import { UserMinimalSelect } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 
 const xAuthMap = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.public,
-    PostQuery: Permission.public,
+    PostQueryAsOwner: db3.DB3FieldReadAuth.inheritRow,
+    PostQuery: db3.DB3FieldReadAuth.inheritRow,
     PreMutateAsOwner: Permission.customize_menu,
     PreMutate: Permission.customize_menu,
     PreInsert: Permission.customize_menu,
@@ -27,8 +29,9 @@ const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
 } as const;
 
 
-const MenuLinkArgs = Prisma.validator<Prisma.MenuLinkDefaultArgs>()({
+export const MenuLinkArgs = Prisma.validator<Prisma.MenuLinkDefaultArgs>()({
     include: {
+        caption: true,
         createdByUser: { select: UserMinimalSelect },
         visiblePermission: true, // for creating new items, the payload should include this object.
     }
@@ -36,9 +39,7 @@ const MenuLinkArgs = Prisma.validator<Prisma.MenuLinkDefaultArgs>()({
 
 export type MenuLinkPayload = Prisma.MenuLinkGetPayload<typeof MenuLinkArgs>;
 
-export const MenuLinkNaturalOrderBy: Prisma.MenuLinkOrderByWithRelationInput[] = [
-    { sortOrder: 'asc' },
-];
+export const MenuLinkNaturalOrderBy = { sortOrder: "asc" } satisfies Prisma.MenuLinkOrderByWithRelationInput;
 
 ////////////////////////////////////////////////////////////////
 export const xMenuLink = db3.defineTable({
@@ -48,11 +49,13 @@ export const xMenuLink = db3.defineTable({
         return MenuLinkArgs;
     },
     tableName: "MenuLink",
+    bandScope: { member: "bandId", managePermission: Permission.customize_menu },
+    queryStrategy: "resolved",
     deletePolicy: "hard",
     naturalOrderBy: MenuLinkNaturalOrderBy,
     getRowInfo: (row: MenuLinkPayload) => ({
         pk: row.publicId,
-        name: row.caption,
+        name: localizedText(row.caption) ?? "",
         description: undefined,
         color: null,
         iconName: row.iconName,
@@ -62,12 +65,21 @@ export const xMenuLink = db3.defineTable({
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "never" }),
         publicId: () => MakePublicIdField<MenuLinkPublicId>(),
+        bandId: columnName => serverOwnedField(new GenericIntegerField({
+            columnName, allowNull: false, allowSearchingThisField: false,
+            authMap: db3.defineAuthMap({
+                PostQuery: Permission.never_grant, PostQueryAsOwner: Permission.never_grant,
+                PreInsert: Permission.never_grant, PreMutate: Permission.never_grant, PreMutateAsOwner: Permission.never_grant,
+            }),
+        })),
         iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xAuthMap, }),
         sortOrder: () => MakeSortOrderField({ authMap: xAuthMap, }),
         createdAt: () => MakeCreatedAtField({}),
         createdByUser: () => MakeCreatedByField(),
         visiblePermission: () => MakeVisiblePermissionField({ authMap: xAuthMap }),
-        caption: columnName => MakeTitleField(columnName, { authMap: xAuthMap, }),
+        caption: columnName => new LocalizedStringField({
+            columnName, stringIdentityMember: "captionId", stringFormat: "PlainText", writeScope: "band", authMap: xAuthMap,
+        }),
 
         realm: columnName => new ConstEnumStringField({
             columnName,

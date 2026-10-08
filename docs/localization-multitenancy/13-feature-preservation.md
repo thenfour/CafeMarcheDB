@@ -41,7 +41,7 @@ running tests. Neither compiler exclusions nor TypeScript suppressions are used.
 | `account-analysis` | Authorized dependency counts, risk summaries and two-account comparisons. |
 | `dashboard-content` | Relevant events, calendar, announcements/wiki, custom navigation and the required reference catalogs. |
 | `file-search` | File quick filtering and association name ordering against resolved band tag/instrument labels, including blanks, hidden assignments, visibility and pagination. General File ownership remains a prerequisite. |
-| `wiki-search` | Wiki quick filtering by resolved band tag names, including per-string fallback, intentional blanks, hidden assignments, visibility, consistent counts and pagination. General wiki ownership remains a prerequisite. |
+| `wiki-search` | Wiki quick filtering by resolved band tag names and menu wiki-slug suggestions, including per-string fallback, intentional blanks, hidden assignments, visibility, consistent counts and pagination. General wiki ownership remains a prerequisite. |
 | `global-search` | Shell search, authorized domain readers, keyboard behavior, selected-band links and cache isolation. |
 | `quick-search` | Public/member/administrator visibility within explicit bands; localized inherited catalogs; query grammar, all-tag/type filters, ranking/limits, public identities and context-preserving links; stale responses; association/song selection, clearing and keyboard behavior; song detail loading; Markdown wiki/mention suggestions and the protected explorer. Manual text/link editing, authored reference renderers and separate domain search remain active. |
 | `activity-reports` | Activity timelines, facets, filtering, detail and CSV exports with explicit band/platform authorization, localized references, public identities and anonymization/redaction. Telemetry recording remains executable. |
@@ -93,6 +93,12 @@ as one `wiki-search` reference. Wiki associations now target BandWikiPageTag and
 public `bandWikiPageTagId` identities; their display ordering uses resolved
 references. General wiki row services remain guarded. No test is newly disabled,
 and catalog/native/browser evidence does not close wiki workflow or search parity.
+
+The MenuLink recovery preserves two additional `wiki-search` references for its
+old menu wiki-slug suggestion reader and compatibility-inventory entry. The editor accepts manual slugs and explains
+that suggestions are unavailable; it makes no WikiPage query. Caption editing,
+band-scoped CRUD/reorder and context-preserving test links remain active. No test
+is disabled. Custom sidebar delivery remains a `dashboard-content` obligation.
 
 A wholly disabled test file starts with `// MIGRATION_DEFERRED_TEST` and contains
 only comments and `export {};`. The test runner verifies this with the TypeScript

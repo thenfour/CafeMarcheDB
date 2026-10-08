@@ -1,4 +1,3 @@
-import type { Prisma } from "db";
 import { reorderMenuLinksCommand, xMenuLink } from "../../db3";
 import { DB3CommandError, defineCommandHandler } from "../db3CommandCore";
 import { DB3MutationAuthorizationError } from "../db3mutationCore";
@@ -20,9 +19,15 @@ export const menuLinkReorderCommandHandler = defineCommandHandler(
                     context.authorization, context.transaction,
                 );
                 return context.transaction.menuLink.findMany({
-                    where: { id: { in: ids } },
-                    orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
-                }) as Promise<Prisma.MenuLinkGetPayload<{}>[]>; // The transaction delegate is runtime selected.
+                    where: {
+                        id: { in: ids },
+                        bandId: context.authorization.requireBand().id
+                    },
+                    orderBy: [
+                        { sortOrder: "asc" },
+                        { publicId: "asc" },
+                    ],
+                });
             },
             writeChange: async change => {
                 await context.rowServices.update(

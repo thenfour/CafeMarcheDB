@@ -94,10 +94,20 @@ adapter hydrates its sample catalog through the same views. Saved version-1
 documents retain numeric local choices, which the adapter alone translates to
 and from public references.
 
+MenuLink declares `bandScope` and resolved-query execution. Its caption is a
+`LocalizedStringField` with band writes; the editor keeps display provenance and
+explicit translation edits separate. Section/group strings remain structural
+identifiers. Ordinary CRUD owns band/creator/string metadata; caption filtering,
+ordering and pagination use resolved values. Reordering resolves visible public
+identities within the selected band, preflights every changed row and audits
+through the ordinary row service. Its natural order is the scalar `sortOrder`
+declaration shared by the Prisma and in-memory backends.
+
 EventTagAssignment includes the canonical `bandEventTagSelection` plus the
 server-side band ownership support field. Localized string metadata and the
 shared catalog source are fetched together; this payload repair does not declare
-general event/assignment ownership or enable custom-menu delivery.
+general event/assignment ownership. Custom sidebar delivery remains deferred;
+the MenuLink editor does not enable that dashboard reader or wiki suggestions.
 
 Song associations use the `BandSongTagAssociation` descriptor and explicit
 `bandSongTagId` foreign key. Both that key and `songId` transport public
