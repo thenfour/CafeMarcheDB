@@ -677,7 +677,7 @@ describe("DB3 named views", () => {
                     },
                 },
             ],
-            taggedInstruments: [{ publicId: fileInstrumentTagPublicId, instrumentId: instrument.publicId }],
+            taggedInstruments: [{ publicId: fileInstrumentTagPublicId, bandInstrumentId: instrument.publicId }],
             taggedWikiPages: [{ publicId: fileWikiPageTagPublicId, wikiPage: { id: 12, publicId: wikiPagePublicId, slug: "repertoire" } }],
         });
         const hydrated = db3.hydrateView(db3.fileSearchView, dto, references);
@@ -694,7 +694,7 @@ describe("DB3 named views", () => {
         expect(hydrated.taggedEvents).toHaveLength(1);
         expect(hydrated.taggedEvents?.[0]?.event.name).toBe("A concert");
         expect(hydrated.taggedInstruments).toHaveLength(1);
-        expect(hydrated.taggedInstruments?.[0]?.instrument).toEqual(
+        expect(hydrated.taggedInstruments?.[0]?.bandInstrument).toEqual(
             references.require(db3.xInstrument, instrument.publicId, "test"),
         );
         expect(hydrated.taggedWikiPages).toHaveLength(1);
@@ -745,7 +745,7 @@ describe("DB3 named views", () => {
             isDeleted: true,
             visiblePermissionId: permission.publicId,
             tags: [{ publicId: fileTagAssignmentPublicId, bandFileTagId: fileTag.publicId }],
-            taggedUsers: [{ publicId: fileUserTagPublicId, user: { publicId: userPublicId(13), name: "Ada" } }],
+            taggedUsers: [{ publicId: fileUserTagPublicId, bandUser: { publicId: membershipPublicId, user: { publicId: userPublicId(13), name: "Ada" } } }],
             taggedSongs: [{ publicId: fileSongTagPublicId, song: { publicId: songPublicId(14), name: "A song" } }],
             taggedEvents: [{
                 publicId: fileEventTagPublicId,
@@ -757,7 +757,7 @@ describe("DB3 named views", () => {
                     typeId: eventTypePublicId,
                 },
             }],
-            taggedInstruments: [{ publicId: fileInstrumentTagPublicId, instrumentId: instrument.publicId }],
+            taggedInstruments: [{ publicId: fileInstrumentTagPublicId, bandInstrumentId: instrument.publicId }],
             taggedWikiPages: [{ publicId: fileWikiPageTagPublicId, wikiPage: { id: 16, publicId: wikiPagePublicId, slug: "repertoire" } }],
             frontpageGalleryItems: [{ publicId: galleryPublicId(90) }],
             parentFile: { publicId: filePublicId(7), fileLeafName: "source.pdf" },
@@ -775,10 +775,10 @@ describe("DB3 named views", () => {
         expect(hydrated.tags?.[0]?.bandFileTag).toEqual(
             references.require(db3.xBandFileTag, fileTag.publicId, "test"),
         );
-        expect(hydrated.taggedUsers).toEqual([{ publicId: fileUserTagPublicId, user: { publicId: userPublicId(13), name: "Ada" } }]);
+        expect(hydrated.taggedUsers).toEqual([{ publicId: fileUserTagPublicId, bandUser: { publicId: membershipPublicId, user: { publicId: userPublicId(13), name: "Ada" } } }]);
         expect(hydrated.taggedSongs).toEqual([{ publicId: fileSongTagPublicId, song: { publicId: songPublicId(14), name: "A song" } }]);
         expect(hydrated.taggedEvents?.[0]?.event.name).toBe("A concert");
-        expect(hydrated.taggedInstruments?.[0]?.instrument).toEqual(
+        expect(hydrated.taggedInstruments?.[0]?.bandInstrument).toEqual(
             references.require(db3.xInstrument, instrument.publicId, "test"),
         );
         expect(hydrated.taggedWikiPages).toEqual([{
@@ -1244,7 +1244,7 @@ describe("DB3 named views", () => {
                     taggedUsers: [],
                     taggedSongs: [],
                     taggedEvents: [],
-                    taggedInstruments: [{ publicId: fileInstrumentTagPublicId, instrumentId: instrument.publicId }],
+                    taggedInstruments: [{ publicId: fileInstrumentTagPublicId, bandInstrumentId: instrument.publicId }],
                     taggedWikiPages: [],
                 },
             }],
@@ -1266,7 +1266,7 @@ describe("DB3 named views", () => {
         expect(hydrated.taggedFiles?.[0]?.file.tags?.[0]?.bandFileTag).toEqual(
             references.require(db3.xBandFileTag, fileTag.publicId, "test"),
         );
-        expect(hydrated.taggedFiles?.[0]?.file.taggedInstruments?.[0]?.instrument).toEqual(
+        expect(hydrated.taggedFiles?.[0]?.file.taggedInstruments?.[0]?.bandInstrument).toEqual(
             references.require(db3.xInstrument, instrument.publicId, "test"),
         );
         expect(hydrated.taggedFiles?.[0]?.file.taggedEvents).toEqual([]);

@@ -101,6 +101,16 @@ are enforced independently. The response contains scalar card details and public
 references only. A null selection still requires authorization. This reader does
 not enable generic Song/File writes or restore deferred picker/search controls.
 
+File search/card/detail/editor selections share band instrument references through
+`FileInstrumentTag.bandInstrumentId`; hydration supplies `bandInstrument` from the
+current dashboard snapshot. Embedded card fetches include the instrument public
+identity before projection. FileUserTag references a `bandUser` with its own public
+membership identity and a nested shared `user` identity for display/profile links.
+File filter selections use membership IDs. These payload contracts do not admit
+general File reads/writes: their ownership policy remains undeclared and guarded.
+Raw instrument-name filtering and association name ordering are preserved under
+`file-search` until resolved filtering/ordering is restored.
+
 Native grids, dialogs, pickers, and create/edit forms use the field-derived
 contracts. Writing language is explicit and enabled; drafts never copy another
 language's fallback. Failed creates retain dialogs/drafts. Picker creation must

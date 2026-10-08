@@ -114,7 +114,7 @@ export const FileListItem = (props: FileListItemProps) => {
                     }} size="small" variation={StandardVariationSpec.Weak} />)}
 
                 {(props.file.taggedInstruments || []).map(taggedInstrument => (
-                    <InstrumentChip key={db3.xFile.fields.taggedInstruments.getForeignIdentity(taggedInstrument)} value={taggedInstrument.instrument} size="small" variation={StandardVariationSpec.Weak} />
+                    <InstrumentChip key={db3.xFile.fields.taggedInstruments.getForeignIdentity(taggedInstrument)} value={taggedInstrument.bandInstrument} size="small" variation={StandardVariationSpec.Weak} />
                 ))}
 
                 {(props.file.taggedWikiPages || []).map(taggedWikiPage => taggedWikiPage.wikiPage.slug === undefined

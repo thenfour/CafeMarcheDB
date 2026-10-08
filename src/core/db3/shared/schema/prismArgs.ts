@@ -573,11 +573,7 @@ export const EventTagAssignmentNaturalOrderBy: Prisma.EventTagAssignmentOrderByW
 // }>;
 export type EventPayloadWithVisiblePermission = Prisma.EventGetPayload<{
     include: {
-        visiblePermission: {
-            include: {
-                roles: true
-            }
-        },
+        visiblePermission: true,
     }
 }>;
 
@@ -891,13 +887,13 @@ export const BandFileTagAssignmentNaturalOrderBy: Prisma.BandFileTagAssignmentOr
 export const FileUserTagArgs = Prisma.validator<Prisma.FileUserTagArgs>()({
     include: {
         file: true,
-        user: true,
+        bandUser: { include: { user: true } },
     }
 });
 export type FileUserTagPayload = Prisma.FileUserTagGetPayload<typeof FileUserTagArgs>;
 export const FileUserTagNaturalOrderBy: Prisma.FileUserTagOrderByWithRelationInput[] = [
-    { user: { name: 'asc' } },
-    { user: { id: 'asc' } },
+    { bandUser: { user: { name: 'asc' } } },
+    { publicId: 'asc' },
 ];
 ////////////////////////////////////////////////////////////////
 export const FileSongTagArgs = Prisma.validator<Prisma.FileSongTagArgs>()({
@@ -917,7 +913,7 @@ export const FileSongTagNaturalOrderBy: Prisma.FileSongTagOrderByWithRelationInp
 export const FileEventTagArgs = Prisma.validator<Prisma.FileEventTagArgs>()({
     include: {
         file: {
-            include: { visiblePermission: { include: { roles: true } } }
+            include: { visiblePermission: true }
         },
         event: {
             include: {
@@ -932,7 +928,7 @@ export type FileEventTagPayload = Prisma.FileEventTagGetPayload<typeof FileEvent
 export const FileEventTagMinimumArgs = Prisma.validator<Prisma.FileEventTagArgs>()({
     include: {
         file: {
-            include: { visiblePermission: { include: { roles: true } } }
+            include: { visiblePermission: true }
         },
     }
 });
@@ -950,19 +946,19 @@ export const FileEventTagNaturalOrderBy: Prisma.FileEventTagOrderByWithRelationI
 export const FileInstrumentTagArgs = Prisma.validator<Prisma.FileInstrumentTagArgs>()({
     include: {
         file: true,
-        instrument: InstrumentWithFunctionalGroupArgs,
+        bandInstrument: { select: { publicId: true, name: true } },
     }
 });
 export type FileInstrumentTagPayload = Prisma.FileInstrumentTagGetPayload<typeof FileInstrumentTagArgs>;
-export type FileInstrumentTagPayloadWithInstrument = Prisma.FileInstrumentTagGetPayload<{
+export type FileInstrumentTagPayloadWithBandInstrument = Prisma.FileInstrumentTagGetPayload<{
     include: {
-        instrument: true,
+        bandInstrument: true,
     }
 }>;
 
 export const FileInstrumentTagNaturalOrderBy: Prisma.FileInstrumentTagOrderByWithRelationInput[] = [
-    { instrument: { name: 'asc' } },
-    { instrument: { id: 'asc' } },
+    // Resolved instrument labels belong to the band catalog, not raw SQL ordering.
+    { publicId: 'asc' },
 ];
 
 ////////////////////////////////////////////////////////////////
@@ -1019,11 +1015,7 @@ export const WikiPageTagAssignmentNaturalOrderBy: Prisma.WikiPageTagAssignmentOr
 
 export const FileArgs = Prisma.validator<Prisma.FileArgs>()({
     include: {
-        visiblePermission: {
-            include: {
-                roles: true
-            }
-        },
+        visiblePermission: true,
         uploadedByUser: true,
 
         tags: BandFileTagAssignmentArgs,
@@ -1098,18 +1090,10 @@ export const EventAttendanceNaturalOrderBy: Prisma.EventAttendanceOrderByWithRel
 ////////////////////////////////////////////////////////////////
 export const FrontpageGalleryItemArgs = Prisma.validator<Prisma.FrontpageGalleryItemArgs>()({
     include: {
-        visiblePermission: {
-            include: {
-                roles: true
-            }
-        },
+        visiblePermission: true,
         file: {
             include: {
-                visiblePermission: {
-                    include: {
-                        roles: true
-                    }
-                },
+                visiblePermission: true,
                 parentFile: true,
             }
         },
@@ -1710,4 +1694,17 @@ export interface ObjectWithVisiblePermission {
 //     { changedAt: 'desc' },
 // ];
 //
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-search
+// Source: 3eef35e286d02c61aebd0bb000c433c34cfb15a6:src/core/db3/shared/schema/prismArgs.ts:963-966
+// Reason: Raw File tag and instrument name matching cannot query the new localized catalogs safely.
+// Restore: Restore File quick filtering and association name ordering against resolved band tag and instrument labels, preserving blanks, hidden assignments, visibility and pagination.
+// Verification: Test localized names, intentional blanks, hidden assigned tags, cross-band visibility, pagination and the built File search.
+// SHA256: b998a780e5c6f49ff142aba85fdf3aa5ac5805fc37d469039e27a52e79f2e71c
+// MIGRATION_REFERENCE_BEGIN
+// export const FileInstrumentTagNaturalOrderBy: Prisma.FileInstrumentTagOrderByWithRelationInput[] = [
+//     { instrument: { name: 'asc' } },
+//     { instrument: { id: 'asc' } },
+// ];
 // MIGRATION_REFERENCE_END

@@ -93,15 +93,24 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** repair the File association payload root at
-`fileSearchView.ts:59`, which still selects `FileInstrumentTag.instrumentId`
-instead of the band instrument relationship. Trace its search/card/detail owners,
-File/member/instrument ownership and public reference hydration together;
-`fileViews.ts` also selects the removed File-to-person relationship. Preserve
-migrated File/Song-tag catalogs, existing Custom Link delivery and the narrow song
-lookup. Then continue the remaining File/song-credit/wiki payload roots,
-including legacy `Permission.roles` selections. Isolate deferred UI and non-page
-entry points together.
+**Next implementation slice:** repair the localized SongCreditType payload root
+at `songViews.ts:29`, which still selects the removed `text` member. Trace its
+descriptor, editor, dashboard reference, credit selections and consumers through
+the shared localization contracts. Preserve the working song-tag lookup and File
+payloads. Then continue the remaining wiki and obsolete instrument payload roots;
+isolate deferred UI and non-page entry points together.
+
+File search/card/detail/editor payloads now use `bandInstrumentId` and
+`bandInstrument`, while File-to-person associations resolve through `bandUser`.
+Membership identities remain distinct from the shared person identities used by
+profile links. Embedded cards fetch instrument public identities before projection;
+all instrument display hydration uses the current dashboard reference snapshot.
+File-related visibility selections no longer request the removed Permission role
+relation. General File queries and writes remain guarded; this repairs payload
+contracts without establishing File workflow or ownership recovery. Raw instrument
+name filtering and association name ordering are preserved under `file-search`
+until the resolved search owner can implement them. Native two-band/two-locale
+checks cover distinct memberships, inherited labels and intentional blank overrides.
 
 Song-tag association payloads now use `BandSongTagAssociation` and
 `bandSongTagId` consistently in Prisma selections, DB3 field metadata, setlist
@@ -346,7 +355,7 @@ implementation/test references and verification obligations for audited removals
 | `LocalizedMarkdown` | Resolved rendering is available; legacy inline editing is disabled and preserved in source. | Scoped translation/Markdown editing after A1. |
 | Settings and branding | Generic DB3 settings storage/view are inactive and preserved in source. Settings/branding pages use registered commands and per-key capabilities, with explicit scope, save/reset and validated clipboard import. Logo editing, optional primary text color and upload controls remain unavailable; hosting mode belongs to deployment configuration. | Verify editors in the built app during A0/A1; recover remaining branding controls and account for legacy clipboard documents under `settings-editors`. |
 | Translation tools | Native catalog controls can edit explicit translations; full inventory/inspection/chrome tooling is incomplete. | Complete after A1. |
-| File-tag catalogs and File payloads | Shared/band tag CRUD, explicit translations, inherited color/order, hiding, deletion and dashboard references are migrated. Partition/Recording behavior comes only from GlobalFileTag. Assignment metadata uses BandFileTagAssignment; general File row services still reject undeclared ownership. Raw File tag-text quick filtering is disabled with its source preserved under `file-search`. | Recover member/instrument/File ownership, uploads/downloads and resolved File filtering; verify the complete workflows in the built application during A0/A1. |
+| File-tag catalogs and File payloads | Shared/band tag CRUD, explicit translations, inherited color/order, hiding, deletion and dashboard references are migrated. Partition/Recording behavior comes only from GlobalFileTag. File payloads use BandFileTagAssignment, BandUser and BandInstrument public references; general File row services still reject undeclared ownership. Raw tag/instrument name quick filtering and association name ordering are preserved under `file-search`. | Recover File ownership, uploads/downloads and resolved File filtering/ordering; verify the complete workflows in the built application during A0/A1. |
 | Shared event catalogs | Type/status/attendance CRUD edits global defaults with platform catalog authority and explicit locales. Dashboard references resolve scoped labels, including retired history. | Verify in the built application during A0/A1; recover event ownership, invitations and responses separately. |
 | Attendance endpoints | Dedicated response writes and person-history/setlist readers resolve active memberships within an explicitly selected band. HTTP reads require authentication and band event-read authority. Bulk segment copy/clear use band event administration, preserve recorded history and update affected membership revisions. Native, menu DOM and development-browser endpoint checks pass. | Recover event payload/editor ownership, default/tag invitation management and full attendance UI; verify workflows in the built app before closing A1. |
 | Calendar subscriptions | Private feeds and subscription/preview callers require explicit band context and active membership. Preferences, invitation groups, historical attendance, UIDs/revisions, setlists and band locale/branding remain supported. The account credential is shared across its band URLs; replacing it invalidates every band subscription. | Re-subscribe existing unscoped URLs using the selected band; verify in the built app during A0/A1. Full subscription-page localization and general event UI recovery remain separate. |

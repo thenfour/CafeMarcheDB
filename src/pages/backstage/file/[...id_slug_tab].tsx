@@ -171,7 +171,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                     "Tagged Users": (file.taggedUsers && file.taggedUsers.length > 0) ? (
                         <CMChipContainer>
                             {file.taggedUsers.map((taggedUser, index) => (
-                                <UserChip key={index} value={taggedUser.user} />
+                                <UserChip key={index} value={taggedUser.bandUser.user} />
                             ))}
                         </CMChipContainer>) : undefined,
                     "Tagged Songs": (file.taggedSongs && file.taggedSongs.length > 0) ?
@@ -204,7 +204,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                         0) ? (
                         <CMChipContainer>
                             {file.taggedInstruments.map((taggedInstrument, index) => (
-                                <InstrumentChip key={index} value={taggedInstrument.instrument} />
+                                <InstrumentChip key={index} value={taggedInstrument.bandInstrument} />
                             ))}
                         </CMChipContainer>) : "",
                     "Tagged Wiki Pages": (file.taggedWikiPages && file.taggedWikiPages.length > 0) ?

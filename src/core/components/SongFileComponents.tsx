@@ -6,7 +6,7 @@ import { Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { Permission } from 'shared/permissions';
-import type { EventPublicId, EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FilePublicId, FileSongTagPublicId, FileTagPublicId, SongPublicId, UserPublicId, WikiPagePublicId } from 'shared/publicId';
+import type { BandUserPublicId, EventPublicId, EventStatusPublicId, EventTypePublicId, FileEventTagPublicId, FilePublicId, FileSongTagPublicId, FileTagPublicId, SongPublicId, UserPublicId, WikiPagePublicId } from 'shared/publicId';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { formatFileSize, SortDirection } from 'shared/rootroot';
 import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
@@ -348,8 +348,8 @@ export const FileValueViewer = (props: FileViewerProps) => {
 
                     {(taggedUsers.length > 0) && (
                         taggedUsers
-                            .filter(a => !props.hiddenTagIds.userTagIds || !existsInArray(props.hiddenTagIds.userTagIds, a.user.publicId))
-                            .map(a => <UserChip key={db3.xFile.fields.taggedUsers.getForeignIdentity(a)} value={a.user} size="small" variation={variation} />)
+                            .filter(a => !props.hiddenTagIds.userTagIds || !existsInArray(props.hiddenTagIds.userTagIds, a.bandUser.user.publicId))
+                            .map(a => <UserChip key={db3.xFile.fields.taggedUsers.getForeignIdentity(a)} value={a.bandUser.user} size="small" variation={variation} />)
                     )}
 
                     {(taggedSongs.length > 0) && (
@@ -364,9 +364,9 @@ export const FileValueViewer = (props: FileViewerProps) => {
                         taggedInstruments
                             .filter(a => !props.hiddenTagIds.instrumentTagIds || !existsInArray(
                                 props.hiddenTagIds.instrumentTagIds,
-                                db3.getInstrumentIdentity(a.instrument),
+                                db3.getInstrumentIdentity(a.bandInstrument),
                             ))
-                            .map(a => <InstrumentChip key={db3.xFile.fields.taggedInstruments.getForeignIdentity(a)} value={a.instrument} size="small" variation={variation} />)
+                            .map(a => <InstrumentChip key={db3.xFile.fields.taggedInstruments.getForeignIdentity(a)} value={a.bandInstrument} size="small" variation={variation} />)
                     )}
 
                     {(taggedWikiPages.length > 0) && (
@@ -455,7 +455,7 @@ export const FileEditor = (props: FileEditorProps) => {
                 cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline',
                 overrideRowInfo: (association: db3.FileEditorInstrumentTag, rowInfo: db3.RowInfo) => {
                     // because the query doesn't include instrument functional group, get it from global dashboard context
-                    const fg = dashboardContext.instrumentFunctionalGroup.getById(association.instrument.functionalGroupId);
+                    const fg = dashboardContext.instrumentFunctionalGroup.getById(association.bandInstrument.functionalGroupId);
                     if (!fg) return rowInfo;
                     return { ...rowInfo, color: gGeneralPaletteList.findEntry(fg.color) };
                 }
@@ -508,10 +508,10 @@ export const FileEditor = (props: FileEditorProps) => {
         })),
         taggedInstruments: props.initialValue.taggedInstruments.map(association => ({
             ...association,
-            instrument: dashboardContext.referenceStore.require(
+            bandInstrument: dashboardContext.referenceStore.require(
                 db3.xInstrument,
-                association.instrumentId,
-                `File(${props.initialValue.publicId}).taggedInstruments.instrument`,
+                association.bandInstrumentId,
+                `File(${props.initialValue.publicId}).taggedInstruments.bandInstrument`,
             ),
         })),
         taggedEvents: props.initialValue.taggedEvents.map(association => ({
@@ -572,7 +572,7 @@ export const FileEditor = (props: FileEditorProps) => {
 interface FileFilterAndSortSpec {
     quickFilter: string;
     tagIds: FileTagPublicId[];
-    taggedUserIds: UserPublicId[];
+    taggedUserIds: BandUserPublicId[];
     taggedInstrumentIds: db3.InstrumentIdentity[];
     taggedSongIds: SongPublicId[];
     taggedEventIds: EventPublicId[];
@@ -596,10 +596,10 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         const tagIds = tags.map(tag => db3.xBandFileTag.getIdentity(tag.bandFileTag));
         if (spec.tagIds.length && !tagIds.some(id => spec.tagIds.includes(id))) return false;
 
-        const userIds = taggedUsers.map(user => user.user.publicId);
+        const userIds = taggedUsers.map(association => association.bandUser.publicId);
         if (spec.taggedUserIds.length && !userIds.some(id => spec.taggedUserIds.includes(id))) return false;
 
-        const instrumentIds = taggedInstruments.map(instrument => db3.getInstrumentIdentity(instrument.instrument));
+        const instrumentIds = taggedInstruments.map(instrument => db3.getInstrumentIdentity(instrument.bandInstrument));
         if (spec.taggedInstrumentIds.length && !instrumentIds.some(id => spec.taggedInstrumentIds.includes(id))) return false;
 
         const songIds = taggedSongs.map(song => song.song.publicId);
@@ -627,8 +627,8 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         const tokensToSearch = [
             (item.file.description || "").toLocaleLowerCase(),
             (item.file.fileLeafName || "").toLocaleLowerCase(),
-            taggedInstruments.map(i => (i.instrument.name || "").toLocaleLowerCase()),
-            taggedUsers.map(i => (i.user.name || "").toLocaleLowerCase()),
+            taggedInstruments.map(i => (i.bandInstrument.name || "").toLocaleLowerCase()),
+            taggedUsers.map(i => (i.bandUser.user.name || "").toLocaleLowerCase()),
             taggedEvents.map(i => (i.event.name || "").toLocaleLowerCase()),
             taggedSongs.map(i => (i.song.name || "").toLocaleLowerCase()),
             taggedWikiPages.map(i => (i.wikiPage.slug || "").toLocaleLowerCase()),
@@ -758,7 +758,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
     const uniqueTags = CalculateUniqueTags<db3.FileTagDashboardClient>({ field: db3.xFile.fields.tags, fileTags: props.fileTags });
     const uniqueInstrumentTags = CalculateUniqueTags<db3.InstrumentDashboardClient>({ field: db3.xFile.fields.taggedInstruments, fileTags: props.fileTags });
     const uniqueEventTags = CalculateUniqueTags<{ publicId: EventPublicId; name: string }>({ field: db3.xFile.fields.taggedEvents, fileTags: props.fileTags });
-    const uniqueUserTags = CalculateUniqueTags<db3.UserPayloadMinimum>({ field: db3.xFile.fields.taggedUsers, fileTags: props.fileTags });
+    const uniqueUserTags = CalculateUniqueTags<NonNullable<db3.FileEditorUserTag["bandUser"]>>({ field: db3.xFile.fields.taggedUsers, fileTags: props.fileTags });
     const uniqueSongTags = CalculateUniqueTags<db3.SongPayloadMinimum>({ field: db3.xFile.fields.taggedSongs, fileTags: props.fileTags });
     const uniqueWikiPageTags = CalculateUniqueTags<db3.WikiPagePayload>({ field: db3.xFile.fields.taggedWikiPages, fileTags: props.fileTags });
     const uniqueMimeTypes = CalculateUniqueMimeTypes({ fileTags: props.fileTags });
@@ -861,7 +861,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                                                 variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedUserIds, t.tag.publicId) }}
                                                 onClick={() => props.onChange({ ...props.value, taggedUserIds: toggleValueInArray(props.value.taggedUserIds, t.tag.publicId) })}
                                             >
-                                                {t.tag.name} ({t.count})
+                                                {t.tag.user.name} ({t.count})
                                             </CMChip>))}
                                     </CMChipContainer>}
                                 </div>

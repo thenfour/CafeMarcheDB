@@ -113,8 +113,9 @@ describe("instrument catalog public-ID transport", () => {
                 id: 93,
                 publicId: fileUserTagPublicId,
                 fileId: 90,
-                userId: 100,
-                user: { id: 100, publicId: userPublicId(100), name: "Ada" },
+                bandUserId: 110,
+                bandUser: { id: 110, publicId: parsePublicId<"BandUser">("TransportMember1"), userId: 100,
+                    user: { id: 100, publicId: userPublicId(100), name: "Ada" } },
             }],
             taggedSongs: [{
                 id: 94,
@@ -134,8 +135,8 @@ describe("instrument catalog public-ID transport", () => {
                 id: 91,
                 publicId: fileInstrumentTagPublicId,
                 fileId: 90,
-                instrumentId: instrument.id,
-                instrument,
+                bandInstrumentId: instrument.id,
+                bandInstrument: instrument,
             }],
             taggedWikiPages: [{
                 id: 96,
@@ -149,8 +150,8 @@ describe("instrument catalog public-ID transport", () => {
         expect(projectedFile).not.toHaveProperty("id");
         expect(projectedFile.tags[0]).not.toHaveProperty("fileId");
         expect(projectedFile.taggedSongs[0]).not.toHaveProperty("fileId");
-        const nestedInstrument = projectedFile.taggedInstruments[0].instrument;
-        expect(projectedFile.taggedInstruments[0].instrumentId).toBe(instrumentPublicId);
+        const nestedInstrument = projectedFile.taggedInstruments[0].bandInstrument;
+        expect(projectedFile.taggedInstruments[0].bandInstrumentId).toBe(instrumentPublicId);
         expect(projectedFile.taggedInstruments[0].publicId).toBe(fileInstrumentTagPublicId);
         expect(projectedFile.taggedInstruments[0]).not.toHaveProperty("id");
         expect(nestedInstrument.publicId).toBe(instrumentPublicId);
@@ -166,9 +167,13 @@ describe("instrument catalog public-ID transport", () => {
         expect(projectedFile.tags[0].bandFileTag).not.toHaveProperty("id");
         expect(projectedFile.taggedUsers[0]).toMatchObject({
             publicId: fileUserTagPublicId,
-            userId: userPublicId(100),
-            user: { publicId: userPublicId(100), name: "Ada" },
+            bandUserId: "TransportMember1",
+            bandUser: { publicId: "TransportMember1", userId: userPublicId(100),
+                user: { publicId: userPublicId(100), name: "Ada" } },
         });
+        expect(projectedFile.taggedUsers[0]).not.toHaveProperty("userId");
+        expect(projectedFile.taggedUsers[0].bandUser).not.toHaveProperty("id");
+        expect(projectedFile.taggedUsers[0].bandUser.user).not.toHaveProperty("id");
         expect(projectedFile.taggedSongs[0]).toMatchObject({
             publicId: fileSongTagPublicId,
             songId: songPublicId,
@@ -464,8 +469,12 @@ describe("instrument catalog public-ID transport", () => {
             tableName: "FileUserTag",
             mutationType: "update",
             updatePublicId: fileUserTagPublicId,
-            updateModel: { userId: 100 },
+            updateModel: { bandUserId: parsePublicId<"BandUser">("TransportMember1") },
         })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "FileUserTag", tableName: "FileUserTag", mutationType: "update",
+            updatePublicId: fileUserTagPublicId, updateModel: { userId: 100 },
+        })).toThrow("unknown mutation field 'userId'");
         expect(() => validateDB3MutationRequest({
             tableID: "FileSongTag",
             tableName: "FileSongTag",
@@ -485,8 +494,12 @@ describe("instrument catalog public-ID transport", () => {
             tableName: "FileInstrumentTag",
             mutationType: "update",
             updatePublicId: fileInstrumentTagPublicId,
-            updateModel: { instrumentId: instrumentPublicId },
+            updateModel: { bandInstrumentId: instrumentPublicId },
         })).not.toThrow();
+        expect(() => validateDB3MutationRequest({
+            tableID: "FileInstrumentTag", tableName: "FileInstrumentTag", mutationType: "update",
+            updatePublicId: fileInstrumentTagPublicId, updateModel: { instrumentId: instrumentPublicId },
+        })).toThrow("unknown mutation field 'instrumentId'");
         expect(() => validateDB3MutationRequest({
             tableID: "FileWikiPageTag",
             tableName: "FileWikiPageTag",

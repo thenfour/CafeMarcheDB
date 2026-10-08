@@ -98,8 +98,8 @@
     },
     {
       "id": "file-search",
-      "reason": "Raw File tag text matching cannot query the new localized catalog. General File ownership recovery remains pending.",
-      "restore": "Restore File quick filtering against resolved band tag labels, alongside the File ownership migration.",
+      "reason": "Raw File tag and instrument name matching cannot query the new localized catalogs safely.",
+      "restore": "Restore File quick filtering and association name ordering against resolved band tag and instrument labels, preserving blanks, hidden assignments, visibility and pagination.",
       "verification": "Test localized names, intentional blanks, hidden assigned tags, cross-band visibility, pagination and the built File search.",
       "status": "pending",
       "evidence": []
@@ -1779,6 +1779,18 @@
       "featureId": "quick-search",
       "source": "66c5806d6f87b328a8ce0dbd653deb5bbacc3457:src/core/components/markdown/RichTextEditor.tsx:139-149",
       "sha256": "454e38972139177d9385537ff1b83146c8a9a0d0d5cfc4c621a443c45f609a5d"
+    },
+    {
+      "file": "src/core/db3/shared/schema/file.ts",
+      "featureId": "file-search",
+      "source": "3eef35e286d02c61aebd0bb000c433c34cfb15a6:src/core/db3/shared/schema/file.ts:517-533",
+      "sha256": "dc73e42b7b289110a48094338e4cb658ec4b371bd36aca432a76f3473b0e02c8"
+    },
+    {
+      "file": "src/core/db3/shared/schema/prismArgs.ts",
+      "featureId": "file-search",
+      "source": "3eef35e286d02c61aebd0bb000c433c34cfb15a6:src/core/db3/shared/schema/prismArgs.ts:963-966",
+      "sha256": "b998a780e5c6f49ff142aba85fdf3aa5ac5805fc37d469039e27a52e79f2e71c"
     }
   ]
 }

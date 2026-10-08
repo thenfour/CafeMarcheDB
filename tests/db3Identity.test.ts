@@ -60,23 +60,23 @@ describe("DB3 table identity authority", () => {
 
     it("lets relation fields own association-object and foreign-identity extraction", () => {
         const association = {
-            instrumentId: instrumentPublicId,
-            instrument: { publicId: instrumentPublicId, name: "Trumpet" },
+            bandInstrumentId: instrumentPublicId,
+            bandInstrument: { publicId: instrumentPublicId, name: "Trumpet" },
         };
 
         expect(db3.xFile.fields.taggedInstruments.getAssociations({
             taggedInstruments: [association],
         })).toEqual([association]);
-        expect(db3.xFile.fields.taggedInstruments.getForeignObject<typeof association.instrument>(
+        expect(db3.xFile.fields.taggedInstruments.getForeignObject<typeof association.bandInstrument>(
             association,
-        )).toBe(association.instrument);
+        )).toBe(association.bandInstrument);
         expect(db3.xFile.fields.taggedInstruments.getForeignIdentity(association))
             .toBe(instrumentPublicId);
         expect(db3.xFile.fields.taggedInstruments.getForeignDatabaseIdentity({
-            instrumentId: 123,
+            bandInstrumentId: 123,
         })).toBe(123);
         expect(() => db3.xFile.fields.taggedInstruments.getForeignIdentity({
-            instrumentId: 123,
+            bandInstrumentId: 123,
         })).toThrow();
 
         const membershipId = parsePublicId<"BandUser">("Membership000001");

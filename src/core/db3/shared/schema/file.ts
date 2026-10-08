@@ -7,9 +7,10 @@ import { CMDBTableFilterModel } from "../apiTypes";
 import { DateTimeField, foreignRef, ForeignCollectionField, foreignRefByTableId, GenericIntegerField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, BandFileTagAssignmentArgs, BandFileTagAssignmentNaturalOrderBy, BandFileTagAssignmentPayload, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FileWikiPageTagArgs, FileWikiPageTagNaturalOrderBy, FileWikiPageTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
-import { CreatedByUserField, MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
+import { CreatedByUserField, MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 import { xEvent } from "./event";
 import { xInstrument } from "./instrument";
+import { xBandUser } from "../entities/user/bandUser";
 import { xSong } from "./song";
 import { xWikiPage } from "./wiki";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
@@ -153,15 +154,15 @@ export const xFileUserTag = db3.defineTable({
     getRowInfo: (row: FileUserTagPayload) => {
         return {
             pk: row.publicId,
-            name: row.user?.name || "",
+            name: row.bandUser?.user?.name ?? "",
             ownerUserId: null,
         };
     },
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<FileUserTagPublicId>(),
-        user: foreignRef(() => xUser, {
-            fkidMember: "userId",
+        bandUser: foreignRef(() => xBandUser, {
+            fkidMember: "bandUserId",
             authMap: xFileAuthMap_FileObjects,
         }),
     })
@@ -294,15 +295,15 @@ export const xFileInstrumentTag = db3.defineTable({
     getRowInfo: (row: FileInstrumentTagPayload) => {
         return {
             pk: row.publicId,
-            name: row.instrument?.name || "",
+            name: localizedText(row.bandInstrument?.name) ?? "",
             ownerUserId: null,
         };
     },
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<FileInstrumentTagPublicId>(),
-        instrument: foreignRef(() => xInstrument, {
-            fkidMember: "instrumentId",
+        bandInstrument: foreignRef(() => xInstrument, {
+            fkidMember: "bandInstrumentId",
             authMap: xFileAuthMap_FileObjects,
         }),
     })
@@ -460,17 +461,15 @@ const xFileBaseArgs = {
             },
         }), // column: tags
 
-        taggedUsers: tagsRef("FileUserTag", "User", {
-            associationForeignObjectMember: "user",
+        taggedUsers: tagsRef("FileUserTag", "BandUser", {
+            associationForeignObjectMember: "bandUser",
             associationLocalObjectMember: "file",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 taggedUsers: {
                     some: {
-                        user: {
-                            name: {
-                                contains: query
-                            }
+                        bandUser: {
+                            user: { name: { contains: query } }
                         }
                     }
                 }
@@ -515,20 +514,11 @@ const xFileBaseArgs = {
         }), // column: taggedEvents
 
         taggedInstruments: tagsRef("FileInstrumentTag", "BandInstrument", {
-            associationForeignObjectMember: "instrument",
+            associationForeignObjectMember: "bandInstrument",
             associationLocalObjectMember: "file",
             authMap: xFileAuthMap_FileObjects,
-            getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
-                taggedInstruments: {
-                    some: {
-                        instrument: {
-                            name: {
-                                contains: query
-                            }
-                        }
-                    }
-                }
-            }),
+            // Inherited localized names require the resolved search owner.
+            getQuickFilterWhereClause: () => false,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedInstruments
 
@@ -739,4 +729,30 @@ declare module "../db3core" {
 //                 return false;
 //             },
 //         }), // column: tags
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-search
+// Source: 3eef35e286d02c61aebd0bb000c433c34cfb15a6:src/core/db3/shared/schema/file.ts:517-533
+// Reason: Raw File tag and instrument name matching cannot query the new localized catalogs safely.
+// Restore: Restore File quick filtering against resolved band tag and instrument labels, preserving blanks, hidden assignments, visibility and pagination.
+// Verification: Test localized names, intentional blanks, hidden assigned tags, cross-band visibility, pagination and the built File search.
+// SHA256: dc73e42b7b289110a48094338e4cb658ec4b371bd36aca432a76f3473b0e02c8
+// MIGRATION_REFERENCE_BEGIN
+//         taggedInstruments: tagsRef("FileInstrumentTag", "BandInstrument", {
+//             associationForeignObjectMember: "instrument",
+//             associationLocalObjectMember: "file",
+//             authMap: xFileAuthMap_FileObjects,
+//             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
+//                 taggedInstruments: {
+//                     some: {
+//                         instrument: {
+//                             name: {
+//                                 contains: query
+//                             }
+//                         }
+//                     }
+//                 }
+//             }),
+//             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
+//         }), // column: taggedInstruments
 // MIGRATION_REFERENCE_END

@@ -33,6 +33,13 @@ requires explicit selected-band authorization, refreshes within a repeatable
 snapshot and returns public references after checking song/tag/pinned-file
 visibility and ownership. Generic Song/File writes and picker/search UI remain
 guarded.
+File association payloads now use band memberships and band instruments across
+search, card, detail, editor and embedded consumers. Person links retain shared
+person identities; association/filter identities belong to memberships. File
+cards fetch instrument public identities before projection, and hydrated labels
+come from the current band/locale reference store. File-related visibility reads
+no longer select the removed Permission role relation. General File ownership,
+metadata/search and creation workflows remain unfinished and guarded.
 **A0 remains open.** The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
@@ -277,44 +284,35 @@ export found during this slice was also repaired by naming the public-ID schema
 
 ## Verification
 
-The song-tag payload slice passes 184 focused checks across eleven files,
-including seven new RPC request/authorization cases, seven new public-reference
-and complete-setlist contract cases, 41 existing view/identity/SQL contracts and
-sixteen isolated controls cases. Existing fixtures now use the target association
-model, foreign key and SQL column while retaining their hydration, authorization,
-natural-ID rejection and projection assertions. The shared File-tag declaration's
-misspelled foreign-key option was also corrected.
+File payload, view/identity/transport and retained recovery boundaries pass 186
+focused tests across seven files. Updated fixtures retain their projection,
+hydration and foreign-identity assertions using the actual band relationship
+names; mutation shapes reject the removed person/instrument field names.
 
-All 117 native cases across eight files pass on a fresh private target-schema
-MariaDB fixture. Ten new lookup cases cover exact public projections, hidden and
-foreign-band assignments, missing/foreign/deleted songs, private ownership,
-visibility grants, independent pinned File deletion/ownership/visibility,
-revoked grants, stale deleted/merged actors, null selection authorization and
-explicit band/authentication requirements. Three existing Song-tag catalog cases
-and 104 retained Setlist Plan, event creation, attendance, event/File-tag and
-Custom Link cases also pass. The native fixture confirmed that `view_files` is a
-public grant; revocation coverage removes a pinned File's separate visibility
-grant instead of assuming a band role can remove a public capability.
+All 30 native tests across six files pass on a fresh private target-schema
+MariaDB fixture. Four new File cases execute search/card/detail/editor and
+association Prisma selections, project public references, hydrate two memberships
+for the same person and two band instrument overrides in English/French, preserve
+intentional blanks and verify that generic File queries/inserts/updates remain
+guarded. Projection-only checks do not claim general File read authorization.
+Dashboard, File/Song-tag catalog, Custom Link and song-lookup regressions pass.
 
-Nine development-browser assertion groups pass without page errors. Real
-ordinary-member song RPCs return public band-tag references and omit hidden/
-foreign assignments; missing band input is rejected, another band's song is
-absent and anonymous lookup requires authentication. The migrated Song-tag grid
-renders resolved labels and saves a new localized tag. Deferred quick-search
-explorer and Markdown controls, local inline-class suggestions, File-tag saves,
-event/segment/song-list creation and Custom Link content/ranges retain the prior
-browser coverage. The catalog screenshot was visually inspected
-(`temp/a0-song-tag-browser-result.json`). The helper dropped its private database
-and storage, stopped its browser/development server, and the owned MariaDB
-instance was shut down. Built-production and complete song/setlist UI delivery
-remain unverified.
+The broader browser fixture passes 121 native tests across nine files, including
+the four new File cases and retained Setlist Plan, event creation/attendance/tag,
+File/Song-tag, Custom Link and song-lookup cases. Nine development-browser assertion
+groups pass without page errors. Real song lookup retains explicit band context,
+public tag references and hidden/foreign omissions. File/Song-tag creation, event
+creation, existing Custom Link content/byte ranges and deferred quick-search/
+Markdown behavior remain executable. The screenshot was visually inspected
+(`temp/a0-file-associations-browser-result.json`). Private databases/storage and
+owned browser/server resources are removed/stopped. Built-production and complete
+File/song/setlist workflows remain unverified.
 
-No feature or existing behavioral test is newly deferred. Preservation remains
-271 references, ten wholly deferred specifications and nineteen pending
-obligations. The song lookup's request now requires band context; its already
-deferred picker is preserved for adaptation when restored. Remaining legacy
-authorization fixtures still need target-model migration. TypeScript diagnostics
-fall from 110 to 89; remaining Song-credit and File roots are separate work.
+Two additional references preserve raw instrument-name filtering and SQL name
+ordering under `file-search`. Preservation now verifies 273 source references,
+ten wholly deferred specifications and nineteen pending obligations. No existing
+test is newly disabled. Typecheck falls from 89 to 56 diagnostics; normal build
+gets past the File payloads and stops at the localized SongCreditType selection.
 
 The quick-search slice passes 130 focused checks across eight files: nine public
 HTTP/reader boundary cases, four explorer page guards, seven isolated controls
@@ -707,7 +705,7 @@ production server could not be checked because the normal build still fails.
 | Custom-link routes/URLs/page guards, bootstrap, view contracts, preservation/recovery boundaries, membership roles and public Markdown/Suspense navigation | Passed: 161 tests across ten files, including two isolated jsdom files. All redirect modes, nested slugs, repeated query values, visit details, routing-parameter exclusion, hash forwarding and the selection-page authorization boundary are covered. |
 | Custom-link CRUD/file authorization, telemetry persistence, dashboard catalogs and member profiles on a fresh private MariaDB fixture | Passed: 24 tests across four files, including six native custom-link cases. Covers duplicate slugs across bands, create/update/delete and visit cascade, server-owned IDs, missing context/revoked authority, file visibility/ownership and crafted unavailable targets. Fixture writes roll back and the generated database is removed. |
 | Existing Custom Link/Menu Link view and schema-wide policy fixtures | The collection view passes with an explicit scoped snapshot. Policy rows now carry band/active-person context and use public identities where natural-ID filtering is forbidden; five earlier failures are recovered. The existing broad metadata assertion still fails because Locale has no DB3 descriptor. |
-| Source preservation and Git provenance | Passed: 271 references, including eighteen new quick-search references. Ten wholly deferred specifications and nineteen pending obligations remain protected; no test is newly disabled in this slice. |
+| Source preservation and Git provenance | Passed: 273 references, including two File instrument-search/ordering references. Ten wholly deferred specifications and nineteen pending obligations remain protected; no test is newly disabled in this slice. |
 | Quick-search HTTP/reader/client isolation, explorer authorization, localized controls and retained Markdown editing | Passed: 130 focused checks across eight files, including twelve isolated DOM cases. Public GET/HEAD returns 503 before query/account/content reads; unsupported methods return 405. Direct helpers reject and controls remain inert with existing values visible; text/HTML and local inline-class suggestions remain active. |
 | Quick-search development-browser and retained native workflows | Passed: seven browser assertion groups without page errors, including public/member/Sysadmin callers, platform/two-band explorer contexts, real Markdown edits/local suggestions, retained File-tag/event saves and existing Custom Link content/ranges. All 104 native cases across six files pass. Screenshots inspected; private database/storage and owned servers removed/stopped. |
 | File-creation isolation, upload HTTP/client, image RPCs and localized controls | Passed: 131 focused checks across six files, including five isolated DOM cases and retained Custom Link/download regressions. Upload returns empty 503 responses before multipart parsing; anonymous HTTP requests receive explicit 401 responses. File/URL/paste/drop and bake controls remain inert while ordinary Markdown text/HTML paste works. |
@@ -730,9 +728,9 @@ production server could not be checked because the normal build still fails.
 | Native dashboard/catalog snapshots and membership role/lifecycle/profile/instrument/tag regression | Passed: 60 tests across seven files on a new private MariaDB target-schema fixture. |
 | Earlier migrated-production-copy bootstrap/account check | Passed: eight tests, including six native cases; the development browser evidence above predates Role/merge isolation. |
 | ESLint on changed/new TypeScript files; `git diff --check` | Passed. |
-| `yarn typecheck` | Fails: 89 diagnostics, down from 110 at the quick-search checkpoint. Song-tag payloads and public references now use the target model. Remaining errors in changed schema/view files belong to legacy File and Song-credit contracts; no compiler exclusions or suppression added. |
-| `yarn build` | Gets past the song-tag payload root; stops at `src/core/db3/shared/entities/file/fileSearchView.ts:59`, which selects removed `FileInstrumentTag.instrumentId`. File membership/instrument references and broader ownership remain unfinished. |
-| `yarn test --reporter=dot` | Fails in the Node batch: 265 failed, 1,578 passed, 278 skipped across 152 files, with ten suite failures. The 211 reported failure entries exactly match the quick-search checkpoint; fourteen new Node cases pass and ten new native cases skip without the private URL. Those native cases pass in the dedicated fixture above. No existing test is newly disabled. Later isolated DOM batches are not reached, so relevant controls files run separately. |
+| `yarn typecheck` | Fails: 56 diagnostics, down from 89. No diagnostics remain in File selections, descriptors, consumers or new native tests. Remaining roots include localized Song-credit types, wiki/instrument payloads and legacy fixtures; no compiler exclusions or suppression added. |
+| `yarn build` | Gets past File payloads; stops at `src/core/db3/shared/entities/song/songViews.ts:29`, which selects the removed SongCreditType `text` member. General File ownership/workflows remain unfinished. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 265 failed, 1,578 passed, 282 skipped across 153 files, with ten suite failures. The 211 reported failure entries exactly match the previous song-tag checkpoint; no failure entry is added or removed. Four new native File cases skip without the private URL and pass in the dedicated fixture above. No existing test is newly disabled. Later isolated DOM batches are not reached; the development-browser regression above verifies retained controls. |
 
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
@@ -763,11 +761,12 @@ verification resources, not application configuration.
 
 ## Remaining A0 blockers
 
-The next build stop is File-instrument selection at `fileSearchView.ts:59`:
-`FileInstrumentTag.instrumentId` was replaced by `bandInstrumentId`. File card/
-detail selections also retain the old person association. Trace search/card/
-detail owners and their public membership/instrument references together without
-enabling undeclared generic ownership. Song-tag associations and the narrow
+The next build stop is the SongCreditType selection at `songViews.ts:29`:
+`text` was replaced by a localized name. Trace its descriptor, editor, dashboard
+reference, credit selections and consumers through the shared localization
+contracts. File search/card/detail/editor payloads and consumers now use public
+band membership/instrument references; general File ownership remains undeclared
+and guarded. Song-tag associations and the narrow
 `getFilteredSongs` lookup now have target-model payloads, public identity and
 fresh selected-band authorization. Migrated song-tag catalogs remain active;
 broader Song ownership/UI and localized credit types remain unfinished.
@@ -790,8 +789,8 @@ Setlist Plan storage is recovered; its complete editor still depends on deferred
 Song/search workflows.
 
 Fix owning contracts before their cascading consumers: `prismArgs.ts` remains the
-largest diagnostic root, followed by obsolete person-level instrument/tag and
-event/file/song descriptors and views. Shared event catalogs and dedicated
+largest diagnostic root, including obsolete instrument/wiki selections and
+localized Song-credit types. Shared event catalogs and dedicated
 attendance write/history/HTTP, bulk copy/clear endpoints and private calendar feeds
 are migrated. Response/invitation reader ownership and identities are migrated. Full event
 search/editing payloads and invitation management remain unfinished, including

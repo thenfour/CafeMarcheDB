@@ -13,7 +13,7 @@ const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
         uploadedAt: true,
         uploadedByUser: {
             select: {
-                id: true,
+                publicId: true,
                 name: true,
             },
         },
@@ -56,7 +56,7 @@ const fileSearchTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
         taggedInstruments: {
             select: {
                 publicId: true,
-                instrumentId: true,
+                bandInstrumentId: true,
             },
         },
         taggedWikiPages: {

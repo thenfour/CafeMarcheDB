@@ -198,10 +198,15 @@ export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArg
         taggedUsers: {
             select: {
                 publicId: true,
-                user: {
+                bandUser: {
                     select: {
                         publicId: true,
-                        name: true,
+                        user: {
+                            select: {
+                                publicId: true,
+                                name: true,
+                            },
+                        },
                     },
                 },
             },
@@ -234,7 +239,7 @@ export const fileCardTransportSelection = Prisma.validator<Prisma.FileDefaultArg
         taggedInstruments: {
             select: {
                 publicId: true,
-                instrumentId: true,
+                bandInstrumentId: true,
             },
         },
         taggedWikiPages: {
@@ -264,7 +269,12 @@ export const fileCardSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
             },
             taggedUsers: {
                 select: {
-                    userId: true,
+                    bandUserId: true,
+                },
+            },
+            taggedInstruments: {
+                select: {
+                    bandInstrument: { select: { publicId: true } },
                 },
             },
             taggedSongs: {
