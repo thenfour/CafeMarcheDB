@@ -18,16 +18,16 @@ export const menuLinkReorderCommandHandler = defineCommandHandler(
                     xMenuLink, dto.scopeRowIds,
                     context.authorization, context.transaction,
                 );
-                return context.transaction.menuLink.findMany({
+                const rows = await context.transaction.menuLink.findMany({
                     where: {
                         id: { in: ids },
                         bandId: context.authorization.requireBand().id
                     },
-                    orderBy: [
-                        { sortOrder: "asc" },
-                        { publicId: "asc" },
-                    ],
+                    orderBy: { sortOrder: "asc" },
                 });
+                // mysql colation sorts differently than client; that matters so this unifies things.
+                return rows.sort((a, b) => a.sortOrder - b.sortOrder
+                    || (a.publicId < b.publicId ? -1 : a.publicId > b.publicId ? 1 : 0));
             },
             writeChange: async change => {
                 await context.rowServices.update(

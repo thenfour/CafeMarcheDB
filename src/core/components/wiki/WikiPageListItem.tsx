@@ -1,3 +1,4 @@
+import { withMemberPresentation } from "../user/bandMemberLinks";
 import { Article } from "@mui/icons-material";
 import React from "react";
 import { CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
@@ -22,7 +23,7 @@ export const WikiPageListItem = (props: WikiPageListItemProps) => {
     const { wikiPage } = props;
     const dashboardContext = useDashboardContext();
 
-    const wikiUrl = dashboardContext.getAbsoluteUri(`/backstage/wiki/${wikiPage.slug}`);
+    const wikiUrl = dashboardContext.getAbsoluteUri(withMemberPresentation(`/backstage/wiki/${wikiPage.slug}`, dashboardContext.memberPresentation));
     const visInfo = dashboardContext.getVisibilityInfo(wikiPage);
 
     return <GenericSearchListItem<EnrichedVerboseWikiPage>

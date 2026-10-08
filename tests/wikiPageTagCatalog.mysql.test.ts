@@ -10,7 +10,6 @@ import { generatePublicId } from "src/server/publicId";
 import { bandWikiPageTagView, xBandWikiPageTag } from "src/core/db3/shared/entities/wikiPageTag/wikiPageTagViews";
 import { wikiPageEditorView, wikiPageSearchView } from "src/core/db3/shared/entities/wiki/wikiViews";
 import { xWikiPage } from "src/core/db3/shared/schema/wiki";
-import { xWikiPageTagAssignment } from "src/core/db3/shared/schema/wikiPageTag";
 import { WikiPageTagAssignmentArgs, WikiPageTagAssignmentNaturalOrderBy } from "src/core/db3/shared/schema/prismArgs";
 import { loadDashboardCatalogs } from "src/core/db3/server/db3DashboardCatalogs";
 import { createCommandRowServices } from "src/core/db3/server/db3CommandCore";
@@ -160,7 +159,7 @@ describe.skipIf(!settingsMysqlTestUrl)("band wiki tag catalogs on MariaDB", () =
 
     it("projects public band-tag identities and orders editor/search associations by resolved captions", () => withFixture(async (tx, fixture) => {
         const auth = await authorize(tx, fixture);
-        const page = await tx.wikiPage.create({ data: { publicId: generatePublicId(), bandId: fixture.bands[0]!.id, slug: "policy" } });
+        const page = await tx.wikiPage.create({ data: { publicId: generatePublicId(), bandId: fixture.bands[0]!.id, createdByUserId: fixture.user.id, slug: "policy" } });
         const ids: string[] = [];
         for (const [english, french] of [["Alpha", "Zulu"], ["Zulu", "Alpha"]]) {
             const created = await executeCatalogCrud(tx, auth, bandWikiPageTagView, { name: text(english!), sortOrder: 0 });
@@ -176,7 +175,7 @@ describe.skipIf(!settingsMysqlTestUrl)("band wiki tag catalogs on MariaDB", () =
         registerDashboardReferences(references, { wikiPageTag: catalogs.wikiPageTag.map(dto => wikiPageTagDashboardView.hydrate(dto, references)) });
         for (const view of [wikiPageEditorView, wikiPageSearchView]) {
             const raw = await tx.wikiPage.findUniqueOrThrow({ ...view.getSelectionArgs({ filter: {}, auth }), where: { id: page.id } });
-            // Payload conversion is separate from the unfinished wiki read/write ownership policy.
+            // The same public tag contract serves page editing and search results.
             const dto = view.parseDto(projectDB3ModelPublicIds(xWikiPage, raw, auth));
             expect(dto.tags).toHaveLength(2);
             expect(dto.tags?.[0]).not.toHaveProperty("tagId");
@@ -184,9 +183,9 @@ describe.skipIf(!settingsMysqlTestUrl)("band wiki tag catalogs on MariaDB", () =
             expect(view.hydrate(dto, references).tags.map(item => item.tag.name)).toEqual(["Alpha", "Zulu"]);
             expect(view.hydrate(dto, references).tags.map(item => item.bandWikiPageTagId)).toEqual([ids[1], ids[0]]);
         }
-        await expect(queryView({ view: wikiPageEditorView, filter: {}, cmdbQueryContext: "deferred wiki ownership" }, auth, await snapshot(tx, auth))).rejects.toThrow();
-        await expect(createCommandRowServices(auth, tx).update(xWikiPage, parsePublicId<"WikiPage">(page.publicId), {})).rejects.toThrow();
-        const assignment = rawAssignments[0]!;
-        await expect(createCommandRowServices(auth, tx).update(xWikiPageTagAssignment, parsePublicId<"WikiPageTagAssignment">(assignment.publicId), {})).rejects.toThrow();
+        const pages = await queryView({ view: wikiPageEditorView, filter: {}, cmdbQueryContext: "owned wiki page" }, auth, await snapshot(tx, auth));
+        expect(pages.items[0]?.tags).toHaveLength(2);
+        const foreignAuth = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(fixture.bands[1]!.publicId));
+        expect((await queryView({ view: wikiPageEditorView, filter: {}, cmdbQueryContext: "other band's wiki pages" }, foreignAuth, await snapshot(tx, foreignAuth))).items).toEqual([]);
     }));
 });

@@ -1,3 +1,7 @@
+import type MarkdownIt from "markdown-it";
+import { withMemberPresentation } from "../user/bandMemberLinks";
+import type { DB3QueryContextInput } from "src/core/db3/components/useDB3Context";
+
 
 // export function CMDBLinkMarkdownPlugin(md) {
 //     const defaultRender = md.renderer.rules.html_inline || function (tokens, idx, options, env, self) {
@@ -43,7 +47,8 @@ export const MarkdownMentionRegexWithSurroundingWhitespace = /\s*\[\[(event|song
 export const MarkdownWikiLinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 export const MarkdownWikiLinkRegexWithSurroundingWhitespace = /\s*\[\[([^\]|]+)(?:\|([^\]]+))?\]\]\s*/g;
 
-export function CMDBLinkMarkdownPlugin(md) {
+// Standalone renderers have no presentation context; application callers supply their selected band.
+export function CMDBLinkMarkdownPlugin(md: MarkdownIt, context: DB3QueryContextInput = {}) {
     // Save the current text renderer (which might be the default, or from another plugin)
     const originalTextRule = md.renderer.rules.text ||
         function (tokens, idx, options, env, self) {
@@ -70,7 +75,7 @@ export function CMDBLinkMarkdownPlugin(md) {
         output = output.replace(MarkdownWikiLinkRegex, (match, slug, caption) => {
             if (slug) {
                 caption = caption || slug;
-                return `<a href="/backstage/wiki/${slug}" class="wikiCMLink wikiWikiLink">${caption}</a>`;
+                return `<a href="${withMemberPresentation(`/backstage/wiki/${slug}`, context)}" class="wikiCMLink wikiWikiLink">${caption}</a>`;
             }
             return match;
         });

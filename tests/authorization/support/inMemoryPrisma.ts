@@ -80,7 +80,7 @@ export function matchesWhere(row: TestRow, where: Record<string, unknown> | unde
       return clauses.every((clause) => !matchesWhere(row, clause as Record<string, unknown>))
     }
     // Prisma compound unique selectors describe several scalar columns.
-    if (["bandId_userId", "localeId_stringId", "bandId_name", "userId_name", "bandUserId_name"].includes(field)) {
+    if (["bandId_userId", "bandId_slug", "localeId_stringId", "bandId_name", "userId_name", "bandUserId_name"].includes(field)) {
       return isRecord(expected) && matchesWhere(row, expected)
     }
     return matchesScalar(row[field], expected)
@@ -129,11 +129,13 @@ const testRelations: Record<string, Record<string, Relation>> = {
     permission: { table: "permission", local: "permissionId", foreign: "id" },
   },
   wikiPage: {
+    revisions: { table: "wikiPageRevision", local: "id", foreign: "wikiPageId", many: true },
     createdByUser: { table: "user", local: "createdByUserId", foreign: "id" },
     visiblePermission: { table: "permission", local: "visiblePermissionId", foreign: "id" },
     lockedByUser: { table: "user", local: "lockedByUserId", foreign: "id" },
     currentRevision: { table: "wikiPageRevision", local: "currentRevisionId", foreign: "id" },
   },
+  wikiPageRevision: { wikiPage: { table: "wikiPage", local: "wikiPageId", foreign: "id" } },
   event: {
     createdByUser: { table: "user", local: "createdByUserId", foreign: "id" },
     visiblePermission: { table: "permission", local: "visiblePermissionId", foreign: "id" },

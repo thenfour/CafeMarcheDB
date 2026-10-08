@@ -9,6 +9,8 @@ function wikiAuth(userId: number) {
         hasPermission: () => true,
         requirePermission: () => undefined,
         requireUser: () => auth,
+        requireBand: () => ({ id: 1 }),
+        refresh: async () => auth,
     };
     return auth;
 }
@@ -55,7 +57,7 @@ const page = (overrides = {}): WikiPageApiPayload => ({
     ...overrides,
 });
 const pageRow = (overrides = {}) => ({ ...page(overrides), id: 1 });
-const args = { canonicalWikiPath: "test", baseRevisionId: revisionPublicId, baseContentVersion: 5, lockId: "editor-a", title: "Title", content: "Draft" };
+const args = { bandPublicId: parsePublicId<"Band">("FixtureBand00001"), canonicalWikiPath: "test", baseRevisionId: revisionPublicId, baseContentVersion: 5, lockId: "editor-a", title: "Title", content: "Draft" };
 beforeEach(() => {
     vi.useFakeTimers(); vi.setSystemTime(now);
     mockDb.$transaction.mockImplementation(async (work: any) => work(mockDb));

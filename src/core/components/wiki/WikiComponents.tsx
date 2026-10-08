@@ -1,4 +1,7 @@
 
+import { withMemberPresentation } from "../user/bandMemberLinks";
+import { Alert } from "@mui/material";
+import { useLocale } from "src/locale/components/useLocale";
 import { useMutation } from "@blitzjs/rpc";
 import { History, LockOpen } from "@mui/icons-material";
 import { ListItemIcon, MenuItem } from "@mui/material";
@@ -43,7 +46,7 @@ interface WikiTitleControlProps {
 const WikiTitleViewer = (props: WikiTitleControlProps) => {
     const dashboardContext = useDashboardContext();
     return <a
-        href={dashboardContext.getAbsoluteUri(props.wikiPageApi.wikiPath.uriRelativeToHost)}
+        href={dashboardContext.getAbsoluteUri(withMemberPresentation(props.wikiPageApi.wikiPath.uriRelativeToHost, dashboardContext.memberPresentation))}
         rel="noreferrer">
         <span className="WikiTitleView">
             {props.potentiallyEditedTitle}
@@ -315,6 +318,7 @@ const WikiPageVisibilityControl = (props: WikiPageVisibilityControlProps) => {
             });
             await snackbar.invokeAsync(async () => {
                 await wikiPageSetVisibilityMutation({
+                    bandPublicId: dashboardContext.requireBandPublicId(),
                     canonicalWikiPath: props.wikiPageApi.wikiPath.canonicalWikiPath,
                     visiblePermissionId: v,
                 })
@@ -368,7 +372,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
         </MenuItem>,
         pageExists && dashboardContext.isAuthorized(Permission.view_wiki_page_revisions) &&
         <MenuItem key={"copylink"} onClick={async () => {
-            await snackbar.invokeAsync(async () => navigator.clipboard.writeText(dashboardContext.getAbsoluteUri(props.wikiPageApi.wikiPath.uriRelativeToHost)), "Copied link to clipboard");
+            await snackbar.invokeAsync(async () => navigator.clipboard.writeText(dashboardContext.getAbsoluteUri(withMemberPresentation(props.wikiPageApi.wikiPath.uriRelativeToHost, dashboardContext.memberPresentation))), "Copied link to clipboard");
             endMenuItemRef.current();
         }}>
             <ListItemIcon>
@@ -378,7 +382,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
         </MenuItem>,
         pageExists && dashboardContext.isAuthorized(Permission.view_wiki_page_revisions) &&
         <MenuItem key={"viewhistory"} onClick={async () => {
-            void router.push(`/backstage/wikiPageHistory?path=${props.wikiPageApi.wikiPath.canonicalWikiPath}`);
+            void router.push(withMemberPresentation(`/backstage/wikiPageHistory?path=${encodeURIComponent(props.wikiPageApi.wikiPath.canonicalWikiPath)}`, dashboardContext.memberPresentation));
             endMenuItemRef.current();
         }}>
             <ListItemIcon>
@@ -500,7 +504,7 @@ export const WikiLockIndicator = ({ wikiPageApi }: { wikiPageApi: WikiPageApi })
 interface WikiPageControlProps {
     wikiPath: WikiPath,
 };
-export const WikiPageControl = (props: WikiPageControlProps) => {
+const WikiPageControlInner = (props: WikiPageControlProps) => {
     const [editing, setEditing] = React.useState<boolean>(false);
     const snackbar = useSnackbar();
 
@@ -555,4 +559,14 @@ export const WikiPageControl = (props: WikiPageControlProps) => {
                 />}
         </AppContextMarker>
     </div>;
+};
+
+export const WikiPageControl = (props: WikiPageControlProps) => {
+    const dashboard = useDashboardContext();
+    const locale = useLocale();
+    const band = dashboard.memberPresentation.bandPublicId;
+    if (!band) {
+        return <Alert severity="info">{locale.getPlainString("wiki.selectBand")}</Alert>;
+    }
+    return <WikiPageControlInner key={`${band}:${props.wikiPath.canonicalWikiPath}`} {...props} />;
 };

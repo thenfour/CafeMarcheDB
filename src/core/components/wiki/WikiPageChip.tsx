@@ -1,3 +1,4 @@
+import { withMemberPresentation } from "../user/bandMemberLinks";
 import { Permission } from "@/shared/permissions";
 import { getHashedColor } from "@/shared/utils";
 import { wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
@@ -25,7 +26,7 @@ export const WikiPageChip = (props: WikiPageChipProps) => {
     return <CMChip
         variation={props.variation}
         size={props.size}
-        href={isAuthorized ? wikiPath.uriRelativeToHost : undefined}
+        href={isAuthorized ? withMemberPresentation(wikiPath.uriRelativeToHost, dashboardContext.memberPresentation) : undefined}
         className={props.className}
     >
         {props.startAdornment}

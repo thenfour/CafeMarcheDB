@@ -1,4 +1,7 @@
 
+import { Alert } from "@mui/material";
+import { useLocale } from "src/locale/components/useLocale";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import React, { Suspense } from "react";
 import { IsNullOrWhitespace } from "shared/utils";
 import { useSnackbar } from "src/core/components/SnackbarContext";
@@ -104,8 +107,14 @@ const WikiStandaloneControlInner = ({ floatingHeader = false, ...props }: WikiSt
 };
 
 export const WikiStandaloneControl = (props: WikiStandaloneControlProps) => {
+    const dashboard = useDashboardContext();
+    const locale = useLocale();
+    const band = dashboard.memberPresentation.bandPublicId;
+    if (!band) {
+        return <Alert severity="info">{locale.getPlainString("wiki.selectBand")}</Alert>;
+    }
     return <Suspense fallback={<div className="lds-dual-ring"></div>}>
-        <WikiStandaloneControlInner {...props} />
+        <WikiStandaloneControlInner key={`${band}:${props.canonicalWikiPath}`} {...props} />
     </Suspense>;
 };
 

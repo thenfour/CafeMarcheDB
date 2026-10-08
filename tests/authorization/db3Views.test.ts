@@ -531,6 +531,7 @@ describe("DB3 named views", () => {
     it("projects the finite WikiPage tag editor view", async () => {
         const findMany = vi.fn(async () => [{
             id: 15,
+            bandId: 1,
             publicId: wikiPagePublicId,
             slug: "policy",
             createdByUserId: 100,
@@ -538,6 +539,7 @@ describe("DB3 named views", () => {
             tags: [{
                 id: 16,
                 publicId: wikiPageTagAssignmentPublicId,
+                wikiPage: { bandId: 1, createdByUserId: 100, visiblePermissionId: null },
                 bandWikiPageTagId: 17,
                 tag: {
                     id: 17,
@@ -556,6 +558,11 @@ describe("DB3 named views", () => {
             { id: 3, name: Permission.view_wiki_pages },
         ]);
 
+        const auth = testBandAuthorization({ id: 100 }, effectivePermissions);
+        vi.spyOn(auth, "refresh").mockResolvedValue(auth);
+        // This projection fixture supplies one delegate; native tests verify real grant refresh.
+        const database = { WikiPage: { findMany } } as unknown as Prisma.TransactionClient;
+        const context = await bindDB3ReadSnapshot(database, auth, { isolationLevel: "Serializable" });
         const result = await queryTable({
             table: {
                 tableID: db3.xWikiPage.tableID,
@@ -565,9 +572,7 @@ describe("DB3 named views", () => {
             orderBy: undefined,
             filter: { publicIds: [wikiPagePublicId] },
             cmdbQueryContext: "wiki-page-editor-view-test",
-        }, testBandAuthorization({ id: 100 }, effectivePermissions), {
-            WikiPage: { findMany },
-        } as any);
+        }, auth, context);
 
         expect(result.items).toEqual([{
             publicId: wikiPagePublicId,
@@ -964,6 +969,7 @@ describe("DB3 named views", () => {
                 }],
             },
             descriptionWikiPage: {
+                bandId: 1,
                 id: 30,
                 publicId: wikiPagePublicId,
                 createdByUserId: 42,
@@ -971,6 +977,7 @@ describe("DB3 named views", () => {
                 currentRevision: {
                     id: 31,
                     publicId: wikiRevisionPublicId,
+                    wikiPage: { bandId: 1, createdByUserId: 42, visiblePermissionId: null },
                     content: "Event details",
                 },
             },

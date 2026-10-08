@@ -57,6 +57,7 @@ type UseWikiPageArgs = {
 //////////////////////////////////
 export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   const dashboardContext = useDashboardContext();
+  const bandPublicId = dashboardContext.requireBandPublicId();
   const messageBox = useMessageBox();
   const [wikiPath, setWikiPath] = React.useState<WikiPath>(() => wikiParseCanonicalWikiPath(args.canonicalWikiPath));
   const recordFeature = useFeatureRecorder();
@@ -66,6 +67,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   const [saving, setSaving] = React.useState(false);
 
   const [currentRevisionData, currentRevisionDataQueryExtras] = useQuery(getWikiPage, {
+    bandPublicId,
     canonicalWikiPath: args.canonicalWikiPath,
     baseRevisionId: basePage?.currentRevision?.publicId ?? null,
     baseContentVersion: basePage?.contentVersion ?? 0,
@@ -90,6 +92,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   async function acquire(base: WikiPageApiPayload | null): Promise<GetWikiPageUpdatabilityResult> {
     const lockId = uuidv4();
     const request = {
+      bandPublicId,
       canonicalWikiPath: args.canonicalWikiPath,
       lockId,
       baseRevisionId: base?.currentRevision?.publicId ?? null,
@@ -131,7 +134,8 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
     try {
       // Reacquisition is explicit in the UI; a stale editor never takes ownership on save.
       const result = await updateWikiPageMutation({
-        canonicalWikiPath: args.canonicalWikiPath,
+        bandPublicId,
+      canonicalWikiPath: args.canonicalWikiPath,
         baseRevisionId: baseRef.current?.currentRevision?.publicId ?? null,
         baseContentVersion: baseRef.current?.contentVersion ?? 0,
         lockId: lockRef.current,
@@ -153,12 +157,12 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   async function releaseYourLock(): Promise<void> {
     const lockId = lockRef.current;
     if (!lockId) return;
-    await wikiReleaseYourLockMutation({ canonicalWikiPath: args.canonicalWikiPath, lockId });
+    await wikiReleaseYourLockMutation({ bandPublicId, canonicalWikiPath: args.canonicalWikiPath, lockId });
     if (lockRef.current === lockId) setLock(null);
   }
 
   async function adminClearLock(): Promise<void> {
-    await wikiAdminClearLockMutation({ canonicalWikiPath: args.canonicalWikiPath });
+    await wikiAdminClearLockMutation({ bandPublicId, canonicalWikiPath: args.canonicalWikiPath });
     setLock(null);
     void currentRevisionDataQueryExtras.refetch();
   }
@@ -166,18 +170,19 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   const renewYourLockThrottled = useThrottle(() => {
     const lockId = lockRef.current;
     if (!lockId) return;
-    void wikiRenewYourLockMutation({ canonicalWikiPath: args.canonicalWikiPath, lockId })
+    void wikiRenewYourLockMutation({ bandPublicId, canonicalWikiPath: args.canonicalWikiPath, lockId })
       .then(() => currentRevisionDataQueryExtras.refetch())
       .catch(() => { /* Keep the draft. Polling or the next save will check ownership. */ });
   }, gWikiLockAutoRenewThrottleInterval);
 
   React.useEffect(() => {
     const canonicalWikiPath = args.canonicalWikiPath;
+    const originalBandPublicId = bandPublicId;
     return () => {
       const lockId = lockRef.current;
-      if (lockId) void wikiReleaseYourLockMutation({ canonicalWikiPath, lockId }).catch(() => {});
+      if (lockId) void wikiReleaseYourLockMutation({ bandPublicId: originalBandPublicId, canonicalWikiPath, lockId }).catch(() => {});
     };
-  }, [args.canonicalWikiPath]);
+  }, [args.canonicalWikiPath, bandPublicId]);
 
   const networkPending = currentRevisionDataQueryExtras.isFetching ||
     updateWikiPageMutationExtras.isLoading ||

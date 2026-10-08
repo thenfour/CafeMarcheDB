@@ -2,7 +2,7 @@ import { isPublicId } from "shared/publicId";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { eventWikiPageContextView } from "../../db3/shared/entities/event/eventViews";
 import { queryView } from "../../db3/server/db3QueryCore";
-import type { TransactionalPrismaClient } from "../../db3/shared/apiTypes";
+import type { DB3ReadContext } from "../../db3/server/db3ReadExecution";
 import { SpecialWikiNamespace, WikiPageData } from "../../wiki/shared/wikiUtils";
 import * as db3 from "../../db3/db3";
 
@@ -15,7 +15,7 @@ export const ProcessEventDescriptionForWikiPage = async (
     slugWithoutNamespace: string,
     inp: WikiPageData,
     authorization: CMServerAuthorization,
-    database: TransactionalPrismaClient,
+    database: DB3ReadContext,
 ): Promise<WikiPageData> => {
     if (namespace.toLowerCase() !== SpecialWikiNamespace.EventDescription.toLowerCase()) {
         return inp;

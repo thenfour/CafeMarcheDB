@@ -142,8 +142,16 @@ Editor values retain explicit translations and raw overrides; ordinary reference
 expose resolved names, descriptions, colors and ordering. WikiPageTagAssignment
 uses public `bandWikiPageTagId` references while retaining the existing WikiPageTag
 identity brand. Editor/search hydration sorts by resolved order/name/public identity.
-Payload conversion does not authorize general WikiPage/assignment reads or writes;
-their owning workflow policy remains guarded. The old raw tag-name quick-filter
+WikiPage declares direct band ownership; revisions and assignments inherit it
+through their owning page. These declarations request repeatable read snapshots
+while retaining the ordinary Prisma query backend. Parent visibility applies to
+revision/assignment reads before projection. Dedicated wiki RPCs require a public
+band identity and refresh authorization inside serializable writes; band/creator
+keys stay server-owned, and legacy global slug lookups are removed. Reads, saves,
+leases, visibility, history/detail/deletion, contributions and maintenance share
+this boundary. Event-description references validate a visible, undeleted same-band
+event before creation/save and restrict the link write to that band. Revisions
+remain authored Markdown, rather than localized catalog text. The old raw tag-name quick-filter
 predicate is preserved under `wiki-search` until the resolved wiki search owner
 can supply equivalent visibility, matching, counts and pagination.
 

@@ -1,37 +1,12 @@
-import { loadAuthorization } from "src/auth/server/serverAuthorization";
-import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
-import { xWikiPage } from "src/core/db3/shared/schema/wiki";
-// wikiRenewYourLock
-
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
-import db from "db";
+import type { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
-import { GetDateSecondsFromNow } from "shared/time";
-import { gWikiPageLockDurationSeconds, TWikiReleaseYourLockArgs, ZTWikiReleaseYourLockArgs } from "src/core/wiki/shared/wikiUtils";
+import { ZTWikiReleaseYourLockArgs, type TWikiReleaseYourLockArgs } from "../shared/wikiUtils";
+import { writeWiki } from "../server/wikiAuthorization";
+import { renewWikiLock } from "../server/wikiPageAdministration";
 
-// entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.authorize(Permission.edit_wiki_pages),
     resolver.zod(ZTWikiReleaseYourLockArgs),
-    async (args: TWikiReleaseYourLockArgs, ctx: AuthenticatedCtx) => {
-
-        const auth = (await loadAuthorization(ctx.session)).requireUser();
-        const readable = await GetAuthorizedTableReadWhere({ table: xWikiPage, auth });
-        const result = await db.wikiPage.updateMany({
-            where: {
-                AND: [readable],
-                slug: args.canonicalWikiPath,
-                lockId: args.lockId,
-                lockedByUserId: ctx.session.userId,
-                lockExpiresAt: { gt: new Date() },
-            },
-            data: {
-                lockExpiresAt: GetDateSecondsFromNow(gWikiPageLockDurationSeconds),
-                lastEditPingAt: new Date(),
-            },
-        });
-        return result.count === 1;
-    }
+    async (args: TWikiReleaseYourLockArgs, ctx: AuthenticatedCtx) =>
+        writeWiki(ctx.session, args.bandPublicId, Permission.edit_wiki_pages, context => renewWikiLock(context, args)),
 );
-

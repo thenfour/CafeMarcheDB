@@ -1,35 +1,12 @@
-import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
-// it's just less effort to make this mutation for this single field than to use db3 superimposed over
-// all this custom stuff.
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
-import db from "db";
+import type { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
-import * as db3 from "src/core/db3/db3";
-import { resolvePublicForeignIds } from "src/core/db3/server/db3PublicIds";
-import { TSetWikiPageVisibilityArgs, ZTSetWikiPageVisibilityArgs } from "src/core/wiki/shared/wikiUtils";
+import { ZTSetWikiPageVisibilityArgs, type TSetWikiPageVisibilityArgs } from "../shared/wikiUtils";
+import { writeWiki } from "../server/wikiAuthorization";
+import { setWikiVisibility } from "../server/wikiPageAdministration";
 
-// entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.authorize(Permission.edit_wiki_pages),
     resolver.zod(ZTSetWikiPageVisibilityArgs),
-    async (args: TSetWikiPageVisibilityArgs, ctx: AuthenticatedCtx): Promise<void> => {
-        const auth = await loadAuthorization(ctx.session);
-        const resolvedForeignIds = await resolvePublicForeignIds(
-            db3.xWikiPage,
-            { visiblePermissionId: args.visiblePermissionId },
-            auth,
-            db,
-        );
-        await db.wikiPage.update({
-            where: {
-                slug: args.canonicalWikiPath,
-            },
-            data: {
-                visiblePermissionId: resolvedForeignIds.visiblePermissionId,
-            },
-        });
-
-    }
+    async (args: TSetWikiPageVisibilityArgs, ctx: AuthenticatedCtx) =>
+        writeWiki(ctx.session, args.bandPublicId, Permission.edit_wiki_pages, context => setWikiVisibility(context, args)),
 );
-

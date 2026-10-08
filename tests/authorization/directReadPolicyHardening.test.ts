@@ -75,12 +75,12 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
       permissions: pageOnlyPermissions,
     })
 
-    await expect(invokeResolver(getWikiPageRevision, { revisionId: 1 }, ctx)).rejects.toThrow(
+    await expect(invokeResolver(getWikiPageRevision, { bandPublicId: parsePublicId<"Band">("FixtureBand00001"), revisionId: parsePublicId<"WikiPageRevision">("WikiTestRev00001") }, ctx)).rejects.toThrow(
       "Unauthorized test persona; required: view_wiki_page_revisions",
     )
     await expect(invokeResolver(
       getUserWikiContributions,
-      { userId: pageOnlyActor.publicId },
+      { bandPublicId: parsePublicId<"Band">("FixtureBand00001"), userId: pageOnlyActor.publicId },
       ctx,
     )).rejects.toThrow("Unauthorized test persona; required: view_wiki_page_revisions")
   })
@@ -390,12 +390,12 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
 
     await expect(invokeResolver(
       getWikiPageRevisions,
-      { canonicalWikiPath: "hidden" },
+      { bandPublicId: parsePublicId<"Band">("FixtureBand00001"), canonicalWikiPath: "hidden" },
       ctx,
     )).resolves.toBeNull()
     const visibleHistory = await invokeResolver(
       getWikiPageRevisions,
-      { canonicalWikiPath: "private-owner" },
+      { bandPublicId: parsePublicId<"Band">("FixtureBand00001"), canonicalWikiPath: "private-owner" },
       ctx,
     )
     expect(visibleHistory).toEqual(expect.objectContaining({ publicId: privatePagePublicId }))
@@ -404,7 +404,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     expect(visibleHistory?.revisions?.[0]).not.toHaveProperty("createdByUserId")
     const contributions = await invokeResolver(
       getUserWikiContributions,
-      { userId: actor.publicId },
+      { bandPublicId: parsePublicId<"Band">("FixtureBand00001"), userId: actor.publicId },
       ctx,
     )
     expect(contributions).toMatchObject({
@@ -419,8 +419,8 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     expect(contributions.wikiContributions[0]).not.toHaveProperty("id")
     expect(contributions.wikiContributions[0]?.revisions[0]).not.toHaveProperty("createdByUserId")
     expect(contributions.wikiContributions[0]?.revisions[0]).not.toHaveProperty("wikiPageId")
-    await expect(invokeResolver(getWikiPageRevision, { revisionId: hiddenRevisionPublicId }, ctx)).resolves.toBeNull()
-    const visibleRevision = await invokeResolver(getWikiPageRevision, { revisionId: privateRevisionPublicId }, ctx)
+    await expect(invokeResolver(getWikiPageRevision, { bandPublicId: parsePublicId<"Band">("FixtureBand00001"), revisionId: hiddenRevisionPublicId }, ctx)).resolves.toBeNull()
+    const visibleRevision = await invokeResolver(getWikiPageRevision, { bandPublicId: parsePublicId<"Band">("FixtureBand00001"), revisionId: privateRevisionPublicId }, ctx)
     expect(visibleRevision).toEqual(expect.objectContaining({ publicId: privateRevisionPublicId }))
     expect(visibleRevision).not.toHaveProperty("id")
     expect(visibleRevision).not.toHaveProperty("wikiPage")
@@ -449,7 +449,7 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
 
     const historyWithoutUserAccess = await invokeResolver(
       getWikiPageRevisions,
-      { canonicalWikiPath: memberPage.slug },
+      { bandPublicId: parsePublicId<"Band">("FixtureBand00001"), canonicalWikiPath: memberPage.slug },
       revisionOnlyCtx,
     )
     expect(historyWithoutUserAccess?.revisions?.[0]).toEqual(

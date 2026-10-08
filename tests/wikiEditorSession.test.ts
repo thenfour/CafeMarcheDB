@@ -13,7 +13,7 @@ vi.mock("src/core/wiki/mutations/wikiRenewYourLock", () => ({ default: vi.fn() }
 vi.mock("src/core/wiki/mutations/wikiAdminClearLock", () => ({ default: vi.fn() }));
 vi.mock("src/core/wiki/queries/getWikiPage", () => ({ default: vi.fn() }));
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({
-    useDashboardContext: () => ({ currentUser: { id: 1 }, getDefaultVisibilityPermission: () => ({ id: 1 }) }),
+    useDashboardContext: () => ({ requireBandPublicId: () => parsePublicId<"Band">("FixtureBand00001"), currentUser: { id: 1 }, getDefaultVisibilityPermission: () => ({ id: 1 }) }),
     useFeatureRecorder: () => vi.fn(),
 }));
 vi.mock("src/core/components/MessageBoxContext", () => ({ useMessageBox: () => ({ showMessage: vi.fn().mockResolvedValue("cancel") }) }));
@@ -94,7 +94,7 @@ describe("wiki editor draft base", () => {
         await act(async () => { await api.beginEditing(); });
         const lockId = api.yourLockId;
         await act(async () => root.render(null));
-        expect(release).toHaveBeenCalledWith({ canonicalWikiPath: "test", lockId });
+        expect(release).toHaveBeenCalledWith({ bandPublicId: parsePublicId<"Band">("FixtureBand00001"), canonicalWikiPath: "test", lockId });
         expect(lockId).toBeTruthy();
     });
     it("retains the base after a network failure and permits retry", async () => {

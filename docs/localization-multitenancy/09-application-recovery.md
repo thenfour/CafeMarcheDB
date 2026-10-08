@@ -42,8 +42,18 @@ no longer select the removed Permission role relation. General File ownership,
 metadata/search and creation workflows remain unfinished and guarded.
 Wiki tags now use band-owned localized/inherited catalog contracts, native CRUD
 and the shared dashboard snapshot. Wiki assignments transport public band-tag
-identities and order hydrated labels. General WikiPage/assignment reads and writes
-remain guarded; the original raw tag-name filter is preserved under `wiki-search`.
+identities and order hydrated labels. Wiki pages now declare direct band ownership;
+assignments and revisions inherit their page's band and visibility. Page reads,
+creation, leases, saves, visibility, history/detail/deletion, contributions and
+band revision-stat maintenance use fresh authorization in repeatable/serializable
+snapshots. New pages derive band and creator on the server and use Members
+visibility. Event-description creation/save validates a visible, undeleted same-band
+event before linking it. Client requests, history/share/reference links and authored
+wiki links retain band/locale context. No-band controls prompt for selection; keyed
+editors retain separate band/page sessions. The raw tag-name filter remains under
+`wiki-search`, and optional legacy per-page help Markdown is preserved under
+`markdown-editing`. This restores the wiki ownership/editor boundary, without
+claiming complete wiki search or localized chrome parity.
 Event-tag assignments now select localized catalog metadata and shared-source
 dependencies. Attendance, File filters/display and demo controls use canonical
 hydrated instruments and public identities. Obsolete raw instrument/group payload
@@ -51,7 +61,9 @@ helpers and the numeric/public identity union are removed; only the local
 attendance scenario adapter retains numeric saved choices in its version-1 format.
 MenuLink now uses localized captions, selected-band ownership and resolved
 filtering/sorting/paging. Generated CRUD and public-ID reordering retain fresh
-authorization, visibility and auditing. Its editor supports explicit translations,
+authorization, visibility and auditing. Equal-position reordering now uses the same
+code-point public-ID tie order as resolved reads, independently of MySQL collation.
+Its editor supports explicit translations,
 band switching and manual wiki slugs. Sidebar delivery remains deferred under
 `dashboard-content`; the old wiki suggestion reader is preserved under `wiki-search`.
 **A0 remains open.** The
@@ -759,6 +771,18 @@ production server could not be checked because the normal build still fails.
 | `yarn build` | Gets past MenuLink; stops at `src/core/wiki/mutations/wikiAdminClearLock.ts:13`, which still uses the obsolete global slug key. General event/wiki workflows and custom sidebar delivery remain unfinished. |
 | `yarn test --reporter=dot` | Fails in the Node batch: 265 failed, 1,587 passed, 300 skipped across 158 files, with ten suite failures. Reported failure entries exactly match the previous event/instrument checkpoint; four page-authorization cases pass and six new native menu cases skip without the private URL. Those native cases pass in the dedicated fixture above. No existing test is newly disabled. Later isolated DOM batches are not reached; focused checks and development-browser coverage verify the changed menu editor. |
 
+### Wiki ownership recovery checkpoint
+
+| Check | Result |
+| --- | --- |
+| Lease/draft session, Markdown/contextual links, route policy, page/revision authorization, DB3 views/contracts and compatibility inventory | Passed: 133 checks across eleven files, including thirteen isolated DOM cases. Uses `yarn test <paths> --reporter=dot`; no behavioral case is disabled. Page/revision authorization fixtures now use real band roles/memberships and respect Prisma selections. |
+| Wiki plus retained menu, catalog, attendance, member/account, File/setlist/link/telemetry readers on private MariaDB | Passed: 133 cases across eighteen files, including nine new wiki cases. Covers default Members visibility and server-owned creator/band, same-slug isolation, private rows, fresh revocation, immutable draft bases, consolidation, takeover/expiry, public transport, visibility, scoped maintenance/deletion, same-band event descriptions and tag references. The menu regression uses fixed mixed-case public IDs to expose MySQL/resolved-order differences. Transactions roll back and generated databases are removed. |
+| Wiki development-browser workflow | Passed: five assertion groups, with a delegated band editor and two fresh bands. Creates/saves/releases locks, saves a new revision, checks authored link context, opens history with band/locale preserved, switches bands through the selector and opens the other same-slug page, and verifies the no-band prompt. No page errors; wiki content screenshot inspected. Private browser/server/database resources are stopped/removed. This is development evidence; a production build is still blocked. |
+| Preservation and lint | `yarn migration:verify` passes: 277 source references, ten deferred specifications and twenty pending features. One per-page help-Markdown reference was added; no existing archive was altered. ESLint and `git diff --check` pass for changed files. |
+| `yarn typecheck` | Fails with fourteen diagnostics, down from seventeen. The two wiki mutation/global-slug errors and obsolete Setting import are removed. Remaining diagnostics belong to the palette editor, legacy authorization fixtures, calendar fixture and existing DB3 view assertions. No compiler exclusion or suppression was added. |
+| `yarn build` | Gets past wiki and stops at `src/pages/backstage/colorEditor2.tsx:16`, which still calls the retired settings API. A0 remains open; a built-server workflow cannot yet be verified. |
+| `yarn test --reporter=dot` | Fails in the Node batch: 252 failed, 1,601 passed, 309 skipped across 159 files, with ten suite failures. Thirteen previous failures now pass; no new reported failure entries. Nine native wiki cases skip without the private URL and pass in the fixture above. Later DOM batches are not reached; focused isolated DOM and development-browser coverage verify the changed workflow. |
+
 The Role/merge slice began with 343 full-run Node failures. The original Role
 editor/designation/association and merge policy/native transaction/picker tests
 are preserved as commented specifications. Partially affected test files retain
@@ -788,16 +812,15 @@ verification resources, not application configuration.
 
 ## Remaining A0 blockers
 
-The next build stop is the unscoped wiki-lock mutation at
-`wikiAdminClearLock.ts:13`. Recover wiki locking/visibility, page reads and their
-ownership contracts. MenuLink captions, editor CRUD and reorder now use the target
-contracts; custom sidebar delivery remains under `dashboard-content`, and wiki
-suggestions remain under `wiki-search`. EventTagAssignment now uses
-the canonical band catalog selection, and active instrument consumers use hydrated
-catalog/public-ID contracts. Wiki-tag
-catalogs, references, editor and association payloads now use the target contracts;
-general wiki ownership, locking/revision/editing and resolved search still require
-recovery. `wiki-search` preserves the former raw tag-name predicate.
+The next build stop is `colorEditor2.tsx:16`, which still uses the retired generic
+settings API. Recover or coherently isolate that palette editor, then continue
+through the remaining normal compiler/build blockers. Wiki page/assignment/revision
+ownership, locking, saving, visibility and history now use explicit bands and fresh
+snapshots. Full wiki search, menu suggestions and optional per-page help remain
+tracked under `wiki-search`/`markdown-editing`. MenuLink captions, editor CRUD and
+reorder use the target contracts; custom sidebar delivery remains under
+`dashboard-content`. EventTagAssignment and active instrument consumers use the
+canonical band catalog and hydrated public-ID contracts.
 SongCreditType now uses localized
 name/description contracts and platform catalog CRUD. Credit displays use the
 same dashboard reference snapshot; general Song/SongCredit ownership and workflows

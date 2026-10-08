@@ -8,6 +8,7 @@ export const dashboardStrings = {
     "platformUser.description": label("Shared person details apply across all bands. Creating a person adds no sign-in method or band membership. Memberships are managed from the selected band's member profiles. Security state is read-only here."),
     "platformUser.visitProfile": label("Visit member profile"),
     "customLink.selectBand": label("Select a band to view its custom links."),
+    "wiki.selectBand": label("Select a band to view or edit wiki pages."),
     "menuLink.selectBand": label("Select a band to edit its menu links."),
     "menuLink.wikiSearchDeferred": label("Wiki page suggestions are temporarily unavailable. You can enter a page slug manually."),
     "menuLink.deliveryDeferred": label("Menu links can be edited here. Custom sidebar navigation will return when dashboard content is restored."),

@@ -1,3 +1,4 @@
+import { withMemberPresentation } from "./bandMemberLinks";
 import { songCreditUserView } from "src/core/db3/shared/entities/song/songViews";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert } from "@mui/material";
@@ -244,7 +245,7 @@ type UserWikiContributionsTabContentProps = {
 };
 export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabContentProps) => {
     const dashboardContext = useDashboardContext();
-    const [qr, refetch] = useQuery(getUserWikiContributions, { userId: props.user.publicId });
+    const [qr, refetch] = useQuery(getUserWikiContributions, { bandPublicId: dashboardContext.requireBandPublicId(), userId: props.user.publicId });
 
     const wikiContributionsWithAddl = qr.wikiContributions.map((contribution, index) => ({
         ...contribution,
@@ -273,7 +274,7 @@ export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabC
                     memberName: "slug",
                     allowSort: true,
                     render: (row) => {
-                        return <CMLink href={`/backstage/wiki/${row.row.slug}`}>{row.row.slug}</CMLink>;
+                        return <CMLink href={withMemberPresentation(`/backstage/wiki/${row.row.slug}`, dashboardContext.memberPresentation)}>{row.row.slug}</CMLink>;
                     },
                 },
                 {

@@ -6,6 +6,7 @@ vi.mock("db", async () => {
     return { ...prisma, default: authorizationTestDb };
 });
 
+import { seedWikiAuthorization, useWikiPrismaSelections } from "./support/wikiFixtures";
 import { AuthorizationError } from "blitz";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
@@ -16,12 +17,16 @@ import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { invokeResolver } from "./support/resolverHarness";
 
 const permissions = [
+    Permission.always_grant,
+    Permission.public,
     Permission.login,
     Permission.view_wiki_pages,
     Permission.edit_wiki_pages,
     Permission.view_wiki_page_revisions,
     Permission.admin_wiki_pages,
     Permission.view_users_basic_info,
+    Permission.view_events,
+    Permission.view_events_nonpublic,
     Permission.visibility_members,
 ];
 const actor = createAuthorizationTestUser("normal", { id: 812, permissions });
@@ -30,6 +35,7 @@ const membersPermission = actor.role!.permissions.find(
 )!.permission;
 const revisionPublicId = parsePublicId<"WikiPageRevision">("AnnouncementRev1");
 const args = {
+    bandPublicId: parsePublicId<"Band">("FixtureBand00001"),
     canonicalWikiPath: "special/announcements",
     baseRevisionId: null,
     baseContentVersion: 0,
@@ -38,6 +44,7 @@ const args = {
 const creationPaths = [args.canonicalWikiPath, "EventDescription/TestEvent0000001"];
 const makePage = (visiblePermissionId: number | null = membersPermission.id, createdByUserId: number | null = null) => ({
     id: 84,
+    bandId: 1,
     publicId: parsePublicId<"WikiPage">("Announcements001"),
     slug: args.canonicalWikiPath,
     namespace: "special",
@@ -66,11 +73,19 @@ const context = () => createAuthorizationPersona("normal", { id: actor.id, permi
 
 describe("wiki page reads and creation authorization", () => {
     beforeEach(() => {
+        vi.restoreAllMocks();
         authorizationTestDb.reset({
             user: [actor],
             permission: [{ ...membersPermission, significance: "Visibility_Members" }],
             wikiPage: [makePage()],
         });
+        seedWikiAuthorization(actor);
+        useWikiPrismaSelections();
+        authorizationTestDb.getDelegate("event").reset([{
+            id: 1, publicId: "TestEvent0000001", bandId: 1, name: "Concert", isDeleted: false,
+            uid: "fixture-event", startsAt: new Date("2026-01-01"), endDateTime: new Date("2026-01-01"), isAllDay: false, durationMillis: BigInt(0),
+            createdByUserId: actor.id, visiblePermissionId: null,
+        }]);
     });
 
     it("returns ownerless announcements with explicit Members visibility and their current content", async () => {
@@ -140,7 +155,8 @@ describe("wiki page reads and creation authorization", () => {
 
     it.each(creationPaths)("rejects creating %s when default Members visibility is missing", async canonicalWikiPath => {
         authorizationTestDb.getDelegate("wikiPage").reset([]);
-        authorizationTestDb.getDelegate("permission").reset([]);
+        authorizationTestDb.getDelegate("permission").reset(authorizationTestDb.snapshot("permission").filter(permission => permission.id !== membersPermission.id));
+        authorizationTestDb.getDelegate("bandRolePermission").reset(authorizationTestDb.snapshot("bandRolePermission").filter(grant => grant.permissionId !== membersPermission.id));
         const create = vi.spyOn(authorizationTestDb.getDelegate("wikiPage"), "create");
 
         await expect(invokeResolver(acquireLockOnWikiPage, {

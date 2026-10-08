@@ -1,7 +1,7 @@
 import { Prisma } from "db";
 import { diffChars, diffLines } from 'diff';
 import { z } from "zod";
-import { isPublicId, type EventPublicId, type PermissionPublicId, type UserPublicId, type WikiPagePublicId, type WikiPageRevisionPublicId } from "shared/publicId";
+import { isPublicId, type BandPublicId, type EventPublicId, type PermissionPublicId, type UserPublicId, type WikiPagePublicId, type WikiPageRevisionPublicId } from "shared/publicId";
 import { slugify } from "../../../../shared/rootroot";
 import type { EventWikiPageContextDto } from "../../db3/shared/entities/event/eventViews";
 import type { WikiPageApiDto } from "../../db3/shared/entities/wiki/wikiViews";
@@ -77,73 +77,82 @@ const normalizeCanonicalWikiPath = (value: string): string => {
 
 const ZWikiSlug = z.string().min(1).transform(normalizeCanonicalWikiPath);
 const ZWikiTitle = z.string().min(1);
+export const ZWikiBand = z.custom<BandPublicId>(isPublicId);
 
 ////////////////////////////////////////////////////////////////
 export const ZTGetWikiPageArgs = z.object({
+    bandPublicId: ZWikiBand,
     canonicalWikiPath: ZWikiSlug,
     baseContentVersion: z.number().int().nonnegative(),
     baseRevisionId: db3.xWikiPageRevision.identitySchema.nullable(), // used to return updateability status.
     lockId: z.string().nullable(), // used to return updateability status
-});
+}).strict();
 
 export type TGetWikiPageArgs = z.infer<typeof ZTGetWikiPageArgs>;
 
 ////////////////////////////////////////////////////////////////
 export const ZTGetWikiPageRevisionsArgs = z.object({
+    bandPublicId: ZWikiBand,
     canonicalWikiPath: ZWikiSlug,
-});
+}).strict();
 
 export type TGetWikiPageRevisionsArgs = z.infer<typeof ZTGetWikiPageRevisionsArgs>;
 
 ////////////////////////////////////////////////////////////////
 export const ZTGetWikiPageRevisionArgs = z.object({
+    bandPublicId: ZWikiBand,
     revisionId: db3.xWikiPageRevision.identitySchema.nullable(), // if null, returns null.
-});
+}).strict();
 
 export type TGetWikiPageRevisionArgs = z.infer<typeof ZTGetWikiPageRevisionArgs>;
 
 ////////////////////////////////////////////////////////////////
 export const ZTSetWikiPageVisibilityArgs = z.object({
+    bandPublicId: ZWikiBand,
     canonicalWikiPath: ZWikiSlug,
     visiblePermissionId: z.custom<PermissionPublicId>(isPublicId).nullable(),
-});
+}).strict();
 
 export type TSetWikiPageVisibilityArgs = z.infer<typeof ZTSetWikiPageVisibilityArgs>;
 
 ////////////////////////////////////////////////////////////////
 export const ZTUpdateWikiPageArgs = z.object({
+    bandPublicId: ZWikiBand,
     canonicalWikiPath: ZWikiSlug,
     title: ZWikiTitle,
     content: z.string(),
     baseContentVersion: z.number().int().nonnegative(),
     baseRevisionId: db3.xWikiPageRevision.identitySchema.nullable(),
     lockId: z.string().nullable(), // you should always have a lock, but some weird cases like admin forcibly removing locks may cancel them.
-});
+}).strict();
 
 export type TUpdateWikiPageArgs = z.infer<typeof ZTUpdateWikiPageArgs>;
 
 ////////////////////////////////////////////////////////////////
 export const ZTAcquireLockOnWikiPageArgs = z.object({
+    bandPublicId: ZWikiBand,
     canonicalWikiPath: ZWikiSlug,
     baseContentVersion: z.number().int().nonnegative(),
     baseRevisionId: db3.xWikiPageRevision.identitySchema.nullable(),
     lockId: z.string().min(1),
     takeOverLockId: z.string().optional(),
-});
+}).strict();
 export type TAcquireLockOnWikiPageArgs = z.infer<typeof ZTAcquireLockOnWikiPageArgs>;
 
 ////////////////////////////////////////////////////////////////
 export const ZTWikiReleaseYourLockArgs = z.object({
+    bandPublicId: ZWikiBand,
     canonicalWikiPath: ZWikiSlug,
     lockId: z.string(),
-});
+}).strict();
 export type TWikiReleaseYourLockArgs = z.infer<typeof ZTWikiReleaseYourLockArgs>;
 
 
 ////////////////////////////////////////////////////////////////
 export const ZTAdminClearPageLockArgs = z.object({
+    bandPublicId: ZWikiBand,
     canonicalWikiPath: ZWikiSlug,
-});
+}).strict();
 export type TAdminClearPageLockArgs = z.infer<typeof ZTAdminClearPageLockArgs>;
 
 // Wiki URIs look like:

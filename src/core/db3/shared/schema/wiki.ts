@@ -1,3 +1,4 @@
+import { serverOwnedField } from "../columnTypes/inherited";
 import { Prisma } from "db";
 import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
@@ -96,6 +97,8 @@ export const xWikiPage = db3.defineTable({
         return WikiPageArgs;
     },
     tableName: "WikiPage",
+    bandScope: { member: "bandId", managePermission: Permission.edit_wiki_pages },
+    readConsistency: "snapshot",
     deletePolicy: "hard",
     naturalOrderBy: WikiPageNaturalOrderBy,
     getRowInfo: (row: WikiPagePayload) => ({
@@ -103,12 +106,19 @@ export const xWikiPage = db3.defineTable({
         name: row.slug,
         description: undefined,
         color: gGeneralPaletteList.findEntry(row.visiblePermission?.color || null),
-        ownerUserId: null,
+        ownerUserId: row.createdByUserId,
     }),
     tableAuthMap: wikiPageTableAuthMap,
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "never" }),
         publicId: () => MakePublicIdField<WikiPagePublicId>(),
+        bandId: columnName => serverOwnedField(new GenericIntegerField({
+            columnName, allowNull: false, allowSearchingThisField: false,
+            authMap: db3.defineAuthMap({
+                PostQuery: Permission.never_grant, PostQueryAsOwner: Permission.never_grant,
+                PreInsert: Permission.never_grant, PreMutate: Permission.never_grant, PreMutateAsOwner: Permission.never_grant,
+            }),
+        })),
         createdByUser: () => MakeCreatedByField(),
         createdAt: () => MakeCreatedAtField(),
         visiblePermission: () => MakeVisiblePermissionField({ authMap: wikiPageAuthMap, }),
@@ -228,13 +238,16 @@ export const xWikiPageRevision = db3.defineTable({
     queryParameters: {
         userId: { kind: "entityIdentity", targetTableID: "User", authorizeAs: "createdByUser" },
     } satisfies db3.DB3QueryParameterMap,
-    getParameterizedWhereClause: (params: { userId?: number }): Prisma.WikiPageRevisionWhereInput[] => (
-        params.userId === undefined ? [] : [{ createdByUserId: params.userId }]
-    ),
+    getParameterizedWhereClause: (params: { userId?: number }, auth): Prisma.WikiPageRevisionWhereInput[] => [
+        { wikiPage: xWikiPage.CalculateWhereClause({ filterModel: {}, auth, includeDeleted: false }) },
+        ...(params.userId === undefined ? [] : [{ createdByUserId: params.userId }]),
+    ],
     getSelectionArgs: (): Prisma.WikiPageRevisionDefaultArgs => {
         return WikiPageRevisionArgs;
     },
     tableName: "WikiPageRevision",
+    bandScope: { member: "bandId", via: { relation: "wikiPage", ownerUserMember: "createdByUserId" }, managePermission: Permission.admin_wiki_pages },
+    readConsistency: "snapshot",
     deletePolicy: "hard",
     naturalOrderBy: WikiPageRevisionNaturalOrderBy,
     getRowInfo: (row: WikiPageRevisionPayload) => ({

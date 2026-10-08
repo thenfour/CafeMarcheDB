@@ -4,7 +4,7 @@ import type { WikiPageTagAssignmentPublicId } from "shared/publicId";
 import { gGeneralPaletteList } from "src/core/components/color/palette";
 import { WikiPageTagAssignmentArgs, WikiPageTagAssignmentNaturalOrderBy, type WikiPageTagAssignmentPayload } from "./prismArgs";
 import { foreignRef, foreignRefByTableId, MakePKfield, MakePublicIdField } from "../columnTypes/xTableColumnTypes";
-import { DB3FieldReadAuth, defineAuthMap, defineTable, makeColumnSet, prismaModel } from "../db3core";
+import { GetTableById, DB3FieldReadAuth, defineAuthMap, defineTable, makeColumnSet, prismaModel } from "../db3core";
 import { localizedText } from "../columnTypes/localizedString";
 import { catalogColor } from "../columnTypes/bandCatalog";
 import { xBandWikiPageTag } from "../entities/wikiPageTag/wikiPageTagViews";
@@ -21,6 +21,10 @@ export const xWikiPageTagAssignment = defineTable({
     prismaModel: prismaModel<Prisma.WikiPageTagAssignmentDelegate>(),
     getIdentity: (row: { publicId: WikiPageTagAssignmentPublicId }) => row.publicId,
     tableName: "WikiPageTagAssignment",
+    bandScope: { member: "bandId", via: { relation: "wikiPage", ownerUserMember: "createdByUserId" }, managePermission: Permission.edit_wiki_pages },
+    readConsistency: "snapshot",
+    queryParameters: {},
+    getParameterizedWhereClause: (_params, auth) => [{ wikiPage: GetTableById("WikiPage").CalculateWhereClause({ filterModel: {}, auth }) }],
     deletePolicy: "hard",
     naturalOrderBy: WikiPageTagAssignmentNaturalOrderBy,
     tableAuthMap: {
@@ -38,7 +42,6 @@ export const xWikiPageTagAssignment = defineTable({
         color: catalogColor(row.tag?.color, gGeneralPaletteList),
         ownerUserId: null,
     }),
-    // General association reads/writes await the owning wiki workflow's band policy.
     fields: makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<WikiPageTagAssignmentPublicId>(),

@@ -1,3 +1,4 @@
+import { parsePublicId } from "shared/publicId";
 import MarkdownIt from "markdown-it";
 import { describe, expect, it } from "vitest";
 import {
@@ -19,4 +20,12 @@ describe("public-ID markdown mentions", () => {
         expect(" before [[song:" + song + "|A song]] after ")
             .toMatch(MarkdownMentionRegexWithSurroundingWhitespace);
     });
+    it("retains band and locale on authored wiki links", () => {
+        const bandPublicId = parsePublicId<"Band">("FixtureBand00001");
+        const markdown = new MarkdownIt().use(CMDBLinkMarkdownPlugin, { bandPublicId, routeLocale: "fr-BE" });
+        const html = markdown.render("[[handbook|Handbook]]");
+        expect(html).toContain(`/backstage/wiki/handbook?bandPublicId=${bandPublicId}&routeLocale=fr-BE`);
+        expect(html).toContain(">Handbook</a>");
+    });
+
 });

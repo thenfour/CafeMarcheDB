@@ -3,7 +3,6 @@ import db from "db";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import type { WikiPagePublicId } from "shared/publicId";
-import { SettingKey } from "@/src/setting/shared/settingKeys";
 import { gSSP } from "src/blitz-server";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
@@ -12,7 +11,7 @@ import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { GetWikiPageCore } from "src/core/wiki/server/getWikiPageCore";
-import { wikiParsePathComponents, WikiPath } from "src/core/wiki/shared/wikiUtils";
+import { wikiParsePathComponents, WikiPath, ZWikiBand } from "src/core/wiki/shared/wikiUtils";
 import { useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
 
 
@@ -24,7 +23,7 @@ const WikiPageComponent = ({ wikiPath, wikiPageId }: { wikiPath: WikiPath, wikiP
 
     return <>
         <LocalizedMarkdown setting="GlobalWikiPage_Markdown"></LocalizedMarkdown>
-        <LocalizedMarkdown setting={`WikiPage_${wikiPath.canonicalWikiPath}_Markdown` as SettingKey}></LocalizedMarkdown>
+
         <WikiPageControl wikiPath={wikiPath} />
     </>;
 };
@@ -36,8 +35,20 @@ type PageProps = {
 };
 
 export const getServerSideProps = gSSP<PageProps>(async (args) => {
-    const wikiPath = wikiParsePathComponents((args.params?.slug || []) as string[]);
-    const auth = await loadAuthorization(args.ctx.session);
+    const components = args.params?.slug;
+    if (!Array.isArray(components) || !components.every(value => typeof value === "string")) {
+        return { notFound: true };
+    }
+    const wikiPath = wikiParsePathComponents(components); // lsmb TODO: centralize route parsing
+    const selectedBand = args.query.bandPublicId;
+    const band = selectedBand === undefined ? null : ZWikiBand.safeParse(selectedBand);
+    if (band && !band.success) {
+        return { notFound: true };
+    }
+    const auth = await loadAuthorization(args.ctx.session, band?.success ? band.data : undefined);
+    if (!band && auth.user && auth.hasPermission(Permission.login)) {
+        return { props: { title: wikiPath.slugWithoutNamespace, wikiPath, wikiPageId: null } };
+    }
     if (!auth.user || !auth.hasPermission(Permission.view_wiki_pages)) {
         return {
             redirect: {
@@ -49,8 +60,8 @@ export const getServerSideProps = gSSP<PageProps>(async (args) => {
 
     const ret = await GetWikiPageCore({
         canonicalWikiSlug: wikiPath.canonicalWikiPath || "<never>",
-        dbt: db as any,
-        ctx: args.ctx,
+        database: db,
+        authorization: auth,
         clientBaseContentVersion: 0,
         clientBaseRevisionId: null,
         clientLockId: null,

@@ -38,12 +38,12 @@ describe.skipIf(!settingsMysqlTestUrl)("band menu links on MariaDB", () => {
     async function read(tx: Prisma.TransactionClient, auth: CMServerAuthorization, routeLocale = "en-US") {
         return queryView({ view: menuLinkListView, filter: {}, routeLocale, cmdbQueryContext: "menu fixture" }, auth, await snapshot(tx, auth));
     }
-    async function rawLink(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture, bandIndex: number, caption: string, creatorId = fixture.user.id) {
+    async function rawLink(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture, bandIndex: number, caption: string, creatorId = fixture.user.id, publicId: string = generatePublicId()) {
         return tx.menuLink.create({ data: {
             ...linkValues(), caption: { create: { publicId: generatePublicId(), values: { create: {
                 publicId: generatePublicId(), localeId: fixture.englishId, indexedValue: caption,
             } } } },
-            publicId: generatePublicId(), band: { connect: { id: fixture.bands[bandIndex]!.id } },
+            publicId, band: { connect: { id: fixture.bands[bandIndex]!.id } },
             createdByUser: { connect: { id: creatorId } },
         } });
     }
@@ -129,7 +129,8 @@ describe.skipIf(!settingsMysqlTestUrl)("band menu links on MariaDB", () => {
 
     it("reorders only visible selected-band rows through audited public identities", () => withFixture(async (tx, fixture) => {
         const auth = await authorize(tx, fixture);
-        const first = await rawLink(tx, fixture, 0, "First"), second = await rawLink(tx, fixture, 0, "Second");
+        const first = await rawLink(tx, fixture, 0, "First", fixture.user.id, "ZWikiMenu0000001"),
+            second = await rawLink(tx, fixture, 0, "Second", fixture.user.id, "aWikiMenu0000002");
         // New links share position zero; list and command must use the same public-ID tie-breaker.
         const initial = [first.publicId, second.publicId].sort();
         expect((await read(tx, auth)).items.map(item => item.publicId)).toEqual(initial);

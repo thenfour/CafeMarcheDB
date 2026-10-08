@@ -59,8 +59,8 @@
     {
       "id": "markdown-editing",
       "reason": "LocalizedMarkdown preserves rendering but its inline editor was removed.",
-      "restore": "Restore edit, cancel, save, save-and-close, feedback and refresh through explicit localized-string scope and locale.",
-      "verification": "Test edit authorization, locale/band targeting, intentional blanks, cancellation, failed saves and presentation refresh; exercise the inline editor.",
+      "restore": "Restore edit, cancel, save, save-and-close, feedback and refresh through explicit localized-string scope and locale. Restore optional per-page wiki help through registered localized content with explicit band ownership.",
+      "verification": "Test edit authorization, locale/band targeting, intentional blanks, cancellation, failed saves and presentation refresh; exercise the inline editor. Verify per-page wiki help delivery and band/locale changes in the built wiki page.",
       "status": "pending",
       "evidence": []
     },

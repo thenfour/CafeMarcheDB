@@ -1,3 +1,6 @@
+import { Alert } from "@mui/material";
+import { useLocale } from "src/locale/components/useLocale";
+import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
 import { CMLink } from "@/src/core/components/CMLink";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
@@ -33,8 +36,10 @@ interface WikiDiffViewerProps {
 };
 
 const WikiDiffViewer = (props: WikiDiffViewerProps) => {
-    const [left, leftX] = useQuery(getWikiPageRevision, { revisionId: props.revisionIdLeft });
-    const [right, rightX] = useQuery(getWikiPageRevision, { revisionId: props.revisionIdRight });
+    const dashboard = useDashboardContext();
+    const bandPublicId = dashboard.requireBandPublicId();
+    const [left, leftX] = useQuery(getWikiPageRevision, { bandPublicId, revisionId: props.revisionIdLeft });
+    const [right, rightX] = useQuery(getWikiPageRevision, { bandPublicId, revisionId: props.revisionIdRight });
 
     return <ReactDiffViewer
         styles={{
@@ -56,7 +61,9 @@ const WikiDiffViewer = (props: WikiDiffViewerProps) => {
 };
 
 const WikiRevisionPreviewDialog = (props: { revisionId: WikiPageRevisionPublicId, onClose: () => void }) => {
-    const [revision, revisionX] = useQuery(getWikiPageRevision, { revisionId: props.revisionId });
+    const dashboard = useDashboardContext();
+    const bandPublicId = dashboard.requireBandPublicId();
+    const [revision, revisionX] = useQuery(getWikiPageRevision, { bandPublicId, revisionId: props.revisionId });
     return <CMDialog
         open
         onClose={props.onClose}
@@ -86,6 +93,8 @@ const WikiRevisionPreviewButton = (props: { revisionId: WikiPageRevisionPublicId
 };
 
 const WikiRevisionDeleteButton = (props: { revision: RevisionHistoryItem, onChanged: () => void }) => {
+    const dashboard = useDashboardContext();
+    const bandPublicId = dashboard.requireBandPublicId();
     const messageBox = useMessageBox();
     const snackbar = useSnackbar();
     const [deleteMutation] = useMutation(deleteWikiRevision);
@@ -96,7 +105,7 @@ const WikiRevisionDeleteButton = (props: { revision: RevisionHistoryItem, onChan
             buttons: ["yes", "cancel"]
         })) {
             await snackbar.invokeAsync(async () => {
-                await deleteMutation({ revisionId: props.revision.publicId });
+                await deleteMutation({ bandPublicId, revisionId: props.revision.publicId });
                 props.onChanged();
             });
         }
@@ -105,6 +114,8 @@ const WikiRevisionDeleteButton = (props: { revision: RevisionHistoryItem, onChan
 };
 
 const RebuildStatsButton = (props: { onChanged: () => void }) => {
+    const dashboard = useDashboardContext();
+    const bandPublicId = dashboard.requireBandPublicId();
     const snackbar = useSnackbar();
     const messageBox = useMessageBox();
     const [rebuildStats] = useMutation(rebuildWikiPageRevisionStats);
@@ -116,7 +127,7 @@ const RebuildStatsButton = (props: { onChanged: () => void }) => {
             return;
         }
         await snackbar.invokeAsync(async () => {
-            await rebuildStats({});
+            await rebuildStats({ bandPublicId });
             props.onChanged();
         });
     };
@@ -127,7 +138,7 @@ const WikiRevisionHistoryPageContent = () => {
     const canonicalWikiPath = (useRouterQuery()["path"] || "") as string;
     const wikiPath = wikiParseCanonicalWikiPath(canonicalWikiPath);
     const dashboardContext = useDashboardContext();
-    const [pageWithRevisions, qExtra] = useQuery(getWikiPageRevisions, { canonicalWikiPath });
+    const [pageWithRevisions, qExtra] = useQuery(getWikiPageRevisions, { bandPublicId: dashboardContext.requireBandPublicId(), canonicalWikiPath });
     if (!pageWithRevisions || !pageWithRevisions.currentRevision) {
         return <div>Page not found</div>;
     }
@@ -143,7 +154,7 @@ const WikiRevisionHistoryPageContent = () => {
             void qExtra.refetch();
         }} />}
         <h1>
-            <CMLink href={wikiPath.uriRelativeToHost} rel="noreferrer">{currentRevision.name || pageWithRevisions.slug}</CMLink>
+            <CMLink href={withMemberPresentation(wikiPath.uriRelativeToHost, dashboardContext.memberPresentation)} rel="noreferrer">{currentRevision.name || pageWithRevisions.slug}</CMLink>
         </h1>
         <table>
             <thead>
@@ -250,12 +261,21 @@ const WikiRevisionHistoryPageContent = () => {
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-const WikiPageHistoryPage: BlitzPage = (props) => {
-    return (
-        <DashboardLayout title="Wiki revision history">
-            <WikiRevisionHistoryPageContent {...props} />
-        </DashboardLayout>
-    )
-}
+// these "band context" component wrappers can  probably just be unified.
+const WikiHistoryBandContent = () => {
+    const dashboard = useDashboardContext();
+    const locale = useLocale();
+    const band = dashboard.memberPresentation.bandPublicId;
+    if (!band) {
+        return <Alert severity="info">{locale.getPlainString("wiki.selectBand")}</Alert>;
+    }
+    return <WikiRevisionHistoryPageContent key={band} />;
+};
+
+const WikiPageHistoryPage: BlitzPage = () => (
+    <DashboardLayout title="Wiki revision history">
+        <WikiHistoryBandContent />
+    </DashboardLayout>
+);
 
 export default WikiPageHistoryPage;

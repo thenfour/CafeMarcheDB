@@ -1,27 +1,18 @@
-// based off the structure/logic of getEventFilterInfo
-
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
+import type { AuthenticatedCtx } from "blitz";
 import db from "db";
-import { Permission } from "shared/permissions";
-import { TGetWikiPageArgs, ZTGetWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { GetWikiPageCore } from "../server/getWikiPageCore";
+import { TGetWikiPageArgs, ZTGetWikiPageArgs } from "../shared/wikiUtils";
 
 export default resolver.pipe(
-    resolver.authorize(Permission.view_wiki_pages),
     resolver.zod(ZTGetWikiPageArgs),
-    async (args: TGetWikiPageArgs, ctx: AuthenticatedCtx) => {
-        const ret = await GetWikiPageCore({
-            canonicalWikiSlug: args.canonicalWikiPath,
-            clientBaseContentVersion: args.baseContentVersion,
-            clientBaseRevisionId: args.baseRevisionId,
-            clientLockId: args.lockId,
-            ctx: ctx,
-            dbt: db
-        });
-        return ret;
-    }
+    async (args: TGetWikiPageArgs, ctx: AuthenticatedCtx) => GetWikiPageCore({
+        canonicalWikiSlug: args.canonicalWikiPath,
+        clientBaseContentVersion: args.baseContentVersion,
+        clientBaseRevisionId: args.baseRevisionId,
+        clientLockId: args.lockId,
+        authorization: await loadAuthorization(ctx.session, args.bandPublicId),
+        database: db,
+    }),
 );
-
-
-

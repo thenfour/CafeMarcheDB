@@ -38,8 +38,8 @@ const routes = [
     { key: "files", pattern: "/backstage/files", caption: "File search", permission: Permission.access_file_landing_page },
     { key: "file", pattern: "/backstage/file/[...id_slug_tab]", caption: "File", permission: Permission.access_file_landing_page },
     { key: "wikiPages", pattern: "/backstage/wikiPages", caption: "Wiki search", permission: Permission.search_wiki_pages },
-    { key: "wiki", pattern: "/backstage/wiki/[...slug]", caption: "Wiki", permission: Permission.view_wiki_pages },
-    { key: "wikiPageHistory", pattern: "/backstage/wikiPageHistory", caption: "Wiki revision history", permission: Permission.view_wiki_page_revisions },
+    { key: "wiki", pattern: "/backstage/wiki/[...slug]", caption: "Wiki", permission: Permission.view_wiki_pages, unscopedPermission: Permission.login },
+    { key: "wikiPageHistory", pattern: "/backstage/wikiPageHistory", caption: "Wiki revision history", permission: Permission.view_wiki_page_revisions, unscopedPermission: Permission.login },
     { key: "users", pattern: "/backstage/users", caption: "User search", permission: Permission.search_users },
     { key: "user", pattern: "/backstage/user/[...id_slug_tab]", caption: "Member", permission: Permission.login },// login admits roleless members to their own profile.
     { key: "profile", pattern: "/backstage/profile", caption: "Your Profile", permission: Permission.login },

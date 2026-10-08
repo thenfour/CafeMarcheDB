@@ -1,3 +1,4 @@
+import { withMemberPresentation } from "../user/bandMemberLinks";
 // <Markdown> = rendered markdown text (simple read only html)
 // <MarkdownEditor> = just the text editor which outputs markdown
 // <MarkdownControl> = full editor with debounced commitment (caller actually commits), displays saving indicator, switch between edit/view
@@ -69,6 +70,9 @@ export const Markdown = (props: MarkdownProps) => {
             if (ihref >= 0) {
                 // distinguish internal vs. external.
                 const href = tokens[idx].attrs[ihref][1];
+                if (href?.startsWith("/backstage/wiki/")) {
+                    tokens[idx].attrs[ihref][1] = withMemberPresentation(href, dashboardContext.memberPresentation);
+                }
                 if (href) {
                     const hrefClass = dashboardContext.routingApi.getURLClass(href);
                     switch (hrefClass) {
@@ -111,12 +115,12 @@ export const Markdown = (props: MarkdownProps) => {
 
         md.use(md => ReactInlineMarkdownPlugin(md));
         md.use(ImageDimensionsMarkdownPlugin);
-        md.use(CMDBLinkMarkdownPlugin);
+        md.use(CMDBLinkMarkdownPlugin, dashboardContext.memberPresentation);
         md.use(md => AbcNotationMarkdownPlugin(md));
 
         setHtml(md.render(props.markdown));
 
-    }, [props.markdown]);
+    }, [props.markdown, dashboardContext.memberPresentation.bandPublicId, dashboardContext.memberPresentation.routeLocale]);
 
     return <NoSsr>
         {IsNullOrWhitespace(props.markdown) ? null :
