@@ -17,7 +17,7 @@ import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet"
 import { Permission } from "shared/permissions"
 import { parsePublicId } from "shared/publicId"
-import { createAuthorizationPersona, createAuthorizationTestUser } from "./support/authorizationFixtures"
+import { createAuthorizationPersona, createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures"
 import { forgeDb3Insert, forgeDb3Query, forgeDb3PublicUpdate } from "./support/db3RequestBuilders"
 import { songPublicId } from "../support/songFixtures"
 import { userPublicId } from "../support/userFixtures"
@@ -155,12 +155,12 @@ describe("explicit DB3 authorization", () => {
     expect(paginated.count).toBe(expectedIds.length)
   })
 
-  it("requires the schema recovery grant even when the actor holds sysadmin", async () => {
+  it("explains deferred Song access even when the actor holds sysadmin", async () => {
     const { user, ctx } = createAuthorizationPersona("normal", {
       id: 501, permissions: [Permission.login, Permission.view_songs, Permission.sysadmin],
     })
     authorizationTestDb.reset({ user: [user!], song: [makeSong(1, { isDeleted: true })] })
-    await expect(invokeResolver(db3Query, forgeDb3Query("Song", { includeDeleted: true }), ctx)).rejects.toThrow("Not authorized")
+    await expect(invokeResolver(db3Query, forgeDb3Query("Song", { includeDeleted: true }), ctx)).rejects.toThrow("Song screens and editing is temporarily unavailable")
   })
 
   it("applies the same recovery and private-owner rules to included relations", async () => {
@@ -286,11 +286,12 @@ describe("explicit DB3 authorization", () => {
     expect(matchesWhere({ id: 2, file: { id: 2, uploadedByUserId: 502, visiblePermissionId: null, isDeleted: false } }, fileWhere)).toBe(false)
   })
 
-  it("denies both mutation entry points when the operation grant is absent", async () => {
-    const { user, ctx } = createAuthorizationPersona("normal", { id: 501 })
+  it("denies generic mutations and explains deferred dedicated editing", async () => {
+    const { user, ctx } = createAuthorizationPersona("normal", { id: 501, permissions: [Permission.login] })
     authorizationTestDb.reset({ user: [user!], song: [makeSong(1)], change: [] })
     await expect(invokeResolver(db3Mutation, forgeDb3PublicUpdate("Song", songPublicId(1), { description: "generic" }), ctx)).rejects.toThrow("Not authorized")
-    await expect(invokeResolver(updateSongBasicFields, { songId: songPublicId(1), description: "dedicated" }, ctx)).rejects.toThrow("Not authorized")
+    // The legacy generic fixture refreshes its session; give the dedicated guard a fresh signed-in context.
+    await expect(invokeResolver(updateSongBasicFields, { songId: songPublicId(1), description: "dedicated" }, createAuthorizationTestContext(user!))).rejects.toThrow("Song screens and editing is temporarily unavailable")
     expect(authorizationTestDb.snapshot("song")[0]!.description).toBe("before")
   })
 
@@ -302,3 +303,35 @@ describe("explicit DB3 authorization", () => {
     expect(authorizationTestDb.snapshot("song")[0]).toMatchObject({ createdByUserId: user!.id })
   })
 })
+
+// MIGRATION_RESTORE: song-workflows
+// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:tests/authorization/db3Authorization.test.ts:289-295
+// Reason: Song and credit screens still depend on undeclared ownership and obsolete dedicated endpoints.
+// Restore: Restore song search/detail/editing, credits and pinned recording with fresh selected-band authorization, visible files and public localized references; retain the recovered narrow song lookup and setlist persistence.
+// Verification: Verify two bands, visibility, deleted records, revoked grants, credits, pinned recording and complete built-browser song workflows.
+// SHA256: 34c0d6198c58cfe415b9bb65a73039c5ef207bdf521fb90644eb740b3f3dc490
+// MIGRATION_REFERENCE_BEGIN
+//   it("denies both mutation entry points when the operation grant is absent", async () => {
+//     const { user, ctx } = createAuthorizationPersona("normal", { id: 501 })
+//     authorizationTestDb.reset({ user: [user!], song: [makeSong(1)], change: [] })
+//     await expect(invokeResolver(db3Mutation, forgeDb3PublicUpdate("Song", songPublicId(1), { description: "generic" }), ctx)).rejects.toThrow("Not authorized")
+//     await expect(invokeResolver(updateSongBasicFields, { songId: songPublicId(1), description: "dedicated" }, ctx)).rejects.toThrow("Not authorized")
+//     expect(authorizationTestDb.snapshot("song")[0]!.description).toBe("before")
+//   })
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: song-workflows
+// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:tests/authorization/db3Authorization.test.ts:158-164
+// Reason: Song and credit screens still depend on undeclared ownership and obsolete dedicated endpoints.
+// Restore: Restore song search/detail/editing, credits and pinned recording with fresh selected-band authorization, visible files and public localized references; retain the recovered narrow song lookup and setlist persistence.
+// Verification: Verify two bands, visibility, deleted records, revoked grants, credits, pinned recording and complete built-browser song workflows.
+// SHA256: 657017b9a343e905411dd111b38bf06231366f6a01b0658e416ac106a9e6d4a6
+// MIGRATION_REFERENCE_BEGIN
+//   it("requires the schema recovery grant even when the actor holds sysadmin", async () => {
+//     const { user, ctx } = createAuthorizationPersona("normal", {
+//       id: 501, permissions: [Permission.login, Permission.view_songs, Permission.sysadmin],
+//     })
+//     authorizationTestDb.reset({ user: [user!], song: [makeSong(1, { isDeleted: true })] })
+//     await expect(invokeResolver(db3Query, forgeDb3Query("Song", { includeDeleted: true }), ctx)).rejects.toThrow("Not authorized")
+//   })
+// MIGRATION_REFERENCE_END

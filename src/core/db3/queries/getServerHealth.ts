@@ -4,22 +4,13 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { xFile, xUser } from "../db3";
 import { FileStatResult, GetServerHealthResult, ServerHealthFileResult, TableStatsQueryRowRaw } from "../shared/apiTypes";
+import path from "node:path";
+import * as fsp from "node:fs/promises";
 
-var fs = require('fs');
-var path = require('path');
-var fsp = require('fs/promises');
-
-async function GetDirectoryInfo(relativePath: string) {
+async function GetDirectoryInfo(directoryPath: string): Promise<FileStatResult[]> {
     try {
-        const baseUploadsDir = path.join(process.cwd(), relativePath)
-        //const requestedPath = path.join(baseUploadsDir, relativePath)
-        const normalizedPath = path.normalize(baseUploadsDir)
-
-        if (!normalizedPath.startsWith(baseUploadsDir)) {
-            throw new Error('Invalid directory path')
-        }
-
-        // const normalizedPath = path.normalize(requestedPath)
+        // FILE_UPLOAD_PATH is deployment configuration and may be absolute.
+        const normalizedPath = path.resolve(process.cwd(), directoryPath);
         const files = await fsp.readdir(normalizedPath)
         const fileStats: FileStatResult[] = await Promise.all(
             files.map(async (fileName) => {

@@ -7,7 +7,7 @@ import { createCommandRowServices } from "src/core/db3/server/db3CommandCore";
 import { getDB3CommandHandler } from "src/core/db3/server/db3CommandRegistry";
 import { bindDB3ReadSnapshot } from "src/core/db3/server/db3ReadExecution";
 import { queryView } from "src/core/db3/server/db3QueryCore";
-import { GetAuthorizedCustomLinkFile } from "src/core/db3/server/fileDownload";
+import { GetAuthorizedCustomLinkFile, GetAuthorizedDirectDownloadFile } from "src/core/db3/server/fileDownload";
 import { customLinkEditorView, customLinkFileSelectionView, customLinkListView } from "src/core/db3/shared/entities/customLink/customLinkViews";
 import { xCustomLinkFile } from "src/core/db3/shared/entities/customLink/customLinkFile";
 import { generatePublicId } from "src/server/publicId";
@@ -100,10 +100,18 @@ describe.skipIf(!settingsMysqlTestUrl)("band custom links on MariaDB", () => {
         expect(selected.items.map(file => file.publicId).sort()).toEqual([targets.local.publicId, targets.owned.publicId].sort());
         for (const target of [targets.local, targets.owned]) {
             expect(await GetAuthorizedCustomLinkFile(target.publicId, auth, await snapshot(tx, auth))).toMatchObject({ storedLeafName: target.storedLeafName });
+            expect(await GetAuthorizedDirectDownloadFile(target.storedLeafName, auth, await snapshot(tx, auth))).toMatchObject({ publicId: target.publicId });
         }
         for (const target of [targets.foreign, targets.deleted, targets.private, targets.external]) {
             expect(await GetAuthorizedCustomLinkFile(target.publicId, auth, await snapshot(tx, auth))).toBeNull();
+            expect(await GetAuthorizedDirectDownloadFile(target.storedLeafName, auth, await snapshot(tx, auth))).toBeNull();
         }
+        const unscoped = await loadAuthorizationForUser(fixture.admin, tx);
+        await expect(GetAuthorizedDirectDownloadFile(targets.local.storedLeafName, unscoped, await snapshot(tx, unscoped))).rejects.toThrow();
+        await tx.file.update({ where: { id: targets.local.id }, data: { visiblePermissionId: null } });
+        expect(await GetAuthorizedDirectDownloadFile(targets.local.storedLeafName, auth, await snapshot(tx, auth))).toBeNull();
+        await tx.bandUser.updateMany({ where: { bandId: fixture.bands[0]!.id, userId: fixture.user.id }, data: { isDeleted: true } });
+        expect(await GetAuthorizedDirectDownloadFile(targets.owned.storedLeafName, auth, await snapshot(tx, auth))).toBeNull();
         expect(xCustomLinkFile.authorizeRowBeforeInsert({ auth })).toBe(false);
         expect(xCustomLinkFile.deletePolicy).toBe("disabled");
     }));

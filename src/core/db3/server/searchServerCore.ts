@@ -1,18 +1,12 @@
+import { requireRestoredApplicationFeature } from "src/core/shared/applicationRecovery";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
-import { calendarWindowSql } from "./calendarWindowSql";
 // generalized version of search results.
 // hopefully can unify song & event search, and then extend to users & files.
 
 import { CMServerAuthorization } from "@/src/auth/server/serverAuthorization";
-import { loadBandTimeZone } from "@/src/server/bandTimeZone";
-import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
-import { AuthorizationError } from "blitz";
-import db, { Prisma } from "db";
 import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUtils";
 import { SplitQuickFilter } from "shared/quickFilter";
-import { Stopwatch, TAnyModel } from "shared/rootroot";
-import { queryTable } from "src/core/db3/server/db3QueryCore";
-import { CalculateFilterQueryResult, type DiscreteCriterion, DiscreteCriterionFilterType, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchResultsRet, SortQueryElements } from "src/core/db3/shared/apiTypes";
+import { CalculateFilterQueryResult, type DiscreteCriterion, DiscreteCriterionFilterType, GetSearchResultsInput, SearchResultsRet, SortQueryElements } from "src/core/db3/shared/apiTypes";
 import * as db3 from "../../../core/db3/db3";
 import { resolvePublicIds } from "./db3PublicIds";
 
@@ -193,228 +187,240 @@ function calculateFilterQuery(
     return result;
 };
 
-export async function GetSearchResultsCore(args: GetSearchResultsInput, auth: CMServerAuthorization): Promise<SearchResultsRet> {
-    if (!args.calendarWindow) return getSearchResults(args, auth, db);
-    return db.$transaction(tx => getSearchResults(args, auth, tx), {
-        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 30_000,
-    });
+export async function GetSearchResultsCore(_args: GetSearchResultsInput, _auth: CMServerAuthorization): Promise<SearchResultsRet> {
+    return requireRestoredApplicationFeature("domainSearch");
 }
 
-async function getSearchResults(args: GetSearchResultsInput, auth: CMServerAuthorization, database: TransactionalPrismaClient): Promise<SearchResultsRet> {
-    try {
-        const rootsw = new Stopwatch();
-        const ret: SearchResultsRet = MakeEmptySearchResultsRet();//{
-
-        // todo: input validation. it's very important because things are being appended to SQL.
-
-        const table = db3.GetTableById(args.tableID);
-        if (!table) {
-            throw new Error(`table ${args.tableID} not found`);
-        }
-        const view = args.viewID ? db3.getDB3View(args.viewID) : undefined;
-        if (view && view.tableID !== table.tableID) {
-            throw new Error(`DB3 view '${view.viewID}' does not belong to table '${table.tableID}'.`);
-        }
-
-        if (!table.authorizeTableForView(auth)
-            || (args.includeDeleted === true && !table.getSearchCapabilities(auth).includeDeleted)) {
-            throw new AuthorizationError();
-        }
-
-        // Unlike quick filters, sort and facet columns are explicitly selected
-        // by the client. Reject forged requests for columns the caller cannot
-        // read instead of silently changing their meaning.
-        const isReadableSearchColumn = (columnName: string) => {
-            if (!table.getColumn(columnName)) {
-                throw new Error(`Search column ${columnName} not found on table ${table.tableName}`);
-            }
-            return table.authorizeColumnForView({ model: null, auth, columnName });
-        };
-        const requireReadableSearchColumn = (columnName: string) => {
-            if (!isReadableSearchColumn(columnName)) {
-                throw new AuthorizationError();
-            }
-        };
-        args.sort.forEach(sort => requireReadableSearchColumn(sort.db3Column));
-        const readableDiscreteCriteria = args.discreteCriteria.filter(criterion => {
-            if (isReadableSearchColumn(criterion.db3Column)) {
-                return true;
-            }
-            // Search pages submit disabled criteria as alwaysMatch. They carry
-            // no filtering intent and must not produce unauthorized facets.
-            if (criterion.behavior === DiscreteCriterionFilterType.alwaysMatch) return false;
-            throw new AuthorizationError();
-        });
-        const resolvedDiscreteCriteria = await resolveSearchDiscreteCriteria(
-            table,
-            readableDiscreteCriteria,
-            auth,
-            database,
-        );
-        const authorizedSearchArgs = { ...args, discreteCriteria: resolvedDiscreteCriteria };
-
-        const sortElements = processSearchSortModel(table, authorizedSearchArgs);
-        const bandTimeZone = auth.band ? await loadBandTimeZone(database, auth.band.id) : DEFAULT_BAND_TIME_ZONE;
-        const calendarPredicate = args.calendarWindow ? calendarWindowSql(args.calendarWindow, bandTimeZone) : null;
-
-        const filterResult = calculateFilterQuery(authorizedSearchArgs, null, sortElements, auth, calendarPredicate);
-        ret.filterQueryResult = filterResult;
-
-        const queries: Promise<any>[] = [];
-
-        for (let i = 0; i < authorizedSearchArgs.discreteCriteria.length; ++i) {
-            const criterion = authorizedSearchArgs.discreteCriteria[i]!;
-            const col = table.getColumn(criterion.db3Column);
-            if (!col) {
-                throw new Error(`Column ${criterion.db3Column} wasn't found on table ${table.tableName} / ID:${table.tableID}; unable to form the search query.`);
-            }
-
-            const filterResult2 = calculateFilterQuery(authorizedSearchArgs, col.member, sortElements, auth, calendarPredicate);
-
-            const facetInfoQuery = col.SqlGetFacetInfoQuery({
-                auth,
-                filteredItemsQuery: filterResult.sqlSelect,
-                filteredItemsQueryExcludingThisCriterion: filterResult2.sqlSelect,
-                crit: criterion,
-            });
-
-            // no facet info to be done on this column
-            if (!facetInfoQuery) continue;
-
-            const proc = async () => {
-                const sw = new Stopwatch();
-                const result: TAnyModel[] = await database.$queryRaw(Prisma.raw(facetInfoQuery.sql));
-                const tr = result.map(r => facetInfoQuery.transformResult(r));
-                ret.facets.push({
-                    db3Column: criterion.db3Column,
-                    items: tr,
-                });
-                ret.queryMetrics.push({
-                    title: `[${col.member}] facet info`,
-                    millis: sw.ElapsedMillis,
-                    query: facetInfoQuery.sql,
-                    rowCount: tr.length,
-                });
-            };
-
-            queries.push(proc());
-        }
-
-        // query paginated
-        let resultIds: number[] = [];
-        const paginatedQueryProc = async () => {
-            const sw = new Stopwatch();
-            // const orderByCol = table.getColumn(args.orderByDb3Column);
-            // if (!orderByCol) {
-            //     throw new Error(`Order by column ${args.orderByDb3Column} not found on table ${table.tableName}`);
-            // }
-
-            const orderBy: string[] = [];
-            sortElements.select.forEach(s => {
-                orderBy.push(`${s.alias} ${s.direction}`);
-            });
-
-            const paginatedResultQuery = `
-                    with FilteredItems as (
-                        ${filterResult.sqlSelect}
-                    )
-                    select
-                        id
-                    from
-                        FilteredItems
-                    order by
-                        ${orderBy.join(`,\n`)}
-                    limit
-                        ${args.offset},${args.take}
-                        `;
-
-            const r: { id: number }[] = await database.$queryRaw(Prisma.raw(paginatedResultQuery));
-            resultIds = r.map(x => x.id);
-            ret.queryMetrics.push({
-                title: `paginated results`,
-                millis: sw.ElapsedMillis,
-                query: paginatedResultQuery,
-                rowCount: r.length,
-            });
-        };
-        queries.push(paginatedQueryProc());
-
-        // TOTAL filtered row count (basically the special "self" facet)
-        const totalRowCountQueryProc = async () => {
-            const sw = new Stopwatch();
-            const totalRowCountQuery = `
-                with FilteredItems as (
-                    ${filterResult.sqlSelect}
-                )
-                select
-                    count(*) as rowCount
-                from
-                    FilteredItems
-                    `;
-            const rowCountResult: [{ rowCount: bigint }] = await database.$queryRaw(Prisma.raw(totalRowCountQuery));
-            ret.rowCount = (new Number(rowCountResult[0].rowCount)).valueOf();
-            ret.queryMetrics.push({
-                title: "total row count",
-                millis: sw.ElapsedMillis,
-                query: totalRowCountQuery,
-                rowCount: 1,
-            });
-        };
-
-        queries.push(totalRowCountQueryProc());
-
-        const parallelsw = new Stopwatch();
-        await Promise.all(queries);
-        ret.queryMetrics.push({
-            title: "parallel execution",
-            millis: parallelsw.ElapsedMillis,
-            query: "",
-            rowCount: 0,
-        });
-
-        // FULL DETAILS USING DB3.
-        if (resultIds.length) {
-            const queryResult = await queryTable(
-                {
-                    cmdbQueryContext: `getSearchResults[${table.tableName}]`,
-                    table: {
-                        tableID: table.tableID,
-                        tableName: table.tableName,
-                        viewID: view?.viewID,
-                    },
-                    includeDeleted: args.includeDeleted === true,
-                    filter: {
-                        items: [],
-                    },
-                    orderBy: undefined,
-                },
-                auth,
-                database,
-                {
-                    orderedPrimaryKeys: resultIds,
-                    trustedNaturalPrimaryKeys: resultIds,
-                }
-            );
-            ret.queryMetrics.push({
-                title: view ? `db3 view items [${view.viewID}]` : "db3 legacy items",
-                millis: queryResult.executionTimeMillis,
-                query: "",
-                rowCount: queryResult.items.length,
-            });
-
-            ret.results = queryResult.items;
-        }
-
-        ret.queryMetrics.push({
-            title: "(root)",
-            millis: rootsw.ElapsedMillis,
-            query: "",
-            rowCount: 0,
-        });
-
-        return ret;
-    } catch (e) {
-        console.error(e);
-        throw (e);
-    }
-}
+// MIGRATION_RESTORE: domain-search
+// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/db3/server/searchServerCore.ts:196-420
+// Reason: The raw domain search owner does not establish a selected-band authorization snapshot for its SQL.
+// Restore: Restore the domain search HTTP/direct owner with explicit band snapshots, authorized localized predicates/facets, consistent counts/paging/order, public identities and contextual links; account for preserved event/song and directory semantics.
+// Verification: Reactivate preserved search authorization/recovery specifications; verify anonymous/member/admin visibility, two bands/locales, hidden assignments, all filter operators, grant revocation, facets and built-browser search.
+// SHA256: 77b8e2cfdffe5578e9e66b6afd00879c808748dddc734b82740dec493e49ee49
+// MIGRATION_REFERENCE_BEGIN
+// export async function GetSearchResultsCore(args: GetSearchResultsInput, auth: CMServerAuthorization): Promise<SearchResultsRet> {
+//     if (!args.calendarWindow) return getSearchResults(args, auth, db);
+//     return db.$transaction(tx => getSearchResults(args, auth, tx), {
+//         isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 30_000,
+//     });
+// }
+//
+// async function getSearchResults(args: GetSearchResultsInput, auth: CMServerAuthorization, database: TransactionalPrismaClient): Promise<SearchResultsRet> {
+//     try {
+//         const rootsw = new Stopwatch();
+//         const ret: SearchResultsRet = MakeEmptySearchResultsRet();//{
+//
+//         // todo: input validation. it's very important because things are being appended to SQL.
+//
+//         const table = db3.GetTableById(args.tableID);
+//         if (!table) {
+//             throw new Error(`table ${args.tableID} not found`);
+//         }
+//         const view = args.viewID ? db3.getDB3View(args.viewID) : undefined;
+//         if (view && view.tableID !== table.tableID) {
+//             throw new Error(`DB3 view '${view.viewID}' does not belong to table '${table.tableID}'.`);
+//         }
+//
+//         if (!table.authorizeTableForView(auth)
+//             || (args.includeDeleted === true && !table.getSearchCapabilities(auth).includeDeleted)) {
+//             throw new AuthorizationError();
+//         }
+//
+//         // Unlike quick filters, sort and facet columns are explicitly selected
+//         // by the client. Reject forged requests for columns the caller cannot
+//         // read instead of silently changing their meaning.
+//         const isReadableSearchColumn = (columnName: string) => {
+//             if (!table.getColumn(columnName)) {
+//                 throw new Error(`Search column ${columnName} not found on table ${table.tableName}`);
+//             }
+//             return table.authorizeColumnForView({ model: null, auth, columnName });
+//         };
+//         const requireReadableSearchColumn = (columnName: string) => {
+//             if (!isReadableSearchColumn(columnName)) {
+//                 throw new AuthorizationError();
+//             }
+//         };
+//         args.sort.forEach(sort => requireReadableSearchColumn(sort.db3Column));
+//         const readableDiscreteCriteria = args.discreteCriteria.filter(criterion => {
+//             if (isReadableSearchColumn(criterion.db3Column)) {
+//                 return true;
+//             }
+//             // Search pages submit disabled criteria as alwaysMatch. They carry
+//             // no filtering intent and must not produce unauthorized facets.
+//             if (criterion.behavior === DiscreteCriterionFilterType.alwaysMatch) return false;
+//             throw new AuthorizationError();
+//         });
+//         const resolvedDiscreteCriteria = await resolveSearchDiscreteCriteria(
+//             table,
+//             readableDiscreteCriteria,
+//             auth,
+//             database,
+//         );
+//         const authorizedSearchArgs = { ...args, discreteCriteria: resolvedDiscreteCriteria };
+//
+//         const sortElements = processSearchSortModel(table, authorizedSearchArgs);
+//         const bandTimeZone = auth.band ? await loadBandTimeZone(database, auth.band.id) : DEFAULT_BAND_TIME_ZONE;
+//         const calendarPredicate = args.calendarWindow ? calendarWindowSql(args.calendarWindow, bandTimeZone) : null;
+//
+//         const filterResult = calculateFilterQuery(authorizedSearchArgs, null, sortElements, auth, calendarPredicate);
+//         ret.filterQueryResult = filterResult;
+//
+//         const queries: Promise<any>[] = [];
+//
+//         for (let i = 0; i < authorizedSearchArgs.discreteCriteria.length; ++i) {
+//             const criterion = authorizedSearchArgs.discreteCriteria[i]!;
+//             const col = table.getColumn(criterion.db3Column);
+//             if (!col) {
+//                 throw new Error(`Column ${criterion.db3Column} wasn't found on table ${table.tableName} / ID:${table.tableID}; unable to form the search query.`);
+//             }
+//
+//             const filterResult2 = calculateFilterQuery(authorizedSearchArgs, col.member, sortElements, auth, calendarPredicate);
+//
+//             const facetInfoQuery = col.SqlGetFacetInfoQuery({
+//                 auth,
+//                 filteredItemsQuery: filterResult.sqlSelect,
+//                 filteredItemsQueryExcludingThisCriterion: filterResult2.sqlSelect,
+//                 crit: criterion,
+//             });
+//
+//             // no facet info to be done on this column
+//             if (!facetInfoQuery) continue;
+//
+//             const proc = async () => {
+//                 const sw = new Stopwatch();
+//                 const result: TAnyModel[] = await database.$queryRaw(Prisma.raw(facetInfoQuery.sql));
+//                 const tr = result.map(r => facetInfoQuery.transformResult(r));
+//                 ret.facets.push({
+//                     db3Column: criterion.db3Column,
+//                     items: tr,
+//                 });
+//                 ret.queryMetrics.push({
+//                     title: `[${col.member}] facet info`,
+//                     millis: sw.ElapsedMillis,
+//                     query: facetInfoQuery.sql,
+//                     rowCount: tr.length,
+//                 });
+//             };
+//
+//             queries.push(proc());
+//         }
+//
+//         // query paginated
+//         let resultIds: number[] = [];
+//         const paginatedQueryProc = async () => {
+//             const sw = new Stopwatch();
+//             // const orderByCol = table.getColumn(args.orderByDb3Column);
+//             // if (!orderByCol) {
+//             //     throw new Error(`Order by column ${args.orderByDb3Column} not found on table ${table.tableName}`);
+//             // }
+//
+//             const orderBy: string[] = [];
+//             sortElements.select.forEach(s => {
+//                 orderBy.push(`${s.alias} ${s.direction}`);
+//             });
+//
+//             const paginatedResultQuery = `
+//                     with FilteredItems as (
+//                         ${filterResult.sqlSelect}
+//                     )
+//                     select
+//                         id
+//                     from
+//                         FilteredItems
+//                     order by
+//                         ${orderBy.join(`,\n`)}
+//                     limit
+//                         ${args.offset},${args.take}
+//                         `;
+//
+//             const r: { id: number }[] = await database.$queryRaw(Prisma.raw(paginatedResultQuery));
+//             resultIds = r.map(x => x.id);
+//             ret.queryMetrics.push({
+//                 title: `paginated results`,
+//                 millis: sw.ElapsedMillis,
+//                 query: paginatedResultQuery,
+//                 rowCount: r.length,
+//             });
+//         };
+//         queries.push(paginatedQueryProc());
+//
+//         // TOTAL filtered row count (basically the special "self" facet)
+//         const totalRowCountQueryProc = async () => {
+//             const sw = new Stopwatch();
+//             const totalRowCountQuery = `
+//                 with FilteredItems as (
+//                     ${filterResult.sqlSelect}
+//                 )
+//                 select
+//                     count(*) as rowCount
+//                 from
+//                     FilteredItems
+//                     `;
+//             const rowCountResult: [{ rowCount: bigint }] = await database.$queryRaw(Prisma.raw(totalRowCountQuery));
+//             ret.rowCount = (new Number(rowCountResult[0].rowCount)).valueOf();
+//             ret.queryMetrics.push({
+//                 title: "total row count",
+//                 millis: sw.ElapsedMillis,
+//                 query: totalRowCountQuery,
+//                 rowCount: 1,
+//             });
+//         };
+//
+//         queries.push(totalRowCountQueryProc());
+//
+//         const parallelsw = new Stopwatch();
+//         await Promise.all(queries);
+//         ret.queryMetrics.push({
+//             title: "parallel execution",
+//             millis: parallelsw.ElapsedMillis,
+//             query: "",
+//             rowCount: 0,
+//         });
+//
+//         // FULL DETAILS USING DB3.
+//         if (resultIds.length) {
+//             const queryResult = await queryTable(
+//                 {
+//                     cmdbQueryContext: `getSearchResults[${table.tableName}]`,
+//                     table: {
+//                         tableID: table.tableID,
+//                         tableName: table.tableName,
+//                         viewID: view?.viewID,
+//                     },
+//                     includeDeleted: args.includeDeleted === true,
+//                     filter: {
+//                         items: [],
+//                     },
+//                     orderBy: undefined,
+//                 },
+//                 auth,
+//                 database,
+//                 {
+//                     orderedPrimaryKeys: resultIds,
+//                     trustedNaturalPrimaryKeys: resultIds,
+//                 }
+//             );
+//             ret.queryMetrics.push({
+//                 title: view ? `db3 view items [${view.viewID}]` : "db3 legacy items",
+//                 millis: queryResult.executionTimeMillis,
+//                 query: "",
+//                 rowCount: queryResult.items.length,
+//             });
+//
+//             ret.results = queryResult.items;
+//         }
+//
+//         ret.queryMetrics.push({
+//             title: "(root)",
+//             millis: rootsw.ElapsedMillis,
+//             query: "",
+//             rowCount: 0,
+//         });
+//
+//         return ret;
+//     } catch (e) {
+//         console.error(e);
+//         throw (e);
+//     }
+// }
+// MIGRATION_REFERENCE_END

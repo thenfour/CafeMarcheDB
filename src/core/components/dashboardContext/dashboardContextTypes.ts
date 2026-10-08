@@ -97,9 +97,9 @@ export abstract class DashboardContextDataBase {
                 return value.externalURI;
             }
             if (!value.fileLeafName) {
-                return this.getAbsoluteUri(`/api/files/download/${value.storedLeafName}`);
+                return this.getAbsoluteUri(withMemberPresentation(`/api/files/download/${value.storedLeafName}`, this.memberPresentation));
             }
-            return this.getAbsoluteUri(`/api/files/download/${value.storedLeafName}/${slugify(value.fileLeafName)}`);
+            return this.getAbsoluteUri(withMemberPresentation(`/api/files/download/${value.storedLeafName}/${slugify(value.fileLeafName)}`, this.memberPresentation));
         },
 
         getURIForFileLandingPage: (value: { publicId: FilePublicId, slug?: string | null | undefined }) => {

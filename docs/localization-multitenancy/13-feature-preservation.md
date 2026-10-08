@@ -43,7 +43,7 @@ running tests. Neither compiler exclusions nor TypeScript suppressions are used.
 | `file-search`               | File quick filtering and association name ordering against resolved band tag/instrument labels, including blanks, hidden assignments, visibility and pagination. General File ownership remains a prerequisite.                                                                                                                                                                                                                                                   |
 | `wiki-search`               | Wiki quick filtering by resolved band tag names and menu wiki-slug suggestions, including per-string fallback, intentional blanks, hidden assignments, visibility, consistent counts and pagination. General wiki ownership remains a prerequisite.                                                                                                                                                                                                               |
 | `global-search`             | Shell search, authorized domain readers, keyboard behavior, selected-band links and cache isolation.                                                                                                                                                                                                                                                                                                                                                              |
-| `quick-search`              | Public/member/administrator visibility within explicit bands; localized inherited catalogs; query grammar, all-tag/type filters, ranking/limits, public identities and context-preserving links; stale responses; association/song selection, clearing and keyboard behavior; song detail loading; Markdown wiki/mention suggestions and the protected explorer. Manual text/link editing, authored reference renderers and separate domain search remain active. |
+| `quick-search`              | Public/member/administrator visibility within explicit bands; localized inherited catalogs; query grammar, all-tag/type filters, ranking/limits, public identities and context-preserving links; stale responses; association/song selection, clearing and keyboard behavior; song detail loading; Markdown wiki/mention suggestions and the protected explorer. Manual text/link editing and authored reference renderers remain active; separate domain search is tracked independently below. |
 | `activity-reports`          | Activity timelines, facets, filtering, detail and CSV exports with explicit band/platform authorization, localized references, public identities and anonymization/redaction. Telemetry recording remains executable.                                                                                                                                                                                                                                             |
 | `audit-log`                 | Protected audit browsing, table/user filters, historical JSON/detail links, clipboard and Markdown inspection with explicit platform/band authorization, fresh snapshots, localized references and redaction. Audit recording remains executable.                                                                                                                                                                                                                 |
 | `legacy-event-song-filters` | Account for the old event/song facet RPC semantics through the existing search owner: timing/relevance, multi-tag matching, counts, localized facets, pagination and ordering with selected-band snapshots and public identities.                                                                                                                                                                                                                                 |
@@ -54,6 +54,13 @@ running tests. Neither compiler exclusions nor TypeScript suppressions are used.
 | `settings-editors`          | Existing settings/branding workflows through typed hives, including time-zone reanchoring and cache invalidation. Replaced storage APIs are historical references.                                                                                                                                                                                                                                                                                                |
 | `catalog-help`              | Song-tag help Markdown alongside the migrated editor. Its rendering call is restored; browser verification remains pending.                                                                                                                                                                                                                                                                                                                                       |
 | `demo-seeding`              | Useful sample content generators on the target schema, or an explicitly approved retirement decision for each omitted capability.                                                                                                                                                                                                                                                                                                                                 |
+
+| `event-workflows` | Event search/detail/editing, segments, invitations, frontpage edits and date-picker event highlights through selected-band snapshots, public references and localized catalogs. Migrated creation, attendance and calendars stay active. |
+| `song-workflows` | Song search/detail/editing, credits, profile-credit display and pinned recordings with fresh band authorization, visible files and public references. Narrow song lookup and plan persistence stay active. |
+| `file-workflows` | File search/detail and metadata/association editing with explicit ownership, public membership/instrument references and fresh visibility. Narrow direct and Custom Link downloads stay active. |
+| `public-publication` | Band-specific homepage/feed, agenda, galleries, hosting/language modes, CORS and gallery/image editing with public band routing and authorized content. |
+| `domain-search` | Raw search HTTP/direct owner, localized authorized predicates/facets, consistent counts/paging/order, public identities and contextual links. Preserve the event/song and directory search specifications. |
+| `developer-examples` | Protected component/grid demonstrations and interactions against recovered domain contracts. Standalone date/attendance/select/dialog tools stay active where their dependencies are migrated. |
 
 These are recovery obligations, not instructions to uncomment obsolete Prisma
 relations or restore the old authorization model. Existing migrated membership,
@@ -71,6 +78,23 @@ variant. `demo-seeding` remains pending, its reference blocks remain intact, and
 no generator is retired. Production seed/startup behavior stays separate.
 
 ## Preserved test specifications
+
+The final A0 route/entry-point audit adds 42 source references from `f96ac10c`.
+The original event/song/file/publication pages, dedicated endpoints, raw search,
+profile-credit rendering and date-picker overlay remain searchable. Three whole
+specifications are newly deferred: `searchRecovery.test.ts` (14 cases),
+`userSearchAuthorization.test.ts` (four cases) and
+`calendarWindowConsumers.test.ts` (three cases). The original credit-read case
+and two authorization expectations also remain in partial reference blocks;
+active RPC tests now assert intentional unavailability. These are preserved
+functional obligations, not passing tests or retired behavior.
+
+`yarn migration:verify` now protects 319 source references and 13 wholly deferred
+test specifications across 26 pending features. Ordinary-member wiki reading and
+explicit-band direct downloads have native/browser evidence, while the six new
+workflow obligations remain pending. A0 can close with coherent isolation; A1/B
+still require their restored behavior and executable specifications.
+
 
 The quick-search isolation adds eighteen references from `66c5806d` across its
 global reader/plugins, HTTP route, client selectors, song picker, Markdown

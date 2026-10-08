@@ -6,6 +6,7 @@ import { z } from "zod";
 import { executeDB3Command } from "../server/db3CommandCore";
 import { getDB3CommandHandler } from "../server/db3CommandRegistry";
 import { BandPublicIdSchema } from "src/locale/shared/presentationInput";
+import { requireRecoveredDB3Domain } from "src/core/shared/applicationRecovery";
 
 const DB3CommandRequestSchema = z.object({
     commandID: z.string().min(1).max(128).regex(/^[A-Za-z][A-Za-z0-9_]*$/),
@@ -22,6 +23,7 @@ export default resolver.pipe(
     resolver.zod(DB3CommandRequestSchema),
     async (request: ExecuteDB3CommandRequest, ctx: AuthenticatedCtx) => {
         const handler = getDB3CommandHandler(request.commandID);
+        requireRecoveredDB3Domain(handler.command.entity.tableID);
         return db.$transaction(
             transactionalDb => executeDB3Command({
                 commandID: request.commandID,

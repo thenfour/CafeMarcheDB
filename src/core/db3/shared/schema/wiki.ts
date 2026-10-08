@@ -62,8 +62,8 @@ const wikiPageRevisionTableAuthMap: db3.DB3AuthTablePermissionMap = {
 } as const;
 
 const wikiPageCurrentRevisionAuthMap = db3.defineAuthMap({
-    PostQueryAsOwner: Permission.view_wiki_page_revisions,
-    PostQuery: Permission.view_wiki_page_revisions,
+    PostQueryAsOwner: Permission.view_wiki_pages,
+    PostQuery: Permission.view_wiki_pages,
     PreMutateAsOwner: Permission.admin_wiki_pages,
     PreMutate: Permission.admin_wiki_pages,
     PreInsert: Permission.admin_wiki_pages,
@@ -145,7 +145,7 @@ export const xWikiPage = db3.defineTable({
             getQuickFilterWhereClause: (): false => false,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.WikiPageWhereInput | boolean => false,
         }),
-        currentRevision: foreignRefByTableId("WikiPageRevision", {
+        currentRevision: foreignRefByTableId("WikiPageCurrentRevision", {
             fkidMember: "currentRevisionId",
             allowNull: true,
             authMap: wikiPageCurrentRevisionAuthMap,
@@ -292,6 +292,56 @@ export const xWikiPageRevision = db3.defineTable({
     })
 });
 
+/** Current content is readable with its page; revision history has a separate grant. */
+// TODO: there should be a SINGLE table def for this table, and differences here should be expressed
+// via views.
+export const xWikiPageCurrentRevision = db3.defineTable({
+    prismaModel: db3.prismaModel<Prisma.WikiPageRevisionDelegate>(),
+    getIdentity: (revision: { publicId: WikiPageRevisionPublicId }) => revision.publicId,
+    tableName: "WikiPageRevision",
+    tableUniqueName: "WikiPageCurrentRevision",
+    queryParameters: {},
+    bandScope: { member: "bandId", via: { relation: "wikiPage", ownerUserMember: "createdByUserId" }, managePermission: Permission.admin_wiki_pages },
+    readConsistency: "snapshot",
+    deletePolicy: "disabled",
+    getSelectionArgs: () => Prisma.validator<Prisma.WikiPageRevisionDefaultArgs>()({
+        select: { publicId: true, name: true, content: true, createdAt: true },
+    }),
+    getParameterizedWhereClause: (_params: {}, auth): Prisma.WikiPageRevisionWhereInput[] => [{
+        pageAsCurrent: xWikiPage.CalculateWhereClause({ filterModel: {}, auth, includeDeleted: false }),
+        wikiPage: xWikiPage.CalculateWhereClause({ filterModel: {}, auth, includeDeleted: false }),
+    }],
+    tableAuthMap: {
+        View: Permission.view_wiki_pages, ViewOwn: Permission.view_wiki_pages,
+        Insert: Permission.never_grant, Edit: Permission.never_grant, EditOwn: Permission.never_grant,
+    },
+    getRowInfo: (row: { publicId: WikiPageRevisionPublicId; name: string }) => ({ pk: row.publicId, name: row.name, ownerUserId: null }),
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield({ naturalIdVisibility: "never" }),
+        publicId: () => MakePublicIdField<WikiPageRevisionPublicId>(),
+        name: columnName => MakeTitleField(columnName, { authMap: wikiPageRevisionAuthMap }),
+        content: columnName => new GenericStringField({ columnName, allowNull: false, format: "markdown", authMap: wikiPageRevisionAuthMap }),
+        createdAt: () => MakeCreatedAtField({ authMap: wikiPageRevisionAuthMap }),
+        createdByUser: () => MakeCreatedByField(),
+        consolidationKey: columnName => new GenericStringField({ columnName, allowNull: true, format: "plain", authMap: wikiPageRevisionAuthMap }),
+        linesAdded: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        linesRemoved: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        prevLineCount: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        lineCount: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        charsAdded: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        charsRemoved: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        sizeChars: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        prevSizeChars: columnName => new GenericIntegerField({ columnName, allowNull: true, authMap: wikiPageRevisionAuthMap }),
+        wikiPage: foreignRefByTableId("WikiPage", {
+            fkidMember: "wikiPageId",
+            authMap: db3.defineAuthMap({
+                PostQuery: Permission.never_grant, PostQueryAsOwner: Permission.never_grant,
+                PreInsert: Permission.never_grant, PreMutate: Permission.never_grant, PreMutateAsOwner: Permission.never_grant,
+            }),
+        }),
+    }),
+});
+
 // statically-typed registration
 // allows retaining type information even when looking up a table by
 // static string table id.
@@ -299,6 +349,7 @@ declare module "../db3core" {
     interface DB3TableTypeRegistry {
         WikiPage: typeof xWikiPage;
         WikiPageRevision: typeof xWikiPageRevision;
+        WikiPageCurrentRevision: typeof xWikiPageCurrentRevision;
     }
 }
 

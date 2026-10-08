@@ -13,9 +13,10 @@ build/startup blocker or enables a named core workflow.
 | **A1: core workflows restored** | Everyday member, event/invitation/attendance, song, and associated-file workflows work end to end, including their required non-page endpoints. Isolation is verified, required checks pass, and remaining restrictions are explicit. |
 | **B: localization and multiband complete** | Full portal routing, administration/lifecycle, translation tooling and agreed coverage work together. Remaining restrictions are restored or explicitly accepted for retirement. `yarn migration:check` passes with verification/retirement evidence recorded. |
 
-A0 and A1 have not been achieved. The SQL migration and focused domain checks
-establish useful foundations, not application readiness. A0 is a development
-recovery gate, not permission to deploy to production.
+A0 is achieved as of 2026-10-08: the normal built application runs on disposable
+migrated data, and reachable deferred routes and entry points are coherently
+isolated. A1 and B remain open. A0 is a development recovery gate, not permission
+to deploy to production; the complete suite still has migration failures.
 
 ## Available foundations
 
@@ -34,9 +35,10 @@ This restores recording, while analytics/report readers still need migration.
 Migrated slices include instrument/group catalogs, song tags, member instruments
 and tags, role assignment, basic profiles/directory, and membership deactivation/
 recovery. Their current contracts are in [DB3](07-db3-contracts.md) and
-[band memberships](08-band-memberships.md). Preserve this work. Focused validation
-does not establish that these pages can currently run in the whole application.
-Further recovery/lifecycle features are not a prerequisite for A0 or A1.
+[band memberships](08-band-memberships.md). Preserve this work. Current built-app
+evidence and remaining workflow restrictions are in
+[application recovery](09-application-recovery.md). Further recovery/lifecycle
+features are not a prerequisite for A0 or A1.
 
 ## A0: restore the executable application
 
@@ -75,14 +77,15 @@ Work in this order, adjusting the next slice to the actual blocker found:
    Assess the full suite so unrelated failures are visible; do not present focused
    checks as a full-suite pass.
 
-Normal typecheck and production build now pass. The account/dashboard bootstrap
-path has browser evidence against a migrated production copy: login, explicit
-band selection, member-profile navigation/reload and clearing the selected band.
-Startup reads use migrated catalogs and membership assignments; deferred dashboard
-domains are not queried. A0 still requires a coherent audit of reachable deferred
-routes and their non-page entry points. The full suite retains unrelated migration
-failures; its latest result and built-browser evidence are recorded below.
-See [current recovery evidence](09-application-recovery.md).
+Normal typecheck and production build pass. Earlier bootstrap evidence against a
+migrated production copy is now supplemented by the normal built server against
+a freshly reset two-band demo. Login, explicit selection, profile/catalog
+navigation, ordinary-member wiki reading and clearing selection work. Deferred
+pages, HTTP/RPC roots, generic DB3 requests and the date-picker event overlay have
+intentional boundaries; startup keeps access-control initialization separate from
+historical content backfills. The full suite is assessed, with no new failure
+entries and existing migration failures still visible. See the audit matrix and
+commands in [current recovery evidence](09-application-recovery.md).
 
 The obsolete single-band Role tables, views, commands, dashboard metadata, and
 account controls are disabled, with their source and tests preserved as searchable
@@ -94,24 +97,31 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Latest implemented slice:** a repeatable demo reset/launch workflow
-before the remaining deferred-surface audit. The user prioritized target-schema
-sample content for manual testing, with CLI-configurable generator sizes, locales,
-seed and reference date. See [demo workflow](../demo-seeding.md). Production seed
-initialization stays separate; no historical startup backfill is restored.
-The implementation has 29 configuration checks, six native reset/generator checks,
-and five passing built-browser assertion groups. Full-suite failures remain at
-230. Ordinary-member wiki reading is a newly documented recovery issue: Harbour's
-seeded welcome page renders for its manager but appears absent under Normal Users.
+**Latest implemented slice:** completed the A0 deferred-surface audit. Seventeen
+backstage routes and the public root show registered recovery text. Legacy
+event/song edits, pinned recordings, profile credits, public publication and raw
+domain search reject before their old readers; generic Song/File/gallery RPCs
+cannot bypass that boundary. Date selection remains usable with an explicit
+event-highlight notice. Ordinary-member wiki current content no longer requires
+history permission; direct local-file downloads use explicit-band authorization,
+fresh visibility checks and context-preserving URLs. Server health no longer
+calls the deferred audit-filter reader and accepts absolute upload directories.
+Preservation verification protects 319 source references, 13 deferred test
+specifications and 26 pending features. No feature is retired by this audit.
 
-**Following implementation slice:** audit the remaining reachable deferred pages and
-matching RPC/API/background entry points for coherent unavailability. Normal
-compiler and production-build blockers are cleared. Preserve the verified login,
-explicit-band, member/catalog and palette workflows while replacing unfinished
-reachable surfaces with registered recovery notices and guarded entry points.
-Account for each disabled implementation and specification in the restoration
-inventory. Assess the remaining authorization/calendar/full-suite fixtures as
-part of that audit before closing A0.
+**Following implementation slice:** begin A1 with the existing member workflows:
+verify directory/profile lookup, permitted shared-person and membership edits,
+instrument/tag assignments, hidden references and roleless memberships through
+the normal built application in two bands. Repair the relevant authorization
+fixtures rather than suppressing the full-suite failures. Then restore the
+event search/detail/creation workflow with its required search and invitation
+dependencies; retain the guarded boundaries until each complete workflow passes.
+
+### Earlier recovery slices
+
+The checkpoints below describe the work leading to A0; their historical open-gate
+statements do not change the current gate status above. The repeatable
+[demo workflow](../demo-seeding.md) remains the disposable browser fixture.
 
 The developer palette now uses the registered `global.dev.textPalette` setting.
 It remains platform-owned across band selections, retains drafts on failed writes
@@ -425,8 +435,8 @@ implementation/test references and verification obligations for audited removals
 | `LocalizedMarkdown` | Resolved rendering is available; legacy inline editing is disabled and preserved in source. | Scoped translation/Markdown editing after A1. |
 | Settings and branding | Generic DB3 settings storage/view are inactive and preserved in source. Settings/branding pages use registered commands and per-key capabilities, with explicit scope, save/reset and validated clipboard import. Logo editing, optional primary text color and upload controls remain unavailable; hosting mode belongs to deployment configuration. | Verify editors in the built app during A0/A1; recover remaining branding controls and account for legacy clipboard documents under `settings-editors`. |
 | Translation tools | Native catalog controls can edit explicit translations; full inventory/inspection/chrome tooling is incomplete. | Complete after A1. |
-| File-tag catalogs and File payloads | Shared/band tag CRUD, explicit translations, inherited color/order, hiding, deletion and dashboard references are migrated. Partition/Recording behavior comes only from GlobalFileTag. File payloads use BandFileTagAssignment, BandUser and BandInstrument public references; general File row services still reject undeclared ownership. Raw tag/instrument name quick filtering and association name ordering are preserved under `file-search`. | Recover File ownership, uploads/downloads and resolved File filtering/ordering; verify the complete workflows in the built application during A0/A1. |
-| Wiki content and tags | Band-localized catalog CRUD and public tag assignments are migrated. Page/assignment/revision ownership, editing, locking, visibility, history and maintenance now use explicit bands and fresh snapshots. The old raw tag-name predicate remains preserved under `wiki-search`; optional per-page help Markdown remains under `markdown-editing`. | Restore resolved search/filtering/counts/pagination and localized page-help delivery; verify complete wiki/chrome workflows in the built application during A0/A1. |
+| File-tag catalogs and File payloads | Migrated tags and associations use band-owned public references. General File pages and generic RPC roots are guarded; direct local-file GET/HEAD/range delivery uses the narrow read-only reader, explicit band context and fresh visibility checks. URLs retain band/locale. Raw resolved-name search remains deferred. | Restore metadata/association editing, uploads, previews and resolved File search during A1; retain verified direct-download isolation. |
+| Wiki content and tags | Page/assignment/revision ownership and editors use explicit bands and fresh snapshots. Current content uses page-read permission; older revisions still require history permission. Ordinary members can read visible welcome pages. The search list explains unavailability, and menu suggestions/per-page help remain preserved. | Restore resolved filtering/counts/pagination, suggestions and localized help; verify complete wiki/chrome workflows under the existing preservation obligations. |
 | Menu Links | Caption editing uses explicit band locales; resolved reads, generated CRUD and audited public-ID reordering enforce selected-band ownership and visibility. The editor permits manual wiki slugs and explains unavailable wiki suggestions/sidebar delivery. | Restore authorized wiki suggestions and target-page workflows under `wiki-search`; restore complete custom navigation with `dashboard-content` and verify in the built application. Section/group fields retain their target-schema structural meaning. |
 | Shared event catalogs | Type/status/attendance CRUD edits global defaults with platform catalog authority and explicit locales. Dashboard references resolve scoped labels, including retired history. | Verify in the built application during A0/A1; recover event ownership, invitations and responses separately. |
 | Attendance endpoints | Dedicated response writes and person-history/setlist readers resolve active memberships within an explicitly selected band. HTTP reads require authentication and band event-read authority. Bulk segment copy/clear use band event administration, preserve recorded history and update affected membership revisions. Native, menu DOM and development-browser endpoint checks pass. | Recover event payload/editor ownership, default/tag invitation management and full attendance UI; verify workflows in the built app before closing A1. |
@@ -436,17 +446,18 @@ implementation/test references and verification obligations for audited removals
 | Custom Links | Scoped editor CRUD, file selection/serving, all redirect modes and visits are active. Public URLs require explicit `bandPublicId`; missing, malformed/repeated and unavailable bands return 404. The narrow read-only File target does not enable unfinished general file APIs. | Verify in the built application during A0/A1; integrate URLs with band portal roots when full routing lands after A1. |
 | Telemetry recording | Recording uses explicit presentation context, server-owned actor/internal IDs and band-scoped associations. The formatting locale is separate from raw device locale/language; unregistered/deleted locales remain null. | Verify recording in the built app during A0. Calendar-feed recording uses the subscriber and band/locale from its authorized snapshot. Activity-report recovery is tracked separately below. |
 | Audit log | The Sysadmin-protected page displays a localized recovery notice. Both historical-reference/filter RPCs reject before database access; the generic Change descriptor and audit JSON viewer are unregistered. Original source/assertions are preserved under `audit-log`. Audit recording and redaction remain active. | Restore audit browsing, filters, historical detail links and JSON/clipboard/Markdown inspection with explicit platform/band policy, fresh authorization, localized/public references and redaction; verify the complete built-browser workflow. |
-| Legacy event/song facet RPCs | Both unused endpoints reject before database access; their SQL and obsolete response helpers are preserved under `legacy-event-song-filters`. Current search pages use the separate search owner and are unchanged. | Verify equivalent timing/relevance, multi-tag matching, counts/facets, pagination and ordering through the current search owner with explicit band snapshots, localized references and public identities. |
+| Legacy event/song facet RPCs | Both endpoints reject before database access; old SQL and response helpers remain preserved. The separately owned raw domain search is now also guarded. | Restore equivalent timing/relevance, multi-tag matching, counts/facets, pagination and ordering through a selected-band search snapshot. |
 | Event statistics and song history | Statistics page and the song history tab display registered localized notices. Both RPCs reject before database access; original queries, controls, charts, event links and API types are preserved under `event-song-statistics`. Existing report/song authorization remains enforced. | Restore and verify the complete statistics/popular-song/history workflow with fresh band authorization, localized catalogs, public references and consistent aggregation. |
 | Experimental event import | The Sysadmin-protected page shows a registered localized notice; the preview RPC requires login and rejects before database access. Parser, default/person/song matching, editable preview, explicit save/history and affected specifications are preserved under `event-import`. Migrated event creation remains active. | Restore parsing, band-owned defaults, membership and visible-song matching, preview editing, explicit saves and saved-event history with fresh authorization, public identities, localized references and band scheduling; reactivate specifications and verify the complete built-browser workflow. |
-| Legacy quick search and reference suggestions | The public HTTP route returns 503 before query/account/content reads. Direct server/client helpers reject; association/song controls retain existing values and explain unavailability. Markdown remote suggestions are unmounted, with manual text/HTML and local inline classes retained. The explorer keeps its Sysadmin guard. Eighteen references are preserved under `quick-search`; separate domain search and existing reference renderers remain active. | Restore fresh public/member/administrator visibility within explicit bands, localized/inherited catalogs, query grammar, all-tag/type filters, ranking/limits, public identities and contextual links, stale-response isolation, selection/clearing/keyboard behavior, song detail loading and Markdown suggestions; verify two bands/locales in the built browser. |
+| Legacy quick search and reference suggestions | The public HTTP route returns 503 before query/account/content reads. Direct server/client helpers reject; association/song controls retain existing values and explain unavailability. Markdown remote suggestions are unmounted, with manual text/HTML and local inline classes retained. The explorer keeps its Sysadmin guard. Eighteen references are preserved under `quick-search`; existing reference renderers remain active; separate domain search is now also deferred. | Restore fresh public/member/administrator visibility within explicit bands, localized/inherited catalogs, query grammar, all-tag/type filters, ranking/limits, public identities and contextual links, stale-response isolation, selection/clearing/keyboard behavior, song detail loading and Markdown suggestions; verify two bands/locales in the built browser. |
 | File uploads and image creation | Multipart/external-URL upload returns an empty 503 after login without parsing files. Image fork/gallery bake RPCs and generic File insertion reject before their work. Selection/paste/drop controls show localized recovery text; bake is disabled with an explanation. Forty references preserve creation, automatic tagging, image transforms/metadata and seven image-authorization cases under `file-creation`. Existing downloads and migrated File-tag catalogs stay executable. | Restore explicit band ownership, public membership/instrument/content references, fresh transactional grants, upload validation, filesystem cleanup/rollback, automatic tags, image crop/rotate/resize/metadata and complete browser controls; reactivate specifications and verify two-band workflows. |
 | Activity-report delivery | `/backstage/featureReports` explains temporary unavailability. All five report RPCs require login and reject before database access, including CSV export. Report implementations and affected specifications are preserved; telemetry recording remains active. | Restore explicit report ownership/permissions, localized references, timelines, facets, filtering, detail and CSV behavior under `activity-reports`; reactivate specifications and verify two-band/browser isolation. |
-| Legacy DB3 domains | Selected-band queries/row services reject undeclared ownership policies. | Migrate required domains for A0/A1; keep other domains coherently unavailable. |
-| Dashboard content and search | Bootstrap includes migrated shared event catalogs but omits events, announcements, role metadata, custom menus and other deferred catalogs. Home explains the restriction; global search is removed from the shell. Legacy sidebar/direct routes and non-page entry points are not yet isolated. | Finish coherent route/endpoint/source isolation during A0; restore content required by core workflows during A1. |
+| Event/song/file and publication screens | Seventeen backstage URLs retain their page permissions and render registered recovery notices. Dedicated legacy event/song edits, pinned recordings and profile credits reject before content reads; public root has a working Backstage/login link. | Restore complete workflows and their tests under `event-workflows`, `song-workflows`, `file-workflows`, `public-publication` and `domain-search`; do not treat notices as feature completion. |
+| Legacy DB3 domains | Generic Song, SongCredit, song-tag association, File/association and gallery read/write RPC roots reject before database access or transactions. Internal narrow readers retain their own scoped contracts; other row services enforce declared ownership. | Restore each required domain with authorized selected-band reads/writes during A1, then remove only its recovery gates. |
+| Dashboard content and search | Bootstrap uses migrated catalogs and omits deferred events/custom menus. Home explains the restriction, shell search is removed, and direct event/song/file/wiki-search/publication pages now show recovery notices. Public feed and raw domain-search HTTP routes return uncached 503; direct search rejects before SQL. | Restore content/search required by core A1 workflows, including date-picker event highlights; restore remaining dashboard/custom-menu behavior under its preservation obligation. |
 | Platform role administration | Legacy Role descriptors, views, commands and account role controls are removed. Assignment/designation RPCs reject before database access; `/backstage/roles` and `/backstage/rolePermissions` explain unavailability. Existing global/band role definitions still authorize requests; membership role assignment remains available. | Build GlobalRole/BandRole and permission editors after A1. |
 | Shared-account merging and dependency reports | Merge search, preview, commit and dependency-analysis RPCs explicitly reject without database access. Merge controls and obsolete person-level merge policies are removed; the analysis tab explains unavailability. Capability responses do not advertise merge or account-role assignment. | Restore cross-band account workflows after A1 with complete ownership-aware policies. |
-| Other shared-account/platform administration | Band grants cannot authorize shared-account or global-catalog writes; remaining legacy consumers need adaptation or isolation. | Finish isolation during A0; complete broader workflows after A1. |
+| Other shared-account/platform administration | Shared-account maintenance and sign-in/lifecycle capabilities use platform authorization; band grants cannot authorize global writes. Retired account role/merge/dependency entry points are explicitly guarded. | Preserve these boundaries while completing broader account/lifecycle workflows after A1. |
 | Person-level instrument/tag editors | Shared User reads/editor/writes no longer include band assignments. `UserInstrument` storage/editor/CRUD are unregistered; unreachable legacy profile/directory renderers are preserved. Invitation/response metadata now uses BandUserTagAssignment; migrated BandUser assignment commands remain active. | Verify full profile/directory parity under their existing preservation obligations. |
 | Catalog/demo seeds | Production seeds initialize access control. Explicit demo reset/launch commands and parameterized target-schema generators provide multilingual bands, accounts, catalogs, wiki, songs/files, events/attendance and activity. Old generator references remain preserved. | Use the repeatable demo for recovery browser checks; account for remaining legacy generator variants before closing `demo-seeding`. |
 | Legacy synchronous band guards | `resolver.authorize` rejects band capabilities. | Required callers use fresh request authorization and loaded resource ownership. |

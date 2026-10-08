@@ -13,7 +13,6 @@ import getFilteredSongs from "@db3/queries/getFilteredSongs"
 import getSetlistPlans from "@db3/queries/getSetlistPlans"
 import getSongPinnedRecording from "@db3/queries/getSongPinnedRecording"
 import { filePublicId } from "../support/fileFixtures"
-import getUserCredits from "@db3/queries/getUserCredits"
 import getUserTagWithAssignments from "@db3/queries/getUserTagWithAssignments"
 import getUserWikiContributions from "@db3/queries/getUserWikiContributions"
 import { loadAuthorization } from "src/auth/server/serverAuthorization"
@@ -200,77 +199,6 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     })
   })
 
-  it("filters user credit associations through the related Song policy", async () => {
-    const analyticsPermissions = [...permissions, Permission.manage_users]
-    const analyticsActor = createAuthorizationTestUser("normal", {
-      id: 804,
-      permissions: analyticsPermissions,
-    })
-    authorizationTestDb.reset({
-      user: [analyticsActor, createAuthorizationTestUser("normal", { id: 900 })],
-      songCredit: [
-        {
-          id: 501,
-          publicId: "SongCredit000501",
-          userId: 900,
-          songId: 51,
-          typeId: 71,
-          year: "2025",
-          comment: "Visible credit",
-          type: { id: 71, publicId: "CreditType000071", text: "Composer" },
-          song: {
-            id: 51,
-            publicId: songPublicId(51),
-            isDeleted: false,
-            createdByUserId: analyticsActor.id + 1,
-            visiblePermissionId: publicVisibilityId,
-          },
-        },
-        {
-          id: 502,
-          publicId: "SongCredit000502",
-          userId: 900,
-          songId: 52,
-          typeId: 71,
-          year: "2025",
-          comment: "Hidden credit",
-          type: { id: 71, publicId: "CreditType000071", text: "Composer" },
-          song: {
-            id: 52,
-            publicId: songPublicId(52),
-            isDeleted: false,
-            createdByUserId: analyticsActor.id + 1,
-            visiblePermissionId: hiddenVisibilityId,
-          },
-        },
-        {
-          id: 503,
-          publicId: "SongCredit000503",
-          userId: 900,
-          songId: 53,
-          typeId: 71,
-          year: "2025",
-          comment: "Deleted-song credit",
-          type: { id: 71, publicId: "CreditType000071", text: "Composer" },
-          song: {
-            id: 53,
-            publicId: songPublicId(53),
-            isDeleted: true,
-            createdByUserId: analyticsActor.id + 1,
-            visiblePermissionId: publicVisibilityId,
-          },
-        },
-      ],
-    })
-    const { ctx } = createAuthorizationPersona("normal", {
-      id: analyticsActor.id,
-      permissions: analyticsPermissions,
-    })
-
-    const result = await invokeResolver(getUserCredits, { userId: createAuthorizationTestUser("normal", { id: 900 }).publicId, take: 10 }, ctx)
-
-    expect(result.songCredits.map(credit => credit.publicId)).toEqual(["SongCredit000501"])
-  })
 
   it("scopes public user-tag assignments to active users", async () => {
     const userTagPublicId = parsePublicId<"UserTag">("UserTagPublic061")
@@ -458,3 +386,94 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     expect(historyWithoutUserAccess?.revisions?.[0]).not.toHaveProperty("createdByUser")
   })
 })
+
+
+// MIGRATION_RESTORE: song-workflows
+// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:tests/authorization/directReadPolicyHardening.test.ts:203-273
+// Reason: Song and credit screens still depend on undeclared ownership and obsolete dedicated endpoints.
+// Restore: Restore song search/detail/editing, credits and pinned recording with fresh selected-band authorization, visible files and public localized references; retain the recovered narrow song lookup and setlist persistence.
+// Verification: Verify two bands, visibility, deleted records, revoked grants, credits, pinned recording and complete built-browser song workflows.
+// SHA256: c2fcc86bc3df8408e4077ea48ffe69a3ab9b0a4d69e089e3def120b6f2a75450
+// MIGRATION_REFERENCE_BEGIN
+//   it("filters user credit associations through the related Song policy", async () => {
+//     const analyticsPermissions = [...permissions, Permission.manage_users]
+//     const analyticsActor = createAuthorizationTestUser("normal", {
+//       id: 804,
+//       permissions: analyticsPermissions,
+//     })
+//     authorizationTestDb.reset({
+//       user: [analyticsActor, createAuthorizationTestUser("normal", { id: 900 })],
+//       songCredit: [
+//         {
+//           id: 501,
+//           publicId: "SongCredit000501",
+//           userId: 900,
+//           songId: 51,
+//           typeId: 71,
+//           year: "2025",
+//           comment: "Visible credit",
+//           type: { id: 71, publicId: "CreditType000071", text: "Composer" },
+//           song: {
+//             id: 51,
+//             publicId: songPublicId(51),
+//             isDeleted: false,
+//             createdByUserId: analyticsActor.id + 1,
+//             visiblePermissionId: publicVisibilityId,
+//           },
+//         },
+//         {
+//           id: 502,
+//           publicId: "SongCredit000502",
+//           userId: 900,
+//           songId: 52,
+//           typeId: 71,
+//           year: "2025",
+//           comment: "Hidden credit",
+//           type: { id: 71, publicId: "CreditType000071", text: "Composer" },
+//           song: {
+//             id: 52,
+//             publicId: songPublicId(52),
+//             isDeleted: false,
+//             createdByUserId: analyticsActor.id + 1,
+//             visiblePermissionId: hiddenVisibilityId,
+//           },
+//         },
+//         {
+//           id: 503,
+//           publicId: "SongCredit000503",
+//           userId: 900,
+//           songId: 53,
+//           typeId: 71,
+//           year: "2025",
+//           comment: "Deleted-song credit",
+//           type: { id: 71, publicId: "CreditType000071", text: "Composer" },
+//           song: {
+//             id: 53,
+//             publicId: songPublicId(53),
+//             isDeleted: true,
+//             createdByUserId: analyticsActor.id + 1,
+//             visiblePermissionId: publicVisibilityId,
+//           },
+//         },
+//       ],
+//     })
+//     const { ctx } = createAuthorizationPersona("normal", {
+//       id: analyticsActor.id,
+//       permissions: analyticsPermissions,
+//     })
+//
+//     const result = await invokeResolver(getUserCredits, { userId: createAuthorizationTestUser("normal", { id: 900 }).publicId, take: 10 }, ctx)
+//
+//     expect(result.songCredits.map(credit => credit.publicId)).toEqual(["SongCredit000501"])
+//   })
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: song-workflows
+// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:tests/authorization/directReadPolicyHardening.test.ts:16-16
+// Reason: Song and credit screens still depend on undeclared ownership and obsolete dedicated endpoints.
+// Restore: Restore song search/detail/editing, credits and pinned recording with fresh selected-band authorization, visible files and public localized references; retain the recovered narrow song lookup and setlist persistence.
+// Verification: Verify two bands, visibility, deleted records, revoked grants, credits, pinned recording and complete built-browser song workflows.
+// SHA256: 56e58d48dc77451ec52caf2a79900b04efa998f61d0fe630c65b2b96d8ab2810
+// MIGRATION_REFERENCE_BEGIN
+// import getUserCredits from "@db3/queries/getUserCredits"
+// MIGRATION_REFERENCE_END

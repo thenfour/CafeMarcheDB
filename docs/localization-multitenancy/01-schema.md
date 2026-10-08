@@ -9,15 +9,15 @@ database must switch together at production cutover.
 
 ## People, memberships, and roles
 
-- `User` is a global person. `BandUser` is unique by `(bandId, userId)` and can
-  be deactivated/reactivated without losing identity or contributions. Account
-  deletion/merge and membership deactivation are distinct states.
-- `User.globalRoleId` and `BandUser.bandRoleId` are separate nullable assignments.
-  Both role-definition tables and their matrices are platform-owned; `BandRole`
-  has no `bandId`.
-- Instruments, user tags, event responses, and file-user associations reference
-  the membership. Authors, uploaders, locks, and song credits reference the person.
-  Event/segment responses must match their membership's band.
+-  `User` is a global person. `BandUser` is unique by `(bandId, userId)` and can
+   be deactivated/reactivated without losing identity or contributions. Account
+   deletion/merge and membership deactivation are distinct states.
+-  `User.globalRoleId` and `BandUser.bandRoleId` are separate nullable assignments.
+   Both role-definition tables and their matrices are platform-owned; `BandRole`
+   has no `bandId`.
+-  Instruments, user tags, event responses, and file-user associations reference
+   the membership. Authors, uploaders, locks, and song credits reference the person.
+   Event/segment responses must match their membership's band.
 
 ## Content ownership and references
 
@@ -43,6 +43,11 @@ reference rather than deleting band content.
 Wiki and Custom Link slugs are unique within a band. Action band/locale context
 is nullable: platform actions need no band, and historical actions may lack a
 resolved locale. References attached to a band action must belong to that band.
+
+## Exceptions for exsiting tenants
+
+-  Frontpage Gallery features are specific to Café Marché, who will run in a single-band
+   hosting mode. Band context is not required therefore; single-band assumed.
 
 ## Catalogs and localized fields
 

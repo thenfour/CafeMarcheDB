@@ -1,5 +1,6 @@
 export type DeferredApplicationFeature = "accountRoles" | "accountMerge" | "accountAnalysis" | "activityReports" | "auditLog"
-    | "legacyEventSongFilters" | "eventSongStatistics" | "eventImport" | "fileCreation" | "quickSearch";
+    | "legacyEventSongFilters" | "eventSongStatistics" | "eventImport" | "fileCreation" | "quickSearch"
+    | "eventWorkflows" | "songWorkflows" | "fileWorkflows" | "publicPublication" | "domainSearch" | "developerExamples";
 
 const featureNames: { readonly [Feature in DeferredApplicationFeature]: string } = {
     accountRoles: "Platform role administration",
@@ -12,6 +13,12 @@ const featureNames: { readonly [Feature in DeferredApplicationFeature]: string }
     eventImport: "Event import",
     fileCreation: "File creation",
     quickSearch: "Quick search",
+    eventWorkflows: "Event screens and editing",
+    songWorkflows: "Song screens and editing",
+    fileWorkflows: "File screens and editing",
+    publicPublication: "Public homepage and galleries",
+    domainSearch: "Domain search",
+    developerExamples: "Developer examples",
 };
 
 export class ApplicationFeatureUnavailableError extends Error {
@@ -24,4 +31,20 @@ export class ApplicationFeatureUnavailableError extends Error {
 /** Deferred RPCs reject before loading a target or starting a transaction. */
 export function requireRestoredApplicationFeature(feature: DeferredApplicationFeature): never {
     throw new ApplicationFeatureUnavailableError(feature);
+}
+
+// Temporary root-domain gates. Narrow migrated readers have separate registered table identities.
+const deferredDB3Domains = new Map<string, DeferredApplicationFeature>([
+    ["song", "songWorkflows"], ["songcredit", "songWorkflows"], ["bandsongtagassociation", "songWorkflows"],
+    ["file", "fileWorkflows"], ["bandfiletagassignment", "fileWorkflows"],
+    ["fileusertag", "fileWorkflows"], ["filesongtag", "fileWorkflows"], ["fileeventtag", "fileWorkflows"],
+    ["fileinstrumenttag", "fileWorkflows"], ["filewikipagetag", "fileWorkflows"],
+    ["frontpagegalleryitem", "publicPublication"],
+]);
+
+export function requireRecoveredDB3Domain(tableID: string): void {
+    const feature = deferredDB3Domains.get(tableID.toLowerCase());
+    if (feature) {
+        requireRestoredApplicationFeature(feature);
+    }
 }

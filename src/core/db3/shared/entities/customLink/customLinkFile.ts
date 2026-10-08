@@ -10,15 +10,24 @@ import { kReadOnlyAuthMap } from "../common/entityCommon";
 
 const customLinkFileArgs = Prisma.validator<Prisma.FileDefaultArgs>()({
     select: {
-        id: true, publicId: true, bandId: true, fileLeafName: true, storedLeafName: true,
-        description: true, isDeleted: true, externalURI: true,
-        uploadedByUserId: true, visiblePermissionId: true,
+        id: true,
+        publicId: true,
+        bandId: true,
+        fileLeafName: true,
+        storedLeafName: true,
+        description: true,
+        isDeleted: true,
+        externalURI: true,
+        uploadedByUserId: true,
+        visiblePermissionId: true,
     },
 });
 
 type CustomLinkFile = Prisma.FileGetPayload<typeof customLinkFileArgs>;
 
 // Custom links need a local-file reader, independent of the unfinished File editor and its tag relations.
+// LSMB todo: this needs to be a  single entity over table "File".
+// customizations needed here should be expressed through views.
 export const xCustomLinkFile = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileDelegate>(),
     getIdentity: (file: { publicId: FilePublicId }) => file.publicId,
@@ -28,12 +37,24 @@ export const xCustomLinkFile = db3.defineTable({
     bandScope: { member: "bandId", managePermission: Permission.manage_files },
     readConsistency: "snapshot",
     queryParameters: {},
-    getParameterizedWhereClause: (): Prisma.FileWhereInput[] => [{ externalURI: null }],
+    getParameterizedWhereClause: (_params: {}, auth): Prisma.FileWhereInput[] => [
+        { externalURI: null },
+
+        // private files are no longer visible if you lose membership to its band context.
+        // ... unless you're a sysadmin.
+        // this is a good policy but does not belong defined here. it needs to be centralized as part
+        // of the intrinsic access control system.
+        // lsmb todo: define & document this policy, implement a mechanism to enforce it.
+        //...(auth.membership || auth.hasPermission(Permission.sysadmin) ? [] : [{ visiblePermissionId: { not: null } }]),
+    ],
     getSelectionArgs: () => customLinkFileArgs,
     naturalOrderBy: [{ fileLeafName: "asc" }],
     tableAuthMap: {
-        View: Permission.view_files, ViewOwn: Permission.view_files,
-        Insert: Permission.never_grant, Edit: Permission.never_grant, EditOwn: Permission.never_grant,
+        View: Permission.view_files,
+        ViewOwn: Permission.view_files,
+        Insert: Permission.never_grant,
+        Edit: Permission.never_grant,
+        EditOwn: Permission.never_grant,
     },
     getRowInfo: (file: CustomLinkFile) => ({
         pk: file.publicId, name: file.fileLeafName, description: file.description,
@@ -45,8 +66,11 @@ export const xCustomLinkFile = db3.defineTable({
         bandId: columnName => serverOwnedField(new GenericIntegerField({
             columnName, allowNull: false, allowSearchingThisField: false,
             authMap: db3.defineAuthMap({
-                PostQuery: Permission.never_grant, PostQueryAsOwner: Permission.never_grant,
-                PreInsert: Permission.never_grant, PreMutate: Permission.never_grant, PreMutateAsOwner: Permission.never_grant,
+                PostQuery: Permission.never_grant,
+                PostQueryAsOwner: Permission.never_grant,
+                PreInsert: Permission.never_grant,
+                PreMutate: Permission.never_grant,
+                PreMutateAsOwner: Permission.never_grant,
             }),
         })),
         fileLeafName: columnName => MakeTitleField(columnName, { authMap: kReadOnlyAuthMap }),

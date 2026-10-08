@@ -25,8 +25,9 @@ Legacy quick search now returns public HTTP 503 without reading query, account o
 content data. Its direct helpers reject, association/song controls explain
 unavailability while displaying authored values, Markdown remote suggestions are
 unmounted, and the Sysadmin explorer displays a registered localized notice.
-Manual text/HTML editing, existing reference rendering, local inline-class
-suggestions and the separately owned domain search remain active.
+Manual text/HTML editing, existing reference rendering and local inline-class
+suggestions remain active. The separately owned raw domain search is now also
+guarded under `domain-search`.
 Song-tag association payloads now use the band-owned model and foreign key across
 lookup, views, setlist transport and planner indicators. The narrow song lookup
 requires explicit selected-band authorization, refreshes within a repeatable
@@ -68,8 +69,9 @@ band switching and manual wiki slugs. Sidebar delivery remains deferred under
 `dashboard-content`; the old wiki suggestion reader is preserved under `wiki-search`.
 Normal typecheck and production build now pass. The palette uses its registered
 global setting, nested DB3 DTO types retain runtime companion metadata, and
-same-scope presentation refreshes preserve drafts. **A0 remains open** for the
-remaining reachable deferred-surface audit. The
+same-scope presentation refreshes preserve drafts. **A0 is achieved (2026-10-08)**
+after the reachable deferred-surface audit and normal built-browser verification
+recorded below. A1 and B remain open. The
 [implementation plan](04-implementation-plan.md) owns delivery gates and the
 restriction register.
 
@@ -87,6 +89,85 @@ assertions are preserved under `activity-reports`. Existing telemetry writes and
 unrelated domain assertions remain executable. The public-ID schema is named
 `BandInstrumentIdentity`; the former raw/client payload identity union has since
 been removed from the active consumers.
+
+## A0 route and entry-point audit (2026-10-08)
+
+**A0 is achieved; A1 and B remain open.** The normal production build runs
+against disposable target-schema data. The audit covers registered backstage
+routes, public HTTP handlers, dedicated and generic RPC entry points, bootstrap
+imports and startup/seed behavior. Recovery notices preserve existing page
+permissions and use registered UI strings; they do not establish restored
+functional parity.
+
+| Surface | Verified boundary |
+| --- | --- |
+| Events | `events`, event detail, `editEvents`, `editEventSegments` and `frontpageEvents` render notices. Legacy basic edits and relevance overrides require login and reject before readers/writes. Migrated event creation, attendance, bulk response and calendar services remain active. |
+| Songs and profile credits | `songs`, song detail, `editSongs` and `editSongCredits` render notices. Legacy song edits, pinned recording read/write and person-credit reads reject before account/content lookup. The profile credit tab explains unavailability. Narrow song lookup and setlist persistence remain active. |
+| Files | `files`, file detail and `editFiles` render notices. General File/association generic RPCs cannot bypass the boundary. Upload/image creation keeps its earlier guards. Direct local-file downloads are recovered through the narrow scoped reader. |
+| Publication | Public `/` renders a notice with a working Backstage/login link. `/api/public` returns uncached 503 without parsing input or reading content. `frontpagegallery` and its grid editor render notices; generic gallery reads/commands reject before database work. |
+| Domain and wiki search | Raw search HTTP returns uncached 503 without parsing, and its direct helper rejects before SQL. `wikiPages` explains search unavailability while existing visible wiki URLs/editors remain active. Quick/global search retain their separate preservation obligations. |
+| Date and developer tools | Legacy `gallery` and `test` sample pages render notices. Date selection stays active; opening its picker explains unavailable event highlights and sends no search request. Standalone migrated date/attendance/select/dialog demonstrations remain available. |
+| Generic DB3 entry points | Validated Song, SongCredit, song-tag association, File/association and gallery root queries reject before authorization reads. Their commands reject before transactions. Internal narrow readers have separate identities and retain their selected-band contracts. |
+| Earlier deferred endpoints | Role/merge/dependency, activity reports/CSV, audit readers, event/song facets/statistics/history, import preview, quick search and upload/image operations retain their explicit guards and preserved source. Existing recovery tests cover login and rejection without database access. |
+| Startup, feeds and utilities | Instrumentation validates routes and initializes access control; production seed does the same. Historical content backfills stay in migrations, and demo generation is explicit. Migrated private calendar, attendance HTTP, Custom Link, telemetry, authentication and standalone render/QR handlers remain separate from deferred search/publication. |
+
+The ordinary-member wiki defect found by demo seeding is fixed at the read
+contract: current revisions use `view_wiki_pages`, with a read-only descriptor
+that restricts results to current content of visible selected-band pages.
+Historical revisions still require `view_wiki_page_revisions`; no role grants
+were broadened. Native checks cover hidden/foreign pages and direct current/history
+queries. In the built browser, Alex under Harbour's Normal Users role reads the
+welcome content without a history grant; the screenshot was inspected.
+
+Direct `/api/files/download/<stored-leaf>` delivery now requires one valid
+`bandPublicId`, refreshes authorization in the read snapshot and reuses the
+read-only local-file policy. Deleted, hidden, external and foreign-band files are
+excluded; removing membership removes private ownership access. Generated URLs
+retain presentation context. GET, HEAD and byte ranges remain supported;
+missing/repeated/foreign band inputs return 404. General File editors/uploads are
+still pending. Server health also no longer mounts the deferred audit-filter RPC;
+its absolute upload-directory resolution was repaired after the browser exposed
+the duplicated Windows path.
+
+Validation against this change:
+
+- `yarn typecheck`, normal `yarn build`, changed-file ESLint and
+  `git diff --check`: pass. Compiler coverage and build settings remain unchanged.
+- Recovery/read-contract/HTTP/DOM checks: **220 pass across nine files**, using
+  `yarn test tests/authorization/applicationRecovery.test.ts tests/db3LegacyReadCompatibilityInventory.test.ts tests/db3ViewContract.test.ts tests/db3FieldReadContracts.test.ts tests/customLinkDirectServe.test.ts tests/directFileDownload.test.ts tests/applicationSurfaceRecovery.test.ts tests/applicationSurfaceRecoveryPage.test.tsx tests/eventCalendarRecovery.test.tsx --reporter=dot`.
+- Wiki read authorization plus existing date editor/clock/explorer checks:
+  **22 pass across four files**, using
+  `yarn test tests/authorization/wikiPageReadAuthorization.test.ts tests/datetime/dateExplorer.test.ts tests/datetime/bandEditor.test.ts tests/datetime/clockControls.test.ts --reporter=dot`.
+- Native wiki/menu/wiki-tag/Custom Link checks: **28 pass across four files**,
+  using `yarn test tests/wikiPages.mysql.test.ts tests/menuLinks.mysql.test.ts tests/wikiPageTagCatalog.mysql.test.ts tests/customLinks.mysql.test.ts --reporter=dot`
+  with `CMDB_PHASE2_TEST_DATABASE_URL` pointing at a new private MariaDB database.
+  Writes roll back and the generated database is dropped.
+- Built Chromium walkthrough: **eight passing assertion groups, no uncaught page
+  errors**. Started the normal built server with `blitz start --port 10458` against
+  a newly reset two-band demo (`seed=104`, date `2026-10-08`) on private MariaDB.
+  Covered real login, 34 route visits (17 per band), guarded HTTP/six dedicated
+  RPCs, generic reads in platform/two-band contexts, generic commands, server
+  health, date picker, ordinary wiki access, SVG GET/HEAD/range/404 boundaries,
+  French instrument override, profile/calendar/planner navigation and clearing
+  band context. This supplements the earlier migrated-production-copy evidence.
+- `yarn test --reporter=dot`: **fails**, with 219 failed, 1684 passed and
+  317 skipped tests in the Node batch; 23 failed, 103 passed and 35 skipped files,
+  including ten suite-loading failures. Later DOM batches are not reached and
+  were checked separately above. The initial baseline was 230 failed, 1654 passed,
+  316 skipped, with the same ten suite-loading failures. No new failure entries
+  remain. The reduction includes preserved deferred search specifications and
+  must not be interpreted as search restoration or a complete-suite pass.
+- `yarn migration:verify`: **319 source references, 13 wholly deferred test
+  specifications, 26 pending features**. The six new workflow obligations and
+  three newly deferred whole specifications are documented in
+  [feature preservation](13-feature-preservation.md). No feature was retired.
+
+Diagnostic logs, the browser result and wiki screenshot are under ignored
+`temp/a0-boundary-*` paths. Verification used only owned private databases and
+services; configured application data was not modified. The next slice is the
+A1 member workflow verification recorded in the implementation plan, followed by
+event/search/invitation recovery. Existing authorization/date-time fixture
+failures remain visible work for A1 rather than A0 compiler exclusions.
 
 ## Restored boundary
 

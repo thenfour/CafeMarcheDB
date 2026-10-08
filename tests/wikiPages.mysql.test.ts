@@ -6,9 +6,9 @@ import { loadAuthorizationForUser, type CMServerAuthorization } from "src/auth/s
 import { initializeAccessControl } from "src/setup/accessControl";
 import { generatePublicId } from "src/server/publicId";
 import { bindDB3ReadSnapshot, type DB3ReadContext } from "src/core/db3/server/db3ReadExecution";
-import { queryView } from "src/core/db3/server/db3QueryCore";
+import { queryTable, queryView } from "src/core/db3/server/db3QueryCore";
 import { wikiPageApiView, wikiPageRevisionContributionView, wikiPageRevisionDetailView, wikiPageRevisionHistoryView, wikiPageEditorView } from "src/core/db3/shared/entities/wiki/wikiViews";
-import { xWikiPage, xWikiPageRevision } from "src/core/db3/shared/schema/wiki";
+import { xWikiPage, xWikiPageCurrentRevision, xWikiPageRevision } from "src/core/db3/shared/schema/wiki";
 import { acquireWikiLock, saveWikiPage } from "src/core/wiki/server/wikiPageEditing";
 import { clearWikiLock, deleteWikiPageRevision, rebuildWikiRevisionStats, releaseWikiLock, renewWikiLock, setWikiVisibility } from "src/core/wiki/server/wikiPageAdministration";
 import { GetWikiPageCore } from "src/core/wiki/server/getWikiPageCore";
@@ -49,6 +49,35 @@ describe.skipIf(!settingsMysqlTestUrl)("band wiki pages on MariaDB", () => {
             clientBaseContentVersion: 0, clientBaseRevisionId: null, clientLockId: null,
         });
     }
+
+    it("reads current content without granting history, including selected-band and visibility boundaries", () => withFixture(async (tx, fixture) => {
+        const members = await tx.permission.findUniqueOrThrow({ where: { name: Permission.visibility_members } });
+        const membership = await tx.bandUser.findFirstOrThrow({ where: { userId: fixture.user.id, bandId: fixture.bands[0]!.id } });
+        const history = await tx.permission.findUniqueOrThrow({ where: { name: Permission.view_wiki_page_revisions } });
+        await tx.bandRolePermission.deleteMany({ where: { bandRoleId: membership.bandRoleId!, permissionId: history.id } });
+        const page = await rawPage(tx, fixture, 0, "handbook", fixture.admin.id, members.id);
+        const previous = await tx.wikiPageRevision.create({ data: {
+            publicId: generatePublicId(), wikiPageId: page.id, name: "Old title", content: "Previous content",
+        } });
+        const current = await tx.wikiPageRevision.create({ data: {
+            publicId: generatePublicId(), wikiPageId: page.id, name: "Current title", content: "Published content",
+        } });
+        await tx.wikiPage.update({ where: { id: page.id }, data: { currentRevisionId: current.id } });
+        const { context, auth } = await authorize(tx, fixture);
+        expect(auth.hasPermission(Permission.view_wiki_page_revisions)).toBe(false);
+        expect((await read(context)).wikiPage?.currentRevision).toMatchObject({ publicId: current.publicId, content: "Published content" });
+        const currentRows = await queryTable({ table: xWikiPageCurrentRevision, filter: {}, orderBy: undefined, cmdbQueryContext: "current wiki fixture" }, auth, context);
+        expect(currentRows.items.map(row => row.publicId)).toEqual([current.publicId]);
+        await expect(queryView({ view: wikiPageRevisionDetailView, filter: { publicIds: [xWikiPageRevision.parseIdentity(previous.publicId)] }, cmdbQueryContext: "history denied" }, auth, context)).rejects.toThrow();
+        const historyRows = await queryView({ view: wikiPageRevisionHistoryView, filter: { publicIds: [xWikiPage.parseIdentity(page.publicId)] }, cmdbQueryContext: "history denied" }, auth, context);
+        expect(historyRows.items[0]).not.toHaveProperty("revisions");
+        await tx.wikiPage.update({ where: { id: page.id }, data: { visiblePermissionId: null } });
+        expect((await read(context)).wikiPage).toBeNull();
+        expect((await queryTable({ table: xWikiPageCurrentRevision, filter: {}, orderBy: undefined, cmdbQueryContext: "private current wiki" }, auth, context)).items).toEqual([]);
+        await tx.wikiPage.update({ where: { id: page.id }, data: { bandId: fixture.bands[1]!.id, visiblePermissionId: members.id } });
+        expect((await read(context)).wikiPage).toBeNull();
+        expect((await queryTable({ table: xWikiPageCurrentRevision, filter: {}, orderBy: undefined, cmdbQueryContext: "foreign current wiki" }, auth, context)).items).toEqual([]);
+    }));
 
     it("creates owned pages with Members visibility, saves/consolidates content and returns public revisions", () => withFixture(async (tx, fixture) => {
         const { context } = await authorize(tx, fixture);

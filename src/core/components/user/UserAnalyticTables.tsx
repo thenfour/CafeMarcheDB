@@ -1,11 +1,9 @@
 import { withMemberPresentation } from "./bandMemberLinks";
-import { songCreditUserView } from "src/core/db3/shared/entities/song/songViews";
 import { useQuery } from "@blitzjs/rpc";
 import { Alert } from "@mui/material";
 import { useLocale } from "src/locale/components/useLocale";
 import React from "react";
 import { isAttendanceGoing } from "shared/eventAttendance";
-import getUserCredits from "../../db3/queries/getUserCredits";
 import getUserEventAttendance from "../../db3/queries/getUserEventAttendance";
 import getUserWikiContributions from "../../db3/queries/getUserWikiContributions";
 import { sortEvents } from "../../db3/shared/apiTypes";
@@ -19,8 +17,6 @@ import { DateValue } from "../DateTime/DateTimeComponents";
 import { AttendanceChip } from "../event/AttendanceChips";
 import { EventChip } from "../event/EventChips";
 import { Markdown } from "../markdown/Markdown";
-import { SongChip } from "../song/SongChip";
-import { useSongsContext } from "../song/SongsContext";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import type { UserClientPayload } from "src/core/db3/shared/schema/prismArgs";
 
@@ -173,69 +169,6 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
 ////////////////////////////////////////////////////////////////
 type UserCreditsTabContentProps = {
     user: UserClientPayload;
-};
-export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
-    const dashboardContext = useDashboardContext();
-    const allSongs = useSongsContext().songs;
-    const [qr, refetch] = useQuery(getUserCredits, { userId: props.user.publicId, take: 100 });
-
-    const songCreditsWithAddl = qr.songCredits.map((dto, index) => {
-        const credit = songCreditUserView.hydrate(dto, dashboardContext.referenceStore);
-        return {
-            ...credit,
-            rowIndex: index,
-            songYear: allSongs.find(s => s.publicId === credit.songId)?.introducedYear,
-            songName: allSongs.find(s => s.publicId === credit.songId)?.name || `#${credit.songId}`,
-        };
-    });
-
-    return <CMTable
-        rows={songCreditsWithAddl}
-        columns={[
-            {
-                header: "#",
-                allowSort: false,
-                memberName: "rowIndex",
-                render: (row) => {
-                    return <span className="pre">#{row.rowIndex + 1}</span>;
-                },
-            },
-            {
-                header: "Song",
-                memberName: "songName",
-                allowSort: true,
-                render: (row) => {
-                    return <SongChip value={allSongs.find(s => s.publicId === row.row.songId) || { publicId: row.row.songId, name: `#${row.row.songId}` }} />;
-                },
-            },
-            {
-                header: "Song year",
-                allowSort: true,
-                memberName: "songYear",
-                render: (row) => {
-                    const song = allSongs.find(s => s.publicId === row.row.songId)!;
-                    return <span>{song?.introducedYear}</span>;
-                },
-            },
-            {
-                header: "Credit type",
-                memberName: "typeId",
-                render: (row) => {
-                    return <span>{row.row.type?.name}</span>;
-                },
-            },
-            {
-                header: "Credit year",
-                memberName: "year",
-            },
-            {
-                memberName: "comment",
-                render: (row) => {
-                    return <Markdown markdown={row.row.comment} />;
-                }
-            }
-        ]}
-    />;
 };
 
 
@@ -681,4 +614,120 @@ export const UserMassAnalysisTabContent = (_props: { user: UserClientPayload }) 
 //         </div>
 //     </div>;
 // };
+// MIGRATION_REFERENCE_END
+
+export const UserCreditsTabContent = (_props: UserCreditsTabContentProps) => {
+    const locale = useLocale();
+    return <Alert severity="info">{locale.getPlainString("recovery.songWorkflows.description")}</Alert>;
+};
+// MIGRATION_RESTORE: song-workflows
+// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/components/user/UserAnalyticTables.tsx:177-239
+// Reason: Song and credit screens still depend on undeclared ownership and obsolete dedicated endpoints.
+// Restore: Restore song search/detail/editing, credits and pinned recording with fresh selected-band authorization, visible files and public localized references; retain the recovered narrow song lookup and setlist persistence.
+// Verification: Verify two bands, visibility, deleted records, revoked grants, credits, pinned recording and complete built-browser song workflows.
+// SHA256: 525673f177f9e4133e21cd28bfbfb49ec54cfac981d540dd1468c615bb0ca649
+// MIGRATION_REFERENCE_BEGIN
+// export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
+//     const dashboardContext = useDashboardContext();
+//     const allSongs = useSongsContext().songs;
+//     const [qr, refetch] = useQuery(getUserCredits, { userId: props.user.publicId, take: 100 });
+//
+//     const songCreditsWithAddl = qr.songCredits.map((dto, index) => {
+//         const credit = songCreditUserView.hydrate(dto, dashboardContext.referenceStore);
+//         return {
+//             ...credit,
+//             rowIndex: index,
+//             songYear: allSongs.find(s => s.publicId === credit.songId)?.introducedYear,
+//             songName: allSongs.find(s => s.publicId === credit.songId)?.name || `#${credit.songId}`,
+//         };
+//     });
+//
+//     return <CMTable
+//         rows={songCreditsWithAddl}
+//         columns={[
+//             {
+//                 header: "#",
+//                 allowSort: false,
+//                 memberName: "rowIndex",
+//                 render: (row) => {
+//                     return <span className="pre">#{row.rowIndex + 1}</span>;
+//                 },
+//             },
+//             {
+//                 header: "Song",
+//                 memberName: "songName",
+//                 allowSort: true,
+//                 render: (row) => {
+//                     return <SongChip value={allSongs.find(s => s.publicId === row.row.songId) || { publicId: row.row.songId, name: `#${row.row.songId}` }} />;
+//                 },
+//             },
+//             {
+//                 header: "Song year",
+//                 allowSort: true,
+//                 memberName: "songYear",
+//                 render: (row) => {
+//                     const song = allSongs.find(s => s.publicId === row.row.songId)!;
+//                     return <span>{song?.introducedYear}</span>;
+//                 },
+//             },
+//             {
+//                 header: "Credit type",
+//                 memberName: "typeId",
+//                 render: (row) => {
+//                     return <span>{row.row.type?.name}</span>;
+//                 },
+//             },
+//             {
+//                 header: "Credit year",
+//                 memberName: "year",
+//             },
+//             {
+//                 memberName: "comment",
+//                 render: (row) => {
+//                     return <Markdown markdown={row.row.comment} />;
+//                 }
+//             }
+//         ]}
+//     />;
+// };
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: song-workflows
+// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/components/user/UserAnalyticTables.tsx:2-2
+// Reason: Song and credit screens still depend on undeclared ownership and obsolete dedicated endpoints.
+// Restore: Restore song search/detail/editing, credits and pinned recording with fresh selected-band authorization, visible files and public localized references; retain the recovered narrow song lookup and setlist persistence.
+// Verification: Verify two bands, visibility, deleted records, revoked grants, credits, pinned recording and complete built-browser song workflows.
+// SHA256: 269e81ebe03e21e42274b4adf0e89e86a941a7c19759271fed1a5aa693177784
+// MIGRATION_REFERENCE_BEGIN
+// import { songCreditUserView } from "src/core/db3/shared/entities/song/songViews";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: song-workflows
+// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/components/user/UserAnalyticTables.tsx:8-8
+// Reason: Song and credit screens still depend on undeclared ownership and obsolete dedicated endpoints.
+// Restore: Restore song search/detail/editing, credits and pinned recording with fresh selected-band authorization, visible files and public localized references; retain the recovered narrow song lookup and setlist persistence.
+// Verification: Verify two bands, visibility, deleted records, revoked grants, credits, pinned recording and complete built-browser song workflows.
+// SHA256: acccf1d0bfeb0d188bf4d9425a54ae29a65df0c15eece428f63943ec048f519a
+// MIGRATION_REFERENCE_BEGIN
+// import getUserCredits from "../../db3/queries/getUserCredits";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: song-workflows
+// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/components/user/UserAnalyticTables.tsx:22-22
+// Reason: Song and credit screens still depend on undeclared ownership and obsolete dedicated endpoints.
+// Restore: Restore song search/detail/editing, credits and pinned recording with fresh selected-band authorization, visible files and public localized references; retain the recovered narrow song lookup and setlist persistence.
+// Verification: Verify two bands, visibility, deleted records, revoked grants, credits, pinned recording and complete built-browser song workflows.
+// SHA256: ffcb654be7c2f1645a03b12a0a86406f52f08ed551fdf862ecd15ab6daf835ad
+// MIGRATION_REFERENCE_BEGIN
+// import { SongChip } from "../song/SongChip";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: song-workflows
+// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/components/user/UserAnalyticTables.tsx:23-23
+// Reason: Song and credit screens still depend on undeclared ownership and obsolete dedicated endpoints.
+// Restore: Restore song search/detail/editing, credits and pinned recording with fresh selected-band authorization, visible files and public localized references; retain the recovered narrow song lookup and setlist persistence.
+// Verification: Verify two bands, visibility, deleted records, revoked grants, credits, pinned recording and complete built-browser song workflows.
+// SHA256: 0fb3d9b0c177b4f92a362ed16bcd8e42af14202688ded4db338feed03e0a1b47
+// MIGRATION_REFERENCE_BEGIN
+// import { useSongsContext } from "../song/SongsContext";
 // MIGRATION_REFERENCE_END

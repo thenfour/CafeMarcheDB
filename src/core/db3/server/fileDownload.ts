@@ -58,20 +58,17 @@ export async function ServeAuthorizedCustomLinkFileDownload(
 export const GetAuthorizedDirectDownloadFile = async (
     storedLeafName: string,
     auth: CMServerAuthorization,
+    database: DB3ReadDatabase = db,
 ): Promise<DownloadableFile | null> => {
+    return executeDB3Read(database, auth, async context => {
 
-    const { item } = await mutationCore.queryFirstImpl<DownloadableFile>({
-        auth,
-        schema: db3.xFile,
-        filterModel: {
-            items: [{
-                operator: "equals",
-                field: "storedLeafName",
-                value: storedLeafName,
-            }],
-        },
+        const result = await queryTable({
+            table: xCustomLinkFile,
+            filter: { items: [{ operator: "equals", field: "storedLeafName", value: storedLeafName }] },
+            take: 1, orderBy: undefined, cmdbQueryContext: "direct file download",
+        }, context.authorization, context);
+        return result.items[0] ? downloadableCustomLinkFile.parse(result.items[0]) : null;
     });
-    return item;
 };
 
 export const SendFileDownload = (

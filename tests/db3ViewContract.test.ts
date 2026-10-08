@@ -107,7 +107,7 @@ describe("DB3 scalar selection compiler", () => {
     expectTypeOf<db3.DB3RelationTargetTableOf<typeof db3.xEvent.fields.tags>>()
       .toEqualTypeOf<typeof db3.xEventTagAssignment>()
     expectTypeOf<db3.DB3RelationTargetTableOf<typeof db3.xWikiPage.fields.currentRevision>>()
-      .toEqualTypeOf<typeof db3.xWikiPageRevision>()
+      .toEqualTypeOf<typeof db3.xWikiPageCurrentRevision>()
     expectTypeOf<db3.DB3RelationTargetTableOf<typeof db3.xWikiPage.fields.revisions>>()
       .toEqualTypeOf<typeof db3.xWikiPageRevision>()
     expectTypeOf<typeof db3.xEvent.fields.tags.associationTableID>()

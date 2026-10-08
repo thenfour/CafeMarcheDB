@@ -114,8 +114,8 @@ describe("DB3 xTable model metadata", () => {
 
     expect(field.getForeignTableSchema()).toBe(db3.xBandEventTag)
     expect(field.foreignTableID).toBe(db3.xBandEventTag.tableID)
-    expect(db3.xWikiPage.fields.currentRevision.getForeignTableSchema())
-      .toBe(db3.xWikiPageRevision)
+      expect(db3.xWikiPage.fields.currentRevision.getForeignTableSchema())
+        .toBe(db3.xWikiPageCurrentRevision)
     expect(db3.xWikiPageRevision.fields.wikiPage.getForeignTableSchema())
       .toBe(db3.xWikiPage)
   })

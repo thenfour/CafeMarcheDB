@@ -114,10 +114,12 @@ multilingual text contract rather than acquiring an invented translation model.
    override. Use `routeLocale=nl-BE` to see Dutch labels and the Drums fallback.
 3. Switch to Harbour Brass. The title, branding and membership change; French
    is unavailable here. Alex's band role is ordinary rather than administrative.
-4. Sign in as `manager2@demo.invalid` to inspect Harbour's wiki at
-   `/backstage/wiki/welcome` with that band's query parameters, then its
-   localized wiki pages. `/score?bandPublicId=<id>` and
-   `/recording?bandPublicId=<id>` serve the local sample files.
+4. As Alex, inspect Harbour's wiki at `/backstage/wiki/welcome` with that band's
+   query parameters. Current content is available under ordinary page-read
+   permission; revision history retains its separate grant. A manager can also
+   edit the page. `/score?bandPublicId=<id>` and `/recording?bandPublicId=<id>`
+   serve local sample files. Direct `/api/files/download/<stored-leaf>` URLs
+   also require that explicit band context.
 5. Sign in as `member1-1@demo.invalid`. Only River appears in the selector;
    manually supplying Harbour's band ID must not reveal its member content.
 6. Make a permitted edit, stop the site, repeat reset with the same options/date,
@@ -127,10 +129,11 @@ Seeded rows do not establish restoration of their pages. General event/song/file
 screens, uploads, custom sidebar delivery and other deferred surfaces still have
 their migration restrictions. Use the supported profile/catalog/wiki/settings and
 Custom Link paths now; the same event/song fixtures support subsequent recovery.
-The browser walkthrough also exposed an existing ordinary-member wiki restriction:
-the seeded welcome page renders for its band manager but is presented as absent
-for Alex under Normal Users in Harbour. Keep this visible in the recovery audit;
-the seed does not broaden ordinary members' grants to bypass it.
+The A0 audit repaired the ordinary-member wiki issue exposed by the first demo
+walkthrough: Alex now reads Harbour's current welcome content without gaining
+revision-history permission. General event/song/file/publication and wiki-search
+URLs display recovery notices. Their seeded data remains available for later
+workflow restoration.
 
 ## Verification
 
