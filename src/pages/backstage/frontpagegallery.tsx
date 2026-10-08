@@ -8,7 +8,7 @@ import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext, useFeatureRecorder } from "@/src/core/components/dashboardContext/DashboardContext";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { HomepageMain } from "@/src/core/components/frontpage/homepageComponents";
-import { ImageEditParams, MakeDefaultImageEditParams, UpdateGalleryItemImageParams } from "@/src/core/db3/shared/fileTypes";
+import { ImageEditParams, MakeDefaultImageEditParams } from "@/src/core/db3/shared/fileTypes";
 import { MakePublicFeedResponseSpec } from "@/src/core/db3/shared/publicFeedApi";
 import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 import { BlitzPage } from "@blitzjs/next";
@@ -27,12 +27,12 @@ import { CMButton, CMButtonGroup, KeyValueTable } from "src/core/components/CMCo
 import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
+import { DeferredImageCreationButton } from "src/core/components/file/FileCreationRecoveryControls";
 import { CMDBUploadFile } from "src/core/components/file/CMDBUploadFile";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "src/core/components/file/FileDrop";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 
@@ -261,7 +261,6 @@ export interface GalleryItemImageEditControlProps {
 export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
-    const updateImageMutation = API.files.updateGalleryItemImageMutation.useToken();
     const [editingValue, setEditingValue] = React.useState<FrontpageGalleryItemClient>(() => {
         const ev: FrontpageGalleryItemClient = { ...props.value }; // create our own copy of the item, for live editing
         let editParams: ImageEditParams = MakeDefaultImageEditParams();
@@ -309,34 +308,6 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
 
     const setEditParams = (editParams: ImageEditParams) => {
         setEditingValue({ ...editingValue, displayParams: JSON.stringify(editParams) });
-    };
-
-    const handleSaveClick = () => {
-        void recordFeature({
-            feature: ActivityFeature.frontpagegallery_item_edit,
-            frontpageGalleryItemId: editingValue.publicId,
-            context: `ImageEditorBake`,
-        });
-        const args: UpdateGalleryItemImageParams = {
-            galleryItemId: editingValue.publicId,
-            imageParams: {
-                quality: 80,
-                outputType: "jpg",
-                parentFileId: editingValue.fileId,
-                newDimensions: { ...reducedDimensions },
-                editParams: info.displayParams,
-            },
-        };
-        updateImageMutation.invoke(args).then((r) => {
-            showSnackbar({ severity: "success", children: `image updated.` });
-            setEditParams({ ...r.newDisplayParams });
-            props.onExitEditMode();
-        }).catch((e) => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: `error updating: ${e}` });
-        }).finally(() => {
-            props.client.refetch();
-        });
     };
 
     const handleSaveRotationClick = () => {
@@ -440,9 +411,7 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
                     setEditParams(MakeDefaultImageEditParams());
                 }} className={`toolbutton resetIcon`}>⟲</CMButton>
             </Tooltip>
-            <Tooltip title={"Click here to process the image with cropping. The idea is your crops probably result in a smaller image for more efficient page download. If you didn't crop anything don't bother with this. 'Bake' and 'Save' result in the same for public users, but bake generates a new smaller image file. Do this if you are sure you're done with edits."}>
-                <CMButton onClick={handleSaveClick} className={`toolbutton save`}>{gIconMap.Save()} Bake new image</CMButton>
-            </Tooltip>
+            <DeferredImageCreationButton />
             <Tooltip title={"Click here to save your edits. The underlying image file won't be modified but the edits will be updated for the public homepage. Do this if you didn't perform any cropping, or if you are just tweaking the image a little bit. Avoids creating a new image file."}>
                 <CMButton onClick={handleSaveRotationClick} className={`toolbutton save`}>{gIconMap.Save()} Save edits</CMButton>
             </Tooltip>
@@ -687,3 +656,92 @@ const EditFrontpageGalleryPage: BlitzPage = () => {
 }
 
 export default EditFrontpageGalleryPage;
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/pages/backstage/frontpagegallery.tsx:11-11
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 38c55e9c475362b33fb6077cf8bfd40209075481fe23c8c23a103cfa20803e2b
+// MIGRATION_REFERENCE_BEGIN
+// import { ImageEditParams, MakeDefaultImageEditParams, UpdateGalleryItemImageParams } from "@/src/core/db3/shared/fileTypes";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/pages/backstage/frontpagegallery.tsx:30-30
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: f27e0f32f8e62bf3582c524c6df4ffb079cca64b945337b6f779b9996abf0f21
+// MIGRATION_REFERENCE_BEGIN
+// import { CMDBUploadFile } from "src/core/components/file/CMDBUploadFile";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/pages/backstage/frontpagegallery.tsx:35-35
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 407144438488e9497c8e1be54984fd13619491afec05c209e9f4cee366e8af4e
+// MIGRATION_REFERENCE_BEGIN
+// import { API } from "src/core/db3/clientAPI";
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/pages/backstage/frontpagegallery.tsx:264-264
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 551995e8977bbba26633e209c6d5d1f9cce622a87f460c345c6af0a5329617e1
+// MIGRATION_REFERENCE_BEGIN
+//     const updateImageMutation = API.files.updateGalleryItemImageMutation.useToken();
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/pages/backstage/frontpagegallery.tsx:314-341
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 79326d22c4e500f7dd7b48835c524222321678196fcc2ec6eb80b060a8dc273e
+// MIGRATION_REFERENCE_BEGIN
+//     const handleSaveClick = () => {
+//         void recordFeature({
+//             feature: ActivityFeature.frontpagegallery_item_edit,
+//             frontpageGalleryItemId: editingValue.publicId,
+//             context: `ImageEditorBake`,
+//         });
+//         const args: UpdateGalleryItemImageParams = {
+//             galleryItemId: editingValue.publicId,
+//             imageParams: {
+//                 quality: 80,
+//                 outputType: "jpg",
+//                 parentFileId: editingValue.fileId,
+//                 newDimensions: { ...reducedDimensions },
+//                 editParams: info.displayParams,
+//             },
+//         };
+//         updateImageMutation.invoke(args).then((r) => {
+//             showSnackbar({ severity: "success", children: `image updated.` });
+//             setEditParams({ ...r.newDisplayParams });
+//             props.onExitEditMode();
+//         }).catch((e) => {
+//             console.log(e);
+//             showSnackbar({ severity: "error", children: `error updating: ${e}` });
+//         }).finally(() => {
+//             props.client.refetch();
+//         });
+//     };
+//
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/pages/backstage/frontpagegallery.tsx:443-445
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 44e5e5537e135d77549a9c906cca9ec6da196e854e19424381c97e84111309ef
+// MIGRATION_REFERENCE_BEGIN
+//             <Tooltip title={"Click here to process the image with cropping. The idea is your crops probably result in a smaller image for more efficient page download. If you didn't crop anything don't bother with this. 'Bake' and 'Save' result in the same for public users, but bake generates a new smaller image file. Do this if you are sure you're done with edits."}>
+//                 <CMButton onClick={handleSaveClick} className={`toolbutton save`}>{gIconMap.Save()} Bake new image</CMButton>
+//             </Tooltip>
+// MIGRATION_REFERENCE_END

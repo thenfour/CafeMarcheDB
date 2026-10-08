@@ -32,4 +32,6 @@ export const dashboardStrings = {
     "recovery.eventSongStatistics.songHistoryDescription": label("Song performance history is temporarily unavailable while band support is restored."),
     "recovery.eventImport.title": label("Import events"),
     "recovery.eventImport.description": label("Event import is temporarily unavailable while band support is restored."),
+    "recovery.fileCreation.description": label("File uploads and image creation are temporarily unavailable while band support is restored."),
+    "recovery.fileCreation.bake": label("Bake new image"),
 };

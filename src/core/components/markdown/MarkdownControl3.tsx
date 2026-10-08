@@ -1,4 +1,3 @@
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import CloseFullscreenIcon from "@mui/icons-material/CloseFullscreen";
 import OpenInFullIcon from "@mui/icons-material/OpenInFull";
 import TabIcon from "@mui/icons-material/Tab";
@@ -6,14 +5,12 @@ import ViewAgendaIcon from "@mui/icons-material/ViewAgenda";
 import ViewWeekIcon from "@mui/icons-material/ViewWeek";
 import { Collapse, Tooltip } from "@mui/material";
 import React from "react";
-import { Permission } from 'shared/permissions';
 import type { EventPublicId, FileTagPublicId, PermissionPublicId, SongPublicId, UserPublicId, WikiPagePublicId } from "shared/publicId";
-import { IsNullOrWhitespace, parseMimeType } from 'shared/utils';
+import { IsNullOrWhitespace } from 'shared/utils';
 import { gCharMap } from '../../db3/components/IconMap';
-import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
-import { CMDBUploadFile } from '../file/CMDBUploadFile';
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import { DeferredFileCreationNotice } from "../file/FileCreationRecoveryControls";
 import { ResponsiveDialog } from "../ResponsiveDialog";
-import { useSnackbar } from '../SnackbarContext';
 import { useLocalStorageState } from "../useLocalStorageState";
 import { Markdown } from './Markdown';
 import { MarkdownCommandInvocationTriggerMap, MarkdownEditorCommand, MarkdownEditorCommandApi } from './MarkdownEditorCommandBase';
@@ -24,7 +21,6 @@ import { MarkdownEditor } from "./RichTextEditor";
 import { useControlledTextArea } from './useControlledTextArea';
 import { WikiPageApi } from './useWikiPageApi';
 
-const kMaxImageDimension = 750;
 const kFullscreenSideBySideBreakpointQuery = "(min-width: 1200px)";
 
 type MarkdownPreviewLayout = "stacked" | "side-by-side" | "tabbed";
@@ -109,7 +105,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const [popoverAnchorEl, setPopoverAnchorEl] = React.useState<null | HTMLElement>(null); // not sure what this was for
     const [showFormattingTips, setShowFormattingTips] = React.useState<boolean>(false);
     const [showPreview, setShowPreview] = React.useState<boolean>(startWithPreviewOpen);
-    const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
+    const uploadProgress = null;
     const [previewLayout, setPreviewLayout] = useLocalStorageState<MarkdownPreviewLayout>({
         key: "MarkdownEditor_PreviewLayout",
         initialValue: props.markdownPreviewLayout ?? "stacked",
@@ -124,9 +120,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     //const [contextMap, setContextMap] = React.useState<MarkdownContextMap>({});
     const commandInvocationTriggerMap = React.useRef<MarkdownCommandInvocationTriggerMap>({});
     const [totalInvokations, setTotalInvocations] = React.useState<number>(0);
-    const snackbar = useSnackbar();
     const dashboardContext = useDashboardContext();
-    const recordFeature = useFeatureRecorder();
 
     // Support for both controlled and uncontrolled usage
     const [controlledValue, setControlledValue] = React.useState<string>(props.initialValue || "");
@@ -232,7 +226,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         dashboardContext: dashboardContext,
         textArea: textAreaRef.current!,
         nativeFileInputRef: nativeFileInputRef!,
-        allowUploads: props.allowUploads,
+        allowUploads: false,
         saveProgress: async () => {
             if (props.handleSave) {
                 await props.handleSave();
@@ -252,49 +246,8 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         commandInvocationTriggerMap.current[command.id]! += 1;
     };
 
-    // ok when you upload, the gallery item component is created.
-    const handleFileSelect = (files: FileList) => {
-        if (props.allowUploads === false || !files.length) return;
-        setUploadProgress(0);
-
-        void snackbar.invokeAsync(async () => {
-            void recordFeature({
-                feature: ActivityFeature.file_upload,
-                context: "Markdown3Editor",
-            });
-            const resp = await CMDBUploadFile({
-                fields: {
-                    ...props.uploadFileContext,
-                    visiblePermission: props.uploadFileContext?.visiblePermission ?? Permission.visibility_public,
-                },
-                files,
-                onProgress: (prog01, uploaded, total) => {
-                    setUploadProgress(prog01);
-                },
-                maxImageDimension: kMaxImageDimension,
-            });
-
-            setUploadProgress(null);
-
-            const toInsert = resp.files.map(f => {
-                const url = `/api/files/download/${f.storedLeafName}`; // relative url is fine.
-                const mimeInfo = parseMimeType(f.mimeType);
-                const isImage = mimeInfo?.type === 'image';
-                if (isImage) {
-                    return `![${f.fileLeafName}](${url})`;
-                }
-                return `[${f.fileLeafName}](${url})`;
-            }).join(" ");
-
-            void apiRef.current.controlledTextArea.replaceSelectionWithText(toInsert, { select: "change" });
-
-            if (!resp.isSuccess) {
-                throw new Error(`Server returned unsuccessful result while uploading files`);
-            }
-        },
-            `Uploaded file(s)`
-        );
-    };
+    // File selection stays inert while band-owned uploads are unavailable.
+    const handleFileSelect = (_files: FileList): void => {};
 
     // listen for key events to invoke commands.
     React.useEffect(() => {
@@ -370,6 +323,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
 
     const renderEditorShell = (inFullscreen: boolean) => (
         <div className={`MD3 editor MD3Container${inFullscreen ? " fullscreen" : ""}`}>
+            {props.allowUploads !== false && <DeferredFileCreationNotice />}
             <div className="header">
                 <div className='toolbar'>
                     <div className='toolItemGroupList'>
@@ -591,4 +545,158 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     return renderEditorShell(false);
 };
 
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:1-1
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 43a02e8e0314f8ec59ecafc49f2449529c75c4696fabc752b8d9b7bc64c1f39c
+// MIGRATION_REFERENCE_BEGIN
+// import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+// MIGRATION_REFERENCE_END
 
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:9-9
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 176e897aafe67f1c709c492bf2547cc8d878b63305dcc98fd8676ce345dfe20a
+// MIGRATION_REFERENCE_BEGIN
+// import { Permission } from 'shared/permissions';
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:11-11
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: db3d349b2e818ebaffb998fe2b3d34168a3d17f4b95124d168886d9f4192f911
+// MIGRATION_REFERENCE_BEGIN
+// import { IsNullOrWhitespace, parseMimeType } from 'shared/utils';
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:13-16
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 976ca578e0d99810771c1e309836d5ca5fee3b438b269a0cd4e93fbe5be4b581
+// MIGRATION_REFERENCE_BEGIN
+// import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
+// import { CMDBUploadFile } from '../file/CMDBUploadFile';
+// import { ResponsiveDialog } from "../ResponsiveDialog";
+// import { useSnackbar } from '../SnackbarContext';
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:27-27
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 40f7ce61188f107b9ea09b0bf32c969c910d917e6a5363fb273512511c3f9c20
+// MIGRATION_REFERENCE_BEGIN
+// const kMaxImageDimension = 750;
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:112-112
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 89f8e23af5cfcb376b05300db91edaef4f8def095e3cd6e5109f27a106856e74
+// MIGRATION_REFERENCE_BEGIN
+//     const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:127-127
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: bb230c5e04b3683b5111556c2cda222198f1e767f3c54b1d9805feadd0d8b1ee
+// MIGRATION_REFERENCE_BEGIN
+//     const snackbar = useSnackbar();
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:129-129
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: af4c8aff65a3ccfabf5ef44bb03122067eefef2ec1695f6ba4bc975b6c134a9d
+// MIGRATION_REFERENCE_BEGIN
+//     const recordFeature = useFeatureRecorder();
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:235-235
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 4980ace7532a5bf807b3e7b1059aa3c0cf794a0d0975a2075c2139ed80007d7e
+// MIGRATION_REFERENCE_BEGIN
+//         allowUploads: props.allowUploads,
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:255-298
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 9bdcc1815fb372b2d0d9bfa4d90c2bf603693b4ba126ccc437ab20f80e7a74d0
+// MIGRATION_REFERENCE_BEGIN
+//     // ok when you upload, the gallery item component is created.
+//     const handleFileSelect = (files: FileList) => {
+//         if (props.allowUploads === false || !files.length) return;
+//         setUploadProgress(0);
+//
+//         void snackbar.invokeAsync(async () => {
+//             void recordFeature({
+//                 feature: ActivityFeature.file_upload,
+//                 context: "Markdown3Editor",
+//             });
+//             const resp = await CMDBUploadFile({
+//                 fields: {
+//                     ...props.uploadFileContext,
+//                     visiblePermission: props.uploadFileContext?.visiblePermission ?? Permission.visibility_public,
+//                 },
+//                 files,
+//                 onProgress: (prog01, uploaded, total) => {
+//                     setUploadProgress(prog01);
+//                 },
+//                 maxImageDimension: kMaxImageDimension,
+//             });
+//
+//             setUploadProgress(null);
+//
+//             const toInsert = resp.files.map(f => {
+//                 const url = `/api/files/download/${f.storedLeafName}`; // relative url is fine.
+//                 const mimeInfo = parseMimeType(f.mimeType);
+//                 const isImage = mimeInfo?.type === 'image';
+//                 if (isImage) {
+//                     return `![${f.fileLeafName}](${url})`;
+//                 }
+//                 return `[${f.fileLeafName}](${url})`;
+//             }).join(" ");
+//
+//             void apiRef.current.controlledTextArea.replaceSelectionWithText(toInsert, { select: "change" });
+//
+//             if (!resp.isSuccess) {
+//                 throw new Error(`Server returned unsuccessful result while uploading files`);
+//             }
+//         },
+//             `Uploaded file(s)`
+//         );
+//     };
+//
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:373-373
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 5d4e5a5205e85a7c1eeb7a28bb03dce9401015f47c46cb3f5e628e2ff854912c
+// MIGRATION_REFERENCE_BEGIN
+//             <div className="header">
+// MIGRATION_REFERENCE_END

@@ -1,4 +1,5 @@
 import type { AuthenticatedCtx, Ctx } from "blitz";
+import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("db", async () => {
@@ -24,6 +25,9 @@ import getSongFilterInfo from "@db3/queries/getSongFilterInfo";
 import getGlobalStats from "@db3/queries/getGlobalStats";
 import getSongActivityReport from "@db3/queries/getSongActivityReport";
 import getImportEventData from "@db3/queries/getImportEventData";
+import forkImage from "@db3/mutations/forkImage";
+import updateGalleryItemImage from "@db3/mutations/updateGalleryItemImage";
+import { insertImpl } from "@db3/server/db3mutationCore";
 import assignUserRole from "src/auth/mutations/assignUserRole";
 import setRoleDesignation from "src/auth/mutations/setRoleDesignation";
 import mergeUsers from "src/auth/mutations/mergeUsers";
@@ -80,6 +84,46 @@ const deferredDomainReaders = [
     { name: "event statistics", resolve: getGlobalStats },
     { name: "song history", resolve: getSongActivityReport },
 ];
+
+const deferredFileCreators = [
+    { name: "image fork", resolve: forkImage },
+    { name: "gallery image bake", resolve: updateGalleryItemImage },
+];
+
+describe("deferred file creation", () => {
+    it.each(deferredFileCreators)("rejects $name before any source, gallery, catalog or filesystem access", async ({ resolve }) => {
+        const uploader = createAuthorizationTestUser("normal", {
+            id: 15,
+            permissions: [Permission.login, Permission.upload_files, Permission.edit_public_homepage],
+        });
+        const requests: unknown[] = [
+            { parentFileId: parsePublicId<"File">("DeferredFile0001"), outputType: "jpg", quality: 80 },
+            { bandPublicId: parsePublicId<"Band">("UploadBand000001"), routeLocale: "fr-BE", galleryItemId: "unknown" },
+            { bandId: 1, parentFileId: 1, quality: -1 },
+            null,
+        ];
+        for (const actor of [member, uploader, sysadmin]) {
+            for (const input of requests) {
+                await expect(invokeResolver(resolve, input, createAuthorizationTestContext(actor)))
+                    .rejects.toThrow(ApplicationFeatureUnavailableError);
+            }
+        }
+    });
+
+    it.each(deferredFileCreators)("requires login before reporting availability for $name", async ({ resolve }) => {
+        await expect(invokeResolver(resolve, {}, createAuthorizationTestContext(null))).rejects.toThrow("login");
+    });
+
+    it("blocks generic File creation before its transaction or metadata hooks", async () => {
+        // The empty target is intentional: every authorization read must fail before any typed field is used.
+        const forbiddenAuthorization = new Proxy({} as CMServerAuthorization, {
+            get: () => {
+                throw new Error("Generic File creation inspected authorization.");
+            },
+        });
+        await expect(insertImpl(db3.xFile, {}, forbiddenAuthorization)).rejects.toThrow(ApplicationFeatureUnavailableError);
+    });
+});
 
 describe("deferred event/song filters and statistics", () => {
     it.each(deferredDomainReaders)("rejects $name before reading authorization, domain or reference data", async ({ resolve }) => {

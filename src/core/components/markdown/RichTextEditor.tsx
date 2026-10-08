@@ -62,17 +62,9 @@ function getInputType(nativeEvent: Event | undefined): string | undefined {
 export function MarkdownEditor(props: MarkdownEditorProps) {
     const kb = useKeyboardState();
 
-    const handleNativeFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            props.onFileSelect(e.target.files);
-            e.target.files = null; // clear
-            e.target.value = ""; // clear
-        }
-    };
-
     const handlePaste = (e) => {
         if ((e.clipboardData?.files?.length || 0) > 0) {
-            props.onFileSelect(e.clipboardData!.files);
+            // File paste must not invoke uploads; ordinary text/HTML paste remains active.
             e.preventDefault();
             return;
         }
@@ -100,13 +92,6 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             onURLUpload={() => { }}
             progress={props.uploadProgress}
         >
-            <input
-                type="file"
-                multiple
-                ref={props.nativeFileInputRef}
-                style={{ display: 'none' }}
-                onChange={handleNativeFileSelect}
-            />
             <ReactTextareaAutocomplete
                 containerClassName="editorContainer"
                 loadingComponent={() => <div>Loading...</div>}
@@ -174,3 +159,45 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     );
 }
 
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/RichTextEditor.tsx:65-72
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 57d1ce6d5585343b4a3ac412d1507b9cf3427becf74d6633f994365a15fdce2a
+// MIGRATION_REFERENCE_BEGIN
+//     const handleNativeFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+//         if (e.target.files) {
+//             props.onFileSelect(e.target.files);
+//             e.target.files = null; // clear
+//             e.target.value = ""; // clear
+//         }
+//     };
+//
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/RichTextEditor.tsx:75-75
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: 71d2d6739c03e1e866168b48a9ecb3b1beda43457bafde66eca1f49636a5f68d
+// MIGRATION_REFERENCE_BEGIN
+//             props.onFileSelect(e.clipboardData!.files);
+// MIGRATION_REFERENCE_END
+
+// MIGRATION_RESTORE: file-creation
+// Source: 1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/RichTextEditor.tsx:103-109
+// Reason: Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.
+// Restore: Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.
+// Verification: Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.
+// SHA256: a8fe2786a31a0186ea93159cbac3150acb61829ac9f933b053b2327013de491c
+// MIGRATION_REFERENCE_BEGIN
+//             <input
+//                 type="file"
+//                 multiple
+//                 ref={props.nativeFileInputRef}
+//                 style={{ display: 'none' }}
+//                 onChange={handleNativeFileSelect}
+//             />
+// MIGRATION_REFERENCE_END

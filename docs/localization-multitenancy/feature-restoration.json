@@ -135,6 +135,14 @@
       "verification": "Reactivate preserved preview/identity/authorization specifications; test supported dates and year overrides, comments/repeated songs, ambiguous or missing matches, two bands, inactive members/catalogs, hidden songs, grant revocation, preview edits and saves in the built browser.",
       "status": "pending",
       "evidence": []
+    },
+    {
+      "id": "file-creation",
+      "reason": "Upload and image-creation paths omit band ownership, use removed global tag/instrument models and person associations, and depend on unfinished File row contracts.",
+      "restore": "Restore multipart/external-URL uploads, public-ID band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize, metadata processing, gallery bake and generic File creation with fresh transactional authorization, filesystem cleanup and localized controls; retain download behavior.",
+      "verification": "Reactivate image authorization specifications; verify two bands, independent grants and revocation, hidden/foreign parents and associations, inactive memberships/catalogs, multipart failures and limits, file/URL/paste/drop uploads, image transforms/metadata, rollback and storage cleanup, public DTOs and built-browser workflows.",
+      "status": "pending",
+      "evidence": []
     }
   ],
   "references": [
@@ -1415,6 +1423,246 @@
       "featureId": "event-import",
       "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:tests/db3LegacyReadCompatibilityInventory.test.ts:55-58",
       "sha256": "44a41f081f7d08485da974f7cc053d7fba37aacd0b46ed4920b74da161a50338"
+    },
+    {
+      "file": "src/core/db3/mutations/forkImage.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/db3/mutations/forkImage.ts:1-80",
+      "sha256": "e66ed6ce65bc38fbc3f7dda41ba38a4dd13e73996572f7c62c5a02eb0317df5d"
+    },
+    {
+      "file": "src/core/db3/mutations/updateGalleryItemImage.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/db3/mutations/updateGalleryItemImage.ts:1-75",
+      "sha256": "faecb953a862d04f0447f421b0910d6c307843a2c068b9e03761d1909d02cf1a"
+    },
+    {
+      "file": "src/pages/api/files/upload.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/pages/api/files/upload.ts:1-301",
+      "sha256": "d28e33a4d6575b35d715228067548da6bfd4ae159ddd7882daf5aed6ce6a1b46"
+    },
+    {
+      "file": "src/core/components/file/CMDBUploadFile.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/file/CMDBUploadFile.tsx:1-76",
+      "sha256": "72cdf3aa843ad8484748b6eb146e73154e1f2b9b17b737f3a24deddb80072ae3"
+    },
+    {
+      "file": "src/core/components/file/FileDrop.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/file/FileDrop.tsx:1-219",
+      "sha256": "4a3e6adef8c362a6799a356d2c675c9e0bb5937684f8588c916540161c3f63c4"
+    },
+    {
+      "file": "src/core/db3/server/db3mutationCore.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/db3/server/db3mutationCore.ts:6-6",
+      "sha256": "45ac3f2fd4e97002a93cbe81a5e7dc2cb52f2e0c4104878f53b218cd957a093c"
+    },
+    {
+      "file": "src/core/db3/server/db3mutationCore.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/db3/server/db3mutationCore.ts:10-12",
+      "sha256": "d6dd53e7e89b573cdfd04715cda84e273e9265d1a11b58610ae57f7116cf1432"
+    },
+    {
+      "file": "src/core/db3/server/db3mutationCore.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/db3/server/db3mutationCore.ts:15-16",
+      "sha256": "668cf832a0716b7d781c8efd8ad1130ec5f2fa368e3a1df905ea1d78aec2b542"
+    },
+    {
+      "file": "src/core/db3/server/db3mutationCore.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/db3/server/db3mutationCore.ts:19-20",
+      "sha256": "31f0e328f25c37d46c34d14b2bc3e638dc82ec4bc51b75f7f25cf038f917de60"
+    },
+    {
+      "file": "src/core/db3/server/db3mutationCore.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/db3/server/db3mutationCore.ts:28-32",
+      "sha256": "4a4f1dc4732fff1b8ac037c9b49c6adc7d1cd5cff789e1691b98c4bad0ab3363"
+    },
+    {
+      "file": "src/core/db3/server/db3mutationCore.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/db3/server/db3mutationCore.ts:502-505",
+      "sha256": "47818734c875dcfff9836aa7d3e40a3bfac808ebf576bdc5bab56a96db7c0484"
+    },
+    {
+      "file": "src/core/db3/server/db3mutationCore.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/db3/server/db3mutationCore.ts:795-1083",
+      "sha256": "9de53da64bdfa8a6cb49d4589626c603198368e6a40ab5e0a857e85364532762"
+    },
+    {
+      "file": "src/core/components/markdown/MarkdownControl3.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:1-1",
+      "sha256": "43a02e8e0314f8ec59ecafc49f2449529c75c4696fabc752b8d9b7bc64c1f39c"
+    },
+    {
+      "file": "src/core/components/markdown/MarkdownControl3.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:9-9",
+      "sha256": "176e897aafe67f1c709c492bf2547cc8d878b63305dcc98fd8676ce345dfe20a"
+    },
+    {
+      "file": "src/core/components/markdown/MarkdownControl3.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:11-11",
+      "sha256": "db3d349b2e818ebaffb998fe2b3d34168a3d17f4b95124d168886d9f4192f911"
+    },
+    {
+      "file": "src/core/components/markdown/MarkdownControl3.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:13-16",
+      "sha256": "976ca578e0d99810771c1e309836d5ca5fee3b438b269a0cd4e93fbe5be4b581"
+    },
+    {
+      "file": "src/core/components/markdown/MarkdownControl3.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:27-27",
+      "sha256": "40f7ce61188f107b9ea09b0bf32c969c910d917e6a5363fb273512511c3f9c20"
+    },
+    {
+      "file": "src/core/components/markdown/MarkdownControl3.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:112-112",
+      "sha256": "89f8e23af5cfcb376b05300db91edaef4f8def095e3cd6e5109f27a106856e74"
+    },
+    {
+      "file": "src/core/components/markdown/MarkdownControl3.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:127-127",
+      "sha256": "bb230c5e04b3683b5111556c2cda222198f1e767f3c54b1d9805feadd0d8b1ee"
+    },
+    {
+      "file": "src/core/components/markdown/MarkdownControl3.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:129-129",
+      "sha256": "af4c8aff65a3ccfabf5ef44bb03122067eefef2ec1695f6ba4bc975b6c134a9d"
+    },
+    {
+      "file": "src/core/components/markdown/MarkdownControl3.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:235-235",
+      "sha256": "4980ace7532a5bf807b3e7b1059aa3c0cf794a0d0975a2075c2139ed80007d7e"
+    },
+    {
+      "file": "src/core/components/markdown/MarkdownControl3.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:255-298",
+      "sha256": "9bdcc1815fb372b2d0d9bfa4d90c2bf603693b4ba126ccc437ab20f80e7a74d0"
+    },
+    {
+      "file": "src/core/components/markdown/MarkdownControl3.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/MarkdownControl3.tsx:373-373",
+      "sha256": "5d4e5a5205e85a7c1eeb7a28bb03dce9401015f47c46cb3f5e628e2ff854912c"
+    },
+    {
+      "file": "src/core/components/markdown/RichTextEditor.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/RichTextEditor.tsx:65-72",
+      "sha256": "57d1ce6d5585343b4a3ac412d1507b9cf3427becf74d6633f994365a15fdce2a"
+    },
+    {
+      "file": "src/core/components/markdown/RichTextEditor.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/RichTextEditor.tsx:75-75",
+      "sha256": "71d2d6739c03e1e866168b48a9ecb3b1beda43457bafde66eca1f49636a5f68d"
+    },
+    {
+      "file": "src/core/components/markdown/RichTextEditor.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/components/markdown/RichTextEditor.tsx:103-109",
+      "sha256": "a8fe2786a31a0186ea93159cbac3150acb61829ac9f933b053b2327013de491c"
+    },
+    {
+      "file": "src/pages/backstage/frontpagegallery.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/pages/backstage/frontpagegallery.tsx:11-11",
+      "sha256": "38c55e9c475362b33fb6077cf8bfd40209075481fe23c8c23a103cfa20803e2b"
+    },
+    {
+      "file": "src/pages/backstage/frontpagegallery.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/pages/backstage/frontpagegallery.tsx:30-30",
+      "sha256": "f27e0f32f8e62bf3582c524c6df4ffb079cca64b945337b6f779b9996abf0f21"
+    },
+    {
+      "file": "src/pages/backstage/frontpagegallery.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/pages/backstage/frontpagegallery.tsx:35-35",
+      "sha256": "407144438488e9497c8e1be54984fd13619491afec05c209e9f4cee366e8af4e"
+    },
+    {
+      "file": "src/pages/backstage/frontpagegallery.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/pages/backstage/frontpagegallery.tsx:264-264",
+      "sha256": "551995e8977bbba26633e209c6d5d1f9cce622a87f460c345c6af0a5329617e1"
+    },
+    {
+      "file": "src/pages/backstage/frontpagegallery.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/pages/backstage/frontpagegallery.tsx:314-341",
+      "sha256": "79326d22c4e500f7dd7b48835c524222321678196fcc2ec6eb80b060a8dc273e"
+    },
+    {
+      "file": "src/pages/backstage/frontpagegallery.tsx",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/pages/backstage/frontpagegallery.tsx:443-445",
+      "sha256": "44e5e5537e135d77549a9c906cca9ec6da196e854e19424381c97e84111309ef"
+    },
+    {
+      "file": "tests/authorization/fileVisibilityHardening.test.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:tests/authorization/fileVisibilityHardening.test.ts:17-18",
+      "sha256": "c0888281802b7a755c2807fd6b32544eb28208e22b3ce5dc5b784cdc36ae93cb"
+    },
+    {
+      "file": "tests/authorization/fileVisibilityHardening.test.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:tests/authorization/fileVisibilityHardening.test.ts:20-20",
+      "sha256": "e20ff017eec5f94f042f117f6aa4d038168a80e24ce27bb36940f7c3a495d03c"
+    },
+    {
+      "file": "tests/authorization/fileVisibilityHardening.test.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:tests/authorization/fileVisibilityHardening.test.ts:28-28",
+      "sha256": "d8a13be9208927d57afdac117527b39a5817d8d01d6c741732e3f643ec1796c7"
+    },
+    {
+      "file": "tests/authorization/fileVisibilityHardening.test.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:tests/authorization/fileVisibilityHardening.test.ts:30-30",
+      "sha256": "c3adbf7785388a6a6db3f8bfddcc45cd07b0f86eb58d8b103051ed4a8cd842e6"
+    },
+    {
+      "file": "tests/authorization/fileVisibilityHardening.test.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:tests/authorization/fileVisibilityHardening.test.ts:36-36",
+      "sha256": "a7813770a983bacec4b13972b22a922e15ce5c421ffcfcfebc3a07f70849d3ef"
+    },
+    {
+      "file": "tests/authorization/fileVisibilityHardening.test.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:tests/authorization/fileVisibilityHardening.test.ts:59-90",
+      "sha256": "d829f48bf5b30ad0c86fafc1de0f7d5a452dac09cf5530ce3db97974645d9cc3"
+    },
+    {
+      "file": "tests/authorization/fileVisibilityHardening.test.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:tests/authorization/fileVisibilityHardening.test.ts:281-454",
+      "sha256": "ef82ffd39cd8cf76c424581997124314da0961b30939c3cf66f8aa071fda2622"
+    },
+    {
+      "file": "src/core/db3/server/db3mutationCore.ts",
+      "featureId": "file-creation",
+      "source": "1bea5a730d2f3a8c20b490681360e1c698403523:src/core/db3/server/db3mutationCore.ts:22-22",
+      "sha256": "b1f812261b9f6dc74121f5e4360bbad8e4ed579637d22c4ff338e170848c375d"
     }
   ]
 }

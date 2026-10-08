@@ -47,6 +47,7 @@ running tests. Neither compiler exclusions nor TypeScript suppressions are used.
 | `legacy-event-song-filters` | Account for the old event/song facet RPC semantics through the existing search owner: timing/relevance, multi-tag matching, counts, localized facets, pagination and ordering with selected-band snapshots and public identities. |
 | `event-song-statistics` | Event statistics, popular-song occurrences and song performance history; timing/type/status/tag controls, visualization, bucket selection, expansion and event links with fresh band-scoped authorization and localized references. |
 | `event-import` | Text/config parsing, dates/year overrides, band-owned defaults, membership and visible-song matching, editable preview, explicit save and saved-event history with fresh authorization, public identities, localized references and band scheduling through migrated event creation. |
+| `file-creation` | Multipart/external-URL uploads, public band-owned associations, automatic Partition/Recording and instrument matching, image crop/rotate/resize and metadata processing, gallery bake, generic File creation and file/URL/paste/drop controls with fresh authorization, rollback and filesystem cleanup. |
 | `markdown-editing` | Inline edit/cancel/save/save-and-close, authorization, feedback and refresh against explicit translation scope and locale. |
 | `settings-editors` | Existing settings/branding workflows through typed hives, including time-zone reanchoring and cache invalidation. Replaced storage APIs are historical references. |
 | `catalog-help` | Song-tag help Markdown alongside the migrated editor. Its rendering call is restored; browser verification remains pending. |
@@ -155,6 +156,17 @@ deferred. The existing creation transaction stays executable and has native and
 development-browser regression evidence. The `event-import` obligation remains
 pending until the complete parser/preview/save workflow and preserved
 specifications are restored and verified.
+
+File-creation isolation adds forty references from `1bea5a73`. They preserve the
+upload HTTP route/client, FileDrop controls, image-fork/gallery-bake RPCs, shared
+creation/resize/metadata helpers and their imports, Markdown upload/paste/input
+behavior, gallery bake hook/handler/control and seven image-authorization tests
+with their fixtures/imports. The generic File insert boundary is also preserved.
+The five existing download/storage cases remain executable; no whole test file
+is newly deferred. New recovery tests verify rejection and inert controls, not
+upload/image parity. Existing downloads, band-scoped Custom Link delivery and
+migrated File-tag catalogs stay active. The `file-creation` obligation remains
+pending until its complete workflows and preserved specifications are restored.
 
 ## Audit scope
 

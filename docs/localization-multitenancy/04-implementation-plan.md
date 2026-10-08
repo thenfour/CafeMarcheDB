@@ -93,13 +93,24 @@ as disabled source. Existing
 membership role/lifecycle commands remain available and have native regression
 coverage.
 
-**Next implementation slice:** repair or isolate general File creation, starting
-at `db3mutationCore.ts:826`, where the upload/create fields omit required band
-ownership. Trace uploads, previews, downloads, background callers and the owning
-member/instrument references before adapting consumers. Preserve the narrow
-band-scoped Custom Link file reader and migrated File-tag catalogs. Then continue
-the remaining File/song/wiki payload roots, including legacy `Permission.roles`
-selections. Isolate deferred pages and non-page entry points together.
+**Next implementation slice:** repair or isolate legacy quick search, starting
+at `quickSearchServerCore.ts:51`, where it queries the removed global Instrument
+model. Trace its HTTP owner, association selectors and Markdown autocomplete
+callers, including event/song/tag and account visibility. Preserve the current
+domain-search owner and migrated catalog/membership readers. Then continue the
+remaining File/song/wiki payload roots, including legacy `Permission.roles`
+selections. Isolate deferred UI and non-page entry points together.
+
+File uploads and image creation are now isolated under `file-creation`.
+The upload HTTP route requires login and returns an empty 503 without parsing
+multipart data; image-fork/gallery-bake RPCs reject before source or gallery
+lookups. Generic File insertion is blocked before its transaction. File/URL
+selection, document paste/drop and gallery bake controls explain unavailability;
+Markdown text/HTML editing stays active. Forty references preserve creation,
+automatic tagging/instrument matching, image processing, controls and affected
+specifications. Existing downloads, the narrow Custom Link reader and migrated
+File-tag CRUD stay executable. General File metadata, search and ownership remain
+unfinished; this slice neither restores uploads nor closes A0.
 
 Experimental event import is now isolated: its Sysadmin-protected page shows a
 registered localized notice, and the preview RPC requires login and rejects
@@ -320,6 +331,7 @@ implementation/test references and verification obligations for audited removals
 | Legacy event/song facet RPCs | Both unused endpoints reject before database access; their SQL and obsolete response helpers are preserved under `legacy-event-song-filters`. Current search pages use the separate search owner and are unchanged. | Verify equivalent timing/relevance, multi-tag matching, counts/facets, pagination and ordering through the current search owner with explicit band snapshots, localized references and public identities. |
 | Event statistics and song history | Statistics page and the song history tab display registered localized notices. Both RPCs reject before database access; original queries, controls, charts, event links and API types are preserved under `event-song-statistics`. Existing report/song authorization remains enforced. | Restore and verify the complete statistics/popular-song/history workflow with fresh band authorization, localized catalogs, public references and consistent aggregation. |
 | Experimental event import | The Sysadmin-protected page shows a registered localized notice; the preview RPC requires login and rejects before database access. Parser, default/person/song matching, editable preview, explicit save/history and affected specifications are preserved under `event-import`. Migrated event creation remains active. | Restore parsing, band-owned defaults, membership and visible-song matching, preview editing, explicit saves and saved-event history with fresh authorization, public identities, localized references and band scheduling; reactivate specifications and verify the complete built-browser workflow. |
+| File uploads and image creation | Multipart/external-URL upload returns an empty 503 after login without parsing files. Image fork/gallery bake RPCs and generic File insertion reject before their work. Selection/paste/drop controls show localized recovery text; bake is disabled with an explanation. Forty references preserve creation, automatic tagging, image transforms/metadata and seven image-authorization cases under `file-creation`. Existing downloads and migrated File-tag catalogs stay executable. | Restore explicit band ownership, public membership/instrument/content references, fresh transactional grants, upload validation, filesystem cleanup/rollback, automatic tags, image crop/rotate/resize/metadata and complete browser controls; reactivate specifications and verify two-band workflows. |
 | Activity-report delivery | `/backstage/featureReports` explains temporary unavailability. All five report RPCs require login and reject before database access, including CSV export. Report implementations and affected specifications are preserved; telemetry recording remains active. | Restore explicit report ownership/permissions, localized references, timelines, facets, filtering, detail and CSV behavior under `activity-reports`; reactivate specifications and verify two-band/browser isolation. |
 | Legacy DB3 domains | Selected-band queries/row services reject undeclared ownership policies. | Migrate required domains for A0/A1; keep other domains coherently unavailable. |
 | Dashboard content and search | Bootstrap includes migrated shared event catalogs but omits events, announcements, role metadata, custom menus and other deferred catalogs. Home explains the restriction; global search is removed from the shell. Legacy sidebar/direct routes and non-page entry points are not yet isolated. | Finish coherent route/endpoint/source isolation during A0; restore content required by core workflows during A1. |
