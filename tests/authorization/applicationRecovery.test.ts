@@ -99,7 +99,7 @@ const deferredWorkflowEndpoints = [
 ];
 
 describe("deferred domain workflow endpoints", () => {
-    it.each(["SongCredit", "File", "BandFileTagAssignment", "FileUserTag", "FileSongTag", "FileEventTag", "FileInstrumentTag", "FileWikiPageTag", "FrontpageGalleryItem"])("guards generic $0 reads in platform and band contexts before database access", async tableID => {
+    it.each(["SongCredit", "FrontpageGalleryItem"])("guards generic $0 reads in platform and band contexts before database access", async tableID => {
         const table = db3.GetTableById(tableID);
         for (const bandPublicId of [null, parsePublicId<"Band">("RecoveryBand0001")]) {
             const request = forgeDb3Query(tableID, { table: { tableID, tableName: table.tableName }, bandPublicId });
@@ -110,7 +110,6 @@ describe("deferred domain workflow endpoints", () => {
 
     it.each([
         db3.songCreditEditorView.crud.operations.update.command.commandID,
-        db3.fileEditorView.crud.operations.update.command.commandID,
         db3.reorderGalleryItemsCommand.commandID,
     ])("guards generic command %s before its transaction", async commandID => {
         await expect(invokeResolver(executeDB3CommandMutation, { commandID, payload: {} }, createAuthorizationTestContext(sysadmin)))
@@ -162,7 +161,7 @@ describe("deferred file creation", () => {
                 throw new Error("Generic File creation inspected authorization.");
             },
         });
-        await expect(insertImpl(db3.xFile, {}, forbiddenAuthorization)).rejects.toThrow(ApplicationFeatureUnavailableError);
+        await expect(insertImpl(db3.xFile, {}, forbiddenAuthorization)).rejects.toThrow("creation");
     });
 });
 

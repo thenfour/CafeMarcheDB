@@ -454,6 +454,7 @@ export const FileEditor = (props: FileEditorProps) => {
                 selectionView: db3.bandFileTagView,
             }),
             taggedInstruments: DB3Client.tagsFieldClientGen<db3.FileEditorInstrumentTag>({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.instruments",
+                selectionView: db3.instrumentDashboardView,
                 cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline',
                 overrideRowInfo: (association: db3.FileEditorInstrumentTag, rowInfo: db3.RowInfo) => {
                     // because the query doesn't include instrument functional group, get it from global dashboard context
@@ -462,9 +463,10 @@ export const FileEditor = (props: FileEditorProps) => {
                     return { ...rowInfo, color: gGeneralPaletteList.findEntry(fg.color) };
                 }
             }),
-            taggedUsers: DB3Client.tagsFieldClientGen<db3.FileEditorUserTag>({ selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.members", allowDeleteFromCell: false }),
-            taggedSongs: DB3Client.tagsFieldClientGen<db3.FileEditorSongTag>({ selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.songs", allowDeleteFromCell: false }),
+            taggedUsers: DB3Client.tagsFieldClientGen<db3.FileEditorUserTag>({ selectionView: db3.bandUserIdentityView, selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.members", allowDeleteFromCell: false }),
+            taggedSongs: DB3Client.tagsFieldClientGen<db3.FileEditorSongTag>({ selectionView: db3.songReferenceView, selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.songs", allowDeleteFromCell: false }),
             taggedEvents: DB3Client.tagsFieldClientGen<db3.FileEditorEventTag>({ selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.events",
+                selectionView: db3.eventReferenceView,
                 cellWidth: 150,
                 allowDeleteFromCell: false,
                 renderAsChip: (args) => {
@@ -531,6 +533,7 @@ export const FileEditor = (props: FileEditorProps) => {
     };
 
     return <DB3EditObjectDialog
+        ownerUserPublicId={props.initialValue.uploadedByUserId}
         initialValue={editorInitialValue}
         onCancel={() => props.onClose()}
         onDelete={() => {
@@ -540,11 +543,10 @@ export const FileEditor = (props: FileEditorProps) => {
             });
             editCommands.delete(props.initialValue.publicId).then(() => {
                 showSnackbar({ severity: "success", children: "file delete successful" });
+                props.onClose();
             }).catch((e) => {
                 console.log(e);
                 showSnackbar({ severity: "error", children: "Error; see console" });
-            }).finally(() => {
-                props.onClose();
             });
         }}
         onOK={(value) => {
@@ -556,11 +558,10 @@ export const FileEditor = (props: FileEditorProps) => {
             const editorValue = value as db3.ClientOf<typeof db3.fileEditorView>;
             editCommands.update(editorValue, editorInitialValue).then(() => {
                 showSnackbar({ severity: "success", children: "file edit successful" });
+                props.onClose();
             }).catch((e) => {
                 console.log(e);
                 showSnackbar({ severity: "error", children: "Error; see console" });
-            }).finally(() => {
-                props.onClose();
             });
         }}
         tableRenderClient={tableRenderClient}
@@ -977,18 +978,21 @@ interface FileControlProps {
 };
 
 export const FileControl = (props: FileControlProps) => {
-    //const dashboardContext = React.useContext(DashboardContext);
+    const dashboard = useDashboardContext();
+    const canEdit = !props.readonly && (dashboard.isAuthorized(Permission.manage_files)
+        || (dashboard.isAuthorized(Permission.upload_files)
+            && dashboard.currentUser?.publicId === props.value.uploadedByUserId));
 
     const [editMode, setEditMode] = React.useState<boolean>(false);
 
     return <>
-        {!props.readonly && editMode &&
+        {canEdit && editMode &&
             <FileEditor initialValue={props.value} onClose={() => { setEditMode(false); props.refetch() }} rowMode="update" />
         }
         <FileValueViewer
             value={props.value}
             onEnterEditMode={() => setEditMode(true)}
-            readonly={props.readonly}
+            readonly={!canEdit}
             statHighlight={props.statHighlight}
             contextEvent={props.contextEvent}
             contextSong={props.contextSong}
@@ -1035,10 +1039,10 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
         sortDirection: "desc",
     });
 
-    const canUploadFiles = dashboardContext.isAuthorized(Permission.upload_files);
+    const canUploadFiles = !props.readonly && dashboardContext.isAuthorized(Permission.upload_files);
 
     const handleFileSelect = (files: FileList) => {
-        if (files.length > 0) {
+        if (canUploadFiles && progress === null && files.length > 0) {
             setProgress(0);
 
             void recordFeature({
@@ -1046,6 +1050,7 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
             });
 
             CMDBUploadFile({
+                bandPublicId: dashboardContext.requireBandPublicId(),
                 fields: {
                     ...props.uploadTags,
                     visiblePermissionId: permissionId,
@@ -1063,12 +1068,16 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
             }).catch((e: string) => {
                 console.log(e);
                 showSnackbar({ severity: "error", children: `error uploading file(s) : ${e}` });
-                //setProgress([...progress, `catch`]);
+            }).finally(() => {
+                setProgress(null);
             });
         }
     };
 
     const handleURLSelect = (uri: string) => {
+        if (!canUploadFiles || progress !== null) {
+            return;
+        }
         setProgress(0);
 
         void recordFeature({
@@ -1076,6 +1085,7 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
         });
 
         CMDBUploadFile({
+            bandPublicId: dashboardContext.requireBandPublicId(),
             fields: {
                 ...props.uploadTags,
                 //taggedEventId: props.event.id,
@@ -1095,15 +1105,16 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
         }).catch((e: string) => {
             console.log(e);
             showSnackbar({ severity: "error", children: `error uploading file(s) : ${e}` });
-            //setProgress([...progress, `catch`]);
+        }).finally(() => {
+            setProgress(null);
         });
     };
 
     const filteredItems = sortAndFilter(props.fileTags, filterSpec);
 
-    return <FileDropWrapper onFileSelect={handleFileSelect} onURLUpload={handleURLSelect} progress={progress}>
+    return <FileDropWrapper enabled={canUploadFiles} onFileSelect={handleFileSelect} onURLUpload={handleURLSelect} progress={progress}>
         {!props.readonly && canUploadFiles && (showUpload ? <div className="uploadControlContainer">
-            <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={handleURLSelect} />
+            <UploadFileComponent enabled={canUploadFiles} onFileSelect={handleFileSelect} progress={progress} onURLUpload={handleURLSelect} />
             <CMButton onClick={() => setShowUpload(false)}>Cancel</CMButton>
         </div> :
             <CMButton onClick={() => setShowUpload(true)}>Upload</CMButton>)

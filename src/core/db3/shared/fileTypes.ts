@@ -1,12 +1,12 @@
 import { Coord2D, Size } from "@/shared/rootroot";
 import type { Prisma } from "db";
-import type { EventPublicId, FilePublicId, FileTagPublicId, FrontpageGalleryItemPublicId, PermissionPublicId, SongPublicId, UserPublicId, WikiPagePublicId } from "shared/publicId";
+import type { BandUserPublicId, EventPublicId, FilePublicId, FileTagPublicId, FrontpageGalleryItemPublicId, InstrumentPublicId, PermissionPublicId, SongPublicId, UserPublicId, WikiPagePublicId } from "shared/publicId";
 
 export interface TClientFileUploadTags {
-    taggedUserId?: UserPublicId;
+    taggedBandUserId?: BandUserPublicId;
     taggedSongId?: SongPublicId;
     taggedEventId?: EventPublicId;
-    taggedInstrumentId?: number;
+    taggedInstrumentId?: InstrumentPublicId;
     taggedWikiPageId?: WikiPagePublicId;
     fileTagId?: FileTagPublicId;
 };
@@ -26,10 +26,10 @@ export interface TClientUpdateFile {
     visiblePermissionId?: PermissionPublicId | null;
 
     tagsIds?: FileTagPublicId[];
-    taggedUserIds?: UserPublicId[];
+    taggedBandUserIds?: BandUserPublicId[];
     taggedSongIds?: SongPublicId[];
     taggedEventIds?: EventPublicId[];
-    taggedInstrumentIds?: number[];
+    taggedInstrumentIds?: InstrumentPublicId[];
     taggedWikiPageIds?: WikiPagePublicId[];
 };
 

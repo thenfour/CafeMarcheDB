@@ -44,10 +44,66 @@ afterEach(async () => {
 });
 
 describe("deferred file creation controls", () => {
+    it("uploads dropped files and HTTP URLs, while blocking busy and disabled drops", async () => {
+        const onFileSelect = vi.fn();
+        const onURLUpload = vi.fn();
+        const render = async (enabled: boolean, progress: number | null) => act(async () => root.render(
+            <FileDropWrapper enabled={enabled} onFileSelect={onFileSelect} onURLUpload={onURLUpload} progress={progress}><span>Files</span></FileDropWrapper>));
+        const drop = (url: string, files: File[] = []) => {
+            const event = new Event("drop", { bubbles: true, cancelable: true });
+            Object.defineProperty(event, "dataTransfer", { value: { files, getData: () => url } });
+            container.querySelector("span")!.dispatchEvent(event);
+            return event;
+        };
+        await render(true, null);
+        drop("https://example.com/song.wav");
+        expect(onURLUpload).toHaveBeenCalledWith("https://example.com/song.wav");
+        drop("file:///private");
+        expect(onURLUpload).toHaveBeenCalledOnce();
+        drop("", [new File(["score"], "score.pdf")]);
+        expect(onFileSelect).toHaveBeenCalledOnce();
+        await render(true, 0);
+        expect(container.querySelector('[role="status"]')).not.toBeNull();
+        expect(drop("https://example.com").defaultPrevented).toBe(true);
+        await render(false, null);
+        drop("", [new File(["score"], "score.pdf")]);
+        expect(onFileSelect).toHaveBeenCalledOnce();
+        expect(onURLUpload).toHaveBeenCalledOnce();
+    });
+
+    it("supports paste and selection while preserving text editing and zero-progress busy state", async () => {
+        const onFileSelect = vi.fn();
+        const onURLUpload = vi.fn();
+        const render = async (progress: number | null) => act(async () => root.render(<>
+            <UploadFileComponent enabled onFileSelect={onFileSelect} onURLUpload={onURLUpload} progress={progress} />
+            <textarea defaultValue="Draft" />
+        </>));
+        const paste = (target: EventTarget, text: string, files: File[] = []) => {
+            const event = new Event("paste", { bubbles: true, cancelable: true });
+            Object.defineProperty(event, "clipboardData", { value: { files, getData: () => text } });
+            target.dispatchEvent(event);
+            return event;
+        };
+        await render(null);
+        expect(paste(document, "ordinary text").defaultPrevented).toBe(false);
+        expect(paste(container.querySelector("textarea")!, "https://example.com").defaultPrevented).toBe(false);
+        expect(paste(document, "https://example.com").defaultPrevented).toBe(true);
+        expect(onURLUpload).toHaveBeenCalledWith("https://example.com/");
+        paste(document, "", [new File(["audio"], "recording.wav")]);
+        expect(onFileSelect).toHaveBeenCalledOnce();
+        const input = container.querySelector('input[type="file"]')!;
+        Object.defineProperty(input, "files", { value: [new File(["score"], "score.pdf")] });
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+        expect(onFileSelect).toHaveBeenCalledTimes(2);
+        await render(0);
+        expect(container.querySelector("button")?.disabled).toBe(true);
+        expect(paste(document, "https://example.com").defaultPrevented).toBe(false);
+        expect(onURLUpload).toHaveBeenCalledOnce();
+    });
     it.each([UploadFileComponent, CollapsableUploadFileComponent])("renders a localized notice without file inputs, buttons or paste interception", async Component => {
         const onFileSelect = vi.fn();
         const onURLUpload = vi.fn();
-        await act(async () => root.render(<Component onFileSelect={onFileSelect} onURLUpload={onURLUpload} progress={0.5} enablePaste />));
+        await act(async () => root.render(<Component enabled={false} onFileSelect={onFileSelect} onURLUpload={onURLUpload} progress={0.5} enablePaste />));
         expect(container.querySelector('[role="alert"]')?.textContent).toContain("en: File uploads and image creation are temporarily unavailable");
         expect(container.querySelectorAll("input, button, progress")).toHaveLength(0);
         const paste = new Event("paste", { bubbles: true, cancelable: true });
@@ -56,14 +112,14 @@ describe("deferred file creation controls", () => {
         expect(onFileSelect).not.toHaveBeenCalled();
         expect(onURLUpload).not.toHaveBeenCalled();
         language = "fr-BE";
-        await act(async () => root.render(<Component onFileSelect={onFileSelect} progress={null} />));
+        await act(async () => root.render(<Component enabled={false} onFileSelect={onFileSelect} progress={null} />));
         expect(container.querySelector('[role="alert"]')?.textContent).toMatch(/^fr-BE:/);
     });
 
     it("preserves child content and prevents file/URL drops from navigating or invoking uploads", async () => {
         const onFileSelect = vi.fn();
         const onURLUpload = vi.fn();
-        await act(async () => root.render(<FileDropWrapper onFileSelect={onFileSelect} onURLUpload={onURLUpload} progress={null}>
+        await act(async () => root.render(<FileDropWrapper enabled={false} onFileSelect={onFileSelect} onURLUpload={onURLUpload} progress={null}>
             <textarea defaultValue="Unsaved content" />
         </FileDropWrapper>));
         for (const type of ["dragover", "drop"]) {

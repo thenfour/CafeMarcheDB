@@ -579,6 +579,11 @@ describe("instrument catalog public-ID transport", () => {
         )).resolves.toEqual([]);
         expect(findMany).toHaveBeenCalledOnce();
 
+        const unreadable = testBandAuthorization({ id: 100 }, new ServerPermissionSet([]));
+        await expect(resolvePublicIds(db3.xSong, [], unreadable, database)).resolves.toEqual([]);
+        await expect(resolvePublicIds(db3.xSong, [songPublicId], unreadable, database)).rejects.toThrow("Song was not found.");
+        expect(findMany).toHaveBeenCalledOnce();
+
         findMany.mockResolvedValueOnce([]);
         await expect(resolvePublicIds(
             db3.xSongTag,

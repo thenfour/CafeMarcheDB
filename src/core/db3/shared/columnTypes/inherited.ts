@@ -139,9 +139,9 @@ export function inheritedField<TField extends AnyDB3Field>(field: TField): Inher
     return new InheritedField(field);
 }
 
-export function serverOwnedField<TField extends AnyDB3Field>(field: TField): TField {
+export function serverOwnedField<TField extends AnyDB3Field>(field: TField): TField & { readonly serverOwned: true } {
     field.ApplyToNewRow = () => { };
-    return field;
+    return Object.assign(field, { serverOwned: true as const });
 }
 
 /** A global source is a read dependency, never an editable relation or an unfiltered global DTO. */

@@ -20,7 +20,7 @@ type Segment = Omit<SegmentDb, "statusId"> & {
 };
 
 export interface EventAttendanceResult {
-    eventUserResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>;
+    eventUserResponse: null | db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>;
     segmentUserResponses: db3.EventSegmentUserResponse<db3.EventResponses_MinimalEventSegment, db3.EventResponses_MinimalEventSegmentUserResponse>[];
     uncancelledSegmentUserResponses: db3.EventSegmentUserResponse<db3.EventResponses_MinimalEventSegment, db3.EventResponses_MinimalEventSegmentUserResponse>[];
 
@@ -107,7 +107,7 @@ export const calculateEventAttendance = (props: EventAttendanceCalculationInput)
     };
 
 
-    ret.isInvited = ret.eventUserResponse.isInvited;
+    ret.isInvited = ret.eventUserResponse?.isInvited ?? false;
     ret.isSingleSegment = uncancelledSegments.length === 1;// ret.segmentUserResponses.length === 1;
 
     ret.allAttendances = ret.segmentUserResponses

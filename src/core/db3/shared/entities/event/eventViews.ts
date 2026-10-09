@@ -708,6 +708,24 @@ export const eventSearchView = defineView({
     },
 });
 
+const eventReferenceContract = deriveViewContract(xEvent,
+    Prisma.validator<Prisma.EventDefaultArgs>()({
+        select: {
+            publicId: true,
+            name: true,
+            startsAt: true,
+            statusId: true,
+            typeId: true
+        },
+    }));
+export const eventReferenceView = defineView({
+    viewID: "Event_Reference",
+    entity: xEvent,
+    selection: eventReferenceContract.prismaSelection,
+    dtoSchema: eventReferenceContract.dtoSchema,
+    hydrate: eventReferenceContract.hydrate,
+});
+
 const eventWikiPageContextTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
     select: {
         publicId: true,

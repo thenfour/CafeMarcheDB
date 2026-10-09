@@ -168,17 +168,23 @@ export interface CalcEventAttendanceArgs {
 
 export { type EventAttendanceResult } from "./attendanceCalculation";
 
-// Production context adapter; the calculation itself has no React dependencies.
+// calculation itself has no React dependencies.
 export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttendanceResult => {
     const dashboardContext = props.dashboardContext;
     const user = props.userMap.find(participant => participant.publicId === dashboardContext.currentUser?.publicId);
-    assert(!!user, "Attendance requires an active participant in the selected band");
+
+    // Q: why is user needed here?
+    //assert(!!user, `Attendance requires an active participant in the selected band; current user: ${dashboardContext.currentUser?.publicId}`);
     if (!props.eventData.responseInfo) throw new Error("no response info");
-    const eventUserResponse = props.eventData.responseInfo.getEventResponseForUser(user, dashboardContext, props.userMap);
-    assert(!!eventUserResponse, "getEventResponseForUser should always return an event response");
+
+    const hasUser = !!user;
+    const eventUserResponse = hasUser ? props.eventData.responseInfo.getEventResponseForUser(user, dashboardContext, props.userMap) : null;
+
+    //assert(!!eventUserResponse, "getEventResponseForUser should always return an event response");
     return calculateEventAttendance({
         eventUserResponse,
-        segmentUserResponses: Object.values(props.eventData.responseInfo.getResponsesBySegmentForUser(user)),
+        segmentUserResponses: hasUser ? Object.values(props.eventData.responseInfo.getResponsesBySegmentForUser(user)) : [],
+
         segments: props.eventData.event.segments,
         eventTiming: props.eventData.eventTiming,
         eventIsCancelled: props.eventData.event.status?.significance === db3.EventStatusSignificance.Cancelled,

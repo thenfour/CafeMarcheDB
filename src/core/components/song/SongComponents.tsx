@@ -628,7 +628,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 <AppContextMarker name="partitions tab" songId={song.publicId}>
                     <FilesTabContent
                         fileTags={fileInfo.partitions}
-                        readonly={true}
+                        readonly={props.readonly}
                         refetch={refetch}
                         uploadTags={{
                             taggedSongId: song.publicId,
@@ -652,7 +652,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 <AppContextMarker name="recordings tab" songId={song.publicId}>
                     <FilesTabContent
                         fileTags={fileInfo.recordings}
-                        readonly={true}
+                        readonly={props.readonly}
                         refetch={refetch}
                         uploadTags={{
                             taggedSongId: song.publicId,
@@ -676,7 +676,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 <AppContextMarker name="all files tab" songId={song.publicId}>
                     <FilesTabContent
                         fileTags={fileInfo.enrichedFiles}
-                        readonly={true}
+                        readonly={props.readonly}
                         refetch={refetch}
                         uploadTags={{
                             taggedSongId: song.publicId,

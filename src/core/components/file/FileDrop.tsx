@@ -1,38 +1,124 @@
 import React from "react";
+import { useLocale } from "src/locale/components/useLocale";
+import { CircularProgressWithLabel, CMButton } from "../CMCoreComponents2";
 import { DeferredFileCreationNotice } from "./FileCreationRecoveryControls";
 
 interface FileDropWrapperProps {
+    enabled: boolean;
     className?: string;
     onFileSelect: (files: FileList) => void;
     onURLUpload: (url: string) => void;
     progress: number | null;
 }
 
-function preventDeferredDrop(event: React.DragEvent<HTMLDivElement>): void {
-    // Keep dropping a local file from navigating away from unsaved content.
+function preventDropNavigation(event: React.DragEvent<HTMLDivElement>): void {
     event.preventDefault();
     event.stopPropagation();
 }
 
 export function FileDropWrapper(props: React.PropsWithChildren<FileDropWrapperProps>) {
-    return <div className={`${props.className ?? ""} fileDropWrapper`} onDragOver={preventDeferredDrop} onDrop={preventDeferredDrop}>
+    const [dragging, setDragging] = React.useState(false);
+    const { getPlainString } = useLocale();
+    const available = props.enabled && props.progress === null;
+    return <div className={`${props.className ?? ""} fileDropWrapper ${dragging ? "dragging" : "notDragging"}`}
+        onDragEnter={event => { preventDropNavigation(event); setDragging(available); }}
+        onDragOver={preventDropNavigation}
+        onDragLeave={event => { preventDropNavigation(event); setDragging(false); }}
+        onDrop={event => {
+            preventDropNavigation(event);
+            setDragging(false);
+            if (!available) {
+                return;
+            }
+            if (event.dataTransfer.files.length > 0) {
+                props.onFileSelect(event.dataTransfer.files);
+                return;
+            }
+            const url = externalURL(event.dataTransfer.getData("text/uri-list") || event.dataTransfer.getData("text/plain"));
+            if (url) {
+                props.onURLUpload(url);
+            }
+        }}>
+        {dragging && <div className="dragOverlay">{getPlainString("files.drop")}</div>}
+        {props.progress !== null && props.enabled && <div className="uploadProgress" role="status">
+            <CircularProgressWithLabel variant="determinate" value={100 * props.progress} />
+        </div>}
         {props.children}
     </div>;
 }
 
 interface UploadFileComponentProps {
+    enabled: boolean;
     onFileSelect: (files: FileList) => void;
     onURLUpload?: (url: string) => void;
     progress: number | null;
     enablePaste?: boolean;
 }
 
-export function UploadFileComponent(_props: UploadFileComponentProps) {
-    return <DeferredFileCreationNotice />;
+function externalURL(text: string): string | null {
+    try {
+        const url = new URL(text.trim());
+        return ["https:", "http:"].includes(url.protocol) ? url.href : null;
+    } catch {
+        return null;
+    }
 }
 
-export function CollapsableUploadFileComponent(_props: UploadFileComponentProps) {
-    return <DeferredFileCreationNotice />;
+export function UploadFileComponent(props: UploadFileComponentProps) {
+    const input = React.useRef<HTMLInputElement>(null);
+    const { getPlainString } = useLocale();
+    const available = props.enabled && props.progress === null;
+    React.useEffect(() => {
+        if (!available || props.enablePaste === false) {
+            return;
+        }
+        const paste = (event: ClipboardEvent) => {
+            // Preserve ordinary editing in inputs and rich text editors.
+            if (event.target instanceof Element && event.target.closest('input, textarea, [contenteditable="true"]')) {
+                return;
+            }
+            const data = event.clipboardData;
+            if (!data) {
+                return;
+            }
+            if (data.files.length > 0) {
+                event.preventDefault();
+                props.onFileSelect(data.files);
+                return;
+            }
+            const url = externalURL(data.getData("text/plain"));
+            if (url && props.onURLUpload) {
+                event.preventDefault();
+                props.onURLUpload(url);
+            }
+        };
+        document.addEventListener("paste", paste);
+        return () => document.removeEventListener("paste", paste);
+    }, [available, props.enablePaste, props.onFileSelect, props.onURLUpload]);
+    if (!props.enabled) {
+        return <DeferredFileCreationNotice />;
+    }
+    return <div className="UploadFileComponentContainer">
+        <input ref={input} type="file" multiple hidden disabled={!available} onChange={event => {
+            if (available && event.currentTarget.files?.length) {
+                props.onFileSelect(event.currentTarget.files);
+            }
+            event.currentTarget.value = "";
+        }} />
+        <CMButton disabled={!available} onClick={() => input.current?.click()}>{getPlainString("files.choose")}</CMButton>
+        <p>{getPlainString("files.uploadInstructions")}</p>
+    </div>;
+}
+
+export function CollapsableUploadFileComponent(props: UploadFileComponentProps) {
+    const [open, setOpen] = React.useState(false);
+    const { getPlainString } = useLocale();
+    if (!props.enabled) {
+        return <DeferredFileCreationNotice />;
+    }
+    return open ? <div><UploadFileComponent {...props} />
+        <CMButton onClick={() => setOpen(false)}>{getPlainString("common.action.cancel")}</CMButton></div>
+        : <CMButton onClick={() => setOpen(true)}>{getPlainString("files.upload")}</CMButton>;
 }
 
 // MIGRATION_RESTORE: file-creation

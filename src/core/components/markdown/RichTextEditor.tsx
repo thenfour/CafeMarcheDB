@@ -62,6 +62,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     return (<div className="FileUploadWrapperContainer">
         <QuickSearchRecoveryNotice />
         <FileDropWrapper
+            enabled={false}
             className="frontpageGalleryFileUploadWrapper"
             onFileSelect={props.onFileSelect}
             onURLUpload={() => { }}
@@ -108,6 +109,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                 }}
             />
             {(props.displayUploadFileComponent) && <CollapsableUploadFileComponent
+                enabled={false}
                 onFileSelect={props.onFileSelect}
                 enablePaste={false} // because paste is handled inline in the textarea.
                 progress={props.uploadProgress}

@@ -27,7 +27,7 @@ profile behavior is only a subset: reference filters, presets, contact-search
 policy, exports and profile tabs remain A1 work.
 
 Song credit editing, general File workflows, remaining domain/quick/shell search,
-publication, uploads and several reports/admin surfaces remain guarded or
+publication, image creation and several reports/admin surfaces remain guarded or
 incomplete. The
 [restoration manifest](feature-restoration.json) records the individual obligations
 and verification criteria; use `yarn migration:status` rather than maintaining a
@@ -70,7 +70,7 @@ the migrated response owners. The person picker now selects band memberships,
 rather than querying shared accounts. Setlist contents and recording playback
 use independently authorized Song/File reads. The Song checkpoint below restores
 setlist editing through the existing commands and nested ownership declarations.
-Event Files retains its viewer while upload/metadata actions remain unavailable.
+Event Files now also uses the associated File editors and uploads described below.
 Dialog help keys and draft tag associations were repaired so the original
 editors can open.
 
@@ -106,15 +106,43 @@ association selects, Markdown suggestions and shell search remain pending. Only
 localized catalog-name text predicates, including quick-search tag names, follow
 the A1 exception; authored text and identity-based filters remain active.
 
-## Next slice: associated File workflows
+## Associated File metadata and uploads checkpoint
 
-Trace the reference File metadata/association and upload path used by Songs and
-Events. Adapt shared File/association declarations and existing owners for band
-membership/instrument references, fresh authorization and localized catalogs;
-retain previews, downloads and playback. Restore original metadata/association
-controls, then multipart/external-URL creation and storage cleanup through their
-existing transactions. Keep remaining credit-picker, File search and image
-processing dependencies explicit rather than reopening unfinished roots.
+The original Song/Event File tabs now expose their existing metadata, visibility,
+association and soft-delete controls with uploader/manage/admin field permissions.
+All six File association declarations inherit ownership and privacy from the File.
+Direct association insertion and reparenting also require permission on their
+owning File. Member references use BandUser public identities; instrument/catalog
+labels use the existing localized band reference views. Narrow Song/Event option
+views avoid pulling full editor payloads into association selection.
+
+Multipart and external HTTP/HTTPS uploads require explicit band context and fresh
+transactional upload permission. The server supplies storage identity, uploader,
+size and MIME/image metadata. Client metadata and natural references are rejected.
+The existing Recording/Partition and instrument regex assignment uses visible,
+resolved band catalogs. Local images support metadata extraction and the existing
+maximum-dimension resize option. A failed batch or commit rolls back File rows,
+associations and audits and removes every copied file; the HTTP owner removes its
+private staging directory on success or failure. Limits are 20 files and 200 MB
+per file/batch, with bounded multipart fields.
+
+The existing selection/drop/paste controls retain read-only/permission boundaries,
+block overlapping uploads at zero progress, and preserve ordinary input/text paste.
+Failed uploads clear progress; failed metadata saves retain the draft. Downloads,
+previews, playback and recording pin/unpin retain independent File authorization.
+Soft deletion keeps storage for recovery while denying ordinary reads/downloads.
+
+General File pages/search, image fork/crop/rotate/gallery bake, and uploads from
+Markdown/profile/brand/gallery callers remain pending. Their guards and source
+archives remain intact. This checkpoint does not close File parity or A1.
+
+## Next slice: general File pages and search
+
+Restore the reference File search and detail/metadata pages using their existing
+search pipeline and the now-authorized File/association declarations. Retain
+filter operators/facets, paging, sorting, URL state and exports, with contextual
+links and two-band snapshot privacy. Keep image creation and remaining upload
+callers explicit until their owning workflows are adapted and verified.
 
 ## Localized catalog text search exception
 
@@ -229,10 +257,33 @@ second-band ordinary-member controls/foreign-Song 404s. No uncaught browser or
 RPC errors occurred; temporary edits and created rows are cleaned up. Unused
 setting-renderer imports found by the normal build were removed.
 
+The associated File checkpoint (2026-10-09) passes 152 focused checks across six
+files and 211 native MariaDB checks across 12 files, including the existing
+Song/Event/setlist checks. Upload cases cover local/URL creation, public
+associations, inherited automatic tags, image metadata/resizing, fresh revocation
+and rollback of database/audit/storage after missing parts, invalid image
+processing and failed commit. Empty association lists require no unrelated target read grant; independent band
+roles retain upload permission when the first band revokes it. Parent edit
+authorization also covers direct child
+insertion and reparenting. Normal typecheck/build, isolated demo build, focused
+lint and preservation verification pass. Formidable/MIME development typings
+were added. Obsolete deferred-upload assertions and manual projection fixtures
+were adapted; every archived source and deferred specification remains intact.
+
+Six built-browser assertion groups pass: File metadata saves, multipart PDF/audio
+uploads with automatic tags and protected downloads, external Event links and
+foreign/forged request rejection, real 21-file limit/staging cleanup, soft deletion
+and download denial, and ordinary second-band own-file/member-association edits
+with admin fields unavailable. No uncaught page/RPC errors occurred. Temporary
+rows, metadata edits, audits and stored files were cleaned up. Selection/drop/
+paste and busy/read-only controls are also covered by isolated jsdom tests.
+
 The complete-suite run still reports 209 failed tests and ten suite-load failures,
 including unscoped authorization/account/setlist fixtures, deferred-domain and
 date-policy contracts; the runner stops before the later jsdom batches. Focused
-passes do not establish A1 readiness. Earlier built-browser member/profile/wiki/
+passes do not establish A1 readiness. The latest run passes 1739 tests and skips
+400; its 209 failed tests and ten suite-load failure labels match the previous
+Song checkpoint exactly. Earlier built-browser member/profile/wiki/
 download checks remain recorded evidence, not workflows rerun by these slices.
 
 The [development seeder](../development-seeding.md) restores the pre-migration

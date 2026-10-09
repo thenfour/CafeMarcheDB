@@ -1154,6 +1154,7 @@ describe("DB3 named views", () => {
                         id: 90,
                         publicId: fileTagAssignmentPublicId,
                         bandFileTagId: 30,
+                        file: { publicId: filePublicId(8), bandId: 1, uploadedByUserId: 100, visiblePermissionId: null, isDeleted: false },
                         bandFileTag: { publicId: fileTagPublicId, bandId: 1 },
                     }],
                 },
@@ -1342,11 +1343,13 @@ describe("DB3 named views", () => {
                         id: 90,
                         publicId: fileTagAssignmentPublicId,
                         bandFileTagId: 30,
+                        file: { publicId: filePublicId(8), bandId: 1, uploadedByUserId: 100, visiblePermissionId: 3, isDeleted: false },
                         bandFileTag: { publicId: fileTagPublicId, bandId: 1 },
                     }],
                     taggedUsers: [],
                     taggedSongs: [{
                         id: 91,
+                        file: { publicId: filePublicId(8), bandId: 1, uploadedByUserId: 100, visiblePermissionId: 3, isDeleted: false },
                         publicId: fileSongTagPublicId,
                         songId: 9,
                         song: {

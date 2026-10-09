@@ -33,11 +33,16 @@ export async function resolvePublicIds(
     if (!table.publicIdMember || publicIds.some(publicId => !isPublicId(publicId))) {
         throw new DB3PublicIdError(`Invalid public ID for ${table.tableID}.`);
     }
+
+    // make distinct set. do this before table-level auth, because an empty set
+    // doesn't require authorization (todo: why? what cases motivate that?)
+    const uniquePublicIds = [...new Set(publicIds.filter(isPublicId))];
+    if (uniquePublicIds.length === 0) {
+        return [];
+    }
     if (!table.authorizeTableForView(auth)) {
         throw new DB3PublicIdError(`${table.tableID} was not found.`);
     }
-    const uniquePublicIds = [...new Set(publicIds.filter(isPublicId))];
-    if (uniquePublicIds.length === 0) return [];
 
     const where = table.CalculateWhereClause({
         filterModel: { publicIds: uniquePublicIds, tableParams: visibility.includeHidden ? { includeHidden: true } : {} },

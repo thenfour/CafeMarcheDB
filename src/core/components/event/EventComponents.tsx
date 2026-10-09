@@ -1156,7 +1156,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
                     }
                     }
                     refetch={refetch}
-                    readonly={true}
+                    readonly={props.readonly}
                     contextEvent={event}
                 />
             </AppContextMarker>

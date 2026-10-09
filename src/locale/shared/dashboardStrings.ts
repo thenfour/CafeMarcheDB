@@ -3,6 +3,10 @@ import { plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 
 const label = (defaultValue: string) => plainStaticString({ defaultValue, description: "Dashboard recovery interface", schema: z.string() });
 export const dashboardStrings = {
+    "files.upload": label("Upload"),
+    "files.choose": label("Choose files"),
+    "files.drop": label("Drop files here"),
+    "files.uploadInstructions": label("Choose or drop files, or paste files or an external URL here."),
     "events.selectBand": label("Select a band to search its events."),
     "events.detailUnavailable": label("No event was found. It may have been deleted or you may no longer have permission to view it."),
     "songs.detailUnavailable": label("No song was found. It may have been deleted or you may no longer have permission to view it."),

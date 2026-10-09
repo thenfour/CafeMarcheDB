@@ -92,7 +92,7 @@ describe.skipIf(!settingsMysqlTestUrl)("File association payloads on MariaDB", (
             tx.file.findUniqueOrThrow({ ...fileEditorSelection, where: { id: seed.file.id } }),
         ]);
         for (const row of rows) {
-            // This tests payload conversion only; general File row authorization remains disabled.
+            // Raw Prisma selections here exercise conversion independently of the DB3 query planner.
             const projected = projectDB3ModelPublicIds(xFile, row, auth);
             expect(projected.taggedInstruments).toMatchObject([{ bandInstrumentId: seed.instrument.publicId }]);
             expect(projected.taggedInstruments[0]).not.toHaveProperty("instrumentId");
@@ -146,7 +146,7 @@ describe.skipIf(!settingsMysqlTestUrl)("File association payloads on MariaDB", (
         expect(memberships.size).toBe(2);
     }));
 
-    it("keeps undeclared File queries and row writes guarded for members and platform administrators", () => withFixture(async (tx, fixture) => {
+    it("requires owned creation and edit permissions for members and platform administrators", () => withFixture(async (tx, fixture) => {
         const [seed] = await seedFileAssociations(tx, fixture);
         if (!seed) {
             throw new Error("File fixture was not created.");
@@ -154,12 +154,18 @@ describe.skipIf(!settingsMysqlTestUrl)("File association payloads on MariaDB", (
         for (const actor of [fixture.user, fixture.admin]) {
             const auth = await loadAuthorizationForUser(actor, tx, parsePublicId<"Band">(seed.band.publicId));
             const snapshot = await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" });
-            await expect(queryView({ view: fileDetailView, filter: {}, cmdbQueryContext: "deferred File payload" }, auth, snapshot)).rejects.toThrow();
+            const visible = await queryView({ view: fileDetailView, filter: {}, cmdbQueryContext: "File payload" }, auth, snapshot);
+            // A null visibility remains private to the uploader, including for platform admins.
+            expect(visible.items.map(item => item.publicId)).toEqual(actor === fixture.user ? [seed.file.publicId] : []);
             const rows = createCommandRowServices(auth, tx);
             await expect(rows.insert(xFile, {})).rejects.toThrow();
-            await expect(rows.update(xFile, parsePublicId<"File">(seed.file.publicId), { description: "unauthorized change" })).rejects.toThrow();
-            expect(await tx.file.findUniqueOrThrow({ where: { id: seed.file.id } })).toMatchObject({ description: "" });
+            if (actor === fixture.user) {
+                await rows.update(xFile, parsePublicId<"File">(seed.file.publicId), { description: "Authorized change" });
+            } else {
+                await expect(rows.update(xFile, parsePublicId<"File">(seed.file.publicId), { description: "Private change" })).rejects.toThrow();
+            }
+            expect(await tx.file.findUniqueOrThrow({ where: { id: seed.file.id } })).toMatchObject({ description: "Authorized change" });
         }
-        expect(await tx.change.count({ where: { userId: fixture.user.id } })).toBe(0);
+        expect(await tx.change.count({ where: { userId: fixture.user.id } })).toBeGreaterThan(0);
     }));
 });

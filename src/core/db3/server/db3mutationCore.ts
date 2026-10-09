@@ -10,7 +10,6 @@ import db, { Prisma } from "db";
 import { ComputeChangePlan, getIntersectingFields } from "shared/associationUtils";
 import { ObjectDiff } from "shared/utils";
 import path from "node:path";
-import { requireRestoredApplicationFeature } from "src/core/shared/applicationRecovery";
 import { z } from "zod";
 import * as db3 from "../db3";
 import { CMDBTableFilterModel, TransactionalPrismaClient } from "../shared/apiTypes";
@@ -37,6 +36,30 @@ function requireMutationScope(table: db3.xTable, auth: CMServerAuthorization): v
     }
     if (table.bandScope) {
         auth.requireBand();
+    }
+}
+
+// Child mutations must also be allowed on their declared ownership parent, including reparenting.
+async function requireOwnershipParentEdit(table: db3.xTable, fields: TAnyModel,
+    auth: CMServerAuthorization, database: TransactionalPrismaClient,
+): Promise<void> {
+    const parent = table.getBandOwnershipParent();
+    if (!parent) {
+        return;
+    }
+    const field = table.getColumn(parent.relation);
+    const identity = field?.fkidMember ? fields[field.fkidMember] : undefined;
+    if (identity === undefined) {
+        return;
+    }
+    const model = await database[parent.table.tableName].findFirst({
+        ...prepareDB3ReadSelection(parent.table, {}).selection,
+        where: { [parent.table.pkMember]: identity },
+    });
+    if (!model || parent.table.getBandId(model) !== auth.requireBand().id
+        || !parent.table.authorizeRowForView({ auth, model })
+        || !parent.table.authorizeRowForEdit({ auth, model })) {
+        throw new DB3MutationAuthorizationError(table.tableName, [parent.relation]);
     }
 }
 
@@ -491,11 +514,20 @@ export const deleteImpl = async (table: db3.xTable, id: number, auth: CMServerAu
 };
 
 // INSERT ////////////////////////////////////////////////
+export interface DB3ServerInsertDependencies {
+    readonly inheritedSourceId?: number;
+
+    // for entities with "serverInsertOnly", these are the server-supplied fields.
+    readonly serverOwnedFields?: Readonly<Record<string, unknown>>;
+}
+
 export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAnyModel, auth: CMServerAuthorization,
-    transactionalDb: TransactionalPrismaClient = db as any, dependencies?: { readonly inheritedSourceId: number },
+    transactionalDb: TransactionalPrismaClient = db as any, dependencies?: DB3ServerInsertDependencies,
 ): Promise<TReturnPayload> => {
-    if (table.tableName.toLowerCase() === "file") {
-        requireRestoredApplicationFeature("fileCreation");
+    if (table.serverInsertOnly && !dependencies?.serverOwnedFields) {
+        // if an entity explicitly requires server-owned fields,
+        // then the server caller must provide them.
+        throw new DB3MutationAuthorizationError(table.tableName, ["creation"]);
     }
     requireNonSettingMutation(table.tableName);
     requireMutationScope(table, auth);
@@ -505,6 +537,15 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         const dbTableClient = transactionalDb[table.tableName]; // the prisma interface
         if (!table.authorizeRowBeforeInsert({ auth })) {
             throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
+        }
+        await requireOwnershipParentEdit(table, fields, auth, transactionalDb);
+
+        const serverFieldsFromClient = table.serverInsertOnly ? Object.keys(fields).filter(member => {
+            const field = table.getColumnForAuthorization(member);
+            return field && "serverOwned" in field;
+        }) : [];
+        if (serverFieldsFromClient.length > 0) {
+            throw new DB3MutationAuthorizationError(table.tableName, serverFieldsFromClient);
         }
 
         // converts serialized -> client, but not perfect. because ForeignSingle fields come through with an ID-only, but client payload wants the object not ID.
@@ -519,6 +560,15 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         }
 
         const dbModel = table.clientToDbModel(validateResult.successfulModel, "new");
+
+        // Legacy creator codecs add the current user during conversion. The server sets
+        // these declared dependencies after client authorization, alongside band ownership.
+        for (const member of table.serverInsertOnly ? Object.keys(dbModel) : []) {
+            const field = table.getColumnForAuthorization(member);
+            if (field && "serverOwned" in field) {
+                delete dbModel[member];
+            }
+        }
 
         const proposedMutationFields = db3.separateMutationValues({ table, fields: dbModel });
         const proposedModel = {
@@ -557,7 +607,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
 
             //await requireUnmergedMutationUsers(transactionalDb, table, { ...authorizedLocalFields, ...authorizedAssociationFields });
             authorizedLocalFields = await prepareDB3FieldWrites(table, authorizedLocalFields, null, auth, transactionalDb);
-            if (dependencies) {
+            if (dependencies?.inheritedSourceId !== undefined) {
                 if (!table.bandScope?.inheritedSourceMember) {
                     throw new Error("The table does not declare an inherited source identity.");
                 }
@@ -567,6 +617,13 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
                         authorizedLocalFields[field.member] = null;
                     }
                 }
+            }
+            for (const [member, value] of Object.entries(dependencies?.serverOwnedFields ?? {})) {
+                const field = table.getColumn(member);
+                if (!field || !("serverOwned" in field) || field.fkidMember) {
+                    throw new Error(`Server insert dependency is not a declared scalar: ${table.tableID}.${member}.`);
+                }
+                authorizedLocalFields[member] = (field.writeTransportSchema ?? field.getReadTransportSchema()).parse(value);
             }
             obj = await createDB3Row(table, dbTableClient, authorizedLocalFields);
 
@@ -655,6 +712,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         if (table.bandScope) {
             auth.requireBandResource(Number(table.getBandId(fullOldObj)));
         }
+        await requireOwnershipParentEdit(table, fields, auth, transactionalDb);
 
         const isDeletedColumn = table.SqlSpecialColumns.isDeleted;
         if (isDeletedColumn && fullOldObj[isDeletedColumn.member] === true) {

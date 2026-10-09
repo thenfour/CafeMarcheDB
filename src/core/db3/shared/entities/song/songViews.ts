@@ -1,4 +1,5 @@
 import { Prisma } from "db";
+
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
@@ -24,6 +25,21 @@ function compareResolvedSongTags(a: { tag: SongTagClientPayload }, b: { tag: Son
 }
 
 export { songCreditTypeEditorSelection, songCreditTypeEditorView } from "./songCreditTypes";
+
+const songReferenceSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
+    select: {
+        publicId: true,
+        name: true
+    }
+});
+const songReferenceContract = deriveViewContract(xSong, songReferenceSelection);
+export const songReferenceView = defineView({
+    viewID: "Song_Reference",
+    entity: xSong,
+    selection: songReferenceContract.prismaSelection,
+    dtoSchema: songReferenceContract.dtoSchema,
+    hydrate: songReferenceContract.hydrate,
+});
 
 export const songCreditEditorSelection = Prisma.validator<Prisma.SongCreditDefaultArgs>()({
     select: {

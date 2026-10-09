@@ -69,10 +69,8 @@ const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeFieldInp
         return args.auth.hasPermission(Permission.view_files);
     }
     if (args.rowMode === "new") {
-        // for now, "trusted code" is assumed.
-        // this is safe because this function is called by the server before mutation occurs.
-        // unit test coverage verifies this
-        return args.auth.hasPermission(Permission.upload_files);
+        // The upload service supplies storage metadata after authorizing the client fields.
+        return false;
     }
     return false; // by default, server-owned fields are not authorized for mutation
 };
@@ -85,8 +83,12 @@ export const xBandFileTagAssignment = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.BandFileTagAssignmentDelegate>(),
     getIdentity: (association: { publicId: FileTagAssignmentPublicId }) => association.publicId,
     tableName: "bandFileTagAssignment",
+    bandScope: {
+        inheritsBandFrom: "file",
+        managePermission: Permission.manage_files
+    },
+    readConsistency: "snapshot",
     tableUniqueName: "BandFileTagAssignment",
-    // File ownership is still deferred; selected-band row services reject this undeclared policy.
     deletePolicy: "hard",
     naturalOrderBy: BandFileTagAssignmentNaturalOrderBy,
     tableAuthMap: xFileTableAuth_FileObjects,
@@ -111,10 +113,12 @@ export const xBandFileTagAssignment = db3.defineTable({
         publicId: () => MakePublicIdField<FileTagAssignmentPublicId>(),
         file: foreignRefByTableId("File", {
             fkidMember: "fileId",
+            requireVisibleTarget: true,
             authMap: xFileAuthMap_FileObjects,
         }),
         bandFileTag: foreignRef(() => xBandFileTag, {
             fkidMember: "bandFileTagId",
+            requireVisibleTarget: true,
             authMap: xFileAuthMap_FileObjects,
         }),
     })
@@ -146,6 +150,8 @@ export const xFileUserTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileUserTagDelegate>(),
     getIdentity: (association: { publicId: FileUserTagPublicId }) => association.publicId,
     tableName: "FileUserTag",
+    bandScope: { inheritsBandFrom: "file", managePermission: Permission.manage_files },
+    readConsistency: "snapshot",
     deletePolicy: "hard",
     naturalOrderBy: FileUserTagNaturalOrderBy,
     tableAuthMap: xFileTableAuth_FileObjects,
@@ -162,8 +168,14 @@ export const xFileUserTag = db3.defineTable({
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<FileUserTagPublicId>(),
+        file: foreignRefByTableId("File", {
+            fkidMember: "fileId",
+            requireVisibleTarget: true,
+            authMap: xFileAuthMap_FileObjects,
+        }),
         bandUser: foreignRef(() => xBandUser, {
             fkidMember: "bandUserId",
+            requireVisibleTarget: true,
             authMap: xFileAuthMap_FileObjects,
         }),
     })
@@ -193,6 +205,11 @@ export const xFileSongTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileSongTagDelegate>(),
     getIdentity: (association: { publicId: FileSongTagPublicId }) => association.publicId,
     tableName: "FileSongTag",
+    bandScope: {
+        inheritsBandFrom: "file",
+        managePermission: Permission.manage_files
+    },
+    readConsistency: "snapshot",
     deletePolicy: "hard",
     naturalOrderBy: FileSongTagNaturalOrderBy,
     tableAuthMap: xFileTableAuth_FileObjects,
@@ -211,10 +228,12 @@ export const xFileSongTag = db3.defineTable({
         publicId: () => MakePublicIdField<FileSongTagPublicId>(),
         file: foreignRef(() => xFile, {
             fkidMember: "fileId",
+            requireVisibleTarget: true,
             authMap: xFileAuthMap_FileObjects,
         }),
         song: foreignRef(() => xSong, {
             fkidMember: "songId",
+            requireVisibleTarget: true,
             authMap: xFileAuthMap_FileObjects,
         }),
     })
@@ -239,6 +258,11 @@ export const xFileEventTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileEventTagDelegate>(),
     getIdentity: (association: { publicId: FileEventTagPublicId }) => association.publicId,
     tableName: "FileEventTag",
+    bandScope: {
+        inheritsBandFrom: "file",
+        managePermission: Permission.manage_files
+    },
+    readConsistency: "snapshot",
     deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
     naturalOrderBy: FileEventTagNaturalOrderBy,
@@ -257,10 +281,12 @@ export const xFileEventTag = db3.defineTable({
         publicId: () => MakePublicIdField<FileEventTagPublicId>(),
         event: foreignRef(() => xEvent, {
             fkidMember: "eventId",
+            requireVisibleTarget: true,
             authMap: xFileAuthMap_FileObjects,
         }),
         file: foreignRef(() => xFile, {
             fkidMember: "fileId",
+            requireVisibleTarget: true,
             authMap: xFileAuthMap_FileObjects,
         }),
     })
@@ -287,6 +313,11 @@ export const xFileInstrumentTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileInstrumentTagDelegate>(),
     getIdentity: (association: { publicId: FileInstrumentTagPublicId }) => association.publicId,
     tableName: "FileInstrumentTag",
+    bandScope: {
+        inheritsBandFrom: "file",
+        managePermission: Permission.manage_files
+    },
+    readConsistency: "snapshot",
     deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
     naturalOrderBy: FileInstrumentTagNaturalOrderBy,
@@ -303,8 +334,14 @@ export const xFileInstrumentTag = db3.defineTable({
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<FileInstrumentTagPublicId>(),
+        file: foreignRefByTableId("File", {
+            fkidMember: "fileId",
+            requireVisibleTarget: true,
+            authMap: xFileAuthMap_FileObjects,
+        }),
         bandInstrument: foreignRef(() => xInstrument, {
             fkidMember: "bandInstrumentId",
+            requireVisibleTarget: true,
             authMap: xFileAuthMap_FileObjects,
         }),
     })
@@ -348,6 +385,7 @@ interface ResolvedFileFilterParams {
 }
 
 const xFileBaseArgs = db3.defineTableDesc({
+    serverInsertOnly: true,
     prismaModel: db3.prismaModel<Prisma.FileDelegate>(),
     getIdentity: (file: { publicId: FilePublicId }) => file.publicId,
     tableName: "File",
@@ -408,45 +446,45 @@ const xFileBaseArgs = db3.defineTableDesc({
         })),
         fileLeafName: columnName => MakeTitleField(columnName, { authMap: xFileAuthMap_FileObjects_AdminEdit }),
         description: () => MakeDescriptionField({ authMap: xFileAuthMap_FileObjects }),
-        uploadedAt: columnName => MakeCreatedAtField({ columnName }),
+        uploadedAt: columnName => serverOwnedField(MakeCreatedAtField({ columnName })),
         isDeleted: () => MakeIsDeletedField({ authMap: xFileAuthMap_FileObjects, }),
-        uploadedByUser: columnName => new CreatedByUserField<"uploadedByUserId">({
+        uploadedByUser: columnName => serverOwnedField(new CreatedByUserField<"uploadedByUserId">({
             columnName,
             fkidMember: "uploadedByUserId",
             _customAuth: authorizeFileServerOwnedField,
-        }),
+        })),
         visiblePermission: () => MakeVisiblePermissionField({ authMap: xFileAuthMap_FileObjects }),
 
-        sizeBytes: columnName => new GenericIntegerField({
+        sizeBytes: columnName => serverOwnedField(new GenericIntegerField({
             columnName,
             allowNull: true,
             allowSearchingThisField: false,
             _customAuth: authorizeFileServerOwnedField,
-        }),
-        storedLeafName: columnName => new GenericStringField({
+        })),
+        storedLeafName: columnName => serverOwnedField(new GenericStringField({
             columnName,
             allowNull: false,
             format: "raw",
             _customAuth: authorizeFileServerOwnedField,
-        }),
-        mimeType: columnName => new GenericStringField({
+        })),
+        mimeType: columnName => serverOwnedField(new GenericStringField({
             columnName,
             allowNull: true,
             format: "raw",
             _customAuth: authorizeFileServerOwnedField,
-        }),
+        })),
         externalURI: columnName => new GenericStringField({
             columnName,
             allowNull: true,
             format: "raw",
             authMap: xFileAuthMap_FileObjects,
         }),
-        customData: columnName => new GenericStringField({
+        customData: columnName => serverOwnedField(new GenericStringField({
             columnName,
             allowNull: true,
             format: "raw",
             _customAuth: authorizeFileServerOwnedField,
-        }),
+        })),
         fileCreatedAt: columnName => new DateTimeField({
             columnName,
             allowNull: true,
@@ -683,6 +721,11 @@ export const xFileWikiPageTag = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FileWikiPageTagDelegate>(),
     getIdentity: (association: { publicId: FileWikiPageTagPublicId }) => association.publicId,
     tableName: "FileWikiPageTag",
+    bandScope: {
+        inheritsBandFrom: "file",
+        managePermission: Permission.manage_files
+    },
+    readConsistency: "snapshot",
     deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
     naturalOrderBy: FileWikiPageTagNaturalOrderBy,
@@ -699,8 +742,14 @@ export const xFileWikiPageTag = db3.defineTable({
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<FileWikiPageTagPublicId>(),
+        file: foreignRefByTableId("File", {
+            fkidMember: "fileId",
+            requireVisibleTarget: true,
+            authMap: xFileAuthMap_FileObjects,
+        }),
         wikiPage: foreignRef(() => xWikiPage, {
             fkidMember: "wikiPageId",
+            requireVisibleTarget: true,
             authMap: xFileAuthMap_FileObjects,
         }),
     })

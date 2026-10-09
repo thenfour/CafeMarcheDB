@@ -1,4 +1,5 @@
 import { TAnyModel } from "@/shared/rootroot";
+import type { UserPublicId } from "shared/publicId";
 import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 import {
     Alert,
@@ -144,6 +145,7 @@ function DB3NewObjectDialogWithClient<TView extends ViewBase>({
 ////////////////////////////////////////////////////////////////
 // similar to DB3EditObjectDialog but uses external table render client.
 type DB3EditObject2DialogProps = {
+    ownerUserPublicId?: UserPublicId | null;
     onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient<any, any>) => void;
     onCancel: () => void;
     onDelete?: (tableClient: DB3ClientCore.xTableRenderClient<any, any>) => void;
@@ -234,7 +236,8 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                                 columnName: c.columnName,
                                 model: obj,
                                 auth: auth,
-                                fallbackOwnerId: null,// assume model has this.
+                                fallbackOwnerId: null,
+                                fallbackOwnerPublicId: props.ownerUserPublicId,
                             }));
                         }).map(column => {
                             let autoFocus = false;
@@ -266,6 +269,7 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
 
 ////////////////////////////////////////////////////////////////
 type DB3EditObjectDialogProps = {
+    ownerUserPublicId?: UserPublicId | null;
     onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient<any, any>) => void;
     onCancel: () => void;
     onDelete?: (tableClient: DB3ClientCore.xTableRenderClient<any, any>) => void;
@@ -280,6 +284,7 @@ type DB3EditObjectDialogProps = {
 export function DB3EditObjectDialog({ onOK, onCancel, tableRenderClient, initialValue, onDelete, ...props }: DB3EditObjectDialogProps) {
     return <AppContextMarker name="DB3EditObjectDialog">
         <DB3EditObject2Dialog
+            ownerUserPublicId={props.ownerUserPublicId}
             initialValue={initialValue}
             onCancel={onCancel}
             onOK={onOK}

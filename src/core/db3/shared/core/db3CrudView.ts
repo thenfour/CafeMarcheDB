@@ -89,7 +89,11 @@ function createPreparedMutationSchema<
     const shape: z.ZodRawShape = {};
     const dtoMembers = new Set(Object.keys(dtoSchema.shape));
     for (const field of entity.columns) {
-        if ("catalogSource" in field) {
+        // lsmb todo: this kind of checking is not acceptable. if a field type
+        // wants exceptional behavior that should be specified at the field level,
+        // not buried in random code. this generic crud view should have no knowledge
+        // of "catalogSource"  or "serverOwned".
+        if ("catalogSource" in field || "serverOwned" in field) {
             continue;
         }
         if (!dtoMembers.has(field.member)

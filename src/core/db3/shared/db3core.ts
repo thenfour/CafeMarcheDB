@@ -983,6 +983,15 @@ export interface TableDesc {
     // aka does it require a read-consistent transaction
     readConsistency?: "snapshot";
 
+    // file insertions use this to indicate that an insertion is only allowed  when
+    // the server supplies  the "server owned fields". it's a way for the entity to
+    // gatekeep creation a bit to require server-supplied fields.
+    // but to be honest this is  not a great mechanism; consider refactoring this.
+    // 1. this check is badly named. it's kinda "i want server-owned values for insertion".
+    // 2. it only applies to insertions, not updates. why?
+    // 3. it could just be derived: if any fields are server-owned, then this is implict.
+    serverInsertOnly?: boolean;
+
     // for things like attendance options, where options can go stale and become "inactive", allow table schemas to filter items out.
     activeAsSelectable?: (params: TAnyModel) => boolean;
 
@@ -1263,6 +1272,7 @@ export class xTable<
     bandScope?: DB3BandScope;
     queryStrategy?: "resolved";
     readConsistency?: "snapshot";
+    serverInsertOnly?: boolean;
 
     // aka does it require a read-consistent transaction
     get requiresReadSnapshot(): boolean {
