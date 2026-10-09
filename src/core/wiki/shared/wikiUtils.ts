@@ -184,37 +184,27 @@ export type WikiPageData = {
 
 
 // used by the wiki page to convert path part params to wiki data.
-export const wikiParsePathComponents = (components: string[]): WikiPath => {
-    if (!components || components.length < 1) throw new Error(`no page specified`);
-    // components is an array of path parts (/event/whatever/something = ['event', 'whatever', 'something'])
-    // for nested pages, the 1st part of the path is considered a kind of "namespace", and the 2nd part is the actual slug.
-    // whatever is AFTER the page slug is ignored (to accommodate aesthetic links like /wiki/event/123/the-big-festival)
-    //
-    // there could be confusion if you have an aesthitic slug after a top-level page, like /mypage/this-is-a-slug-to-be-ignored.
-    // in that case, we'd parse it as namespace: mypage, and wiki slug "this-is-a-slug".
-    //
-    // in other words, only pages under namespaces can have aesthetic slugs.
-    let namespace: string | null;
-    let slug: string;
-
-    if (components.length > 1) {
-        namespace = components[0]!;
-        slug = components[1]!;
-    } else {
-        namespace = null;
-        slug = components[0]!;
+export const wikiParsePathComponents = (components: readonly string[]): WikiPath => {
+    const [first, second] = components;
+    if (first === undefined) {
+        throw new Error("no page specified");
     }
 
-    const isEventDescription = namespace?.toLowerCase() === SpecialWikiNamespace.EventDescription.toLowerCase()
-        && isPublicId(slug);
-    const canonicalWikiPath = isEventDescription
-        ? `${SpecialWikiNamespace.EventDescription}/${slug}`
-        : slugify(`${namespace ? `${namespace}/` : ''}${slug}`);
-    const aestheticSlug = components.length > 2 ? components.slice(2).join('/') : null;
+    // Namespaced pages use namespace/page; any remaining text is an aesthetic name.
+    const namespaceInput = second === undefined ? null : first;
+    const slugInput = second ?? first;
+    const isEventDescription = namespaceInput?.toLowerCase() === SpecialWikiNamespace.EventDescription.toLowerCase()
+        && isPublicId(slugInput);
+    const namespace = isEventDescription ? SpecialWikiNamespace.EventDescription
+        : namespaceInput === null ? null : slugify(namespaceInput);
+    // Event public IDs are references, so preserve their case and underscores.
+    const slugWithoutNamespace = isEventDescription ? slugInput : slugify(slugInput);
+    const canonicalWikiPath = namespace === null ? slugWithoutNamespace : `${namespace}/${slugWithoutNamespace}`;
+    const aestheticSlug = components.length > 2 ? slugify(components.slice(2).join(' ')) : null;
 
     return {
-        namespace: isEventDescription ? SpecialWikiNamespace.EventDescription : namespace,
-        slugWithoutNamespace: slug,
+        namespace,
+        slugWithoutNamespace,
         canonicalWikiPath,
         uriRelativeToHost: `/backstage/wiki/${canonicalWikiPath}`,
         aestheticSlug,
@@ -222,7 +212,8 @@ export const wikiParsePathComponents = (components: string[]): WikiPath => {
 };
 
 export const wikiMakeRelativeURI = (canonicalWikiPath: string, aestheticSlug?: string | undefined) => {
-    return `/backstage/wiki/${canonicalWikiPath}${aestheticSlug ? `/${slugify(aestheticSlug)}` : ''}`;
+    const wikiPath = wikiParseCanonicalWikiPath(canonicalWikiPath);
+    return `${wikiPath.uriRelativeToHost}${aestheticSlug ? `/${slugify(aestheticSlug)}` : ''}`;
 };
 
 // returns a canonical wiki path from event.

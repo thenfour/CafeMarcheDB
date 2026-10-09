@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 import * as React from 'react';
 import * as DynMenu from "shared/dynMenuTypes";
 import { Permission } from "shared/permissions";
-import { gNullValue, slugify } from "shared/rootroot";
+import { gNullValue } from "shared/rootroot";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
@@ -18,6 +18,7 @@ import { HostingMode } from '@/shared/brandConfigBase';
 import { DashboardContextData, useClientTelemetryEvent, useDashboardContext } from '../dashboardContext/DashboardContext';
 import { withMemberPresentation } from "../user/bandMemberLinks";
 import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
+import { wikiMakeRelativeURI } from "src/core/wiki/shared/wikiUtils";
 
 
 // Flattened types for rendering (used internally by flattening functions)
@@ -63,7 +64,7 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext
             path = item.externalURI || "";
             break;
         case "Wiki":
-            path = item.wikiSlug ? withMemberPresentation(`/backstage/wiki/${slugify(item.wikiSlug)}`, dashboardContext.memberPresentation) : "";
+            path = item.wikiSlug ? withMemberPresentation(wikiMakeRelativeURI(item.wikiSlug), dashboardContext.memberPresentation) : "";
             break;
     }
 
@@ -414,7 +415,7 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
                 let itemPath = "";
                 switch (item.linkType as keyof typeof DynMenu.DynamicMenuLinkType) {
                     case "Wiki":
-                        itemPath = item.wikiSlug ? `/backstage/wiki/${slugify(item.wikiSlug)}` : "";
+                        itemPath = item.wikiSlug ? wikiMakeRelativeURI(item.wikiSlug) : "";
                         break;
                     case "ExternalURL":
                         itemPath = item.externalURI || "";

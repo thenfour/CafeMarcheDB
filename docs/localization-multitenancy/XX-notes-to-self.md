@@ -977,12 +977,14 @@ model BandSetting {
 }
 ```
 
-# TECH DEBT accumulating
+# TECH DEBT accumulating / things to make sure we do
 
+-  a user landing page which has mixed-band info (events for all bands, etc)
 -  base: full feature restoration
    -  localization
    -  band awareness and platform vs. band mgmt
    -  supporting routing
+-  tab management system such that you can have band A in tab 1, band B in tab 2.
 -  xTable should stop being used like a view
    -  only 1 xtable per db entity
    -  fieldbase should also own serialization, validation (and likely own zod schema at very least for DTO parsing)

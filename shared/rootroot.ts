@@ -10,7 +10,7 @@ export type Nullish = null | undefined;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // https://gist.github.com/codeguy/6684588
-// this function must be idempotent for wikis in order to support slugifying user-input URLs.
+// Produces one path segment. Callers slugify path parts separately and join them.
 export const slugify = (...args: (string | number)[]): string => {
     const value = args.join(' ');
 
@@ -19,8 +19,8 @@ export const slugify = (...args: (string | number)[]): string => {
         .replace(/[\u0300-\u036f]/g, '') // Remove all previously split accents
         .toLowerCase()
         .trim()
-        .replace(/[^a-z0-9 /_-]/g, '') // Allow forward slash, single hyphens and spaces, disallow other characters
-        .replace(/[\s_-]+/g, '-') // Replace spaces, underscores, and hyphens with a single hyphen
+        .replace(/[^a-z0-9 /_-]/g, '') // Keep letters, numbers and separators.
+        .replace(/[\s/_-]+/g, '-') // Collapse separators, including slashes, into one hyphen.
         .replace(/-+/g, '-'); // Replace multiple hyphens with a single hyphen
 }
 

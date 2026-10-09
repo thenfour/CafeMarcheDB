@@ -3,7 +3,7 @@ import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { DynamicMenuLinkType } from "shared/dynMenuTypes";
 import { Permission } from 'shared/permissions';
-import { slugify, TAnyModel } from "shared/rootroot";
+import { TAnyModel } from "shared/rootroot";
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -21,6 +21,7 @@ import { useLocale } from "src/locale/components/useLocale";
 import { LocalizedStringColumnClient } from "src/core/db3/components/DB3CatalogFields";
 import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
 import { withMemberPresentation } from "../user/bandMemberLinks";
+import { wikiMakeRelativeURI } from "src/core/wiki/shared/wikiUtils";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -116,7 +117,7 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
 
             {
                 ((props.item.linkType as keyof typeof DynamicMenuLinkType) === "Wiki") &&
-                <CMLink href={withMemberPresentation(`/backstage/wiki/${slugify(props.item.wikiSlug || "")}`, dashboardContext.memberPresentation)} target="_blank" rel="noreferrer" className="menuLinkTestLink wikiCMLink">
+                <CMLink href={withMemberPresentation(wikiMakeRelativeURI(props.item.wikiSlug || ""), dashboardContext.memberPresentation)} target="_blank" rel="noreferrer" className="menuLinkTestLink wikiCMLink">
                     <div>Test wiki link</div>
                     {gIconMap.Launch()}
                 </CMLink>

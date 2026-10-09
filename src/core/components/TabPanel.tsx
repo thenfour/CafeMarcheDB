@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import React, { Suspense, useEffect } from "react";
 import { CoalesceBool } from "shared/utils";
 
 type TTabID = string | number | undefined | null;
@@ -53,21 +53,20 @@ export const CMTabPanel = (props: CMTabPanelProps) => {
 
     const children = Array.isArray(props.children) ? props.children : [props.children];
 
-    // if the selected tab is not available
-
     const enabledChildren = children.filter(tab => CoalesceBool(tab.props.enabled, true));
-    let selectedChild = enabledChildren.find(tab => tab.props.thisTabId === props.selectedTabId);
-    if (!selectedChild) {
-        //selectedChild = filteredChildren.find(tab => tab.props.thisTabId === props.defaultTabId);
-        //const moreFilteredChildren = filteredChildren.filter(t => !!t.props.canBeDefault);
-        selectedChild = enabledChildren.find(tab => tab.props.canBeDefault);
-        if (selectedChild) {
-            //props.setNewDefault && props.setNewDefault(selectedChild.props.thisTabId);
-            props.handleTabChange(undefined, selectedChild.props.thisTabId);
-        } else if (enabledChildren.length) {
-            selectedChild = enabledChildren[0];
+    const selectedChild = enabledChildren.find(tab => tab.props.thisTabId === props.selectedTabId)
+        ?? enabledChildren.find(tab => tab.props.canBeDefault)
+        ?? enabledChildren[0];
+    const selectedTabId = selectedChild?.props.thisTabId;
+    const needsDefaultSelection = !!selectedChild?.props.canBeDefault && selectedTabId !== props.selectedTabId;
+    const { handleTabChange } = props;
+
+    useEffect(() => {
+        if (needsDefaultSelection) {
+            handleTabChange(undefined, selectedTabId);
         }
-    }
+    }, [needsDefaultSelection, selectedTabId, handleTabChange]);
+
     return <div className={`CMTabPanel ${props.className}`} style={props.style}>
         <div className="CMTabHeader">
             <ul className="CMTabList" style={props.tablListStyle}>

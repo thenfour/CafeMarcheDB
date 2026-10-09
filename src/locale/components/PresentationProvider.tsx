@@ -74,13 +74,15 @@ export function PresentationProvider({ initial, bandPublicId, routeLocale, child
     const [refresh, setRefresh] = React.useState(0);
     React.useEffect(() => {
         const update = () => setRefresh(value => value + 1);
+        // Keep the loaded page visible while a focus refresh waits for its snapshot.
+        const focusUpdate = () => React.startTransition(update);
         const storageUpdate = (event: StorageEvent) => { if (event.key === changeEvent) update(); };
         window.addEventListener(changeEvent, update);
-        window.addEventListener("focus", update);
+        window.addEventListener("focus", focusUpdate);
         window.addEventListener("storage", storageUpdate);
         return () => {
             window.removeEventListener(changeEvent, update);
-            window.removeEventListener("focus", update);
+            window.removeEventListener("focus", focusUpdate);
             window.removeEventListener("storage", storageUpdate);
         };
     }, []);

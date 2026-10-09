@@ -66,6 +66,44 @@ async function loadPlatform() {
 }
 
 describe("presentation navigation through Suspense", () => {
+    it("keeps the loaded page and its draft visible while focus refreshes presentation", async () => {
+        function Draft() {
+            const [draft, setDraft] = React.useState("saved");
+            return <><SelectedBand /><button onClick={() => setDraft("unsaved")}>{draft}</button></>;
+        }
+        await act(async () => root.render(<PresentationProvider bandPublicId={null}><Draft /></PresentationProvider>));
+        await act(async () => { for (const read of reads.values()) { read.resolve(); } });
+        await act(async () => container.querySelector("button")!.click());
+        const previousRequest = container.querySelector("[data-band]")?.textContent;
+        const before = reads.size;
+
+        await act(async () => window.dispatchEvent(new window.Event("focus")));
+        const pending = [...reads.values()].filter(read => !read.resolved);
+        expect(pending).toHaveLength(1);
+        expect(reads.size).toBe(before + 1);
+        expect(container.textContent).not.toContain("Loading");
+        expect(container.querySelector("[data-band]")?.textContent).toBe(previousRequest);
+        expect(container.querySelector("button")?.textContent).toBe("unsaved");
+        expect(container.querySelector("button")?.style.display).not.toBe("none");
+
+        await act(async () => pending[0]!.resolve());
+        expect(container.querySelector("[data-band]")?.textContent).toBe(pending[0]!.input.clientRequestId);
+        expect(container.querySelector("button")?.textContent).toBe("unsaved");
+    });
+
+    it.each(["cmdb-presentation-changed", "storage"])("still suspends for explicit invalidation via %s", async eventName => {
+        await loadPlatform();
+        const event = eventName === "storage"
+            ? new window.StorageEvent("storage", { key: "cmdb-presentation-changed" })
+            : new window.Event(eventName);
+        await act(async () => window.dispatchEvent(event));
+        expect(container.textContent).toContain("Loading");
+        const pending = [...reads.values()].filter(read => !read.resolved);
+        expect(pending).toHaveLength(1);
+        await act(async () => pending[0]!.resolve());
+        expect(container.querySelector("[data-band]")?.textContent).toBe(pending[0]!.input.clientRequestId);
+    });
+
     it("finishes a band transition using one stable request token across render retries", async () => {
         await loadPlatform();
         const before = reads.size;
