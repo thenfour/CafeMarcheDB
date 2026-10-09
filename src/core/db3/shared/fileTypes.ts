@@ -1,6 +1,6 @@
 import { Coord2D, Size } from "@/shared/rootroot";
 import type { Prisma } from "db";
-import type { BandUserPublicId, EventPublicId, FilePublicId, FileTagPublicId, FrontpageGalleryItemPublicId, InstrumentPublicId, PermissionPublicId, SongPublicId, UserPublicId, WikiPagePublicId } from "shared/publicId";
+import type { BandPublicId, BandUserPublicId, EventPublicId, FilePublicId, FileTagPublicId, FrontpageGalleryItemPublicId, InstrumentPublicId, PermissionPublicId, SongPublicId, UserPublicId, WikiPagePublicId } from "shared/publicId";
 
 export interface TClientFileUploadTags {
     taggedBandUserId?: BandUserPublicId;
@@ -90,9 +90,10 @@ export interface UploadResponsePayload {
 };
 
 export interface ForkImageParams {
+    bandPublicId: BandPublicId;
     parentFileId: FilePublicId; // which image file to use. for gallery items it may be different than the previous one.
     outputType: ImageFileFormat;
-    quality: number; // 0-100 corresponds with jpeg quality / https://sharp.pixelplumbing.com/api-output options.quality.
+    quality: number; // 1-100, following the image encoder's quality range.  / https://sharp.pixelplumbing.com/api-output options.quality.
     editParams: ImageEditParams;
     newDimensions?: Size;
 };

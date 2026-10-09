@@ -1,10 +1,20 @@
 import { resolver } from "@blitzjs/rpc";
+import type { Ctx } from "blitz";
+import db from "db";
 import { Permission } from "shared/permissions";
-import { requireRestoredApplicationFeature } from "src/core/shared/applicationRecovery";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
+import { forkImage } from "../server/imageFork";
+import { requireFileStorageDirectory } from "../server/fileStorage";
+import { ForkImageParamsSchema } from "../shared/imageFork";
 
 export default resolver.pipe(
     resolver.authorize(Permission.login),
-    async (_args: unknown): Promise<never> => requireRestoredApplicationFeature("fileCreation"),
+    resolver.zod(ForkImageParamsSchema),
+    async (args, ctx: Ctx) => {
+        const authorization = await loadAuthorization(ctx.session, args.bandPublicId);
+        authorization.requireUser().requirePermission(Permission.upload_files);
+        return forkImage(db, authorization, args, requireFileStorageDirectory());
+    },
 );
 
 // MIGRATION_RESTORE: file-creation

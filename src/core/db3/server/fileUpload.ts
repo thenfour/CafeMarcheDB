@@ -15,7 +15,8 @@ import { fileTagDashboardView, instrumentDashboardView, FileTagSignificance, xFi
 import { bindDB3ReadSnapshot, type DB3ReadContext, type DB3ReadRootDatabase } from "./db3ReadExecution";
 import { queryView } from "./db3QueryCore";
 import { resolvePublicForeignIds } from "./db3PublicIds";
-import { insertImpl } from "./db3mutationCore";
+import { createFileRecord, type FileCreationFields, type FileStorageMetadata } from "./fileCreation";
+import { resolveFileStoragePath } from "./fileStorage";
 
 /** Multipart parsing owns these temporary paths; they never come from JSON/client fields. */
 export interface FileUploadPart {
@@ -124,12 +125,8 @@ function storageLeaf(leaf: string): string {
     return generatePublicId() + safeExtension;
 }
 
-type UploadStorageMetadata = Pick<File, "uploadedAt" | "storedLeafName" | "mimeType" | "sizeBytes" | "customData">;
-type UploadClientFields = ReturnType<typeof uploadAssociations> & Pick<File, "fileLeafName" | "description" | "fileCreatedAt"> & { externalURI?: string };
-
-async function createUploadedFile(context: DB3ReadContext, values: UploadClientFields, metadata: UploadStorageMetadata): Promise<UploadedFile> {
-    const fields = await resolvePublicForeignIds(xFile, values, context.authorization, context.database);
-    const file = await insertImpl<File>(xFile, fields, context.authorization, context.database, { serverOwnedFields: metadata });
+async function createUploadedFile(context: DB3ReadContext, values: FileCreationFields, metadata: FileStorageMetadata): Promise<UploadedFile> {
+    const file = await createFileRecord(context, values, metadata);
     return publicUploadedFile(file, context.authorization);
 }
 
@@ -143,9 +140,9 @@ async function createExternalUpload(context: DB3ReadContext, args: FileUploadArg
 
 async function storeLocalUpload(part: FileUploadPart, storageDirectory: string, leaf: string,
     mimeType: string | null, maxImageDimension: number | undefined, createdPaths: string[],
-): Promise<UploadStorageMetadata> {
+): Promise<FileStorageMetadata> {
     const storedLeafName = storageLeaf(leaf);
-    const storedPath = path.resolve(storageDirectory, storedLeafName);
+    const storedPath = resolveFileStoragePath(storageDirectory, storedLeafName);
     await mkdir(storageDirectory, { recursive: true });
     await copyFile(part.temporaryPath, storedPath, constants.COPYFILE_EXCL);
     createdPaths.push(storedPath);

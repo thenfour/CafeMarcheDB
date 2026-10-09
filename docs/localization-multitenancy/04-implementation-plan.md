@@ -26,9 +26,10 @@ Preserve them while restoring their wider workflows. Basic member directory and
 profile behavior is only a subset: reference filters, presets, contact-search
 policy, exports and profile tabs remain A1 work.
 
-Song credit editing, remaining domain/quick/shell search, publication, image
-creation and several reports/admin surfaces remain guarded or incomplete.
-General File search/detail/metadata pages and associated uploads are restored. The
+Song credit editing, remaining domain/quick/shell search, publication, gallery
+editing and several reports/admin surfaces remain guarded or incomplete.
+General File search/detail/metadata pages, associated uploads and the image fork
+service are restored. The
 [restoration manifest](feature-restoration.json) records the individual obligations
 and verification criteria; use `yarn migration:status` rather than maintaining a
 second restriction table. Keep every deferred page, RPC/API, generic DB3 root,
@@ -133,9 +134,9 @@ Failed uploads clear progress; failed metadata saves retain the draft. Downloads
 previews, playback and recording pin/unpin retain independent File authorization.
 Soft deletion keeps storage for recovery while denying ordinary reads/downloads.
 
-General File pages/search are restored in the checkpoint below. Image
-fork/crop/rotate/gallery bake and uploads from Markdown/profile/brand/gallery
-callers remain pending with their guards and source archives intact.
+General File pages/search and the image fork service are restored in the
+checkpoints below. Gallery controls/bake and uploads from Markdown/profile/brand/
+gallery callers remain pending with their guards and source archives intact.
 
 ## General File pages and search checkpoint
 
@@ -163,17 +164,46 @@ independent visibility policy.
 
 The `file-workflows` page obligation is restored and its three source blocks and
 manifest references are removed. `file-search` remains pending only for full
-localized-name text matching; image creation and remaining upload integrations
+localized-name text matching; gallery editing/bake and remaining upload integrations
 have their own pending obligations. A1 and B remain open.
 
-## Next slice: File image transforms
+## File image fork checkpoint
 
-Restore reference image fork/crop/rotate through the existing image controls and
-server owners, with explicit band/public targets, independently authorized source
-Files, server-owned storage/metadata, parent/preview relationships and rollback
-of database/audits/storage. Verify the actual image results in the built browser.
-Keep gallery bake and Markdown/profile/brand/gallery upload integrations explicit
-until their owning workflows are adapted and verified.
+The existing `forkImage` RPC now requires explicit band/source public identities,
+strict transform fields, login and freshly authorized upload permission. Its
+serializable transaction loads the source through shared DB3 visibility and
+ownership policy. Hidden, deleted, foreign, external and non-image sources are
+unavailable. Uploads and forks share File creation/storage helpers; the File
+declaration owns field authorization, public reference resolution and auditing.
+The server generates the storage identity and supplies uploader, band, visibility,
+MIME, size and actual image dimensions. The result contains only a File public ID.
+
+Forks retain the reference filename convention, parent relationship and inherited
+visibility. They leave the original bytes and preview relationship intact and do
+not copy associations. EXIF orientation and crop bounds come from the decoder;
+preview and server share crop geometry, including tiny images and fractional
+edges. Crop/resize precedes physical rotation. The reference implementation ignored
+rotation and encoder quality; physical forks now apply both. PNG, JPEG and WebP
+are verified. HEIC requires HEVC encoding, absent in the bundled Sharp library;
+an unsupported encoder fails without creating rows, audits or storage. Any File,
+audit or commit failure removes the generated image and rolls back the database.
+
+The reference has no standalone File image editor: its controls belong to the
+still-deferred gallery page. This checkpoint restores the shared service/RPC and
+verifies outputs through existing File pages/downloads, without claiming gallery
+editor parity. `file-creation` remains pending and its source archives/deferred
+specifications are retained.
+
+## Next slice: Gallery image editing and bake
+
+Restore the existing authenticated gallery editor, source selection, crop/rotate/
+resize controls, ordering and bake through adapted Gallery/File owners. Use
+explicit band/public identities, localized source choices and independent File
+visibility. Bake must keep the gallery update, image creation and audit/storage
+rollback together. Its display parameters must account for rotation already baked
+into the pixels, avoiding a second rotation. Verify the actual existing controls
+in the built browser. Anonymous homepage/feed publication and remaining Markdown/
+profile/brand/gallery uploads retain their own obligations until verified.
 
 ## Localized catalog text search exception
 
@@ -202,7 +232,7 @@ when a concrete workflow dependency requires it.
 | --- | --- |
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
 | Events | Retain restored search/detail/creation/editing, setlist editing and invitation/attendance controls; finish default-instrument and attendance parity and date-picker highlights. |
-| Songs and files | Retain restored Song search/detail/editing, tags, setlist picking, File search/detail/metadata/associations, associated uploads and recording/file viewers; finish credit editing/history, image processing and remaining upload callers. |
+| Songs and files | Retain restored Song search/detail/editing, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; finish credit editing/history, gallery controls/bake and remaining upload callers. |
 | Supporting workflows | Dashboard/wiki/custom navigation, plans, search, calendars/feeds/tokens, Custom Links, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
 After core restoration: platform role/matrix and catalog/settings administration;
@@ -336,12 +366,33 @@ SSR returning 500. TSV's double-incremented order was corrected. The build also
 exposed nullable attendance-response assumptions and an unused Event import;
 the narrow guards/type fixes retain the existing attendance test coverage.
 
+The image fork checkpoint (2026-10-09) passes normal typecheck/build, isolated
+demo build, focused lint, 127 focused checks across five files and 265 native
+MariaDB checks across 14 files. The 29 new native cases verify physical crop/
+resize/rotation and pixel placement, EXIF orientation, stale metadata, tiny and
+fractional edge crops, PNG/JPEG/WebP codecs and quality, HEIC encoder availability,
+fork hierarchies, public DTOs, independent bands/privacy, fresh grant/account/
+membership/band revocation and database/audit/storage cleanup after insert or
+commit failure. Existing upload, File search/detail, Song/Event/setlist and
+attendance regressions remain included. Two obsolete deferred-fork assertions
+were replaced by active RPC/authorization coverage; all source archives and
+deferred specifications remain intact. Preservation verification passes.
+
+Seven built-browser groups pass: actual fork RPC and audited band File creation;
+decoder-verified protected 10x20 crop/resize/rotation pixels with the original
+unchanged; French File metadata/contextual parent-child links; counterclockwise
+JPEG codec/MIME/dimensions; private/deleted/foreign/forged input rejection; fresh
+first-band revocation with independent Dutch second-band WebP creation and foreign
+detail/download 404s; anonymous denial. No uncaught page or unexpected RPC errors
+occurred. Disposable rows, grants, audits and stored files were cleaned up. The
+RPC is exercised directly because its original gallery controls remain deferred.
+
 The complete-suite run still reports 209 failed tests and ten suite-load failures,
 including unscoped authorization/account/setlist fixtures, deferred-domain and
 date-policy contracts; the runner stops before the later jsdom batches. Focused
-passes do not establish A1 readiness. The latest run passes 1740 tests and skips
-425; its 209 failed tests and ten suite-load failure labels match the previous
-associated File checkpoint exactly. Earlier built-browser member/profile/wiki/
+passes do not establish A1 readiness. The latest run passes 1753 tests and skips
+454; its 209 failed tests and ten suite-load failure labels match the previous
+general File checkpoint exactly. Earlier built-browser member/profile/wiki/
 download checks remain recorded evidence, not workflows rerun by these slices.
 
 The [development seeder](../development-seeding.md) restores the pre-migration

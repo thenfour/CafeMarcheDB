@@ -421,6 +421,26 @@ export const fileDetailView = defineView({
     hydrate: fileDetailContract.hydrate,
 });
 
+const fileImageSourceContract = deriveViewContract(xFile, {
+    select: {
+        publicId: true,
+        fileLeafName: true,
+        storedLeafName: true,
+        mimeType: true,
+        externalURI: true,
+        visiblePermissionId: true,
+    },
+}, { references: dashboardReferenceContract });
+
+/** Image processing needs only the authorized source and its visibility, not its associations. */
+export const fileImageSourceView = defineView({
+    viewID: "File_ImageSource", entity: xFile,
+    selection: fileImageSourceContract.prismaSelection,
+    dtoSchema: fileImageSourceContract.dtoSchema,
+    references: fileImageSourceContract.referenceContract,
+    hydrate: fileImageSourceContract.hydrate,
+});
+
 export type FileDetailDto = DtoOf<typeof fileDetailView>;
 export type FileDetailClient = ClientOf<typeof fileDetailView>;
 export type FileEditorClient = ClientOf<typeof fileEditorView>;

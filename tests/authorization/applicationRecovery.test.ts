@@ -25,7 +25,6 @@ import getSongFilterInfo from "@db3/queries/getSongFilterInfo";
 import getGlobalStats from "@db3/queries/getGlobalStats";
 import getSongActivityReport from "@db3/queries/getSongActivityReport";
 import getImportEventData from "@db3/queries/getImportEventData";
-import forkImage from "@db3/mutations/forkImage";
 import updateGalleryItemImage from "@db3/mutations/updateGalleryItemImage";
 import getUserCredits from "@db3/queries/getUserCredits";
 import db3queries from "@db3/queries/db3queries";
@@ -90,7 +89,6 @@ const deferredDomainReaders = [
 ];
 
 const deferredFileCreators = [
-    { name: "image fork", resolve: forkImage },
     { name: "gallery image bake", resolve: updateGalleryItemImage },
 ];
 

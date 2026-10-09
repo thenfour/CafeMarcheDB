@@ -9,7 +9,7 @@ import { AuthorizationError, assert } from "blitz";
 import db, { Prisma } from "db";
 import { ComputeChangePlan, getIntersectingFields } from "shared/associationUtils";
 import { ObjectDiff } from "shared/utils";
-import path from "node:path";
+import { requireFileStorageDirectory, resolveFileStoragePath } from "./fileStorage";
 import { z } from "zod";
 import * as db3 from "../db3";
 import { CMDBTableFilterModel, TransactionalPrismaClient } from "../shared/apiTypes";
@@ -87,7 +87,8 @@ const createDB3Row = async (
     });
 };
 
-const requireAuthorizedMutationFields = (
+// DB3 accepts models from any declared entity; its field policy validates their dynamic shape.
+export const requireAuthorizedMutationFields = (
     table: db3.xTable,
     authResult: db3.DB3AuthorizeAndSanitizeResult<TAnyModel>,
 ): TAnyModel => {
@@ -832,18 +833,7 @@ export const queryFirstImpl = async <TitemPayload,>({ schema, filterModel, auth 
 };
 
 export const GetFileServerStoragePath = (storedLeafName: string) => {
-    const uploadPath = process.env.FILE_UPLOAD_PATH;
-    if (!uploadPath) {
-        throw new Error("FILE_UPLOAD_PATH is not configured.");
-    }
-    if (!storedLeafName
-        || storedLeafName !== path.basename(storedLeafName)
-        || storedLeafName.includes("/")
-        || storedLeafName.includes("\\")) {
-        throw new Error("Invalid stored file name.");
-    }
-
-    return path.resolve(uploadPath, storedLeafName);
+    return resolveFileStoragePath(requireFileStorageDirectory(), storedLeafName);
 }
 
 // MIGRATION_RESTORE: file-creation
