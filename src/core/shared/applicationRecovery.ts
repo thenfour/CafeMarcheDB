@@ -36,7 +36,6 @@ export function requireRestoredApplicationFeature(feature: DeferredApplicationFe
 // Temporary root-domain gates. Narrow migrated readers have separate registered table identities.
 const deferredDB3Domains = new Map<string, DeferredApplicationFeature>([
     ["songcredit", "songWorkflows"],
-    ["frontpagegalleryitem", "publicPublication"],
 ]);
 
 export function requireRecoveredDB3Domain(tableID: string): void {

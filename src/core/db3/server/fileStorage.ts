@@ -1,4 +1,16 @@
 import path from "node:path";
+import { unlink } from "node:fs/promises";
+
+/** The caller owns the transaction; remove its new files even when commit fails. */
+export async function withFileStorageRollback<TResult>(work: (createdPaths: string[]) => Promise<TResult>): Promise<TResult> {
+    const createdPaths: string[] = [];
+    try {
+        return await work(createdPaths);
+    } catch (error) {
+        await Promise.all(createdPaths.map(createdPath => unlink(createdPath)));
+        throw error;
+    }
+}
 
 export function requireFileStorageDirectory(): string {
     const directory = process.env.FILE_UPLOAD_PATH;

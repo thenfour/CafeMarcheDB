@@ -205,7 +205,7 @@ export class GenericStringColumnClient<TColumnName extends string = string>
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface MarkdownStringColumnArgs<TColumnName extends string = string> extends DB3ClientCore.ColumnPresentationArgs {
     columnName: TColumnName;
-    cellWidth: number;
+    cellWidth?: number;
     className?: string;
     visible?: boolean;
 };
@@ -220,7 +220,7 @@ export class MarkdownStringColumnClient<TColumnName extends string = string>
             editable: true,
             headerNameKey: args.fieldCaptionKey,
             isAutoFocusable: true,
-            width: args.cellWidth,
+            width: args.cellWidth ?? 120, // default 120
             visible: CoerceToBoolean(args.visible, true),
             className: args.className,
             fieldCaptionKey: args.fieldCaptionKey,

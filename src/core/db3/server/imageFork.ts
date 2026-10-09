@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { AuthorizationError } from "blitz";
-import { mkdir, open, readFile, unlink } from "node:fs/promises";
+import { mkdir, open, readFile } from "node:fs/promises";
 import path from "node:path";
 import sharp, { type Sharp } from "sharp";
 import { Permission } from "shared/permissions";
@@ -13,7 +13,7 @@ import { resolveImageEditGeometry } from "../shared/imageGeometry";
 import { bindDB3ReadSnapshot, type DB3ReadContext, type DB3ReadRootDatabase } from "./db3ReadExecution";
 import { queryView } from "./db3QueryCore";
 import { authorizeFileCreation, createFileRecord, type FileCreationFields, type FileStorageMetadata } from "./fileCreation";
-import { resolveFileStoragePath } from "./fileStorage";
+import { resolveFileStoragePath, withFileStorageRollback } from "./fileStorage";
 
 export class ImageForkInputError extends Error {
     readonly statusCode = 400;
@@ -30,8 +30,10 @@ async function readImageSource(context: DB3ReadContext, args: ImageForkInput) {
         || !source.mimeType?.startsWith("image/")) {
         throw new ImageForkInputError("Source image was not found.");
     }
-    return { ...source, fileLeafName: source.fileLeafName, storedLeafName: source.storedLeafName,
-        visiblePermissionId: source.visiblePermissionId };
+    return {
+        ...source, fileLeafName: source.fileLeafName, storedLeafName: source.storedLeafName,
+        visiblePermissionId: source.visiblePermissionId
+    };
 }
 
 type ImageSource = Awaited<ReturnType<typeof readImageSource>>;
@@ -68,8 +70,10 @@ async function transformImage(sourcePath: string, args: ImageForkInput) {
     const height = Math.max(1, Math.round(geometry.cropEnd.y) - top);
     let image = sharp(decoded.data, { raw: decoded.info }).extract({ left, top, width, height });
     if (args.newDimensions) {
-        image = image.resize({ width: Math.max(1, Math.round(args.newDimensions.width)),
-            height: Math.max(1, Math.round(args.newDimensions.height)) });
+        image = image.resize({
+            width: Math.max(1, Math.round(args.newDimensions.width)),
+            height: Math.max(1, Math.round(args.newDimensions.height))
+        });
     }
     // Forks are physical images; the requested rotation belongs in the output pixels.
     // A separate pipeline ensures that rotation occurs after the crop and resize.
@@ -97,33 +101,42 @@ async function storeFork(source: ImageSource, args: ImageForkInput, directory: s
         imageMetadata: { width: transformed.info.width, height: transformed.info.height },
     };
     const mimeTypes = { png: "image/png", jpg: "image/jpeg", webp: "image/webp", heic: "image/heic" };
-    return { uploadedAt: new Date(), storedLeafName, mimeType: mimeTypes[args.outputType],
-        sizeBytes: transformed.data.length, customData: JSON.stringify(customData) };
+    return {
+        uploadedAt: new Date(), storedLeafName, mimeType: mimeTypes[args.outputType],
+        sizeBytes: transformed.data.length, customData: JSON.stringify(customData)
+    };
+}
+
+/** Compose an image fork with another write in the caller's authorized snapshot. */
+export async function createImageFork(context: DB3ReadContext, input: ImageForkInput,
+    storageDirectory: string, createdPaths: string[],
+) {
+    const args = ForkImageParamsSchema.parse(input);
+    const auth = context.authorization.requireUser();
+    auth.requirePermission(Permission.upload_files);
+    if (auth.requireBand().publicId !== args.bandPublicId) {
+        throw new AuthorizationError("Image forking requires the selected band.");
+    }
+    const source = await readImageSource(context, args);
+    const fields = forkCreationFields(source, args);
+    await authorizeFileCreation(context, fields);
+    const metadata = await storeFork(source, args, storageDirectory, createdPaths);
+    const file = await createFileRecord(context, fields, metadata);
+    return ForkImageResultSchema.parse({ publicId: xFile.parseIdentity(file.publicId) });
 }
 
 /** Own the image write and audited File insert together, including a failed transaction commit. */
 export async function forkImage(database: DB3ReadRootDatabase, authorization: CMServerAuthorization,
     input: ImageForkInput, storageDirectory: string,
 ) {
-    const args = ForkImageParamsSchema.parse(input);
-    const createdPaths: string[] = [];
-    try {
-        return await database.$transaction(async transaction => {
-            const context = await bindDB3ReadSnapshot(transaction, authorization, { isolationLevel: "Serializable" });
-            const auth = context.authorization.requireUser();
-            auth.requirePermission(Permission.upload_files);
-            if (auth.requireBand().publicId !== args.bandPublicId) {
-                throw new AuthorizationError("Image forking requires the selected band.");
-            }
-            const source = await readImageSource(context, args);
-            const fields = forkCreationFields(source, args);
-            await authorizeFileCreation(context, fields);
-            const metadata = await storeFork(source, args, storageDirectory, createdPaths);
-            const file = await createFileRecord(context, fields, metadata);
-            return ForkImageResultSchema.parse({ publicId: xFile.parseIdentity(file.publicId) });
-        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120_000 });
-    } catch (error) {
-        await Promise.all(createdPaths.map(createdPath => unlink(createdPath)));
-        throw error;
-    }
+    return withFileStorageRollback(createdPaths => database.$transaction(async transaction => {
+        const context = await bindDB3ReadSnapshot(
+            transaction,
+            authorization,
+            { isolationLevel: "Serializable" }
+        );
+
+        return createImageFork(context, input, storageDirectory, createdPaths);
+
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120_000 }));
 }

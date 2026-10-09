@@ -12,8 +12,8 @@ import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/feature
 
 import { createActionRecord } from "@db3/server/recordActionServer";
 import { MakePublicFeedResponseSpec } from "src/core/db3/shared/publicFeedApi";
-import { Permission } from "shared/permissions";
-import type { FrontpageGalleryItemPublicId } from "shared/publicId";
+import { gPermissionRegistry, Permission } from "shared/permissions";
+import { parsePublicId, type FrontpageGalleryItemPublicId } from "shared/publicId";
 import { galleryPublicId } from "../support/galleryFixtures";
 import { createAuthorizationPersona, createAuthorizationTestUser, testPublicRolePermissions } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
@@ -42,6 +42,30 @@ const publicRole = {
         permission: { id: name === Permission.visibility_public ? 700 : 701 + index, name },
     })),
 };
+
+const bandPublicId = parsePublicId<"Band">("GalleryBand00001");
+function resetGalleryEditor(isDeleted = false) {
+    const permissions = [Permission.login, Permission.edit_public_homepage];
+    const actor = createAuthorizationTestUser("normal", { id: 5, permissions });
+    const permissionId = (name: Permission) => gPermissionRegistry.findIndex(definition => definition.key === name) + 1;
+    authorizationTestDb.reset({
+        user: [{ ...actor, globalRoleId: null, isDeleted: false, mergedIntoUserId: null }],
+        band: [{ id: 1, publicId: bandPublicId, isDeleted: false }],
+        bandUser: [{ id: 1, publicId: parsePublicId<"BandUser">("GalleryMember001"), userId: actor.id, bandId: 1, bandRoleId: 20, isDeleted: false }],
+        bandRole: [{ id: 10, isPublicRole: true, isDeleted: false }, { id: 20, isDeleted: false }],
+        permission: gPermissionRegistry.map((definition, index) => ({ id: index + 1, name: definition.key, isDeleted: false })),
+        bandRolePermission: [...testPublicRolePermissions, Permission.edit_public_homepage].map((name, index) => ({
+            id: index + 1, bandRoleId: name === Permission.edit_public_homepage ? 20 : 10, permissionId: permissionId(name),
+        })),
+        file: [{ id: 10, publicId: filePublicId(10), bandId: 1, uploadedByUserId: actor.id,
+            externalURI: null, isDeleted: false, visiblePermissionId: permissionId(Permission.visibility_public) }],
+        frontpageGalleryItem: [galleryRow(20, 0), galleryRow(21, 1, isDeleted), galleryRow(22, 7)].map(row => ({
+            ...row, createdByUserId: actor.id, visiblePermissionId: permissionId(Permission.visibility_public),
+        })),
+        change: [],
+    });
+    return createAuthorizationPersona("normal", { id: actor.id, permissions }).ctx;
+}
 
 describe("FrontpageGalleryItem public identity", () => {
     beforeEach(() => {
@@ -99,16 +123,9 @@ describe("FrontpageGalleryItem public identity", () => {
     });
 
     it("reorders scoped rows and leaves an unrelated row unchanged", async () => {
-        const permissions = [Permission.login, Permission.edit_public_homepage];
-        const actor = createAuthorizationTestUser("normal", { id: 5, permissions });
-        authorizationTestDb.reset({
-            user: [actor],
-            role: [publicRole],
-            frontpageGalleryItem: [galleryRow(20, 0), galleryRow(21, 1), galleryRow(22, 7)],
-            change: [],
-        });
-        const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions });
+        const ctx = resetGalleryEditor();
         await invokeResolver(executeDB3CommandMutation, {
+            bandPublicId,
             commandID: db3.reorderGalleryItemsCommand.commandID,
             payload: {
                 movingItemId: galleryPublicId(20),
@@ -124,16 +141,9 @@ describe("FrontpageGalleryItem public identity", () => {
     });
 
     it("rejects a deleted scoped row before writing", async () => {
-        const permissions = [Permission.login, Permission.edit_public_homepage];
-        const actor = createAuthorizationTestUser("normal", { id: 5, permissions });
-        authorizationTestDb.reset({
-            user: [actor],
-            role: [publicRole],
-            frontpageGalleryItem: [galleryRow(20, 0), galleryRow(21, 1, true)],
-            change: [],
-        });
-        const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions });
+        const ctx = resetGalleryEditor(true);
         await expect(invokeResolver(executeDB3CommandMutation, {
+            bandPublicId,
             commandID: db3.reorderGalleryItemsCommand.commandID,
             payload: {
                 movingItemId: galleryPublicId(20),

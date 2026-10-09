@@ -76,7 +76,10 @@ class FilesSharedAPI {
     }; // getGalleryItemImageInfo
 
     getPublicGalleryImageInfo = (item: PublicGalleryItemSpec) => {
-        return this.getImageFileEditInfo(item, this.getGalleryItemDisplayParams(item));
+        return {
+            ...this.getImageFileEditInfo(item, this.getGalleryItemDisplayParams(item)),
+            imageURI: item.imageFileUri
+        };
     }
 };
 

@@ -441,6 +441,29 @@ export const fileImageSourceView = defineView({
     hydrate: fileImageSourceContract.hydrate,
 });
 
+const fileImageChoiceContract = deriveViewContract(xFile, {
+    select: {
+        publicId: true, fileLeafName: true, storedLeafName: true, description: true,
+        externalURI: true, mimeType: true, customData: true, sizeBytes: true, uploadedByUserId: true
+    },
+}, { references: dashboardReferenceContract });
+
+/** Source choices reuse File ownership/privacy without loading its editor associations. */
+export const fileImageChoiceView = defineView({
+    viewID: "File_ImageChoice", entity: xFile,
+    selection: fileImageChoiceContract.prismaSelection,
+    dtoSchema: fileImageChoiceContract.dtoSchema,
+    references: fileImageChoiceContract.referenceContract,
+    hydrate: (dto, references) => {
+        const file = fileImageChoiceContract.hydrate(dto, references);
+        if (file.fileLeafName === undefined) {
+            throw new Error("File_ImageChoice returned no leaf.");
+        }
+        return { ...file, fileLeafName: file.fileLeafName };
+    },
+    where: () => ({ mimeType: { startsWith: "image/" }, externalURI: null }),
+});
+
 export type FileDetailDto = DtoOf<typeof fileDetailView>;
 export type FileDetailClient = ClientOf<typeof fileDetailView>;
 export type FileEditorClient = ClientOf<typeof fileEditorView>;

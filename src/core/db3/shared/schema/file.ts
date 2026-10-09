@@ -658,6 +658,16 @@ export const xFrontpageGalleryItem = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.FrontpageGalleryItemDelegate>(),
     getIdentity: (item: { publicId: FrontpageGalleryItemPublicId }) => item.publicId,
     tableName: "FrontpageGalleryItem",
+    // The image supplies the band; the gallery creator and field grants remain independent.
+    bandScope: {
+        member: "bandId", via:
+        {
+            relation: "file",
+            ownerUserMember: "uploadedByUserId"
+        },
+        managePermission: Permission.edit_public_homepage
+    },
+    readConsistency: "snapshot",
     deletePolicy: "softOnly",
     viewDeletedPermission: Permission.edit_public_homepage,
     restorePermission: Permission.edit_public_homepage,
@@ -667,12 +677,12 @@ export const xFrontpageGalleryItem = db3.defineTable({
     },
     tableAuthMap: xFrontpageTableAuthMap,
     naturalOrderBy: FrontpageGalleryItemNaturalOrderBy,
-    getParameterizedWhereClause: (params: any): (Prisma.FrontpageGalleryItemWhereInput[]) => [],
+    getParameterizedWhereClause: (): Prisma.FrontpageGalleryItemWhereInput[] => [],
     getRowInfo: (row: FrontpageGalleryItemPayload) => ({
         pk: row.publicId,
         name: row.caption,
         description: row.caption,
-        ownerUserId: null,
+        ownerUserId: row.createdByUserId,
     }),
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
@@ -709,6 +719,7 @@ export const xFrontpageGalleryItem = db3.defineTable({
         }),
         file: foreignRef(() => xFile, {
             fkidMember: "fileId",
+            requireVisibleTarget: true,
             authMap: xFrontpageAuthMap_Basic,
         }),
     })

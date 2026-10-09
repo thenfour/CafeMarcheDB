@@ -25,7 +25,6 @@ import getSongFilterInfo from "@db3/queries/getSongFilterInfo";
 import getGlobalStats from "@db3/queries/getGlobalStats";
 import getSongActivityReport from "@db3/queries/getSongActivityReport";
 import getImportEventData from "@db3/queries/getImportEventData";
-import updateGalleryItemImage from "@db3/mutations/updateGalleryItemImage";
 import getUserCredits from "@db3/queries/getUserCredits";
 import db3queries from "@db3/queries/db3queries";
 import db3paginatedQueries from "@db3/queries/db3paginatedQueries";
@@ -88,16 +87,12 @@ const deferredDomainReaders = [
     { name: "song history", resolve: getSongActivityReport },
 ];
 
-const deferredFileCreators = [
-    { name: "gallery image bake", resolve: updateGalleryItemImage },
-];
-
 const deferredWorkflowEndpoints = [
     { name: "person credits", resolve: getUserCredits },
 ];
 
 describe("deferred domain workflow endpoints", () => {
-    it.each(["SongCredit", "FrontpageGalleryItem"])("guards generic $0 reads in platform and band contexts before database access", async tableID => {
+    it.each(["SongCredit"])("guards generic $0 reads in platform and band contexts before database access", async tableID => {
         const table = db3.GetTableById(tableID);
         for (const bandPublicId of [null, parsePublicId<"Band">("RecoveryBand0001")]) {
             const request = forgeDb3Query(tableID, { table: { tableID, tableName: table.tableName }, bandPublicId });
@@ -108,7 +103,6 @@ describe("deferred domain workflow endpoints", () => {
 
     it.each([
         db3.songCreditEditorView.crud.operations.update.command.commandID,
-        db3.reorderGalleryItemsCommand.commandID,
     ])("guards generic command %s before its transaction", async commandID => {
         await expect(invokeResolver(executeDB3CommandMutation, { commandID, payload: {} }, createAuthorizationTestContext(sysadmin)))
             .rejects.toThrow(ApplicationFeatureUnavailableError);
@@ -129,29 +123,6 @@ describe("deferred domain workflow endpoints", () => {
 });
 
 describe("deferred file creation", () => {
-    it.each(deferredFileCreators)("rejects $name before any source, gallery, catalog or filesystem access", async ({ resolve }) => {
-        const uploader = createAuthorizationTestUser("normal", {
-            id: 15,
-            permissions: [Permission.login, Permission.upload_files, Permission.edit_public_homepage],
-        });
-        const requests: unknown[] = [
-            { parentFileId: parsePublicId<"File">("DeferredFile0001"), outputType: "jpg", quality: 80 },
-            { bandPublicId: parsePublicId<"Band">("UploadBand000001"), routeLocale: "fr-BE", galleryItemId: "unknown" },
-            { bandId: 1, parentFileId: 1, quality: -1 },
-            null,
-        ];
-        for (const actor of [member, uploader, sysadmin]) {
-            for (const input of requests) {
-                await expect(invokeResolver(resolve, input, createAuthorizationTestContext(actor)))
-                    .rejects.toThrow(ApplicationFeatureUnavailableError);
-            }
-        }
-    });
-
-    it.each(deferredFileCreators)("requires login before reporting availability for $name", async ({ resolve }) => {
-        await expect(invokeResolver(resolve, {}, createAuthorizationTestContext(null))).rejects.toThrow("login");
-    });
-
     it("blocks generic File creation before its transaction or metadata hooks", async () => {
         // The empty target is intentional: every authorization read must fail before any typed field is used.
         const forbiddenAuthorization = new Proxy({} as CMServerAuthorization, {

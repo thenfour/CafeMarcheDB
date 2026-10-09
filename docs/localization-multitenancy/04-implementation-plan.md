@@ -134,9 +134,10 @@ Failed uploads clear progress; failed metadata saves retain the draft. Downloads
 previews, playback and recording pin/unpin retain independent File authorization.
 Soft deletion keeps storage for recovery while denying ordinary reads/downloads.
 
-General File pages/search and the image fork service are restored in the
-checkpoints below. Gallery controls/bake and uploads from Markdown/profile/brand/
-gallery callers remain pending with their guards and source archives intact.
+General File pages/search, the image fork service and authenticated frontpage
+gallery controls/bake are restored in the checkpoints below. Uploads from
+Markdown/profile/brand and the separate general gallery browser remain pending
+with their guards and source archives intact.
 
 ## General File pages and search checkpoint
 
@@ -189,21 +190,50 @@ an unsupported encoder fails without creating rows, audits or storage. Any File,
 audit or commit failure removes the generated image and rolls back the database.
 
 The reference has no standalone File image editor: its controls belong to the
-still-deferred gallery page. This checkpoint restores the shared service/RPC and
-verifies outputs through existing File pages/downloads, without claiming gallery
-editor parity. `file-creation` remains pending and its source archives/deferred
+frontpage gallery page, restored in the following checkpoint. This service/RPC
+checkpoint verifies outputs through existing File pages/downloads. `file-creation`
+remains pending for other upload integrations and its source archives/deferred
 specifications are retained.
 
-## Next slice: Gallery image editing and bake
+## Gallery image editing and bake checkpoint
 
-Restore the existing authenticated gallery editor, source selection, crop/rotate/
-resize controls, ordering and bake through adapted Gallery/File owners. Use
-explicit band/public identities, localized source choices and independent File
-visibility. Bake must keep the gallery update, image creation and audit/storage
-rollback together. Its display parameters must account for rotation already baked
-into the pixels, avoiding a second rotation. Verify the actual existing controls
-in the built browser. Anonymous homepage/feed publication and remaining Markdown/
-profile/brand/gallery uploads retain their own obligations until verified.
+The authenticated frontpage gallery editor and original metadata grid are active.
+The existing File supplies the gallery's band through the shared DB3 declaration;
+gallery creator privacy stays independent of image uploader privacy. Required
+File visibility excludes gallery rows whose source is hidden, private, deleted or
+foreign. Captions remain the schema's authored English/Dutch/French fields,
+including intentional blanks. Source choices reuse the narrow authorized File
+view and registry labels. New gallery items can use an existing local image or
+the existing upload/select/drop/paste controls. Upload and gallery registration
+retain the reference's separate calls; only bake owns a combined transaction.
+
+The editor retains its homepage SVG preview, five joystick tools, Reset,
+caption editors, visibility, drag ordering and confirmed soft deletion. Protected
+preview URLs carry band context. Save edits changes display parameters without
+creating an image; failed caption saves retain the draft and editor. Band/locale
+changes discard editor state. The primary page retains edit_public_homepage;
+the metadata grid retains its original Sysadmin capability. Baking also requires
+fresh upload_files authority, while caption/display edits require no image
+management grant.
+
+Bake composes the shared physical fork with the gallery update and both audits
+inside one serializable snapshot/commit. Gallery and source authorization precede
+filesystem work. A gallery write, audit or commit failure rolls back both records
+and removes the generated image. Bake uses the current source File, preserves
+original bytes and resets crop/rotation after applying them to pixels. The shared
+fork's crop/resize-before-rotation order remains explicit; the SVG reference
+preview retains its own framing. All public results omit natural/storage identity.
+Anonymous homepage/feed delivery, other upload integrations and the separate
+general gallery browser retain their pending obligations and source archives.
+
+## Next slice: Public homepage and feed delivery
+
+Restore existing public homepage/agenda/gallery and feed consumers through the
+authorized Event/Gallery/File owners, with explicit public band routing and
+ordered language preferences. Preserve hosting modes, CORS, visibility, agenda/
+gallery ordering and image URLs. Verify anonymous/member publication, private/
+hidden references, independent bands and French/Dutch presentation in the built
+browser and feed consumers. Keep remaining upload integrations separately tracked.
 
 ## Localized catalog text search exception
 
@@ -384,15 +414,42 @@ unchanged; French File metadata/contextual parent-child links; counterclockwise
 JPEG codec/MIME/dimensions; private/deleted/foreign/forged input rejection; fresh
 first-band revocation with independent Dutch second-band WebP creation and foreign
 detail/download 404s; anonymous denial. No uncaught page or unexpected RPC errors
-occurred. Disposable rows, grants, audits and stored files were cleaned up. The
-RPC is exercised directly because its original gallery controls remain deferred.
+occurred. Disposable rows, grants, audits and stored files were cleaned up. That
+checkpoint exercised the RPC directly; the original gallery controls are now
+verified by the following checkpoint.
 
-The complete-suite run still reports 209 failed tests and ten suite-load failures,
+The gallery checkpoint (2026-10-09) passes normal typecheck/build, isolated demo
+build, focused lint, 146 focused checks across eight files and 53 applicable
+schema read-policy checks. The policy file's unrelated missing Locale descriptor
+assertion remains in the full-suite assessment. Native MariaDB passes 292 checks
+across 15 files, retaining the File/image/Song/Event/setlist/attendance regressions.
+The 27 new gallery cases cover shared CRUD/public identities, three captions and
+blanks, creator/image privacy, visible source choices, decoder-verified bake pixels,
+current-source rebake, scoped reorder/audits, soft deletion, fresh grant/account/
+membership/band revocation, independent roles and gallery/audit/commit cleanup.
+Four obsolete deferred-gallery assertions were removed; active reorder fixtures
+now use real selected-band membership and File ownership. Source archives and
+deferred specifications remain intact; preservation verification passes.
+
+Fourteen built-browser groups pass: French protected image/caption rendering;
+three actual Markdown editors and persisted blanks; failed caption save/retry;
+all five joystick tools, Save edits/reload and Reset/crop; actual JPEG bake with
+decoder metadata, audit/parent links and unchanged original; revoked-upload bake
+denial with draft recovery; independent gallery visibility; drag ordering;
+multipart upload/registration; existing-image selection with hidden/foreign
+exclusion; confirmed soft deletion; Dutch second-band bake/foreign-download 404
+and shared-person band switch; original platform metadata grid/page capability;
+anonymous denial. No uncaught page or unexpected RPC errors occurred. Temporary
+rows, grants, audits and stored files were cleaned up. Browser inspection also
+verified fixes for a missing source reference provider, ignored contextual preview
+URLs, invalid crop state after Reset and caption drafts closing after failed saves.
+
+The complete-suite run still reports 208 failed tests and ten suite-load failures,
 including unscoped authorization/account/setlist fixtures, deferred-domain and
 date-policy contracts; the runner stops before the later jsdom batches. Focused
-passes do not establish A1 readiness. The latest run passes 1753 tests and skips
-454; its 209 failed tests and ten suite-load failure labels match the previous
-general File checkpoint exactly. Earlier built-browser member/profile/wiki/
+passes do not establish A1 readiness. The latest run passes 1758 tests and skips
+481; no failure labels were added compared with the image fork checkpoint, and
+the gallery reorder fixture now passes. Earlier built-browser member/profile/wiki/
 download checks remain recorded evidence, not workflows rerun by these slices.
 
 The [development seeder](../development-seeding.md) restores the pre-migration
@@ -409,7 +466,7 @@ A normal Prisma reset on a disposable database produced two bands, 80 people,
 password login, both bands' content, Song detail, welcome wiki, SVG/WAV delivery
 and the French inherited trumpet override with no page/RPC errors. The smaller
 [isolated demo workflow](../demo-seeding.md) remains available. Repository-wide
-tests still report the separate 209 failures and ten suite-load failures above.
+tests still report the separate 208 failures and ten suite-load failures above.
 
 `yarn migration:verify` protects the source inventory and deferred specifications;
 it does not prove runtime parity. Full feature completion uses the separate

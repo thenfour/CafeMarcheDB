@@ -49,16 +49,19 @@ function policyAuthorization(table: db3.xTable, auth = actorPublicData): CMServe
 function makePolicyRow(
   table: db3.xTable,
   overrides: Record<string, unknown> = {},
+  referenceVisibilityId = grantedVisibilityId,
 ): { id: number; [key: string]: unknown } {
   // Synthetic rows follow each descriptor's policy columns, rather than one Prisma model.
   const row: Record<string, unknown> = { id: 1, publicId: policyPublicId, externalURI: null, user: { isDeleted: false, mergedIntoUserId: null } }
   const parent = table.getBandOwnershipParent()
   if (parent) {
-    row[parent.relation] = makePolicyRow(parent.table)
+    row[parent.relation] = makePolicyRow(parent.table, {}, referenceVisibilityId)
   } else if (table.bandScope?.via) {
-    row[table.bandScope.via.relation] = {
-      [table.bandScope.member]: 1,
-      [table.bandScope.via.ownerUserMember]: actor.id + 1,
+    const relation = table.prismaMemberRegistry.get(table.bandScope.via.relation)
+    const target = relation?.kind === "foreignObject" ? relation.getTargetTable() : undefined
+    // A required source has its own visibility/deletion policy, beyond supplying the band.
+    row[table.bandScope.via.relation] = target ? makePolicyRow(target, {}, referenceVisibilityId) : {
+      [table.bandScope.member]: 1, [table.bandScope.via.ownerUserMember]: actor.id + 1,
     }
   } else if (table.bandScope?.member !== undefined) {
     row[table.bandScope.member] = 1
@@ -67,7 +70,7 @@ function makePolicyRow(
   const visibilityColumn = table.SqlSpecialColumns.visiblePermission
   const ownerColumn = table.SqlSpecialColumns.ownerUser
   if (deletedColumn) row[deletedColumn.member] = false
-  if (visibilityColumn) row[visibilityColumn.fkidMember!] = grantedVisibilityId
+  if (visibilityColumn) row[visibilityColumn.fkidMember!] = referenceVisibilityId
   if (ownerColumn) row[ownerColumn.fkidMember || ownerColumn.member] = actor.id + 1
   return { ...row, ...overrides } as { id: number; [key: string]: unknown }
 }
@@ -191,12 +194,12 @@ describe("schema-wide DB3 read-policy contracts", () => {
 
       const publicRowMatches = matchesWhere(makePolicyRow(table, {
         [visibilityColumn.fkidMember!]: publicVisibilityId,
-      }), where as any)
+      }, publicVisibilityId), where as any)
       expect(publicRowMatches).toBe(table.authorizeTableForView(auth))
       expect(matchesWhere(makePolicyRow(table, {
         [visibilityColumn.fkidMember!]: null,
         [ownerColumn.fkidMember || ownerColumn.member]: actor.id,
-      }), where as any)).toBe(false)
+      }, publicVisibilityId), where as any)).toBe(false)
     }
   })
 
@@ -265,6 +268,12 @@ describe("read-policy composition boundaries", () => {
   it.each(visibilityTables.map(table => [table.tableID, table] as const))(
     "%s groups the raw-SQL permission/owner OR before composing adjacent predicates",
     (_tableId, table) => {
+      if (table.bandScope?.via || table.bandScope?.inheritsBandFrom) {
+        // This helper has no authorized parent join; indirect owners must use the shared read owner.
+        expect(() => table.SqlGetVisFilterExpression({ auth: policyAuthorization(table), tableAlias: "P" }))
+          .toThrow(`SQL visibility requires direct band ownership: ${table.tableID}.`)
+        return
+      }
       const policySql = table.SqlGetVisFilterExpression({ auth: policyAuthorization(table), tableAlias: "P" })
       const composedSql = SqlCombineAndExpression(["(P.id = 123)", policySql])
       const visibilityColumn = table.SqlSpecialColumns.visiblePermission!.fkidMember!

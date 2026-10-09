@@ -99,7 +99,8 @@ export interface ForkImageParams {
 };
 
 export interface UpdateGalleryItemImageParams {
+    bandPublicId: BandPublicId;
     galleryItemId: FrontpageGalleryItemPublicId;
-    imageParams: ForkImageParams;
+    imageParams: Omit<ForkImageParams, "bandPublicId">;
 };
 

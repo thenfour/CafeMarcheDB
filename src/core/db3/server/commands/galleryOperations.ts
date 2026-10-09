@@ -20,9 +20,13 @@ export const galleryReorderCommandHandler = defineCommandHandler(
                     context.authorization, context.transaction,
                 );
                 return context.transaction.frontpageGalleryItem.findMany({
-                    where: { id: { in: ids }, isDeleted: false },
+                    where: {
+                        id: { in: ids },
+                        isDeleted: false
+                    },
+                    include: { file: true },
                     orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
-                }) as Promise<Prisma.FrontpageGalleryItemGetPayload<{}>[]>; // The transaction delegate is runtime selected.
+                }) as Promise<Prisma.FrontpageGalleryItemGetPayload<{ include: { file: true } }>[]>; // The transaction delegate is runtime selected.
             },
             writeChange: async change => {
                 await context.rowServices.update(

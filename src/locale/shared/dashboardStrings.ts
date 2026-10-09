@@ -3,6 +3,13 @@ import { plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 
 const label = (defaultValue: string) => plainStaticString({ defaultValue, description: "Dashboard recovery interface", schema: z.string() });
 export const dashboardStrings = {
+    "gallery.addExistingImage": label("Add an existing image"),
+    "gallery.chooseImage": label("Choose an existing image"),
+    "gallery.imagesOnly": label("Choose image files for the gallery."),
+    "gallery.localImagesOnly": label("Choose local image files."),
+    "gallery.created": label("Gallery item created."),
+    "gallery.createError": label("Error creating gallery item"),
+    "gallery.uploadError": label("Error uploading gallery images"),
     "files.upload": label("Upload"),
     "files.choose": label("Choose files"),
     "files.drop": label("Upload files..."),
