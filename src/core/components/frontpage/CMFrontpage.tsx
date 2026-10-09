@@ -4,32 +4,36 @@ import { NoSsr } from "@mui/material";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
-import { EnNlFr, LangSelectString, ParseLanguageCode } from "shared/lang";
+import { EnNlFr, LangSelectString } from "shared/lang";
 import GoogleAnalytics from "src/core/components/GoogleAnalytics";
+import type { PublicFeedInput } from "src/core/db3/shared/publicFeedInput";
 import { PublicFeedResponseSpec } from "../../db3/shared/publicTypes";
 
-const MainContent = ({ lang, onLangChange, publicFeed }: { lang: EnNlFr, onLangChange: (newLang: EnNlFr) => void, publicFeed: PublicFeedResponseSpec }) => {
-    const sess = useSession();
+interface CMPublicIndexProps {
+    publicFeed: PublicFeedResponseSpec;
+    selection: PublicFeedInput;
+    lang: EnNlFr;
+}
 
+const MainContent = ({ lang, onLangChange, publicFeed, selection }: CMPublicIndexProps & { onLangChange: (newLang: EnNlFr) => void }) => {
+    const sess = useSession();
     return <NoSsr>
-        <GoogleAnalytics trackingId={sess.GOOGLE_ANALYTICS_ID_BACKSTAGE} />
-        <HomepageMain content={publicFeed} className="realFrontpage" fullPage={true} lang={lang} onLangChange={onLangChange} />
+        <GoogleAnalytics trackingId={sess.GOOGLE_ANALYTICS_ID_PUBLIC} />
+        <HomepageMain key={JSON.stringify(selection)} content={publicFeed} presentation={selection}
+            className="realFrontpage" fullPage={true} lang={lang} onLangChange={onLangChange} />
     </NoSsr>;
 };
 
-
-export const CMPublicIndex = (props: { publicFeed: PublicFeedResponseSpec }) => {
+export const CMPublicIndex = (props: CMPublicIndexProps) => {
     const router = useRouter();
-    const { locale } = router;
-
-    const [userSelectedLang, setUserSelectedLang] = React.useState<EnNlFr | null>(null);
-
     const handleManualLangChange = async (newLang: EnNlFr) => {
-        setUserSelectedLang(newLang);
-        await router.push(router.pathname, router.asPath, { locale: newLang });
+        await router.push({
+            pathname: "/",
+            query: { ...router.query, bandPublicId: props.selection.bandPublicId, routeLocale: newLang }
+        },
+            undefined, { locale: newLang });
     };
-
-    const lang = userSelectedLang || ParseLanguageCode(locale);
+    const lang = props.lang;
     const titleText = `Café Marché | Brussels fanfare-orkest`;
 
     return <>
@@ -59,7 +63,7 @@ export const CMPublicIndex = (props: { publicFeed: PublicFeedResponseSpec }) => 
         </Head>
         <link href="/homepage/public.css" rel="stylesheet" type="text/css" />
         <Suspense>
-            <MainContent lang={lang} onLangChange={handleManualLangChange} publicFeed={props.publicFeed} />
+            <MainContent {...props} onLangChange={handleManualLangChange} />
             <div></div>
         </Suspense>
 

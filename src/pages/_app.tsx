@@ -200,8 +200,8 @@ function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pag
               <React.Suspense fallback={<span role="status">Loading language and settings…</span>}>
                 <PresentationProvider
                   initial={pageProps.presentation}
-                  bandPublicId={presentationInput.bandPublicId ?? null}
-                  routeLocale={presentationInput.routeLocale ?? null}
+                  bandPublicId={presentationInput.bandPublicId ?? (router.pathname === "/" ? pageProps.presentation?.input.bandPublicId : null) ?? null}
+                  routeLocale={presentationInput.routeLocale ?? (router.pathname === "/" ? pageProps.presentation?.input.routeLocale : null) ?? null}
                 >
                   {getLayout(<Component {...pageProps} />)}
                 </PresentationProvider>
@@ -232,7 +232,8 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
   let bootstrap: Awaited<ReturnType<typeof getPageBootstrap>>;
   try {
     const presentationInput = pagePresentationInput(appCtx.ctx.query, req?.headers["accept-language"]);
-    const input = { ...presentationInput, pathname };
+    const routeLocale = presentationInput.routeLocale ?? (pathname === "/" && appCtx.ctx.locale !== appCtx.ctx.defaultLocale ? appCtx.ctx.locale : undefined);
+    const input = { ...presentationInput, routeLocale, pathname };
     bootstrap = req ? await getPageBootstrap(input, appCtx.ctx) : await invoke(getPageBootstrap, input);
   } catch (error) {
     if (error instanceof AuthorizationError && res) {
@@ -242,8 +243,9 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
       return { pageProps: {} };
     }
     // App bootstrap runs before the catch-all's own 404 handler.
+    // LSMB todo: this behavior needs to go in a dedicated, centralized structured router.
     const invalidBandInput = error instanceof ZodError && error.issues.some(issue => issue.path[0] === "bandPublicId");
-    if (pathname === "/[...customLinkSlug]" && (error instanceof NotFoundError || invalidBandInput)) {
+    if ((pathname === "/[...customLinkSlug]" || pathname === "/") && (error instanceof NotFoundError || invalidBandInput || (pathname === "/" && error instanceof RangeError))) {
       if (res) {
         res.statusCode = 404;
         res.end();

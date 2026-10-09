@@ -1,3 +1,4 @@
+import type { DB3QueryContextInput } from "../../db3/components/useDB3Context";
 import { withMemberPresentation } from "../user/bandMemberLinks";
 // <Markdown> = rendered markdown text (simple read only html)
 // <MarkdownEditor> = just the text editor which outputs markdown
@@ -34,6 +35,7 @@ import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface MarkdownProps {
+    presentation?: DB3QueryContextInput;
     markdown: string | null,
     id?: string,
     className?: string,
@@ -43,6 +45,7 @@ interface MarkdownProps {
 export const Markdown = (props: MarkdownProps) => {
     const [html, setHtml] = React.useState('');
     const dashboardContext = useDashboardContext();
+    const presentation = props.presentation ?? dashboardContext.memberPresentation;
     const containerRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
@@ -70,8 +73,9 @@ export const Markdown = (props: MarkdownProps) => {
             if (ihref >= 0) {
                 // distinguish internal vs. external.
                 const href = tokens[idx].attrs[ihref][1];
-                if (href?.startsWith("/backstage/wiki/")) {
-                    tokens[idx].attrs[ihref][1] = withMemberPresentation(href, dashboardContext.memberPresentation);
+                // lsmb todo: use a real routing mechanism, not ad-hoc parsing
+                if (href?.startsWith("/backstage/") || href?.startsWith("/api/files/download/")) {
+                    tokens[idx].attrs[ihref][1] = withMemberPresentation(href, presentation);
                 }
                 if (href) {
                     const hrefClass = dashboardContext.routingApi.getURLClass(href);
@@ -114,13 +118,13 @@ export const Markdown = (props: MarkdownProps) => {
         };
 
         md.use(md => ReactInlineMarkdownPlugin(md));
-        md.use(ImageDimensionsMarkdownPlugin);
-        md.use(CMDBLinkMarkdownPlugin, dashboardContext.memberPresentation);
+        md.use(ImageDimensionsMarkdownPlugin, presentation);
+        md.use(CMDBLinkMarkdownPlugin, presentation);
         md.use(md => AbcNotationMarkdownPlugin(md));
 
         setHtml(md.render(props.markdown));
 
-    }, [props.markdown, dashboardContext.memberPresentation.bandPublicId, dashboardContext.memberPresentation.routeLocale]);
+    }, [props.markdown, presentation.bandPublicId, presentation.routeLocale]);
 
     return <NoSsr>
         {IsNullOrWhitespace(props.markdown) ? null :

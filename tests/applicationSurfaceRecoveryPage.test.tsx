@@ -30,7 +30,6 @@ import Gallery from "src/pages/backstage/frontpagegallery";
 import EditGallery from "src/pages/backstage/editFrontpageGalleryItems";
 import Examples from "src/pages/backstage/gallery";
 import GridExamples from "src/pages/backstage/test";
-import PublicIndex from "src/pages/index";
 import WikiSearch from "src/pages/backstage/wikiPages";
 
 let language = "en-US";
@@ -61,9 +60,4 @@ describe("reachable deferred application pages", () => {
         expect(container.querySelector('[role="alert"]')?.textContent).toMatch(/^fr-BE:/);
     });
 
-    it("renders the public root without its feed request and retains a usable login destination", async () => {
-        await act(async () => root.render(<PublicIndex />));
-        expect(container.querySelector('[role="status"]')?.textContent).toContain("temporarily unavailable");
-        expect(container.querySelector("a")?.getAttribute("href")).toBe("/backstage");
-    });
 });

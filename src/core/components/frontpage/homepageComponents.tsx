@@ -1,3 +1,5 @@
+import type { DB3QueryContextInput } from "../../db3/components/useDB3Context";
+import { withMemberPresentation } from "../user/bandMemberLinks";
 import { nanoid } from 'nanoid';
 import React from "react";
 import { EnNlFr, LangSelectString } from 'shared/lang';
@@ -16,7 +18,7 @@ const gSettings = {
     landscapeNaturalWidth: 1500, // horiz
 };
 
-export const generateHomepageId = (n: string, instanceKey: string, postId: PublicGalleryItemSpec["fileId"]) => `${n}_${instanceKey}_${postId}`;
+export const generateHomepageId = (n: string, instanceKey: string, postId: PublicGalleryItemSpec["galleryItemId"]) => `${n}_${instanceKey}_${postId}`;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -33,7 +35,7 @@ export interface HomepagePhotoPatternProps {
 
 export const HomepagePhotoPattern = ({ post, ...props }: HomepagePhotoPatternProps) => {
 
-    const id = (name: string) => generateHomepageId(name, props.instanceKey, post.fileId);// `${n}_${props.instanceKey}_${post.id}`;
+    const id = (name: string) => generateHomepageId(name, props.instanceKey, post.galleryItemId);// `${n}_${props.instanceKey}_${post.id}`;
 
     const info = SharedAPI.files.getPublicGalleryImageInfo(post);
 
@@ -62,7 +64,7 @@ export const HomepagePhotoPattern = ({ post, ...props }: HomepagePhotoPatternPro
 // the point is to show what the final image would look like if you baked it.
 export const HomepagePhotoMaskPattern = ({ post, ...props }: HomepagePhotoPatternProps) => {
 
-    const id = (name: string) => generateHomepageId(name, props.instanceKey, post.fileId);// `${n}_${props.instanceKey}_${post.id}`;
+    const id = (name: string) => generateHomepageId(name, props.instanceKey, post.galleryItemId);// `${n}_${props.instanceKey}_${post.id}`;
     const info = SharedAPI.files.getPublicGalleryImageInfo(post);
 
     /*
@@ -93,7 +95,7 @@ export const HomepagePhotoMaskPattern = ({ post, ...props }: HomepagePhotoPatter
             <image
                 href={info.imageURI}
                 x={0} y={0}
-                id={id(`galleryPatternImage`)}
+                id={id(`galleryMaskImage`)}
             />
             <rect x="0" y="0" width={info.fileDimensions.width} height={info.fileDimensions.height} className='imageStroke' />
             {/* TOP mask */}
@@ -201,11 +203,11 @@ class Gallery {
         const nextPostID = this.bringIndexIntoRange(this.selectedIdx + 1);
         const nextPost = posts[nextPostID]!;
 
-        const thisPostImage = document.getElementById(`galleryPatternImage_${this.instanceKey}_${post.fileId}`);
+        const thisPostImage = document.getElementById(`galleryPatternImage_${this.instanceKey}_${post.galleryItemId}`);
         if (thisPostImage) {
             thisPostImage.setAttribute('href', post.imageFileUri)
         }
-        const nextPostImage = document.getElementById(`galleryPatternImage_${this.instanceKey}_${nextPost.fileId}`);
+        const nextPostImage = document.getElementById(`galleryPatternImage_${this.instanceKey}_${nextPost.galleryItemId}`);
         if (nextPostImage) {
             nextPostImage.setAttribute('href', nextPost.imageFileUri);
         }
@@ -214,7 +216,7 @@ class Gallery {
         const b = this.ab ? this.mainSVGRefs.galleryPhoto1Ref : this.mainSVGRefs.galleryPhoto2Ref;
         if (!a || !b) return; // error actually.
 
-        a.setAttribute("fill", `url(#galleryPattern_${this.instanceKey}_${post.fileId})`);
+        a.setAttribute("fill", `url(#galleryPattern_${this.instanceKey}_${post.galleryItemId})`);
 
         if (this.photoSelectorRef) {
             this.photoSelectorRef.style.setProperty("--count", `${posts.length}`);
@@ -225,8 +227,7 @@ class Gallery {
     }
 
     getSelectedPost(): PublicGalleryItemSpec | null {
-        if (!this.content) return null;
-        return this.content.gallery[this.getSelectedIndex()]! as any; // it's hard to understand the typing here; no time to fix.
+        return this.content?.gallery[this.getSelectedIndex()] ?? null;
     }
 
     getSelectedIndex(): number {
@@ -236,7 +237,7 @@ class Gallery {
     bringIndexIntoRange(index: number): number {
         if (!this.content) return index;
         if (this.content.gallery.length < 1) return index; // nothing will be displayed anyway.
-        return modulo(this.selectedIdx, this.content.gallery.length);
+        return modulo(index, this.content.gallery.length);
     }
 
     setSelectedIdx(idx) {
@@ -250,6 +251,7 @@ class Gallery {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface AgendaItemProps {
+    presentation?: DB3QueryContextInput;
     item: PublicAgendaItemSpec;
 };
 
@@ -270,7 +272,7 @@ export class AgendaItem extends React.Component<AgendaItemProps> {
             {!IsNullOrWhitespace(post.location) && IsNullOrWhitespace(post.locationURI) && <div className="agendaLocation">{gIconMap.Place()}{post.location}</div>}
             {!IsNullOrWhitespace(post.time) && <div className="agendaTime">{gIconMap.Schedule()}{post.time}</div>}
             {!IsNullOrWhitespace(post.tags) && <div className="agendaTags">{post.tags}</div>}
-            {!IsNullOrWhitespace(post.detailsMarkdown) && <Markdown markdown={post.detailsMarkdown || ""} className="agendaDetails" />}
+            {!IsNullOrWhitespace(post.detailsMarkdown) && <Markdown markdown={post.detailsMarkdown || ""} className="agendaDetails" presentation={this.props.presentation} />}
 
         </div>
         );
@@ -384,7 +386,7 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
             <defs>
                 {
                     props.content.gallery.map((post, idx) => <HomepagePhotoPattern
-                        key={post.fileId}
+                        key={post.galleryItemId}
                         instanceKey={props.instanceKey}
                         post={post as any} // TODO: hackhack asany
                         editable={props.editable}
@@ -393,7 +395,7 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
                 }
                 {
                     props.content.gallery.map((post, idx) => <HomepagePhotoMaskPattern
-                        key={post.fileId}
+                        key={post.galleryItemId}
                         instanceKey={props.instanceKey}
                         post={post as any} // TODO: hackhack asany
                         editable={props.editable}
@@ -551,6 +553,7 @@ const correctLayoutFromRef = (refel: SVGForeignObjectElement | undefined | null,
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface HomepageMainProps {
+    presentation?: DB3QueryContextInput;
     content: PublicFeedResponseSpec;
     className?: string;
     fullPage: boolean; //
@@ -703,7 +706,7 @@ export const HomepageMain = ({ content, className, fullPage, editable, lang, onL
             }
             <div className="photoCaptionContainer" ref={photoCaptionContainerRef}>
                 <div className="photoCaptionContainerWrapShape"></div>
-                <Markdown className="photoCaption" markdown={captionMarkdown} />
+                <Markdown className="photoCaption" markdown={captionMarkdown} presentation={props.presentation} />
             </div>
 
             <div className="photoSelectContainer" ref={photoSelectContainerRef}>
@@ -715,7 +718,7 @@ export const HomepageMain = ({ content, className, fullPage, editable, lang, onL
                 </div>
                 <ul className="photoSelector" ref={photoSelectorRef}>
                     {content.gallery.map((post, i) => (
-                        <li key={i} onClick={() => onSelectPhoto(i)}>
+                        <li key={post.galleryItemId} onClick={() => onSelectPhoto(i)}>
                             <svg viewBox="-25 -25 350 350" preserveAspectRatio="xMidYMid meet" className={"photoSelectHex" + (i === gallery.getSelectedIndex() ? " selected" : "")} >
                                 <polygon className="photoSelectHexShape1" points="150,300 280,225 280,75 150,0 20,75 20,225"></polygon>
                                 <polygon className="photoSelectHexShape2" points="150,300 280,225 280,75 150,0 20,75 20,225"></polygon>
@@ -728,13 +731,13 @@ export const HomepageMain = ({ content, className, fullPage, editable, lang, onL
             <div className="agendaContent frontpageAgendaContentWrapper" ref={agendaContentRef}>
                 <div className="agendaContentContainer">
                     {content.agenda.map((p, i) => {
-                        return <AgendaItem key={i} item={p} />;
+                        return <AgendaItem key={p.id} item={p} presentation={props.presentation} />;
                     })}
                     {props.additionalAgendaChildren}
                     {editable && (
                         <svg width="100%" height="500">
                             <rect width="100%" height="100%" fill="black"></rect>
-                            <rect width="100%" height="100%" fill={`url(#galleryPatternMask_${instanceKey}_${content.gallery[0]?.fileId})`}></rect>
+                            <rect width="100%" height="100%" fill={`url(#galleryPatternMask_${instanceKey}_${content.gallery[0]?.galleryItemId})`}></rect>
                         </svg>
                     )}
                 </div>
@@ -745,7 +748,7 @@ export const HomepageMain = ({ content, className, fullPage, editable, lang, onL
                     <img className="nbrussel" src="/homepage/CMbrusselicon.png" />
                 </div>
 
-                <div className="backstageContainer new"><a href={gSettings.backstageURL}><img src="/homepage/CMbackstage.png"></img></a></div>
+                <div className="backstageContainer new"><a href={withMemberPresentation(gSettings.backstageURL, props.presentation ?? {})}><img src="/homepage/CMbackstage.png"></img></a></div>
             </>
             }
         </div>

@@ -237,11 +237,15 @@
       "reason": "Anonymous public homepage/agenda/feed delivery still uses deferred unscoped readers; authenticated event frontpage and gallery editors are restored.",
       "restore": "Restore band-specific public homepage, agenda, galleries and feed delivery, including hosting modes, language selection, CORS, image editing and visibility with explicit public band routing and authorized reads/writes.",
       "verification": "Verify anonymous and member publication in two bands/locales, privacy, CORS/feed consumers, gallery ordering/images and built-browser homepage/editor workflows.",
-      "status": "pending",
+      "status": "restored",
       "evidence": [
         "2026-10-08: Authenticated event-detail frontpage field editing uses the shared Event write owner and explicit band/public targets, including existing English/French/Dutch fields and visibility. Public homepage/agenda/feed/gallery delivery and imports remain guarded or incomplete; this is editor evidence only.",
         "2026-10-09: Original authenticated frontpage gallery and metadata-grid editors are active through the shared Gallery/File owners. Band comes from File; gallery creator and source uploader privacy stay independent, and required source visibility excludes hidden/deleted/foreign gallery images. Three authored captions preserve blanks; caption/display saves, image selection/upload, five tools/reset, original homepage preview, visibility, drag ordering and soft deletion retain reference behavior. Bake is atomic with physical File creation/audits/storage and resets baked display edits. Contextual protected URLs and band/locale remounts discard earlier editor state. Primary page retains edit_public_homepage and metadata grid retains Sysadmin capability.",
-        "Fourteen production-demo browser groups and 27 new native gallery cases verify the authenticated workflow, French/Dutch context, independent privacy, hidden/foreign choices, actual controls/captions/order/upload/deletion, failed-save drafts, physical pixels/metadata, fresh revocation and rollback. See 04-implementation-plan.md#verification-status for retained regressions and full-suite limits. Anonymous homepage/agenda/feed delivery, hosting modes/CORS and public feed consumers remain pending; all public-publication source references are retained until the full obligation is verified."
+        "Fourteen production-demo browser groups and 27 new native gallery cases verify the authenticated workflow, French/Dutch context, independent privacy, hidden/foreign choices, actual controls/captions/order/upload/deletion, failed-save drafts, physical pixels/metadata, fresh revocation and rollback. See 04-implementation-plan.md#verification-status for retained regressions and full-suite limits. Anonymous homepage/agenda/feed delivery, hosting modes/CORS and public feed consumers remain pending; all public-publication source references are retained until the full obligation is verified.",
+        "2026-10-09: Public homepage and /api/public are restored through a narrow Event publication view and existing Gallery/File owners. Content, enabled locales and current grants share one RepeatableRead snapshot. Requests use explicit band public IDs; only the CafeMarche root may use trusted CMDB_PUBLIC_BAND_PUBLIC_ID configuration. GenericSingleTenant retains its contextual Backstage redirect. No database-order band inference or self-HTTP homepage feed request remains.",
+        "Authored fields resolve independently through ordered route/browser preferences and enabled band locales, retaining intentional blanks. The original agenda/gallery JSON contract, chronological agenda and gallery ordering, crop/rotation, protected absolute File URLs, original SVG homepage and language selector are retained. Same-origin member feed previews use current member authority; crossorigin reads and published homepage use anonymous authority. GET/HEAD/OPTIONS and strict input/status handling are explicit; wildcard feed CORS grants no credentialed or protected-download access. Contextual Markdown, band/language remounts and gallery public identity prevent old or reused-image state collisions. The matching four-line carousel identity fix is included in CafeMarcheHomepage.",
+        "Validation: 302 native tests in 16 files, including 10 publication cases; 45 focused tests in seven files; both normal and isolated demo production builds and standalone SPA build; built-browser homepage/standalone groups covering two bands, French/Dutch, real controls/autoplay/crops/image pixels, member/private content, CORS and immediate source deletion; both hosting modes and missing/invalid selection checks. The 27 native gallery cases and 14 gallery browser groups also pass in the final regression run. The complete suite retains 208 test failures and 10 suite-load failures with no added failure labels; A1/B remain open. See 04-implementation-plan.md for details and configuration.",
+        "The four completed public-publication source blocks and manifest reference entries were removed after accounting for homepage/feed and original gallery editors. Event parity/imports, other upload callers, generic gallery examples and remaining deferred specifications keep their own obligations."
       ]
     },
     {
@@ -1954,18 +1958,6 @@
       "sha256": "0eb20434a59da009e3e2774b97a9db4f759c2ed06d44c53cb9725ed5aea6ab8c"
     },
     {
-      "file": "src/pages/backstage/frontpagegallery.tsx",
-      "featureId": "public-publication",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/frontpagegallery.tsx:1-658",
-      "sha256": "346402e677169ca776d2f7a4885f9c8e44d9901a80c62515c060d0fcdcb18538"
-    },
-    {
-      "file": "src/pages/backstage/editFrontpageGalleryItems.tsx",
-      "featureId": "public-publication",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/editFrontpageGalleryItems.tsx:1-41",
-      "sha256": "157c667b33e001db672507412b5d0fe0a5b90746175ada78073904718bd2f7c4"
-    },
-    {
       "file": "src/pages/backstage/gallery.tsx",
       "featureId": "developer-examples",
       "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/gallery.tsx:1-474",
@@ -1976,12 +1968,6 @@
       "featureId": "developer-examples",
       "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/test.tsx:1-272",
       "sha256": "a8f67e7a82c9bcc421082d853c3cb4aa86105b3083bda6ed6290128bd8b4bec6"
-    },
-    {
-      "file": "src/pages/index.tsx",
-      "featureId": "public-publication",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/index.tsx:1-36",
-      "sha256": "fc60646b33fbede7210bad29381e6f5f41147c4863d73eea5445854389addf32"
     },
     {
       "file": "src/core/db3/mutations/updateEventBasicFields.ts",
@@ -2018,12 +2004,6 @@
       "featureId": "song-workflows",
       "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/db3/queries/getUserCredits.ts:1-36",
       "sha256": "d27a3a3a8c7cc1f6031188fe2b568b452752652638b406610b82121c1ae0260c"
-    },
-    {
-      "file": "src/pages/api/public.ts",
-      "featureId": "public-publication",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/api/public.ts:1-82",
-      "sha256": "dffcf1c4d2e6274385fcf9e344b51ce16a4f38bb5ff0e3a06d7bbdab077e4a27"
     },
     {
       "file": "src/pages/api/search/getSearchResultsApi.ts",

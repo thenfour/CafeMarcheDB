@@ -110,3 +110,44 @@ export const eventFrontpageView = defineView({
 export type EventFrontpageDBPayload = DbPayloadOf<typeof eventFrontpageView>;
 export type EventFrontpageDto = DtoOf<typeof eventFrontpageView>;
 export type EventFrontpageClient = ClientOf<typeof eventFrontpageView>;
+
+
+// Publication needs authored fields only; editor metadata belongs to eventFrontpageView.
+const eventPublicFeedSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
+    select: {
+        publicId: true,
+        startsAt: true,
+        frontpageVisible: true,
+        frontpageDate: true,
+        frontpageTime: true,
+        frontpageDetails: true,
+        frontpageTitle: true,
+        frontpageLocation: true,
+        frontpageLocationURI: true,
+        frontpageTags: true,
+        frontpageDate_nl: true,
+        frontpageTime_nl: true,
+        frontpageDetails_nl: true,
+        frontpageTitle_nl: true,
+        frontpageLocation_nl: true,
+        frontpageLocationURI_nl: true,
+        frontpageTags_nl: true,
+        frontpageDate_fr: true,
+        frontpageTime_fr: true,
+        frontpageDetails_fr: true,
+        frontpageTitle_fr: true,
+        frontpageLocation_fr: true,
+        frontpageLocationURI_fr: true,
+        frontpageTags_fr: true,
+    },
+});
+const eventPublicFeedContract = deriveViewContract(xEvent, eventPublicFeedSelection);
+export const eventPublicFeedView = defineView({
+    viewID: "Event_PublicFeed",
+    entity: xEvent,
+    where: { frontpageVisible: true },
+    selection: eventPublicFeedContract.prismaSelection,
+    dtoSchema: eventPublicFeedContract.dtoSchema,
+    hydrate: eventPublicFeedContract.hydrate,
+});
+export type EventPublicFeedDto = DtoOf<typeof eventPublicFeedView>;

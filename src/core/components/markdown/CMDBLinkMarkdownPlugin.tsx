@@ -17,11 +17,11 @@ import type { DB3QueryContextInput } from "src/core/db3/components/useDB3Context
 //             token.content = token.content.replace(linkRegex, (match, type, id, caption) => {
 //                 if (id && type === 'event') {
 //                     caption = caption || `Event ${id}`; // Default caption if none provided
-//                     return `<a href="/backstage/event/${id}" class="wikiCMLink wikiEventLink">📅 ${caption}</a>`;
+//                     return `<a href="${withMemberPresentation(`/backstage/event/${id}`, context)}" class="wikiCMLink wikiEventLink">📅 ${caption}</a>`;
 //                 }
 //                 if (id && type === 'song') {
 //                     caption = caption || `Song ${id}`; // Default caption if none provided
-//                     return `<a href="/backstage/song/${id}" class="wikiCMLink wikiSongLink">🎵 ${caption}</a>`;
+//                     return `<a href="${withMemberPresentation(`/backstage/song/${id}`, context)}" class="wikiCMLink wikiSongLink">🎵 ${caption}</a>`;
 //                 }
 //             });
 //         }
@@ -63,10 +63,10 @@ export function CMDBLinkMarkdownPlugin(md: MarkdownIt, context: DB3QueryContextI
         output = output.replace(MarkdownMentionRegex, (match, type, id, caption) => {
             if (type === 'event') {
                 caption = caption || `Event ${id}`;
-                return `<a href="/backstage/event/${id}" class="wikiCMLink wikiEventLink">📅 ${caption}</a>`;
+                return `<a href="${withMemberPresentation(`/backstage/event/${id}`, context)}" class="wikiCMLink wikiEventLink">📅 ${caption}</a>`;
             } else if (type === 'song') {
                 caption = caption || `Song ${id}`;
-                return `<a href="/backstage/song/${id}" class="wikiCMLink wikiSongLink">🎵 ${caption}</a>`;
+                return `<a href="${withMemberPresentation(`/backstage/song/${id}`, context)}" class="wikiCMLink wikiSongLink">🎵 ${caption}</a>`;
             }
             return match;
         });

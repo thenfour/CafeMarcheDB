@@ -5,12 +5,14 @@ import * as db3 from "@db3/db3";
 import { FormControlLabel, Switch } from "@mui/material";
 import { Prisma } from "db";
 import React from "react";
-import { EnNlFr, LangSelectStringWithDetail } from "shared/lang";
+import { EnNlFr } from "shared/lang";
 import { DateTimeRange } from "shared/time";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { Localized } from "../../../setting/client/components/SettingMarkdown";
 import { API } from '../../db3/clientAPI';
 import { gIconMap } from "../../db3/components/IconMap";
+import { usePresentation } from "src/locale/components/PresentationProvider";
+import { authoredTranslationContext, resolveAuthoredTranslations } from "src/locale/shared/authoredTranslations";
 import { getAgendaItem } from "../../db3/shared/publicFeedApi";
 import { PublicAgendaItemSpec } from "../../db3/shared/publicTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
@@ -229,14 +231,13 @@ interface EventFrontpageControlProps {
 
 
 
-const EventFrontpageValuesTable = ({ valueEn, valueNl, valueFr }: { valueEn: string, valueNl: string, valueFr: string }) => {
+const EventFrontpageValuesTable = ({ valueEn, valueNl, valueFr }: { valueEn: string | null, valueNl: string | null, valueFr: string | null }) => {
 
     const renderValueOrFallback = (lang: EnNlFr): React.ReactNode => {
-        const selectResult = LangSelectStringWithDetail(lang, valueEn, valueNl, valueFr);
-        if (selectResult.preferredLangWasChosen) {
-            return <span>{selectResult.result}</span>;
-        }
-        return <span className="faded">{selectResult.result}</span>;
+        const values = { en: valueEn, nl: valueNl, fr: valueFr };
+        const resolved = resolveAuthoredTranslations(values,
+            authoredTranslationContext({ routeLocale: lang }, ["en-US", "nl-BE", "fr-BE"]));
+        return <span className={values[lang] == null ? "faded" : undefined}>{resolved}</span>;
     };
 
     return <table className="EventFrontpageValuesTable value">
@@ -280,9 +281,9 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
         });
     };
 
-    const valueEn = props.event[props.fieldSpec.fieldNameEn] || "";
-    const valueNl = props.event[props.fieldSpec.fieldNameNl] || "";
-    const valueFr = props.event[props.fieldSpec.fieldNameFr] || "";
+    const valueEn = props.event[props.fieldSpec.fieldNameEn] ?? null;
+    const valueNl = props.event[props.fieldSpec.fieldNameNl] ?? null;
+    const valueFr = props.event[props.fieldSpec.fieldNameFr] ?? null;
 
     const canEdit = db3.xEvent.authorizeColumnForEdit({
         auth: auth,
@@ -356,6 +357,7 @@ export interface EventFrontpageTabContentProps {
 
 export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
+    const presentationSnapshot = usePresentation();
     const [previewLang, setPreviewLang] = React.useState<EnNlFr>("en");
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const confirm = useConfirm();
@@ -382,10 +384,9 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
         });
     }
 
-    const agendaItem: PublicAgendaItemSpec = getAgendaItem({
-        ...props.event,
-        frontpageDetails: props.event.frontpageDetails || "",
-    }, previewLang);
+    const agendaItem: PublicAgendaItemSpec = getAgendaItem(props.event,
+        authoredTranslationContext({ ...dashboardContext.memberPresentation, routeLocale: previewLang },
+            presentationSnapshot.data?.localization.availability.band ?? []));
 
     const canEdit_frontpageVisible = db3.xEvent.authorizeColumnForEdit({
         auth: auth,

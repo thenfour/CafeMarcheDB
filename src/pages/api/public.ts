@@ -1,101 +1,71 @@
-import { api } from "src/blitz-server";
+import { AuthorizationError, NotFoundError, type Ctx } from "blitz";
+import type { NextApiRequest, NextApiResponse } from "next";
+import { z, ZodError } from "zod";
+import db from "db";
+import { loadAuthorization, loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
+import { publicFeedBaseURL } from "src/server/publicHomepage";
+import { getSessionForRequest } from "src/blitz-server";
+import { readPublicFeed } from "src/core/db3/server/publicFeed";
+import { PublicFeedInputSchema } from "src/core/db3/shared/publicFeedInput";
+import { collectLocalePreferences, parseAcceptLanguage } from "src/locale/shared/localePreferences";
 
 export const config = { api: { bodyParser: false } };
+const PublicFeedQuerySchema = PublicFeedInputSchema.omit({ browserLanguages: true })
+    // lang remains the standalone homepage's public spelling for an explicit locale preference.
+    .extend({ lang: z.string().max(128).optional() })
+    .refine(input => !(input.lang && input.routeLocale), "Supply either lang or routeLocale");
 
-// Reject before parsing input or reading accounts/content during recovery.
-export default api(async (_req, res) => {
+function isCrossOrigin(req: NextApiRequest, baseURL: string): boolean {
+    return req.headers.origin !== undefined && req.headers.origin !== new URL(baseURL).origin;
+}
+
+export async function publicFeedHandler(req: NextApiRequest, res: NextApiResponse, ctx?: Pick<Ctx, "session">) {
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.status(503).end();
-});
+    res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS");
+    if (req.method === "OPTIONS") {
+        res.status(204).end();
+        return;
+    }
+    if (req.method !== "GET" && req.method !== "HEAD") {
+        res.setHeader("Allow", "GET,HEAD,OPTIONS");
+        res.status(405).end();
+        return;
+    }
+    try {
+        const query = PublicFeedQuerySchema.parse(req.query);
+        const input = PublicFeedInputSchema.parse({
+            bandPublicId: query.bandPublicId,
+            routeLocale: query.routeLocale ?? query.lang,
+            browserLanguages: parseAcceptLanguage(req.headers["accept-language"]).slice(0, 32),
+        });
+        collectLocalePreferences(input); // Validate explicit tags before loading accounts or content.
+        const baseURL = publicFeedBaseURL();
+        const auth = isCrossOrigin(req, baseURL)
+            ? await loadAuthorizationForUser(null, undefined, input.bandPublicId)
+            : await loadAuthorization(ctx?.session ?? await getSessionForRequest(req, res), input.bandPublicId);
+        const payload = await readPublicFeed(db, auth, input, { baseURL });
+        if (req.method === "HEAD") {
+            res.status(200).end();
+            return;
+        }
+        res.status(200).json(payload);
+    } catch (error) {
+        if (error instanceof ZodError || error instanceof RangeError) {
+            res.status(400).end();
+            return;
+        }
+        if (error instanceof NotFoundError) {
+            res.status(404).end();
+            return;
+        }
+        if (error instanceof AuthorizationError) {
+            res.status(403).end();
+            return;
+        }
+        throw error;
+    }
+}
 
-// MIGRATION_RESTORE: public-publication
-// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/api/public.ts:1-82
-// Reason: Public homepage/feed and gallery editors still use unscoped content queries.
-// Restore: Restore band-specific public homepage, agenda, galleries and feed delivery, including hosting modes, language selection, CORS, image editing and visibility with explicit public band routing and authorized reads/writes.
-// Verification: Verify anonymous and member publication in two bands/locales, privacy, CORS/feed consumers, gallery ordering/images and built-browser homepage/editor workflows.
-// SHA256: dffcf1c4d2e6274385fcf9e344b51ce16a4f38bb5ff0e3a06d7bbdab077e4a27
-// MIGRATION_REFERENCE_BEGIN
-// // server
-// // http://192.168.1.2:10455/api/public
-// // http://192.168.1.2:10455/api/public?lang=fr
-//
-// import { loadAuthorization } from "@/src/auth/server/serverAuthorization";
-// // provide json feed of content for public homepage consumption.
-//
-// // input: lang
-//
-// import { xEvent } from "@/src/core/db3/db3";
-// import { queryTable } from "@/src/core/db3/server/db3QueryCore";
-// import { CMDBTableFilterModel } from "@/src/core/db3/shared/apiTypes";
-// import { MakePublicFeedResponseSpec } from "@/src/core/db3/shared/publicFeedApi";
-// import { Ctx } from "blitz";
-// import { NextApiRequest, NextApiResponse } from "next";
-// import { EnNlFr, ParseLanguageCode } from "shared/lang";
-// import { api } from "src/blitz-server";
-// import * as db3 from "src/core/db3/db3";
-//
-// async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
-//     const authorization = await loadAuthorization(ctx.session);
-//
-//     let langParam = req.query.lang;
-//     if (Array.isArray(langParam)) {
-//         // if multiple lang parameters are provided, take the first one
-//         langParam = langParam[0];
-//     }
-//     const lang: EnNlFr = ParseLanguageCode(langParam);
-//
-//     const eventsFilterModel: CMDBTableFilterModel = {
-//         items: [
-//             {
-//                 field: "frontpageVisible",
-//                 operator: "equals",
-//                 value: true
-//             }
-//         ],
-//     };
-//
-//     const eventsCall = queryTable({
-//         filter: eventsFilterModel,
-//         cmdbQueryContext: "publicDataFeed",
-//         table: {
-//             tableID: xEvent.tableID,
-//             tableName: xEvent.tableName,
-//             viewID: db3.eventFrontpageView.viewID,
-//         },
-//         orderBy: undefined,
-//     },
-//         authorization);
-//
-//     const galleryCall = queryTable({
-//         filter: { items: [] },
-//         cmdbQueryContext: "publicDataFeed",
-//         table: {
-//             tableID: db3.xFrontpageGalleryItem.tableID,
-//             tableName: db3.xFrontpageGalleryItem.tableName,
-//             viewID: db3.frontpageGalleryFeedView.viewID,
-//         },
-//         orderBy: undefined,
-//     },
-//         authorization);
-//
-//     const [eventsResultRaw, galleryResultRaw] = await Promise.all([
-//         eventsCall,
-//         galleryCall,
-//     ]);
-//
-//     const eventItems = eventsResultRaw.items as db3.EventFrontpageDBPayload[];
-//     const galleryItems = galleryResultRaw.items as db3.FrontpageGalleryFeedDBPayload[];
-//
-//     const payload = MakePublicFeedResponseSpec(eventItems, lang, galleryItems);
-//
-//     // CORS
-//     res.setHeader("Access-Control-Allow-Origin", "*");
-//     res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
-//     //res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-//
-//     res.status(200).json(payload);
-// }
-//
-// export default api(handler);
-// MIGRATION_REFERENCE_END
+// A read-only Next route rejects methods before session/CSRF middleware; accepted GETs use the shared session owner.
+export default publicFeedHandler;

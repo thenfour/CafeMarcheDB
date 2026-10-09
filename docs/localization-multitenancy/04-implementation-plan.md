@@ -26,8 +26,9 @@ Preserve them while restoring their wider workflows. Basic member directory and
 profile behavior is only a subset: reference filters, presets, contact-search
 policy, exports and profile tabs remain A1 work.
 
-Song credit editing, remaining domain/quick/shell search, publication, gallery
-editing and several reports/admin surfaces remain guarded or incomplete.
+Song credit editing, remaining domain/quick/shell search and several reports/
+admin surfaces remain guarded or incomplete. Public homepage/feed delivery and
+frontpage gallery editing/bake are restored in the checkpoints below.
 General File search/detail/metadata pages, associated uploads and the image fork
 service are restored. The
 [restoration manifest](feature-restoration.json) records the individual obligations
@@ -76,9 +77,8 @@ Dialog help keys and draft tag associations were repaired so the original
 editors can open.
 
 Remaining event parity includes date-picker highlights, the full attendance/
-default-instrument interaction matrix and publication consumers/imports.
-Editing frontpage fields does not restore the
-anonymous homepage or feed. Localized catalog-name matching remains covered by
+default-instrument interaction matrix and publication imports. The public
+homepage/feed is restored in its own checkpoint below. Localized catalog-name matching remains covered by
 the A1 exception; these gaps keep `event-workflows` and A1 open.
 
 ## Songs and event setlist checkpoint
@@ -165,8 +165,8 @@ independent visibility policy.
 
 The `file-workflows` page obligation is restored and its three source blocks and
 manifest references are removed. `file-search` remains pending only for full
-localized-name text matching; gallery editing/bake and remaining upload integrations
-have their own pending obligations. A1 and B remain open.
+localized-name text matching. Remaining upload integrations have their own
+pending obligations. A1 and B remain open.
 
 ## File image fork checkpoint
 
@@ -223,17 +223,68 @@ and removes the generated image. Bake uses the current source File, preserves
 original bytes and resets crop/rotation after applying them to pixels. The shared
 fork's crop/resize-before-rotation order remains explicit; the SVG reference
 preview retains its own framing. All public results omit natural/storage identity.
-Anonymous homepage/feed delivery, other upload integrations and the separate
-general gallery browser retain their pending obligations and source archives.
+Public homepage/feed delivery is restored in the checkpoint below. Other upload
+integrations and the separate general gallery browser retain their pending
+obligations and source archives.
 
-## Next slice: Public homepage and feed delivery
+## Public homepage and feed delivery checkpoint
 
-Restore existing public homepage/agenda/gallery and feed consumers through the
-authorized Event/Gallery/File owners, with explicit public band routing and
-ordered language preferences. Preserve hosting modes, CORS, visibility, agenda/
-gallery ordering and image URLs. Verify anonymous/member publication, private/
-hidden references, independent bands and French/Dutch presentation in the built
-browser and feed consumers. Keep remaining upload integrations separately tracked.
+The original Caf? March? homepage and `/api/public` JSON feed are active. A narrow
+Event publication view selects the authored fields; Gallery source visibility uses
+the existing File owner. Both content readers, locale availability and current
+authorization share one repeatable snapshot. No feed queries bypass those owners.
+Public agenda includes listed readable Events only; Gallery entries and their
+source Files must each be independently readable, active and in the selected band.
+The published homepage always uses anonymous authority. Same-origin member feed
+requests retain readable member previews; cross-origin feed requests use anonymous
+authority even when a caller supplies a session cookie.
+
+Each authored string uses ordered explicit route and browser preferences against
+enabled band locales. Missing text may fall through; authored blanks remain blank.
+The English/French/Dutch editor previews use the same resolver. The original wire
+shape, chronological agenda with undated items last, gallery order, SVG composition,
+photo selection/previous/next/autoplay, crops/rotation and absolute protected image
+URLs remain intact. Gallery identity now owns SVG IDs and keys, allowing multiple
+entries using one File with distinct edits. The standalone `CafeMarcheHomepage`
+consumer includes the matching four-line identity fix. Internal Markdown links,
+mentions and File images retain the selected band/locale.
+
+The feed requires `bandPublicId` and accepts either `routeLocale` or the standalone
+consumer's `lang`; weighted `Accept-Language` supplies later preferences. Ambiguous,
+malformed or extra query inputs return 400, absent/deleted bands 404, denied reads
+403 and unsupported methods 405. GET/HEAD/OPTIONS are explicit. OPTIONS and rejected
+methods/inputs finish before session loading. Wildcard feed CORS enables anonymous
+cross-origin consumption without credentialed access. Protected downloads retain
+their existing authorization and CORS policy. Publication responses are uncached.
+
+For the familiar Caf? March? bare root, explicitly configure:
+
+```dotenv
+CMDB_HOSTING_MODE=CafeMarche
+CMDB_PUBLIC_BAND_PUBLIC_ID=<the public ID of the published Band>
+CMDB_BASE_URL=https://your-cmdb-host.example
+```
+
+An explicit `/?bandPublicId=...&routeLocale=fr-BE` overrides that root binding.
+Missing host binding and invalid/absent bands finish with 404 during bootstrap;
+no database-order default band is inferred. Generic hosting redirects directly to
+Backstage and retains supplied band/locale. Next's `/fr` and `/nl` routes remain
+explicit language preferences; language changes preserve band and other query state.
+Set the standalone site's `VITE_PUBLIC_FEED_URI` to
+`https://your-cmdb-host.example/api/public?bandPublicId=<Band.publicId>`; its existing
+language URL builder preserves that band parameter. Credentials remain omitted.
+
+All four `public-publication` source blocks and reference entries are removed,
+and that obligation is restored. This does not close the separate Event/import,
+remaining upload, general gallery browser or A1/B obligations.
+
+## Next slice: Song credit editing and history
+
+Restore the original Song credit authoring/history workflow through the Song owner,
+with explicit band/public targets, authorized person and credit-type choices,
+shared row authorization, auditing and localized references. Retain existing Song
+search/detail/setlist/File behavior and verify two bands, French/Dutch, private/
+foreign references, fresh revocation, rollback and the built credit controls.
 
 ## Localized catalog text search exception
 
@@ -262,7 +313,7 @@ when a concrete workflow dependency requires it.
 | --- | --- |
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
 | Events | Retain restored search/detail/creation/editing, setlist editing and invitation/attendance controls; finish default-instrument and attendance parity and date-picker highlights. |
-| Songs and files | Retain restored Song search/detail/editing, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; finish credit editing/history, gallery controls/bake and remaining upload callers. |
+| Songs and files | Retain restored Song search/detail/editing, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish credit editing/history and remaining upload callers. |
 | Supporting workflows | Dashboard/wiki/custom navigation, plans, search, calendars/feeds/tokens, Custom Links, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
 After core restoration: platform role/matrix and catalog/settings administration;
@@ -444,12 +495,31 @@ rows, grants, audits and stored files were cleaned up. Browser inspection also
 verified fixes for a missing source reference provider, ignored contextual preview
 URLs, invalid crop state after Reset and caption drafts closing after failed saves.
 
+The public publication checkpoint passes normal and isolated demo builds/typechecks,
+targeted lint, the standalone SPA build and 45 focused tests in seven files. The
+native run passes 302 tests in 16 files, including ten new publication cases.
+These cover the public wire contract, per-field preferences/blanks, enabled locales,
+member previews, independent Gallery/File privacy, two bands, account/membership/
+band revocation, deletion, epoch zero/undated ordering and one root snapshot.
+Two obsolete deferred-public assertions were removed; other deferred tests remain.
+
+Ten built Chromium groups pass: anonymous ordered feed content and privacy; second-
+band Dutch isolation; method/input/status handling; configured bare homepage and
+contextual Markdown; reused-image IDs/crops/rotation/selection/previous/next/autoplay;
+decoded and foreign-band images; original language switching and band remounts;
+member feed vs. anonymous published/cross-origin content; actual standalone SPA
+French/Dutch consumption and image decoding; immediate source deletion without
+changing download CORS. Both hosting modes and missing/invalid selection also pass.
+French built-homepage and Dutch standalone screenshots were visually inspected
+after layout completion. The 14 gallery editor/bake browser groups also pass on the final build, with no
+page/RPC errors. They are distinct from these public delivery checks.
+
 The complete-suite run still reports 208 failed tests and ten suite-load failures,
 including unscoped authorization/account/setlist fixtures, deferred-domain and
 date-policy contracts; the runner stops before the later jsdom batches. Focused
-passes do not establish A1 readiness. The latest run passes 1758 tests and skips
-481; no failure labels were added compared with the image fork checkpoint, and
-the gallery reorder fixture now passes. Earlier built-browser member/profile/wiki/
+passes do not establish A1 readiness. The latest run passes 1785 tests and skips
+491; no failure labels were added compared with the gallery checkpoint. The existing
+failures still prevent A1 acceptance. Earlier built-browser member/profile/wiki/
 download checks remain recorded evidence, not workflows rerun by these slices.
 
 The [development seeder](../development-seeding.md) restores the pre-migration

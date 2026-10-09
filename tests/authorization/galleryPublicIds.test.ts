@@ -11,6 +11,7 @@ import executeDB3CommandMutation from "@db3/mutations/executeDB3Command";
 import { ActivityFeature, ZTRecordActionArgs } from "src/core/components/featureReports/activityTracking";
 
 import { createActionRecord } from "@db3/server/recordActionServer";
+import { authoredTranslationContext } from "src/locale/shared/authoredTranslations";
 import { MakePublicFeedResponseSpec } from "src/core/db3/shared/publicFeedApi";
 import { gPermissionRegistry, Permission } from "shared/permissions";
 import { parsePublicId, type FrontpageGalleryItemPublicId } from "shared/publicId";
@@ -93,7 +94,7 @@ describe("FrontpageGalleryItem public identity", () => {
             });
             expect(dto).not.toHaveProperty("id");
             expectTypeOf(dto.publicId).toEqualTypeOf<FrontpageGalleryItemPublicId>();
-            const feed = MakePublicFeedResponseSpec([], "en", [{
+            const feed = MakePublicFeedResponseSpec([], [{
                 publicId: galleryPublicId(20),
                 sortOrder: 2,
                 caption: "Concert",
@@ -101,7 +102,7 @@ describe("FrontpageGalleryItem public identity", () => {
                 caption_fr: "Concert",
                 displayParams: "{}",
                 file: { publicId: filePublicId(21), storedLeafName: "concert.jpg", customData: null, mimeType: "image/jpeg" },
-            }]);
+            }], { translations: authoredTranslationContext({ routeLocale: "en" }, ["en-US"]), bandPublicId, baseURL: "https://test" });
             expect(feed.gallery[0]?.galleryItemId).toBe(galleryPublicId(20));
         } finally {
             if (previous === undefined) delete process.env.CMDB_BASE_URL;

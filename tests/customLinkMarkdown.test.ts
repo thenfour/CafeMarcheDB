@@ -5,6 +5,7 @@ import { act } from "react-dom/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { getCmdbWindow } from "src/core/components/dashboardContext/DashboardContext";
+import { parsePublicId } from "shared/publicId";
 
 let root: Root;
 
@@ -23,6 +24,21 @@ afterEach(async () => {
 });
 
 describe("Markdown on a public custom-link page", () => {
+    it("keeps explicit publication band/locale on internal links, mentions and dimensioned File images", async () => {
+        const bandPublicId = parsePublicId<"Band">("PublicationBand1");
+        const markdown = "[document](/api/files/download/photo.png) [page](/backstage/wiki/welcome) [[welcome|Wiki]] [[event:Event00000000001|Concert]] ![photo](/api/files/download/photo.png?240)";
+        await act(async () => root.render(React.createElement(Markdown, {
+            markdown, presentation: { bandPublicId, routeLocale: "nl-NL" },
+        })));
+        for (const anchor of document.querySelectorAll<HTMLAnchorElement>(".renderedContent a")) {
+            expect(new URL(anchor.href).searchParams.get("bandPublicId")).toBe(bandPublicId);
+            expect(new URL(anchor.href).searchParams.get("routeLocale")).toBe("nl-NL");
+        }
+        expect(document.querySelectorAll(".renderedContent a")).toHaveLength(4);
+        const image = document.querySelector<HTMLImageElement>(".renderedContent img");
+        expect(image?.src).toContain("bandPublicId=PublicationBand1&routeLocale=nl-NL");
+        expect(image?.style.maxWidth).toBe("240px");
+    });
     it("renders formatted text and inline components without dashboard data", async () => {
         await act(async () => root.render(React.createElement(Markdown, { markdown: "**Please read** {{highlight:before continuing}}" })));
 

@@ -658,7 +658,7 @@ export function sortEvents<T extends { startsAt: null | Date }>(events: T[]): T[
     const ret = [...events];
     ret.sort((a, b) => {
         if (a.startsAt === null || b.startsAt === null) {
-            return a.startsAt === null ? 1 : -1;
+            return a.startsAt === b.startsAt ? 0 : a.startsAt === null ? 1 : -1;
         }
         return a.startsAt.valueOf() - b.startsAt.valueOf();
     });
@@ -670,7 +670,7 @@ export function sortEventsRaw<T extends { startsAt: null | number }>(events: T[]
     const ret = [...events];
     ret.sort((a, b) => {
         if (a.startsAt === null || b.startsAt === null) {
-            return a.startsAt === null ? 1 : -1;
+            return a.startsAt === b.startsAt ? 0 : a.startsAt === null ? 1 : -1;
         }
         return a.startsAt - b.startsAt;
     });

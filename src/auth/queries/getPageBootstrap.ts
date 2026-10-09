@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getSessionForRequest } from "src/blitz-server";
 import { loadPresentationData } from "src/locale/server/presentation";
 import { PresentationInputSchema } from "src/locale/shared/presentationInput";
+import { publicHomepageSelection } from "src/server/publicHomepage";
 import { loadDbBrandConfig } from "src/server/brand";
 import { loadPageAuthorization } from "../server/pageRequestAuthorization";
 
@@ -24,7 +25,8 @@ async function pageSession(context: PageBootstrapContext) {
 // The query boundary keeps server imports out of _app's browser bundle. SSR passes
 // its request context directly; client navigations use Blitz's authenticated RPC context.
 export default async function getPageBootstrap(input: PageBootstrapInput, context: PageBootstrapContext) {
-    const { pathname, ...presentationInput } = PageBootstrapInputSchema.parse(input);
+    const { pathname, ...requestedPresentation } = PageBootstrapInputSchema.parse(input);
+    const presentationInput = pathname === "/" ? publicHomepageSelection(requestedPresentation) : requestedPresentation;
     const session = await pageSession(context);
     const auth = await loadPageAuthorization(pathname, session, presentationInput.bandPublicId ?? undefined);
     const presentation = await loadPresentationData(auth, presentationInput);

@@ -14,7 +14,7 @@ export type LocalizationDatabase = Pick<Prisma.TransactionClient, "locale" | "st
 export const localizationDatabase = db as unknown as LocalizationDatabase;
 
 // returns a list of ietf tags available globally & for band. if band is null, band locales is empty.
-async function loadLocaleAvailability(database: Pick<LocalizationDatabase, "locale">, bandId: number | null): Promise<LocaleAvailability> {
+export async function loadLocaleAvailability(database: Pick<LocalizationDatabase, "locale">, bandId: number | null): Promise<LocaleAvailability> {
     const locales = await database.locale.findMany({
         where: { isDeleted: false },
         select: {
