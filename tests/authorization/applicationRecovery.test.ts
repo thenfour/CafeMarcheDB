@@ -27,8 +27,6 @@ import getSongActivityReport from "@db3/queries/getSongActivityReport";
 import getImportEventData from "@db3/queries/getImportEventData";
 import forkImage from "@db3/mutations/forkImage";
 import updateGalleryItemImage from "@db3/mutations/updateGalleryItemImage";
-import updateSongBasicFields from "@db3/mutations/updateSongBasicFields";
-import updateSongPinnedRecording from "@db3/mutations/updateSongPinnedRecording";
 import getUserCredits from "@db3/queries/getUserCredits";
 import db3queries from "@db3/queries/db3queries";
 import db3paginatedQueries from "@db3/queries/db3paginatedQueries";
@@ -97,13 +95,11 @@ const deferredFileCreators = [
 ];
 
 const deferredWorkflowEndpoints = [
-    { name: "song edit", resolve: updateSongBasicFields },
-    { name: "pinned recording write", resolve: updateSongPinnedRecording },
     { name: "person credits", resolve: getUserCredits },
 ];
 
 describe("deferred domain workflow endpoints", () => {
-    it.each(["Song", "SongCredit", "BandSongTagAssociation", "File", "BandFileTagAssignment", "FileUserTag", "FileSongTag", "FileEventTag", "FileInstrumentTag", "FileWikiPageTag", "FrontpageGalleryItem"])("guards generic $0 reads in platform and band contexts before database access", async tableID => {
+    it.each(["SongCredit", "File", "BandFileTagAssignment", "FileUserTag", "FileSongTag", "FileEventTag", "FileInstrumentTag", "FileWikiPageTag", "FrontpageGalleryItem"])("guards generic $0 reads in platform and band contexts before database access", async tableID => {
         const table = db3.GetTableById(tableID);
         for (const bandPublicId of [null, parsePublicId<"Band">("RecoveryBand0001")]) {
             const request = forgeDb3Query(tableID, { table: { tableID, tableName: table.tableName }, bandPublicId });
@@ -113,7 +109,6 @@ describe("deferred domain workflow endpoints", () => {
     });
 
     it.each([
-        db3.songEditorView.crud.operations.update.command.commandID,
         db3.songCreditEditorView.crud.operations.update.command.commandID,
         db3.fileEditorView.crud.operations.update.command.commandID,
         db3.reorderGalleryItemsCommand.commandID,

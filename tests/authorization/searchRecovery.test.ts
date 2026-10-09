@@ -5,7 +5,7 @@ import { ZGetSearchResultsInput } from "src/core/db3/shared/apiTypes";
 import { ApplicationFeatureUnavailableError } from "src/core/shared/applicationRecovery";
 import { createAuthorizationPersona } from "./support/authorizationFixtures";
 
-describe("restored event search recovery boundary", () => {
+describe("restored event/song search recovery boundary", () => {
     it("keeps event recovery unavailable even to platform administrators", () => {
         const { schemaAuthorization } = createAuthorizationPersona("sysadmin");
         expect(db3.xEvent.getSearchCapabilities(schemaAuthorization)).toEqual({ includeDeleted: false });
@@ -18,7 +18,7 @@ describe("restored event search recovery boundary", () => {
             expect(() => ZGetSearchResultsInput.parse({ ...args, offset })).toThrow();
         }
     });
-    it.each(["Song", "File", "User", "WikiPage"])("keeps %s deferred before starting a snapshot", async tableID => {
+    it.each(["File", "User", "WikiPage"])("keeps %s deferred before starting a snapshot", async tableID => {
         await expect(GetSearchResultsCore({ tableID, offset: 0, take: 20, quickFilter: "", sort: [], discreteCriteria: [] },
             createAuthorizationPersona("sysadmin").schemaAuthorization)).rejects.toThrow(ApplicationFeatureUnavailableError);
     });

@@ -1,19 +1,44 @@
 import React from "react";
+import { Autocomplete, InputBase } from "@mui/material";
+import { IsNullOrWhitespace } from "shared/utils";
+import type { PresentationInput } from "src/locale/shared/presentationInput";
+import { QuickSearchInputSchema, SongQuickSearchResultsSchema } from "src/core/db3/shared/quickSearchTypes";
 import { useLocale } from "src/locale/components/useLocale";
 import { requireRestoredApplicationFeature } from "src/core/shared/applicationRecovery";
 import { QuickSearchRecoveryNotice } from "./search/QuickSearchRecoveryNotice";
 import { QuickSearchItemMatch, QuickSearchItemType } from "shared/quickFilter";
 import { gIconMap } from "src/core/db3/components/IconMap";
-import { NameValuePair } from "./CMCoreComponents2";
+import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
+import { ActivityFeature } from "./featureReports/activityTracking";
+import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/DashboardContext";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // for allowed item types best to use QuickSearchItemTypeSets
 export async function fetchObjectQuery<TItemType extends QuickSearchItemType>(
-    _keyword: string,
-    _allowedItemTypes: readonly TItemType[],
+    keyword: string,
+    allowedItemTypes: readonly TItemType[],
+    presentation: PresentationInput,
+    signal?: AbortSignal,
 ): Promise<QuickSearchItemMatch<TItemType>[]> {
-    return requireRestoredApplicationFeature("quickSearch");
+    if (allowedItemTypes.length === 0 || allowedItemTypes.some(type => type !== QuickSearchItemType.song)) {
+        return requireRestoredApplicationFeature("quickSearch");
+    }
+    const input = QuickSearchInputSchema.parse({ ...presentation, keyword, allowedItemTypes });
+    const query = new URLSearchParams({ keyword, allowedItemTypes: JSON.stringify(allowedItemTypes), bandPublicId: input.bandPublicId });
+    if (input.routeLocale) {
+        query.set("routeLocale", input.routeLocale);
+    }
+    if (input.browserLanguages) {
+        query.set("browserLanguages", JSON.stringify(input.browserLanguages));
+    }
+    const response = await fetch(`/api/wiki/quickSearch?${query}`, { signal });
+    if (!response.ok) {
+        throw new Error("Song suggestions could not be loaded.");
+    }
+    const results = SongQuickSearchResultsSchema.parse(await response.json());
+    // The allowed-type check and result schema prove that every result belongs to the requested song type.
+    return results as QuickSearchItemMatch<TItemType>[];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,9 +155,166 @@ export interface AssociationAutocompleteProps<TItemType extends QuickSearchItemT
     getItemInfo?: (item: QuickSearchItemMatch<TItemType>) => AssociationAutocompleteItemInfo;
 }
 
-// Keep all callers inert, including Markdown dialogs and the unmounted shell search.
-export function AssociationAutocomplete<TItemType extends QuickSearchItemType>(_props: AssociationAutocompleteProps<TItemType>) {
-    return <QuickSearchRecoveryNotice />;
+const getActivityIdentities = (value: QuickSearchItemMatch | null) => ({
+    eventId: value?.itemType === QuickSearchItemType.event
+        ? value.id
+        : undefined,
+    songId: value?.itemType === QuickSearchItemType.song
+        ? value.id
+        : undefined,
+    wikiPageId: value?.itemType === QuickSearchItemType.wikiPage
+        ? value.id
+        : undefined,
+});
+
+const SongAssociationAutocomplete = <TItemType extends QuickSearchItemType,>({
+    autofocus = false,
+    showSearchIcon = true,
+    showClearIcon = true,
+    placeholder = "Search...", // todo: localize
+    disableEscapeHandling = false,
+    ...props
+}: AssociationAutocompleteProps<TItemType>) => {
+    const isControlled = props.value !== undefined;
+    const recordFeature = useFeatureRecorder();
+    const dashboard = useDashboardContext();
+    const bandPublicId = dashboard.authorizationContext?.bandPublicId;
+    const { routeLocale, browserLanguages } = dashboard.localePreferences;
+    const typesKey = JSON.stringify(props.allowedItemTypes);
+    const languagesKey = JSON.stringify(browserLanguages);
+
+    // Internal, "uncontrolled" state
+    const [internalValue, setInternalValue] = React.useState(
+        props.defaultValue ?? ""
+    );
+
+    // The actual text we display in the input
+    const queryText = isControlled ? props.value! : internalValue;
+
+    // Autocomplete search results
+    const [results, setResults] = React.useState<QuickSearchItemMatch<TItemType>[]>([]);
+
+    // When queryText changes, fetch new results
+    React.useEffect(() => {
+        setResults([]);
+        if (IsNullOrWhitespace(queryText) || !bandPublicId) {
+            return;
+        }
+        const controller = new AbortController();
+        void fetchObjectQuery(queryText, props.allowedItemTypes, { bandPublicId, routeLocale, browserLanguages: [...browserLanguages] }, controller.signal).then((response) => {
+            if (controller.signal.aborted) {
+                return;
+            }
+            const filtered = response.filter((item) => item.absoluteUri);
+            setResults(filtered);
+        }).catch(() => {
+            if (!controller.signal.aborted) {
+                setResults([]);
+            }
+        });
+        return () => controller.abort();
+        // Content keys prevent a new inline array from restarting an unchanged query.
+    }, [queryText, typesKey, bandPublicId, routeLocale, languagesKey]);
+
+    const handleTextChange = (newValue: string) => {
+        // Update internal state only if we're uncontrolled
+        if (!isControlled) {
+            setInternalValue(newValue);
+        }
+        // Let the parent know about any change
+        props.onValueChange?.(newValue);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (disableEscapeHandling) {
+            return;
+        }
+        if (e.key === "Escape" && !IsNullOrWhitespace(queryText)) { // don't handle if input empty, to allow dialogs to close
+            // Clear out the text
+            handleTextChange("");
+            // Prevent the Autocomplete from swallowing the event before clearing
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    };
+
+    return (
+        <Autocomplete
+            className="AssociationAutocomplete"
+            value={null}
+            freeSolo
+            // Tells Autocomplete how to track the current text for search
+            inputValue={queryText}
+            filterOptions={(x) => x}
+            onChange={async (_event, newValue) => {
+                // newValue can be a string if freeSolo is true, or an object
+                if (typeof newValue === "string") {
+                    // Typically we ignore string input since we are using freeSolo
+                    // but you might do something with that here if you want
+                    return;
+                }
+
+                await recordFeature({
+                    feature: ActivityFeature.link_follow_internal,
+                    queryText: queryText,
+                    ...getActivityIdentities(newValue),
+                });
+                props.onSelect(newValue, queryText);
+            }}
+            options={results}
+            getOptionLabel={(option) => {
+                if (typeof option === "string") {
+                    return option;
+                }
+                return option.name
+            }
+            }
+            // getOptionKey is not a standard Autocomplete prop. You can just set a key in renderOption.
+            renderOption={(liProps, option, { selected }) => {
+                const extraInfo: AssociationAutocompleteItemInfo = !props.getItemInfo ? {} : props.getItemInfo(option);
+                return <li {...liProps} key={`${option.itemType}_${option.id}`}>
+                    <AssociationValue
+                        value={option}
+                        className={`autoCompleteCMLinkItem ${extraInfo.className || ""}`}
+                        style={extraInfo.style}
+                        selected={selected}
+                    />
+                </li>;
+            }}
+            renderInput={(params) => (
+                <InputBase
+                    ref={params.InputProps.ref}
+                    placeholder={placeholder}
+                    autoFocus={autofocus}
+                    inputProps={{
+                        ...params.inputProps,
+                        onKeyDown: handleKeyDown,
+                    }}
+                    onChange={(e) => handleTextChange(e.target.value)}
+                    startAdornment={showSearchIcon ? gIconMap.Search() : undefined}
+                    endAdornment={
+                        (IsNullOrWhitespace(queryText) || !showClearIcon) ? undefined : (
+                            <CMSmallButton onClick={() => handleTextChange("")}>
+                                {gIconMap.Close()}
+                            </CMSmallButton>
+                        )
+                    }
+                />
+            )}
+        />
+    );
+};
+
+export function AssociationAutocomplete<TItemType extends QuickSearchItemType>(props: AssociationAutocompleteProps<TItemType>) {
+    if (props.allowedItemTypes.length === 0 || props.allowedItemTypes.some(type => type !== QuickSearchItemType.song)) {
+        return <QuickSearchRecoveryNotice />;
+    }
+    return <BandSongAssociationAutocomplete {...props} />;
+}
+
+function BandSongAssociationAutocomplete<TItemType extends QuickSearchItemType>(props: AssociationAutocompleteProps<TItemType>) {
+    const dashboard = useDashboardContext();
+    return <SongAssociationAutocomplete key={dashboard.authorizationContext?.bandPublicId} {...props} />;
 }
 
 // MIGRATION_RESTORE: quick-search

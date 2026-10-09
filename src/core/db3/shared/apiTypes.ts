@@ -143,6 +143,7 @@ export interface TupdateEventBasicFieldsArgs {
 
 
 export interface TupdateSongBasicFieldsArgs {
+    bandPublicId: BandPublicId;
     songId: SongPublicId;
     description?: string;
 }

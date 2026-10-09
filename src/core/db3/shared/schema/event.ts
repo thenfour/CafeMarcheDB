@@ -806,6 +806,15 @@ export const xEventSongList = db3.defineTable({
         return EventSongListArgs;
     },
     tableName: "EventSongList",
+    bandScope: {
+        member: "bandId",
+        via: {
+            relation: "event",
+            ownerUserMember: "createdByUserId"
+        },
+        managePermission: Permission.manage_events
+    },
+    readConsistency: "snapshot",
     deletePolicy: "hard",
     queryParameters: {
         eventId: {
@@ -860,6 +869,11 @@ export const xEventSongListSong = db3.defineTable({
         return EventSongListSongArgs;
     },
     tableName: "EventSongListSong",
+    bandScope: {
+        inheritsBandFrom: "eventSongList",
+        managePermission: Permission.manage_events
+    },
+    readConsistency: "snapshot",
     deletePolicy: "hard",
     queryParameters: {
         eventSongListId: { kind: "entityIdentity", targetTableID: "EventSongList", authorizeAs: "eventSongListId" },
@@ -908,6 +922,11 @@ export const xEventSongListDivider = db3.defineTable({
         return EventSongListDividerArgs;
     },
     tableName: "EventSongListDivider",
+    bandScope: {
+        inheritsBandFrom: "eventSongList",
+        managePermission: Permission.manage_events
+    },
+    readConsistency: "snapshot",
     deletePolicy: "hard",
     queryParameters: {
         eventSongListId: { kind: "entityIdentity", targetTableID: "EventSongList", authorizeAs: "eventSongListId" },

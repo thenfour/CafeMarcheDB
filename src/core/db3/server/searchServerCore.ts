@@ -211,26 +211,55 @@ function calculateFilterQuery(
 
 export class SearchInputError extends Error { }
 
+const searchDomains = [
+    {
+        table: db3.xEvent,
+        view: db3.eventSearchView,
+        permission: Permission.view_events_nonpublic,
+        // TODO: these should be well-typed such that a misspelled symbol
+        // would fail to compile!
+        sorts: ["name", "startsAt"],
+        criteria: ["startsAt", "type", "status", "tags"],
+    },
+    {
+        table: db3.xSong,
+        view: db3.songSearchView,
+        permission: Permission.view_songs,
+        // TODO: these should be well-typed such that a misspelled symbol
+        // would fail to compile!
+        sorts: ["name", "startBPM", "introducedYear", "lengthSeconds"],
+        criteria: ["tags"]
+    },
+];
+
+function requireSearchDomain(tableID: string) {
+    const domain = searchDomains.find(domain => domain.table.tableID.toLowerCase() === tableID.toLowerCase());
+    if (!domain) {
+        return requireRestoredApplicationFeature("domainSearch");
+    }
+    return domain;
+}
+
 export async function GetSearchResultsCore(input: GetSearchResultsInput, authorization: CMServerAuthorization,
     database: DB3ReadDatabase = db,
 ): Promise<SearchResultsRet> {
     // Each domain is reopened only when its query and transport owners are migrated.
-    if (input.tableID.toLowerCase() !== db3.xEvent.tableID.toLowerCase()) {
-        return requireRestoredApplicationFeature("domainSearch");
-    }
+    requireSearchDomain(input.tableID);
     const args = ZGetSearchResultsInput.parse(input);
     return executeDB3Read(database, authorization, context => searchInSnapshot(args, context));
 }
 
 function authorizeSearch(args: GetSearchResultsInput, auth: CMServerAuthorization): DiscreteCriterion[] {
-    auth.requirePermission(Permission.view_events_nonpublic);
+    const domain = requireSearchDomain(args.tableID);
+    auth.requireUser();
+    auth.requirePermission(domain.permission);
     if (args.bandPublicId !== auth.requireBand().publicId || args.includeDeleted === true) {
         throw new AuthorizationError();
     }
-    if (args.viewID && args.viewID !== db3.eventSearchView.viewID) {
-        throw new SearchInputError("Event search requires the Event_Search view.");
+    if (args.viewID && args.viewID !== domain.view.viewID) {
+        throw new SearchInputError(`Search requires the ${domain.view.viewID} view.`);
     }
-    const table: db3.xTable = db3.xEvent;
+    const table: db3.xTable = domain.table;
     if (!table.authorizeTableForView(auth)) {
         throw new AuthorizationError();
     }
@@ -244,7 +273,7 @@ function authorizeSearch(args: GetSearchResultsInput, auth: CMServerAuthorizatio
     };
     for (const sort of args.sort) {
         requireReadableColumn(sort.db3Column);
-        if (sort.db3Column !== "name" && sort.db3Column !== "startsAt") {
+        if (!domain.sorts.includes(sort.db3Column)) {
             throw new SearchInputError(`Unsupported search sort ${sort.db3Column}.`);
         }
     }
@@ -254,8 +283,8 @@ function authorizeSearch(args: GetSearchResultsInput, auth: CMServerAuthorizatio
             return false;
         }
         requireReadableColumn(criterion.db3Column);
-        if (!["startsAt", "type", "status", "tags"].includes(criterion.db3Column)) {
-            throw new SearchInputError(`Unsupported event search criterion ${criterion.db3Column}.`);
+        if (!domain.criteria.includes(criterion.db3Column)) {
+            throw new SearchInputError(`Unsupported search criterion ${criterion.db3Column}.`);
         }
         return true;
     });
@@ -263,6 +292,7 @@ function authorizeSearch(args: GetSearchResultsInput, auth: CMServerAuthorizatio
 
 interface SearchExecution {
     readonly context: DB3ReadContext;
+    readonly domain: ReturnType<typeof requireSearchDomain>;
     readonly args: GetSearchResultsInput;
     readonly sort: SortQueryElements;
     readonly calendarPredicate: string | null;
@@ -272,14 +302,15 @@ interface SearchExecution {
 
 async function prepareSearch(args: GetSearchResultsInput, context: DB3ReadContext): Promise<SearchExecution> {
     const auth = context.authorization;
+    const domain = requireSearchDomain(args.tableID);
     const criteria = authorizeSearch(args, auth);
-    const discreteCriteria = await resolveSearchDiscreteCriteria(db3.xEvent, criteria, auth, context.database);
+    const discreteCriteria = await resolveSearchDiscreteCriteria(domain.table, criteria, auth, context.database);
     const searchArgs = { ...args, discreteCriteria };
-    const sort = processSearchSortModel(db3.xEvent, searchArgs);
+    const sort = processSearchSortModel(domain.table, searchArgs);
     const calendarPredicate = args.calendarWindow
         ? calendarWindowSql(args.calendarWindow, await loadBandTimeZone(context.database, auth.requireBand().id)) : null;
     const filter = calculateFilterQuery(searchArgs, null, sort, auth, calendarPredicate);
-    return { context, args: searchArgs, sort, calendarPredicate, filter, metrics: [] };
+    return { context, domain, args: searchArgs, sort, calendarPredicate, filter, metrics: [] };
 }
 
 async function querySearchRows<T>(search: SearchExecution, title: string, sql: string): Promise<T[]> {
@@ -292,11 +323,14 @@ async function querySearchRows<T>(search: SearchExecution, title: string, sql: s
 async function loadSearchFacet(search: SearchExecution, criterion: DiscreteCriterion): Promise<SearchResultsFacet | null> {
     const { args, sort, context, filter, calendarPredicate } = search;
     const auth = context.authorization;
-    const table: db3.xTable = db3.xEvent;
+    const table: db3.xTable = search.domain.table;
     const field = table.getColumn(criterion.db3Column)!;
     const excluding = calculateFilterQuery(args, field.member, sort, auth, calendarPredicate);
-    const facet = field.SqlGetFacetInfoQuery({ auth, crit: criterion,
-        filteredItemsQuery: filter.sqlSelect, filteredItemsQueryExcludingThisCriterion: excluding.sqlSelect });
+    const facet = field.SqlGetFacetInfoQuery({
+        auth, crit: criterion,
+        filteredItemsQuery: filter.sqlSelect,
+        filteredItemsQueryExcludingThisCriterion: excluding.sqlSelect
+    });
     if (!facet) {
         return null;
     }
@@ -330,13 +364,21 @@ async function loadSearchPage(search: SearchExecution, primaryKeys: number[]): P
     if (!primaryKeys.length) {
         return [];
     }
-    const { args, context } = search;
+    const { args, context, domain } = search;
     const rows = await queryTable({
-        table: { tableID: db3.xEvent.tableID, tableName: db3.xEvent.tableName, viewID: db3.eventSearchView.viewID },
-        bandPublicId: args.bandPublicId, routeLocale: args.routeLocale, browserLanguages: args.browserLanguages,
-        filter: {}, orderBy: undefined, cmdbQueryContext: "event search results",
+        table: {
+            tableID: domain.table.tableID,
+            tableName: domain.table.tableName,
+            viewID: domain.view.viewID
+        },
+        bandPublicId: args.bandPublicId,
+        routeLocale: args.routeLocale,
+        browserLanguages: args.browserLanguages,
+        filter: {},
+        orderBy: undefined,
+        cmdbQueryContext: "domain search results",
     }, context.authorization, context, { orderedPrimaryKeys: primaryKeys, trustedNaturalPrimaryKeys: primaryKeys });
-    search.metrics.push({ title: "DB3 Event_Search items", millis: rows.executionTimeMillis, query: "", rowCount: rows.items.length });
+    search.metrics.push({ title: `DB3 ${domain.view.viewID} items`, millis: rows.executionTimeMillis, query: "", rowCount: rows.items.length });
     return rows.items;
 }
 

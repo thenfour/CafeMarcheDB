@@ -27,6 +27,10 @@ vi.mock("@blitzjs/rpc", async () => ({
 vi.mock("src/core/components/featureReports/useFeatureRecorder", () => ({ useFeatureRecorder: () => {
     throw new Error("Deferred control mounted telemetry.");
 } }));
+vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({
+    useDashboardContext: () => { throw new Error("Deferred control mounted a dashboard query."); },
+    useFeatureRecorder: () => { throw new Error("Deferred control mounted telemetry."); },
+}));
 vi.mock("src/core/components/markdown/MarkdownReactPlugins", () => ({ fetchInlineClasses: () => ["highlight"] }));
 vi.mock("src/core/hooks/useKeyboardState", () => ({ useKeyboardState: () => ({ consumeRawPasteIntent: () => false }) }));
 interface TextAreaProps {
@@ -42,7 +46,6 @@ vi.mock("@webscopeio/react-textarea-autocomplete", () => ({ default: (props: Tex
 } }));
 
 import { AssociationAutocomplete, AssociationSelect, fetchObjectQuery } from "src/core/components/ItemAssociation";
-import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 import { MarkdownEditor } from "src/core/components/markdown/RichTextEditor";
 import QuickSearchPage from "src/pages/backstage/test/quickSearchTest";
 
@@ -102,14 +105,6 @@ describe("deferred quick search controls", () => {
         expect(onValueChange).not.toHaveBeenCalled();
     });
 
-    it("retains the authored song name without loading song details", async () => {
-        const onChange = vi.fn();
-        await act(async () => root.render(<SongAutocomplete value={{ name: song.name }} onChange={onChange} autofocus />));
-        expect(container.textContent).toContain(song.name);
-        expect(container.querySelectorAll("input, button")).toHaveLength(0);
-        expect(onChange).not.toHaveBeenCalled();
-    });
-
     it("renders the actual explorer as a localized notice without search effects", async () => {
         language = "fr-BE";
         await act(async () => root.render(<QuickSearchPage />));
@@ -144,6 +139,6 @@ describe("deferred quick search controls", () => {
     });
 
     it("rejects direct client search before constructing a request", async () => {
-        await expect(fetchObjectQuery("private", [QuickSearchItemType.song])).rejects.toThrow("Quick search is temporarily unavailable");
+        await expect(fetchObjectQuery("private", [QuickSearchItemType.user], {})).rejects.toThrow("Quick search is temporarily unavailable");
     });
 });

@@ -23,6 +23,7 @@ import { resolvePublicForeignIds, resolvePublicId } from "./db3PublicIds";
 import { CMServerAuthorization, loadAuthorization } from "@/src/auth/server/serverAuthorization";
 import type { BandPublicId } from "shared/publicId";
 import { CatalogSourceField } from "../shared/columnTypes/inherited";
+import { db3Server } from "./db3Server";
 
 export class DB3CommandError extends Error {
     constructor(message: string) {
@@ -135,7 +136,7 @@ export function createCommandRowServices(
             requireRowServiceScope(entity, authorization);
             const scope = entity.bandScope;
             const sourceField = entity.columns.find((field): field is CatalogSourceField<DB3AuthSpec> => field instanceof CatalogSourceField);
-            if (!scope?.inheritedSourceMember || !sourceField) {
+            if (!scope?.inheritedSourceMember || scope.member === undefined || !sourceField) {
                 throw new DB3CommandError("The entity does not declare a global catalog source.");
             }
             authorization.requirePermission(scope.managePermission);
@@ -213,6 +214,7 @@ export function createCommandRowServices(
                 transactionalDb,
             );
             const model = await transactionalDb[entity.tableName].findFirst({
+                ...db3Server.table(entity).prepareReadSelection({}).selection,
                 where: { [entity.pkMember]: resolvedIdentity },
             });
             if (!model) {

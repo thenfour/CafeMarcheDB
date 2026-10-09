@@ -26,7 +26,7 @@ vi.mock("db", async () => {
 import { config as publicConfig } from "src/pages/api/public";
 import { GetSearchResultsCore } from "src/core/db3/server/searchServerCore";
 
-describe("deferred public feed and non-event domain search", () => {
+describe("deferred public feed and remaining domain search", () => {
     it("disables body parsing and returns uncached 503 without inspecting input or loading accounts/content", async () => {
         expect(publicConfig.api.bodyParser).toBe(false);
         expect(endpoints.handlers).toHaveLength(1);
@@ -53,7 +53,7 @@ describe("deferred public feed and non-event domain search", () => {
 
     it("guards direct SQL search before reading authorization or starting a database snapshot", async () => {
         const auth = createAuthorizationPersona("sysadmin").schemaAuthorization;
-        await expect(GetSearchResultsCore({ tableID: "Song", offset: 0, take: 20, quickFilter: "private", sort: [], discreteCriteria: [] }, auth))
+        await expect(GetSearchResultsCore({ tableID: "File", offset: 0, take: 20, quickFilter: "private", sort: [], discreteCriteria: [] }, auth))
             .rejects.toThrow(ApplicationFeatureUnavailableError);
     });
 });

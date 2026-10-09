@@ -10,6 +10,7 @@ vi.mock("db", async () => {
 import * as db3 from "src/core/db3/db3";
 import { db3Server } from "src/core/db3/server/db3Server";
 import { queryTable, queryHydratedView } from "src/core/db3/server/db3QueryCore";
+import { bindDB3ReadSnapshot } from "src/core/db3/server/db3ReadExecution";
 import { authorizeAndProjectDB3ViewModel } from "src/core/db3/server/db3PublicIds";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import type { DB3ReadSelectionArgs } from "src/core/db3/shared/core/db3ReadSelection";
@@ -164,17 +165,22 @@ describe("DB3 read execution dependencies", () => {
         authorizationTestDb.reset(scopedReadFixture([{ user: actor.user!, permissions: [Permission.view_songs] }]));
         vi.spyOn(db3.xSong, "getSelectionArgs").mockReturnValue({ select: { name: true, id: false } });
         const findMany = vi.fn(async (args: DB3ReadSelectionArgs) => [selectPrismaTestRow({
-            id: 10, name: "Song", createdByUserId: 93, visiblePermissionId: null, isDeleted: false,
+            id: 10, name: "Song", bandId: 1, createdByUserId: 93, visiblePermissionId: null, isDeleted: false,
         }, args)]);
-        // This test exercises only the dynamically selected Song read delegate.
-        const database = { Song: { findMany } } as unknown as TransactionalPrismaClient;
+        // Keep the real fixture authorization delegates and replace only the strict Song projection.
+        const proxy = new Proxy(authorizationTestDb, {
+            get: (target, member) => member === "Song" ? { findMany } : Reflect.get(target, member),
+        });
+        // The fixture implements transaction/grant refreshes; only Song's select is projected strictly.
+        const database = proxy as unknown as TransactionalPrismaClient;
+        const auth = await loadAuthorization(actor.ctx.session, readFixtureBandId);
         const result = await queryTable({
             table: { tableID: "Song", tableName: "Song" }, filter: { items: [] },
             orderBy: undefined, cmdbQueryContext: "legacy-selected-read-test",
-        }, await loadAuthorization(actor.ctx.session, readFixtureBandId), database, { orderedPrimaryKeys: [10] });
+        }, auth, await bindDB3ReadSnapshot(database, auth, { isolationLevel: "Serializable" }), { orderedPrimaryKeys: [10] });
         expect(result.items).toStrictEqual([{ name: "Song" }]);
         expect(findMany.mock.calls[0]![0].select).toEqual({
-            name: true, id: true, createdByUserId: true, visiblePermissionId: true, isDeleted: true,
+            name: true, id: true, bandId: true, createdByUserId: true, visiblePermissionId: true, isDeleted: true,
         });
     });
 
@@ -183,6 +189,31 @@ describe("DB3 read execution dependencies", () => {
         const partial = { ...event, [member]: undefined };
         expect(() => authorizeAndProjectDB3ViewModel(db3.xEvent, partial, schemaAuthorization, "missing-policy-test"))
             .toThrow(`Event.${member}' is missing required authorization data`);
+    });
+
+    it("loads two-hop setlist ownership for narrow reads and removes server support fields", () => {
+        const selection = db3Server.table(db3.xEventSongListDivider).prepareReadSelection({ select: { publicId: true, subtitle: true } });
+        expect(selection.selection.select).toMatchObject({
+            eventSongList: { select: { event: { select: { bandId: true, createdByUserId: true, visiblePermissionId: true, isDeleted: true } } } },
+        });
+        expect(selection.stripSupportFields({ publicId: "FixtureDivider01", subtitle: "Break", eventSongList: {
+            event: { bandId: 1, createdByUserId: 93, visiblePermissionId: null, isDeleted: false },
+        } })).toEqual({ publicId: "FixtureDivider01", subtitle: "Break" });
+        const auth = testBandAuthorization({ id: 93 }, createAuthorizationPersona("normal", { permissions: [Permission.view_events_nonpublic] }).schemaAuthorization.effectivePermissions);
+        expect(db3.xEventSongListDivider.authorizeRowForView({ auth, model: { publicId: "FixtureDivider01", eventSongList: { event: { bandId: 2, createdByUserId: 93 } } } })).toBe(false);
+        expect(db3.xEventSongListDivider.authorizeRowForView({ auth, model: { publicId: "FixtureDivider01", eventSongList: {} } })).toBe(false);
+    });
+
+    it("keeps own-only access tied to the person's two-hop owner even when the parent is publicly readable", () => {
+        const table: db3.xTable = db3.xEventSongListDivider;
+        const original = table.tableAuthMap;
+        try {
+            table.tableAuthMap = { ...original, View: Permission.manage_events, ViewOwn: Permission.view_events_nonpublic };
+            const auth = testBandAuthorization({ id: 93 }, createAuthorizationPersona("normal", { permissions: [Permission.view_events_nonpublic] }).schemaAuthorization.effectivePermissions);
+            expect(table.getRowAuthorizationWhereClause(auth)).toEqual({ eventSongList: { event: { createdByUserId: 93 } } });
+        } finally {
+            table.tableAuthMap = original;
+        }
     });
 
     it.each(["private", "deleted", "visible"])("keeps projection-only target authorization for a %s Event", visibility => {

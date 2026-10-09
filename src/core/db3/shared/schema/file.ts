@@ -6,6 +6,7 @@ import { TAnyModel } from "shared/rootroot";
 import { CMDBTableFilterModel } from "../apiTypes";
 import { DateTimeField, foreignRef, ForeignCollectionField, foreignRefByTableId, GenericIntegerField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeSortOrderField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
+import { serverOwnedField } from "../columnTypes/inherited";
 import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, BandFileTagAssignmentArgs, BandFileTagAssignmentNaturalOrderBy, BandFileTagAssignmentPayload, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FileWikiPageTagArgs, FileWikiPageTagNaturalOrderBy, FileWikiPageTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
 import { CreatedByUserField, MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 import { xEvent } from "./event";
@@ -346,10 +347,15 @@ interface ResolvedFileFilterParams {
     fileTagIds: number[];
 }
 
-const xFileBaseArgs = {
+const xFileBaseArgs = db3.defineTableDesc({
     prismaModel: db3.prismaModel<Prisma.FileDelegate>(),
     getIdentity: (file: { publicId: FilePublicId }) => file.publicId,
     tableName: "File",
+    bandScope: {
+        member: "bandId",
+        managePermission: Permission.manage_files
+    },
+    readConsistency: "snapshot",
     deletePolicy: "softOnly" as const,
     viewDeletedPermission: Permission.recover_files,
     restorePermission: Permission.recover_files,
@@ -389,6 +395,17 @@ const xFileBaseArgs = {
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<FilePublicId>(),
+        bandId: columnName => serverOwnedField(new GenericIntegerField({
+            columnName,
+            allowNull: false,
+            allowSearchingThisField: false,
+            authMap:
+            {
+                ...xFileAuthMap_FileObjects,
+                PostQuery: Permission.never_grant,
+                PostQueryAsOwner: Permission.never_grant
+            },
+        })),
         fileLeafName: columnName => MakeTitleField(columnName, { authMap: xFileAuthMap_FileObjects_AdminEdit }),
         description: () => MakeDescriptionField({ authMap: xFileAuthMap_FileObjects }),
         uploadedAt: columnName => MakeCreatedAtField({ columnName }),
@@ -566,9 +583,10 @@ const xFileBaseArgs = {
         }),
     })
 
-};
+});
 
 export const xFile = db3.defineTable(xFileBaseArgs);
+
 
 
 

@@ -104,6 +104,7 @@ export const PinSongRecordingMenuItem = (props: PinSongRecordingMenuItemProps) =
         onClick={async () => {
             await snackbar.invokeAsync(async () => {
                 await pinMutation({
+                    bandPublicId: dashboardContext.requireBandPublicId(),
                     songId: props.contextSong.publicId,
                     fileId: props.value.publicId,
                 });
@@ -139,6 +140,7 @@ export const UnpinSongRecordingMenuItem = (props: Omit<PinSongRecordingMenuItemP
         onClick={async () => {
             await snackbar.invokeAsync(async () => {
                 await pinMutation({
+                    bandPublicId: dashboardContext.requireBandPublicId(),
                     songId: props.contextSong.publicId,
                     fileId: null,
                 });

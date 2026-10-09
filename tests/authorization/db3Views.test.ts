@@ -1119,7 +1119,7 @@ describe("DB3 named views", () => {
 
     it("projects the Song search DTO through nested field authorization", async () => {
         const rows = [{
-            id: 7,
+            id: 7, bandId: 1,
             publicId: songPublicId(7),
             name: "A song",
             aliases: "",
@@ -1134,7 +1134,7 @@ describe("DB3 named views", () => {
                 id: 70,
                 publicId: songTagAssociationPublicId,
                 songId: 7,
-                song: { publicId: songPublicId(7), createdByUserId: 100, visiblePermissionId: null, isDeleted: false },
+                song: { publicId: songPublicId(7), bandId: 1, createdByUserId: 100, visiblePermissionId: null, isDeleted: false },
                 bandSongTagId: 20,
                 tag: { publicId: songTagPublicId, bandId: 1 },
             }],
@@ -1146,6 +1146,7 @@ describe("DB3 named views", () => {
                 file: {
                     id: 8,
                     publicId: filePublicId(8),
+                    bandId: 1,
                     uploadedByUserId: 100,
                     visiblePermissionId: null,
                     isDeleted: false,
@@ -1162,6 +1163,7 @@ describe("DB3 named views", () => {
                 publicId: songCreditPublicId,
                 userId: 100,
                 songId: 7,
+                song: { publicId: songPublicId(7), bandId: 1, createdByUserId: 100, visiblePermissionId: null, isDeleted: false },
                 typeId: 2,
                 type: { publicId: songCreditTypePublicId },
                 year: "2026",
@@ -1291,7 +1293,7 @@ describe("DB3 named views", () => {
     it("projects the Song detail DTO recursively without leaking authorization support fields", async () => {
         const uploadedAt = new Date("2026-01-02T12:00:00Z");
         const rows = [{
-            id: 7,
+            id: 7, bandId: 1,
             publicId: songPublicId(7),
             name: "A song",
             aliases: "",
@@ -1309,7 +1311,7 @@ describe("DB3 named views", () => {
                 id: 70,
                 publicId: songTagAssociationPublicId,
                 songId: 7,
-                song: { publicId: songPublicId(7), createdByUserId: 100, visiblePermissionId: 3, isDeleted: false },
+                song: { publicId: songPublicId(7), bandId: 1, createdByUserId: 100, visiblePermissionId: 3, isDeleted: false },
                 bandSongTagId: 20,
                 tag: { publicId: songTagPublicId, bandId: 1 },
             }],
@@ -1321,6 +1323,7 @@ describe("DB3 named views", () => {
                 file: {
                     id: 8,
                     publicId: filePublicId(8),
+                    bandId: 1,
                     fileLeafName: "score.pdf",
                     description: "",
                     uploadedAt,
@@ -1347,7 +1350,7 @@ describe("DB3 named views", () => {
                         publicId: fileSongTagPublicId,
                         songId: 9,
                         song: {
-                            id: 9,
+                            id: 9, bandId: 1,
                             publicId: songPublicId(9),
                             name: "Private related song",
                             createdByUserId: 100,
@@ -1686,13 +1689,14 @@ describe("DB3 named views", () => {
             songs: [{
                 publicId: listSongPublicId(501),
                 eventSongListId: 50,
-                eventSongList: { publicId: listPublicId(50) },
+                eventSongList: { publicId: listPublicId(50), event: { bandId: 1, createdByUserId: 42, visiblePermissionId: null, isDeleted: false } },
                 subtitle: null,
                 sortOrder: 10,
                 songId: 7,
                 song: {
                     id: 7,
                     publicId: songPublicId(7),
+                    bandId: 1,
                     name: "Visible song",
                     lengthSeconds: 120,
                     startBPM: 110,
@@ -1705,7 +1709,7 @@ describe("DB3 named views", () => {
                         id: 701,
                         publicId: songTagAssociationPublicId,
                         songId: 7,
-                        song: { publicId: songPublicId(7), createdByUserId: 42, visiblePermissionId: null, isDeleted: false },
+                        song: { publicId: songPublicId(7), bandId: 1, createdByUserId: 42, visiblePermissionId: null, isDeleted: false },
                         bandSongTagId: 9,
                         tag: { publicId: songTagPublicId, bandId: 1 },
                     }],
@@ -1753,7 +1757,7 @@ describe("DB3 named views", () => {
             name: "Restricted set",
             description: "Restricted",
             eventId: 5,
-            event: { publicId: eventPublicId(5) },
+            event: { publicId: eventPublicId(5), bandId: 1, createdByUserId: null, visiblePermissionId: 2, isDeleted: false },
             sortOrder: 10,
             isOrdered: true,
             isActuallyPlayed: false,

@@ -129,6 +129,10 @@ describe.skipIf(!settingsMysqlTestUrl)("band-scoped setlist song lookup on Maria
             const snapshot = await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" });
             await expect(readSetlistSong(snapshot, auth, c.args)).rejects.toThrow();
         }
-        await expect(createCommandRowServices(c.auth, tx).insert(xSong, {})).rejects.toThrow();
+        const inserted = await createCommandRowServices(c.auth, tx).insert(xSong, {
+            bandId: fixture.bands[1]!.id, name: "Forged ownership", description: "", aliases: "",
+        });
+        expect(inserted.bandId).toBe(fixture.bands[0]!.id);
+        expect(await tx.song.count({ where: { bandId: fixture.bands[1]!.id, name: "Forged ownership" } })).toBe(0);
     }));
 });

@@ -124,7 +124,9 @@
       "restore": "Account for legacy event/song filtering through the current search owner, retaining timing/relevance, multi-tag matching, counts, facets, pagination and ordering with selected-band authorization, localized references and public identities; avoid a second search implementation.",
       "verification": "Verify equivalent filter semantics, two-band isolation, hidden/deleted references, strict request limits, fresh revocation, consistent rows/counts/facets and browser search workflows before closing this obligation.",
       "status": "pending",
-      "evidence": []
+      "evidence": [
+        "2026-10-09: Current Event_Search and Song_Search consumers retain the existing domain-search pipeline, operators, counts/facets, stable paging and sorting on selected-band snapshots/public catalog identities. Native and built-browser checks cover both domains. Legacy facet RPCs remain guarded; their remaining consumers/semantics still require accounting through this owner before closing the obligation."
+      ]
     },
     {
       "id": "event-song-statistics",
@@ -156,7 +158,11 @@
       "restore": "Restore authorized band-scoped HTTP search, domain plugins and query grammar/relevance, public identities and context-preserving links, association/song pickers, Markdown wiki/mention suggestions and the protected explorer; retain existing values, manual text/link editing and separate domain search.",
       "verification": "Test public/member/administrator privacy, two bands and locales, hidden/deleted/merged accounts and resources, localized/inherited catalogs, all-tag and type filters, ranking/limits, stale query/band responses, selection/clearing/keyboard behavior, song detail loading and Markdown suggestions in the built browser.",
       "status": "pending",
-      "evidence": []
+      "evidence": [
+        "2026-10-09: Reopened only the existing Song quick-search plugin and original Song autocomplete for setlist editing. HTTP/direct requests require explicit band/public identities, fresh view_songs authorization and ordered presentation preferences; results retain authored-text/type grammar, relevance weights, the 100-candidate/15-result limits and contextual links. Other plugins and mixed/global requests remain guarded before content reads.",
+        "Native Song tests cover ranking/limits/type grammar, two-band privacy and fresh revoked/inactive/deleted/merged/platform authorization. jsdom tests cover aborting/discarding stale query/band suggestions, ordered language preferences, selection/clearing and Escape. Built-browser setlist picking loads the authorized full Song and persists it. Localized tag-name predicates are the exact A1 text-search exception; tag-only queries return no suggestions until that matching is restored.",
+        "Still pending: other domain plugins, association selects, Markdown wiki/mention suggestions, protected explorer and shell search. Song-only picker recovery does not close the full quick-search obligation."
+      ]
     },
     {
       "id": "wiki-search",
@@ -177,7 +183,8 @@
         "123 focused checks and 30 native MariaDB checks pass; native eventSearch cases cover isolation, all tag operators, combined criteria, localized/blank/inherited facets, stable paging and revoked/member/platform/inactive/deleted/merged authorization. Normal typecheck/build, focused lint and seven built-browser assertion groups pass; see 04-implementation-plan.md#verification-status.",
         "2026-10-08: Restored the original event detail page, breadcrumbs/tabs, creation dialog, basic/visibility/relevance edits, segment creation/date edits/deletion, invitation-group/member selection, inline attendance and CafeMarche frontpage field editing. Public targets and fresh band snapshots use shared DB3 field authorization, localized reference catalogs, audit and event-range services. The invitation picker uses active band memberships; draft tag choices and missing dialog help keys were repaired.",
         "294 focused checks and 162 native MariaDB checks pass, including parent-inherited segment ownership, real invitation-tag assignments, audit/range updates, hidden/foreign references, revoked grants and independent pinned Song/File visibility. Normal typecheck/build and focused lint pass. Twelve built-browser groups pass, including original creation/editing controls, existing creation permission checks, invitation/attendance saves, actual WAV playback, French frontpage writes and Dutch second-band/foreign-event boundaries; no uncaught browser or RPC errors. See 04-implementation-plan.md#verification-status for evidence and the failing full-suite assessment.",
-        "Still pending: setlist writes/song picking, the full attendance/default-instrument interaction matrix, date-picker highlights, publication consumers/imports and localized catalog-name free-text matching under the A1 exception. Setlist contents/recording reads remain available, but editing is unavailable until Song and nested child ownership are restored. Event Files retains its viewer with upload/metadata actions unavailable. This checkpoint does not close event parity or A1."
+        "2026-10-09: Restored the original event setlist editor and Song picker. Shared parent/child ownership declarations authorize save/update/delete/reorder, preserve persisted child identities and audit transactions, and reject hidden/foreign parents, songs, child IDs and mixed-event reorder scopes. Native tests retain creation/attendance/response/plan regressions; built-browser creation/editing, keyboard picking, drag reorder and confirmed parent/child deletion pass. See the Song/setlist verification in 04-implementation-plan.md.",
+        "Still pending: the full attendance/default-instrument interaction matrix, date-picker highlights, publication consumers/imports and localized catalog-name free-text matching under the A1 exception. Event Files retains its viewer with upload/metadata actions unavailable. These checkpoints do not close event parity or A1."
       ]
     },
     {
@@ -187,7 +194,9 @@
       "verification": "Verify two bands, visibility, deleted records, revoked grants, credits, pinned recording and complete built-browser song workflows.",
       "status": "pending",
       "evidence": [
-        "2026-10-08: Restored only the pinned-recording reader and existing setlist/player callers with required band/public IDs, fresh read snapshots and independent Song/File visibility/deletion/band checks. Native tests cover foreign-band songs/files and revoked grants. General Song screens/CRUD and event setlist writes remain pending; the narrow reader does not reopen those roots."
+        "2026-10-09: Restored the original Song search/detail/create/basic-edit/visibility/tag/Markdown workflows through shared Song/association ownership and field authorization. Song_Search retains its existing SQL/filter/facet/preset/URL/sort/paging/export composition, localized tag references, public targets, contextual links and fresh band snapshots. Dedicated description and pin/unpin writes use the generated editor contract and existing audited row service.",
+        "238 focused checks across 17 executable files, 197 native MariaDB checks across ten files, normal typecheck/build, isolated demo build, focused lint and eight built-browser assertion groups pass. Song/File visibility is independent: unavailable pinned files project null without hiding the Song or leaking numeric foreign IDs. Browser checks persist creation/basic/Markdown edits and actual WAV playback/pin/unpin; native tests cover all tag operators, hidden/foreign/deleted references and fresh revoked/inactive/deleted/merged/platform boundaries. See 04-implementation-plan.md#verification-status.",
+        "Still pending: Song credit editing/shared-person picker, history/statistics and general File metadata/association/upload workflows. Credits retain their reader and linked File cards/previews/playback remain available with independently authorized File reads. Localized catalog-name free-text matching remains deferred under the A1 exception. This checkpoint does not close song parity or A1."
       ]
     },
     {
@@ -196,7 +205,9 @@
       "restore": "Restore File search/detail and metadata/association editing with explicit band ownership, public membership/instrument references, localized labels and fresh authorization; retain narrow authorized downloads.",
       "verification": "Verify two-band search/facets/paging, metadata, association privacy, downloads and complete built-browser File workflows.",
       "status": "pending",
-      "evidence": []
+      "evidence": [
+        "2026-10-09: Shared File declarations now enforce direct band ownership and snapshot reads for the existing Song/Event linked-file and recording consumers. File cards/previews, contextual downloads and actual two-second WAV playback remain available; pin/unpin is a Song command with independent visible-file authorization. General File pages/CRUD, search, metadata/association editors and uploads remain guarded and pending; restoring this reader dependency does not close File parity."
+      ]
     },
     {
       "id": "public-publication",
@@ -215,8 +226,9 @@
       "verification": "Reactivate reference search authorization/recovery specifications and compare existing consumers in the built CafeMarche app. Verify anonymous/member/admin visibility, two bands/locales, hidden assignments, all operators, revocation and consistent rows/counts/facets/order/paging. Record the A1 text-search exception and verify localized-name matching before closing the full obligation.",
       "status": "pending",
       "evidence": [
-        "2026-10-08: Event_Search reuses the existing SQL/filter/facet/query owner inside executeDB3Read, including fresh grants, explicit band, authorized public filter references, stable public-ID sort ties, same-snapshot counts/rows/facets and localized catalog-view labels/order. Client requests retain ordered presentation preferences and discard old-band/language results. Non-event domains remain guarded.",
-        "tests/eventSearch.mysql.test.ts, tests/eventSearchEndpoint.test.ts and reactivated search recovery/client contracts pass alongside existing view/calendar/sort contracts. Built-browser presets, filtering, URL reload, paging, export and two-band/localized presentation pass. Authored text predicates remain active; localized catalog-name text predicates are deliberately deferred until after A1 and must be restored before closing this obligation."
+        "2026-10-08: Event_Search reuses the existing SQL/filter/facet/query owner inside executeDB3Read, including fresh grants, explicit band, authorized public filter references, stable public-ID sort ties, same-snapshot counts/rows/facets and localized catalog-view labels/order. Client requests retain ordered presentation preferences and discard old-band/language results. Remaining domains outside Event/Song remain guarded.",
+        "tests/eventSearch.mysql.test.ts, tests/eventSearchEndpoint.test.ts and reactivated search recovery/client contracts pass alongside existing view/calendar/sort contracts. Built-browser presets, filtering, URL reload, paging, export and two-band/localized presentation pass. Authored text predicates remain active; localized catalog-name text predicates are deliberately deferred until after A1 and must be restored before closing this obligation.",
+        "2026-10-09: Song_Search now uses that same domain-search owner and restored reference page, including authored name/aliases/description search, all seven identity-based tag operators, localized/blank facets, counts, name/tempo sorting, stable paging, URL state and exports. Native two-band/revocation checks and contextual HTTP/browser search controls pass. Song localized catalog-name text predicates remain deferred under the A1 exception; File/member/wiki domains remain pending."
       ]
     },
     {

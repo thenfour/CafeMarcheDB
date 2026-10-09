@@ -3,12 +3,17 @@ import type { LocalePreferenceInput } from "src/locale/shared/localePreferences"
 import type { SearchResultsFacetOption } from "../shared/apiTypes";
 import type { xTable } from "../shared/db3core";
 import type { AnyDB3View } from "../shared/core/db3View";
-import { eventStatusDashboardView, eventTagDashboardView, eventTypeDashboardView } from "../shared/references/dashboardReferences";
+import { eventStatusDashboardView, eventTagDashboardView, eventTypeDashboardView, songTagDashboardView } from "../shared/references/dashboardReferences";
 import type { DB3ReadContext } from "./db3ReadExecution";
 import { queryView } from "./db3QueryCore";
 
 // The search field selects a catalog at runtime; its registered view validates the concrete DTO.
-const facetViews: readonly AnyDB3View[] = [eventTypeDashboardView, eventStatusDashboardView, eventTagDashboardView];
+const facetViews: readonly AnyDB3View[] = [
+    eventTypeDashboardView,
+    eventStatusDashboardView,
+    eventTagDashboardView,
+    songTagDashboardView
+];
 const FacetLabelSchema = z.object({
     publicId: z.string(),
     name: z.string().nullable(),

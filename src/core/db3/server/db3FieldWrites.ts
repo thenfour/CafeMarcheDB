@@ -28,7 +28,7 @@ export async function prepareDB3FieldWrites(table: xTable, values: MutationValue
             }
         }
     }
-    if (table.bandScope && !table.bandScope.via && existing === null) {
+    if (table.bandScope?.member !== undefined && !table.bandScope.via && existing === null) {
         result[table.bandScope.member] = auth.requireBand().id;
     }
     return result;

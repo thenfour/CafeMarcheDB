@@ -155,12 +155,12 @@ describe("explicit DB3 authorization", () => {
     expect(paginated.count).toBe(expectedIds.length)
   })
 
-  it("explains deferred Song access even when the actor holds sysadmin", async () => {
+  it("rejects unscoped Song access even when the session claims sysadmin", async () => {
     const { user, ctx } = createAuthorizationPersona("normal", {
       id: 501, permissions: [Permission.login, Permission.view_songs, Permission.sysadmin],
     })
     authorizationTestDb.reset({ user: [user!], song: [makeSong(1, { isDeleted: true })] })
-    await expect(invokeResolver(db3Query, forgeDb3Query("Song", { includeDeleted: true }), ctx)).rejects.toThrow("Song screens and editing is temporarily unavailable")
+    await expect(invokeResolver(db3Query, forgeDb3Query("Song", { includeDeleted: true }), ctx)).rejects.toThrow("Not authorized to perform this query.")
   })
 
   it("applies the same recovery and private-owner rules to included relations", async () => {
@@ -185,7 +185,7 @@ describe("explicit DB3 authorization", () => {
     })
     authorizationTestDb.reset({ user: [user!], song: [makeSong(1)], change: [] })
     await invokeResolver(db3Mutation, forgeDb3PublicUpdate("Song", songPublicId(1), { description: "generic" }), ctx)
-    await invokeResolver(updateSongBasicFields, { songId: songPublicId(1), description: "dedicated" }, ctx)
+    await invokeResolver(updateSongBasicFields, { bandPublicId: "AuthBand00000001", songId: songPublicId(1), description: "dedicated" }, ctx)
     expect(authorizationTestDb.snapshot("song")[0]!.description).toBe("dedicated")
   })
 
@@ -286,12 +286,12 @@ describe("explicit DB3 authorization", () => {
     expect(matchesWhere({ id: 2, file: { id: 2, uploadedByUserId: 502, visiblePermissionId: null, isDeleted: false } }, fileWhere)).toBe(false)
   })
 
-  it("denies generic mutations and explains deferred dedicated editing", async () => {
+  it("denies generic and dedicated editing without a selected band", async () => {
     const { user, ctx } = createAuthorizationPersona("normal", { id: 501, permissions: [Permission.login] })
     authorizationTestDb.reset({ user: [user!], song: [makeSong(1)], change: [] })
     await expect(invokeResolver(db3Mutation, forgeDb3PublicUpdate("Song", songPublicId(1), { description: "generic" }), ctx)).rejects.toThrow("Not authorized")
-    // The legacy generic fixture refreshes its session; give the dedicated guard a fresh signed-in context.
-    await expect(invokeResolver(updateSongBasicFields, { songId: songPublicId(1), description: "dedicated" }, createAuthorizationTestContext(user!))).rejects.toThrow("Song screens and editing is temporarily unavailable")
+    // An explicit target cannot create a membership or grant permissions.
+    await expect(invokeResolver(updateSongBasicFields, { bandPublicId: "AuthBand00000001", songId: songPublicId(1), description: "dedicated" }, createAuthorizationTestContext(user!))).rejects.toThrow()
     expect(authorizationTestDb.snapshot("song")[0]!.description).toBe("before")
   })
 

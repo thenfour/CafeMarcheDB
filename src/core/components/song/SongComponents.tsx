@@ -118,6 +118,7 @@ interface SongDescriptionEditorProps {
 
 export const SongDescriptionEditor = (props: SongDescriptionEditorProps) => {
     const [value, setValue] = React.useState<string>(props.song.description || "");
+    const dashboard = useDashboardContext();
 
     const mutationToken = API.songs.updateSongBasicFields.useToken();
     const recordFeature = useFeatureRecorder();
@@ -129,6 +130,7 @@ export const SongDescriptionEditor = (props: SongDescriptionEditorProps) => {
                 feature: ActivityFeature.song_edit_description,
             });
             await mutationToken.invoke({
+                bandPublicId: dashboard.requireBandPublicId(),
                 songId: props.song.publicId,
                 description: value,
             });
@@ -599,7 +601,8 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
 
     return <SongDetailContainer readonly={props.readonly} songData={songData} tableClient={tableClient} editCommands={editCommands} showVisibility={true}>
 
-        <SongMetadataView readonly={props.readonly} refetch={refetch} songData={songData} showCredits={true} />
+        {/* Credit editing still depends on the shared-person picker. */}
+        <SongMetadataView readonly={true} refetch={refetch} songData={songData} showCredits={true} />
 
         <CMTabPanel
             selectedTabId={selectedTab}
@@ -625,7 +628,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 <AppContextMarker name="partitions tab" songId={song.publicId}>
                     <FilesTabContent
                         fileTags={fileInfo.partitions}
-                        readonly={props.readonly}
+                        readonly={true}
                         refetch={refetch}
                         uploadTags={{
                             taggedSongId: song.publicId,
@@ -649,7 +652,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 <AppContextMarker name="recordings tab" songId={song.publicId}>
                     <FilesTabContent
                         fileTags={fileInfo.recordings}
-                        readonly={props.readonly}
+                        readonly={true}
                         refetch={refetch}
                         uploadTags={{
                             taggedSongId: song.publicId,
@@ -673,7 +676,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 <AppContextMarker name="all files tab" songId={song.publicId}>
                     <FilesTabContent
                         fileTags={fileInfo.enrichedFiles}
-                        readonly={props.readonly}
+                        readonly={true}
                         refetch={refetch}
                         uploadTags={{
                             taggedSongId: song.publicId,

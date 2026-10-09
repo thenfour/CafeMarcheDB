@@ -225,7 +225,13 @@ export function projectDB3ModelPublicIds(
                 // uses publicIds. It means we don't know its public ID (it's still unresolved);
                 // Never retain an unresolved database FK for a converted target.
                 // Null is the public representation of an absent optional relation.
-                delete ret[field.fkidMember];
+                if (Object.prototype.hasOwnProperty.call(ret, field.fkidMember)
+                    && (field as db3.ForeignSingleField<TAnyModel>).allowNull) {
+                    // The foreign-object branch above establishes the field's relation type.
+                    ret[field.fkidMember] = null;
+                } else {
+                    delete ret[field.fkidMember];
+                }
             }
             continue;
         }
@@ -289,8 +295,19 @@ export function authorizeAndProjectDB3ViewModel(
                 if (authorizedForeign) {
                     authorizedModel[field.member] = authorizedForeign;
                 } else {
-                    delete authorizedModel[field.member];
-                    if (field.fkidMember) delete authorizedModel[field.fkidMember];
+                    // Foreign-object metadata distinguishes absent optional relations from required ones.
+                    const optional = (field as db3.ForeignSingleField<TAnyModel>).allowNull;
+                    if (optional) {
+                        authorizedModel[field.member] = null;
+                        if (field.fkidMember && Object.prototype.hasOwnProperty.call(authorizedModel, field.fkidMember)) {
+                            authorizedModel[field.fkidMember] = null;
+                        }
+                    } else {
+                        delete authorizedModel[field.member];
+                        if (field.fkidMember) {
+                            delete authorizedModel[field.fkidMember];
+                        }
+                    }
                 }
                 continue;
             }

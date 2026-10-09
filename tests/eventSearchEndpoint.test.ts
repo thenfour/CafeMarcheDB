@@ -40,18 +40,18 @@ function response() {
     return { res, send, json, end, setHeader, status };
 }
 
-describe("existing event search HTTP owner", () => {
+describe("existing domain search HTTP owner", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         vi.mocked(loadAuthorization).mockResolvedValue(auth);
         vi.mocked(GetSearchResultsCore).mockResolvedValue(MakeEmptySearchResultsRet());
     });
 
-    it("passes explicit band and ordered locale preferences and keeps responses uncached", async () => {
+    it.each([["Event", "Event_Search"], ["Song", "Song_Search"]])("passes %s band and ordered locale preferences and keeps responses uncached", async (tableID, viewID) => {
         const res = response();
-        await searchResultsRoute(request({ ...args, routeLocale: "fr-BE" }), res.res, ctx);
+        await searchResultsRoute(request({ ...args, tableID, viewID, routeLocale: "fr-BE" }), res.res, ctx);
         expect(loadAuthorization).toHaveBeenCalledWith(ctx.session, args.bandPublicId);
-        expect(GetSearchResultsCore).toHaveBeenCalledWith(expect.objectContaining({ ...args, routeLocale: "fr-BE", browserLanguages: ["nl-BE", "fr-BE"] }), auth);
+        expect(GetSearchResultsCore).toHaveBeenCalledWith(expect.objectContaining({ ...args, tableID, viewID, routeLocale: "fr-BE", browserLanguages: ["nl-BE", "fr-BE"] }), auth);
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.setHeader).toHaveBeenCalledWith("Cache-Control", "no-store");
         expect(superjson.deserialize(res.send.mock.calls[0]![0])).toEqual(MakeEmptySearchResultsRet());
@@ -73,7 +73,7 @@ describe("existing event search HTTP owner", () => {
         expect(GetSearchResultsCore).not.toHaveBeenCalled();
     });
 
-    it.each(["Song", "File", "User", "WikiPage"])("keeps %s search deferred before reading accounts/content", async tableID => {
+    it.each(["File", "User", "WikiPage"])("keeps %s search deferred before reading accounts/content", async tableID => {
         const res = response();
         await searchResultsRoute(request({ ...args, tableID }), res.res, ctx);
         expect(res.status).toHaveBeenCalledWith(503);

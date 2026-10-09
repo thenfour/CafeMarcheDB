@@ -5,20 +5,30 @@ import { DB3QueryAuthorizationError, queryView } from "@db3/server/db3QueryCore"
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 import { Permission } from "shared/permissions";
 import { songPublicId } from "tests/support/songFixtures";
-import { testServerAuthorization } from "tests/support/serverAuthorization";
+import { testBandAuthorization } from "tests/support/serverAuthorization";
+import { bindDB3ReadSnapshot } from "@db3/server/db3ReadExecution";
+import type { Prisma } from "@prisma/client";
 
-const authorization = (...names: Permission[]) => testServerAuthorization(
+const authorization = (...names: Permission[]) => testBandAuthorization(
     { id: 501 },
     new ServerPermissionSet(names.map((name, index) => ({ id: index + 1, name }))),
 );
 const bandAdmin = authorization(Permission.public, Permission.login, Permission.admin_songs, Permission.view_songs);
 
+// These sort tests supply narrow delegates; native workflow tests verify real grant refreshes.
+async function sortQuerySnapshot(auth: ReturnType<typeof authorization>, database: Prisma.TransactionClient) {
+    vi.spyOn(auth, "refresh").mockResolvedValue(auth);
+    return bindDB3ReadSnapshot(database, auth, { isolationLevel: "Serializable" });
+}
+
 describe("DB3 grid default sorting", () => {
     it.each([null, songPublicId(7)])("allows the song credit editor query with songId=%s", async songId => {
         const findMany = vi.fn(async (_args: unknown) => []);
-        const findSongs = vi.fn(async () => [{ id: 7, publicId: songPublicId(7) }]);
+        const findSongs = vi.fn(async () => [{ id: 7, publicId: songPublicId(7), bandId: 1,
+            createdByUserId: 501, isDeleted: false, visiblePermissionId: null }]);
         // This query fixture implements only the delegates used by the editor and its song filter.
-        const database = { SongCredit: { findMany }, Song: { findMany: findSongs } } as unknown as Parameters<typeof queryView>[2];
+        const database = { SongCredit: { findMany }, Song: { findMany: findSongs } } as unknown as Prisma.TransactionClient;
+        const context = await sortQuerySnapshot(bandAdmin, database);
         const sortModel = gridSortModelFromPrismaOrderBy(db3.xSongCredit, bandAdmin);
         const input = {
             view: db3.songCreditEditorView,
@@ -29,7 +39,7 @@ describe("DB3 grid default sorting", () => {
 
         expect(bandAdmin.hasPermission(Permission.sysadmin)).toBe(false);
         expect(sortModel).toEqual([]);
-        await expect(queryView(input, bandAdmin, database)).resolves.toMatchObject({ items: [] });
+        await expect(queryView(input, bandAdmin, context)).resolves.toMatchObject({ items: [] });
         expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
             orderBy: db3.xSongCredit.naturalOrderBy,
         }));
@@ -41,7 +51,7 @@ describe("DB3 grid default sorting", () => {
 
         findMany.mockClear();
         // Keep client-supplied natural-ID sorting restricted at the server boundary.
-        await expect(queryView({ ...input, orderBy: { id: "asc" } }, bandAdmin, database))
+        await expect(queryView({ ...input, orderBy: { id: "asc" } }, bandAdmin, context))
             .rejects.toBeInstanceOf(DB3QueryAuthorizationError);
         expect(findMany).not.toHaveBeenCalled();
     });
@@ -60,13 +70,15 @@ describe("DB3 grid default sorting", () => {
     it("rejects an editor query when song viewing is not granted", async () => {
         const findMany = vi.fn(async () => []);
         // The rejected query must never reach its delegate.
-        const database = { SongCredit: { findMany } } as unknown as Parameters<typeof queryView>[2];
+        const database = { SongCredit: { findMany } } as unknown as Prisma.TransactionClient;
+        const auth = authorization(Permission.login, Permission.admin_songs);
+        const context = await sortQuerySnapshot(auth, database);
         await expect(queryView({
             view: db3.songCreditEditorView,
             filter: { items: [], tableParams: { songId: null } },
             orderBy: undefined,
             cmdbQueryContext: "song-credit-grid-missing-view-permission",
-        }, authorization(Permission.login, Permission.admin_songs), database))
+        }, auth, context))
             .rejects.toBeInstanceOf(DB3QueryAuthorizationError);
         expect(findMany).not.toHaveBeenCalled();
     });

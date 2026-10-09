@@ -47,22 +47,30 @@ export function prepareDB3ReadSelection(
     };
 
     const parentScope = table.bandScope?.via;
+    const inheritedParent = table.getBandOwnershipParent();
+    if (inheritedParent && !requestedMembers?.[inheritedParent.relation]) {
+        supportMembers.add(inheritedParent.relation);
+        setMember(inheritedParent.relation,
+            prepareDB3ReadSelection(inheritedParent.table, { select: {} }).selection);
+    }
     if (parentScope && !requestedMembers?.[parentScope.relation]) {
         const parentField = table.prismaMemberRegistry.get(parentScope.relation);
         if (parentField?.kind !== "foreignObject") {
             throw new Error(`Band ownership requires a declared parent reference on ${table.tableID}.`);
         }
         supportMembers.add(parentScope.relation);
-        const parentSelection = { select: {
-            [table.bandScope!.member]: true, [parentScope.ownerUserMember]: true,
-        } };
+        const parentSelection = {
+            select: {
+                [table.bandScope!.member]: true, [parentScope.ownerUserMember]: true,
+            }
+        };
         setMember(parentScope.relation, prepareDB3ReadSelection(parentField.getTargetTable(), parentSelection).selection);
     }
 
     // include and implicit selections already fetch every scalar column.
     if (requested.select) {
         for (const member of [...table.getReadAuthorizationMembers(), ...requiredRootMembers]) {
-            if (parentScope?.relation === member) {
+            if (parentScope?.relation === member || inheritedParent?.relation === member) {
                 continue;
             }
             if (requested.select[member]) {

@@ -33,7 +33,7 @@ export async function searchResultsRoute(req: NextApiRequest, res: NextApiRespon
         return;
     }
     // Deferred domains reject before accounts or content are read.
-    if (args.tableID.toLowerCase() !== "event") {
+    if (!["event", "song"].includes(args.tableID.toLowerCase())) {
         res.status(503).json({ error: new ApplicationFeatureUnavailableError("domainSearch").message });
         return;
     }

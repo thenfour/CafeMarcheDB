@@ -82,6 +82,7 @@ export const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
         endBPM: true,
         introducedYear: true,
         lengthSeconds: true,
+        pinnedRecordingId: true,
         isDeleted: true,
         createdByUserId: true,
         createdByUser: {

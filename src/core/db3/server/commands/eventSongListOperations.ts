@@ -9,6 +9,7 @@ import { DB3CommandError, defineCommandHandler } from "../db3CommandCore";
 import { DB3MutationAuthorizationError } from "../db3mutationCore";
 import { resolvePublicIds } from "../db3PublicIds";
 import { executePublicIdReorder } from "../db3PublicIdReorder";
+import { db3Server } from "../db3Server";
 
 export const eventSongListDeleteCommandHandler = defineCommandHandler(
     deleteEventSongListCommand,
@@ -49,6 +50,7 @@ export const eventSongListReorderCommandHandler = defineCommandHandler(
                     context.authorization, context.transaction,
                 );
                 return context.transaction.eventSongList.findMany({
+                    ...db3Server.table(xEventSongList).prepareReadSelection({}).selection,
                     where: { id: { in: ids }, eventId: event.id },
                     orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
                 }) as Promise<Prisma.EventSongListGetPayload<{}>[]>; // The transaction delegate is runtime selected.

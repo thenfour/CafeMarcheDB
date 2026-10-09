@@ -181,7 +181,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method !== "GET") {
         res.setHeader("Allow", ["GET"]);
         return res.status(405).end("Method Not Allowed");
-    } try {
+    }
+    try {
         // Use our custom ABC to SVG renderer
         const renderSvg = renderAbcToSvg;
         const sw = new Stopwatch();

@@ -26,9 +26,9 @@ Preserve them while restoring their wider workflows. Basic member directory and
 profile behavior is only a subset: reference filters, presets, contact-search
 policy, exports and profile tabs remain A1 work.
 
-Event setlist editing, general song/file screens, non-event domain search,
-quick/shell search, publication, uploads and several reports/admin surfaces remain
-guarded or incomplete. The
+Song credit editing, general File workflows, remaining domain/quick/shell search,
+publication, uploads and several reports/admin surfaces remain guarded or
+incomplete. The
 [restoration manifest](feature-restoration.json) records the individual obligations
 and verification criteria; use `yarn migration:status` rather than maintaining a
 second restriction table. Keep every deferred page, RPC/API, generic DB3 root,
@@ -67,27 +67,54 @@ first segment's name/description explicitly.
 
 Invitation-group changes and the original invitation/attendance controls reuse
 the migrated response owners. The person picker now selects band memberships,
-rather than querying shared accounts. Existing setlist contents and recording
-playback are available through independently authorized Song/File reads. Setlist
-editing remains unavailable: its commands and child rows still need ownership
-declarations, and saving depends on the deferred Song row service. Event Files
-retains its viewer while upload/metadata actions remain unavailable. Dialog help
-keys and draft tag associations were repaired so the original editors can open.
+rather than querying shared accounts. Setlist contents and recording playback
+use independently authorized Song/File reads. The Song checkpoint below restores
+setlist editing through the existing commands and nested ownership declarations.
+Event Files retains its viewer while upload/metadata actions remain unavailable.
+Dialog help keys and draft tag associations were repaired so the original
+editors can open.
 
-Remaining event parity includes setlist writes and song picking, date-picker
-highlights, the full attendance/default-instrument interaction matrix and
-publication consumers/imports. Editing frontpage fields does not restore the
+Remaining event parity includes date-picker highlights, the full attendance/
+default-instrument interaction matrix and publication consumers/imports.
+Editing frontpage fields does not restore the
 anonymous homepage or feed. Localized catalog-name matching remains covered by
 the A1 exception; these gaps keep `event-workflows` and A1 open.
 
-## Next slice: songs and event setlist editing
+## Songs and event setlist checkpoint
 
-Trace the reference Song search/detail/edit path and its File dependencies.
-Restore their ownership through shared DB3 declarations and existing server/UI
-owners, including nested setlist children and visible song references. Reactivate
-the original event setlist editor only when save/delete/reorder and song picking
-work across two bands. Retain the event and attendance checkpoints; account for
-file previews, metadata/associations and uploads as concrete dependencies.
+The original Song search page, presets, tag operators/facets/counts, URL state,
+tempo sorting, paging and CSV/TSV export now use the existing domain-search owner
+with explicit band snapshots and localized SongTag references. Song detail,
+creation, basic/visibility/tag edits and Markdown description saves use the
+existing dialogs and shared row/field authorization. Private, deleted and
+foreign-band targets remain unavailable, including metadata requests.
+
+The original event setlist editor saves mixed songs/dividers, preserves existing
+child identities, deletes children with their parent and reorders lists through
+the existing commands. Nested children inherit ownership from the setlist/Event
+declarations. The original Song autocomplete uses the Song-only quick-search
+plugin and narrow authorized detail reader, public identities and contextual
+links. Query/band changes cancel suggestions and discard stale results; keyboard
+selection, clearing and Escape retain their reference behavior.
+
+Linked File cards/previews/playback and recording pin/unpin use independently
+authorized File rows. An unavailable recording becomes null without hiding its
+visible Song or exposing a numeric FK. General File CRUD/upload/metadata and Song
+credit editing remain unavailable. Credits retain their reader; editing requires
+the shared-person picker. Song history/statistics and other quick-search plugins,
+association selects, Markdown suggestions and shell search remain pending. Only
+localized catalog-name text predicates, including quick-search tag names, follow
+the A1 exception; authored text and identity-based filters remain active.
+
+## Next slice: associated File workflows
+
+Trace the reference File metadata/association and upload path used by Songs and
+Events. Adapt shared File/association declarations and existing owners for band
+membership/instrument references, fresh authorization and localized catalogs;
+retain previews, downloads and playback. Restore original metadata/association
+controls, then multipart/external-URL creation and storage cleanup through their
+existing transactions. Keep remaining credit-picker, File search and image
+processing dependencies explicit rather than reopening unfinished roots.
 
 ## Localized catalog text search exception
 
@@ -115,8 +142,8 @@ when a concrete workflow dependency requires it.
 | Work | Required parity |
 | --- | --- |
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
-| Events | Retain restored search/detail/creation/editing and invitation/attendance controls; finish default-instrument and attendance parity, event song-list editing and date-picker highlights. |
-| Songs and files | Search/detail/editing, tags/credits, partitions/recordings, metadata/associations, previews, uploads and downloads. |
+| Events | Retain restored search/detail/creation/editing, setlist editing and invitation/attendance controls; finish default-instrument and attendance parity and date-picker highlights. |
+| Songs and files | Retain restored Song search/detail/editing, tags, setlist picking and recording/file viewers; finish credit editing/history and File search, metadata/associations, uploads and image processing. |
 | Supporting workflows | Dashboard/wiki/custom navigation, plans, search, calendars/feeds/tokens, Custom Links, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
 After core restoration: platform role/matrix and catalog/settings administration;
@@ -183,11 +210,30 @@ Dutch second-band detail/ordinary-member controls with foreign-band 404s. No
 uncaught browser or RPC errors occurred. The browser fixture supplies the existing
 event-administration grant only for creation and removes it afterwards.
 
-The complete-suite run still reports 214 failed tests and ten suite-load failures
-in the Node batch, including authorization/account, deferred-domain and date-policy
-contracts; the runner stops before the later jsdom batches. Focused passes do not
-establish A1 readiness. Earlier built-browser member/profile/wiki/download checks
-remain recorded evidence, not workflows rerun by these event slices.
+The Song/setlist checkpoint (2026-10-09) passes normal typecheck/build, isolated
+demo build, focused lint, 238 focused tests across 17 executable files and 197
+native MariaDB tests across ten files. Native tests retain event creation,
+attendance/response and plan regressions, and cover all Song tag operators,
+localized/blank facets, two-band visibility, fresh revoked/inactive/deleted/merged
+grants, platform explicit-band access, mixed setlist child/audit rollback,
+same-event reorder scope and independent pinned File visibility. Narrow selection
+tests cover two-hop ownership, own-only predicates and stripping server support
+fields. Obsolete deferred-Song assertions and incomplete projection/sort fixtures
+were adapted to the selected-band contracts; no deferred specification was lost.
+
+Eight assertion groups pass in the isolated production demo browser: original
+Song search/facets/tempo/TSV and URL reload, actual creation and basic/Markdown
+saves, File cards with two-second WAV playback and pin/unpin, keyboard Song
+picking, setlist create/edit/drag reorder/confirmed child deletion, and Dutch
+second-band ordinary-member controls/foreign-Song 404s. No uncaught browser or
+RPC errors occurred; temporary edits and created rows are cleaned up. Unused
+setting-renderer imports found by the normal build were removed.
+
+The complete-suite run still reports 209 failed tests and ten suite-load failures,
+including unscoped authorization/account/setlist fixtures, deferred-domain and
+date-policy contracts; the runner stops before the later jsdom batches. Focused
+passes do not establish A1 readiness. Earlier built-browser member/profile/wiki/
+download checks remain recorded evidence, not workflows rerun by these slices.
 
 The repeatable [demo workflow](../demo-seeding.md) has 29 configuration checks,
 six native generator/reset checks, an isolated production build and five passing

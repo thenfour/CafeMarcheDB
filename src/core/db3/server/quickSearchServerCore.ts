@@ -1,8 +1,63 @@
 import { requireRestoredApplicationFeature } from "src/core/shared/applicationRecovery";
+import { AuthorizationError } from "blitz";
+import db, { Prisma } from "db";
+import { Permission } from "shared/permissions";
+import { CalculateMatchStrength, MakeWhereCondition, ParseQuickFilter, QuickSearchItemType,
+    type QuickSearchItemMatch, type SearchableTableFieldSpec } from "shared/quickFilter";
+import { slugify } from "shared/rootroot";
+import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
+import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
+import { ServerApi } from "src/server/serverApi";
+import { xSong } from "../shared/schema/song";
+import { QuickSearchInputSchema, type QuickSearchInput } from "../shared/quickSearchTypes";
+import { executeDB3Read, type DB3ReadDatabase } from "./db3ReadExecution";
+import { GetAuthorizedTableReadWhere } from "./db3ReadPolicy";
 
-// Deferred calls reject before interpreting a query or touching authorization/readers.
-export async function getQuickSearchResults(_keyword: unknown, _authorization: unknown, _allowedItemTypes: unknown): Promise<never> {
-    return requireRestoredApplicationFeature("quickSearch");
+const songFields: SearchableTableFieldSpec[] = [
+    { fieldName: "publicId", fieldType: "string", strengthMultiplier: 1 },
+    { fieldName: "aliases", fieldType: "string", strengthMultiplier: 0.7 },
+    { fieldName: "name", fieldType: "string", strengthMultiplier: 1 },
+    { fieldName: "description", fieldType: "string", strengthMultiplier: 0.5 },
+];
+
+export async function getQuickSearchResults(input: QuickSearchInput, authorization: CMServerAuthorization,
+    database: DB3ReadDatabase = db,
+): Promise<QuickSearchItemMatch<QuickSearchItemType.song>[]> {
+    // Only the song plugin is ready; mixed/global suggestions stay unavailable.
+    if (input.allowedItemTypes.length === 0 || input.allowedItemTypes.some(type => type !== QuickSearchItemType.song)) {
+        return requireRestoredApplicationFeature("quickSearch");
+    }
+    const args = QuickSearchInputSchema.parse(input);
+    return executeDB3Read(database, authorization, async context => {
+        const auth = context.authorization.requireUser();
+        auth.requirePermission(Permission.view_songs);
+        if (auth.requireBand().publicId !== args.bandPublicId) {
+            throw new AuthorizationError("Song search requires the selected band.");
+        }
+        const query = ParseQuickFilter(args.keyword);
+        if ((query.typeFilter && !["song", "s"].includes(query.typeFilter)) || query.keywords.length === 0) {
+            return [];
+        }
+        // A1 defers localized tag-name matching; authored fields retain their grammar and weights.
+        const authoredWhere: Prisma.SongWhereInput = MakeWhereCondition(songFields, query);
+        const where = await GetAuthorizedTableReadWhere({ table: xSong, auth, where: authoredWhere });
+        const songs = await context.database.song.findMany({ where,
+            select: { publicId: true, name: true, aliases: true, description: true, introducedYear: true },
+            orderBy: { publicId: "asc" }, take: 100,
+        });
+        return songs.map((song): QuickSearchItemMatch<QuickSearchItemType.song> => {
+            const match = CalculateMatchStrength(songFields, song, query);
+            return {
+                id: xSong.parseIdentity(song.publicId), itemType: QuickSearchItemType.song,
+                name: `${song.name}${song.introducedYear ? ` (${song.introducedYear})` : ""}`,
+                absoluteUri: ServerApi.getAbsoluteUri(withMemberPresentation(
+                    `/backstage/song/${song.publicId}/${slugify(song.name)}`, args)),
+                matchStrength: match.matchStrength, matchingField: match.fieldName,
+            };
+        }).filter(match => match.matchStrength > 0)
+            .sort((left, right) => right.matchStrength - left.matchStrength)
+            .slice(0, 15);
+    });
 }
 
 // MIGRATION_RESTORE: quick-search

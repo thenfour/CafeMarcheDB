@@ -13,6 +13,7 @@ import type {
 import { CMDBTableFilterModel } from "../apiTypes";
 import { ForeignCollectionField, foreignRef, foreignRefByTableId, GenericIntegerField, MakeIsDeletedField, MakePKfield, MakePublicIdField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
+import { serverOwnedField } from "../columnTypes/inherited";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongNaturalOrderBy, SongPayload, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
@@ -75,6 +76,15 @@ export const xSongTagAssociation = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.BandSongTagAssociationDelegate>(),
     getIdentity: (association: { publicId: SongTagAssociationPublicId }) => association.publicId,
     tableName: "BandSongTagAssociation",
+    bandScope: {
+        member: "bandId",
+        via: {
+            relation: "song",
+            ownerUserMember: "createdByUserId"
+        },
+        managePermission: Permission.manage_songs,
+    },
+    readConsistency: "snapshot",
     deletePolicy: "hard",
     getSelectionArgs: (): Prisma.BandSongTagAssociationDefaultArgs => {
         return SongTagAssociationArgs;
@@ -124,6 +134,11 @@ const xSongArgs_Base = db3.defineTableDesc({
     prismaModel: db3.prismaModel<Prisma.SongDelegate>(),
     getIdentity: (song: { publicId: SongPublicId }) => song.publicId,
     tableName: "Song",
+    bandScope: {
+        member: "bandId",
+        managePermission: Permission.manage_songs
+    },
+    readConsistency: "snapshot",
     deletePolicy: "softOnly",
     viewDeletedPermission: Permission.recover_songs,
     restorePermission: Permission.recover_songs,
@@ -170,6 +185,15 @@ const xSongArgs_Base = db3.defineTableDesc({
     fields: db3.makeColumnSet({
         id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
         publicId: () => MakePublicIdField<SongPublicId>(),
+        bandId: columnName => serverOwnedField(new GenericIntegerField({
+            columnName, allowNull: false,
+            allowSearchingThisField: false,
+            authMap: {
+                ...xSongAuthMap_R_EManagers,
+                PostQuery: Permission.never_grant,
+                PostQueryAsOwner: Permission.never_grant
+            },
+        })),
         name: columnName => MakeTitleField(columnName, { authMap: xSongAuthMap_R_EOwn_EManagers, }),
         description: () => MakeDescriptionField({ authMap: xSongAuthMap_R_EOwn_EManagers, }),
         isDeleted: () => MakeIsDeletedField({ authMap: xSongAuthMap_R_EOwn_EManagers, }),
@@ -247,6 +271,7 @@ const xSongArgs_Base = db3.defineTableDesc({
         }),
         pinnedRecording: foreignRefByTableId("File", {
             fkidMember: "pinnedRecordingId",
+            // An unavailable recording must not hide the independently visible song.
             allowNull: true,
             authMap: xSongAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
@@ -269,6 +294,15 @@ export const xSongCredit = db3.defineTable({
         return SongCreditArgs;
     },
     tableName: "SongCredit",
+    bandScope: {
+        member: "bandId",
+        via: {
+            relation: "song",
+            ownerUserMember: "createdByUserId"
+        },
+        managePermission: Permission.manage_songs
+    },
+    readConsistency: "snapshot",
     deletePolicy: "hard",
     queryParameters: {
         songId: { kind: "entityIdentity", targetTableID: "Song", authorizeAs: "songId", nullable: true },

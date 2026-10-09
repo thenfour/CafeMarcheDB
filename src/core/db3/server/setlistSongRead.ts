@@ -4,7 +4,8 @@ import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { GetFilteredSongsArgsSchema, GetFilteredSongsItemSongSelect, type GetFilteredSongsArgs, type GetFilteredSongsRet } from "../shared/apiTypes";
-import { GetUserVisibilityWhereExpression } from "./db3Helpers";
+import { xSong, xFile } from "../db3";
+import { GetAuthorizedTableReadWhere } from "./db3ReadPolicy";
 import { executeDB3Read, type DB3ReadDatabase } from "./db3ReadExecution";
 
 type SelectedSong = Prisma.SongGetPayload<{ select: typeof GetFilteredSongsItemSongSelect }>;
@@ -20,12 +21,7 @@ function requireSetlistSongBand(auth: CMServerAuthorization, args: GetFilteredSo
 }
 
 function visiblePinnedRecording(file: SelectedSong["pinnedRecording"], auth: CMServerAuthorization): boolean {
-    if (!file || file.bandId !== auth.requireBand().id || file.isDeleted || !auth.hasPermission(Permission.view_files)) {
-        return false;
-    }
-    return file.visiblePermissionId === null
-        ? file.uploadedByUserId === auth.userId
-        : auth.effectivePermissions.includesId(file.visiblePermissionId);
+    return file !== null && xFile.authorizeRowForView({ auth, model: file });
 }
 
 function projectSetlistSong(song: SelectedSong, auth: CMServerAuthorization): GetFilteredSongsRet {
@@ -46,7 +42,7 @@ function projectSetlistSong(song: SelectedSong, auth: CMServerAuthorization): Ge
     };
 }
 
-/** A narrow lookup for setlist cards; generic Song/File CRUD remains guarded. */
+/** A narrow transport for the existing setlist cards and song picker. */
 export function readSetlistSong(database: DB3ReadDatabase, authorization: CMServerAuthorization,
     input: GetFilteredSongsArgs,
 ): Promise<GetFilteredSongsRet> {
@@ -57,14 +53,7 @@ export function readSetlistSong(database: DB3ReadDatabase, authorization: CMServ
             return { matchingItem: null };
         }
         const song = await tx.song.findFirst({
-            where: {
-                publicId: args.id,
-                bandId,
-                // lsmb todo: this is likely redundant with GetUserVisibilityWhereExpression; this
-                // function should not attempt to implement song entity behaviors.
-                isDeleted: false,
-                ...GetUserVisibilityWhereExpression({ auth, createdByUserIDColumnName: "createdByUserId" }),
-            },
+            where: await GetAuthorizedTableReadWhere({ table: xSong, auth, where: { publicId: args.id } }),
             select: {
                 ...GetFilteredSongsItemSongSelect,
                 tags: {

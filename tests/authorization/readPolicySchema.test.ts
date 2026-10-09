@@ -52,7 +52,15 @@ function makePolicyRow(
 ): { id: number; [key: string]: unknown } {
   // Synthetic rows follow each descriptor's policy columns, rather than one Prisma model.
   const row: Record<string, unknown> = { id: 1, publicId: policyPublicId, externalURI: null, user: { isDeleted: false, mergedIntoUserId: null } }
-  if (table.bandScope) {
+  const parent = table.getBandOwnershipParent()
+  if (parent) {
+    row[parent.relation] = makePolicyRow(parent.table)
+  } else if (table.bandScope?.via) {
+    row[table.bandScope.via.relation] = {
+      [table.bandScope.member]: 1,
+      [table.bandScope.via.ownerUserMember]: actor.id + 1,
+    }
+  } else if (table.bandScope?.member !== undefined) {
     row[table.bandScope.member] = 1
   }
   const deletedColumn = table.SqlSpecialColumns.isDeleted
@@ -257,7 +265,7 @@ describe("read-policy composition boundaries", () => {
   it.each(visibilityTables.map(table => [table.tableID, table] as const))(
     "%s groups the raw-SQL permission/owner OR before composing adjacent predicates",
     (_tableId, table) => {
-      const policySql = table.SqlGetVisFilterExpression({ auth: actorPublicData, tableAlias: "P" })
+      const policySql = table.SqlGetVisFilterExpression({ auth: policyAuthorization(table), tableAlias: "P" })
       const composedSql = SqlCombineAndExpression(["(P.id = 123)", policySql])
       const visibilityColumn = table.SqlSpecialColumns.visiblePermission!.fkidMember!
 

@@ -81,7 +81,7 @@ export abstract class DashboardContextDataBase {
             const parts: string[] = [song.publicId];
             if (song.name) parts.push(slugify(song.name));
             if (!IsNullOrWhitespace(tabSlug)) parts.push(tabSlug || "");
-            return this.getAbsoluteUri(`/backstage/song/${parts.join("/")}`);
+            return this.getAbsoluteUri(withMemberPresentation(`/backstage/song/${parts.join("/")}`, this.memberPresentation));
         },
 
         getURIForUser: (user: { publicId: UserPublicId, name?: string }) => {

@@ -1094,8 +1094,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summarySubtitle={<>({event.songLists.length})</>}
         >
             <AppContextMarker name="setlists tab">
-                {/* Setlist writes depend on the deferred Song and setlist-child ownership contracts. */}
-                <EventSongListTabContent event={event} readonly={true} refetch={refetch} />
+                <EventSongListTabContent event={event} readonly={props.readonly} refetch={refetch} />
             </AppContextMarker>
         </CMTab>
 

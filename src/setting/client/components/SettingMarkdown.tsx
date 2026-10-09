@@ -1,7 +1,7 @@
 import React from "react";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { useLocale } from "src/locale/components/useLocale";
-import type { LocalizedMarkdownKey, LocalizedPlainStringKey, StaticLocalizedStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
+import type { StaticLocalizedStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
 
 const resolveStringWithFallback = (str: string | null, fallbackWhen: "null" | "emptyString" | "nullOrEmptyString", fallback: string | null) => {
     const missing = str === null;
