@@ -111,7 +111,11 @@
       "restore": "Restore the f027830a9790 File search workflow through its existing pipeline with band-owned references, localized display labels and preserved visibility/pagination. A1 may defer only free-text matching against localized catalog names; retain filters/facets and account separately for localized-name ordering. Full localized-name matching remains pending after A1.",
       "verification": "Compare reference controls/results, filters, counts, ordering and paging; test blanks, hidden assignments and cross-band visibility in the built File search. Record the exact A1 text-search exception and verify localized-name matching before closing the full obligation.",
       "status": "pending",
-      "evidence": []
+      "evidence": [
+        "2026-10-09: File_Search now uses the existing selected-band domain-search pipeline and reference page. Authored filename/description text, all tag/instrument operators, localized facets/counts, file-name/upload-date/size/MIME sorts, stable paging, URL state, refresh and CSV/TSV export are retained. Labels and catalog order come from shared authorized localized views; no removed raw-name columns or domain-specific label fallback is queried.",
+        "25 native File search/detail cases and nine built-browser groups pass alongside the retained File/Event/Song/setlist suites. Checks include hidden assignments, blank/inherited labels, ordered presentation preferences, revoked grants, contextual links, two-band isolation, metadata saves and reference page permissions. See the File checkpoint in 04-implementation-plan.md#verification-status.",
+        "Only free-text matching against localized FileTag and instrument names remains deferred under the A1 exception. File sorts use authored filename, upload timestamp, size or MIME, so no localized-name result sort is deferred; facets retain resolved catalog ordering. The raw-name predicate archives remain intact and this full search obligation stays pending until localized-name matching is verified."
+      ]
     },
     {
       "id": "audit-log",
@@ -192,8 +196,8 @@
         "2026-10-08: Restored the original event detail page, breadcrumbs/tabs, creation dialog, basic/visibility/relevance edits, segment creation/date edits/deletion, invitation-group/member selection, inline attendance and CafeMarche frontpage field editing. Public targets and fresh band snapshots use shared DB3 field authorization, localized reference catalogs, audit and event-range services. The invitation picker uses active band memberships; draft tag choices and missing dialog help keys were repaired.",
         "294 focused checks and 162 native MariaDB checks pass, including parent-inherited segment ownership, real invitation-tag assignments, audit/range updates, hidden/foreign references, revoked grants and independent pinned Song/File visibility. Normal typecheck/build and focused lint pass. Twelve built-browser groups pass, including original creation/editing controls, existing creation permission checks, invitation/attendance saves, actual WAV playback, French frontpage writes and Dutch second-band/foreign-event boundaries; no uncaught browser or RPC errors. See 04-implementation-plan.md#verification-status for evidence and the failing full-suite assessment.",
         "2026-10-09: Restored the original event setlist editor and Song picker. Shared parent/child ownership declarations authorize save/update/delete/reorder, preserve persisted child identities and audit transactions, and reject hidden/foreign parents, songs, child IDs and mixed-event reorder scopes. Native tests retain creation/attendance/response/plan regressions; built-browser creation/editing, keyboard picking, drag reorder and confirmed parent/child deletion pass. See the Song/setlist verification in 04-implementation-plan.md.",
-        "Still pending: the full attendance/default-instrument interaction matrix, date-picker highlights, publication consumers/imports and localized catalog-name free-text matching under the A1 exception. Event Files retains its viewer with upload/metadata actions unavailable. These checkpoints do not close event parity or A1.",
-        "2026-10-09: Event Files now uses the restored shared File metadata/association and upload controls with explicit band/public targets and independent File authorization; the remaining File page/search and image-creation obligations are tracked separately."
+        "Still pending: the full attendance/default-instrument interaction matrix, date-picker highlights, publication consumers/imports and localized catalog-name free-text matching under the A1 exception. Event Files retains the restored shared upload/metadata controls. These checkpoints do not close event parity or A1.",
+        "2026-10-09: Event Files now uses the restored shared File metadata/association and upload controls with explicit band/public targets and independent File authorization; File pages are restored and image-creation/localized-name-search obligations are tracked separately."
       ]
     },
     {
@@ -205,7 +209,7 @@
       "evidence": [
         "2026-10-09: Restored the original Song search/detail/create/basic-edit/visibility/tag/Markdown workflows through shared Song/association ownership and field authorization. Song_Search retains its existing SQL/filter/facet/preset/URL/sort/paging/export composition, localized tag references, public targets, contextual links and fresh band snapshots. Dedicated description and pin/unpin writes use the generated editor contract and existing audited row service.",
         "238 focused checks across 17 executable files, 197 native MariaDB checks across ten files, normal typecheck/build, isolated demo build, focused lint and eight built-browser assertion groups pass. Song/File visibility is independent: unavailable pinned files project null without hiding the Song or leaking numeric foreign IDs. Browser checks persist creation/basic/Markdown edits and actual WAV playback/pin/unpin; native tests cover all tag operators, hidden/foreign/deleted references and fresh revoked/inactive/deleted/merged/platform boundaries. See 04-implementation-plan.md#verification-status.",
-        "Still pending: Song credit editing/shared-person picker, history/statistics and general File metadata/association/upload workflows. Credits retain their reader and linked File cards/previews/playback remain available with independently authorized File reads. Localized catalog-name free-text matching remains deferred under the A1 exception. This checkpoint does not close song parity or A1.",
+        "Still pending: Song credit editing/shared-person picker, history/statistics. Credits retain their reader and linked File cards/previews/playback remain available with independently authorized File reads. Localized catalog-name free-text matching remains deferred under the A1 exception. This checkpoint does not close song parity or A1.",
         "2026-10-09: Song File tabs now use the restored File editors, public BandUser/instrument association selectors and multipart/external-URL uploads. Built-browser checks cover metadata, local PDF/audio upload, download privacy, deletion and own-file editing across the two demo bands. Credit editing/shared-person picking and history remain pending."
       ]
     },
@@ -214,11 +218,13 @@
       "reason": "General File pages still depend on undeclared metadata/search ownership.",
       "restore": "Restore File search/detail and metadata/association editing with explicit band ownership, public membership/instrument references, localized labels and fresh authorization; retain narrow authorized downloads.",
       "verification": "Verify two-band search/facets/paging, metadata, association privacy, downloads and complete built-browser File workflows.",
-      "status": "pending",
+      "status": "restored",
       "evidence": [
-        "2026-10-09: Shared File declarations now enforce direct band ownership and snapshot reads for the existing Song/Event linked-file and recording consumers. File cards/previews, contextual downloads and actual two-second WAV playback remain available; pin/unpin is a Song command with independent visible-file authorization. General File pages/CRUD, search, metadata/association editors and uploads remain guarded and pending; restoring this reader dependency does not close File parity.",
-        "2026-10-09: Restored the original metadata, visibility, association and soft-delete controls in Song/Event File tabs. Shared File associations inherit band, privacy and uploader ownership from File; direct child insertion and reparenting require edit permission on the owning File. BandUser/instrument references are public and band-scoped, and narrow Song/Event option views avoid full-editor catalog payloads. General File pages/search remain pending.",
-        "152 focused checks across six files, 211 native MariaDB checks across 12 files, normal typecheck/build, isolated demo build and six built-browser assertion groups pass. Native checks cover own/manage field permissions, read privacy, association reparenting, atomic audits and rejected foreign/private/inactive references. Browser checks persist metadata, soft deletion and member associations, and verify ordinary second-band uploader/admin-field boundaries and protected downloads. See 04-implementation-plan.md#verification-status."
+        "2026-10-09: Restored the reference File search, detail and metadata-grid pages through SearchPageContent/fileSearchConfig and the shared File/association declarations. Tag/instrument operators, facets/counts, all four sorts, stable paging, URL state, authored text, TSV/CSV columns and protected contextual links remain active. Shared catalog views resolve localized labels, intentional blanks, inheritance and effective ordering. Localized catalog-name free-text matching remains explicitly pending under file-search and the A1 exception.",
+        "Detail/page metadata uses fresh selected-band authorization and returns 404 for hidden, deleted or foreign targets. Related File/Song rows are independently authorized. Original metadata, visibility, all six association controls, previews/playback and soft deletion reuse the existing editors and audited owners; deletion returns to the contextual list. Member references are BandUser identities and localized instruments/catalogs use shared views. The metadata grid retains the reference admin_files capability; search/detail retain access_file_landing_page. Denied SSR requests return uncached 403 before page loaders.",
+        "140 focused checks across 13 files and 236 native MariaDB checks across 13 files pass, including retained Song/Event/setlist/upload regressions. Native File search covers both filters' seven operators, combined authored text, blanks/inheritance/ordered language preferences, actual ascending/descending sort values and stable page totals, private/hidden/foreign references, fresh revocation, roleless/deleted/merged principals, explicit-band platform policy and narrow public File reads. Normal typecheck/build, isolated demo build, focused lint and preservation verification pass.",
+        "Nine built-browser groups pass: reference 20-row paging/load-more and contextual links, TSV columns/one-based order/protected URLs, text/sort/URL reload/reset, French facets and inherited instrument override, persisted description/member association saves, BandAdmin metadata-grid access, confirmed soft deletion/list navigation, Dutch second-band isolation/foreign detail 404, and ordinary-member search/detail/grid rejection. No uncaught page/RPC errors; disposable edits, created rows and audits are cleaned up. Earlier associated-file browser checks retain protected downloads and actual audio playback. See 04-implementation-plan.md#verification-status for the full-suite limitations.",
+        "The three completed page source blocks and manifest references were removed. Image fork/crop/rotate/gallery bake and remaining upload callers stay pending under file-creation/public-publication; no other source archive or deferred specification was removed."
       ]
     },
     {
@@ -238,9 +244,10 @@
       "verification": "Reactivate reference search authorization/recovery specifications and compare existing consumers in the built CafeMarche app. Verify anonymous/member/admin visibility, two bands/locales, hidden assignments, all operators, revocation and consistent rows/counts/facets/order/paging. Record the A1 text-search exception and verify localized-name matching before closing the full obligation.",
       "status": "pending",
       "evidence": [
-        "2026-10-08: Event_Search reuses the existing SQL/filter/facet/query owner inside executeDB3Read, including fresh grants, explicit band, authorized public filter references, stable public-ID sort ties, same-snapshot counts/rows/facets and localized catalog-view labels/order. Client requests retain ordered presentation preferences and discard old-band/language results. Remaining domains outside Event/Song remain guarded.",
+        "2026-10-08: Event_Search reuses the existing SQL/filter/facet/query owner inside executeDB3Read, including fresh grants, explicit band, authorized public filter references, stable public-ID sort ties, same-snapshot counts/rows/facets and localized catalog-view labels/order. Client requests retain ordered presentation preferences and discard old-band/language results. Event/Song/File now use this owner; member/wiki domains remain guarded.",
         "tests/eventSearch.mysql.test.ts, tests/eventSearchEndpoint.test.ts and reactivated search recovery/client contracts pass alongside existing view/calendar/sort contracts. Built-browser presets, filtering, URL reload, paging, export and two-band/localized presentation pass. Authored text predicates remain active; localized catalog-name text predicates are deliberately deferred until after A1 and must be restored before closing this obligation.",
-        "2026-10-09: Song_Search now uses that same domain-search owner and restored reference page, including authored name/aliases/description search, all seven identity-based tag operators, localized/blank facets, counts, name/tempo sorting, stable paging, URL state and exports. Native two-band/revocation checks and contextual HTTP/browser search controls pass. Song localized catalog-name text predicates remain deferred under the A1 exception; File/member/wiki domains remain pending."
+        "2026-10-09: Song_Search now uses that same domain-search owner and restored reference page, including authored name/aliases/description search, all seven identity-based tag operators, localized/blank facets, counts, name/tempo sorting, stable paging, URL state and exports. Native two-band/revocation checks and contextual HTTP/browser search controls pass. Song localized catalog-name text predicates remain deferred under the A1 exception; member/wiki domains remain pending.",
+        "2026-10-09: File_Search uses the same authorized owner, retained reference tag/instrument filters/facets, authored text, four sorts, stable paging, URL state and exports. Native snapshot/privacy/revocation tests and nine built-browser groups pass. Localized FileTag/instrument-name text matching follows the A1 exception; member/wiki search and remaining indirect consumers keep domain-search pending."
       ]
     },
     {
@@ -1938,24 +1945,6 @@
       "featureId": "song-workflows",
       "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/editSongCredits.tsx:1-45",
       "sha256": "0eb20434a59da009e3e2774b97a9db4f759c2ed06d44c53cb9725ed5aea6ab8c"
-    },
-    {
-      "file": "src/pages/backstage/files.tsx",
-      "featureId": "file-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/files.tsx:1-204",
-      "sha256": "b970c21646043925c61572ac18fcc67899165bd0669fcc4ad38984fdc63d8ecf"
-    },
-    {
-      "file": "src/pages/backstage/file/[...id_slug_tab].tsx",
-      "featureId": "file-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/file/[...id_slug_tab].tsx:1-356",
-      "sha256": "e0ba0c451334ba8e9ddb24b48623d1dd6271755fc14b9ecf47b6bdc90f6f4952"
-    },
-    {
-      "file": "src/pages/backstage/editFiles.tsx",
-      "featureId": "file-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/editFiles.tsx:1-96",
-      "sha256": "c234aee41be38ac3ced402cdf19cdc6c23e3d6f28f29f0cc879c5fdd3e9d4107"
     },
     {
       "file": "src/pages/backstage/frontpagegallery.tsx",

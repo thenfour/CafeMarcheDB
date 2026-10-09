@@ -235,6 +235,12 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
     const input = { ...presentationInput, pathname };
     bootstrap = req ? await getPageBootstrap(input, appCtx.ctx) : await invoke(getPageBootstrap, input);
   } catch (error) {
+    if (error instanceof AuthorizationError && res) {
+      res.statusCode = 403;
+      res.setHeader("Cache-Control", "no-store");
+      res.end();
+      return { pageProps: {} };
+    }
     // App bootstrap runs before the catch-all's own 404 handler.
     const invalidBandInput = error instanceof ZodError && error.issues.some(issue => issue.path[0] === "bandPublicId");
     if (pathname === "/[...customLinkSlug]" && (error instanceof NotFoundError || invalidBandInput)) {

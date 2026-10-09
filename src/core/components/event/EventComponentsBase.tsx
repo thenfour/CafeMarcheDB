@@ -1,5 +1,4 @@
 
-import { assert } from 'blitz';
 import { DateTimeRange, Timing } from 'shared/time';
 import { getUniqueNegativeID } from 'shared/utils';
 import * as db3 from "src/core/db3/db3";
@@ -412,5 +411,4 @@ export const EventTableClientColumns = DB3Client.makeClientColumnSet({
     frontpageLocationURI: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.publicLocationUrl", columnName, cellWidth: 150 }),
     frontpageTags: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.publicTags", columnName, cellWidth: 150 }),
 });
-
 

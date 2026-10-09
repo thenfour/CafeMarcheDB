@@ -3,7 +3,7 @@ import type { LocalePreferenceInput } from "src/locale/shared/localePreferences"
 import type { SearchResultsFacetOption } from "../shared/apiTypes";
 import type { xTable } from "../shared/db3core";
 import type { AnyDB3View } from "../shared/core/db3View";
-import { eventStatusDashboardView, eventTagDashboardView, eventTypeDashboardView, songTagDashboardView } from "../shared/references/dashboardReferences";
+import { eventStatusDashboardView, eventTagDashboardView, eventTypeDashboardView, fileTagDashboardView, instrumentDashboardView, songTagDashboardView } from "../shared/references/dashboardReferences";
 import type { DB3ReadContext } from "./db3ReadExecution";
 import { queryView } from "./db3QueryCore";
 
@@ -12,13 +12,16 @@ const facetViews: readonly AnyDB3View[] = [
     eventTypeDashboardView,
     eventStatusDashboardView,
     eventTagDashboardView,
-    songTagDashboardView
+    songTagDashboardView,
+    fileTagDashboardView,
+    instrumentDashboardView,
 ];
 const FacetLabelSchema = z.object({
     publicId: z.string(),
     name: z.string().nullable(),
     description: z.string().nullable(),
-    color: z.string().nullable(),
+    // Instruments use the functional group's color.
+    color: z.string().nullable().optional(),
     iconName: z.string().nullable().optional(),
     sortOrder: z.number(),
 });
@@ -45,7 +48,7 @@ export async function resolveSearchFacetLabels(
         ...items.filter(item => item.id === null),
         ...labels.map(row => ({
             id: row.publicId, rowCount: counts.get(row.publicId) ?? 0,
-            label: row.name, tooltip: row.description, color: row.color,
+            label: row.name, tooltip: row.description, color: row.color ?? null,
             iconName: row.iconName ?? null, shape: undefined,
         })),
     ];

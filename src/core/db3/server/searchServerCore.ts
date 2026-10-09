@@ -230,6 +230,15 @@ const searchDomains = [
         sorts: ["name", "startBPM", "introducedYear", "lengthSeconds"],
         criteria: ["tags"]
     },
+    {
+        table: db3.xFile,
+        view: db3.fileSearchView,
+        permission: Permission.view_files,
+        // TODO: these should be well-typed such that a misspelled symbol
+        // would fail to compile!
+        sorts: ["fileLeafName", "uploadedAt", "sizeBytes", "mimeType"],
+        criteria: ["tags", "taggedInstruments"],
+    },
 ];
 
 function requireSearchDomain(tableID: string) {

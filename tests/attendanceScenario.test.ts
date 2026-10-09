@@ -23,10 +23,10 @@ describe("attendance scenario adapter", () => {
         scenario.users[0]!.tagInvited = false;
         expect(buildAttendanceScenario(scenario, 0).attendance.isInvited).toBe(false);
         scenario.users[1]!.primaryInstrumentId = 2;
-        expect(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse.instrument!.publicId)
+        expect(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse?.instrument?.publicId)
             .toBe(scenarioInstruments[1]!.publicId);
         scenario.users[1]!.instrumentId = 4;
-        expect(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse.instrument!.publicId)
+        expect(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse?.instrument?.publicId)
             .toBe(scenarioInstruments[3]!.publicId);
     });
 

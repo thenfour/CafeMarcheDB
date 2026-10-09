@@ -103,10 +103,10 @@ export abstract class DashboardContextDataBase {
         },
 
         getURIForFileLandingPage: (value: { publicId: FilePublicId, slug?: string | null | undefined }) => {
-            if (IsNullOrWhitespace(value.slug)) {
-                return this.getAbsoluteUri(`/backstage/file/${value.publicId}`);
-            };
-            return this.getAbsoluteUri(`/backstage/file/${value.publicId}/${slugify(value.slug || "")}`);
+            const path = IsNullOrWhitespace(value.slug)
+                ? `/backstage/file/${value.publicId}`
+                : `/backstage/file/${value.publicId}/${slugify(value.slug || "")}`;
+            return this.getAbsoluteUri(withMemberPresentation(path, this.memberPresentation));
         },
 
         getURLClass: (url: string, baseDomain: string = window.location.hostname): "internalPage" | "internalAPI" | "external" => {

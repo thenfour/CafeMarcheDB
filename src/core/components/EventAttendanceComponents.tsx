@@ -50,6 +50,9 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
     const recordFeature = useFeatureRecorder();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const onSave = async (change: AttendanceChange) => {
+        if (!attendance.eventUserResponse) {
+            throw new Error("Attendance changes require a selected band member.");
+        }
         const eventId = props.eventData.event.publicId;
         const userId = attendance.eventUserResponse.user.publicId;
         const instrumentId = change.type === "instrument" ? change.instrumentId : undefined;

@@ -53,7 +53,7 @@ describe("deferred public feed and remaining domain search", () => {
 
     it("guards direct SQL search before reading authorization or starting a database snapshot", async () => {
         const auth = createAuthorizationPersona("sysadmin").schemaAuthorization;
-        await expect(GetSearchResultsCore({ tableID: "File", offset: 0, take: 20, quickFilter: "private", sort: [], discreteCriteria: [] }, auth))
+        await expect(GetSearchResultsCore({ tableID: "User", offset: 0, take: 20, quickFilter: "private", sort: [], discreteCriteria: [] }, auth))
             .rejects.toThrow(ApplicationFeatureUnavailableError);
     });
 });

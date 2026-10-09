@@ -57,4 +57,12 @@ describe("entity routing with slash-containing names", () => {
         const url = new URL(dashboard.routingApi.getURIForSong({ publicId: songId, name: "March / Waltz" }, "files"));
         expect(url.pathname.split("/").slice(3)).toEqual([songId, "march-waltz", "files"]);
     });
+
+    it.each([undefined, "Score / Recording"])("preserves File band and locale with slug %s", slug => {
+        const fileId = parsePublicId<"File">("RoutingFile00001");
+        const url = new URL(dashboard.routingApi.getURIForFileLandingPage({ publicId: fileId, slug }));
+        expect(url.pathname).toBe(`/backstage/file/${fileId}${slug ? "/score-recording" : ""}`);
+        expect(url.searchParams.get("bandPublicId")).toBe(dashboard.memberPresentation.bandPublicId);
+        expect(url.searchParams.get("routeLocale")).toBe("fr-BE");
+    });
 });

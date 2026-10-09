@@ -124,7 +124,7 @@ export const FileListItem = (props: FileListItemProps) => {
         }
 
         footerContent={<>
-            {uploadedAt && <span>Uploaded: {uploadedAt.toLocaleDateString()}</span>}
+            {uploadedAt && <span>Uploaded: {uploadedAt.toLocaleDateString(dashboardContext.eventDatePresentation.locale)}</span>}
             {uploadedByUser && <span>By: {uploadedByUser}</span>}
             <span>{props.file.sizeBytes ? `Size: ${Math.round(props.file.sizeBytes / 1024)} KB` : 'Size: Unknown'}</span>
             <span>{props.file.mimeType ? `Type: ${props.file.mimeType}` : 'Type: Unknown'}</span>

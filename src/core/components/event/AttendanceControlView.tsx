@@ -59,7 +59,7 @@ const InstrumentButton = ({ value, selected, onSelect }: {
 >{value.name}</CMChip>;
 
 const InstrumentControl = ({ response, environment }: {
-    response: EventAttendanceResult["eventUserResponse"]; environment: AttendanceControlEnvironment;
+    response: NonNullable<EventAttendanceResult["eventUserResponse"]>; environment: AttendanceControlEnvironment;
 }) => {
     const [inProgress, setInProgress] = React.useState(false);
     const instruments = response.user.bandUserInstruments.flatMap(assignment => {
@@ -89,7 +89,7 @@ const InstrumentControl = ({ response, environment }: {
 };
 
 const CommentEditor = ({ response, environment, onClose }: {
-    response: EventAttendanceResult["eventUserResponse"]; environment: AttendanceControlEnvironment; onClose: () => void;
+    response: NonNullable<EventAttendanceResult["eventUserResponse"]>; environment: AttendanceControlEnvironment; onClose: () => void;
 }) => {
     const [value, setValue] = React.useState(response.response.userComment || "");
     const save = async () => {
@@ -115,7 +115,7 @@ const CommentEditor = ({ response, environment, onClose }: {
 };
 
 const CommentControl = ({ response, environment }: {
-    response: EventAttendanceResult["eventUserResponse"]; environment: AttendanceControlEnvironment;
+    response: NonNullable<EventAttendanceResult["eventUserResponse"]>; environment: AttendanceControlEnvironment;
 }) => {
     const [editing, setEditing] = React.useState(false);
     return <div className={`ownAttendanceComment freeButton ${!editing && "clickToEdit"}`} onClick={!editing ? () => setEditing(true) : undefined}>
@@ -167,7 +167,9 @@ const AnswerControl = ({ segment, environment, forceEditMode, onReadonlyClick }:
 export const AttendanceControlView = ({ attendance: y, environment, ...props }: AttendanceControlViewProps) => {
     const [userSelectedEdit, setUserSelectedEdit] = React.useState(false);
     const editMode = userSelectedEdit || !y.allowViewMode;
-    if (!y.visible) return <>{props.debugView}</>;
+    if (!y.visible || !y.eventUserResponse) {
+        return <>{props.debugView}</>;
+    }
     const captionIndex = !y.allUncancelledSegmentsAnswered ? 0 : y.allUncancelledSegmentsAffirmative ? 1 : y.allUncancelledSegmentResponsesNegative ? 2 : 3;
     const findAttendance = (id: EventAttendancePublicId | null) => environment.attendances.find(a => a.publicId === id) || null;
     if (!userSelectedEdit && !y.alertFlag && y.anyAnswered && props.minimalWhenNotAlert) {

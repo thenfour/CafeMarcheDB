@@ -33,7 +33,9 @@ export async function searchResultsRoute(req: NextApiRequest, res: NextApiRespon
         return;
     }
     // Deferred domains reject before accounts or content are read.
-    if (!["event", "song"].includes(args.tableID.toLowerCase())) {
+    // LSMB todo: do not introduce this check here. "get search results" should not
+    // have knowledge of specific tables like event, song, file ...
+    if (!["event", "song", "file"].includes(args.tableID.toLowerCase())) {
         res.status(503).json({ error: new ApplicationFeatureUnavailableError("domainSearch").message });
         return;
     }

@@ -61,6 +61,7 @@ export const EditFieldsDialogButton = <
             React.createElement(buttonComponent, { onClick: () => { setIsOpen(!isOpen) } }, props.renderButtonChildren()) :
             <CMButton onClick={() => { setIsOpen(!isOpen) }}>{props.renderButtonChildren()}</CMButton>)}
         {isOpen && !readonly && <DB3EditObjectDialog
+            title={props.dialogTitle}
             initialValue={props.initialValue as TAnyModel}
             onCancel={() => {
                 props.onCancel();

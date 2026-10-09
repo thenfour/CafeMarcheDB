@@ -26,9 +26,9 @@ Preserve them while restoring their wider workflows. Basic member directory and
 profile behavior is only a subset: reference filters, presets, contact-search
 policy, exports and profile tabs remain A1 work.
 
-Song credit editing, general File workflows, remaining domain/quick/shell search,
-publication, image creation and several reports/admin surfaces remain guarded or
-incomplete. The
+Song credit editing, remaining domain/quick/shell search, publication, image
+creation and several reports/admin surfaces remain guarded or incomplete.
+General File search/detail/metadata pages and associated uploads are restored. The
 [restoration manifest](feature-restoration.json) records the individual obligations
 and verification criteria; use `yarn migration:status` rather than maintaining a
 second restriction table. Keep every deferred page, RPC/API, generic DB3 root,
@@ -99,8 +99,9 @@ selection, clearing and Escape retain their reference behavior.
 
 Linked File cards/previews/playback and recording pin/unpin use independently
 authorized File rows. An unavailable recording becomes null without hiding its
-visible Song or exposing a numeric FK. General File CRUD/upload/metadata and Song
-credit editing remain unavailable. Credits retain their reader; editing requires
+visible Song or exposing a numeric FK. File metadata/upload controls and general
+pages are restored in the checkpoints below. Song credit editing remains
+unavailable. Credits retain their reader; editing requires
 the shared-person picker. Song history/statistics and other quick-search plugins,
 association selects, Markdown suggestions and shell search remain pending. Only
 localized catalog-name text predicates, including quick-search tag names, follow
@@ -132,17 +133,47 @@ Failed uploads clear progress; failed metadata saves retain the draft. Downloads
 previews, playback and recording pin/unpin retain independent File authorization.
 Soft deletion keeps storage for recovery while denying ordinary reads/downloads.
 
-General File pages/search, image fork/crop/rotate/gallery bake, and uploads from
-Markdown/profile/brand/gallery callers remain pending. Their guards and source
-archives remain intact. This checkpoint does not close File parity or A1.
+General File pages/search are restored in the checkpoint below. Image
+fork/crop/rotate/gallery bake and uploads from Markdown/profile/brand/gallery
+callers remain pending with their guards and source archives intact.
 
-## Next slice: general File pages and search
+## General File pages and search checkpoint
 
-Restore the reference File search and detail/metadata pages using their existing
-search pipeline and the now-authorized File/association declarations. Retain
-filter operators/facets, paging, sorting, URL state and exports, with contextual
-links and two-band snapshot privacy. Keep image creation and remaining upload
-callers explicit until their owning workflows are adapted and verified.
+The original File search, detail and metadata-grid pages are active.
+`SearchPageContent`, filter/list hooks and `fileSearchConfig` retain both tag and
+instrument filters, all seven operators, facets/counts, authored filename/description
+search, four sorts, 20-row paging/load-more, URL state, refresh and CSV/TSV export.
+Rows/counts/facets share the selected-band authorization snapshot. Shared catalog
+views resolve intentional blanks, inherited/local labels and effective ordering.
+Only FileTag/instrument-name free-text matching follows the A1 exception below.
+No localized result sort is omitted: the reference sorts use filename, uploaded
+time, size and MIME. Band/language changes discard earlier search results.
+
+Detail page metadata and reads use the same shared authorized owner; hidden,
+private, deleted and foreign targets return 404. Band changes remount detail
+state and discard cached results. The original breadcrumbs, related-file links,
+metadata/visibility/association editors, previews/playback and deletion controls
+retain public targets, contextual URLs and independent reference authorization.
+All six association selectors use shared band/catalog views. Confirmed deletion
+returns to the contextual File list without refetching the unavailable target.
+The metadata grid retains the reference `admin_files` capability, while
+search/detail retain `access_file_landing_page`. Denied SSR requests return an
+uncached 403 before page loaders. Narrow `view_files` consumers keep their
+independent visibility policy.
+
+The `file-workflows` page obligation is restored and its three source blocks and
+manifest references are removed. `file-search` remains pending only for full
+localized-name text matching; image creation and remaining upload integrations
+have their own pending obligations. A1 and B remain open.
+
+## Next slice: File image transforms
+
+Restore reference image fork/crop/rotate through the existing image controls and
+server owners, with explicit band/public targets, independently authorized source
+Files, server-owned storage/metadata, parent/preview relationships and rollback
+of database/audits/storage. Verify the actual image results in the built browser.
+Keep gallery bake and Markdown/profile/brand/gallery upload integrations explicit
+until their owning workflows are adapted and verified.
 
 ## Localized catalog text search exception
 
@@ -171,7 +202,7 @@ when a concrete workflow dependency requires it.
 | --- | --- |
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
 | Events | Retain restored search/detail/creation/editing, setlist editing and invitation/attendance controls; finish default-instrument and attendance parity and date-picker highlights. |
-| Songs and files | Retain restored Song search/detail/editing, tags, setlist picking and recording/file viewers; finish credit editing/history and File search, metadata/associations, uploads and image processing. |
+| Songs and files | Retain restored Song search/detail/editing, tags, setlist picking, File search/detail/metadata/associations, associated uploads and recording/file viewers; finish credit editing/history, image processing and remaining upload callers. |
 | Supporting workflows | Dashboard/wiki/custom navigation, plans, search, calendars/feeds/tokens, Custom Links, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
 After core restoration: platform role/matrix and catalog/settings administration;
@@ -278,12 +309,39 @@ with admin fields unavailable. No uncaught page/RPC errors occurred. Temporary
 rows, metadata edits, audits and stored files were cleaned up. Selection/drop/
 paste and busy/read-only controls are also covered by isolated jsdom tests.
 
+The general File page/search checkpoint (2026-10-09) passes 140 focused checks
+across 13 files and 236 native MariaDB checks across 13 files, including retained
+File upload/association, Song/Event/setlist and attendance regressions. New native
+File cases cover both filters' seven operators, combined authored text, hidden
+assignments, blanks/inheritance and ordered language preferences, actual values
+for all four ascending/descending sorts, stable paging/counts, public DTOs and
+fresh grant/member/account/band revocation. Detail titles and related Files have
+independent private/deleted/foreign-reference checks; anonymous/outsider/roleless/
+platform cases retain narrow public visibility and explicit selected-band policy.
+HTTP/jsdom checks cover File transport, contextual links and uncached 403 before
+denied page loaders. Normal typecheck/build, isolated demo build, focused lint
+and preservation verification pass. Obsolete deferred-File assertions now target
+the still-deferred User domain; no behavioral specification was removed.
+
+Nine built-browser groups pass: original 20-row paging/load-more and contextual
+links; TSV columns, one-based order and protected URLs; authored text, sorting,
+URL reload and Reset filter; French tag/instrument facets and inherited Cornet
+override; persisted description/member-association saves; BandAdmin metadata-grid
+access; confirmed soft deletion/list navigation; Dutch second-band isolation and
+foreign File detail 404; ordinary-member search/detail/grid rejection. No uncaught
+page/RPC errors occurred. Disposable rows, edits and audits were cleaned up.
+The browser exposed and verified fixes for missing band/locale File links, ignored
+dialog titles, deletion refetching, temporary Sysadmin grid restriction and denied
+SSR returning 500. TSV's double-incremented order was corrected. The build also
+exposed nullable attendance-response assumptions and an unused Event import;
+the narrow guards/type fixes retain the existing attendance test coverage.
+
 The complete-suite run still reports 209 failed tests and ten suite-load failures,
 including unscoped authorization/account/setlist fixtures, deferred-domain and
 date-policy contracts; the runner stops before the later jsdom batches. Focused
-passes do not establish A1 readiness. The latest run passes 1739 tests and skips
-400; its 209 failed tests and ten suite-load failure labels match the previous
-Song checkpoint exactly. Earlier built-browser member/profile/wiki/
+passes do not establish A1 readiness. The latest run passes 1740 tests and skips
+425; its 209 failed tests and ten suite-load failure labels match the previous
+associated File checkpoint exactly. Earlier built-browser member/profile/wiki/
 download checks remain recorded evidence, not workflows rerun by these slices.
 
 The [development seeder](../development-seeding.md) restores the pre-migration

@@ -4,6 +4,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 export const FileTableClientColumns = DB3Client.makeClientColumnSet({
     publicId: DB3Client.publicIdFieldGen(),
     fileLeafName: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, columnName, cellWidth: 200, fieldCaptionKey: "db3.fields.fileName", className: "titleText" }),
+    storedLeafName: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, columnName, cellWidth: 150, fieldCaptionKey: "db3.fields.storedFileName" }),
     description: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.description", columnName, cellWidth: 200 }),
     uploadedAt: columnName => new DB3Client.CreatedAtColumn({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.uploadedAt", columnName, cellWidth: 150 }),
     uploadedByUser: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.uploadedBy", columnName, cellWidth: 120 }),
@@ -23,6 +24,7 @@ export const FileTableClientColumns = DB3Client.makeClientColumnSet({
         selectionView: db3.bandFileTagView,
     }),
     taggedUsers: columnName => new DB3Client.TagsFieldClient<db3.FileEditorUserTag>({
+        selectionView: db3.bandUserIdentityView,
         columnName,
         cellWidth: 150,
         fieldCaptionKey: "db3.fields.members",
@@ -30,8 +32,9 @@ export const FileTableClientColumns = DB3Client.makeClientColumnSet({
         selectStyle: "inline",
         allowDeleteFromCell: false,
     }),
-    taggedSongs: columnName => new DB3Client.TagsFieldClient<db3.FileEditorSongTag>({ selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.songs", columnName, cellWidth: 150, allowDeleteFromCell: false }),
+    taggedSongs: columnName => new DB3Client.TagsFieldClient<db3.FileEditorSongTag>({ selectionView: db3.songReferenceView, selectStyle: "inline", fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.songs", columnName, cellWidth: 150, allowDeleteFromCell: false }),
     taggedEvents: columnName => new DB3Client.TagsFieldClient<db3.FileEditorEventTag>({
+        selectionView: db3.eventReferenceView,
         columnName,
         cellWidth: 150,
         fieldCaptionKey: "db3.fields.events",
@@ -40,6 +43,7 @@ export const FileTableClientColumns = DB3Client.makeClientColumnSet({
         allowDeleteFromCell: false,
     }),
     taggedInstruments: columnName => new DB3Client.TagsFieldClient<db3.FileEditorInstrumentTag>({
+        selectionView: db3.instrumentDashboardView,
         columnName,
         cellWidth: 150,
         fieldCaptionKey: "db3.fields.instruments",

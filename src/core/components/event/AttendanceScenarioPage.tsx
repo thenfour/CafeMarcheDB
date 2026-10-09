@@ -159,7 +159,7 @@ export const AttendanceScenarioPage = () => {
                         }}>Reset user</CMButton>
                     </Stack>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        {attendance.isInvited ? "Invited" : "Uninvited"} · {person.instrumentCount} profile instrument(s) · Effective instrument: {attendance.eventUserResponse.instrument?.name || "none"}
+                        {attendance.isInvited ? "Invited" : "Uninvited"} · {person.instrumentCount} profile instrument(s) · Effective instrument: {attendance.eventUserResponse?.instrument?.name || "none"}
                     </Typography>
                     <details><summary>Configure {person.name}</summary><UserSettings person={person} segmentCount={scenario.segments.length} update={patch => updateUser(index, patch)} /></details>
                     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "minmax(0, 1fr)", lg: modes.length === 2 ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)" }, gap: 2, my: 2 }}>
@@ -184,9 +184,7 @@ export const AttendanceScenarioPage = () => {
                         <Box component="pre" sx={{ fontSize: 12, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{JSON.stringify({
                             ...flags,
                             storedInstrumentId: person.instrumentId,
-                            effectiveInstrumentId: attendance.eventUserResponse.instrument
-                                ? attendance.eventUserResponse.instrument.publicId
-                                : null,
+                            effectiveInstrumentId: attendance.eventUserResponse?.instrument?.publicId ?? null,
                             segments: event.segments.map((s, index) => ({ publicId: s.publicId, startsAt: s.startsAt, cancelled: s.statusId !== null, response: person.responses[index] })),
                         }, null, 2)}</Box>
                     </details>

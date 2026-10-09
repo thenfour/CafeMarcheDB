@@ -32,6 +32,14 @@ See `docs/testing.md` for the rationale and full conventions.
 - Prefer clean new-looking code rather than legacy fallbacks.
   Legacy / fallbacks / odd-but-justified behavior / workarounds requires a comment explanation.
 
+## Encapsulation / modularity
+
+Policies, business logic rules, algorithms should be carefully placed in an architecturally-consistent
+location. Generic functions should stay generic and not introduce specific fallbacks or
+exceptional logic for cases introduced by a task. If a generic routine requires special
+handling to complete a task, then introduce the mechanism to accomplish it that keeps
+the right level of abstraction.
+
 ## frontend/UI/UX
 
 - Even though this app includes MUI, many wrappers/adapters/custom controls have been

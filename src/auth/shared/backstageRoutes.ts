@@ -75,7 +75,7 @@ const routes = [
     { key: "userTags", pattern: "/backstage/userTags", caption: "Member Tags", permission: Permission.manage_users },
     { key: "userRoles", pattern: "/backstage/userRoles", caption: "Member Roles", permission: Permission.assign_user_roles },
     { key: "recoverMembers", pattern: "/backstage/recoverMembers", caption: "Recover Members", permission: Permission.recover_users },
-    { key: "editFiles", pattern: "/backstage/editFiles", caption: "Files", permission: Permission.sysadmin },
+    { key: "editFiles", pattern: "/backstage/editFiles", caption: "Files", permission: Permission.admin_files },
     { key: "editFrontpageGalleryItems", pattern: "/backstage/editFrontpageGalleryItems", caption: "Front page gallery", permission: Permission.sysadmin },
 
     { key: "settings", pattern: "/backstage/settings", caption: "Settings", permission: Permission.sysadmin },

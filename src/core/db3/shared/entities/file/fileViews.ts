@@ -364,6 +364,8 @@ const fileEditorTransportSelection = Prisma.validator<Prisma.FileDefaultArgs>()(
         uploadedAt: true,
         isDeleted: true,
         sizeBytes: true,
+        mimeType: true,
+        externalURI: true,
         customData: true,
         uploadedByUserId: true,
         uploadedByUser: fileCardTransportSelection.select.uploadedByUser,
