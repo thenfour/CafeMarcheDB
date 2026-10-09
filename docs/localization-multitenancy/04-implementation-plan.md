@@ -102,7 +102,7 @@ Linked File cards/previews/playback and recording pin/unpin use independently
 authorized File rows. An unavailable recording becomes null without hiding its
 visible Song or exposing a numeric FK. File metadata/upload controls and general
 pages are restored in the checkpoints below. Song credit editing and performance
-history are restored in their checkpoint below. Profile credits, Event statistics and other quick-search plugins,
+history and Event statistics are restored in their checkpoints below. Profile credits and other quick-search plugins,
 association selects, Markdown suggestions and shell search remain pending. Only
 localized catalog-name text predicates, including quick-search tag names, follow
 the A1 exception; authored text and identity-based filters remain active.
@@ -302,18 +302,45 @@ discard earlier results and bucket selection, and links retain context.
 The generic SongCredit recovery gate is removed. The shared User declaration now
 uses the existing snapshot mechanism for person references; no parallel descriptor
 or domain-specific query bypass was introduced. The chart's existing maximum-year
-calculation was corrected. Profile credit reads and Event/popular-Song statistics
-remain pending under their owners. Source archives and deferred specifications
-remain intact while those wider obligations and A1/B stay open.
+calculation was corrected. Profile credit reads remain pending under their owner.
+Their source archives and deferred specifications remain intact while those wider
+obligations and A1/B stay open.
 
-## Next slice: Event statistics and popular Songs
+## Event statistics and popular Songs checkpoint
 
-Restore the original statistics page and `getGlobalStats` owner, retaining timing/
-type/status/tag filters, Event totals, popular-Song occurrences, expansion, monthly
-charts, bucket selection and contextual links. Reuse the shared snapshot, visibility,
-public identity, localized catalog and band-calendar contracts exercised by Song
-history. Verify aggregates, duplicate occurrences, private/foreign references,
-fresh revocation and both bands in the built app.
+The original statistics page and `getGlobalStats` owner are active. Concert and
+FinalConfirmation defaults, every timing/type/status/Event-tag/Song-tag filter,
+Event totals, top-ten Songs, expansion/reset, monthly charts, bucket selection and
+contextual links are retained. Song tags require all selected tags and affect
+Song occurrences only; Event totals still include Events without a visible Song.
+Each Song counts once per Event despite duplicate entries or multiple setlists.
+Ranking uses distinct Event count, then public identity for deterministic ties.
+
+The shared Event/Song/setlist declarations own band scope, row/field visibility,
+public reference projection and catalog identity resolution. Totals and occurrences
+share one freshly authorized repeatable snapshot. Hidden, private, deleted and
+foreign references are unavailable independently. Without Song filters, Song grant
+revocation removes occurrences while retaining permitted Event totals; selected
+Song tags still require Song read authority. Report/Event grant revocation denies
+the read. Platform authority still requires an explicit band.
+
+Statistics and Song history now share their timing/filter contract and band-calendar
+boundaries. Dashboard views supply localized/inherited labels and intentional blanks;
+monthly charts use the band timezone and formatting locale. Band/language changes
+remount filters/results; new results discard earlier bucket selections and errors
+clear displayed rows. New page text uses the registry. The completed
+`event-song-statistics` obligation has its five source blocks/references and obsolete
+guards removed. Remaining deferred specifications and A1/B gates stay open.
+
+## Next slice: Member directory and profile workflows
+
+Restore the original member search through its existing domain-search owner and
+components: filters/facets/presets/URL state, contact-search policy and exports.
+Retain the shared-person versus band-membership boundary and verify private fields,
+fresh revocation and both bands. Then finish the existing profile tabs, including
+credit reads, account controls and activity, through their migrated owners. The
+existing deleted/merged-person Song-credit write failure below needs a shared
+authorization fix before A1 acceptance.
 
 ## Localized catalog text search exception
 
@@ -564,11 +591,37 @@ was visually inspected. Temporary rows, grant/account changes and audits were
 cleaned up. Obsolete credit/history recovery assertions were updated; archives
 and remaining deferred specifications stay intact. Preservation verification passes.
 
+The Event statistics checkpoint (2026-10-10) passes normal typecheck/build, isolated
+demo build, targeted lint and 97 focused tests across four executable files. All
+17 new native statistics checks and 13 retained Song-history checks pass. They cover
+every timing mode at band-day/DST/year boundaries, distinct occurrences and stable
+top-ten ties, combined/all-tag filters, public catalog references, unavailable
+Song/Event identities, root snapshot consistency, explicit platform context,
+shared people with independent band roles and fresh grant/account/membership/band
+revocation. No domain SQL or authorization bypass was added.
+
+Six built Chromium groups pass: French defaults/catalogs and distinct totals/ranking;
+band-month charts, bucket Event/Song links and expansion; every timing filter,
+combined Event/inherited Song tags and Reset; fresh report revocation clearing rows
+with grant recovery; Dutch shared-person band switch/independent roles and foreign/
+forged references; anonymous denial. No uncaught page or unexpected RPC errors
+occurred. The French chart layout was visually inspected. Temporary rows, roles,
+account changes and actions were cleaned up. Preservation verification passes
+after removing the five completed statistics archives/references and obsolete
+deferred-statistics assertions/guards; remaining specifications stay intact.
+
+The wider native run passes 349 of 350 tests in 20 files. The existing Song-credit
+write test at `tests/songCreditWorkflow.mysql.test.ts:107` accepts a deleted/merged
+person. An isolated unchanged `11d7a1a1` worktree reproduces the same 11/12 result
+for that file. This is a shared person-reference authorization gap outside the
+statistics slice and remains an A1 blocker; do not weaken the test or restore
+domain-specific person fallbacks to conceal it.
+
 The complete-suite run still reports 208 failed tests and ten suite-load failures,
 including unscoped authorization/account/setlist fixtures, deferred-domain and
 date-policy contracts; the runner stops before the later jsdom batches. Focused
-passes do not establish A1 readiness. The latest run passes 1781 tests and skips
-516; its failure labels exactly match the publication checkpoint. The existing
+passes do not establish A1 readiness. The latest run passes 1790 tests and skips
+533; its failure labels exactly match the Song credit/history checkpoint. The existing
 failures still prevent A1 acceptance. Earlier built-browser member/profile/wiki/
 download checks remain recorded evidence, not workflows rerun by these slices.
 

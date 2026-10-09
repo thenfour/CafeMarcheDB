@@ -5,16 +5,10 @@ import { defineView, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
 import { xEvent } from "../../schema/event";
 import { xSong } from "../../schema/song";
-import { xBandEventTag } from "../event/eventTagCatalogs";
-import { xEventStatus, xEventType } from "../event/eventCatalogs";
+import { EventActivityFilterSchema, EventActivityTimingSchema } from "../event/eventActivity";
 
-export const SongHistoryTimingSchema = z.enum(["All", "All past", "Future", "Past 5 years", "Past year"]);
-export const SongHistoryFilterSchema = z.object({
-    timing: SongHistoryTimingSchema,
-    eventTypeIds: z.array(xEventType.identitySchema).max(100),
-    eventStatusIds: z.array(xEventStatus.identitySchema).max(100),
-    eventTagIds: z.array(xBandEventTag.identitySchema).max(100),
-}).strict();
+export const SongHistoryTimingSchema = EventActivityTimingSchema;
+export const SongHistoryFilterSchema = EventActivityFilterSchema;
 export const SongHistoryInputSchema = PresentationInputSchema.extend({
     bandPublicId: BandPublicIdSchema,
     songId: xSong.identitySchema,

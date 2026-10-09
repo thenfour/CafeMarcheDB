@@ -140,10 +140,12 @@
       "reason": "Event statistics and song history use legacy SQL readers without selected-band snapshots and depend on removed role/catalog fields.",
       "restore": "Restore event statistics, popular-song occurrences and song performance history with timing/type/status/tag filters, visualization, bucket selection, expansion and event links using fresh band-scoped authorization, public identities and localized catalog labels.",
       "verification": "Test two bands, platform policy, permission/member revocation, hidden/deleted songs/events, date boundaries, consistent aggregates and public references; exercise statistics and song history controls in the built browser.",
-      "status": "pending",
+      "status": "restored",
       "evidence": [
-        "2026-10-09: Song performance history is restored through a strict public-input RPC and existing Song/Event views in one fresh repeatable snapshot. Timing/type/status/all-tag filters, expansion/reset, monthly chart, bucket Event selection and contextual links retain their original controls. Band calendar-day/year boundaries and monthly timezone grouping replace viewer-dependent scheduling; localized catalog labels and date headings use the shared presentation context. Duplicate setlist entries produce one Event; undated/private/deleted/foreign Events remain unavailable.",
-        "Thirteen new native history cases and seven built-browser Song workflow groups cover date boundaries, combined/hidden/foreign catalog identities, public DTOs, fresh authority, root snapshot, actual history controls and French/Dutch context. Existing File/gallery/publication/Song/Event/setlist/attendance regressions pass in the 333-test native run. Event statistics and popular-Song occurrences remain pending; their guards, all source archives and deferred specifications remain intact. See 04-implementation-plan.md#verification-status."
+        "2026-10-10: The original statistics page/getGlobalStats and Song performance history use shared DB3 views and freshly authorized repeatable snapshots with explicit band/public inputs. Reference default Concert/FinalConfirmation filters, every timing/type/status/all-Event-tag/all-Song-tag filter, Event totals, top-ten Songs, expansion/reset, monthly charts, bucket selection and contextual links are retained. Song tags filter occurrences without changing Event totals; repeated entries/setlists count each Song once per Event. Public identity breaks ranking ties deterministically.",
+        "Song history and statistics share one event-activity filter/calendar contract. Past excludes today and Future includes today in the band timezone; one/five-year windows include their calendar-year lower bound. Undated/private/deleted/foreign Events and independently inaccessible Songs remain excluded. Localized/blank/inherited filter labels use existing dashboard catalog views; charts use band months and formatting locale. New snapshots discard earlier rows and bucket selection. No raw SQL, parallel authorization policy or removed catalog-name field was introduced.",
+        "Normal typecheck/build, isolated demo build, targeted lint, 97 focused tests and all 17 new native statistics plus 13 history tests pass. Six built Chromium assertion groups cover French defaults/catalogs, totals/ranking, charts/bucket links, every timing filter and combined tags/reset, report revocation/recovery, Dutch second-band roles/context, foreign/forged references and anonymous denial. No uncaught page/unexpected RPC errors; the French layout was visually inspected. Previous Song-history browser evidence remains recorded in 04-implementation-plan.md#verification-status. All five completed statistics source blocks/references and obsolete guards were removed.",
+        "The broad native regression run passes 349/350 checks in 20 files. The existing Song-credit write test at tests/songCreditWorkflow.mysql.test.ts:107 still accepts a deleted/merged person; the same 11/12 result was reproduced on unchanged HEAD 11d7a1a1 in an isolated worktree. The full suite retains 208 failed tests and ten suite-load failures with the same failure labels as the prior checkpoint. These independent gaps keep A1/B open; no deferred specifications were removed."
       ]
     },
     {
@@ -217,7 +219,7 @@
       "evidence": [
         "2026-10-09: Restored the original Song search/detail/create/basic-edit/visibility/tag/Markdown workflows through shared Song/association ownership and field authorization. Song_Search retains its existing SQL/filter/facet/preset/URL/sort/paging/export composition, localized tag references, public targets, contextual links and fresh band snapshots. Dedicated description and pin/unpin writes use the generated editor contract and existing audited row service.",
         "238 focused checks across 17 executable files, 197 native MariaDB checks across ten files, normal typecheck/build, isolated demo build, focused lint and eight built-browser assertion groups pass. Song/File visibility is independent: unavailable pinned files project null without hiding the Song or leaking numeric foreign IDs. Browser checks persist creation/basic/Markdown edits and actual WAV playback/pin/unpin; native tests cover all tag operators, hidden/foreign/deleted references and fresh revoked/inactive/deleted/merged/platform boundaries. See 04-implementation-plan.md#verification-status.",
-        "Still pending: profile credit reads, Event/popular-Song statistics and localized catalog-name free-text matching under the A1 exception. Linked File cards/previews/playback retain independently authorized File reads. These checkpoints do not close song parity or A1.",
+        "Still pending: profile credit reads and localized catalog-name free-text matching under the A1 exception. Linked File cards/previews/playback retain independently authorized File reads. These checkpoints do not close song parity or A1.",
         "2026-10-09: Song File tabs use the restored File editors, public BandUser/instrument association selectors and multipart/external-URL uploads. Built-browser checks cover metadata, local PDF/audio upload, download privacy, deletion and own-file editing across the two demo bands.",
         "2026-10-09: Restored original Song credit create/edit/confirmed deletion controls and the delegated credit grid through generated commands, Song ownership, field authorization and audits. Person choices contain public identity/name only for active, unmerged people in the selected band; the same declaration constrains references on reads and writes. Credit authorship grants no Song ownership. Localized credit types reuse the shared catalog and settings; nullable people, year/comment blanks, Markdown and failed-save draft retry remain supported. The generic SongCredit recovery gate is removed, while the profile credit reader and source archives remain preserved.",
         "Normal typecheck/build, isolated demo build, targeted lint, 85 focused checks in six files and 333 native checks in 19 files pass. Seven built-browser groups verify French/Dutch authoring, edit/delete persistence, actual localized pickers, delegated grid sorting, revoked edit-grant draft retry, performance-history controls and private/foreign Song denial. No page or unexpected RPC errors occurred. Updated obsolete deferred assertions retain the remaining unavailable contracts. See 04-implementation-plan.md#verification-status for full-suite limits."
@@ -1429,30 +1431,6 @@
       "sha256": "f4c565857d61ddd62d69ce301edc1dbc7e2904b458e0f495c6fcc2dee005673d"
     },
     {
-      "file": "src/core/db3/queries/getGlobalStats.ts",
-      "featureId": "event-song-statistics",
-      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/queries/getGlobalStats.ts:1-223",
-      "sha256": "3d44380935ff787e6614465499c28c670aa79ff2d192cc5ec198ea206f737a8d"
-    },
-    {
-      "file": "src/core/db3/queries/getSongActivityReport.ts",
-      "featureId": "event-song-statistics",
-      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/queries/getSongActivityReport.ts:1-122",
-      "sha256": "d0efc70cb1b6397ca15b8ec847e169d12b6da7bdff7c48fa287a5401a1118625"
-    },
-    {
-      "file": "src/pages/backstage/stats.tsx",
-      "featureId": "event-song-statistics",
-      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/pages/backstage/stats.tsx:1-313",
-      "sha256": "2486c760974560b74da292a80d3da49706ffd8fb3b12717d594a43dfb1fd435b"
-    },
-    {
-      "file": "src/core/components/song/SongHistory.tsx",
-      "featureId": "event-song-statistics",
-      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/components/song/SongHistory.tsx:1-201",
-      "sha256": "5c2fbe7cc40e6ec62cd84061d3d2fd1237f519c965cc498d11d4d041adc066f0"
-    },
-    {
       "file": "src/core/db3/shared/apiTypes.ts",
       "featureId": "legacy-event-song-filters",
       "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:12-12",
@@ -1475,12 +1453,6 @@
       "featureId": "legacy-event-song-filters",
       "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:376-387",
       "sha256": "8ac7c09c507f37e73a47b262c3e4e0c7975bba42f9c25427772f12bea458b60e"
-    },
-    {
-      "file": "src/core/db3/shared/apiTypes.ts",
-      "featureId": "event-song-statistics",
-      "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:403-478",
-      "sha256": "eb8cfc9674c05473dca4de4f29957edba984bf7cd252f27380e5fafc69882722"
     },
     {
       "file": "src/core/db3/queries/getImportEventData.ts",

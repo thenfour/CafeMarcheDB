@@ -22,7 +22,6 @@ import getAdminLogItemInfo from "@db3/queries/getAdminLogItemInfo";
 import getDistinctChangeFilterValues from "@db3/queries/getDistinctChangeFilterValues";
 import getEventFilterInfo from "@db3/queries/getEventFilterInfo";
 import getSongFilterInfo from "@db3/queries/getSongFilterInfo";
-import getGlobalStats from "@db3/queries/getGlobalStats";
 import getImportEventData from "@db3/queries/getImportEventData";
 import getUserCredits from "@db3/queries/getUserCredits";
 import { insertImpl } from "@db3/server/db3mutationCore";
@@ -79,7 +78,6 @@ const deferredAuditEndpoints = [
 const deferredDomainReaders = [
     { name: "legacy event facets", resolve: getEventFilterInfo },
     { name: "legacy song facets", resolve: getSongFilterInfo },
-    { name: "event statistics", resolve: getGlobalStats },
 ];
 
 const deferredWorkflowEndpoints = [
