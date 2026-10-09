@@ -22,7 +22,6 @@ import EditEvents from "src/pages/backstage/editEvents";
 import EditSegments from "src/pages/backstage/editEventSegments";
 import Agenda from "src/pages/backstage/frontpageEvents";
 import EditSongs from "src/pages/backstage/editSongs";
-import EditCredits from "src/pages/backstage/editSongCredits";
 import Files from "src/pages/backstage/files";
 import File from "src/pages/backstage/file/[...id_slug_tab]";
 import EditFiles from "src/pages/backstage/editFiles";
@@ -48,7 +47,7 @@ afterEach(async () => {
     vi.unstubAllGlobals();
 });
 
-const pages = [ EditEvents, EditSegments, Agenda, EditSongs, EditCredits, Files, File, EditFiles, Gallery, EditGallery, Examples, GridExamples, WikiSearch];
+const pages = [ EditEvents, EditSegments, Agenda, EditSongs, Files, File, EditFiles, Gallery, EditGallery, Examples, GridExamples, WikiSearch];
 describe("reachable deferred application pages", () => {
     it.each(pages.map((Page, index) => ({ Page, index })))("renders page $index without readers/editors and updates its localized notice", async ({ Page }) => {
         await act(async () => root.render(<Page />));

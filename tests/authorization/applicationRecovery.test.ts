@@ -23,12 +23,8 @@ import getDistinctChangeFilterValues from "@db3/queries/getDistinctChangeFilterV
 import getEventFilterInfo from "@db3/queries/getEventFilterInfo";
 import getSongFilterInfo from "@db3/queries/getSongFilterInfo";
 import getGlobalStats from "@db3/queries/getGlobalStats";
-import getSongActivityReport from "@db3/queries/getSongActivityReport";
 import getImportEventData from "@db3/queries/getImportEventData";
 import getUserCredits from "@db3/queries/getUserCredits";
-import db3queries from "@db3/queries/db3queries";
-import db3paginatedQueries from "@db3/queries/db3paginatedQueries";
-import executeDB3CommandMutation from "@db3/mutations/executeDB3Command";
 import { insertImpl } from "@db3/server/db3mutationCore";
 import assignUserRole from "src/auth/mutations/assignUserRole";
 import setRoleDesignation from "src/auth/mutations/setRoleDesignation";
@@ -84,7 +80,6 @@ const deferredDomainReaders = [
     { name: "legacy event facets", resolve: getEventFilterInfo },
     { name: "legacy song facets", resolve: getSongFilterInfo },
     { name: "event statistics", resolve: getGlobalStats },
-    { name: "song history", resolve: getSongActivityReport },
 ];
 
 const deferredWorkflowEndpoints = [
@@ -92,22 +87,6 @@ const deferredWorkflowEndpoints = [
 ];
 
 describe("deferred domain workflow endpoints", () => {
-    it.each(["SongCredit"])("guards generic $0 reads in platform and band contexts before database access", async tableID => {
-        const table = db3.GetTableById(tableID);
-        for (const bandPublicId of [null, parsePublicId<"Band">("RecoveryBand0001")]) {
-            const request = forgeDb3Query(tableID, { table: { tableID, tableName: table.tableName }, bandPublicId });
-            await expect(invokeResolver(db3queries, request, createAuthorizationTestContext(sysadmin))).rejects.toThrow(ApplicationFeatureUnavailableError);
-            await expect(invokeResolver(db3paginatedQueries, { ...request, skip: 0, take: 10 }, createAuthorizationTestContext(sysadmin))).rejects.toThrow(ApplicationFeatureUnavailableError);
-        }
-    });
-
-    it.each([
-        db3.songCreditEditorView.crud.operations.update.command.commandID,
-    ])("guards generic command %s before its transaction", async commandID => {
-        await expect(invokeResolver(executeDB3CommandMutation, { commandID, payload: {} }, createAuthorizationTestContext(sysadmin)))
-            .rejects.toThrow(ApplicationFeatureUnavailableError);
-    });
-
     it.each(deferredWorkflowEndpoints)("rejects $name without reading accounts, targets or references", async ({ resolve }) => {
         for (const actor of [member, sysadmin]) {
             for (const input of [null, { eventId: 1, songIds: [1] }, { bandPublicId: "Band000000000001", routeLocale: "fr-BE" }]) {

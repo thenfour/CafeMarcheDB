@@ -70,7 +70,7 @@ const routes = [
     { key: "editEvents", pattern: "/backstage/editEvents", caption: "Events", permission: Permission.admin_events },
     { key: "editEventSegments", pattern: "/backstage/editEventSegments", caption: "Event Segments", permission: Permission.admin_events },
     { key: "editSongs", pattern: "/backstage/editSongs", caption: "Songs", permission: Permission.sysadmin },
-    { key: "editSongCredits", pattern: "/backstage/editSongCredits", caption: "Song Credits", permission: Permission.sysadmin },
+    { key: "editSongCredits", pattern: "/backstage/editSongCredits", caption: "Song Credits", permission: Permission.manage_songs },
     { key: "userInstruments", pattern: "/backstage/userInstruments", caption: "Member Instruments", permission: Permission.manage_users },
     { key: "userTags", pattern: "/backstage/userTags", caption: "Member Tags", permission: Permission.manage_users },
     { key: "userRoles", pattern: "/backstage/userRoles", caption: "Member Roles", permission: Permission.assign_user_roles },

@@ -28,7 +28,10 @@ export async function resolvePublicIds(
     auth: CMServerAuthorization,
     database: TransactionalPrismaClient,
     includeDeleted = false,
-    visibility: { readonly includeHidden?: boolean } = {},
+    visibility: {
+        readonly includeHidden?: boolean;
+        readonly where?: Readonly<object>
+    } = {},
 ): Promise<number[]> {
     if (!table.publicIdMember || publicIds.some(publicId => !isPublicId(publicId))) {
         throw new DB3PublicIdError(`Invalid public ID for ${table.tableID}.`);
@@ -50,7 +53,7 @@ export async function resolvePublicIds(
         includeDeleted,
     });
     const rows = await database[table.tableName].findMany({
-        where,
+        where: visibility.where ? { AND: [where, visibility.where] } : where,
         select: {
             [table.pkMember]: true,
             [table.publicIdMember]: true,
@@ -76,7 +79,10 @@ export async function resolvePublicId(
     auth: CMServerAuthorization,
     database: TransactionalPrismaClient,
     includeDeleted = false,
-    visibility: { readonly includeHidden?: boolean } = {},
+    visibility: {
+        readonly includeHidden?: boolean;
+        readonly where?: Readonly<object>
+    } = {},
 ): Promise<number> {
     return (await resolvePublicIds(
         table,
@@ -164,7 +170,12 @@ export async function resolvePublicForeignIds(
             // not a foreign object.
             continue;
         }
-        const foreignTable = (field as db3.ForeignSingleField<TAnyModel>).getForeignTableSchema();
+        // Foreign-object fields share this runtime contract across Prisma delegates.
+        const foreignField = field as db3.ForeignSingleField<TAnyModel>;
+        const foreignTable = foreignField.getForeignTableSchema();
+        // Evaluate reference policy only for fields actually supplied by this write.
+        const resolveReference = (publicId: string) => resolvePublicId(foreignTable, publicId, auth, database, false,
+            { where: foreignField.getTargetWhereClause?.(auth) });
         if (!foreignTable.publicIdMember) {
             // foreign table doesn't use publicId; skip.
             continue;
@@ -174,7 +185,7 @@ export async function resolvePublicForeignIds(
         if (Object.prototype.hasOwnProperty.call(ret, field.fkidMember)) {
             const value = ret[field.fkidMember];
             if (value !== null && value !== undefined) {
-                ret[field.fkidMember] = await resolvePublicId(foreignTable, value, auth, database);
+                ret[field.fkidMember] = await resolveReference(value);
             }
         }
 
@@ -187,7 +198,7 @@ export async function resolvePublicForeignIds(
             const value = ret[field.member];
             if (value !== null && value !== undefined) {
                 const publicId = value[foreignTable.publicIdMember];
-                ret[field.fkidMember] = await resolvePublicId(foreignTable, publicId, auth, database);
+                ret[field.fkidMember] = await resolveReference(publicId);
                 delete ret[field.member];
             }
         }

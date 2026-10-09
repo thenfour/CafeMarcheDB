@@ -117,7 +117,7 @@ describe.skipIf(!settingsMysqlTestUrl)("shared song credit types on MariaDB", ()
         registerDashboardReferences(references, { songCreditType: catalogs.songCreditType.map(dto => songCreditTypeDashboardView.hydrate(dto, references)) });
         for (const view of [songCreditEditorView, songCreditUserView]) {
             const raw = await tx.songCredit.findUniqueOrThrow({ ...view.getSelectionArgs({ filter: {}, auth: reader }), where: { id: credit.id } });
-            // These conversions validate payloads; general song/credit reads remain guarded.
+            // Raw conversion tests the reference shape separately from row visibility.
             const dto = view.parseDto(projectDB3ModelPublicIds(xSongCredit, raw, reader));
             expect(dto).toMatchObject({ typeId: type.publicId, userId: person.publicId });
             expect(dto).not.toHaveProperty("type");
@@ -128,7 +128,8 @@ describe.skipIf(!settingsMysqlTestUrl)("shared song credit types on MariaDB", ()
             const dto = view.parseDto(projectDB3ModelPublicIds(view.entity, raw, reader));
             expect(view.hydrate(dto, references).credits).toMatchObject([{ type: { publicId: type.publicId, name: "Auteur" } }]);
         }
-        await expect(queryView({ view: songCreditEditorView, filter: {}, cmdbQueryContext: "deferred credits" }, reader, await snapshot(tx, reader))).rejects.toThrow();
+        // The private Song has no owner, so the shared credit policy omits it.
+        expect((await queryView({ view: songCreditEditorView, filter: {}, cmdbQueryContext: "private credits" }, reader, await snapshot(tx, reader))).items).toEqual([]);
         await expect(createCommandRowServices(reader, tx).update(xSongCredit, parsePublicId<"SongCredit">(credit.publicId), { comment: "Changed" })).rejects.toThrow();
         expect(await tx.songCredit.findUniqueOrThrow({ where: { id: credit.id } })).toMatchObject({ comment: "Credit" });
     }));

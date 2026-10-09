@@ -260,8 +260,9 @@ export const SongCreditEditButton = ({ creditsTableClient, creditsCommands, ...p
         auth: auth,
     });
 
-    if (!editAuthorized) return null;
-    if (props.readonly) return null;
+    if (!editAuthorized || props.readonly) {
+        return null;
+    }
 
     return <DB3EditRowButton
         smallButton={true}
@@ -287,11 +288,11 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
         view: db3.songCreditEditorView,
         columns: {
             publicId: DB3Client.publicIdFieldGen(),
-            user: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.member", columnName, cellWidth: 120, }),
-            type: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.creditType", columnName, cellWidth: 120, selectionView: db3.songCreditTypeEditorView }),
-            year: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.year", columnName, cellWidth: 120 }),
-            comment: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.comment", columnName, cellWidth: 120 }),
-            song: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.song", columnName, cellWidth: 120, visible: false }),
+            user: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.member", columnName, selectionView: db3.bandPersonReferenceView }),
+            type: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.creditType", columnName, selectionView: db3.songCreditTypeEditorView, selectStyleSettingKey: "global.ui.songCredit.type.selectStyle" }),
+            year: columnName => new DB3Client.GenericStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.year", columnName, }),
+            comment: columnName => new DB3Client.MarkdownStringColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.comment", columnName, }),
+            song: columnName => new DB3Client.ForeignSingleFieldClient({ fieldDescriptionKey: null, fieldCaptionKey: "db3.fields.song", columnName, visible: false, selectionView: db3.songReferenceView }),
         },
     });
 
@@ -313,13 +314,13 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
         const editorRow = updateObj as Partial<SongCreditEditorClient>;
         creditsCommands.create(editorRow).then(() => {
             showSnackbar({ severity: "success", children: "updated" });
+            api.closeDialog();
         }).catch(e => {
             console.log(e);
             showSnackbar({ severity: "error", children: "error updating" });
         }).finally(async () => {
             creditsTableClient.refetch();
             props.refetch();
-            api.closeDialog();
         });
     };
 
@@ -601,8 +602,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
 
     return <SongDetailContainer readonly={props.readonly} songData={songData} tableClient={tableClient} editCommands={editCommands} showVisibility={true}>
 
-        {/* Credit editing still depends on the shared-person picker. */}
-        <SongMetadataView readonly={true} refetch={refetch} songData={songData} showCredits={true} />
+        <SongMetadataView readonly={props.readonly} refetch={refetch} songData={songData} showCredits={true} />
 
         <CMTabPanel
             selectedTabId={selectedTab}

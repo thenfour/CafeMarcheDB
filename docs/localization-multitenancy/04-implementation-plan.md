@@ -26,9 +26,9 @@ Preserve them while restoring their wider workflows. Basic member directory and
 profile behavior is only a subset: reference filters, presets, contact-search
 policy, exports and profile tabs remain A1 work.
 
-Song credit editing, remaining domain/quick/shell search and several reports/
-admin surfaces remain guarded or incomplete. Public homepage/feed delivery and
-frontpage gallery editing/bake are restored in the checkpoints below.
+Remaining domain/quick/shell search and several reports/admin surfaces remain
+guarded or incomplete. Song credit editing and performance history, public
+homepage/feed delivery and frontpage gallery editing/bake are restored below.
 General File search/detail/metadata pages, associated uploads and the image fork
 service are restored. The
 [restoration manifest](feature-restoration.json) records the individual obligations
@@ -101,9 +101,8 @@ selection, clearing and Escape retain their reference behavior.
 Linked File cards/previews/playback and recording pin/unpin use independently
 authorized File rows. An unavailable recording becomes null without hiding its
 visible Song or exposing a numeric FK. File metadata/upload controls and general
-pages are restored in the checkpoints below. Song credit editing remains
-unavailable. Credits retain their reader; editing requires
-the shared-person picker. Song history/statistics and other quick-search plugins,
+pages are restored in the checkpoints below. Song credit editing and performance
+history are restored in their checkpoint below. Profile credits, Event statistics and other quick-search plugins,
 association selects, Markdown suggestions and shell search remain pending. Only
 localized catalog-name text predicates, including quick-search tag names, follow
 the A1 exception; authored text and identity-based filters remain active.
@@ -278,13 +277,43 @@ All four `public-publication` source blocks and reference entries are removed,
 and that obligation is restored. This does not close the separate Event/import,
 remaining upload, general gallery browser or A1/B obligations.
 
-## Next slice: Song credit editing and history
+## Song credit editing and performance history checkpoint
 
-Restore the original Song credit authoring/history workflow through the Song owner,
-with explicit band/public targets, authorized person and credit-type choices,
-shared row authorization, auditing and localized references. Retain existing Song
-search/detail/setlist/File behavior and verify two bands, French/Dutch, private/
-foreign references, fresh revocation, rollback and the built credit controls.
+Song detail's original credit controls and the delegated credit grid are active.
+Create/edit/confirmed deletion use the existing generated commands, Song ownership,
+field authorization and audits. The person selector exposes only public identity
+and name for active, unmerged people with active selected-band memberships; the
+same declared reference predicate applies to reads and writes. Credit authorship
+does not grant Song ownership. Credit types use the existing shared localized
+catalog and selection settings. Nullable people, intentional year/comment blanks
+and Markdown are retained. Losing only the edit grant rejects save while retaining
+the readable page and draft for retry. Losing page-read authority closes access.
+
+The original history filters, expansion/reset, monthly visualization, bucket
+selection and Event links are active. Strict public inputs, visible Song checks,
+Event visibility, catalog identity resolution and scheduling settings share one
+fresh repeatable snapshot. Events appear once even with repeated setlist entries;
+undated, private, deleted and foreign Events are excluded. Past excludes the band's
+current calendar day; Future includes it. One/five-year windows subtract calendar
+years, include the lower boundary and exclude today. Month buckets use the band's
+timezone; headings and dates use the formatting locale. Band/locale/filter changes
+discard earlier results and bucket selection, and links retain context.
+
+The generic SongCredit recovery gate is removed. The shared User declaration now
+uses the existing snapshot mechanism for person references; no parallel descriptor
+or domain-specific query bypass was introduced. The chart's existing maximum-year
+calculation was corrected. Profile credit reads and Event/popular-Song statistics
+remain pending under their owners. Source archives and deferred specifications
+remain intact while those wider obligations and A1/B stay open.
+
+## Next slice: Event statistics and popular Songs
+
+Restore the original statistics page and `getGlobalStats` owner, retaining timing/
+type/status/tag filters, Event totals, popular-Song occurrences, expansion, monthly
+charts, bucket selection and contextual links. Reuse the shared snapshot, visibility,
+public identity, localized catalog and band-calendar contracts exercised by Song
+history. Verify aggregates, duplicate occurrences, private/foreign references,
+fresh revocation and both bands in the built app.
 
 ## Localized catalog text search exception
 
@@ -313,7 +342,7 @@ when a concrete workflow dependency requires it.
 | --- | --- |
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
 | Events | Retain restored search/detail/creation/editing, setlist editing and invitation/attendance controls; finish default-instrument and attendance parity and date-picker highlights. |
-| Songs and files | Retain restored Song search/detail/editing, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish credit editing/history and remaining upload callers. |
+| Songs and files | Retain restored Song search/detail/editing, credits/performance history, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish profile credits, statistics and remaining upload callers. |
 | Supporting workflows | Dashboard/wiki/custom navigation, plans, search, calendars/feeds/tokens, Custom Links, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
 After core restoration: platform role/matrix and catalog/settings administration;
@@ -514,11 +543,32 @@ French built-homepage and Dutch standalone screenshots were visually inspected
 after layout completion. The 14 gallery editor/bake browser groups also pass on the final build, with no
 page/RPC errors. They are distinct from these public delivery checks.
 
+The Song credit/history checkpoint passes normal typecheck/build, isolated demo
+build, targeted lint and 85 focused tests in six executable files. Native MariaDB
+passes 333 tests in 19 files, retaining File/gallery/publication/Song/Event/setlist/
+attendance regressions. New credit cases cover generated CRUD/audits, minimal
+band-person references, French/Dutch/blank types, public transport, hidden/foreign/
+inactive/deleted/merged references, independent roles, fresh edit/read/account/
+membership/band revocation and rollback after audit failures. Thirteen history
+cases cover all timing modes, DST/calendar-year boundaries, duplicate entries,
+combined/all-tag filters, hidden identities, visible Song/Event requirements,
+strict inputs, anonymous/platform denial and one root repeatable snapshot.
+
+Seven built Chromium groups pass: actual French person/type selection and Markdown/
+year creation; intentional blank edits; all history timing modes, expanded type/
+status/tag filters, Reset, band-month chart/bucket links; delegated credit-grid
+creation; confirmed deletion; edit-grant revocation with retained draft and retry;
+independent Dutch second-band creation/person exclusion and private/foreign Song
+404s. No page or unexpected RPC errors occurred. The French history screenshot
+was visually inspected. Temporary rows, grant/account changes and audits were
+cleaned up. Obsolete credit/history recovery assertions were updated; archives
+and remaining deferred specifications stay intact. Preservation verification passes.
+
 The complete-suite run still reports 208 failed tests and ten suite-load failures,
 including unscoped authorization/account/setlist fixtures, deferred-domain and
 date-policy contracts; the runner stops before the later jsdom batches. Focused
-passes do not establish A1 readiness. The latest run passes 1785 tests and skips
-491; no failure labels were added compared with the gallery checkpoint. The existing
+passes do not establish A1 readiness. The latest run passes 1781 tests and skips
+516; its failure labels exactly match the publication checkpoint. The existing
 failures still prevent A1 acceptance. Earlier built-browser member/profile/wiki/
 download checks remain recorded evidence, not workflows rerun by these slices.
 

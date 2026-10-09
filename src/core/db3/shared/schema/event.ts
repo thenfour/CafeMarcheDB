@@ -30,6 +30,8 @@ import type {
     EventStatusPublicId,
     EventTagAssignmentPublicId,
     EventTypePublicId,
+    EventTagPublicId,
+    SongPublicId,
     BandUserPublicId,
     InstrumentPublicId,
 } from "shared/publicId";
@@ -247,6 +249,10 @@ export interface EventTableParams {
     eventUids?: string[];
     eventTypeIds?: EventTypePublicId[];
     eventStatusIds?: EventStatusPublicId[];
+    eventTagIds?: EventTagPublicId[];
+    songId?: SongPublicId;
+    startsBefore?: Date;
+    startsOnOrAfter?: Date;
     minDate?: Date;
     forFrontPageAgenda?: boolean; // returns future + recent events + any event that's showing on front page
     refreshSerial?: number; // ignored but useful to force a refresh
@@ -254,15 +260,21 @@ export interface EventTableParams {
 
 interface ResolvedEventTableParams extends Omit<
     EventTableParams,
-    "eventId" | "eventIds" | "eventTypeIds" | "eventStatusIds"
+    "eventId" | "eventIds" | "eventTypeIds" | "eventStatusIds" | "eventTagIds" | "songId"
 > {
     eventId?: number;
     eventIds?: number[];
     eventTypeIds?: number[];
     eventStatusIds?: number[];
+    eventTagIds?: number[];
+    songId?: number;
 }
 
 const EventQueryParameters = {
+    songId: { kind: "entityIdentity", targetTableID: "Song", authorizeAs: "songLists" },
+    eventTagIds: { kind: "entityIdentityArray", targetTableID: "BandEventTag", authorizeAs: "tags" },
+    startsBefore: { kind: "date", authorizeAs: "startsAt" },
+    startsOnOrAfter: { kind: "date", authorizeAs: "startsAt" },
     eventId: { kind: "entityIdentity", targetTableID: "Event", authorizeAs: "publicId" },
     eventIds: { kind: "entityIdentityArray", targetTableID: "Event", authorizeAs: "publicId" },
     eventUids: { kind: "stringArray", authorizeAs: "uid" },
@@ -322,6 +334,19 @@ export const xEventArgs_Base = db3.defineTableDesc({
 
     getParameterizedWhereClause: (params: ResolvedEventTableParams): (Prisma.EventWhereInput[]) => {
         const ret: Prisma.EventWhereInput[] = [];
+
+        if (params.songId !== undefined) {
+            ret.push({ songLists: { some: { songs: { some: { songId: params.songId } } } } });
+        }
+        if (params.eventTagIds !== undefined) {
+            ret.push(...params.eventTagIds.map(bandEventTagId => ({ tags: { some: { bandEventTagId } } })));
+        }
+        if (params.startsBefore !== undefined) {
+            ret.push({ startsAt: { lt: params.startsBefore } });
+        }
+        if (params.startsOnOrAfter !== undefined) {
+            ret.push({ startsAt: { gte: params.startsOnOrAfter } });
+        }
 
         if (params.eventId !== undefined) {
             //console.assert(params.eventSlug === undefined);

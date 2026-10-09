@@ -325,6 +325,7 @@ const userBaseArgs = db3.defineTableDesc({
         return UserSafeArgs;
     },
     tableName: "User",
+    readConsistency: "snapshot",
     deletePolicy: "disabled",
     viewDeletedPermission: Permission.recover_users,
     searchCapabilities: { includeDeleted: true },

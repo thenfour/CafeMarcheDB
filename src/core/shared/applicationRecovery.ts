@@ -32,15 +32,3 @@ export class ApplicationFeatureUnavailableError extends Error {
 export function requireRestoredApplicationFeature(feature: DeferredApplicationFeature): never {
     throw new ApplicationFeatureUnavailableError(feature);
 }
-
-// Temporary root-domain gates. Narrow migrated readers have separate registered table identities.
-const deferredDB3Domains = new Map<string, DeferredApplicationFeature>([
-    ["songcredit", "songWorkflows"],
-]);
-
-export function requireRecoveredDB3Domain(tableID: string): void {
-    const feature = deferredDB3Domains.get(tableID.toLowerCase());
-    if (feature) {
-        requireRestoredApplicationFeature(feature);
-    }
-}

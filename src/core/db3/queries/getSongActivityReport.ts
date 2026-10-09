@@ -1,12 +1,15 @@
 import { resolver } from "@blitzjs/rpc";
-import { Permission } from "shared/permissions";
-import { requireRestoredApplicationFeature } from "src/core/shared/applicationRecovery";
+import type { Ctx } from "blitz";
+import db from "db";
+import { loadAuthorization } from "src/auth/server/serverAuthorization";
+import { SongHistoryInputSchema } from "../shared/entities/song/songHistory";
+import { readSongHistory } from "../server/songHistory";
 
-// Reject every legacy input before reading authorization, domain rows or references.
-export default resolver.pipe(
-    resolver.authorize(Permission.login),
-    async (_args: unknown): Promise<never> => requireRestoredApplicationFeature("eventSongStatistics"),
-);
+export default resolver.pipe(async (input: unknown, ctx: Ctx) => {
+    const args = SongHistoryInputSchema.parse(input);
+    const auth = await loadAuthorization(ctx.session, args.bandPublicId);
+    return readSongHistory(db, auth, args);
+});
 
 // MIGRATION_RESTORE: event-song-statistics
 // Source: 8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/queries/getSongActivityReport.ts:1-122

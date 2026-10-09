@@ -9,19 +9,21 @@ import type {
     SongTagAssociationPublicId,
     SongTagPublicId,
     SongPublicId,
+    UserPublicId,
 } from "shared/publicId";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { ForeignCollectionField, foreignRef, foreignRefByTableId, GenericIntegerField, MakeIsDeletedField, MakePKfield, MakePublicIdField, tagsRef } from "../columnTypes/xTableColumnTypes";
+import { ForeignCollectionField, foreignRef, foreignRefByTableId, GenericIntegerField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakePublicIdField, MakeUpdatedAtField, tagsRef } from "../columnTypes/xTableColumnTypes";
 import * as db3 from "../db3core";
 import { serverOwnedField } from "../columnTypes/inherited";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../columnTypes/genericString";
 import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongNaturalOrderBy, SongPayload, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload } from "./prismArgs";
-import { MakeCreatedByField, MakeVisiblePermissionField, xUser } from "./user";
+import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField, xUser } from "./user";
 import { xBandSongTag as xSongTag } from "../entities/song/bandSongTagViews";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { localizedText } from "../columnTypes/localizedString";
 import { catalogColor } from "../columnTypes/bandCatalog";
 import { xSongCreditType } from "../entities/song/songCreditTypes";
+import { activeBandPersonWhere } from "../entities/user/bandPersonReference";
 
 export { xSongTag, xSongCreditType };
 
@@ -197,7 +199,12 @@ const xSongArgs_Base = db3.defineTableDesc({
         name: columnName => MakeTitleField(columnName, { authMap: xSongAuthMap_R_EOwn_EManagers, }),
         description: () => MakeDescriptionField({ authMap: xSongAuthMap_R_EOwn_EManagers, }),
         isDeleted: () => MakeIsDeletedField({ authMap: xSongAuthMap_R_EOwn_EManagers, }),
+
+        createdAt: () => MakeCreatedAtField(),
         createdByUser: () => MakeCreatedByField(),
+        updatedAt: () => MakeUpdatedAtField(),
+        updatedByUser: () => MakeUpdatedByField(),
+
         visiblePermission: () => MakeVisiblePermissionField({ authMap: xSongAuthMap_R_EOwn_EManagers, }),
 
         aliases: columnName => new GenericStringField({
@@ -284,7 +291,7 @@ export const xSong = db3.defineTable(xSongArgs_Base);
 ////////////////////////////////////////////////////////////////
 export interface SongCreditTableParams {
     songId?: SongPublicId | null;
-    userId?: number | null;
+    userId?: UserPublicId | null;
 }
 
 export const xSongCredit = db3.defineTable({
@@ -306,14 +313,15 @@ export const xSongCredit = db3.defineTable({
     deletePolicy: "hard",
     queryParameters: {
         songId: { kind: "entityIdentity", targetTableID: "Song", authorizeAs: "songId", nullable: true },
-        userId: { kind: "entityIdentity", targetTableID: "User", authorizeAs: "publicId", nullable: true },
+        userId: { kind: "entityIdentity", targetTableID: "User", authorizeAs: "userId", nullable: true },
     } satisfies db3.DB3QueryParameterMap,
     tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongCreditNaturalOrderBy,
     getRowInfo: (row: SongCreditPayload) => ({
         pk: row.publicId,
         name: "<a song credit>",
-        ownerUserId: row.userId, // questionable.
+        // Credit authorship does not grant write authority over the owning Song.
+        ownerUserId: null,
     }),
     getParameterizedWhereClause: (params: { songId?: number | null; userId?: number | null }): (Prisma.SongCreditWhereInput[] | false) => {
         const ret: Prisma.SongCreditWhereInput[] = [];
@@ -335,6 +343,8 @@ export const xSongCredit = db3.defineTable({
         user: foreignRef(() => xUser, {
             fkidMember: "userId",
             allowNull: true,
+            requireVisibleTarget: true,
+            getTargetWhereClause: auth => activeBandPersonWhere(auth.requireBand().id),
             authMap: xSongAuthMap_R_EManagers,
         }),
         comment: columnName => new GenericStringField({

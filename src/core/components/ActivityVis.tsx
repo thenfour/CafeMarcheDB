@@ -141,6 +141,8 @@ interface ActivityVisProps<T> {
     onBucketClick?: (bucket: ActivityVisBucket<T>) => void;
     getBucketInfo?: (bucket: ActivityVisBucket<T>) => ActivityVisCellInfo;
     getItemInfo: (item: T) => ActivityVisItemInfo;
+    formattingLocale?: string;
+    getCalendarMonth?: (date: Date) => { year: number; month: number };
 };
 
 export const ActivityVis = <T,>(props: ActivityVisProps<T>) => {
@@ -150,10 +152,12 @@ export const ActivityVis = <T,>(props: ActivityVisProps<T>) => {
     // attach info to the generic item
     const itemsWithInfo: ActivityVisItemWithInfo<T>[] = props.items.map(item => {
         const extraInfo = props.getItemInfo(item);
-        const year = extraInfo.occursAt.getFullYear();
-        minYear = Math.min(minYear || 9999, year);
-        maxYear = Math.min(maxYear || 0, year);
-        const month = extraInfo.occursAt.getMonth(); // month index, where January is 0
+        // Callers can bucket in their domain's timezone; older callers use the viewer's calendar.
+        const calendar = props.getCalendarMonth?.(extraInfo.occursAt);
+        const year = calendar?.year ?? extraInfo.occursAt.getFullYear();
+        minYear = Math.min(minYear ?? year, year);
+        maxYear = Math.max(maxYear ?? year, year);
+        const month = calendar?.month ?? extraInfo.occursAt.getMonth();
         return {
             item,
             extraInfo,
@@ -305,7 +309,7 @@ export const ActivityVis = <T,>(props: ActivityVisProps<T>) => {
                 <tr>
                     <th></th>
                     {Array.from({ length: 12 }, (_, i) => (
-                        <th key={i} className='monthTH'>{new Date(0, i).toLocaleString('default', { month: 'short' })}</th>
+                        <th key={i} className='monthTH'>{new Date(2000, i).toLocaleString(props.formattingLocale, { month: 'short' })}</th>
                     ))}
                     <th>Year total</th>
                 </tr>

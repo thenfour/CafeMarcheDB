@@ -30,6 +30,18 @@ type ForeignSingleFieldValueArgs<
     // Omit the local row when its target cannot be read. Use for dependent
     // records, such as a setlist entry whose song must remain private.
     requireVisibleTarget?: boolean;
+
+    // Reference eligibility may be narrower than the target's ordinary visibility.
+    // This predicate spans registered Prisma models and is applied to reads and writes.
+    //
+    // motivating example is xSongCredit, where the visibility of the associated user
+    // should be narrowed to the same band. Without this clause, auth / visibility is applied,
+    // but users would see everyone they're allowed to see on the platform; the policy
+    // we want to enforce is to limit scope to the band. that's not something to put on
+    // the target table, but still not totally natural here either. better to put that
+    // on a view.
+    getTargetWhereClause?: (auth: CMServerAuthorization) => Readonly<object>;
+
     defaultValue?: TForeign | null;
     getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
     specialFunction?: SqlSpecialColumnFunction | undefined;
@@ -99,6 +111,7 @@ export class ForeignSingleField<
     declare readonly __relationNullable: TAllowNull;
     declare readonly fkidMember: TForeignKeyMember;
     requireVisibleTarget: boolean;
+    getTargetWhereClause?: (auth: CMServerAuthorization) => Readonly<object>;
     private readonly declaredForeignTableID?: string;
     private readonly getForeignTable__: () => xTable;
     localTableSpec: xTable;
@@ -174,6 +187,7 @@ export class ForeignSingleField<
             args.allowNull,
         ) as z.ZodType<DB3IdentityOf<TTargetTable> | null>;
         this.requireVisibleTarget = args.requireVisibleTarget === true;
+        this.getTargetWhereClause = args.getTargetWhereClause;
         this.defaultValue = args.defaultValue || null;
         this.declaredForeignTableID = args.foreignTableID;
         this.getForeignTable__ = args.getForeignTable
@@ -201,14 +215,17 @@ export class ForeignSingleField<
     getOverallWhereClause = (): TAnyModel | boolean => false;
 
     getRowVisibilityWhereClause = (auth: CMServerAuthorization, includeDeleted: boolean, includeHidden = false): TAnyModel | undefined => {
-        if (!this.requireVisibleTarget) return undefined;
+        if (!this.requireVisibleTarget && !this.getTargetWhereClause) {
+            return undefined;
+        }
         const target = this.getForeignTableSchema();
         // A parent administration view may include hidden references only with the target's own management grant.
         const targetIncludesHidden = includeHidden && !!target.bandScope?.hiddenMember && auth.hasPermission(target.bandScope.managePermission);
         const where = target.CalculateWhereClause({
             auth, includeDeleted, filterModel: { items: [], tableParams: targetIncludesHidden ? { includeHidden: true } : {} },
         });
-        const visibleTarget = { [this.member]: { is: where || {} } };
+        const targetFilter = this.getTargetWhereClause?.(auth);
+        const visibleTarget = { [this.member]: { is: targetFilter ? { AND: [where || {}, targetFilter] } : where || {} } };
         // An optional reference has no target to authorize until it is assigned.
         return this.allowNull ? { OR: [{ [this.fkidMember]: null }, visibleTarget] } : visibleTarget;
     };
@@ -481,6 +498,7 @@ export const foreignRef = <
         fkidMember: args.fkidMember,
         allowNull: (args.allowNull ?? false) as TAllowNull,
         requireVisibleTarget: args.requireVisibleTarget,
+        getTargetWhereClause: args.getTargetWhereClause,
         defaultValue: args.defaultValue,
         specialFunction: args.specialFunction,
         sortBy: args.sortBy,
@@ -553,6 +571,7 @@ export const foreignRefByTableId = <
             fkidMember: args.fkidMember,
             allowNull: (args.allowNull ?? false) as TAllowNull,
             requireVisibleTarget: args.requireVisibleTarget,
+            getTargetWhereClause: args.getTargetWhereClause,
             defaultValue: args.defaultValue,
             specialFunction: args.specialFunction,
             sortBy: args.sortBy,
