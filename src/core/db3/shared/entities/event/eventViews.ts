@@ -5,11 +5,10 @@ import { isPublicId, type EventPublicId, type EventStatusPublicId, type EventTag
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } from "../../core/db3View";
 import { deriveViewContract } from "../../core/db3ViewContract";
-import { catalogDisplayModel } from "../../columnTypes/bandCatalog";
 import { EventTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { db3s, graft } from "../common/viewCommon";
 import { hydrateEventDateRange } from "./eventDateRange";
-import { bandUserTagContract, bandUserTagSelection } from "../user/bandUserTagViews";
+import { bandUserTagContract } from "../user/bandUserTagViews";
 import { bandEventTagContract } from "./eventTagCatalogs";
 import { dashboardReferenceContract } from "../../references/dashboardReferences";
 import { fileCardSelection, fileCardTransportSelection } from "../file/fileViews";
@@ -58,7 +57,6 @@ export const eventSegmentEditorSelection = Prisma.validator<Prisma.EventSegmentD
                 publicId: true,
                 name: true,
                 startsAt: true,
-                createdByUserId: true,
                 typeId: true,
             }
         },
@@ -120,6 +118,7 @@ const EventEditorDtoSchema = z.object({
     revision: z.number().int().optional(),
 
     name: z.string().optional(),
+    relevanceClassOverride: z.number().int().nullable().optional(),
     locationDescription: z.string().optional(),
     locationURL: z.string().optional(),
 
@@ -157,6 +156,20 @@ const EventEditorDtoSchema = z.object({
     frontpageLocation: z.string().nullable().optional(),
     frontpageLocationURI: z.string().nullable().optional(),
     frontpageTags: z.string().nullable().optional(),
+    frontpageDate_nl: z.string().nullable().optional(),
+    frontpageTime_nl: z.string().nullable().optional(),
+    frontpageDetails_nl: z.string().nullable().optional(),
+    frontpageTitle_nl: z.string().nullable().optional(),
+    frontpageLocation_nl: z.string().nullable().optional(),
+    frontpageLocationURI_nl: z.string().nullable().optional(),
+    frontpageTags_nl: z.string().nullable().optional(),
+    frontpageDate_fr: z.string().nullable().optional(),
+    frontpageTime_fr: z.string().nullable().optional(),
+    frontpageDetails_fr: z.string().nullable().optional(),
+    frontpageTitle_fr: z.string().nullable().optional(),
+    frontpageLocation_fr: z.string().nullable().optional(),
+    frontpageLocationURI_fr: z.string().nullable().optional(),
+    frontpageTags_fr: z.string().nullable().optional(),
 });
 
 const eventEditorBaseSelection = ZodToPrismaSelection(EventEditorDtoSchema);
@@ -286,7 +299,7 @@ const eventDetailTransportSelection = Prisma.validator<Prisma.EventDefaultArgs>(
         },
         expectedAttendanceUserTag: {
             select: {
-                ...bandUserTagSelection.select,
+                publicId: true,
                 bandUserTagAssignments: {
                     select: {
                         publicId: true,
@@ -390,16 +403,8 @@ const hydrateEventDetailDto = (
         { eventTag: true },
         `Event_Detail.tags[${index}]`,
     ));
-    // The transport selection and hydrated references above cover every
-    // optional branch in this finite detail contract.
-    const displayEvent = {
-        ...event,
-        expectedAttendanceUserTag: event.expectedAttendanceUserTag
-            ? catalogDisplayModel(event.expectedAttendanceUserTag)
-            : event.expectedAttendanceUserTag,
-    };
-    // The shape checks above cover the full detail transport before catalog display conversion.
-    return displayEvent as DeepDefined<typeof displayEvent>;
+    // The checks cover the complete finite detail transport and hydrated references.
+    return event as DeepDefined<typeof event>;
 };
 
 export const eventDetailSelection = eventDetailViewContract.prismaSelection;

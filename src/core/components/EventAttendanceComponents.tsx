@@ -1,5 +1,6 @@
 // Production adapter for the shared attendance control.
 import React from "react";
+import { Localized } from "../../setting/client/components/SettingMarkdown";
 import { API } from "../db3/clientAPI";
 import type { EventParticipantList } from "../db3/shared/schema/eventAPI";
 import { AdminInspectObject } from "./CMCoreComponents2";
@@ -7,7 +8,6 @@ import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/Dash
 import { AttendanceChange, AttendanceControlView } from "./event/AttendanceControlView";
 import { CalcEventAttendance, type AttendanceEventMetadata } from "./event/EventComponentsBase";
 import { ActivityFeature } from "./featureReports/activityTracking";
-import { LocalizedMarkdown } from "../../setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "./SnackbarContext";
 
 type CreatedUpdatedObj = {
@@ -95,7 +95,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
             onSave,
             allowUploads: true,
             datePresentation: dashboardContext.eventDatePresentation,
-            commentDialogTitle: <LocalizedMarkdown setting="EventAttendanceCommentDialog_TitleMarkdown" />,
-            commentDialogDescription: <LocalizedMarkdown setting="EventAttendanceCommentDialog_DescriptionMarkdown" />,
+            commentDialogTitle: <Localized id="EventAttendanceCommentDialog_TitleMarkdown" />,
+            commentDialogDescription: <Localized id="EventAttendanceCommentDialog_DescriptionMarkdown" />,
         }} />;
 };

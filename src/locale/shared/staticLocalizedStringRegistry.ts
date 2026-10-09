@@ -121,6 +121,17 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
     "Event.workflowDef.DescriptionMarkdown": defaultMarkdownStaticString(),
     "NewEventSegmentDialogDescription": defaultMarkdownStaticString(),
     "NewEventSegmentDialogTitle": defaultMarkdownStaticString(),
+    "EditEventSegmentDialogDescription": defaultMarkdownStaticString(),
+    "EditEventSegmentDialogTitle": defaultMarkdownStaticString(),
+    "EditSingleEventSegmentDialogDescription": defaultMarkdownStaticString(),
+    "EditSingleEventSegmentDialogTitle": defaultMarkdownStaticString(),
+    "EventFrontpageEditDialog_Date": defaultMarkdownStaticString(),
+    "EventFrontpageEditDialog_Time": defaultMarkdownStaticString(),
+    "EventFrontpageEditDialog_Title": defaultMarkdownStaticString(),
+    "EventFrontpageEditDialog_Details": defaultMarkdownStaticString(),
+    "EventFrontpageEditDialog_Location": defaultMarkdownStaticString(),
+    "EventFrontpageEditDialog_Location URI": defaultMarkdownStaticString(),
+    "EventFrontpageEditDialog_Tags": defaultMarkdownStaticString(),
     "general.fieldCaptions.id": plainStaticString({
         defaultValue: "ID",
         description: "Record identifier column heading",
@@ -129,6 +140,7 @@ export const kStaticLocalizedStringRegistry = freezeRegistry({
 });
 
 export type StaticLocalizedStringKey = keyof typeof kStaticLocalizedStringRegistry;
+export type LocalizedStringKey = StaticLocalizedStringKey; // "static" is slightly redundant; this is for convenience/readibility
 
 type KeysWithFormat<TFormat extends "plain" | "markdown"> = {
     [K in StaticLocalizedStringKey]: typeof kStaticLocalizedStringRegistry[K]["format"] extends TFormat ? K : never;

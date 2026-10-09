@@ -1,5 +1,5 @@
-import { formatEventDateRangeTranslations } from "shared/dateTimePresentation";
 import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
+import { formatEventDateRangeTranslations } from "shared/dateTimePresentation";
 
 import * as db3 from "@db3/db3";
 import { FormControlLabel, Switch } from "@mui/material";
@@ -8,6 +8,7 @@ import React from "react";
 import { EnNlFr, LangSelectStringWithDetail } from "shared/lang";
 import { DateTimeRange } from "shared/time";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { Localized } from "../../../setting/client/components/SettingMarkdown";
 import { API } from '../../db3/clientAPI';
 import { gIconMap } from "../../db3/components/IconMap";
 import { getAgendaItem } from "../../db3/shared/publicFeedApi";
@@ -20,7 +21,6 @@ import { useConfirm } from "../ConfirmationDialog";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { AgendaItem } from '../frontpage/homepageComponents';
-import { LocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
 import type { EventDetailEvent } from "./EventComponentsBase";
 
 
@@ -179,7 +179,7 @@ interface FrontpageControlSpec {
         }
     }>;
     nullable: boolean;
-    fieldLabel: string;
+    fieldLabel: "Date" | "Time" | "Title" | "Details" | "Location" | "Location URI" | "Tags";
     renderIcon: () => JSX.Element;
 }
 
@@ -253,6 +253,7 @@ const EventFrontpageValuesTable = ({ valueEn, valueNl, valueFr }: { valueEn: str
 ////////////////////////////////////////////////////////////////
 const EventFrontpageControl = (props: EventFrontpageControlProps) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
+    const dashboard = useDashboardContext();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
     const confirm = useConfirm();
@@ -265,6 +266,7 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
         });
         mutationToken.invoke({
             eventId: props.event.publicId,
+            bandPublicId: dashboard.requireBandPublicId(),
             [props.fieldSpec.fieldNameEn]: valueEn,
             [props.fieldSpec.fieldNameNl]: valueNl,
             [props.fieldSpec.fieldNameFr]: valueFr,
@@ -307,7 +309,7 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
                     valueFr={valueFr || ""}
                     dialogTitle={props.fieldSpec.fieldLabel}
                     readOnly={readonly}
-                    dialogDescription={<LocalizedMarkdown setting={`EventFrontpageEditDialog_${props.fieldSpec.fieldLabel}` as any} />}
+                    dialogDescription={<Localized id={`EventFrontpageEditDialog_${props.fieldSpec.fieldLabel}`} />}
                     selectButtonLabel='edit'
                     onChange={handleChange}
                 />
@@ -368,6 +370,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
         });
         mutationToken.invoke({
             eventId: props.event.publicId,
+            bandPublicId: dashboardContext.requireBandPublicId(),
             frontpageVisible: e.target.checked,
         }).then(() => {
             showSnackbar({ severity: "success", children: `Successfully updated frontpage visibility` });
@@ -444,6 +447,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
                 });
                 await mutationToken.invoke({
                     eventId: props.event.publicId,
+                    bandPublicId: dashboardContext.requireBandPublicId(),
 
                     frontpageDate: dateValues.en,
                     frontpageDate_fr: dateValues.fr,

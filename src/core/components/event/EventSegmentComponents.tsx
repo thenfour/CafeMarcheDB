@@ -1,31 +1,31 @@
-import { EventDateRangeText } from "../DateTime/EventDateRangeText";
 import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
+import { EventDateRangeText } from "../DateTime/EventDateRangeText";
 
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
+import { LocalizedMarkdownKey, StaticLocalizedStringKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
 import { useMutation } from "@blitzjs/rpc";
 import { Divider, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React from "react";
+import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
-import type { EventPublicId } from "shared/publicId";
 import { IsNullOrWhitespace } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
+import { Localized } from "../../../setting/client/components/SettingMarkdown";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
 import { DB3EditObjectDialog } from '../../db3/components/db3NewObjectDialog';
 import clearEventSegmentResponses from "../../db3/mutations/clearEventSegmentResponses";
 import copyEventSegmentResponses from "../../db3/mutations/copyEventSegmentResponses";
-import { useConfirm } from "../ConfirmationDialog";
-import { type EventDetailEvent, type EventDetailTableClient, EventTableClientColumns } from "./EventComponentsBase";
-import { Markdown } from "../markdown/Markdown";
-import { LocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
-import { toSorted } from "shared/arrayUtils";
-import { EventStatusValue } from "../event/EventChips";
-import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { CMButton } from "../CMCoreComponents2";
+import { useConfirm } from "../ConfirmationDialog";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import { EventStatusValue } from "../event/EventChips";
+import { Markdown } from "../markdown/Markdown";
+import { type EventDetailEvent, type EventDetailTableClient, EventTableClientColumns } from "./EventComponentsBase";
 
 
 
@@ -63,7 +63,9 @@ type EventSegmentEditorCommands = DB3Client.CrudViewCommandClient<typeof db3.eve
 interface EventSegmentEditDialogProps {
     initialValue: EventSegmentEditorClient;
     //isNewObject: boolean,
-    markdownSettingPrefix: string,
+    //markdownSettingPrefix: "NewEventSegment" | "EditEventSegment" | "EditSingleEventSegment",
+    titleKey: StaticLocalizedStringKey;
+    descriptionKey: LocalizedMarkdownKey;
     onSave: (
         newValue: EventSegmentEditorClient,
         commands: EventSegmentEditorCommands,
@@ -113,14 +115,14 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
         tableRenderClient={tableRenderClient}
         // title={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogTitle" : "EditEventSegmentDialogTitle"} />}
         // description={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogDescription" : "EditEventSegmentDialogDescription"} />}
-        title={<LocalizedMarkdown setting={`${props.markdownSettingPrefix}DialogTitle` as any} />}
-        description={<LocalizedMarkdown setting={`${props.markdownSettingPrefix}DialogDescription` as any} />}
+        title={<Localized id={props.titleKey} />}
+        description={<Localized id={props.descriptionKey} />}
     />;
 };
 
 ////////////////////////////////////////////////////////////////
 interface NewEventSegmentButtonProps {
-    event: { publicId: EventPublicId };
+    event: EventDetailEvent;
     initialName: string;
     refetch: () => void;
 };
@@ -134,6 +136,8 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
     const blankObject: EventSegmentEditorClient = db3.xEventSegment.createNew(currentUser);
     blankObject.name = props.initialName;
     blankObject.eventId = event.publicId;
+    // The editor validates the relation object as well as the public parent identity.
+    blankObject.event = event;
 
     const authorized = db3.xEventSegment.authorizeRowBeforeInsert({
         auth: auth,
@@ -156,7 +160,9 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
         {authorized && <CMButton className="newSegmentButton" onClick={() => setOpen(true)}>{gIconMap.Add()} New segment</CMButton>}
         {open && <EventSegmentEditDialog
             onCancel={() => setOpen(false)}
-            markdownSettingPrefix="NewEventSegment"
+            //markdownSettingPrefix="NewEventSegment"
+            titleKey="NewEventSegmentDialogTitle"
+            descriptionKey="NewEventSegmentDialogDescription"
             onSave={handleSave}
             initialValue={blankObject}
         />
@@ -235,7 +241,8 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
 
             {!props.readonly && editOpen && (<EventSegmentEditDialog
                 initialValue={props.segment}
-                markdownSettingPrefix="EditEventSegment"
+                titleKey="EditEventSegmentDialogTitle"
+                descriptionKey="EditEventSegmentDialogDescription"
                 onDelete={handleDelete}
                 onCancel={() => setEditOpen(false)}
                 onSave={handleSave}
@@ -328,7 +335,8 @@ export const EditSingleSegmentDateButton = (props: EditSingleSegmentDateButtonPr
         <CMButton onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Change date</CMButton>
         {editOpen && (<EventSegmentEditDialog
             initialValue={props.segment}
-            markdownSettingPrefix="EditSingleEventSegment"
+            titleKey="EditSingleEventSegmentDialogTitle"
+            descriptionKey="EditSingleEventSegmentDialogDescription"
             onCancel={() => setEditOpen(false)}
             onSave={handleSave}
         />)}

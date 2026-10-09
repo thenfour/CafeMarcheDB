@@ -1,5 +1,5 @@
-import React, { Suspense } from "react";
 import type { BlitzPage } from "@blitzjs/next";
+import { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
@@ -8,15 +8,15 @@ import { ProfilePageIdentityControl } from "src/core/components/user/UserIdentit
 import { CalendarUserSettingsControl } from "src/core/components/user/UserSettingsControls";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
-import { LocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
+import { Localized } from "src/setting/client/components/SettingMarkdown";
 
 function ProfileContent() {
     const presentation = usePresentation();
     const dashboard = useDashboardContext();
     const personId = presentation.data?.authorization.userPublicId;
     return <>
-        <LocalizedMarkdown setting="profile_markdown" />
-        <LocalizedMarkdown setting="profile_description_markdown" />
+        <Localized id="profile_markdown" />
+        <Localized id="profile_description_markdown" />
         {personId && <BandMemberProfile personId={personId} />}
         {dashboard.isAuthorized(Permission.sysadmin) && personId && <ProfilePageIdentityControl userId={personId} />}
         <CalendarUserSettingsControl />

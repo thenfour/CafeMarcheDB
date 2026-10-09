@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -113,13 +113,31 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         void recordFeature({
             feature: ActivityFeature.event_create,
         });
+        const eventFields = eventTableClient.prepareInsertMutation(eventValue);
+        const segmentFields = segmentTableClient.prepareInsertMutation(segmentValue);
+        // Creation accepts only the fields offered by this dialog, not every Event editor field.
         const payload: TinsertEventArgs = {
             bandPublicId: dashboardContext.requireBandPublicId(),
             routeLocale: dashboardContext.localePreferences.routeLocale,
             browserLanguages: [...dashboardContext.localePreferences.browserLanguages],
-            event: eventTableClient.prepareInsertMutation(eventValue),
-            segment: { name: "Set 1", description: "", ...segmentTableClient.prepareInsertMutation(segmentValue) },
-        }; setGrayed(true);
+            event: {
+                name: eventFields.name,
+                locationDescription: eventFields.locationDescription,
+                typeId: eventFields.typeId,
+                statusId: eventFields.statusId,
+                tags: eventFields.tags,
+                expectedAttendanceUserTagId: eventFields.expectedAttendanceUserTagId,
+                visiblePermissionId: eventFields.visiblePermissionId,
+            },
+            segment: {
+                startsAt: segmentFields.startsAt,
+                durationMillis: segmentFields.durationMillis,
+                isAllDay: segmentFields.isAllDay,
+                name: "Set 1",
+                description: "",
+            },
+        };
+        setGrayed(true);
         mut.invoke(payload).then(async (ret) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
             props.onOK();
@@ -147,7 +165,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             <CMButton onClick={handleSaveClick} startIcon={gIconMap.Save()} enabled={!grayed}>OK</CMButton>
         </>}
     >
-        <LocalizedMarkdown setting="NewEventDialogDescriptionMarkdown" />
+        <Localized id="NewEventDialogDescriptionMarkdown" />
 
         <div className="NameValuePairList">
             <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {
@@ -177,8 +195,15 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
 export const NewEventButton = (props: {}) => {
     const [open, setOpen] = React.useState<boolean>(false);
     const dashboardContext = useDashboardContext();
+    // Creation initializes protected revision and frontpage defaults on the server.
+    const canInitializeEvent = ["revision", "frontpageVisible"].every(columnName => db3.xEvent.authorizeColumnForInsert({
+        auth: dashboardContext.authorization,
+        model: null,
+        columnName,
+    }));
 
-    if (!dashboardContext.authorizationContext?.bandPublicId || !dashboardContext.isAuthorized(Permission.manage_events)) {
+    if (!dashboardContext.authorizationContext?.bandPublicId
+        || !dashboardContext.isAuthorized(Permission.manage_events) || !canInitializeEvent) {
         return null;
     }
 

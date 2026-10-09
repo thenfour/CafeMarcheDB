@@ -26,7 +26,7 @@ Preserve them while restoring their wider workflows. Basic member directory and
 profile behavior is only a subset: reference filters, presets, contact-search
 policy, exports and profile tabs remain A1 work.
 
-Event detail/creation/editing, general song/file screens, non-event domain search,
+Event setlist editing, general song/file screens, non-event domain search,
 quick/shell search, publication, uploads and several reports/admin surfaces remain
 guarded or incomplete. The
 [restoration manifest](feature-restoration.json) records the individual obligations
@@ -46,22 +46,48 @@ inheritance and effective label ordering. Band/language changes abort old reques
 and clear their results; event links and exports retain band/route locale.
 
 Authored text matching remains active; localized catalog-name matching follows
-the A1 exception below. Creation and pin/hide editing controls remain unavailable
-until their write owners are restored. Detail links retain the reference URLs and
-currently reach the guarded detail surface. Text-only search now exposes Reset
-filter, which also clears the text. This checkpoint does not close event parity
-or A1; other domain-search roots remain guarded.
+the A1 exception below. Detail links retain the reference URLs and open the
+restored detail page. Creation and pin/hide controls now use the restored write
+owners. Text-only search exposes Reset filter, which also clears the text. These
+checkpoints do not close event parity or A1; other domain-search roots remain guarded.
 
-## Next slice: existing event detail and editing
+## Event detail and editing checkpoint
 
-Compare `f027830a9790` and trace the existing event detail page, tabs, creation/edit
-dialogs, event/segment commands, invitations/default instruments and their indirect
-callers before editing. Restore them through their existing UI and server owners,
-using explicit band/public identities and shared localized catalogs. Retain the
-restored search path and migrated attendance/calendar services. Account for each
-dependency that remains unavailable, including date-picker highlights and
-frontpage behavior; verify detail/tab links and writes in the built app across two
-bands. Do not replace the detail workflow with a reduced page.
+The existing detail page, breadcrumbs, tabs and creation/edit dialogs are active.
+Page metadata and detail reads use shared snapshot authorization and localized
+catalog references; absent, private, deleted and foreign-band events return 404.
+Band changes remount detail state and discard previous query results. Event
+creation, basic fields, visibility, pin/hide relevance, segment creation/date
+editing/deletion and CafeMarche frontpage fields use explicit band/public targets
+and the shared field authorization, audit and event-range services.
+Creation retains the existing revision/frontpage initialization checks, requiring
+`admin_events` and `edit_public_homepage` alongside `manage_events`; its button
+now follows those checks. The dialog sends only creation fields and supplies the
+first segment's name/description explicitly.
+
+Invitation-group changes and the original invitation/attendance controls reuse
+the migrated response owners. The person picker now selects band memberships,
+rather than querying shared accounts. Existing setlist contents and recording
+playback are available through independently authorized Song/File reads. Setlist
+editing remains unavailable: its commands and child rows still need ownership
+declarations, and saving depends on the deferred Song row service. Event Files
+retains its viewer while upload/metadata actions remain unavailable. Dialog help
+keys and draft tag associations were repaired so the original editors can open.
+
+Remaining event parity includes setlist writes and song picking, date-picker
+highlights, the full attendance/default-instrument interaction matrix and
+publication consumers/imports. Editing frontpage fields does not restore the
+anonymous homepage or feed. Localized catalog-name matching remains covered by
+the A1 exception; these gaps keep `event-workflows` and A1 open.
+
+## Next slice: songs and event setlist editing
+
+Trace the reference Song search/detail/edit path and its File dependencies.
+Restore their ownership through shared DB3 declarations and existing server/UI
+owners, including nested setlist children and visible song references. Reactivate
+the original event setlist editor only when save/delete/reorder and song picking
+work across two bands. Retain the event and attendance checkpoints; account for
+file previews, metadata/associations and uploads as concrete dependencies.
 
 ## Localized catalog text search exception
 
@@ -89,7 +115,7 @@ when a concrete workflow dependency requires it.
 | Work | Required parity |
 | --- | --- |
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
-| Events | Retain restored search; restore detail/creation/editing, segments, invitations/default instruments, attendance UI and event song lists. |
+| Events | Retain restored search/detail/creation/editing and invitation/attendance controls; finish default-instrument and attendance parity, event song-list editing and date-picker highlights. |
 | Songs and files | Search/detail/editing, tags/credits, partitions/recordings, metadata/associations, previews, uploads and downloads. |
 | Supporting workflows | Dashboard/wiki/custom navigation, plans, search, calendars/feeds/tokens, Custom Links, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
@@ -143,11 +169,25 @@ concerts presets, 30-row paging, contextual links, TSV export, text/filter URL
 reload, facet counts/sorting, French labels, Dutch second-band results and
 ordinary-member access rejection. No uncaught browser errors occurred.
 
-The complete-suite run still reports 215 failed tests and ten suite-load failures
+The event-detail checkpoint passed 294 focused tests across 15 executable files
+and 162 native MariaDB tests across eight files, including real invitation-tag
+assignments, parent-inherited segment ownership, audit/range updates, hidden and
+foreign references, revoked grants, and independent pinned Song/File visibility.
+Draft association tests cover new parents and invalid supplied IDs. Normal
+typecheck/build and focused lint pass. Twelve assertion groups passed in the
+isolated production demo browser: original detail/tab links, creation permission
+gating and actual creation, basic/segment/date edits, invitation groups and member
+selection, inline attendance, setlist contents and actual two-second WAV playback,
+French frontpage saves/visibility, deferred File/setlist action boundaries and
+Dutch second-band detail/ordinary-member controls with foreign-band 404s. No
+uncaught browser or RPC errors occurred. The browser fixture supplies the existing
+event-administration grant only for creation and removes it afterwards.
+
+The complete-suite run still reports 214 failed tests and ten suite-load failures
 in the Node batch, including authorization/account, deferred-domain and date-policy
 contracts; the runner stops before the later jsdom batches. Focused passes do not
 establish A1 readiness. Earlier built-browser member/profile/wiki/download checks
-remain recorded evidence, not workflows rerun by this event-search slice.
+remain recorded evidence, not workflows rerun by these event slices.
 
 The repeatable [demo workflow](../demo-seeding.md) has 29 configuration checks,
 six native generator/reset checks, an isolated production build and five passing

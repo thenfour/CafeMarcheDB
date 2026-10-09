@@ -175,7 +175,9 @@
       "evidence": [
         "2026-10-08: Restored the existing Events/SearchPageContent/eventSearchConfig composition and Event_Search HTTP/direct owner. Reference presets, date/type/status/tag operators, facets/counts, URL state, sorting, cards, load-more, refresh callbacks and CSV/TSV export use fresh band snapshots/public references and shared localized catalog views. Event links retain band/route locale. Text-only Reset filter was repaired.",
         "123 focused checks and 30 native MariaDB checks pass; native eventSearch cases cover isolation, all tag operators, combined criteria, localized/blank/inherited facets, stable paging and revoked/member/platform/inactive/deleted/merged authorization. Normal typecheck/build, focused lint and seven built-browser assertion groups pass; see 04-implementation-plan.md#verification-status.",
-        "Still pending: event detail/creation/editing, segments, invitations/default instruments, complete attendance UI, event song lists, date-picker highlights and frontpage behavior. Creation and pin/hide write controls remain unavailable, and detail URLs reach the guarded surface. Localized catalog-name free-text matching remains pending under the A1 exception. The full repository suite remains failing; this checkpoint does not close A1."
+        "2026-10-08: Restored the original event detail page, breadcrumbs/tabs, creation dialog, basic/visibility/relevance edits, segment creation/date edits/deletion, invitation-group/member selection, inline attendance and CafeMarche frontpage field editing. Public targets and fresh band snapshots use shared DB3 field authorization, localized reference catalogs, audit and event-range services. The invitation picker uses active band memberships; draft tag choices and missing dialog help keys were repaired.",
+        "294 focused checks and 162 native MariaDB checks pass, including parent-inherited segment ownership, real invitation-tag assignments, audit/range updates, hidden/foreign references, revoked grants and independent pinned Song/File visibility. Normal typecheck/build and focused lint pass. Twelve built-browser groups pass, including original creation/editing controls, existing creation permission checks, invitation/attendance saves, actual WAV playback, French frontpage writes and Dutch second-band/foreign-event boundaries; no uncaught browser or RPC errors. See 04-implementation-plan.md#verification-status for evidence and the failing full-suite assessment.",
+        "Still pending: setlist writes/song picking, the full attendance/default-instrument interaction matrix, date-picker highlights, publication consumers/imports and localized catalog-name free-text matching under the A1 exception. Setlist contents/recording reads remain available, but editing is unavailable until Song and nested child ownership are restored. Event Files retains its viewer with upload/metadata actions unavailable. This checkpoint does not close event parity or A1."
       ]
     },
     {
@@ -184,7 +186,9 @@
       "restore": "Restore song search/detail/editing, credits and pinned recording with fresh selected-band authorization, visible files and public localized references; retain the recovered narrow song lookup and setlist persistence.",
       "verification": "Verify two bands, visibility, deleted records, revoked grants, credits, pinned recording and complete built-browser song workflows.",
       "status": "pending",
-      "evidence": []
+      "evidence": [
+        "2026-10-08: Restored only the pinned-recording reader and existing setlist/player callers with required band/public IDs, fresh read snapshots and independent Song/File visibility/deletion/band checks. Native tests cover foreign-band songs/files and revoked grants. General Song screens/CRUD and event setlist writes remain pending; the narrow reader does not reopen those roots."
+      ]
     },
     {
       "id": "file-workflows",
@@ -200,7 +204,9 @@
       "restore": "Restore band-specific public homepage, agenda, galleries and feed delivery, including hosting modes, language selection, CORS, image editing and visibility with explicit public band routing and authorized reads/writes.",
       "verification": "Verify anonymous and member publication in two bands/locales, privacy, CORS/feed consumers, gallery ordering/images and built-browser homepage/editor workflows.",
       "status": "pending",
-      "evidence": []
+      "evidence": [
+        "2026-10-08: Authenticated event-detail frontpage field editing uses the shared Event write owner and explicit band/public targets, including existing English/French/Dutch fields and visibility. Public homepage/agenda/feed/gallery delivery and imports remain guarded or incomplete; this is editor evidence only."
+      ]
     },
     {
       "id": "domain-search",

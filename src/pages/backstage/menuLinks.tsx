@@ -1,9 +1,9 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { MenuLinkList } from "@/src/core/components/dashboard/MenuLinkComponents";
+import { Localized } from "@/src/setting/client/components/SettingMarkdown";
 import { BlitzPage } from "@blitzjs/next";
-import { Suspense } from "react";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import { Alert } from "@mui/material";
+import { Suspense } from "react";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import { useLocale } from "src/locale/components/useLocale";
 
@@ -16,7 +16,7 @@ const MyContent = () => {
     }
     return <div>
         <Alert severity="info">{locale.getPlainString("menuLink.deliveryDeferred")}</Alert>
-        <LocalizedMarkdown setting="MenuLinksPageMarkdown" />
+        <Localized id="MenuLinksPageMarkdown" />
         <MenuLinkList key={dashboard.memberPresentation.bandPublicId} />
     </div>;
 };

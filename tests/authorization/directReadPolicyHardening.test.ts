@@ -12,7 +12,6 @@ vi.mock("db", async () => {
 import getFilteredSongs from "@db3/queries/getFilteredSongs"
 import getSetlistPlans from "@db3/queries/getSetlistPlans"
 import getSongPinnedRecording from "@db3/queries/getSongPinnedRecording"
-import { filePublicId } from "../support/fileFixtures"
 import getUserTagWithAssignments from "@db3/queries/getUserTagWithAssignments"
 import getUserWikiContributions from "@db3/queries/getUserWikiContributions"
 import { loadAuthorization } from "src/auth/server/serverAuthorization"
@@ -165,38 +164,10 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     expect(result.matchingItem).toEqual(expect.objectContaining({ publicId: songPublicId(10) }))
   })
 
-  it("filters the song and its pinned File independently", async () => {
-    const visibleSong = {
-      id: 20,
-      publicId: songPublicId(20),
-      name: "Visible song",
-      isDeleted: false,
-      createdByUserId: actor.id + 1,
-      visiblePermissionId: publicVisibilityId,
-      pinnedRecordingId: 200,
-      pinnedRecording: {
-        id: 200,
-        publicId: filePublicId(200),
-        isDeleted: false,
-        uploadedByUserId: actor.id + 1,
-        visiblePermissionId: hiddenVisibilityId,
-      },
-    }
-    authorizationTestDb.getDelegate("song").reset([visibleSong])
+  it("requires explicit band context for pinned-recording reads", async () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
-
-    await expect(invokeResolver(getSongPinnedRecording, { songIds: [songPublicId(20)] }, ctx)).resolves.toEqual({})
-
-    authorizationTestDb.getDelegate("song").reset([{
-      ...visibleSong,
-      pinnedRecording: {
-        ...visibleSong.pinnedRecording,
-        visiblePermissionId: publicVisibilityId,
-      },
-    }])
-    await expect(invokeResolver(getSongPinnedRecording, { songIds: [songPublicId(20)] }, ctx)).resolves.toEqual({
-      [songPublicId(20)]: expect.objectContaining({ publicId: filePublicId(200) }),
-    })
+    // Deliberately malformed HTTP input; the native recording tests cover scoped visibility.
+    await expect(invokeResolver(getSongPinnedRecording, { songIds: [songPublicId(20)] } as never, ctx)).rejects.toThrow()
   })
 
 

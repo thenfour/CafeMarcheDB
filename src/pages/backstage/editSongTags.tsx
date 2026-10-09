@@ -1,23 +1,27 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import type { BlitzPage } from "@blitzjs/next";
 import { Alert } from "@mui/material";
+import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
+import { InheritedColumnClient, LocalizedStringColumnClient } from "src/core/db3/components/DB3CatalogFields";
+import { BoolColumnClient, ColorColumnClient, GenericIntegerColumnClient, GenericStringColumnClient } from "src/core/db3/components/DB3ClientBasicFields";
+import { defineTableClientSpec } from "src/core/db3/components/DB3ClientCore";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import { bandSongTagView } from "src/core/db3/shared/entities/song/bandSongTagViews";
-import { defineTableClientSpec } from "src/core/db3/components/DB3ClientCore";
-import { GenericStringColumnClient, GenericIntegerColumnClient, ColorColumnClient, BoolColumnClient } from "src/core/db3/components/DB3ClientBasicFields";
-import { LocalizedStringColumnClient, InheritedColumnClient } from "src/core/db3/components/DB3CatalogFields";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
-import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
-import { LocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
+import { Localized } from "src/setting/client/components/SettingMarkdown";
 
 export const bandSongTagTableSpec = defineTableClientSpec({
     view: bandSongTagView,
     columns: {
         name: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.name" }),
         description: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.description" }),
-        color: columnName => new InheritedColumnClient(new ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "catalog.color", columnName, cellWidth: 250 }), { fieldCaptionKey: "catalog.color" }),
-        sortOrder: columnName => new InheritedColumnClient(new GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "catalog.sortOrder", columnName, cellWidth: 80 }), { fieldCaptionKey: "catalog.sortOrder" }),
+        color: columnName => new InheritedColumnClient(
+            new ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "catalog.color", columnName, }),
+            { fieldCaptionKey: "catalog.color" }),
+        sortOrder: columnName => new InheritedColumnClient(
+            new GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "catalog.sortOrder", columnName, }),
+            { fieldCaptionKey: "catalog.sortOrder" }),
         isHidden: columnName => new BoolColumnClient({ columnName, fieldCaptionKey: "catalog.hidden", fieldDescriptionKey: null }),
         group: columnName => new InheritedColumnClient(new GenericStringColumnClient({ columnName, fieldCaptionKey: "catalog.group", fieldDescriptionKey: null }), { fieldCaptionKey: "catalog.group" }),
         indicator: columnName => new InheritedColumnClient(new GenericStringColumnClient({ columnName, fieldCaptionKey: "catalog.indicator", fieldDescriptionKey: null }), { fieldCaptionKey: "catalog.indicator" }),
@@ -29,13 +33,13 @@ const MainContent = () => {
     const presentation = usePresentation();
     const locale = useLocale();
     return <>
-        <LocalizedMarkdown setting="editSongTags_markdown" />
+        <Localized id="editSongTags_markdown" />
         {presentation.bandPublicId ? <DB3EditGrid
-        tableSpec={bandSongTagTableSpec}
-        view={bandSongTagView}
-        referenceProvider={dashboard.referenceStore}
-    />
-        : <Alert severity="info">{locale.getPlainString("catalog.selectBand")}</Alert>}
+            tableSpec={bandSongTagTableSpec}
+            view={bandSongTagView}
+            referenceProvider={dashboard.referenceStore}
+        />
+            : <Alert severity="info">{locale.getPlainString("catalog.selectBand")}</Alert>}
     </>;
 };
 const EditSongTagsPage: BlitzPage = () => {

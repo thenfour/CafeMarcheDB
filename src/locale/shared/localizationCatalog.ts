@@ -1,6 +1,8 @@
 import { IntlMessageFormat } from "intl-messageformat";
-import { kStaticLocalizedStringRegistry, type LocalizedMarkdownKey, type LocalizedPlainStringKey,
-    type StaticLocalizedStringKey, type StaticStringArguments } from "./staticLocalizedStringRegistry";
+import {
+    kStaticLocalizedStringRegistry, type LocalizedMarkdownKey, type LocalizedPlainStringKey,
+    type StaticLocalizedStringKey, type StaticStringArguments
+} from "./staticLocalizedStringRegistry";
 import type { LocalePreferences } from "./localePreferences";
 import type { LocaleAvailability, StringResolution } from "./stringResolution";
 
@@ -14,7 +16,7 @@ export interface LocalizationCatalog {
     readonly strings: Readonly<Record<StaticLocalizedStringKey, StringResolution>>;
 }
 
-export function createLocaleApi(catalog: LocalizationCatalog | null, refetch: () => void = () => {}) {
+export function createLocaleApi(catalog: LocalizationCatalog | null, refetch: () => void = () => { }) {
     function getStringDetail(key: StaticLocalizedStringKey): StringResolution {
         if (!catalog) throw new Error("Localization catalog is not loaded.");
         const value = catalog.strings[key];
@@ -23,8 +25,13 @@ export function createLocaleApi(catalog: LocalizationCatalog | null, refetch: ()
     }
     function requireText(key: StaticLocalizedStringKey): StringResolution & { value: string } {
         const detail = getStringDetail(key);
-        if (detail.value === null) throw new Error(`No eligible translation for ${key}: ${detail.reason}`);
-        return { ...detail, value: detail.value };
+        if (detail.value === null) {
+            throw new Error(`No eligible translation for ${key}: ${detail.reason}`);
+        }
+        return {
+            ...detail,
+            value: detail.value,
+        };
     }
     return {
         getStringDetail,
@@ -47,6 +54,21 @@ export function createLocaleApi(catalog: LocalizationCatalog | null, refetch: ()
         getMarkdownString(key: LocalizedMarkdownKey): string {
             if (kStaticLocalizedStringRegistry[key].format !== "markdown") throw new Error(`Expected a Markdown key: ${key}`);
             return requireText(key).value;
+        },
+        getString<K extends StaticLocalizedStringKey>(key: K) {
+            const detail = requireText(key);
+            // we don't store this with the resolved catalog, so that fetching them preserves
+            // the entry's type.
+            const entry = kStaticLocalizedStringRegistry[key];
+            return {
+                value: detail.value,
+                detail: detail,
+                format: kStaticLocalizedStringRegistry[key].format,
+                entry,
+            };
+        },
+        getRegistryEntry(key) {
+            return kStaticLocalizedStringRegistry[key];
         },
         formattingLocale: catalog?.formattingLocale ?? null,
         preferences: catalog?.preferences ?? null,

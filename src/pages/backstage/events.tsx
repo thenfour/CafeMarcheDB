@@ -1,23 +1,22 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { EventOrderByColumnNames, EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "@/src/core/components/event/EventClientBaseTypes";
-import { Alert } from "@mui/material";
-import { CMButton } from "src/core/components/CMCoreComponents2";
-import { NavRealm } from "src/core/components/dashboard/StaticMenuItems";
-import { Permission } from "shared/permissions";
-import { useLocale } from "src/locale/components/useLocale";
+import { Localized } from "@/src/setting/client/components/SettingMarkdown";
 import { BlitzPage } from "@blitzjs/next";
+import { Alert } from "@mui/material";
 import { Suspense } from "react";
+import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId } from "shared/publicId";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
+import { NavRealm } from "src/core/components/dashboard/StaticMenuItems";
 import { EventListItem } from "src/core/components/event/EventComponents";
+import { NewEventButton } from "src/core/components/event/NewEventComponents";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
-import type { EventStatusPublicId, EventTagPublicId, EventTypePublicId } from "shared/publicId";
+import { useLocale } from "src/locale/components/useLocale";
 
 // for serializing in compact querystring
 interface EventsFilterSpecStatic {
@@ -271,7 +270,6 @@ const EventListOuter = () => {
                 event={event}
                 filterSpec={filterSpec}
                 refetch={refetch}
-                allowRelevanceEditing={false}
             />
         ),
         getItemKey: (event) => event.publicId,
@@ -357,7 +355,7 @@ const EventSearchContent = () => {
         return <Alert severity="info">{locale.getPlainString("events.selectBand")}</Alert>;
     }
     return <>
-        {dashboard.isAuthorized(Permission.manage_events) && <CMButton disabled tooltip={locale.getPlainString("events.creationPending")}>Create a new event</CMButton>}
+        <NewEventButton />
         <EventListOuter key={band} />
     </>;
 };
@@ -368,7 +366,7 @@ const SearchEventsPage: BlitzPage = () => {
             <AppContextMarker name="Event search page">
                 <div className="eventsMainContent searchPage">
                     <Suspense>
-                        <LocalizedMarkdown setting="events_markdown"></LocalizedMarkdown>
+                        <Localized id="events_markdown" />
                     </Suspense>
                     <EventSearchContent />
                 </div>

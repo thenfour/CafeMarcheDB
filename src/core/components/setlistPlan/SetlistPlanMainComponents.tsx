@@ -1,3 +1,4 @@
+import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 import { useQuery } from "@blitzjs/rpc";
 import { Button, ButtonGroup, Divider, FormControlLabel, Menu, MenuItem, Switch, Tooltip } from "@mui/material";
 import React from "react";
@@ -752,10 +753,15 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
     }, [docOrTempDoc.payload.rows]);
 
     // Fetch all pinned recordings for songs in this planner
+    const recordingContext = useDB3QueryContext();
     const [pinnedRecordings] = useQuery(getSongPinnedRecording, {
+        bandPublicId: recordingContext.bandPublicId!, // The query is disabled without a band.
         songIds: songIds,
     }, {
-        enabled: songIds.length > 0
+        enabled: !!recordingContext.bandPublicId && songIds.length > 0,
+        staleTime: 0,
+        cacheTime: 0,
+        keepPreviousData: false,
     });
 
     const rowToPlaylistTrack = (row: SetlistPlan['payload']['rows'][number], rowIndex: number): MediaPlayerTrack => {

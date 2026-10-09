@@ -987,6 +987,8 @@ model BandSetting {
    -  only 1 xtable per db entity
    -  fieldbase should also own serialization, validation (and likely own zod schema at very least for DTO parsing)
    -  don't re-invent auth: search for `export const xCustomLinkFile = db3.defineTable({` to see where ad-hoc auth is sneaking in
+   -  and should reconcile db3client -- which also is view-like. though it could just attach to a db3view, in which case it should
+      specifically be concerned with rendering behavior. all columns should be specified
 -  find a way to auto-hydrate localized strings. the view would need a way to specify this.
 -  lots of entity details bleed into places it shouldn't. check for `isDeleted` and `mergedIntoUserId` to see all the places
    that are trying to own their own copy of user / user merging policies.

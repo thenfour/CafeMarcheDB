@@ -17,6 +17,7 @@ import { CMDBTableFilterModel, TransactionalPrismaClient } from "../shared/apiTy
 import { UserWithRolesArgs } from "../shared/schema/userPayloads";
 import { queryTable } from "./db3QueryCore";
 import { prepareDB3FieldWrites } from "./db3FieldWrites";
+import { prepareDB3ReadSelection } from "../shared/core/db3ReadSelection";
 import { db3Server } from "./db3Server";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
 
@@ -415,7 +416,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, auth: CMServerAu
             ? UserWithRolesArgs // require roles in order to do protected auth checks
             : table.getSelectionArgs({ items: [] }, auth);
         const oldValues = await dbTableClient.findFirst({
-            ...selectionArgs,
+            ...prepareDB3ReadSelection(table, selectionArgs).selection,
             where: { [table.pkMember]: id },
         });
         if (!oldValues) {
@@ -647,11 +648,13 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             ? UserWithRolesArgs
             : {};
         const fullOldObj = await dbTableClient.findFirst({
-            ...selectionArgs,
+            ...prepareDB3ReadSelection(table, selectionArgs).selection,
             where: { [table.pkMember]: pkid },
         });
         if (!fullOldObj) throw new Error(`${table.tableName} ${pkid} was not found.`);
-        if (table.bandScope) auth.requireBandResource(fullOldObj[table.bandScope.member]);
+        if (table.bandScope) {
+            auth.requireBandResource(Number(table.getBandId(fullOldObj)));
+        }
 
         const isDeletedColumn = table.SqlSpecialColumns.isDeleted;
         if (isDeletedColumn && fullOldObj[isDeletedColumn.member] === true) {

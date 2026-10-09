@@ -1,4 +1,5 @@
 import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
+import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
@@ -13,25 +14,29 @@ import { assert } from 'blitz';
 import React, { useCallback, useRef } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { moveItemInArray } from 'shared/arrayUtils';
+import type { SongPublicId, SongTagPublicId } from 'shared/publicId';
 import { formatSongLength } from 'shared/time';
 import { CoalesceBool, getHashedColor } from "shared/utils";
 import { SnackbarContext, SnackbarContextType, useSnackbar } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
+import { Localized } from '../../setting/client/components/SettingMarkdown';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import getSongPinnedRecording from '../db3/queries/getSongPinnedRecording';
 import { GetFilteredSongsItemSongPayload, TSongPinnedRecording } from '../db3/shared/apiTypes';
+import type { PortableSongList } from "../db3/shared/entities/eventSongList/eventSongListClipboard";
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AppContextMarker } from './AppContext';
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
-import { CMDialog } from './CMDialog';
 import { AdminInspectObject, CMButton, CMDialogContentText, CMSmallButton, CMTextarea, NameValuePair } from './CMCoreComponents2';
+import { CMDialog } from './CMDialog';
 import { CMLink } from './CMLink';
 import { CMTextInputBase, SongLengthInput } from './CMTextField';
 import { GetStyleVariablesForColor } from './color/ColorClientUtils';
 import { ColorPick } from './color/ColorPick';
 import { gSwatchColors } from './color/palette';
 import { useDashboardContext, useFeatureRecorder } from './dashboardContext/DashboardContext';
+import type { EventDetailEvent } from './event/EventComponentsBase';
 import { ActivityFeature } from './featureReports/activityTracking';
 import { Markdown } from "./markdown/Markdown";
 import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
@@ -39,12 +44,8 @@ import { MediaPlayerTrack } from './mediaPlayer/MediaPlayerTypes';
 import { SongPlayButton } from './mediaPlayer/SongPlayButton';
 import { useMessageBox } from './MessageBoxContext';
 import { MetronomeButton } from './Metronome';
-import { LocalizedMarkdown } from '../../setting/client/components/SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 import { SongTagIndicatorContainer } from './SongTagIndicatorContainer';
-import type { PortableSongList } from "../db3/shared/entities/eventSongList/eventSongListClipboard";
-import type { SongPublicId, SongTagPublicId } from 'shared/publicId';
-import type { EventDetailEvent } from './event/EventComponentsBase';
 
 const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Partial<Record<SongPublicId, TSongPinnedRecording>>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, setlistClientId: db3.SetlistClientId }): MediaPlayerTrack => {
     if (args.rowItem.type === 'song') {
@@ -566,10 +567,15 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
 
     // Fetch all pinned recordings for songs in this list at once
     const songIds = props.value.content?.songItems.map(item => item.song.publicId) ?? [];
+    const recordingContext = useDB3QueryContext();
     const [pinnedRecordings] = useQuery(getSongPinnedRecording, {
+        bandPublicId: recordingContext.bandPublicId!, // The query is disabled without a band.
         songIds: songIds,
     }, {
-        enabled: songIds.length > 0
+        enabled: !!recordingContext.bandPublicId && songIds.length > 0,
+        staleTime: 0,
+        cacheTime: 0,
+        keepPreviousData: false,
     });
 
     const rowItems = props.value.content?.items ?? [];
@@ -1117,10 +1123,15 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
 
     // Fetch all pinned recordings for songs in this list at once
     const songIds = value.items.flatMap(item => item.type === "song" ? [item.songId] : []);
+    const recordingContext = useDB3QueryContext();
     const [pinnedRecordings] = useQuery(getSongPinnedRecording, {
+        bandPublicId: recordingContext.bandPublicId!, // The query is disabled without a band.
         songIds: songIds,
     }, {
-        enabled: songIds.length > 0,
+        enabled: !!recordingContext.bandPublicId && songIds.length > 0,
+        staleTime: 0,
+        cacheTime: 0,
+        keepPreviousData: false,
         suspense: false, // #629
         useErrorBoundary: false,
     });
@@ -1407,7 +1418,7 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
             maxWidth="md"
             title={<>
                 <div>Edit setlist</div>
-                <LocalizedMarkdown setting='EditEventSongListDialogTitle' />
+                <Localized id='EditEventSongListDialogTitle' />
                 <div style={{ display: "flex" }}>
                     {preview ? (<CMButton onClick={() => setPreview(false)} startIcon={<ArrowBack />}>Continue editing</CMButton>)
                         : (<CMButton onClick={() => setPreview(true)} startIcon={gIconMap.Visibility()}>Preview</CMButton>)}
@@ -1427,7 +1438,7 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
             </>}
         >
             <CMDialogContentText>
-                <LocalizedMarkdown setting='EditEventSongListDialogDescription' />
+                <Localized id='EditEventSongListDialogDescription' />
                 <AdminInspectObject src={props.initialValue} label="initial value" />
                 <AdminInspectObject src={value} label="value" />
                 <AdminInspectObject src={stats} label="stats" />
@@ -1655,7 +1666,7 @@ export const EventSongListTabContent = ({ event, readonly, refetch }: { event: E
     });
 
     return <div className="EventSongListTabContent">
-        <LocalizedMarkdown setting='EventSongListTabDescription' />
+        <Localized id='EventSongListTabDescription' />
         {insertAuthorized && !readonly && <CMButton className='addNewSongListButton' onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</CMButton>}
         {newOpen && !readonly && insertAuthorized && (
             <AppContextMarker name="EventSongListNewEditor">

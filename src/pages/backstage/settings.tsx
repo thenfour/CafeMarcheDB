@@ -1,17 +1,16 @@
 import type { BlitzPage } from "@blitzjs/next";
-import React from "react";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
-import { LocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
-import { RegisteredSettingsEditor } from "src/setting/client/components/RegisteredSettingsEditor";
 import { useLocale } from "src/locale/components/useLocale";
+import { RegisteredSettingsEditor } from "src/setting/client/components/RegisteredSettingsEditor";
+import { Localized } from "src/setting/client/components/SettingMarkdown";
 
 const SettingsPage: BlitzPage = () => {
     const locale = useLocale();
     return <DashboardLayout title={locale.getPlainString("settings.title")}>
         <CMSinglePageSurfaceCard>
             <div className="content muiCompatible">
-                <LocalizedMarkdown setting="settings_markdown" />
+                <Localized id="settings_markdown" />
                 <RegisteredSettingsEditor />
             </div>
         </CMSinglePageSurfaceCard>

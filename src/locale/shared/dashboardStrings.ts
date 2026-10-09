@@ -4,6 +4,7 @@ import { plainStaticString } from "./staticLocalizedStringRegistryHelpers";
 const label = (defaultValue: string) => plainStaticString({ defaultValue, description: "Dashboard recovery interface", schema: z.string() });
 export const dashboardStrings = {
     "events.selectBand": label("Select a band to search its events."),
+    "events.detailUnavailable": label("No event was found. It may have been deleted or you may no longer have permission to view it."),
     "events.creationPending": label("Event creation will return with the event editing workflow."),
     "calendar.selectBand": label("Select a band to view its calendar."),
     "platformUser.title": label("Platform accounts"),

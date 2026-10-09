@@ -1,35 +1,35 @@
 'use client';
 
-import { useDB3CreateFromString } from "./useDB3CreateFromString";
-import { useDB3QueryContext } from "./useDB3Context";
 import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 import { Box, Button } from "@mui/material";
 import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import React from "react";
+import { useDB3QueryContext } from "./useDB3Context";
+import { useDB3CreateFromString } from "./useDB3CreateFromString";
 //import * as DB3Client from "../DB3Client";
+import { TAnyModel } from '@/shared/rootroot';
+import { LocalizedMarkdownKey, LocalizedPlainStringKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
+import { useGlobalSettings } from "@/src/setting/client/useSettings";
 import { useQuery } from "@blitzjs/rpc";
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { gQueryOptions } from "shared/utils";
 import { CMChip, CMChipContainer } from 'src/core/components/CMChip';
-import { SelectionPicker } from 'src/core/components/select/SelectionPicker';
 import { SelectionEditButton, SelectionFieldFrame } from 'src/core/components/select/SelectionField';
-import { SelectionSource } from 'src/core/components/select/selectionSource';
 import { SelectionValueList } from 'src/core/components/select/SelectionOptions';
-import { LocalizedMarkdown } from '@/src/setting/client/components/SettingMarkdown';
+import { SelectionPicker } from 'src/core/components/select/SelectionPicker';
+import { SelectionSource } from 'src/core/components/select/selectionSource';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { useLocale } from "src/locale/components/useLocale";
+import type { GlobalSettingKey } from "src/setting/shared/globalSettingsRegistry";
+import { type ColorVariationSpec, StandardVariationSpec } from '../../components/color/palette';
+import { useDashboardContext } from '../../components/dashboardContext/DashboardContext';
 import * as db3 from "../db3";
 import db3queries from "../queries/db3queries";
 import { IColumnClient, type RenderForNewItemDialogArgs, type RenderViewerArgs, xTableRenderClient } from './DB3ClientCore';
 import type { RenderAsChipParams } from './db3ForeignSingleFieldClient';
 import { RenderMuiIcon } from './IconMap';
-import { type ColorVariationSpec, StandardVariationSpec } from '../../components/color/palette';
-import { TAnyModel } from '@/shared/rootroot';
-import { useDashboardContext } from '../../components/dashboardContext/DashboardContext';
 import { type CrudViewCreateToken, useCrudViewCreate } from './useCrudViewCreate';
-import { LocalizedMarkdownKey, LocalizedPlainStringKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
-import { useGlobalSettings } from "@/src/setting/client/useSettings";
-import type { GlobalSettingKey } from "src/setting/shared/globalSettingsRegistry";
-import { useLocale } from "src/locale/components/useLocale";
+import { Localized } from "@/src/setting/client/components/SettingMarkdown";
 
 
 const gMaxVisibleTags = 6;
@@ -97,7 +97,7 @@ function DB3SelectTagsDialogInner<TAssociation extends TAnyModel>(props: DB3Sele
     };
     return <SelectionPicker source={source} multiple value={props.initialValue}
         title={props.caption ? locale.getPlainString(props.caption) : locale.getPlainString("db3.action.selectField", { field: props.spec.selectionCaption })}
-        description={descriptionSettingName ? <LocalizedMarkdown setting={descriptionSettingName} /> : undefined}
+        description={descriptionSettingName ? <Localized id={descriptionSettingName} /> : undefined}
         onCancel={props.onClose} onAccept={value => { props.onChange(value); props.onClose(); }} />;
 }
 

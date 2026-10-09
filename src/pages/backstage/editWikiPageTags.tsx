@@ -1,15 +1,15 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import type { BlitzPage } from "@blitzjs/next";
 import { Alert } from "@mui/material";
+import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
+import { InheritedColumnClient, LocalizedStringColumnClient } from "src/core/db3/components/DB3CatalogFields";
+import { BoolColumnClient, ColorColumnClient, GenericIntegerColumnClient } from "src/core/db3/components/DB3ClientBasicFields";
+import { defineTableClientSpec } from "src/core/db3/components/DB3ClientCore";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import { bandWikiPageTagView } from "src/core/db3/shared/entities/wikiPageTag/wikiPageTagViews";
-import { defineTableClientSpec } from "src/core/db3/components/DB3ClientCore";
-import { GenericIntegerColumnClient, ColorColumnClient, BoolColumnClient } from "src/core/db3/components/DB3ClientBasicFields";
-import { LocalizedStringColumnClient, InheritedColumnClient } from "src/core/db3/components/DB3CatalogFields";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
-import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
-import { LocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
+import { Localized } from "src/setting/client/components/SettingMarkdown";
 
 export const bandWikiPageTagTableSpec = defineTableClientSpec({
     view: bandWikiPageTagView,
@@ -30,7 +30,7 @@ const MainContent = () => {
     const presentation = usePresentation();
     const locale = useLocale();
     return <>
-        <LocalizedMarkdown setting="editWikiPageTags_markdown" />
+        <Localized id="editWikiPageTags_markdown" />
         {presentation.bandPublicId ? <DB3EditGrid
             tableSpec={bandWikiPageTagTableSpec}
             view={bandWikiPageTagView}

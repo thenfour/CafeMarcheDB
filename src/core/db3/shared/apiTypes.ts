@@ -101,15 +101,16 @@ export const ZupdateUserEventAttendanceMutationArgs = z.object({
 // };
 
 export interface TupdateEventBasicFieldsArgs {
+    bandPublicId: BandPublicId;
     eventId: EventPublicId;
     name?: string;
     //slug?: string;
     //description?: string;
-    typeId?: EventTypePublicId;
+    typeId?: EventTypePublicId | null;
     locationDescription?: string;
     locationURL?: string;
     isDeleted?: boolean;
-    statusId?: EventStatusPublicId;
+    statusId?: EventStatusPublicId | null;
     expectedAttendanceUserTagId?: UserTagPublicId | null;
     visiblePermissionId?: PermissionPublicId | null;
 

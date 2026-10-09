@@ -4,11 +4,11 @@ import type { UserPublicId } from "shared/publicId";
 import React from "react";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
-import { useDB3SelectionSource } from "src/core/db3/components/useDB3SelectionSource";
+import * as DB3Client from "src/core/db3/DB3Client";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMLink } from "../CMLink";
 import { SelectionPicker } from "../select/SelectionPicker";
-import { SelectionSource } from "../select/selectionSource";
+import { makeLocalSelectionSource } from "../select/selectionSource";
 //import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabContent, UserWikiContributionsTabContent } from "./UserAnalyticTables";
 import { useDashboardContext } from '../dashboardContext/DashboardContext';
 import { UserChip } from "./userChip";
@@ -19,22 +19,29 @@ import { CMButton } from '../CMCoreComponents2';
 //////////////////////////////////////////////////////////////////////////////////////
 export interface AddUserButtonProps {
     buttonChildren?: React.ReactNode;
-    filterPredicate?: (u: db3.UserClientPayload) => boolean;
-    onSelect: (u: db3.UserClientPayload | null) => void;
+    filterPredicate?: (u: db3.EventParticipant) => boolean;
+    onSelect: (u: db3.EventParticipant | null) => void;
     title?: React.ReactNode;
     description?: React.ReactNode;
 };
 
 const AddUserPicker = (props: AddUserButtonProps & { onClose: () => void }) => {
-    const users = useDB3SelectionSource<db3.UserClientPayload>({ schema: db3.xUser, allowInsertFromString: false });
-    const source: SelectionSource<db3.UserClientPayload> = {
-        ...users,
+    const dashboard = useDashboardContext();
+    const members = DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+        tableSpec: DB3Client.defineTableClientSpec({ view: db3.eventParticipantView, columns: {} }),
+        referenceProvider: dashboard.referenceStore,
+        queryOptions: { staleTime: 0, cacheTime: 0, keepPreviousData: false },
+    });
+    const people = members.items.map(db3.eventParticipantFromMembership)
+        .filter((person): person is db3.EventParticipant => person !== null)
+        .filter(person => !props.filterPredicate || props.filterPredicate(person));
+    const source = makeLocalSelectionSource<db3.EventParticipant>({
+        items: people,
+        getKey: person => person.membershipId,
+        getLabel: person => person.name,
         renderValue: user => <UserChip value={user} noLink size="small" />,
-        useOptions(filterText, enabled) {
-            const query = users.useOptions(filterText, enabled);
-            return { ...query, items: props.filterPredicate ? query.items.filter(props.filterPredicate) : query.items };
-        },
-    };
+    });
     return <SelectionPicker source={source} value={[]} title={props.title || "Add user"} description={props.description}
         onCancel={props.onClose} onAccept={users => { props.onSelect(users[0]!); props.onClose(); }} />;
 };

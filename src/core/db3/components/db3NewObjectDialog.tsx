@@ -1,20 +1,20 @@
 import { TAnyModel } from "@/shared/rootroot";
+import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 import {
     Alert,
     FormControl
 } from "@mui/material";
 import React, { Suspense } from "react";
-import type { LocalizedMarkdownKey } from "src/locale/shared/staticLocalizedStringRegistry";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { CMDialog } from "src/core/components/CMDialog";
 import { AdminInspectObject, CMButton, CMButtonGroup, CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
-import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
+import { CMDialog } from "src/core/components/CMDialog";
+import type { LocalizedMarkdownKey } from "src/locale/shared/staticLocalizedStringRegistry";
 import * as db3 from "../db3";
 import { MarkdownStringColumnClient } from "./DB3ClientBasicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
+import { Localized } from "@/src/setting/client/components/SettingMarkdown";
 
 ////////////////////////////////////////////////////////////////
 // this type spec is directly from xTableClientSpec
@@ -105,7 +105,7 @@ function DB3NewObjectDialogWithClient<TView extends ViewBase>({
                 </>}
             >
                 {error && <Alert severity="error">{error}</Alert>}
-                {props.descriptionSettingName && <LocalizedMarkdown setting={props.descriptionSettingName} />}
+                {props.descriptionSettingName && <Localized id={props.descriptionSettingName} />}
 
                 <FormControl>
                     {

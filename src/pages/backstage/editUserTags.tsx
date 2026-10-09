@@ -9,17 +9,23 @@ import { LocalizedStringColumnClient, InheritedColumnClient } from "src/core/db3
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
 import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
-import { LocalizedMarkdown } from "src/setting/client/components/SettingMarkdown";
+import { Localized } from "src/setting/client/components/SettingMarkdown";
 
 export const bandUserTagTableSpec = defineTableClientSpec({
     view: bandUserTagView,
     columns: {
         name: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.name" }),
         description: columnName => new LocalizedStringColumnClient({ columnName, fieldCaptionKey: "catalog.description" }),
-        color: columnName => new InheritedColumnClient(new ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "catalog.color", columnName, cellWidth: 250 }), { fieldCaptionKey: "catalog.color" }),
-        sortOrder: columnName => new InheritedColumnClient(new GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "catalog.sortOrder", columnName, cellWidth: 80 }), { fieldCaptionKey: "catalog.sortOrder" }),
+        color: columnName => new InheritedColumnClient(
+            new ColorColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "catalog.color", columnName, }),
+            { fieldCaptionKey: "catalog.color" }),
+        sortOrder: columnName => new InheritedColumnClient(
+            new GenericIntegerColumnClient({ fieldDescriptionKey: null, fieldCaptionKey: "catalog.sortOrder", columnName, }),
+            { fieldCaptionKey: "catalog.sortOrder" }),
         isHidden: columnName => new BoolColumnClient({ columnName, fieldCaptionKey: "catalog.hidden", fieldDescriptionKey: null }),
-        cssClass: columnName => new InheritedColumnClient(new GenericStringColumnClient({ columnName, fieldCaptionKey: "catalog.cssClass", fieldDescriptionKey: null }), { fieldCaptionKey: "catalog.cssClass" }),
+        cssClass: columnName => new InheritedColumnClient(
+            new GenericStringColumnClient({ columnName, fieldCaptionKey: "catalog.cssClass", fieldDescriptionKey: null }),
+            { fieldCaptionKey: "catalog.cssClass" }),
     },
 });
 
@@ -28,7 +34,7 @@ const MainContent = () => {
     const presentation = usePresentation();
     const locale = useLocale();
     return <>
-        <LocalizedMarkdown setting="EditUserTagsPage_markdown" />
+        <Localized id="EditUserTagsPage_markdown" />
         {presentation.bandPublicId ? <DB3EditGrid tableSpec={bandUserTagTableSpec} view={bandUserTagView} referenceProvider={dashboard.referenceStore} />
             : <Alert severity="info">{locale.getPlainString("catalog.selectBand")}</Alert>}
     </>;

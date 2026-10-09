@@ -366,19 +366,25 @@ class TagsFieldImpl<
 
     createMockAssociation_DefaultImpl = (row: TAnyModel, foreignObject: TAnyModel): TAssociation => {
         const localIdentityMember = this.localTableSpec.clientIdMember;
+        const localIdentity = row[localIdentityMember];
+        // A new parent receives its identity when the aggregate is saved.
+        const parentReference = localIdentity === undefined ? {} : {
+            [this.associationLocalIDMember]: this.localTableSpec.parseIdentity(localIdentity),
+        };
         const associationTable = this.getAssociationTableShema();
         // Converted association identities are server-generated; client drafts
         // are compared by their foreign target and must not invent one.
         const mockAssociationIdentity = associationTable.publicIdMember
             ? {}
             : { [associationTable.pkMember]: -1 };
+        // Relation metadata fixes these members; drafts omit server-generated identities.
         const ret = {
             ...mockAssociationIdentity,
             [this.associationLocalObjectMember]: row, // local object
-            [this.associationLocalIDMember]: this.localTableSpec.parseIdentity(row[localIdentityMember]),
+            ...parentReference,
             [this.associationForeignObjectMember]: foreignObject, // local object
             [this.associationForeignIDMember]: this.getRuntimeForeignIdentity(foreignObject),
-        } as TAssociation /* trust me */;
+        } as TAssociation;
         return ret;
     };
 

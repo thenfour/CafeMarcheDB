@@ -27,11 +27,8 @@ import getSongActivityReport from "@db3/queries/getSongActivityReport";
 import getImportEventData from "@db3/queries/getImportEventData";
 import forkImage from "@db3/mutations/forkImage";
 import updateGalleryItemImage from "@db3/mutations/updateGalleryItemImage";
-import updateEventBasicFields from "@db3/mutations/updateEventBasicFields";
-import setEventRelevanceClassOverride from "@db3/mutations/setEventRelevanceClassOverride";
 import updateSongBasicFields from "@db3/mutations/updateSongBasicFields";
 import updateSongPinnedRecording from "@db3/mutations/updateSongPinnedRecording";
-import getSongPinnedRecording from "@db3/queries/getSongPinnedRecording";
 import getUserCredits from "@db3/queries/getUserCredits";
 import db3queries from "@db3/queries/db3queries";
 import db3paginatedQueries from "@db3/queries/db3paginatedQueries";
@@ -100,11 +97,8 @@ const deferredFileCreators = [
 ];
 
 const deferredWorkflowEndpoints = [
-    { name: "event edit", resolve: updateEventBasicFields },
-    { name: "event relevance", resolve: setEventRelevanceClassOverride },
     { name: "song edit", resolve: updateSongBasicFields },
     { name: "pinned recording write", resolve: updateSongPinnedRecording },
-    { name: "pinned recording read", resolve: getSongPinnedRecording },
     { name: "person credits", resolve: getUserCredits },
 ];
 

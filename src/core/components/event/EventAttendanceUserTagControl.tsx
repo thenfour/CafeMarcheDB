@@ -1,5 +1,7 @@
 import React from "react";
+import type { EventPublicId, UserPublicId } from "shared/publicId";
 import * as db3 from "src/core/db3/db3";
+import { Localized } from "../../../setting/client/components/SettingMarkdown";
 import { API } from "../../db3/clientAPI";
 import { useClientAuth } from "../../db3/components/useClientAuth";
 import { CMStandardDBChip } from "../CMChip";
@@ -7,20 +9,21 @@ import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/Das
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { CMSelectDisplayStyle, SelectionField } from "../select/SelectionField";
 import { CMSelectNullBehavior, makeLocalSelectionSource, withNullSelection } from "../select/selectionSource";
-import { LocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
 import { SnackbarContext } from "../SnackbarContext";
-import type { EventPublicId, UserPublicId } from "shared/publicId";
 
 interface EventAttendanceUserTagControlEvent {
     publicId: EventPublicId;
     createdByUser: { publicId: UserPublicId } | null;
-    expectedAttendanceUserTag: Pick<db3.UserTagDisplay, "publicId" | "cssClass"> | null;
+    expectedAttendanceUserTag: Pick<db3.UserTagDisplay, "publicId"> | null;
 }
 
 export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { event: EventAttendanceUserTagControlEvent; refetch: () => void; readonly: boolean }) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage } = React.useContext(SnackbarContext);
     const dashboard = useDashboardContext();
+    const selectedTag = event.expectedAttendanceUserTag
+        ? dashboard.userTag.getById(event.expectedAttendanceUserTag.publicId) ?? null
+        : null;
     const recordFeature = useFeatureRecorder();
     const auth = useClientAuth();
     const authorizedForEdit = db3.xEvent.authorizeColumnForEdit({
@@ -33,6 +36,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
         void recordFeature({ feature: ActivityFeature.event_change_invite_tag });
         mutationToken.invoke({
             eventId: event.publicId,
+            bandPublicId: dashboard.requireBandPublicId(),
             expectedAttendanceUserTagId: value ? db3.xBandUserTag.getIdentity(value) : null,
         }).then(() => {
             showMessage({ severity: "success", children: "Successfully updated event attendance tag" });
@@ -49,10 +53,10 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
         renderValue: tag => <CMStandardDBChip model={tag} />,
     }), CMSelectNullBehavior.AllowNull, () => "No tags are invited");
 
-    return <SelectionField className={`eventStatusControl ${event.expectedAttendanceUserTag?.cssClass ?? ""}`} source={source}
-        value={[event.expectedAttendanceUserTag ? dashboard.userTag.getById(event.expectedAttendanceUserTag.publicId) ?? null : null]}
+    return <SelectionField className={`eventStatusControl ${selectedTag?.cssClass ?? ""}`} source={source}
+        value={[selectedTag]}
         readonly={readonly || !authorizedForEdit} displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
         dialogTitle="Expected attendance group"
-        dialogDescription={<LocalizedMarkdown setting={"event.expectedAttendanceUserTag.DescriptionMarkdown"} />}
+        dialogDescription={<Localized id={"event.expectedAttendanceUserTag.DescriptionMarkdown"} />}
         onChange={values => handleChange(values[0]!)} />;
 };

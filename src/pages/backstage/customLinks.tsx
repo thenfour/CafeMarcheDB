@@ -1,11 +1,11 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
+import { Localized } from "@/src/setting/client/components/SettingMarkdown";
 import { BlitzPage } from "@blitzjs/next";
+import { Alert } from "@mui/material";
 import { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CustomLinkList } from "src/core/components/CustomLinksComponents";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
-import { Alert } from "@mui/material";
 import { useLocale } from "src/locale/components/useLocale";
 
 
@@ -24,7 +24,7 @@ const MyContent = () => {
     }
 
     return <div>
-        <LocalizedMarkdown setting="CustomLinksPageMarkdown" />
+        <Localized id="CustomLinksPageMarkdown" />
         <CustomLinkList key={dashboardContext.memberPresentation.bandPublicId} />
     </div>;
 };

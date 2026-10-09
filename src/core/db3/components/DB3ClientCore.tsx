@@ -1,9 +1,9 @@
 'use client';
 
-import { useDB3QueryContext, type DB3QueryContextInput } from "./useDB3Context";
-import { useLocale } from "src/locale/components/useLocale";
 import { useClientAuth } from "@/src/core/db3/components/useClientAuth";
 import type { CMClientAuthorization } from "src/auth/shared/cmAuthorization";
+import { useLocale } from "src/locale/components/useLocale";
+import { useDB3QueryContext, type DB3QueryContextInput } from "./useDB3Context";
 
 // so originally this started as a general API (hence the "capabilities" bitfield). but it's really just geared towards datagrids.
 // for a more conventional "client side API" look at clientAPI.tsx et al.
@@ -16,12 +16,12 @@ import type { CMClientAuthorization } from "src/auth/shared/cmAuthorization";
 // this is for rendering in various places on the site front-end. a datagrid will require pretty much
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
-import { type RestPaginatedResult, type RestQueryResult, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
+import { usePaginatedQuery, useQuery, type RestPaginatedResult, type RestQueryResult } from "@blitzjs/rpc";
 import React from "react";
 //import * as db3 from "../db3";
 import { TAnyModel } from "@/shared/rootroot";
 import { kStaticLocalizedStringRegistry, type LocalizedMarkdownKey, type LocalizedPlainStringKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
+import { Localized } from "@/src/setting/client/components/SettingMarkdown";
 import type { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import { assert } from "blitz";
 import { Coalesce, HasFlag, gQueryOptions } from "shared/utils";
@@ -144,7 +144,7 @@ export abstract class IColumnClient<
         return <NameValuePair
             key={this.columnName}
             name={this.fieldCaption}
-            description={this.fieldDescriptionKey ? <LocalizedMarkdown setting={this.fieldDescriptionKey} /> : undefined}
+            description={this.fieldDescriptionKey ? <Localized id={this.fieldDescriptionKey} /> : undefined}
             value={value}
             fieldName={this.columnName}
             isReadOnly={isReadOnly}

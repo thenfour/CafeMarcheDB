@@ -3,6 +3,7 @@ import { parsePublicId } from "shared/publicId";
 import { ZinsertEventArgs, type TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { GenericIntegerField } from "src/core/db3/shared/columnTypes/genericInteger";
 import { createAuthContextMap_GrantAll } from "src/core/db3/shared/db3core";
+import { xEvent } from "src/core/db3/db3";
 
 const args: TinsertEventArgs = {
     bandPublicId: parsePublicId<"Band">("CreationBand0001"),
@@ -11,6 +12,21 @@ const args: TinsertEventArgs = {
 };
 
 describe("event creation transport", () => {
+    it("offers tag choices before a new event has a server-generated identity", () => {
+        const tags = xEvent.getColumn("tags");
+        if (!tags) {
+            throw new Error("Event tags must use the shared association field.");
+        }
+        const tagId = parsePublicId<"EventTag">("CreationTag00001");
+        const tag = { publicId: tagId };
+        const draft = tags.createMockAssociation({}, tag);
+        expect(draft).not.toHaveProperty("eventId");
+        expect(draft).not.toHaveProperty("publicId");
+        expect(tags.getForeignIdentity(draft)).toBe(tagId);
+        const eventId = parsePublicId<"Event">("CreationEvent001");
+        expect(tags.createMockAssociation({ publicId: eventId }, tag)).toMatchObject({ eventId });
+        expect(() => tags.createMockAssociation({ publicId: 42 }, tag)).toThrow();
+    });
     it("validates BigInt-backed durations without applying Prisma Int's range", () => {
         const field = new GenericIntegerField({ columnName: "durationMillis", allowNull: false, readTransportType: "bigint", authMap: createAuthContextMap_GrantAll() });
         for (const value of [3_000_000_000, BigInt(3_000_000_000), "3000000000"]) {

@@ -5,7 +5,7 @@ import { Prisma } from "@prisma/client";
 import type { EventPublicId } from "shared/publicId";
 import setEventRelevanceClassOverride from "../../db3/mutations/setEventRelevanceClassOverride";
 import { EventRelevanceClassName, gEventRelevanceClass } from "../../db3/shared/eventRelevance";
-import { useClientTelemetryEvent } from "../dashboardContext/DashboardContext";
+import { useDashboardContext, useClientTelemetryEvent } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { useSnackbar } from "../SnackbarContext";
 
@@ -87,6 +87,7 @@ export const RelevanceClassOverrideMenuItemGroup = (props: RelevanceClassOverrid
     // renders an array of menu items for each relevance class override option
     const options: MenuItemSpec[] = [];
     const [mut] = useMutation(setEventRelevanceClassOverride);
+    const dashboard = useDashboardContext();
     const featureRecorder = useClientTelemetryEvent();
     const snackbar = useSnackbar();
 
@@ -137,6 +138,7 @@ export const RelevanceClassOverrideMenuItemGroup = (props: RelevanceClassOverrid
                 await snackbar.invokeAsync(async () => {
                     await mut({
                         eventId: props.event.publicId,
+                        bandPublicId: dashboard.requireBandPublicId(),
                         relevanceClassOverrideName: item.value,
                     });
                     void props.refetch();

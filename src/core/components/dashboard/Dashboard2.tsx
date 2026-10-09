@@ -1,5 +1,7 @@
 import { shouldShowAdminControls } from "@/shared/adminControls";
+import { ServerStartInfo } from "@/shared/serverStateBase";
 import { IsNullOrWhitespace } from "@/shared/utils";
+import { findBackstageRouteByPattern, pageRoutePermission } from "@/src/auth/shared/backstageRoutes";
 import { useSession } from "@blitzjs/auth";
 import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
@@ -15,33 +17,31 @@ import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import { useBrand } from "../../../../shared/brandConfig";
+import { Localized } from "../../../setting/client/components/SettingMarkdown";
+import { ConnectionStatusIndicator } from "../../connectivity/ConnectionHealthComponents";
 import { API } from "../../db3/clientAPI";
 import { gIconMap } from "../../db3/components/IconMap";
 import { QrHelpers } from "../../db3/shared/qrApi";
 import { AppContextMarker } from "../AppContext";
-import { useDialogAfterMenuClose } from "../CMDialog";
 import { AdminInspectObject } from "../CMCoreComponents2";
+import { useDialogAfterMenuClose } from "../CMDialog";
 import { ConfirmProvider } from "../ConfirmationDialog";
 import { DashboardContextProvider, useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
+import { DateValue } from "../DateTime/DateTimeComponents";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { LoginSignup } from "../LoginSignupForm";
 import { MediaPlayerBar } from "../mediaPlayer/MediaPlayerBar";
 import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerContext";
 import { MessageBoxProvider } from "../MessageBoxContext";
 import { QrCodeDialog } from "../QrCode";
-import { BandSelection } from "./BandSelection";
+import { useDialogViewportRect } from "../ResponsiveDialog";
 import { withMemberPresentation } from "../user/bandMemberLinks";
-import { LocalizedMarkdown } from "../../../setting/client/components/SettingMarkdown";
+import { ApplicationFrameProvider, useApplicationFrame, useApplicationFrameBackgroundRef } from "./ApplicationFrameContext";
+import { BandSelection } from "./BandSelection";
 import {
     SideMenu
 } from "./MenuStructure";
 import { NavRealm } from "./StaticMenuItems";
-import { ServerStartInfo } from "@/shared/serverStateBase";
-import { DateValue } from "../DateTime/DateTimeComponents";
-import { findBackstageRouteByPattern, pageRoutePermission } from "@/src/auth/shared/backstageRoutes";
-import { ApplicationFrameProvider, useApplicationFrame, useApplicationFrameBackgroundRef } from "./ApplicationFrameContext";
-import { useDialogViewportRect } from "../ResponsiveDialog";
-import { ConnectionStatusIndicator } from "../../connectivity/ConnectionHealthComponents";
 
 const drawerWidth = 260;
 
@@ -168,7 +168,7 @@ const AppBarPageQrDialog = ({ open, onClose }: { open: boolean, onClose: () => v
             onClose={onClose}
             content={QrHelpers.url(dashboardContext.getAbsoluteUri(router.asPath))}
             title="QR code for this page"
-            description={<LocalizedMarkdown setting={"QrCodeForThisPageDescriptionMarkdown"} />}
+            description={<Localized id={"QrCodeForThisPageDescriptionMarkdown"} />}
         />
     </AppContextMarker>;
 };

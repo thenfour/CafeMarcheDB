@@ -22,19 +22,19 @@ import * as db3fields from "../shared/columnTypes/xTableColumnTypes";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { IconEditCell } from "./IconSelectDialog";
 // NB: do not use API.* here due to circular dependencies
-import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
-import { LocalizedMarkdown } from "@/src/setting/client/components/SettingMarkdown";
-import { type CMDBTableFilterModel } from "../shared/apiTypes";
-import { RenderMuiIcon } from "./IconMap";
+import { gNullValue, TAnyModel } from "@/shared/rootroot";
+import type { LocalizedMarkdownKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
+import { Localized } from "@/src/setting/client/components/SettingMarkdown";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
-import { GenericStringField } from "../shared/columnTypes/genericString";
+import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
+import { ColorPick } from "../../components/color/ColorPick";
 import { ColorSwatch } from "../../components/color/ColorSwatch";
 import type { ColorPaletteEntry } from "../../components/color/palette";
-import { ColorPick } from "../../components/color/ColorPick";
-import { gNullValue, TAnyModel } from "@/shared/rootroot";
 import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
-import type { LocalizedMarkdownKey } from "@/src/locale/shared/staticLocalizedStringRegistry";
+import { type CMDBTableFilterModel } from "../shared/apiTypes";
+import { GenericStringField } from "../shared/columnTypes/genericString";
+import { RenderMuiIcon } from "./IconMap";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs<TColumnName extends string = string> {
@@ -684,7 +684,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
                 </CMChipContainer>
                 {selectedDescriptionKey && <div className="description">
                     <Suspense>
-                        <LocalizedMarkdown setting={selectedDescriptionKey} />
+                        <Localized id={selectedDescriptionKey} />
                     </Suspense>
                 </div>}
             </div>

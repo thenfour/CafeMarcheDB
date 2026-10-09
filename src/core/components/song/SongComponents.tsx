@@ -11,6 +11,7 @@ import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
+import { Localized } from '../../../setting/client/components/SettingMarkdown';
 import { API } from '../../db3/clientAPI';
 import { gIconMap } from '../../db3/components/IconMap';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../../db3/components/db3NewObjectDialog';
@@ -21,7 +22,6 @@ import { CMLink } from '../CMLink';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from '../EditFieldsDialog';
 import { MetronomeButton } from '../Metronome';
 import { SearchableNameColumnClient } from '../SearchableNameColumnClient';
-import { LocalizedMarkdown } from '../../../setting/client/components/SettingMarkdown';
 import { FilesTabContent } from '../SongFileComponents';
 import { CMTab, CMTabPanel } from '../TabPanel';
 import { VisibilityValue } from '../VisibilityControl';
@@ -467,7 +467,7 @@ export const SongDetailContainer = ({ songData, tableClient, editCommands, ...pr
 
                 {tableClient && editCommands && <EditFieldsDialogButton
                     dialogTitle='Edit song'
-                    dialogDescription={<LocalizedMarkdown setting='EditSongDialogDescription' />}
+                    dialogDescription={<Localized id='EditSongDialogDescription' />}
                     readonly={props.readonly}
                     initialValue={song}
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}

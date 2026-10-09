@@ -18,8 +18,6 @@ vi.mock("@blitzjs/rpc", () => ({
     useMutation: () => { throw new Error("Recovery page mounted an editor."); },
 }));
 
-import Events from "src/pages/backstage/events";
-import Event from "src/pages/backstage/event/[...id_slug_tab]";
 import EditEvents from "src/pages/backstage/editEvents";
 import EditSegments from "src/pages/backstage/editEventSegments";
 import Agenda from "src/pages/backstage/frontpageEvents";
@@ -53,7 +51,7 @@ afterEach(async () => {
     vi.unstubAllGlobals();
 });
 
-const pages = [Events, Event, EditEvents, EditSegments, Agenda, Songs, Song, EditSongs, EditCredits, Files, File, EditFiles, Gallery, EditGallery, Examples, GridExamples, WikiSearch];
+const pages = [ EditEvents, EditSegments, Agenda, Songs, Song, EditSongs, EditCredits, Files, File, EditFiles, Gallery, EditGallery, Examples, GridExamples, WikiSearch];
 describe("reachable deferred application pages", () => {
     it.each(pages.map((Page, index) => ({ Page, index })))("renders page $index without readers/editors and updates its localized notice", async ({ Page }) => {
         await act(async () => root.render(<Page />));

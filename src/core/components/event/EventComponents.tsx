@@ -40,7 +40,7 @@ import { EventSongListTabContent } from '../EventSongListComponents';
 import { ActivityFeature } from '../featureReports/activityTracking';
 import { Markdown } from '../markdown/Markdown';
 import { SearchItemBigCardLink } from '../SearchItemBigCardLink';
-import { LocalizedMarkdown } from '../../../setting/client/components/SettingMarkdown';
+import { Localized } from '../../../setting/client/components/SettingMarkdown';
 import { FilesTabContent } from '../SongFileComponents';
 import { CMTab, CMTabPanel } from '../TabPanel';
 import { UserChip } from '../user/userChip';
@@ -265,7 +265,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         open
         onClose={props.onCancel}
         title={<>
-            <LocalizedMarkdown setting="EventAttendanceEditDialog_TitleMarkdown" />
+            <Localized id="EventAttendanceEditDialog_TitleMarkdown" />
             <AdminInspectObject src={eventResponseValue} label="event response" />
             <AdminInspectObject src={eventSegmentResponseValues} label="segment responses" />
         </>}
@@ -275,7 +275,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         </>}
     >
         <CMDialogContentText>
-            <LocalizedMarkdown setting="EventAttendanceEditDialog_DescriptionMarkdown" />
+            <Localized id="EventAttendanceEditDialog_DescriptionMarkdown" />
         </CMDialogContentText>
 
         <div className="NameValuePairList">
@@ -457,7 +457,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
         setSortSegment(shownSegments.find(s => s.publicId === sortSegmentId) || null);
     }, [sortSegmentId, event]);
 
-    const onAddUser = (u: db3.UserClientPayload | null) => {
+    const onAddUser = (u: db3.EventParticipant | null) => {
         if (u == null) return;
         void recordFeature({
             feature: ActivityFeature.attendance_explicit_invite,
@@ -590,7 +590,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                             }}
                             buttonChildren={<>{gIconMap.Add()} Invite someone</>}
                             title={"Invite users"}
-                            description={<LocalizedMarkdown setting='EventInviteUsersDialogDescriptionMarkdown' />}
+                            description={<Localized id='EventInviteUsersDialogDescriptionMarkdown' />}
                         />}
                     </td>
                     {segStats.map(seg => {
@@ -946,7 +946,7 @@ export const EventDetailContainer = ({ eventData, tableClient, editCommands, ref
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
                     tableSpec={tableClient.tableSpec}
                     tableRenderClient={tableClient}
-                    dialogDescription={<LocalizedMarkdown setting="EditEventDialogDescriptionMarkdown" />}
+                    dialogDescription={<Localized id="EditEventDialogDescriptionMarkdown" />}
                     onCancel={() => { }}
                     onOK={(obj: EventDetailEvent, _tableClient: EventDetailTableClient, api: EditFieldsDialogButtonApi) => {
                         void recordFeature({
@@ -1094,7 +1094,8 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summarySubtitle={<>({event.songLists.length})</>}
         >
             <AppContextMarker name="setlists tab">
-                <EventSongListTabContent event={event} readonly={props.readonly} refetch={refetch} />
+                {/* Setlist writes depend on the deferred Song and setlist-child ownership contracts. */}
+                <EventSongListTabContent event={event} readonly={true} refetch={refetch} />
             </AppContextMarker>
         </CMTab>
 
@@ -1104,7 +1105,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryTitle="by instrument"
         >
             <AppContextMarker name="by instrument tab">
-                <LocalizedMarkdown setting='EventCompletenessTabMarkdown' />
+                <Localized id='EventCompletenessTabMarkdown' />
                 <EventCompletenessTabContent eventData={eventData} userMap={userMap} readonly={props.readonly} refetch={refetch} />
             </AppContextMarker>
         </CMTab>
@@ -1116,7 +1117,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summarySubtitle={segmentResponseCountStr}
         >
             <AppContextMarker name="attendance tab">
-                <LocalizedMarkdown setting='EventAttendanceDetailMarkdown' />
+                <Localized id='EventAttendanceDetailMarkdown' />
                 <EventAttendanceDetail eventData={eventData} tableClient={tableClient} refetch={refetch} readonly={props.readonly} userMap={userMap} />
             </AppContextMarker>
         </CMTab>
@@ -1156,7 +1157,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
                     }
                     }
                     refetch={refetch}
-                    readonly={props.readonly}
+                    readonly={true}
                     contextEvent={event}
                 />
             </AppContextMarker>
