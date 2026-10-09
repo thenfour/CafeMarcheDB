@@ -1,462 +1,170 @@
-// Preserved migration reference only. The empty export keeps this file a TypeScript module.
-export {};
+import { faker } from "@faker-js/faker";
+import { Temporal } from "@js-temporal/polyfill";
+import type { Event, EventSegment, Prisma, Song } from "@prisma/client";
+import { CalendarDate, bandDateTimeToInstant } from "../../shared/dateTimePolicy";
+import { DateTimeRange, createAllDayRange, roundToNearest15Minutes } from "../../shared/time";
+import { generatePublicId } from "../../src/server/publicId";
+import { calculateEventDateBoundsUpdatePatch } from "../../src/server/dateTime";
+import { randomVisibilityPermissionId, type SeedingState } from "./base";
+import { generateEventName } from "./eventNames";
+import { choose, probability, randomDate, subset } from "./random";
+import { seedWikiPage } from "./wikiPageSeeding";
+import { seedFile } from "./files";
 
+export function seedEventWindow(state: Pick<SeedingState, "now" | "config" | "band">) {
+    const today = CalendarDate.fromInstant({ value: state.now, timeZone: state.band.timeZone });
+    const anchor = Temporal.PlainDate.from(today.date);
+    const first = new CalendarDate(anchor.subtract({ months: state.config.monthsBeforeNow }).toString(), today.timeZone);
+    const last = new CalendarDate(anchor.add({ months: state.config.monthsAfterNow }).toString(), today.timeZone);
+    return { first, last };
+}
 
-// MIGRATION_RESTORE: demo-seeding
-// Source: 451c9cde3af65ffce804cb7360032dd001c681eb:db/seeding/events.ts:1-450
-// Reason: Legacy demo generators were deleted because they referenced removed models.
-// Restore: Account for useful sample users, catalogs, songs/files, events/attendance, wiki and activity generators using target-schema ownership; obtain explicit approval for any retired generator.
-// Verification: Run restored generators only against a disposable target-schema database and verify their relationships; never restore automatic production startup backfills.
-// SHA256: 2a1cd5604f0976402b14b5182a8681c5fe80cd5fcb75971830a527df94ebec03
-// MIGRATION_REFERENCE_BEGIN
-// import { DateTimeRange, roundToNearest15Minutes, createAllDayRange } from "../../shared/time";
-// import { CalendarDate } from "../../shared/dateTimePolicy";
-// import { faker } from '@faker-js/faker';
-// import { Prisma } from '@prisma/client';
-// import { SeedingState } from './base';
-// import { generatePublicId } from '../../src/server/publicId';
-// //import { EventTypeSignificance } from 'src/core/db3/db3';
-//
-// const BAND_TIME_ZONE = "Europe/Brussels";
-//
-// // Define arrays of words for event names
-// const adjectives = [
-//     'Grand', 'Epic', 'Legendary', 'Mystic', 'Electric', 'Harmonic', 'Vibrant', 'Groovy', 'Classic', 'Fusion', 'Ultimate',
-//     'Spectacular', 'Fantastic', 'Majestic', 'Radiant', 'Funky', 'Sonic', 'Blissful', 'Luminous', 'Dynamic', 'Extravagant',
-//     'Marvelous', 'Brilliant', 'Phenomenal', 'Magical', 'Enchanting', 'Energetic', 'Astounding', 'Remarkable'
-// ];
-//
-// const nouns = [
-//     'Festival', 'Concert', 'Party', 'Celebration', 'Gathering', 'Show', 'Extravaganza', 'Fiesta', 'Carnival', 'Gala',
-//     'Bash', 'Rave', 'Hoedown', 'Jubilee', 'Feast', 'Fair', 'Soiree', 'Meetup', 'Symphony', 'Ball', 'Recital', 'Session',
-//     'Performance', 'Function', 'Revelry', 'Ceremony', 'Blowout', 'Mixer', 'Slam'
-// ];
-//
-// const locations = [
-//     'Beach', 'Park', 'Hall', 'Arena', 'Center', 'Stadium', 'Plaza', 'Club', 'Garden', 'Ballroom', 'Theater', 'Auditorium',
-//     'Lounge', 'Pavilion', 'Court', 'Grounds', 'Field', 'Terrace', 'Rooftop', 'Boulevard', 'Promenade', 'Deck', 'Lawn',
-//     'Dome', 'Amphitheater'
-// ];
-//
-// const occasions = [
-//     'Wedding', 'Anniversary', 'Birthday', 'Reunion', 'Farewell', 'Welcome', 'Fundraiser', 'Charity', 'Launch', 'Opening',
-//     'Closing', 'Commemoration', 'Homecoming', 'Ceremony', 'Kickoff', 'Reception', 'Banquet', 'Gala', 'Gathering', 'Festival',
-//     'Showcase', 'Spectacle', 'Presentation', 'Bash', 'Picnic', 'Outing', 'Retreat', 'Convention', 'Symposium'
-// ];
-//
-// const prefixes = [
-//     'C\'est Pas de la', 'Le Grand', 'Mega', 'Ultra', 'The Annual', 'The Ultimate', 'The One and Only', 'The Legendary',
-//     'Super', 'Fantastic', 'Amazing', 'Incredible', 'The First Annual', 'The Grand', 'The Supreme', 'The Iconic', 'The Prestigious',
-//     'The Renowned', 'The Famous', 'The Celebrated', 'The Illustrious', 'The Notorious', 'The Historic', 'The Unforgettable',
-//     'The Magnificent', 'The Colossal', 'The Prodigious'
-// ];
-//
-// const suffixes = [
-//     '(Pre-show)', '(After Party)', '(Exclusive)', '(Free Entry)', '(VIP Only)', '(Open Air)', '(Live)', '(Special Edition)',
-//     '(Members Only)', '(Encore)', '(Matinee)', '(Late Night)', '(Festival Edition)', '(Charity Event)', '(Fundraiser)', '(Benefit)',
-//     '(Special Appearance)', '(One Night Only)', '(Tour)', '(Summer Edition)', '(Winter Edition)', '(Spring Fling)', '(Autumn Affair)',
-//     '(Gala Event)', '(Featuring Guest Artists)', '(With Special Guests)', '(Under the Stars)', '(Limited Tickets)'
-// ];
-//
-// function generateEventName(): string {
-//     const adjective = faker.helpers.arrayElement(adjectives);
-//     const noun = faker.helpers.arrayElement(nouns);
-//     const location = faker.helpers.arrayElement(locations);
-//     const occasion = faker.helpers.arrayElement(occasions);
-//     const prefix = faker.helpers.arrayElement(prefixes);
-//     const suffix = faker.helpers.arrayElement(suffixes);
-//
-//     const formats = [
-//         `${adjective} ${noun}`,
-//         `${adjective} ${noun} at the ${location}`,
-//         `${adjective} ${noun} for ${occasion}`,
-//         `${noun} at the ${location}`,
-//         `${noun} for ${occasion}`,
-//         `${adjective} ${occasion} ${noun}`,
-//         `${prefix} ${noun}`,
-//         `${prefix} ${noun} at the ${location}`,
-//         `${prefix} ${occasion} ${noun}`,
-//         `${adjective} ${noun} ${suffix}`,
-//         `${noun} at the ${location} ${suffix}`,
-//         `${prefix} ${noun} ${suffix}`
-//     ];
-//
-//     return faker.helpers.arrayElement(formats);
-// }
-//
-//
-// const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number | null, segmentDateRanges: DateTimeRange[]) => {
-//
-//     // create things out of order.
-//     segmentDateRanges = faker.helpers.shuffle(segmentDateRanges);
-//     const eventRange = DateTimeRange.union(segmentDateRanges);
-//     //console.log(`= ${eventRange.toString()}`);
-//
-//     const visibilityPermissionId = gState.randomVisibilityPermissionId();
-//     const event = await gState.prisma.event.create({
-//         data: {
-//             publicId: generatePublicId<"Event">(),
-//             name: eventName,
-//             revision: 0,
-//             expectedAttendanceUserTagId: faker.datatype.boolean(0.8) ? faker.helpers.arrayElement(gState.gAllUserTags).id : null,
-//             calendarInputHash: faker.string.uuid(),
-//             uid: faker.string.uuid(),
-//             createdAt: new Date(),
-//             visiblePermissionId: visibilityPermissionId,
-//             typeId,//: faker.datatype.boolean(0.3) ? null : faker.helpers.arrayElement(gState.gAllEventTypes).id,
-//             statusId: faker.helpers.arrayElement([null, ...gState.gAllEventStatuses.map(i => i.id)]),
-//             locationDescription: faker.datatype.boolean(0.5) ? undefined : faker.location.streetAddress(),
-//
-//             startsAt: eventRange.getSpec().startsAtDateTime,
-//             durationMillis: eventRange.getSpec().durationMillis,
-//             isAllDay: eventRange.getSpec().isAllDay,
-//             endDateTime: eventRange.getBounds()?.end ?? null,
-//
-//             frontpageVisible: faker.datatype.boolean(0.5),
-//         }
-//     });
-//
-//     // create description wiki
-//     if (faker.datatype.boolean(0.5)) {
-//         const wp = await gState.prisma.wikiPage.create({
-//             data: {
-//                 publicId: generatePublicId<"WikiPage">(),
-//                 slug: `EventDescription/${event.publicId}`,
-//                 namespace: 'eventdescription',
-//                 visiblePermissionId: visibilityPermissionId,
-//                 revisions: {
-//                     create: {
-//                         publicId: generatePublicId<"WikiPageRevision">(),
-//                         content: faker.lorem.paragraphs(faker.number.int({ min: 1, max: 5 })),
-//                         createdAt: new Date(),
-//                         name: `(description for event #${event.id} ${event.name})`,
-//                     }
-//                 }
-//             }
-//         });
-//
-//         await gState.prisma.event.update({
-//             where: { id: event.id },
-//             data: {
-//                 descriptionWikiPageId: wp.id,
-//             }
-//         });
-//     }
-//
-//     const tags = faker.helpers.arrayElements(gState.gAllEventTags);
-//     await tags.forEach(async (tag) => {
-//         await gState.prisma.eventTagAssignment.create({
-//             data: {
-//                 publicId: generatePublicId<"EventTagAssignment">(),
-//                 eventTagId: tag.id,
-//                 eventId: event.id,
-//             }
-//         });
-//     });
-//
-//     // segments
-//     const segments: Prisma.EventSegmentGetPayload<{}>[] = [];
-//     for (let ii = 0; ii < segmentDateRanges.length; ++ii) {
-//
-//         // generate a random datetime span. whew.
-//         const range = segmentDateRanges[ii]!;
-//
-//         const seg = await gState.prisma.eventSegment.create({
-//             data: {
-//                 publicId: generatePublicId<"EventSegment">(),
-//                 description: faker.datatype.boolean(0.15) ? faker.lorem.paragraph() : "",
-//                 startsAt: range.getSpec().startsAtDateTime,
-//                 durationMillis: range.getSpec().durationMillis,
-//                 isAllDay: range.getSpec().isAllDay,
-//                 name: `Set ${faker.lorem.word()}`,
-//                 eventId: event.id,
-//             }
-//         });
-//
-//         segments.push(seg);
-//     }
-//     // song lists
-//     const songListCount = faker.number.int({ max: 2 });
-//     for (let ii = 0; ii < songListCount; ++ii) {
-//
-//         const songList = await gState.prisma.eventSongList.create({
-//             data: {
-//                 publicId: generatePublicId<"EventSongList">(),
-//                 name: `Setlist ${faker.lorem.word()}`,
-//                 description: faker.datatype.boolean(0.15) ? faker.lorem.paragraph() : "",
-//                 eventId: event.id,
-//                 sortOrder: ii,
-//             }
-//         });
-//
-//         const songCount = faker.datatype.boolean(0.1) ? 0 : faker.number.int({ min: 1, max: 40 });
-//
-//         // Create a combined list of songs and dividers
-//         const items: any[] = [];
-//         let sortOrder = 0;
-//
-//         for (let iii = 0; iii < songCount; ++iii) {
-//
-//             // Randomly decide to insert a divider before the song
-//             if (faker.datatype.boolean(0.1)) {
-//                 // Add a divider
-//                 items.push({
-//                     type: 'divider',
-//                     data: {
-//                         eventSongListId: songList.id,
-//                         sortOrder: sortOrder++,
-//                         subtitle: faker.datatype.boolean(0.5) ? faker.lorem.words() : '', // Optional subtitle
-//                         isSong: faker.datatype.boolean(),
-//                         lengthSeconds: faker.datatype.boolean() ? null : faker.number.int({ min: 30, max: 300 }),
-//                         subtitleIfSong: faker.datatype.boolean(0.5) ? faker.lorem.sentence({ min: 1, max: 5 }) : undefined,
-//                     }
-//                 });
-//             }
-//
-//             // Add a song
-//             items.push({
-//                 type: 'song',
-//                 data: {
-//                     eventSongListId: songList.id,
-//                     songId: faker.helpers.arrayElement(gState.gAllSongs).id,
-//                     sortOrder: sortOrder++,
-//                     subtitle: faker.datatype.boolean(0.1) ? faker.lorem.sentence() : undefined,
-//                 }
-//             });
-//         }
-//
-//         // Optionally add a divider at the end
-//         if (faker.datatype.boolean(0.1)) {
-//             items.push({
-//                 type: 'divider',
-//                 data: {
-//                     eventSongListId: songList.id,
-//                     sortOrder: sortOrder++,
-//                     subtitle: faker.datatype.boolean(0.5) ? faker.lorem.words() : '',
-//                     isSong: faker.datatype.boolean(),
-//                     lengthSeconds: faker.datatype.boolean() ? null : faker.number.int({ min: 30, max: 300 }),
-//                     subtitleIfSong: faker.datatype.boolean(0.5) ? faker.lorem.sentence({ min: 1, max: 5 }) : undefined,
-//                 }
-//             });
-//         }
-//
-//         // Insert the items into the database
-//         for (const item of items) {
-//             if (item.type === 'song') {
-//                 await gState.prisma.eventSongListSong.create({
-//                     data: { ...item.data, publicId: generatePublicId<"EventSongListSong">() }
-//                 });
-//             } else if (item.type === 'divider') {
-//                 await gState.prisma.eventSongListDivider.create({
-//                     data: { ...item.data, publicId: generatePublicId<"EventSongListDivider">() }
-//                 });
-//             }
-//         }
-//
-//     } // create song lists
-//
-//     // generate event & segment user responses.
-//     let userList: Prisma.UserGetPayload<{}>[] = [];
-//     const userListStyle = faker.number.int({ max: 3 }); // 0 1 2 3
-//     switch (userListStyle) {
-//         case 0:
-//             // no users.
-//             break;
-//         case 1:
-//             // few users
-//             userList = faker.helpers.arrayElements(gState.gAllUsers, { min: 1, max: gState.config.userCount * 0.1 });
-//         case 2:
-//             // many users
-//             userList = faker.helpers.arrayElements(gState.gAllUsers, { min: gState.config.userCount * .8, max: gState.config.userCount });
-//         case 3:
-//             // all users
-//             userList = [...gState.gAllUsers];
-//             break;
-//     }
-//
-//     const users = faker.helpers.arrayElements(gState.gAllUsers);
-//     users.forEach(async (u, ui) => {
-//         await gState.prisma.eventUserResponse.create({
-//             data: {
-//                 publicId: generatePublicId<"EventUserResponse">(),
-//                 eventId: event.id,
-//                 userId: u.id,
-//                 instrumentId: faker.datatype.boolean(0.15) ? faker.helpers.arrayElement(gState.gAllInstruments).id : null,
-//                 isInvited: faker.datatype.boolean(0.5),
-//                 userComment: faker.datatype.boolean(0.05) ? faker.lorem.sentence() : undefined,
-//             }
-//         });
-//
-//         // segment responses.
-//         const segmentsToRespondToStyle = faker.number.int({ max: 3 }); // 0 1 2 3
-//         let segmentsToRespondTo: Prisma.EventSegmentGetPayload<{}>[] = [];// = faker.helpers.arrayElements(segments);
-//         switch (segmentsToRespondToStyle) {
-//             case 0:
-//                 // no segments.
-//                 break;
-//             case 1:
-//                 // some
-//                 segmentsToRespondTo = faker.helpers.arrayElements(segments);
-//             case 2:
-//                 // all
-//                 segmentsToRespondTo = [...segments];
-//                 break;
-//         }
-//
-//         segmentsToRespondTo.forEach(async (seg, si) => {
-//             await gState.prisma.eventSegmentUserResponse.create({
-//                 data: {
-//                 publicId: generatePublicId<"EventSegmentUserResponse">(),
-//                     userId: u.id,
-//                     eventSegmentId: seg.id,
-//                     attendanceId: faker.helpers.arrayElement([...gState.gAllAttendanceOptions, null])?.id || null,
-//                 }
-//             });
-//         });
-//     });
-//
-//     // files
-//     const fileCount = faker.datatype.boolean(0.5) ? 0 : faker.number.int({ max: 12 });
-//     for (let j = 0; j < fileCount; ++j) {
-//         const file = await gState.FakeFile(gState.randomVisibilityPermissionId());
-//         await gState.prisma.fileEventTag.create({
-//             data: {
-//                 publicId: generatePublicId<"FileEventTag">(),
-//                 fileId: file.id,
-//                 eventId: event.id,
-//             }
-//         });
-//     }
-//
-// };
-//
-//
-//
-//
-//
-// interface EventSeedingConfig {
-//     minDate: Date;
-//     maxDate: Date;
-// }
-//
-// interface Event {
-//     name: string;
-//     typeId: number | null;
-//     segments: DateTimeRange[];
-// }
-//
-// function randomDateInRange(minDate: Date, maxDate: Date): Date {
-//     const minTime = minDate.getTime();
-//     const maxTime = maxDate.getTime();
-//     return new Date(minTime + Math.random() * (maxTime - minTime));
-// }
-//
-// function generateRandomSegments(config: EventSeedingConfig, bandTimeZone: string): DateTimeRange[] {
-//     const segments: DateTimeRange[] = [];
-//     const segmentCount = faker.number.int({ min: 0, max: 4 });
-//
-//     let lastEndDate: Date | null = null;
-//     for (let i = 0; i < segmentCount; i++) {
-//         const isAllDay = faker.datatype.boolean(0.3);
-//         const isTBD = faker.datatype.boolean(0.1);
-//         let s = new DateTimeRange({ durationMillis: 0, isAllDay: false, startsAtDateTime: null });
-//         if (!isTBD) {
-//
-//             let startsAt: Date;
-//             if (lastEndDate) {
-//                 // Start after the last segment, within a reasonable time frame
-//                 startsAt = new Date(lastEndDate.getTime() + faker.number.int({ min: 15, max: 120 }) * 60 * 1000);
-//             } else {
-//                 // Start at a random time within the date range
-//                 startsAt = randomDateInRange(config.minDate, config.maxDate);
-//                 startsAt = roundToNearest15Minutes(startsAt);
-//             }
-//
-//             const durationMillis = isAllDay
-//                 ? faker.number.int({ min: 1, max: 3 }) * 24 * 60 * 60 * 1000 // 1 to 3 days in milliseconds
-//                 : faker.number.int({ min: 1, max: 8 }) * 60 * 60 * 1000; // 1 to 8 hours in milliseconds
-//
-//             // Update lastEndDate for the next segment
-//             lastEndDate = new Date(startsAt.getTime() + durationMillis);
-//
-//             s = new DateTimeRange({
-//                 durationMillis,
-//                 isAllDay,
-//                 startsAtDateTime: startsAt,
-//             });
-//             if (isAllDay) {
-//                 const date = CalendarDate.fromInstant({ value: startsAt, timeZone: bandTimeZone });
-//                 s = createAllDayRange({ startDate: date.date, endDateExclusive: date.addDays(durationMillis / 86_400_000).date }, date.timeZone);
-//             }
-//             lastEndDate = s.getEndDateTime();
-//
-//         }
-//         //console.log(`= ${s.toString()}`);
-//
-//         segments.push(s);
-//     }
-//
-//     return segments;
-// }
-//
-//
-// function GenerateEventsAndSegments(gState: SeedingState, config: EventSeedingConfig, bandTimeZone: string): Event[] {
-//     const events: Event[] = [];
-//     const rehearsalType = gState.gAllEventTypes.find(i => i.significance === "Rehearsal")!;
-//
-//     const totalMonths = (config.maxDate.getFullYear() - config.minDate.getFullYear()) * 12 +
-//         (config.maxDate.getMonth() - config.minDate.getMonth());
-//     const totalEvents = totalMonths * 5; // 5 events per month on average
-//
-//     // Generate regular events
-//     for (let i = 0; i < totalEvents; i++) {
-//         events.push({
-//             segments: generateRandomSegments(config, bandTimeZone),
-//             name: generateEventName(),
-//             typeId: faker.helpers.arrayElement([null, ...(gState.gAllEventTypes.map(i => i.id))]),
-//         });
-//     }
-//
-//     // Generate rehearsals (every Thursday)
-//     let currentDate = new Date(config.minDate);
-//     while (currentDate <= config.maxDate) {
-//         if (currentDate.getDay() === 4) { // Thursday
-//             const rehearsalStart = new Date(currentDate);
-//             rehearsalStart.setHours(20, 0, 0, 0); // Start at 20:00
-//
-//             events.push({
-//                 segments: [new DateTimeRange({
-//                     isAllDay: false,
-//                     startsAtDateTime: rehearsalStart,
-//                     durationMillis: 2 * 60 * 60 * 1000 // 2 hours in milliseconds
-//                 })],
-//                 name: "Rehearsal",
-//                 typeId: rehearsalType.id,
-//             });
-//         }
-//         currentDate.setDate(currentDate.getDate() + 1);
-//     }
-//
-//     return events;
-// }
-//
-//
-//
-// export const SeedEvents_VeryRandom = async (gState: SeedingState) => {
-//
-//     let eventDates = GenerateEventsAndSegments(gState, gState.config.events, BAND_TIME_ZONE);
-//     console.log(`creating ${eventDates.length} events...`);
-//
-//     eventDates = faker.helpers.shuffle(eventDates);
-//
-//     for (const [i, e] of eventDates.entries()) {
-//         console.log(`creating event #${i} ${e.name}`);
-//
-//         await MakeEvent(gState, e.name, e.typeId, e.segments);
-//     }
-//
-//     gState.gAllEvents = await gState.prisma.event.findMany({});
-// };
-//
-//
-// MIGRATION_REFERENCE_END
+function randomSegments(state: SeedingState): DateTimeRange[] {
+    const { first, last } = seedEventWindow(state);
+    const ranges: DateTimeRange[] = [];
+    const count = faker.number.int({ min: 0, max: 4 });
+    let previousEnd: Date | null = null;
+    for (let index = 0; index < count; index++) {
+        if (probability(0.1)) {
+            ranges.push(new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: false }));
+            continue;
+        }
+        const startsAt = previousEnd ? new Date(previousEnd.valueOf() + faker.number.int({ min: 15, max: 120 }) * 60_000)
+            : roundToNearest15Minutes(randomDate(first.toStartInstant(), last.toStartInstant()));
+        let range: DateTimeRange;
+        if (probability(0.3)) {
+            let date = CalendarDate.fromInstant({ value: startsAt, timeZone: state.band.timeZone });
+            // An all-day start must not move backwards into the previous segment.
+            if (previousEnd && date.toStartInstant() < previousEnd) {
+                date = date.addDays(1);
+            }
+            range = createAllDayRange({ startDate: date.date, endDateExclusive: date.addDays(faker.number.int({ min: 1, max: 3 })).date }, state.band.timeZone);
+        } else {
+            range = new DateTimeRange({ startsAtDateTime: startsAt, durationMillis: faker.number.int({ min: 1, max: 8 }) * 3_600_000, isAllDay: false });
+        }
+        previousEnd = range.getEndDateTime();
+        ranges.push(range);
+    }
+    return faker.helpers.shuffle(ranges);
+}
+
+interface SeedEventDefinition { name: string; typeId: number | null; ranges: DateTimeRange[]; }
+
+function eventDefinitions(state: SeedingState): SeedEventDefinition[] {
+    const { first, last } = seedEventWindow(state);
+    const result: SeedEventDefinition[] = [];
+    const count = (state.config.monthsBeforeNow + state.config.monthsAfterNow) * 5;
+    for (let index = 0; index < count; index++) {
+        result.push({ name: generateEventName(), typeId: choose([null, ...state.platform.eventTypes.map(type => type.id)]), ranges: randomSegments(state) });
+    }
+    const rehearsal = state.platform.eventTypes.find(type => type.significance === "Rehearsal")!;
+    for (let date = first; date.date <= last.date; date = date.addDays(1)) {
+        if (Temporal.PlainDate.from(date.date).dayOfWeek !== 4) {
+            continue;
+        }
+        result.push({ name: "Rehearsal", typeId: rehearsal.id, ranges: [new DateTimeRange({
+            startsAtDateTime: bandDateTimeToInstant({ date: date.date, time: "20:00" }, state.band.timeZone),
+            durationMillis: 2 * 3_600_000, isAllDay: false,
+        })] });
+    }
+    return faker.helpers.shuffle(result);
+}
+
+async function seedSetlists(state: SeedingState, event: Event, songs: readonly Song[]): Promise<void> {
+    const count = faker.number.int({ min: 0, max: 2 });
+    for (let index = 0; index < count; index++) {
+        const list = await state.db.eventSongList.create({ data: {
+            publicId: generatePublicId<"EventSongList">(), eventId: event.id, name: `Setlist ${faker.lorem.word()}`, sortOrder: index,
+            description: probability(0.15) ? faker.lorem.paragraph() : "", isOrdered: probability(0.9), isActuallyPlayed: probability(0.5),
+        } });
+        const items: Prisma.EventSongListSongCreateManyInput[] = [];
+        const dividers: Prisma.EventSongListDividerCreateManyInput[] = [];
+        let sortOrder = 0;
+        const addDivider = () => dividers.push({ publicId: generatePublicId<"EventSongListDivider">(), eventSongListId: list.id,
+            sortOrder: sortOrder++, subtitle: probability(0.5) ? faker.lorem.words() : "", isSong: probability(0.5),
+            lengthSeconds: probability(0.5) ? faker.number.int({ min: 30, max: 300 }) : null,
+            subtitleIfSong: probability(0.5) ? faker.lorem.sentence() : null });
+        const songCount = !songs.length || probability(0.1) ? 0 : faker.number.int({ min: 1, max: 40 });
+        for (let songIndex = 0; songIndex < songCount; songIndex++) {
+            if (probability(0.1)) {
+                addDivider();
+            }
+            items.push({ publicId: generatePublicId<"EventSongListSong">(), eventSongListId: list.id,
+                songId: choose(songs).id, sortOrder: sortOrder++, subtitle: probability(0.1) ? faker.lorem.sentence() : null });
+        }
+        if (probability(0.1)) {
+            addDivider();
+        }
+        await state.db.eventSongListSong.createMany({ data: items });
+        await state.db.eventSongListDivider.createMany({ data: dividers });
+    }
+}
+
+async function seedAttendance(state: SeedingState, event: Event, segments: readonly EventSegment[]): Promise<void> {
+    const members = state.band.members;
+    const style = faker.number.int({ min: 0, max: 3 });
+    const respondents = style === 0 ? [] : style === 1 ? subset(members, 1, Math.max(1, Math.floor(members.length * 0.1)))
+        : style === 2 ? subset(members, Math.floor(members.length * 0.8), members.length) : members;
+    const responses: Prisma.EventUserResponseCreateManyInput[] = [];
+    const attendance: Prisma.EventSegmentUserResponseCreateManyInput[] = [];
+    for (const member of respondents) {
+        responses.push({ publicId: generatePublicId<"EventUserResponse">(), eventId: event.id, bandUserId: member.id,
+            bandInstrumentId: probability(0.15) ? choose(state.band.instruments).id : null,
+            isInvited: probability(0.5), userComment: probability(0.05) ? faker.lorem.sentence() : null });
+        const segmentStyle = faker.number.int({ min: 0, max: 2 });
+        const answered = segmentStyle === 0 ? [] : segmentStyle === 1 ? subset(segments, 0, segments.length) : segments;
+        for (const segment of answered) {
+            attendance.push({ publicId: generatePublicId<"EventSegmentUserResponse">(), bandUserId: member.id, eventSegmentId: segment.id,
+                attendanceId: choose([null, ...state.platform.attendance.map(option => option.id)]), createdByUserId: member.userId });
+        }
+    }
+    await state.db.eventUserResponse.createMany({ data: responses });
+    await state.db.eventSegmentUserResponse.createMany({ data: attendance });
+}
+
+async function seedEvent(state: SeedingState, definition: SeedEventDefinition, songs: readonly Song[]): Promise<Event> {
+    const visibility = randomVisibilityPermissionId(state);
+    const event = await state.db.event.create({ data: {
+        publicId: generatePublicId<"Event">(), bandId: state.band.band.id, revision: 0, name: definition.name, typeId: definition.typeId,
+        statusId: choose([null, ...state.platform.eventStatuses.map(status => status.id)]), visiblePermissionId: visibility,
+        createdByUserId: choose(state.band.members).userId,
+        expectedAttendanceUserTagId: probability(0.8) ? choose(state.band.userTags).id : null,
+        locationDescription: probability(0.5) ? faker.location.streetAddress() : "", frontpageVisible: probability(0.5),
+    } });
+    const segments: EventSegment[] = [];
+    for (const range of definition.ranges) {
+        const spec = range.getSpec();
+        segments.push(await state.db.eventSegment.create({ data: {
+            publicId: generatePublicId<"EventSegment">(), eventId: event.id, name: `Set ${faker.lorem.word()}`,
+            description: probability(0.15) ? faker.lorem.paragraph() : "", startsAt: spec.startsAtDateTime,
+            durationMillis: BigInt(spec.durationMillis), isAllDay: spec.isAllDay, dateTimeVersion: 2,
+            statusId: probability(0.2) ? choose(state.platform.eventStatuses).id : null,
+        } }));
+    }
+    const cancelled = state.platform.eventStatuses.filter(status => status.significance === "Cancelled").map(status => status.id);
+    const bounds = await calculateEventDateBoundsUpdatePatch(state.db, event.id, cancelled);
+    let descriptionWikiPageId: number | null = null;
+    if (probability(0.5)) {
+        descriptionWikiPageId = (await seedWikiPage(state, `EventDescription/${event.publicId}`, visibility,
+            `(description for ${event.name})`, faker.lorem.paragraphs(faker.number.int({ min: 1, max: 5 })), 1)).id;
+    }
+    await state.db.eventTagAssignment.createMany({ data: subset(state.band.eventTags, 0, state.band.eventTags.length).map(tag => ({
+        publicId: generatePublicId<"EventTagAssignment">(), eventId: event.id, bandEventTagId: tag.id,
+    })) });
+    await seedSetlists(state, event, songs);
+    await seedAttendance(state, event, segments);
+    const fileCount = probability(0.5) ? 0 : faker.number.int({ min: 0, max: 12 });
+    for (let fileIndex = 0; fileIndex < fileCount; fileIndex++) {
+        const file = await seedFile(state, randomVisibilityPermissionId(state), { assetIndex: null, isDeleted: probability(0.8), name: faker.lorem.words({ min: 1, max: 6 }) });
+        await state.db.fileEventTag.create({ data: { publicId: generatePublicId<"FileEventTag">(), fileId: file.id, eventId: event.id } });
+    }
+    return state.db.event.update({ where: { id: event.id }, data: { ...bounds, descriptionWikiPageId } });
+}
+
+export async function seedEvents(state: SeedingState, songs: readonly Song[]): Promise<Event[]> {
+    const events: Event[] = [];
+    for (const definition of eventDefinitions(state)) {
+        events.push(await seedEvent(state, definition, songs));
+    }
+    return events;
+}

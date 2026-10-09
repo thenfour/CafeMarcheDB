@@ -235,12 +235,21 @@ date-policy contracts; the runner stops before the later jsdom batches. Focused
 passes do not establish A1 readiness. Earlier built-browser member/profile/wiki/
 download checks remain recorded evidence, not workflows rerun by these slices.
 
-The repeatable [demo workflow](../demo-seeding.md) has 29 configuration checks,
-six native generator/reset checks, an isolated production build and five passing
-built-browser assertion groups covering localized fallback/overrides, profile
-writes, actual SVG/WAV delivery and foreign-band file rejection. Legacy generator
-variants still need accounting under `demo-seeding`; none is retired. Production
-seed/startup does not run demo generators or historical backfills.
+The [development seeder](../development-seeding.md) restores the pre-migration
+fixed catalogs and random users, songs/files, event schedules/attendance/setlists,
+wiki revisions and activity on the current schema. Normal database reset followed
+by F5 uses the normal database and upload directory. Platform catalogs, inherited
+band catalogs, local entries and localized overrides are supported. The original
+generators are accounted for under the restored `demo-seeding` entry. Production
+seed/startup only initializes access-control foundations.
+
+Native seed checks, normal typecheck, targeted ESLint and production build pass.
+A normal Prisma reset on a disposable database produced two bands, 80 people,
+100 songs, 860 events and 2743 real files. Built Chromium checks passed shared
+password login, both bands' content, Song detail, welcome wiki, SVG/WAV delivery
+and the French inherited trumpet override with no page/RPC errors. The smaller
+[isolated demo workflow](../demo-seeding.md) remains available. Repository-wide
+tests still report the separate 209 failures and ten suite-load failures above.
 
 `yarn migration:verify` protects the source inventory and deferred specifications;
 it does not prove runtime parity. Full feature completion uses the separate

@@ -1,79 +1,51 @@
-// Preserved migration reference only. The empty export keeps this file a TypeScript module.
-export {};
+import { faker } from "@faker-js/faker";
+import type { WikiPage } from "@prisma/client";
+import { generatePublicId } from "../../src/server/publicId";
+import { randomVisibilityPermissionId, type SeedingState } from "./base";
+import { choose, probability, randomDate, subset } from "./random";
 
+export async function seedWikiPage(state: SeedingState, slug: string, visiblePermissionId: number | null,
+    title: string, content: string, revisionCount: number): Promise<WikiPage> {
+    const page = await state.db.wikiPage.create({ data: {
+        publicId: generatePublicId<"WikiPage">(), bandId: state.band.band.id, slug,
+        namespace: slug.includes("/") ? slug.slice(0, slug.lastIndexOf("/")) : null,
+        visiblePermissionId, createdByUserId: choose(state.band.members).userId, contentVersion: revisionCount,
+    } });
+    const dates = Array.from({ length: revisionCount }, () => randomDate(new Date(state.now.valueOf() - 365 * 86_400_000), state.now))
+        .sort((a, b) => a.valueOf() - b.valueOf());
+    let latestRevisionId: number | null = null;
+    for (const [index, createdAt] of dates.entries()) {
+        const revision = await state.db.wikiPageRevision.create({ data: {
+            publicId: generatePublicId<"WikiPageRevision">(), wikiPageId: page.id,
+            name: index === revisionCount - 1 ? title : faker.lorem.sentence(3),
+            content: index === revisionCount - 1 ? content : faker.lorem.paragraphs(faker.number.int({ min: 1, max: 5 })),
+            createdAt, createdByUserId: probability(0.9) ? choose(state.band.members).userId : null,
+        } });
+        latestRevisionId = revision.id;
+    }
+    await state.db.wikiPageTagAssignment.createMany({ data: subset(state.band.wikiTags, 0, 3).map(tag => ({
+        publicId: generatePublicId<"WikiPageTagAssignment">(), wikiPageId: page.id, bandWikiPageTagId: tag.id,
+    })) });
+    return state.db.wikiPage.update({ where: { id: page.id }, data: { currentRevisionId: latestRevisionId } });
+}
 
-// MIGRATION_RESTORE: demo-seeding
-// Source: 451c9cde3af65ffce804cb7360032dd001c681eb:db/seeding/wikiPageSeeding.ts:1-67
-// Reason: Legacy demo generators were deleted because they referenced removed models.
-// Restore: Account for useful sample users, catalogs, songs/files, events/attendance, wiki and activity generators using target-schema ownership; obtain explicit approval for any retired generator.
-// Verification: Run restored generators only against a disposable target-schema database and verify their relationships; never restore automatic production startup backfills.
-// SHA256: e1204ebde15206aab5158532d37b99fcbc516dfe23bca86edf0136e9070d72ce
-// MIGRATION_REFERENCE_BEGIN
-// import { Prisma } from '@prisma/client';
-// import { faker } from '@faker-js/faker';
-// import { SeedingState } from './base';
-// import { generatePublicId } from '../../src/server/publicId';
-//
-// export const SeedWikiPages = async (gState: SeedingState) => {
-//
-//     const wikiPageCount = 30;
-//     const wikiPageRevisionMaxCount = 3;
-//     const namespaces = [
-//         faker.lorem.slug(1),
-//         faker.lorem.slug(1),
-//         null,
-//     ];
-//     const pages: Prisma.WikiPageGetPayload<{}>[] = [];
-//
-//     for (let i = 0; i < wikiPageCount; i++) {
-//         const namespace = faker.helpers.arrayElement(namespaces);
-//         const slug = faker.lorem.slug({ min: 1, max: 3 });
-//         const page = await gState.prisma.wikiPage.create({
-//             data: {
-//                 publicId: generatePublicId<"WikiPage">(),
-//                 slug: namespace ? `${namespace}/${slug}` : slug,
-//                 namespace,
-//                 visiblePermissionId: gState.randomVisibilityPermissionId(),
-//             },
-//         });
-//         pages.push(page);
-//
-//         // create revisions for this page
-//         const revisionCount = faker.number.int({ min: 1, max: wikiPageRevisionMaxCount });
-//         const revisions: Prisma.WikiPageRevisionGetPayload<{}>[] = [];
-//         for (let j = 0; j < revisionCount; j++) {
-//             const revision = await gState.prisma.wikiPageRevision.create({
-//                 data: {
-//                     publicId: generatePublicId<"WikiPageRevision">(),
-//                     wikiPageId: page.id,
-//                     name: faker.lorem.sentence(3),
-//                     content: faker.lorem.paragraphs(faker.number.int({ min: 1, max: 5 })),
-//                     createdByUserId: faker.helpers.arrayElement(gState.gAllUsers)?.id || null,
-//                     createdAt: faker.date.past(),
-//                 },
-//             });
-//             revisions.push(revision);
-//         }
-//
-//         // make sure the latest revision is marked current.
-//         // first find the latest revision.
-//         const latestRevision = revisions.reduce((prev, current) => {
-//             return (prev.createdAt > current.createdAt) ? prev : current;
-//         });
-//         // update the page with the latest revision.
-//         await gState.prisma.wikiPage.update({
-//             where: { id: page.id },
-//             data: {
-//                 currentRevisionId: latestRevision.id,
-//             },
-//         });
-//     };
-//     gState.gAllWikiPages = pages;
-// };
-//
-//
-//
-//
-//
-//
-// MIGRATION_REFERENCE_END
+export async function seedWikiPages(state: SeedingState, count: number): Promise<WikiPage[]> {
+    const pages: WikiPage[] = [];
+    const memberVisibility = await state.db.permission.findUniqueOrThrow({ where: { name: "visibility_members" } });
+    for (const locale of state.band.locales) {
+        const language = locale === "fr-BE" ? { slug: "bienvenue", title: "Bienvenue", text: "La répétition a lieu chaque semaine." }
+            : locale === "nl-BE" ? { slug: "welkom", title: "Welkom", text: "We repeteren elke week." }
+                : { slug: "welcome", title: "Welcome", text: "We rehearse every week." };
+        pages.push(await seedWikiPage(state, language.slug, memberVisibility.id, `${language.title} — ${state.band.title}`,
+            `# ${state.band.title}\n\n${language.text}\n\n[Score](/score?bandPublicId=${state.band.band.publicId})`, 1));
+    }
+    const namespaces = [faker.lorem.slug(1), faker.lorem.slug(1), null];
+    for (let index = 0; index < count; index++) {
+        const namespace = choose(namespaces);
+        // The suffix prevents random slug collisions from failing a whole reset.
+        const slug = `${namespace ? `${namespace}/` : ""}${faker.lorem.slug({ min: 1, max: 3 })}-${index + 1}`;
+        pages.push(await seedWikiPage(state, slug, randomVisibilityPermissionId(state), faker.lorem.sentence(3),
+            faker.lorem.paragraphs(faker.number.int({ min: 1, max: 5 })), faker.number.int({ min: 1, max: 3 })));
+    }
+    return pages;
+}

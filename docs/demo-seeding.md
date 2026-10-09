@@ -1,5 +1,9 @@
 # Reset and launch the demo
 
+For normal development (database reset followed by VS Code F5), use the rich
+[development seeder](development-seeding.md). These commands provide the smaller
+isolated demo fixture.
+
 The demo is a repeatable manual-testing database on the localization/multiband
 schema. Production seeding remains access-control initialization only.
 

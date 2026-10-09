@@ -88,10 +88,13 @@
       "reason": "Legacy demo generators were deleted because they referenced removed models.",
       "restore": "Account for useful sample users, catalogs, songs/files, events/attendance, wiki and activity generators using target-schema ownership; obtain explicit approval for any retired generator.",
       "verification": "Run restored generators only against a disposable target-schema database and verify their relationships; never restore automatic production startup backfills.",
-      "status": "pending",
+      "status": "restored",
       "evidence": [
-        "Parameterized target-schema generators in db/seeding/demo and explicit demo:reset/dev/build/start commands; see docs/demo-seeding.md. Preserved legacy variants remain pending; no retirement is inferred.",
-        "2026-10-08: 29 configuration checks and six native reset/generator checks pass. Isolated production build and five built-browser assertion groups pass, including localized overrides/fallback, profile writes, actual SVG/WAV delivery and foreign-band file 404. See docs/localization-multitenancy/04-implementation-plan.md#verification-status."
+        "2026-10-09: Restored the pre-migration fixed catalogs and random users, songs/files, events/attendance/setlists, wiki revisions and activity generators in db/seeding. Normal Prisma reset invokes scripts/seed.cjs, using the application DATABASE_URL and FILE_UPLOAD_PATH; production initializes access-control foundations only. See docs/development-seeding.md.",
+        "Current-schema mappings preserve shared people and band memberships, platform catalogs and inherited/local band catalogs, localized values/overrides/blanks and band-owned references. Permissions/roles use the current canonical initializer; removed song-tag significance is represented by current tag metadata. Arbitrary fake file metadata is replaced with actual SVG/WAV/PDF/text bytes and hosted download links.",
+        "Corrected unawaited asynchronous iteration, attendance switch fallthrough, local-time rehearsal creation, all-day UTC spans, cancelled-segment event aggregates, wiki namespaces/current revision selection and activity timestamps. Default counts remain 80 people, 100 songs and 30 random wiki pages across two bands, with the original 40-month history and six-month future calendar density per band.",
+        "Validation: 65 focused tests including seven development-seed and six isolated-demo native integration checks; configuration and preservation tests; normal typecheck, targeted ESLint and production build. A normal reset through the Prisma seed hook on a disposable database produced two bands, 80 people, 100 songs, 860 events and 2743 real files. Built Chromium checks passed password login, selected-band content, Song detail, welcome wiki, actual SVG/WAV delivery and French inherited-name override with no page/RPC errors. Browser evidence: temp/development-seed-browser-result.json.",
+        "The isolated small demo workflow remains supported. Repository-wide tests still report 209 failures and ten suite-load failures in unrelated authorization/date-policy migration specifications; these are not seeding acceptance evidence."
       ]
     },
     {
@@ -990,36 +993,6 @@
       "featureId": "catalog-help",
       "source": "c4df4fe07549d210e476ef5f0d24731bdf338a67:src/pages/backstage/editSongTags.tsx:1-42",
       "sha256": "853d987f30c5e4468e513900dc0b27c654163c7c2bef7a747798555404aee075"
-    },
-    {
-      "file": "db/seeds.ts",
-      "featureId": "demo-seeding",
-      "source": "4a03c23f4798a6380a84674ae831a7f0b0513231:db/seeds.ts:1-979",
-      "sha256": "04132841f604730e506ad0233230fc9720b8f80138003f618eb1640602f01da9"
-    },
-    {
-      "file": "db/seeding/activitySeeding.ts",
-      "featureId": "demo-seeding",
-      "source": "451c9cde3af65ffce804cb7360032dd001c681eb:db/seeding/activitySeeding.ts:1-185",
-      "sha256": "ad595272c335a580c3d03b365d682d181948745ed5046ab61fe8187abd7b6186"
-    },
-    {
-      "file": "db/seeding/base.ts",
-      "featureId": "demo-seeding",
-      "source": "451c9cde3af65ffce804cb7360032dd001c681eb:db/seeding/base.ts:1-80",
-      "sha256": "69b82d1452888a6cd215e86fb9b0a4a65a1c72d6d580f284c7a7e022bf5846e4"
-    },
-    {
-      "file": "db/seeding/events.ts",
-      "featureId": "demo-seeding",
-      "source": "451c9cde3af65ffce804cb7360032dd001c681eb:db/seeding/events.ts:1-450",
-      "sha256": "2a1cd5604f0976402b14b5182a8681c5fe80cd5fcb75971830a527df94ebec03"
-    },
-    {
-      "file": "db/seeding/wikiPageSeeding.ts",
-      "featureId": "demo-seeding",
-      "source": "451c9cde3af65ffce804cb7360032dd001c681eb:db/seeding/wikiPageSeeding.ts:1-67",
-      "sha256": "e1204ebde15206aab5158532d37b99fcbc516dfe23bca86edf0136e9070d72ce"
     },
     {
       "file": "src/core/db3/shared/db3schema.ts",
