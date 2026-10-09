@@ -5,8 +5,11 @@ const label = (defaultValue: string) => plainStaticString({ defaultValue, descri
 export const dashboardStrings = {
     "files.upload": label("Upload"),
     "files.choose": label("Choose files"),
-    "files.drop": label("Drop files here"),
-    "files.uploadInstructions": label("Choose or drop files, or paste files or an external URL here."),
+    "files.drop": label("Upload files..."),
+    "files.uploadInstructions": label("To upload files,"),
+    "files.uploadInstructions.dragDrop": label("Drag & drop files or URLs here"),
+    "files.uploadInstructions.choose": label("or, Click to select files"),
+    "files.uploadInstructions.paste": label("or, Paste files/images/URLs"),
     "events.selectBand": label("Select a band to search its events."),
     "events.detailUnavailable": label("No event was found. It may have been deleted or you may no longer have permission to view it."),
     "songs.detailUnavailable": label("No song was found. It may have been deleted or you may no longer have permission to view it."),

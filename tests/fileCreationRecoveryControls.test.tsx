@@ -44,6 +44,88 @@ afterEach(async () => {
 });
 
 describe("deferred file creation controls", () => {
+    it("retains the production upload card, localized instructions and file picker interaction", async () => {
+        await act(async () => root.render(<UploadFileComponent enabled onFileSelect={vi.fn()} progress={null} />));
+        const card = container.querySelector('.UploadFileComponent.interactable.interactableWithBorder');
+        expect(card).not.toBeNull();
+        expect(card?.classList.contains("notBusy")).toBe(true);
+        expect(card?.querySelector('.UploadFileComponentInterior > svg')).not.toBeNull();
+        expect(card?.querySelector('.instructions')?.textContent).toContain("en: To upload files,");
+        expect(Array.from(container.querySelectorAll('.instructions li'), item => item.textContent)).toEqual([
+            "en: Drag & drop files or URLs here",
+            "en: or, Click to select files",
+            "en: or, Paste files/images/URLs",
+        ]);
+        const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+        const selectFiles = vi.spyOn(input, "click");
+        card?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        card?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+        card?.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+        expect(selectFiles).toHaveBeenCalledTimes(3);
+        language = "fr-BE";
+        await act(async () => root.render(<UploadFileComponent enabled onFileSelect={vi.fn()} progress={0} />));
+        expect(container.querySelector('.UploadFileComponent.busy')?.getAttribute("aria-disabled")).toBe("true");
+        expect(container.querySelector('.instructions')).toBeNull();
+        expect(container.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow")).toBe("0");
+        container.querySelector('.UploadFileComponent')?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(selectFiles).toHaveBeenCalledTimes(3);
+        await act(async () => root.render(<UploadFileComponent enabled onFileSelect={vi.fn()} progress={null} />));
+        expect(container.querySelector('.instructions')?.textContent).toContain("fr-BE: To upload files,");
+    });
+
+    it("keeps the drag overlay visible across child transitions and clears it on exit and drop", async () => {
+        const onFileSelect = vi.fn();
+        await act(async () => root.render(<FileDropWrapper enabled onFileSelect={onFileSelect} onURLUpload={vi.fn()} progress={null}>
+            <div className="card"><span className="icon">Icon</span><span className="instructions">Instructions</span></div>
+        </FileDropWrapper>));
+        const wrapper = container.querySelector('.fileDropWrapper')!;
+        const card = container.querySelector('.card')!;
+        const icon = container.querySelector('.icon')!;
+        const instructions = container.querySelector('.instructions')!;
+        const drag = async (target: Element, type: string) => act(async () => {
+            const event = new Event(type, { bubbles: true, cancelable: true });
+            Object.defineProperty(event, "dataTransfer", { value: { files: [new File(["score"], "score.pdf")] } });
+            target.dispatchEvent(event);
+        });
+        await drag(wrapper, "dragenter");
+        expect(container.querySelector('.dragOverlay')?.textContent).toBe("en: Upload files...");
+        await drag(card, "dragenter");
+        await drag(wrapper, "dragleave");
+        expect(container.querySelector('.dragOverlay')).not.toBeNull();
+        await drag(icon, "dragenter");
+        await drag(card, "dragleave");
+        await drag(instructions, "dragenter");
+        await drag(icon, "dragleave");
+        expect(container.querySelector('.dragOverlay')).not.toBeNull();
+        await drag(instructions, "dragleave");
+        expect(container.querySelector('.dragOverlay')).toBeNull();
+        await drag(card, "dragover");
+        expect(container.querySelector('.dragOverlay')).not.toBeNull();
+        await drag(card, "drop");
+        expect(container.querySelector('.dragOverlay')).toBeNull();
+        expect(onFileSelect).toHaveBeenCalledOnce();
+    });
+
+    it("clears drag feedback when unavailable and restores the production progress modal at zero", async () => {
+        const render = async (enabled: boolean, progress: number | null) => act(async () => root.render(
+            <FileDropWrapper enabled={enabled} onFileSelect={vi.fn()} onURLUpload={vi.fn()} progress={progress}><span>Files</span></FileDropWrapper>));
+        const enter = async () => act(async () => container.querySelector('.fileDropWrapper')!.dispatchEvent(
+            new Event("dragenter", { bubbles: true, cancelable: true })));
+        await render(true, null);
+        await enter();
+        expect(container.querySelector('.dragOverlay')).not.toBeNull();
+        await render(true, 0);
+        expect(container.querySelector('.dragOverlay')).toBeNull();
+        expect(document.querySelector('.uploadProgressModal .progressContainer [role="progressbar"]')?.getAttribute("aria-valuenow")).toBe("0");
+        await render(true, null);
+        expect(container.querySelector('.dragOverlay')).toBeNull();
+        await enter();
+        await render(false, null);
+        expect(container.querySelector('.dragOverlay')).toBeNull();
+        await render(true, null);
+        expect(container.querySelector('.dragOverlay')).toBeNull();
+    });
+
     it("uploads dropped files and HTTP URLs, while blocking busy and disabled drops", async () => {
         const onFileSelect = vi.fn();
         const onURLUpload = vi.fn();
@@ -63,7 +145,7 @@ describe("deferred file creation controls", () => {
         drop("", [new File(["score"], "score.pdf")]);
         expect(onFileSelect).toHaveBeenCalledOnce();
         await render(true, 0);
-        expect(container.querySelector('[role="status"]')).not.toBeNull();
+        expect(document.querySelector('.uploadProgressModal [role="status"]')).not.toBeNull();
         expect(drop("https://example.com").defaultPrevented).toBe(true);
         await render(false, null);
         drop("", [new File(["score"], "score.pdf")]);
@@ -96,7 +178,7 @@ describe("deferred file creation controls", () => {
         input.dispatchEvent(new Event("change", { bubbles: true }));
         expect(onFileSelect).toHaveBeenCalledTimes(2);
         await render(0);
-        expect(container.querySelector("button")?.disabled).toBe(true);
+        expect(container.querySelector<HTMLInputElement>('input[type="file"]')?.disabled).toBe(true);
         expect(paste(document, "https://example.com").defaultPrevented).toBe(false);
         expect(onURLUpload).toHaveBeenCalledOnce();
     });

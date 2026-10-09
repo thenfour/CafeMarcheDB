@@ -1,5 +1,8 @@
+import FileUploadIcon from "@mui/icons-material/FileUpload";
+import { Modal } from "@mui/material";
 import React from "react";
 import { useLocale } from "src/locale/components/useLocale";
+import { AppContextMarker } from "../AppContext";
 import { CircularProgressWithLabel, CMButton } from "../CMCoreComponents2";
 import { DeferredFileCreationNotice } from "./FileCreationRecoveryControls";
 
@@ -18,15 +21,47 @@ function preventDropNavigation(event: React.DragEvent<HTMLDivElement>): void {
 
 export function FileDropWrapper(props: React.PropsWithChildren<FileDropWrapperProps>) {
     const [dragging, setDragging] = React.useState(false);
+    const dragDepth = React.useRef(0);
     const { getPlainString } = useLocale();
     const available = props.enabled && props.progress === null;
-    return <div className={`${props.className ?? ""} fileDropWrapper ${dragging ? "dragging" : "notDragging"}`}
-        onDragEnter={event => { preventDropNavigation(event); setDragging(available); }}
-        onDragOver={preventDropNavigation}
-        onDragLeave={event => { preventDropNavigation(event); setDragging(false); }}
+    const clearDrag = React.useCallback(() => {
+        dragDepth.current = 0;
+        setDragging(false);
+    }, []);
+    React.useEffect(() => {
+        if (!available) {
+            clearDrag();
+        }
+    }, [available, clearDrag]);
+    const showDragOverlay = available && dragging;
+    return <div className={`${props.className ?? ""} fileDropWrapper ${showDragOverlay ? "dragging" : "notDragging"}`}
+        onDragEnter={event => {
+            preventDropNavigation(event);
+            if (available) {
+                // Entering children also emits drag events; only the final leave exits the wrapper.
+                dragDepth.current += 1;
+                setDragging(true);
+            }
+        }}
+        onDragOver={event => {
+            preventDropNavigation(event);
+            if (available) {
+                // Drag-over also restores feedback if the initial enter was missed.
+                dragDepth.current = Math.max(1, dragDepth.current);
+                setDragging(true);
+            }
+        }}
+        onDragLeave={event => {
+            preventDropNavigation(event);
+            dragDepth.current = Math.max(0, dragDepth.current - 1);
+            if (dragDepth.current === 0) {
+                setDragging(false);
+            }
+        }}
+        onDragEnd={clearDrag}
         onDrop={event => {
             preventDropNavigation(event);
-            setDragging(false);
+            clearDrag();
             if (!available) {
                 return;
             }
@@ -39,10 +74,12 @@ export function FileDropWrapper(props: React.PropsWithChildren<FileDropWrapperPr
                 props.onURLUpload(url);
             }
         }}>
-        {dragging && <div className="dragOverlay">{getPlainString("files.drop")}</div>}
-        {props.progress !== null && props.enabled && <div className="uploadProgress" role="status">
-            <CircularProgressWithLabel variant="determinate" value={100 * props.progress} />
-        </div>}
+        {showDragOverlay && <div className="dragOverlay">{getPlainString("files.drop")}</div>}
+        <Modal open={props.enabled && props.progress !== null} className="uploadProgressModal">
+            <div className="progressContainer" role="status" aria-label={getPlainString("files.upload")}>
+                <CircularProgressWithLabel variant="determinate" value={100 * (props.progress ?? 0)} className="progressIndicator" size={200} />
+            </div>
+        </Modal>
         {props.children}
     </div>;
 }
@@ -68,6 +105,17 @@ export function UploadFileComponent(props: UploadFileComponentProps) {
     const input = React.useRef<HTMLInputElement>(null);
     const { getPlainString } = useLocale();
     const available = props.enabled && props.progress === null;
+    const openFileDialog = () => {
+        if (available) {
+            input.current?.click();
+        }
+    };
+    const handleFileDialogKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openFileDialog();
+        }
+    };
     React.useEffect(() => {
         if (!available || props.enablePaste === false) {
             return;
@@ -99,14 +147,30 @@ export function UploadFileComponent(props: UploadFileComponentProps) {
         return <DeferredFileCreationNotice />;
     }
     return <div className="UploadFileComponentContainer">
-        <input ref={input} type="file" multiple hidden disabled={!available} onChange={event => {
-            if (available && event.currentTarget.files?.length) {
-                props.onFileSelect(event.currentTarget.files);
-            }
-            event.currentTarget.value = "";
-        }} />
-        <CMButton disabled={!available} onClick={() => input.current?.click()}>{getPlainString("files.choose")}</CMButton>
-        <p>{getPlainString("files.uploadInstructions")}</p>
+        <div className={`UploadFileComponent interactable interactableWithBorder ${available ? "notBusy" : "busy"}`}
+            role="button" tabIndex={available ? 0 : -1} aria-label={getPlainString("files.upload")}
+            aria-disabled={!available} onClick={openFileDialog} onKeyDown={handleFileDialogKeyDown}>
+            <div className="UploadFileComponentInterior">
+                <input ref={input} type="file" multiple hidden disabled={!available}
+                    onClick={event => event.stopPropagation()} onChange={event => {
+                        if (available && event.currentTarget.files?.length) {
+                            props.onFileSelect(event.currentTarget.files);
+                        }
+                        event.currentTarget.value = "";
+                    }} />
+                {props.progress !== null ? <CircularProgressWithLabel value={100 * props.progress} /> : <>
+                    <FileUploadIcon />
+                    <div className="instructions">
+                        {getPlainString("files.uploadInstructions")}
+                        <ul>
+                            <li>{getPlainString("files.uploadInstructions.dragDrop")}</li>
+                            <li>{getPlainString("files.uploadInstructions.choose")}</li>
+                            <li>{getPlainString("files.uploadInstructions.paste")}</li>
+                        </ul>
+                    </div>
+                </>}
+            </div>
+        </div>
     </div>;
 }
 
@@ -116,7 +180,8 @@ export function CollapsableUploadFileComponent(props: UploadFileComponentProps) 
     if (!props.enabled) {
         return <DeferredFileCreationNotice />;
     }
-    return open ? <div><UploadFileComponent {...props} />
+    return open ? <div className="uploadControlContainer">
+        <AppContextMarker name="CollapsableUploadFileComponent"><UploadFileComponent {...props} /></AppContextMarker>
         <CMButton onClick={() => setOpen(false)}>{getPlainString("common.action.cancel")}</CMButton></div>
         : <CMButton onClick={() => setOpen(true)}>{getPlainString("files.upload")}</CMButton>;
 }
