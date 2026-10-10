@@ -92,8 +92,6 @@ const RelevantEventsWithDashboardContext = ({
     });
     const enrichedEvents = tableClient.items;
 
-    if (dashboardContext.relevantEventIds.length < 1) return null;
-
     // allow 1 single "happening now" event.
 
     let eventsWithTiming = enrichedEvents.flatMap(event => {
@@ -168,6 +166,8 @@ const RelevantEventsWithDashboardContext = ({
 
 export const RelevantEvents = () => {
     const dashboardContext = useDashboardContext();
-    if (!dashboardContext) return null;
+    if (dashboardContext.relevantEventIds.length === 0) {
+        return null;
+    }
     return <RelevantEventsWithDashboardContext dashboardContext={dashboardContext} />;
 };

@@ -232,6 +232,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     const [dashboardDto, { refetch }] = useQuery(getDashboardData, presentation.data?.input ?? {});
     const dashboardData = React.useMemo(() => db3.hydrateDashboardData(dashboardDto), [dashboardDto]);
     valueRef.current.currentMembership = dashboardData.currentMembership;
+    valueRef.current.hasLimitedAccess = dashboardData.hasLimitedAccess;
     valueRef.current.refetchDashboardData = refetch;
     valueRef.current.permission = new TableAccessor(dashboardData.permission);
 

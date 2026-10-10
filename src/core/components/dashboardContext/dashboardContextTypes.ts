@@ -40,6 +40,7 @@ export abstract class DashboardContextDataBase {
 
     currentUser: CurrentAccount | null;
     currentMembership: EventParticipantDto | null = null;
+    hasLimitedAccess = false;
     serverBaseUri: string;
     serverStartupState: ServerStartInfo | null; // null if not available (non-admins)
 

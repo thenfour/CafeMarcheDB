@@ -21,7 +21,7 @@ export type EventRelevanceClassName =
 export type EventRelevanceClassValue =
     typeof gEventRelevanceClass[EventRelevanceClassName];
 
-type EventRelevanceContext = {
+export type EventRelevanceContext = {
     now: Date,
     sevenDaysFromNow: Date,
     twentyFourHoursAgo: Date,

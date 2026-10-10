@@ -29,6 +29,7 @@ export interface DashboardDataDto {
     serverBaseUri: string;
     serverStartupState: ServerStartInfo | null;
     relevantEventIds: EventPublicId[];
+    hasLimitedAccess: boolean;
     bandTimeZone: string;
 
     settings: SettingsDto;

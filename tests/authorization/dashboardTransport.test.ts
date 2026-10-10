@@ -1,127 +1,97 @@
-// MIGRATION_DEFERRED_TEST
-// Preserved migration reference only. The empty export keeps this file a TypeScript module.
-export {};
+import { PrismaClient, type Prisma } from "@prisma/client";
+import { afterAll, afterEach, beforeAll, describe, expect, expectTypeOf, it, vi } from "vitest";
+import { Permission } from "shared/permissions";
+import { parsePublicId } from "shared/publicId";
+import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
+import { gGeneralPaletteList } from "src/core/components/color/palette";
+import { loadDashboardData } from "src/core/db3/server/db3DashboardData";
+import { bindDB3ReadSnapshot } from "src/core/db3/server/db3ReadExecution";
+import { xBandInstrument } from "src/core/db3/shared/entities/instrument/bandInstrumentContracts";
+import { hydrateDashboardData, type DashboardDataDto } from "src/core/db3/shared/references/dashboardData";
+import { eventAttendanceDashboardView, instrumentDashboardView, instrumentFunctionalGroupDashboardView } from "src/core/db3/shared/references/dashboardReferences";
+import { xEventAttendance } from "src/core/db3/shared/schema/event";
+import { generatePublicId } from "src/server/publicId";
+import { initializeAccessControl } from "src/setup/accessControl";
+import { settingsMysqlTestUrl, withSettingsMysqlFixture, type SettingsMysqlFixture } from "../support/settingsMysqlFixture";
 
+async function seedDashboard(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture) {
+    const bandId = fixture.bands[0]!.id;
+    const bandPublicId = parsePublicId<"Band">(fixture.bands[0]!.publicId);
+    const auth = await loadAuthorizationForUser(fixture.user, tx, bandPublicId);
+    const name = (indexedValue: string) => tx.dynamicLocalizedString.create({ data: { publicId: generatePublicId(), values: { create: {
+        publicId: generatePublicId(), localeId: fixture.englishId, indexedValue,
+    } } } });
+    const group = await tx.bandInstrumentFunctionalGroup.create({ data: { publicId: generatePublicId(), bandId, color: "orange", nameId: (await name("Brass")).id } });
+    const instrument = await tx.bandInstrument.create({ data: { publicId: generatePublicId(), bandId, functionalGroupId: group.id, nameId: (await name("Trumpet")).id } });
+    const permission = await tx.permission.findUniqueOrThrow({ where: { name: Permission.visibility_members } });
+    const menu = await tx.menuLink.create({ data: { publicId: generatePublicId(), bandId, captionId: (await name("Scores")).id,
+        groupName: "scores", groupCssClass: "", itemCssClass: "", linkType: "ExternalURL", externalURI: "https://example.test/scores",
+        createdByUserId: fixture.user.id, visiblePermissionId: permission.id } });
+    const read = async () => loadDashboardData(await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" }), auth, { bandPublicId, routeLocale: "en-US" });
+    return { group, instrument, permission, menu, read };
+}
 
-// MIGRATION_RESTORE: dashboard-content
-// Source: 451c9cde3af65ffce804cb7360032dd001c681eb:tests/authorization/dashboardTransport.test.ts:1-114
-// Reason: Startup intentionally omits legacy domain readers and the home page hides their content.
-// Restore: Restore relevant events, calendar, announcements/wiki content, custom navigation and required reference catalogs with authorized band-scoped reads.
-// Verification: Adapt dashboard transport specifications and add native snapshots plus built-browser checks for two bands, permission revocation and context switches.
-// SHA256: e55602ba2597f85746f23dbc623e35694a0af2450f431c4c2943c52b7a06c8ed
-// MIGRATION_REFERENCE_BEGIN
-// import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
-//
-// vi.mock("db", async () => {
-//     const { authorizationTestDb } = await import("./support/inMemoryPrisma");
-//     return {
-//         ...await vi.importActual<typeof import("@prisma/client")>("@prisma/client"),
-//         default: new Proxy(authorizationTestDb, {
-//             // Event relevance does not affect the dashboard's DTO/hydration boundary.
-//             get: (database, key) => key === "$queryRaw" ? async () => [] : Reflect.get(database, key),
-//         }),
-//     };
-// });
-//
-// import getDashboardData from "src/auth/queries/getDashboardData";
-// import * as db3 from "src/core/db3/db3";
-// import { gGeneralPaletteList } from "src/core/components/color/palette";
-// import { Permission } from "shared/permissions";
-// import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
-// import { authorizationTestDb } from "./support/inMemoryPrisma";
-// import { invokeResolver } from "./support/resolverHarness";
-//
-// const user = createAuthorizationTestUser("sysadmin", { id: 42 });
-// const role = {
-//     ...user.role!, description: "Administrators", sortOrder: 1, color: "blue", significance: null,
-//     isRoleForNewUsers: false, isPublicRole: false, isSysAdminRole: true,
-// };
-// const permission = {
-//     ...role.permissions.find(entry => entry.permission.name === Permission.visibility_public)!.permission,
-//     description: "Public", sortOrder: 1, isVisibility: true, significance: null, color: "green", iconName: null,
-// };
-// const group = {
-//     id: 10, publicId: db3.xInstrumentFunctionalGroup.parseIdentity("DashboardGroup01"),
-//     name: "Brass", description: "", sortOrder: 1, color: "orange",
-// };
-// const instrument = {
-//     id: 12, publicId: db3.xInstrument.parseIdentity("DashboardInstr01"),
-//     name: "Trumpet", description: "", sortOrder: 1, autoAssignFileLeafRegex: null,
-//     functionalGroupId: group.id, functionalGroup: group,
-// };
-// const menuLink = {
-//     id: 14, publicId: db3.xMenuLink.parseIdentity("DashboardMenu001"), sortOrder: 1, realm: "General", applicationPage: null, groupName: "Resources",
-//     caption: "Scores", iconName: null, linkType: "ExternalURL", externalURI: "https://example.test/scores",
-//     wikiSlug: null, groupCssClass: "", itemCssClass: "", createdAt: new Date("2026-09-26T12:00:00Z"),
-//     createdByUserId: user.id, createdByUser: user,
-//     visiblePermissionId: permission.id, visiblePermission: permission,
-// };
-//
-// beforeEach(() => authorizationTestDb.reset({
-//     user: [user], role: [role], permission: [permission],
-//     instrumentFunctionalGroup: [group], instrument: [instrument],
-//     menuLink: [menuLink],
-// }));
-// afterEach(() => { vi.restoreAllMocks(); });
-//
-// describe("dashboard transport boundary", () => {
-//     it("returns DTOs from resolvers and hydrates normalized references once at the consumer", async () => {
-//         const groupHydrate = vi.spyOn(db3.instrumentFunctionalGroupDashboardView, "hydrate");
-//         const instrumentHydrate = vi.spyOn(db3.instrumentDashboardView, "hydrate");
-//         const ctx = createAuthorizationTestContext(user);
-//         const dto = await invokeResolver(getDashboardData, {}, ctx);
-//         expectTypeOf(dto).toEqualTypeOf<db3.DashboardDataDto>();
-//         expect(groupHydrate).not.toHaveBeenCalled();
-//         expect(instrumentHydrate).not.toHaveBeenCalled();
-//         expect(dto.instrumentFunctionalGroup[0]!.color).toBe("orange");
-//         expect(dto.role[0]!.color).toBe("blue");
-//         expect(dto.permission[0]!.color).toBe("green");
-//         expect(dto.instrument[0]).toMatchObject({
-//             functionalGroupId: group.publicId,
-//         });
-//         expect(dto.instrument[0]).not.toHaveProperty("id");
-//         expect(dto.instrument[0]).not.toHaveProperty("functionalGroup");
-//         expect(dto.dynMenuLinks[0]).not.toHaveProperty("visiblePermission");
-//         expect(dto).not.toHaveProperty("referenceStore");
-//         expect(db3.instrumentDashboardView.parseDto(dto.instrument[0])).toEqual(dto.instrument[0]);
-//
-//         const client = db3.hydrateDashboardData(dto);
-//         expect(groupHydrate).toHaveBeenCalledOnce();
-//         expect(instrumentHydrate).toHaveBeenCalledOnce();
-//         expect(client.instrumentFunctionalGroup[0]!.color).toEqual(gGeneralPaletteList.findEntry("orange"));
-//         expect(client.instrument[0]!.functionalGroup).toBe(client.instrumentFunctionalGroup[0]);
-//         expect(client.dynMenuLinks[0]!.visiblePermission).toBe(client.permission[0]);
-//         expect(client.referenceStore.get(db3.xInstrument, instrument.publicId)).toBe(client.instrument[0]);
-//         // Hydration must not mutate the cached RPC payload.
-//         expect(dto.instrumentFunctionalGroup[0]!.color).toBe("orange");
-//         expect(dto.instrument[0]).not.toHaveProperty("functionalGroup");
-//     });
-//
-//     it("rebuilds references for each snapshot and still rejects missing required references", async () => {
-//         const dto = await invokeResolver(getDashboardData, {}, createAuthorizationTestContext(user));
-//         const first = db3.hydrateDashboardData(dto);
-//         const refreshed = db3.hydrateDashboardData({
-//             ...dto, instrument: [], instrumentFunctionalGroup: [],
-//         });
-//         expect(refreshed.referenceStore).not.toBe(first.referenceStore);
-//         expect(refreshed.referenceStore.get(db3.xInstrument, instrument.publicId)).toBeUndefined();
-//         expect(() => db3.hydrateDashboardData({ ...dto, instrumentFunctionalGroup: [] }))
-//             .toThrow(/not available/);
-//     });
-//
-//     it("keeps authorization omissions out of complete client option lists", async () => {
-//         const dto = await invokeResolver(getDashboardData, {}, createAuthorizationTestContext(user));
-//         const client = db3.hydrateDashboardData({
-//             ...dto,
-//             role: [{ publicId: role.publicId }],
-//             eventAttendance: [{ publicId: db3.xEventAttendance.parseIdentity("DashboardAttend1") }],
-//             wikiPageTag: [{ publicId: db3.xWikiPageTag.parseIdentity("DashboardWiki001") }],
-//         });
-//         expect(client.role).toEqual([]);
-//         expect(client.eventAttendance).toEqual([]);
-//         expect(client.wikiPageTag).toEqual([]);
-//         expect(client.referenceStore.get(db3.xEventAttendance, db3.xEventAttendance.parseIdentity("DashboardAttend1")))
-//             .toBeUndefined();
-//     });
-// });
-// MIGRATION_REFERENCE_END
+describe.skipIf(!settingsMysqlTestUrl)("dashboard transport boundary on migrated MariaDB", () => {
+    const database = new PrismaClient(settingsMysqlTestUrl ? { datasourceUrl: settingsMysqlTestUrl } : undefined);
+    beforeAll(() => initializeAccessControl(database), 30_000);
+    afterAll(() => database.$disconnect());
+    afterEach(() => { vi.restoreAllMocks(); });
+    const run = (work: (tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture) => Promise<void>) => withSettingsMysqlFixture(database, work);
+
+    it("delivers public DTOs and hydrates normalized references once at the consumer without mutating the payload", () => run(async (tx, fixture) => {
+        const seed = await seedDashboard(tx, fixture);
+        const groupHydrate = vi.spyOn(instrumentFunctionalGroupDashboardView, "hydrate");
+        const instrumentHydrate = vi.spyOn(instrumentDashboardView, "hydrate");
+        const dto = await seed.read();
+        expectTypeOf(dto).toEqualTypeOf<DashboardDataDto>();
+        expect(groupHydrate).not.toHaveBeenCalled();
+        expect(instrumentHydrate).not.toHaveBeenCalled();
+        expect(dto.instrumentFunctionalGroup[0]!.color).toBe("orange");
+        expect(dto.instrument[0]).toMatchObject({ functionalGroupId: seed.group.publicId });
+        expect(dto.instrument[0]).not.toHaveProperty("id");
+        expect(dto.instrument[0]).not.toHaveProperty("functionalGroup");
+        expect(dto.dynMenuLinks[0]).toMatchObject({ visiblePermissionId: seed.permission.publicId });
+        expect(dto.dynMenuLinks[0]).not.toHaveProperty("visiblePermission");
+        expect(dto).not.toHaveProperty("referenceStore");
+        expect(instrumentDashboardView.parseDto(dto.instrument[0])).toEqual(dto.instrument[0]);
+
+        const client = hydrateDashboardData(dto);
+        expect(groupHydrate).toHaveBeenCalledOnce();
+        expect(instrumentHydrate).toHaveBeenCalledOnce();
+        expect(client.instrumentFunctionalGroup[0]!.color).toEqual(gGeneralPaletteList.findEntry("orange"));
+        expect(client.instrument[0]!.functionalGroup).toBe(client.instrumentFunctionalGroup[0]);
+        expect(client.dynMenuLinks[0]!.visiblePermission).toBe(client.permission.find(permission => permission.publicId === seed.permission.publicId));
+        expect(client.referenceStore.get(xBandInstrument, xBandInstrument.parseIdentity(seed.instrument.publicId))).toBe(client.instrument[0]);
+        expect(dto.instrumentFunctionalGroup[0]!.color).toBe("orange");
+        expect(dto.instrument[0]).not.toHaveProperty("functionalGroup");
+    }));
+
+    it("rebuilds the reference store for each snapshot and rejects missing required references", () => run(async (tx, fixture) => {
+        const seed = await seedDashboard(tx, fixture);
+        const dto = await seed.read();
+        const first = hydrateDashboardData(dto);
+        const refreshed = hydrateDashboardData({ ...dto, instrument: [], instrumentFunctionalGroup: [] });
+        expect(refreshed.referenceStore).not.toBe(first.referenceStore);
+        expect(refreshed.referenceStore.get(xBandInstrument, xBandInstrument.parseIdentity(seed.instrument.publicId))).toBeUndefined();
+        expect(() => hydrateDashboardData({ ...dto, instrumentFunctionalGroup: [] })).toThrow(/not available/);
+    }));
+
+    it("keeps partial attendance options and freshly inaccessible rows out of complete client option lists", () => run(async (tx, fixture) => {
+        const seed = await seedDashboard(tx, fixture);
+        const dto = await seed.read();
+        const missing = xEventAttendance.parseIdentity("DashboardAttend1");
+        // The migrated DTO requires complete fields; a partial option fails before hydration.
+        expect(() => eventAttendanceDashboardView.parseDto({ publicId: missing })).toThrow();
+        const client = hydrateDashboardData(dto);
+        expect(client.referenceStore.get(xEventAttendance, missing)).toBeUndefined();
+        await tx.bandInstrumentFunctionalGroup.update({ where: { id: seed.group.id }, data: { isHidden: true } });
+        await tx.menuLink.update({ where: { id: seed.menu.id }, data: { visiblePermissionId: null, createdByUserId: fixture.admin.id } });
+        await tx.bandUser.update({ where: { bandId_userId: { bandId: fixture.bands[0]!.id, userId: fixture.user.id } }, data: { bandRoleId: null } });
+        const refreshed = hydrateDashboardData(await seed.read());
+        expect(refreshed.instrument).toEqual([]);
+        expect(refreshed.dynMenuLinks).toEqual([]);
+        // The migrated role designation is a server-derived notice; role administration stays separate.
+        expect(refreshed.hasLimitedAccess).toBe(true);
+        expect(refreshed).not.toHaveProperty("role");
+    }));
+});

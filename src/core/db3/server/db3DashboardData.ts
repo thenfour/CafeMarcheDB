@@ -13,6 +13,8 @@ import { executeDB3Read, type DB3ReadDatabase, type DB3ReadContext } from "./db3
 import { queryView } from "./db3QueryCore";
 import { xBandUser } from "../db3";
 import { menuLinkListView } from "../shared/entities/menuLink/menuLinkViews";
+import { readDashboardRelevantEvents } from "./dashboardEvents";
+import { hasLimitedDashboardAccess } from "./dashboardAccountNotice";
 
 async function loadCurrentMembership(context: DB3ReadContext, input: PresentationInput) {
     const { authorization } = context;
@@ -48,7 +50,7 @@ export function loadDashboardData(
 ): Promise<DashboardDataDto> {
     return executeDB3Read(database, authorization, async context => {
         const { database: transaction, authorization } = context;
-        const [localization, settings, permissions, catalogs, sharedCatalogs, currentMembership, dynMenuLinks] = await Promise.all([
+        const [localization, settings, permissions, catalogs, sharedCatalogs, currentMembership, dynMenuLinks, relevantEventIds, hasLimitedAccess] = await Promise.all([
             loadLocalizationCatalog(transaction, authorization, input),
             loadSettingsSnapshot(transaction, authorization),
             queryView({ view: permissionDashboardView, ...input, filter: {}, cmdbQueryContext: "dashboard permissions" }, authorization, context),
@@ -56,6 +58,8 @@ export function loadDashboardData(
             loadSharedCatalogs(context, authorization, input),
             loadCurrentMembership(context, input),
             loadDashboardMenuLinks(context, input),
+            readDashboardRelevantEvents(context, new Date()),
+            hasLimitedDashboardAccess(context),
         ]);
         const server = getClientServerState(authorization.hasPermission(Permission.sysadmin));
         return {
@@ -70,8 +74,8 @@ export function loadDashboardData(
             serverStartupState: server.diagnostics,
             bandTimeZone: authorization.band ? readSettingSnapshot(settings, "band", "dateTime.bandTimeZone") : "Europe/Brussels",
             dynMenuLinks,
-            // Event relevance remains under the separate dashboard Event/calendar checkpoint.
-            relevantEventIds: [],
+            relevantEventIds,
+            hasLimitedAccess,
         };
     });
 }

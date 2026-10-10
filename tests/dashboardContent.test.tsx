@@ -21,6 +21,8 @@ vi.mock("src/core/components/AppContext", () => ({
     AppContextMarker: ({ children }: React.PropsWithChildren) => <>{children}</>, useAppContext: () => [],
 }));
 vi.mock("src/core/components/CMLink", () => ({ CMLink: (props: React.ComponentProps<"a">) => <a {...props} /> }));
+vi.mock("src/core/components/event/RelevantEvents", () => ({ RelevantEvents: () => <div className="RelevantEvents">Relevant Events</div> }));
+vi.mock("src/core/components/EventCalendar", () => ({ BigEventCalendar: () => <div className="CMBigCalendar">Calendar</div> }));
 vi.mock("src/core/components/dashboard/DashboardLayout", () => ({ default: ({ children }: React.PropsWithChildren) => <>{children}</> }));
 vi.mock("src/core/components/CMCoreComponents", () => ({
     PermissionBoundary: ({ permission, children }: React.PropsWithChildren<{ permission: Permission }>) => dashboard.isAuthorized(permission) ? <>{children}</> : null,
@@ -57,6 +59,7 @@ const dashboard = {
     memberPresentation,
     brand: { hostingMode: HostingMode.CafeMarche },
     currentUser: authenticatedPerson(),
+    hasLimitedAccess: false,
     currentMembership: { bandUserInstruments: [] },
     isAuthorized: (value: Permission | string) => grants.has(value),
 };
@@ -77,6 +80,7 @@ beforeEach(() => {
     grants.clear(); grants.add(Permission.visibility_members); grants.add(Permission.view_wiki_pages); grants.add(Permission.view_events_nonpublic);
     dashboard.memberPresentation = { bandPublicId: band, routeLocale: "fr-BE" };
     dashboard.currentUser = { id: 1 }; dashboard.currentMembership = { bandUserInstruments: [] };
+    dashboard.hasLimitedAccess = false;
     container = document.createElement("div"); document.body.appendChild(container); root = createRoot(container);
 });
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
@@ -130,13 +134,17 @@ describe("dashboard announcements and navigation", () => {
         expect(text.indexOf("BackstageFrontpageHeaderMarkdown")).toBeLessThan(text.indexOf("special/announcements"));
         expect(text.indexOf("special/announcements")).toBeLessThan(text.indexOf("BackstageFrontpageMarkdown"));
         expect(container.querySelector("a")!.getAttribute("href")).toBe(`/backstage/profile?bandPublicId=${band}&routeLocale=fr-BE`);
-        expect(text).toContain(kStaticLocalizedStringRegistry["dashboard.eventsDeferred"].defaultValue);
+        expect(container.querySelector(".RelevantEvents")).not.toBeNull();
+        expect(container.querySelector(".CMBigCalendar")).not.toBeNull();
+        expect(text.indexOf("special/announcements")).toBeLessThan(text.indexOf("Relevant Events"));
+        expect(text.indexOf("Calendar")).toBeLessThan(text.indexOf("BackstageFrontpageMarkdown"));
     });
-    it("does not mount announcements without band, active user or Wiki read permission, and hides the events notice without its grant", async () => {
+    it("does not mount announcements without band, active user or Wiki read permission, or Event controls without their grant", async () => {
         grants.clear();
         await act(async () => root.render(<HomeContent />));
         expect(container.querySelector(".announcementMarkdown")).toBeNull();
-        expect(container.textContent).not.toContain(kStaticLocalizedStringRegistry["dashboard.eventsDeferred"].defaultValue);
+        expect(container.querySelector(".RelevantEvents")).toBeNull();
+        expect(container.querySelector(".CMBigCalendar")).toBeNull();
         grants.add(Permission.view_wiki_pages);
         // Home only needs the presence of an authenticated person and explicit selected band.
         dashboard.currentUser = null;
@@ -147,5 +155,16 @@ describe("dashboard announcements and navigation", () => {
         await act(async () => root.render(<HomeContent />));
         expect(container.querySelector(".announcementMarkdown")).toBeNull();
         expect(container.textContent).toContain(kStaticLocalizedStringRegistry["dashboard.band.required"].defaultValue);
+    });
+    it("retains the original limited-access warning only for the fresh authenticated dashboard state", async () => {
+        dashboard.hasLimitedAccess = true;
+        await act(async () => root.render(<HomeContent />));
+        expect(container.textContent).toContain(kStaticLocalizedStringRegistry["dashboard.account.limited"].defaultValue);
+        dashboard.hasLimitedAccess = false;
+        await act(async () => root.render(<HomeContent />));
+        expect(container.textContent).not.toContain(kStaticLocalizedStringRegistry["dashboard.account.limited"].defaultValue);
+        dashboard.hasLimitedAccess = true; dashboard.currentUser = null;
+        await act(async () => root.render(<HomeContent />));
+        expect(container.textContent).not.toContain(kStaticLocalizedStringRegistry["dashboard.account.limited"].defaultValue);
     });
 });

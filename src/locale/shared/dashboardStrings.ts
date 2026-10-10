@@ -41,7 +41,7 @@ export const dashboardStrings = {
     "dashboard.band.switchFailed": label("Could not change bands. Try again."),
     "dashboard.instruments.missing": label("You have no instruments assigned in this band. Open your profile to choose them."),
     "dashboard.profile": label("Your profile"),
-    "dashboard.eventsDeferred": label("Upcoming events and the dashboard calendar are temporarily unavailable."),
+    "dashboard.account.limited": label("Your account has limited access; please contact an admin for access."),
     "recovery.accountAnalysis.description": label("Account dependency analysis is temporarily unavailable while band support is restored."),
     "recovery.accountRoles.title": label("Platform role administration"),
     "recovery.accountRoles.description": label("Role definitions and permission editing are temporarily unavailable. Existing roles still apply. You can change a member's band role from their profile."),

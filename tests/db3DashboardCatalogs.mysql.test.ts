@@ -65,7 +65,7 @@ describe.skipIf(!settingsMysqlTestUrl)("dashboard catalog references on MariaDB"
         // Other dashboard resources are unrelated to these catalog/reference contracts.
         return { ...catalogs, localization, settings, currentMembership: null, authorization: auth.toClientContext(),
             permission: [], eventType: [], eventStatus: [], eventTag: [],
-            eventAttendance: [], songCreditType: [], dynMenuLinks: [], relevantEventIds: [],
+            eventAttendance: [], songCreditType: [], dynMenuLinks: [], relevantEventIds: [], hasLimitedAccess: false,
             serverBaseUri: "https://example.test", serverStartupState: null, bandTimeZone: "Europe/Brussels" };
     }
 

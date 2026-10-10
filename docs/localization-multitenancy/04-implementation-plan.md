@@ -470,25 +470,59 @@ of customization, row visibility and natural order. The existing sidebar retains
 case-insensitive section/group merging, static links, numeric order, icons, item
 classes, inherited localized captions, intentional blanks and external URLs.
 Nested Wiki links carry band/locale context; visited paths now select and expand
-the owning section instead of its group. The obsolete menu-delivery notice is
-removed and the home notice identifies only the remaining Event/calendar gap.
+the owning section instead of its group. The obsolete menu-delivery notice was
+removed; the remaining Event/calendar gap is closed in the next checkpoint.
 
-`dashboard-content` stays pending for relevant Events/cards, the dashboard calendar
-and the original limited/new-member warning with migrated role designations.
-All six source references and the deferred dashboard transport specification remain
-preserved. This checkpoint does not close full dashboard parity or A1/B.
+At this checkpoint, `dashboard-content` remained pending for relevant Events/cards,
+the dashboard calendar and the original limited/new-member warning. All six source
+references and the deferred transport specification were preserved until the
+Event/calendar checkpoint below. A1/B remain open.
 
-## Next slice: Dashboard relevant events and calendar
+## Dashboard relevant events and calendar checkpoint
 
-Restore the reference relevant-event selection/cards and home calendar through
-their existing Event owners, with explicit selected-band reads, fresh grants,
-visible public identities and the shared date/timezone policy. Preserve original
-selection/order and Event interactions; verify two bands, revoked visibility,
-membership changes and context switches in native snapshots and the built app.
-Account for the remaining limited/new-member warning before closing
-`dashboard-content` or reactivating its complete deferred transport specification.
-Markdown suggestions, account administration and full localized-name search
-remain separate bounded work.
+The home again renders the original `RelevantEvents`/`SubtleEventCard` and
+`BigEventCalendar` between announcements and the footer. One freshly authorized
+dashboard snapshot selects only visible selected-band public Event identities.
+The shared Event table/column/row policy owns access; the existing classifier
+retains twenty candidates, five cards, pins, ongoing/upcoming/recent priority and
+the ordinary nearest-future fallback. Hidden overrides are excluded before the
+candidate limit, fixing starvation of otherwise visible Events. Cancelled status
+meaning remains effective after retirement; an empty status catalog needs no
+special fallback. Timing windows measure elapsed UTC time, while authored all-day
+spans preserve their band/DST meaning.
+
+The original month-only calendar retains bounded Event search, uncancelled
+individual segments, the shared all-day adapter, selection/deselection and the
+existing Event result/attendance composition. Next/previous/today controls and
+month URL state remain intact. Information/setlist links open the original Event
+detail tabs with selected band and locale. Band/locale transitions clear earlier
+cards and selected detail through the existing presentation boundary.
+
+The original limited/new-member warning follows fresh GlobalRole designations
+outside a band and the selected membership's BandRole inside it. Missing, retired
+or new-user roles warn; platform authority is exempt, and anonymous accounts do
+not warn. Only the derived notice flag enters the dashboard DTO. Missing-instrument
+and contextual profile warnings remain intact. Role administration stays separate;
+the legacy shared `User.role` list is not part of the migrated dashboard contract.
+
+The three deferred dashboard transport specifications are active on native
+migrated fixtures. Public DTOs, one client hydration, immutable payloads, fresh
+reference stores, required-reference/partial-DTO rejection and fresh hidden-row
+revocation remain covered. Active BandUser tag/instrument catalogs and assignment/
+invitation contracts account for the superseded UserTag/UserInstrument blocks.
+All six completed dashboard source references are removed, and `dashboard-content`
+is restored. A1/B and full localized-name matching remain open.
+
+## Next slice: Global shell search
+
+Restore the original shell search through the existing domain readers and result
+components, with explicit selected-band/presentation inputs, fresh visibility and
+public contextual links. Preserve cross-domain ordering, keyboard navigation and
+selection; clear cached results when query, band, locale or authority changes.
+Verify independent bands and revoked access in native snapshots and the built
+app. Account for required quick-search dependencies within this bounded slice;
+Markdown suggestions, account administration and full localized-name text matching
+retain their separate obligations.
 
 ## Localized catalog text search exception
 
@@ -518,7 +552,7 @@ when a concrete workflow dependency requires it.
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
 | Events | Retain restored search/detail/creation/editing, setlists, invitation/attendance/default-instrument controls, date-picker highlights and import preview/save; finish full localized catalog-name matching separately. |
 | Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish remaining upload callers. |
-| Supporting workflows | Dashboard/wiki/custom navigation, plans, search, calendars/feeds/tokens, Custom Links, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
+| Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish shell/quick search, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
 After core restoration: platform role/matrix and catalog/settings administration;
 band onboarding/lifecycle; shared-account lifecycle/merge/dependency reports;
@@ -868,15 +902,42 @@ labels plus actual menu edit/sidebar refresh/Wiki navigation; fresh authority
 revocation/restoration; roleless shared member, anonymous sign-in and explicit
 no-band selection. No uncaught page or unexpected RPC errors occurred. The French
 layout was visually inspected; temporary rows, strings, account changes, audits
-and actions were cleaned up and the test server stopped. All six dashboard source
-references and its deferred transport specification remain intact.
+and actions were cleaned up and the test server stopped. At that checkpoint, all
+six dashboard source references and its deferred transport specification remained
+intact; the completed Event/calendar checkpoint removes them below.
+
+The dashboard Event/calendar slice passes 117 focused checks in six files and
+326 native MariaDB cases in twenty-three files, including eighteen Event selection/
+notice cases and the three reactivated dashboard transport specifications.
+Coverage includes pins and ordinary future fallback, twenty-candidate/five-card
+limits, hidden/private/deleted/foreign rows, cancellation after status retirement,
+empty catalogs, exact/subsecond/point/DST boundaries, fresh person/grant/membership
+changes, independent bands, role designations, public DTOs and immutable single
+hydration. Existing Wiki/menu, tag/instrument/role, Event/attendance/creation,
+member, File, Song/setlist and catalog regressions pass.
+
+Seven production Chromium groups pass on disposable two-band data: French cards
+and contextual Info/setlist navigation; individual calendar segments/all-day spans
+from a Tokyo browser and selection/deselection; next/previous/today and month URL
+reload; fresh Event grant revocation/recovery; shared-person band changes with
+cleared selected detail and Dutch links; fresh roleless notice, recovered role,
+explicit no-band and anonymous boundaries. No uncaught page or unexpected RPC
+errors occurred. The calendar layout was visually inspected; temporary Event/Wiki,
+grant/membership and audit/action fixtures were cleaned up and the test server
+stopped. Normal typecheck/build, the isolated demo production build and targeted
+lint pass. Normal build output is isolated to preserve the running development
+server. All six completed dashboard source blocks/references are removed;
+preservation verification reports 287 references,
+ten deferred specifications and twenty pending features. Remaining English/calendar
+chrome follows the A1 exception.
 
 The complete-suite run still reports 206 failed tests and ten suite-load failures,
 including unscoped authorization/account/setlist fixtures, deferred-domain and
 date-policy contracts; the runner stops before the later jsdom batches. Focused
 passes do not establish A1 readiness. The latest run passes 1823 tests and skips
-624; native cases require the explicit MariaDB test environment, including the
-twelve new dashboard cases. Updated account fixtures change
+645; native cases require the explicit MariaDB test environment, including the
+eighteen new dashboard Event/notice cases and three reactivated transport cases.
+Updated account fixtures change
 which legacy assertions reach the missing
 GlobalRole/designation prerequisites; those changed failures reproduce on baseline
 `bce53c20` product code with the same fixture. Newly introduced projection,
