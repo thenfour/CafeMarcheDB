@@ -112,6 +112,31 @@ describe("band-owned upload HTTP boundary", () => {
 });
 
 describe("upload public contract and client transport", () => {
+    it.each(["before send", "during upload", "after completion"])("handles cancellation %s without leaving a signal listener", async when => {
+        const listeners = new Map<string, () => void>();
+        const send = vi.fn(); const abort = vi.fn(() => listeners.get("abort")?.());
+        vi.stubGlobal("FormData", class { append = vi.fn(); });
+        vi.stubGlobal("XMLHttpRequest", class {
+            upload = { addEventListener: vi.fn() }; responseText = JSON.stringify({ files: [], isSuccess: true }); status = 200;
+            open = vi.fn(); setRequestHeader = vi.fn(); send = send; abort = abort;
+            addEventListener(name: string, listener: () => void) { listeners.set(name, listener); }
+        });
+        const controller = new AbortController();
+        const removeListener = vi.spyOn(controller.signal, "removeEventListener");
+        if (when === "before send") {
+            controller.abort();
+        }
+        const request = CMDBUploadFile({ bandPublicId, files: null, fields: { externalURI: "https://example.com/score.pdf" },
+            onProgress: vi.fn(), signal: controller.signal });
+        if (when === "after completion") {
+            listeners.get("load")?.(); await expect(request).resolves.toMatchObject({ isSuccess: true }); controller.abort();
+            expect(abort).not.toHaveBeenCalled(); expect(removeListener).toHaveBeenCalledOnce();
+        } else {
+            controller.abort(); await expect(request).rejects.toThrow("Upload cancelled.");
+            expect(send).toHaveBeenCalledTimes(when === "before send" ? 0 : 1);
+            expect(removeListener).toHaveBeenCalledTimes(when === "before send" ? 0 : 1);
+        }
+    });
     it("requires a band and rejects natural references and server fields", () => {
         for (const input of [{}, { bandPublicId, taggedBandUserId: 1 }, { bandPublicId, sizeBytes: 1 },
             { bandPublicId, visiblePermission: "public", visiblePermissionId: "Permission000001" }]) {

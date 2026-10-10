@@ -15,6 +15,7 @@ var turndownService = new TurndownService();
 
 interface MarkdownEditorProps {
     referenceSearchEnabled: boolean;
+    uploadsEnabled: boolean;
     value: string | null, // value which may be coming from the database.
     onValueChanged: (edit: NativeTextAreaEdit) => void, // caller can save the changed value to a db here.
     onBeforeInput: (inputType: string | undefined, selectionStart: number, selectionEnd: number) => boolean;
@@ -23,6 +24,7 @@ interface MarkdownEditorProps {
     autoFocus?: boolean;
     displayUploadFileComponent?: boolean;
     onFileSelect: (files: FileList) => void;
+    onURLUpload: (url: string) => void;
     uploadProgress: number | null;
     onCustomPaste?: (pastedHtml: string) => void;
 
@@ -55,10 +57,12 @@ function MarkdownTextEditor(props: MarkdownEditorProps & {
     const kb = useKeyboardState();
     const locale = useLocale();
 
-    const handlePaste = (e) => {
+    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
         if ((e.clipboardData?.files?.length || 0) > 0) {
-            // File paste must not invoke uploads; ordinary text/HTML paste remains active.
             e.preventDefault();
+            if (props.uploadsEnabled && props.uploadProgress === null) {
+                props.onFileSelect(e.clipboardData.files);
+            }
             return;
         }
 
@@ -81,12 +85,21 @@ function MarkdownTextEditor(props: MarkdownEditorProps & {
     return (<div className="FileUploadWrapperContainer">
         {!props.referenceSearchEnabled && <QuickSearchRecoveryNotice />}
         <FileDropWrapper
-            enabled={false}
+            enabled={props.uploadsEnabled}
             className="frontpageGalleryFileUploadWrapper"
             onFileSelect={props.onFileSelect}
-            onURLUpload={() => { }}
+            onURLUpload={props.onURLUpload}
             progress={props.uploadProgress}
         >
+            {props.uploadsEnabled && <input type="file" multiple hidden
+                ref={props.nativeFileInputRef} disabled={props.uploadProgress !== null}
+                onChange={event => {
+                    if (props.uploadProgress === null && event.currentTarget.files?.length) {
+                        props.onFileSelect(event.currentTarget.files);
+                    }
+                    // Choosing the same file again must still emit a change event.
+                    event.currentTarget.value = "";
+                }} />}
             <ReactTextareaAutocomplete
                 containerClassName="editorContainer"
                 loadingComponent={() => <div>{locale.getPlainString("markdown.reference.loading")}</div>}
@@ -135,8 +148,9 @@ function MarkdownTextEditor(props: MarkdownEditorProps & {
                 }}
             />
             {(props.displayUploadFileComponent) && <CollapsableUploadFileComponent
-                enabled={false}
+                enabled={props.uploadsEnabled}
                 onFileSelect={props.onFileSelect}
+                onURLUpload={props.onURLUpload}
                 enablePaste={false} // because paste is handled inline in the textarea.
                 progress={props.uploadProgress}
             />}

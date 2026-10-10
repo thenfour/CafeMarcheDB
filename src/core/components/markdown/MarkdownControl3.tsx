@@ -6,11 +6,10 @@ import ViewWeekIcon from "@mui/icons-material/ViewWeek";
 import { Collapse, Tooltip } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
-import type { EventPublicId, FileTagPublicId, PermissionPublicId, SongPublicId, UserPublicId, WikiPagePublicId } from "shared/publicId";
+import type { TClientUploadFileArgs } from "../../db3/shared/fileTypes";
 import { IsNullOrWhitespace } from 'shared/utils';
 import { gCharMap } from '../../db3/components/IconMap';
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
-import { DeferredFileCreationNotice } from "../file/FileCreationRecoveryControls";
 import { ResponsiveDialog } from "../ResponsiveDialog";
 import { useLocalStorageState } from "../useLocalStorageState";
 import { Markdown } from './Markdown';
@@ -21,6 +20,7 @@ import { MarkdownLockIndicator } from './MarkdownLockIndicator';
 import { MarkdownEditor } from "./RichTextEditor";
 import { useControlledTextArea } from './useControlledTextArea';
 import { WikiPageApi } from './useWikiPageApi';
+import { useMarkdownAttachments } from './useMarkdownAttachments';
 
 const kFullscreenSideBySideBreakpointQuery = "(min-width: 1200px)";
 
@@ -75,18 +75,9 @@ interface Markdown3EditorPropsBase {
     startWithPreviewOpen?: boolean;
     markdownPreviewLayout?: MarkdownPreviewLayout;
     /**
-     * Optional file upload context for tagging uploaded files (e.g. song, event, instrument, user, fileTagId, etc)
+     * Public associations for uploaded files (e.g. Song, Event, instrument or band member).
      */
-    uploadFileContext?: {
-        taggedSongId?: SongPublicId;
-        taggedEventId?: EventPublicId;
-        taggedInstrumentId?: number;
-        taggedWikiPageId?: WikiPagePublicId;
-        taggedUserId?: UserPublicId;
-        fileTagId?: FileTagPublicId;
-        visiblePermissionId?: PermissionPublicId;
-        visiblePermission?: string;
-    };
+    uploadFileContext?: Omit<TClientUploadFileArgs, "externalURI">;
 };
 
 //////////////////////////////////////////////////
@@ -106,7 +97,6 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const [popoverAnchorEl, setPopoverAnchorEl] = React.useState<null | HTMLElement>(null); // not sure what this was for
     const [showFormattingTips, setShowFormattingTips] = React.useState<boolean>(false);
     const [showPreview, setShowPreview] = React.useState<boolean>(startWithPreviewOpen);
-    const uploadProgress = null;
     const [previewLayout, setPreviewLayout] = useLocalStorageState<MarkdownPreviewLayout>({
         key: "MarkdownEditor_PreviewLayout",
         initialValue: props.markdownPreviewLayout ?? "stacked",
@@ -139,6 +129,18 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     //const [textAreaRef, setTextAreaRef] = React.useState<HTMLTextAreaElement | null>(null);
     const textAreaRef = React.useRef<HTMLTextAreaElement | null>(null);
     const controlledTextArea = useControlledTextArea(textAreaRef, useValue, handleChange);
+    const uploadsEnabled = !readonly && props.allowUploads !== false
+        && !!dashboardContext.authorizationContext?.userPublicId
+        && !!dashboardContext.authorizationContext?.bandPublicId && dashboardContext.isAuthorized(Permission.upload_files);
+    // Markdown attachments retain the original public visibility and image size policy.
+    const uploadFields = props.uploadFileContext?.visiblePermissionId || props.uploadFileContext?.visiblePermission
+        ? props.uploadFileContext : { ...props.uploadFileContext, visiblePermission: Permission.visibility_public };
+    const attachments = useMarkdownAttachments({
+        enabled: uploadsEnabled, bandPublicId: dashboardContext.authorizationContext?.bandPublicId ?? null,
+        fields: uploadFields, maxImageDimension: 750,
+        scopeKey: JSON.stringify([dashboardContext.authorizationContext, dashboardContext.localePreferences, uploadFields]),
+        draft: useValue, textarea: textAreaRef, editor: controlledTextArea,
+    });
     const [nativeFileInputRef, setNativeFileInputRef] = React.useState<HTMLInputElement | null>(null);
     const instanceId = React.useId();
     const writeTabId = `${instanceId}-write-tab`;
@@ -227,8 +229,9 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         invocationTriggerMap: commandInvocationTriggerMap.current,
         dashboardContext: dashboardContext,
         textArea: textAreaRef.current!,
-        nativeFileInputRef: nativeFileInputRef!,
-        allowUploads: false,
+        nativeFileInputRef,
+        allowUploads: uploadsEnabled,
+        uploadInProgress: attachments.progress !== null,
         referenceSearchEnabled,
         saveProgress: async () => {
             if (props.handleSave) {
@@ -248,9 +251,6 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         setTotalInvocations((prev) => prev + 1); // force a re-render to continue the invocation.
         commandInvocationTriggerMap.current[command.id]! += 1;
     };
-
-    // File selection stays inert while band-owned uploads are unavailable.
-    const handleFileSelect = (_files: FileList): void => {};
 
     // listen for key events to invoke commands.
     React.useEffect(() => {
@@ -326,7 +326,6 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
 
     const renderEditorShell = (inFullscreen: boolean) => (
         <div className={`MD3 editor MD3Container${inFullscreen ? " fullscreen" : ""}`}>
-            {props.allowUploads !== false && <DeferredFileCreationNotice />}
             <div className="header">
                 <div className='toolbar'>
                     <div className='toolItemGroupList'>
@@ -428,6 +427,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                                     <div className="editorContainer">
                                         <MarkdownEditor
                                             referenceSearchEnabled={referenceSearchEnabled}
+                                            uploadsEnabled={uploadsEnabled}
                                             onValueChanged={controlledTextArea.handleNativeTextChange}
                                             onBeforeInput={controlledTextArea.handleNativeBeforeInput}
                                             onSave={props.handleSave}
@@ -435,10 +435,11 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                                             value={useValue}
                                             autoFocus={autoFocus}
 
-                                            uploadProgress={uploadProgress}
+                                            uploadProgress={attachments.progress}
                                             textAreaRef={(ref) => textAreaRef.current = ref}
                                             nativeFileInputRef={setNativeFileInputRef}
-                                            onFileSelect={handleFileSelect}
+                                            onFileSelect={attachments.onFileSelect}
+                                            onURLUpload={attachments.onURLUpload}
                                             onCustomPaste={(pastedHtml) => {
                                                 void controlledTextArea.replaceSelectionWithText(pastedHtml, {
                                                     select: "afterChange",
@@ -470,6 +471,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                             <div className="editorContainer">
                                 <MarkdownEditor
                                     referenceSearchEnabled={referenceSearchEnabled}
+                                    uploadsEnabled={uploadsEnabled}
                                     onValueChanged={controlledTextArea.handleNativeTextChange}
                                     onBeforeInput={controlledTextArea.handleNativeBeforeInput}
                                     onSave={props.handleSave}
@@ -477,10 +479,11 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                                     value={useValue}
                                     autoFocus={autoFocus}
 
-                                    uploadProgress={uploadProgress}
+                                    uploadProgress={attachments.progress}
                                     textAreaRef={(ref) => textAreaRef.current = ref}
                                     nativeFileInputRef={setNativeFileInputRef}
-                                    onFileSelect={handleFileSelect}
+                                    onFileSelect={attachments.onFileSelect}
+                                    onURLUpload={attachments.onURLUpload}
                                     onCustomPaste={(pastedHtml) => {
                                         void controlledTextArea.replaceSelectionWithText(pastedHtml, {
                                             select: "afterChange",

@@ -43,7 +43,7 @@ export interface ControlledTextAreaAPI {
 
     isLineBasedSelection: () => boolean;
 
-    replaceRange: (start: number, end: number, replacement: string) => Promise<void>;
+    replaceRange: (start: number, end: number, replacement: string, options?: ReplaceSelectionWithTextOptions) => Promise<void>;
     replaceSelectionWithText: (replacement: string, options?: ReplaceSelectionWithTextOptions) => Promise<void>;
     surroundSelectionWithText: (prefix: string, suffix: string, textIfNoSelection: string) => Promise<void>;
     transformSelectedLines: (transform: (line: string, lineIndex: number, allSelectedLines: string[]) => string | undefined) => Promise<void>; // transforming a line to undefined removes it.
@@ -155,14 +155,16 @@ export function useControlledTextArea(
         return textValue.slice(textArea.selectionStart, textArea.selectionEnd);
     };
 
-    const replaceRange = async (start: number, end: number, replacement: string) => {
+    const replaceRange = async (start: number, end: number, replacement: string,
+        options: ReplaceSelectionWithTextOptions = { select: "afterChange" }) => {
         const caretAfterReplacement = start + replacement.length;
         await applyProgrammaticEdit(
             start,
             end,
             replacement,
+            options.select === "change" ? start : caretAfterReplacement,
             caretAfterReplacement,
-            caretAfterReplacement
+            options.historyEditKind
         );
     };
 
@@ -244,16 +246,7 @@ export function useControlledTextArea(
         const textArea = getTextArea();
         const start = textArea?.selectionStart ?? 0;
         const end = textArea?.selectionEnd ?? 0;
-        const selectionStart = options.select === "change" ? start : start + replacement.length;
-        const selectionEnd = start + replacement.length;
-        await applyProgrammaticEdit(
-            start,
-            end,
-            replacement,
-            selectionStart,
-            selectionEnd,
-            options.historyEditKind
-        );
+        await replaceRange(start, end, replacement, options);
     };
 
     const handleNativeTextChange = (edit: NativeTextAreaEdit) => {

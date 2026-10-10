@@ -17,8 +17,9 @@ export interface MarkdownEditorCommandApi {
     dashboardContext: DashboardContextData;
     textArea: HTMLTextAreaElement;
     controlledTextArea: ControlledTextAreaAPI;
-    nativeFileInputRef: HTMLInputElement;
-    allowUploads?: boolean;
+    nativeFileInputRef: HTMLInputElement | null;
+    allowUploads: boolean;
+    uploadInProgress: boolean;
     referenceSearchEnabled: boolean;
     saveProgress: () => Promise<void>;
     //contextMap: MarkdownContextMap;

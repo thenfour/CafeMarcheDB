@@ -27,7 +27,7 @@ filters/presets/contact-search/export and core profile tabs/account controls/act
 are restored below; full profile and localized-name-search obligations remain open.
 
 Global shell search, planner association selection, the protected quick-search
-explorer and Markdown suggestions are restored below. Full localized-name matching
+explorer, Markdown suggestions and Markdown attachments are restored below. Full localized-name matching
 and several reports/admin surfaces remain guarded
 or incomplete. Song credit editing and performance history, public
 homepage/feed delivery and frontpage gallery editing/bake are restored below.
@@ -660,17 +660,47 @@ band contexts. All quick-search source archives/references remain preserved whil
 full localized tag-name matching is pending under the exact A1 exception. This
 checkpoint does not close `markdown-editing`, account administration or A1/B.
 
-## Next slice: Markdown file attachments
+## Markdown file attachments checkpoint
 
-Restore the original attachment toolbar, file chooser, paste/drop and progress/
-inserted-link workflow in `MarkdownControl3` and `RichTextEditor` through the
-existing band-owned File creation service. Carry explicit band, public association
-identities and permission policy from the editor; retain text/HTML/raw paste,
-drafts, captions and undo. Verify two bands/locales, revoked upload/association
-grants, failed processing/rollback/storage cleanup and actual saved references in
-the built editor before enabling those callers. Profile/branding uploads,
-localized Markdown editing/help and full localized-name matching retain their
-separate obligations.
+The original attachment toolbar, multiple-file chooser, clipboard file/image
+paste, file/URL drop and progress workflow are restored in `MarkdownControl3`
+and `RichTextEditor`. The editor supplies an authenticated selected band,
+public association identities and the original public-visibility/750px image
+policy. A caller's explicit visibility identity or name replaces that default.
+Person associations use `BandUser`; instruments use public identities. Existing
+Song, attendance Event and Wiki contexts use the same File upload owner, with
+fresh transactional authorization and database/audit/storage rollback.
+
+Local attachments retain relative protected-download references; their rendered
+links/images receive the current band and locale through the existing Markdown
+owners. External records link directly to their URL because they have no stored
+bytes. Captions preserve literal filename punctuation and external URL parentheses
+are escaped. Successful batches replace the captured selection as one highlighted,
+undoable edit. Text/HTML/raw paste, manual links, custom captions and draft/history
+remain active. Failed uploads release progress and preserve the draft for retry.
+
+Band, ordered language, authority, association, permission or presentation changes
+cancel the client request and discard stale progress/completions. A changed draft
+or remounted textarea cannot receive a delayed insertion; same-context uploaded
+files remain available through Files with an explanatory message. Readonly,
+anonymous, no-band, ungranted and local-only editors mount no chooser or attachment
+toolbar and cannot initiate paste/drop uploads. Telemetry failure cannot block an
+attachment. The shared `CMButton` now forwards its typed `aria-label`, giving the
+paperclip an accessible localized name.
+
+All `file-creation` source archives and deferred specifications remain preserved
+while profile/branding and general-gallery callers are pending. Localized Markdown
+editing/help and full localized-name matching retain their separate obligations;
+this checkpoint does not close `file-creation`, `markdown-editing` or A1/B.
+
+## Next slice: profile and branding uploads
+
+Trace and restore the original profile/branding upload callers through the current
+band-owned File and image services. Keep shared-person identity separate from band
+membership associations and carry explicit owner, band and visibility policy.
+Retain chooser/paste/drop, image processing and existing publication/save behavior;
+verify independent bands/locales, fresh revocation, failed processing/rollback,
+storage cleanup and actual built-browser saves before enabling each caller.
 
 ## Localized catalog text search exception
 
@@ -700,7 +730,7 @@ when a concrete workflow dependency requires it.
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
 | Events | Retain restored search/detail/creation/editing, setlists, invitation/attendance/default-instrument controls, date-picker highlights and import preview/save; finish full localized catalog-name matching separately. |
 | Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish remaining upload callers. |
-| Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, planner association selection/protected explorer, Markdown suggestions, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish Markdown attachments, localized Markdown editing/help, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
+| Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, planner association selection/protected explorer, Markdown suggestions/attachments, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish localized Markdown editing/help, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
 After core restoration: platform role/matrix and catalog/settings administration;
 band onboarding/lifecycle; shared-account lifecycle/merge/dependency reports;
@@ -1211,6 +1241,41 @@ jsdom batches; native cases require their disposable MariaDB environment.
 Preservation verification retains 285 source references, ten deferred
 specifications and nineteen pending features. Full localized tag-name matching
 keeps `quick-search` pending; all its archives remain intact. A1/B remain open.
+
+The Markdown-attachment checkpoint (2026-10-10) passes normal typecheck, targeted
+lint and a normal production build with isolated output. Focused coverage passes
+162 checks across thirteen files, including 23 attachment cases in the actual
+editor, chooser, textarea and undo controls. They cover batch selection/progress,
+paste/drop/URL insertion, text/HTML/raw paste, failure/retry, literal captions,
+external URL syntax, explicit visibility, ungranted/local/readonly/anonymous
+controls, telemetry failure, draft changes, fullscreen remounts, unmounting and
+band/language/authority/association/presentation cancellation. Transport cases
+cover cancellation before sending, during upload and after completion. All 106
+native MariaDB checks across seven files pass on a newly created/dropped database,
+including Wiki association visibility revocation and existing upload/image
+processing, commit rollback, storage cleanup and two-band authorization cases.
+
+Nine built Chromium groups pass: French multi-file chooser with real PDF/image
+bytes, public associations, 750px metadata, literal captions, undo/redo and
+contextual downloads; native clipboard image paste and file/URL drops with exact
+Song persistence; actual HTML/raw paste and undo; invalid-image batch rollback of
+File/association/audit/storage with a preserved draft and retry; fresh upload
+revocation; fresh parent visibility revocation before copying files; pending
+presentation cancellation followed by independent Dutch labels/ownership/save
+and a contextual saved reference after reload; a locked Event-description Wiki
+upload with both Wiki/Event associations and exact saved revision; and uncached
+anonymous rejection. No uncaught page or unexpected RPC errors occurred. French
+and Dutch layouts were visually inspected. Created content/files, localized
+labels, grants, actions, audits and the private upload directory were cleaned up;
+the owned server stopped. Evidence is in
+`temp/markdown-attachments-browser-result.json`.
+
+The complete suite retains 206 failed tests and ten suite-load failures, with
+1845 passed and 692 skipped. Its 164 normalized failure titles add or remove none
+against the Markdown-suggestion baseline. The runner stops before later jsdom
+batches; native cases require their disposable MariaDB environment. Preservation
+verification retains 285 source references, ten deferred specifications and
+nineteen pending features. `file-creation`, `markdown-editing` and A1/B remain open.
 
 The [development seeder](../development-seeding.md) restores the pre-migration
 fixed catalogs and random users, songs/files, event schedules/attendance/setlists,

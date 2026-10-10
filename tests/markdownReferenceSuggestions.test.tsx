@@ -53,7 +53,7 @@ function InlineHarness({ seed = "Draft ", enabled = true }: { seed?: string; ena
     const [value, setValue] = React.useState(seed);
     const ref = React.useRef<HTMLTextAreaElement | null>(null);
     editor = useControlledTextArea(ref, value, setValue);
-    return <MarkdownEditor referenceSearchEnabled={enabled} value={value} onValueChanged={editor.handleNativeTextChange}
+    return <MarkdownEditor referenceSearchEnabled={enabled} uploadsEnabled={false} onURLUpload={() => {}} value={value} onValueChanged={editor.handleNativeTextChange}
         onBeforeInput={editor.handleNativeBeforeInput} nominalHeight={200} onFileSelect={() => {}} uploadProgress={null}
         textAreaRef={element => { ref.current = element; }} nativeFileInputRef={() => {}} />;
 }
@@ -69,6 +69,7 @@ function DialogHarness({ command, seed = "Authored draft" }: { command: Markdown
         // These commands receive context for the editor contract but read search scope through its owner.
         dashboardContext: {} as DashboardContextData,
         controlledTextArea: editor, textArea: element!, nativeFileInputRef: document.createElement("input"),
+        allowUploads: false, uploadInProgress: false,
         referenceSearchEnabled: !!band, saveProgress: async () => {}, invocationTriggerMap: { [command.id]: trigger },
     };
     return <><textarea value={value} readOnly ref={node => { ref.current = node; if (node && node !== element) setElement(node); }} />

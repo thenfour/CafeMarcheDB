@@ -8,6 +8,7 @@ export interface CMDBUploadFilesArgs {
     files: FileList | null;
     fields: TClientUploadFileArgs;
     maxImageDimension?: number;
+    signal?: AbortSignal;
     onProgress: (progress01: number, uploaded: number, total: number) => void;
 }
 
@@ -26,12 +27,20 @@ export async function CMDBUploadFile(args: CMDBUploadFilesArgs): Promise<UploadR
     }
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+        if (args.signal?.aborted) {
+            reject(new Error("Upload cancelled."));
+            return;
+        }
+        const abort = () => xhr.abort();
+        const releaseSignal = () => args.signal?.removeEventListener("abort", abort);
+        args.signal?.addEventListener("abort", abort, { once: true });
         xhr.upload.addEventListener("progress", event => {
             if (event.lengthComputable) {
                 args.onProgress(event.loaded / event.total, event.loaded, event.total);
             }
         });
         xhr.addEventListener("load", () => {
+            releaseSignal();
             try {
                 const response = FileUploadResponseSchema.parse(JSON.parse(xhr.responseText));
                 if (xhr.status !== 200 || !response.isSuccess) {
@@ -43,8 +52,14 @@ export async function CMDBUploadFile(args: CMDBUploadFilesArgs): Promise<UploadR
                 reject(error);
             }
         });
-        xhr.addEventListener("error", () => reject(new Error("Upload request failed.")));
-        xhr.addEventListener("abort", () => reject(new Error("Upload cancelled.")));
+        xhr.addEventListener("error", () => {
+            releaseSignal();
+            reject(new Error("Upload request failed."));
+        });
+        xhr.addEventListener("abort", () => {
+            releaseSignal();
+            reject(new Error("Upload cancelled."));
+        });
         xhr.open("POST", "/api/files/upload?bandPublicId=" + encodeURIComponent(args.bandPublicId), true);
         const token = getAntiCSRFToken();
         if (token) {

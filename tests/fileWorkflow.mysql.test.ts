@@ -12,7 +12,7 @@ import { bindDB3ReadSnapshot, type DB3ReadRootDatabase } from "src/core/db3/serv
 import { queryView } from "src/core/db3/server/db3QueryCore";
 import { FileUploadInputError, uploadFiles, type FileUploadPart } from "src/core/db3/server/fileUpload";
 import { FileUploadArgsSchema, FileUploadResponseSchema, type FileUploadArgs } from "src/core/db3/shared/fileUpload";
-import { eventReferenceView, songReferenceView, fileDetailView, fileEditorView, xBandUser, xFile, xFileSongTag, xInstrument, xPermission, xSong } from "src/core/db3/db3";
+import { eventReferenceView, songReferenceView, fileDetailView, fileEditorView, xBandUser, xFile, xFileSongTag, xInstrument, xPermission, xSong, xWikiPage } from "src/core/db3/db3";
 import { generatePublicId } from "src/server/publicId";
 import { initializeAccessControl } from "src/setup/accessControl";
 import { prepareSongs } from "./support/songWorkflowMysqlFixture";
@@ -53,6 +53,23 @@ describe.skipIf(!settingsMysqlTestUrl)("associated File editing and uploads on M
     beforeAll(async () => initializeAccessControl(database), 30_000);
     afterAll(async () => database.$disconnect());
     const run = (work: (tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture) => Promise<void>) => withSettingsMysqlFixture(database, work);
+
+    it("associates Markdown uploads with the public Wiki identity and rechecks the parent visibility grant", () => run(async (tx, fixture) => withStorage(async storage => {
+        const c = await prepare(tx, fixture);
+        const permission = await tx.permission.findUniqueOrThrow({ where: { name: Permission.visibility_editors } });
+        const grant = await tx.bandRolePermission.create({ data: { publicId: generatePublicId(), bandRoleId: c.role.id, permissionId: permission.id } });
+        const page = await tx.wikiPage.create({ data: { publicId: generatePublicId(), bandId: c.band.id, slug: "attachment-page",
+            createdByUserId: fixture.admin.id, visiblePermissionId: permission.id } });
+        const patch = { taggedWikiPageId: xWikiPage.parseIdentity(page.publicId), externalURI: "https://example.com/score.pdf" };
+        const response = await c.upload([], storage, patch);
+        const file = await tx.file.findUniqueOrThrow({ where: { publicId: response.files[0]!.publicId }, include: { taggedWikiPages: true } });
+        expect(file.bandId).toBe(c.band.id); expect(file.taggedWikiPages.map(tag => tag.wikiPageId)).toEqual([page.id]);
+        await tx.bandRolePermission.delete({ where: { id: grant.id } });
+        const before = { files: await tx.file.count(), changes: await tx.change.count(), associations: await tx.fileWikiPageTag.count() };
+        await expect(c.upload([], storage, patch)).rejects.toThrow();
+        expect({ files: await tx.file.count(), changes: await tx.change.count(), associations: await tx.fileWikiPageTag.count() }).toEqual(before);
+        expect(await readdir(storage)).toEqual([]);
+    })));
 
     it("creates an external URL using public associations, actor ownership and shared audits", () => run(async (tx, fixture) => withStorage(async storage => {
         const c = await prepare(tx, fixture);

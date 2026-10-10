@@ -3,12 +3,14 @@ import { Tooltip } from "@mui/material";
 import React from "react";
 import { IsNullOrWhitespace } from "shared/utils";
 import { KeyValueTable } from "../CMCoreComponents2";
-import { MarkdownEditorCommand } from "./MarkdownEditorCommandBase";
+import { MarkdownEditorCommand, type MarkdownEditorCommandApi } from "./MarkdownEditorCommandBase";
 import { CMHighlightIcon, InsertSpecialCharacterToolItemWithDropdown, SurroundTextCommandSpec, SurroundTextToolItemWithDropdown } from "./MarkdownEditorCommandUtils";
 import { MarkdownHyperlinkCommand } from "./MarkdownEditorHyperlinkCommand";
 import { MarkdownEditorMentionCommand } from "./MarkdownEditorMentionCommand";
 import { WikiReferenceCommand } from "./MarkdownEditorWikiReferenceCommand";
 import { gIconMap } from "../../db3/components/IconMap";
+import { useLocale } from "src/locale/components/useLocale";
+import { CMButton } from "../CMCoreComponents2";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const BoldCommand: MarkdownEditorCommand = {
@@ -192,17 +194,19 @@ const CharacterSizeCommand: MarkdownEditorCommand = {
 // if existing, select & show dialog. if not, show file picker dialog.
 const FileAttachCommand: MarkdownEditorCommand = {
     id: "fileAttach",
-    isEnabled: api => api.allowUploads !== false,
-    toolbarTooltip: "File attach",
-    toolbarIcon:
+    isEnabled: api => api.allowUploads === true,
+    toolbarItem: props => <FileAttachmentToolbar {...props} />,
+};
+
+function FileAttachmentToolbar({ api }: { api: MarkdownEditorCommandApi }) {
+    const { getPlainString } = useLocale();
+    const label = getPlainString("markdown.attachment.choose");
+    return <Tooltip title={label} disableInteractive><span><CMButton className="toolItem fileAttach" aria-label={label}
+        disabled={!api.nativeFileInputRef || api.uploadInProgress} onClick={() => api.nativeFileInputRef?.click()}>
         <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" className="octicon octicon-paperclip Button-visual">
             <path d="M12.212 3.02a1.753 1.753 0 0 0-2.478.003l-5.83 5.83a3.007 3.007 0 0 0-.88 2.127c0 .795.315 1.551.88 2.116.567.567 1.333.89 2.126.89.79 0 1.548-.321 2.116-.89l5.48-5.48a.75.75 0 0 1 1.061 1.06l-5.48 5.48a4.492 4.492 0 0 1-3.177 1.33c-1.2 0-2.345-.487-3.187-1.33a4.483 4.483 0 0 1-1.32-3.177c0-1.195.475-2.341 1.32-3.186l5.83-5.83a3.25 3.25 0 0 1 5.553 2.297c0 .863-.343 1.691-.953 2.301L7.439 12.39c-.375.377-.884.59-1.416.593a1.998 1.998 0 0 1-1.412-.593 1.992 1.992 0 0 1 0-2.828l5.48-5.48a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-5.48 5.48a.492.492 0 0 0 0 .707.499.499 0 0 0 .352.154.51.51 0 0 0 .356-.154l5.833-5.827a1.755 1.755 0 0 0 0-2.481Z"></path>
-        </svg>
-    ,
-    invoke: async (args) => {
-        args.api.nativeFileInputRef.click();
-    },
-};
+        </svg></CMButton></span></Tooltip>;
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const UnorderedListCommand: MarkdownEditorCommand = {

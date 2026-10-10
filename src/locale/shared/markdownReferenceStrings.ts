@@ -13,4 +13,8 @@ export const markdownReferenceStrings = {
     "markdown.reference.caption": label("Custom caption (optional)"),
     "markdown.reference.search": label("Search..."),
     "markdown.reference.loading": label("Loading..."),
+    "markdown.attachment.choose": label("Attach files"),
+    "markdown.attachment.uploaded": label("Files uploaded"),
+    "markdown.attachment.failed": label("Could not upload files. Your draft is preserved."),
+    "markdown.attachment.draftChanged": label("Files uploaded. Your draft changed, so no links were inserted. The files are available in the Files list."),
 };
