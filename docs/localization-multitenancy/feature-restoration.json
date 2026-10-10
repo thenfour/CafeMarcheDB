@@ -163,8 +163,13 @@
       "reason": "Experimental import preview uses global person/song lookups, obsolete invitation tags and an unscoped authorization/time-zone boundary; its editor depends on unfinished event/song contracts.",
       "restore": "Restore text/config parsing, band-owned defaults, visible song and membership matching, editable preview, explicit save and saved-event history with strict public inputs, fresh snapshot authorization, localized references and band scheduling through the migrated creation transaction.",
       "verification": "Reactivate preserved preview/identity/authorization specifications; test supported dates and year overrides, comments/repeated songs, ambiguous or missing matches, two bands, inactive members/catalogs, hidden songs, grant revocation, preview edits and saves in the built browser.",
-      "status": "pending",
-      "evidence": []
+      "status": "restored",
+      "evidence": [
+        "2026-10-10: Restored the original two-column text/config importer, yYYYY override and 2023 fallback, first-line naming, standalone notes separator, Concert/Rehearsal detection, ordered/repeated Song matching with aliases/comments, original Carl/Peter/Guido attendance aliases, editable name/date/type/status/tags/invitation/visibility preview, explicit save and contextual session history through the existing page/RPC and aggregate Event creation owner. Preview performs no writes. The original platform-administration gate remains in place.",
+        "Strict public band/presentation inputs enter a freshly authorized repeatable snapshot. Shared DB3 views supply visible Songs, active selected-band people and localized catalog/default references; no global person/Song lookup or parallel row policy was introduced. All-day imports use separate selected-band midnights, including 23/25-hour DST days, and missing dates use today's band date. Missing/inactive/hidden defaults and members are omitted safely. Ambiguous Song/member matches are logged and omitted instead of choosing an arbitrary identity; the reference numeric/month-first date-parser bugs and invalid explicit leap-year fallback were fixed.",
+        "Normal typecheck/build, isolated demo build and targeted lint pass. 103 focused checks across six files and all 233 native MariaDB cases across fourteen files pass, including sixteen import cases and retained Event creation/attendance/search/detail, member, File, Song/setlist and catalog regressions. Import checks cover parser/strict transport, public defaults/children, no-write previews, two-band visibility, unavailable members/catalogs, ambiguity, fresh revoked/deleted/merged authority, band dates/DST, edited saves, failed drafts, pending duplicate saves and context resets.",
+        "Seven built Chromium groups pass on disposable two-band data: French preview/captions/comments/defaults without writes; retirement after preview rejects the actual save atomically and retains edits; edited name/date/type/tag save with DST, child order, membership responses and audits/ranges; contextual history opens Event detail; Dutch second-band defaults/memberships and cleared history; fresh platform revocation/recovery; existing anonymous sign-in gate without import controls. No uncaught page or unexpected RPC errors occurred. The French layout was visually inspected and fixture rows/catalog changes/audits/actions were cleaned up. All seven completed import source blocks/references and obsolete recovery controls/assertions were removed. Remaining English chrome follows the A1 exception; localized-name search and the 206 full-suite failures/ten suite-load failures still leave A1/B open. See 04-implementation-plan.md#verification-status."
+      ]
     },
     {
       "id": "file-creation",
@@ -216,7 +221,7 @@
         "2026-10-08: Restored the original event detail page, breadcrumbs/tabs, creation dialog, basic/visibility/relevance edits, segment creation/date edits/deletion, invitation-group/member selection, inline attendance and CafeMarche frontpage field editing. Public targets and fresh band snapshots use shared DB3 field authorization, localized reference catalogs, audit and event-range services. The invitation picker uses active band memberships; draft tag choices and missing dialog help keys were repaired.",
         "294 focused checks and 162 native MariaDB checks pass, including parent-inherited segment ownership, real invitation-tag assignments, audit/range updates, hidden/foreign references, revoked grants and independent pinned Song/File visibility. Normal typecheck/build and focused lint pass. Twelve built-browser groups pass, including original creation/editing controls, existing creation permission checks, invitation/attendance saves, actual WAV playback, French frontpage writes and Dutch second-band/foreign-event boundaries; no uncaught browser or RPC errors. See 04-implementation-plan.md#verification-status for evidence and the failing full-suite assessment.",
         "2026-10-09: Restored the original event setlist editor and Song picker. Shared parent/child ownership declarations authorize save/update/delete/reorder, preserve persisted child identities and audit transactions, and reject hidden/foreign parents, songs, child IDs and mixed-event reorder scopes. Native tests retain creation/attendance/response/plan regressions; built-browser creation/editing, keyboard picking, drag reorder and confirmed parent/child deletion pass. See the Song/setlist verification in 04-implementation-plan.md.",
-        "Still pending: Event import preview/save and localized catalog-name free-text matching under the A1 exception. Public homepage/feed delivery and Event Files are restored in their own checkpoints. These checkpoints do not close the full event-workflows obligation or A1/B.",
+        "Still pending: localized catalog-name free-text matching under the A1 exception. Event import preview/save, public homepage/feed delivery and Event Files are restored in their own checkpoints. These checkpoints do not close the full event-workflows obligation or A1/B.",
         "2026-10-09: Event Files now uses the restored shared File metadata/association and upload controls with explicit band/public targets and independent File authorization; File pages are restored and image-creation/localized-name-search obligations are tracked separately.",
         "2026-10-10: Restored the original attendance/default-instrument interaction matrix and date-picker highlights through the existing membership, attendance and Event_Search owners. Effective primary selection remains live until explicitly pinned and clearing restores the current band default. Blank instrument labels remain selectable; new hidden instrument/group choices use shared DB3 reference visibility. Failed/busy comment saves retain drafts, the Markdown shortcut retains the open editor, and response-table saves send changed fields only so retired historical references survive unrelated edits.",
         "The bounded 100-result picker search carries explicit calendar bounds and shared band/locale cancellation. Individual noncancelled segments and point events highlight dates; aggregate gaps/TBD/private/deleted/foreign Events remain excluded. All-day dates stay in the band, timed dates use the picker timezone, and DST/exclusive boundaries are retained. Shared negative-reference filtering now includes NULL references; empty cancellation catalogs use alwaysMatch. Calendar source/deferred-test archives and the obsolete recovery notice/test are replaced by active coverage.",
@@ -1467,48 +1472,6 @@
       "featureId": "legacy-event-song-filters",
       "source": "8fdb9fd6ba7c2bb21718fd050181aad06c6eda97:src/core/db3/shared/apiTypes.ts:376-387",
       "sha256": "8ac7c09c507f37e73a47b262c3e4e0c7975bba42f9c25427772f12bea458b60e"
-    },
-    {
-      "file": "src/core/db3/queries/getImportEventData.ts",
-      "featureId": "event-import",
-      "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:src/core/db3/queries/getImportEventData.ts:1-399",
-      "sha256": "5c4b33418fc27962a5c5e0831e38e7179ee9e9139ee838f4345840d11461a2b9"
-    },
-    {
-      "file": "src/pages/backstage/eventImport.tsx",
-      "featureId": "event-import",
-      "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:src/pages/backstage/eventImport.tsx:1-331",
-      "sha256": "d6cdcd6d856e4eb603459a4fb0ad1b2de2ab33862cfe6d90cd2ad18c86c7344f"
-    },
-    {
-      "file": "src/core/db3/shared/apiTypes.ts",
-      "featureId": "event-import",
-      "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:src/core/db3/shared/apiTypes.ts:319-345",
-      "sha256": "b0d5c41b45258544a0a3430afc0573392337e2730301b8827398ebaa54c665e2"
-    },
-    {
-      "file": "tests/authorization/eventAttendancePublicIds.test.ts",
-      "featureId": "event-import",
-      "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:tests/authorization/eventAttendancePublicIds.test.ts:17-17",
-      "sha256": "86ddf59632a9e69dea1e0c1a1bf4d6dcb7d486754222a735471727f188b41810"
-    },
-    {
-      "file": "tests/authorization/eventAttendancePublicIds.test.ts",
-      "featureId": "event-import",
-      "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:tests/authorization/eventAttendancePublicIds.test.ts:206-216",
-      "sha256": "ca18fef4ca8eeda056f5d3aa2d8fcdafa0b4cf77221647d28f7ec784a70a7b2f"
-    },
-    {
-      "file": "tests/authorization/backstageServerGuard.test.ts",
-      "featureId": "event-import",
-      "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:tests/authorization/backstageServerGuard.test.ts:170-181",
-      "sha256": "dea4485ea47d786517c2bbd1860bda1eabc867ec90d7824bc88f46a28d4434d0"
-    },
-    {
-      "file": "tests/db3LegacyReadCompatibilityInventory.test.ts",
-      "featureId": "event-import",
-      "source": "ced31f2c6595be33520214fe5e23a75cc8148b3a:tests/db3LegacyReadCompatibilityInventory.test.ts:55-58",
-      "sha256": "44a41f081f7d08485da974f7cc053d7fba37aacd0b46ed4920b74da161a50338"
     },
     {
       "file": "src/core/db3/mutations/forkImage.ts",

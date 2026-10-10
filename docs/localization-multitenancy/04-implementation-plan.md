@@ -408,16 +408,37 @@ cancellation catalogs leave status filtering open. The generic negative-referenc
 filter now includes unset references, fixing SQL NULL exclusion without Event
 special cases. Completed calendar source/deferred-test blocks and the obsolete
 recovery notice/test are removed; the behavioral specification is active again.
-This checkpoint leaves import/localized-name obligations and A1/B open.
+This checkpoint leaves localized-name obligations and A1/B open; import is restored
+in the following checkpoint.
 
-## Next slice: Event import preview and save
+## Event import checkpoint
 
-Restore the original text/config parser, year overrides, band-owned defaults,
-visible Song and active membership matching, editable preview, explicit save and
-saved-event history through the migrated creation transaction. Follow the
-`event-import` manifest entry and reactivate its preserved specifications. Retain
-the restored Event/member workflows; keep account analysis, merging, role
-administration, full localized-name matching and the full-suite gate separate.
+The original text/config importer retains its two columns, year overrides and
+2023 fallback, notes separator, title/type detection, ordered/repeated Songs with
+aliases/comments and Carl/Peter/Guido attendance aliases. Name/date/type/status/
+tags/invitation/visibility remain editable; explicit saves use the existing Event
+aggregate transaction and add contextual links to session history. Preview writes
+nothing and retains the original platform-administration gate.
+
+Fresh band snapshots supply visible Songs, active membership-qualified people,
+localized catalog labels and band-owned defaults through shared DB3 views. Import
+dates use band midnights, including DST, and a missing date uses today's band date.
+Missing or ambiguous matches are logged and omitted; tied matches no longer pick
+arbitrary identities. Numeric/month-first date parsing and invalid explicit
+leap-year fallback are repaired. Busy saves cannot be duplicated, failed saves
+retain edits, and new text/config/band/locale context clears the earlier draft.
+Completed import source blocks, recovery controls and obsolete assertions are
+removed. Remaining localized-name search and full-suite failures leave A1/B open.
+
+## Next slice: Wiki search and navigation suggestions
+
+Restore the reference Wiki search and menu Wiki-slug suggestions through their
+existing owners with selected-band visibility, localized labels, catalog filters,
+counts/pagination and contextual links. Follow `wiki-search` and the relevant
+`quick-search` obligations; preserve original navigation/editing behavior and
+record only the localized catalog-name text predicates deferred by the A1
+exception. This bounded checkpoint leaves other quick-search plugins, Markdown
+mentions, account administration and full localized-name matching separate.
 
 ## Localized catalog text search exception
 
@@ -445,7 +466,7 @@ when a concrete workflow dependency requires it.
 | Work | Required parity |
 | --- | --- |
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
-| Events | Retain restored search/detail/creation/editing, setlists, invitation/attendance/default-instrument controls and date-picker highlights; restore import preview/save and account for its remaining dependencies. |
+| Events | Retain restored search/detail/creation/editing, setlists, invitation/attendance/default-instrument controls, date-picker highlights and import preview/save; finish full localized catalog-name matching separately. |
 | Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish remaining upload callers. |
 | Supporting workflows | Dashboard/wiki/custom navigation, plans, search, calendars/feeds/tokens, Custom Links, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
@@ -732,11 +753,34 @@ No uncaught page or unexpected RPC errors occurred. The calendar layout was
 visually inspected and temporary event/catalog/response/assignment/audit fixtures
 were cleaned up. Remaining English chrome is covered by the A1 exception.
 
+The import slice passes 103 focused checks in six files and 233 native MariaDB
+cases in fourteen files, including sixteen new import cases and retained Event,
+member, File, Song/setlist and catalog regressions. Coverage includes every
+advertised date format/year override, comments/repeats/aliases, ambiguity, missing
+or inactive catalogs/members, independent bands/defaults, hidden/private/deleted
+Songs, fresh authority/account/band revocation, public children/audits/ranges,
+band-today and 23/25-hour DST days. Client checks cover explicit edited saves,
+pending duplicate prevention, failed-draft retry and text/band/locale resets.
+Normal typecheck/build, isolated demo build, targeted lint and preservation
+verification pass after removing all seven completed import source blocks and
+obsolete recovery controls/assertions.
+
+Seven production Chromium groups pass on disposable two-band data: French
+preview with localized captions/defaults and no writes; actual atomic rejection
+after Song retirement retaining edits; edited name/date/type/tag creation with
+DST-aware dates, ordered children, membership responses, revisions and audits;
+history opening the existing contextual Event detail; independent Dutch defaults/
+memberships and reset history; fresh platform revocation/recovery; anonymous
+sign-in gating with no import controls. No uncaught page or unexpected RPC errors
+occurred. The French layout was visually inspected; temporary rows, catalog
+changes, audits and actions were cleaned up. Remaining English chrome stays under
+the A1 exception.
+
 The complete-suite run still reports 206 failed tests and ten suite-load failures,
 including unscoped authorization/account/setlist fixtures, deferred-domain and
 date-policy contracts; the runner stops before the later jsdom batches. Focused
-passes do not establish A1 readiness. The latest run passes 1801 tests and skips
-567. Updated account fixtures change which legacy assertions reach the missing
+passes do not establish A1 readiness. The latest run passes 1824 tests and skips
+583. Updated account fixtures change which legacy assertions reach the missing
 GlobalRole/designation prerequisites; those changed failures reproduce on baseline
 `bce53c20` product code with the same fixture. Newly introduced projection,
 translation-read and CommonJS import-order failures were fixed; date probes and

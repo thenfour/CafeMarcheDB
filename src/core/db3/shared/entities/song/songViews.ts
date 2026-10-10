@@ -41,6 +41,22 @@ export const songReferenceView = defineView({
     hydrate: songReferenceContract.hydrate,
 });
 
+// for event import song matching. could also consider combining with songReferenceView
+const songImportMatchContract = deriveViewContract(xSong, Prisma.validator<Prisma.SongDefaultArgs>()({
+    select: {
+        publicId: true,
+        name: true,
+        aliases: true,
+    },
+}));
+export const songImportMatchView = defineView({
+    viewID: "Song_ImportMatch",
+    entity: xSong,
+    selection: songImportMatchContract.prismaSelection,
+    dtoSchema: songImportMatchContract.dtoSchema,
+    hydrate: songImportMatchContract.hydrate,
+});
+
 export const songCreditEditorSelection = Prisma.validator<Prisma.SongCreditDefaultArgs>()({
     select: {
         publicId: true,

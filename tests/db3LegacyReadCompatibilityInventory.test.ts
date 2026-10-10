@@ -151,18 +151,6 @@ describe("legacy DB3 read compatibility inventory", () => {
 //     ],
 // MIGRATION_REFERENCE_END
 
-// MIGRATION_RESTORE: event-import
-// Source: ced31f2c6595be33520214fe5e23a75cc8148b3a:tests/db3LegacyReadCompatibilityInventory.test.ts:55-58
-// Reason: Experimental import preview uses global person/song lookups, obsolete invitation tags and an unscoped authorization/time-zone boundary; its editor depends on unfinished event/song contracts.
-// Restore: Restore text/config parsing, band-owned defaults, visible song and membership matching, editable preview, explicit save and saved-event history with strict public inputs, fresh snapshot authorization, localized references and band scheduling through the migrated creation transaction.
-// Verification: Reactivate preserved preview/identity/authorization specifications; test supported dates and year overrides, comments/repeated songs, ambiguous or missing matches, two bands, inactive members/catalogs, hidden songs, grant revocation, preview edits and saves in the built browser.
-// SHA256: 44a41f081f7d08485da974f7cc053d7fba37aacd0b46ed4920b74da161a50338
-// MIGRATION_REFERENCE_BEGIN
-//     "src/pages/backstage/eventImport.tsx": [
-//         { api: "defineLegacyTableClientSpec", category: "render-only-editor", count: 2 },
-//         { api: "useLegacyTableRenderContext", category: "render-only-editor", count: 2 },
-//     ],
-// MIGRATION_REFERENCE_END
 
 
 // MIGRATION_RESTORE: wiki-search

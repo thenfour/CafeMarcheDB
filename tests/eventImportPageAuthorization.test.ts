@@ -22,7 +22,7 @@ function grant(...permissions: Permission[]) {
     return requirePermission;
 }
 
-describe("deferred event import page authorization", () => {
+describe("event import page authorization", () => {
     beforeEach(() => loadAuth.mockReset());
 
     it.each([undefined, bandId])("retains Sysadmin protection with band %s", async selectedBand => {

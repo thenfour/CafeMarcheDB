@@ -28,14 +28,6 @@ export function DeferredAuditLogPage() {
     </DashboardLayout>;
 }
 
-/** Keep import reachable without mounting preview readers or save controls. */
-export function DeferredEventImportPage() {
-    const locale = useLocale();
-    return <DashboardLayout title={locale.getPlainString("recovery.eventImport.title")}>
-        <Alert severity="info">{locale.getPlainString("recovery.eventImport.description")}</Alert>
-    </DashboardLayout>;
-}
-
 /** Preserve the protected explorer URL without mounting a global search reader. */
 export function DeferredQuickSearchPage() {
     const locale = useLocale();

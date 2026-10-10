@@ -1,5 +1,5 @@
 export type DeferredApplicationFeature = "accountRoles" | "accountMerge" | "accountAnalysis" | "activityReports" | "auditLog"
-    | "legacyEventSongFilters" | "eventImport" | "fileCreation" | "quickSearch"
+    | "legacyEventSongFilters" | "fileCreation" | "quickSearch"
     | "eventWorkflows" | "songWorkflows" | "fileWorkflows" | "publicPublication" | "domainSearch" | "developerExamples";
 
 const featureNames: { readonly [Feature in DeferredApplicationFeature]: string } = {
@@ -9,7 +9,6 @@ const featureNames: { readonly [Feature in DeferredApplicationFeature]: string }
     activityReports: "Activity reports",
     auditLog: "Audit log",
     legacyEventSongFilters: "Legacy event and song filters",
-    eventImport: "Event import",
     fileCreation: "File creation",
     quickSearch: "Quick search",
     eventWorkflows: "Event screens and editing",
