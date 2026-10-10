@@ -13,11 +13,10 @@ import { DB3EditRowButton, type DB3EditRowButtonAPI } from '../../db3/components
 import { AppContextMarker } from "../AppContext";
 import { KeyValueDisplay } from '../CMCoreComponents2';
 import { CMLink } from "../CMLink";
-import { CMTextInputBase, type CMTextInputBaseProps } from "../CMTextField";
 import { VisibilityValue } from "../VisibilityControl";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
-import { useLocale } from "src/locale/components/useLocale";
+import { WikiSlugInputWithSearch } from "../wiki/WikiSlugInputWithSearch";
 import { LocalizedStringColumnClient } from "src/core/db3/components/DB3CatalogFields";
 import { localizedText } from "src/core/db3/shared/columnTypes/localizedString";
 import { withMemberPresentation } from "../user/bandMemberLinks";
@@ -130,20 +129,8 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // this is basically TextInputWithSearchProps but with different formatting.
-export interface WikiSlugInputWithSearchProps extends CMTextInputBaseProps, DB3Client.ColumnPresentationArgs {
-    columnName: string;
-    schema: db3.xTable;
-    allowSearch: boolean;
-};
-export const WikiSlugInputWithSearch = (props: WikiSlugInputWithSearchProps) => {
-    const locale = useLocale();
-    const { fieldCaptionKey, fieldDescriptionKey, columnName, schema, allowSearch, ...inputProps } = props;
-    // Wiki ownership and resolved search remain under the wiki-search restoration obligation.
-    return <div className="searchableValueContainer">
-        <CMTextInputBase {...inputProps} />
-        <div className="searchableValueResult">{locale.getPlainString("menuLink.wikiSearchDeferred")}</div>
-    </div>;
-};
+export { WikiSlugInputWithSearch } from "../wiki/WikiSlugInputWithSearch";
+export type { WikiSlugInputWithSearchProps } from "../wiki/WikiSlugInputWithSearch";
 
 
 
@@ -164,14 +151,11 @@ export class SearchableWikiSlugColumnClient extends DB3Client.GenericStringColum
             aria-label={this.fieldCaption}
             onChange={(e, val) => params.api.setFieldValues({ [this.columnName]: val })}
             autoFocus={params.autoFocus}
+            // This column is bound to the MenuLink editor's string-valued wikiSlug.
             value={params.value as string}
             className={this.className}
 
             allowSearch={!params.validationResult || !!params.validationResult.success}
-            columnName={"slug"}
-            schema={db3.xWikiPage}
-            fieldCaptionKey={this.fieldCaptionKey}
-            fieldDescriptionKey={this.fieldDescriptionKey}
         />
     });
 };

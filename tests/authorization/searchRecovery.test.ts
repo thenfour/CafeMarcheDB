@@ -18,7 +18,7 @@ describe("restored event/song/file search recovery boundary", () => {
             expect(() => ZGetSearchResultsInput.parse({ ...args, offset })).toThrow();
         }
     });
-    it.each(["User", "WikiPage"])("keeps %s deferred before starting a snapshot", async tableID => {
+    it.each(["User"])("keeps %s deferred before starting a snapshot", async tableID => {
         await expect(GetSearchResultsCore({ tableID, offset: 0, take: 20, quickFilter: "", sort: [], discreteCriteria: [] },
             createAuthorizationPersona("sysadmin").schemaAuthorization)).rejects.toThrow(ApplicationFeatureUnavailableError);
     });

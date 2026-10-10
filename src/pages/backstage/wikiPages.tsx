@@ -1,9 +1,218 @@
 import React from "react";
-import { DeferredDomainPage } from "src/core/components/DeferredDomainPage";
+import { Alert } from "@mui/material";
+import { useLocale } from "src/locale/components/useLocale";
+import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
+import { EnrichedVerboseWikiPage, WikiPageOrderByColumnNames, WikiPageOrderByColumnOption, WikiPageOrderByColumnOptions, WikiPagesFilterSpec } from "@/src/core/components/wiki/WikiClientBaseTypes";
+import { WikiPageListItem } from "@/src/core/components/wiki/WikiPageListItem";
+import { wikiParseCanonicalWikiPath } from "@/src/core/wiki/shared/wikiUtils";
+import { BlitzPage } from "@blitzjs/next";
+import { SortDirection } from "shared/rootroot";
+import { AppContextMarker } from "src/core/components/AppContext";
+import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
+import * as db3 from "src/core/db3/db3";
+import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
+import { wikiPageSearchConfig } from "src/core/hooks/searchConfigs";
+import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
+import type { WikiPageTagPublicId } from "shared/publicId";
 
-export default function WikiSearchPage() {
-    return <DeferredDomainPage feature="wikiSearch" />;
+// for serializing in compact querystring
+interface WikiPagesFilterSpecStatic {
+    label: string,
+    helpText: string,
+
+    orderByColumn: WikiPageOrderByColumnOption;
+    orderByDirection: SortDirection;
+
+    tagFilterEnabled: boolean;
+    tagFilterBehavior: DiscreteCriterionFilterType;
+    tagFilterOptions: WikiPageTagPublicId[];
+
+    namespaceFilterEnabled: boolean;
+    namespaceFilterBehavior: DiscreteCriterionFilterType;
+    namespaceFilterOptions: string[];
 }
+
+function parseWikiSortColumn(column: string): WikiPageOrderByColumnOption {
+    if (column === "slug" || column === "createdAt" || column === "namespace") {
+        return column;
+    }
+    throw new Error(`Unknown Wiki sort column ${column}.`);
+}
+
+// predefined filter sets
+const gDefaultStaticFilterValue: WikiPagesFilterSpecStatic = {
+    label: "All wiki pages",
+    helpText: "",
+    orderByColumn: WikiPageOrderByColumnOptions.slug,
+    orderByDirection: "asc",
+
+    tagFilterBehavior: DiscreteCriterionFilterType.hasAllOf,
+    tagFilterOptions: [],
+    tagFilterEnabled: false,
+
+    namespaceFilterBehavior: DiscreteCriterionFilterType.doesntHaveAnyOf,
+    namespaceFilterOptions: ["EventDescription"],
+    namespaceFilterEnabled: true,
+};
+
+const gStaticFilters: WikiPagesFilterSpecStatic[] = []
+
+export const WikiPageListOuter = () => {
+    const dashboardContext = useDashboardContext();
+
+    // Individual filter hooks - still needed for the search page hook
+    const tagFilter = useDiscreteFilter<WikiPageTagPublicId>({
+        urlPrefix: "ta",
+        db3Column: "tags",
+        defaultBehavior: gDefaultStaticFilterValue.tagFilterBehavior,
+        defaultOptions: gDefaultStaticFilterValue.tagFilterOptions,
+        defaultEnabled: gDefaultStaticFilterValue.tagFilterEnabled,
+    });
+
+    const namespaceFilter = useDiscreteFilter<string>({
+        urlPrefix: "ns",
+        db3Column: "namespace",
+        defaultBehavior: gDefaultStaticFilterValue.namespaceFilterBehavior,
+        defaultOptions: gDefaultStaticFilterValue.namespaceFilterOptions,
+        defaultEnabled: gDefaultStaticFilterValue.namespaceFilterEnabled,
+    });
+
+    // Using useSearchPage hook for centralized search page logic
+    const searchPage = useSearchPage<WikiPagesFilterSpecStatic, WikiPagesFilterSpec>({
+        staticFilters: gStaticFilters,
+        defaultStaticFilter: gDefaultStaticFilterValue,
+        sortColumnKey: "orderByColumn",
+        sortDirectionKey: "orderByDirection",
+        filterMappings: [
+            { filterHook: tagFilter, columnKey: "tagFilter" },
+            { filterHook: namespaceFilter, columnKey: "namespaceFilter" },
+        ],
+        buildFilterSpec: ({ refreshSerial, quickFilter, sortColumn, sortDirection, filterMappings }) => {
+            const filterSpec: WikiPagesFilterSpec = {
+                refreshSerial,
+                quickFilter,
+                orderByColumn: parseWikiSortColumn(sortColumn),
+                orderByDirection: sortDirection,
+                tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+                namespaceFilter: namespaceFilter.enabled ? namespaceFilter.criterion : { db3Column: "namespace", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+            };
+            return filterSpec;
+        },
+        buildStaticFilterSpec: ({ sortColumn, sortDirection, filterMappings }) => {
+            const staticSpec: WikiPagesFilterSpecStatic = {
+                label: "(n/a)",
+                helpText: "",
+                orderByColumn: parseWikiSortColumn(sortColumn),
+                orderByDirection: sortDirection,
+                tagFilterEnabled: tagFilter.enabled,
+                tagFilterBehavior: tagFilter.criterion.behavior,
+                tagFilterOptions: tagFilter.criterion.options,
+                namespaceFilterEnabled: namespaceFilter.enabled,
+                namespaceFilterBehavior: namespaceFilter.criterion.behavior,
+                namespaceFilterOptions: namespaceFilter.criterion.options,
+            };
+            return staticSpec;
+        }
+    });
+
+    // Configuration for the generic SearchPageContent component
+    const config: SearchPageContentConfig<
+        WikiPagesFilterSpecStatic,
+        WikiPagesFilterSpec,
+        db3.WikiPageSearchDto,
+        EnrichedVerboseWikiPage
+    > = {
+        staticFilters: gStaticFilters,
+        defaultStaticFilter: gDefaultStaticFilterValue,
+        sortColumnOptions: WikiPageOrderByColumnOptions,
+        sortColumnNames: WikiPageOrderByColumnNames,
+        searchConfig: wikiPageSearchConfig,
+        renderItem: (wikiPage, index, filterSpec, results, refetch) => (
+            <WikiPageListItem
+                index={index}
+                wikiPage={wikiPage}
+                results={results}
+                refetch={refetch}
+                filterSpec={filterSpec}
+            />
+        ),
+        getItemKey: (wikiPage) => wikiPage.publicId,
+        contextMarkerName: "Wiki pages list",
+        csvExporter: {
+            itemToCSVRow: (wikiPage, index) => {
+                const path = wikiParseCanonicalWikiPath(wikiPage.slug);
+                return {
+                    // SearchResultsList supplies a one-based export position.
+                    Order: index.toString(),
+                    ID: wikiPage.publicId.toString(),
+                    Slug: wikiPage.slug,
+                    Namespace: wikiPage.namespace || "",
+                    URL: dashboardContext.getAbsoluteUri(withMemberPresentation(path.uriRelativeToHost, dashboardContext.memberPresentation)),
+                }
+            }
+        },
+        className: "wikiPagesListContainer",
+        showAdminControls: true,
+    };
+
+    // Filter hooks for passing to the generic component
+    const filterHooks = {
+        tags: tagFilter,
+        namespace: namespaceFilter,
+    };
+
+    // Filter group definitions
+    const filterGroupDefinitions: FilterGroupDefinition[] = [
+        {
+            key: "tags",
+            label: "Wiki page tags",
+            type: "tags",
+            column: "tags",
+        },
+        {
+            key: "namespace",
+            label: "Namespace",
+            type: "foreignSingle",
+            column: "namespace",
+        },
+    ];
+
+    return (
+        <SearchPageContent
+            config={config}
+            filterHooks={filterHooks}
+            filterGroupDefinitions={filterGroupDefinitions}
+            searchPageHook={searchPage}
+        />
+    );
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+function WikiSearchInBand() {
+    const dashboard = useDashboardContext();
+    const locale = useLocale();
+    if (!dashboard.authorizationContext?.bandPublicId) {
+        return <Alert severity="info">{locale.getPlainString("wikiSearch.bandRequired")}</Alert>;
+    }
+    return <WikiPageListOuter key={dashboard.requireBandPublicId()} />;
+}
+
+const WikiPagesPage: BlitzPage = () => {
+    return (
+        <DashboardLayout title="Wiki Pages" navRealm={NavRealm.wikiPages}>
+            <AppContextMarker name="Wiki pages search page">
+                <div className="eventsMainContent searchPage">
+                    <WikiSearchInBand />
+                </div>
+            </AppContextMarker>
+        </DashboardLayout>
+    )
+}
+
+export default WikiPagesPage;
 
 // MIGRATION_RESTORE: wiki-search
 // Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:src/pages/backstage/wikiPages.tsx:1-194

@@ -89,6 +89,19 @@ export const WikiPageNaturalOrderBy: Prisma.WikiPageOrderByWithRelationInput[] =
     { slug: 'asc' },
 ];
 
+function makeWikiContentSearchField() {
+    const field = new GhostField({ authMap: wikiPageAuthMap, memberName: "contentSearch" });
+    // Current content must belong to the visible parent, including malformed revision pointers.
+    // lsmb todo: make this type-safe; misspellings or errors / schema changes won't
+    // be caught by the compiler here. see bandUser for an example where we tie raw sql to the schema.
+    field.SqlGetQuickFilterElementsForToken = token => `EXISTS (
+        SELECT 1 FROM WikiPageRevision wpr
+        WHERE wpr.id = P.currentRevisionId AND wpr.wikiPageId = P.id
+        AND wpr.content LIKE '%${MysqlEscape(token)}%'
+    )`;
+    return field;
+}
+
 ////////////////////////////////////////////////////////////////
 export const xWikiPage = db3.defineTable({
     prismaModel: db3.prismaModel<Prisma.WikiPageDelegate>(),
@@ -141,7 +154,7 @@ export const xWikiPage = db3.defineTable({
             associationForeignObjectMember: "tag",
             associationLocalObjectMember: "wikiPage",
             authMap: wikiPageAuthMap,
-            // The raw tag-name predicate is preserved below under wiki-search.
+            // A1 defers localized tag-name text matching; identity filters and labels stay active.
             getQuickFilterWhereClause: (): false => false,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.WikiPageWhereInput | boolean => false,
         }),
@@ -186,26 +199,7 @@ export const xWikiPage = db3.defineTable({
             readTransportSchema: z.number().int(),
         }),
 
-        // Virtual field for searching wiki page content; hackhack
-        contentSearch: () => (() => {
-            const contentSearchField = new GhostField({
-                authMap: wikiPageAdministrationAuthMap,
-                memberName: "contentSearch",
-            });
-
-            // Override the SqlGetQuickFilterElementsForToken method to search currentRevision.content
-            contentSearchField.SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => {
-                // Return SQL that searches the current revision's content
-                return `EXISTS (
-                    SELECT 1 
-                    FROM WikiPageRevision wpr 
-                    WHERE wpr.id = P.currentRevisionId 
-                    AND wpr.content LIKE '%${MysqlEscape(token)}%'
-                )`;
-            };
-
-            return contentSearchField;
-        })(),
+        contentSearch: makeWikiContentSearchField,
     })
 });
 

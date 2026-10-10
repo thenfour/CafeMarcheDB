@@ -430,15 +430,39 @@ retain edits, and new text/config/band/locale context clears the earlier draft.
 Completed import source blocks, recovery controls and obsolete assertions are
 removed. Remaining localized-name search and full-suite failures leave A1/B open.
 
-## Next slice: Wiki search and navigation suggestions
+## Wiki search and navigation suggestions checkpoint
 
-Restore the reference Wiki search and menu Wiki-slug suggestions through their
-existing owners with selected-band visibility, localized labels, catalog filters,
-counts/pagination and contextual links. Follow `wiki-search` and the relevant
-`quick-search` obligations; preserve original navigation/editing behavior and
-record only the localized catalog-name text predicates deferred by the A1
-exception. This bounded checkpoint leaves other quick-search plugins, Markdown
-mentions, account administration and full localized-name matching separate.
+The reference Wiki page, `SearchPageContent`, result cards and domain-search owner
+are active for `WikiPage_Search`. Authored slug/current-content matching, all tag
+operators, namespace filters, exclude-self facets/counts, sorting, stable paging,
+URL state, load-more and TSV export retain the original UI. The default excludes
+`EventDescription` and includes unset namespaces. Result/export links carry the
+selected band and locale; visible tags resolve inherited labels and intentional
+blanks through the shared catalog reader. Hidden assignments stay out of results.
+
+The existing menu editor again previews exact/best Wiki-slug matches through the
+same named search view. Arbitrary authored slugs remain editable. Lookup requires
+explicit band and full ordered presentation preferences, cancels obsolete requests
+and clears stale or denied confirmations. This path originally used DB3 search;
+other quick-search plugins and Markdown suggestions retain their own obligations.
+
+Fresh row visibility and the existing public Wiki-view permission are preserved;
+the page retains its separate `search_wiki_pages` route gate. Content matching
+requires the current revision to belong to the visible parent, including malformed
+revision pointers. Obvious tag natural-order, blank filter-caption and TSV
+one-based-position bugs are fixed. Only localized tag-name text matching follows
+the A1 exception: `wiki-search` and its four preserved source references stay
+pending. Other source archives/deferred specifications remain intact.
+
+## Next slice: Dashboard Wiki content and custom navigation
+
+Restore the reference dashboard's announcements/Wiki content and custom sidebar
+navigation through existing dashboard and menu owners with selected-band reads,
+resolved localized labels and contextual links. Follow `dashboard-content`, retain
+original visibility/ordering/grouping and verify fresh revocation and band/locale
+switches. Keep remaining dashboard Event/calendar dependencies explicitly accounted
+for; Markdown suggestions, account administration and full localized-name search
+remain separate bounded work.
 
 ## Localized catalog text search exception
 
@@ -776,11 +800,36 @@ occurred. The French layout was visually inspected; temporary rows, catalog
 changes, audits and actions were cleaned up. Remaining English chrome stays under
 the A1 exception.
 
+The Wiki slice passes 55 focused checks in eight files and 268 native MariaDB
+cases in seventeen files, including 29 new Wiki-search cases and retained Wiki,
+tag/menu, Event, member, File, Song/setlist and catalog regressions. Native checks
+cover all tag operators, unset/negative namespaces, combined filters, counts/facets,
+sorts/paging, authored current-content matching, malformed revision pointers,
+localized inheritance/blanks/ordered preferences, hidden/private/foreign identities
+and fresh account/membership/visibility/band revocation. Typecheck, targeted lint
+and preservation verification pass; the demo production build passes. Normal
+production settings are built with isolated output to avoid the running development
+server's `.next` directory.
+Fresh build lint also exposed an obsolete `UserClientBaseTypes.tsx` duplicate,
+shadowed by the active `.ts` contract. The unused duplicate was removed without
+changing compiler/lint coverage or preserved source references.
+
+Seven production Chromium groups pass on disposable two-band data: French defaults,
+blank captions and load-more; contextual TSV export and sort controls; current
+authored content, URL reload/reset and tag/namespace counts; existing Wiki reader
+navigation; actual menu exact/best/no-match editing and saved links; independent
+Dutch labels/links; fresh authority revocation and anonymous sign-in gating. No
+uncaught page or unexpected RPC errors occurred. The French layout was visually
+inspected and temporary pages/tags/menu rows, account changes, strings, audits and
+actions were cleaned up. Remaining English chrome stays under the A1 exception.
+
 The complete-suite run still reports 206 failed tests and ten suite-load failures,
 including unscoped authorization/account/setlist fixtures, deferred-domain and
 date-policy contracts; the runner stops before the later jsdom batches. Focused
-passes do not establish A1 readiness. The latest run passes 1824 tests and skips
-583. Updated account fixtures change which legacy assertions reach the missing
+passes do not establish A1 readiness. The latest run passes 1823 tests and skips
+612; one obsolete deferred-Wiki assertion was removed and 29 native Wiki cases
+require the explicit MariaDB test environment. Updated account fixtures change
+which legacy assertions reach the missing
 GlobalRole/designation prerequisites; those changed failures reproduce on baseline
 `bce53c20` product code with the same fixture. Newly introduced projection,
 translation-read and CommonJS import-order failures were fixed; date probes and

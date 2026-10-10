@@ -240,6 +240,13 @@ const searchDomains = [
         criteria: ["tags", "taggedInstruments"].map(column => ({ column, permission: Permission.view_files })),
     },
     {
+        table: db3.xWikiPage,
+        view: db3.wikiPageSearchView,
+        permissions: [Permission.view_wiki_pages],
+        sorts: ["slug", "createdAt", "namespace"],
+        criteria: ["tags", "namespace"].map(column => ({ column, permission: Permission.view_wiki_pages })),
+    },
+    {
         table: db3.xBandUser,
         view: db3.bandUserSearchView,
         permissions: [Permission.search_users, Permission.view_users_basic_info],

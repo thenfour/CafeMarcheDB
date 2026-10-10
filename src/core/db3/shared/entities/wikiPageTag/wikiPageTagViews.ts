@@ -40,7 +40,7 @@ export const xBandWikiPageTag = defineTable({
         hiddenMember: "isHidden",
         managePermission: Permission.admin_wiki_pages,
     },
-    naturalOrderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    naturalOrderBy: { sortOrder: "asc", name: "asc" },
     // Ownership is required for row authorization and stays outside public transport.
     getSelectionArgs: () => ({ select: { ...bandWikiPageTagSelection.select, bandId: true } }),
     createInsertModelFromString: bandCatalogCreateFromString,

@@ -343,7 +343,7 @@ export const TagsFilterGroup = (props: TagsFilterGroupProps) => {
                     onClick={() => handleClickFacet(sanitizedItem)}
                 >
                     <div className='filterChipLabelContainer'>
-                        <div className='label'>{sanitizedItem.label || "-"}</div>
+                        <div className='label'>{sanitizedItem.label ?? "-"}</div>
                         <div className='rowCount'>{sanitizedItem.rowCount}</div>
                     </div>
                 </CMChip>;

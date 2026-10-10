@@ -3,7 +3,7 @@ import type { LocalePreferenceInput } from "src/locale/shared/localePreferences"
 import type { SearchResultsFacetOption } from "../shared/apiTypes";
 import type { xTable } from "../shared/db3core";
 import type { AnyDB3View } from "../shared/core/db3View";
-import { eventStatusDashboardView, eventTagDashboardView, eventTypeDashboardView, fileTagDashboardView, instrumentDashboardView, songTagDashboardView, userTagDashboardView } from "../shared/references/dashboardReferences";
+import { eventStatusDashboardView, eventTagDashboardView, eventTypeDashboardView, fileTagDashboardView, instrumentDashboardView, songTagDashboardView, userTagDashboardView, wikiPageTagDashboardView } from "../shared/references/dashboardReferences";
 import { bandRoleListView } from "../shared/entities/user/bandRoleViews";
 import type { DB3ReadContext } from "./db3ReadExecution";
 import { queryView } from "./db3QueryCore";
@@ -18,6 +18,7 @@ const facetViews: readonly AnyDB3View[] = [
     instrumentDashboardView,
     userTagDashboardView,
     bandRoleListView,
+    wikiPageTagDashboardView,
 ];
 const FacetLabelSchema = z.object({
     publicId: z.string(),

@@ -44,6 +44,7 @@ export const WikiPageListItem = (props: WikiPageListItemProps) => {
                         key={db3.xWikiPageTagAssignment.getIdentity(tagAssignment)}
                         size="small"
                         model={tagAssignment.tag}
+                        getText={tag => tag?.name ?? ""}
                         variation={{
                             ...StandardVariationSpec.Weak,
                             selected: props.filterSpec.tagFilter.options.includes(

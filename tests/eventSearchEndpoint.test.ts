@@ -48,7 +48,7 @@ describe("existing domain search HTTP owner", () => {
         vi.mocked(GetSearchResultsCore).mockResolvedValue(MakeEmptySearchResultsRet());
     });
 
-    it.each([["Event", "Event_Search"], ["Song", "Song_Search"], ["File", "File_Search"], ["BandUser", "BandUser_Search"]])("passes %s band and ordered locale preferences and keeps responses uncached", async (tableID, viewID) => {
+    it.each([["Event", "Event_Search"], ["Song", "Song_Search"], ["File", "File_Search"], ["BandUser", "BandUser_Search"], ["WikiPage", "WikiPage_Search"]])("passes %s band and ordered locale preferences and keeps responses uncached", async (tableID, viewID) => {
         const res = response();
         await searchResultsRoute(request({ ...args, tableID, viewID, routeLocale: "fr-BE" }), res.res, ctx);
         expect(loadAuthorization).toHaveBeenCalledWith(ctx.session, args.bandPublicId);
@@ -74,7 +74,7 @@ describe("existing domain search HTTP owner", () => {
         expect(GetSearchResultsCore).not.toHaveBeenCalled();
     });
 
-    it.each(["User", "WikiPage"])("keeps %s search deferred before reading accounts/content", async tableID => {
+    it.each(["User"])("keeps %s search deferred before reading accounts/content", async tableID => {
         vi.mocked(isRestoredSearchDomain).mockReturnValue(false);
         const res = response();
         await searchResultsRoute(request({ ...args, tableID }), res.res, ctx);
