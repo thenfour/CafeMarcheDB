@@ -15,7 +15,6 @@ const MyContent = () => {
         return <Alert severity="info">{locale.getPlainString("menuLink.selectBand")}</Alert>;
     }
     return <div>
-        <Alert severity="info">{locale.getPlainString("menuLink.deliveryDeferred")}</Alert>
         <Localized id="MenuLinksPageMarkdown" />
         <MenuLinkList key={dashboard.memberPresentation.bandPublicId} />
     </div>;

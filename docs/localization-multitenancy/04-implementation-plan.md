@@ -454,14 +454,40 @@ one-based-position bugs are fixed. Only localized tag-name text matching follows
 the A1 exception: `wiki-search` and its four preserved source references stay
 pending. Other source archives/deferred specifications remain intact.
 
-## Next slice: Dashboard Wiki content and custom navigation
+## Dashboard Wiki content and custom navigation checkpoint
 
-Restore the reference dashboard's announcements/Wiki content and custom sidebar
-navigation through existing dashboard and menu owners with selected-band reads,
-resolved localized labels and contextual links. Follow `dashboard-content`, retain
-original visibility/ordering/grouping and verify fresh revocation and band/locale
-switches. Keep remaining dashboard Event/calendar dependencies explicitly accounted
-for; Markdown suggestions, account administration and full localized-name search
+The reference home again renders `special/announcements` through its existing
+floating Wiki editor between the original header/footer. Selected band, active
+person and Wiki read permission gate the reader. Existing lock/revision writes,
+unsaved-draft protection and contextual Markdown links remain intact; no-band and
+anonymous home do not mount it. The current membership's missing-instrument warning
+retains its contextual profile link.
+
+Dashboard snapshots now query `MenuLink_List` inside the existing fresh authorized
+read snapshot and deliver public DTOs. Existing client hydration uses that
+snapshot's permission references. Menu reads retain the public grant independently
+of customization, row visibility and natural order. The existing sidebar retains
+case-insensitive section/group merging, static links, numeric order, icons, item
+classes, inherited localized captions, intentional blanks and external URLs.
+Nested Wiki links carry band/locale context; visited paths now select and expand
+the owning section instead of its group. The obsolete menu-delivery notice is
+removed and the home notice identifies only the remaining Event/calendar gap.
+
+`dashboard-content` stays pending for relevant Events/cards, the dashboard calendar
+and the original limited/new-member warning with migrated role designations.
+All six source references and the deferred dashboard transport specification remain
+preserved. This checkpoint does not close full dashboard parity or A1/B.
+
+## Next slice: Dashboard relevant events and calendar
+
+Restore the reference relevant-event selection/cards and home calendar through
+their existing Event owners, with explicit selected-band reads, fresh grants,
+visible public identities and the shared date/timezone policy. Preserve original
+selection/order and Event interactions; verify two bands, revoked visibility,
+membership changes and context switches in native snapshots and the built app.
+Account for the remaining limited/new-member warning before closing
+`dashboard-content` or reactivating its complete deferred transport specification.
+Markdown suggestions, account administration and full localized-name search
 remain separate bounded work.
 
 ## Localized catalog text search exception
@@ -823,12 +849,34 @@ uncaught page or unexpected RPC errors occurred. The French layout was visually
 inspected and temporary pages/tags/menu rows, account changes, strings, audits and
 actions were cleaned up. Remaining English chrome stays under the A1 exception.
 
+The dashboard Wiki/navigation slice passes 21 focused checks in three files and
+286 native MariaDB cases in nineteen files, including twelve dashboard cases.
+Coverage includes public DTOs and single hydration, same-snapshot references,
+natural ordering, band-first blanks/inheritance/ordered locale preferences,
+anonymous/no-band/platform boundaries and fresh grant/role/membership/person/band
+revocation. Existing Wiki editing/search, menu, catalogs, member, Event, File,
+Song and setlist regressions pass. Normal typecheck/build, isolated demo build,
+targeted lint and preservation verification pass; normal production settings use
+isolated build output to preserve the running development server.
+
+Seven production Chromium groups pass on disposable two-band data: floating
+announcements and contextual Markdown links; sidebar order, blank captions,
+static section merging, icons/classes/private visibility/external URLs; persisted
+collapse and direct nested-route expansion/selection; owned revision save and
+unsaved-draft Stay/Leave band transitions; unavailable French fallback and Dutch
+labels plus actual menu edit/sidebar refresh/Wiki navigation; fresh authority
+revocation/restoration; roleless shared member, anonymous sign-in and explicit
+no-band selection. No uncaught page or unexpected RPC errors occurred. The French
+layout was visually inspected; temporary rows, strings, account changes, audits
+and actions were cleaned up and the test server stopped. All six dashboard source
+references and its deferred transport specification remain intact.
+
 The complete-suite run still reports 206 failed tests and ten suite-load failures,
 including unscoped authorization/account/setlist fixtures, deferred-domain and
 date-policy contracts; the runner stops before the later jsdom batches. Focused
 passes do not establish A1 readiness. The latest run passes 1823 tests and skips
-612; one obsolete deferred-Wiki assertion was removed and 29 native Wiki cases
-require the explicit MariaDB test environment. Updated account fixtures change
+624; native cases require the explicit MariaDB test environment, including the
+twelve new dashboard cases. Updated account fixtures change
 which legacy assertions reach the missing
 GlobalRole/designation prerequisites; those changed failures reproduce on baseline
 `bce53c20` product code with the same fixture. Newly introduced projection,

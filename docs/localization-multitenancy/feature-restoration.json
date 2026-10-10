@@ -59,7 +59,12 @@
       "restore": "Restore relevant events, calendar, announcements/wiki content, custom navigation and required reference catalogs with authorized band-scoped reads.",
       "verification": "Adapt dashboard transport specifications and add native snapshots plus built-browser checks for two bands, permission revocation and context switches.",
       "status": "pending",
-      "evidence": []
+      "evidence": [
+        "2026-10-10: The reference home again mounts WikiStandaloneControl for special/announcements between the original header/footer, with floating controls and contextual Markdown links. Existing Wiki reads, locks, revisions, draft protection and editing remain the domain owner. Explicit selected band, active person and Wiki read permission are required; platform/no-band and anonymous home do not mount the reader.",
+        "Dashboard snapshots now deliver MenuLink_List DTOs through the shared authorized query inside the existing fresh repeatable snapshot. Public read permission remains independent of customize_menu; row visibility, natural ordering, localized band-first/inherited captions and intentional blanks remain intact. Client hydration resolves the same snapshot's permission references once. The existing sidebar retains case-insensitive sections/groups, static links, numeric ordering, icons, item classes and unchanged external URLs; Wiki links retain nested slugs and band/locale context. Visited Wiki paths now select and expand the owning section rather than its group.",
+        "Validation passes normal typecheck/build with isolated build output, isolated demo build, targeted lint, 21 focused checks in three files, 286 native MariaDB cases in nineteen files including twelve dashboard cases, and seven production Chromium groups. Browser checks cover inline save, unsaved-draft Stay/Leave and band switching, French blanks and unavailable-locale fallback, Dutch labels, menu edit/sidebar refresh, section collapse/reload/direct navigation, fresh authority revocation/restoration and shared roleless/anonymous/no-band contexts. No page or unexpected RPC errors; layout visually inspected and disposable rows/account changes/audits/actions cleaned up. Full-suite limitations remain in the canonical plan.",
+        "Still pending: relevant Event IDs/cards, dashboard calendar and the original limited/new-member account warning with migrated role designations. This bounded Wiki/navigation checkpoint preserves all six dashboard source references and the deferred dashboard transport specification. dashboard-content and A1/B remain open. Verification is recorded in 04-implementation-plan.md#verification-status."
+      ]
     },
     {
       "id": "global-search",

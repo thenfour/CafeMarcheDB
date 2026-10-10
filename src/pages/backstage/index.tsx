@@ -1,4 +1,5 @@
 import type { BlitzPage } from "@blitzjs/next";
+import React from "react";
 import { Alert, Stack } from "@mui/material";
 import { CMLink } from "src/core/components/CMLink";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
@@ -6,21 +7,32 @@ import { useDashboardContext } from "src/core/components/dashboardContext/Dashbo
 import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
 import { useLocale } from "src/locale/components/useLocale";
 import { Localized } from "src/setting/client/components/SettingMarkdown";
+import { Permission } from "shared/permissions";
+import { AppContextMarker } from "src/core/components/AppContext";
+import { PermissionBoundary } from "src/core/components/CMCoreComponents";
+import { WikiStandaloneControl } from "src/core/components/wiki/WikiStandaloneComponents";
 
-function HomeContent() {
+export function HomeContent() {
   const dashboard = useDashboardContext();
   const locale = useLocale();
   const member = dashboard.currentMembership;
-  return <Stack spacing={2}>
+  const bandPublicId = dashboard.memberPresentation.bandPublicId;
+  return <AppContextMarker name="backstage home"><Stack spacing={2}>
     {!dashboard.memberPresentation.bandPublicId && <Alert severity="info">{locale.getPlainString("dashboard.band.required")}</Alert>}
     {member && member.bandUserInstruments.length === 0 && <Alert severity="info">
       {locale.getPlainString("dashboard.instruments.missing")}{" "}
       <CMLink href={withMemberPresentation("/backstage/profile", dashboard.memberPresentation)}>{locale.getPlainString("dashboard.profile")}</CMLink>
     </Alert>}
-    <Localized id="BackstageFrontpageHeaderMarkdown" />
-    <Alert severity="info">{locale.getPlainString("dashboard.deferred")}</Alert>
+    <div className="DashboardHeader"><Localized id="BackstageFrontpageHeaderMarkdown" /></div>
+    {bandPublicId && dashboard.currentUser && <PermissionBoundary permission={Permission.view_wiki_pages}>
+      <WikiStandaloneControl canonicalWikiPath="special/announcements"
+        className="contentSection announcementMarkdown" floatingHeader={true} />
+    </PermissionBoundary>}
+    {bandPublicId && <PermissionBoundary permission={Permission.view_events_nonpublic}>
+      <Alert severity="info">{locale.getPlainString("dashboard.eventsDeferred")}</Alert>
+    </PermissionBoundary>}
     <Localized id="BackstageFrontpageMarkdown" />
-  </Stack>;
+  </Stack></AppContextMarker>;
 }
 
 const Home: BlitzPage = () => {

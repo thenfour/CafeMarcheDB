@@ -1,0 +1,151 @@
+// @vitest-environment jsdom
+import React from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { act } from "react-dom/test-utils";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { HostingMode } from "shared/brandConfigBase";
+import { Permission } from "shared/permissions";
+import { parsePublicId } from "shared/publicId";
+import type { PresentationInput } from "src/locale/shared/presentationInput";
+import { TableAccessor } from "shared/rootroot";
+import { menuLinkListView, type MenuLinkListClient } from "src/core/db3/shared/entities/menuLink/menuLinkViews";
+import { createDashboardReferenceStore, registerDashboardReferences, permissionDashboardView } from "src/core/db3/shared/references/dashboardReferences";
+import { kStaticLocalizedStringRegistry, type LocalizedPlainStringKey } from "src/locale/shared/staticLocalizedStringRegistry";
+
+vi.mock("next/router", () => ({ useRouter: () => ({ pathname: "/backstage", asPath: "/backstage" }) }));
+vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({
+    useDashboardContext: () => dashboard, useClientTelemetryEvent: () => vi.fn(),
+}));
+vi.mock("src/core/components/CMCoreComponents2", () => ({ AdminInspectObject: () => null }));
+vi.mock("src/core/components/AppContext", () => ({
+    AppContextMarker: ({ children }: React.PropsWithChildren) => <>{children}</>, useAppContext: () => [],
+}));
+vi.mock("src/core/components/CMLink", () => ({ CMLink: (props: React.ComponentProps<"a">) => <a {...props} /> }));
+vi.mock("src/core/components/dashboard/DashboardLayout", () => ({ default: ({ children }: React.PropsWithChildren) => <>{children}</> }));
+vi.mock("src/core/components/CMCoreComponents", () => ({
+    PermissionBoundary: ({ permission, children }: React.PropsWithChildren<{ permission: Permission }>) => dashboard.isAuthorized(permission) ? <>{children}</> : null,
+}));
+vi.mock("src/core/components/wiki/WikiStandaloneComponents", () => ({
+    WikiStandaloneControl: (props: { canonicalWikiPath: string; className?: string; floatingHeader?: boolean }) =>
+        <div className={props.className} data-floating={props.floatingHeader}>{props.canonicalWikiPath}</div>,
+}));
+vi.mock("src/setting/client/components/SettingMarkdown", () => ({ Localized: ({ id }: { id: string }) => <div data-setting={id}>{id}</div> }));
+vi.mock("src/locale/components/useLocale", () => ({ useLocale: () => ({
+    getPlainString: (key: LocalizedPlainStringKey) => kStaticLocalizedStringRegistry[key].defaultValue,
+}) }));
+import { AddDynMenuItemsToStatic, DynMenuToMenuItem, FlattenMenuSections, getCurrentMenuSection } from "src/core/components/dashboard/MenuStructure";
+import { NavRealm, type MenuSection } from "src/core/components/dashboard/StaticMenuItems";
+import { HomeContent } from "src/pages/backstage/index";
+
+const band = parsePublicId<"Band">("DashboardBand001");
+const otherBand = parsePublicId<"Band">("DashboardBand002");
+const permission = permissionDashboardView.hydrate(permissionDashboardView.parseDto({
+    publicId: parsePublicId<"Permission">("DashboardPerm001"), name: Permission.visibility_members,
+    description: "Members", sortOrder: 1, color: null, isVisibility: true,
+    descriptionResolution: { value: "Members", localeTag: "en-US", scope: "global", source: "stored", reason: "exact", requestedTag: "en-US" },
+    descriptionStringPublicId: null, significance: null, iconName: null,
+}), createDashboardReferenceStore());
+const references = createDashboardReferenceStore();
+registerDashboardReferences(references, { permission: [permission] });
+const grants = new Set<string>();
+const memberPresentation: Pick<PresentationInput, "bandPublicId" | "routeLocale"> = { bandPublicId: band, routeLocale: "fr-BE" };
+function authenticatedPerson(): { id: number } | null {
+    return { id: 1 };
+}
+const dashboard = {
+    permission: new TableAccessor([permission]),
+    memberPresentation,
+    brand: { hostingMode: HostingMode.CafeMarche },
+    currentUser: authenticatedPerson(),
+    currentMembership: { bandUserInstruments: [] },
+    isAuthorized: (value: Permission | string) => grants.has(value),
+};
+function menu(overrides: Partial<MenuLinkListClient> = {}): MenuLinkListClient {
+    return { ...menuLinkListView.hydrate(menuLinkListView.parseDto({
+        publicId: parsePublicId<"MenuLink">("DashboardMenu001"), caption: "Partitions", linkType: "Wiki",
+        wikiSlug: "special/announcements", externalURI: null, applicationPage: "Resources", groupName: "scores",
+        groupCssClass: "", itemCssClass: "score-link", iconName: null, visiblePermissionId: permission.publicId,
+        realm: null, sortOrder: 2, createdAt: new Date(), createdByUserId: null, createdByUser: null,
+        captionStringPublicId: null,
+        captionResolution: { value: "Partitions", localeTag: "fr-BE", scope: "band", source: "stored", reason: "exact", requestedTag: "fr-BE" },
+    }), references), ...overrides };
+}
+let root: Root;
+let container: HTMLDivElement;
+beforeEach(() => {
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    grants.clear(); grants.add(Permission.visibility_members); grants.add(Permission.view_wiki_pages); grants.add(Permission.view_events_nonpublic);
+    dashboard.memberPresentation = { bandPublicId: band, routeLocale: "fr-BE" };
+    dashboard.currentUser = { id: 1 }; dashboard.currentMembership = { bandUserInstruments: [] };
+    container = document.createElement("div"); document.body.appendChild(container); root = createRoot(container);
+});
+afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
+
+describe("dashboard announcements and navigation", () => {
+    it("retains nested Wiki paths, contextual band/locale, authored blank captions and external URLs", () => {
+        const link = DynMenuToMenuItem(menu(), dashboard)!;
+        expect(link.path).toBe(`/backstage/wiki/special/announcements?bandPublicId=${band}&routeLocale=fr-BE`);
+        expect(link).toMatchObject({ className: "score-link", permission: Permission.visibility_members, linkCaption: "Partitions", openInNewTab: false });
+        expect(DynMenuToMenuItem(menu({ caption: { ...menu().caption, value: "" } }), dashboard)!.linkCaption).toBe("");
+        const externalURI = "https://example.invalid/scores?edition=2026#brass";
+        expect(DynMenuToMenuItem(menu({ linkType: "ExternalURL", externalURI }), dashboard)).toMatchObject({ path: externalURI, openInNewTab: true });
+        dashboard.memberPresentation = { bandPublicId: otherBand, routeLocale: "nl-BE" };
+        expect(DynMenuToMenuItem(menu(), dashboard)!.path).toContain(`bandPublicId=${otherBand}&routeLocale=nl-BE`);
+    });
+    it("merges section/group names without case sensitivity and preserves static links and numeric order without mutating inputs", () => {
+        const staticLink = DynMenuToMenuItem(menu({ caption: { ...menu().caption, value: "Static" } }), dashboard)!;
+        const sections: MenuSection[] = [{ name: "Resources", groups: [{ className: "scores", links: [staticLink] }] }];
+        const rows = [menu({ sortOrder: 20, caption: { ...menu().caption, value: "Later" } }), menu({ sortOrder: 2 })];
+        const merged = AddDynMenuItemsToStatic(sections, new Map([["resources", new Map([["SCORES", rows]])]]), dashboard);
+        expect(merged).toHaveLength(1); expect(merged[0]!.groups).toHaveLength(1);
+        expect(merged[0]!.groups[0]!.links.map(link => link.linkCaption)).toEqual(["Static", "Partitions", "Later"]);
+        expect(sections[0]!.groups[0]!.links).toEqual([staticLink]); expect(rows.map(row => row.sortOrder)).toEqual([20, 2]);
+        const flat = FlattenMenuSections(dashboard, merged);
+        expect(getCurrentMenuSection(flat, undefined, { pathname: "/backstage/wiki/[...slug]", asPath: `/backstage/wiki/special/announcements?bandPublicId=${band}#top` })).toBe("Resources");
+    });
+    it("filters revoked and unknown permissions and does not select external menu links as a local route", () => {
+        const unknown = DynMenuToMenuItem(menu({ visiblePermissionId: parsePublicId<"Permission">("MissingPerm00001") }), dashboard)!;
+        expect(unknown.permission).toBe(Permission.never_grant);
+        const sections: MenuSection[] = [{ name: "Resources", groups: [{ links: [unknown, DynMenuToMenuItem(menu(), dashboard)!] }] }];
+        expect(FlattenMenuSections(dashboard, sections).filter(row => row.item.type === "link")).toHaveLength(1);
+        grants.delete(Permission.visibility_members);
+        expect(FlattenMenuSections(dashboard, sections)).toEqual([]);
+        grants.add(Permission.visibility_members);
+        sections[0]!.groups[0]!.links = [DynMenuToMenuItem(menu({ linkType: "ExternalURL", externalURI: "/backstage" }), dashboard)!];
+        expect(getCurrentMenuSection(FlattenMenuSections(dashboard, sections), NavRealm.backstageHome, { pathname: "/backstage", asPath: "/backstage" })).toBeNull();
+    });
+    it("selects the original empty-string home realm and ignores unrelated and protocol-relative paths", () => {
+        const link = DynMenuToMenuItem(menu(), dashboard)!;
+        const sections: MenuSection[] = [{ name: "Home", groups: [{ links: [{ ...link, path: "/different", realm: NavRealm.backstageHome }] }] }];
+        expect(getCurrentMenuSection(FlattenMenuSections(dashboard, sections), NavRealm.backstageHome, { pathname: "/backstage", asPath: "/backstage" })).toBe("Home");
+        expect(getCurrentMenuSection(FlattenMenuSections(dashboard, sections), NavRealm.songs, { pathname: "/backstage", asPath: "/backstage" })).toBeNull();
+        sections[0]!.groups[0]!.links = [{ ...link, path: "//example.invalid/backstage" }];
+        expect(getCurrentMenuSection(FlattenMenuSections(dashboard, sections), undefined, { pathname: "//example.invalid/backstage", asPath: "//example.invalid/backstage" })).toBeNull();
+    });
+    it("places floating announcements between the original header/footer and retains the scoped missing-instrument profile link", async () => {
+        await act(async () => root.render(<HomeContent />));
+        expect(container.querySelector(".announcementMarkdown")!.textContent).toBe("special/announcements");
+        expect(container.querySelector(".announcementMarkdown")!.getAttribute("data-floating")).toBe("true");
+        const text = container.textContent!;
+        expect(text.indexOf("BackstageFrontpageHeaderMarkdown")).toBeLessThan(text.indexOf("special/announcements"));
+        expect(text.indexOf("special/announcements")).toBeLessThan(text.indexOf("BackstageFrontpageMarkdown"));
+        expect(container.querySelector("a")!.getAttribute("href")).toBe(`/backstage/profile?bandPublicId=${band}&routeLocale=fr-BE`);
+        expect(text).toContain(kStaticLocalizedStringRegistry["dashboard.eventsDeferred"].defaultValue);
+    });
+    it("does not mount announcements without band, active user or Wiki read permission, and hides the events notice without its grant", async () => {
+        grants.clear();
+        await act(async () => root.render(<HomeContent />));
+        expect(container.querySelector(".announcementMarkdown")).toBeNull();
+        expect(container.textContent).not.toContain(kStaticLocalizedStringRegistry["dashboard.eventsDeferred"].defaultValue);
+        grants.add(Permission.view_wiki_pages);
+        // Home only needs the presence of an authenticated person and explicit selected band.
+        dashboard.currentUser = null;
+        await act(async () => root.render(<HomeContent />));
+        expect(container.querySelector(".announcementMarkdown")).toBeNull();
+        dashboard.currentUser = { id: 1 };
+        dashboard.memberPresentation.bandPublicId = undefined;
+        await act(async () => root.render(<HomeContent />));
+        expect(container.querySelector(".announcementMarkdown")).toBeNull();
+        expect(container.textContent).toContain(kStaticLocalizedStringRegistry["dashboard.band.required"].defaultValue);
+    });
+});

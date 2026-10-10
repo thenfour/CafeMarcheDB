@@ -12,6 +12,7 @@ import { loadDashboardCatalogs, loadSharedCatalogs } from "./db3DashboardCatalog
 import { executeDB3Read, type DB3ReadDatabase, type DB3ReadContext } from "./db3ReadExecution";
 import { queryView } from "./db3QueryCore";
 import { xBandUser } from "../db3";
+import { menuLinkListView } from "../shared/entities/menuLink/menuLinkViews";
 
 async function loadCurrentMembership(context: DB3ReadContext, input: PresentationInput) {
     const { authorization } = context;
@@ -29,6 +30,16 @@ async function loadCurrentMembership(context: DB3ReadContext, input: Presentatio
     return result.items[0] ?? null;
 }
 
+async function loadDashboardMenuLinks(context: DB3ReadContext, input: PresentationInput) {
+    if (!context.authorization.band) {
+        return [];
+    }
+    const result = await queryView({
+        view: menuLinkListView, ...input, filter: {}, cmdbQueryContext: "dashboard menu links",
+    }, context.authorization, context);
+    return result.items;
+}
+
 /** Bootstrap only restored domains. Every delivered field shares fresh grants and one snapshot. */
 export function loadDashboardData(
     database: DB3ReadDatabase,
@@ -37,13 +48,14 @@ export function loadDashboardData(
 ): Promise<DashboardDataDto> {
     return executeDB3Read(database, authorization, async context => {
         const { database: transaction, authorization } = context;
-        const [localization, settings, permissions, catalogs, sharedCatalogs, currentMembership] = await Promise.all([
+        const [localization, settings, permissions, catalogs, sharedCatalogs, currentMembership, dynMenuLinks] = await Promise.all([
             loadLocalizationCatalog(transaction, authorization, input),
             loadSettingsSnapshot(transaction, authorization),
             queryView({ view: permissionDashboardView, ...input, filter: {}, cmdbQueryContext: "dashboard permissions" }, authorization, context),
             loadDashboardCatalogs(context, authorization, input),
             loadSharedCatalogs(context, authorization, input),
             loadCurrentMembership(context, input),
+            loadDashboardMenuLinks(context, input),
         ]);
         const server = getClientServerState(authorization.hasPermission(Permission.sysadmin));
         return {
@@ -57,8 +69,8 @@ export function loadDashboardData(
             serverBaseUri: server.baseUri,
             serverStartupState: server.diagnostics,
             bandTimeZone: authorization.band ? readSettingSnapshot(settings, "band", "dateTime.bandTimeZone") : "Europe/Brussels",
-            // These consumers are deferred during A0 recovery; do not query their old models.
-            dynMenuLinks: [],
+            dynMenuLinks,
+            // Event relevance remains under the separate dashboard Event/calendar checkpoint.
             relevantEventIds: [],
         };
     });

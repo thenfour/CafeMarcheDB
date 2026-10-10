@@ -3,10 +3,8 @@ import { Box, Collapse, Divider, Drawer, List, ListItemButton, ListItemIcon, Lis
 import Link from "next/link";
 import { useRouter } from "next/router";
 import * as React from 'react';
-import * as DynMenu from "shared/dynMenuTypes";
 import { Permission } from "shared/permissions";
 import { gNullValue } from "shared/rootroot";
-import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
 import { AppContextMarker } from "../AppContext";
@@ -55,7 +53,9 @@ export interface FlatMenuSection {
 export type FlatMenuItemAndSection = { sectionInfo: FlatMenuSection, item: FlatMenuItemSpec };
 
 // Helper function to convert dynamic menu items to static menu items
-export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext: DashboardContextData): MenuLink | null => {
+type DynamicMenuPresentation = Pick<DashboardContextData, "permission" | "memberPresentation">;
+
+export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext: DynamicMenuPresentation): MenuLink | null => {
     let path = "";
     let openInNewTab = false;
     switch (item.linkType) {
@@ -83,7 +83,12 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkListClient, dashboardContext
     };
 };
 
-function IsLinkEnabled(dashboardContext: DashboardContextData, link: MenuLink): boolean {
+interface MenuAuthorization {
+    brand: Pick<DashboardContextData["brand"], "hostingMode">;
+    isAuthorized: DashboardContextData["isAuthorized"];
+}
+
+function IsLinkEnabled(dashboardContext: MenuAuthorization, link: MenuLink): boolean {
     if (link.enabledForGenericSingleTenant === false && dashboardContext.brand.hostingMode === HostingMode.GenericSingleTenant) {
         return false;
     }
@@ -92,7 +97,7 @@ function IsLinkEnabled(dashboardContext: DashboardContextData, link: MenuLink): 
 
 // New flattening function for hierarchical menu structure
 export const FlattenMenuSections = (
-    dashboardContext: DashboardContextData,
+    dashboardContext: MenuAuthorization,
     sections: MenuSection[],
     //expandedSections: Set<string>
 ): FlatMenuItemAndSection[] => {
@@ -178,10 +183,29 @@ export const FlattenMenuSections = (
     return menuItems;
 };
 
-function MenuItemMatchesRealm(linkPath: string | undefined, linkRealm: NavRealm | undefined, realm: NavRealm | undefined, router: ReturnType<typeof useRouter>): boolean {
-    return linkRealm && realm
-        ? linkRealm === realm
-        : router.pathname === linkPath;
+interface MenuRoute {
+    pathname: string;
+    asPath: string;
+}
+
+// lsmb todo: this kind of operation should be on a cmdb Router system that
+// can route-match.
+function MenuItemMatchesRealm(linkPath: string | undefined, linkRealm: NavRealm | undefined, realm: NavRealm | undefined, router: MenuRoute): boolean {
+    if (linkRealm !== undefined && realm !== undefined) {
+        return linkRealm === realm;
+    }
+    if (!linkPath?.startsWith("/") || linkPath.startsWith("//")) {
+        return false;
+    }
+    const path = linkPath.split(/[?#]/, 1)[0];
+    return router.pathname === path || router.asPath.split(/[?#]/, 1)[0] === path;
+}
+
+/** Dynamic routes use the visited path; section names own expansion, not group names. */
+export function getCurrentMenuSection(items: readonly FlatMenuItemAndSection[], realm: NavRealm | undefined, router: MenuRoute): string | null {
+    const current = items.find(({ item }) => item.type === "link" && !item.openInNewTab
+        && MenuItemMatchesRealm(item.path, item.realm, realm, router));
+    return current?.sectionInfo.section.name ?? null;
 }
 
 // Menu item component props
@@ -285,7 +309,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
                 <ListItemButton
                     component={Link}
                     href={withMemberPresentation(linkItem.path, dashboard.memberPresentation)}
-                    selected={router.pathname === linkItem.path}
+                    selected={MenuItemMatchesRealm(linkItem.path, linkItem.realm, props.realm, router)}
                     className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
                     onClick={e => {
                         void recordFeature({ feature: ActivityFeature.link_follow_internal });
@@ -318,7 +342,7 @@ const nv = (s: string | null | undefined) =>
 export const AddDynMenuItemsToStatic = (
     staticSections: MenuSection[],
     dynSections: Map<string, Map<string, db3.MenuLinkListClient[]>>,
-    ctx: DashboardContextData
+    ctx: DynamicMenuPresentation
 ): MenuSection[] => {
     // 1️⃣ deep‑clone static definition (so we never mutate props)
     const merged: MenuSection[] = staticSections.map(s => ({
@@ -379,7 +403,18 @@ interface SideMenuProps {
 
 export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme }: SideMenuProps) => {
     const dashboardContext = useDashboardContext();
-    const router = useRouter();    // Initialize expanded sections with default expanded sections
+    const router = useRouter();
+    const dynamicSections = groupByMap(dashboardContext.dynMenuLinks.items,
+        item => item.applicationPage || gNullValue);
+    const dynamicSectionsAndGroups = new Map<string, Map<string, db3.MenuLinkListClient[]>>();
+    for (const [sectionName, items] of dynamicSections) {
+        dynamicSectionsAndGroups.set(sectionName, groupByMap(items, item => item.groupName || gNullValue));
+    }
+    const menuSections = AddDynMenuItemsToStatic(gMenuSections, dynamicSectionsAndGroups, dashboardContext);
+    const menuItems = FlattenMenuSections(dashboardContext, menuSections);
+    const currentSection = getCurrentMenuSection(menuItems, navRealm, router);
+
+    // Initialize expanded sections with default expanded sections.
     const getInitialExpandedSections = React.useCallback(() => {
         const expanded = new Set<string>();
 
@@ -393,50 +428,12 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
         return expanded;
     }, []);
 
-    // Find which section contains the current page and ensure it's expanded
-    const getCurrentPageSection = React.useCallback(() => {
-        const currentPath = router.pathname;
-
-        // Check all sections for a matching path
-        for (const section of gMenuSections) {
-            for (const group of section.groups) {
-                for (const link of group.links) {
-                    const matches = MenuItemMatchesRealm(link.path, link.realm, navRealm, router);
-                    if (matches) {
-                        return section.name;
-                    }
-                }
-            }
-        }
-
-        // Also check dynamic menu items if they exist
-        if (dashboardContext?.dynMenuLinks?.items) {
-            for (const item of dashboardContext.dynMenuLinks.items) {
-                let itemPath = "";
-                switch (item.linkType as keyof typeof DynMenu.DynamicMenuLinkType) {
-                    case "Wiki":
-                        itemPath = item.wikiSlug ? wikiMakeRelativeURI(item.wikiSlug) : "";
-                        break;
-                    case "ExternalURL":
-                        itemPath = item.externalURI || "";
-                        break;
-                }
-                if (itemPath === currentPath && !IsNullOrWhitespace(item.groupName)) {
-                    return item.groupName;
-                }
-            }
-        }
-
-        return null;
-    }, [router.pathname, dashboardContext]);
-
     const [expandedSections, setExpandedSections] = useLocalStorageSet(
         'menu-expanded-sections', getInitialExpandedSections
     );
 
     // Update expanded sections when the route changes
     React.useEffect(() => {
-        const currentSection = getCurrentPageSection();
         if (currentSection) {
             setExpandedSections(prev => {
                 const newSet = new Set(prev);
@@ -444,7 +441,7 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
                 return newSet;
             });
         }
-    }, [getCurrentPageSection]);
+    }, [currentSection]);
 
     const toggleSection = React.useCallback((sectionId: string) => {
         setExpandedSections(prev => {
@@ -457,34 +454,6 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
             return newSet;
         });
     }, []);
-
-    // TODO: fill in in dynamic menu items to the right places in the menu.
-    // MenuLink.groupName specifies a section name that will house these.
-    //type DbMenuRow = typeof dashboardContext.dynMenuLinks.items[number];
-    const dynamicSections: Map<string, db3.MenuLinkListClient[]> = groupByMap(dashboardContext.dynMenuLinks.items,
-        item => item.applicationPage || gNullValue, // these are section names.
-    );
-
-    // convert sections into grouped array of menu items
-    const dynamicSectionsAndGroups: Map<string, Map<string, db3.MenuLinkListClient[]>> = new Map();
-    for (const [sectionName, items] of dynamicSections.entries()) {
-        const groupMap = groupByMap(items, item => item.groupName || gNullValue);
-        dynamicSectionsAndGroups.set(sectionName, groupMap);
-    }
-
-    // - the db menu item section name matches section name of menu items
-    //   the dyn menu items get placed at the bottom of the section
-    //   if the section name is not found, it gets placed in a custom section with that name.
-    // - the db menu item group name matches the group id of menu items
-    // - SORTING: dyn menu items within their section & group, are sorted by sortOrder
-    const menuSectionsWithDynItems = AddDynMenuItemsToStatic(
-        gMenuSections,
-        dynamicSectionsAndGroups,
-        dashboardContext                  // extra param
-    );
-
-    // flatten our list of menu sections & items based on permissions.
-    const menuItems = FlattenMenuSections(dashboardContext, menuSectionsWithDynItems);
 
     return (
         <Drawer
