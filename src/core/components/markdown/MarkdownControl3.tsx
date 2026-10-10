@@ -5,6 +5,7 @@ import ViewAgendaIcon from "@mui/icons-material/ViewAgenda";
 import ViewWeekIcon from "@mui/icons-material/ViewWeek";
 import { Collapse, Tooltip } from "@mui/material";
 import React from "react";
+import { Permission } from "shared/permissions";
 import type { EventPublicId, FileTagPublicId, PermissionPublicId, SongPublicId, UserPublicId, WikiPagePublicId } from "shared/publicId";
 import { IsNullOrWhitespace } from 'shared/utils';
 import { gCharMap } from '../../db3/components/IconMap';
@@ -121,6 +122,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const commandInvocationTriggerMap = React.useRef<MarkdownCommandInvocationTriggerMap>({});
     const [totalInvokations, setTotalInvocations] = React.useState<number>(0);
     const dashboardContext = useDashboardContext();
+    const referenceSearchEnabled = !!dashboardContext.authorizationContext?.bandPublicId && dashboardContext.isAuthorized(Permission.login);
 
     // Support for both controlled and uncontrolled usage
     const [controlledValue, setControlledValue] = React.useState<string>(props.initialValue || "");
@@ -227,6 +229,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         textArea: textAreaRef.current!,
         nativeFileInputRef: nativeFileInputRef!,
         allowUploads: false,
+        referenceSearchEnabled,
         saveProgress: async () => {
             if (props.handleSave) {
                 await props.handleSave();
@@ -424,6 +427,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                                 >
                                     <div className="editorContainer">
                                         <MarkdownEditor
+                                            referenceSearchEnabled={referenceSearchEnabled}
                                             onValueChanged={controlledTextArea.handleNativeTextChange}
                                             onBeforeInput={controlledTextArea.handleNativeBeforeInput}
                                             onSave={props.handleSave}
@@ -465,6 +469,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                         <>
                             <div className="editorContainer">
                                 <MarkdownEditor
+                                    referenceSearchEnabled={referenceSearchEnabled}
                                     onValueChanged={controlledTextArea.handleNativeTextChange}
                                     onBeforeInput={controlledTextArea.handleNativeBeforeInput}
                                     onSave={props.handleSave}

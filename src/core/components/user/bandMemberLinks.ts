@@ -1,7 +1,7 @@
 import type { UserPublicId } from "shared/publicId";
 import type { DB3QueryContextInput } from "src/core/db3/components/useDB3Context";
 
-// TODO: proper routing mechanism
+// lsmb TODO: proper routing mechanism
 
 export function bandMemberHref(personId: UserPublicId, context: DB3QueryContextInput): string {
     return withMemberPresentation(`/backstage/user/${personId}`, context);

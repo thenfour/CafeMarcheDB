@@ -28,4 +28,15 @@ describe("public-ID markdown mentions", () => {
         expect(html).toContain(">Handbook</a>");
     });
 
+    it("renders a shared person public identity in selected-band context instead of as a Wiki slug", () => {
+        const person = parsePublicId<"User">("PickerPerson0001");
+        const bandPublicId = parsePublicId<"Band">("FixtureBand00001");
+        const markdown = new MarkdownIt().use(CMDBLinkMarkdownPlugin, { bandPublicId, routeLocale: "nl-BE" });
+        const html = markdown.render(`[[user:${person}|Authored person caption]]`);
+        expect(html).toContain(`/backstage/user/${person}?bandPublicId=${bandPublicId}&routeLocale=nl-BE`);
+        expect(html).toContain(">Authored person caption</a>");
+        expect(html).not.toContain("/backstage/wiki/user:");
+        expect(` [[user:${person}|Caption]] `).toMatch(new RegExp(MarkdownMentionRegexWithSurroundingWhitespace.source));
+    });
+
 });

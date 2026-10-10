@@ -6,6 +6,9 @@ import { fetchObjectQuery } from "./quickSearchClient";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 /** Reset suggestion input without changing the caller's saved association or editor draft. */
+// currently just amounts to a combo of
+// locale config, and auth context.
+// such that when your permissions change or you switch locale, search scope refreshes.
 export function useQuickSearchScopeKey(): string {
     const dashboard = useDashboardContext();
     return JSON.stringify([dashboard.authorizationContext, dashboard.localePreferences]);

@@ -237,7 +237,7 @@ describe("deferred file creation controls", () => {
     it("blocks Markdown file paste while retaining text/HTML paste and existing content", async () => {
         const onFileSelect = vi.fn();
         const onCustomPaste = vi.fn();
-        await act(async () => root.render(<MarkdownEditor value="Existing markdown" nominalHeight={200}
+        await act(async () => root.render(<MarkdownEditor referenceSearchEnabled={false} value="Existing markdown" nominalHeight={200}
             onValueChanged={vi.fn()} onBeforeInput={() => false} onFileSelect={onFileSelect}
             uploadProgress={null} onCustomPaste={onCustomPaste} textAreaRef={vi.fn()} nativeFileInputRef={vi.fn()} />));
         expect(container.querySelector('input[type="file"]')).toBeNull();

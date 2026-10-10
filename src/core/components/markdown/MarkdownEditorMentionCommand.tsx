@@ -3,12 +3,15 @@ import React from "react";
 import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
 import { isPublicId } from "shared/publicId";
 import { IsNullOrWhitespace } from "shared/utils";
+import { usePresentation } from "src/locale/components/PresentationProvider";
+import { useLocale } from "src/locale/components/useLocale";
 import { CMDialog } from "../CMDialog";
-import { NameValuePair } from "../CMCoreComponents2";
+import { CMButton, NameValuePair } from "../CMCoreComponents2";
 import { AssociationAutocomplete, AssociationValue } from "../ItemAssociation";
 import { MarkdownMentionRegexWithSurroundingWhitespace } from "./CMDBLinkMarkdownPlugin";
 import { MarkdownEditorCommand, MarkdownEditorCommandApi, MarkdownTokenContext } from "./MarkdownEditorCommandBase";
-import { GetMatchUnderSelection, MarkdownEditorToolbarItem, MuiButtonWithEnterHandler, ParsedMarkdownReference, parseMarkdownReference } from "./MarkdownEditorCommandUtils";
+import { GetMatchUnderSelection, MarkdownEditorToolbarItem, ParsedMarkdownReference, parseMarkdownReference } from "./MarkdownEditorCommandUtils";
+import { useQuickSearchScopeKey } from "../search/useQuickSearchResults";
 
 const kCommandId = "MarkdownEditorMentionCommand";
 
@@ -53,8 +56,8 @@ const parseMarkdownMention = (text: string): ParsedMarkdownMention => {
 function deduceContext(api: MarkdownEditorCommandApi): undefined | MarkdownTokenContext {
     const ret = GetMatchUnderSelection(
         api.controlledTextArea.getText(),
-        api.controlledTextArea.selectionStart,
-        api.controlledTextArea.selectionEnd,
+        api.textArea.selectionStart,
+        api.textArea.selectionEnd,
         MarkdownMentionRegexWithSurroundingWhitespace,
         { trimSurroundingWhitespace: true }
     );
@@ -63,43 +66,34 @@ function deduceContext(api: MarkdownEditorCommandApi): undefined | MarkdownToken
 
 const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (props) => {
     const [open, setOpen] = React.useState(false);
-
-    const incomingParsedMention = (() => {
-        const text = props.api.controlledTextArea.getText();
-        const selectedText = text.slice(props.api.controlledTextArea.selectionStart, props.api.controlledTextArea.selectionEnd);
-        return parseMarkdownMention(selectedText);
-    })();
-
-    const defaultQueryText = incomingParsedMention.isMention ? `${incomingParsedMention.type}:${incomingParsedMention.id}` : incomingParsedMention.parsedRef.slug;
-
-    const [queryText, setQueryText] = React.useState<string>(defaultQueryText); // unlike the wiki editor, this doesnt end up in the output link.
-    React.useEffect(() => {
-        setQueryText(defaultQueryText);
-    }, [defaultQueryText]);
-
-    const [matchingItem, setMatchingItem] = React.useState<QuickSearchItemMatch | null>(null);
-
-    const [customCaption, setCustomCaption] = React.useState<string>(incomingParsedMention.parsedRef.caption);
-    React.useEffect(() => {
-        setCustomCaption(incomingParsedMention.parsedRef.caption);
-    }, [incomingParsedMention.parsedRef.caption]);
-
-    React.useEffect(() => {
-        if (matchingItem) {
-            setCustomCaption(matchingItem?.name);
-        }
-    }, [matchingItem]);
+    const locale = useLocale();
+    const scopeKey = useQuickSearchScopeKey();
+    const { data: snapshot } = usePresentation();
+    const [incomingMention, setIncomingMention] = React.useState<ParsedMarkdownMention | null>(null);
+    const [queryText, setQueryText] = React.useState("");
+    const [customCaption, setCustomCaption] = React.useState("");
+    const [selection, setSelection] = React.useState<{ item: QuickSearchItemMatch; scopeKey: string; snapshot: typeof snapshot } | null>(null);
+    const matchingItem = props.api.referenceSearchEnabled && selection?.scopeKey === scopeKey && selection.snapshot === snapshot
+        ? selection.item : null;
 
     const invoke = async () => {
         const context = deduceContext(props.api);
         if (context) {
             await props.api.controlledTextArea.setSelectionRange(context.start, context.end);
         }
+        const selectedText = props.api.controlledTextArea.getSelectedText();
+        const mention = parseMarkdownMention(selectedText);
+        setIncomingMention(mention);
+        setQueryText(mention.isMention ? `${mention.type}:${mention.id}` : mention.parsedRef.slug || selectedText);
+        setCustomCaption(mention.parsedRef.caption);
+        setSelection(null);
         setOpen(true);
     };
 
     React.useEffect(() => {
-        if (!props.api.invocationTriggerMap[kCommandId]) return; // avoid initial trigger
+        if (!props.api.invocationTriggerMap[kCommandId]) {
+            return;
+        }
         void invoke();
     }, [props.api.invocationTriggerMap[kCommandId]]);
 
@@ -126,7 +120,7 @@ const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> =
     };
 
     return <MarkdownEditorToolbarItem
-        tooltip="Link to song / event (ctrl+M)"
+        tooltip={locale.getPlainString("markdown.reference.mentionTooltip")}
         icon={
             <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" className="octicon octicon-mention Button-visual">
                 <path d="M4.75 2.37a6.501 6.501 0 0 0 6.5 11.26.75.75 0 0 1 .75 1.298A7.999 7.999 0 0 1 .989 4.148 8 8 0 0 1 16 7.75v1.5a2.75 2.75 0 0 1-5.072 1.475 3.999 3.999 0 0 1-6.65-4.19A4 4 0 0 1 12 8v1.25a1.25 1.25 0 0 0 2.5 0V7.867a6.5 6.5 0 0 0-9.75-5.496ZM10.5 8a2.5 2.5 0 1 0-5 0 2.5 2.5 0 0 0 5 0Z"></path>
@@ -137,29 +131,34 @@ const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> =
         <CMDialog
             open={open}
             onClose={closeDialog}
-            title="Insert reference to songs, events, etc..."
+            title={locale.getPlainString("markdown.reference.mentionTitle")}
             actions={<>
-                <MuiButtonWithEnterHandler onClick={handleOK}>Ok</MuiButtonWithEnterHandler>
-                <MuiButtonWithEnterHandler onClick={closeDialog}>Cancel</MuiButtonWithEnterHandler>
+                <CMButton disabled={!matchingItem} onClick={() => { void handleOK(); }}>{locale.getPlainString("common.action.ok")}</CMButton>
+                <CMButton onClick={closeDialog}>{locale.getPlainString("common.action.cancel")}</CMButton>
             </>}
         >
                 <NameValuePair
-                    name="Item"
+                    name={locale.getPlainString("markdown.reference.item")}
                     value={<>
                         <AssociationAutocomplete
-                            permissionPolicy="requireAll"
-                            // Mention selection remains deferred until its membership workflow is restored.
-                            searchEnabled={false}
+                            permissionPolicy="omitUnavailable"
+                            searchEnabled={props.api.referenceSearchEnabled && open}
                             allowedItemTypes={QuickSearchItemTypeSets.ForMarkdownReference}
                             disableEscapeHandling={true}
                             value={queryText}
                             autofocus={true}
+                            placeholder={locale.getPlainString("markdown.reference.search")}
                             onValueChange={(newQuery) => {
                                 setQueryText(newQuery);
+                                setSelection(null);
                             }}
                             onSelect={(item) => {
-                                setMatchingItem(item);
-                                setCustomCaption(item?.name ?? "");
+                                setSelection(item ? { item, scopeKey, snapshot } : null);
+                                // Reselecting an authored reference preserves its custom caption.
+                                const isSameMention = item?.itemType === incomingMention?.type && item?.id === incomingMention?.id;
+                                if (item && (!isSameMention || IsNullOrWhitespace(customCaption))) {
+                                    setCustomCaption(item.name);
+                                }
                             }}
                         />
                         {matchingItem && <AssociationValue value={matchingItem} />}
@@ -167,10 +166,11 @@ const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> =
                     }
                 />
                 <NameValuePair
-                    name="Custom caption (optional)"
+                    name={locale.getPlainString("markdown.reference.caption")}
                     value={
                         <InputBase
                             type="text"
+                            inputProps={{ "aria-label": locale.getPlainString("markdown.reference.caption") }}
                             value={customCaption}
                             onChange={(e) => {
                                 setCustomCaption(e.target.value);

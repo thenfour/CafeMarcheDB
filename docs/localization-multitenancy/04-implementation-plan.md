@@ -26,8 +26,8 @@ Preserve them while restoring their wider workflows. Reference member-directory
 filters/presets/contact-search/export and core profile tabs/account controls/activity
 are restored below; full profile and localized-name-search obligations remain open.
 
-Global shell search, planner association selection and the protected quick-search
-explorer are restored below. Markdown suggestions, full localized-name matching
+Global shell search, planner association selection, the protected quick-search
+explorer and Markdown suggestions are restored below. Full localized-name matching
 and several reports/admin surfaces remain guarded
 or incomplete. Song credit editing and performance history, public
 homepage/feed delivery and frontpage gallery editing/bake are restored below.
@@ -619,16 +619,58 @@ tag-name obligations are pending. Obsolete deferred-person and explorer recovery
 assertions are replaced by active authorization and interaction coverage. A1/B
 remain open.
 
-## Next slice: Markdown wiki and mention suggestions
+## Markdown wiki and mention suggestions checkpoint
 
-Restore the original Markdown suggestion dialogs and editor callers through the
-existing band-scoped quick-search owner. Supply explicit permission policy,
-readiness and ordered presentation inputs; preserve authored text, manual links
-and unsaved drafts. Keep each dialog's reference query grammar, result composition,
-keyboard/select/clear behavior and inserted-link format. Verify current access,
-two bands/locales and stale query/selection responses in the built editor before
-enabling each caller. Account administration and full localized tag-name matching
-retain their separate obligations.
+The original Wiki and mention toolbar dialogs and inline `[[`/`@` suggestions are
+active in the existing Markdown editor. The shared quick-search owner receives
+the explicit selected band, ordered route/browser language preferences and fresh
+authorization. Wiki suggestions require their domain grant; mixed references
+explicitly omit unavailable domains. The editor owns required readiness and
+enables remote suggestions only for a signed-in selected-band context. Manual
+Wiki slugs, existing links, ordinary text/HTML paste and local inline classes
+remain available independently of search.
+
+The original type-prefix grammar, ranked result composition, keyboard/mouse
+selection, clearing and Escape remain intact. Wiki completions insert canonical
+slugs, while Song/Event/person mentions insert public `type:id` references with
+captions. The reference inline `@` set also includes Wiki; its old `wikiPage:id`
+output opened a nonexistent article. It now inserts the supported canonical Wiki
+slug/caption form. Person mentions now render contextual profile links instead
+of being interpreted as Wiki slugs. Neither fix rewrites stored authored text.
+
+Dialog invocation reads the actual selection, including expansion of an existing
+reference from the Wiki toolbar. Reselecting the same mention preserves its
+custom caption. Changing its query or presentation/authority snapshot invalidates
+the picked mention before confirmation without discarding the caption or editor
+draft. Cancel/reopen cannot retain a preceding picked item. Wiki text remains a
+manual link draft rather than an authorization confirmation.
+
+The callback-based textarea control uses the same typed search client. Requests
+abort on text, band, ordered language, authority or presentation changes; delivered
+choices retain a current-query/caret guard through insertion. The library checks
+only the trigger on asynchronous completion, so abandoned callbacks cannot settle
+and erase a newer token's popup. Stable choice keys remain valid when a stale
+choice's output rejects selection. Presentation changes dismiss the popup without
+remounting the textarea or losing its caret/history. Necessary dialog/search
+labels use the localized registry and the actions use `CMButton`/`CMDialog`.
+
+Built Song and locked Wiki editors verify real saves, existing authored links,
+custom captions, undo/redo, fresh grant revocation and independent French/Dutch
+band contexts. All quick-search source archives/references remain preserved while
+full localized tag-name matching is pending under the exact A1 exception. This
+checkpoint does not close `markdown-editing`, account administration or A1/B.
+
+## Next slice: Markdown file attachments
+
+Restore the original attachment toolbar, file chooser, paste/drop and progress/
+inserted-link workflow in `MarkdownControl3` and `RichTextEditor` through the
+existing band-owned File creation service. Carry explicit band, public association
+identities and permission policy from the editor; retain text/HTML/raw paste,
+drafts, captions and undo. Verify two bands/locales, revoked upload/association
+grants, failed processing/rollback/storage cleanup and actual saved references in
+the built editor before enabling those callers. Profile/branding uploads,
+localized Markdown editing/help and full localized-name matching retain their
+separate obligations.
 
 ## Localized catalog text search exception
 
@@ -658,7 +700,7 @@ when a concrete workflow dependency requires it.
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
 | Events | Retain restored search/detail/creation/editing, setlists, invitation/attendance/default-instrument controls, date-picker highlights and import preview/save; finish full localized catalog-name matching separately. |
 | Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish remaining upload callers. |
-| Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, planner association selection/protected explorer, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish Markdown suggestions, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
+| Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, planner association selection/protected explorer, Markdown suggestions, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish Markdown attachments, localized Markdown editing/help, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
 After core restoration: platform role/matrix and catalog/settings administration;
 band onboarding/lifecycle; shared-account lifecycle/merge/dependency reports;
@@ -1132,6 +1174,43 @@ jsdom batches; native cases require their disposable MariaDB environment.
 Preservation verification retains 285 source references, ten deferred
 specifications and nineteen pending features. The full `quick-search` obligation,
 Markdown suggestions, localized tag-name matching and A1/B remain open.
+
+The Markdown-suggestion checkpoint (2026-10-10) passes normal typecheck, targeted
+lint, a normal production build with isolated output, 175 focused checks across
+sixteen files and 103 native MariaDB checks across five files. Twenty-seven new
+jsdom cases exercise the actual textarea library and dialogs: bracket/type grammar,
+ordered preferences/public identities, canonical output, keyboard/mouse selection,
+manual links/local classes, captions, cancellation/reopen, undo, denied-request
+recovery, old-token responses, visible/pending band/language/authority/presentation
+changes, changed insertion points and selection awaiting telemetry. Person-renderer
+coverage verifies public contextual profile links. Native coverage retains current
+Wiki/Song/person visibility, membership/role/grant revocation, privacy and independent
+band reads; it uses a newly created and dropped disposable MariaDB database.
+
+Eight built Chromium groups pass on disposable two-band data: French Wiki/mention
+shortcuts, prefixes, keyboard/clear behavior, captions, preview links and undo/redo;
+existing-person caption editing and manual nonexistent Wiki links; inline Song/
+Wiki/person keyboard/mouse selection and real Song persistence; an older held
+token response and Escape; actual search-grant revocation before confirmation,
+draft/caption preservation and recovery; a pending-response band switch with
+independent Dutch labels/content and save; a public Song mention saved through the
+locked Wiki editor into a new revision; and uncached anonymous Wiki rejection.
+The built run identified the textarea library's required stable choice key when
+an outdated output rejects selection; that fix is covered by the changed-caret
+case and the rebuilt browser run. No uncaught page, unexpected RPC or search errors
+occurred. French/Dutch editor/dialog layouts were visually inspected. Temporary
+content, memberships, localized labels, grants, actions and audits were removed,
+and the owned test server stopped. Evidence is in
+`temp/markdown-reference-browser-result.json` and
+`temp/markdown-reference-browser-cleanup.json`.
+
+The complete-suite rerun retains 206 failed tests and ten suite-load failures,
+with 1842 passed and 691 skipped. Its 164 normalized failure titles add or remove
+none against the association-selection baseline. The runner stops before later
+jsdom batches; native cases require their disposable MariaDB environment.
+Preservation verification retains 285 source references, ten deferred
+specifications and nineteen pending features. Full localized tag-name matching
+keeps `quick-search` pending; all its archives remain intact. A1/B remain open.
 
 The [development seeder](../development-seeding.md) restores the pre-migration
 fixed catalogs and random users, songs/files, event schedules/attendance/setlists,

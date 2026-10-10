@@ -115,7 +115,7 @@ describe("deferred quick search controls", () => {
         const onValueChanged = vi.fn();
         const onCustomPaste = vi.fn();
         const authored = "[[wiki-slug]] @person {{highlight:text}}";
-        await act(async () => root.render(<MarkdownEditor value={authored} nominalHeight={200}
+        await act(async () => root.render(<MarkdownEditor referenceSearchEnabled={false} value={authored} nominalHeight={200}
             onValueChanged={onValueChanged} onBeforeInput={() => false} onFileSelect={vi.fn()} uploadProgress={null}
             onCustomPaste={onCustomPaste} textAreaRef={vi.fn()} nativeFileInputRef={vi.fn()} />));
         expect(container.querySelector("textarea")?.value).toBe(authored);

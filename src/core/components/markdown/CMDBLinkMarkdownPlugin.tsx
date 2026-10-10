@@ -41,8 +41,8 @@ import type { DB3QueryContextInput } from "src/core/db3/components/useDB3Context
 //     };
 // }
 
-export const MarkdownMentionRegex = /\[\[(event|song):([A-Za-z0-9_-]{16})\|?(.*?)\]\]/g;
-export const MarkdownMentionRegexWithSurroundingWhitespace = /\s*\[\[(event|song):([A-Za-z0-9_-]{16})\|?(.*?)\]\]\s*/g;
+export const MarkdownMentionRegex = /\[\[(event|song|user):([A-Za-z0-9_-]{16})\|?(.*?)\]\]/g;
+export const MarkdownMentionRegexWithSurroundingWhitespace = /\s*\[\[(event|song|user):([A-Za-z0-9_-]{16})\|?(.*?)\]\]\s*/g;
 
 export const MarkdownWikiLinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 export const MarkdownWikiLinkRegexWithSurroundingWhitespace = /\s*\[\[([^\]|]+)(?:\|([^\]]+))?\]\]\s*/g;
@@ -67,6 +67,9 @@ export function CMDBLinkMarkdownPlugin(md: MarkdownIt, context: DB3QueryContextI
             } else if (type === 'song') {
                 caption = caption || `Song ${id}`;
                 return `<a href="${withMemberPresentation(`/backstage/song/${id}`, context)}" class="wikiCMLink wikiSongLink">🎵 ${caption}</a>`;
+            } else if (type === 'user') {
+                caption = caption || `Person ${id}`;
+                return `<a href="${withMemberPresentation(`/backstage/user/${id}`, context)}" class="wikiCMLink wikiUserLink">${caption}</a>`;
             }
             return match;
         });

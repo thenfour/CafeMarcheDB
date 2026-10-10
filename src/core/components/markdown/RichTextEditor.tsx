@@ -8,10 +8,13 @@ import { CollapsableUploadFileComponent, FileDropWrapper } from "../file/FileDro
 import { fetchInlineClasses } from './MarkdownReactPlugins';
 import { useKeyboardState } from '../../hooks/useKeyboardState';
 import { NativeTextAreaEdit } from './useControlledTextArea';
+import { useMarkdownReferenceSuggestions } from './useMarkdownReferenceSuggestions';
+import { useLocale } from 'src/locale/components/useLocale';
 
 var turndownService = new TurndownService();
 
 interface MarkdownEditorProps {
+    referenceSearchEnabled: boolean;
     value: string | null, // value which may be coming from the database.
     onValueChanged: (edit: NativeTextAreaEdit) => void, // caller can save the changed value to a db here.
     onBeforeInput: (inputType: string | undefined, selectionStart: number, selectionEnd: number) => boolean;
@@ -34,7 +37,23 @@ function getInputType(nativeEvent: Event | undefined): string | undefined {
 }
 
 export function MarkdownEditor(props: MarkdownEditorProps) {
+    return props.referenceSearchEnabled ? <MarkdownEditorWithReferences {...props} />
+        : <MarkdownTextEditor {...props} referenceTriggers={null} />;
+}
+
+function MarkdownEditorWithReferences(props: MarkdownEditorProps) {
+    const textarea = React.useRef<HTMLTextAreaElement | null>(null);
+    const suggestions = useMarkdownReferenceSuggestions(props.referenceSearchEnabled, textarea);
+    return <MarkdownTextEditor {...props} referenceTriggers={suggestions.triggers} invalidateSuggestions={suggestions.invalidate}
+        textAreaRef={element => { textarea.current = element; props.textAreaRef(element); }} />;
+}
+
+function MarkdownTextEditor(props: MarkdownEditorProps & {
+    referenceTriggers: ReturnType<typeof useMarkdownReferenceSuggestions>["triggers"] | null;
+    invalidateSuggestions?: () => void;
+}) {
     const kb = useKeyboardState();
+    const locale = useLocale();
 
     const handlePaste = (e) => {
         if ((e.clipboardData?.files?.length || 0) > 0) {
@@ -60,7 +79,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     };
 
     return (<div className="FileUploadWrapperContainer">
-        <QuickSearchRecoveryNotice />
+        {!props.referenceSearchEnabled && <QuickSearchRecoveryNotice />}
         <FileDropWrapper
             enabled={false}
             className="frontpageGalleryFileUploadWrapper"
@@ -70,7 +89,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
         >
             <ReactTextareaAutocomplete
                 containerClassName="editorContainer"
-                loadingComponent={() => <div>Loading...</div>}
+                loadingComponent={() => <div>{locale.getPlainString("markdown.reference.loading")}</div>}
                 autoFocus={props.autoFocus}
                 innerRef={textarea => props.textAreaRef(textarea)}
                 value={props.value || ""}
@@ -87,6 +106,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                     }
                 }}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                    props.invalidateSuggestions?.();
                     //console.log(`onChange event e=`, e, "nativeEvent=", e.nativeEvent);
                     const inputType = getInputType(e.nativeEvent);
                     //console.log(`inputType=${inputType}`);
@@ -98,9 +118,15 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                     });
                 }}
                 onPaste={handlePaste}
+                onKeyDown={(event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                    if (event.key === "Escape") {
+                        props.invalidateSuggestions?.();
+                    }
+                }}
                 minChar={1} // how many chars AFTER the trigger char you need to type before the popup arrives
 
                 trigger={{
+                    ...props.referenceTriggers,
                     "{{": { // it's hard to understand how these triggers work; are these chars or strings??
                         dataProvider: token => fetchInlineClasses(token),
                         component: ({ entity, selected }: { entity: string, selected: boolean }) => <div className={`autoCompleteCMLinkItem inlineclass ${selected ? "selected" : "notSelected"}`}>{entity}</div>,
