@@ -14,7 +14,6 @@ import { CalendarDate, CalendarRange, CalendarDayHitTest, getBandDateTimeFields 
 import { useDashboardContext } from '../dashboardContext/DashboardContext';
 import { gGeneralPaletteList, StandardVariationSpec } from '../color/palette';
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
-import { EventCalendarRecoveryNotice } from './EventCalendarRecoveryNotice';
 
 const roundedNow = () => roundToNearest15Minutes(new Date());
 
@@ -158,7 +157,7 @@ const EventCalendarMonth = (props: EventCalendarMonthProps) => {
         new CalendarDate(lastVisibleDay.add(1, "day").format("YYYY-MM-DD"), props.timeZone)
     ), [firstVisibleDay, lastVisibleDay, props.timeZone]);
 
-    const { events, loading, availability } = useEventsForDateRange(visibleRange);
+    const { events, loading } = useEventsForDateRange(visibleRange);
 
     const dayProps: CustomDayProps = React.useMemo(() => ({
         selectedDay: djs,
@@ -169,7 +168,6 @@ const EventCalendarMonth = (props: EventCalendarMonthProps) => {
     }), [djs, otherDjs, props.range, events, now]);
 
     return <div className="EventCalendarMonthContainer">
-        {availability === "deferred" && <EventCalendarRecoveryNotice />}
         {loading && <LinearProgress className='loadingIndicator' />}
         <DateCalendar
             showDaysOutsideCurrentMonth

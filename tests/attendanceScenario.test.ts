@@ -5,9 +5,40 @@ import {
     applyAttendanceScenarioChange,
     scenarioAttendances, attendanceScenarioSchema, buildAttendanceScenario, createAttendanceScenario,
     scenarioInstruments, scenarioSegmentPublicId,
+    type AttendanceScenario,
 } from "src/core/components/event/attendanceScenario";
 
 describe("attendance scenario adapter", () => {
+    it.each(["past", "ongoing", "future", "tbd"] as const)("retains the attendance interaction matrix for %s events", timing => {
+        const cases = [
+            { answers: ["missing", "missing", "missing"], invited: false, visible: false, answered: false, instrument: false },
+            { answers: [null, null, null], invited: true, visible: true, answered: false, instrument: false },
+            { answers: [3, "missing", "missing"], invited: true, visible: true, answered: false, instrument: false },
+            { answers: [1, 1, "missing"], invited: true, visible: true, answered: true, instrument: false },
+            { answers: [3, 1, "missing"], invited: false, visible: true, answered: true, instrument: true },
+            { answers: [2, 3, "missing"], invited: true, visible: true, answered: true, instrument: true },
+        ] satisfies { answers: AttendanceScenario["users"][number]["responses"]; invited: boolean; visible: boolean; answered: boolean; instrument: boolean }[];
+        for (const entry of cases) {
+            const scenario = createAttendanceScenario();
+            scenario.timing = timing;
+            scenario.users[1]!.tagInvited = entry.invited;
+            scenario.users[1]!.responses = entry.answers;
+            const { attendance } = buildAttendanceScenario(scenario, 1);
+            expect(attendance).toMatchObject({ visible: entry.visible, allUncancelledSegmentsAnswered: entry.answered,
+                allowInstrumentSelect: entry.instrument, alertFlag: entry.invited && !entry.answered && timing !== "past" });
+        }
+    });
+
+    it("ignores cancelled unanswered segments and uses the first assigned instrument when no primary is set", () => {
+        const scenario = createAttendanceScenario();
+        scenario.segments[1]!.cancelled = true;
+        scenario.users[1]!.primaryInstrumentId = null;
+        const { attendance } = buildAttendanceScenario(scenario, 1);
+        expect(attendance).toMatchObject({ isSingleSegment: true, alertFlag: false, allowInstrumentSelect: true });
+        expect(attendance.eventUserResponse?.instrument?.publicId).toBe(scenarioInstruments[0]!.publicId);
+        scenario.users[1]!.instrumentCount = 0;
+        expect(buildAttendanceScenario(scenario, 1).attendance.eventUserResponse?.instrument).toBeNull();
+    });
     it("replays exported data including cleared answers, dates, comments, and explicit instruments", () => {
         const scenario = createAttendanceScenario();
         scenario.users[1] = { ...scenario.users[1]!, responses: [null, 3, "missing"], instrumentId: 4, comment: "Need a lift" };

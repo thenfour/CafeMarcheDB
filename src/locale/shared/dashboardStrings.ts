@@ -58,7 +58,6 @@ export const dashboardStrings = {
     "recovery.quickSearch.association": label("Association"),
     "recovery.eventWorkflows.title": label("Events"),
     "recovery.eventWorkflows.description": label("Event search, details and editing are temporarily unavailable while band support is restored. Calendar subscriptions remain available."),
-    "recovery.eventWorkflows.calendarOverlay": label("Event highlights are temporarily unavailable. You can still select dates."),
     "recovery.songWorkflows.title": label("Songs"),
     "recovery.songWorkflows.description": label("Song search, details, credits and recording editing are temporarily unavailable while band support is restored. Song tag catalogs remain available."),
     "recovery.fileWorkflows.title": label("Files"),

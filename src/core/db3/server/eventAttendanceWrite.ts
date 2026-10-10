@@ -4,8 +4,10 @@ import { Permission } from "shared/permissions";
 import { ChangeAction, CreateChangeContext, RegisterChange, type ChangeContext } from "src/auth/server/activityLog";
 import type { CMServerAuthorization, CMServerAuthorizationWithUser } from "src/auth/server/serverAuthorization";
 import { generatePublicId } from "src/server/publicId";
+import { xBandInstrument } from "../shared/entities/instrument/bandInstrumentContracts";
 import { ZupdateUserEventAttendanceMutationArgs, type TupdateUserEventAttendanceMutationArgs } from "../shared/apiTypes";
 import type { DB3ReadRootDatabase } from "./db3ReadExecution";
+import { resolvePublicId } from "./db3PublicIds";
 import { RecalcEventDateRangeAndIncrementRevision } from "./db3mutationCore";
 import { requireAttendanceBand, requireAttendanceTarget } from "./eventAttendancePolicy";
 
@@ -34,8 +36,8 @@ function authorizeAttendanceChanges(auth: CMServerAuthorization, args: TupdateUs
 
 async function resolveAttendanceChanges(
     database: Prisma.TransactionClient,
+    auth: CMServerAuthorization,
     eventId: number,
-    bandId: number,
     args: TupdateUserEventAttendanceMutationArgs,
 ) {
     const requested = Object.entries(args.segmentResponses ?? {}).flatMap(([publicId, response]) => response ? [{ publicId, attendanceId: response.attendanceId }] : []);
@@ -43,7 +45,7 @@ async function resolveAttendanceChanges(
     const [segments, attendances, instrument] = await Promise.all([
         database.eventSegment.findMany({ where: { eventId, publicId: { in: requested.map(response => response.publicId) } }, select: { id: true, publicId: true } }),
         database.eventAttendance.findMany({ where: { publicId: { in: attendancePublicIds }, isDeleted: false, isActive: true }, select: { id: true, publicId: true } }),
-        args.instrumentId == null ? null : database.bandInstrument.findFirst({ where: { publicId: args.instrumentId, bandId, isHidden: false }, select: { id: true } }),
+        args.instrumentId == null ? null : resolvePublicId(xBandInstrument, args.instrumentId, auth, database),
     ]);
     if (segments.length !== requested.length || attendances.length !== attendancePublicIds.length || (args.instrumentId != null && !instrument)) {
         throw new NotFoundError();
@@ -51,7 +53,7 @@ async function resolveAttendanceChanges(
     const segmentIds = new Map(segments.map(segment => [segment.publicId, segment.id]));
     const attendanceIds = new Map(attendances.map(attendance => [attendance.publicId, attendance.id]));
     return {
-        bandInstrumentId: args.instrumentId == null ? args.instrumentId : instrument!.id,
+        bandInstrumentId: args.instrumentId == null ? args.instrumentId : instrument!,
         segments: requested.map(response => ({ eventSegmentId: segmentIds.get(response.publicId)!, attendanceId: response.attendanceId === null ? null : attendanceIds.get(response.attendanceId)! })),
     };
 }
@@ -139,8 +141,8 @@ export async function updateEventAttendanceInTransaction(
     const args = ZupdateUserEventAttendanceMutationArgs.parse(input);
     const auth = (await authorization.refresh(database)).requireUser();
     authorizeAttendanceChanges(auth, args);
-    const { member, event, bandId } = await requireAttendanceTarget(database, auth, args);
-    const changes = await resolveAttendanceChanges(database, event.id, bandId, args);
+    const { member, event } = await requireAttendanceTarget(database, auth, args);
+    const changes = await resolveAttendanceChanges(database, auth, event.id, args);
     const changeContext = CreateChangeContext("updateUserEventAttendance");
     const segmentsChanged = await saveSegmentResponses(database, auth, changeContext, member.id, changes.segments);
     await saveEventAttendanceResponse(database, auth, changeContext, member.id, event.id, {

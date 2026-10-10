@@ -36,6 +36,7 @@ import { DashboardContextData, useDashboardContext, useFeatureRecorder } from '.
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from '../EditFieldsDialog';
 import { EventStatusChip } from '../event/EventChips';
 import { EventAttendanceControl } from '../EventAttendanceComponents';
+import { getAttendanceEditChanges } from './attendanceEditChanges';
 import { EventSongListTabContent } from '../EventSongListComponents';
 import { ActivityFeature } from '../featureReports/activityTracking';
 import { Markdown } from '../markdown/Markdown';
@@ -153,13 +154,14 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
     const [showCancelledSegments, setShowCancelledSegments] = React.useState<boolean>(false);
-
-    const [eventResponseValue, setEventResponseValue] = React.useState<db3.EventDetailEventResponse | null>(() => {
-        return (props.responseInfo.getEventResponseForUser(props.user, dashboardContext, props.userMap)?.response) || null;
-    });
-    const [eventSegmentResponseValues, setEventSegmentResponseValues] = React.useState<Record<EventSegmentPublicId, db3.EventDetailSegmentResponse>>(() => {
-        return Object.fromEntries(Object.entries(props.responseInfo.getResponsesBySegmentForUser(props.user)).map(x => [x[0], x[1].response]));
-    });
+    const [saving, setSaving] = React.useState(false);
+    const canManageInvitations = dashboardContext.isAuthorized(Permission.manage_events);
+    const [initialResponses] = React.useState(() => ({
+        event: props.responseInfo.getEventResponseForUser(props.user, dashboardContext, props.userMap)?.response ?? null,
+        segments: Object.fromEntries(Object.entries(props.responseInfo.getResponsesBySegmentForUser(props.user)).map(([id, response]) => [id, response.response])),
+    }));
+    const [eventResponseValue, setEventResponseValue] = React.useState(initialResponses.event);
+    const [eventSegmentResponseValues, setEventSegmentResponseValues] = React.useState(initialResponses.segments);
 
     // use the db3 client stuff for rendering / validating fields.
     const eventResponseTableSpec = DB3Client.defineLegacyTableClientSpec({
@@ -216,6 +218,21 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     );
 
     const handleSaveClick = () => {
+        if (saving) {
+            return;
+        }
+        const changes = getAttendanceEditChanges({
+            initialEvent: initialResponses.event!,
+            event: eventResponseValue,
+            initialSegments: initialResponses.segments,
+            segments: eventSegmentResponseValues,
+            canManageInvitations
+        });
+        if (Object.keys(changes).length === 0) {
+            props.onOK();
+            return;
+        }
+        setSaving(true);
         void recordFeature({
             feature: ActivityFeature.attendance_response,
             context: `EventAttendanceEditDialog`,
@@ -225,25 +242,17 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             bandPublicId: dashboardContext.requireBandPublicId(),
             userId: props.user.publicId,
             eventId: props.event.publicId,
-            comment: eventResponseValue.userComment,
-            instrumentId: eventResponseValue.bandInstrumentId,
-            segmentResponses: Object.fromEntries(Object.entries(eventSegmentResponseValues).map(x => {
-                const att = dashboardContext.eventAttendance.getById(x[1].attendanceId);
-                return [x[0], {
-                    attendanceId: att?.publicId || null
-                }];
-            })),
-            // inviting another user requires manage-events permission
-            ...(dashboardContext.isAuthorized(Permission.manage_events)
-                ? { isInvited: eventResponseValue.isInvited }
-                : {}),
+            ...changes,
         }).then(() => {
             showSnackbar({ children: "update successful", severity: 'success' });
             props.onOK();
         }).catch(err => {
             console.log(err);
             showSnackbar({ children: "update error", severity: 'error' });
-        }).finally(props.refetch);
+        }).finally(() => {
+            setSaving(false);
+            props.refetch();
+        });
     };
 
     const handleChangedEventResponse = (n: db3.EventDetailEventResponse) => {
@@ -270,8 +279,8 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             <AdminInspectObject src={eventSegmentResponseValues} label="segment responses" />
         </>}
         actions={<>
-            <CMButton onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</CMButton>
-            <CMButton onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</CMButton>
+            <CMButton disabled={saving} onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</CMButton>
+            <CMButton disabled={saving} onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</CMButton>
         </>}
     >
         <CMDialogContentText>
@@ -279,7 +288,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         </CMDialogContentText>
 
         <div className="NameValuePairList">
-            {eventResponseTableSpec.renderEditor("isInvited", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
+            {eventResponseTableSpec.renderEditor("isInvited", eventResponseValue, eventValidationResult, handleChangedEventResponse, !canManageInvitations)}
             {eventResponseTableSpec.renderEditor("bandInstrument", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
 
             {(cancelledSegments.length > 0) && dashboardContext.isAuthorized(Permission.manage_events) &&

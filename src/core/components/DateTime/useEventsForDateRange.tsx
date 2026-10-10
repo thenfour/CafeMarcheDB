@@ -1,101 +1,61 @@
-import type { CalendarRange } from "shared/dateTimePolicy";
+import React from "react";
+import { CalendarDate, CalendarRange, getCalendarWindow } from "shared/dateTimePolicy";
+import { eventPresentationTimeZone, getRangeCalendarDates } from "shared/dateTimePresentation";
+import { EventStatusSignificance } from "src/core/db3/db3";
+import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
+import { eventSearchConfig } from "src/core/hooks/searchConfigs";
+import { useSearchableList } from "src/core/hooks/useSearchableList";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import { EventOrderByColumnOptions, type EventsFilterSpec } from "../event/EventClientBaseTypes";
 import type { CalendarEventSpec } from "./DateTimeTypes";
 
-/** Keep date selection usable while event overlays depend on deferred search. */
-export function useEventsForDateRange(_dateRange: CalendarRange): {
-    events: CalendarEventSpec[]; loading: false; error: null; availability: "deferred";
-} {
-    return { events: [], loading: false, error: null, availability: "deferred" };
+export function useEventsForDateRange(dateRange: CalendarRange) {
+    const dashboard = useDashboardContext();
+    const cancelledStatuses = dashboard.eventStatus.items.filter(status => status.significance === EventStatusSignificance.Cancelled)
+        .map(status => status.publicId);
+    const filter: EventsFilterSpec = {
+        refreshSerial: 1,
+        quickFilter: "",
+        calendarWindow: getCalendarWindow(dateRange.dates, dateRange.start.timeZone),
+        orderByColumn: EventOrderByColumnOptions.startsAt,
+        orderByDirection: "asc",
+        tagFilter: { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        typeFilter: { db3Column: "type", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        dateFilter: { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        statusFilter: {
+            db3Column: "status", behavior: cancelledStatuses.length > 0
+                ? DiscreteCriterionFilterType.doesntHaveAnyOf : DiscreteCriterionFilterType.alwaysMatch,
+            options: cancelledStatuses,
+        },
+    };
+    // Keep the reference picker's bounded month search through the ordinary Event owner.
+    const { enrichedItems, loading } = useSearchableList(filter, eventSearchConfig, 100);
+    const highlights = React.useMemo<{ events: CalendarEventSpec[]; error: Error | null }>(() => {
+        try {
+            const events: CalendarEventSpec[] = enrichedItems.flatMap(event => (event.segments ?? []).flatMap(segment => {
+                const range = segment.dateRange;
+                if (!range || range.isTBD()
+                    || dashboard.eventStatus.getById(segment.statusId)?.significance === EventStatusSignificance.Cancelled) {
+                    return [];
+                }
+                const dates = getRangeCalendarDates(range, eventPresentationTimeZone(range, {
+                    viewerTimeZone: dateRange.start.timeZone,
+                    bandTimeZone: dashboard.bandTimeZone,
+                    locale: dashboard.formattingLocale,
+                }))!;
+                return [{
+                    id: event.publicId,
+                    title: event.name || "Untitled Event",
+                    color: event.type?.color?.id ?? "blue",
+                    // All-day dates stay in the band; timed dates use the picker timezone.
+                    dateRange: new CalendarRange(new CalendarDate(dates.start.date, dateRange.start.timeZone),
+                        new CalendarDate(dates.endExclusive.date, dateRange.start.timeZone)),
+                }];
+            }));
+            return { events, error: null };
+        } catch (error) {
+            return { events: [], error: error instanceof Error ? error : new Error("Failed to transform events") };
+        }
+    }, [enrichedItems, dashboard.eventStatus, dashboard.bandTimeZone, dashboard.formattingLocale, dateRange.start.timeZone]);
+    return { ...highlights, loading };
 }
-
-// MIGRATION_RESTORE: event-workflows
-// Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/components/DateTime/useEventsForDateRange.tsx:1-83
-// Reason: Date-picker event highlights call the deferred raw search owner.
-// Restore: Restore selected-band calendar-window search and event highlights while retaining date selection.
-// Verification: Reactivate calendar-window consumer specifications and verify localized highlights, cancelled segments, point events and built-browser date selection.
-// SHA256: 57af0fe9e9c4dcd6374b2b24d3912cd60702f21408d6766eead8daa4b5518c26
-// MIGRATION_REFERENCE_BEGIN
-// import { CalendarDate, CalendarRange, getCalendarWindow } from "shared/dateTimePolicy";
-// import { eventPresentationTimeZone, getRangeCalendarDates } from "shared/dateTimePresentation";
-// import React from "react";
-// import { CalendarEventSpec } from "./DateTimeTypes";
-// import { DiscreteCriterionFilterType } from "../../db3/shared/apiTypes";
-// import { useSearchableList } from "../../hooks/useSearchableList";
-// import { eventSearchConfig } from "../../hooks/searchConfigs";
-// import { EventOrderByColumnOptions, EventsFilterSpec } from "../event/EventClientBaseTypes";
-// import { EventStatusSignificance } from "../../db3/db3";
-// import { useDashboardContext } from "../dashboardContext/DashboardContext";
-//
-// export const useEventsForDateRange = (dateRange: CalendarRange) => {
-//     const [events, setEvents] = React.useState<CalendarEventSpec[]>([]);
-//     const [error, setError] = React.useState<Error | null>(null);
-//     const dashboardContext = useDashboardContext();
-//
-//     const filterSpec = React.useMemo(() => {
-//
-//         return {
-//             refreshSerial: 1,
-//             quickFilter: "",
-//             calendarWindow: getCalendarWindow(dateRange.dates, dateRange.start.timeZone),
-//             orderByColumn: EventOrderByColumnOptions.startsAt,
-//             orderByDirection: 'asc' as const,
-//             tagFilter: { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-//             statusFilter: {
-//                 db3Column: "status", behavior: DiscreteCriterionFilterType.doesntHaveAnyOf, options:
-//                     dashboardContext.eventStatus.items
-//                         .filter(status => status.significance === EventStatusSignificance.Cancelled)
-//                         .map(status => status.publicId)
-//             },
-//             typeFilter: { db3Column: "type", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-//             dateFilter: { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-//         } satisfies EventsFilterSpec;
-//     }, [dateRange.start.date, dateRange.endExclusive.date, dashboardContext.eventStatus, dashboardContext.bandTimeZone, dateRange.start.timeZone]);
-//
-//     const { enrichedItems: enrichedEvents, results, loading } = useSearchableList(filterSpec, eventSearchConfig, 100);
-//
-//     // Transform enrichedEvents to CalendarEventSpec format
-//     React.useEffect(() => {
-//         if (!filterSpec) {
-//             setEvents([]);
-//             return;
-//         }
-//
-//         setError(null);
-//
-//         if (enrichedEvents) {
-//             try {
-//                 const transformed = enrichedEvents.flatMap(event => (event.segments || [])
-//                     .flatMap(segment => {
-//                         const range = segment.dateRange;
-//                         if (!range
-//                             || range.isTBD()
-//                             || segment.statusId === undefined
-//                             || dashboardContext.eventStatus.getById(segment.statusId)?.significance === EventStatusSignificance.Cancelled) {
-//                             return [];
-//                         }
-//                         const dates = getRangeCalendarDates(range, eventPresentationTimeZone(range, {
-//                             viewerTimeZone: dateRange.start.timeZone,
-//                             bandTimeZone: dashboardContext.bandTimeZone,
-//                             locale: dashboardContext.formattingLocale,
-//                         }))!;
-//                         return [{
-//                             id: event.publicId, // Preserve the picker cell's data-event-id.
-//                             title: event.name || 'Untitled Event',
-//                             color: typeof event.type?.color === "string"
-//                                 ? event.type.color
-//                                 : event.type?.color?.id || "blue",
-//                             // Paint the selected band dates into this calendar's date cells.
-//                             dateRange: new CalendarRange(new CalendarDate(dates.start.date, dateRange.start.timeZone),
-//                                 new CalendarDate(dates.endExclusive.date, dateRange.start.timeZone)),
-//                         }];
-//                     }));
-//                 setEvents(transformed);
-//             } catch (err) {
-//                 setError(err instanceof Error ? err : new Error('Failed to transform events'));
-//             }
-//         }
-//     }, [enrichedEvents, filterSpec, dashboardContext.eventStatus, dashboardContext.bandTimeZone, dateRange.start.timeZone]);
-//
-//     return { events, loading, error };
-// };
-// MIGRATION_REFERENCE_END

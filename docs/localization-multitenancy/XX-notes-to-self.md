@@ -977,6 +977,47 @@ model BandSetting {
 }
 ```
 
+# Routes & route scopes
+
+What is a route scope? A parameterized page-wide envelope. Something that marks
+the whole page's functionality under a parameter. In practice that's just a
+global platform scope (no narrowing parameter), and a band scope.
+
+We can think of a route scope as a parameter that can denote "you are under a different
+envelope here". Likely the dashboard chrome will be formatted differently under different
+scopes.
+
+One big reason to have this concept is to make it clear whether you're configuring
+platform-level data versus band-level data.
+
+What a route scope is NOT:
+
+-  a group of functionality. For example configuration, events, analytics -- do not denote scopes;
+   they are just different pages with different functionality.
+-  locale: even though locale is a page-wide parameter, it doesn't count as a scope
+   in this context because it doesn't mean a different level of functionality.
+
+Scopes:
+
+## `platform`
+
+-  homepage, privacy policy, login, etc.
+-  admin for platform-wide
+-  analytics
+-  user's cross-band dashboard
+
+## `band`
+
+The URL route specifies the page-wide band scope parameter.
+
+Mmost existing backstage pages fall under this scope.
+
+Page chrome gets the band-specific branding.
+
+Your user dashboard will NOT be band-scoped because you can be in multiple bands,
+which brings multiple band contexts to the single page. HOWEVER if you're in only
+1 band, we should likely not expose users to cross-band experiences.
+
 # TECH DEBT accumulating / things to make sure we do
 
 -  a user landing page which has mixed-band info (events for all bands, etc)
@@ -985,7 +1026,7 @@ model BandSetting {
    -  band awareness and platform vs. band mgmt
    -  supporting routing
 -  tab management system such that you can have band A in tab 1, band B in tab 2.
--  xTable should stop being used like a view
+-  `xTable` should stop being used like a view
    -  only 1 xtable per db entity
    -  fieldbase should also own serialization, validation (and likely own zod schema at very least for DTO parsing)
    -  don't re-invent auth: search for `export const xCustomLinkFile = db3.defineTable({` to see where ad-hoc auth is sneaking in

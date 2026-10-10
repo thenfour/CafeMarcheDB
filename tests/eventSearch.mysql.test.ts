@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { getCalendarWindow } from "shared/dateTimePolicy";
+import { createAllDayRange } from "shared/time";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
 import { bindDB3ReadSnapshot } from "src/core/db3/server/db3ReadExecution";
 import { GetSearchResultsCore } from "src/core/db3/server/searchServerCore";
@@ -148,6 +149,52 @@ describe.skipIf(!settingsMysqlTestUrl)("existing event search on migrated MariaD
         expect(result.results.map(row => row.name)).toEqual(["Alpha"]);
         expect(result.rowCount).toBe(1);
         expect(result.facets.find(facet => facet.db3Column === "tags")!.items.find(item => item.id === seed.firstTag.publicId)?.rowCount).toBe(1);
+    }));
+
+    it("searches picker dates through visible segments at DST, point and exclusive boundaries", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const seed = await seedSearch(tx, fixture);
+        const band = fixture.bands[0]!;
+        const cancelled = await tx.eventStatus.create({ data: { publicId: generatePublicId(), nameId: seed.type.nameId,
+            descriptionId: seed.type.descriptionId, significance: "Cancelled" } });
+        const allDay = createAllDayRange({ startDate: "2026-03-29", endDateExclusive: "2026-03-30" }, "Europe/Brussels");
+        const visibility = await tx.permission.findUniqueOrThrow({ where: { name: Permission.visibility_members } });
+        const fixtures = [
+            { name: "All day", startsAt: allDay.getStartDateTime(), durationMillis: allDay.getDurationMillis(), isAllDay: true },
+            { name: "Point at start", startsAt: new Date("2026-03-28T23:00:00Z"), durationMillis: 0 },
+            { name: "End at start", startsAt: new Date("2026-03-28T22:00:00Z"), durationMillis: 3600000 },
+            { name: "Point at end", startsAt: new Date("2026-03-29T22:00:00Z"), durationMillis: 0 },
+            { name: "Cancelled set", startsAt: new Date("2026-03-29T12:00:00Z"), durationMillis: 3600000, statusId: cancelled.id },
+            { name: "TBD", startsAt: null, durationMillis: 3600000 },
+            { name: "Foreign", startsAt: new Date("2026-03-29T12:00:00Z"), durationMillis: 0, bandId: fixture.bands[1]!.id },
+            { name: "Private", startsAt: new Date("2026-03-29T12:00:00Z"), durationMillis: 0, private: true },
+            { name: "Deleted", startsAt: new Date("2026-03-29T12:00:00Z"), durationMillis: 0, isDeleted: true },
+        ];
+        for (const row of fixtures) {
+            await tx.event.create({ data: { publicId: generatePublicId(), name: row.name, bandId: row.bandId ?? band.id, revision: 1,
+                visiblePermissionId: row.private ? null : visibility.id, createdByUserId: fixture.admin.id, isDeleted: row.isDeleted ?? false,
+                // Deliberately stale aggregates must not hide a segment on the selected day.
+                startsAt: new Date("2026-01-01"), typeId: seed.type.id,
+                segments: { create: { publicId: generatePublicId(), name: "Set", description: "", startsAt: row.startsAt,
+                    durationMillis: BigInt(row.durationMillis), isAllDay: row.isAllDay ?? false, dateTimeVersion: 2, statusId: row.statusId } },
+            } });
+        }
+        const result = await seed.read({ calendarWindow: getCalendarWindow({ startDate: "2026-03-29", endDateExclusive: "2026-03-30" }, "Europe/Brussels"), routeLocale: "fr-BE",
+            discreteCriteria: [...seed.query().discreteCriteria.filter(criterion => criterion.db3Column !== "status"),
+                { db3Column: "status", behavior: Behavior.doesntHaveAnyOf, options: [cancelled.publicId] }] });
+        expect(result.results.map(row => row.name)).toEqual(["All day", "Point at start"]);
+        expect(result.rowCount).toBe(2);
+        expect(result.facets.find(facet => facet.db3Column === "type")!.items.find(item => item.id === seed.type.publicId)?.rowCount).toBe(2);
+        expect(JSON.stringify(result.results)).not.toMatch(/"(?:id|bandId|bandUserId)":/);
+    }));
+
+    it("includes unset references when excluding one or several scalar catalog choices", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const seed = await seedSearch(tx, fixture);
+        const other = await tx.eventStatus.create({ data: { publicId: generatePublicId(), nameId: seed.type.nameId, descriptionId: seed.type.descriptionId } });
+        for (const options of [[seed.status.publicId], [seed.status.publicId, other.publicId]]) {
+            const result = await seed.read({ discreteCriteria: [{ db3Column: "status", behavior: Behavior.doesntHaveAnyOf, options }] });
+            expect(result.results.map(row => row.name)).toEqual(["Delta"]);
+            expect(result.rowCount).toBe(1);
+        }
     }));
 
     it("rejects foreign, hidden and forged catalog identities without widening results", () => withSettingsMysqlFixture(database, async (tx, fixture) => {

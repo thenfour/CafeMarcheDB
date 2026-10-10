@@ -76,8 +76,8 @@ Event Files now also uses the associated File editors and uploads described belo
 Dialog help keys and draft tag associations were repaired so the original
 editors can open.
 
-Remaining event parity includes date-picker highlights, the full attendance/
-default-instrument interaction matrix and publication imports. The public
+The attendance/default-instrument matrix and date-picker highlights are restored
+in their checkpoint below. Remaining event parity includes imports. The public
 homepage/feed is restored in its own checkpoint below. Localized catalog-name matching remains covered by
 the A1 exception; these gaps keep `event-workflows` and A1 open.
 
@@ -382,14 +382,42 @@ deleted/merged-person Song-credit write failure without a Song-specific fallback
 Nested read resolution batches permitted child rows, preserves recovery access,
 skips inaccessible references and avoids translation reads for plain selections.
 
-## Next slice: Event attendance and default-instrument parity
+## Event attendance and date-picker checkpoint
 
-Finish the original event attendance/default-instrument interaction matrix and
-date-picker highlights through the migrated membership/attendance owners. Retain
-the restored directory/profile workflows and their remaining manifest obligations.
-Keep the failing repository-suite assessment separate from native/browser parity;
-account analysis, merging, role administration and full localized-name matching
-remain in the later sequence below.
+The original inline attendance, instrument chooser, Markdown comment editor and
+response-table dialog retain invitation, past/ongoing/future/TBD, unanswered,
+cleared, mixed and cancelled-segment behavior. Effective defaults come from the
+selected band's membership; changing its primary instrument updates an unpinned
+response, an explicit event choice remains pinned, and clearing restores the live
+default. The chooser marks that effective selection without persisting a default.
+Intentional blank instrument labels remain selectable; hidden instruments and
+functional groups cannot become new selections. Shared DB3 reference resolution
+enforces the same visibility inside the existing attendance transaction.
+
+Response-table saves submit only changed fields, retaining historical references
+that become hidden or inactive while editing. An unchanged dialog creates no
+response. Invitation edits require their separate management authority. Busy saves
+cannot be submitted twice; failed comment/dialog saves retain drafts for retry.
+The Markdown save shortcut retains the original open-editor behavior.
+
+Date pickers again highlight visible Event segments through the existing bounded
+100-result month search and shared band/locale request lifecycle. Aggregate gaps,
+TBD and cancelled segments/events are excluded; point events occupy one day.
+Timed highlights use the picker timezone; all-day dates remain band dates. Empty
+cancellation catalogs leave status filtering open. The generic negative-reference
+filter now includes unset references, fixing SQL NULL exclusion without Event
+special cases. Completed calendar source/deferred-test blocks and the obsolete
+recovery notice/test are removed; the behavioral specification is active again.
+This checkpoint leaves import/localized-name obligations and A1/B open.
+
+## Next slice: Event import preview and save
+
+Restore the original text/config parser, year overrides, band-owned defaults,
+visible Song and active membership matching, editable preview, explicit save and
+saved-event history through the migrated creation transaction. Follow the
+`event-import` manifest entry and reactivate its preserved specifications. Retain
+the restored Event/member workflows; keep account analysis, merging, role
+administration, full localized-name matching and the full-suite gate separate.
 
 ## Localized catalog text search exception
 
@@ -417,7 +445,7 @@ when a concrete workflow dependency requires it.
 | Work | Required parity |
 | --- | --- |
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
-| Events | Retain restored search/detail/creation/editing, setlist editing and invitation/attendance controls; finish default-instrument and attendance parity and date-picker highlights. |
+| Events | Retain restored search/detail/creation/editing, setlists, invitation/attendance/default-instrument controls and date-picker highlights; restore import preview/save and account for its remaining dependencies. |
 | Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish remaining upload callers. |
 | Supporting workflows | Dashboard/wiki/custom navigation, plans, search, calendars/feeds/tokens, Custom Links, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
@@ -683,11 +711,32 @@ and band-scoped profile activity. No uncaught page or unexpected RPC errors occu
 The French directory and profile layouts were visually inspected. Temporary rows,
 roles, sign-in methods, account changes and actions were cleaned up.
 
+The attendance/calendar slice passes 123 focused checks in 12 files and 217 native
+MariaDB cases in 13 files, plus six independent native calendar-window cases.
+The interaction matrix covers past/ongoing/future/TBD, invitations, absent/cleared
+answers, negative/mixed/positive responses, cancelled segments and missing
+instruments. Native additions cover live/pinned/cleared membership defaults,
+hidden functional groups, atomic rejection, DST and exclusive picker boundaries,
+stale aggregate dates, point events, visibility and one/multiple status exclusions
+with unset references. Event/member/File/Song/setlist regressions remain included.
+Normal typecheck, normal and isolated demo production builds, targeted lint and
+source-preservation verification pass.
+
+Eight production Chromium groups pass on disposable two-band data: original
+French multi-segment invitations/declines/affirmative chooser, live defaults and
+explicit pin/clear, revoked response authority retaining the real Markdown draft
+and retrying, actual calendar highlights/date selection from a Tokyo browser,
+past/cancelled controls, response-table comment editing after catalog retirement,
+and independent Dutch membership/default behavior with foreign/anonymous denial.
+No uncaught page or unexpected RPC errors occurred. The calendar layout was
+visually inspected and temporary event/catalog/response/assignment/audit fixtures
+were cleaned up. Remaining English chrome is covered by the A1 exception.
+
 The complete-suite run still reports 206 failed tests and ten suite-load failures,
 including unscoped authorization/account/setlist fixtures, deferred-domain and
 date-policy contracts; the runner stops before the later jsdom batches. Focused
-passes do not establish A1 readiness. The latest run passes 1792 tests and skips
-558. Updated account fixtures change which legacy assertions reach the missing
+passes do not establish A1 readiness. The latest run passes 1801 tests and skips
+567. Updated account fixtures change which legacy assertions reach the missing
 GlobalRole/designation prerequisites; those changed failures reproduce on baseline
 `bce53c20` product code with the same fixture. Newly introduced projection,
 translation-read and CommonJS import-order failures were fixed; date probes and

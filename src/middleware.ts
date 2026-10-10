@@ -16,20 +16,20 @@ export function middleware(request: NextRequest) {
 
     //console.log(`MW path: ${path}`);
 
-    if (path === "/settings") {
-        const destination = request.nextUrl.clone();
-        // the destination must also be a page (/pages/...) -- cannot just be embedded somewhere in the repo.
-        destination.pathname = `/backstage/events`;
+    // if (path === "/settings") {
+    //     const destination = request.nextUrl.clone();
+    //     // the destination must also be a page (/pages/...) -- cannot just be embedded somewhere in the repo.
+    //     destination.pathname = `/backstage/events`;
 
-        // Remove any value supplied by the browser.
-        const headers = new Headers(request.headers);
-        //headers.delete("x-cmdb-portal-path");
+    //     // Remove any value supplied by the browser.
+    //     const headers = new Headers(request.headers);
+    //     //headers.delete("x-cmdb-portal-path");
 
-        headers.set("x-cmdb-portal-path", path);
+    //     headers.set("x-cmdb-portal-path", path);
 
-        return NextResponse.rewrite(destination, { request: { headers } });
+    //     return NextResponse.rewrite(destination, { request: { headers } });
 
-    }
+    // }
 
 
     return NextResponse.next();

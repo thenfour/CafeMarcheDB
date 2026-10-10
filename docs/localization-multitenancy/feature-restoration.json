@@ -216,8 +216,11 @@
         "2026-10-08: Restored the original event detail page, breadcrumbs/tabs, creation dialog, basic/visibility/relevance edits, segment creation/date edits/deletion, invitation-group/member selection, inline attendance and CafeMarche frontpage field editing. Public targets and fresh band snapshots use shared DB3 field authorization, localized reference catalogs, audit and event-range services. The invitation picker uses active band memberships; draft tag choices and missing dialog help keys were repaired.",
         "294 focused checks and 162 native MariaDB checks pass, including parent-inherited segment ownership, real invitation-tag assignments, audit/range updates, hidden/foreign references, revoked grants and independent pinned Song/File visibility. Normal typecheck/build and focused lint pass. Twelve built-browser groups pass, including original creation/editing controls, existing creation permission checks, invitation/attendance saves, actual WAV playback, French frontpage writes and Dutch second-band/foreign-event boundaries; no uncaught browser or RPC errors. See 04-implementation-plan.md#verification-status for evidence and the failing full-suite assessment.",
         "2026-10-09: Restored the original event setlist editor and Song picker. Shared parent/child ownership declarations authorize save/update/delete/reorder, preserve persisted child identities and audit transactions, and reject hidden/foreign parents, songs, child IDs and mixed-event reorder scopes. Native tests retain creation/attendance/response/plan regressions; built-browser creation/editing, keyboard picking, drag reorder and confirmed parent/child deletion pass. See the Song/setlist verification in 04-implementation-plan.md.",
-        "Still pending: the full attendance/default-instrument interaction matrix, date-picker highlights, publication consumers/imports and localized catalog-name free-text matching under the A1 exception. Event Files retains the restored shared upload/metadata controls. These checkpoints do not close event parity or A1.",
-        "2026-10-09: Event Files now uses the restored shared File metadata/association and upload controls with explicit band/public targets and independent File authorization; File pages are restored and image-creation/localized-name-search obligations are tracked separately."
+        "Still pending: Event import preview/save and localized catalog-name free-text matching under the A1 exception. Public homepage/feed delivery and Event Files are restored in their own checkpoints. These checkpoints do not close the full event-workflows obligation or A1/B.",
+        "2026-10-09: Event Files now uses the restored shared File metadata/association and upload controls with explicit band/public targets and independent File authorization; File pages are restored and image-creation/localized-name-search obligations are tracked separately.",
+        "2026-10-10: Restored the original attendance/default-instrument interaction matrix and date-picker highlights through the existing membership, attendance and Event_Search owners. Effective primary selection remains live until explicitly pinned and clearing restores the current band default. Blank instrument labels remain selectable; new hidden instrument/group choices use shared DB3 reference visibility. Failed/busy comment saves retain drafts, the Markdown shortcut retains the open editor, and response-table saves send changed fields only so retired historical references survive unrelated edits.",
+        "The bounded 100-result picker search carries explicit calendar bounds and shared band/locale cancellation. Individual noncancelled segments and point events highlight dates; aggregate gaps/TBD/private/deleted/foreign Events remain excluded. All-day dates stay in the band, timed dates use the picker timezone, and DST/exclusive boundaries are retained. Shared negative-reference filtering now includes NULL references; empty cancellation catalogs use alwaysMatch. Calendar source/deferred-test archives and the obsolete recovery notice/test are replaced by active coverage.",
+        "123 focused checks across 12 files, 217 native MariaDB cases across 13 files plus six native calendar-window cases, normal typecheck/build, isolated demo build, targeted lint and preservation verification pass. Eight built-browser groups cover French attendance/default/draft/date-picker/response-table behavior, fresh grant denial/retry, independent Dutch membership defaults and foreign/anonymous denial, without uncaught page/unexpected RPC errors. The full suite still reports 206 failed tests and ten suite-load failures (1801 passed, 567 skipped); A1/B remain open. See 04-implementation-plan.md#verification-status."
       ]
     },
     {
@@ -2082,18 +2085,6 @@
       "featureId": "song-workflows",
       "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:tests/authorization/db3Authorization.test.ts:289-295",
       "sha256": "34c0d6198c58cfe415b9bb65a73039c5ef207bdf521fb90644eb740b3f3dc490"
-    },
-    {
-      "file": "src/core/components/DateTime/useEventsForDateRange.tsx",
-      "featureId": "event-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/components/DateTime/useEventsForDateRange.tsx:1-83",
-      "sha256": "57af0fe9e9c4dcd6374b2b24d3912cd60702f21408d6766eead8daa4b5518c26"
-    },
-    {
-      "file": "tests/datetime/calendarWindowConsumers.test.ts",
-      "featureId": "event-workflows",
-      "source": "f96ac10c66a450a4b16b3a7a857abf96d125d434:tests/datetime/calendarWindowConsumers.test.ts:1-89",
-      "sha256": "72306d361f4e58452576aac4e91a92cd1dc8a54f6c25d10b27b7eea143c777b9"
     },
     {
       "file": "tests/authorization/db3Authorization.test.ts",

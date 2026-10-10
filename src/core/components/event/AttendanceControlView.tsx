@@ -51,7 +51,7 @@ const InstrumentButton = ({ value, selected, onSelect }: {
     value: db3.InstrumentDashboardClient | null;
     selected: boolean;
     onSelect: () => void;
-}) => !value?.name ? null : <CMChip
+}) => !value ? null : <CMChip
     onClick={onSelect} shape="rounded" border="noBorder"
     className={`attendanceInstrument CMChipNoMargin ${selected ? "" : "HalfOpacity"}`}
     color={value.functionalGroup.color} tooltip={value.description}
@@ -65,11 +65,9 @@ const InstrumentControl = ({ response, environment }: {
     const instruments = response.user.bandUserInstruments.flatMap(assignment => {
         const instrument = environment.instruments.find(option => option.publicId === assignment.bandInstrumentId);
         // Assignment history may outlive access to its catalog entry.
-        return instrument ? [instrument] : [];
+        return instrument && !instrument.isHidden && !instrument.functionalGroup.isHidden ? [instrument] : [];
     });
-    const selected = environment.instruments.find(
-        instrument => instrument.publicId === response.response.bandInstrumentId,
-    );
+    const selected = response.instrument;
     const change = async (instrumentId: InstrumentPublicId) => {
         setInProgress(true);
         try { await environment.onSave({ type: "instrument", instrumentId }); }
@@ -92,24 +90,35 @@ const CommentEditor = ({ response, environment, onClose }: {
     response: NonNullable<EventAttendanceResult["eventUserResponse"]>; environment: AttendanceControlEnvironment; onClose: () => void;
 }) => {
     const [value, setValue] = React.useState(response.response.userComment || "");
-    const save = async () => {
-        try { await environment.onSave({ type: "comment", comment: value }); }
+    const [saving, setSaving] = React.useState(false);
+    const save = async (closeAfterSave: boolean) => {
+        if (saving) {
+            return;
+        }
+        setSaving(true);
+        try {
+            await environment.onSave({ type: "comment", comment: value });
+            if (closeAfterSave) {
+                onClose();
+            }
+        }
         catch { /* Feedback belongs to the adapter. */ }
+        finally { setSaving(false); }
     };
     return <AppContextMarker name="EventAttendanceCommentEditorDialog"><CMDialog
         open
         onClose={onClose}
         title={environment.commentDialogTitle}
         actions={<>
-            <CMButton className="freeButton cancelButton" onClick={onClose}>Cancel</CMButton>
-            <CMButton className="saveButton saveAndCloseButton freeButton changed" onClick={async () => { await save(); onClose(); }}>
+            <CMButton className="freeButton cancelButton" disabled={saving} onClick={onClose}>Cancel</CMButton>
+            <CMButton className="saveButton saveAndCloseButton freeButton changed" disabled={saving} onClick={() => { void save(true); }}>
                 {gIconMap.CheckCircleOutline()}Save
             </CMButton>
         </>}
     >
         {environment.commentDialogDescription}
         <Markdown3Editor value={value} onChange={setValue} nominalHeight={200}
-            handleSave={() => { void save(); }} allowUploads={environment.allowUploads}
+            handleSave={() => { void save(false); }} allowUploads={environment.allowUploads}
             uploadFileContext={environment.allowUploads ? { taggedEventId: response.event.publicId } : undefined} />
     </CMDialog></AppContextMarker>;
 };

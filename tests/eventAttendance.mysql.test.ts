@@ -4,6 +4,10 @@ import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
 import { loadAuthorizationForUser } from "src/auth/server/serverAuthorization";
 import { bindDB3ReadSnapshot } from "src/core/db3/server/db3ReadExecution";
+import { loadDashboardData } from "src/core/db3/server/db3DashboardData";
+import { hydrateDashboardData } from "src/core/db3/shared/references/dashboardData";
+import { eventParticipantFromMembership } from "src/core/db3/shared/entities/user/eventParticipant";
+import { getInstrumentForEventUserResponse } from "src/core/db3/shared/schema/eventAPI";
 import { readUserEventAttendance } from "src/core/db3/server/eventAttendanceRead";
 import { updateEventAttendance, updateEventAttendanceInTransaction } from "src/core/db3/server/eventAttendanceWrite";
 import { generatePublicId } from "src/server/publicId";
@@ -220,6 +224,47 @@ describe.skipIf(!settingsMysqlTestUrl)("membership-owned event attendance on Mar
             await expect(readUserEventAttendance(snapshot, auth, c.args)).rejects.toThrow();
         }
         expect(await tx.eventUserResponse.count()).toBe(0);
+    }));
+
+    it("uses shared instrument visibility, including a hidden functional group, before any write", () => fixtureTest(async (tx, fixture) => {
+        const c = await prepare(tx, fixture);
+        await c.write({ instrumentId: parsePublicId<"Instrument">(c.instrument.publicId) });
+        const before = await tx.change.count();
+        await tx.bandInstrumentFunctionalGroup.update({ where: { id: c.instrument.functionalGroupId }, data: { isHidden: true } });
+        await expect(c.write({ comment: "Must not save", instrumentId: parsePublicId<"Instrument">(c.instrument.publicId), segmentResponses: c.answers })).rejects.toThrow();
+        expect(await tx.change.count()).toBe(before);
+        expect(await tx.eventSegmentUserResponse.count()).toBe(0);
+        expect((await c.read()).instrumentId).toBe(c.instrument.publicId);
+        expect((await c.read()).comment).toBe("");
+        await c.write({ instrumentId: null });
+        expect((await c.read()).instrumentId).toBeNull();
+    }));
+
+    it("keeps event defaults live within each membership while explicit instruments persist until cleared", () => fixtureTest(async (tx, fixture) => {
+        const c = await prepare(tx, fixture);
+        const second = await tx.bandInstrument.create({ data: { publicId: generatePublicId(), bandId: c.band.id, functionalGroupId: c.instrument.functionalGroupId } });
+        const primary = await tx.bandUserInstrument.create({ data: { publicId: generatePublicId(), bandUserId: c.member.id, bandInstrumentId: c.instrument.id, isPrimary: true } });
+        const secondary = await tx.bandUserInstrument.create({ data: { publicId: generatePublicId(), bandUserId: c.member.id, bandInstrumentId: second.id } });
+        const effective = async () => {
+            const context = await bindDB3ReadSnapshot(tx, c.auth, { isolationLevel: "Serializable" });
+            const dashboard = hydrateDashboardData(await loadDashboardData(context, c.auth, { bandPublicId: c.args.bandPublicId, routeLocale: "fr-BE" }));
+            const user = eventParticipantFromMembership(dashboard.currentMembership)!;
+            const stored = await c.read();
+            return getInstrumentForEventUserResponse({ bandUserId: user.membershipId, bandInstrumentId: stored.instrumentId,
+                isInvited: null, userComment: "" }, user.membershipId, { instrument: { find: predicate => dashboard.instrument.find(predicate) } }, [user]);
+        };
+        expect((await effective())?.publicId).toBe(c.instrument.publicId);
+        await tx.bandUserInstrument.update({ where: { id: primary.id }, data: { isPrimary: false } });
+        await tx.bandUserInstrument.update({ where: { id: secondary.id }, data: { isPrimary: true } });
+        expect((await effective())?.publicId).toBe(second.publicId);
+        expect(await tx.eventUserResponse.count()).toBe(0);
+        await c.write({ instrumentId: parsePublicId<"Instrument">(c.instrument.publicId) });
+        expect((await effective())?.publicId).toBe(c.instrument.publicId);
+        await c.write({ instrumentId: null });
+        expect((await effective())?.publicId).toBe(second.publicId);
+        await tx.bandInstrument.update({ where: { id: second.id }, data: { isHidden: true } });
+        expect(await effective()).toBeNull();
+        expect((await c.read()).instrumentId).toBeNull();
     }));
 
     it("rolls back responses, revisions and audit when the calendar hook fails", async () => {

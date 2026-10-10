@@ -397,13 +397,16 @@ export class ForeignSingleField<
                     error: "Select options to filter on",
                     whereAnd: `(${this.fkidMember} is not null)`,
                 };
-                if (crit.options.length === 1) return {
-                    error: undefined,
-                    whereAnd: `(${this.fkidMember} != ${crit.options[0]})`,
-                };
+                if (crit.options.length === 1) {
+                    return {
+                        error: undefined,
+                        // An unset reference has none of the excluded values. SQL NULL needs an explicit branch.
+                        whereAnd: `(${this.fkidMember} is null or ${this.fkidMember} != ${crit.options[0]})`,
+                    };
+                }
                 return {
                     error: undefined,
-                    whereAnd: `(${this.fkidMember} not in (${crit.options.join(",")}))`,
+                    whereAnd: `(${this.fkidMember} is null or ${this.fkidMember} not in (${crit.options.join(",")}))`,
                 };
             },
             doesntHaveAllOf: () => {
