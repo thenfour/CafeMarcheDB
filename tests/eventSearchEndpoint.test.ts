@@ -13,10 +13,10 @@ vi.mock("src/blitz-server", () => ({ api: (handler: unknown) => handler }));
 vi.mock("src/auth/server/serverAuthorization", async () => ({
     ...await vi.importActual<typeof ServerAuthorization>("src/auth/server/serverAuthorization"), loadAuthorization: vi.fn(),
 }));
-vi.mock("src/core/db3/server/searchServerCore", () => ({ GetSearchResultsCore: vi.fn(), SearchInputError: class extends Error {} }));
+vi.mock("src/core/db3/server/searchServerCore", () => ({ GetSearchResultsCore: vi.fn(), isRestoredSearchDomain: vi.fn(), SearchInputError: class extends Error {} }));
 
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
-import { GetSearchResultsCore } from "src/core/db3/server/searchServerCore";
+import { GetSearchResultsCore, isRestoredSearchDomain } from "src/core/db3/server/searchServerCore";
 import { MakeEmptySearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { searchResultsRoute } from "src/pages/api/search/getSearchResultsApi";
 
@@ -43,11 +43,12 @@ function response() {
 describe("existing domain search HTTP owner", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(isRestoredSearchDomain).mockReturnValue(true);
         vi.mocked(loadAuthorization).mockResolvedValue(auth);
         vi.mocked(GetSearchResultsCore).mockResolvedValue(MakeEmptySearchResultsRet());
     });
 
-    it.each([["Event", "Event_Search"], ["Song", "Song_Search"], ["File", "File_Search"]])("passes %s band and ordered locale preferences and keeps responses uncached", async (tableID, viewID) => {
+    it.each([["Event", "Event_Search"], ["Song", "Song_Search"], ["File", "File_Search"], ["BandUser", "BandUser_Search"]])("passes %s band and ordered locale preferences and keeps responses uncached", async (tableID, viewID) => {
         const res = response();
         await searchResultsRoute(request({ ...args, tableID, viewID, routeLocale: "fr-BE" }), res.res, ctx);
         expect(loadAuthorization).toHaveBeenCalledWith(ctx.session, args.bandPublicId);
@@ -74,6 +75,7 @@ describe("existing domain search HTTP owner", () => {
     });
 
     it.each(["User", "WikiPage"])("keeps %s search deferred before reading accounts/content", async tableID => {
+        vi.mocked(isRestoredSearchDomain).mockReturnValue(false);
         const res = response();
         await searchResultsRoute(request({ ...args, tableID }), res.res, ctx);
         expect(res.status).toHaveBeenCalledWith(503);

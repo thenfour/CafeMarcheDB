@@ -9,6 +9,7 @@ import { platformUserEditorView } from "src/core/db3/shared/entities/user/platfo
 import { userIdentitySummaryView } from "src/core/db3/shared/entities/user/userViews";
 import { generatePublicId } from "src/server/publicId";
 import { initializeAccessControl } from "src/setup/accessControl";
+import { readUserManagementCapabilities } from "src/auth/server/userManagementCapabilitiesRead";
 import { executeCatalogCrud } from "./support/db3CatalogFixture";
 import { settingsMysqlTestUrl, withSettingsMysqlFixture, type SettingsMysqlFixture } from "./support/settingsMysqlFixture";
 
@@ -17,18 +18,66 @@ describe.skipIf(!settingsMysqlTestUrl)("platform accounts on MariaDB", () => {
     beforeAll(() => initializeAccessControl(database), 30_000);
     afterAll(() => database.$disconnect());
 
-    async function accountManager(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture) {
-        const permission = await tx.permission.findUniqueOrThrow({ where: { name: Permission.manage_global_users } });
+    async function accountManager(tx: Prisma.TransactionClient, fixture: SettingsMysqlFixture,
+        grants: readonly Permission[] = [Permission.manage_global_users]) {
+        const permissions = await tx.permission.findMany({ where: { name: { in: [...grants] } } });
         const role = await tx.globalRole.create({ data: {
             publicId: generatePublicId(),
             name: { create: { publicId: generatePublicId(), values: { create: { publicId: generatePublicId(), localeId: fixture.englishId, indexedValue: "Account manager" } } } },
-            permissions: { create: { publicId: generatePublicId(), permissionId: permission.id } },
+            permissions: { create: permissions.map(permission => ({ publicId: generatePublicId(), permissionId: permission.id })) },
         } });
         const user = await tx.user.create({ data: { publicId: generatePublicId(), name: "Account manager", email: "manager@test.invalid", globalRoleId: role.id } });
         return { user, role, auth: await loadAuthorizationForUser(user, tx) };
     }
 
     const snapshot = (tx: Prisma.TransactionClient, auth: CMServerAuthorization) => bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" });
+
+    it("reads account capabilities with fresh platform authority, independently of band profile grants", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const manager = await accountManager(tx, fixture);
+        const person = await tx.user.findUniqueOrThrow({ where: { id: fixture.user.id }, select: { publicId: true } });
+        const target = parsePublicId<"User">(person.publicId);
+        expect(manager.auth.hasPermission(Permission.view_users_basic_info)).toBe(false);
+        const result = await readUserManagementCapabilities(await snapshot(tx, manager.auth), manager.auth, target);
+        expect(result).toMatchObject({ canAssignRole: false, canMerge: false, mergedIntoUserId: null });
+        expect(JSON.stringify(result)).not.toMatch(/"(?:id|email|phone)":/);
+        const admin = await loadAuthorizationForUser(fixture.admin, tx);
+        expect(await readUserManagementCapabilities(await snapshot(tx, admin), admin, target)).toMatchObject({ canManageSignInMethods: true, canResetPassword: true });
+        const bandMember = await loadAuthorizationForUser(fixture.user, tx, parsePublicId<"Band">(fixture.bands[0]!.publicId));
+        expect(await readUserManagementCapabilities(await snapshot(tx, bandMember), bandMember, target))
+            .toMatchObject({ canDeactivate: false, canReactivate: false, canImpersonate: false });
+        await tx.globalRolePermission.deleteMany({ where: { globalRoleId: manager.role.id } });
+        expect(await readUserManagementCapabilities(await snapshot(tx, manager.auth), manager.auth, target))
+            .toMatchObject({ canDeactivate: false, canReactivate: false, canImpersonate: false });
+    }));
+
+    it("returns dedicated impersonation capabilities without global account management and observes grant revocation", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const actor = await accountManager(tx, fixture, [Permission.impersonate_user]);
+        const target = parsePublicId<"User">((await tx.user.findUniqueOrThrow({ where: { id: fixture.user.id } })).publicId);
+        expect(actor.auth.hasPermission(Permission.manage_global_users)).toBe(false);
+        expect(await readUserManagementCapabilities(await snapshot(tx, actor.auth), actor.auth, target))
+            .toMatchObject({ canImpersonate: true, canDeactivate: false, canResetPassword: false });
+        expect(await readUserManagementCapabilities(await snapshot(tx, actor.auth), actor.auth, parsePublicId<"User">(actor.user.publicId)))
+            .toMatchObject({ canImpersonate: false });
+        await tx.globalRolePermission.deleteMany({ where: { globalRoleId: actor.role.id } });
+        expect(await readUserManagementCapabilities(await snapshot(tx, actor.auth), actor.auth, target))
+            .toMatchObject({ canImpersonate: false });
+    }));
+
+    it("evaluates deleted targets without imposing recovery-read permissions", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const manager = await accountManager(tx, fixture);
+        const person = await tx.user.update({ where: { id: fixture.user.id }, data: { isDeleted: true } });
+        expect(manager.auth.hasPermission(Permission.recover_users)).toBe(false);
+        expect(await readUserManagementCapabilities(await snapshot(tx, manager.auth), manager.auth, parsePublicId<"User">(person.publicId)))
+            .toMatchObject({ canReactivate: true, canDeactivate: false, canImpersonate: false });
+    }));
+
+    it.each(["account", "merged"])("rejects %s revocation for account capabilities", reason => withSettingsMysqlFixture(database, async (tx, fixture) => {
+        const manager = await accountManager(tx, fixture);
+        const context = await snapshot(tx, manager.auth);
+        const person = await tx.user.findUniqueOrThrow({ where: { id: fixture.user.id }, select: { publicId: true } });
+        await tx.user.update({ where: { id: manager.user.id }, data: reason === "account" ? { isDeleted: true } : { mergedIntoUserId: fixture.admin.id } });
+        await expect(readUserManagementCapabilities(context, manager.auth, parsePublicId<"User">(person.publicId))).rejects.toThrow();
+    }));
 
     it("reads sign-in summaries without a band and withholds them from ordinary account managers", () => withSettingsMysqlFixture(database, async (tx, fixture) => {
         const person = await tx.user.findUniqueOrThrow({ where: { id: fixture.user.id } });

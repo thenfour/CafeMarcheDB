@@ -1,19 +1,11 @@
 import { resolver } from "@blitzjs/rpc";
-import { AuthorizationError, NotFoundError } from "blitz";
+import type { Ctx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { UserPublicIdSchema } from "../schemas";
-import {
-    getContinuityWarningsForUserResult,
-    getUserManagementCapabilities,
-} from "../server/userManagementPolicy";
-import {
-    findActiveNonSysadminUsers,
-    findUserManagementActor,
-    findUserManagementTargetByPublicId,
-} from "../server/userManagementState";
-import { PermissionSet } from "../shared/PermissionSet";
+import { loadAuthorization } from "../server/serverAuthorization";
+import { readUserManagementCapabilities } from "../server/userManagementCapabilitiesRead";
 
 const GetUserManagementCapabilitiesInput = z.object({
     userId: UserPublicIdSchema,
@@ -21,41 +13,8 @@ const GetUserManagementCapabilitiesInput = z.object({
 
 export default resolver.pipe(
     resolver.zod(GetUserManagementCapabilitiesInput),
-    resolver.authorize(Permission.view_users_basic_info),
-    async ({ userId }, ctx) => {
-        const [actor, target] = await Promise.all([
-            findUserManagementActor(db, ctx.session.userId),
-            findUserManagementTargetByPublicId(db, userId),
-        ]);
-
-        if (!target) {
-            throw new NotFoundError();
-        }
-        if (target.principal.isDeleted
-            && !actor.auth.hasPermission(Permission.recover_users)) {
-            // target user is deleted.
-            // deleted users are only known through Permission.recover_users
-            throw new AuthorizationError();
-        }
-        const capabilities = getUserManagementCapabilities(actor, target);
-        const activeNonSysadminUsers = capabilities.canDeactivate
-            ? await findActiveNonSysadminUsers(db)
-            : [];
-
-        return {
-            ...capabilities,
-            // These account-wide workflows have no migrated implementation yet.
-            canAssignRole: false,
-            canMerge: false,
-            mergedIntoUserId: target.principal.mergedIntoUserId == null ? null : (await db.user.findUnique({
-                where: { id: target.principal.mergedIntoUserId },
-                select: { publicId: true },
-            }))?.publicId ?? null,
-            deactivationContinuityWarnings: capabilities.canDeactivate
-                ? getContinuityWarningsForUserResult(target, new PermissionSet([]), activeNonSysadminUsers)
-                : [],
-        };
-    },
+    resolver.authorize(Permission.login),
+    async ({ userId }, ctx: Ctx) => readUserManagementCapabilities(db, await loadAuthorization(ctx.session, null), userId),
 );
 
 

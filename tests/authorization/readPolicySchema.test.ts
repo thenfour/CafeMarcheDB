@@ -69,13 +69,27 @@ function makePolicyRow(
   const deletedColumn = table.SqlSpecialColumns.isDeleted
   const visibilityColumn = table.SqlSpecialColumns.visiblePermission
   const ownerColumn = table.SqlSpecialColumns.ownerUser
+  const unavailableColumn = table.SqlSpecialColumns.unavailableWhenSet
   if (deletedColumn) row[deletedColumn.member] = false
   if (visibilityColumn) row[visibilityColumn.fkidMember!] = referenceVisibilityId
   if (ownerColumn) row[ownerColumn.fkidMember || ownerColumn.member] = actor.id + 1
+  if (unavailableColumn) row[unavailableColumn.member] = null
   return { ...row, ...overrides } as { id: number; [key: string]: unknown }
 }
 
 describe("schema-wide DB3 read-policy contracts", () => {
+  it.each(registeredTables.filter(table => !!table.SqlSpecialColumns.unavailableWhenSet))(
+    "%s excludes replaced identities in row, Prisma and SQL policies even during recovery",
+    table => {
+      const column = table.SqlSpecialColumns.unavailableWhenSet!
+      const auth = policyAuthorization(table)
+      const where = table.CalculateWhereClause({ filterModel: emptyFilter, auth, includeDeleted: true })
+      const replaced = makePolicyRow(table, { [column.member]: 999 })
+      expect(matchesWhere(replaced, where)).toBe(false)
+      expect(table.authorizeRowForView({ model: replaced, auth, includeDeleted: true })).toBe(false)
+      expect(table.SqlGetVisFilterExpression({ auth, tableAlias: "P", includeDeleted: true })).toContain(`P.${column.member} IS NULL`)
+    },
+  )
   it("registers DB3 policy metadata for every protected Prisma model", () => {
     const protectedModels = Prisma.dmmf.datamodel.models.filter(model => (
       model.fields.some(field => field.name === "isDeleted")

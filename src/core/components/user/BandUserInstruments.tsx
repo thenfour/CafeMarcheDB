@@ -39,9 +39,10 @@ function instrumentSelectionOptions(member: BandUserInstrumentsDto,
     };
 }
 
-export function BandUserInstrumentsEditor({ member, refetch }: {
+export function BandUserInstrumentsEditor({ member, refetch, orientation = "vertical" }: {
     readonly member: BandUserInstrumentsDto;
     readonly refetch: () => Promise<unknown>;
+    readonly orientation?: "horizontal" | "vertical";
 }) {
     const locale = useLocale();
     const dashboard = useDashboardContext();
@@ -52,7 +53,7 @@ export function BandUserInstrumentsEditor({ member, refetch }: {
     const { selected, options, primaryOption } = instrumentSelectionOptions(member, dashboard.instrument.items,
         locale.getPlainString("membership.instruments.unavailable"));
     const renderInstrument = (option: InstrumentOption) => option.available
-        ? <InstrumentChip value={option.publicId} size="big" />
+        ? <InstrumentChip value={option.publicId} size={orientation === "horizontal" ? "small" : "big"} />
         : <Typography component="span">{option.label}</Typography>;
     const { save, saving, error, isPending } = useMemberAssignmentSave<BandUserInstrumentsEdit>({
         execute: command.invoke, refetch,
@@ -70,11 +71,13 @@ export function BandUserInstrumentsEditor({ member, refetch }: {
     return <Stack spacing={1} aria-busy={saving}>
         {error && !dialog && <Alert severity="error">{error}</Alert>}
         {selected.length === 0 && <Typography>{locale.getPlainString("membership.instruments.empty")}</Typography>}
-        {selected.map(option => <Box key={option.publicId} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            {renderInstrument(option)}
-            {selected.length > 1 && option.publicId === primaryOption?.publicId
-                && <Typography variant="caption">{locale.getPlainString("membership.instruments.default")}</Typography>}
-        </Box>)}
+        <Stack direction={orientation === "horizontal" ? "row" : "column"} spacing={1} sx={{ flexWrap: "wrap" }}>
+            {selected.map(option => <Box key={option.publicId} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                {renderInstrument(option)}
+                {selected.length > 1 && option.publicId === primaryOption?.publicId
+                    && <Typography variant="caption">{locale.getPlainString("membership.instruments.default")}</Typography>}
+            </Box>)}
+        </Stack>
         {canEdit && <Box>
             <CMButton disabled={saving} onClick={() => setDialog("instruments")}>
                 {locale.getPlainString(selected.length ? "membership.instruments.edit" : "membership.instruments.select")}

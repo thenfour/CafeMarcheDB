@@ -70,7 +70,7 @@ export function BandUserRoleEditor({ member, roles, assignableRoleIds, refetch }
             setSaving(false);
         }
     };
-    return <Stack spacing={1} aria-busy={saving}>
+    return <Stack spacing={1} alignItems="flex-start" aria-busy={saving}>
         <Typography>{roleLabel(member.bandRoleId)}</Typography>
         {error && !open && <Alert severity="error">{error}</Alert>}
         {canEdit && <CMButton disabled={saving} onClick={() => {

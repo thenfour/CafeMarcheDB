@@ -1,5 +1,5 @@
 import { invalidateQuery, useMutation, useQuery } from "@blitzjs/rpc";
-import { Alert, Button, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { Alert, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import React, { Suspense } from "react";
 import addUserSignInMethod from "src/auth/mutations/addUserSignInMethod";
 import removeUserSignInMethod from "src/auth/mutations/removeUserSignInMethod";
@@ -57,13 +57,15 @@ const SignInMethodsEditor = ({ user, onChanged }: Props) => {
             <TableBody>{data.methods.map(method => <TableRow key={xUserSignInMethod.getIdentity(method)}>
                 <TableCell>{method.type === "email" ? "Email" : "Google subject"}</TableCell>
                 <TableCell sx={{ overflowWrap: "anywhere" }}>{method.displayId ?? method.identifier}</TableCell>
-                <TableCell><Button disabled={pending} onClick={async () => {
+                <TableCell><CMButton disabled={pending} onClick={async () => {
                     if (!await confirm({
                         title: "Release sign-in method?",
                         description: `Remove ${method.displayId ?? method.identifier} from ${user.name}?`,
-                    })) return;
+                    })) {
+                        return;
+                    }
                     await apply(() => removeMethod({ userId: user.publicId, methodPublicId: xUserSignInMethod.getIdentity(method) }));
-                }}>Remove</Button></TableCell>
+                }}>Remove</CMButton></TableCell>
             </TableRow>)}</TableBody>
         </Table>
         {data.methods.length === 0 && <div>No sign-in methods attached.</div>}
@@ -81,12 +83,12 @@ const SignInMethodsEditor = ({ user, onChanged }: Props) => {
                 onChange={event => setIdentifier(event.target.value)}
                 helperText={type === "google" ? "Use the provider subject ID, not the Google email address." : "Adding this address grants sign-in access with the existing account password."} />
             <div>
-                <Button disabled={pending || !identifier.trim()} onClick={() => apply(async () => {
+                <CMButton disabled={pending || !identifier.trim()} onClick={() => apply(async () => {
                     const method = SignInMethodSchema.parse({ type, identifier });
                     await addMethod({ userId: user.publicId, method });
                 })}>
                     Add method
-                </Button>
+                </CMButton>
             </div>
         </div>
         {!user.isDeleted && <AdminResetPasswordButton user={user} />}
@@ -103,7 +105,7 @@ export const UserSignInMethodsButton = (props: Props) => {
             fullWidth
             maxWidth="sm"
             title={<>Sign-in methods for {props.user.name}</>}
-            actions={<Button onClick={() => setOpen(false)}>Close</Button>}
+            actions={<CMButton onClick={() => setOpen(false)}>Close</CMButton>}
         >
             {open && <Suspense fallback={<div>Loading sign-in methods...</div>}>
                 <SignInMethodsEditor {...props} />

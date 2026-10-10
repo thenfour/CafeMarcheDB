@@ -41,12 +41,14 @@ describe("platform account maintenance contract", () => {
     });
 
     it("keeps existing band readers and owner projections under their separate policy", () => {
-        expect(authorizeAndProjectViewDto(db3.userEditorView, person, platform, "platform through person view")).toBeNull();
-        const dto = authorizeAndProjectViewDto(db3.userEditorView, person, bandManager, "band person");
+        const activePerson = { ...person, mergedIntoUserId: null };
+        expect(authorizeAndProjectViewDto(db3.userEditorView, activePerson, platform, "platform through person view")).toBeNull();
+        const dto = authorizeAndProjectViewDto(db3.userEditorView, activePerson, bandManager, "band person");
         expect(dto).toMatchObject({ name: person.name, email: person.email });
         expect(dto).toHaveProperty("isSysAdmin", false);
         expect(db3.xUser.fields).not.toHaveProperty("instruments");
         expect(db3.xUser.fields).not.toHaveProperty("tags");
+        expect(authorizeAndProjectViewDto(db3.userEditorView, { ...person, mergedIntoUserId: 999 }, bandManager, "merged band person")).toBeNull();
     });
 
     it("permits basic person writes and preserves the stricter email update permission", () => {

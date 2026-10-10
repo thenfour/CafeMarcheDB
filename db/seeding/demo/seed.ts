@@ -57,7 +57,7 @@ export async function seedDemoDatabase(databaseUrl: string, config: DemoConfig, 
             const catalogs = await seedDemoCatalogs(c);
             const visibility = await db.permission.findUniqueOrThrow({ where: { name: "visibility_members" } });
             for (let index = 0; index < config.bands; index++) {
-                const band = { ...await seedDemoBand(c, index, catalogs, shared.id, hashedPassword, roles), memberVisibilityId: visibility.id };
+                const band = { ...await seedDemoBand(c, index, catalogs, shared, hashedPassword, roles), memberVisibilityId: visibility.id };
                 const { songs } = await seedDemoSongs(c, band, catalogs, assets);
                 await seedDemoWiki(c, band);
                 await seedDemoEvents(c, band, catalogs, songs);

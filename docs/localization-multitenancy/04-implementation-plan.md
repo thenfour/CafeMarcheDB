@@ -22,9 +22,9 @@ Authorization, localization/presentation, typed settings and shared DB3 support
 are available. Migrated catalogs, basic member/profile edits, membership status,
 wiki content, menus, attendance/calendar endpoints, plan persistence, Custom Links,
 telemetry and narrow downloads have implementation and verification evidence.
-Preserve them while restoring their wider workflows. Basic member directory and
-profile behavior is only a subset: reference filters, presets, contact-search
-policy, exports and profile tabs remain A1 work.
+Preserve them while restoring their wider workflows. Reference member-directory
+filters/presets/contact-search/export and core profile tabs/account controls/activity
+are restored below; full profile and localized-name-search obligations remain open.
 
 Remaining domain/quick/shell search and several reports/admin surfaces remain
 guarded or incomplete. Song credit editing and performance history, public
@@ -332,15 +332,64 @@ clear displayed rows. New page text uses the registry. The completed
 `event-song-statistics` obligation has its five source blocks/references and obsolete
 guards removed. Remaining deferred specifications and A1/B gates stay open.
 
-## Next slice: Member directory and profile workflows
+## Member directory and profile checkpoint
 
-Restore the original member search through its existing domain-search owner and
-components: filters/facets/presets/URL state, contact-search policy and exports.
-Retain the shared-person versus band-membership boundary and verify private fields,
-fresh revocation and both bands. Then finish the existing profile tabs, including
-credit reads, account controls and activity, through their migrated owners. The
-existing deleted/merged-person Song-credit write failure below needs a shared
-authorization fix before A1 acceptance.
+The original search composition is active for BandUser: All/New presets, tag,
+instrument and permitted role filters/operators/facets, URL state, sorting,
+load-more and TSV export. Rows and links distinguish the shared person's identity
+from membership assignments. Join-date sorting and the New preset use membership
+creation rather than account creation. Catalog presentation uses shared localized
+and inherited reads; catalog-name free-text matching remains under the A1 exception.
+Name search remains available; contact and sign-in search follow their respective
+field permissions. Recovery search requires `recover_users` and includes inactive
+memberships while excluding deleted or merged people.
+
+The existing profile owner again exposes attendance, credits and Wiki Contributions
+with the original sysadmin tab gate and contextual tab URLs. Credits require fresh
+member-management, basic-person and Song-read authority, an active selected-band
+person, and independently visible Songs. Public Song metadata replaces the old
+all-Songs dependency; localized credit types reuse dashboard references. Account
+controls use the independent platform account view and current platform capability
+policy in a repeatable snapshot. Profile activity retains the selected band and
+person context. Existing account dialogs now use CMButton. Mass Analysis still
+shows its explicit recovery notice; account analysis, merging and role administration
+retain their separate obligations. This checkpoint does not close those workflows,
+the full member-profile obligation or A1/B.
+
+Profile presentation retains the original white surface, title line, contact chips
+and compact instrument row; the directory retains the shared search-page width.
+The capability reader evaluates each account action through the policy without
+blanket `manage_global_users` or deleted-target recovery-read gates. Snapshot
+authorization still refreshes the actor; operation writers enforce their own
+requirements. The RPC reader and pure capability evaluator have distinct names.
+Join-date labels explicitly describe membership creation, and both development
+and demo seeds generate historical account/membership and content dates.
+Queries retain their current content on window focus by default; presentation
+refreshes follow explicit invalidation, cross-tab mutations and context changes.
+
+The presentation/capability/date follow-up passes 58 focused contract/editor
+checks and 41 native cases across account capabilities, member search and both
+seeders. The final seed chronology changes also pass all 15 seed cases. Nine built
+browser groups cover the original directory/profile workflows, focus without
+requests or remounts, membership-date labeling, and both profile surfaces.
+Typecheck, targeted lint, demo production build and source preservation pass.
+The legacy `userRecovery` suite still has its nine previously recorded failures;
+this follow-up does not close the full-suite or A1/B gates.
+
+Shared row policy now declares non-null replacement identities unavailable, including
+minimal projections and write references. This fixes the previously reproduced
+deleted/merged-person Song-credit write failure without a Song-specific fallback.
+Nested read resolution batches permitted child rows, preserves recovery access,
+skips inaccessible references and avoids translation reads for plain selections.
+
+## Next slice: Event attendance and default-instrument parity
+
+Finish the original event attendance/default-instrument interaction matrix and
+date-picker highlights through the migrated membership/attendance owners. Retain
+the restored directory/profile workflows and their remaining manifest obligations.
+Keep the failing repository-suite assessment separate from native/browser parity;
+account analysis, merging, role administration and full localized-name matching
+remain in the later sequence below.
 
 ## Localized catalog text search exception
 
@@ -369,7 +418,7 @@ when a concrete workflow dependency requires it.
 | --- | --- |
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
 | Events | Retain restored search/detail/creation/editing, setlist editing and invitation/attendance controls; finish default-instrument and attendance parity and date-picker highlights. |
-| Songs and files | Retain restored Song search/detail/editing, credits/performance history, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish profile credits, statistics and remaining upload callers. |
+| Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish remaining upload callers. |
 | Supporting workflows | Dashboard/wiki/custom navigation, plans, search, calendars/feeds/tokens, Custom Links, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
 After core restoration: platform role/matrix and catalog/settings administration;
@@ -610,20 +659,40 @@ account changes and actions were cleaned up. Preservation verification passes
 after removing the five completed statistics archives/references and obsolete
 deferred-statistics assertions/guards; remaining specifications stay intact.
 
-The wider native run passes 349 of 350 tests in 20 files. The existing Song-credit
-write test at `tests/songCreditWorkflow.mysql.test.ts:107` accepts a deleted/merged
-person. An isolated unchanged `11d7a1a1` worktree reproduces the same 11/12 result
-for that file. This is a shared person-reference authorization gap outside the
-statistics slice and remains an A1 blocker; do not weaken the test or restore
-domain-specific person fallbacks to conceal it.
+The earlier broad native statistics run passed 349 of 350 checks; unchanged
+`11d7a1a1` reproduced the deleted/merged-person Song-credit write failure. The
+member checkpoint fixes that gap through shared unavailable-identity policy. Its
+final native run passes all 223 checks in 18 files, including 14 member-search,
+20 credit-workflow and ten platform-account cases, plus membership, Event, Song,
+File, catalog and resolved-query regressions. Native tests cover operators,
+contact/sign-in search restrictions, localization/inheritance/blanks, recovery,
+two bands, public projections, private/foreign/deleted references and fresh
+permission/account/membership/band revocation. Normal typecheck, both normal and
+isolated demo production builds, targeted lint and preservation verification pass.
+Focused client/endpoint/read checks pass 192 tests in ten files; 78 timezone/date
+probe checks pass in two files. Two obsolete assertions
+requiring profile credit reads to stay disabled were removed; preserved source
+references and deferred specifications remain intact.
 
-The complete-suite run still reports 208 failed tests and ten suite-load failures,
+Six production Chromium groups pass on disposable two-band data: original directory
+counts/loading/TSV export; All/New presets, French catalogs, facets and URL reload;
+inactive recovery and immediate contact-search revocation; contextual profile links
+and the dashboard band-switch route; management revocation removing operational
+controls; profile credit/Wiki/attendance tab URLs, actual sign-in method add/remove
+and band-scoped profile activity. No uncaught page or unexpected RPC errors occurred.
+The French directory and profile layouts were visually inspected. Temporary rows,
+roles, sign-in methods, account changes and actions were cleaned up.
+
+The complete-suite run still reports 206 failed tests and ten suite-load failures,
 including unscoped authorization/account/setlist fixtures, deferred-domain and
 date-policy contracts; the runner stops before the later jsdom batches. Focused
-passes do not establish A1 readiness. The latest run passes 1790 tests and skips
-533; its failure labels exactly match the Song credit/history checkpoint. The existing
-failures still prevent A1 acceptance. Earlier built-browser member/profile/wiki/
-download checks remain recorded evidence, not workflows rerun by these slices.
+passes do not establish A1 readiness. The latest run passes 1792 tests and skips
+558. Updated account fixtures change which legacy assertions reach the missing
+GlobalRole/designation prerequisites; those changed failures reproduce on baseline
+`bce53c20` product code with the same fixture. Newly introduced projection,
+translation-read and CommonJS import-order failures were fixed; date probes and
+the retained named-view tests pass. The remaining failures still prevent A1
+acceptance. Earlier unrelated browser/download evidence remains recorded evidence.
 
 The [development seeder](../development-seeding.md) restores the pre-migration
 fixed catalogs and random users, songs/files, event schedules/attendance/setlists,
@@ -639,7 +708,7 @@ A normal Prisma reset on a disposable database produced two bands, 80 people,
 password login, both bands' content, Song detail, welcome wiki, SVG/WAV delivery
 and the French inherited trumpet override with no page/RPC errors. The smaller
 [isolated demo workflow](../demo-seeding.md) remains available. Repository-wide
-tests still report the separate 208 failures and ten suite-load failures above.
+tests still report the separate 206 failures and ten suite-load failures above.
 
 `yarn migration:verify` protects the source inventory and deferred specifications;
 it does not prove runtime parity. Full feature completion uses the separate

@@ -5,7 +5,7 @@ import { CalendarDate, bandDateTimeToInstant } from "../../shared/dateTimePolicy
 import { DateTimeRange, createAllDayRange, roundToNearest15Minutes } from "../../shared/time";
 import { generatePublicId } from "../../src/server/publicId";
 import { calculateEventDateBoundsUpdatePatch } from "../../src/server/dateTime";
-import { randomVisibilityPermissionId, type SeedingState } from "./base";
+import { randomVisibilityPermissionId, seedContentAuthorship, type SeedingState } from "./base";
 import { generateEventName } from "./eventNames";
 import { choose, probability, randomDate, subset } from "./random";
 import { seedWikiPage } from "./wikiPageSeeding";
@@ -114,8 +114,11 @@ async function seedAttendance(state: SeedingState, event: Event, segments: reado
         const segmentStyle = faker.number.int({ min: 0, max: 2 });
         const answered = segmentStyle === 0 ? [] : segmentStyle === 1 ? subset(segments, 0, segments.length) : segments;
         for (const segment of answered) {
+            // Historical attendance can be recorded after the event, but never before joining.
+            const createdAt = randomDate(new Date(Math.max(event.createdAt.valueOf(), member.createdAt.valueOf())), state.now);
             attendance.push({ publicId: generatePublicId<"EventSegmentUserResponse">(), bandUserId: member.id, eventSegmentId: segment.id,
-                attendanceId: choose([null, ...state.platform.attendance.map(option => option.id)]), createdByUserId: member.userId });
+                attendanceId: choose([null, ...state.platform.attendance.map(option => option.id)]), createdByUserId: member.userId,
+                createdAt, updatedAt: createdAt });
         }
     }
     await state.db.eventUserResponse.createMany({ data: responses });
@@ -124,10 +127,12 @@ async function seedAttendance(state: SeedingState, event: Event, segments: reado
 
 async function seedEvent(state: SeedingState, definition: SeedEventDefinition, songs: readonly Song[]): Promise<Event> {
     const visibility = randomVisibilityPermissionId(state);
+    const latestCreation = new Date(Math.min(state.now.valueOf(), ...definition.ranges
+        .map(range => range.getSpec().startsAtDateTime?.valueOf() ?? state.now.valueOf())));
     const event = await state.db.event.create({ data: {
         publicId: generatePublicId<"Event">(), bandId: state.band.band.id, revision: 0, name: definition.name, typeId: definition.typeId,
         statusId: choose([null, ...state.platform.eventStatuses.map(status => status.id)]), visiblePermissionId: visibility,
-        createdByUserId: choose(state.band.members).userId,
+        ...seedContentAuthorship(state, latestCreation),
         expectedAttendanceUserTagId: probability(0.8) ? choose(state.band.userTags).id : null,
         locationDescription: probability(0.5) ? faker.location.streetAddress() : "", frontpageVisible: probability(0.5),
     } });

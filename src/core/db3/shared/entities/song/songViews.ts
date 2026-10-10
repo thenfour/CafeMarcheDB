@@ -88,6 +88,29 @@ const songCreditUserContract = deriveViewContract(
     { references: dashboardReferenceContract },
 );
 
+// Profile rows include their visible Song; the catalog supplies localized credit types.
+const memberSongCreditContract = deriveViewContract(
+    xSongCredit,
+    Prisma.validator<Prisma.SongCreditDefaultArgs>()({
+        select: {
+            ...songCreditUserSelection.select,
+            song: {
+                select: {
+                    publicId: true,
+                    name: true,
+                    introducedYear: true
+                }
+            }
+        },
+    }),
+    { references: dashboardReferenceContract });
+
+export const memberSongCreditView = defineView({
+    viewID: "SongCredit_MemberProfile", entity: xSongCredit,
+    selection: memberSongCreditContract.prismaSelection, dtoSchema: memberSongCreditContract.dtoSchema,
+    references: memberSongCreditContract.referenceContract, hydrate: memberSongCreditContract.hydrate,
+});
+
 export const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
     select: {
         publicId: true,

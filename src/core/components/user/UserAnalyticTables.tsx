@@ -18,11 +18,17 @@ import { AttendanceChip } from "../event/AttendanceChips";
 import { EventChip } from "../event/EventChips";
 import { Markdown } from "../markdown/Markdown";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
-import type { UserClientPayload } from "src/core/db3/shared/schema/prismArgs";
+import type { UserPublicId } from "shared/publicId";
+import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
+import getUserCredits from "../../db3/queries/getUserCredits";
+import { memberSongCreditView } from "src/core/db3/shared/entities/song/songViews";
+import { SongChip } from "../song/SongChip";
+
+type MemberAnalyticsIdentity = { readonly publicId: UserPublicId };
 
 ////////////////////////////////////////////////////////////////
 type UserAttendanceTabContentProps = {
-    user: UserClientPayload;
+    user: MemberAnalyticsIdentity;
 };
 export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) => {
     const dashboardContext = useDashboardContext();
@@ -168,13 +174,13 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
 
 ////////////////////////////////////////////////////////////////
 type UserCreditsTabContentProps = {
-    user: UserClientPayload;
+    user: MemberAnalyticsIdentity;
 };
 
 
 ////////////////////////////////////////////////////////////////
 type UserWikiContributionsTabContentProps = {
-    user: UserClientPayload;
+    user: MemberAnalyticsIdentity;
 };
 export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabContentProps) => {
     const dashboardContext = useDashboardContext();
@@ -225,9 +231,7 @@ export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabC
                     memberName: "firstRevisionDate",
                     allowSort: true,
                     render: (row) => {
-                        if (!row.row.firstRevisionDate) return <span>-</span>;
-                        const date = new Date(row.row.firstRevisionDate);
-                        return <span>{date.toLocaleDateString()}</span>;
+                        return <DateValue value={row.row.firstRevisionDate ?? null} />;
                     },
                 },
                 {
@@ -235,9 +239,7 @@ export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabC
                     memberName: "lastRevisionDate",
                     allowSort: true,
                     render: (row) => {
-                        if (!row.row.lastRevisionDate) return <span>-</span>;
-                        const date = new Date(row.row.lastRevisionDate);
-                        return <span>{date.toLocaleDateString()}</span>;
+                        return <DateValue value={row.row.lastRevisionDate ?? null} />;
                     },
                 },
             ]}
@@ -246,7 +248,7 @@ export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabC
 };
 
 ////////////////////////////////////////////////////////////////
-export const UserMassAnalysisTabContent = (_props: { user: UserClientPayload }) => {
+export const UserMassAnalysisTabContent = (_props: { user: MemberAnalyticsIdentity }) => {
     const locale = useLocale();
     return <Alert severity="info">{locale.getPlainString("recovery.accountAnalysis.description")}</Alert>;
 };
@@ -616,9 +618,23 @@ export const UserMassAnalysisTabContent = (_props: { user: UserClientPayload }) 
 // };
 // MIGRATION_REFERENCE_END
 
-export const UserCreditsTabContent = (_props: UserCreditsTabContentProps) => {
-    const locale = useLocale();
-    return <Alert severity="info">{locale.getPlainString("recovery.songWorkflows.description")}</Alert>;
+export const UserCreditsTabContent = ({ user }: UserCreditsTabContentProps) => {
+    const dashboard = useDashboardContext();
+    const context = useDB3QueryContext();
+    const [result] = useQuery(getUserCredits, { ...context, bandPublicId: dashboard.requireBandPublicId(), userId: user.publicId, take: 100 },
+        { staleTime: 0, cacheTime: 0, keepPreviousData: false });
+    const rows = result.songCredits.map((dto, index) => {
+        const credit = memberSongCreditView.hydrate(dto, dashboard.referenceStore);
+        return { ...credit, rowIndex: index + 1, songName: credit.song?.name ?? "", songYear: credit.song?.introducedYear };
+    });
+    return <div className="UserCreditsTabContent"><CMTable rows={rows} columns={[
+        { header: "#", memberName: "rowIndex", allowSort: false, render: row => <span className="pre">#{row.row.rowIndex}</span> },
+        { header: "Song", memberName: "songName", allowSort: true, render: row => row.row.song && <SongChip value={row.row.song} /> },
+        { header: "Song year", memberName: "songYear", allowSort: true, render: row => <span>{row.row.songYear}</span> },
+        { header: "Credit type", memberName: "type", render: row => <span>{row.row.type?.name}</span> },
+        { header: "Credit year", memberName: "year", allowSort: true },
+        { header: "Comment", memberName: "comment", render: row => <Markdown markdown={row.row.comment} /> },
+    ]} /></div>;
 };
 // MIGRATION_RESTORE: song-workflows
 // Source: f96ac10c66a450a4b16b3a7a857abf96d125d434:src/core/components/user/UserAnalyticTables.tsx:177-239

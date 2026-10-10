@@ -13,6 +13,7 @@ const person = {
     id: 10, publicId: userId, name: "Alice", email: "alice@example.test", phone: "+32 123",
     isSysAdmin: false, isDeleted: false, cssClass: null, createdAt: new Date("2026-10-01T12:00:00Z"),
 };
+const activePerson = { ...person, mergedIntoUserId: null };
 
 function authorization(actorId: number, ...permissions: Permission[]) {
     return testServerAuthorization({ id: actorId }, new ServerPermissionSet(
@@ -81,7 +82,7 @@ describe("shared person and membership contract boundary", () => {
     });
 
     it("retains owner contact access while withholding operational account metadata", () => {
-        const dto = authorizeAndProjectViewDto(db3.userEditorView, person, owner, "shared-owner");
+        const dto = authorizeAndProjectViewDto(db3.userEditorView, activePerson, owner, "shared-owner");
         expect(dto).toMatchObject({ publicId: userId, name: "Alice", email: person.email, phone: person.phone });
         expect(dto).not.toHaveProperty("id");
         expect(dto).not.toHaveProperty("createdAt");
@@ -89,12 +90,12 @@ describe("shared person and membership contract boundary", () => {
     });
 
     it("requires the contact-read permission for another person's contact details", () => {
-        const dto = authorizeAndProjectViewDto(db3.userEditorView, person, reader, "shared-reader");
+        const dto = authorizeAndProjectViewDto(db3.userEditorView, activePerson, reader, "shared-reader");
         expect(dto).toMatchObject({ publicId: userId, name: "Alice" });
         expect(dto).not.toHaveProperty("email");
         expect(dto).not.toHaveProperty("phone");
         const contactReader = authorization(20, Permission.login, Permission.view_users_basic_info, Permission.view_user_contact_info);
-        expect(authorizeAndProjectViewDto(db3.userEditorView, person, contactReader, "shared-contact-reader"))
+        expect(authorizeAndProjectViewDto(db3.userEditorView, activePerson, contactReader, "shared-contact-reader"))
             .toMatchObject({ email: person.email, phone: person.phone });
     });
 

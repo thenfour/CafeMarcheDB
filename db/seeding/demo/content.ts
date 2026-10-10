@@ -1,5 +1,5 @@
 import type { Event, File, Song, WikiPage } from "@prisma/client";
-import { demoChoice } from "./config";
+import { demoChoice, demoDateBetween, demoDaysAgo } from "./config";
 import { createDemoString, type DemoContext } from "./context";
 import type { DemoBand } from "./bands";
 import type { DemoCatalogs } from "./catalogs";
@@ -30,7 +30,8 @@ export async function seedDemoSongs(c: DemoContext, b: DemoContentBand, catalogs
             // Each row has its own storage identity; the runner writes identical sample bytes for each band.
             storedLeafName: `${c.id(key)}.${index === 0 ? "svg" : "wav"}`,
             bandId: b.band.id, fileLeafName: `${b.title}-${index === 0 ? "score.svg" : "recording.wav"}`,
-            description: `Sample asset for ${b.title}`, uploadedAt: new Date(`${c.config.referenceDate}T12:00:00Z`),
+            description: `Sample asset for ${b.title}`,
+            uploadedAt: demoDateBetween(c.config, key, demoDaysAgo(c.config, 365), demoDaysAgo(c.config, 0)),
             uploadedByUserId: b.manager.id, visiblePermissionId: b.memberVisibilityId,
         } });
         await c.db.bandFileTagAssignment.create({ data: { publicId: c.id(`${key}:tag`), fileId: file.id, bandFileTagId: b.fileTags[index]!.id } });
@@ -44,7 +45,8 @@ export async function seedDemoSongs(c: DemoContext, b: DemoContentBand, catalogs
         }
         await c.db.customLink.create({ data: { publicId: c.id(`${key}:link`), bandId: b.band.id,
             name: index === 0 ? "Demo score" : "Demo recording", description: "Local sample asset", slug: index === 0 ? "score" : "recording",
-            redirectType: "ServeFile", fileId: file.id, createdByUserId: b.manager.id } });
+            redirectType: "ServeFile", fileId: file.id, createdByUserId: b.manager.id,
+            createdAt: demoDateBetween(c.config, `${key}:link`, file.uploadedAt, demoDaysAgo(c.config, 0)) } });
         files.push(file);
     }
     return { songs, files };
@@ -62,10 +64,11 @@ export async function seedDemoWiki(c: DemoContext, b: DemoContentBand) {
             : tag === "nl-BE" ? { slug: "welkom", title: "Welkom", text: "Welkom bij onze band. We repeteren elke week." }
                 : { slug: "welcome", title: "Welcome", text: "Welcome to our band. We rehearse every week." };
         const key = `${b.key}:wiki:${tag}`;
+        const createdAt = demoDateBetween(c.config, key, demoDaysAgo(c.config, 365), demoDaysAgo(c.config, 0));
         const page = await c.db.wikiPage.create({ data: { publicId: c.id(key), bandId: b.band.id, slug: language.slug,
-            createdByUserId: b.manager.id, visiblePermissionId: b.memberVisibilityId, contentVersion: 1 } });
+            createdByUserId: b.manager.id, visiblePermissionId: b.memberVisibilityId, contentVersion: 1, createdAt } });
         const revision = await c.db.wikiPageRevision.create({ data: { publicId: c.id(`${key}:revision`), wikiPageId: page.id,
-            createdByUserId: b.manager.id, name: `${language.title} — ${b.title}`, content: `# ${b.title}\n\n${language.text}\n\n[Demo score](/score?bandPublicId=${b.band.publicId})` } });
+            createdByUserId: b.manager.id, createdAt, name: `${language.title} — ${b.title}`, content: `# ${b.title}\n\n${language.text}\n\n[Demo score](/score?bandPublicId=${b.band.publicId})` } });
         await c.db.wikiPage.update({ where: { id: page.id }, data: { currentRevisionId: revision.id } });
         pages.push(page);
     }
@@ -85,24 +88,26 @@ export async function seedDemoEvents(c: DemoContext, b: DemoContentBand, catalog
     for (let index = 0; index < c.config.eventsPerBand; index++) {
         const key = `${b.key}:event:${index}`;
         const publicId = c.id(key);
+        const startsAt = new Date(`${c.config.referenceDate}T17:00:00Z`);
+        startsAt.setUTCDate(startsAt.getUTCDate() + (index === 0 ? -7 : index * 7));
+        const latestCreation = new Date(Math.min(startsAt.valueOf(), demoDaysAgo(c.config, 0).valueOf()));
+        const createdAt = demoDateBetween(c.config, key, demoDaysAgo(c.config, 365), latestCreation);
         const description = await c.db.wikiPage.create({ data: {
             publicId: c.id(`${key}:description`), bandId: b.band.id, slug: `EventDescription/${publicId}`,
-            namespace: "EventDescription", visiblePermissionId: b.memberVisibilityId, createdByUserId: b.manager.id, contentVersion: 1,
+            namespace: "EventDescription", visiblePermissionId: b.memberVisibilityId, createdByUserId: b.manager.id, contentVersion: 1, createdAt,
         } });
         const revision = await c.db.wikiPageRevision.create({ data: {
-            publicId: c.id(`${key}:description:revision`), wikiPageId: description.id, createdByUserId: b.manager.id,
+            publicId: c.id(`${key}:description:revision`), wikiPageId: description.id, createdByUserId: b.manager.id, createdAt,
             name: "Event description", content: `# ${b.title}\n\nBring your instrument. Apportez votre instrument. Breng je instrument mee.`,
         } });
         await c.db.wikiPage.update({ where: { id: description.id }, data: { currentRevisionId: revision.id } });
-        const startsAt = new Date(`${c.config.referenceDate}T17:00:00Z`);
-        startsAt.setUTCDate(startsAt.getUTCDate() + (index === 0 ? -7 : index * 7));
         const durationMillis = BigInt(2 * 60 * 60 * 1_000);
         const event = await c.db.event.create({ data: { publicId, bandId: b.band.id, revision: 1,
             uid: `${c.id(key)}@demo.invalid`, name: `${b.title} — ${index % 2 === 0 ? "Concert" : "Répétition / Repetitie"} ${index + 1}`,
             typeId: index % 2 === 0 ? catalogs.concert.id : catalogs.rehearsal.id,
             statusId: catalogs.statuses[index === 3 ? 1 : 0]!.id, startsAt, durationMillis, isAllDay: false,
             endDateTime: new Date(startsAt.getTime() + Number(durationMillis)), locationDescription: `${b.title} rehearsal room`,
-            visiblePermissionId: b.memberVisibilityId, createdByUserId: b.manager.id, expectedAttendanceUserTagId: b.memberTag.id,
+            visiblePermissionId: b.memberVisibilityId, createdByUserId: b.manager.id, createdAt, expectedAttendanceUserTagId: b.memberTag.id,
             descriptionWikiPageId: description.id } });
         const segment = await c.db.eventSegment.create({ data: { publicId: c.id(`${key}:segment`), eventId: event.id,
             uid: `${c.id(`${key}:segment`)}@demo.invalid`, name: "Set 1", description: "Demo segment", startsAt, durationMillis, isAllDay: false } });
@@ -113,16 +118,20 @@ export async function seedDemoEvents(c: DemoContext, b: DemoContentBand, catalog
             publicId: c.id(`${key}:setlist:song:${sortOrder}`), eventSongListId: list.id, songId: song.id, sortOrder,
         })) });
         for (const [memberIndex, member] of b.members.entries()) {
+            const responseDate = demoDateBetween(c.config, `${key}:attendance:${memberIndex}`,
+                new Date(Math.max(createdAt.valueOf(), member.createdAt.valueOf())), demoDaysAgo(c.config, 0));
             await c.db.eventUserResponse.create({ data: { publicId: c.id(`${key}:response:${memberIndex}`),
                 eventId: event.id, bandUserId: member.id, isInvited: memberIndex !== b.members.length - 1,
                 bandInstrumentId: member.instrumentId, userComment: memberIndex === 0 ? "Shared person, band-specific response" : null } });
             await c.db.eventSegmentUserResponse.create({ data: { publicId: c.id(`${key}:attendance:${memberIndex}`),
                 eventSegmentId: segment.id, bandUserId: member.id, createdByUserId: member.userId,
+                createdAt: responseDate, updatedAt: responseDate,
                 attendanceId: memberIndex === 2 ? null : catalogs.attendance[demoChoice(c.config, `${key}:${memberIndex}`, catalogs.attendance.length)]!.id } });
         }
         await c.db.action.create({ data: { userId: b.members[0]!.userId, bandId: b.band.id,
             localeContextId: c.locales.get(b.locales[index % b.locales.length]!), eventId: event.id,
-            isClient: true, feature: "event_view", uri: `/backstage/event/${event.publicId}`, createdAt: startsAt,
+            isClient: true, feature: "event_view", uri: `/backstage/event/${event.publicId}`,
+            createdAt: demoDateBetween(c.config, `${key}:view`, createdAt, latestCreation),
             language: "en", locale: "en-us", deviceClass: "desktop", context: "demo seed" } });
         events.push(event);
     }

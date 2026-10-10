@@ -28,10 +28,12 @@ export const bandUserIdentityView = defineView({
     selection: identityContract.prismaSelection,
     dtoSchema: identityContract.dtoSchema,
     hydrate: identityContract.hydrate,
+    // Identity pickers represent active members even during an authorized recovery read.
+    where: { isDeleted: false },
 });
 
 // One authorized membership supplies the profile and directory; catalogs supply localized labels.
-const selection = Prisma.validator<Prisma.BandUserDefaultArgs>()({
+export const bandUserProfileSelection = Prisma.validator<Prisma.BandUserDefaultArgs>()({
     select: {
         ...bandUserInstrumentsSelection.select,
         ...bandUserTagsSelection.select,
@@ -51,12 +53,13 @@ const selection = Prisma.validator<Prisma.BandUserDefaultArgs>()({
     },
 });
 
-const contract = deriveViewContract(xBandUser, selection);
+const contract = deriveViewContract(xBandUser, bandUserProfileSelection);
 
 export const bandUserProfileView = defineView({
     viewID: "BandUser_Profile",
     entity: xBandUser,
     selection: contract.prismaSelection,
+    where: { isDeleted: false },
     dtoSchema: contract.dtoSchema,
     hydrate: contract.hydrate,
 });

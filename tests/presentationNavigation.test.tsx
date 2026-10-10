@@ -66,29 +66,29 @@ async function loadPlatform() {
 }
 
 describe("presentation navigation through Suspense", () => {
-    it("keeps the loaded page and its draft visible while focus refreshes presentation", async () => {
+    it("keeps the same request, mounted page and caret selection when the window regains focus", async () => {
         function Draft() {
-            const [draft, setDraft] = React.useState("saved");
-            return <><SelectedBand /><button onClick={() => setDraft("unsaved")}>{draft}</button></>;
+            const presentation = usePresentation();
+            return <><SelectedBand /><input key={presentation.data?.input.clientRequestId} defaultValue="unsaved draft" /></>;
         }
         await act(async () => root.render(<PresentationProvider bandPublicId={null}><Draft /></PresentationProvider>));
         await act(async () => { for (const read of reads.values()) { read.resolve(); } });
-        await act(async () => container.querySelector("button")!.click());
+        const input = container.querySelector("input")!;
+        input.focus();
+        input.setSelectionRange(2, 7);
         const previousRequest = container.querySelector("[data-band]")?.textContent;
         const before = reads.size;
 
         await act(async () => window.dispatchEvent(new window.Event("focus")));
         const pending = [...reads.values()].filter(read => !read.resolved);
-        expect(pending).toHaveLength(1);
-        expect(reads.size).toBe(before + 1);
+        expect(pending).toHaveLength(0);
+        expect(reads.size).toBe(before);
         expect(container.textContent).not.toContain("Loading");
         expect(container.querySelector("[data-band]")?.textContent).toBe(previousRequest);
-        expect(container.querySelector("button")?.textContent).toBe("unsaved");
-        expect(container.querySelector("button")?.style.display).not.toBe("none");
-
-        await act(async () => pending[0]!.resolve());
-        expect(container.querySelector("[data-band]")?.textContent).toBe(pending[0]!.input.clientRequestId);
-        expect(container.querySelector("button")?.textContent).toBe("unsaved");
+        expect(container.querySelector("input")).toBe(input);
+        expect(input.value).toBe("unsaved draft");
+        expect(document.activeElement).toBe(input);
+        expect([input.selectionStart, input.selectionEnd]).toEqual([2, 7]);
     });
 
     it.each(["cmdb-presentation-changed", "storage"])("still suspends for explicit invalidation via %s", async eventName => {

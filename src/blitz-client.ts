@@ -11,6 +11,8 @@ export const { withBlitz, queryClient } = setupBlitzClient({
   plugins: [AuthClientPlugin(authConfig), BlitzRpcPlugin({
     reactQueryOptions: {
       queries: {
+        // Pages retain their current view on focus; callers can opt into background refresh.
+        refetchOnWindowFocus: false,
         retry: shouldRetryQuery,
         useErrorBoundary: shouldThrowQueryError,
       },

@@ -385,7 +385,7 @@ describe("DB3 named views", () => {
 
     it("queries the finite Custom Link and Menu Link collection views", async () => {
         const createdAt = new Date("2026-09-21T12:00:00.000Z");
-        const createdByUser = { id: 100, publicId: userPublicId(100), name: "Ada", cssClass: null, isDeleted: false };
+        const createdByUser = { id: 100, publicId: userPublicId(100), name: "Ada", cssClass: null, isDeleted: false, mergedIntoUserId: null };
         const customLink = {
             id: 20,
             bandId: 1,
@@ -1169,7 +1169,7 @@ describe("DB3 named views", () => {
                 type: { publicId: songCreditTypePublicId },
                 year: "2026",
                 comment: "",
-                user: { id: 100, publicId: userPublicId(100), name: "Composer", isDeleted: false },
+                user: { id: 100, publicId: userPublicId(100), name: "Composer", isDeleted: false, mergedIntoUserId: null },
             }],
         }];
         const effectivePermissions = new ServerPermissionSet([

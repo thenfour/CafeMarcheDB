@@ -56,6 +56,7 @@ export type AuthorizationTestUser = {
   phone: string | null
   isSysAdmin: boolean
   isDeleted: boolean
+  mergedIntoUserId: number | null
   createdAt: Date
   roleId: number | null
   cssClass: string | null
@@ -126,6 +127,7 @@ export function createAuthorizationTestUser(
     phone: overrides.phone ?? null,
     isSysAdmin: overrides.isSysAdmin ?? persona === "sysadmin",
     isDeleted: overrides.isDeleted ?? false,
+    mergedIntoUserId: overrides.mergedIntoUserId ?? null,
     createdAt: overrides.createdAt ?? new Date("2026-01-01T00:00:00.000Z"),
     roleId,
     cssClass: overrides.cssClass ?? null,

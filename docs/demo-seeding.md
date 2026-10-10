@@ -60,8 +60,12 @@ before database creation or reset.
 | `--date` | Today in UTC | Real `YYYY-MM-DD`; first event seven days before, subsequent events weekly after |
 
 With the same options and reference date, reset recreates the same authored
-content, relationships and public identities. Password hashes, access-control
-foundation identities and bookkeeping timestamps are freshly generated.
+content, relationships, public identities and historical band, account/membership,
+sign-in, event, attendance, wiki and upload dates. Membership dates follow account
+creation and differ between bands; the last member in each band joined within the
+preceding fortnight.
+Password hashes, access-control foundation identities and modification timestamps
+are freshly generated.
 Reset removes manual database edits. Launch does not reseed.
 
 ## Accounts and content

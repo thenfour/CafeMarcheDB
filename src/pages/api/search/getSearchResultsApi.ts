@@ -5,7 +5,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import superjson from "superjson";
 import { Permission } from "shared/permissions";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
-import { GetSearchResultsCore, SearchInputError } from "src/core/db3/server/searchServerCore";
+import { GetSearchResultsCore, SearchInputError, isRestoredSearchDomain } from "src/core/db3/server/searchServerCore";
 import { DB3PublicIdError } from "src/core/db3/server/db3PublicIds";
 import { ZGetSearchResultsInput, type GetSearchResultsInput } from "src/core/db3/shared/apiTypes";
 import { ApplicationFeatureUnavailableError } from "src/core/shared/applicationRecovery";
@@ -32,10 +32,8 @@ export async function searchResultsRoute(req: NextApiRequest, res: NextApiRespon
         res.status(400).json({ error: "Invalid search arguments" });
         return;
     }
-    // Deferred domains reject before accounts or content are read.
-    // LSMB todo: do not introduce this check here. "get search results" should not
-    // have knowledge of specific tables like event, song, file ...
-    if (!["event", "song", "file"].includes(args.tableID.toLowerCase())) {
+    // The search owner declares restored domains; HTTP does not maintain a second list.
+    if (!isRestoredSearchDomain(args.tableID)) {
         res.status(503).json({ error: new ApplicationFeatureUnavailableError("domainSearch").message });
         return;
     }

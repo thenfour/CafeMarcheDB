@@ -47,7 +47,7 @@ export async function seedDevelopmentDatabase(database: PrismaClient, options: D
             locales.set(tag, (await db.locale.findUniqueOrThrow({ where: { ietfTag: tag } })).id);
         }
         const platform = await seedPlatformCatalogs(db, locales);
-        const people = await seedPeople(db, options.config, hashedPassword);
+        const people = await seedPeople(db, options.config, hashedPassword, options.now);
         const roles = new Map((await db.bandRole.findMany({ where: { isDeleted: false }, include: {
             name: { include: { values: { where: { localeId: locales.get("en-US")! } } } },
         } })).map(role => [role.name.values[0]!.indexedValue!, role.id]));
@@ -58,7 +58,7 @@ export async function seedDevelopmentDatabase(database: PrismaClient, options: D
         }
         const visibilityPermissionIds = (await db.permission.findMany({ where: { isVisibility: true } })).map(permission => permission.id);
         for (let index = 0; index < options.config.bands; index++) {
-            const band = await seedBand(db, platform, people, locales, roles, options.config.bands, index);
+            const band = await seedBand(db, platform, people, locales, roles, options.config.bands, index, options.now);
             const state: SeedingState = { db, ...options, locales, platform, band, visibilityPermissionIds };
             const songs = await seedSongs(state, distributeSeedCount(options.config.songCount, options.config.bands, index));
             await seedBandSampleFiles(state, songs[0]?.id ?? null);

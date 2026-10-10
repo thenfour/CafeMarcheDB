@@ -24,25 +24,49 @@ export async function resolveDB3ReadGraph(
     database: LocalizationDatabase,
     auth: CMServerAuthorization,
     preferences: LocalePreferenceInput,
+    includeDeleted = false,
 ): Promise<ReadRow[]> {
-    const resolved = await resolveDB3ReadRows(table, rows, database, auth, preferences);
-    return Promise.all(resolved.map(async row => {
-        const result = { ...row };
-        for (const [member, value] of Object.entries(row)) {
-            const relation = table.prismaMemberRegistry.get(member);
-            if ((relation?.kind !== "foreignObject" && relation?.kind !== "relationCollection")
-                || !table.authorizeColumnForView({ model: row, auth, columnName: relation.field.member })) {
+    // Inaccessible nested references are removed by projection; resolve only permitted rows.
+    const visible = rows.map((row, index) => ({ row, index })).filter(({ row }) => table.authorizeRowForView({ model: row, auth, includeDeleted }));
+    const resolvedVisible = await resolveDB3ReadRows(table, visible.map(item => item.row), database, auth, preferences);
+    const resolved = [...rows];
+    visible.forEach((item, index) => { resolved[item.index] = resolvedVisible[index]!; });
+    const result = resolved.map(row => ({ ...row }));
+    for (const [member, relation] of table.prismaMemberRegistry) {
+        if (relation.kind !== "foreignObject" && relation.kind !== "relationCollection") {
+            continue;
+        }
+        const children: ReadRow[] = [];
+        const slots: Array<{
+            rowIndex: number;
+            start: number;
+            count: number;
+            collection: boolean
+        }> = [];
+        for (const [rowIndex, row] of resolved.entries()) {
+            if (!table.authorizeColumnForView({ model: row, auth, includeDeleted, columnName: relation.field.member })) {
                 continue;
             }
-            if (value && typeof value === "object" && !Array.isArray(value)) {
-                // Prisma selected relations are records; metadata determines the concrete model.
-                [result[member]] = await resolveDB3ReadGraph(relation.getTargetTable(), [value as ReadRow], database, auth, preferences);
-            } else if (Array.isArray(value)) {
-                result[member] = await resolveDB3ReadGraph(relation.getTargetTable(), value, database, auth, preferences);
+            const value = row[member];
+            const collection = Array.isArray(value);
+            const selected = collection ? value : value && typeof value === "object" ? [value] : [];
+            if (selected.length === 0) {
+                continue;
             }
+            slots.push({ rowIndex, start: children.length, count: selected.length, collection });
+            // Prisma relations contain records; the registry supplies their model contract.
+            children.push(...selected as ReadRow[]);
         }
-        return result;
-    }));
+        if (children.length === 0) {
+            continue;
+        }
+        const resolvedChildren = await resolveDB3ReadGraph(relation.getTargetTable(), children, database, auth, preferences, includeDeleted);
+        for (const slot of slots) {
+            const values = resolvedChildren.slice(slot.start, slot.start + slot.count);
+            result[slot.rowIndex]![member] = slot.collection ? values : values[0];
+        }
+    }
+    return result;
 }
 function sourceOf(table: xTable, row: ReadRow): ReadRow | null {
     const value = table.bandScope?.inheritedFrom ? row[table.bandScope.inheritedFrom] : null;
@@ -61,7 +85,9 @@ export async function resolveDB3ReadRows(table: xTable, rows: readonly ReadRow[]
     const identities = rows.flatMap(row => [...getDB3LocalizedIdentities(table, row, sourceOf(table, row)).entries()]
         .filter(([member, identity]) => fields.some(field => field.member === member) && identity !== null)
         .map(([, identity]) => identity!));
-    const strings = await resolveAuthorizedDynamicStrings(database, auth, [...new Set(identities)], preferences);
+    const strings = identities.length > 0
+        ? await resolveAuthorizedDynamicStrings(database, auth, [...new Set(identities)], preferences)
+        : new Map<number, StringResolution>();
     return rows.map(row => {
         const source = sourceOf(table, row);
         const resolutions = resolveDB3LocalizedFields(table, row, source, strings, missing);

@@ -34,6 +34,14 @@ helpers, including cancelled-segment handling. Random events retain zero to four
 segments, TBD dates, mixed timing, variable attendance, zero to two setlists,
 song repetitions, dividers and optional descriptions/files.
 
+Account creation and band join dates vary across the history window; membership
+dates follow account creation. Directory Join Date sorting and the "Joined this
+band" footer both use membership creation. Events are created before their
+scheduled start, wiki revisions follow page creation, and file creation precedes
+upload. Bands predate their memberships, sign-in methods follow account creation,
+and attendance records follow membership and event creation. These dates use the
+captured reference time rather than insertion time.
+
 Fixed catalogs restore 23 instruments and functional groups, seven song tags,
 three file tags, two event tags, five statuses, four event types, four attendance
 options, three credit types, three member tags and six wiki tags. Platform rows

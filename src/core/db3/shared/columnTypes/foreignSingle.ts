@@ -312,7 +312,31 @@ export class ForeignSingleField<
     };
 
     SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
-    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
+    SqlGetRowVisibilityExpression = (auth: CMServerAuthorization, tableAlias: string): string | null => {
+        if (!this.requireVisibleTarget) {
+            return null;
+        }
+        const target = this.getForeignTableSchema();
+        const alias = `${tableAlias}_${this.member}`;
+        const visible = `EXISTS (SELECT 1 FROM ${target.sqlTableName} ${alias} WHERE ${alias}.${target.pkMember} = ${tableAlias}.${this.fkidMember} AND ${target.SqlGetVisFilterExpression({ auth, tableAlias: alias })})`;
+        return this.allowNull ? `(${tableAlias}.${this.fkidMember} IS NULL OR ${visible})` : visible;
+    };
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => {
+        if (!this.sortBy) {
+            return null;
+        }
+        const target = this.getForeignTableSchema();
+        const column = target.getColumn(this.sortBy);
+        const sort = column?.SqlGetSortableQueryElements({ ...api, primaryTableAlias: "ST" });
+        if (!sort || sort.join.length || sort.select.length !== 1) {
+            throw new Error(`SQL relation sorting requires a scalar member: ${this.member}.${this.sortBy}.`);
+        }
+        return {
+            join: [],
+            select: [{ alias: api.getColumnAlias(), direction: api.sortModel.direction,
+                expression: `(SELECT ${sort.select[0]!.expression} FROM ${target.sqlTableName} ST WHERE ST.${target.pkMember} = ${api.primaryTableAlias}.${this.fkidMember})` }],
+        };
+    };
 
     getPrismaOrderBy = (direction: SortDirection): TAnyModel => {
         if (!this.sortBy) {
@@ -416,7 +440,7 @@ export class ForeignSingleField<
             -1 sortOrder
         FROM
             FIQ -- filtered events
-            inner join ${this.localTableSpec.tableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the statusId field
+            inner join ${this.localTableSpec.sqlTableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id
         where
             P.${this.fkidMember} is null
 
@@ -432,7 +456,7 @@ export class ForeignSingleField<
             FT.${foreignMembers.sortOrder?.member || foreignSchema.pkMember} sortOrder
         FROM
             FIQ -- filtered events
-            inner join ${this.localTableSpec.tableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the statusId field
+            inner join ${this.localTableSpec.sqlTableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id
             right join ${foreignTable} as FT on FT.${foreignSchema.pkMember} = P.${this.fkidMember}            -- like eventStatus
         where
             ${foreignSchema.SqlGetVisFilterExpression({ auth, tableAlias: "FT" })} -- account for delete, visibility

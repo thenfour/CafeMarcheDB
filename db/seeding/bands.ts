@@ -6,7 +6,7 @@ import { catalogDefinitions } from "./catalogDefinitions";
 import type { SeedPlatformCatalogs } from "./catalogs";
 import { seedLabels, seedLocalizedString, type SeedLocale } from "./localization";
 import type { SeedPeople } from "./people";
-import { choose, probability, subset } from "./random";
+import { choose, probability, randomDate, subset } from "./random";
 
 export interface SeedMember extends BandUser { instrumentIds: number[]; }
 
@@ -94,26 +94,30 @@ async function seedBandChrome(db: Prisma.TransactionClient, bandId: number, publ
 }
 
 export async function seedBand(db: Prisma.TransactionClient, platform: SeedPlatformCatalogs, people: SeedPeople,
-    locales: ReadonlyMap<SeedLocale, number>, roles: ReadonlyMap<string, number>, bandCount: number, index: number) {
+    locales: ReadonlyMap<SeedLocale, number>, roles: ReadonlyMap<string, number>, bandCount: number, index: number, now: Date) {
     const title = index === 0 ? "Café Marché" : index === 1 ? "Harbour Brass" : `Ensemble ${index + 1}`;
+    const manager = people.managers[index]!;
+    const persons = [people.shared, manager, ...people.special, ...people.ordinary.filter((_, personIndex) => personIndex % bandCount === index)];
+    const earliestAccount = new Date(Math.min(...persons.map(person => person.createdAt.valueOf())));
+    const createdAt = randomDate(new Date(earliestAccount.valueOf() - 365 * 86_400_000), earliestAccount);
     const nameId = await seedLocalizedString(db, locales, { "en-US": title }, LocalizedStringFormat.PlainText);
     // Fresh migrations create an empty first band. Reuse it rather than creating a stray scaffold.
     const scaffold = index === 0 ? await db.band.findFirst() : null;
-    const band = scaffold ? await db.band.update({ where: { id: scaffold.id }, data: { nameId } })
-        : await db.band.create({ data: { publicId: generatePublicId<"Band">(), nameId } });
+    const band = scaffold ? await db.band.update({ where: { id: scaffold.id }, data: { nameId, createdAt } })
+        : await db.band.create({ data: { publicId: generatePublicId<"Band">(), nameId, createdAt } });
     const enabledLocales = [...locales.keys()].filter(locale => index % 2 === 0 || locale !== "fr-BE");
     await db.bandLocale.deleteMany({ where: { bandId: band.id } });
     await db.bandLocale.createMany({ data: enabledLocales.map((locale, sortOrder) => ({ bandId: band.id, localeId: locales.get(locale)!, sortOrder })) });
     const catalogs = await seedBandCatalogs(db, band.id, platform, locales, index);
-    const manager = people.managers[index]!;
     const members: SeedMember[] = [];
-    const persons = [people.shared, manager, ...people.special, ...people.ordinary.filter((_, personIndex) => personIndex % bandCount === index)];
     for (const [personIndex, person] of persons.entries()) {
         const roleId = personIndex === 1 || people.special.some(special => special.id === person.id) || (personIndex === 0 && index === 0)
             ? roles.get("Band Admin")! : personIndex === 0 || personIndex === 5 ? roles.get("Normal Users")!
                 : probability(0.05) ? null : choose([...roles.values()]);
         const member = await db.bandUser.create({ data: {
             publicId: generatePublicId<"BandUser">(), bandId: band.id, userId: person.id, bandRoleId: roleId,
+            createdAt: randomDate(person.createdAt, personIndex < 5
+                ? new Date(person.createdAt.valueOf() + 180 * 86_400_000) : now),
         } });
         const instrumentCount = personIndex < 5 ? 3 : probability(0.08) ? 0 : faker.number.int({ min: 1, max: 3 });
         const instruments = subset(catalogs.instruments, instrumentCount, instrumentCount);

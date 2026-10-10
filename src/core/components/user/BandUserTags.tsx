@@ -47,7 +47,7 @@ export function BandUserTagsEditor({ member, refetch }: {
         return option.available && tag ? <CMStandardDBChip model={tag} size="small" /> : <Typography component="span">{option.label}</Typography>;
     };
     const canEdit = presentation.data?.authorization.effectivePermissionNames.includes(Permission.manage_users) ?? false;
-    return <Stack spacing={1} aria-busy={saving}>
+    return <Stack spacing={1} alignItems="flex-start" aria-busy={saving}>
         {error && !open && <Alert severity="error">{error}</Alert>}
         {selected.length === 0 && <Typography>{locale.getPlainString("membership.tags.empty")}</Typography>}
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>{selected.map(option => <React.Fragment key={option.publicId}>{renderTag(option)}</React.Fragment>)}</Box>

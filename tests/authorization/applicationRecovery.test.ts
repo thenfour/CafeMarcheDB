@@ -23,7 +23,6 @@ import getDistinctChangeFilterValues from "@db3/queries/getDistinctChangeFilterV
 import getEventFilterInfo from "@db3/queries/getEventFilterInfo";
 import getSongFilterInfo from "@db3/queries/getSongFilterInfo";
 import getImportEventData from "@db3/queries/getImportEventData";
-import getUserCredits from "@db3/queries/getUserCredits";
 import { insertImpl } from "@db3/server/db3mutationCore";
 import assignUserRole from "src/auth/mutations/assignUserRole";
 import setRoleDesignation from "src/auth/mutations/setRoleDesignation";
@@ -79,25 +78,6 @@ const deferredDomainReaders = [
     { name: "legacy event facets", resolve: getEventFilterInfo },
     { name: "legacy song facets", resolve: getSongFilterInfo },
 ];
-
-const deferredWorkflowEndpoints = [
-    { name: "person credits", resolve: getUserCredits },
-];
-
-describe("deferred domain workflow endpoints", () => {
-    it.each(deferredWorkflowEndpoints)("rejects $name without reading accounts, targets or references", async ({ resolve }) => {
-        for (const actor of [member, sysadmin]) {
-            for (const input of [null, { eventId: 1, songIds: [1] }, { bandPublicId: "Band000000000001", routeLocale: "fr-BE" }]) {
-                await expect(invokeResolver(resolve, input, createAuthorizationTestContext(actor)))
-                    .rejects.toThrow(ApplicationFeatureUnavailableError);
-            }
-        }
-    });
-
-    it.each(deferredWorkflowEndpoints)("requires login for $name", async ({ resolve }) => {
-        await expect(invokeResolver(resolve, {}, createAuthorizationTestContext(null))).rejects.toThrow("login");
-    });
-});
 
 describe("deferred file creation", () => {
     it("blocks generic File creation before its transaction or metadata hooks", async () => {

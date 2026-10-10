@@ -157,7 +157,7 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     throw new Error(`Unhandled action: ${action}`);
 };
 
-export const getUserManagementCapabilities = (
+export const evaluateUserManagementCapabilities = (
     actor: UserManagementActor,
     target: UserManagementTarget,
 ): UserManagementCapabilities => ({

@@ -1,5 +1,6 @@
 import { Prisma, SignInMethodType } from "db";
 import { Permission } from "shared/permissions";
+import { MysqlEscape } from "shared/mysqlUtils";
 import type { UserSignInMethodPublicId } from "shared/publicId";
 import { GenericStringField } from "../columnTypes/genericString";
 import { ConstEnumStringField, foreignRefByTableId, MakeCreatedAtField, MakePKfield, MakePublicIdField } from "../columnTypes/xTableColumnTypes";
@@ -47,6 +48,15 @@ export const xUserSignInMethod = defineTable({
         createdAt: () => MakeCreatedAtField({ authMap: kReadOnlyAuthMap }),
     }),
 });
+
+/** Search email credentials using this entity's declared database identifiers. */
+export function getEmailSignInSearchExpression(token: string, userKeyExpression: string): string {
+    const fields = xUserSignInMethod.fields;
+    return `EXISTS (SELECT 1 FROM ${xUserSignInMethod.sqlTableName} SI
+        WHERE SI.${fields.user.fkidMember} = ${userKeyExpression}
+          AND SI.${fields.type.member} = '${SignInMethodType.email}'
+          AND SI.${fields.identifier.member} LIKE '%${MysqlEscape(token)}%')`;
+}
 
 declare module "../db3core" {
     interface DB3TableTypeRegistry {

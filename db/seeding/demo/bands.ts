@@ -1,12 +1,13 @@
-import type { BandFileTag, BandInstrument, BandUser, Prisma } from "@prisma/client";
-import { demoChoice, type DemoLocale } from "./config";
+import type { BandFileTag, BandInstrument, BandUser, Prisma, User } from "@prisma/client";
+import { demoChoice, demoDateBetween, demoDaysAgo, type DemoLocale } from "./config";
 import { createDemoString, type DemoContext } from "./context";
 import type { DemoCatalogs } from "./catalogs";
 
 export async function createDemoPerson(c: DemoContext, key: string, name: string, email: string,
     hashedPassword: string, globalRoleId?: number) {
+    const createdAt = demoDateBetween(c.config, `person:${key}`, demoDaysAgo(c.config, 5 * 365), demoDaysAgo(c.config, 3 * 365));
     return c.db.user.create({ data: { publicId: c.id(`person:${key}`), name, email, hashedPassword, globalRoleId,
-        signInMethods: { create: { publicId: c.id(`sign-in:${key}`), type: "email", identifier: email } } } });
+        createdAt, signInMethods: { create: { publicId: c.id(`sign-in:${key}`), type: "email", identifier: email, createdAt } } } });
 }
 
 async function seedBandCatalogs(c: DemoContext, bandId: number, key: string, catalogs: DemoCatalogs) {
@@ -59,11 +60,12 @@ async function seedBandSettings(c: DemoContext, bandId: number, key: string, tit
 }
 
 export async function seedDemoBand(c: DemoContext, index: number, catalogs: DemoCatalogs,
-    sharedPersonId: number, hashedPassword: string, roles: ReadonlyMap<string, number>) {
+    sharedPerson: Pick<User, "id" | "createdAt">, hashedPassword: string, roles: ReadonlyMap<string, number>) {
     const key = `band:${index + 1}`;
     const title = index === 0 ? "River Fanfare" : index === 1 ? "Harbour Brass" : `Demo Ensemble ${index + 1}`;
     const locales = c.config.locales.filter(tag => index % 2 === 0 || tag !== "fr-BE");
     const band = await c.db.band.create({ data: { publicId: c.id(key),
+        createdAt: demoDateBetween(c.config, key, demoDaysAgo(c.config, 6 * 365), demoDaysAgo(c.config, 5 * 365)),
         nameId: await createDemoString(c, `${key}:name`, { "en-US": title }),
         locales: { create: locales.map((tag, sortOrder) => ({ localeId: c.locales.get(tag)!, sortOrder })) },
     } });
@@ -90,13 +92,16 @@ export async function seedDemoBand(c: DemoContext, index: number, catalogs: Demo
     const manager = await createDemoPerson(c, `${key}:manager`, `${title} Manager`, `manager${index + 1}@demo.invalid`, hashedPassword);
     const members: Array<BandUser & { instrumentId: number }> = [];
     for (let memberIndex = 0; memberIndex < c.config.membersPerBand; memberIndex++) {
-        const userId = memberIndex === 0 ? sharedPersonId : memberIndex === 1 ? manager.id : (await createDemoPerson(c,
+        const person = memberIndex === 0 ? sharedPerson : memberIndex === 1 ? manager : await createDemoPerson(c,
             `${key}:member:${memberIndex}`, `${title} Musician ${memberIndex - 1}`,
-            `member${index + 1}-${memberIndex - 1}@demo.invalid`, hashedPassword)).id;
+            `member${index + 1}-${memberIndex - 1}@demo.invalid`, hashedPassword);
         const roleName = memberIndex === 1 || (memberIndex === 0 && index === 0) ? "Band Admin"
             : memberIndex > 2 && memberIndex === c.config.membersPerBand - 1 ? "Limited Users" : "Normal Users";
         const membership = await c.db.bandUser.create({ data: {
-            publicId: c.id(`${key}:membership:${memberIndex}`), userId, bandId: band.id, bandRoleId: roles.get(roleName)!,
+            publicId: c.id(`${key}:membership:${memberIndex}`), userId: person.id, bandId: band.id, bandRoleId: roles.get(roleName)!,
+            createdAt: demoDateBetween(c.config, `${key}:membership:${memberIndex}`,
+                memberIndex === c.config.membersPerBand - 1 ? demoDaysAgo(c.config, 14) : person.createdAt,
+                demoDaysAgo(c.config, memberIndex < 2 ? 2 * 365 : 0)),
         } });
         const instrument = scoped.instruments[demoChoice(c.config, `${key}:member:${memberIndex}`, scoped.instruments.length)]!;
         await c.db.bandUserInstrument.create({ data: { publicId: c.id(`${key}:member-instrument:${memberIndex}`),

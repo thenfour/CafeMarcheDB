@@ -50,7 +50,7 @@ export const DateValue = (props: DateValueProps) => {
     }>
         <span className={`DateValue ${props.className}`} style={props.style}>
             {valueNode}
-            {" "}({props.showRelative && <span className="RelativeIndicator">{rel.label}</span>})
+            {props.showRelative && <> (<span className="RelativeIndicator">{rel.label}</span>)</>}
         </span>
     </Tooltip>;
 }

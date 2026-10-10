@@ -461,6 +461,9 @@ export enum SqlSpecialColumnFunction {
     color = "color",
     iconName = "iconName",
     isDeleted = "isDeleted",
+    // A non-null values makes the row unavailable. a hacky workaround to bring the idea of 
+    // "mergedIntoUserId" behavior act a bit like a soft delete.
+    unavailableWhenSet = "unavailableWhenSet",
     visiblePermission = "visiblePermission",
     ownerUser = "ownerUser",
     name = "name",
@@ -518,10 +521,13 @@ export type DB3AuthorizeAndSanitizeFieldInput<T extends TAnyModel> = DB3Authoriz
     isOwner: boolean;
 };
 
-export type DB3AuthorizeForViewColumnArgs<T extends TAnyModel> = { columnName: string } & (
-    | { model: null; auth: IAuthorization }
-    | { model: T; auth: CMServerAuthorization }
-);
+export type DB3AuthorizeForViewColumnArgs<T extends TAnyModel> = {
+    columnName: string;
+    includeDeleted?: boolean
+} & (
+        | { model: null; auth: IAuthorization }
+        | { model: T; auth: CMServerAuthorization }
+    );
 
 function hasRowReadModel<T extends TAnyModel>(
     args: DB3AuthorizeForViewColumnArgs<T>,
@@ -832,6 +838,7 @@ export abstract class FieldBase<
 
     // Relations may require their target to be readable for this row to appear.
     getRowVisibilityWhereClause = (_auth: CMServerAuthorization, _includeDeleted: boolean, _includeHidden = false): TAnyModel | undefined => undefined;
+    SqlGetRowVisibilityExpression = (_auth: CMServerAuthorization, _tableAlias: string): string | null => null;
 };
 
 export interface SortModel {
@@ -1005,7 +1012,7 @@ export interface TableDesc {
     viewDeletedPermission?: Permission;
     restorePermission?: Permission;
 
-    // Search features are opt-in independently of admin-grid recovery.
+    // lsmb todo: this is likely better handled at the VIEW level. hard to justify this.
     searchCapabilities?: { includeDeleted?: boolean };
 
 };
@@ -1478,6 +1485,15 @@ export class xTable<
         if (this.SqlSpecialColumns.isDeleted && !canIncludeDeleted) {
             AND.push(`(${tableAlias}.${this.SqlSpecialColumns.isDeleted.member} = false)`);
         }
+        if (this.SqlSpecialColumns.unavailableWhenSet) {
+            AND.push(`(${tableAlias}.${this.SqlSpecialColumns.unavailableWhenSet.member} IS NULL)`);
+        }
+        for (const field of this.columns) {
+            const expression = field.SqlGetRowVisibilityExpression(auth, tableAlias);
+            if (expression) {
+                AND.push(expression);
+            }
+        }
         if (this.SqlSpecialColumns.visiblePermission) {
             const ownerColumn = this.SqlSpecialColumns.ownerUser;
             assert(!!ownerColumn, `Table ${this.tableID} requires an owner for private visibility.`);
@@ -1618,7 +1634,7 @@ export class xTable<
         const authContext = isOwner ? "PostQueryAsOwner" : "PostQuery";
         if (col.readAuthorizationInheritsRow(authContext)) {
             const rowIsAuthorized = hasRowReadModel(args)
-                ? this.authorizeRowForView({ model: args.model, auth: args.auth })
+                ? this.authorizeRowForView({ model: args.model, auth: args.auth, includeDeleted: args.includeDeleted })
                 : this.authorizeTableForView(args.auth);
             if (!rowIsAuthorized) return false;
         }
@@ -1673,8 +1689,8 @@ export class xTable<
     // includes isDeleted, owner, and visiblePermission columns. if a query  doesn't
     // include these, then we can't actually perform authorization so we throw an error.
     getReadAuthorizationMembers = (): readonly string[] => {
-        const { ownerUser, visiblePermission, isDeleted } = this.SqlSpecialColumns;
-        const members = [ownerUser, visiblePermission, isDeleted]
+        const { ownerUser, visiblePermission, isDeleted, unavailableWhenSet } = this.SqlSpecialColumns;
+        const members = [ownerUser, visiblePermission, isDeleted, unavailableWhenSet]
             .filter((column): column is AnyDB3Field => column !== undefined)
             .map(column => column.fkidMember || column.member);
         if (this.bandScope) {
@@ -1781,6 +1797,10 @@ export class xTable<
             && (args.auth.userId === ownerUserId);
 
         if (args.model) {
+            const unavailable = this.SqlSpecialColumns.unavailableWhenSet;
+            if (unavailable && args.model[unavailable.member] !== null) {
+                return false;
+            }
             const isDeletedColumn = this.SqlSpecialColumns.isDeleted;
             if (isDeletedColumn && args.model[isDeletedColumn.member] === true) {
                 if (!args.includeDeleted || !this.canViewDeletedRows(args.auth)) {
@@ -2119,6 +2139,9 @@ export class xTable<
         }
 
         const canIncludeDeleted = includeDeleted && this.canViewDeletedRows(auth);
+        if (this.SqlSpecialColumns.unavailableWhenSet) {
+            and.push({ [this.SqlSpecialColumns.unavailableWhenSet.member]: null });
+        }
         if (this.SqlSpecialColumns.isDeleted && !canIncludeDeleted) {
             and.push({ [this.SqlSpecialColumns.isDeleted.member]: false });
         }

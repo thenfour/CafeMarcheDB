@@ -12,6 +12,7 @@ import { loadSharedCatalogs } from "src/core/db3/server/db3DashboardCatalogs";
 import { createDashboardReferenceStore, registerDashboardReferences, songCreditTypeDashboardView } from "src/core/db3/shared/references/dashboardReferences";
 import { generatePublicId } from "src/server/publicId";
 import { initializeAccessControl } from "src/setup/accessControl";
+import { readMemberSongCredits } from "src/core/db3/server/memberSongCredits";
 import { settingsMysqlTestUrl, withSettingsMysqlFixture, type SettingsMysqlFixture } from "./support/settingsMysqlFixture";
 import { prepareSongs } from "./support/songWorkflowMysqlFixture";
 
@@ -91,6 +92,55 @@ describe.skipIf(!settingsMysqlTestUrl)("Song credit authoring on MariaDB", () =>
         expect(page.count).toBe(1);
         await expect(queryView({ view: bandPersonReferenceView, filter: {}, cmdbQueryContext: "platform person picker" },
             await loadAuthorizationForUser(fixture.admin, tx), await bindDB3ReadSnapshot(tx, await loadAuthorizationForUser(fixture.admin, tx), { isolationLevel: "Serializable" }))).rejects.toThrow();
+    }));
+
+    it("reads profile credits with visible Song metadata, public references and an active selected-band person", () => run(async (tx, fixture) => {
+        const c = await prepare(tx, fixture);
+        const grant = await tx.permission.findUniqueOrThrow({ where: { name: Permission.manage_users } });
+        await tx.bandRolePermission.create({ data: { publicId: generatePublicId(), bandRoleId: c.role.id, permissionId: grant.id } });
+        await c.create();
+        const input = { bandPublicId: c.target.bandPublicId, userId: c.dto.userId!, take: 100, routeLocale: "fr-BE" };
+        const read = () => readMemberSongCredits(c.root, c.auth, input);
+        expect((await read()).songCredits).toMatchObject([{ userId: c.dto.userId, songId: c.target.songId, typeId: c.dto.typeId,
+            song: { publicId: c.target.songId, name: "Alpha", introducedYear: 2026 } }]);
+        expect(JSON.stringify(await read())).not.toMatch(/"(?:id|userId|songId|typeId)":\d/);
+        for (const song of await tx.song.findMany({ where: { bandId: c.band.id, name: { contains: "secret" } } })) {
+            await tx.songCredit.create({ data: { publicId: generatePublicId(), songId: song.id, userId: c.person.id,
+                typeId: c.type.id, year: "hidden", comment: "hidden" } });
+        }
+        expect((await read()).songCredits).toHaveLength(1);
+        await tx.songCredit.create({ data: { publicId: generatePublicId(), songId: c.foreign.id, userId: c.person.id, typeId: c.type.id, year: "foreign", comment: "foreign" } });
+        expect((await read()).songCredits).toHaveLength(1);
+        await expect(readMemberSongCredits(c.root, c.auth, { ...input, bandPublicId: parsePublicId<"Band">(fixture.bands[1]!.publicId) })).rejects.toThrow();
+        await expect(readMemberSongCredits(c.root, c.auth, { ...input, userId: parsePublicId<"User">(c.foreignPerson.publicId) })).rejects.toThrow();
+        await tx.bandUser.update({ where: { bandId_userId: { bandId: c.band.id, userId: c.person.id } }, data: { isDeleted: true } });
+        await expect(read()).rejects.toThrow();
+        await tx.bandUser.update({ where: { bandId_userId: { bandId: c.band.id, userId: c.person.id } }, data: { isDeleted: false } });
+        for (const state of [{ isDeleted: true }, { mergedIntoUserId: fixture.admin.id }]) {
+            await tx.user.update({ where: { id: c.person.id }, data: { isDeleted: false, mergedIntoUserId: null, ...state } });
+            await expect(read()).rejects.toThrow();
+        }
+    }));
+
+    it.each(["management", "songs", "basic", "membership", "account", "merged", "band"])("rechecks %s authority before reading profile credits", reason => run(async (tx, fixture) => {
+        const c = await prepare(tx, fixture);
+        const grant = await tx.permission.findUniqueOrThrow({ where: { name: Permission.manage_users } });
+        await tx.bandRolePermission.create({ data: { publicId: generatePublicId(), bandRoleId: c.role.id, permissionId: grant.id } });
+        await c.create();
+        const auth = await c.auth.refresh(tx);
+        const input = { bandPublicId: c.target.bandPublicId, userId: c.dto.userId!, take: 100 };
+        expect((await readMemberSongCredits(c.root, auth, input)).songCredits).toHaveLength(1);
+        const revoked = { management: Permission.manage_users, songs: Permission.view_songs, basic: Permission.view_users_basic_info };
+        if (reason === "management" || reason === "songs" || reason === "basic") {
+            await tx.bandRolePermission.deleteMany({ where: { bandRoleId: c.role.id, permission: { name: revoked[reason] } } });
+        } else if (reason === "membership") {
+            await tx.bandUser.update({ where: { id: c.member.id }, data: { isDeleted: true } });
+        } else if (reason === "band") {
+            await tx.band.update({ where: { id: c.band.id }, data: { isDeleted: true } });
+        } else {
+            await tx.user.update({ where: { id: fixture.user.id }, data: reason === "merged" ? { mergedIntoUserId: fixture.admin.id } : { isDeleted: true } });
+        }
+        await expect(readMemberSongCredits(c.root, auth, input)).rejects.toThrow();
     }));
 
     it("rejects foreign, inactive and merged people, inaccessible Songs and forged type identities without writes", () => run(async (tx, fixture) => {

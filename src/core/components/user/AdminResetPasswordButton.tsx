@@ -1,6 +1,5 @@
 
 import { useMutation } from "@blitzjs/rpc";
-import { Button } from "@mui/material";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import forgotPassword from "src/auth/mutations/forgotPassword";
@@ -47,8 +46,8 @@ export const AdminResetPasswordButton = ({ user }: { user: Pick<db3.UserClientPa
                 onClose={() => setShowConfirm(false)}
                 title={<>Reset password for {user.name} ({user.email})</>}
                 actions={<>
-                    <Button onClick={() => setShowConfirm(false)}>Cancel</Button>
-                    <Button autoFocus={true} onClick={handleConfirmClick}>Continue</Button>
+                    <CMButton onClick={() => setShowConfirm(false)}>Cancel</CMButton>
+                    <CMButton autoFocus={true} onClick={handleConfirmClick}>Continue</CMButton>
                 </>}
             >
                 This will generate a temporary URL which can be used to reset a user's password.
@@ -62,7 +61,7 @@ export const AdminResetPasswordButton = ({ user }: { user: Pick<db3.UserClientPa
                 className="resetPasswordURLDialog"
                 onClose={() => { setShowCopied(false); setResetURL(null) }}
                 title="Here's your link"
-                actions={<Button autoFocus={true} onClick={() => { setShowCopied(false); setResetURL(null) }}>Close</Button>}
+                actions={<CMButton autoFocus={true} onClick={() => { setShowCopied(false); setResetURL(null) }}>Close</CMButton>}
             >
                 Click to copy the link to the clipboard
                 <div role="button" className="resetPasswordURLCopyButton" onClick={onCopy}>

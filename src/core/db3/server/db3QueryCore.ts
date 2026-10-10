@@ -14,7 +14,7 @@ import {
 } from "./db3PublicIds";
 import { db3Server } from "./db3Server";
 import { executeDB3Read } from "./db3ReadExecution";
-import { resolveDB3ReadRows } from "./db3ResolvedFields";
+import { resolveDB3ReadGraph } from "./db3ResolvedFields";
 import { queryDB3Memory } from "../shared/core/db3MemoryQuery";
 import { collectLocalePreferences, selectFormattingLocale } from "src/locale/shared/localePreferences";
 
@@ -244,8 +244,16 @@ async function queryTableInContext(
         executionOptions.orderedPrimaryKeys,
     );
     if (input.delayMS) await sleep(input.delayMS);
+    const resolved = await resolveDB3ReadGraph(
+        query.table,
+        orderedItems,
+        database,
+        query.auth,
+        input,
+        query.includeDeleted);
+
     return {
-        items: sanitizeQueryRows(orderedItems, query, `query:${query.table.tableName}`),
+        items: sanitizeQueryRows(resolved, query, `query:${query.table.tableName}`),
         executionTimeMillis: Date.now() - startTimestamp,
         resultId: randomUUID(),
     };
@@ -268,7 +276,7 @@ async function queryResolvedRowsInMemory(input: db3.LegacyQueryInputBase, query:
     database: TransactionalPrismaClient, skip: number, take?: number,
 ) {
     const rawRows = await database[query.table.tableName].findMany({ where: query.where, ...query.selectionArgs });
-    const resolved = await resolveDB3ReadRows(query.table, rawRows, database, query.auth, input);
+    const resolved = await resolveDB3ReadGraph(query.table, rawRows, database, query.auth, input, query.includeDeleted);
     // Authorize before matching, so protected fields cannot affect matches, counts, or order.
     const authorized = resolved.map(row => authorizeAndProjectDB3ViewModel(
         query.table, row, query.auth, `resolvedQuery:${query.table.tableName}`, query.includeDeleted,
@@ -416,8 +424,11 @@ async function paginatedQueryInContext(input: db3.PaginatedQueryRequestInput, au
         }),
     });
     if (input.delayMS) await sleep(input.delayMS);
+
+    // why cast?: paginate cannot infer the runtime-selected delegate; DB3's selection planner owns these records.
+    const resolved = await resolveDB3ReadGraph(query.table, items as TAnyModel[], database, query.auth, input, query.includeDeleted);
     return {
-        items: sanitizeQueryRows(items as TAnyModel[], query, `paginatedQuery:${query.table.tableName}`),
+        items: sanitizeQueryRows(resolved, query, `paginatedQuery:${query.table.tableName}`),
         ...pagination,
         executionTimeMillis: Date.now() - startTimestamp,
         resultId: randomUUID(),

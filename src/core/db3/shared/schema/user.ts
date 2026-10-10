@@ -3,7 +3,6 @@ import type { UserWithRolesPayload } from "./userPayloads";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { Prisma } from "db";
 import { assertIsNumberArray } from "shared/arrayUtils";
-import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import type {
     PermissionPublicId,
@@ -19,6 +18,7 @@ import * as db3 from "../db3core";
 import { GenericStringField } from "../columnTypes/genericString";
 import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserSafeArgs } from "./prismArgs";
 import { LocalizedStringField, localizedText } from "../columnTypes/localizedString";
+import { getEmailSignInSearchExpression } from "./userSignInMethod";
 
 // Basic profile data is self-service for the account owner and readable for
 // other users only through the explicit member-profile capability.
@@ -62,7 +62,7 @@ const xUserTaxonomyDefinitionAuthMap = db3.defineAuthMap({
 
 // Contact information has a separate non-owner read capability. Phone remains
 // self-editable; email writes are owned by dedicated account-maintenance flows.
-const xUserContactInfoAuthMap = db3.defineAuthMap({
+export const xUserContactInfoAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
     PostQuery: Permission.view_user_contact_info,
     PreMutateAsOwner: Permission.login,
@@ -70,7 +70,7 @@ const xUserContactInfoAuthMap = db3.defineAuthMap({
     PreInsert: Permission.manage_global_users,
 });
 
-const xUserEmailAuthMap = db3.defineAuthMap({
+export const xUserEmailAuthMap = db3.defineAuthMap({
     PostQueryAsOwner: Permission.login,
     PostQuery: Permission.view_user_contact_info,
     PreMutateAsOwner: Permission.sysadmin,
@@ -211,7 +211,11 @@ export const xUserMinimum = db3.defineTable({
         }),
         hashedPassword: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
         signInMethods: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
-        mergedIntoUserId: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+        mergedIntoUserId: memberName => new GhostField({
+            memberName,
+            specialFunction: db3.SqlSpecialColumnFunction.unavailableWhenSet,
+            _customAuth: denyGenericUserAuthenticationField
+        }),
         mergedAt: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
         calendarFeedToken: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
         accessToken: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }), // rejected legacy field name
@@ -289,26 +293,14 @@ declare module "../db3core" {
 
 
 ////////////////////////////////////////////////////////////////
-const MakeUserSignInEmailSearchField = () => {
+const MakeUserSignInEmailSearchField = (memberName: string) => {
     const field = new GhostField({
-        memberName: "signInEmailSearch",
+        memberName,
         authMap: xUserSignInMetadataAuthMap,
     });
 
-    // compile-time type safety for the sql filter.
-    const STATIC_CHECK: Prisma.UserSignInMethodScalarWhereInput = {
-        type: { equals: 'email' },
-        identifier: { contains: '' },
-        userId: { equals: 0 },
-    };
-
-    field.SqlGetQuickFilterElementsForToken = (token: string): string => `EXISTS (
-        SELECT 1
-        FROM UserSignInMethod signInMethod
-        WHERE signInMethod.userId = P.id
-          AND signInMethod.type = 'email'
-          AND signInMethod.identifier LIKE '%${MysqlEscape(token)}%'
-    )`;
+    field.SqlGetQuickFilterElementsForToken =
+        token => getEmailSignInSearchExpression(token, `P.${field.table.pkMember}`);
     return field;
 };
 
@@ -403,8 +395,12 @@ const userBaseArgs = db3.defineTableDesc({
 
         // This search-only field's runtime member is signInEmailSearch; the old
         // array placement beside email did not make it a second email field.
-        signInEmailSearch: () => MakeUserSignInEmailSearchField(),
-        mergedIntoUserId: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+        signInEmailSearch: MakeUserSignInEmailSearchField,
+        mergedIntoUserId: memberName => new GhostField({
+            memberName,
+            specialFunction: db3.SqlSpecialColumnFunction.unavailableWhenSet,
+            _customAuth: denyGenericUserAuthenticationField
+        }),
         mergedAt: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
         hashedPassword: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
         calendarFeedToken: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),

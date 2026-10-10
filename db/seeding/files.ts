@@ -4,7 +4,7 @@ import { faker } from "@faker-js/faker";
 import type { File } from "@prisma/client";
 import { generatePublicId } from "../../src/server/publicId";
 import { sampleScore, createSampleRecording } from "./assets";
-import type { SeedingState } from "./base";
+import { seedContentAuthorship, type SeedingState } from "./base";
 import { choose, probability, randomDate, subset } from "./random";
 
 interface SeedAsset { extension: string; mimeType: string; bytes: Buffer; }
@@ -44,6 +44,7 @@ export async function seedFile(state: SeedingState, visiblePermissionId: number 
     await mkdir(state.assetDirectory, { recursive: true });
     // Never clear the upload directory: it can also hold manually uploaded files.
     await writeFile(path.join(state.assetDirectory, storedLeafName), new Uint8Array(asset.bytes));
+    const upload = seedContentAuthorship(state, state.now);
     const file = await state.db.file.create({ data: {
         publicId, bandId: state.band.band.id, storedLeafName, fileLeafName: `${options.name}.${asset.extension}`,
         description: probability(0.1) ? faker.lorem.paragraph() : "", isDeleted: options.isDeleted,
@@ -51,9 +52,9 @@ export async function seedFile(state: SeedingState, visiblePermissionId: number 
         // External-link examples still point to these real, band-authorized hosted bytes.
         externalURI: options.assetIndex === null && probability(0.5)
             ? `/api/files/download/${storedLeafName}?bandPublicId=${state.band.band.publicId}` : null,
-        uploadedAt: randomDate(new Date(state.now.valueOf() - 365 * 86_400_000), state.now),
-        fileCreatedAt: probability(0.5) ? randomDate(new Date(state.now.valueOf() - 730 * 86_400_000), state.now) : null,
-        uploadedByUserId: choose(state.band.members).userId, visiblePermissionId,
+        uploadedAt: upload.createdAt,
+        fileCreatedAt: probability(0.5) ? randomDate(new Date(upload.createdAt.valueOf() - 365 * 86_400_000), upload.createdAt) : null,
+        uploadedByUserId: upload.createdByUserId, visiblePermissionId,
     } });
     await state.db.bandFileTagAssignment.createMany({ data: subset(state.band.fileTags, 0, state.band.fileTags.length).map(tag => ({
         publicId: generatePublicId<"BandFileTagAssignment">(), fileId: file.id, bandFileTagId: tag.id,
@@ -74,6 +75,7 @@ export async function seedBandSampleFiles(state: SeedingState, firstSongId: numb
         await state.db.customLink.create({ data: {
             publicId: generatePublicId<"CustomLink">(), bandId: state.band.band.id, slug, name: slug,
             description: "Development sample asset", redirectType: "ServeFile", fileId: file.id, createdByUserId: state.band.manager.id,
+            createdAt: randomDate(file.uploadedAt, state.now),
         } });
         if (firstSongId !== null) {
             await state.db.fileSongTag.create({ data: { publicId: generatePublicId<"FileSongTag">(), fileId: file.id, songId: firstSongId } });

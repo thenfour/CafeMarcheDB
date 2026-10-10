@@ -56,10 +56,12 @@ describe.skipIf(!testUrl)("demo reset and generators on MySQL", () => {
     });
 
     it("keeps event responses, instruments, setlists and files inside their band", async () => {
+        const now = new Date("2026-10-08T12:00:00Z");
         const events = await database.event.findMany({ include: { segments: true, descriptionWikiPage: true, responses: { include: { bandUser: true, bandInstrument: true } },
             songLists: { include: { songs: { include: { song: true } } } } } });
         expect(events).toHaveLength(10);
         for (const event of events) {
+            expect(event.createdAt <= now && event.createdAt <= event.startsAt!).toBe(true);
             expect(event.endDateTime!.getTime() - event.startsAt!.getTime()).toBe(Number(event.durationMillis));
             expect(event.segments[0]?.dateTimeVersion).toBe(2);
             expect(event.descriptionWikiPage).toMatchObject({ bandId: event.bandId, namespace: "EventDescription", slug: `EventDescription/${event.publicId}` });
@@ -72,17 +74,42 @@ describe.skipIf(!testUrl)("demo reset and generators on MySQL", () => {
         expect(files).toHaveLength(4);
         expect(await database.customLink.count({ where: { redirectType: "ServeFile", fileId: { not: null } } })).toBe(4);
         for (const file of files) {
+            expect(file.uploadedAt <= now).toBe(true);
             const data = await readFile(path.join(assetDirectory, file.storedLeafName));
             expect(data.length).toBe(file.sizeBytes);
             expect(file.taggedSongs.every(link => link.song.bandId === file.bandId)).toBe(true);
         }
     });
 
+    it("seeds different account and band join dates with chronological wiki history", async () => {
+        const now = new Date("2026-10-08T12:00:00Z");
+        const users = await database.user.findMany();
+        const members = await database.bandUser.findMany({ include: { user: true, band: true } });
+        expect(new Set(users.map(user => user.createdAt.valueOf())).size).toBe(users.length);
+        expect(new Set(members.map(member => member.createdAt.valueOf())).size).toBe(members.length);
+        for (const member of members) {
+            expect(member.user.createdAt < member.createdAt && member.band.createdAt <= member.createdAt && member.createdAt <= now).toBe(true);
+        }
+        const sharedMemberships = members.filter(member => member.user.email === "shared@demo.invalid");
+        expect(sharedMemberships[0]?.createdAt).not.toEqual(sharedMemberships[1]?.createdAt);
+        for (const page of await database.wikiPage.findMany({ include: { revisions: true } })) {
+            expect(page.revisions.every(revision => page.createdAt && page.createdAt <= revision.createdAt && revision.createdAt <= now)).toBe(true);
+        }
+        expect((await database.action.findMany()).every(action => action.createdAt <= now)).toBe(true);
+        const responses = await database.eventSegmentUserResponse.findMany({ include: { bandUser: true, eventSegment: { include: { event: true } } } });
+        expect(responses.every(response => response.createdAt >= response.bandUser.createdAt
+            && response.createdAt >= response.eventSegment.event.createdAt && response.createdAt <= now)).toBe(true);
+    });
+
     it("repeats a reset with the same identities and removes manual edits", async () => {
         const before = await database.song.findMany({ select: { publicId: true, name: true, startBPM: true }, orderBy: { publicId: "asc" } });
+        const beforeMembers = await database.bandUser.findMany({ select: { publicId: true, createdAt: true }, orderBy: { publicId: "asc" } });
+        const beforeUsers = await database.user.findMany({ select: { publicId: true, createdAt: true }, orderBy: { publicId: "asc" } });
         await database.song.update({ where: { publicId: before[0]!.publicId }, data: { name: "Manual test edit" } });
         reset();
         expect(await database.song.findMany({ select: { publicId: true, name: true, startBPM: true }, orderBy: { publicId: "asc" } })).toEqual(before);
+        expect(await database.bandUser.findMany({ select: { publicId: true, createdAt: true }, orderBy: { publicId: "asc" } })).toEqual(beforeMembers);
+        expect(await database.user.findMany({ select: { publicId: true, createdAt: true }, orderBy: { publicId: "asc" } })).toEqual(beforeUsers);
     }, 120_000);
 
     it("leaves populated data intact when options or database selection are rejected", async () => {

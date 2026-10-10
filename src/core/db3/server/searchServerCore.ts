@@ -198,7 +198,7 @@ function calculateFilterQuery(
             P.${table.publicIdMember} publicId,
             ${sortElements.select.map(m => `${m.expression} ${m.alias}`).join(", \n")}
         FROM 
-            ${table.tableName} P
+            ${table.sqlTableName} P
             ${sortElements.join.join(", \n")}
         WHERE
             ${SqlCombineAndExpression(whereAnd)}
@@ -215,29 +215,40 @@ const searchDomains = [
     {
         table: db3.xEvent,
         view: db3.eventSearchView,
-        permission: Permission.view_events_nonpublic,
+        permissions: [Permission.view_events_nonpublic],
         // TODO: these should be well-typed such that a misspelled symbol
         // would fail to compile!
         sorts: ["name", "startsAt"],
-        criteria: ["startsAt", "type", "status", "tags"],
+        criteria: ["startsAt", "type", "status", "tags"].map(column => ({ column, permission: Permission.view_events_nonpublic })),
     },
     {
         table: db3.xSong,
         view: db3.songSearchView,
-        permission: Permission.view_songs,
+        permissions: [Permission.view_songs],
         // TODO: these should be well-typed such that a misspelled symbol
         // would fail to compile!
         sorts: ["name", "startBPM", "introducedYear", "lengthSeconds"],
-        criteria: ["tags"]
+        criteria: [{ column: "tags", permission: Permission.view_songs }],
     },
     {
         table: db3.xFile,
         view: db3.fileSearchView,
-        permission: Permission.view_files,
+        permissions: [Permission.view_files],
         // TODO: these should be well-typed such that a misspelled symbol
         // would fail to compile!
         sorts: ["fileLeafName", "uploadedAt", "sizeBytes", "mimeType"],
-        criteria: ["tags", "taggedInstruments"],
+        criteria: ["tags", "taggedInstruments"].map(column => ({ column, permission: Permission.view_files })),
+    },
+    {
+        table: db3.xBandUser,
+        view: db3.bandUserSearchView,
+        permissions: [Permission.search_users, Permission.view_users_basic_info],
+        sorts: ["user", "createdAt"],
+        criteria: [
+            { column: "bandUserTagAssignments", permission: Permission.view_users_basic_info },
+            { column: "bandUserInstruments", permission: Permission.view_users_basic_info },
+            { column: "bandRole", permission: Permission.manage_users },
+        ],
     },
 ];
 
@@ -247,6 +258,10 @@ function requireSearchDomain(tableID: string) {
         return requireRestoredApplicationFeature("domainSearch");
     }
     return domain;
+}
+
+export function isRestoredSearchDomain(tableID: string): boolean {
+    return searchDomains.some(domain => domain.table.tableID.toLowerCase() === tableID.toLowerCase());
 }
 
 export async function GetSearchResultsCore(input: GetSearchResultsInput, authorization: CMServerAuthorization,
@@ -261,8 +276,11 @@ export async function GetSearchResultsCore(input: GetSearchResultsInput, authori
 function authorizeSearch(args: GetSearchResultsInput, auth: CMServerAuthorization): DiscreteCriterion[] {
     const domain = requireSearchDomain(args.tableID);
     auth.requireUser();
-    auth.requirePermission(domain.permission);
-    if (args.bandPublicId !== auth.requireBand().publicId || args.includeDeleted === true) {
+    for (const permission of domain.permissions) {
+        auth.requirePermission(permission);
+    }
+    if (args.bandPublicId !== auth.requireBand().publicId
+        || (args.includeDeleted === true && !domain.table.getSearchCapabilities(auth).includeDeleted)) {
         throw new AuthorizationError();
     }
     if (args.viewID && args.viewID !== domain.view.viewID) {
@@ -287,12 +305,19 @@ function authorizeSearch(args: GetSearchResultsInput, auth: CMServerAuthorizatio
         }
     }
     return args.discreteCriteria.filter(criterion => {
+        const policy = domain.criteria.find(policy => policy.column === criterion.db3Column);
+        if (policy && !auth.hasPermission(policy.permission)) {
+            if (criterion.behavior === DiscreteCriterionFilterType.alwaysMatch) {
+                return false;
+            }
+            throw new AuthorizationError();
+        }
         if (criterion.behavior === DiscreteCriterionFilterType.alwaysMatch
             && !table.authorizeColumnForView({ model: null, auth, columnName: criterion.db3Column })) {
             return false;
         }
         requireReadableColumn(criterion.db3Column);
-        if (!domain.criteria.includes(criterion.db3Column)) {
+        if (!policy) {
             throw new SearchInputError(`Unsupported search criterion ${criterion.db3Column}.`);
         }
         return true;
@@ -383,6 +408,7 @@ async function loadSearchPage(search: SearchExecution, primaryKeys: number[]): P
         bandPublicId: args.bandPublicId,
         routeLocale: args.routeLocale,
         browserLanguages: args.browserLanguages,
+        includeDeleted: args.includeDeleted,
         filter: {},
         orderBy: undefined,
         cmdbQueryContext: "domain search results",

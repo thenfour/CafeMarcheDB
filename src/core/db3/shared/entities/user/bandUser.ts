@@ -1,12 +1,14 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { Permission } from "shared/permissions";
+import { MysqlEscape } from "shared/mysqlUtils";
 import type { BandUserPublicId } from "shared/publicId";
 import { defineAuthMap, defineTable, makeColumnSet, prismaModel, SqlSpecialColumnFunction } from "../../db3core";
-import { BoolField, foreignRef, MakeCreatedAtField, MakePKfield, MakePublicIdField, tagsRef } from "../../columnTypes/xTableColumnTypes";
+import { BoolField, GhostField, foreignRef, MakeCreatedAtField, MakePKfield, MakePublicIdField, tagsRef } from "../../columnTypes/xTableColumnTypes";
 import { GenericIntegerField } from "../../columnTypes/genericInteger";
 import { serverOwnedField } from "../../columnTypes/inherited";
-import { xUserMinimum } from "../../schema/user";
+import { xUserMinimum, xUserContactInfoAuthMap, xUserEmailAuthMap } from "../../schema/user";
+import { getEmailSignInSearchExpression } from "../../schema/userSignInMethod";
 import { kReadOnlyAuthMap } from "../common/entityCommon";
 import { xBandRole } from "./bandRoleViews";
 
@@ -26,7 +28,46 @@ const managerAssignments = defineAuthMap({
     PreMutateAsOwner: Permission.manage_users,
 });
 
-// Membership creation, roles and deactivation belong to dedicated administration flows.
+/** Search-only fields borrow the shared person's field policy; no contact data is stored on membership. */
+function personSearchField(
+    memberName: string,
+    personField: typeof xUserMinimum.fields.email | typeof xUserMinimum.fields.phone,
+    authMap: typeof xUserEmailAuthMap | typeof xUserContactInfoAuthMap,
+): GhostField {
+    const field = new GhostField({
+        memberName, authMap,
+    });
+    // Resolve the relation after its table has initialized; its FK is declared only there.
+    field.SqlGetQuickFilterElementsForToken = token => {
+        const relation = xBandUser.fields.user;
+        const person = relation.getForeignTableSchema();
+        return `EXISTS (SELECT 1 FROM ${person.sqlTableName} SU WHERE SU.${person.pkMember} = P.${relation.fkidMember} AND SU.${personField.member} LIKE '%${MysqlEscape(token)}%')`;
+    };
+    return field;
+}
+
+function memberSignInEmailSearchField(memberName: string): GhostField {
+    const field = new GhostField({
+        memberName,
+        authMap: defineAuthMap({ ...kReadOnlyAuthMap, PostQuery: Permission.sysadmin, PostQueryAsOwner: Permission.sysadmin }),
+    });
+    field.SqlGetQuickFilterElementsForToken = token => getEmailSignInSearchExpression(token, `P.${xBandUser.fields.user.fkidMember}`);
+    return field;
+}
+
+function memberPersonField(memberName: string) {
+    const field = foreignRef(() => xUserMinimum, {
+        fkidMember: "userId", specialFunction: SqlSpecialColumnFunction.ownerUser, authMap: kReadOnlyAuthMap,
+        requireVisibleTarget: true, sortBy: "name",
+        getQuickFilterWhereClause: (query): Prisma.BandUserWhereInput => ({ user: { name: { contains: query } } }),
+    })(memberName);
+    field.SqlGetQuickFilterElementsForToken = token => {
+        const person = field.getForeignTableSchema();
+        return `EXISTS (SELECT 1 FROM ${person.sqlTableName} SU WHERE SU.${person.pkMember} = P.${field.fkidMember} AND SU.${xUserMinimum.fields.name.member} LIKE '%${MysqlEscape(token)}%')`;
+    };
+    return field;
+}
+
 export const xBandUser = defineTable({
     tableName: "bandUser",
     tableUniqueName: "BandUser",
@@ -35,6 +76,7 @@ export const xBandUser = defineTable({
     bandScope: { member: "bandId", managePermission: Permission.manage_users },
     readConsistency: "snapshot", deletePolicy: "disabled",
     viewDeletedPermission: Permission.recover_users,
+    searchCapabilities: { includeDeleted: true },
     tableAuthMap: {
         View: Permission.view_users_basic_info,
         ViewOwn: Permission.login,
@@ -59,14 +101,26 @@ export const xBandUser = defineTable({
         membershipIds?: string[];
         tagId?: number; instrumentId?: number; roleId?: number | null; membershipStatus?: string;
     }, auth): Prisma.BandUserWhereInput[] => {
-        const status = z.enum(["active", "inactive"]).parse(params.membershipStatus ?? "active");
+        const status = params.membershipStatus === undefined ? undefined : z.enum(["active", "inactive"]).parse(params.membershipStatus);
         if (status === "inactive") {
             auth.requirePermission(Permission.recover_users);
         }
         // Deleted-row authorization still requires includeDeleted; shared people must remain active.
         const clauses: Prisma.BandUserWhereInput[] = [{
-            ...activeBandMembershipWhere(), isDeleted: status === "inactive",
+            // LSMB todo: this is a design problem.
+            // 1. this table def should not be responsible for enforcing user entity policies.
+            // 2. table defs are not meant to enforce this anyway; db3 has built-in routines for visibility / auth.
+            // code like this gives the false impression that if the user entity changes policies,
+            // everywhere it's used needs to be updated. those policies should be described on the user entity only,
+            // and enforced through db3.
+            user: {
+                isDeleted: false,
+                mergedIntoUserId: null,
+            }
         }];
+        if (status !== undefined) {
+            clauses.push({ isDeleted: status === "inactive" });
+        }
         if (params.personPublicId !== undefined) {
             // Keep person URLs; the predicate still starts from authorized memberships.
             clauses.push({ user: { publicId: xUserMinimum.parseIdentity(params.personPublicId) } });
@@ -124,11 +178,7 @@ export const xBandUser = defineTable({
                 PostQueryAsOwner: Permission.never_grant
             })
         })),
-        user: foreignRef(() => xUserMinimum, {
-            fkidMember: "userId", specialFunction: SqlSpecialColumnFunction.ownerUser, authMap: kReadOnlyAuthMap,
-            sortBy: "name",
-            getQuickFilterWhereClause: (query): Prisma.BandUserWhereInput => ({ user: { name: { contains: query } } }),
-        }),
+        user: memberPersonField,
         bandRole: foreignRef(() => xBandRole, {
             fkidMember: "bandRoleId",
             allowNull: true,
@@ -150,6 +200,13 @@ export const xBandUser = defineTable({
             getQuickFilterWhereClause: () => false,
             getCustomFilterWhereClause: () => false,
         }),
+
+        // synthetic fields to aide search functionality.
+        // lsmb todo: evaluate whether this is a design risk. fields in this list are meant to directly
+        // represent db schema fields.
+        emailSearch: memberName => personSearchField(memberName, xUserMinimum.fields.email, xUserEmailAuthMap),
+        phoneSearch: memberName => personSearchField(memberName, xUserMinimum.fields.phone, xUserContactInfoAuthMap),
+        signInEmailSearch: memberSignInEmailSearchField,
     }),
 });
 

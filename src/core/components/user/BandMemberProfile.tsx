@@ -13,7 +13,8 @@ import { xUserMinimum } from "src/core/db3/shared/schema/user";
 import { usePresentation } from "src/locale/components/PresentationProvider";
 import { useLocale } from "src/locale/components/useLocale";
 import { CMLink } from "../CMLink";
-import { CMButton } from "../CMCoreComponents2";
+import { AdminInspectObject, CMButton, CMButtonGroup, KeyValueTable } from "../CMCoreComponents2";
+import { CMChip, CMChipContainer } from "../CMChip";
 import { ResponsiveDialog } from "../ResponsiveDialog";
 import { BandUserInstrumentsEditor } from "./BandUserInstruments";
 import { BandUserTagsEditor } from "./BandUserTags";
@@ -21,6 +22,7 @@ import { BandUserRoleEditor } from "./BandUserRoles";
 import { BandUserLifecycleControl } from "./BandUserLifecycle";
 import { withMemberPresentation } from "./bandMemberLinks";
 import { useMemberAssignmentSave } from "./useMemberAssignmentSave";
+import { UserDetail } from "./UserDetail";
 
 export function BandMemberProfileEditor({ member, refetch }: {
     readonly member: BandUserProfileDto; readonly refetch: () => Promise<unknown>;
@@ -37,7 +39,7 @@ export function BandMemberProfileEditor({ member, refetch }: {
         execute: command.invoke, refetch, refreshRelatedData: presentation.invalidate, onCommitted: () => setOpen(false),
         messages: { saved: "membership.profile.saved", failed: "membership.profile.failed", refreshFailed: "membership.profile.refreshFailed" },
     });
-    return <Stack spacing={1}>
+    return <Stack spacing={1} alignItems="flex-start">
         {error && !open && <Alert severity="error">{error}</Alert>}
         {canEdit && <CMButton disabled={saving} onClick={() => {
             setName(member.user.name ?? "");
@@ -99,20 +101,35 @@ function LoadedMemberProfile({ personId }: { readonly personId: UserPublicId }) 
         return <Alert severity="info">{locale.getPlainString("membership.profile.notFound")}</Alert>;
     }
     const member = bandUserProfileView.parseDto(row);
-    return <Stack spacing={3}>
+    return <>
         <Breadcrumbs>
             {canOpenDirectory && <CMLink href={withMemberPresentation("/backstage/users", context)}>{locale.getPlainString("membership.directory.title")}</CMLink>}
             <Typography>{member.user.name}</Typography>
         </Breadcrumbs>
-        <Typography variant="h4">{member.user.name}</Typography>
-        {member.user.email !== undefined && <Typography>{locale.getPlainString("membership.profile.email")}: {member.user.email}</Typography>}
-        {member.user.phone !== undefined && <Typography>{locale.getPlainString("membership.profile.phone")}: {member.user.phone || "—"}</Typography>}
-        <BandMemberProfileEditor member={member} refetch={refetch} />
-        <Stack><Typography variant="h6">{locale.getPlainString("membership.roles.role")}</Typography><MemberProfileRole member={member} refetch={refetch} /></Stack>
-        <Stack><Typography variant="h6">{locale.getPlainString("membership.instruments.title")}</Typography><BandUserInstrumentsEditor member={member} refetch={refetch} /></Stack>
-        <Stack><Typography variant="h6">{locale.getPlainString("membership.tags.title")}</Typography><BandUserTagsEditor member={member} refetch={refetch} /></Stack>
-        <BandUserLifecycleControl member={member} refetch={refetch} />
-    </Stack>;
+        <div className="EventDetail contentSection event">
+            <div className="content">
+                <div className="titleLine">
+                    <div className="titleText"><div className="titleLink"><span className="title">{member.user.name}</span></div></div>
+                    <MemberProfileRole member={member} refetch={refetch} />
+                    <div className="flex-spacer" />
+                    <AdminInspectObject src={member} />
+                </div>
+                <BandUserTagsEditor member={member} refetch={refetch} />
+                <BandUserInstrumentsEditor member={member} refetch={refetch} orientation="horizontal" />
+                <CMButtonGroup>
+                    <BandMemberProfileEditor member={member} refetch={refetch} />
+                    <BandUserLifecycleControl member={member} refetch={refetch} />
+                </CMButtonGroup>
+                <KeyValueTable data={{
+                    ...(member.user.phone !== undefined ? { [locale.getPlainString("membership.profile.phone")]:
+                        <CMChipContainer>{member.user.phone ? <CMChip>{member.user.phone}</CMChip> : <span>—</span>}</CMChipContainer> } : {}),
+                    ...(member.user.email !== undefined ? { [locale.getPlainString("membership.profile.email")]:
+                        <CMChipContainer><CMChip>{member.user.email}</CMChip></CMChipContainer> } : {}),
+                }} />
+                <UserDetail person={member.user} />
+            </div>
+        </div>
+    </>;
 }
 
 export function BandMemberProfile({ personId }: { readonly personId: UserPublicId }) {

@@ -126,7 +126,9 @@ describe("user recovery", () => {
         } else {
             await expect(invokeResolver(db3queries, forgeDb3Query("User", { includeDeleted: true }), ctx)).rejects.toThrow();
             await expect(invokeResolver(getUserExtraInfo, { userId: target.publicId }, ctx)).rejects.toThrow();
-            await expect(invokeResolver(getUserManagementCapabilities, { userId: target.publicId }, ctx)).rejects.toThrow();
+            // Capabilities report policy decisions; recovery-read restrictions belong to profile reads.
+            expect(await invokeResolver(getUserManagementCapabilities, { userId: target.publicId }, ctx))
+                .toMatchObject({ canDeactivate: false, canImpersonate: false });
         }
     });
 

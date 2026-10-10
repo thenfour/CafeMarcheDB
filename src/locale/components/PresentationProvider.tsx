@@ -27,7 +27,7 @@ export async function invalidatePresentation(): Promise<void> {
     if (typeof window !== "undefined") {
         window.dispatchEvent(new Event(changeEvent));
         try { window.localStorage.setItem(changeEvent, `${Date.now()}/${Math.random()}`); } catch {
-            // Storage may be disabled; focus/refetch still refreshes the current tab.
+            // Storage may be disabled; the local change event still refreshes this tab.
         }
     }
 }
@@ -74,15 +74,11 @@ export function PresentationProvider({ initial, bandPublicId, routeLocale, child
     const [refresh, setRefresh] = React.useState(0);
     React.useEffect(() => {
         const update = () => setRefresh(value => value + 1);
-        // Keep the loaded page visible while a focus refresh waits for its snapshot.
-        const focusUpdate = () => React.startTransition(update);
         const storageUpdate = (event: StorageEvent) => { if (event.key === changeEvent) update(); };
         window.addEventListener(changeEvent, update);
-        window.addEventListener("focus", focusUpdate);
         window.addEventListener("storage", storageUpdate);
         return () => {
             window.removeEventListener(changeEvent, update);
-            window.removeEventListener("focus", focusUpdate);
             window.removeEventListener("storage", storageUpdate);
         };
     }, []);

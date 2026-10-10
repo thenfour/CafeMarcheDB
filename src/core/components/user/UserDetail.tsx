@@ -1,5 +1,81 @@
-// Replaced by band membership profiles/directory. Retain the full legacy behavior below until parity is verified.
-export {};
+import React, { Suspense } from "react";
+import { useQuery } from "@blitzjs/rpc";
+import { useRouter } from "next/router";
+import { Permission } from "shared/permissions";
+import { slugify } from "shared/rootroot";
+import type { UserPublicId } from "shared/publicId";
+import getUserManagementCapabilities from "src/auth/queries/getUserManagementCapabilities";
+import db3queries from "src/core/db3/queries/db3queries";
+import { useDB3QueryContext } from "src/core/db3/components/useDB3Context";
+import { platformUserEditorView } from "src/core/db3/shared/entities/user/platformUser";
+import { useLocale } from "src/locale/components/useLocale";
+import { gIconMap } from "../../db3/components/IconMap";
+import { CMButtonGroup } from "../CMCoreComponents2";
+import { CMTab, CMTabPanel } from "../TabPanel";
+import { useDashboardContext, useRecordFeatureUse } from "../dashboardContext/DashboardContext";
+import { ActivityFeature } from "../featureReports/activityTracking";
+import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
+import { UserAdminPanel } from "./UserAdminPanel";
+import { UserSignInMethodsButton } from "./UserSignInMethodsButton";
+import { UserIdentityIndicator } from "./UserIdentityIndicator";
+import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabContent, UserWikiContributionsTabContent } from "./UserAnalyticTables";
+import { withMemberPresentation } from "./bandMemberLinks";
+
+interface ProfilePerson { readonly publicId: UserPublicId; readonly name?: string }
+const tabs = ["attendance", "credits", "wiki", "massAnalysis"] as const;
+function isProfileTab(value: unknown): value is typeof tabs[number] {
+    return tabs.some(tab => tab === value);
+}
+
+function ProfileAccountControls({ person }: { readonly person: ProfilePerson }) {
+    const context = useDB3QueryContext();
+    const dashboard = useDashboardContext();
+    const [result, { refetch }] = useQuery(db3queries, { ...context,
+        table: { tableID: platformUserEditorView.tableID, tableName: platformUserEditorView.tableName, viewID: platformUserEditorView.viewID },
+        filter: { publicIds: [person.publicId] }, take: 1, cmdbQueryContext: "profile account controls",
+    }, { staleTime: 0, cacheTime: 0, keepPreviousData: false });
+    const [capabilities, { refetch: refetchCapabilities }] = useQuery(getUserManagementCapabilities, { userId: person.publicId },
+        { staleTime: 0, cacheTime: 0, keepPreviousData: false });
+    const row = result.items[0];
+    if (!row) {
+        return null;
+    }
+    const user = platformUserEditorView.hydrate(platformUserEditorView.parseDto(row), dashboard.referenceStore);
+    const refresh = () => { void Promise.all([refetch(), refetchCapabilities()]); };
+    return <CMButtonGroup>
+        <UserAdminPanel user={user} capabilities={capabilities} refetch={refresh} />
+        {dashboard.isAuthorized(Permission.sysadmin) && <UserIdentityIndicator user={user} />}
+        {capabilities.canResetPassword && <AdminResetPasswordButton user={user} />}
+        {capabilities.canManageSignInMethods && <UserSignInMethodsButton user={user} onChanged={refresh} />}
+    </CMButtonGroup>;
+}
+
+// Account authority is global; analytics retain the original sysadmin presentation gate.
+export function UserDetail({ person }: { readonly person: ProfilePerson }) {
+    const dashboard = useDashboardContext();
+    const context = useDB3QueryContext();
+    const router = useRouter();
+    const locale = useLocale();
+    useRecordFeatureUse({ feature: ActivityFeature.profile_view, context: `profile/${person.publicId}` });
+    const path = router.query.id_slug_tab;
+    const requested = Array.isArray(path) ? path[2] : undefined;
+    const selected = isProfileTab(requested) ? requested : "attendance";
+    return <>
+        {dashboard.isAuthorized(Permission.manage_global_users) && <Suspense><ProfileAccountControls person={person} /></Suspense>}
+        {dashboard.isAuthorized(Permission.sysadmin) && <CMTabPanel selectedTabId={selected} handleTabChange={(_, value) => {
+            if (!isProfileTab(value)) {
+                return;
+            }
+            const uri = `/backstage/user/${person.publicId}/${slugify(person.name || "member")}/${value}`;
+            void router.push(withMemberPresentation(uri, context), undefined, { shallow: true });
+        }}>
+            <CMTab thisTabId="attendance" summaryTitle="Attendance" summaryIcon={gIconMap.Check()}><UserAttendanceTabContent user={person} /></CMTab>
+            <CMTab thisTabId="credits" summaryTitle="Credits" summaryIcon={gIconMap.Comment()}><UserCreditsTabContent user={person} /></CMTab>
+            <CMTab thisTabId="wiki" summaryTitle="Wiki Contributions" summaryIcon={gIconMap.Article()}><UserWikiContributionsTabContent user={person} /></CMTab>
+            <CMTab thisTabId="massAnalysis" summaryTitle={locale.getPlainString("membership.profile.analysis")} summaryIcon={gIconMap.Info()}><UserMassAnalysisTabContent user={person} /></CMTab>
+        </CMTabPanel>}
+    </>;
+}
 
 // MIGRATION_RESTORE: role-administration
 // Source: ab71102f2df004302ff85cb652a1be4f49b54191:src/core/components/user/UserDetail.tsx:1-286

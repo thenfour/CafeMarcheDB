@@ -123,3 +123,13 @@ export function demoId(config: Pick<DemoConfig, "seed">, key: string): string {
 export function demoChoice(config: Pick<DemoConfig, "seed">, key: string, count: number): number {
     return createHash("sha256").update(`${config.seed}:${key}`).digest().readUInt32BE(0) % count;
 }
+
+export function demoDaysAgo(config: Pick<DemoConfig, "referenceDate">, days: number): Date {
+    return new Date(new Date(`${config.referenceDate}T12:00:00Z`).valueOf() - days * 86_400_000);
+}
+
+/** Repeatable dates use the full interval, independently of insertion order. */
+export function demoDateBetween(config: Pick<DemoConfig, "seed">, key: string, earliest: Date, latest: Date): Date {
+    const fraction = demoChoice(config, `${key}:date`, 1_000_001) / 1_000_000;
+    return new Date(earliest.valueOf() + Math.floor((latest.valueOf() - earliest.valueOf()) * fraction));
+}

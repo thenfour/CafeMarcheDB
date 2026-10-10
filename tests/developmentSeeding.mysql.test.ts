@@ -90,6 +90,10 @@ describe.skipIf(!testUrl)("restored development seeding on MySQL", () => {
             songLists: { include: { songs: { include: { song: true } } } }, descriptionWikiPage: true } });
         expect(events.length).toBeGreaterThan(30);
         for (const event of events) {
+            expect(event.createdAt <= now).toBe(true);
+            if (event.startsAt) {
+                expect(event.createdAt <= event.startsAt).toBe(true);
+            }
             const bounds = await calculateEventDateBoundsUpdatePatch(database, event.id, cancelled);
             expect(event).toMatchObject({ ...bounds, durationMillis: BigInt(bounds.durationMillis) });
             expect(event.segments.every(segment => segment.dateTimeVersion === 2)).toBe(true);
@@ -104,18 +108,26 @@ describe.skipIf(!testUrl)("restored development seeding on MySQL", () => {
         }
         const attendance = await database.eventSegmentUserResponse.findMany({ include: { bandUser: true, eventSegment: { include: { event: true } } } });
         expect(attendance.every(response => response.bandUser.bandId === response.eventSegment.event.bandId)).toBe(true);
+        expect(attendance.every(response => response.createdAt >= response.bandUser.createdAt
+            && response.createdAt >= response.eventSegment.event.createdAt && response.createdAt <= now)).toBe(true);
     });
 
     it("writes real file bytes and coherent wiki/activity references", async () => {
         const files = await database.file.findMany({ include: { taggedSongs: { include: { song: true } }, taggedEvents: { include: { event: true } } } });
         expect(files.length).toBeGreaterThan(4);
         for (const file of files) {
+            expect(file.uploadedAt <= now).toBe(true);
+            if (file.fileCreatedAt) {
+                expect(file.fileCreatedAt <= file.uploadedAt).toBe(true);
+            }
             expect((await readFile(path.join(assetDirectory, file.storedLeafName))).length).toBe(file.sizeBytes);
             expect(file.taggedSongs.every(link => link.song.bandId === file.bandId)).toBe(true);
             expect(file.taggedEvents.every(link => link.event.bandId === file.bandId)).toBe(true);
         }
         const pages = await database.wikiPage.findMany({ include: { currentRevision: true, revisions: true } });
         for (const page of pages) {
+            expect(page.createdAt).not.toBeNull();
+            expect(page.revisions.every(revision => page.createdAt && page.createdAt <= revision.createdAt && revision.createdAt <= now)).toBe(true);
             expect(page.currentRevision?.wikiPageId).toBe(page.id);
             expect(page.currentRevision!.createdAt.valueOf()).toBe(Math.max(...page.revisions.map(revision => revision.createdAt.valueOf())));
         }
@@ -126,6 +138,23 @@ describe.skipIf(!testUrl)("restored development seeding on MySQL", () => {
             expect(!action.event || action.event.bandId === action.bandId).toBe(true);
             expect(!action.song || action.song.bandId === action.bandId).toBe(true);
             expect(!action.wikiPage || action.wikiPage.bandId === action.bandId).toBe(true);
+        }
+    });
+
+    it("varies account, membership and content dates while preserving their chronology", async () => {
+        const users = await database.user.findMany();
+        const members = await database.bandUser.findMany({ include: { user: true, band: true } });
+        const events = await database.event.findMany();
+        expect(new Set(users.map(user => user.createdAt.valueOf())).size).toBe(users.length);
+        expect(new Set(members.map(member => member.createdAt.valueOf())).size).toBe(members.length);
+        expect(new Set(events.map(event => event.createdAt.valueOf())).size).toBe(events.length);
+        for (const member of members) {
+            expect(member.user.createdAt <= member.createdAt && member.band.createdAt <= member.createdAt && member.createdAt <= now).toBe(true);
+        }
+        for (const event of events) {
+            expect(event.createdAt <= now).toBe(true);
+            const creator = members.find(member => member.bandId === event.bandId && member.userId === event.createdByUserId);
+            expect(creator && creator.createdAt <= event.createdAt).toBe(true);
         }
     });
 

@@ -1,17 +1,19 @@
 import { faker } from "@faker-js/faker";
 import type { WikiPage } from "@prisma/client";
 import { generatePublicId } from "../../src/server/publicId";
-import { randomVisibilityPermissionId, type SeedingState } from "./base";
+import { randomVisibilityPermissionId, seedContentAuthorship, type SeedingState } from "./base";
 import { choose, probability, randomDate, subset } from "./random";
 
 export async function seedWikiPage(state: SeedingState, slug: string, visiblePermissionId: number | null,
     title: string, content: string, revisionCount: number): Promise<WikiPage> {
+    const authorship = seedContentAuthorship(state, state.now);
     const page = await state.db.wikiPage.create({ data: {
         publicId: generatePublicId<"WikiPage">(), bandId: state.band.band.id, slug,
         namespace: slug.includes("/") ? slug.slice(0, slug.lastIndexOf("/")) : null,
-        visiblePermissionId, createdByUserId: choose(state.band.members).userId, contentVersion: revisionCount,
+        visiblePermissionId, ...authorship, contentVersion: revisionCount,
     } });
-    const dates = Array.from({ length: revisionCount }, () => randomDate(new Date(state.now.valueOf() - 365 * 86_400_000), state.now))
+    const dates = Array.from({ length: revisionCount }, (_, index) => index === 0 ? authorship.createdAt
+        : randomDate(authorship.createdAt, state.now))
         .sort((a, b) => a.valueOf() - b.valueOf());
     let latestRevisionId: number | null = null;
     for (const [index, createdAt] of dates.entries()) {
@@ -19,7 +21,7 @@ export async function seedWikiPage(state: SeedingState, slug: string, visiblePer
             publicId: generatePublicId<"WikiPageRevision">(), wikiPageId: page.id,
             name: index === revisionCount - 1 ? title : faker.lorem.sentence(3),
             content: index === revisionCount - 1 ? content : faker.lorem.paragraphs(faker.number.int({ min: 1, max: 5 })),
-            createdAt, createdByUserId: probability(0.9) ? choose(state.band.members).userId : null,
+            createdAt, createdByUserId: probability(0.9) ? choose(state.band.members.filter(member => member.createdAt <= createdAt)).userId : null,
         } });
         latestRevisionId = revision.id;
     }

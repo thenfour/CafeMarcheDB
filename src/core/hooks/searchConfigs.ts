@@ -5,6 +5,26 @@ import { SongsFilterSpec } from '../components/song/SongClientBaseTypes';
 import { EventsFilterSpec } from '../components/event/EventClientBaseTypes';
 import { WikiPagesFilterSpec } from '../components/wiki/WikiClientBaseTypes';
 import { FilesFilterSpec } from '../components/file/FileClientBaseTypes';
+import type { UsersFilterSpec } from '../components/user/UserClientBaseTypes';
+
+export const userSearchConfig = defineViewSearchConfig({
+    view: db3.bandUserSearchView,
+    getQueryArgs: (filter: UsersFilterSpec, offset: number, take: number) => ({
+        offset,
+        take,
+        includeDeleted: filter.includeDeleted,
+        refreshSerial: filter.refreshSerial,
+        sort: [
+            { db3Column: filter.orderByColumn === "name" ? "user" : "createdAt", direction: filter.orderByDirection }],
+        quickFilter: filter.quickFilter,
+        discreteCriteria: [
+            filter.tagFilter,
+            filter.roleFilter,
+            filter.instrumentFilter
+        ],
+    }),
+    errorMessage: "Failed to load more members.",
+});
 
 // Song search configuration
 export const songSearchConfig = defineViewSearchConfig({
