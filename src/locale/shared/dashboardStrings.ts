@@ -62,6 +62,7 @@ export const dashboardStrings = {
     "recovery.quickSearch.title": label("Quick search"),
     "recovery.quickSearch.description": label("Quick search and reference suggestions are temporarily unavailable while band support is restored."),
     "recovery.quickSearch.association": label("Association"),
+    "search.shell.placeholder": label("Search..."),
     "recovery.eventWorkflows.title": label("Events"),
     "recovery.eventWorkflows.description": label("Event search, details and editing are temporarily unavailable while band support is restored. Calendar subscriptions remain available."),
     "recovery.songWorkflows.title": label("Songs"),

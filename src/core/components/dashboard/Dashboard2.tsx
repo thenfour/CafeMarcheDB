@@ -38,6 +38,7 @@ import { useDialogViewportRect } from "../ResponsiveDialog";
 import { withMemberPresentation } from "../user/bandMemberLinks";
 import { ApplicationFrameProvider, useApplicationFrame, useApplicationFrameBackgroundRef } from "./ApplicationFrameContext";
 import { BandSelection } from "./BandSelection";
+import { MainSiteSearch } from "../search/MainSiteSearch";
 import {
     SideMenu
 } from "./MenuStructure";
@@ -323,7 +324,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                     </Link>
                 </Tooltip>
 
-                {/* Cross-domain search is deferred until its band-owned readers are restored. */}
+                <MainSiteSearch />
 
                 <Box sx={{ flexGrow: 1 }} />{/* spacing to separate left from right sides */}
 
@@ -565,119 +566,3 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
 
 
 export default Dashboard2;
-
-
-// MIGRATION_RESTORE: global-search
-// Source: 451c9cde3af65ffce804cb7360032dd001c681eb:src/core/components/dashboard/Dashboard2.tsx:32-32
-// Reason: The application shell no longer mounts MainSiteSearch.
-// Restore: Restore shell search with authorized band-scoped readers, selected-band links and context-safe cached results.
-// Verification: Test cross-domain results, visibility, keyboard navigation and band switches; exercise shell search in the built app.
-// SHA256: 99f32e6896bb07a4df32df6f26793d21a20dd1c5bf04d9c7259b5730e9196b77
-// MIGRATION_REFERENCE_BEGIN
-// import { MainSiteSearch } from "../search/MainSiteSearch";
-// MIGRATION_REFERENCE_END
-
-// MIGRATION_RESTORE: global-search
-// Source: 451c9cde3af65ffce804cb7360032dd001c681eb:src/core/components/dashboard/Dashboard2.tsx:270-365
-// Reason: The application shell no longer mounts MainSiteSearch.
-// Restore: Restore shell search with authorized band-scoped readers, selected-band links and context-safe cached results.
-// Verification: Test cross-domain results, visibility, keyboard navigation and band switches; exercise shell search in the built app.
-// SHA256: 64275a3355ddc50e80443acb9156217bb1f93aee5677e56fd2d5fd7d0562d38d
-// MIGRATION_REFERENCE_BEGIN
-// const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
-//     const theme = useTheme();
-//     const router = useRouter();
-//     const dashboardContext = useDashboardContext();
-//     //const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
-//
-//     const session = useSession();
-//     //let backgroundColor: string | undefined = undefined;
-//     // if (session.impersonatingFromUserId != null) {
-//     //     backgroundColor = "#844";
-//     // }
-//
-//     const brand = useBrand();
-//     const versionLabel = React.useMemo(() => formatVersionLabel(dashboardContext.serverStartupState), [dashboardContext.serverStartupState]);
-//     return (
-//         <AppBar
-//             position="static"
-//             sx={{
-//                 gridArea: 'appbar',
-//                 zIndex: theme.zIndex.drawer + 1
-//             }}
-//         >
-//             <Toolbar style={{ position: "relative" }}>
-//                 <div className={`headerIndicatorBar ${session.impersonatingFromUserId != null ? "impersonating" : "notImpersonating"}`}></div>
-//                 <IconButton
-//                     size="large"
-//                     edge="start"
-//                     color="inherit"
-//                     aria-label="toggle drawer"
-//                     sx={{ mr: 2, display: { xs: 'flex', md: 'none' } }}
-//                     onClick={props.onClickToggleDrawer}
-//                 >
-//                     <MenuIcon />
-//                 </IconButton>
-//                 <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
-//                     {brand.siteLogoUrl && (
-//                         <Link href={"/backstage"} aria-label="Home" style={{ display: 'inline-flex' }}>
-//                             <img src={brand.siteLogoUrl} alt="logo" style={{ display: 'block' }} />
-//                         </Link>
-//                     )}
-//                     <Typography
-//                         variant="h6"
-//                         noWrap
-//                         component="div"
-//                     >
-//                         {!IsNullOrWhitespace(brand.siteTitle) && <Link href={"/backstage"} className={`logo`}>{brand.siteTitle}</Link>}
-//                     </Typography>
-//                 </Box>
-//
-//                 <Tooltip title="Practice tools">
-//                     <Link href="/backstage/practice-tools" aria-label="Practice tools" className="freeButton globalMetronomeButton">
-//                         {gIconMap.VolumeDown()}
-//                     </Link>
-//                 </Tooltip>
-//
-//                 <MainSiteSearch />
-//
-//                 <Box sx={{ flexGrow: 1 }} />{/* spacing to separate left from right sides */}
-//
-//                 {dashboardContext.isAuthorized(Permission.sysadmin) && versionLabel && dashboardContext.serverStartupState && (
-//                     <Tooltip title={<>
-//                         <Typography variant="subtitle1">Server version</Typography>
-//                         {/* display version details breakdown and explanation */}
-//                         <Box sx={{ mt: 1 }}>
-//                             <Typography variant="body2">Tag: {dashboardContext.serverStartupState.versionTag}</Typography>
-//                             {dashboardContext.serverStartupState.versionCommitsSinceTag > 0 && (
-//                                 <Typography variant="body2">Commits since tag: {dashboardContext.serverStartupState.versionCommitsSinceTag}</Typography>)
-//                             }
-//                             {dashboardContext.serverStartupState.versionIsDirty && (
-//                                 <Typography variant="body2">With local modifications</Typography>
-//                             )}
-//                             <Typography variant="body2">Git commit date: <DateValue value={dashboardContext.serverStartupState.gitCommitDate} /></Typography>
-//                         </Box>
-//
-//                     </>}>
-//                         <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', sm: 'inline-flex' }, alignItems: 'center', cursor: 'pointer' }}>
-//                             <a href="/backstage/serverHealth" style={{ color: 'inherit', textDecoration: 'none' }}>
-//                                 {versionLabel}
-//                             </a>
-//                         </Typography>
-//                     </Tooltip>
-//                 )}
-//
-//                 {(session.userId != null) && <>
-//                     <ConnectionStatusIndicator />
-//                     <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-//                         <AppBarUserIcon_Desktop />
-//                     </Box>
-//                     <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-//                         <AppBarUserIcon_Mobile />
-//                     </Box>
-//                 </>}
-//             </Toolbar>
-//         </AppBar>
-//     );
-// }; // PrimarySearchAppBar
-// MIGRATION_REFERENCE_END

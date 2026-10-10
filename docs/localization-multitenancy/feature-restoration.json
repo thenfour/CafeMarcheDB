@@ -77,8 +77,14 @@
       "reason": "The application shell no longer mounts MainSiteSearch.",
       "restore": "Restore shell search with authorized band-scoped readers, selected-band links and context-safe cached results.",
       "verification": "Test cross-domain results, visibility, keyboard navigation and band switches; exercise shell search in the built app.",
-      "status": "pending",
-      "evidence": []
+      "status": "restored",
+      "evidence": [
+        "2026-10-10: Restored the f027830a9790 MainSiteSearch app-bar control through the existing AssociationAutocomplete and quick-search owner. Event, Instrument, Song and Wiki retain authored text/type prefixes, relevance weights, 100 candidates per plugin and 15 ranked results, original result composition, keyboard/mouse selection, clear and Escape. Public result identities and detail/Wiki links preserve explicit selected band and route locale. The reference shell excludes person suggestions.",
+        "Every HTTP/direct request uses explicit band and ordered presentation inputs, fresh login/read authority and shared table/row policies inside one repeatable snapshot. Required caller permissionPolicy chooses omitUnavailable for shell search and requireAll for pickers. Event dates match and display in the band timezone, including exclusive DST days. Event description matching independently authorizes current Wiki content and rejects malformed/foreign/private revision pointers. Instruments reuse resolved catalog views with inheritance, band overrides, blanks and localized descriptions; localized tag-name predicates alone follow the A1 exception.",
+        "Client query/band/ordered-language/authority changes abort or discard old responses and selections, including selection awaiting telemetry. New presentation snapshots refetch content and hide retired results; scope changes reset uncontrolled input. Anonymous/no-band contexts mount no search control. Required caller-owned searchEnabled retains recovery notices for deferred Markdown workflows rather than opening their dialogs when a plugin becomes available.",
+        "Validation: normal typecheck, targeted lint and normal production build with isolated output; 132 focused tests in eight files; 351 native MariaDB cases in twenty-four files including 23 new shell-search cases; seven built Chromium assertion groups. Native and client checks cover four domains, limits/grammar, independent bands/roles, localized/blank/inherited labels, Wiki ownership, DST, public links, current grants/accounts/memberships, strict transport and stale query/scope/telemetry responses. The complete suite retains 206 failed tests and ten suite-load failures with no added or removed failure titles; A1/B remain open.",
+        "Built checks verify French ranking/contextual links from a Tokyo browser, keyboard navigation, prefixes/Escape/clear/mouse Instrument detail, retired-content refresh, actual grant revocation, shared-person band switch while an old request is pending, independent Dutch results and no-band/anonymous boundaries. No page/RPC/unexpected search errors occurred; French/Dutch layouts were visually inspected. Temporary fixtures/grants/actions were cleaned up and the test server stopped. The restored component's missing React import was fixed. Only the two completed global-search archives/references are removed; quick-search/person/association/explorer/Markdown and full localized-name obligations remain preserved. See 04-implementation-plan.md#verification-status."
+      ]
     },
     {
       "id": "markdown-editing",
@@ -209,7 +215,8 @@
       "evidence": [
         "2026-10-09: Reopened only the existing Song quick-search plugin and original Song autocomplete for setlist editing. HTTP/direct requests require explicit band/public identities, fresh view_songs authorization and ordered presentation preferences; results retain authored-text/type grammar, relevance weights, the 100-candidate/15-result limits and contextual links. Other plugins and mixed/global requests remain guarded before content reads.",
         "Native Song tests cover ranking/limits/type grammar, two-band privacy and fresh revoked/inactive/deleted/merged/platform authorization. jsdom tests cover aborting/discarding stale query/band suggestions, ordered language preferences, selection/clearing and Escape. Built-browser setlist picking loads the authorized full Song and persists it. Localized tag-name predicates are the exact A1 text-search exception; tag-only queries return no suggestions until that matching is restored.",
-        "Still pending: other domain plugins, association selects, Markdown wiki/mention suggestions, protected explorer and shell search. Song-only picker recovery does not close the full quick-search obligation."
+        "2026-10-10: Event, Instrument and Wiki plugins join the existing Song plugin for the restored global shell. They share explicit band/presentation inputs, repeatable authorization, public identities, original ranking/type grammar and scope-safe AssociationAutocomplete behavior. Required permissionPolicy and searchEnabled keep caller authorization/readiness explicit. Native, endpoint, client and built-browser evidence is recorded under global-search and 04-implementation-plan.md#verification-status.",
+        "Still pending: person suggestions through selected-band memberships, association-select dialogs, Markdown wiki/mention suggestions, the protected explorer and full localized tag-name matching after A1. Deferred Markdown callers explicitly retain their recovery notice, and all quick-search source archives/references remain preserved. Four-plugin shell and Song-picker recovery do not close the full quick-search obligation."
       ]
     },
     {
@@ -931,18 +938,6 @@
       "featureId": "role-administration",
       "source": "30ce7de7d429973877201a8cf94c27979333cfc6:src/auth/queries/getAllRoles.ts:1-23",
       "sha256": "5244e8b648c4c6b5622153ec73ce512ed4d33942216cceab684928dc884d22dc"
-    },
-    {
-      "file": "src/core/components/dashboard/Dashboard2.tsx",
-      "featureId": "global-search",
-      "source": "451c9cde3af65ffce804cb7360032dd001c681eb:src/core/components/dashboard/Dashboard2.tsx:32-32",
-      "sha256": "99f32e6896bb07a4df32df6f26793d21a20dd1c5bf04d9c7259b5730e9196b77"
-    },
-    {
-      "file": "src/core/components/dashboard/Dashboard2.tsx",
-      "featureId": "global-search",
-      "source": "451c9cde3af65ffce804cb7360032dd001c681eb:src/core/components/dashboard/Dashboard2.tsx:270-365",
-      "sha256": "64275a3355ddc50e80443acb9156217bb1f93aee5677e56fd2d5fd7d0562d38d"
     },
     {
       "file": "src/setting/client/components/SettingMarkdown.tsx",

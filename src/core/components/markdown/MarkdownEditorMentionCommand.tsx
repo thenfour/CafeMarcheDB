@@ -147,6 +147,9 @@ const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> =
                     name="Item"
                     value={<>
                         <AssociationAutocomplete
+                            permissionPolicy="requireAll"
+                            // Mention selection remains deferred until its membership workflow is restored.
+                            searchEnabled={false}
                             allowedItemTypes={QuickSearchItemTypeSets.ForMarkdownReference}
                             disableEscapeHandling={true}
                             value={queryText}

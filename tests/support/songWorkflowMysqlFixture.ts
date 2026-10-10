@@ -67,8 +67,7 @@ export async function prepareSongs(tx: Prisma.TransactionClient, fixture: Settin
         sort: [{ db3Column: "name", direction: "asc" }], discreteCriteria: [{ db3Column: "tags", behavior: Behavior.alwaysMatch, options: [] }], ...patch,
     });
     const search = async (patch: Partial<GetSearchResultsInput> = {}) => GetSearchResultsCore(query(patch), c.auth, await snapshot());
-    const quick = async (keyword: string) => getQuickSearchResults({ bandPublicId, keyword, allowedItemTypes: [QuickSearchItemType.song], routeLocale: "fr-BE" }, c.auth, await snapshot());
+    const quick = async (keyword: string) => getQuickSearchResults({ bandPublicId, keyword, allowedItemTypes: [QuickSearchItemType.song], permissionPolicy: "requireAll", routeLocale: "fr-BE" }, c.auth, await snapshot());
     return { ...c, target, visibility, songs, foreign, file, firstTag, secondTag, hiddenTag, foreignTag, text, globalTag,
         snapshot, query, search, quick, root: songTransactionRoot(tx) };
 }
-

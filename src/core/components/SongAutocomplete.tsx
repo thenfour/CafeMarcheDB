@@ -42,7 +42,11 @@ function SongAutocompleteInBand({ value, onChange, fadedSongIds = [], autofocus 
         setInputValue("");
         onChange(fullResult.matchingItem);
     }, [pendingSelection, fullResult, onChange]);
-    return <AssociationAutocomplete<QuickSearchItemType.song> allowedItemTypes={songTypes} value={inputValue}
+    return <AssociationAutocomplete<QuickSearchItemType.song>
+        allowedItemTypes={songTypes}
+        permissionPolicy="requireAll"
+        searchEnabled
+        value={inputValue}
         autofocus={autofocus} onValueChange={setInputValue}
         onSelect={selection => {
             setPendingSelection(selection);

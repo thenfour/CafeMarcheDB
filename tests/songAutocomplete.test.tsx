@@ -25,7 +25,7 @@ const requests: Array<{ url: string; signal?: AbortSignal; resolve: (value: Resp
 const songTypes: readonly QuickSearchItemType.song[] = [QuickSearchItemType.song];
 const onSelect = vi.fn();
 const render = (query: string) => root.render(<AssociationAutocomplete<QuickSearchItemType.song>
-    value={query} allowedItemTypes={songTypes} onSelect={onSelect} />);
+    value={query} allowedItemTypes={songTypes} permissionPolicy="requireAll" searchEnabled onSelect={onSelect} />);
 const response = (name: string) => new Response(JSON.stringify([{ itemType: "song", id: "PickerSong000001", name,
     absoluteUri: `/backstage/song/PickerSong000001?bandPublicId=${band}`, matchStrength: 1, matchingField: "name" }]), { status: 200 });
 
@@ -79,7 +79,7 @@ describe("restored song association autocomplete", () => {
     it("clears uncontrolled text with Escape and the existing clear button", async () => {
         const changed = vi.fn();
         await act(async () => root.render(<AssociationAutocomplete<QuickSearchItemType.song>
-            defaultValue="Authored query" allowedItemTypes={songTypes} onSelect={onSelect} onValueChange={changed} />));
+            defaultValue="Authored query" allowedItemTypes={songTypes} permissionPolicy="requireAll" searchEnabled onSelect={onSelect} onValueChange={changed} />));
         const input = container.querySelector("input")!;
         await act(async () => Simulate.keyDown(input, { key: "Escape" }));
         expect(input.value).toBe("");

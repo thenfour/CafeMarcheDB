@@ -2,8 +2,9 @@ import React from "react";
 import { Autocomplete, InputBase } from "@mui/material";
 import { IsNullOrWhitespace } from "shared/utils";
 import type { PresentationInput } from "src/locale/shared/presentationInput";
-import { QuickSearchInputSchema, SongQuickSearchResultsSchema } from "src/core/db3/shared/quickSearchTypes";
+import { QuickSearchInputSchema, QuickSearchResultsSchema, supportsQuickSearchTypes, type QuickSearchPermissionPolicy } from "src/core/db3/shared/quickSearchTypes";
 import { useLocale } from "src/locale/components/useLocale";
+import { usePresentation } from "src/locale/components/PresentationProvider";
 import { requireRestoredApplicationFeature } from "src/core/shared/applicationRecovery";
 import { QuickSearchRecoveryNotice } from "./search/QuickSearchRecoveryNotice";
 import { QuickSearchItemMatch, QuickSearchItemType } from "shared/quickFilter";
@@ -19,25 +20,29 @@ export async function fetchObjectQuery<TItemType extends QuickSearchItemType>(
     keyword: string,
     allowedItemTypes: readonly TItemType[],
     presentation: PresentationInput,
+    permissionPolicy: QuickSearchPermissionPolicy,
     signal?: AbortSignal,
 ): Promise<QuickSearchItemMatch<TItemType>[]> {
-    if (allowedItemTypes.length === 0 || allowedItemTypes.some(type => type !== QuickSearchItemType.song)) {
+    if (!supportsQuickSearchTypes(allowedItemTypes)) {
         return requireRestoredApplicationFeature("quickSearch");
     }
-    const input = QuickSearchInputSchema.parse({ ...presentation, keyword, allowedItemTypes });
-    const query = new URLSearchParams({ keyword, allowedItemTypes: JSON.stringify(allowedItemTypes), bandPublicId: input.bandPublicId });
+    const input = QuickSearchInputSchema.parse({ ...presentation, keyword, allowedItemTypes, permissionPolicy });
+    const query = new URLSearchParams({ keyword, allowedItemTypes: JSON.stringify(allowedItemTypes), bandPublicId: input.bandPublicId, permissionPolicy });
     if (input.routeLocale) {
         query.set("routeLocale", input.routeLocale);
     }
     if (input.browserLanguages) {
         query.set("browserLanguages", JSON.stringify(input.browserLanguages));
     }
-    const response = await fetch(`/api/wiki/quickSearch?${query}`, { signal });
+    const response = await fetch(`/api/wiki/quickSearch?${query}`, { signal, cache: "no-store" });
     if (!response.ok) {
-        throw new Error("Song suggestions could not be loaded.");
+        throw new Error("Search suggestions could not be loaded.");
     }
-    const results = SongQuickSearchResultsSchema.parse(await response.json());
-    // The allowed-type check and result schema prove that every result belongs to the requested song type.
+    const results = QuickSearchResultsSchema.parse(await response.json());
+    if (results.some(result => !allowedItemTypes.some(type => type === result.itemType))) {
+        throw new Error("Search returned an unrequested item type.");
+    }
+    // Runtime validation and the membership check narrow every result to the requested public identity types.
     return results as QuickSearchItemMatch<TItemType>[];
 }
 
@@ -146,6 +151,10 @@ export interface AssociationAutocompleteProps<TItemType extends QuickSearchItemT
      * Allowed item types for the fetch operation.
      */
     allowedItemTypes: readonly TItemType[];
+    permissionPolicy: QuickSearchPermissionPolicy;
+
+    /** The caller owns readiness of its complete selection workflow. */
+    searchEnabled: boolean;
 
     showSearchIcon?: boolean;
     showClearIcon?: boolean;
@@ -167,7 +176,7 @@ const getActivityIdentities = (value: QuickSearchItemMatch | null) => ({
         : undefined,
 });
 
-const SongAssociationAutocomplete = <TItemType extends QuickSearchItemType,>({
+const ScopedAssociationAutocomplete = <TItemType extends QuickSearchItemType,>({
     autofocus = false,
     showSearchIcon = true,
     showClearIcon = true,
@@ -178,6 +187,7 @@ const SongAssociationAutocomplete = <TItemType extends QuickSearchItemType,>({
     const isControlled = props.value !== undefined;
     const recordFeature = useFeatureRecorder();
     const dashboard = useDashboardContext();
+    const presentation = usePresentation();
     const bandPublicId = dashboard.authorizationContext?.bandPublicId;
     const { routeLocale, browserLanguages } = dashboard.localePreferences;
     const typesKey = JSON.stringify(props.allowedItemTypes);
@@ -192,29 +202,42 @@ const SongAssociationAutocomplete = <TItemType extends QuickSearchItemType,>({
     const queryText = isControlled ? props.value! : internalValue;
 
     // Autocomplete search results
-    const [results, setResults] = React.useState<QuickSearchItemMatch<TItemType>[]>([]);
+    const requestKey = JSON.stringify([queryText, typesKey, props.permissionPolicy, bandPublicId, routeLocale, languagesKey, dashboard.authorizationContext]);
+    const latestRequest = React.useRef({ key: requestKey, snapshot: presentation.data });
+    const mounted = React.useRef(false);
+    React.useEffect(() => {
+        mounted.current = true;
+        return () => { mounted.current = false; };
+    }, []);
+    latestRequest.current = { key: requestKey, snapshot: presentation.data };
+    const [responseState, setResponseState] = React.useState<{
+        key: string; snapshot: typeof presentation.data;
+        items: QuickSearchItemMatch<TItemType>[]
+    } | null>(null);
+    // Do not display the previous query or authority's options even before effects run.
+    const results = responseState?.key === requestKey && responseState.snapshot === presentation.data ? responseState.items : [];
 
     // When queryText changes, fetch new results
     React.useEffect(() => {
-        setResults([]);
+        setResponseState(null);
         if (IsNullOrWhitespace(queryText) || !bandPublicId) {
             return;
         }
         const controller = new AbortController();
-        void fetchObjectQuery(queryText, props.allowedItemTypes, { bandPublicId, routeLocale, browserLanguages: [...browserLanguages] }, controller.signal).then((response) => {
+        void fetchObjectQuery(queryText, props.allowedItemTypes, { bandPublicId, routeLocale, browserLanguages: [...browserLanguages] }, props.permissionPolicy, controller.signal).then((response) => {
             if (controller.signal.aborted) {
                 return;
             }
             const filtered = response.filter((item) => item.absoluteUri);
-            setResults(filtered);
+            setResponseState({ key: requestKey, snapshot: presentation.data, items: filtered });
         }).catch(() => {
             if (!controller.signal.aborted) {
-                setResults([]);
+                setResponseState(null);
             }
         });
         return () => controller.abort();
         // Content keys prevent a new inline array from restarting an unchanged query.
-    }, [queryText, typesKey, bandPublicId, routeLocale, languagesKey]);
+    }, [requestKey, presentation.data]);
 
     const handleTextChange = (newValue: string) => {
         // Update internal state only if we're uncontrolled
@@ -254,11 +277,18 @@ const SongAssociationAutocomplete = <TItemType extends QuickSearchItemType,>({
                     return;
                 }
 
+                if (newValue && !results.includes(newValue)) {
+                    return;
+                }
+
                 await recordFeature({
                     feature: ActivityFeature.link_follow_internal,
                     queryText: queryText,
                     ...getActivityIdentities(newValue),
                 });
+                if (!mounted.current || latestRequest.current.key !== requestKey || latestRequest.current.snapshot !== presentation.data) {
+                    return;
+                }
                 props.onSelect(newValue, queryText);
             }}
             options={results}
@@ -306,15 +336,16 @@ const SongAssociationAutocomplete = <TItemType extends QuickSearchItemType,>({
 };
 
 export function AssociationAutocomplete<TItemType extends QuickSearchItemType>(props: AssociationAutocompleteProps<TItemType>) {
-    if (props.allowedItemTypes.length === 0 || props.allowedItemTypes.some(type => type !== QuickSearchItemType.song)) {
+    if (!props.searchEnabled || !supportsQuickSearchTypes(props.allowedItemTypes)) {
         return <QuickSearchRecoveryNotice />;
     }
-    return <BandSongAssociationAutocomplete {...props} />;
+    return <BandAssociationAutocomplete {...props} />;
 }
 
-function BandSongAssociationAutocomplete<TItemType extends QuickSearchItemType>(props: AssociationAutocompleteProps<TItemType>) {
+function BandAssociationAutocomplete<TItemType extends QuickSearchItemType>(props: AssociationAutocompleteProps<TItemType>) {
     const dashboard = useDashboardContext();
-    return <SongAssociationAutocomplete key={dashboard.authorizationContext?.bandPublicId} {...props} />;
+    const scopeKey = JSON.stringify([dashboard.authorizationContext, dashboard.localePreferences]);
+    return <ScopedAssociationAutocomplete key={scopeKey} {...props} />;
 }
 
 // MIGRATION_RESTORE: quick-search

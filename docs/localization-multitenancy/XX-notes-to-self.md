@@ -1020,6 +1020,8 @@ which brings multiple band contexts to the single page. HOWEVER if you're in onl
 
 # TECH DEBT accumulating / things to make sure we do
 
+-  replace adhoc localized strings on chrome
+-  fix backstage home alerts formatting
 -  a user landing page which has mixed-band info (events for all bands, etc)
 -  base: full feature restoration
    -  localization

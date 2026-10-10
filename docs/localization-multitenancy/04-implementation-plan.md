@@ -26,8 +26,9 @@ Preserve them while restoring their wider workflows. Reference member-directory
 filters/presets/contact-search/export and core profile tabs/account controls/activity
 are restored below; full profile and localized-name-search obligations remain open.
 
-Remaining domain/quick/shell search and several reports/admin surfaces remain
-guarded or incomplete. Song credit editing and performance history, public
+Global shell search is restored below. Remaining quick-search selection workflows,
+full localized-name matching and several reports/admin surfaces remain guarded
+or incomplete. Song credit editing and performance history, public
 homepage/feed delivery and frontpage gallery editing/bake are restored below.
 General File search/detail/metadata pages, associated uploads and the image fork
 service are restored. The
@@ -102,8 +103,9 @@ Linked File cards/previews/playback and recording pin/unpin use independently
 authorized File rows. An unavailable recording becomes null without hiding its
 visible Song or exposing a numeric FK. File metadata/upload controls and general
 pages are restored in the checkpoints below. Song credit editing and performance
-history and Event statistics are restored in their checkpoints below. Profile credits and other quick-search plugins,
-association selects, Markdown suggestions and shell search remain pending. Only
+history and Event statistics are restored in their checkpoints below. Profile
+credits and the four shell-search plugins are restored in later checkpoints;
+person suggestions, association selects and Markdown suggestions remain pending. Only
 localized catalog-name text predicates, including quick-search tag names, follow
 the A1 exception; authored text and identity-based filters remain active.
 
@@ -538,16 +540,50 @@ records the preceding checkpoint. The notice implementation is outside this
 search change, apart from removing its unused `Permission` import found by the
 production build.
 
-## Next slice: Global shell search
+## Global shell search checkpoint
 
-Restore the original shell search through the existing domain readers and result
-components, with explicit selected-band/presentation inputs, fresh visibility and
-public contextual links. Preserve cross-domain ordering, keyboard navigation and
-selection; clear cached results when query, band, locale or authority changes.
-Verify independent bands and revoked access in native snapshots and the built
-app. Account for required quick-search dependencies within this bounded slice;
-Markdown suggestions, account administration and full localized-name text matching
-retain their separate obligations.
+The original `MainSiteSearch` is mounted in the app bar and uses the shared
+`AssociationAutocomplete` and existing quick-search owner. Its reference Event,
+Instrument, Song and Wiki plugins retain authored text, type prefixes, relevance
+weights, one hundred candidates per domain and fifteen combined results. Keyboard
+navigation, mouse selection, Escape and clearing retain the original controls.
+Each result carries a public identity and selected-band/route-locale link; the
+original shell does not include person suggestions.
+
+HTTP and direct reads require explicit band and ordered presentation preferences,
+fresh login/read grants and shared table/row visibility in one repeatable snapshot.
+The caller explicitly chooses `omitUnavailable` for shell domains or `requireAll`
+for pickers. Independently authorized current Wiki content can match an Event
+description; foreign, private and malformed revision pointers cannot. Event date
+matching and displayed suffixes use the band calendar/timezone, including exclusive
+DST day boundaries. Instruments use the existing resolved band catalog, preserving
+inheritance, band overrides, intentional blanks and localized description matching.
+
+Query, band, ordered language and authority changes discard earlier results and
+pending selections, including selections awaiting telemetry. A fresh presentation
+snapshot refreshes suggestions after content retirement. Band/locale/grant changes
+reset uncontrolled shell input. Anonymous and no-band contexts expose no shell
+control. Caller-owned readiness keeps deferred Markdown dialogs unavailable even
+though their Wiki plugin is now active.
+
+The two completed `global-search` source references are removed and that obligation
+is restored. Person suggestions, association selects, the protected explorer and
+Markdown suggestions retain the `quick-search` obligation and its archives. Tag/
+localized-catalog-name predicates follow the A1 exception; resolved small-catalog
+instrument matching remains active. A1/B stay open.
+
+## Next slice: Association selection and quick-search explorer
+
+Restore the original association-selection dialog and protected quick-search
+explorer through the same owner and components. Retain existing values, explicit
+clear/select behavior, keyboard controls and contextual navigation. Restore the
+person plugin only through visible active selected-band memberships, retaining
+shared person identity/profile links and independent account boundaries. Supply
+explicit permission policy and presentation inputs at each caller; preserve
+manual links and unrelated editor drafts. Verify two bands, fresh revoked access,
+hidden/deleted/merged people and pending selection/context changes in native
+snapshots and the built app. Markdown suggestions, account administration and full
+localized-name matching retain their separate obligations.
 
 ## Localized catalog text search exception
 
@@ -577,7 +613,7 @@ when a concrete workflow dependency requires it.
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
 | Events | Retain restored search/detail/creation/editing, setlists, invitation/attendance/default-instrument controls, date-picker highlights and import preview/save; finish full localized catalog-name matching separately. |
 | Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish remaining upload callers. |
-| Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish shell/quick search, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
+| Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish quick-search selection, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
 After core restoration: platform role/matrix and catalog/settings administration;
 band onboarding/lifecycle; shared-account lifecycle/merge/dependency reports;
@@ -984,6 +1020,34 @@ Failure-title comparison against the preceding dashboard run adds or removes no
 failures.
 Preservation verification retains 287 references, ten deferred specifications and
 twenty pending features. A1/B remain open.
+
+The global shell-search checkpoint (2026-10-10) passes normal typecheck, targeted
+lint, a normal production build with isolated output, 132 focused tests across
+eight files and 351 native MariaDB tests across twenty-four files. The 23 new native
+cases cover four domains, ranking/candidate/result limits, type/authored/date
+grammar, contextual public links, two bands, inherited/blank/ordered-language
+instrument labels, independently visible current Wiki content, malformed pointers,
+exclusive DST day boundaries and fresh grant/account/membership/band revocation.
+HTTP and jsdom checks cover strict permission policy, uncached errors, query aborts,
+scope changes, authority refresh, keyboard/click/clear/Escape and delayed selections.
+
+Seven built Chromium groups pass on disposable two-band data: French ranked
+results and contextual links; actual keyboard detail navigation; prefixes/Escape/
+clear/mouse Instrument navigation; retired-content refresh; actual read-grant
+revocation; shared-person band switch with an old request in flight and independent
+Dutch results; no-band/anonymous control and HTTP boundaries. No uncaught page,
+RPC or unexpected search errors occurred. French/Dutch layouts were visually
+inspected; temporary content, instruments, localized strings, grants and actions
+were cleaned up and the test server stopped. The restored component's missing
+React import was fixed. Preservation verification reports 285 source references,
+ten deferred specifications and nineteen pending features after closing only
+`global-search`.
+
+The complete-suite rerun retains 206 failed tests and ten suite-load failures,
+with 1838 passed and 673 skipped; the runner stops before later jsdom batches and
+native cases need their disposable MariaDB environment. Failure-title comparison
+against the preceding Event-search run adds or removes no failures. A1/B remain
+open; focused/native/browser success does not close those broader failures.
 
 The [development seeder](../development-seeding.md) restores the pre-migration
 fixed catalogs and random users, songs/files, event schedules/attendance/setlists,

@@ -167,7 +167,7 @@ describe.skipIf(!settingsMysqlTestUrl)("restored song workflows on MariaDB", () 
             const bandPublicId = kind === "mismatched" ? parsePublicId<"Band">(fixture.bands[1]!.publicId) : c.target.bandPublicId;
             const snapshot = await bindDB3ReadSnapshot(tx, auth, { isolationLevel: "Serializable" });
             await expect(GetSearchResultsCore(c.query({ bandPublicId }), auth, snapshot)).rejects.toThrow();
-            await expect(getQuickSearchResults({ bandPublicId, keyword: "Alpha", allowedItemTypes: [QuickSearchItemType.song] }, auth, snapshot)).rejects.toThrow();
+            await expect(getQuickSearchResults({ bandPublicId, keyword: "Alpha", allowedItemTypes: [QuickSearchItemType.song], permissionPolicy: "requireAll" }, auth, snapshot)).rejects.toThrow();
             expect(await readSongDetailPage(snapshot, auth, { bandPublicId }, c.target.songId)).toBeNull();
             await expect(updateSongBasicFields(c.root, auth, { ...c.target, bandPublicId, description: "Denied" })).rejects.toThrow();
             expect((await tx.song.findUniqueOrThrow({ where: { id: c.songs[0]!.id } })).description).toBe("Song description");

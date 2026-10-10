@@ -54,9 +54,9 @@ async function invoke(method: string, query: TestRequest["query"]) {
 }
 beforeEach(() => endpoint.load.mockClear());
 
-describe("song-only quick search HTTP boundary", () => {
+describe("deferred person quick search HTTP boundary", () => {
     it.each(["GET", "HEAD"])("keeps other domains unavailable for %s before authorization", async method => {
-        for (const allowedItemTypes of [["user"], ["song", "event"], []]) {
+        for (const allowedItemTypes of [["user"], ["song", "user"], []]) {
             const spies = await invoke(method, { allowedItemTypes: JSON.stringify(allowedItemTypes) });
             expect(config.api.bodyParser).toBe(false);
             expect(spies.status).toHaveBeenCalledWith(503);
@@ -84,10 +84,10 @@ describe("song-only quick search HTTP boundary", () => {
 });
 
 describe("deferred quick search plugins", () => {
-    it.each([{ types: [QuickSearchItemType.user] }, { types: [QuickSearchItemType.song, QuickSearchItemType.event] }, { types: [] }])(
+    it.each([{ types: [QuickSearchItemType.user] }, { types: [QuickSearchItemType.song, QuickSearchItemType.user] }, { types: [] }])(
         "rejects $types before snapshots or data", async ({ types: allowedItemTypes }) => {
             const auth = testBandAuthorization(null, new ServerPermissionSet([]));
-            await expect(getQuickSearchResults({ bandPublicId: parsePublicId<"Band">("FixtureBand00001"), keyword: "private", allowedItemTypes }, auth))
+            await expect(getQuickSearchResults({ bandPublicId: parsePublicId<"Band">("FixtureBand00001"), keyword: "private", allowedItemTypes, permissionPolicy: "requireAll" }, auth))
                 .rejects.toThrow(ApplicationFeatureUnavailableError);
         },
     );

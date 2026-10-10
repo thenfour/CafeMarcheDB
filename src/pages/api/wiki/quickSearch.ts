@@ -7,7 +7,7 @@ import { api } from "src/blitz-server";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
 import { ApplicationFeatureUnavailableError } from "src/core/shared/applicationRecovery";
 import { getQuickSearchResults } from "src/core/db3/server/quickSearchServerCore";
-import { QuickSearchInputSchema, type QuickSearchInput } from "src/core/db3/shared/quickSearchTypes";
+import { QuickSearchInputSchema, supportsQuickSearchTypes, type QuickSearchInput } from "src/core/db3/shared/quickSearchTypes";
 import { collectLocalePreferences, parseAcceptLanguage } from "src/locale/shared/localePreferences";
 
 export const config = { api: { bodyParser: false } };
@@ -22,12 +22,13 @@ export async function quickSearchRoute(req: NextApiRequest, res: NextApiResponse
     let input: QuickSearchInput;
     try {
         const types = z.array(z.nativeEnum(QuickSearchItemType)).parse(JSON.parse(String(req.query.allowedItemTypes)));
-        if (types.length === 0 || types.some(type => type !== QuickSearchItemType.song)) {
+        if (!supportsQuickSearchTypes(types)) {
             res.status(503).json({ error: new ApplicationFeatureUnavailableError("quickSearch").message });
             return;
         }
         input = QuickSearchInputSchema.parse({
             keyword: req.query.keyword, allowedItemTypes: types, bandPublicId: req.query.bandPublicId,
+            permissionPolicy: req.query.permissionPolicy,
             routeLocale: req.query.routeLocale, browserLanguages: req.query.browserLanguages === undefined
                 ? parseAcceptLanguage(req.headers["accept-language"]) : JSON.parse(String(req.query.browserLanguages)),
         });
@@ -38,13 +39,18 @@ export async function quickSearchRoute(req: NextApiRequest, res: NextApiResponse
     }
     try {
         const auth = await loadAuthorization(ctx.session, input.bandPublicId);
-        res.status(200).json(await getQuickSearchResults(input, auth));
+        const results = await getQuickSearchResults(input, auth);
+        if (req.method === "HEAD") {
+            res.status(200).end();
+            return;
+        }
+        res.status(200).json(results);
     } catch (error) {
         if (error instanceof AuthenticationError || error instanceof AuthorizationError || error instanceof NotFoundError) {
             res.status(error.statusCode).json({ error: error.message });
             return;
         }
-        console.error("Failed to fetch song suggestions", error);
+        console.error("Failed to fetch search suggestions", error);
         res.status(500).json({ error: "Failed to fetch data" });
     }
 }

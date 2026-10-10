@@ -97,7 +97,7 @@ describe("deferred quick search controls", () => {
     it.each(["controlled", "initial"])("does not start searching or change %s query state", async mode => {
         const onSelect = vi.fn();
         const onValueChange = vi.fn();
-        await act(async () => root.render(<AssociationAutocomplete value={mode === "controlled" ? "Authored query" : undefined}
+        await act(async () => root.render(<AssociationAutocomplete searchEnabled permissionPolicy="requireAll" value={mode === "controlled" ? "Authored query" : undefined}
             defaultValue="Initial query" onSelect={onSelect} onValueChange={onValueChange} allowedItemTypes={[QuickSearchItemType.user]} autofocus />));
         expect(container.querySelector('[role="alert"]')?.textContent).toContain("reference suggestions are temporarily unavailable");
         expect(container.querySelectorAll("input, button")).toHaveLength(0);
@@ -111,6 +111,13 @@ describe("deferred quick search controls", () => {
         expect(container.querySelector("h1")?.textContent).toBe("fr-BE: Quick search");
         expect(container.querySelector('[role="alert"]')?.textContent).toContain("fr-BE:");
         expect(container.querySelectorAll("input, button")).toHaveLength(0);
+    });
+
+    it("keeps a deferred caller unavailable even when its domain plugin is restored", async () => {
+        await act(async () => root.render(<AssociationAutocomplete searchEnabled={false} permissionPolicy="requireAll"
+            allowedItemTypes={[QuickSearchItemType.wikiPage]} defaultValue="Wiki draft" onSelect={vi.fn()} />));
+        expect(container.querySelector('[role="alert"]')?.textContent).toContain("Quick search");
+        expect(container.querySelector("input")).toBeNull();
     });
 
     it("keeps Markdown text/HTML editing and inline classes while removing remote reference suggestions", async () => {
@@ -139,6 +146,6 @@ describe("deferred quick search controls", () => {
     });
 
     it("rejects direct client search before constructing a request", async () => {
-        await expect(fetchObjectQuery("private", [QuickSearchItemType.user], {})).rejects.toThrow("Quick search is temporarily unavailable");
+        await expect(fetchObjectQuery("private", [QuickSearchItemType.user], {}, "requireAll")).rejects.toThrow("Quick search is temporarily unavailable");
     });
 });

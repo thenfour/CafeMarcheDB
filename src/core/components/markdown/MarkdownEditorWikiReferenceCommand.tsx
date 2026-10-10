@@ -104,6 +104,9 @@ const WikiReferenceDialog: React.FC<{ api: MarkdownEditorCommandApi, invocationT
                     name="Wiki link"
                     value={<>
                         <AssociationAutocomplete
+                            permissionPolicy="requireAll"
+                            // Markdown dialog suggestions retain their separate restoration obligation.
+                            searchEnabled={false}
                             disableEscapeHandling={true}
                             allowedItemTypes={QuickSearchItemTypeSets.WikiPages}
                             value={wikiSlugQuery}
