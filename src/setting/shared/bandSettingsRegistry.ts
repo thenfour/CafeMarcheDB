@@ -42,6 +42,12 @@ export const kBandSettingsRegistry = freezeRegistry({
         schema: BrandAssetUrlSchema,
         stringFormat: "plain",
     }),
+    "siteCustomization.logoUrl": stringSetting({
+        defaultValue: DefaultDbBrandConfig.siteLogoUrl ?? "",
+        writePermission: Permission.manage_site_branding,
+        schema: BrandAssetUrlSchema,
+        stringFormat: "plain",
+    }),
     "siteCustomization.themeColors.primaryMain": stringSetting({
         defaultValue: DefaultDbBrandConfig.theme!.primaryMain!,
         writePermission: Permission.manage_site_branding,

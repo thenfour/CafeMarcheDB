@@ -31,8 +31,8 @@ explorer, Markdown suggestions and Markdown attachments are restored below. Full
 and several reports/admin surfaces remain guarded
 or incomplete. Song credit editing and performance history, public
 homepage/feed delivery and frontpage gallery editing/bake are restored below.
-General File search/detail/metadata pages, associated uploads and the image fork
-service are restored. The
+General File search/detail/metadata pages, associated uploads, the image fork
+service and band branding uploads are restored. The
 [restoration manifest](feature-restoration.json) records the individual obligations
 and verification criteria; use `yarn migration:status` rather than maintaining a
 second restriction table. Keep every deferred page, RPC/API, generic DB3 root,
@@ -689,18 +689,61 @@ attachment. The shared `CMButton` now forwards its typed `aria-label`, giving th
 paperclip an accessible localized name.
 
 All `file-creation` source archives and deferred specifications remain preserved
-while profile/branding and general-gallery callers are pending. Localized Markdown
+pending their final parity audit. Branding callers are restored below. Localized Markdown
 editing/help and full localized-name matching retain their separate obligations;
 this checkpoint does not close `file-creation`, `markdown-editing` or A1/B.
 
-## Next slice: profile and branding uploads
+## Profile and branding upload checkpoint
 
-Trace and restore the original profile/branding upload callers through the current
-band-owned File and image services. Keep shared-person identity separate from band
-membership associations and carry explicit owner, band and visibility policy.
-Retain chooser/paste/drop, image processing and existing publication/save behavior;
-verify independent bands/locales, fresh revocation, failed processing/rollback,
-storage cleanup and actual built-browser saves before enabling each caller.
+The reference profile pages edit shared name/phone and membership instruments/tags;
+they contain no profile photo or upload caller. The earlier next-slice assumption
+is corrected: this checkpoint adds no person image field or membership association.
+The protected `/backstage/gallery` page is a developer example, with its separate
+`developer-examples` obligation; it is not another production upload caller.
+
+Favicon and logo chooser, scoped clipboard/file/URL paste/drop, progress, preview
+and clear controls now compose with the existing registered settings editor.
+Generic settings code exposes a small draft-tools contract; branding owns the
+upload workflow. Logo persistence uses the new band setting
+`siteCustomization.logoUrl`, the existing URL schema and per-key branding authority.
+Upload changes the draft; explicit save publishes, cancel restores the stored
+value, reset restores the registry default and blank URLs clear publication.
+URL paste/drop edits the draft directly without creating an external File record.
+
+Local uploads use the existing upload owner with explicit band and public
+visibility. The server owns uploader/storage/MIME/size/image metadata and audits.
+Branding retains original bytes, including SVG and ICO; it supplies no resize
+limit. The original batch behavior selects the first URL and retains all uploaded
+Files. Saved download URLs include the owning public band ID because branding is
+rendered outside member-link contextualization. Files receive no person or
+membership tags. Cancel/reset or a denied publication save leaves successful
+uploads available in Files; failed uploads retain the draft and release progress.
+
+Band/account/language/authority snapshot changes cancel pending uploads and ignore
+late progress/completions. Changed drafts cannot be overwritten. Paste belongs to
+one asset control even when both choosers are open; ordinary text-field paste is
+preserved. Server upload and setting writers retain fresh transactional authority,
+so revocation in an already-open form still rejects the operation.
+
+Built-browser testing reproduced a stale header after immediate save/reload: page
+and RPC bundles could retain independent brand caches. Page bootstrap now requests
+an explicit refresh from the existing loader, retaining its last-known-good error
+behavior. Immediate reload displays the committed favicon and logo in each band.
+The existing branding lifecycle test's missing bootstrap/router/RPC mocks are
+repaired. All source archives and deferred specifications remain preserved;
+`file-creation` and `settings-editors` still need their final parity/specification
+audit, and optional primary text color remains deferred. A1/B remain open.
+
+## Next slice: localized Markdown editing and page help
+
+Restore the original LocalizedMarkdown edit/cancel/save/save-and-close workflow
+through the existing localized-string owners with explicit scope and edit locale.
+Keep resolved display text separate from stored overrides, including intentional
+blanks and inherited values. Reuse the restored Markdown editor, references and
+attachments with caller-owned band/visibility policy. Restore optional page help
+through registered localized content. Verify per-key/scope authority, fresh
+revocation, locale/band changes, retained failed drafts, refresh and actual browser
+saves before removing the corresponding guards or preservation references.
 
 ## Localized catalog text search exception
 
@@ -729,7 +772,7 @@ when a concrete workflow dependency requires it.
 | --- | --- |
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
 | Events | Retain restored search/detail/creation/editing, setlists, invitation/attendance/default-instrument controls, date-picker highlights and import preview/save; finish full localized catalog-name matching separately. |
-| Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish remaining upload callers. |
+| Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated and Markdown/branding uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish the preserved File/image creation parity audit. |
 | Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, planner association selection/protected explorer, Markdown suggestions/attachments, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish localized Markdown editing/help, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
 After core restoration: platform role/matrix and catalog/settings administration;
@@ -1296,3 +1339,31 @@ tests still report the separate 206 failures and ten suite-load failures above.
 `yarn migration:verify` protects the source inventory and deferred specifications;
 it does not prove runtime parity. Full feature completion uses the separate
 `yarn migration:check` gate.
+
+The **profile and branding upload checkpoint** passes normal typecheck, targeted
+lint, the normal production build with isolated output and 181 focused checks
+across fourteen files. These include 21 new branding UI cases, brand cache/loading,
+page bootstrap freshness, settings authorization/editor/lifecycle, upload transport,
+Markdown attachments, profile ownership, presentation navigation and preservation.
+Seven new native branding cases plus retained settings/File/image/profile coverage
+pass 63 MariaDB checks in five files. PNG/SVG/ICO bytes, available image metadata,
+public/foreign-band reads, blank/reset semantics, no membership associations,
+independent roles, fresh upload/publication revocation and storage/processing/commit
+rollback are exercised. Private native databases and storage fixtures are removed.
+
+Ten built Chromium groups pass chooser/batch, native clipboard and SVG drop,
+direct-URL paste/drop, explicit save/cancel/clear/reset and immediate header reload.
+They verify public bytes and foreign/missing-band 404s, actual ICO pixels,
+French/Dutch labels and independent publications, a held request during band
+switch, fresh grants revoked in already-open forms, real multipart batch rollback
+and no-store anonymous 401. Both profiles preserve the same shared identity and
+Files have no membership tags. No uncaught page or unexpected RPC errors occur;
+French/Dutch layouts are visually inspected. Owned Files, settings, localized
+labels, grants, actions, audits and private storage are cleaned up, and the owned
+server is stopped. Evidence is in `temp/branding-uploads-browser-result.json`.
+
+The complete suite retains 206 failed tests and ten suite-load failures, with
+1846 passed and 699 skipped. Its 164 normalized failure titles add or remove none
+against the Markdown-attachment checkpoint. Preservation verification retains
+285 source references, ten deferred specifications and nineteen pending features.
+No source archive/specification is removed or feature prematurely marked complete.

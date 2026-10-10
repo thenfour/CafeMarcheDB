@@ -8,6 +8,7 @@ export const siteBrandingSettingByField = {
     siteTitlePrefix: "siteCustomization.titlePrefix" satisfies BandSettingsRegistryKey,
 
     siteFaviconUrl: "siteCustomization.faviconUrl" satisfies BandSettingsRegistryKey,
+    siteLogoUrl: "siteCustomization.logoUrl" satisfies BandSettingsRegistryKey,
     bandTimeZone: "dateTime.bandTimeZone" satisfies BandSettingsRegistryKey,
 
     // todo: localize
@@ -27,6 +28,7 @@ export const SiteBrandingSettingsSchema = z.object({
     siteTitle: kBandSettingsRegistry[siteBrandingSettingByField.siteTitle].schema,
     siteTitlePrefix: kBandSettingsRegistry[siteBrandingSettingByField.siteTitlePrefix].schema,
     siteFaviconUrl: kBandSettingsRegistry[siteBrandingSettingByField.siteFaviconUrl].schema,
+    siteLogoUrl: kBandSettingsRegistry[siteBrandingSettingByField.siteLogoUrl].schema,
     bandTimeZone: kBandSettingsRegistry[siteBrandingSettingByField.bandTimeZone].schema,
     calendarName: kBandSettingsRegistry[siteBrandingSettingByField.calendarName].schema,
     calendarCompany: kBandSettingsRegistry[siteBrandingSettingByField.calendarCompany].schema,

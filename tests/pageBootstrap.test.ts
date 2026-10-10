@@ -35,7 +35,7 @@ describe("page bootstrap server boundary", () => {
         expect(services.presentation).toHaveBeenCalledWith(authorization, {
             bandPublicId, routeLocale: "fr-BE", browserLanguages: ["nl-BE"],
         });
-        expect(services.brand).toHaveBeenCalledWith(undefined, 17);
+        expect(services.brand).toHaveBeenCalledWith({ hostHeader: undefined, bandId: 17, freshness: "refresh" });
         expect(services.authorize.mock.invocationCallOrder[0]).toBeLessThan(services.presentation.mock.invocationCallOrder[0]!);
         expect(result).toEqual({ presentation: { input: { bandPublicId } }, brand: { siteTitle: "Selected band" } });
     });
@@ -46,7 +46,7 @@ describe("page bootstrap server boundary", () => {
         const response = new ServerResponse(request);
         await getPageBootstrap(input, { req: request, res: response });
         expect(services.session).toHaveBeenCalledWith(request, response);
-        expect(services.brand).toHaveBeenCalledWith("band.example.test", 17);
+        expect(services.brand).toHaveBeenCalledWith({ hostHeader: "band.example.test", bandId: 17, freshness: "refresh" });
     });
 
     it("does not read page data after route authorization rejects the session", async () => {

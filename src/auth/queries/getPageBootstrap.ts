@@ -31,6 +31,7 @@ export default async function getPageBootstrap(input: PageBootstrapInput, contex
     const auth = await loadPageAuthorization(pathname, session, presentationInput.bandPublicId ?? undefined);
     const presentation = await loadPresentationData(auth, presentationInput);
     const host = "req" in context ? context.req?.headers.host : undefined;
-    const brand = await loadDbBrandConfig(host, auth.band?.id ?? null);
+    // Page and RPC bundles can hold separate caches; a reload must see committed branding.
+    const brand = await loadDbBrandConfig({ hostHeader: host, bandId: auth.band?.id ?? null, freshness: "refresh" });
     return { presentation, brand };
 }

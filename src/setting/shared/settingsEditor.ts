@@ -23,6 +23,7 @@ export const settingLabelKeys = {
         "siteCustomization.title": "settings.field.siteTitle",
         "siteCustomization.titlePrefix": "settings.field.titlePrefix",
         "siteCustomization.faviconUrl": "settings.field.faviconUrl",
+        "siteCustomization.logoUrl": "settings.field.logoUrl",
         "siteCustomization.themeColors.primaryMain": "settings.field.primaryColor",
         "siteCustomization.themeColors.secondaryMain": "settings.field.secondaryColor",
         "siteCustomization.themeColors.backgroundDefault": "settings.field.backgroundColor",

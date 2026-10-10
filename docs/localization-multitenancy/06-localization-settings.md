@@ -89,8 +89,21 @@ remain source-export previews.
 
 Branding uses selected-band settings with registry validation/defaults and cache
 identity including trusted band/host. Café Marché deployment configures
-`CMDB_HOSTING_MODE=CafeMarche`; hosting mode is not a setting. Blank titles remain
-intentional; removed logo/text-color schema fields are not recreated.
+`CMDB_HOSTING_MODE=CafeMarche`; hosting mode is not a setting. Blank titles and
+asset URLs remain intentional. Favicon and logo use registered band URL settings;
+the restored logo key is `siteCustomization.logoUrl`, with the existing URL
+validation and branding write permission. No global setting storage or database
+column is added; optional primary text color remains deferred.
+
+Branding upload tools set a draft and preserve separate save/cancel/reset. Local
+Files are public and belong to the explicit selected band; their download URLs
+carry that band's public ID. Original image bytes are retained, including SVG/ICO,
+while the shared upload owner records available image metadata. Pasted/dropped
+URLs remain direct URLs without new File records. Successful uploads remain in
+Files after cancel/reset or a failed publication save. Scope changes cancel client
+uploads and discard late completions. Page bootstrap explicitly refreshes branding
+so an immediate save/reload sees committed settings across server bundles; the
+loader retains its last-known-good behavior after refresh errors.
 
 Timezone reads use trusted band ownership and the caller's database transaction.
 Changing/resetting timezone reanchors only that band's all-day segments and event

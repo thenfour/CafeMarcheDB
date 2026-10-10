@@ -109,6 +109,10 @@ vi.mock("src/core/components/SnackbarContext", async () => {
   }
 })
 vi.mock("src/core/createEmotionCache", () => ({ default: () => ({}) }))
+// Application rendering does not execute the server bootstrap or Next navigation.
+vi.mock("src/auth/queries/getPageBootstrap", () => ({ default: vi.fn() }))
+vi.mock("next/router", () => ({ default: { replace: vi.fn() }, useRouter: () => ({ query: {}, pathname: "/backstage" }) }))
+vi.mock("@blitzjs/rpc", () => ({ invoke: vi.fn(), useQueryErrorResetBoundary: () => ({ reset: vi.fn() }) }))
 
 let root: Root | undefined
 const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT")

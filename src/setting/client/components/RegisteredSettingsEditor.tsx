@@ -15,12 +15,25 @@ import {
     getSettingsEditorLabelKey, parseSettingsClipboard, serializeSettingsClipboard, settingsScopeLabelKeys,
 } from "../../shared/settingsEditor";
 
+/** A feature can add draft tools without making the settings editor own its workflow. */
+export interface SettingDraftToolsProps {
+    readonly hive: SettingsHive;
+    readonly settingKey: string;
+    readonly draft: string | boolean;
+    readonly onChange: (value: string | boolean) => void;
+    readonly readOnly: boolean;
+    readonly saving: boolean;
+    readonly onBusyChange: (busy: boolean) => void;
+}
+export type RenderSettingDraftTools = (props: SettingDraftToolsProps) => React.ReactNode;
+
 interface SettingRowProps {
     readonly hive: SettingsHive;
     readonly settingKey: string;
     readonly entry: SettingSnapshot;
     readonly pending: boolean;
     readonly save: (commands: readonly SettingCommand[]) => Promise<void>;
+    readonly renderDraftTools?: RenderSettingDraftTools;
 }
 
 function settingDraft(value: unknown): string | boolean {
@@ -31,11 +44,12 @@ function settingDraft(value: unknown): string | boolean {
     throw new Error("Unsupported settings editor value.");
 }
 
-function SettingRow({ hive, settingKey, entry, pending, save }: SettingRowProps) {
+function SettingRow({ hive, settingKey, entry, pending, save, renderDraftTools }: SettingRowProps) {
     const locale = useLocale();
     const snackbar = useSnackbar();
     const definition = getSettingDefinition(hive, settingKey);
     const [draft, setDraft] = React.useState(() => settingDraft(entry.value));
+    const [toolsBusy, setToolsBusy] = React.useState(false);
     const previousValue = React.useRef(entry.value);
     React.useEffect(() => {
         // A refresh updates untouched fields without discarding a failed or unsaved edit.
@@ -45,7 +59,7 @@ function SettingRow({ hive, settingKey, entry, pending, save }: SettingRowProps)
     }, [entry.value]);
     const validation = definition.schema.safeParse(draft);
     const dirty = draft !== entry.value;
-    const disabled = pending || !entry.capabilities.canEdit;
+    const disabled = pending || toolsBusy || !entry.capabilities.canEdit;
     const label = locale.getPlainString(getSettingsEditorLabelKey(hive, settingKey));
 
     const write = async (operation: SettingCommand["operation"]) => {
@@ -84,6 +98,8 @@ function SettingRow({ hive, settingKey, entry, pending, save }: SettingRowProps)
     }
     return <div data-settings-key={settingKey} style={{ marginBottom: 20 }}>
         {input}
+        {renderDraftTools?.({ hive, settingKey, draft, onChange: setDraft,
+            readOnly: !entry.capabilities.canEdit, saving: pending, onBusyChange: setToolsBusy })}
         <div>{locale.getPlainString(entry.source === "stored" ? "settings.stored" : "settings.default")}</div>
         {entry.capabilities.canEdit && <CMButtonGroup>
             <CMButton disabled={disabled || !dirty || !validation.success} onClick={() => {
@@ -94,14 +110,17 @@ function SettingRow({ hive, settingKey, entry, pending, save }: SettingRowProps)
             <CMButton disabled={disabled || entry.source === "default"} onClick={() => { void write({ kind: "reset" }); }}>
                 {locale.getPlainString("settings.reset")}
             </CMButton>
-            <CMButton disabled={pending || !dirty} onClick={() => setDraft(settingDraft(entry.value))}>
+            <CMButton disabled={pending || toolsBusy || !dirty} onClick={() => setDraft(settingDraft(entry.value))}>
                 {locale.getPlainString("common.action.cancel")}
             </CMButton>
         </CMButtonGroup>}
     </div>;
 }
 
-function SettingsScopeEditor({ hive, snapshot }: { readonly hive: SettingsHive; readonly snapshot: SettingsHiveSnapshot }) {
+function SettingsScopeEditor({ hive, snapshot, renderDraftTools }: {
+    readonly hive: SettingsHive; readonly snapshot: SettingsHiveSnapshot;
+    readonly renderDraftTools?: RenderSettingDraftTools;
+}) {
     const presentation = usePresentation();
     const locale = useLocale();
     const snackbar = useSnackbar();
@@ -164,12 +183,15 @@ function SettingsScopeEditor({ hive, snapshot }: { readonly hive: SettingsHive; 
                 {locale.getPlainString("settings.paste")}
             </CMButton>}
         </CMButtonGroup>
-        {visible.map(([key, entry]) => <SettingRow key={key} hive={hive} settingKey={key} entry={entry} pending={pending} save={save} />)}
+        {visible.map(([key, entry]) => <SettingRow key={key} hive={hive} settingKey={key} entry={entry}
+            pending={pending} save={save} renderDraftTools={renderDraftTools} />)}
     </>;
 }
 
 /** A fixed hive is used by branding; the settings page allows explicit scope selection. */
-export function RegisteredSettingsEditor({ hive: fixedHive }: { readonly hive?: SettingsHive }) {
+export function RegisteredSettingsEditor({ hive: fixedHive, renderDraftTools }: {
+    readonly hive?: SettingsHive; readonly renderDraftTools?: RenderSettingDraftTools;
+}) {
     const presentation = usePresentation();
     const locale = useLocale();
     const [selectedHive, setSelectedHive] = React.useState<SettingsHive>("global");
@@ -186,6 +208,6 @@ export function RegisteredSettingsEditor({ hive: fixedHive }: { readonly hive?: 
                 {locale.getPlainString(labelKey)}
             </MenuItem>)}
         </TextField>}
-        <SettingsScopeEditor key={scopeKey} hive={hive} snapshot={presentation.data.settings[hive]} />
+        <SettingsScopeEditor key={scopeKey} hive={hive} snapshot={presentation.data.settings[hive]} renderDraftTools={renderDraftTools} />
     </>;
 }
