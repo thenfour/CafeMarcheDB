@@ -155,7 +155,7 @@ async function synchronizeSharedSession(session: SessionContext, auth: CMServerA
     const current = {
         permissionNames: auth.sessionPermissions.names,
         isSysAdmin: auth.user?.isSysAdmin ?? false,
-        showAdminControls: !!auth.user?.isSysAdmin && !!previous.showAdminControls,
+        showAdminControls: auth.sessionPermissions.includesName(Permission.sysadmin) && !!previous.showAdminControls,
         GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
         GOOGLE_ANALYTICS_ID_PUBLIC: process.env.GOOGLE_ANALYTICS_ID_PUBLIC,
     } satisfies Partial<Omit<PublicDataType, "userId">>;

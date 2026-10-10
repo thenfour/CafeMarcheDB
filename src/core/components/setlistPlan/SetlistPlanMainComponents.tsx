@@ -1660,6 +1660,9 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                     />
                                     <AssociationSelect
                                         allowedItemTypes={QuickSearchItemTypeSets.Everything!}
+                                        allowNull
+                                        searchEnabled
+                                        permissionPolicy="omitUnavailable"
                                         value={!segment.associatedItem ? null : { ...segment.associatedItem, matchStrength: 0, matchingField: undefined }}
                                         onChange={(newAssociation) => {
                                             props.mutator.setColumnAssociatedItem(

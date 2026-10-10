@@ -9,6 +9,7 @@ import { xUser } from "../shared/schema/user";
 import { xWikiPage } from "../shared/schema/wiki";
 import type { SetlistPlanPayload } from "../shared/setlistPlanTypes";
 import { GetAuthorizedTableReadWhere } from "./db3ReadPolicy";
+import { activeBandPersonWhere } from "../shared/entities/user/bandPersonReference";
 
 function collectPayloadReferences(payload: SetlistPlanPayload) {
     const associatedItems = [...payload.columns, ...(payload.columnLeds ?? []), ...(payload.rowLeds ?? [])]
@@ -102,21 +103,8 @@ async function authorizeUserReferences(database: Prisma.TransactionClient, auth:
         where: {
             AND: [
                 policy,
-                {
-                    bandUsersByUser: {
-                        some: {
-                            bandId: auth.requireBand().id,
-                            isDeleted: false // lsmb todo: GetAuthorizedTableReadWhere normally handles this; don't attempt to reinvent the mechanism.
-                        }
-                    },
-                    isDeleted: false, // lsmb todo: GetAuthorizedTableReadWhere normally handles this; don't attempt to reinvent the mechanism.
-
-                    // lsmb todo: GetAuthorizedTableReadWhere normally handles this; don't attempt to reinvent the mechanism.
-                    // this one is especially bad because setlist plan code should not own any "user merge" logic.
-                    mergedIntoUserId: null,
-
-                    publicId: { in: publicIds },
-                }
+                activeBandPersonWhere(auth.requireBand().id),
+                { publicId: { in: publicIds } },
             ]
         }
     });
@@ -125,10 +113,7 @@ async function authorizeUserReferences(database: Prisma.TransactionClient, auth:
     }
 }
 
-/** Validate references without rewriting authored content or its cached labels.
- * Song and Wiki general workflows remain deferred; these readers enforce their
- * visibility and ownership without enabling those workflows.
- */
+/** Validate current reference visibility without rewriting authored content or cached labels. */
 export async function authorizePlanPayloadReferences(database: Prisma.TransactionClient, auth: CMServerAuthorization, payload: SetlistPlanPayload) {
     const references = collectPayloadReferences(payload);
     await Promise.all([

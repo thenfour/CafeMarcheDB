@@ -51,6 +51,12 @@ describe("selected-band global search HTTP boundary", () => {
         expect(spies.json).not.toHaveBeenCalled();
     });
 
+    it("passes the restored person plugin through the same explicit-band authorization boundary", async () => {
+        const spies = await invoke("GET", { allowedItemTypes: '["user"]', keyword: "u:Alex", permissionPolicy: "requireAll" });
+        expect(spies.status).toHaveBeenCalledWith(200);
+        expect(endpoint.read).toHaveBeenCalledWith(expect.objectContaining({ allowedItemTypes: ["user"], keyword: "u:Alex", permissionPolicy: "requireAll" }), authority);
+    });
+
     it.each([{ bandPublicId: undefined }, { bandPublicId: "123" }, { routeLocale: "bad locale" }, { permissionPolicy: undefined }, { permissionPolicy: "unknown" },
         { browserLanguages: "bad json" }, { browserLanguages: '[123]' }])("rejects malformed %j before authorization", async patch => {
         const spies = await invoke("GET", patch);

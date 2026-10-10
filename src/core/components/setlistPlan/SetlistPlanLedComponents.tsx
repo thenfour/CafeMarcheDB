@@ -215,6 +215,9 @@ export const SetlistPlannerLedDef = (props: SetlistPlannerLedDefProps) => {
         } />
         <AssociationSelect
             allowedItemTypes={QuickSearchItemTypeSets.Everything!}
+            allowNull
+            searchEnabled
+            permissionPolicy="omitUnavailable"
             value={!props.ledDef.associatedItem ? null : { ...props.ledDef.associatedItem, matchStrength: 0, matchingField: undefined }}
             onChange={(newValue) => props.onChange({
                 ...props.ledDef,

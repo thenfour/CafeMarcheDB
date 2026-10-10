@@ -14,13 +14,9 @@ export const QuickSearchInputSchema = PresentationInputSchema.extend({
 }).strict();
 export type QuickSearchInput = z.infer<typeof QuickSearchInputSchema>;
 
-/** Plugins restored for the shell and Song picker; person suggestions remain deferred. */
+/** The reference shell searches content and catalogs; association callers may also search people. */
 export const shellSearchItemTypes = [QuickSearchItemType.event, QuickSearchItemType.instrument,
 QuickSearchItemType.song, QuickSearchItemType.wikiPage] as const;
-
-export function supportsQuickSearchTypes(types: readonly QuickSearchItemType[]): boolean {
-    return types.length > 0 && types.every(type => type !== QuickSearchItemType.user);
-}
 
 const matchFields = {
     name: z.string(),
@@ -44,6 +40,11 @@ export const QuickSearchResultsSchema = z.array(z.discriminatedUnion("itemType",
     z.object({
         itemType: z.literal(QuickSearchItemType.instrument),
         id: z.string().refine(isPublicId).transform(value => parsePublicId<"Instrument">(value)),
+        ...matchFields
+    }).strict(),
+    z.object({
+        itemType: z.literal(QuickSearchItemType.user),
+        id: z.string().refine(isPublicId).transform(value => parsePublicId<"User">(value)),
         ...matchFields
     }).strict(),
     z.object({

@@ -1,50 +1,21 @@
 import React from "react";
 import { Autocomplete, InputBase } from "@mui/material";
 import { IsNullOrWhitespace } from "shared/utils";
-import type { PresentationInput } from "src/locale/shared/presentationInput";
-import { QuickSearchInputSchema, QuickSearchResultsSchema, supportsQuickSearchTypes, type QuickSearchPermissionPolicy } from "src/core/db3/shared/quickSearchTypes";
+import type { QuickSearchPermissionPolicy } from "src/core/db3/shared/quickSearchTypes";
 import { useLocale } from "src/locale/components/useLocale";
-import { usePresentation } from "src/locale/components/PresentationProvider";
-import { requireRestoredApplicationFeature } from "src/core/shared/applicationRecovery";
 import { QuickSearchRecoveryNotice } from "./search/QuickSearchRecoveryNotice";
 import { QuickSearchItemMatch, QuickSearchItemType } from "shared/quickFilter";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/DashboardContext";
+import { CMTextInputBase } from "./CMTextField";
+import { useQuickSearchResults, useQuickSearchScopeKey } from "./search/useQuickSearchResults";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // for allowed item types best to use QuickSearchItemTypeSets
-export async function fetchObjectQuery<TItemType extends QuickSearchItemType>(
-    keyword: string,
-    allowedItemTypes: readonly TItemType[],
-    presentation: PresentationInput,
-    permissionPolicy: QuickSearchPermissionPolicy,
-    signal?: AbortSignal,
-): Promise<QuickSearchItemMatch<TItemType>[]> {
-    if (!supportsQuickSearchTypes(allowedItemTypes)) {
-        return requireRestoredApplicationFeature("quickSearch");
-    }
-    const input = QuickSearchInputSchema.parse({ ...presentation, keyword, allowedItemTypes, permissionPolicy });
-    const query = new URLSearchParams({ keyword, allowedItemTypes: JSON.stringify(allowedItemTypes), bandPublicId: input.bandPublicId, permissionPolicy });
-    if (input.routeLocale) {
-        query.set("routeLocale", input.routeLocale);
-    }
-    if (input.browserLanguages) {
-        query.set("browserLanguages", JSON.stringify(input.browserLanguages));
-    }
-    const response = await fetch(`/api/wiki/quickSearch?${query}`, { signal, cache: "no-store" });
-    if (!response.ok) {
-        throw new Error("Search suggestions could not be loaded.");
-    }
-    const results = QuickSearchResultsSchema.parse(await response.json());
-    if (results.some(result => !allowedItemTypes.some(type => type === result.itemType))) {
-        throw new Error("Search returned an unrequested item type.");
-    }
-    // Runtime validation and the membership check narrow every result to the requested public identity types.
-    return results as QuickSearchItemMatch<TItemType>[];
-}
+export { fetchObjectQuery } from "./search/quickSearchClient";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const AssociationValueLink = (props: { value: QuickSearchItemMatch | null, className?: string | undefined, selected?: boolean }) => {
@@ -102,18 +73,90 @@ export interface AssociationSelectProps<TItemType extends QuickSearchItemType = 
     value: QuickSearchItemMatch<TItemType> | null;
     onChange: (newValue: QuickSearchItemMatch<TItemType> | null) => void;
     allowedItemTypes: readonly TItemType[]; // see QuickSearchItemTypeSets
-    allowNull?: boolean;
+    allowNull: boolean;
+    permissionPolicy: QuickSearchPermissionPolicy;
+    searchEnabled: boolean;
 };
 
 // could use an AutoComplete, but this is just easier.
 export function AssociationSelect<TItemType extends QuickSearchItemType>(props: AssociationSelectProps<TItemType>) {
     const locale = useLocale();
     return <NameValuePair name={props.title || locale.getPlainString("recovery.quickSearch.association")} value={
-        <div className="AssociationSelect">
+        props.searchEnabled ? <BandAssociationSelect {...props} /> : <div className="AssociationSelect">
             <QuickSearchRecoveryNotice />
             <AssociationValueLink value={props.value} />
         </div>
     } />;
+}
+
+function BandAssociationSelect<TItemType extends QuickSearchItemType>(props: AssociationSelectProps<TItemType>) {
+    const scopeKey = useQuickSearchScopeKey();
+    return <ScopedAssociationSelect key={scopeKey} {...props} />;
+}
+
+function ScopedAssociationSelect<TItemType extends QuickSearchItemType>(props: AssociationSelectProps<TItemType>) {
+    const locale = useLocale();
+    const dashboard = useDashboardContext();
+    const [query, setQuery] = React.useState("");
+    const [highlighted, setHighlighted] = React.useState<string | null>(null);
+    const { results, status, isCurrent } = useQuickSearchResults({ query, allowedItemTypes: props.allowedItemTypes,
+        permissionPolicy: props.permissionPolicy, minimumCharacters: 2, enabled: props.searchEnabled });
+    const resultKey = (item: QuickSearchItemMatch<TItemType>) => `${item.itemType}/${item.id}`;
+    const activeIndex = results.findIndex(item => resultKey(item) === highlighted);
+    const changeQuery = (value: string) => {
+        setQuery(value);
+        setHighlighted(null);
+    };
+    const select = (item: QuickSearchItemMatch<TItemType>) => {
+        if (!isCurrent() || !results.includes(item)) {
+            return;
+        }
+        props.onChange(item);
+        changeQuery("");
+    };
+    const handleInputKey = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (!(event.target instanceof HTMLInputElement)) {
+            return;
+        }
+        if (event.key === "Escape") {
+            changeQuery("");
+            event.preventDefault();
+        } else if ((event.key === "ArrowDown" || event.key === "ArrowUp") && results.length > 0) {
+            const index = event.key === "ArrowDown" ? Math.min(activeIndex + 1, results.length - 1) : Math.max(activeIndex - 1, 0);
+            setHighlighted(resultKey(results[index]!));
+            event.preventDefault();
+        } else if (event.key === "Enter" && activeIndex >= 0) {
+            select(results[activeIndex]!);
+            event.preventDefault();
+        }
+    };
+    const clear = () => props.onChange(null);
+    return <div className="AssociationSelect" onKeyDown={handleInputKey}>
+        <CMTextInputBase value={query} onChange={(_event, value) => changeQuery(value)}
+            readOnly={!dashboard.authorizationContext?.bandPublicId} aria-label={props.title || locale.getPlainString("recovery.quickSearch.association")} />
+        <div style={{ display: "flex" }}>
+            {props.allowNull && props.value && <div role="button" tabIndex={0} aria-label={locale.getPlainString("search.quick.clearAssociation")}
+                className="selectable deemphasizedWithHover" onClick={clear} onKeyDown={event => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        clear();
+                        event.preventDefault();
+                    }
+                }}>{gIconMap.Close()}</div>}
+            <AssociationValueLink value={props.value} />
+        </div>
+        {status === "error" && <div role="alert">{locale.getPlainString("search.quick.failed")}</div>}
+        <div className="autoCompleteResults" role="listbox" aria-label={locale.getPlainString("search.quick.suggestions")}>
+            {results.map((item, index) => <div key={resultKey(item)} role="option" tabIndex={0}
+                aria-selected={index === activeIndex} className="selectable" onClick={() => select(item)} onKeyDown={event => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        select(item);
+                        event.preventDefault();
+                    }
+                }}>
+                <AssociationValue value={item} className="selectable" selected={index === activeIndex} />
+            </div>)}
+        </div>
+    </div>;
 }
 
 interface AssociationAutocompleteItemInfo {
@@ -186,12 +229,6 @@ const ScopedAssociationAutocomplete = <TItemType extends QuickSearchItemType,>({
 }: AssociationAutocompleteProps<TItemType>) => {
     const isControlled = props.value !== undefined;
     const recordFeature = useFeatureRecorder();
-    const dashboard = useDashboardContext();
-    const presentation = usePresentation();
-    const bandPublicId = dashboard.authorizationContext?.bandPublicId;
-    const { routeLocale, browserLanguages } = dashboard.localePreferences;
-    const typesKey = JSON.stringify(props.allowedItemTypes);
-    const languagesKey = JSON.stringify(browserLanguages);
 
     // Internal, "uncontrolled" state
     const [internalValue, setInternalValue] = React.useState(
@@ -201,43 +238,9 @@ const ScopedAssociationAutocomplete = <TItemType extends QuickSearchItemType,>({
     // The actual text we display in the input
     const queryText = isControlled ? props.value! : internalValue;
 
-    // Autocomplete search results
-    const requestKey = JSON.stringify([queryText, typesKey, props.permissionPolicy, bandPublicId, routeLocale, languagesKey, dashboard.authorizationContext]);
-    const latestRequest = React.useRef({ key: requestKey, snapshot: presentation.data });
-    const mounted = React.useRef(false);
-    React.useEffect(() => {
-        mounted.current = true;
-        return () => { mounted.current = false; };
-    }, []);
-    latestRequest.current = { key: requestKey, snapshot: presentation.data };
-    const [responseState, setResponseState] = React.useState<{
-        key: string; snapshot: typeof presentation.data;
-        items: QuickSearchItemMatch<TItemType>[]
-    } | null>(null);
-    // Do not display the previous query or authority's options even before effects run.
-    const results = responseState?.key === requestKey && responseState.snapshot === presentation.data ? responseState.items : [];
-
-    // When queryText changes, fetch new results
-    React.useEffect(() => {
-        setResponseState(null);
-        if (IsNullOrWhitespace(queryText) || !bandPublicId) {
-            return;
-        }
-        const controller = new AbortController();
-        void fetchObjectQuery(queryText, props.allowedItemTypes, { bandPublicId, routeLocale, browserLanguages: [...browserLanguages] }, props.permissionPolicy, controller.signal).then((response) => {
-            if (controller.signal.aborted) {
-                return;
-            }
-            const filtered = response.filter((item) => item.absoluteUri);
-            setResponseState({ key: requestKey, snapshot: presentation.data, items: filtered });
-        }).catch(() => {
-            if (!controller.signal.aborted) {
-                setResponseState(null);
-            }
-        });
-        return () => controller.abort();
-        // Content keys prevent a new inline array from restarting an unchanged query.
-    }, [requestKey, presentation.data]);
+    const { results: matches, isCurrent } = useQuickSearchResults({ query: queryText, allowedItemTypes: props.allowedItemTypes,
+        permissionPolicy: props.permissionPolicy, minimumCharacters: 1, enabled: props.searchEnabled });
+    const results = matches.filter(item => item.absoluteUri);
 
     const handleTextChange = (newValue: string) => {
         // Update internal state only if we're uncontrolled
@@ -286,7 +289,7 @@ const ScopedAssociationAutocomplete = <TItemType extends QuickSearchItemType,>({
                     queryText: queryText,
                     ...getActivityIdentities(newValue),
                 });
-                if (!mounted.current || latestRequest.current.key !== requestKey || latestRequest.current.snapshot !== presentation.data) {
+                if (!isCurrent()) {
                     return;
                 }
                 props.onSelect(newValue, queryText);
@@ -336,15 +339,14 @@ const ScopedAssociationAutocomplete = <TItemType extends QuickSearchItemType,>({
 };
 
 export function AssociationAutocomplete<TItemType extends QuickSearchItemType>(props: AssociationAutocompleteProps<TItemType>) {
-    if (!props.searchEnabled || !supportsQuickSearchTypes(props.allowedItemTypes)) {
+    if (!props.searchEnabled) {
         return <QuickSearchRecoveryNotice />;
     }
     return <BandAssociationAutocomplete {...props} />;
 }
 
 function BandAssociationAutocomplete<TItemType extends QuickSearchItemType>(props: AssociationAutocompleteProps<TItemType>) {
-    const dashboard = useDashboardContext();
-    const scopeKey = JSON.stringify([dashboard.authorizationContext, dashboard.localePreferences]);
+    const scopeKey = useQuickSearchScopeKey();
     return <ScopedAssociationAutocomplete key={scopeKey} {...props} />;
 }
 

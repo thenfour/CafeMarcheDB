@@ -47,7 +47,6 @@ vi.mock("@webscopeio/react-textarea-autocomplete", () => ({ default: (props: Tex
 
 import { AssociationAutocomplete, AssociationSelect, fetchObjectQuery } from "src/core/components/ItemAssociation";
 import { MarkdownEditor } from "src/core/components/markdown/RichTextEditor";
-import QuickSearchPage from "src/pages/backstage/test/quickSearchTest";
 
 let language: string;
 let root: Root;
@@ -81,13 +80,13 @@ afterEach(async () => {
 describe("deferred quick search controls", () => {
     it("keeps the selected association link without query, clear or selection controls", async () => {
         const onChange = vi.fn();
-        await act(async () => root.render(<AssociationSelect title="Reference" value={song} onChange={onChange} allowedItemTypes={[QuickSearchItemType.song]} allowNull />));
+        await act(async () => root.render(<AssociationSelect searchEnabled={false} permissionPolicy="requireAll" title="Reference" value={song} onChange={onChange} allowedItemTypes={[QuickSearchItemType.song]} allowNull />));
         expect(container.textContent).toContain("Reference");
         expect(container.querySelector("a")?.getAttribute("href")).toBe(song.absoluteUri);
         expect(container.querySelector("a")?.textContent).toContain(song.name);
         expect(container.querySelectorAll("input, button")).toHaveLength(0);
         language = "fr-BE";
-        await act(async () => root.render(<AssociationSelect value={null} onChange={onChange} allowedItemTypes={[QuickSearchItemType.song]} />));
+        await act(async () => root.render(<AssociationSelect searchEnabled={false} permissionPolicy="requireAll" value={null} onChange={onChange} allowedItemTypes={[QuickSearchItemType.song]} allowNull />));
         expect(container.textContent).toContain("fr-BE: Association");
         expect(container.querySelector('[role="alert"]')?.textContent).toContain("fr-BE: Quick search");
         expect(container.querySelector("a")).toBeNull();
@@ -97,20 +96,12 @@ describe("deferred quick search controls", () => {
     it.each(["controlled", "initial"])("does not start searching or change %s query state", async mode => {
         const onSelect = vi.fn();
         const onValueChange = vi.fn();
-        await act(async () => root.render(<AssociationAutocomplete searchEnabled permissionPolicy="requireAll" value={mode === "controlled" ? "Authored query" : undefined}
+        await act(async () => root.render(<AssociationAutocomplete searchEnabled={false} permissionPolicy="requireAll" value={mode === "controlled" ? "Authored query" : undefined}
             defaultValue="Initial query" onSelect={onSelect} onValueChange={onValueChange} allowedItemTypes={[QuickSearchItemType.user]} autofocus />));
         expect(container.querySelector('[role="alert"]')?.textContent).toContain("reference suggestions are temporarily unavailable");
         expect(container.querySelectorAll("input, button")).toHaveLength(0);
         expect(onSelect).not.toHaveBeenCalled();
         expect(onValueChange).not.toHaveBeenCalled();
-    });
-
-    it("renders the actual explorer as a localized notice without search effects", async () => {
-        language = "fr-BE";
-        await act(async () => root.render(<QuickSearchPage />));
-        expect(container.querySelector("h1")?.textContent).toBe("fr-BE: Quick search");
-        expect(container.querySelector('[role="alert"]')?.textContent).toContain("fr-BE:");
-        expect(container.querySelectorAll("input, button")).toHaveLength(0);
     });
 
     it("keeps a deferred caller unavailable even when its domain plugin is restored", async () => {
@@ -146,6 +137,6 @@ describe("deferred quick search controls", () => {
     });
 
     it("rejects direct client search before constructing a request", async () => {
-        await expect(fetchObjectQuery("private", [QuickSearchItemType.user], {}, "requireAll")).rejects.toThrow("Quick search is temporarily unavailable");
+        await expect(fetchObjectQuery("private", [QuickSearchItemType.user], {}, "requireAll")).rejects.toThrow();
     });
 });

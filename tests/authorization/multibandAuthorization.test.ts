@@ -160,6 +160,43 @@ describe("trusted platform and band authorization", () => {
         expect(session.$publicData.permissionNames).not.toContain(Permission.practice_tools_use);
     });
 
+    it.each([false, true])("preserves the GlobalRole administrator's inspector preference (%s) without a legacy flag", async showAdminControls => {
+        await authorizationTestDb.getDelegate("user").update({ where: { id: account.id }, data: { globalRoleId: 30 } });
+        const session = sessionForAccount();
+        session.$publicData.showAdminControls = showAdminControls;
+        const auth = await loadAuthorization(session, bandA);
+        expect(auth.hasPermission(Permission.sysadmin)).toBe(true);
+        expect(auth.user?.isSysAdmin).toBe(false);
+        expect(session.$publicData.showAdminControls).toBe(showAdminControls);
+        const nextRequest = { ...session, get userId() { return session.userId; } };
+        await loadAuthorization(nextRequest, bandB);
+        expect(session.$publicData.showAdminControls).toBe(showAdminControls);
+    });
+
+    it("clears the inspector preference on fresh GlobalRole revocation while keeping account login", async () => {
+        await authorizationTestDb.getDelegate("user").update({ where: { id: account.id }, data: { globalRoleId: 30 } });
+        const session = sessionForAccount();
+        session.$publicData.showAdminControls = true;
+        await loadAuthorization(session, bandA);
+        expect(session.$publicData.showAdminControls).toBe(true);
+        await authorizationTestDb.getDelegate("user").update({ where: { id: account.id }, data: { globalRoleId: null } });
+        const nextRequest = { ...session, get userId() { return session.userId; } };
+        await loadAuthorization(nextRequest, bandB);
+        expect(session.$publicData.showAdminControls).toBe(false);
+        expect(session.$publicData.permissionNames).not.toContain(Permission.sysadmin);
+        expect(session.userId).toBe(account.id);
+    });
+
+    it("does not preserve a forged inspector preference through cookie flags or band grants", async () => {
+        await authorizationTestDb.getDelegate("bandRolePermission").create({ data: bandGrant(100, 20, Permission.sysadmin) });
+        const session = sessionForAccount();
+        session.$publicData.isSysAdmin = true;
+        session.$publicData.showAdminControls = true;
+        await loadAuthorization(session, bandA);
+        expect(session.$publicData.showAdminControls).toBe(false);
+        expect(session.$publicData.permissionNames).not.toContain(Permission.sysadmin);
+    });
+
     it("rejects cookie-based band guards despite stale scope data", async () => {
         const session = sessionForAccount();
         Object.assign(session.$publicData, {

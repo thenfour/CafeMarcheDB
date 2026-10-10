@@ -5,9 +5,8 @@ import { z } from "zod";
 import { QuickSearchItemType } from "shared/quickFilter";
 import { api } from "src/blitz-server";
 import { loadAuthorization } from "src/auth/server/serverAuthorization";
-import { ApplicationFeatureUnavailableError } from "src/core/shared/applicationRecovery";
 import { getQuickSearchResults } from "src/core/db3/server/quickSearchServerCore";
-import { QuickSearchInputSchema, supportsQuickSearchTypes, type QuickSearchInput } from "src/core/db3/shared/quickSearchTypes";
+import { QuickSearchInputSchema, type QuickSearchInput } from "src/core/db3/shared/quickSearchTypes";
 import { collectLocalePreferences, parseAcceptLanguage } from "src/locale/shared/localePreferences";
 
 export const config = { api: { bodyParser: false } };
@@ -22,10 +21,6 @@ export async function quickSearchRoute(req: NextApiRequest, res: NextApiResponse
     let input: QuickSearchInput;
     try {
         const types = z.array(z.nativeEnum(QuickSearchItemType)).parse(JSON.parse(String(req.query.allowedItemTypes)));
-        if (!supportsQuickSearchTypes(types)) {
-            res.status(503).json({ error: new ApplicationFeatureUnavailableError("quickSearch").message });
-            return;
-        }
         input = QuickSearchInputSchema.parse({
             keyword: req.query.keyword, allowedItemTypes: types, bandPublicId: req.query.bandPublicId,
             permissionPolicy: req.query.permissionPolicy,

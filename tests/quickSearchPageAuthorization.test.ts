@@ -12,7 +12,7 @@ import { authorizePageRequest } from "src/auth/server/pageRequestAuthorization";
 const session = {} as SessionContext;
 const bandId = parsePublicId<"Band">("SearchBand000001");
 
-describe("deferred quick search explorer authorization", () => {
+describe("quick search explorer authorization", () => {
     beforeEach(() => loadAuth.mockReset());
 
     it.each([undefined, bandId])("retains Sysadmin protection with band %s", async selectedBand => {

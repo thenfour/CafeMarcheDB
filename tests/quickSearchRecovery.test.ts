@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ApplicationFeatureUnavailableError } from "src/core/shared/applicationRecovery";
-import { QuickSearchItemType } from "shared/quickFilter";
+import { ZodError } from "zod";
 import { parsePublicId } from "shared/publicId";
 import { ServerPermissionSet } from "src/auth/server/ServerPermissionSet";
 import { testBandAuthorization } from "./support/serverAuthorization";
@@ -54,13 +53,13 @@ async function invoke(method: string, query: TestRequest["query"]) {
 }
 beforeEach(() => endpoint.load.mockClear());
 
-describe("deferred person quick search HTTP boundary", () => {
-    it.each(["GET", "HEAD"])("keeps other domains unavailable for %s before authorization", async method => {
-        for (const allowedItemTypes of [["user"], ["song", "user"], []]) {
+describe("quick search HTTP argument boundary", () => {
+    it.each(["GET", "HEAD"])("rejects invalid domains for %s before authorization", async method => {
+        for (const allowedItemTypes of [["unknown"], ["song", 123], []]) {
             const spies = await invoke(method, { allowedItemTypes: JSON.stringify(allowedItemTypes) });
             expect(config.api.bodyParser).toBe(false);
-            expect(spies.status).toHaveBeenCalledWith(503);
-            expect(spies.json).toHaveBeenCalledWith({ error: new ApplicationFeatureUnavailableError("quickSearch").message });
+            expect(spies.status).toHaveBeenCalledWith(400);
+            expect(spies.json).toHaveBeenCalledWith({ error: "Invalid search arguments" });
             expect(spies.setHeader).toHaveBeenCalledWith("Cache-Control", "no-store");
         }
         expect(endpoint.load).not.toHaveBeenCalled();
@@ -83,12 +82,10 @@ describe("deferred person quick search HTTP boundary", () => {
     );
 });
 
-describe("deferred quick search plugins", () => {
-    it.each([{ types: [QuickSearchItemType.user] }, { types: [QuickSearchItemType.song, QuickSearchItemType.user] }, { types: [] }])(
-        "rejects $types before snapshots or data", async ({ types: allowedItemTypes }) => {
-            const auth = testBandAuthorization(null, new ServerPermissionSet([]));
-            await expect(getQuickSearchResults({ bandPublicId: parsePublicId<"Band">("FixtureBand00001"), keyword: "private", allowedItemTypes, permissionPolicy: "requireAll" }, auth))
-                .rejects.toThrow(ApplicationFeatureUnavailableError);
-        },
-    );
+describe("direct quick search arguments", () => {
+    it("rejects an empty domain list before snapshots or data", async () => {
+        const auth = testBandAuthorization(null, new ServerPermissionSet([]));
+        await expect(getQuickSearchResults({ bandPublicId: parsePublicId<"Band">("FixtureBand00001"), keyword: "private", allowedItemTypes: [], permissionPolicy: "requireAll" }, auth))
+            .rejects.toThrow(ZodError);
+    });
 });

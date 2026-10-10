@@ -1020,6 +1020,7 @@ which brings multiple band contexts to the single page. HOWEVER if you're in onl
 
 # TECH DEBT accumulating / things to make sure we do
 
+-  `parsePublicId<"Event">` -- these free strings are slightly a problem; better to use `xEvent.parseIdentity`
 -  replace adhoc localized strings on chrome
 -  fix backstage home alerts formatting
 -  a user landing page which has mixed-band info (events for all bands, etc)

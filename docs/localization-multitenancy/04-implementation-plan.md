@@ -26,8 +26,9 @@ Preserve them while restoring their wider workflows. Reference member-directory
 filters/presets/contact-search/export and core profile tabs/account controls/activity
 are restored below; full profile and localized-name-search obligations remain open.
 
-Global shell search is restored below. Remaining quick-search selection workflows,
-full localized-name matching and several reports/admin surfaces remain guarded
+Global shell search, planner association selection and the protected quick-search
+explorer are restored below. Markdown suggestions, full localized-name matching
+and several reports/admin surfaces remain guarded
 or incomplete. Song credit editing and performance history, public
 homepage/feed delivery and frontpage gallery editing/bake are restored below.
 General File search/detail/metadata pages, associated uploads and the image fork
@@ -104,8 +105,8 @@ authorized File rows. An unavailable recording becomes null without hiding its
 visible Song or exposing a numeric FK. File metadata/upload controls and general
 pages are restored in the checkpoints below. Song credit editing and performance
 history and Event statistics are restored in their checkpoints below. Profile
-credits and the four shell-search plugins are restored in later checkpoints;
-person suggestions, association selects and Markdown suggestions remain pending. Only
+credits and all five quick-search plugins are restored in later checkpoints;
+Markdown suggestions remain pending. Only
 localized catalog-name text predicates, including quick-search tag names, follow
 the A1 exception; authored text and identity-based filters remain active.
 
@@ -567,23 +568,67 @@ control. Caller-owned readiness keeps deferred Markdown dialogs unavailable even
 though their Wiki plugin is now active.
 
 The two completed `global-search` source references are removed and that obligation
-is restored. Person suggestions, association selects, the protected explorer and
-Markdown suggestions retain the `quick-search` obligation and its archives. Tag/
+is restored. The following checkpoint restores person suggestions, association
+selects and the protected explorer. Markdown suggestions retain the `quick-search`
+obligation and its archives. Tag/
 localized-catalog-name predicates follow the A1 exception; resolved small-catalog
 instrument matching remains active. A1/B stay open.
 
-## Next slice: Association selection and quick-search explorer
+## Association selection and quick-search explorer checkpoint
 
-Restore the original association-selection dialog and protected quick-search
-explorer through the same owner and components. Retain existing values, explicit
-clear/select behavior, keyboard controls and contextual navigation. Restore the
-person plugin only through visible active selected-band memberships, retaining
-shared person identity/profile links and independent account boundaries. Supply
-explicit permission policy and presentation inputs at each caller; preserve
-manual links and unrelated editor drafts. Verify two bands, fresh revoked access,
-hidden/deleted/merged people and pending selection/context changes in native
-snapshots and the built app. Markdown suggestions, account administration and full
-localized-name matching retain their separate obligations.
+The reference `AssociationSelect` is an inline control; the preceding next-slice
+note called it a dialog. Its existing planner column, column-LED
+and Song-LED callers are active through the same quick-search owner. It retains the
+two-character threshold, ranked choices, saved association links and optional
+explicit clearing. Mouse and keyboard selection, Arrow navigation and Escape
+operate on current suggestions; arbitrary input does not replace an association.
+Each caller supplies required permission policy, readiness and clearing behavior.
+The reference association type set includes Event, Song, person and Wiki; it does
+not include Instrument.
+
+The fifth plugin restores authored-person-name matching and `u`/`user` prefixes
+with the original relevance weight and candidate/result limits. Active selected-band
+membership eligibility comes from the existing band-person reference contract.
+Shared User read policy owns account visibility, deletion and merge rules.
+`search_users` remains necessary,
+and absence of the basic-info read grant permits only the policy's own-account
+name read. Results expose shared person public identity and a selected-band,
+route-locale profile link, without contact or membership data. Planner save uses
+the same eligibility contract and revalidates every reference before writing,
+retaining authored content and cached labels.
+
+The original protected explorer retains its editable match-strength probes,
+filter/result inspectors, links and ranking diagnostics. Its server and client
+guards use current platform administration authority; no-band context exposes
+only the registered selection notice. Session refresh now retains the explicit
+inspector preference through the fresh shared Sysadmin grant. Its preceding
+flag-only check hid inspectors for GlobalRole administrators without
+`User.isSysAdmin`; revoked roles and forged cookie/band grants still clear it.
+The explorer and planner explicitly omit unavailable domains. The shell retains
+its original four-domain type set, and
+the Song picker requires its Song read grant.
+
+The shared client request lifecycle aborts and discards results on query, band,
+ordered-language, authority or presentation changes, including pending autocomplete
+selections awaiting telemetry. Same-scope refresh preserves the saved association,
+independent probe text and unrelated planner draft; authority changes clear
+suggestion input. Failed searches retain selected values and allow another query.
+Band and locale navigation retain the app's existing presentation remount boundary.
+All `quick-search` archives remain preserved while its Markdown and full localized
+tag-name obligations are pending. Obsolete deferred-person and explorer recovery
+assertions are replaced by active authorization and interaction coverage. A1/B
+remain open.
+
+## Next slice: Markdown wiki and mention suggestions
+
+Restore the original Markdown suggestion dialogs and editor callers through the
+existing band-scoped quick-search owner. Supply explicit permission policy,
+readiness and ordered presentation inputs; preserve authored text, manual links
+and unsaved drafts. Keep each dialog's reference query grammar, result composition,
+keyboard/select/clear behavior and inserted-link format. Verify current access,
+two bands/locales and stale query/selection responses in the built editor before
+enabling each caller. Account administration and full localized tag-name matching
+retain their separate obligations.
 
 ## Localized catalog text search exception
 
@@ -613,7 +658,7 @@ when a concrete workflow dependency requires it.
 | Members | Existing directory filters/facets/presets/URL state/contact search/exports; profile tabs, account controls and activity, retaining migrated membership policy. |
 | Events | Retain restored search/detail/creation/editing, setlists, invitation/attendance/default-instrument controls, date-picker highlights and import preview/save; finish full localized catalog-name matching separately. |
 | Songs and files | Retain restored Song search/detail/editing, credits/performance history/profile credit reads/statistics, tags, setlist picking, File search/detail/metadata/associations, associated uploads, image fork service and recording/file viewers; retain frontpage gallery editing/bake and public feed delivery; finish remaining upload callers. |
-| Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish quick-search selection, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
+| Supporting workflows | Retain restored dashboard announcements/relevant Events/calendar/custom navigation, global shell search, planner association selection/protected explorer, Wiki readers/search, plans, calendars/feeds/tokens and Custom Links; finish Markdown suggestions, exports, telemetry and jobs used by core workflows. Account explicitly for remaining gaps. |
 
 After core restoration: platform role/matrix and catalog/settings administration;
 band onboarding/lifecycle; shared-account lifecycle/merge/dependency reports;
@@ -1048,6 +1093,45 @@ with 1838 passed and 673 skipped; the runner stops before later jsdom batches an
 native cases need their disposable MariaDB environment. Failure-title comparison
 against the preceding Event-search run adds or removes no failures. A1/B remain
 open; focused/native/browser success does not close those broader failures.
+
+The association-selection/explorer checkpoint (2026-10-10) passes normal
+typecheck, targeted lint, a normal production build with isolated output, 119
+focused tests across ten files and 398 native MariaDB tests across twenty-six
+files. The eighteen new native cases cover selected-band active people,
+name-only/type-prefix matching, public contextual profile links, private DTO
+boundaries, candidate/result limits, independent platform/roleless/second-band
+reads and fresh grant/role/membership/account/band revocation. All three planner
+association positions persist the picked person and reject changed eligibility
+without mutating stored plans or audit rows. Twelve new jsdom cases cover inline
+selection/clear/keyboard behavior, the query threshold, failures and stale
+query/band/language/authority/presentation responses, actual person autocomplete,
+the explorer's probes/inspectors/diagnostics and no-band/current-admin boundaries.
+
+Eight built Chromium groups pass on disposable two-band data: the original
+explorer's match probes, actual filter/result console inspectors, ranked domains
+and person exclusions; explicit no-band notice; French planner column links,
+threshold/keyboard/mouse/clear and persistence with authored draft data; Event/Wiki
+column/Song-LED saves; actual search-grant revocation with a pending response;
+reference-membership revocation and rejected-save rollback/draft preservation;
+pending-query band switch and an independent Dutch planner save; fresh member/
+anonymous explorer denial and uncached anonymous person search. The browser found
+and verified the shared session inspector-preference fix for GlobalRole
+administrators; four added authorization cases cover both preference values,
+role revocation and forged cookie/band grants. No uncaught page, unexpected RPC
+or search errors occurred. French/Dutch explorer, column and LED layouts were
+visually inspected. Temporary content, memberships, planner grants, actions and
+audits were removed, the original search grant/administrator role were verified
+intact, and the owned test server stopped. Evidence is in
+`temp/association-search-browser-result.json` and
+`temp/association-search-browser-cleanup.json`.
+
+The complete-suite rerun retains 206 failed tests and ten suite-load failures,
+with 1841 passed and 691 skipped. Its normalized failure titles add or remove
+none against the preceding shell-search run. The runner stops before later
+jsdom batches; native cases require their disposable MariaDB environment.
+Preservation verification retains 285 source references, ten deferred
+specifications and nineteen pending features. The full `quick-search` obligation,
+Markdown suggestions, localized tag-name matching and A1/B remain open.
 
 The [development seeder](../development-seeding.md) restores the pre-migration
 fixed catalogs and random users, songs/files, event schedules/attendance/setlists,

@@ -15,15 +15,16 @@ import {
 import { slugify } from "shared/rootroot";
 import type { CMServerAuthorization } from "src/auth/server/serverAuthorization";
 import { withMemberPresentation } from "src/core/components/user/bandMemberLinks";
-import { requireRestoredApplicationFeature } from "src/core/shared/applicationRecovery";
 import { collectLocalePreferences, selectFormattingLocale } from "src/locale/shared/localePreferences";
 import { loadBandTimeZone } from "src/server/bandTimeZone";
 import { ServerApi } from "src/server/serverApi";
 import type { xTable } from "../shared/db3core";
-import { QuickSearchInputSchema, supportsQuickSearchTypes, type QuickSearchInput } from "../shared/quickSearchTypes";
+import { activeBandPersonWhere } from "../shared/entities/user/bandPersonReference";
+import { QuickSearchInputSchema, type QuickSearchInput } from "../shared/quickSearchTypes";
 import { instrumentDashboardView } from "../shared/references/dashboardReferences";
 import { xEvent } from "../shared/schema/event";
 import { xSong } from "../shared/schema/song";
+import { xUser } from "../shared/schema/user";
 import { xWikiPage } from "../shared/schema/wiki";
 import { queryView } from "./db3QueryCore";
 import { executeDB3Read, type DB3ReadContext, type DB3ReadDatabase } from "./db3ReadExecution";
@@ -57,7 +58,9 @@ const instrumentFields: SearchableTableFieldSpec[] = [
     { fieldName: "name", fieldType: "string", strengthMultiplier: 1 },
     { fieldName: "description", fieldType: "string", strengthMultiplier: 0.5 },
 ];
+const personFields: SearchableTableFieldSpec[] = [{ fieldName: "name", fieldType: "string", strengthMultiplier: 1 }];
 
+// lsmb todo: use a robust routing mechanism to generate URLs
 function contextualUri(path: string, input: QuickSearchInput): string {
     return ServerApi.getAbsoluteUri(withMemberPresentation(path, input));
 }
@@ -83,6 +86,7 @@ async function readSongMatches(context: DB3ReadContext, query: ParseQuickFilterR
             id: xSong.parseIdentity(song.publicId),
             itemType: QuickSearchItemType.song,
             name: `${song.name}${song.introducedYear ? ` (${song.introducedYear})` : ""}`,
+            // lsmb todo: use a robust routing mechanism to generate URLs
             absoluteUri: contextualUri(`/backstage/song/${song.publicId}/${slugify(song.name)}`, input),
             matchStrength: match.matchStrength,
             matchingField: match.fieldName
@@ -135,6 +139,7 @@ async function readEventMatches(context: DB3ReadContext, query: ParseQuickFilter
         return {
             id: xEvent.parseIdentity(event.publicId), itemType: QuickSearchItemType.event,
             name: `${event.name}${date ? ` (${date})` : ""}`,
+            // lsmb todo: use a robust routing mechanism to generate URLs
             absoluteUri: contextualUri(`/backstage/event/${event.publicId}/${slugify(event.name)}`, input),
             matchStrength: match.matchStrength, matchingField: match.fieldName
         };
@@ -174,6 +179,7 @@ async function readWikiMatches(context: DB3ReadContext, query: ParseQuickFilterR
         return {
             id: xWikiPage.parseIdentity(page.publicId), itemType: QuickSearchItemType.wikiPage,
             name: revision ? `${revision.name} (${page.slug})` : page.slug, canonicalWikiSlug: page.slug,
+            // lsmb todo: use a robust routing mechanism to generate URLs
             absoluteUri: contextualUri(`/backstage/wiki/${page.slug}`, input),
             matchStrength: match.matchStrength, matchingField: match.fieldName
         };
@@ -198,6 +204,7 @@ async function readInstrumentMatches(context: DB3ReadContext, query: ParseQuickF
             id: instrument.publicId,
             itemType: QuickSearchItemType.instrument,
             name: instrument.name ?? "",
+            // lsmb todo: use a robust routing mechanism to generate URLs
             absoluteUri: contextualUri(`/backstage/instrument/${instrument.publicId}`, input),
             matchStrength: match.matchStrength,
             matchingField: match.fieldName
@@ -205,13 +212,50 @@ async function readInstrumentMatches(context: DB3ReadContext, query: ParseQuickF
     }).filter(match => match.matchStrength > 0).slice(0, candidatesPerType);
 }
 
-interface ShellSearchPlugin {
+async function readPersonMatches(context: DB3ReadContext, query: ParseQuickFilterResult, input: QuickSearchInput) {
+    // Shared person policy owns account visibility; the existing reference contract owns band eligibility.
+    const authoredWhere: Prisma.UserWhereInput = MakeWhereCondition(personFields, query);
+    const where = await GetAuthorizedTableReadWhere({
+        table: xUser,
+        auth: context.authorization,
+        where: {
+            AND: [
+                activeBandPersonWhere(context.authorization.requireBand().id),
+                authoredWhere
+            ]
+        }
+    });
+
+    const people = await context.database.user.findMany({
+        select: {
+            publicId: true,
+            name: true
+        },
+        where,
+        orderBy: { publicId: "asc" },
+        take: candidatesPerType
+    });
+    return people.map((person): QuickSearchItemMatch<QuickSearchItemType.user> => {
+        const match = CalculateMatchStrength(personFields, person, query);
+        return {
+            id: xUser.parseIdentity(person.publicId),
+            itemType: QuickSearchItemType.user,
+            name: person.name,
+            // lsmb todo: use a robust routing mechanism to generate URLs
+            absoluteUri: contextualUri(`/backstage/user/${person.publicId}`, input),
+            matchStrength: match.matchStrength,
+            matchingField: match.fieldName
+        };
+    });
+}
+
+interface QuickSearchPlugin {
     readonly aliases: readonly string[];
     readonly permission: Permission;
     readonly entity: xTable;
     readonly read: (context: DB3ReadContext, query: ParseQuickFilterResult, input: QuickSearchInput) => Promise<QuickSearchItemMatch[]>;
 }
-const plugins: Partial<{ readonly [Type in QuickSearchItemType]: ShellSearchPlugin }> = {
+const plugins: { readonly [Type in QuickSearchItemType]: QuickSearchPlugin } = {
     song: {
         aliases: ["song", "s"],
         permission: Permission.view_songs,
@@ -236,6 +280,7 @@ const plugins: Partial<{ readonly [Type in QuickSearchItemType]: ShellSearchPlug
         entity: xWikiPage,
         read: readWikiMatches
     },
+    user: { aliases: ["user", "u"], permission: Permission.search_users, entity: xUser, read: readPersonMatches },
 };
 
 async function parseBandSearchQuery(context: DB3ReadContext, keyword: string): Promise<ParseQuickFilterResult> {
@@ -262,9 +307,6 @@ async function parseBandSearchQuery(context: DB3ReadContext, keyword: string): P
 export async function getQuickSearchResults(input: QuickSearchInput, authorization: CMServerAuthorization,
     database: DB3ReadDatabase = db,
 ): Promise<QuickSearchItemMatch[]> {
-    if (!supportsQuickSearchTypes(input.allowedItemTypes)) {
-        return requireRestoredApplicationFeature("quickSearch");
-    }
     const args = QuickSearchInputSchema.parse(input);
     return executeDB3Read(database, authorization, async context => {
         const auth = context.authorization.requireUser();
